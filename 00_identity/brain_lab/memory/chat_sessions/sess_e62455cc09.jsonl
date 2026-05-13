@@ -1,0 +1,2 @@
+{"ts": "2026-02-20T16:02:07.631148Z", "role": "user", "content": "quien eres?", "meta": {}}
+{"ts": "2026-02-20T16:03:07.676034Z", "role": "assistant", "content": "FALLBACK: Ollama generate falló.\nOLLAMA_URL=http://127.0.0.1:11434\nMODEL=qwen2.5:14b\nERROR=timed out\n\nPrueba: escribe 'diag' para ver diagnóstico completo.", "meta": {"intent": "chat", "model": "qwen2.5:14b", "ollama_ok": true}}

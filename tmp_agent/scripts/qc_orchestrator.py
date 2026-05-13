@@ -1,0 +1,1 @@
+<script que llama la API de QuantConnect>

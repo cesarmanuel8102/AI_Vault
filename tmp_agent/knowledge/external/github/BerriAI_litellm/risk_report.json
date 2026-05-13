@@ -1,0 +1,19 @@
+{
+  "source_id": "github_BerriAI_litellm_20260508",
+  "generated_at_utc": "2026-05-08T04:57:02.358282Z",
+  "source_risk_score": 5.75,
+  "pattern_risks": [
+    {
+      "pattern_id": "ci_backed_regression_harness",
+      "risk": 2.5
+    },
+    {
+      "pattern_id": "dependency_manifest_governance",
+      "risk": 3.0
+    },
+    {
+      "pattern_id": "structured_tool_dispatch",
+      "risk": 3.5
+    }
+  ]
+}

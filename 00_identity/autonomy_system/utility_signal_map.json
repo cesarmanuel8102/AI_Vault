@@ -1,0 +1,112 @@
+{
+  "map_id": "utility_signal_map_v1",
+  "version": "1.0.0",
+  "created_at": "2026-03-19T04:20:00Z",
+  "description": "Mapa de señales de utilidad que conecta métricas de rendimiento con decisiones operativas",
+  
+  "signal_types": {
+    "UTILITY_SCORE": {
+      "description": "Score calculado por la función U",
+      "range": [0.0, 1.0],
+      "thresholds": {
+        "excellent": {"min": 0.8, "color": "green", "action": "promote"},
+        "good": {"min": 0.6, "max": 0.8, "color": "blue", "action": "maintain"},
+        "acceptable": {"min": 0.4, "max": 0.6, "color": "yellow", "action": "monitor"},
+        "poor": {"min": 0.2, "max": 0.4, "color": "orange", "action": "review"},
+        "critical": {"max": 0.2, "color": "red", "action": "demote_or_stop"}
+      }
+    },
+    "SHARPE_RATIO": {
+      "description": "Ratio de Sharpe de la estrategia",
+      "thresholds": {
+        "excellent": {"min": 2.0},
+        "good": {"min": 1.5, "max": 2.0},
+        "acceptable": {"min": 1.0, "max": 1.5},
+        "poor": {"min": 0.5, "max": 1.0},
+        "critical": {"max": 0.5}
+      }
+    },
+    "MAX_DRAWDOWN": {
+      "description": "Máximo drawdown como porcentaje",
+      "thresholds": {
+        "safe": {"max": 0.05},
+        "acceptable": {"min": 0.05, "max": 0.10},
+        "warning": {"min": 0.10, "max": 0.15},
+        "danger": {"min": 0.15, "max": 0.20},
+        "critical": {"min": 0.20}
+      }
+    },
+    "WIN_RATE": {
+      "description": "Porcentaje de trades ganadores",
+      "thresholds": {
+        "excellent": {"min": 0.60},
+        "good": {"min": 0.55, "max": 0.60},
+        "acceptable": {"min": 0.50, "max": 0.55},
+        "poor": {"min": 0.45, "max": 0.50},
+        "critical": {"max": 0.45}
+      }
+    }
+  },
+  
+  "signal_flow": {
+    "input_metrics": [
+      "total_return",
+      "sharpe_ratio",
+      "max_drawdown",
+      "volatility",
+      "win_rate",
+      "profit_factor",
+      "avg_trade_return"
+    ],
+    "processing": {
+      "step_1": "normalize_metrics",
+      "step_2": "apply_weights",
+      "step_3": "calculate_utility_score",
+      "step_4": "check_thresholds",
+      "step_5": "generate_signal"
+    },
+    "output_decisions": [
+      "promote_to_satellite",
+      "promote_to_core",
+      "maintain_position",
+      "reduce_exposure",
+      "demote_layer",
+      "emergency_stop"
+    ]
+  },
+  
+  "signal_mapping": {
+    "HIGH_UTILITY_HIGH_SHARPE": {
+      "conditions": {"utility_score": ">=0.8", "sharpe_ratio": ">=1.5"},
+      "signal": "PROMOTE_TO_CORE",
+      "priority": 1
+    },
+    "HIGH_UTILITY_MODERATE_SHARPE": {
+      "conditions": {"utility_score": ">=0.7", "sharpe_ratio": ">=1.0"},
+      "signal": "PROMOTE_TO_SATELLITE",
+      "priority": 2
+    },
+    "MODERATE_UTILITY": {
+      "conditions": {"utility_score": "0.4-0.7", "sharpe_ratio": "0.5-1.0"},
+      "signal": "MAINTAIN_EXPLORER",
+      "priority": 3
+    },
+    "LOW_UTILITY_HIGH_DRAWDOWN": {
+      "conditions": {"utility_score": "<0.4", "max_drawdown": ">0.15"},
+      "signal": "EMERGENCY_STOP",
+      "priority": 0
+    },
+    "LOW_UTILITY": {
+      "conditions": {"utility_score": "<0.4"},
+      "signal": "DEMOTE_OR_REVIEW",
+      "priority": 4
+    }
+  },
+  
+  "integration": {
+    "brain_api": "/v1/signals/utility",
+    "dashboard_widget": "utility_signal_panel",
+    "alert_channels": ["dashboard", "log", "email"],
+    "update_frequency": "realtime"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "phase": "P94_UTILITY_FIRST_SHALLOW_PULLBACK",
+  "verdict": "reject",
+  "reason": "Shallow retest geometry also removed all pullback fills and collapsed the branch back toward ORB-only behavior.",
+  "evidence": {
+    "candidate_pb_fills": {
+      "IS_2022_2024": 0,
+      "OOS_2025_2026Q1": 0,
+      "STRESS_2020": 0
+    },
+    "candidate_utility_score": 3.87653,
+    "candidate_oos_weekly": 0.4809,
+    "candidate_is_weekly": 0.2646,
+    "phase89_oos_weekly": 0.8287,
+    "phase89_utility_score": 5.817146
+  },
+  "hypothesis": "The current winning pullback edge depends on deeper retests toward the OR anchor; forcing shallow geometry invalidates the setup family."
+}

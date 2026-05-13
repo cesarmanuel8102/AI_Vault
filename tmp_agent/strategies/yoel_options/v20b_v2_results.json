@@ -1,0 +1,82 @@
+[
+  {
+    "name": "V2.0b-v2 BASELINE (PT=0.35 SL=-0.20 R=0.05)",
+    "bt_id": "f81f3ceff51e33bcc8db8478734e3456",
+    "params": {
+      "profit_target_pct": "0.35",
+      "stop_loss_pct": "-0.20",
+      "risk_per_trade": "0.05"
+    },
+    "net_profit": -29.72,
+    "cagr": -16.228,
+    "sharpe": -0.898,
+    "sortino": -0.509,
+    "max_dd": 34.9,
+    "total_trades": 110,
+    "win_rate": 41.0,
+    "profit_factor": 0.83,
+    "annual_vol": 0.173,
+    "psr": 0.331,
+    "v2_log_lines": [
+      "2023-01-01 00:00:00 V2.0b-v2 INIT: PT=0.35 SL=-0.2 risk=0.05 DTE=14-30 | DD_halt=0.3 DD_resume=0.25 | trail_on=0.25 trail_stop=0.1 | max_hold=3d | min_conf=0.50",
+      "2023-02-13 12:55:00 TRAIL_ON YOEL_CALL_QQQ_230213_1: pnl=+25% peak=$11.64",
+      "2023-04-06 11:50:00 TRAIL_ON YOEL_CALL_QQQ_230406_2: pnl=+25% peak=$9.54",
+      "2023-04-13 13:50:00 TRAIL_ON YOEL_CALL_QQQ_230413_4: pnl=+25% peak=$8.98",
+      "2023-06-07 09:35:00 TRAIL_ON YOEL_CALL_AAPL_230606_14: pnl=+28% peak=$4.97",
+      "2023-06-08 11:55:00 TRAIL_ON YOEL_CALL_QQQ_230608_15: pnl=+28% peak=$9.03",
+      "2023-06-22 10:15:00 TRAIL_ON YOEL_CALL_QQQ_230622_18: pnl=+26% peak=$9.09",
+      "2023-06-27 12:40:00 TRAIL_ON YOEL_CALL_AAPL_230627_20: pnl=+26% peak=$3.75",
+      "2023-07-17 09:35:00 TRAIL_ON YOEL_CALL_AAPL_230714_24: pnl=+25% peak=$6.20",
+      "2023-12-01 12:30:00 TRAIL_ON YOEL_CALL_AAPL_231201_34: pnl=+28% peak=$4.10",
+      "2023-12-05 10:05:00 TRAIL_ON YOEL_CALL_MSFT_231205_35: pnl=+25% peak=$12.07",
+      "2023-12-11 09:31:00 DD_CIRCUIT: HALTED trading (DD=33.0% > 30%) [halt #1]",
+      "2024-12-28 00:00:00 YOEL OPTIONS V2.0b-v2 DD REDUCTION \u2014 FINAL REPORT",
+      "2024-12-28 00:00:00   risk_skips=34 peak_eq=$10,495",
+      "2024-12-28 00:00:00   V2: dd_halts=1 trailing_activations=0",
+      "2024-12-28 00:00:00   CONFIDENCE: avg=0.86 trades=40"
+    ],
+    "gate": "FAIL"
+  },
+  {
+    "name": "V2.0b-v2 G22 (PT=0.40 SL=-0.20 R=0.04)",
+    "bt_id": "eb7979db382268486588846ab00af96b",
+    "params": {
+      "profit_target_pct": "0.40",
+      "stop_loss_pct": "-0.20",
+      "risk_per_trade": "0.04"
+    },
+    "net_profit": 0.0,
+    "cagr": 0.0,
+    "sharpe": 0.0,
+    "sortino": 0.0,
+    "max_dd": 0.0,
+    "total_trades": 0,
+    "win_rate": 0.0,
+    "profit_factor": 0.0,
+    "annual_vol": 0.0,
+    "psr": 0.0,
+    "v2_log_lines": [
+      "2023-01-01 00:00:00 V2.0b-v2 INIT: PT=0.4 SL=-0.2 risk=0.04 DTE=14-30 | DD_halt=0.3 DD_resume=0.25 | trail_on=0.25 trail_stop=0.1 | max_hold=3d | min_conf=0.50",
+      "2023-02-13 12:55:00 TRAIL_ON YOEL_CALL_QQQ_230213_1: pnl=+25% peak=$11.64",
+      "2023-04-06 11:50:00 TRAIL_ON YOEL_CALL_QQQ_230406_2: pnl=+25% peak=$9.54",
+      "2023-04-13 13:50:00 TRAIL_ON YOEL_CALL_QQQ_230413_4: pnl=+25% peak=$8.98",
+      "2023-05-31 10:05:00 TRAIL_ON YOEL_CALL_AAPL_230530_16: pnl=+29% peak=$5.15",
+      "2023-06-01 12:05:00 TRAIL_ON YOEL_CALL_AAPL_230601_17: pnl=+27% peak=$5.03",
+      "2023-06-07 09:35:00 TRAIL_ON YOEL_CALL_AAPL_230606_18: pnl=+28% peak=$4.97",
+      "2023-06-08 11:55:00 TRAIL_ON YOEL_CALL_QQQ_230608_19: pnl=+28% peak=$9.03",
+      "2023-06-22 10:15:00 TRAIL_ON YOEL_CALL_QQQ_230622_22: pnl=+26% peak=$9.09",
+      "2023-06-27 12:40:00 TRAIL_ON YOEL_CALL_AAPL_230627_24: pnl=+26% peak=$3.75",
+      "2023-07-13 09:35:00 TRAIL_ON YOEL_CALL_QQQ_230712_29: pnl=+26% peak=$9.78",
+      "2023-07-17 09:35:00 TRAIL_ON YOEL_CALL_AAPL_230714_30: pnl=+25% peak=$6.20",
+      "2023-07-28 11:25:00 TRAIL_ON YOEL_CALL_QQQ_230728_36: pnl=+27% peak=$9.30",
+      "2023-12-01 12:30:00 TRAIL_ON YOEL_CALL_AAPL_231201_42: pnl=+28% peak=$4.10",
+      "2023-12-05 10:05:00 TRAIL_ON YOEL_CALL_MSFT_231205_43: pnl=+25% peak=$12.07",
+      "2023-12-26 09:31:00 DD_CIRCUIT: HALTED trading (DD=30.4% > 30%) [halt #1]",
+      "2024-12-28 00:00:00 YOEL OPTIONS V2.0b-v2 DD REDUCTION \u2014 FINAL REPORT",
+      "2024-12-28 00:00:00   risk_skips=21 peak_eq=$12,309",
+      "2024-12-28 00:00:00   V2: dd_halts=1 trailing_activations=0",
+      "2024-12-28 00:00:00   CONFIDENCE: avg=0.85 trades=50"
+    ],
+    "gate": "FAIL"
+  }
+]

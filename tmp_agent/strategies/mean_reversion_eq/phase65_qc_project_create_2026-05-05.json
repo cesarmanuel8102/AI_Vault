@@ -1,0 +1,61 @@
+{
+  "project_id": 31204537,
+  "name": "PF200_ORB_ML_RESEARCH_V1_20260505",
+  "create": {
+    "projects": [
+      {
+        "projectId": 31204537,
+        "organizationId": "6d487993ca17881264c2ac55e41ae539",
+        "name": "PF200_ORB_ML_RESEARCH_V1_20260505",
+        "modified": "2026-05-06 00:13:10",
+        "created": "2026-05-06 00:13:10",
+        "ownerId": 384945,
+        "language": "Py",
+        "collaborators": [
+          {
+            "uid": 384945,
+            "liveControl": true,
+            "permission": "write",
+            "publicId": "cesar_13",
+            "profileImage": "https://cdn.quantconnect.com/web/i/users/profile/default.jpg",
+            "email": "cesarmanuel8102@gmail.com",
+            "name": "Cesar",
+            "bio": "",
+            "owner": true
+          }
+        ],
+        "leanVersionId": 17695,
+        "leanPinnedToMaster": true,
+        "owner": true,
+        "description": "",
+        "channelId": "P31204537-7e6f8270e1abae2ada9fc55cc46d2e61",
+        "parameters": [],
+        "libraries": [],
+        "grid": {
+          "xs": [],
+          "sm": [],
+          "md": [],
+          "lg": [],
+          "xl": []
+        },
+        "liveGrid": {
+          "xs": [],
+          "sm": [],
+          "md": [],
+          "lg": [],
+          "xl": []
+        },
+        "paperEquity": null,
+        "lastLiveDeployment": null,
+        "liveForm": null,
+        "encrypted": false,
+        "codeRunning": false,
+        "leanEnvironment": 1,
+        "encryptionKey": null,
+        "maxFileSize": 64000,
+        "isPinned": false
+      }
+    ],
+    "success": true
+  }
+}

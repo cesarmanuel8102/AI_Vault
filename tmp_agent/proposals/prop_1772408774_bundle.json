@@ -1,0 +1,265 @@
+{
+  "proposal_id": "prop_1772408774",
+  "created_at": "2026-03-01T23:46:14.864147Z",
+  "title": "Sandbox proposal bundle (auto)",
+  "rationale": "Empaquetar diffs desde tmp_agent/workspace contra workspace/brainlab (read-only).",
+  "mode": "sandbox_proposal_bundle",
+  "touches_runtime": false,
+  "requires_human_approval_to_apply": true,
+  "items": [
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\_ast_probe.py",
+      "suggested_repo_path": "(NEEDS_DECISION) _ast_probe.py",
+      "new_sha256": "00a6967a7f82a730a1a432c0302e9db93b43af5147d060d17aad5123252d25ee",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774__ast_probe_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_devloop_run_20260228_090151.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_devloop_run_20260228_090151.json",
+      "new_sha256": "9d07922bf371caf70196d6f6f6c5e4237ba1f695bd46968c231808dd49fefee4",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_devloop_run_20260228_090151_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_devloop_run_20260228_090334.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_devloop_run_20260228_090334.json",
+      "new_sha256": "0a18423c9fe87f2b3409a09a229de7026810eafe05794b2ef51dacd49ce4e57d",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_devloop_run_20260228_090334_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_devloop_run_20260228_090446.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_devloop_run_20260228_090446.json",
+      "new_sha256": "09685b0b78fc16a29bf28dc5207b2624733926e983f925b53c1606f11816697c",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_devloop_run_20260228_090446_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_devloop_run_20260228_091458.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_devloop_run_20260228_091458.json",
+      "new_sha256": "3a2ef255b2101bf912a4951dbc01afb97c5ca35ed8af90c4a91df3ab3cdf2f9b",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_devloop_run_20260228_091458_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_devloop_run_20260228_091821.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_devloop_run_20260228_091821.json",
+      "new_sha256": "90a854befe1734e3ec1a4ffbb50b3dd14267f6022b87833bb7191fdb4c294ef4",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_devloop_run_20260228_091821_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_devloop_run_20260228_092101.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_devloop_run_20260228_092101.json",
+      "new_sha256": "afdf751d179b50e28e5324b0bc188bb04064bc2975b7a23ccb3ca5b289164842",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_devloop_run_20260228_092101_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_devloop_run_20260228_092736.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_devloop_run_20260228_092736.json",
+      "new_sha256": "0e1183fe046dbc5637f85261d08aac21e4dddef8436d5d4e9e53eb4ab65acd89",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_devloop_run_20260228_092736_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_devloop_run_20260228_093920.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_devloop_run_20260228_093920.json",
+      "new_sha256": "6e6e5b71776fa0c6d092215550872fb446cb837908571520c5cf5fc74a5a4af4",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_devloop_run_20260228_093920_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_devloop_run_20260228_094016.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_devloop_run_20260228_094016.json",
+      "new_sha256": "a29e544e6b55ee1a1b21e962bd56f444b13ffd69a7a70dd5bbf80d2cd93c4c0d",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_devloop_run_20260228_094016_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_devloop_run_20260228_094101.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_devloop_run_20260228_094101.json",
+      "new_sha256": "ed386d967c3e9fde85bb1d245be6c411360daba235dcaf55fb71bcc8767f8c26",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_devloop_run_20260228_094101_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_devloop_run_20260228_094547.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_devloop_run_20260228_094547.json",
+      "new_sha256": "446a562fddb1eb47add378eee069d0c093b48dee2e7b3d2c209f6efbc1e35e4d",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_devloop_run_20260228_094547_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_devloop_run_20260228_094556.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_devloop_run_20260228_094556.json",
+      "new_sha256": "c4f62f4174122f195b962b38772231e402bb4d0df52c40ac9b3a46426e152862",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_devloop_run_20260228_094556_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_devloop_run_20260228_095356.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_devloop_run_20260228_095356.json",
+      "new_sha256": "cbe586507ae18eaf16f3845d8667f72e3c98d72ebcb5a4b91e47f507ccd73631",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_devloop_run_20260228_095356_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_devloop_run_20260228_095430.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_devloop_run_20260228_095430.json",
+      "new_sha256": "57dc5968846f97ec32ad3d155a6b58e93a1909c6e28474686cf1657681743840",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_devloop_run_20260228_095430_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_devloop_run_20260228_095817.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_devloop_run_20260228_095817.json",
+      "new_sha256": "ad5ee370b4b9769393ac73578d75a243c45190f370d0a867253c47cd37f2f837",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_devloop_run_20260228_095817_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_integration_smoke_20260228_165842.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_integration_smoke_20260228_165842.json",
+      "new_sha256": "b22670efa56b111a4d5b91a9fb97f0d34dd80e0ac573f0a8ecc8b8dd81cc8c8a",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_integration_smoke_20260228_165842_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_minreal_plan_20260228_131018.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_minreal_plan_20260228_131018.json",
+      "new_sha256": "d3d931885c834c9c27ccdd0b47f1263119a8d937a080018262066cd67a21a45f",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_minreal_plan_20260228_131018_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_minreal_plan_20260228_135122.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_minreal_plan_20260228_135122.json",
+      "new_sha256": "b459f1ccebd30c1e0a0857a45424194ebcbec4ea15a31bac1ceafafc7790f8fb",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_minreal_plan_20260228_135122_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_minreal_plan_20260228_135354.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_minreal_plan_20260228_135354.json",
+      "new_sha256": "560bae8af21cc3b6378cdd07f263f1ba5d959e6a9b6fa2330164e87370696ecb",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_minreal_plan_20260228_135354_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_minreal_plan_20260228_135409.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_minreal_plan_20260228_135409.json",
+      "new_sha256": "0ded229e91f49f4cb3d768b69938ffb9727b3f4481668de3134c956af63e8081",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_minreal_plan_20260228_135409_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_minreal_plan_20260228_135550.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_minreal_plan_20260228_135550.json",
+      "new_sha256": "3c44b433c9b881b68e82f6525f979d580113367f7cd76dd99c84d827cb68323b",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_minreal_plan_20260228_135550_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_minreal_plan_20260228_140227.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_minreal_plan_20260228_140227.json",
+      "new_sha256": "950152c99f7d5029582398fbfcc1f433637df33223b34fef85fdc4897f2b2138",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_minreal_plan_20260228_140227_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_minreal_smoke_20260228_141107.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_minreal_smoke_20260228_141107.json",
+      "new_sha256": "572557b33e639710d73b942ebfbaa47e3bded64eaa3cfac04e88334f7074166e",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_minreal_smoke_20260228_141107_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_minreal_smoke_20260228_141713.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_minreal_smoke_20260228_141713.json",
+      "new_sha256": "443983d55a94a8dc9252ba67ec1d54a614253224cfe869e028ebe72bd7e8e4f1",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_minreal_smoke_20260228_141713_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_minreal_smoke_20260228_141931.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_minreal_smoke_20260228_141931.json",
+      "new_sha256": "13051e3c2fbb436b22185bdd09a9675120c4ace63976cee8d698e59763fe0798",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_minreal_smoke_20260228_141931_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_minreal_smoke_20260228_142052.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_minreal_smoke_20260228_142052.json",
+      "new_sha256": "b5b319de28e82ae7ba044df8f48949f65880fbd72905792a8324f22c4c18d325",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_minreal_smoke_20260228_142052_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_parity_smoke_20260228_142219.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_parity_smoke_20260228_142219.json",
+      "new_sha256": "0facd74e336b5c705dae91736c2df816994de36774ce58f9aa7b1be74b4c0435",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_parity_smoke_20260228_142219_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_parity_smoke_20260228_142428.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_parity_smoke_20260228_142428.json",
+      "new_sha256": "c7c903b0e88fc69910af8ba784275d0deea7ff2163af9884bb05e4fbb00703c1",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_parity_smoke_20260228_142428_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_run_apply_smoke_20260228_084653.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_run_apply_smoke_20260228_084653.json",
+      "new_sha256": "6e48e6165dab615b569b815a73ec2443adfb93191e8ea4b5e8365ddf19e89b74",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_run_apply_smoke_20260228_084653_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\receipts\\run_room_ssot_e2e_20260228_174329.json",
+      "suggested_repo_path": "(NEEDS_DECISION) run_room_ssot_e2e_20260228_174329.json",
+      "new_sha256": "fc9c77e76cbfa4b87ffa4b015d4f99d50080a9355944cfdb752075e365e7029a",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_run_room_ssot_e2e_20260228_174329_NEW.diff"
+    },
+    {
+      "kind": "modify",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\risk\\risk_engine.py",
+      "repo_path": "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk\\risk_engine.py",
+      "old_sha256": "690ac14e40ad51af57bee4b8249dc7d3c36cab27bd0c690628725f33932b360c",
+      "new_sha256": "762387e687a46989b4875b4990f4f001ab4d7c2a6ed91f07fbb2c71174d926f5",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_risk_engine.diff"
+    },
+    {
+      "kind": "modify",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\risk_engine.py",
+      "repo_path": "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk\\risk_engine.py",
+      "old_sha256": "690ac14e40ad51af57bee4b8249dc7d3c36cab27bd0c690628725f33932b360c",
+      "new_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_risk_engine.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\smoke_quick_20260228_075037.json",
+      "suggested_repo_path": "(NEEDS_DECISION) smoke_quick_20260228_075037.json",
+      "new_sha256": "dd8f8fd9f19b7bfb74ad4419e0d29ed8ca03c5ea6377584a7dbfb79fb5880a21",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_smoke_quick_20260228_075037_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\smoke_quick_20260228_075101.json",
+      "suggested_repo_path": "(NEEDS_DECISION) smoke_quick_20260228_075101.json",
+      "new_sha256": "dd8f8fd9f19b7bfb74ad4419e0d29ed8ca03c5ea6377584a7dbfb79fb5880a21",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_smoke_quick_20260228_075101_NEW.diff"
+    },
+    {
+      "kind": "new_file",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\smoke_quick_20260228_075144.json",
+      "suggested_repo_path": "(NEEDS_DECISION) smoke_quick_20260228_075144.json",
+      "new_sha256": "a23645b5de53096e77de01e9ebef5ee641b4a3ade1db9a2b2dfc0bf926f530d4",
+      "diff_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\prop_1772408774_smoke_quick_20260228_075144_NEW.diff"
+    }
+  ]
+}

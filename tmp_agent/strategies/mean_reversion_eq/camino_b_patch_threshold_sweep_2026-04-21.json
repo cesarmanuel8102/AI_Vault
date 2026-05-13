@@ -1,0 +1,198 @@
+{
+  "generated_at_utc": "2026-04-21T17:26:35.326485+00:00",
+  "compile_id": "92d34ad9dbb6d87e2df1dc169fe98a90-e48dc627a0f0c8b3dcc1d294cbcd694e",
+  "rows": [
+    {
+      "status": "Completed.",
+      "backtest_id": "cf6cc3ec69f74f065998d572e8e5bea8",
+      "np": 10.623,
+      "dd": 2.1,
+      "orders": 156,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 63,
+      "stress_trades": 1,
+      "normal_trades": 77,
+      "max_vixy": 1.428,
+      "label": "PATCH_V1030",
+      "window": "OOS_2025_2026Q1",
+      "overrides": {}
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "f2504a6ab84c651f748c10e222b16ae1",
+      "np": -1.525,
+      "dd": 3.5,
+      "orders": 20,
+      "dbr": 1,
+      "tbr": 1,
+      "stress_days": 0,
+      "stress_trades": 0,
+      "normal_trades": 10,
+      "max_vixy": 1.025,
+      "label": "PATCH_V1030",
+      "window": "STRESS_2020",
+      "overrides": {}
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "4f3b964288a94d675a641c7b6f0d04c2",
+      "np": 9.928,
+      "dd": 2.3,
+      "orders": 154,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 78,
+      "stress_trades": 2,
+      "normal_trades": 75,
+      "max_vixy": 1.428,
+      "label": "PATCH_V1020",
+      "window": "OOS_2025_2026Q1",
+      "overrides": {
+        "ext_vixy_ratio_threshold": "1.02"
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "98564d5174d932851c288f677ff8cbd1",
+      "np": -3.039,
+      "dd": 3.4,
+      "orders": 22,
+      "dbr": 0,
+      "tbr": 1,
+      "stress_days": 1,
+      "stress_trades": 0,
+      "normal_trades": 11,
+      "max_vixy": 1.025,
+      "label": "PATCH_V1020",
+      "window": "STRESS_2020",
+      "overrides": {
+        "ext_vixy_ratio_threshold": "1.02"
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "f4a39b46cb5d5a0fda6da672af62f916",
+      "np": 10.248,
+      "dd": 2.2,
+      "orders": 152,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 90,
+      "stress_trades": 3,
+      "normal_trades": 73,
+      "max_vixy": 1.428,
+      "label": "PATCH_V1015",
+      "window": "OOS_2025_2026Q1",
+      "overrides": {
+        "ext_vixy_ratio_threshold": "1.015"
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "3176d248471477d38eb70016efdb4b5e",
+      "np": -3.039,
+      "dd": 3.4,
+      "orders": 22,
+      "dbr": 0,
+      "tbr": 1,
+      "stress_days": 1,
+      "stress_trades": 0,
+      "normal_trades": 11,
+      "max_vixy": 1.025,
+      "label": "PATCH_V1015",
+      "window": "STRESS_2020",
+      "overrides": {
+        "ext_vixy_ratio_threshold": "1.015"
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "1c8b6ba44e429862848564afcdd33db5",
+      "np": 10.233,
+      "dd": 2.3,
+      "orders": 156,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 110,
+      "stress_trades": 3,
+      "normal_trades": 75,
+      "max_vixy": 1.428,
+      "label": "PATCH_EXT_A",
+      "window": "OOS_2025_2026Q1",
+      "overrides": {
+        "ext_vixy_ratio_threshold": "1.02",
+        "ext_rv_threshold": "0.28",
+        "ext_gap_z_threshold": "2.0",
+        "ext_gap_abs_threshold": "0.01",
+        "ext_min_signals": "1"
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "acd96e7962095a0f806e14cde0530073",
+      "np": -3.039,
+      "dd": 3.4,
+      "orders": 22,
+      "dbr": 0,
+      "tbr": 1,
+      "stress_days": 2,
+      "stress_trades": 0,
+      "normal_trades": 11,
+      "max_vixy": 1.025,
+      "label": "PATCH_EXT_A",
+      "window": "STRESS_2020",
+      "overrides": {
+        "ext_vixy_ratio_threshold": "1.02",
+        "ext_rv_threshold": "0.28",
+        "ext_gap_z_threshold": "2.0",
+        "ext_gap_abs_threshold": "0.01",
+        "ext_min_signals": "1"
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "9c82104974f809f4d41d6d0ec1b21f27",
+      "np": 9.652,
+      "dd": 2.1,
+      "orders": 168,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 43,
+      "stress_trades": 1,
+      "normal_trades": 83,
+      "max_vixy": 1.428,
+      "label": "PATCH_EXT_B",
+      "window": "OOS_2025_2026Q1",
+      "overrides": {
+        "ext_vixy_ratio_threshold": "1.02",
+        "ext_rv_threshold": "0.28",
+        "ext_gap_z_threshold": "2.0",
+        "ext_gap_abs_threshold": "0.01",
+        "ext_min_signals": "2"
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "630a3df90a3597947c8abf1ce96860b5",
+      "np": null,
+      "dd": null,
+      "orders": null,
+      "dbr": 1,
+      "tbr": 1,
+      "stress_days": 0,
+      "stress_trades": 0,
+      "normal_trades": 10,
+      "max_vixy": 1.025,
+      "label": "PATCH_EXT_B",
+      "window": "STRESS_2020",
+      "overrides": {
+        "ext_vixy_ratio_threshold": "1.02",
+        "ext_rv_threshold": "0.28",
+        "ext_gap_z_threshold": "2.0",
+        "ext_gap_abs_threshold": "0.01",
+        "ext_min_signals": "2"
+      }
+    }
+  ]
+}

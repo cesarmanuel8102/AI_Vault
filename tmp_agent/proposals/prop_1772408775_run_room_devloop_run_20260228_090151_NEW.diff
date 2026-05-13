@@ -1,0 +1,40 @@
+--- NUL
++++ C:\AI_VAULT\tmp_agent\workspace\receipts\run_room_devloop_run_20260228_090151.json
+@@ -0,0 +1,37 @@
++﻿{
++    "ts_local":  "2026-02-28T09:01:51.5467023-05:00",
++    "base":  "http://127.0.0.1:8010",
++    "room_id":  "room_devloop_run_20260228_090151",
++    "goal":  "RUN_ENDPOINT_SMOKE",
++    "max_iters":  25,
++    "strict":  true,
++    "force_plan":  true,
++    "steps":  [
++                  {
++                      "kind":  "get_plan_pre",
++                      "status":  200,
++                      "body":  {
++                                   "ok":  true,
++                                   "room_id":  "room_devloop_run_20260228_090151",
++                                   "plan":  {
++
++                                            }
++                               },
++                      "raw":  "{\"ok\":true,\"room_id\":\"room_devloop_run_20260228_090151\",\"plan\":{}}"
++                  },
++                  {
++                      "kind":  "post_plan",
++                      "status":  0,
++                      "body":  null,
++                      "raw":  "Operation cancelled due to security concerns. Use -UseBasicParsing parameter for safe HTML parsing without script execution."
++                  }
++              ],
++    "final":  {
++                  "ok":  false,
++                  "error":  "PLAN_FAILED",
++                  "detail":  {
++                                 "raw":  "Operation cancelled due to security concerns. Use -UseBasicParsing parameter for safe HTML parsing without script execution.",
++                                 "status":  0
++                             }
++              }
++}

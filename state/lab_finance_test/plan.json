@@ -1,0 +1,31 @@
+{
+  "steps": [
+    {
+      "proposal": {
+        "dte": 30,
+        "expected_edge": 0.12,
+        "type": "call_option",
+        "risk_pct": 5,
+        "instrument": "SPY"
+      },
+      "title": "Propuesta financiera simulada",
+      "domain": "finance",
+      "action": "PROPOSAL",
+      "id": "s1",
+      "status": "done",
+      "started_at": 1771972800,
+      "result": {
+        "text": "Para el objetivo de proponer una operación financiera simulada, se propone la adquisición de una opción de compra (call option) sobre el índice SPY con un vencimiento de 30 días. Se espera obtener una ventaja del 12% sobre la inversión inicial, con un nivel de riesgo del 5% del capital en juego. Este paso está en curso y fue iniciado recientemente."
+      },
+      "ended_at": 1771972822
+    }
+  ],
+  "cursor": 0,
+  "updated_at": 1771972822,
+  "policy_gate": {
+    "score": 0.75,
+    "violations": [],
+    "verdict": "continue",
+    "notes": "OK"
+  }
+}

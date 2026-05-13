@@ -1,0 +1,60 @@
+{
+  "updated_utc": "2026-04-13T14:30:54Z",
+  "rows": [
+    {
+      "backtest_id": "90cb0a6fcb16d82247e234e9acf8eac2",
+      "net_profit_pct": 0.385,
+      "drawdown_pct": 0.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "stress_trades": 1,
+      "normal_trades": 0,
+      "external_stress_days": 57,
+      "candidate": "CB_T1_A"
+    },
+    {
+      "backtest_id": "508a83dad32e94da0826d39ada724212",
+      "net_profit_pct": 1.306,
+      "drawdown_pct": 0.1,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "stress_trades": 3,
+      "normal_trades": 0,
+      "external_stress_days": 71,
+      "candidate": "CB_T1_B"
+    },
+    {
+      "backtest_id": "d90903c53f99c6667c5f3536f39c61f8",
+      "net_profit_pct": 0.385,
+      "drawdown_pct": 0.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "stress_trades": 1,
+      "normal_trades": 0,
+      "external_stress_days": 57,
+      "candidate": "CB_T1_C_LONG"
+    },
+    {
+      "backtest_id": "7c3d7451624123219017f0e989ee6f5e",
+      "net_profit_pct": 0.385,
+      "drawdown_pct": 0.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "stress_trades": 1,
+      "normal_trades": 0,
+      "external_stress_days": 50,
+      "candidate": "CB_T1_D_DEF"
+    },
+    {
+      "backtest_id": "35ffed7fcc0c6a609a045bd36bd7aa76",
+      "net_profit_pct": 1.834,
+      "drawdown_pct": 0.4,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "stress_trades": 6,
+      "normal_trades": 0,
+      "external_stress_days": 71,
+      "candidate": "CB_T1_E_AGGR"
+    }
+  ]
+}

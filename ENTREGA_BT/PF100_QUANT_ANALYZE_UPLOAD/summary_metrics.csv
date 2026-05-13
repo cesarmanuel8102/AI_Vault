@@ -1,0 +1,4 @@
+scenario,backtest_id,net_profit_pct,drawdown_pct,daily_loss_breaches,trailing_breaches,return_pct,equity
+STRESS_2020,35da253994a1be91f3c280cb6a62516a,0.146,3.2,0.0,0.0,0.15,"$50,073.18"
+FULL_2022_2026Q1,811a366b44845e699a4349ea4b569178,20.94,2.9,0.0,0.0,20.94,"$60,469.90"
+OOS_2025_2026Q1,bcfb8ae3d084a85220a50effaee63a24,14.092,2.1,0.0,0.0,14.09,"$57,046.06"

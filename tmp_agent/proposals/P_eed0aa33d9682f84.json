@@ -1,0 +1,14 @@
+{
+  "proposal_id": "P_eed0aa33d9682f84",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "C:\\AI_VAULT\\tmp_agent\\state\\rooms\\room_autodev_20260302_192209\\episode.json",
+    "content": "{\n  \"ts\": \"2026-03-03T00:22:49Z\",\n  \"room_id\": \"room_autodev_20260302_192209\",\n  \"phase\": \"P3\",\n  \"note\": \"fallback advisor (no openai) - create episode/eval artifacts\"\n}",
+    "text": "{\n  \"ts\": \"2026-03-03T00:22:49Z\",\n  \"room_id\": \"room_autodev_20260302_192209\",\n  \"phase\": \"P3\",\n  \"note\": \"fallback advisor (no openai) - create episode/eval artifacts\"\n}"
+  },
+  "room_id": "room_autodev_20260302_192209",
+  "step_id": "EPI1",
+  "created_at": "2026-03-03T00:22:50.843679+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

@@ -1,0 +1,56 @@
+[
+  {
+    "name": "V4-A (PT=0.35 R=0.045)",
+    "bt_id": "65093534658d6d354b0b0dc95e62857b",
+    "params": {
+      "profit_target_pct": "0.35",
+      "stop_loss_pct": "-0.20",
+      "risk_per_trade": "0.045"
+    },
+    "net_profit": 184.229,
+    "cagr": 68.955,
+    "sharpe": 1.578,
+    "sortino": 1.684,
+    "max_dd": 32.7,
+    "total_trades": 315,
+    "win_rate": 48.0,
+    "profit_factor": 1.95,
+    "gate": "PASS"
+  },
+  {
+    "name": "V4-B (PT=0.35 R=0.04)",
+    "bt_id": "416cd719abdab6b75c14620da28ff93e",
+    "params": {
+      "profit_target_pct": "0.35",
+      "stop_loss_pct": "-0.20",
+      "risk_per_trade": "0.04"
+    },
+    "net_profit": 136.412,
+    "cagr": 54.03,
+    "sharpe": 1.391,
+    "sortino": 1.447,
+    "max_dd": 29.2,
+    "total_trades": 309,
+    "win_rate": 48.0,
+    "profit_factor": 1.87,
+    "gate": "PASS"
+  },
+  {
+    "name": "V4-C (PT=0.40 R=0.05)",
+    "bt_id": "81970f99d39dd4aaa439705988433c7a",
+    "params": {
+      "profit_target_pct": "0.40",
+      "stop_loss_pct": "-0.20",
+      "risk_per_trade": "0.05"
+    },
+    "net_profit": 103.613,
+    "cagr": 42.903,
+    "sharpe": 0.976,
+    "sortino": 0.945,
+    "max_dd": 33.5,
+    "total_trades": 283,
+    "win_rate": 46.0,
+    "profit_factor": 1.84,
+    "gate": "FAIL"
+  }
+]

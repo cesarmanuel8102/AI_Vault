@@ -1,0 +1,21 @@
+opportunity_id,name,category,time_to_first_dollar_days,expected_margin_pct,scalability_1to5,capital_required,risk_1to5,competition_1to5,legal_risk_1to5,automation_1to5,evidence_link_or_note,score_total,status,created_at,updated_at
+OPP-016,Automation: capturar oportunidades y auto score diario,automation,5,0,5,0,1,1,1,5,acelera el sistema,54.17,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49
+OPP-018,Automation: pipeline logging decisiones y metricas,automation,5,0,5,0,1,1,1,5,gobernanza,54.17,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49
+OPP-017,Automation: RAG local para notas y procedimientos internos,automation,7,0,5,0,1,2,1,5,reduce friccion,49.33,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49
+OPP-014,B2B: generar reportes estandar semanales automatizados,b2b,10,65,4,0,2,3,1,5,muy automatizable,48.83,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49
+OPP-003,Servicio: limpiar y estandarizar datos Excel para empresas,services,7,75,3,0,2,3,1,4,dolor comun; repetible,48.08,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49
+OPP-004,Servicio: automatizar emails y seguimiento de leads,services,10,60,4,0,2,3,1,5,automatizable; ROI evidente,47.83,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49
+OPP-013,B2B: sistema simple de recordatorios pagos citas,b2b,7,55,4,0,2,3,1,4,facil; valor inmediato,47.83,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49
+OPP-015,B2B: limpieza de datos + dashboard mensual,b2b,10,70,4,0,2,3,1,4,servicio recurrente,47.33,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49
+OPP-001,Servicio: automatizar reportes Excel Docs para pequeÃ±os negocios,services,7,70,3,0,2,3,1,4,demanda frecuente; entrega rapida,47.08,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49
+OPP-011,B2B: automatizar cotizaciones y seguimiento para pymes,b2b,10,65,4,0,2,3,1,4,pymes lo necesitan,46.33,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49
+OPP-006,Producto: pack de plantillas SOP para operaciones,product,14,85,4,10,2,4,1,5,escalable; bajo costo,45.57,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49
+OPP-009,Producto: toolkit de automatizacion para QA reportes,product,14,85,4,20,2,4,1,5,reutilizable; vendible,45.47,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49
+OPP-005,Servicio: scripts para auditoria de PC y optimizacion,services,5,60,3,0,2,3,1,3,muchos usuarios con lentitud,44.92,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49
+OPP-008,Producto: guia paso a paso IA local con scripts,product,10,75,4,0,2,4,2,4,alta demanda; soporte posible,43.33,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49
+OPP-007,Producto: plantilla de control financiero personal,product,14,80,4,10,2,4,1,4,mercado grande; simple,42.07,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49
+OPP-012,B2B: automatizar facturas recibos y conciliacion basica,b2b,14,60,4,0,2,3,1,4,ahorro de tiempo,40.67,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49
+OPP-002,Servicio: crear dashboards KPI para negocios locales,services,10,65,3,0,2,3,1,3,valor claro; medible,40.08,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49
+OPP-010,Producto: micro curso mantenimiento PC rendimiento,product,21,70,4,10,2,4,1,3,competitivo; aun viable,29.40,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49
+OPP-019,Trading: sistema exploratorio paper a micro con control riesgo,trading,21,30,3,50,4,5,1,4,solo exploratorio,9.75,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49
+OPP-020,Trading: arbitraje simple de volatilidad; validacion lenta,trading,30,25,3,75,5,5,1,3,probabilidad baja en 30 dias,0.00,candidate,2026-02-20T13:55:25,2026-02-20T13:57:49

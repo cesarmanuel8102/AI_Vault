@@ -1,0 +1,7 @@
+﻿{
+    "response":  "No obtuve resultados para esta consulta.\nIntenta reformular la pregunta.",
+    "session_id":  "r26_e2e_v2",
+    "model_used":  "agent_orav",
+    "success":  true,
+    "pending_action":  null
+}

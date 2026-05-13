@@ -1,0 +1,35 @@
+{
+  "generated_utc": "2026-04-13T14:39:20.027265Z",
+  "rows": [
+    {
+      "scenario": "STRESS_2020",
+      "backtest_id": "35da253994a1be91f3c280cb6a62516a",
+      "net_profit_pct": 0.146,
+      "drawdown_pct": 3.2,
+      "daily_loss_breaches": 0.0,
+      "trailing_breaches": 0.0,
+      "return_pct": 0.15,
+      "equity": "$50,073.18"
+    },
+    {
+      "scenario": "FULL_2022_2026Q1",
+      "backtest_id": "811a366b44845e699a4349ea4b569178",
+      "net_profit_pct": 20.94,
+      "drawdown_pct": 2.9,
+      "daily_loss_breaches": 0.0,
+      "trailing_breaches": 0.0,
+      "return_pct": 20.94,
+      "equity": "$60,469.90"
+    },
+    {
+      "scenario": "OOS_2025_2026Q1",
+      "backtest_id": "bcfb8ae3d084a85220a50effaee63a24",
+      "net_profit_pct": 14.092,
+      "drawdown_pct": 2.1,
+      "daily_loss_breaches": 0.0,
+      "trailing_breaches": 0.0,
+      "return_pct": 14.09,
+      "equity": "$57,046.06"
+    }
+  ]
+}

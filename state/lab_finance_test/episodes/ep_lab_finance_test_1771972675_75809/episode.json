@@ -1,0 +1,76 @@
+{
+  "episode_id": "ep_lab_finance_test_1771972675_75809",
+  "room_id": "lab_finance_test",
+  "created_at": 1771972675,
+  "mission": {
+    "room_id": "lab_finance_test",
+    "objective": "Proponer operación financiera simulada.",
+    "constraints": [
+      "no ejecutar brokers",
+      "solo proposal"
+    ],
+    "status": "active",
+    "created_at": 1771972675,
+    "updated_at": 1771972675
+  },
+  "events": [
+    {
+      "ts_epoch": 1771972675,
+      "type": "mission_set",
+      "mission": {
+        "room_id": "lab_finance_test",
+        "objective": "Proponer operación financiera simulada.",
+        "constraints": [
+          "no ejecutar brokers",
+          "solo proposal"
+        ],
+        "status": "active",
+        "created_at": 1771972675,
+        "updated_at": 1771972675
+      }
+    },
+    {
+      "ts_epoch": 1771972800,
+      "type": "memory_hits",
+      "where": "executor",
+      "hits": []
+    },
+    {
+      "ts_epoch": 1771972822,
+      "type": "step_executed",
+      "step": {
+        "proposal": {
+          "dte": 30,
+          "expected_edge": 0.12,
+          "type": "call_option",
+          "risk_pct": 5,
+          "instrument": "SPY"
+        },
+        "title": "Propuesta financiera simulada",
+        "domain": "finance",
+        "action": "PROPOSAL",
+        "id": "s1",
+        "status": "done",
+        "started_at": 1771972800,
+        "result": {
+          "text": "Para el objetivo de proponer una operación financiera simulada, se propone la adquisición de una opción de compra (call option) sobre el índice SPY con un vencimiento de 30 días. Se espera obtener una ventaja del 12% sobre la inversión inicial, con un nivel de riesgo del 5% del capital en juego. Este paso está en curso y fue iniciado recientemente."
+        },
+        "ended_at": 1771972822
+      }
+    },
+    {
+      "ts_epoch": 1771972822,
+      "type": "evaluation",
+      "verdict": {
+        "ok": true,
+        "score": 100,
+        "errors": [],
+        "pending_count": 0,
+        "recommendation": "continue",
+        "reasons": [],
+        "recommendations": [],
+        "updated_at": 1771972822
+      }
+    }
+  ]
+}

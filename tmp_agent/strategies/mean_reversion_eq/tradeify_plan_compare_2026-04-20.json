@@ -1,0 +1,58 @@
+{
+  "generated_at_utc": "2026-04-20T23:12:12Z",
+  "results": [
+    {
+      "status": "Completed.",
+      "backtest_id": "14d8593a738edd9f8f1492c5a64c5b87",
+      "np_pct": 6.0,
+      "dd_pct": 2.1,
+      "dbr": 0,
+      "tbr": 0,
+      "challenge_hit": true,
+      "challenge_days": 77,
+      "consistency_pct": 34.0,
+      "profile": "GROWTH50",
+      "window": "CH_2025"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "58d3c4612dda08ca05f1c37068048046",
+      "np_pct": -4.295,
+      "dd_pct": 4.3,
+      "dbr": 1,
+      "tbr": 1,
+      "challenge_hit": false,
+      "challenge_days": -1,
+      "consistency_pct": 999.0,
+      "profile": "GROWTH50",
+      "window": "CH_2026_Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "2d124cd7612fe18e268db0b196f92d6c",
+      "np_pct": 6.0,
+      "dd_pct": 2.1,
+      "dbr": 0,
+      "tbr": 0,
+      "challenge_hit": true,
+      "challenge_days": 77,
+      "consistency_pct": 34.0,
+      "profile": "SELECT50",
+      "window": "CH_2025"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "ef53d0885e869d77ca19da4605efd923",
+      "np_pct": 6.059,
+      "dd_pct": 2.4,
+      "dbr": 0,
+      "tbr": 0,
+      "challenge_hit": true,
+      "challenge_days": 10,
+      "consistency_pct": 37.16,
+      "profile": "SELECT50",
+      "window": "CH_2026_Q1"
+    }
+  ],
+  "compile_id": "79cfeaada74180f501f49744a72667da-545aa20525ba956e6033f5b8e3b002f8"
+}

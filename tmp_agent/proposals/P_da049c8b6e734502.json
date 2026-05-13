@@ -1,0 +1,14 @@
+{
+  "proposal_id": "P_da049c8b6e734502",
+  "tool_name": "append_file",
+  "tool_args": {
+    "path": "smoke.txt",
+    "content": "hello\n",
+    "text": "hello\n"
+  },
+  "room_id": "pytest_ssot_65b9bfeb6b",
+  "step_id": "W1",
+  "created_at": "2026-03-16T00:14:50.119260+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

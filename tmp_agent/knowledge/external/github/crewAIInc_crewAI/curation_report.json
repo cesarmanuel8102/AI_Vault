@@ -1,0 +1,39 @@
+{
+  "source_id": "github_crewAIInc_crewAI_20260508",
+  "curated_at_utc": "2026-05-08T04:56:51.030810Z",
+  "repo": {
+    "full_name": "crewAIInc/crewAI",
+    "default_branch": "main",
+    "updated_at": "2026-05-08T04:33:00Z",
+    "stargazers_count": 50858,
+    "open_issues_count": 287,
+    "size_kb": 230865,
+    "language": "Python",
+    "topics": [
+      "agents",
+      "ai",
+      "ai-agents",
+      "aiagentframework",
+      "llms"
+    ],
+    "tests_present": true,
+    "docs_present": true,
+    "dependency_files": [
+      "pyproject.toml"
+    ]
+  },
+  "curation_score": 11.6,
+  "risk_score": 2.25,
+  "license_status": "compatible",
+  "recommended_action": "analyze",
+  "reject_reasons": [],
+  "notes": [
+    "dependency_risk_flags_detected",
+    "source_host_not_in_allowlist_seed"
+  ],
+  "dependency_risk_flags": [
+    "pyproject.toml:unsafe_subprocess_pattern"
+  ],
+  "suspicious_binaries": [],
+  "apparent_secrets": []
+}

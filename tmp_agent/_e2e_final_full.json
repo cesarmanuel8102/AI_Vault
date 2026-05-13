@@ -1,0 +1,54 @@
+{
+    "t4":  {
+               "reply":  "Fecha y hora actual: 2026-05-05 19:37:53 (hora local del servidor)",
+               "ok":  true,
+               "name":  "t4_ghost",
+               "meta":  {
+                            "response":  "Fecha y hora actual: 2026-05-05 19:37:53 (hora local del servidor)",
+                            "session_id":  "e2e_t4_ghost",
+                            "model_used":  "system",
+                            "success":  true,
+                            "pending_action":  null
+                        },
+               "ms":  17
+           },
+    "t1":  {
+               "reply":  "Se sondearon 254 direcciones IP (rango completo 192.168.1.1-.254).\n\nSe detectaron **134 hosts activos** visibles en el resultado (IPs .1 a .134), todos con puerto 80 abierto.\n\nNota: El output está marcado como truncado (total 11574 caracteres), por lo que podrían existir hosts adicionales activos en el rango .135-.254 que no se muestran en el extracto proporcionado.",
+               "ok":  true,
+               "name":  "t1_scan",
+               "meta":  {
+                            "response":  "Se sondearon 254 direcciones IP (rango completo 192.168.1.1-.254).\n\nSe detectaron **134 hosts activos** visibles en el resultado (IPs .1 a .134), todos con puerto 80 abierto.\n\nNota: El output está marcado como truncado (total 11574 caracteres), por lo que podrían existir hosts adicionales activos en el rango .135-.254 que no se muestran en el extracto proporcionado.",
+                            "session_id":  "e2e_t1_scan",
+                            "model_used":  "agent_orav",
+                            "success":  true,
+                            "pending_action":  null
+                        },
+               "ms":  67585
+           },
+    "t3":  {
+               "reply":  "El comando falló por la regla R17: PowerShell -Command no acepta variables con `$` (como `$_`) porque cmd.exe las interpreta mal antes de llegar a PowerShell.\n\nHabría que escribir el script a un archivo `.ps1` y ejecutarlo con `run_powershell(file_path=...)` o usar `powershell -File` en lugar de `-Command`.",
+               "ok":  true,
+               "name":  "t3_psdollar",
+               "meta":  {
+                            "response":  "El comando falló por la regla R17: PowerShell -Command no acepta variables con `$` (como `$_`) porque cmd.exe las interpreta mal antes de llegar a PowerShell.\n\nHabría que escribir el script a un archivo `.ps1` y ejecutarlo con `run_powershell(file_path=...)` o usar `powershell -File` en lugar de `-Command`.",
+                            "session_id":  "e2e_t3_psdollar",
+                            "model_used":  "agent_orav",
+                            "success":  true,
+                            "pending_action":  null
+                        },
+               "ms":  99067
+           },
+    "t2":  {
+               "reply":  "nmap no está disponible en este sistema Windows (no reconocido como comando interno/externo). \n\nSe activó automáticamente el escáner nativo `scan_local_network` como alternativa. Resultado: **254 hosts vivos** detectados en el rango 192.168.1.0/24 (100% de los 254 hosts probados).\n\nTodos los hosts detectados responden con el puerto 80 abierto (desde 192.168.1.1 hasta 192.168.1.254). El escaneo TCP sweep se completó exitosamente sin requerir herramientas externas.",
+               "ok":  true,
+               "name":  "t2_nmap",
+               "meta":  {
+                            "response":  "nmap no está disponible en este sistema Windows (no reconocido como comando interno/externo). \n\nSe activó automáticamente el escáner nativo `scan_local_network` como alternativa. Resultado: **254 hosts vivos** detectados en el rango 192.168.1.0/24 (100% de los 254 hosts probados).\n\nTodos los hosts detectados responden con el puerto 80 abierto (desde 192.168.1.1 hasta 192.168.1.254). El escaneo TCP sweep se completó exitosamente sin requerir herramientas externas.",
+                            "session_id":  "e2e_t2_nmap",
+                            "model_used":  "agent_orav",
+                            "success":  true,
+                            "pending_action":  null
+                        },
+               "ms":  61935
+           }
+}

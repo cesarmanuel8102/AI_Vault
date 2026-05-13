@@ -1,0 +1,24 @@
+{
+  "room_id": "room_demo",
+  "mission_objective": "validate one-shot + step",
+  "mission_updated_at": 1772059651,
+  "created_at": 1772064761,
+  "updated_at": 1772064761,
+  "cursor": 0,
+  "steps": [
+    {
+      "id": "s1",
+      "title": "Listar archivos en el directorio de trabajo",
+      "action": "TOOL",
+      "tool": "list_dir",
+      "args": {
+        "path": "C:\\AI_VAULT\\workspace\\brainlab"
+      },
+      "success_criteria": "Se listan correctamente los archivos del directorio",
+      "status": "pending",
+      "result": null,
+      "started_at": null,
+      "ended_at": null
+    }
+  ]
+}

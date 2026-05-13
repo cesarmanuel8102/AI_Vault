@@ -1,0 +1,60 @@
+{
+  "generated_at_utc": "2026-04-20T17:35:50Z",
+  "project_id": 29652652,
+  "base_label": "PF100_FASTPASS_S4_BLEND_35_FREQ",
+  "results": [
+    {
+      "status": "Completed.",
+      "backtest_id": "501e1d6a9696d43aa8eff27b184a7588",
+      "np_pct": 6.094,
+      "dd_pct": 0.0,
+      "sharpe": -0.356,
+      "orders": 8,
+      "dbr": 0,
+      "tbr": 0,
+      "challenge_hit": true,
+      "challenge_days": 10,
+      "window": "CH_2025"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "9433126951b893860d15abd19b1fdf8e",
+      "np_pct": 6.192,
+      "dd_pct": 2.2,
+      "sharpe": 2.341,
+      "orders": 20,
+      "dbr": 0,
+      "tbr": 0,
+      "challenge_hit": true,
+      "challenge_days": 10,
+      "window": "CH_2026_Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "d0759a10d773451501a92e692dbebfa9",
+      "np_pct": 19.445,
+      "dd_pct": 4.2,
+      "sharpe": 0.714,
+      "orders": 64,
+      "dbr": 0,
+      "tbr": 1,
+      "challenge_hit": false,
+      "challenge_days": -1,
+      "window": "OOS_2025_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "d55fc8d6211ddd6c61543d405bfe0ebd",
+      "np_pct": -2.885,
+      "dd_pct": 4.6,
+      "sharpe": -0.62,
+      "orders": 6,
+      "dbr": 0,
+      "tbr": 1,
+      "challenge_hit": false,
+      "challenge_days": -1,
+      "window": "STRESS_2020"
+    }
+  ],
+  "compile_id": "12970279a69821b0eba543faa1511fb2-67e924f4f4693f557d0a602e57f0d42c"
+}

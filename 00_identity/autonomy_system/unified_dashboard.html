@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI_VAULT Command Center</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --panel: #121a2d;
+      --panel2: #182238;
+      --border: #273552;
+      --text: #ecf1f8;
+      --muted: #99a7c2;
+      --accent: #4f7cff;
+      --ok: #2ec27e;
+      --warn: #f6ad55;
+      --bad: #f56565;
+      --shadow: 0 12px 40px rgba(0,0,0,.25);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #09101d 0%, #0b1020 100%);
+      color: var(--text);
+      font: 14px/1.45 "Segoe UI", system-ui, sans-serif;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+    }
+    aside {
+      background: rgba(12,18,32,.95);
+      border-right: 1px solid var(--border);
+      padding: 24px 18px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+    .brand {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 26px;
+      color: #7ea2ff;
+    }
+    .nav-title {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin: 18px 12px 8px;
+    }
+    .nav-link {
+      display: block;
+      padding: 12px 14px;
+      border-radius: 10px;
+      color: var(--text);
+      text-decoration: none;
+      margin-bottom: 6px;
+      background: transparent;
+    }
+    .nav-link:hover, .nav-link.active {
+      background: var(--panel2);
+      color: #8bb0ff;
+    }
+    main {
+      padding: 28px;
+    }
+    .hero, .section, .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+    }
+    .hero {
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .hero-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: start;
+    }
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 34px;
+    }
+    .hero p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 820px;
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: rgba(46,194,126,.08);
+      color: var(--ok);
+      border: 1px solid rgba(46,194,126,.22);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .card {
+      padding: 18px;
+    }
+    .label {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .value {
+      font-size: 30px;
+      font-weight: 800;
+      margin-bottom: 6px;
+      line-height: 1.12;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .value.compact {
+      font-size: 22px;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .section {
+      padding: 22px;
+      margin-bottom: 20px;
+      scroll-margin-top: 24px;
+    }
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .section h2 {
+      margin: 0;
+      font-size: 22px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      text-align: left;
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    th {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .ok { background: rgba(46,194,126,.12); color: var(--ok); }
+    .warn { background: rgba(246,173,85,.14); color: var(--warn); }
+    .bad { background: rgba(245,101,101,.14); color: var(--bad); }
+    .mono { font-family: Consolas, monospace; }
+    .prewrap { white-space: pre-wrap; }
+    .two {
+      display: grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: 20px;
+    }
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .hidden { display: none; }
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--panel2);
+      color: var(--text);
+      border-radius: 10px;
+      padding: 8px 12px;
+      cursor: pointer;
+    }
+    .btn.primary { background: rgba(79,124,255,.16); color: #9ab8ff; }
+    .btn.warnish { background: rgba(246,173,85,.16); color: var(--warn); }
+    .btn.danger { background: rgba(245,101,101,.16); color: var(--bad); }
+    .btn:disabled { opacity: .55; cursor: wait; }
+    .stack {
+      display: grid;
+      gap: 16px;
+    }
+    .service-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .service-card {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .service-card h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+    .service-meta {
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+    .service-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+    .service-notes {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .feedback {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      background: rgba(24,34,56,.55);
+    }
+    @media (max-width: 1100px) {
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .two { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 800px) {
+      .layout { grid-template-columns: 1fr; }
+      aside { position: static; height: auto; }
+      .grid { grid-template-columns: 1fr; }
+      main { padding: 16px; }
+      .hero h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside>
+      <div class="brand">AI_VAULT Command Center</div>
+      <div class="nav-title">Navegación</div>
+      <a class="nav-link active" href="#overview">Dashboard</a>
+      <a class="nav-link" href="/chat">Brain Chat V9</a>
+      <a class="nav-link" href="#operating-mode">Modo Operativo</a>
+      <a class="nav-link" href="#fair-test">Fair Test PO</a>
+      <a class="nav-link" href="#maintenance">Mantenimiento</a>
+      <a class="nav-link" href="#monitor">Monitor</a>
+      <a class="nav-link" href="#channels">Financial</a>
+      <div class="nav-title">Estado Canónico</div>
+      <a class="nav-link" href="#roadmap">Roadmap BL</a>
+      <a class="nav-link" href="#roadmap-development">Meta Desarrollo</a>
+      <a class="nav-link" href="#meta-improvement">Meta Mejora</a>
+      <a class="nav-link" href="#chat-product">Chat Product</a>
+      <a class="nav-link" href="#utility-governance">Utility Governance</a>
+      <a class="nav-link" href="#post-bl-roadmap">Post-BL</a>
+      <a class="nav-link" href="#strategy-engine">Strategy Engine</a>
+      <a class="nav-link" href="#platforms-separated">Plataformas Separadas</a>
+      <a class="nav-link" href="#trading-platforms">Trading Platforms</a>
+      <a class="nav-link" href="#loop">Loop Autónomo</a>
+      <a class="nav-link" href="#self-improvement">Autoconstrucción</a>
+      <a class="nav-link" href="#trading-platforms">Trading Platforms</a>
+      <a class="nav-link" href="#channels">Canales</a>
+    </aside>
+
+    <main>
+      <section class="hero" id="overview">
+        <div class="hero-head">
+          <div>
+            <h1 id="hero-phase">Cargando…</h1>
+            <p id="hero-sub">Consolidando roadmap, Utility U, autoconstrucción y canales financieros desde una sola fuente.</p>
+          </div>
+          <div class="pill" id="hero-status">● sincronizando</div>
+        </div>
+      </section>
+
+      <div class="two">
+        <section class="section" id="operating-mode">
+          <div class="section-head">
+            <h2>Modo Operativo</h2>
+            <button class="btn" onclick="refreshAll()">Actualizar</button>
+          </div>
+          <table>
+            <tbody id="operating-mode-table"></tbody>
+          </table>
+        </section>
+
+        <section class="section" id="maintenance">
+          <div class="section-head">
+            <h2>Mantenimiento</h2>
+            <button class="btn" onclick="refreshMaintenance()">Refrescar servicios</button>
+          </div>
+          <div id="maintenance-grid" class="service-grid"></div>
+          <div id="maintenance-feedback" class="feedback">Sin acciones recientes.</div>
+        </section>
+      </div>
+
+      <section class="section" id="fair-test">
+        <div class="section-head">
+          <h2>Fair Test PO OTC</h2>
+          <span class="small" id="fair-test-status-line">Cargando…</span>
+        </div>
+        <div class="grid" id="fairtest-metrics"></div>
+        <table>
+          <tbody id="fairtest-table"></tbody>
+        </table>
+      </section>
+
+      <section class="grid">
+        <div class="card">
+          <div class="label">Fase Activa</div>
+          <div class="value" id="k-phase">—</div>
+          <div class="sub" id="k-stage">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Utility U</div>
+          <div class="value" id="k-u">—</div>
+          <div class="sub" id="k-u-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Último Cambio</div>
+          <div class="value" id="k-si">—</div>
+          <div class="sub" id="k-si-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Canales Saludables</div>
+          <div class="value" id="k-ch">—</div>
+          <div class="sub" id="k-ch-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Top Action</div>
+          <div class="value compact" id="k-top-action">—</div>
+          <div class="sub" id="k-top-action-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Último Outcome</div>
+          <div class="value" id="k-outcome">—</div>
+          <div class="sub" id="k-outcome-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Delta U Reciente</div>
+          <div class="value" id="k-u-delta">—</div>
+          <div class="sub" id="k-u-delta-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Tendencia U</div>
+          <div class="value compact" id="k-u-trend">—</div>
+          <div class="sub" id="k-u-trend-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Líder Ejecutable</div>
+          <div class="value compact" id="k-top-strategy">—</div>
+          <div class="sub" id="k-top-strategy-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Líder Expectancy</div>
+          <div class="value" id="k-strategy-exp">—</div>
+          <div class="sub" id="k-strategy-exp-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Sample Quality</div>
+          <div class="value" id="k-strategy-sample">—</div>
+          <div class="sub" id="k-strategy-sample-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Hypotheses</div>
+          <div class="value" id="k-hypotheses">—</div>
+          <div class="sub" id="k-hypotheses-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Preferred Symbol</div>
+          <div class="value compact" id="k-pref-symbol">—</div>
+          <div class="sub" id="k-pref-symbol-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Batch Intensity</div>
+          <div class="value" id="k-batch-iters">—</div>
+          <div class="sub" id="k-batch-iters-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Strategy Governance</div>
+          <div class="value compact" id="k-strategy-gov">—</div>
+          <div class="sub" id="k-strategy-gov-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Context Governance</div>
+          <div class="value compact" id="k-context-gov">—</div>
+          <div class="sub" id="k-context-gov-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Último Job Loop</div>
+          <div class="value compact mono" id="k-loop-job">—</div>
+          <div class="sub" id="k-loop-job-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Frescura Loop</div>
+          <div class="value compact" id="k-loop-fresh">—</div>
+          <div class="sub" id="k-loop-fresh-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Skips Consecutivos</div>
+          <div class="value" id="k-consecutive-skips">—</div>
+          <div class="sub" id="k-consecutive-skips-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Trades Hoy</div>
+          <div class="value" id="k-trades-today">—</div>
+          <div class="sub" id="k-trades-today-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Estado Ejecución</div>
+          <div class="value compact" id="k-execution-status">—</div>
+          <div class="sub" id="k-execution-status-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Meta Desarrollo</div>
+          <div class="value compact" id="k-roadmap-dev">—</div>
+          <div class="sub" id="k-roadmap-dev-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Meta Mejora</div>
+          <div class="value compact" id="k-meta-gap">—</div>
+          <div class="sub" id="k-meta-gap-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Chat Product</div>
+          <div class="value compact" id="k-chat-product">—</div>
+          <div class="sub" id="k-chat-product-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Utility Governance</div>
+          <div class="value compact" id="k-utility-gov">—</div>
+          <div class="sub" id="k-utility-gov-sub">—</div>
+        </div>
+        <div class="card">
+          <div class="label">Roadmap Post-BL</div>
+          <div class="value compact" id="k-post-bl">—</div>
+          <div class="sub" id="k-post-bl-sub">—</div>
+        </div>
+      </section>
+
+      <div class="two">
+        <section class="section" id="roadmap">
+          <div class="section-head">
+            <h2>Roadmap Canónico</h2>
+            <button class="btn" onclick="refreshAll()">Actualizar</button>
+          </div>
+          <table>
+            <tbody id="roadmap-table"></tbody>
+          </table>
+        </section>
+
+        <section class="section" id="self-improvement">
+          <div class="section-head">
+            <h2>Autoconstrucción</h2>
+          </div>
+          <table>
+            <tbody id="si-table"></tbody>
+          </table>
+        </section>
+      </div>
+
+      <section class="section" id="roadmap-development">
+        <div class="section-head">
+          <h2>Meta Desarrollo</h2>
+        </div>
+        <table>
+          <tbody id="roadmap-development-table"></tbody>
+        </table>
+      </section>
+
+      <section class="section" id="meta-improvement">
+        <div class="section-head">
+          <h2>Meta Mejora</h2>
+        </div>
+        <table>
+          <tbody id="meta-improvement-table"></tbody>
+        </table>
+      </section>
+
+      <section class="section" id="chat-product">
+        <div class="section-head">
+          <h2>Chat Product</h2>
+        </div>
+        <table>
+          <tbody id="chat-product-table"></tbody>
+        </table>
+      </section>
+
+      <section class="section" id="utility-governance">
+        <div class="section-head">
+          <h2>Utility Governance</h2>
+        </div>
+        <table>
+          <tbody id="utility-governance-table"></tbody>
+        </table>
+      </section>
+
+      <section class="section" id="post-bl-roadmap">
+        <div class="section-head">
+          <h2>Roadmap Post-BL</h2>
+        </div>
+        <table>
+          <tbody id="post-bl-roadmap-table"></tbody>
+        </table>
+      </section>
+
+      <section class="section" id="loop">
+        <div class="section-head">
+          <h2>Loop Autónomo</h2>
+        </div>
+        <table>
+          <tbody id="loop-table"></tbody>
+        </table>
+      </section>
+
+      <section class="section" id="strategy-engine">
+        <div class="section-head">
+          <h2>Strategy Engine</h2>
+        </div>
+        <table>
+          <tbody id="strategy-engine-table"></tbody>
+        </table>
+      </section>
+
+      <!-- PLATAFORMAS SEPARADAS -->
+      <section class="section" id="trading-platforms">
+        <div class="section-head">
+          <h2>Plataformas de Trading</h2>
+          <span class="badge ok">Separado por Venue</span>
+        </div>
+        
+        <!-- PocketOption -->
+        <div class="platform-card" id="po-card" style="margin-bottom: 20px; padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel2);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px;">📊</div>
+              <div>
+                <h3 style="margin: 0; color: #667eea;">PocketOption</h3>
+                <div style="color: var(--muted); font-size: 12px;">Opciones Binarias OTC</div>
+              </div>
+            </div>
+            <div id="po-status-badge"></div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
+            <div class="metric-box" style="padding: 12px; background: var(--panel); border-radius: 8px;">
+              <div style="color: var(--muted); font-size: 11px; text-transform: uppercase;">Timeframe</div>
+              <div style="font-size: 20px; font-weight: bold;" id="po-timeframe">—</div>
+            </div>
+            <div class="metric-box" style="padding: 12px; background: var(--panel); border-radius: 8px;">
+              <div style="color: var(--muted); font-size: 11px; text-transform: uppercase;">Símbolo Actual</div>
+              <div style="font-size: 20px; font-weight: bold;" id="po-symbol">—</div>
+            </div>
+            <div class="metric-box" style="padding: 12px; background: var(--panel); border-radius: 8px;">
+              <div style="color: var(--muted); font-size: 11px; text-transform: uppercase;">Señales Válidas</div>
+              <div style="font-size: 20px; font-weight: bold;" id="po-valid-signals">—</div>
+            </div>
+            <div class="metric-box" style="padding: 12px; background: var(--panel); border-radius: 8px;">
+              <div style="color: var(--muted); font-size: 11px; text-transform: uppercase;">Trades Recientes</div>
+              <div style="font-size: 20px; font-weight: bold;" id="po-recent-trades">—</div>
+            </div>
+          </div>
+          
+          <div style="background: var(--panel); padding: 12px; border-radius: 8px; margin-top: 10px;">
+            <div style="color: var(--muted); font-size: 11px; text-transform: uppercase; margin-bottom: 8px;">Señales Activas</div>
+            <div id="po-signals-list" style="font-size: 13px;"></div>
+          </div>
+        </div>
+
+        <!-- IBKR -->
+        <div class="platform-card" id="ibkr-card" style="margin-bottom: 20px; padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel2);">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px;">📈</div>
+              <div>
+                <h3 style="margin: 0; color: #38ef7d;">Interactive Brokers</h3>
+                <div style="color: var(--muted); font-size: 12px;">Stocks / ETFs / Options</div>
+              </div>
+            </div>
+            <div id="ibkr-status-badge"></div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
+            <div class="metric-box" style="padding: 12px; background: var(--panel); border-radius: 8px;">
+              <div style="color: var(--muted); font-size: 11px; text-transform: uppercase;">Timeframe</div>
+              <div style="font-size: 20px; font-weight: bold;" id="ibkr-timeframe">—</div>
+            </div>
+            <div class="metric-box" style="padding: 12px; background: var(--panel); border-radius: 8px;">
+              <div style="color: var(--muted); font-size: 11px; text-transform: uppercase;">Puerto</div>
+              <div style="font-size: 20px; font-weight: bold;" id="ibkr-port">—</div>
+            </div>
+            <div class="metric-box" style="padding: 12px; background: var(--panel); border-radius: 8px;">
+              <div style="color: var(--muted); font-size: 11px; text-transform: uppercase;">Señales Válidas</div>
+              <div style="font-size: 20px; font-weight: bold;" id="ibkr-valid-signals">—</div>
+            </div>
+            <div class="metric-box" style="padding: 12px; background: var(--panel); border-radius: 8px;">
+              <div style="color: var(--muted); font-size: 11px; text-transform: uppercase;">Órdenes Recientes</div>
+              <div style="font-size: 20px; font-weight: bold;" id="ibkr-recent-orders">—</div>
+            </div>
+          </div>
+          
+          <div style="background: var(--panel); padding: 12px; border-radius: 8px; margin-top: 10px;">
+            <div style="color: var(--muted); font-size: 11px; text-transform: uppercase; margin-bottom: 8px;">Señales Activas</div>
+            <div id="ibkr-signals-list" style="font-size: 13px;"></div>
+          </div>
+        </div>
+
+        <!-- SampleAccumulator Status -->
+        <div class="platform-card" style="padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: linear-gradient(135deg, rgba(79,124,255,0.1) 0%, rgba(102,126,234,0.1) 100%);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <div style="width: 50px; height: 50px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 24px;">🤖</div>
+              <div>
+                <h3 style="margin: 0; color: #f5576c;">SampleAccumulator Agent</h3>
+                <div style="color: var(--muted); font-size: 12px;">Modo Aprendizaje Activo</div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 24px; font-weight: bold;" id="acc-trades">—</div>
+              <div style="color: var(--muted); font-size: 11px;">Trades Sesión</div>
+            </div>
+          </div>
+          <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border); display: flex; gap: 20px; flex-wrap: wrap;">
+            <div>
+              <div style="color: var(--muted); font-size: 11px;">Estado</div>
+              <div id="acc-status" style="font-weight: bold;">—</div>
+            </div>
+            <div>
+              <div style="color: var(--muted); font-size: 11px;">Cooldown</div>
+              <div id="acc-cooldown">—</div>
+            </div>
+            <div>
+              <div style="color: var(--muted); font-size: 11px;">Check Interval</div>
+              <div id="acc-interval">—</div>
+            </div>
+            <div>
+              <div style="color: var(--muted); font-size: 11px;">Aprendizaje</div>
+              <div id="acc-learning" style="color: #2ec27e;">—</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PLATAFORMAS SEPARADAS - U SCORES INDEPENDIENTES -->
+      <section class="section" id="platforms-separated">
+        <div class="section-head">
+          <h2>Plataformas Separadas (U Independientes)</h2>
+          <button class="btn" onclick="refreshPlatforms()">Actualizar</button>
+        </div>
+        
+        <div id="platforms-separated-content" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+          <!-- PO -->
+          <div class="platform-u-card" style="padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;">📊</div>
+                <div>
+                  <h4 style="margin: 0; color: #667eea;">PocketOption</h4>
+                  <div style="color: var(--muted); font-size: 11px;">U Score Independiente</div>
+                </div>
+              </div>
+              <div id="po-u-verdict"></div>
+            </div>
+            <div style="font-size: 32px; font-weight: bold; margin-bottom: 10px;" id="po-u-score">—</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px;">
+              <div>Trades: <span id="po-u-trades">—</span></div>
+              <div>Win Rate: <span id="po-u-winrate">—</span></div>
+              <div>Profit: <span id="po-u-profit">—</span></div>
+              <div>Trend: <span id="po-u-trend">—</span></div>
+            </div>
+            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);">
+              <div style="color: var(--muted); font-size: 10px; text-transform: uppercase;">Blockers</div>
+              <div id="po-u-blockers" style="font-size: 11px; color: #f56565;">—</div>
+            </div>
+          </div>
+
+          <!-- IBKR -->
+          <div class="platform-u-card" style="padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: linear-gradient(135deg, rgba(17,153,142,0.1) 0%, rgba(56,239,125,0.1) 100%);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;">📈</div>
+                <div>
+                  <h4 style="margin: 0; color: #38ef7d;">Interactive Brokers</h4>
+                  <div style="color: var(--muted); font-size: 11px;">U Score Independiente</div>
+                </div>
+              </div>
+              <div id="ibkr-u-verdict"></div>
+            </div>
+            <div style="font-size: 32px; font-weight: bold; margin-bottom: 10px;" id="ibkr-u-score">—</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px;">
+              <div>Trades: <span id="ibkr-u-trades">—</span></div>
+              <div>Win Rate: <span id="ibkr-u-winrate">—</span></div>
+              <div>Profit: <span id="ibkr-u-profit">—</span></div>
+              <div>Trend: <span id="ibkr-u-trend">—</span></div>
+            </div>
+            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);">
+              <div style="color: var(--muted); font-size: 10px; text-transform: uppercase;">Blockers</div>
+              <div id="ibkr-u-blockers" style="font-size: 11px; color: #f56565;">—</div>
+            </div>
+          </div>
+
+          <!-- Internal -->
+          <div class="platform-u-card" style="padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: linear-gradient(135deg, rgba(240,147,251,0.1) 0%, rgba(245,87,108,0.1) 100%);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px;">🤖</div>
+                <div>
+                  <h4 style="margin: 0; color: #f5576c;">Internal Paper</h4>
+                  <div style="color: var(--muted); font-size: 11px;">U Score Independiente</div>
+                </div>
+              </div>
+              <div id="internal-u-verdict"></div>
+            </div>
+            <div style="font-size: 32px; font-weight: bold; margin-bottom: 10px;" id="internal-u-score">—</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px;">
+              <div>Trades: <span id="internal-u-trades">—</span></div>
+              <div>Win Rate: <span id="internal-u-winrate">—</span></div>
+              <div>Profit: <span id="internal-u-profit">—</span></div>
+              <div>Trend: <span id="internal-u-trend">—</span></div>
+            </div>
+            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);">
+              <div style="color: var(--muted); font-size: 10px; text-transform: uppercase;">Blockers</div>
+              <div id="internal-u-blockers" style="font-size: 11px; color: #f56565;">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comparación -->
+        <div style="margin-top: 20px; padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel2);">
+          <h4 style="margin: 0 0 15px 0;">Comparación de Plataformas</h4>
+          <div id="platforms-comparison" style="font-size: 13px;">Cargando...</div>
+        </div>
+      </section>
+
+      <section class="section" id="channels">
+        <div class="section-head">
+          <h2>Canales Financieros (Legacy)</h2>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Canal</th>
+              <th>Estado</th>
+              <th>Modo</th>
+              <th>Capacidad</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody id="channels-table"></tbody>
+        </table>
+      </section>
+
+      <section class="section" id="monitor">
+        <div class="section-head">
+          <h2>Monitor del Brain</h2>
+        </div>
+        <table>
+          <tbody id="monitor-table"></tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    async function getJson(url) {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
+      return await res.json();
+    }
+
+    function badge(status) {
+      const cls = status === 'healthy' || status === 'promoted' || status === 'ok' ? 'ok'
+        : status === 'running' || status === 'ready' ? 'ok'
+        : status === 'rolled_back' || status === 'promotion_blocked' || status === 'port_closed' || status === 'disconnected' || status === 'pending' ? 'warn'
+        : status === 'startup_failed' || status === 'error' || status === 'down' || status === 'stopped' ? 'bad'
+        : 'warn';
+      return `<span class="badge ${cls}">${status}</span>`;
+    }
+
+    function text(v, fallback='—') {
+      return v === undefined || v === null || v === '' ? fallback : String(v);
+    }
+
+    function governanceLabel(state, freeze, promote, watch) {
+      if (freeze || state === 'frozen') return 'Frozen';
+      if (promote || state === 'promote_candidate') return 'Promote Candidate';
+      if (watch || state === 'paper_watch') return 'Watch';
+      if (state === 'paper_active') return 'Active';
+      if (state === 'paper_probe') return 'Probe';
+      if (state === 'paper_candidate') return 'Candidate';
+      return text(state);
+    }
+
+    function governanceBadge(state, freeze, promote, watch) {
+      const label = governanceLabel(state, freeze, promote, watch);
+      const cls = label === 'Frozen' ? 'bad'
+        : label === 'Promote Candidate' ? 'ok'
+        : label === 'Watch' ? 'warn'
+        : label === 'Active' ? 'ok'
+        : 'warn';
+      return `<span class="badge ${cls}">${label}</span>`;
+    }
+
+    function formatU(v, digits = 4) {
+      if (v === undefined || v === null || v === '') return '—';
+      const n = Number(v);
+      if (Number.isNaN(n)) return text(v);
+      return n.toFixed(digits);
+    }
+
+    function syncActiveNav(hash = window.location.hash || '#overview') {
+      const links = document.querySelectorAll('.nav-link[href^="#"]');
+      links.forEach(link => {
+        const isActive = link.getAttribute('href') === hash;
+        link.classList.toggle('active', isActive);
+      });
+    }
+
+    function jumpToHash(hash, smooth = true) {
+      if (!hash || !hash.startsWith('#')) return;
+      const target = document.querySelector(hash);
+      if (!target) return;
+      target.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+      history.replaceState(null, '', hash);
+      syncActiveNav(hash);
+    }
+
+    document.querySelectorAll('.nav-link[href^="#"]').forEach(link => {
+      link.addEventListener('click', (event) => {
+        const hash = link.getAttribute('href');
+        const target = document.querySelector(hash);
+        if (!target) return;
+        event.preventDefault();
+        jumpToHash(hash, true);
+      });
+    });
+
+    window.addEventListener('hashchange', () => syncActiveNav(window.location.hash));
+
+    function pct(v, digits = 1) {
+      if (v === undefined || v === null || v === '') return '—';
+      const n = Number(v);
+      if (Number.isNaN(n)) return text(v);
+      return `${(n * 100).toFixed(digits)}%`;
+    }
+
+    function metricCard(label, value, sub) {
+      return `
+        <div class="card">
+          <div class="label">${label}</div>
+          <div class="value compact">${value}</div>
+          <div class="sub">${sub}</div>
+        </div>
+      `;
+    }
+
+    function renderOperatingContext(operating, data, platformsData) {
+      const lane = operating.lane || {};
+      const progress = operating.progress || {};
+      const filters = operating.filters || {};
+      const hourFilter = filters.hour_filter || {};
+      const capture = operating.closed_trades_capture || {};
+      const summary = platformsData.summary || {};
+      document.getElementById('operating-mode-table').innerHTML = `
+        <tr><th>Modo actual</th><td>${badge(text(operating.status || operating.mode || 'unknown'))}<div class="small">${text(operating.focus)}</div></td></tr>
+        <tr><th>Marco activo</th><td>${text(operating.title)}<div class="small">paper_only=${text(operating.paper_only)} · live_forbidden=${text(operating.live_trading_forbidden)}</div></td></tr>
+        <tr><th>Lane objetivo</th><td>${text(lane.platform)} · ${text(lane.symbol)} · ${text(lane.timeframe)} · ${text(lane.setup_variant)}</td></tr>
+        <tr><th>Bloqueadores</th><td>${(operating.blockers || []).join('<br>') || 'sin_blockers'}</td></tr>
+        <tr><th>Siguiente acción</th><td>${(operating.next_actions || []).join(', ') || 'sin_acciones'}</td></tr>
+        <tr><th>Estado de señal</th><td>total=${text(summary.total_signals, 0)} · valid=${text(summary.valid_signals, 0)} · trades_sesión=${text(summary.session_trades, 0)}</td></tr>
+        <tr><th>Filtro horario</th><td>${badge(hourFilter.status || 'unknown')}<div class="small">hours=${(hourFilter.configured_hours_utc || []).join(', ') || '—'} · ${text(hourFilter.reason, 'sin_nota')}</div></td></tr>
+        <tr><th>Closed trades PO</th><td>${badge(capture.status || 'pending')}<div class="small">file=${text(capture.file_exists)} · captured=${text(capture.captured_trades, 0)} · manual_step=${text(capture.needs_manual_browser_step)}</div></td></tr>
+        <tr><th>Progreso del test</th><td>${text(progress.resolved_trades, 0)}/${text(operating.decision_framework?.target_trades, 50)} resueltos<div class="small">wins=${text(progress.wins, 0)} · losses=${text(progress.losses, 0)} · unresolved=${text(progress.unresolved, 0)}</div></td></tr>
+      `;
+      document.getElementById('fair-test-status-line').textContent = `status=${text(operating.status)} · remaining=${text(progress.remaining_to_target, 0)} · generated=${text(data.generated_utc)}`;
+    }
+
+    function renderFairTest(operating) {
+      const progress = operating.progress || {};
+      const decision = operating.decision_framework || {};
+      const filters = operating.filters || {};
+      const capture = operating.closed_trades_capture || {};
+      const durations = filters.duration_targets || {};
+      document.getElementById('fairtest-metrics').innerHTML = [
+        metricCard('Trades resueltos', text(progress.resolved_trades, 0), `objetivo ${text(decision.target_trades, 50)}`),
+        metricCard('Win Rate', pct(progress.win_rate), `breakeven ${pct(progress.breakeven_win_rate)}`),
+        metricCard('Expectancy', text(progress.expectancy_per_trade, '—'), `net ${text(progress.net_profit, '—')}`),
+        metricCard('Closed Trades', text(capture.captured_trades, 0), `${text(capture.status)} · manual=${text(capture.needs_manual_browser_step)}`),
+      ].join('');
+      document.getElementById('fairtest-table').innerHTML = `
+        <tr><th>Decisión</th><td>abandono &lt; ${pct(decision.abandon_below_win_rate)} · iteración ${pct((decision.iterate_between_win_rate || [])[0])}-${pct((decision.iterate_between_win_rate || [])[1])} · escala &gt; ${pct(decision.scale_above_win_rate)}</td></tr>
+        <tr><th>Filtro de dirección</th><td>PUT only=${text(filters.put_only)} · CALL block=${text(filters.call_block_enabled)}</td></tr>
+        <tr><th>Signal reasons</th><td>mínimo=${text(filters.min_signal_reasons, '—')}</td></tr>
+        <tr><th>Regímenes bloqueados</th><td>${(filters.blocked_regimes || []).join(', ') || '—'}</td></tr>
+        <tr><th>Duración objetivo</th><td>short=${text(durations.short_seconds, '—')}s · medium=${text(durations.medium_seconds, '—')}s · normal=${text(durations.normal_seconds, '—')}s</td></tr>
+        <tr><th>Captura oficial PO</th><td>${badge(capture.status || 'pending')}<div class="small">implemented=${text(capture.implemented)} · file_exists=${text(capture.file_exists)}</div></td></tr>
+      `;
+    }
+
+    function renderMaintenance(maintenance) {
+      const components = maintenance.components || {};
+      const cards = Object.entries(components).map(([key, component]) => {
+        const actions = (component.actions || []).map(action => {
+          const btnClass = action === 'stop' ? 'btn danger' : action === 'restart' ? 'btn warnish' : 'btn primary';
+          return `<button class="${btnClass}" onclick="maintenanceAction('${key}','${action}')">${action}</button>`;
+        }).join('');
+        const notes = (component.notes || []).map(note => `<div>${text(note)}</div>`).join('');
+        return `
+          <div class="service-card">
+            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
+              <div>
+                <h3>${text(component.label, key)}</h3>
+                <div class="service-meta">${text(component.detail)}</div>
+              </div>
+              <div>${badge(component.status || 'unknown')}</div>
+            </div>
+            <div class="small">pid=${text(component.pid)} · port=${text(component.port, 'n/a')}</div>
+            <div class="service-notes">${notes || '<div>sin_notas</div>'}</div>
+            <div class="service-actions">${actions || '<span class="small">sin acciones remotas</span>'}</div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('maintenance-grid').innerHTML = cards || '<div class="small">No hay componentes de mantenimiento.</div>';
+    }
+
+    async function refreshMaintenance() {
+      try {
+        const maintenance = await getJson('/api/maintenance/status');
+        renderMaintenance(maintenance);
+      } catch (error) {
+        document.getElementById('maintenance-feedback').textContent = `Error cargando mantenimiento: ${error.message}`;
+      }
+    }
+
+    async function maintenanceAction(service, action) {
+      const feedback = document.getElementById('maintenance-feedback');
+      feedback.textContent = `Ejecutando ${service}.${action}...`;
+      try {
+        const res = await fetch('/api/maintenance/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ service, action }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.detail || `HTTP ${res.status}`);
+        }
+        const message = data.message || data.result?.message || data.result?.stdout || 'acción completada';
+        feedback.textContent = `${service}.${action}: ${message}`;
+        renderMaintenance(data.maintenance || {});
+        setTimeout(() => refreshAll(), 1500);
+      } catch (error) {
+        feedback.textContent = `${service}.${action}: ${error.message}`;
+      }
+    }
+
+    async function refreshAll() {
+      // Cargar datos de ambos endpoints
+      const [data, platformsData, maintenance] = await Promise.all([
+        getJson('/api/command-center'),
+        getJson('/api/platforms').catch(() => ({})),
+        getJson('/api/maintenance/status').catch(() => ({ components: {}, summary: {} })),
+      ]);
+      
+      const roadmap = data.roadmap || {};
+      const roadmapGov = data.roadmap_governance || {};
+      const roadmapDev = data.roadmap_development || {};
+      const operating = data.operating_context || {};
+      const roadmapPromotion = roadmapGov.promotion || {};
+      const roadmapPhaseSpec = roadmapGov.phase_spec || {};
+      const legacySummary = roadmapGov.legacy_reconciliation?.summary || {};
+      const legacyRows = roadmapGov.legacy_reconciliation?.legacy_roadmaps || [];
+      const utility = data.utility || {};
+      const autonomyLoop = data.autonomy_loop || {};
+      const strategyEngine = data.strategy_engine || {};
+      const metaImprovement = data.meta_improvement || {};
+      const chatProduct = data.chat_product || {};
+      const utilityGovernance = data.utility_governance || {};
+      const postBlRoadmap = data.post_bl_roadmap || {};
+      const v9 = data.brain_v9 || {};
+      const ops = v9.operations?.data || {};
+      const latestChange = ops.self_improvement?.latest_change || {};
+      const trading = ops.trading || {};
+      const health = v9.health?.data || {};
+      const autonomy = v9.autonomy?.data || {};
+      const diag = v9.self_diagnostic?.data || {};
+      const latestAction = autonomyLoop.latest_job || {};
+      const latestArtifact = autonomyLoop.latest_artifact || {};
+      const execCtx = autonomyLoop.execution_context || {};
+      const currentActionCtx = autonomyLoop.current_action_context || {};
+      const loopMeta = autonomyLoop.latest_job_meta || {};
+      const recentU = utility.recent_u || [];
+      const recentUDelta = recentU.length >= 2 ? Number(recentU[recentU.length - 1].u_score) - Number(recentU[recentU.length - 2].u_score) : null;
+      const latestTrade = latestArtifact.result?.trade || latestArtifact.result?.trades?.[0] || null;
+      const rankingV2 = strategyEngine.ranking_v2 || {};
+      const effectiveTopCandidate = strategyEngine.effective_top_candidate || strategyEngine.top_candidate || {};
+      const exploitCandidate = strategyEngine.exploit_candidate || effectiveTopCandidate || {};
+      const exploreCandidate = strategyEngine.explore_candidate || {};
+      const topStrategy = exploitCandidate;
+      const expectancyLeader = strategyEngine.expectancy_leader || {};
+      const topStrategyKind = topStrategy.selection_mode
+        || (rankingV2.top_strategy?.strategy_id
+        ? 'strict_top'
+        : rankingV2.top_recovery_candidate?.strategy_id
+        ? 'recovery_candidate'
+        : topStrategy.strategy_id
+        ? 'rank_leader_fallback'
+        : 'none');
+      const exploreStrategyKind = exploreCandidate.selection_mode
+        || (exploreCandidate.strategy_id ? 'explore_candidate' : 'none');
+      const latestComparisonCycle = strategyEngine.latest_comparison_cycle || {};
+      const ranked = strategyEngine.ranked || [];
+      
+      // Actualizar datos de plataformas
+      const po = platformsData.platforms?.pocket_option || {};
+      const ibkr = platformsData.platforms?.ibkr || {};
+      const acc = platformsData.sample_accumulator || {};
+      const historySnapshot = strategyEngine.history || {};
+      const featureSnapshot = strategyEngine.features || {};
+      const signalSnapshot = strategyEngine.signals || {};
+      const archiveState = strategyEngine.archive || {};
+      const scorecards = strategyEngine.scorecards || {};
+      const symbolScorecards = strategyEngine.symbol_scorecards || {};
+      const contextScorecards = strategyEngine.context_scorecards || {};
+      const hypotheses = strategyEngine.hypotheses || [];
+      const metaTopGap = metaImprovement.top_gap || {};
+      const metaRoadmap = metaImprovement.roadmap || {};
+      const metaMemory = metaImprovement.memory || {};
+      const metaExecution = metaImprovement.last_execution || {};
+      const openGapIds = new Set((metaImprovement.gap_registry?.open_gaps || []).map(item => item.gap_id));
+      const topStrategyCard = topStrategy.strategy_id ? (scorecards[topStrategy.strategy_id] || {}) : {};
+      const topStrategySymbolCards = Object.values(symbolScorecards).filter(card =>
+        card.strategy_id === topStrategy.strategy_id && card.venue === topStrategy.venue
+      ).sort((a, b) => (Number(b.expectancy || 0) - Number(a.expectancy || 0)) || (Number(b.sample_quality || 0) - Number(a.sample_quality || 0)));
+      const hypothesisStats = {
+        pass: hypotheses.filter(x => x.status === 'pass').length,
+        in_test: hypotheses.filter(x => x.status === 'in_test').length,
+        queued: hypotheses.filter(x => x.status === 'queued').length,
+      };
+
+      renderOperatingContext(operating, data, platformsData);
+      renderFairTest(operating);
+      renderMaintenance(maintenance);
+
+      document.getElementById('hero-phase').textContent = `${text(operating.title, roadmap.current_phase)} · ${text(operating.status || roadmap.active_title)}`;
+      document.getElementById('hero-sub').textContent = `focus: ${text(operating.focus, roadmap.active_program)} · room: ${text(roadmap.room_id)} · generated: ${text(data.generated_utc)}`;
+      document.getElementById('hero-status').textContent = `● ${health.status || 'unknown'} · ${text(operating.mode, 'standard')}`;
+
+      document.getElementById('k-phase').textContent = text(roadmap.current_phase);
+      document.getElementById('k-stage').textContent = `${text(roadmap.current_stage)} · next: ${text(roadmap.next_item)}`;
+      document.getElementById('k-u').textContent = formatU(utility.u_proxy_score, 4);
+      document.getElementById('k-u-sub').textContent = `${text(utility.verdict)} · blockers: ${(utility.blockers || []).length}`;
+      document.getElementById('k-si').textContent = text(latestChange.status);
+      document.getElementById('k-si-sub').textContent = `${text(latestChange.change_id)} · restart: ${text(latestChange.restart)}`;
+
+      const healthyCount = Object.values(trading).filter(x => x?.success && x?.status !== 'disconnected').length;
+      document.getElementById('k-ch').textContent = `${healthyCount}/${Object.keys(trading).length}`;
+      document.getElementById('k-ch-sub').textContent = `IBKR: ${trading.ibkr?.status || ibkr.status || '—'} · PO: ${trading.pocket_option?.status || po.status || '—'}`;
+      document.getElementById('k-top-action').textContent = text(autonomyLoop.top_action);
+      document.getElementById('k-top-action-sub').textContent = `actual · blockers: ${(currentActionCtx.blockers || utility.blockers || []).length} · u=${formatU(currentActionCtx.u_score ?? utility.u_proxy_score, 4)}`;
+      document.getElementById('k-outcome').textContent = latestTrade ? `${latestTrade.result}` : text(latestAction.status);
+      document.getElementById('k-outcome-sub').textContent = latestTrade
+        ? `${text(latestTrade.symbol)} · ${text(latestTrade.direction)} · ${text(latestTrade.profit)}`
+        : `${text(latestAction.action_name)} · ${text(latestAction.updated_utc)}`;
+      document.getElementById('k-u-delta').textContent = recentUDelta !== null ? recentUDelta.toFixed(4) : '—';
+      document.getElementById('k-u-delta-sub').textContent = `${recentU.length} muestras recientes`;
+      document.getElementById('k-u-trend').textContent = recentU.length ? recentU.map(item => formatU(item.u_score, 4)).join(' → ') : '—';
+      document.getElementById('k-u-trend-sub').textContent = recentU.length ? `última: ${text(recentU[recentU.length - 1].timestamp)}` : 'sin historial';
+      document.getElementById('k-top-strategy').textContent = text(topStrategy.strategy_id);
+      document.getElementById('k-top-strategy-sub').textContent = `${text(topStrategy.venue)} · ${text(topStrategy.family)} · ${text(topStrategy.promotion_state)} · symbol ${text(topStrategy.preferred_symbol || topStrategy.best_symbol)} · mode ${text(topStrategyKind)}`;
+      document.getElementById('k-strategy-exp').textContent = expectancyLeader.expectancy !== undefined && expectancyLeader.expectancy !== null ? Number(expectancyLeader.expectancy).toFixed(2) : '—';
+      document.getElementById('k-strategy-exp-sub').textContent = `${text(expectancyLeader.strategy_id)} · ${text(expectancyLeader.selection_mode || expectancyLeader.expectancy_rank_source || 'none')} · score ${text(expectancyLeader.priority_score ?? expectancyLeader.rank_score, '—')}`;
+      document.getElementById('k-strategy-sample').textContent = topStrategy.sample_quality !== undefined && topStrategy.sample_quality !== null ? Number(topStrategy.sample_quality).toFixed(4) : '—';
+      document.getElementById('k-strategy-sample-sub').textContent = `scorecards: ${Object.keys(scorecards).length} · símbolos: ${Object.keys(symbolScorecards).length} · contextos: ${Object.keys(contextScorecards).length}`;
+      document.getElementById('k-hypotheses').textContent = `${hypothesisStats.in_test}/${hypotheses.length}`;
+      document.getElementById('k-hypotheses-sub').textContent = `pass: ${hypothesisStats.pass} · queued: ${hypothesisStats.queued}`;
+      document.getElementById('k-pref-symbol').textContent = text(execCtx.preferred_symbol || latestArtifact.result?.preferred_symbol || topStrategy.preferred_symbol);
+      document.getElementById('k-pref-symbol-sub').textContent = `${text(execCtx.venue || topStrategy.venue)} · ${topStrategyKind === 'recovery_candidate' ? 'recovery candidate symbol' : 'top strategy symbol'}`;
+      document.getElementById('k-batch-iters').textContent = text(execCtx.recommended_iterations || latestArtifact.result?.recommended_iterations || topStrategy.recommended_iterations);
+      document.getElementById('k-batch-iters-sub').textContent = `batch_run=${text(latestArtifact.result?.batch_run?.run_id)}`;
+      document.getElementById('k-strategy-gov').textContent = governanceLabel(topStrategy.governance_state, topStrategy.freeze_recommended, topStrategy.promote_candidate, topStrategy.watch_recommended);
+      document.getElementById('k-strategy-gov-sub').textContent = `promotion_state=${text(topStrategy.promotion_state)} · freeze=${text(topStrategy.freeze_recommended)} · mode=${text(topStrategyKind)}`;
+      document.getElementById('k-context-gov').textContent = governanceLabel(topStrategy.context_governance_state, topStrategy.context_governance_state === 'frozen', topStrategy.context_governance_state === 'promote_candidate', topStrategy.context_governance_state === 'paper_watch');
+      document.getElementById('k-context-gov-sub').textContent = `${text(topStrategy.preferred_symbol)} · ${text(topStrategy.preferred_timeframe)} · ${text(topStrategy.preferred_setup_variant)}`;
+      document.getElementById('k-loop-job').textContent = text(loopMeta.job_id);
+      document.getElementById('k-loop-job-sub').textContent = `${text(loopMeta.status)} · ${text(loopMeta.action_name)} · ${text(execCtx.platform)} · ${text(execCtx.venue)}`;
+      document.getElementById('k-loop-fresh').textContent = text(loopMeta.finished_utc || loopMeta.updated_utc);
+      document.getElementById('k-loop-fresh-sub').textContent = `started=${text(loopMeta.started_utc)} · artifact=${text(loopMeta.artifact_path)}`;
+      
+      // NUEVO: Actualizar tarjetas de estado de aprendizaje y ejecución
+      const learningMetrics = autonomyLoop.learning_metrics || {};
+      const skipDetails = autonomyLoop.skip_details || {};
+      const consecutiveSkips = learningMetrics.consecutive_skips || 0;
+      const skipStatusColor = consecutiveSkips >= 3 ? '#f56565' : (consecutiveSkips > 0 ? '#f6ad55' : '#2ec27e');
+      
+      document.getElementById('k-consecutive-skips').textContent = consecutiveSkips;
+      document.getElementById('k-consecutive-skips').style.color = skipStatusColor;
+      document.getElementById('k-consecutive-skips-sub').textContent = consecutiveSkips >= 3 
+        ? '⚠️ FORZANDO EJECUCIÓN en próxima oportunidad' 
+        : `${learningMetrics.skip_history_count || 0} skips totales · ${learningMetrics.u_history_entries || 0} entradas U`;
+      
+      document.getElementById('k-trades-today').textContent = learningMetrics.trades_today || 0;
+      document.getElementById('k-trades-today-sub').textContent = learningMetrics.last_successful_trade 
+        ? `Último: ${text(learningMetrics.last_successful_trade.timestamp).slice(11, 19)} · ${text(learningMetrics.last_successful_trade.detail?.slice(0, 50))}` 
+        : 'Sin trades exitosos hoy';
+      
+      const executionStatus = latestAction.status;
+      const isSkipped = executionStatus === 'skipped';
+      document.getElementById('k-execution-status').textContent = isSkipped ? 'PAUSADO' : (executionStatus || '—');
+      document.getElementById('k-execution-status').style.color = isSkipped ? '#f56565' : '#2ec27e';
+      document.getElementById('k-execution-status-sub').textContent = isSkipped 
+        ? `Razón: ${text(skipDetails.reason) || 'No hay candidatos válidos'} · Sample Quality: ${text(skipDetails.sample_quality, 'N/A')}` 
+        : `${text(latestAction.action_name)} · ${text(topStrategy.strategy_id)}`;
+      
+      document.getElementById('k-roadmap-dev').textContent = text(roadmapDev.work_status);
+      document.getElementById('k-roadmap-dev-sub').textContent = `${text(roadmapDev.phase_id)} · blockers=${text(roadmapDev.blocker_count, 0)} · ${text(roadmapDev.promotion_state)}`;
+      document.getElementById('k-meta-gap').textContent = text(metaTopGap.gap_id || metaRoadmap.work_status);
+      document.getElementById('k-meta-gap-sub').textContent = `${text(metaTopGap.execution_mode || metaRoadmap.work_status)} · priority=${text(metaTopGap.priority_score, 'n/a')} · playbooks=${text(metaMemory.summary?.playbook_count, 0)} · método=${text(metaMemory.summary?.last_successful_method, 'none')}`;
+      document.getElementById('k-chat-product').textContent = text(chatProduct.current_state || 'missing');
+      document.getElementById('k-chat-product-sub').textContent = `accepted=${text(chatProduct.accepted_baseline)} · quality=${text(chatProduct.quality_score, 'n/a')} · next=${(chatProduct.next_actions || []).join(', ') || 'none'}`;
+      document.getElementById('k-utility-gov').textContent = text(utilityGovernance.current_state || 'missing');
+      document.getElementById('k-utility-gov-sub').textContent = `accepted=${text(utilityGovernance.accepted_baseline)} · u=${formatU(utilityGovernance.u_proxy_score, 4)} · signal=${text(utilityGovernance.effective_signal_score, 'n/a')} · next=${(utilityGovernance.next_actions || []).join(', ') || 'none'}`;
+      document.getElementById('k-post-bl').textContent = text(postBlRoadmap.current_focus?.item_id || postBlRoadmap.work_status || 'missing');
+      document.getElementById('k-post-bl-sub').textContent = `${text(postBlRoadmap.current_focus?.title || 'sin_foco')} · ${text(postBlRoadmap.work_status)}`;
+
+      document.getElementById('roadmap-table').innerHTML = `
+        <tr><th>Programa</th><td>${text(roadmap.active_program)}</td></tr>
+        <tr><th>Fase</th><td>${text(roadmap.current_phase)} · ${text(roadmap.current_stage)}</td></tr>
+        <tr><th>Título</th><td>${text(roadmap.active_title)}</td></tr>
+        <tr><th>Siguiente</th><td class="mono">${text(roadmap.next_item)}</td></tr>
+        <tr><th>Avance</th><td>${text(roadmap.counts?.done, 0)}/${text(roadmap.counts?.total, 0)} done · ${text(roadmap.counts?.in_progress, 0)} in_progress</td></tr>
+        <tr><th>Autopromoción</th><td>${badge(text(roadmapPromotion.promotion_state, 'unknown'))}<div class="small">promoted=${text(roadmapPromotion.promoted)} · phase=${text(roadmapPromotion.current_phase || roadmap.current_phase)}</div></td></tr>
+        <tr><th>Evaluator</th><td>${badge(text(roadmapPhaseSpec.evaluator_status, 'unknown'))}<div class="small">mode=${text(roadmapPhaseSpec.acceptance_mode)} · checks=${text(roadmapPhaseSpec.checks_defined, 0)}</div></td></tr>
+        <tr><th>Decisión canónica</th><td>${text(roadmapPromotion.reason || roadmapPromotion.acceptance?.acceptance_reason || '—')}</td></tr>
+        <tr><th>Legacy resumidos</th><td>archived=${text(legacySummary.archived_certified, 0)} · mapped=${text(legacySummary.legacy_mapped_to_bl, 0)} · absorbed=${text(legacySummary.legacy_absorbed_into_bl, 0)}</td></tr>
+        <tr><th>Legacy visibles</th><td>${legacyRows.map(item => `${text(item.roadmap_id || item.label)} → ${text(item.decision)}`).join('<br>') || '—'}</td></tr>
+      `;
+
+      document.getElementById('si-table').innerHTML = `
+        <tr><th>Total cambios</th><td>${text(ops.self_improvement?.total_changes, 0)}</td></tr>
+        <tr><th>Último estado</th><td>${badge(text(latestChange.status, 'unknown'))}</td></tr>
+        <tr><th>Último cambio</th><td class="mono">${text(latestChange.change_id)}</td></tr>
+        <tr><th>Health post-change</th><td>${text(latestChange.health)}</td></tr>
+        <tr><th>Rollback</th><td>${text(latestChange.rollback)}</td></tr>
+        <tr><th>Impacto U</th><td>${text(latestChange.impact_delta?.delta_u_score, 'n/a')}</td></tr>
+      `;
+
+      document.getElementById('roadmap-development-table').innerHTML = `
+        <tr><th>Estado</th><td>${badge(text(roadmapDev.work_status, 'unknown'))}<div class="small">promotion_state=${text(roadmapDev.promotion_state)} · evaluator=${text(roadmapDev.evaluator_status)} · accepted=${text(roadmapDev.accepted)}</div></td></tr>
+        <tr><th>Fase</th><td>${text(roadmapDev.phase_id)} · ${text(roadmapDev.phase_title)}</td></tr>
+        <tr><th>Objetivo</th><td>${text(roadmapDev.phase_objective)}</td></tr>
+        <tr><th>Deliverable</th><td>${text(roadmapDev.phase_deliverable)}</td></tr>
+        <tr><th>Room</th><td class="mono">${text(roadmapDev.room_id)}</td></tr>
+        <tr><th>Trabajo actual</th><td>${text(roadmapDev.current_work_summary)}<div class="small">${(roadmapDev.current_work_items || []).join(' · ') || '—'}</div></td></tr>
+        <tr><th>Error / bloqueo</th><td>${text(roadmapDev.last_error, 'sin_error')}<div class="small">blockers=${text(roadmapDev.blocker_count, 0)}</div></td></tr>
+        <tr><th>Blockers detallados</th><td>${(roadmapDev.blockers || []).map(item => `${item.check_id}: ${text(item.detail)} · hint=${text(item.repair_hint)}`).join('<br>') || 'sin_blockers'}</td></tr>
+        <tr><th>Siguiente intento</th><td>${(roadmapDev.next_recommended_actions || []).join('<br>') || 'sin_acciones_pendientes'}</td></tr>
+        <tr><th>Handoff meta-cerebro</th><td class="mono prewrap">${text(roadmapDev.meta_brain_handoff)}</td></tr>
+        <tr><th>Evidencias</th><td class="mono">${(roadmapDev.evidence_paths || []).join('<br>') || '—'}</td></tr>
+      `;
+
+      document.getElementById('meta-improvement-table').innerHTML = `
+        <tr><th>Misión</th><td>${text(metaImprovement.mission?.goal)}<div class="small">${text(metaImprovement.mission?.continuation_rule)}</div></td></tr>
+        <tr><th>Estado roadmap meta</th><td>${badge(text(metaRoadmap.work_status, 'unknown'))}<div class="small">${text(metaRoadmap.current_work_summary)}</div></td></tr>
+        <tr><th>Top gap</th><td class="mono">${text(metaTopGap.gap_id)} · ${text(metaTopGap.domain_id)}<div class="small">${text(metaTopGap.title)}</div></td></tr>
+        <tr><th>Objetivo</th><td>${text(metaTopGap.objective)}</td></tr>
+        <tr><th>Prioridad</th><td>priority=${text(metaTopGap.priority_score)} · benefit=${text(metaTopGap.benefit_score)} · readiness=${text(metaTopGap.readiness_score)} · recurrence=${text(metaTopGap.recurrence_count, 0)} · attempts=${text(metaTopGap.attempt_count, 0)}</td></tr>
+        <tr><th>Modo de ejecución</th><td>${badge(text(metaTopGap.execution_mode || 'observe_only'))}<div class="small">blockers=${(metaTopGap.blockers || []).join(', ') || 'none'}</div></td></tr>
+        <tr><th>Acciones sugeridas</th><td>${(metaTopGap.suggested_actions || []).join(', ') || 'sin_acciones_internas'}</td></tr>
+        <tr><th>Última ejecución meta</th><td class="mono">${text(metaExecution.gap_id)} · ${text(metaExecution.status)}<div class="small">delegated_action=${text(metaExecution.delegated_action)} · platform=${text(metaExecution.delegated_platform)} · pnl=${text(metaExecution.delegated_total_profit, 'n/a')} · updated=${text(metaExecution.updated_utc)}</div></td></tr>
+        <tr><th>Método recomendado</th><td class="mono">${text(metaTopGap.recommended_method, 'none')}<div class="small">reason=${text(metaTopGap.method_selection_reason, 'none')} · playbooks=${(metaTopGap.selected_playbooks || []).join(', ') || 'none'}</div></td></tr>
+        <tr><th>Playbooks</th><td>${(metaMemory.playbooks || []).map(item => `${item.playbook_id}: conf=${item.confidence} · evidence=${item.evidence_count}`).join('<br>') || '—'}</td></tr>
+        <tr><th>Lecciones aprendidas</th><td>${(metaMemory.lessons || []).map(item => `${item.lesson_id}: ${item.observation} · conf=${text(item.confidence)} · evidence=${text(item.evidence_count, 0)}`).join('<br>') || 'sin_lecciones_formalizadas'}</td></tr>
+        <tr><th>Gaps resueltos</th><td>${(metaMemory.resolved_gaps || []).filter(item => !openGapIds.has(item.gap_id)).map(item => `${item.gap_id}: ${text(item.resolution_reason)} · ${text(item.resolved_utc)}`).join('<br>') || 'sin_gaps_resueltos_aun'}</td></tr>
+        <tr><th>Memoria resumida</th><td>playbooks=${text(metaMemory.summary?.playbook_count, 0)} · lessons=${text(metaMemory.summary?.lessons_count, 0)} · resolved=${text(metaMemory.summary?.resolved_gap_count, 0)} · recurring=${text(metaMemory.summary?.recurring_gap_count, 0)}<div class="small">last_successful_method=${text(metaMemory.summary?.last_successful_method, 'none')}</div></td></tr>
+        <tr><th>Dominios</th><td>${(metaImprovement.self_model?.domains || []).map(item => `${item.domain_id}: score=${item.score} · ${item.status}`).join('<br>') || '—'}</td></tr>
+        <tr><th>Roadmap</th><td>${(metaRoadmap.items || []).slice(0, 5).map(item => `${item.item_id}. ${item.title} · ${item.status} · ${item.execution_mode}`).join('<br>') || '—'}</td></tr>
+        <tr><th>Handoff meta-cerebro</th><td class="mono prewrap">${text(metaImprovement.meta_brain_handoff)}</td></tr>
+        <tr><th>Evidencias</th><td class="mono">${(metaTopGap.evidence_paths || []).join('<br>') || '—'}</td></tr>
+      `;
+
+      document.getElementById('chat-product-table').innerHTML = `
+        <tr><th>Producto</th><td>${text(chatProduct.title)}<div class="small">${text(chatProduct.mission)}</div></td></tr>
+        <tr><th>Estado</th><td>${badge(text(chatProduct.current_state, 'unknown'))}<div class="small">work_status=${text(chatProduct.work_status)} · accepted=${text(chatProduct.accepted_baseline)}</div></td></tr>
+        <tr><th>Checks</th><td>${(chatProduct.acceptance_checks || []).map(item => `${item.passed ? 'ok' : 'fail'} · ${item.check_id}: ${text(item.detail)}`).join('<br>') || '—'}</td></tr>
+        <tr><th>Quality</th><td>score=${text(chatProduct.quality_score, 'n/a')}<div class="small">${(chatProduct.quality_checks || []).map(item => `${item.passed ? 'ok' : 'fail'} · ${item.check_id}`).join(' · ') || 'sin_quality_checks'}</div></td></tr>
+        <tr><th>Pendientes</th><td>${(chatProduct.pending_improvement_items || []).join('<br>') || 'sin_pendientes'}</td></tr>
+        <tr><th>Siguiente</th><td>${(chatProduct.next_actions || []).join(', ') || 'none'}</td></tr>
+        <tr><th>Handoff</th><td class="mono prewrap">${text(chatProduct.meta_brain_handoff)}</td></tr>
+        <tr><th>Evidencias</th><td class="mono">${(chatProduct.evidence_paths || []).join('<br>') || '—'}</td></tr>
+      `;
+
+      document.getElementById('utility-governance-table').innerHTML = `
+        <tr><th>Dominio</th><td>${text(utilityGovernance.title)}<div class="small">${text(utilityGovernance.mission)}</div></td></tr>
+        <tr><th>Estado</th><td>${badge(text(utilityGovernance.current_state, 'unknown'))}<div class="small">work_status=${text(utilityGovernance.work_status)} · accepted=${text(utilityGovernance.accepted_baseline)}</div></td></tr>
+        <tr><th>Utility actual</th><td>u=${formatU(utilityGovernance.u_proxy_score ?? utility.u_proxy_score, 4)} · signal=${text(utilityGovernance.effective_signal_score, 'n/a')} · verdict=${text(utilityGovernance.verdict || utility.verdict)} · allow_promote=${text(utilityGovernance.allow_promote)}</td></tr>
+        <tr><th>Checks</th><td>${(utilityGovernance.acceptance_checks || []).map(item => `${item.passed ? 'ok' : 'fail'} · ${item.check_id}: ${text(item.detail)}`).join('<br>') || '—'}</td></tr>
+        <tr><th>Blockers</th><td>${(utilityGovernance.blockers || []).join('<br>') || 'sin_blockers'}</td></tr>
+        <tr><th>Pendientes</th><td>${(utilityGovernance.pending_improvement_items || []).join('<br>') || 'sin_pendientes'}</td></tr>
+        <tr><th>Siguiente</th><td>${(utilityGovernance.next_actions || []).join(', ') || 'none'}</td></tr>
+        <tr><th>Referencia estrategia</th><td>${text(utilityGovernance.top_strategy_reference?.strategy_id)}<div class="small">state=${text(utilityGovernance.top_strategy_reference?.promotion_state)} · context=${text(utilityGovernance.top_strategy_reference?.context_governance_state)} · expectancy=${text(utilityGovernance.top_strategy_reference?.expectancy)} · context_expectancy=${text(utilityGovernance.top_strategy_reference?.context_expectancy)}</div></td></tr>
+        <tr><th>Referencia efectiva</th><td>${text(utilityGovernance.effective_reference_strategy?.strategy_id)}<div class="small">state=${text(utilityGovernance.effective_reference_strategy?.promotion_state)} · context=${text(utilityGovernance.effective_reference_strategy?.context_governance_state)} · symbol_expectancy=${text(utilityGovernance.effective_reference_strategy?.symbol_expectancy)} · context_expectancy=${text(utilityGovernance.effective_reference_strategy?.context_expectancy)}</div></td></tr>
+        <tr><th>Handoff</th><td class="mono prewrap">${text(utilityGovernance.meta_brain_handoff)}</td></tr>
+        <tr><th>Evidencias</th><td class="mono">${(utilityGovernance.evidence_paths || []).join('<br>') || '—'}</td></tr>
+      `;
+
+      document.getElementById('post-bl-roadmap-table').innerHTML = `
+        <tr><th>Roadmap</th><td>${text(postBlRoadmap.roadmap_id)}<div class="small">${text(postBlRoadmap.mission)}</div></td></tr>
+        <tr><th>Estado</th><td>${badge(text(postBlRoadmap.work_status, 'unknown'))}<div class="small">enabled=${text(postBlRoadmap.enabled)}</div></td></tr>
+        <tr><th>Foco actual</th><td class="mono">${text(postBlRoadmap.current_focus?.item_id, 'none')} · ${text(postBlRoadmap.current_focus?.title, 'sin_foco')}</td></tr>
+        <tr><th>Objetivo</th><td>${text(postBlRoadmap.current_focus?.objective, 'sin_objetivo')}</td></tr>
+        <tr><th>Detalle</th><td>${text(postBlRoadmap.current_focus?.detail, 'sin_detalle')}</td></tr>
+        <tr><th>Siguiente</th><td>${(postBlRoadmap.current_focus?.next_actions || []).join(', ') || 'none'}</td></tr>
+        <tr><th>Items</th><td>${(postBlRoadmap.items || []).map(item => `${item.item_id}. ${item.title} · ${item.status}`).join('<br>') || '—'}</td></tr>
+        <tr><th>Handoff</th><td class="mono prewrap">${text(postBlRoadmap.meta_brain_handoff)}</td></tr>
+      `;
+
+      document.getElementById('loop-table').innerHTML = `
+        <tr><th>Estado Loop</th><td>${badge(autonomyLoop.running ? 'healthy' : 'disconnected')} · Tasks: ${autonomyLoop.active_tasks || 0} · Reports: ${autonomyLoop.reports_count || 0}</td></tr>
+        <tr><th>Ejecución Actual</th><td>${latestAction.status === 'skipped' ? '<span style="color: #f56565; font-weight: bold;">PAUSADO - Sin candidatos válidos</span>' : badge(text(latestAction.status))} · ${text(latestAction.action_name || 'N/A')}</td></tr>
+        ${latestAction.status === 'skipped' ? `<tr><th>Razón Skip</th><td style="color: #f56565;">${text(latestArtifact.result?.reason) || 'No se cumplen condiciones de ejecución'}</td></tr>` : ''}
+        <tr><th>Candidato Intentado</th><td class="mono">${text(latestArtifact.result?.candidate?.strategy_id)} · Sample Quality: ${text(latestArtifact.result?.candidate?.sample_quality)} · Ready: ${text(latestArtifact.result?.candidate?.execution_ready)}</td></tr>
+        <tr><th>Trades Hoy</th><td><span id="trades-today-count">Cargando...</span></td></tr>
+        <tr><th>Último Trade Exitoso</th><td id="last-successful-trade">Cargando...</td></tr>
+        <tr><th>Top Action</th><td class="mono">${text(autonomyLoop.top_action)}</td></tr>
+        <tr><th>Acciones Sugeridas</th><td>${(autonomyLoop.recommended_actions || []).join(', ') || 'Ninguna'}</td></tr>
+        <tr><th>Policy Trading</th><td>paper_only=${text(data.trading_policy?.global_rules?.paper_only)} · live_forbidden=${text(data.trading_policy?.global_rules?.live_trading_forbidden)}</td></tr>
+        ${latestAction.status === 'skipped' ? '<tr><th colspan="2" style="background: rgba(245, 101, 101, 0.2); color: #f56565; padding: 12px; text-align: center;">⚠️ Sistema pausado - Requiere atención para ejecutar trades</th></tr>' : ''}
+      `;
+
+      document.getElementById('strategy-engine-table').innerHTML = `
+        <tr><th>Líder ejecutable</th><td class="mono">${text(topStrategy.strategy_id)}<div class="small">mode=${text(topStrategyKind)} · ready=${text(topStrategy.execution_ready)} · signal_valid=${text(topStrategy.signal_valid)}</div></td></tr>
+        <tr><th>Líder por expectancy</th><td class="mono">${text(expectancyLeader.strategy_id)}<div class="small">mode=${text(expectancyLeader.selection_mode || expectancyLeader.expectancy_rank_source)} · expectancy=${text(expectancyLeader.expectancy)} · sample=${text(expectancyLeader.sample_quality)} · ready=${text(expectancyLeader.execution_ready)}</div></td></tr>
+        <tr><th>Exploit candidate</th><td class="mono">${text(exploitCandidate.strategy_id)}<div class="small">mode=${text(exploitCandidate.selection_mode || topStrategyKind)} · sample=${text(exploitCandidate.sample_quality)} · entries=${text(exploitCandidate.entries_resolved || exploitCandidate.best_entries_resolved)} · ready=${text(exploitCandidate.execution_ready)}</div></td></tr>
+        <tr><th>Explore candidate</th><td class="mono">${text(exploreCandidate.strategy_id)}<div class="small">mode=${text(exploreStrategyKind)} · expectancy=${text(exploreCandidate.expectancy)} · sample=${text(exploreCandidate.sample_quality)} · ready=${text(exploreCandidate.execution_ready)}</div></td></tr>
+        <tr><th>Venue</th><td>${text(topStrategy.venue)} · venue_ready=${text(topStrategy.venue_ready)}</td></tr>
+        <tr><th>Familia</th><td>${text(topStrategy.family)}</td></tr>
+        <tr><th>Resumen</th><td>${text(topStrategy.summary)}</td></tr>
+        <tr><th>Indicadores</th><td>${(topStrategy.indicators || []).join(', ') || '—'}</td></tr>
+        <tr><th>Universo</th><td>${(topStrategy.universe || []).join(', ') || '—'}</td></tr>
+        <tr><th>Expectancy</th><td>${text(topStrategy.expectancy)} · sample_quality=${text(topStrategy.sample_quality)} · consistency=${text(topStrategy.consistency_score)}</td></tr>
+        <tr><th>Governance</th><td>${governanceBadge(topStrategy.governance_state, topStrategy.freeze_recommended, topStrategy.promote_candidate, topStrategy.watch_recommended)} · context ${governanceBadge(topStrategy.context_governance_state, topStrategy.context_governance_state === 'frozen', topStrategy.context_governance_state === 'promote_candidate', topStrategy.context_governance_state === 'paper_watch')}<div class="small">strategy=${text(topStrategy.governance_state)} · context=${text(topStrategy.context_governance_state)} · freeze=${text(topStrategy.freeze_recommended)} · promote_candidate=${text(topStrategy.promote_candidate)}</div></td></tr>
+        <tr><th>Best symbol</th><td>${text(topStrategy.best_symbol)} · symbol_expectancy=${text(topStrategy.symbol_expectancy)} · symbol_sample=${text(topStrategy.symbol_sample_quality)}</td></tr>
+        <tr><th>Preferred symbol</th><td>${text(topStrategy.preferred_symbol)} · recommended_iterations=${text(topStrategy.recommended_iterations)}</td></tr>
+        <tr><th>Preferred context</th><td>timeframe=${text(topStrategy.preferred_timeframe)} · setup=${text(topStrategy.preferred_setup_variant)} · context_scorecards=${text(topStrategy.context_scorecards_available)}</td></tr>
+        <tr><th>Signal / readiness</th><td>${text(topStrategy.signal_direction)} · ready=${text(topStrategy.execution_ready)} · confidence=${text(topStrategy.signal_confidence)}<div class="small">reasons=${(topStrategy.signal_reasons || []).join(', ') || '—'} · blockers=${(topStrategy.signal_blockers || []).join(', ') || 'none'}</div></td></tr>
+        <tr><th>Feature snapshot</th><td>price_ready=${text(topStrategy.feature_price_available)} · last=${text(topStrategy.feature_last)} · move=${text(topStrategy.feature_last_vs_close_pct)} · imbalance=${text(topStrategy.feature_bid_ask_imbalance)} · payout=${text(topStrategy.feature_payout_pct)}</td></tr>
+        <tr><th>Archive state</th><td>${text(topStrategy.archive_state)} · ${text(topStrategy.archive_reason || '—')}<div class="small">archive summary: archived=${text(archiveState.summary?.archived_count)} · testing=${text(archiveState.summary?.testing_count)} · active=${text(archiveState.summary?.active_count)}</div></td></tr>
+        <tr><th>History engine</th><td>symbols=${text(historySnapshot.summary?.symbols_count)} · ready=${text(historySnapshot.summary?.history_ready_count)} · granularity=${text(historySnapshot.summary?.granularity)}</td></tr>
+        <tr><th>Feature engine</th><td>items=${text(featureSnapshot.summary?.items_count)} · price_ready=${text(featureSnapshot.summary?.price_ready_count)}<div class="small">unpriced=${(featureSnapshot.summary?.unpriced_symbols || []).join(', ') || '—'}</div></td></tr>
+        <tr><th>Signal engine</th><td>signals=${text(signalSnapshot.signals_count)} · ready=${text((signalSnapshot.by_strategy || []).filter(item => item.execution_ready).length)}</td></tr>
+        <tr><th>Último comparison cycle</th><td class="mono">${text(latestComparisonCycle.cycle_id)} · candidates=${text(latestComparisonCycle.selected_candidates)} · pnl=${text(latestComparisonCycle.total_profit)}</td></tr>
+        <tr><th>Top before/after</th><td>${text(latestComparisonCycle.top_before_effective?.strategy_id)} → ${text(latestComparisonCycle.top_after_effective?.strategy_id)}<div class="small">before_mode=${text(latestComparisonCycle.top_before_effective?.selection_mode || 'derived')} · after_mode=${text(latestComparisonCycle.top_after_effective?.selection_mode || topStrategyKind)}</div></td></tr>
+        <tr><th>Exploit before/after</th><td>${text(latestComparisonCycle.exploit_before_effective?.strategy_id)} → ${text(latestComparisonCycle.exploit_after_effective?.strategy_id)}<div class="small">before_mode=${text(latestComparisonCycle.exploit_before_effective?.selection_mode || 'derived')} · after_mode=${text(latestComparisonCycle.exploit_after_effective?.selection_mode || topStrategyKind)}</div></td></tr>
+        <tr><th>Explore before/after</th><td>${text(latestComparisonCycle.explore_before_effective?.strategy_id)} → ${text(latestComparisonCycle.explore_after_effective?.strategy_id)}<div class="small">before_mode=${text(latestComparisonCycle.explore_before_effective?.selection_mode || 'derived')} · after_mode=${text(latestComparisonCycle.explore_after_effective?.selection_mode || exploreStrategyKind)}</div></td></tr>
+        <tr><th>Success metric</th><td>${text(topStrategy.success_metric)}</td></tr>
+        <tr><th>Razones ranking</th><td>${(topStrategy.reasons || []).join(', ') || '—'}</td></tr>
+        <tr><th>Ranking</th><td>${ranked.map((item, idx) => `${idx + 1}. ${item.strategy_id} (${item.venue}, score ${item.priority_score}) · ${governanceLabel(item.governance_state, item.freeze_recommended, item.promote_candidate, item.watch_recommended)} / ${governanceLabel(item.context_governance_state, item.context_governance_state === 'frozen', item.context_governance_state === 'promote_candidate', item.context_governance_state === 'paper_watch')}`).join('<br>') || '—'}</td></tr>
+        <tr><th>Scorecards</th><td>${Object.values(scorecards).map(card => `${card.strategy_id}: trades=${card.entries_resolved}, expectancy=${card.expectancy}, state=${governanceLabel(card.governance_state, card.freeze_recommended, card.promote_candidate, card.watch_recommended)}`).join('<br>') || '—'}</td></tr>
+        <tr><th>Scorecards por símbolo</th><td>${topStrategySymbolCards.map(card => `${card.symbol}: trades=${card.entries_resolved}, expectancy=${card.expectancy}, sample=${card.sample_quality}`).join('<br>') || '—'}</td></tr>
+        <tr><th>Hypotheses</th><td>${hypotheses.map(h => `${h.hypothesis_id}: ${h.status} (${h.result})`).join('<br>') || '—'}</td></tr>
+      `;
+
+      // Actualizar datos de PLATAFORMAS SEPARADAS
+      // PO Status
+      document.getElementById('po-status-badge').innerHTML = badge(po.status || 'disconnected');
+      document.getElementById('po-timeframe').textContent = po.timeframe || '1m';
+      document.getElementById('po-symbol').textContent = po.current_symbol || '—';
+      document.getElementById('po-valid-signals').innerHTML = `<span style="color: ${(po.signals?.valid || 0) > 0 ? '#2ec27e' : '#f56565'};">${po.signals?.valid || 0}</span> / ${po.signals?.total || 0}`;
+      document.getElementById('po-recent-trades').textContent = po.recent_trades || 0;
+      
+      // PO Señales
+      const poSignals = (po.signals?.items || []).filter(s => s.signal_valid).slice(0, 3);
+      document.getElementById('po-signals-list').innerHTML = poSignals.length > 0 
+        ? poSignals.map(s => `
+            <div style="padding: 8px; margin: 4px 0; background: rgba(102, 126, 234, 0.2); border-radius: 6px; border-left: 3px solid #667eea;">
+              <strong>${s.strategy_id}</strong><br>
+              <span style="font-size: 11px; color: var(--muted);">
+                ${s.direction?.toUpperCase()} | Conf: ${s.confidence?.toFixed(2)} | Regimen: ${s.market_regime}
+              </span>
+            </div>
+          `).join('')
+        : '<div style="color: var(--muted); font-style: italic;">No hay señales válidas activas</div>';
+      
+      // IBKR Status
+      document.getElementById('ibkr-status-badge').innerHTML = badge(ibkr.status || 'disconnected');
+      document.getElementById('ibkr-timeframe').textContent = ibkr.timeframe || '5m';
+      document.getElementById('ibkr-port').textContent = ibkr.port || 4002;
+      document.getElementById('ibkr-valid-signals').innerHTML = `<span style="color: ${(ibkr.signals?.valid || 0) > 0 ? '#2ec27e' : '#f56565'};">${ibkr.signals?.valid || 0}</span> / ${ibkr.signals?.total || 0}`;
+      document.getElementById('ibkr-recent-orders').textContent = ibkr.recent_orders || 0;
+      
+      // IBKR Señales
+      const ibkrSignals = (ibkr.signals?.items || []).filter(s => s.signal_valid).slice(0, 3);
+      document.getElementById('ibkr-signals-list').innerHTML = ibkrSignals.length > 0 
+        ? ibkrSignals.map(s => `
+            <div style="padding: 8px; margin: 4px 0; background: rgba(17, 153, 142, 0.2); border-radius: 6px; border-left: 3px solid #11998e;">
+              <strong>${s.strategy_id}</strong><br>
+              <span style="font-size: 11px; color: var(--muted);">
+                ${s.direction?.toUpperCase()} | Symbol: ${s.symbol} | Conf: ${s.confidence?.toFixed(2)}
+              </span>
+            </div>
+          `).join('')
+        : '<div style="color: var(--muted); font-style: italic;">No hay señales válidas activas</div>';
+      
+      // SampleAccumulator
+      document.getElementById('acc-trades').textContent = acc.session_trades || 0;
+      document.getElementById('acc-status').textContent = acc.running ? 'Running' : 'Stopped';
+      document.getElementById('acc-status').style.color = acc.running ? '#2ec27e' : '#f56565';
+      document.getElementById('acc-cooldown').textContent = acc.cooldown || '0 min';
+      document.getElementById('acc-interval').textContent = acc.check_interval || '2 min';
+      document.getElementById('acc-learning').textContent = acc.aprendizaje?.includes('SI') ? '✓ Activo' : '✗ Inactivo';
+
+      // Legacy platforms table
+      const platforms = data.platforms || {};
+      document.getElementById('channels-table').innerHTML = Object.entries(platforms).map(([name, info]) => {
+        const state = info?.status || 'error';
+        const mode = info?.mode || '—';
+        const capability = `${text(info?.platform)} · ${text(info?.current_capability)} · paper=${text(info?.paper_trading_allowed)}`;
+        const notes = Array.isArray(info?.notes) && info.notes.length ? `<div class="small">${info.notes.join(' · ')}</div>` : '';
+        const nextStep = info?.next_step ? `<div class="small">next: ${info.next_step}</div>` : '';
+        const freshness = info?.freshness_utc ? `<div class="small">freshness: ${info.freshness_utc}</div>` : '';
+        const detail = `${text(info?.detail)}${freshness}${notes}${nextStep}`;
+        return `<tr>
+          <td>${text(info?.display_name, name)}</td>
+          <td>${badge(state)}</td>
+          <td>${text(mode)}</td>
+          <td>${capability}</td>
+          <td>${detail}</td>
+        </tr>`;
+      }).join('');
+
+      const warningCount = diag.issues?.warning
+        ?? diag.issues_count?.warning
+        ?? diag.last_check?.issues_count?.warning
+        ?? 0;
+      document.getElementById('monitor-table').innerHTML = `
+        <tr><th>V9 health</th><td>${badge(text(health.status, 'unknown'))}</td></tr>
+        <tr><th>Sesiones</th><td>${text(health.sessions)}</td></tr>
+        <tr><th>Autonomy running</th><td>${text(autonomy.running)}</td></tr>
+        <tr><th>Active tasks</th><td>${text(autonomy.active_tasks)}</td></tr>
+        <tr><th>SampleAccumulator</th><td>${text(v9.sample_accumulator?.data?.running ? 'running (' + (v9.sample_accumulator?.data?.status?.session_trades_count || 0) + ' trades)' : 'stopped')}</td></tr>
+        <tr><th>SelfDiagnostic</th><td>${text(diag.status || diag.overall_status || 'unknown')}</td></tr>
+        <tr><th>Warnings</th><td>${text(warningCount, 0)}</td></tr>
+      `;
+    }
+
+    refreshAll().then(() => {
+      syncActiveNav(window.location.hash || '#overview');
+      if (window.location.hash) {
+        setTimeout(() => jumpToHash(window.location.hash, false), 50);
+      }
+    });
+    setInterval(refreshAll, 10000);
+
+    // Funciones para plataformas separadas
+    async function refreshPlatforms() {
+      try {
+        const platforms = await getJson('/api/platforms/summary');
+        
+        // Actualizar PocketOption
+        const po = platforms.platforms?.pocket_option || {};
+        document.getElementById('po-u-score').textContent = (po.u_score?.current || 0).toFixed(4);
+        document.getElementById('po-u-score').style.color = po.u_score?.current > 0 ? '#2ec27e' : '#f56565';
+        document.getElementById('po-u-verdict').innerHTML = badge(po.u_score?.verdict || 'unknown');
+        document.getElementById('po-u-trades').textContent = po.metrics?.total_trades || 0;
+        document.getElementById('po-u-winrate').textContent = (po.metrics?.win_rate || 0).toFixed(1) + '%';
+        document.getElementById('po-u-profit').textContent = (po.metrics?.total_profit || 0).toFixed(2);
+        document.getElementById('po-u-trend').textContent = po.u_score?.trend_24h || 'stable';
+        document.getElementById('po-u-blockers').textContent = (po.u_score?.blockers || []).join(', ') || 'Ninguno';
+        
+        // Actualizar IBKR
+        const ibkr = platforms.platforms?.ibkr || {};
+        document.getElementById('ibkr-u-score').textContent = (ibkr.u_score?.current || 0).toFixed(4);
+        document.getElementById('ibkr-u-score').style.color = ibkr.u_score?.current > 0 ? '#2ec27e' : '#f56565';
+        document.getElementById('ibkr-u-verdict').innerHTML = badge(ibkr.u_score?.verdict || 'unknown');
+        document.getElementById('ibkr-u-trades').textContent = ibkr.metrics?.total_trades || 0;
+        document.getElementById('ibkr-u-winrate').textContent = (ibkr.metrics?.win_rate || 0).toFixed(1) + '%';
+        document.getElementById('ibkr-u-profit').textContent = (ibkr.metrics?.total_profit || 0).toFixed(2);
+        document.getElementById('ibkr-u-trend').textContent = ibkr.u_score?.trend_24h || 'stable';
+        document.getElementById('ibkr-u-blockers').textContent = (ibkr.u_score?.blockers || []).join(', ') || 'Ninguno';
+        
+        // Actualizar Internal
+        const internal = platforms.platforms?.internal_paper || {};
+        document.getElementById('internal-u-score').textContent = (internal.u_score?.current || 0).toFixed(4);
+        document.getElementById('internal-u-score').style.color = internal.u_score?.current > 0 ? '#2ec27e' : '#f56565';
+        document.getElementById('internal-u-verdict').innerHTML = badge(internal.u_score?.verdict || 'unknown');
+        document.getElementById('internal-u-trades').textContent = internal.metrics?.total_trades || 0;
+        document.getElementById('internal-u-winrate').textContent = (internal.metrics?.win_rate || 0).toFixed(1) + '%';
+        document.getElementById('internal-u-profit').textContent = (internal.metrics?.total_profit || 0).toFixed(2);
+        document.getElementById('internal-u-trend').textContent = internal.u_score?.trend_24h || 'stable';
+        document.getElementById('internal-u-blockers').textContent = (internal.u_score?.blockers || []).join(', ') || 'Ninguno';
+        
+        // Actualizar comparación
+        const comparison = platforms.comparison || {};
+        let compHtml = '<table style="width: 100%;"><tr>';
+        compHtml += '<th>Plataforma</th><th>U Score</th><th>Trades</th><th>Win Rate</th><th>Estado</th></tr>';
+        
+        Object.entries(comparison).forEach(([name, data]) => {
+          const color = data.u_score > 0 ? 'color: #2ec27e;' : 'color: #f56565;';
+          compHtml += `<tr>
+            <td><strong>${name.replace('_', ' ').toUpperCase()}</strong></td>
+            <td style="${color} font-weight: bold;">${data.u_score?.toFixed(4) || '0.0000'}</td>
+            <td>${data.trades || 0}</td>
+            <td>${((data.win_rate || 0) * 100).toFixed(1)}%</td>
+            <td>${badge(data.status || 'idle')}</td>
+          </tr>`;
+        });
+        
+        compHtml += '</table>';
+        
+        if (platforms.recommendations?.length > 0) {
+          compHtml += '<div style="margin-top: 15px; padding: 10px; background: rgba(246, 173, 85, 0.1); border-radius: 6px;">';
+          compHtml += '<div style="font-weight: bold; margin-bottom: 5px;">Recomendaciones:</div>';
+          platforms.recommendations.forEach(rec => {
+            compHtml += `<div style="font-size: 12px; margin: 3px 0;">• ${rec.platform}: ${rec.action} - ${rec.reason}</div>`;
+          });
+          compHtml += '</div>';
+        }
+        
+        document.getElementById('platforms-comparison').innerHTML = compHtml;
+        
+      } catch (e) {
+        console.error('Error cargando plataformas:', e);
+        document.getElementById('platforms-comparison').innerHTML = 
+          '<div style="color: #f56565;">Error cargando datos de plataformas</div>';
+      }
+    }
+
+    // Cargar plataformas cada 30 segundos
+    setInterval(refreshPlatforms, 30000);
+    // Cargar inicialmente
+    setTimeout(refreshPlatforms, 2000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "source_id": "github_All_Hands_AI_OpenHands_20260508",
+  "source_type": "github_repo",
+  "url": "https://github.com/All-Hands-AI/OpenHands",
+  "owner": "All-Hands-AI",
+  "repo": "OpenHands",
+  "ingested_at_utc": "2026-05-08T05:07:38.750418Z",
+  "local_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\All_Hands_AI_OpenHands",
+  "status": "downloaded",
+  "hash": "6b64c01d203d41e0bf7d7972f319514f82ec2761d5029eaad90113d1af80f5ab",
+  "files_indexed": 0,
+  "repo_api_url": "https://api.github.com/repos/All-Hands-AI/OpenHands",
+  "readme_download_url": null,
+  "root_index_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\All_Hands_AI_OpenHands\\root_index.json",
+  "dependency_hints_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\All_Hands_AI_OpenHands\\dependency_hints.json"
+}

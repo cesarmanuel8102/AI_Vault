@@ -1,0 +1,23 @@
+{
+  "project_id": 29652652,
+  "compile_id": "a755c9310c03a423353489c69e2f9150-e9af841169040863dd38a4ea99240086",
+  "backtest_id": "845c6526931147f9fe918e33d79a34db",
+  "backtest_name": "London Breakout V1.3 Late Close Tight Stop",
+  "launched_at": "2026-04-03 22:39:21 UTC",
+  "parameters": {
+    "start_year": "2020",
+    "end_year": "2024",
+    "end_month": "12",
+    "risk_per_trade": "0.02",
+    "max_positions": "3",
+    "breakout_buffer_atr": "0.2",
+    "chandelier_mult": "2.0",
+    "ema_period": "50",
+    "atr_period": "14",
+    "range_lookback": "20",
+    "range_pct_max": "40",
+    "session_close_hour": "14",
+    "max_daily_risk": "0.04"
+  },
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/london_breakout/main.py"
+}

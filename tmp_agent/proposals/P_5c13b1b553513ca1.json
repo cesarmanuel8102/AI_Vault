@@ -1,0 +1,14 @@
+{
+  "proposal_id": "P_5c13b1b553513ca1",
+  "tool_name": "write_file",
+  "tool_args": {
+    "text": "{\r\n  \"room_id\": \"brain_master_nl01\",\r\n  \"utc\": \"2026-03-13T21:54:06Z\",\r\n  \"note\": \"Smoke del executor lane v7\",\r\n  \"cycle\": 4,\r\n  \"source\": \"nl03_executor_smoke_v7\"\r\n}",
+    "content": "{\r\n  \"room_id\": \"brain_master_nl01\",\r\n  \"utc\": \"2026-03-13T21:54:06Z\",\r\n  \"note\": \"Smoke del executor lane v7\",\r\n  \"cycle\": 4,\r\n  \"source\": \"nl03_executor_smoke_v7\"\r\n}",
+    "path": "C:\\AI_VAULT\\tmp_agent\\state\\rooms\\brain_master_nl01\\nl03_executor_smoke.json"
+  },
+  "room_id": "brain_master_nl01",
+  "step_id": "NL03_EXECUTOR_SMOKE",
+  "created_at": "2026-03-13T21:54:12.963260+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

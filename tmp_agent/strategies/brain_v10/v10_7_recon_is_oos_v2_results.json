@@ -1,0 +1,35 @@
+{
+  "v10.7-recon IS 2023-2024": {
+    "status": "LAUNCH_FAILED"
+  },
+  "v10.7-recon OOS 2025-2026": {
+    "bt_id": "d1aeebdcc1ba0ff97e4bdf0cc127bebc",
+    "Net Profit": "5.036%",
+    "Compounding Annual Return": "3.967%",
+    "Sharpe Ratio": "-0.091",
+    "Sortino Ratio": "-0.126",
+    "Drawdown": "15.300%",
+    "Total Orders": "26",
+    "Win Rate": "85%",
+    "Profit-Loss Ratio": "0.26",
+    "Expectancy": "0.066",
+    "Alpha": "-0.036",
+    "Beta": "0.641",
+    "Treynor Ratio": "-0.023",
+    "Information Ratio": "-0.329",
+    "Annual Standard Deviation": "0.165",
+    "Annual Variance": "0.027",
+    "Tracking Error": "0.143",
+    "Total Fees": "$26.00",
+    "Estimated Strategy Capacity": "$90000000.00",
+    "Lowest Capacity Asset": "SPY R735QTJ8XC9X",
+    "Probabilistic Sharpe Ratio": "12.202%",
+    "Portfolio Turnover": "0.45%",
+    "Loss Rate": "15%",
+    "Average Win": "1.97%",
+    "Average Loss": "-7.57%",
+    "Drawdown Recovery": "1",
+    "End Equity": "10503.61",
+    "Start Equity": "10000"
+  }
+}

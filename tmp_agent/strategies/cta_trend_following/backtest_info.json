@@ -1,0 +1,13 @@
+{
+  "project_id": 29652652,
+  "compile_id": "82870795cf3e55c01a16419efe30142c-10b5472797506742d36aaf3b192b44eb",
+  "backtest_id": "14cdd4872412a3b3dc08afc55b3feb2a",
+  "backtest_name": "CTA-TF V2.4 TrailOnly IS",
+  "launched_at": "2026-04-04 13:26:46 UTC",
+  "parameters": {
+    "start_year": "2010",
+    "end_year": "2020",
+    "end_month": "12"
+  },
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/cta_trend_following/main_v24.py"
+}

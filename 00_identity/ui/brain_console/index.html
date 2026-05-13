@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Brain Lab Console</title>
+  <link rel="stylesheet" href="/ui/assets/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-mark">B</div>
+        <div>
+          <div class="brand-title">Brain Lab Console</div>
+          <div class="brand-subtitle">Control plane / autodesarrollo / roadmap / trazabilidad</div>
+        </div>
+      </div>
+
+      <div class="topbar-center">
+        <label class="room-label" for="roomId">Room</label>
+        <input id="roomId" class="room-input" type="text" value="autobuild_brain_openai">
+        <button id="btnSetRoom" class="btn btn-primary">Cargar</button>
+        <button id="btnRefresh" class="btn">Refresh</button>
+        <button id="btnRunOnce" class="btn btn-accent">Run once</button>
+      </div>
+
+      <div class="topbar-right">
+        <div id="pillLive" class="pill pill-muted">STALE</div>
+        <div id="pill8010" class="pill pill-muted">8010</div>
+        <div id="pill8030" class="pill pill-muted">8030</div>
+        <div id="pillSnapshot" class="pill pill-muted">SNAPSHOT</div>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <aside class="left-rail">
+        <div class="panel panel-tight">
+          <div class="panel-title">Navegación</div>
+          <nav class="nav-list">
+            <a href="#consolePanel">Console</a>
+            <a href="#processPanel">Process flow</a>
+            <a href="#autodevPanel">Auto desarrollo</a>
+            <a href="#contractPanel">Contract</a>
+            <a href="#planPanel">Plan</a>
+            <a href="#timelinePanel">Timeline</a>
+            <a href="#artifactsPanel">Artifacts</a>
+            <a href="#roadmapPanel">Roadmap</a>
+            <a href="#healthPanel">Health</a>
+          </nav>
+        </div>
+
+        <div class="panel panel-tight">
+          <div class="panel-title">Contexto activo</div>
+          <div id="roomMeta" class="kv-stack"></div>
+        </div>
+
+        <div class="panel panel-tight">
+          <div class="panel-title">Acción advisor</div>
+          <textarea id="objectiveInput" class="textarea" rows="6" placeholder="Objetivo / instrucción para advisor..."></textarea>
+          <button id="btnAdvisorNext" class="btn btn-primary btn-block">Advisor next</button>
+          <div id="advisorResult" class="mini-log"></div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <section class="command-strip">
+          <div class="strip-title">Resumen operacional</div>
+          <div id="summaryStrip" class="summary-grid"></div>
+        </section>
+
+        <section class="grid">
+          <article id="consolePanel" class="panel panel-main">
+            <div class="panel-head">
+              <div class="panel-title">Conversational Console</div>
+              <div id="consoleState" class="panel-badge">runtime pending</div>
+            </div>
+            <div id="consoleSummary" class="raw-box"></div>
+          </article>
+
+          <article id="processPanel" class="panel">
+            <div class="panel-head">
+              <div class="panel-title">Flujo Brain -> Planner/Advisor -> Respuesta -> Error/Corrección</div>
+              <div id="processState" class="panel-badge">flow</div>
+            </div>
+            <div id="processSummary" class="raw-box"></div>
+            <div class="subsection-title">Quién interviene y cuándo</div>
+            <div id="actorsList" class="actor-list"></div>
+          </article>
+
+          <article id="autodevPanel" class="panel">
+            <div class="panel-head">
+              <div class="panel-title">Etapas de autodesarrollo / ejecución del roadmap</div>
+              <div id="autodevState" class="panel-badge">autodev</div>
+            </div>
+            <div class="subsection-title">Pipeline activo</div>
+            <div id="stagesList" class="stage-list"></div>
+            <div class="subsection-title">Work items del roadmap</div>
+            <div id="roadmapExecList" class="stage-list"></div>
+          </article>
+
+          <article id="contractPanel" class="panel">
+            <div class="panel-head">
+              <div class="panel-title">Mission / Intent / Contract</div>
+              <div id="contractState" class="panel-badge">v2</div>
+            </div>
+            <div id="contractSummary" class="raw-box"></div>
+          </article>
+
+          <article id="planPanel" class="panel">
+            <div class="panel-head">
+              <div class="panel-title">Plan & Steps</div>
+              <div id="planState" class="panel-badge">unknown</div>
+            </div>
+            <div id="planSummary" class="raw-box"></div>
+            <div id="stepsList" class="steps-list"></div>
+          </article>
+
+          <article id="timelinePanel" class="panel">
+            <div class="panel-head">
+              <div class="panel-title">Timeline / Evidence</div>
+              <div id="timelineState" class="panel-badge">audit</div>
+            </div>
+            <div id="evidenceList" class="timeline"></div>
+          </article>
+
+          <article id="artifactsPanel" class="panel">
+            <div class="panel-head">
+              <div class="panel-title">Artifacts & Preview</div>
+              <div id="artifactsState" class="panel-badge">files</div>
+            </div>
+            <div id="artifactsTable" class="table-wrap"></div>
+            <div class="preview-head">Preview</div>
+            <pre id="artifactPreview" class="preview-box">Selecciona un artifact previewable.</pre>
+          </article>
+
+          <article id="roadmapPanel" class="panel">
+            <div class="panel-head">
+              <div class="panel-title">Roadmap / Work Item / Acceptance</div>
+              <div id="roadmapState" class="panel-badge">roadmap</div>
+            </div>
+            <div id="roadmapSummary" class="raw-box"></div>
+          </article>
+
+          <article id="healthPanel" class="panel">
+            <div class="panel-head">
+              <div class="panel-title">Health / Services / Ports</div>
+              <div id="healthState" class="panel-badge">health</div>
+            </div>
+            <div id="healthSummary" class="raw-box"></div>
+          </article>
+        </section>
+      </main>
+
+      <aside class="right-rail">
+        <div class="panel panel-critical">
+          <div class="panel-head">
+            <div class="panel-title">Blocked / Approvals Center</div>
+            <div id="blockedState" class="panel-badge">none</div>
+          </div>
+          <div id="blockedBody" class="raw-box">No hay bloqueos pendientes.</div>
+          <div class="btn-row">
+            <button id="btnApply" class="btn btn-success" disabled>Apply</button>
+            <button id="btnReject" class="btn btn-danger" disabled>Reject</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Último artifact</div>
+          <div id="latestArtifact" class="raw-box">Sin artifacts recientes.</div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-title">Alerts / Degraded mode</div>
+          <div id="alertsBox" class="raw-box">Sin alertas.</div>
+        </div>
+      </aside>
+    </div>
+
+    <footer class="statusbar">
+      <div id="statusbarLeft">rendered from 8010 SSOT</div>
+      <div id="statusbarRight">last refresh: --</div>
+    </footer>
+  </div>
+
+  <script type="module" src="/ui/assets/app.js"></script>
+</body>
+</html>

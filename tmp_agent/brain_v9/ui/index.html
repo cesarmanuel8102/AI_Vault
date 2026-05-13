@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brain Chat V9</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0f1117;
+    --surface:  #1a1d27;
+    --surface2: #22263a;
+    --border:   #2e3350;
+    --accent:   #6c63ff;
+    --accent2:  #9d97ff;
+    --text:     #e4e6f0;
+    --text2:    #8b90b0;
+    --green:    #3ecf8e;
+    --red:      #f06060;
+    --amber:    #f5a623;
+    --radius:   12px;
+    --font:     -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; height: 100vh; display: flex; flex-direction: column; }
+
+  /* Header */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  header .logo {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700; color: #fff;
+  }
+  header h1 { font-size: 16px; font-weight: 600; color: var(--text); }
+  header .badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 20px;
+    background: var(--surface2); color: var(--text2); border: 1px solid var(--border);
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--text2); margin-left: auto;
+    transition: background .3s;
+  }
+  .status-dot.ok  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-dot.err { background: var(--red); }
+
+  /* Nav tabs */
+  nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    padding: 0 20px;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  nav button {
+    background: none; border: none; cursor: pointer;
+    padding: 10px 16px; color: var(--text2); font-size: 13px;
+    border-bottom: 2px solid transparent; transition: all .2s;
+  }
+  nav button:hover { color: var(--text); }
+  nav button.active { color: var(--accent2); border-bottom-color: var(--accent); }
+
+  /* Panels */
+  .panel { display: none; flex: 1; overflow: hidden; }
+  .panel.active { display: flex; flex-direction: column; }
+
+  /* ── Chat ── */
+  #messages {
+    flex: 1; overflow-y: auto; padding: 20px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .msg { display: flex; gap: 12px; max-width: 820px; animation: fadeIn .2s; }
+  .msg.user { flex-direction: row-reverse; align-self: flex-end; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } }
+
+  .avatar {
+    width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 600;
+  }
+  .msg.user   .avatar { background: var(--accent);  color: #fff; }
+  .msg.agent  .avatar { background: var(--surface2); color: var(--accent2); }
+  .msg.system .avatar { background: var(--surface2); color: var(--amber); }
+
+  .bubble {
+    padding: 12px 16px; border-radius: var(--radius);
+    line-height: 1.6; max-width: 680px; word-break: break-word;
+  }
+  .msg.user   .bubble { background: var(--accent); color: #fff; border-radius: var(--radius) 4px var(--radius) var(--radius); }
+  .msg.agent  .bubble { background: var(--surface); border: 1px solid var(--border); border-radius: 4px var(--radius) var(--radius) var(--radius); }
+  .msg.system .bubble { background: var(--surface2); border: 1px solid var(--border); color: var(--text2); font-size: 13px; }
+
+  .bubble pre  { background: #0d1117; border-radius: 6px; padding: 12px; overflow-x: auto; font-size: 13px; margin-top: 8px; }
+  .bubble code { font-family: "Fira Code", "Cascadia Code", monospace; font-size: 13px; }
+  .bubble p    { margin-bottom: 8px; }
+  .bubble p:last-child { margin-bottom: 0; }
+
+  .meta { font-size: 11px; color: var(--text2); margin-top: 4px; padding: 0 4px; }
+
+  /* Governance approval card */
+  .approval-card {
+    margin-top: 12px; padding: 14px 16px; border-radius: 10px;
+    background: linear-gradient(135deg, #1e2140, #1a2a35);
+    border: 1px solid var(--amber);
+    animation: fadeIn .3s;
+  }
+  .approval-card .approval-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    font-size: 13px; font-weight: 600; color: var(--amber);
+  }
+  .approval-card .approval-desc {
+    font-size: 13px; color: var(--text2); margin-bottom: 12px; line-height: 1.5;
+  }
+  .approval-card .approval-meta {
+    font-size: 11px; color: var(--text2); margin-bottom: 10px;
+    font-family: monospace;
+  }
+  .approval-card .approval-buttons {
+    display: flex; gap: 10px;
+  }
+  .approval-card .btn-approve {
+    background: var(--green); color: #000; border: none; border-radius: 8px;
+    padding: 8px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: all .2s;
+  }
+  .approval-card .btn-approve:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .approval-card .btn-approve:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .approval-card .btn-reject {
+    background: transparent; color: var(--red); border: 1px solid var(--red); border-radius: 8px;
+    padding: 8px 20px; font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: all .2s;
+  }
+  .approval-card .btn-reject:hover { background: rgba(240,96,96,0.1); }
+  .approval-card .btn-reject:disabled { opacity: 0.5; cursor: not-allowed; }
+  .approval-card .approval-result {
+    margin-top: 10px; padding: 8px 12px; border-radius: 6px; font-size: 13px;
+    display: none;
+  }
+  .approval-card .approval-result.ok { display: block; background: rgba(62,207,142,0.15); color: var(--green); }
+  .approval-card .approval-result.err { display: block; background: rgba(240,96,96,0.15); color: var(--red); }
+
+  /* Input bar */
+  .input-bar {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 16px 20px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+  .input-bar select {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text2); border-radius: 8px; padding: 8px 10px;
+    font-size: 13px; cursor: pointer; flex-shrink: 0;
+  }
+  .input-bar textarea {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px; color: var(--text);
+    font-size: 15px; resize: none; min-height: 44px; max-height: 160px;
+    font-family: var(--font); line-height: 1.5;
+    transition: border-color .2s;
+  }
+  .input-bar textarea:focus { outline: none; border-color: var(--accent); }
+  .input-bar button {
+    background: var(--accent); border: none; border-radius: 10px;
+    width: 44px; height: 44px; cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .2s;
+  }
+  .input-bar button:hover  { background: var(--accent2); }
+  .input-bar button:disabled { background: var(--surface2); cursor: not-allowed; }
+  .input-bar button svg { width: 18px; height: 18px; fill: #fff; }
+
+  #send-btn { transform: translateX(-20px); }
+
+  /* ── Status / Metrics ── */
+  .panel-content { flex: 1; overflow-y: auto; padding: 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+  }
+  .card .label { font-size: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+  .card .value { font-size: 24px; font-weight: 600; }
+  .card .value.ok  { color: var(--green); }
+  .card .value.err { color: var(--red); }
+  .card .value.warn{ color: var(--amber); }
+  .card .sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+  .badge-new {
+    display: inline-block; font-size: 10px; font-weight: 700; padding: 1px 6px;
+    border-radius: 4px; background: var(--accent); color: #fff; margin-left: 6px;
+    vertical-align: middle; letter-spacing: .02em;
+  }
+  .freshness-bar {
+    display: flex; align-items: center; gap: 8px; padding: 8px 14px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    margin-bottom: 8px; font-size: 13px;
+  }
+  .freshness-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .freshness-dot.fresh { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .freshness-dot.stale { background: var(--red); }
+  .freshness-dot.unknown { background: var(--text2); }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  th { color: var(--text2); font-weight: 500; font-size: 12px; text-transform: uppercase; }
+  tr:hover td { background: var(--surface2); }
+
+  /* Typing indicator */
+  .typing { display: flex; gap: 5px; padding: 14px 16px; align-items: center; }
+  .typing span {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--text2);
+    animation: bounce .9s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: .15s; }
+  .typing span:nth-child(3) { animation-delay: .30s; }
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .endpoint-list { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+  .ep { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 13px; }
+  .ep .method { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; flex-shrink: 0; }
+  .ep .method.GET  { background: #1a3a2a; color: var(--green); }
+  .ep .method.POST { background: #2a2a3a; color: var(--accent2); }
+  .ep .method.DEL  { background: #3a1a1a; color: var(--red); }
+  .ep .path { font-family: monospace; color: var(--text); }
+  .ep .desc { color: var(--text2); margin-left: auto; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">B</div>
+  <h1>Brain Chat V9</h1>
+  <span class="badge">AI_VAULT</span>
+  <div class="status-dot" id="status-dot" title="Estado del sistema"></div>
+</header>
+
+<nav>
+  <button class="active" onclick="showPanel('chat')">Chat</button>
+  <button onclick="showPanel('platforms')">Platforms</button>
+  <button onclick="showPanel('status')">Estado</button>
+  <button onclick="showPanel('brain')">Brain RSI</button>
+  <button onclick="showPanel('api')">API</button>
+  <button onclick="showPanel('closedloop')">Closed-Loop</button>
+  <button onclick="showPanel('qclive')">QC Live</button>
+</nav>
+
+<!-- CHAT -->
+<div class="panel active" id="panel-chat">
+  <div id="messages"></div>
+  <div class="input-bar">
+    <select id="model-select" title="Modelo LLM">
+      <option value="chat">💬 Chat rápido</option>
+      <option value="llama8b">🦙 Llama3.1 8B</option>
+      <option value="deepseek14b">🦙 DeepSeek R1 14B</option>
+      <option value="coder14b">🧠 Qwen2.5 Coder 14B</option>
+      <option value="claude">🤖 Claude</option>
+      <option value="gpt4">✨ GPT-4</option>
+    </select>
+    <button id="agent-toggle" title="Activar modo agente ORAV" onclick="toggleAgentMode()"
+      style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:0 12px;height:44px;cursor:pointer;font-size:13px;transition:all .2s;white-space:nowrap;">
+      ⚙ Auto
+    </button>
+    <textarea id="input" placeholder="Escribe tu mensaje… (Enter para enviar, Shift+Enter para nueva línea)"
+              rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button id="send-btn" onclick="sendMessage()" title="Enviar">
+      <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- PLATFORMS -->
+<div class="panel" id="panel-platforms">
+  <div class="panel-content">
+    <div class="grid" id="platform-cards"></div>
+
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Platform Ranking</h3>
+    <div id="platform-ranking"></div>
+
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Strategies by State</h3>
+    <div id="platform-strategies"></div>
+
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Recent Trades</h3>
+    <div id="platform-trades"></div>
+
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Signal Pipeline</h3>
+    <div id="platform-signals"></div>
+
+    <button onclick="refreshPlatforms()" style="margin-top:16px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">Refresh</button>
+  </div>
+</div>
+
+<!-- STATUS -->
+<div class="panel" id="panel-status">
+  <div class="panel-content">
+    <div class="grid" id="status-grid">
+      <div class="card"><div class="label">Estado</div><div class="value" id="s-status">…</div></div>
+      <div class="card"><div class="label">Versión</div><div class="value" id="s-version">…</div></div>
+      <div class="card"><div class="label">Sesiones</div><div class="value" id="s-sessions">…</div></div>
+      <div class="card"><div class="label">CPU</div><div class="value" id="s-cpu">…</div><div class="sub">Uso actual</div></div>
+      <div class="card"><div class="label">Memoria</div><div class="value" id="s-mem">…</div><div class="sub">Uso actual</div></div>
+      <div class="card"><div class="label">Errores (logs)</div><div class="value" id="s-err">…</div><div class="sub">Últimos logs</div></div>
+      <div class="card"><div class="label">Utility U</div><div class="value" id="s-u">…</div><div class="sub" id="s-u-sub">Gate</div></div>
+      <div class="card"><div class="label">Último cambio</div><div class="value" id="s-si">…</div><div class="sub" id="s-si-sub">Autoconstrucción</div></div>
+    </div>
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Data Freshness <span class="badge-new">NEW</span></h3>
+    <div id="data-freshness"></div>
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Servicios</h3>
+    <div id="services-table"></div>
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Canales financieros</h3>
+    <div id="trading-table"></div>
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">IBKR Live Data <span class="badge-new">NEW</span></h3>
+    <div id="ibkr-ingester-status"></div>
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Pipeline Health <span class="badge-new">NEW</span></h3>
+    <div id="pipeline-health"></div>
+    <button onclick="refreshStatus()" style="margin-top:16px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">&circlearrowleft; Actualizar</button>
+  </div>
+</div>
+
+<!-- BRAIN RSI -->
+<div class="panel" id="panel-brain">
+  <div class="panel-content">
+    <div class="grid" id="rsi-grid"></div>
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Recomendaciones</h3>
+    <div id="rsi-recs"></div>
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Fases</h3>
+    <div id="rsi-fases"></div>
+    <button onclick="refreshBrain()" style="margin-top:16px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">↻ Actualizar RSI</button>
+  </div>
+</div>
+
+<!-- CLOSED-LOOP -->
+<div class="panel" id="panel-closedloop">
+  <div class="panel-content">
+    <h3 style="margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Pipeline Status</h3>
+    <div class="grid" id="cl-pipeline-cards"></div>
+
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Strategy Lifecycle</h3>
+    <div id="cl-strategies"></div>
+
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">IBKR Paper Positions</h3>
+    <div id="cl-positions"></div>
+
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Recent Signals</h3>
+    <div id="cl-signals"></div>
+
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">QC Iteration History</h3>
+    <div id="cl-iterations"></div>
+
+    <button onclick="refreshClosedLoop()" style="margin-top:16px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">Refresh</button>
+  </div>
+</div>
+
+<!-- QC LIVE -->
+<div class="panel" id="panel-qclive">
+  <div class="panel-content">
+    <!-- Header row -->
+    <div id="qcl-header" style="display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap">
+      <div style="font-size:18px;font-weight:600;color:var(--text)">QC Live</div>
+      <div id="qcl-deploy-badge" style="padding:3px 10px;border-radius:20px;font-size:12px;border:1px solid var(--text2);color:var(--text2)">Not Deployed</div>
+      <div id="qcl-state-badge" style="padding:3px 10px;border-radius:20px;font-size:12px;border:1px solid var(--text2);color:var(--text2)"></div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button onclick="refreshQCLive()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px">Refresh</button>
+        <button onclick="forceQCLivePoll()" style="background:var(--accent);border:none;color:#fff;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:12px">Force Poll</button>
+      </div>
+    </div>
+
+    <!-- Metrics cards -->
+    <div class="grid" id="qcl-metric-cards"></div>
+
+    <!-- Holdings table -->
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Open Positions</h3>
+    <div id="qcl-holdings"></div>
+
+    <!-- Live vs Backtest comparison -->
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Live vs Backtest Comparison</h3>
+    <div id="qcl-comparison"></div>
+
+    <!-- Equity curve chart -->
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Equity Curve</h3>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;height:300px">
+      <canvas id="qcl-equity-chart"></canvas>
+    </div>
+
+    <!-- Drawdown chart -->
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Drawdown</h3>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;height:200px">
+      <canvas id="qcl-dd-chart"></canvas>
+    </div>
+
+    <!-- Alerts -->
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Alerts</h3>
+    <div id="qcl-alerts"></div>
+
+    <!-- Brain Actions -->
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Brain Actions</h3>
+    <div id="qcl-brain-actions"></div>
+  </div>
+</div>
+
+<!-- API -->
+<div class="panel" id="panel-api">
+  <div class="panel-content">
+    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">Brain Chat V9 — Referencia de endpoints</p>
+    <div class="endpoint-list" id="ep-list"></div>
+  </div>
+</div>
+
+<script src="chart.umd.min.js"></script>
+<script>
+const BASE = '';
+let sessionId = 'default';
+
+// ── Utilities ──────────────────────────────────────────────────────────────
+async function api(path, opts = {}) {
+  const {
+    timeoutMs,
+    retryNetwork = 0,
+    ...fetchOpts
+  } = opts;
+  const resolvedTimeout = timeoutMs ?? (
+    path === '/agent' ? 300000 :
+    path === '/chat' ? 180000 :
+    30000
+  );
+
+  let lastError = null;
+
+  for (let attempt = 0; attempt <= retryNetwork; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), resolvedTimeout);
+    try {
+      const r = await fetch(BASE + path, {
+        headers: { 'Content-Type': 'application/json' },
+        ...fetchOpts,
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+
+      const raw = await r.text();
+      let data = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = { raw };
+      }
+
+      if (!r.ok) {
+        const detail = data?.detail || data?.error || data?.message || `HTTP ${r.status}`;
+        throw new Error(detail);
+      }
+      return data;
+    } catch (e) {
+      clearTimeout(timer);
+      const isAbort = e && e.name === 'AbortError';
+      const isNetwork = e instanceof TypeError || isAbort;
+      if (isAbort) {
+        lastError = new Error(`timeout tras ${Math.round(resolvedTimeout / 1000)}s`);
+      } else {
+        lastError = e;
+      }
+      if (attempt < retryNetwork && isNetwork) {
+        await new Promise(resolve => setTimeout(resolve, 600));
+        continue;
+      }
+      throw lastError;
+    }
+  }
+  throw lastError || new Error('request failed');
+}
+
+function ts() {
+  return new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderMarkdown(text) {
+  return text
+    .replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) =>
+      `<pre><code class="lang-${lang}">${escapeHtml(code.trim())}</code></pre>`)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
+// ── Panel navigation ───────────────────────────────────────────────────────
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (id === 'status') refreshStatus();
+  if (id === 'platforms') refreshPlatforms();
+  if (id === 'brain')  refreshBrain();
+  if (id === 'api')    renderApi();
+  if (id === 'closedloop') refreshClosedLoop();
+  if (id === 'qclive') refreshQCLive();
+}
+
+// ── Chat ───────────────────────────────────────────────────────────────────
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function addMsg(role, content, meta = '') {
+  const wrap  = document.getElementById('messages');
+  const avatars = { user: 'U', agent: 'B', system: '⚙' };
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.innerHTML = `
+    <div class="avatar">${avatars[role] || '?'}</div>
+    <div>
+      <div class="bubble">${role === 'user' ? escapeHtml(content) : renderMarkdown(content)}</div>
+      ${meta ? `<div class="meta">${meta}</div>` : ''}
+    </div>`;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+  return div;
+}
+
+function addTyping() {
+  const wrap = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg agent';
+  div.id = 'typing';
+  div.innerHTML = `<div class="avatar">B</div><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function removeTyping() {
+  document.getElementById('typing')?.remove();
+}
+
+let agentMode = false;
+
+function toggleAgentMode() {
+  agentMode = !agentMode;
+  const btn = document.getElementById('agent-toggle');
+  if (agentMode) {
+    btn.style.background = 'var(--accent)';
+    btn.style.color = '#fff';
+    btn.style.borderColor = 'var(--accent)';
+    btn.textContent = '⚙ Agente ON';
+    addMsg('system', 'Modo agente activado — el chat usará herramientas reales para acciones (revisar, analizar, ejecutar).', ts());
+  } else {
+    btn.style.background = 'var(--surface2)';
+    btn.style.color = 'var(--text2)';
+    btn.style.borderColor = 'var(--border)';
+    btn.textContent = '⚙ Auto';
+    addMsg('system', 'Modo automático — el sistema decide si usar LLM o agente según el mensaje.', ts());
+  }
+}
+
+async function sendMessage() {
+  const inp   = document.getElementById('input');
+  const msg   = inp.value.trim();
+  if (!msg) return;
+  const model = document.getElementById('model-select').value;
+
+  inp.value = '';
+  inp.style.height = 'auto';
+  document.getElementById('send-btn').disabled = true;
+
+  addMsg('user', msg, ts());
+  addTyping();
+
+  try {
+    // Si agentMode está ON, ir directo a /agent
+    // Si está en Auto, el backend decide según la intención
+    const endpoint = agentMode ? '/agent' : '/chat';
+    const body = agentMode
+      ? JSON.stringify({ task: msg, session_id: sessionId, model_priority: model })
+      : JSON.stringify({ message: msg, session_id: sessionId, model_priority: model });
+
+    const data = await api(endpoint, {
+      method: 'POST',
+      body,
+      timeoutMs: agentMode ? 300000 : 180000,
+      retryNetwork: 1,
+    });
+
+    removeTyping();
+
+    const route     = data.route || (agentMode ? 'agent' : 'llm');
+    const routeIcon = route === 'agent' ? '⚙' : '💬';
+    const modelUsed = data.model_used || data.model || (agentMode ? 'agent_orav' : '?');
+    const meta      = `${routeIcon} ${modelUsed} · ${ts()}`;
+
+    addMsg('agent', data.response || data.result || data.content || data.error || '(sin respuesta)', meta);
+
+    // Render approval card if there's a pending action
+    if (data.pending_action && data.pending_action.pending_id) {
+      const pa = data.pending_action;
+      renderApprovalCard(pa.pending_id, pa.tool, pa.risk, pa.description);
+    }
+  } catch (e) {
+    removeTyping();
+    addMsg('system', `Error de conexión: ${e.message}`, ts());
+  } finally {
+    document.getElementById('send-btn').disabled = false;
+    document.getElementById('input').focus();
+  }
+}
+
+// ── Governance Approval Card ──────────────────────────────────────────────
+function renderApprovalCard(pendingId, toolName, risk, description) {
+  const wrap = document.getElementById('messages');
+  const card = document.createElement('div');
+  card.className = 'approval-card';
+  card.id = 'approval-' + pendingId;
+  card.innerHTML = `
+    <div class="approval-header">
+      <span>&#9888;</span> Accion requiere aprobacion
+    </div>
+    <div class="approval-desc">${escapeHtml(description)}</div>
+    <div class="approval-meta">
+      Tool: <strong>${escapeHtml(toolName)}</strong> &nbsp;|&nbsp; Riesgo: <strong>${escapeHtml(risk)}</strong> &nbsp;|&nbsp; ID: ${escapeHtml(pendingId)}
+    </div>
+    <div class="approval-buttons">
+      <button class="btn-approve" onclick="handleGateAction('approve','${pendingId}',this)">Aprobar</button>
+      <button class="btn-reject" onclick="handleGateAction('reject','${pendingId}',this)">Rechazar</button>
+    </div>
+    <div class="approval-result" id="result-${pendingId}"></div>
+  `;
+  wrap.appendChild(card);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+async function handleGateAction(action, pendingId, btn) {
+  const card = document.getElementById('approval-' + pendingId);
+  const buttons = card.querySelectorAll('button');
+  buttons.forEach(b => b.disabled = true);
+  btn.textContent = action === 'approve' ? 'Aprobando...' : 'Rechazando...';
+
+  try {
+    const data = await api(`/gate/${action}/${pendingId}`, { method: 'POST' });
+    const resultDiv = document.getElementById('result-' + pendingId);
+    if (data.success) {
+      resultDiv.className = 'approval-result ok';
+      if (action === 'approve') {
+        resultDiv.textContent = 'Aprobado y ejecutado: ' + (data.result || 'OK').substring(0, 300);
+      } else {
+        resultDiv.textContent = 'Accion rechazada.';
+      }
+      // Fade the buttons
+      card.querySelector('.approval-buttons').style.display = 'none';
+    } else {
+      resultDiv.className = 'approval-result err';
+      resultDiv.textContent = 'Error: ' + (data.error || 'unknown');
+      buttons.forEach(b => b.disabled = false);
+      btn.textContent = action === 'approve' ? 'Aprobar' : 'Rechazar';
+    }
+  } catch (e) {
+    const resultDiv = document.getElementById('result-' + pendingId);
+    resultDiv.className = 'approval-result err';
+    resultDiv.textContent = 'Error de conexion: ' + e.message;
+    card.querySelectorAll('button').forEach(b => b.disabled = false);
+    btn.textContent = action === 'approve' ? 'Aprobar' : 'Rechazar';
+  }
+}
+
+// ── Platforms ──────────────────────────────────────────────────────────────
+async function refreshPlatforms() {
+  try {
+    const [summary, compare, strategies, signals_po, signals_ibkr] = await Promise.all([
+      api('/trading/platforms/summary'),
+      api('/trading/platforms/compare'),
+      api('/brain/strategy-engine/ranking-v2').catch(() => ({ strategies: [] })),
+      api('/trading/platforms/pocket_option/signals').catch(() => ({})),
+      api('/trading/platforms/ibkr/signals').catch(() => ({})),
+    ]);
+
+    // Platform U-score cards
+    const platforms = summary.platforms || {};
+    document.getElementById('platform-cards').innerHTML = Object.entries(platforms).map(([name, p]) => {
+      const u = p.u_score?.current ?? 0;
+      const cls = u > 0.1 ? 'ok' : u < -0.05 ? 'err' : 'warn';
+      const trades = p.metrics?.total_trades ?? 0;
+      const wr = p.metrics?.win_rate ?? 0;
+      const running = p.accumulator?.running;
+      const statusColor = p.status === 'active' ? 'var(--green)' : 'var(--text2)';
+      return `<div class="card">
+        <div class="label">${name.replace(/_/g, ' ')}</div>
+        <div class="value ${cls}">${u.toFixed(4)}</div>
+        <div class="sub">
+          <span style="color:${statusColor}">${p.status || 'idle'}</span> |
+          ${trades} trades | WR ${wr.toFixed(1)}% |
+          ${p.u_score?.verdict || 'unknown'}
+        </div>
+      </div>`;
+    }).join('');
+
+    // Ranking table
+    const ranking = compare.ranking || [];
+    document.getElementById('platform-ranking').innerHTML = ranking.length ? `
+      <table>
+        <thead><tr><th>#</th><th>Platform</th><th>U Score</th><th>Win Rate</th><th>Profit</th><th>Trades</th></tr></thead>
+        <tbody>${ranking.map(r => `
+          <tr>
+            <td>${r.rank}</td>
+            <td>${r.platform}</td>
+            <td style="color:${r.u_score > 0 ? 'var(--green)' : r.u_score < 0 ? 'var(--red)' : 'var(--text2)'}">${(r.u_score ?? 0).toFixed(4)}</td>
+            <td>${(r.win_rate ?? 0).toFixed(1)}%</td>
+            <td style="color:${(r.profit ?? 0) >= 0 ? 'var(--green)' : 'var(--red)'}">${(r.profit ?? 0).toFixed(4)}</td>
+            <td>${r.trades ?? 0}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>` : '<p style="color:var(--text2);font-size:13px">No ranking data yet.</p>';
+
+    // Strategies by state
+    const strats = strategies.strategies || strategies.ranking || [];
+    if (strats.length) {
+      const byState = {};
+      strats.forEach(s => {
+        const state = s.governance_state || s.state || 'unknown';
+        if (!byState[state]) byState[state] = [];
+        byState[state].push(s);
+      });
+      const stateColors = { paper_active: 'var(--green)', paper_probe: 'var(--accent2)', paper_candidate: 'var(--text2)', frozen: 'var(--red)', paper_watch: 'var(--amber)', promote_candidate: 'var(--green)' };
+      document.getElementById('platform-strategies').innerHTML = Object.entries(byState).map(([state, items]) =>
+        `<div style="margin-bottom:12px">
+          <span style="display:inline-block;padding:2px 8px;border-radius:4px;background:var(--surface2);color:${stateColors[state] || 'var(--text2)'};font-size:12px;margin-bottom:6px">${state} (${items.length})</span>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${items.slice(0, 8).map(s => `<span style="font-size:12px;padding:3px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px" title="rank: ${s.rank_score ?? '?'}">${s.strategy_id || s.id}</span>`).join('')}
+            ${items.length > 8 ? `<span style="font-size:12px;color:var(--text2)">+${items.length - 8} more</span>` : ''}
+          </div>
+        </div>`
+      ).join('');
+    } else {
+      document.getElementById('platform-strategies').innerHTML = '<p style="color:var(--text2);font-size:13px">No strategies loaded.</p>';
+    }
+
+    // Recent trades (from all platforms)
+    const allTrades = [];
+    for (const name of ['pocket_option', 'ibkr', 'internal_paper']) {
+      try {
+        const t = await api(`/trading/platforms/${name}/trades`);
+        if (Array.isArray(t)) t.forEach(tr => allTrades.push({ ...tr, _platform: name }));
+      } catch(err) { console.debug('trades fetch failed for', name, err); }
+    }
+    document.getElementById('platform-trades').innerHTML = allTrades.length ? `
+      <table>
+        <thead><tr><th>Platform</th><th>Symbol</th><th>Direction</th><th>Result</th><th>Profit</th></tr></thead>
+        <tbody>${allTrades.slice(-20).reverse().map(t => `
+          <tr>
+            <td>${t._platform}</td>
+            <td>${t.symbol || '—'}</td>
+            <td>${t.direction || '—'}</td>
+            <td style="color:${t.result === 'win' ? 'var(--green)' : t.result === 'loss' ? 'var(--red)' : 'var(--text2)'}">${t.result || t.outcome || '—'}</td>
+            <td style="color:${(t.profit ?? 0) >= 0 ? 'var(--green)' : 'var(--red)'}">${(t.profit ?? 0).toFixed(2)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>` : '<p style="color:var(--text2);font-size:13px">No trades recorded yet.</p>';
+
+    // Signal pipeline summary
+    const sigData = [
+      { name: 'PocketOption', ...signals_po },
+      { name: 'IBKR', ...signals_ibkr },
+    ];
+    document.getElementById('platform-signals').innerHTML = `
+      <table>
+        <thead><tr><th>Platform</th><th>Total Signals</th><th>Valid</th><th>Execution Ready</th><th>Avg Confidence</th></tr></thead>
+        <tbody>${sigData.map(s => `
+          <tr>
+            <td>${s.name}</td>
+            <td>${s.total_signals ?? '—'}</td>
+            <td>${s.valid_signals ?? '—'}</td>
+            <td style="color:${(s.execution_ready ?? 0) > 0 ? 'var(--green)' : 'var(--text2)'}">${s.execution_ready ?? '—'}</td>
+            <td>${s.avg_confidence != null ? s.avg_confidence.toFixed(3) : '—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+
+    // Recommendations
+    const recs = summary.recommendations || [];
+    if (recs.length) {
+      document.getElementById('platform-signals').innerHTML += `
+        <h4 style="margin-top:16px;color:var(--text2);font-size:12px;text-transform:uppercase">Recommendations</h4>
+        ${recs.map(r => `<div style="padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-top:6px;font-size:13px">
+          <span style="color:${r.priority === 'high' ? 'var(--red)' : r.priority === 'medium' ? 'var(--amber)' : 'var(--green)'}">[${r.priority}]</span>
+          ${r.platform}: ${r.reason}
+        </div>`).join('')}`;
+    }
+  } catch(e) {
+    document.getElementById('platform-cards').innerHTML = `<p style="color:var(--red);font-size:13px">Error loading platform data: ${e.message}</p>`;
+  }
+}
+
+// ── Status ─────────────────────────────────────────────────────────────────
+
+function _ageLabel(checkedUtc) {
+  if (!checkedUtc) return { text: 'no data', cls: 'unknown', seconds: null };
+  const age = (Date.now() - new Date(checkedUtc).getTime()) / 1000;
+  if (age < 0) return { text: 'future?', cls: 'unknown', seconds: age };
+  if (age < 60) return { text: Math.round(age) + 's ago', cls: 'fresh', seconds: age };
+  if (age < 3600) return { text: Math.round(age / 60) + 'm ago', cls: age < 900 ? 'fresh' : 'stale', seconds: age };
+  if (age < 86400) return { text: Math.round(age / 3600) + 'h ago', cls: 'stale', seconds: age };
+  return { text: Math.round(age / 86400) + 'd ago', cls: 'stale', seconds: age };
+}
+
+async function refreshDataFreshness() {
+  const el = document.getElementById('data-freshness');
+  try {
+    const [features, ingester] = await Promise.all([
+      api('/brain/strategy-engine/features').catch(() => ({})),
+      api('/brain/autonomy/ibkr-ingester').catch(() => ({})),
+    ]);
+    const items = features.items || [];
+    const venues = {};
+    items.forEach(i => {
+      if (!venues[i.venue]) venues[i.venue] = { count: 0, stale: 0, latest: null };
+      venues[i.venue].count++;
+      if (i.is_stale) venues[i.venue].stale++;
+      if (i.captured_utc && (!venues[i.venue].latest || i.captured_utc > venues[i.venue].latest))
+        venues[i.venue].latest = i.captured_utc;
+    });
+
+    let html = '';
+    for (const [venue, v] of Object.entries(venues)) {
+      const age = _ageLabel(v.latest);
+      html += `<div class="freshness-bar">
+        <div class="freshness-dot ${age.cls}"></div>
+        <strong>${venue}</strong>
+        <span style="color:var(--text2)">${v.count} symbols</span>
+        <span style="color:${v.stale > 0 ? 'var(--red)' : 'var(--green)'}">${v.stale > 0 ? v.stale + ' stale' : 'all fresh'}</span>
+        <span style="margin-left:auto;color:var(--text2)">${age.text}</span>
+      </div>`;
+    }
+
+    // IBKR ingester row
+    if (ingester.ok) {
+      const iAge = _ageLabel(ingester.last_checked_utc);
+      html += `<div class="freshness-bar">
+        <div class="freshness-dot ${ingester.last_connected ? 'fresh' : 'stale'}"></div>
+        <strong>IBKR Ingester</strong>
+        <span style="color:var(--text2)">${ingester.running ? 'running' : 'stopped'}</span>
+        <span style="color:${ingester.last_connected ? 'var(--green)' : 'var(--red)'}">${ingester.last_connected ? 'connected' : 'disconnected'}</span>
+        <span style="margin-left:auto;color:var(--text2)">${iAge.text}</span>
+      </div>`;
+    }
+
+    el.innerHTML = html || '<p style="color:var(--text2);font-size:13px">No feature data available.</p>';
+  } catch(e) {
+    el.innerHTML = `<p style="color:var(--red);font-size:13px">Error loading freshness: ${e.message}</p>`;
+  }
+}
+
+async function refreshPipelineHealth() {
+  const el = document.getElementById('pipeline-health');
+  try {
+    const data = await api('/brain/pipeline-health');
+    if (!data.ok) {
+      el.innerHTML = '<p style="color:var(--text2);font-size:13px">Pipeline health unavailable.</p>';
+      return;
+    }
+    const pv = data.pipeline_verification || {};
+    const tests = pv.tests || [];
+    const allPass = pv.all_passing;
+    const httpTests = data.http_endpoint_tests || {};
+
+    let html = `<div class="grid">
+      <div class="card">
+        <div class="label">Total Tests</div>
+        <div class="value ok">${data.total_tests}</div>
+        <div class="sub">${data.test_files} test files</div>
+      </div>
+      <div class="card">
+        <div class="label">Failures</div>
+        <div class="value ${data.failures === 0 ? 'ok' : 'err'}">${data.failures}</div>
+        <div class="sub">${data.failures === 0 ? 'all passing' : 'needs attention'}</div>
+      </div>
+      <div class="card">
+        <div class="label">Pipeline Checks</div>
+        <div class="value ${allPass ? 'ok' : 'err'}">${pv.count}/${pv.count}</div>
+        <div class="sub">${allPass ? 'all verified' : 'issues detected'}</div>
+      </div>
+      <div class="card">
+        <div class="label">HTTP Endpoint Tests</div>
+        <div class="value ${httpTests.all_passing ? 'ok' : 'err'}">${httpTests.count}</div>
+        <div class="sub">${httpTests.all_passing ? 'all passing' : 'issues'}</div>
+      </div>
+    </div>`;
+
+    // Pipeline verification detail
+    html += '<div style="margin-top:12px">';
+    tests.forEach(t => {
+      const icon = t.verified ? '<span style="color:var(--green)">&#10003;</span>' : '<span style="color:var(--red)">&#10007;</span>';
+      html += `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:13px;border-bottom:1px solid var(--border)">
+        ${icon} <span style="color:var(--text)">${t.desc}</span>
+        <span style="margin-left:auto;color:var(--text2);font-size:11px">${t.id}</span>
+      </div>`;
+    });
+    html += '</div>';
+
+    // Sprint status
+    const sprints = data.sprints || {};
+    html += '<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">';
+    for (const [key, status] of Object.entries(sprints)) {
+      const color = status === 'complete' ? 'var(--green)' : 'var(--amber)';
+      html += `<span style="padding:3px 10px;border-radius:20px;border:1px solid ${color};color:${color};font-size:11px">${key.replace(/_/g, ' ')}: ${status}</span>`;
+    }
+    html += `<span style="padding:3px 10px;border-radius:20px;border:1px solid var(--accent);color:var(--accent2);font-size:11px">${data.phase7_status.replace(/_/g, ' ')}</span>`;
+    html += '</div>';
+
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<p style="color:var(--red);font-size:13px">Error loading pipeline health: ' + e.message + '</p>';
+  }
+}
+
+async function refreshIBKRIngester() {
+  const el = document.getElementById('ibkr-ingester-status');
+  try {
+    const status = await api('/brain/autonomy/ibkr-ingester');
+    if (!status.ok) {
+      el.innerHTML = `<p style="color:var(--text2);font-size:13px">IBKR ingester not initialized.</p>`;
+      return;
+    }
+    // QC Cloud mode — IBKR is accessed via QC Live API
+    if (status.mode === 'qc_cloud') {
+      el.innerHTML = `
+        <div class="grid">
+          <div class="card">
+            <div class="label">Mode</div>
+            <div class="value ok">QC Cloud</div>
+            <div class="sub">Local gateway OFF</div>
+          </div>
+          <div class="card">
+            <div class="label">Status</div>
+            <div class="value ok">Connected</div>
+            <div class="sub">Via QuantConnect Live API</div>
+          </div>
+        </div>
+        <p style="color:var(--text2);font-size:12px;margin-top:8px">IBKR is connected via QC Cloud. Positions and orders are monitored through the QC Live tab.</p>`;
+      return;
+    }
+    const age = _ageLabel(status.last_checked_utc);
+    el.innerHTML = `
+      <div class="grid">
+        <div class="card">
+          <div class="label">Status</div>
+          <div class="value ${status.running ? 'ok' : 'warn'}">${status.running ? 'Running' : 'Stopped'}</div>
+          <div class="sub">Interval: ${status.interval_seconds}s</div>
+        </div>
+        <div class="card">
+          <div class="label">Last Snapshot</div>
+          <div class="value ${age.cls === 'fresh' ? 'ok' : age.cls === 'stale' ? 'err' : 'warn'}">${age.text}</div>
+          <div class="sub">${status.last_connected ? 'Connected' : 'Disconnected'}</div>
+        </div>
+        <div class="card">
+          <div class="label">Symbols</div>
+          <div class="value">${status.last_symbol_count ?? 0}</div>
+          <div class="sub">${status.last_error_count ?? 0} errors · ${status.consecutive_failures ?? 0} failures</div>
+        </div>
+      </div>
+      <button onclick="triggerIBKRSnapshot()" style="margin-top:10px;background:var(--accent);border:none;color:#fff;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">Trigger Snapshot Now</button>`;
+  } catch(e) {
+    el.innerHTML = `<p style="color:var(--red);font-size:13px">Error: ${e.message}</p>`;
+  }
+}
+
+async function triggerIBKRSnapshot() {
+  const el = document.getElementById('ibkr-ingester-status');
+  try {
+    el.insertAdjacentHTML('beforeend', '<p style="color:var(--text2);font-size:12px;margin-top:8px">Requesting snapshot...</p>');
+    const result = await api('/brain/autonomy/ibkr-snapshot', { method: 'POST' });
+    await refreshIBKRIngester();
+    await refreshDataFreshness();
+  } catch(e) {
+    el.insertAdjacentHTML('beforeend', `<p style="color:var(--red);font-size:12px;margin-top:8px">Failed: ${e.message}</p>`);
+  }
+}
+
+async function refreshStatus() {
+  try {
+    const [health, metrics, services, operations] = await Promise.all([
+      api('/health'),
+      api('/brain/metrics'),
+      api('/brain/health'),
+      api('/brain/operations'),
+    ]);
+
+    const dot = document.getElementById('status-dot');
+    dot.className = 'status-dot ' + (health.status === 'healthy' ? 'ok' : 'err');
+
+    document.getElementById('s-status').textContent  = health.status || '—';
+    document.getElementById('s-status').className    = 'value ' + (health.status === 'healthy' ? 'ok' : 'err');
+    document.getElementById('s-version').textContent = health.version || '—';
+    document.getElementById('s-sessions').textContent = health.sessions ?? '—';
+
+    const sys = metrics?.current?.system;
+    document.getElementById('s-cpu').textContent = sys?.cpu_percent != null ? sys.cpu_percent.toFixed(1) + '%' : '—';
+    document.getElementById('s-mem').textContent = sys?.memory_percent != null ? sys.memory_percent.toFixed(1) + '%' : '—';
+
+    const errs = metrics?.errors?.error_count;
+    const errEl = document.getElementById('s-err');
+    errEl.textContent = errs != null ? errs : '—';
+    errEl.className   = 'value ' + (errs > 0 ? 'warn' : 'ok');
+
+    const utility = operations?.utility || {};
+    const uEl = document.getElementById('s-u');
+    const uScore = utility?.u_score;
+    uEl.textContent = uScore != null ? Number(uScore).toFixed(2) : '—';
+    uEl.className = 'value ' + ((uScore ?? -1) > 0 ? 'ok' : (uScore == null ? '' : 'warn'));
+    document.getElementById('s-u-sub').textContent = `${utility?.verdict || '—'} · ${utility?.current_phase || '—'}`;
+
+    const latestChange = operations?.self_improvement?.latest_change;
+    const siEl = document.getElementById('s-si');
+    siEl.textContent = latestChange?.status || '—';
+    siEl.className = 'value ' + (latestChange?.status === 'promoted' ? 'ok' : latestChange?.status === 'rolled_back' ? 'warn' : '');
+    document.getElementById('s-si-sub').textContent = latestChange?.change_id || 'Sin cambios';
+
+    // Services table
+    const svcHtml = services?.services ? `
+      <table>
+        <thead><tr><th>Servicio</th><th>Estado</th><th>Latencia</th></tr></thead>
+        <tbody>${Object.entries(services.services).map(([name, s]) => `
+          <tr>
+            <td>${name}</td>
+            <td style="color:${s.healthy ? 'var(--green)' : 'var(--red)'}">${s.healthy ? '● Online' : '● Offline'}</td>
+            <td>${s.latency_ms != null ? s.latency_ms + ' ms' : s.error || '—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>` : '<p style="color:var(--text2);font-size:13px">No se pudo cargar estado de servicios.</p>';
+    document.getElementById('services-table').innerHTML = svcHtml;
+
+    const trading = operations?.trading || {};
+    const tradingRows = Object.entries(trading).map(([name, s]) => {
+      const healthy = s?.success && (s?.status !== 'disconnected');
+      const mode = s?.mode || s?.status || '—';
+      const detail = s?.port_open != null ? (s.port_open ? `port ${s.port} open` : `port ${s.port} closed`) : (s?.error || s?.status_code || '—');
+      return `
+        <tr>
+          <td>${name}</td>
+          <td style="color:${healthy ? 'var(--green)' : 'var(--amber)'}">${healthy ? '● usable' : '● limitado'}</td>
+          <td>${mode}</td>
+          <td>${detail}</td>
+        </tr>`;
+    }).join('');
+    document.getElementById('trading-table').innerHTML = tradingRows ? `
+      <table>
+        <thead><tr><th>Canal</th><th>Estado</th><th>Modo</th><th>Detalle</th></tr></thead>
+        <tbody>${tradingRows}</tbody>
+      </table>` : '<p style="color:var(--text2);font-size:13px">No se pudo cargar telemetría financiera.</p>';
+
+    // P7-04: Refresh data freshness and IBKR ingester
+    refreshDataFreshness();
+    refreshIBKRIngester();
+    // P7-06: Refresh pipeline health
+    refreshPipelineHealth();
+  } catch(e) {
+    document.getElementById('s-status').textContent = 'Error';
+  }
+}
+
+// ── Brain RSI ──────────────────────────────────────────────────────────────
+async function refreshBrain() {
+  try {
+    const rsi = await api('/brain/rsi');
+    document.getElementById('rsi-grid').innerHTML = [
+      { label: 'Brechas totales',  value: rsi.brechas_count,     cls: rsi.brechas_count > 0 ? 'warn' : 'ok' },
+      { label: 'Brechas críticas', value: rsi.brechas_criticas,  cls: rsi.brechas_criticas > 0 ? 'err' : 'ok' },
+      { label: 'Fases activas',    value: rsi.fases_activas,     cls: 'ok' },
+      { label: 'Progreso general', value: (rsi.progreso_general || 0) + '%', cls: rsi.progreso_general >= 70 ? 'ok' : 'warn' },
+    ].map(c => `<div class="card"><div class="label">${c.label}</div><div class="value ${c.cls}">${c.value}</div></div>`).join('');
+
+    document.getElementById('rsi-recs').innerHTML = (rsi.recomendaciones || [])
+      .map(r => `<div style="padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;font-size:13px">💡 ${r}</div>`)
+      .join('') || '<p style="color:var(--text2);font-size:13px">Sin recomendaciones.</p>';
+
+    const fases = rsi.fases_completadas || [];
+    document.getElementById('rsi-fases').innerHTML = fases.length
+      ? fases.map(f => `<span style="display:inline-block;padding:4px 12px;margin:4px;background:var(--surface2);border:1px solid var(--green);border-radius:20px;color:var(--green);font-size:12px">✓ ${f}</span>`).join('')
+      : '<p style="color:var(--text2);font-size:13px">Sin fases completadas registradas.</p>';
+  } catch(e) {
+    document.getElementById('rsi-grid').innerHTML = '<p style="color:var(--red);font-size:13px">Error cargando RSI</p>';
+  }
+}
+
+// ── Closed-Loop ───────────────────────────────────────────────────────────
+async function refreshClosedLoop() {
+  try {
+    const [status, strategies, signals, positions, iterations] = await Promise.all([
+      api('/trading/closed-loop/status').catch(() => ({})),
+      api('/trading/closed-loop/strategies').catch(() => ({ strategies: [] })),
+      api('/trading/closed-loop/signals').catch(() => ({ signals: [] })),
+      api('/trading/closed-loop/positions').catch(() => ({ positions: [] })),
+      api('/trading/closed-loop/iterations').catch(() => ({ iterations: [] })),
+    ]);
+
+    // ─ Pipeline cards ─
+    const qc = status.qc_loop || {};
+    const ibkr = status.ibkr_loop || {};
+    const gov = status.governance || {};
+    const sched = status.scheduler || {};
+
+    const qcIng = qc.ingestion || {};
+    const qcIter = qc.iteration || {};
+    const ibkrSig = ibkr.signal_engine || {};
+    const ibkrPerf = ibkr.performance_tracker || {};
+    const ibkrOrd = ibkr.paper_orders || {};
+
+    document.getElementById('cl-pipeline-cards').innerHTML = `
+      <div class="card">
+        <div class="label">QC Ingestion</div>
+        <div class="value ${qcIng.last_poll_utc ? 'ok' : 'warn'}">${qcIng.total_backtests_processed ?? 0}</div>
+        <div class="sub">${qcIng.last_poll_utc ? 'Last: ' + new Date(qcIng.last_poll_utc).toLocaleString('es') : 'Never run'} · ${qcIng.projects_monitored ?? 0} projects</div>
+      </div>
+      <div class="card">
+        <div class="label">QC Iterations</div>
+        <div class="value">${qcIter.total_iterations ?? 0}</div>
+        <div class="sub">${qcIter.strategies_iterated ?? 0} strategies iterated</div>
+      </div>
+      <div class="card">
+        <div class="label">IBKR Signals</div>
+        <div class="value ${(ibkrSig.total_signals ?? 0) > 0 ? 'ok' : 'warn'}">${ibkrSig.total_signals ?? 0}</div>
+        <div class="sub">${ibkrSig.last_scan_utc ? 'Last: ' + new Date(ibkrSig.last_scan_utc).toLocaleString('es') : 'No scans yet'}</div>
+      </div>
+      <div class="card">
+        <div class="label">IBKR Orders</div>
+        <div class="value">${ibkrOrd.total_orders ?? 0}</div>
+        <div class="sub">Paper orders placed</div>
+      </div>
+      <div class="card">
+        <div class="label">Active Strategies</div>
+        <div class="value ok">${gov.total_strategies ?? 0}</div>
+        <div class="sub">${Object.entries(gov.state_distribution || {}).map(([k,v]) => k + ':' + v).join(' · ') || 'none'}</div>
+      </div>
+      <div class="card">
+        <div class="label">Perf Tracker</div>
+        <div class="value ${ibkrPerf.last_poll_utc ? 'ok' : 'warn'}">${ibkrPerf.last_poll_utc ? 'Active' : 'Idle'}</div>
+        <div class="sub">${ibkrPerf.last_poll_utc ? 'Last: ' + new Date(ibkrPerf.last_poll_utc).toLocaleString('es') : 'Never polled'}</div>
+      </div>
+    `;
+
+    // ─ Strategy lifecycle ─
+    const strats = strategies.strategies || [];
+    if (strats.length) {
+      const byState = {};
+      strats.forEach(s => {
+        const state = s.governance_state || s.state || 'unknown';
+        if (!byState[state]) byState[state] = [];
+        byState[state].push(s);
+      });
+      const stateColors = {
+        paper_candidate: 'var(--text2)', paper_probe: 'var(--accent2)',
+        paper_active: 'var(--green)', paper_watch: 'var(--amber)',
+        promote_candidate: 'var(--green)', live_paper: '#00d4ff',
+        frozen: 'var(--red)', retired: 'var(--text2)',
+      };
+      const stateOrder = ['live_paper','promote_candidate','paper_active','paper_watch','paper_probe','paper_candidate','frozen','retired'];
+      const sorted = stateOrder.filter(s => byState[s]).concat(Object.keys(byState).filter(s => !stateOrder.includes(s)));
+
+      document.getElementById('cl-strategies').innerHTML = sorted.map(state => {
+        const items = byState[state];
+        return `<div style="margin-bottom:12px">
+          <span style="display:inline-block;padding:2px 8px;border-radius:4px;background:var(--surface2);color:${stateColors[state] || 'var(--text2)'};font-size:12px;margin-bottom:6px">${state} (${items.length})</span>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            ${items.map(s => {
+              const wr = s.win_rate != null ? ` WR:${s.win_rate.toFixed(0)}%` : '';
+              const exp = s.expectancy != null ? ` E:${s.expectancy.toFixed(2)}` : '';
+              return `<span style="font-size:12px;padding:3px 8px;background:var(--surface);border:1px solid var(--border);border-radius:6px" title="${s.strategy_id}${wr}${exp}">${s.strategy_id || s.id}</span>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('');
+    } else {
+      document.getElementById('cl-strategies').innerHTML = '<p style="color:var(--text2);font-size:13px">No strategies loaded.</p>';
+    }
+
+    // ─ Positions (from QC Live or local IBKR) ─
+    let posHtml = '';
+    try {
+      const qcPos = await api('/trading/qc-live/positions').catch(() => ({}));
+      const qcHoldings = Object.values(qcPos.holdings || {});
+      if (qcPos.deployed && qcHoldings.length > 0) {
+        const totalPnl = qcHoldings.reduce((s, h) => s + (h.unrealizedPnl || 0), 0);
+        posHtml = `<div style="margin-bottom:8px;font-size:13px;color:var(--text2)">Source: QC Cloud Live · Equity: ${qcPos.equity ? '$' + Number(qcPos.equity).toLocaleString() : 'N/A'}</div>
+          <table>
+            <thead><tr><th>Symbol</th><th>Qty</th><th>Avg Price</th><th>Price</th><th>Value</th><th>P&L</th><th>P&L%</th></tr></thead>
+            <tbody>${qcHoldings.map(h => {
+              const pnlColor = (h.unrealizedPnl || 0) >= 0 ? 'var(--green)' : 'var(--red)';
+              return `<tr>
+                <td>${parseQCSymbol(h.symbol || '')}</td>
+                <td style="text-align:right">${h.quantity}</td>
+                <td style="text-align:right">$${(h.avgPrice || 0).toFixed(2)}</td>
+                <td style="text-align:right">$${(h.price || 0).toFixed(2)}</td>
+                <td style="text-align:right">$${(h.value || 0).toFixed(2)}</td>
+                <td style="text-align:right;color:${pnlColor}">$${(h.unrealizedPnl || 0).toFixed(2)}</td>
+                <td style="text-align:right;color:${pnlColor}">${(h.unrealizedPnlPct || 0).toFixed(2)}%</td>
+              </tr>`;
+            }).join('')}
+            <tr style="border-top:2px solid var(--border);font-weight:600">
+              <td colspan="5">Total</td>
+              <td style="text-align:right;color:${totalPnl >= 0 ? 'var(--green)' : 'var(--red)'}">$${totalPnl.toFixed(2)}</td>
+              <td></td>
+            </tr>
+            </tbody>
+          </table>`;
+      } else if (qcPos.deployed) {
+        posHtml = '<p style="color:var(--text2);font-size:13px">QC Live active — no open positions.</p>';
+      }
+    } catch(e) {}
+
+    if (!posHtml) {
+      // Fallback: local IBKR positions
+      const snap = positions.latest_snapshot || {};
+      const pos = snap.positions || [];
+      const acct = snap.account || {};
+      const posHeader = acct.net_liquidation ? `<div style="margin-bottom:8px;font-size:13px;color:var(--text2)">Account: NLV $${(acct.net_liquidation ?? 0).toFixed(2)} · Unrealized $${(acct.unrealized_pnl ?? 0).toFixed(2)} · Snapshot: ${snap.timestamp ? new Date(snap.timestamp).toLocaleString('es') : '—'}</div>` : '';
+      posHtml = posHeader + (pos.length ? `
+        <table>
+          <thead><tr><th>Symbol</th><th>Qty</th><th>Avg Cost</th><th>Market Value</th><th>Unrealized P&L</th><th>Strategy</th></tr></thead>
+          <tbody>${pos.map(p => `
+            <tr>
+              <td>${p.symbol || p.contract || '—'}</td>
+              <td>${p.quantity ?? p.position ?? '—'}</td>
+              <td>$${(p.avg_cost ?? 0).toFixed(2)}</td>
+              <td>$${(p.market_value ?? 0).toFixed(2)}</td>
+              <td style="color:${(p.unrealized_pnl ?? 0) >= 0 ? 'var(--green)' : 'var(--red)'}">$${(p.unrealized_pnl ?? 0).toFixed(2)}</td>
+              <td>${p.strategy_id || '—'}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>` : '<p style="color:var(--text2);font-size:13px">No open positions.</p>') + `<p style="color:var(--text2);font-size:11px;margin-top:4px">${positions.history_count ?? 0} historical snapshots</p>`;
+    }
+    document.getElementById('cl-positions').innerHTML = posHtml;
+
+    // ─ Signals ─
+    const sigs = signals.signals || [];
+    document.getElementById('cl-signals').innerHTML = sigs.length ? `
+      <table>
+        <thead><tr><th>Time</th><th>Strategy</th><th>Symbol</th><th>Direction</th><th>Confidence</th><th>Status</th></tr></thead>
+        <tbody>${sigs.slice(0, 30).map(s => `
+          <tr>
+            <td style="font-size:11px">${s.timestamp ? new Date(s.timestamp).toLocaleString('es') : '—'}</td>
+            <td>${s.strategy_id || '—'}</td>
+            <td>${s.symbol || '—'}</td>
+            <td style="color:${s.direction === 'BUY' ? 'var(--green)' : 'var(--red)'}">${s.direction || '—'}</td>
+            <td>${s.confidence != null ? (s.confidence * 100).toFixed(0) + '%' : '—'}</td>
+            <td>${s.status || s.action || '—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>` : '<p style="color:var(--text2);font-size:13px">No signals generated yet.</p>';
+
+    // ─ Iterations ─
+    const iterData = iterations.per_strategy || {};
+    const iterEntries = Object.entries(iterData);
+    document.getElementById('cl-iterations').innerHTML = `<p style="font-size:13px;color:var(--text2);margin-bottom:8px">${iterations.strategies_iterated ?? 0} strategies iterated · ${iterations.total_iterations ?? 0} total iterations</p>` + (iterEntries.length ? `
+      <table>
+        <thead><tr><th>Strategy</th><th>Iterations</th><th>Last Action</th><th>Last Result</th><th>Timestamp</th></tr></thead>
+        <tbody>${iterEntries.map(([sid, info]) => {
+          const last = info.last || {};
+          return `<tr>
+            <td>${sid}</td>
+            <td>${info.count ?? 0}</td>
+            <td>${last.adjustment_type || last.action || '—'}</td>
+            <td style="color:${last.result === 'improved' ? 'var(--green)' : last.result === 'degraded' ? 'var(--red)' : 'var(--text2)'}">${last.result || 'pending'}</td>
+            <td style="font-size:11px">${last.timestamp ? new Date(last.timestamp).toLocaleString('es') : '—'}</td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table>` : '<p style="color:var(--text2);font-size:13px">No iterations yet.</p>');
+
+  } catch(e) {
+    document.getElementById('cl-pipeline-cards').innerHTML = `<p style="color:var(--red);font-size:13px">Error loading closed-loop data: ${e.message}</p>`;
+  }
+}
+
+// ── QC Live ───────────────────────────────────────────────────────────────
+let _qclEquityChart = null;
+let _qclDDChart = null;
+let _qclAutoRefresh = null;
+
+function parseQCSymbol(sym) {
+  // QC option symbols: "SPY 331D547WE456U|SPY R735QTJ8XC9X"
+  const underlying = sym.split(' ')[0] || sym;
+  const parts = sym.split('|');
+  if (parts.length > 1) return underlying + ' Opt';
+  return underlying;
+}
+
+async function refreshQCLive() {
+  try {
+    const [status, perf, alerts, actions, positions] = await Promise.all([
+      api('/trading/qc-live/status').catch(() => ({})),
+      api('/trading/qc-live/performance?days=7').catch(() => ({})),
+      api('/trading/qc-live/alerts?limit=20').catch(() => ({ alerts: [] })),
+      api('/trading/qc-live/brain-actions?limit=20').catch(() => ({ actions: [] })),
+      api('/trading/qc-live/positions').catch(() => ({ holdings: {} })),
+    ]);
+
+    // ─ Header badges ─
+    const deployed = status.deployed;
+    const deployBadge = document.getElementById('qcl-deploy-badge');
+    const stateBadge = document.getElementById('qcl-state-badge');
+
+    if (deployed) {
+      deployBadge.textContent = 'LIVE';
+      deployBadge.style.borderColor = 'var(--green)';
+      deployBadge.style.color = 'var(--green)';
+      deployBadge.style.background = 'rgba(62,207,142,0.1)';
+    } else {
+      deployBadge.textContent = 'Not Deployed';
+      deployBadge.style.borderColor = 'var(--text2)';
+      deployBadge.style.color = 'var(--text2)';
+      deployBadge.style.background = 'transparent';
+    }
+
+    const algoState = status.status || '';
+    const stateColors = { Running: 'var(--green)', Stopped: 'var(--red)', RuntimeError: 'var(--red)', Liquidated: 'var(--amber)', deploying: 'var(--amber)' };
+    stateBadge.textContent = algoState || 'Unknown';
+    stateBadge.style.color = stateColors[algoState] || 'var(--text2)';
+    stateBadge.style.borderColor = stateColors[algoState] || 'var(--text2)';
+
+    // ─ Metric cards ─
+    const m = status.latest_metrics || {};
+    const ref = status.backtest_reference || {};
+    const cards = [
+      { label: 'Strategy', value: status.strategy_name || 'N/A', cls: '' },
+      { label: 'Equity', value: m.equity != null ? '$' + Number(m.equity).toLocaleString() : 'N/A', cls: 'ok' },
+      { label: 'Net Profit', value: m.net_profit != null ? '$' + Number(m.net_profit).toFixed(2) : 'N/A', cls: (m.net_profit ?? 0) >= 0 ? 'ok' : 'err' },
+      { label: 'Return', value: m.return_pct != null ? (m.return_pct * 100).toFixed(2) + '%' : 'N/A', cls: (m.return_pct ?? 0) >= 0 ? 'ok' : 'err' },
+      { label: 'Drawdown', value: m.drawdown != null ? (Math.abs(m.drawdown) * 100).toFixed(2) + '%' : 'N/A', cls: Math.abs(m.drawdown ?? 0) > ref.max_drawdown ? 'err' : 'ok' },
+      { label: 'Win Rate', value: m.win_rate != null ? (m.win_rate * 100).toFixed(1) + '%' : 'N/A', cls: (m.win_rate ?? 0) >= 0.6 ? 'ok' : (m.win_rate ?? 0) >= 0.5 ? 'warn' : 'err' },
+      { label: 'Holdings', value: m.holdings_count ?? 0, cls: '' },
+      { label: 'Polls', value: status.poll_count ?? 0, sub: status.last_poll_utc ? 'Last: ' + new Date(status.last_poll_utc).toLocaleTimeString('es') : 'Never', cls: '' },
+    ];
+    document.getElementById('qcl-metric-cards').innerHTML = cards.map(c =>
+      `<div class="card">
+        <div class="label">${c.label}</div>
+        <div class="value ${c.cls}">${c.value}</div>
+        ${c.sub ? `<div class="sub">${c.sub}</div>` : ''}
+      </div>`
+    ).join('');
+
+    // ─ Holdings table ─
+    const holdingsMap = positions.holdings || {};
+    const holdingsArr = Object.values(holdingsMap);
+    if (holdingsArr.length > 0) {
+      const totalValue = holdingsArr.reduce((s, h) => s + (h.value || 0), 0);
+      const totalPnl = holdingsArr.reduce((s, h) => s + (h.unrealizedPnl || 0), 0);
+      document.getElementById('qcl-holdings').innerHTML = `
+        <table>
+          <thead><tr>
+            <th>Symbol</th><th>Qty</th><th>Avg Price</th>
+            <th>Price</th><th>Value</th><th>P&L</th><th>P&L%</th>
+          </tr></thead>
+          <tbody>${holdingsArr.map(h => {
+            const pnlColor = (h.unrealizedPnl || 0) >= 0 ? 'var(--green)' : 'var(--red)';
+            return `<tr>
+              <td>${parseQCSymbol(h.symbol || '')}</td>
+              <td style="text-align:right">${h.quantity}</td>
+              <td style="text-align:right">$${(h.avgPrice || 0).toFixed(2)}</td>
+              <td style="text-align:right">$${(h.price || 0).toFixed(2)}</td>
+              <td style="text-align:right">$${(h.value || 0).toFixed(2)}</td>
+              <td style="text-align:right;color:${pnlColor}">$${(h.unrealizedPnl || 0).toFixed(2)}</td>
+              <td style="text-align:right;color:${pnlColor}">${(h.unrealizedPnlPct || 0).toFixed(2)}%</td>
+            </tr>`;
+          }).join('')}
+          <tr style="border-top:2px solid var(--border);font-weight:600">
+            <td colspan="4">Total</td>
+            <td style="text-align:right">$${totalValue.toFixed(2)}</td>
+            <td style="text-align:right;color:${totalPnl >= 0 ? 'var(--green)' : 'var(--red)'}">$${totalPnl.toFixed(2)}</td>
+            <td></td>
+          </tr>
+          </tbody>
+        </table>`;
+    } else {
+      document.getElementById('qcl-holdings').innerHTML =
+        '<p style="color:var(--text2);font-size:13px">No open positions.</p>';
+    }
+
+    // ─ Live vs Backtest comparison table ─
+    const bt = status.backtest_reference || {};
+    const comp = m.backtest_comparison || {};
+    const compRows = [
+      { metric: 'Sharpe Ratio', live: comp.sharpe?.live, bt: bt.sharpe_ratio, status: comp.sharpe?.status },
+      { metric: 'Max Drawdown', live: comp.drawdown?.live, bt: bt.max_drawdown, status: comp.drawdown?.status, pct: true },
+      { metric: 'Win Rate', live: comp.win_rate?.live, bt: bt.win_rate, status: comp.win_rate?.status, pct: true },
+      { metric: 'CAGR', live: comp.return?.live, bt: bt.cagr, pct: true },
+    ];
+    const statusIcons = { ok: '<span style="color:var(--green)">&#9679;</span>', warn: '<span style="color:var(--amber)">&#9679;</span>', critical: '<span style="color:var(--red)">&#9679;</span>' };
+    document.getElementById('qcl-comparison').innerHTML = `
+      <table>
+        <thead><tr><th>Metric</th><th>Live</th><th>Backtest</th><th>Status</th></tr></thead>
+        <tbody>${compRows.map(r => {
+          const liveVal = r.live != null ? (r.pct ? (Math.abs(r.live) * 100).toFixed(2) + '%' : r.live.toFixed(3)) : 'N/A';
+          const btVal = r.bt != null ? (r.pct ? (Math.abs(r.bt) * 100).toFixed(2) + '%' : r.bt.toFixed(3)) : 'N/A';
+          return `<tr>
+            <td>${r.metric}</td>
+            <td>${liveVal}</td>
+            <td>${btVal}</td>
+            <td>${statusIcons[r.status] || '<span style="color:var(--text2)">-</span>'}</td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table>`;
+
+    // ─ Equity curve chart ─
+    const eqData = perf.equity_curve || [];
+    if (eqData.length > 1 && typeof Chart !== 'undefined') {
+      const ctx = document.getElementById('qcl-equity-chart').getContext('2d');
+      if (_qclEquityChart) _qclEquityChart.destroy();
+      _qclEquityChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: eqData.map(p => p.t ? new Date(p.t).toLocaleString('es', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : ''),
+          datasets: [{
+            label: 'Equity',
+            data: eqData.map(p => p.y),
+            borderColor: '#6c63ff',
+            backgroundColor: 'rgba(108,99,255,0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0,
+            borderWidth: 2,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { display: true, ticks: { color: '#8b90b0', maxTicksLimit: 10, font: { size: 10 } }, grid: { color: 'rgba(46,51,80,0.5)' } },
+            y: { display: true, ticks: { color: '#8b90b0', font: { size: 10 }, callback: v => '$' + v.toLocaleString() }, grid: { color: 'rgba(46,51,80,0.5)' } },
+          },
+        }
+      });
+    } else {
+      document.getElementById('qcl-equity-chart').parentElement.innerHTML += '<p style="color:var(--text2);font-size:13px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)">No equity data yet</p>';
+    }
+
+    // ─ Drawdown chart ─
+    const ddData = perf.drawdown_curve || [];
+    if (ddData.length > 1 && typeof Chart !== 'undefined') {
+      const ctx2 = document.getElementById('qcl-dd-chart').getContext('2d');
+      if (_qclDDChart) _qclDDChart.destroy();
+      _qclDDChart = new Chart(ctx2, {
+        type: 'line',
+        data: {
+          labels: ddData.map(p => p.t ? new Date(p.t).toLocaleString('es', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : ''),
+          datasets: [{
+            label: 'Drawdown',
+            data: ddData.map(p => Math.abs(p.y || 0) * 100),
+            borderColor: '#f06060',
+            backgroundColor: 'rgba(240,96,96,0.1)',
+            fill: true,
+            tension: 0.3,
+            pointRadius: 0,
+            borderWidth: 2,
+          }, {
+            label: 'Backtest Max DD',
+            data: ddData.map(() => (bt.max_drawdown || 0) * 100),
+            borderColor: 'rgba(245,166,35,0.5)',
+            borderDash: [5, 5],
+            pointRadius: 0,
+            borderWidth: 1,
+            fill: false,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#8b90b0', font: { size: 10 } } } },
+          scales: {
+            x: { display: true, ticks: { color: '#8b90b0', maxTicksLimit: 10, font: { size: 10 } }, grid: { color: 'rgba(46,51,80,0.5)' } },
+            y: { display: true, ticks: { color: '#8b90b0', font: { size: 10 }, callback: v => v.toFixed(1) + '%' }, grid: { color: 'rgba(46,51,80,0.5)' } },
+          },
+        }
+      });
+    }
+
+    // ─ Alerts ─
+    const alertList = alerts.alerts || [];
+    document.getElementById('qcl-alerts').innerHTML = alertList.length ? `
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <span style="font-size:12px;color:var(--red)">${alerts.critical_count || 0} critical</span>
+        <span style="font-size:12px;color:var(--amber)">${alerts.warn_count || 0} warnings</span>
+      </div>
+      <div style="max-height:200px;overflow-y:auto">
+        ${alertList.reverse().map(a => `
+          <div style="padding:8px 12px;background:var(--surface);border:1px solid ${a.severity === 'critical' ? 'var(--red)' : 'var(--amber)'};border-radius:8px;margin-bottom:6px;font-size:12px">
+            <span style="color:${a.severity === 'critical' ? 'var(--red)' : 'var(--amber)'}">[${a.severity}]</span>
+            ${a.message}
+            <span style="color:var(--text2);margin-left:8px">${a.timestamp_utc ? new Date(a.timestamp_utc).toLocaleString('es') : ''}</span>
+          </div>
+        `).join('')}
+      </div>
+    ` : '<p style="color:var(--text2);font-size:13px">No alerts.</p>';
+
+    // ─ Brain Actions ─
+    const actionList = actions.actions || [];
+    document.getElementById('qcl-brain-actions').innerHTML = actionList.length ? `
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <span style="font-size:12px;color:var(--green)">${actions.applied_count || 0} applied</span>
+        <span style="font-size:12px;color:var(--amber)">${actions.pending_count || 0} pending</span>
+        <span style="font-size:12px;color:var(--red)">${actions.rejected_count || 0} rejected</span>
+      </div>
+      <table>
+        <thead><tr><th>Time</th><th>Type</th><th>Description</th><th>Status</th></tr></thead>
+        <tbody>${actionList.reverse().map(a => {
+          const statusColor = a.status === 'APLICADO' ? 'var(--green)' : a.status === 'RECHAZADO' ? 'var(--red)' : 'var(--amber)';
+          return `<tr>
+            <td style="font-size:11px">${a.timestamp_utc ? new Date(a.timestamp_utc).toLocaleString('es') : '—'}</td>
+            <td>${a.action_type || '—'}</td>
+            <td style="max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.description || '—'}</td>
+            <td style="color:${statusColor};font-weight:600">${a.status || '—'}</td>
+          </tr>`;
+        }).join('')}
+        </tbody>
+      </table>
+    ` : '<p style="color:var(--text2);font-size:13px">No brain actions recorded yet.</p>';
+
+    // ─ Auto-refresh every 30s ─
+    if (_qclAutoRefresh) clearInterval(_qclAutoRefresh);
+    _qclAutoRefresh = setInterval(() => {
+      if (document.getElementById('panel-qclive').classList.contains('active')) {
+        refreshQCLive();
+      } else {
+        clearInterval(_qclAutoRefresh);
+        _qclAutoRefresh = null;
+      }
+    }, 30000);
+
+  } catch(e) {
+    document.getElementById('qcl-metric-cards').innerHTML = `<p style="color:var(--red);font-size:13px">Error loading QC Live data: ${e.message}</p>`;
+  }
+}
+
+async function forceQCLivePoll() {
+  try {
+    const result = await api('/trading/qc-live/refresh', { method: 'POST' });
+    if (result.success) {
+      await refreshQCLive();
+    } else {
+      alert('Force poll failed: ' + (result.reason || result.error || 'unknown'));
+    }
+  } catch(e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+// ── API Reference ──────────────────────────────────────────────────────────
+function renderApi() {
+  const endpoints = [
+    { method:'GET',  path:'/health',                desc:'Estado del sistema' },
+    { method:'GET',  path:'/status',                desc:'Sesiones activas' },
+    { method:'POST', path:'/chat',                  desc:'Enviar mensaje' },
+    { method:'GET',  path:'/brain/rsi',             desc:'Análisis RSI' },
+    { method:'GET',  path:'/brain/health',          desc:'Salud de servicios' },
+    { method:'GET',  path:'/brain/metrics',         desc:'Métricas del sistema' },
+    { method:'GET',  path:'/brain/operations',      desc:'Resumen operativo unificado' },
+    { method:'POST', path:'/brain/validate',        desc:'Validar acción vs premisas' },
+    { method:'GET',  path:'/trading/health',        desc:'Estado conectores trading' },
+    { method:'GET',  path:'/trading/platforms/summary', desc:'All platforms: U, metrics, recommendations' },
+    { method:'GET',  path:'/trading/platforms/{name}/summary', desc:'Single platform detail' },
+    { method:'GET',  path:'/trading/platforms/{name}/u-history', desc:'U-score history' },
+    { method:'GET',  path:'/trading/platforms/{name}/trades', desc:'Platform trade history' },
+    { method:'GET',  path:'/trading/platforms/compare', desc:'Cross-platform ranking' },
+    { method:'GET',  path:'/trading/platforms/{name}/signals', desc:'Signal pipeline analysis' },
+    { method:'GET',  path:'/trading/market/{sym}',  desc:'Datos de mercado' },
+    { method:'GET',  path:'/trading/balance',       desc:'Balance PocketOption' },
+    { method:'GET',  path:'/trading/trades/open',   desc:'Trades abiertos' },
+    { method:'GET',  path:'/trading/trades/history',desc:'Historial de trades' },
+    { method:'GET',  path:'/autonomy/status',       desc:'Estado autonomía' },
+    { method:'GET',  path:'/autonomy/reports',      desc:'Reportes de autonomía' },
+    { method:'POST', path:'/autonomy/start',        desc:'Iniciar autonomía' },
+    { method:'GET',  path:'/brain/autonomy/ibkr-ingester', desc:'IBKR ingester status (P7-03)' },
+    { method:'POST', path:'/brain/autonomy/ibkr-snapshot', desc:'Trigger IBKR snapshot (P7-03)' },
+    { method:'GET',  path:'/brain/pipeline-health', desc:'Pipeline health & test coverage (P7-06)' },
+    { method:'DEL',  path:'/sessions/{id}',         desc:'Eliminar sesión' },
+    { method:'DEL',  path:'/sessions/{id}/memory',  desc:'Limpiar memoria' },
+    { method:'GET',  path:'/docs',                  desc:'Swagger UI interactivo' },
+    { method:'GET',  path:'/trading/closed-loop/status',     desc:'Full pipeline status (QC + IBKR + governance)' },
+    { method:'GET',  path:'/trading/closed-loop/strategies', desc:'All strategies with lifecycle info' },
+    { method:'GET',  path:'/trading/closed-loop/signals',    desc:'Recent signal log' },
+    { method:'GET',  path:'/trading/closed-loop/positions',  desc:'IBKR paper positions snapshot' },
+    { method:'GET',  path:'/trading/closed-loop/iterations', desc:'QC iteration history' },
+    { method:'GET',  path:'/trading/qc-live/status',        desc:'QC Live deployment status & metrics' },
+    { method:'GET',  path:'/trading/qc-live/performance',   desc:'QC Live historical snapshots & equity' },
+    { method:'GET',  path:'/trading/qc-live/positions',     desc:'QC Live current holdings' },
+    { method:'GET',  path:'/trading/qc-live/trades',        desc:'QC Live trade log' },
+    { method:'GET',  path:'/trading/qc-live/alerts',        desc:'QC Live alert history' },
+    { method:'GET',  path:'/trading/qc-live/brain-actions', desc:'Brain auto-adjustment log' },
+    { method:'POST', path:'/trading/qc-live/refresh',       desc:'Force immediate QC Live poll' },
+    { method:'POST', path:'/trading/qc-live/deploy',        desc:'Deploy algo as QC Live' },
+    { method:'POST', path:'/trading/qc-live/stop',          desc:'Stop QC Live algorithm' },
+    { method:'POST', path:'/trading/qc-live/liquidate',     desc:'Liquidate & stop QC Live' },
+  ];
+  document.getElementById('ep-list').innerHTML = endpoints.map(e =>
+    `<div class="ep">
+      <span class="method ${e.method}">${e.method}</span>
+      <span class="path">${e.path}</span>
+      <span class="desc">${e.desc}</span>
+    </div>`).join('');
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+async function init() {
+  addMsg('system', 'Brain Chat V9 conectando…');
+  try {
+    const h = await api('/health');
+    document.getElementById('status-dot').className = 'status-dot ' + (h.status === 'healthy' ? 'ok' : 'err');
+    addMsg('system', h.status === 'healthy'
+      ? `Listo · ${h.version} · Ollama: ${h.ollama_model || 'connected'}`
+      : `Iniciando… (${h.status})`);
+  } catch(e) {
+    addMsg('system', 'No se pudo conectar con el servidor. ¿Está corriendo en puerto 8090?');
+  }
+  document.getElementById('input').focus();
+}
+
+init();
+</script>
+</body>
+</html>

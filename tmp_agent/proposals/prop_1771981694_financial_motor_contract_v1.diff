@@ -1,0 +1,9 @@
+--- C:\AI_VAULT\workspace\brainlab\brainlab\contracts\financial_motor_contract_v1.json
++++ C:\AI_VAULT\tmp_agent\workspace\financial_motor_contract_v1.json
+@@ -39,3 +39,6 @@
+     "required_artifacts": ["logs_ndjson", "state_json", "receipts_applied"]
+   }
+ }
++
++/* scope_contracts_touch 2026-02-24T20:07:51.2690523-05:00 */
++

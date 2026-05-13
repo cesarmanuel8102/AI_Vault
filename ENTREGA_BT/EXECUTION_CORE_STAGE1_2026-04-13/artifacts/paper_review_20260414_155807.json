@@ -1,0 +1,21 @@
+{
+  "window": 2,
+  "hard_violations": 6,
+  "totals": {
+    "accepted": 4,
+    "rejected": 6,
+    "signals": 10
+  },
+  "reason_counts": {
+    "accepted": 4,
+    "qty_over_total_limit": 3,
+    "outside_allowed_session": 2,
+    "daily_loss_limit_reached": 1
+  },
+  "pass": false,
+  "generated_at_utc": "2026-04-14T19:58:07Z",
+  "reports_used": [
+    "C:\\AI_VAULT\\ENTREGA_BT\\EXECUTION_CORE_STAGE1_2026-04-13\\artifacts\\paper_day_report_20260414_155723.json",
+    "C:\\AI_VAULT\\ENTREGA_BT\\EXECUTION_CORE_STAGE1_2026-04-13\\artifacts\\paper_day_report_20260414_155737.json"
+  ]
+}

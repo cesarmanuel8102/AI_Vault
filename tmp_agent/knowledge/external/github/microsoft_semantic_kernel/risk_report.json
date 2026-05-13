@@ -1,0 +1,23 @@
+{
+  "source_id": "github_microsoft_semantic_kernel_20260508",
+  "generated_at_utc": "2026-05-08T04:57:06.359673Z",
+  "source_risk_score": 0.75,
+  "pattern_risks": [
+    {
+      "pattern_id": "structured_multi_agent_debate",
+      "risk": 4.0
+    },
+    {
+      "pattern_id": "role_orchestrated_tool_routing",
+      "risk": 4.0
+    },
+    {
+      "pattern_id": "ci_backed_regression_harness",
+      "risk": 2.5
+    },
+    {
+      "pattern_id": "structured_tool_dispatch",
+      "risk": 3.5
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "generated_at_utc": "2026-04-21T15:35:35.708059Z",
+  "compile": {
+    "id": "817631a8c02348ff306807f28b863f49-545aa20525ba956e6033f5b8e3b002f8",
+    "state": "BuildSuccess"
+  },
+  "backtest": {
+    "name": "LIVE_MIRROR_CHECK_1776785739",
+    "id": "4880d1f4aef440743b9e4faf0f29c62c"
+  },
+  "result": {
+    "status": "Completed.",
+    "np": "0%",
+    "dd": "0%",
+    "orders": 0,
+    "runtime": {
+      "Mode": "PF100",
+      "Profile": "FAST_PASS",
+      "PF100TradesTotal": "0",
+      "PF100StressTrades": "0",
+      "PF100SecondEntries": "0",
+      "ExternalStressDays": "1",
+      "DailyLossBreaches": "0",
+      "TrailingBreaches": "0",
+      "ChallengeTargetHit": "0"
+    }
+  }
+}

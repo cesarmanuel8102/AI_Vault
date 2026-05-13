@@ -1,0 +1,13 @@
+{
+  "proposal_id": "P_81ff6dd23a8d9440",
+  "tool_name": "write_file",
+  "tool_args": {
+    "content": "smoke_full\n",
+    "path": "C:\\AI_VAULT\\tmp_agent\\workspace\\smoke_full_write.txt"
+  },
+  "room_id": "smoke_full_20260301_133936",
+  "step_id": "2",
+  "created_at": "2026-03-01T18:39:39.917149+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

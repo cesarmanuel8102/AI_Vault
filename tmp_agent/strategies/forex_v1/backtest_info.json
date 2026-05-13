@@ -1,0 +1,20 @@
+{
+  "project_id": 29652652,
+  "compile_id": "d4e3662c4f81f4bb858f622252e0d7b7-ce65a0d7d4be13611c2f230c2444fdc9",
+  "backtest_id": "13f822540b598a9d0783efb5b150939c",
+  "backtest_name": "Forex V4.0c risk3 pos5 cluster3 ceiling-test",
+  "launched_at": "2026-04-03 21:26:33 UTC",
+  "parameters": {
+    "squeeze_pct": "0.60",
+    "min_squeeze_bars": "3",
+    "squeeze_window": "3",
+    "chandelier_mult": "2.0",
+    "adx_min": "20",
+    "pullback_enabled": "0",
+    "risk_per_trade": "0.03",
+    "max_positions": "5",
+    "max_cluster": "3",
+    "max_daily_risk": "0.08",
+    "max_weekly_risk": "0.15"
+  }
+}

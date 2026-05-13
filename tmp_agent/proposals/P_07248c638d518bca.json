@@ -1,0 +1,13 @@
+{
+  "proposal_id": "P_07248c638d518bca",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "C:\\AI_VAULT\\tmp_agent\\state\\rooms\\ui_2026-03-16T18_41_27_625Z\\ui_2026-03-16T18_41_27_625Z_artifact.json",
+    "content": "{\n  \"request\": \"ME REFIERO AL MOTOR FINANCIERO DESARROLLADO POR BRAIN\"\n}\\n"
+  },
+  "room_id": "ui_2026-03-16T18_41_27_625Z",
+  "step_id": "EP_8_41_27_625Z",
+  "created_at": "2026-03-16T18:43:19.372604+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

@@ -1,0 +1,73 @@
+import json
+import sys
+from pathlib import Path
+
+from smoke_risk_engine import RiskEngine
+from smoke_utils import utc_iso
+
+
+def _derive_repo_root(contract_path: str) -> str:
+    """
+    Best-effort: contracts live under <repo_root>\\brainlab\\contracts\\*.json
+    If we can find a parent named 'brainlab', repo_root = parent.parent.
+    Else fallback to the contract's parent directory.
+    """
+    try:
+        p = Path(contract_path).resolve()
+        for parent in p.parents:
+            if parent.name.lower() == "brainlab":
+                return str(parent.parent)
+        return str(p.parent)
+    except Exception:
+        return ""
+
+
+def main(argv=None) -> int:
+    argv = argv if argv is not None else sys.argv[1:]
+    if not argv:
+        print(json.dumps({"ok": False, "error": "MISSING_CONTRACT_PATH"}, ensure_ascii=False, indent=2))
+        return 1
+
+    contract = argv[0].strip()
+    re = RiskEngine.from_contract_path(contract)
+
+    tests = [
+        {"name": "ok", "snapshot": {"nlv": 1000.0, "daily_pnl": -5.0, "weekly_drawdown": 0.01, "total_exposure": 0.35}},
+        {"name": "daily_loss_violation", "snapshot": {"nlv": 1000.0, "daily_pnl": -25.0, "weekly_drawdown": 0.01, "total_exposure": 0.35}},
+        {"name": "weekly_dd_violation", "snapshot": {"nlv": 1000.0, "daily_pnl": 0.0, "weekly_drawdown": 0.10, "total_exposure": 0.35}},
+        {"name": "exposure_violation", "snapshot": {"nlv": 1000.0, "daily_pnl": 0.0, "weekly_drawdown": 0.01, "total_exposure": 0.95}},
+    ]
+
+    results = [{"name": t["name"], "assess": re.assess(t["snapshot"])} for t in tests]
+
+    # derive halt signals
+    has_halt = False
+    halt_reasons = []
+    for r in results:
+        a = r.get("assess") or {}
+        if a.get("verdict") == "halt":
+            has_halt = True
+            halt_reasons.append({
+                "name": r.get("name"),
+                "reason": a.get("reason"),
+                "violations": a.get("violations") or []
+            })
+
+    out = {
+        "ts": utc_iso(),
+        "contract_path": contract,
+        "repo_root": _derive_repo_root(contract),
+        "limits": getattr(re, "limits").__dict__ if getattr(re, "limits", None) is not None else {},
+        "results": results,
+        "has_halt": bool(has_halt),
+        "halt_reasons": halt_reasons,
+        # ok means "policy passed", not "runner executed"
+        "ok": (not has_halt),
+    }
+
+    print(json.dumps(out, ensure_ascii=False, indent=2))
+    return 2 if has_halt else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

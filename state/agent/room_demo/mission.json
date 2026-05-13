@@ -1,0 +1,14 @@
+{
+  "mission_id": "mission_8bfb4c4c7c8a",
+  "created_ts": "2026-02-26T15:07:28.916815Z",
+  "updated_ts": "2026-02-26T15:08:44.575370Z",
+  "goal": "lee un archivo del workspace y resume su contenido",
+  "status": "running",
+  "notes": [],
+  "room_id": "room_demo",
+  "objective": "lee un archivo del workspace y resume su contenido",
+  "constraints": [],
+  "created_at": 1772118448,
+  "updated_at": 1772118448,
+  "status_legacy": "active"
+}

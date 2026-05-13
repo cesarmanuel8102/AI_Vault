@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_b5a2dd0326d35d77",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_autobuild_20260303_212443\\patches\\apply_brain_episode_v1.ps1",
+    "content": "# Backup previous state\nCopy-Item -Path 'C:\\AI_VAULT\\00_identity\\brain_server.py' -Destination 'C:\\AI_VAULT\\00_identity\\brain_server_backup.py'\n\n# Apply the brain episode patch\nPatch-Apply -Path 'C:\\AI_VAULT\\00_identity\\brain_server.py' -Diff 'c:\\ai_vault\\tmp_agent\\state\\rooms\\room_autobuild_20260303_212443\\patches\\brain_episode_v1.diff'\n\n# Compile Python files\npy_compile.compile('C:\\AI_VAULT\\00_identity\\brain_server.py')\n\n# Run smoke tests\nInvoke-Expression 'C:\\AI_VAULT\\tmp_agent\\state\\rooms\\room_autobuild_20260303_212443\\patches\\smoke_p3_1.ps1'",
+    "value": null,
+    "text": "# Backup previous state\nCopy-Item -Path 'C:\\AI_VAULT\\00_identity\\brain_server.py' -Destination 'C:\\AI_VAULT\\00_identity\\brain_server_backup.py'\n\n# Apply the brain episode patch\nPatch-Apply -Path 'C:\\AI_VAULT\\00_identity\\brain_server.py' -Diff 'c:\\ai_vault\\tmp_agent\\state\\rooms\\room_autobuild_20260303_212443\\patches\\brain_episode_v1.diff'\n\n# Compile Python files\npy_compile.compile('C:\\AI_VAULT\\00_identity\\brain_server.py')\n\n# Run smoke tests\nInvoke-Expression 'C:\\AI_VAULT\\tmp_agent\\state\\rooms\\room_autobuild_20260303_212443\\patches\\smoke_p3_1.ps1'"
+  },
+  "room_id": "room_autobuild_20260303_212443",
+  "step_id": "S2",
+  "created_at": "2026-03-04T02:30:09.895083+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

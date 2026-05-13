@@ -1,0 +1,14 @@
+{
+  "proposal_id": "P_d7926a3af37c74a4",
+  "tool_name": "append_file",
+  "tool_args": {
+    "path": "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_plan_from_goal_v1_1_20260305_115215\\autobuild_next.md",
+    "content": "AUTO-BUILD NEXT (v1.1) — 2026-03-05T16:52:16.070202+00:00\nroom_id: room_plan_from_goal_v1_1_20260305_115215\ngoal: Seguir roadmap.json y preparar propuesta ejecutable del siguiente incremento mínimo\n\nphase: P1_UI_ORCHESTRATION_SSOT_ONLY\nphase_objective: UI orquesta endpoints sin SSOT paralelo; panel Blocked funcional y consistente con status.\nwork_item_id: P1.1\ntitle: Alinear fuente de verdad del panel Blocked con /proxy/v1/agent/status\ndescription: El panel Blocked debe leer status desde el brain (proxy) para obtener blocked actual. Debe refrescar tras Apply/Reject y mostrar estado final.\n\ndone_criteria: [\"Cuando status.blocked existe, se ven botones Apply/Reject.\", \"Al click Apply: POST /ui/api/apply devuelve ok=true y en <=2s el panel pasa a Blocked: — (porque blocked se consumió).\", \"Al click Reject: proposal queda rechazada y panel pasa a Blocked: —; plan refleja estado error/rejected según implementación.\"]\ntests: [\"Smoke UI: crear plan con append_file; run -> blocked; apply desde UI -> archivo cambia; status -> blocked=null.\", \"Negativo: si no hay blocked, Apply/Reject no hace nada y lo loggea.\"]\n\n",
+    "text": "AUTO-BUILD NEXT (v1.1) — 2026-03-05T16:52:16.070202+00:00\nroom_id: room_plan_from_goal_v1_1_20260305_115215\ngoal: Seguir roadmap.json y preparar propuesta ejecutable del siguiente incremento mínimo\n\nphase: P1_UI_ORCHESTRATION_SSOT_ONLY\nphase_objective: UI orquesta endpoints sin SSOT paralelo; panel Blocked funcional y consistente con status.\nwork_item_id: P1.1\ntitle: Alinear fuente de verdad del panel Blocked con /proxy/v1/agent/status\ndescription: El panel Blocked debe leer status desde el brain (proxy) para obtener blocked actual. Debe refrescar tras Apply/Reject y mostrar estado final.\n\ndone_criteria: [\"Cuando status.blocked existe, se ven botones Apply/Reject.\", \"Al click Apply: POST /ui/api/apply devuelve ok=true y en <=2s el panel pasa a Blocked: — (porque blocked se consumió).\", \"Al click Reject: proposal queda rechazada y panel pasa a Blocked: —; plan refleja estado error/rejected según implementación.\"]\ntests: [\"Smoke UI: crear plan con append_file; run -> blocked; apply desde UI -> archivo cambia; status -> blocked=null.\", \"Negativo: si no hay blocked, Apply/Reject no hace nada y lo loggea.\"]\n\n"
+  },
+  "room_id": "room_plan_from_goal_v1_1_20260305_115215",
+  "step_id": "S0",
+  "created_at": "2026-03-05T16:52:22.437373+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

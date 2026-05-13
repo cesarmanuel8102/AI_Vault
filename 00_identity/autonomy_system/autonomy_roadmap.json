@@ -1,0 +1,189 @@
+{
+  "version": "1.0",
+  "title": "AI_VAULT Autonomy Roadmap",
+  "description": "Plan de autonomía progresiva para que el sistema se auto-construya",
+  "current_phase": 0,
+  "phases": [
+    {
+      "number": 0,
+      "name": "INIT - Inicialización",
+      "description": "Establecer infraestructura base y conexión entre servicios",
+      "status": "active",
+      "goals": [
+        "Iniciar orchestrator de servicios",
+        "Levantar dashboard de monitoreo",
+        "Establecer comunicación entre brain_server y advisor_server",
+        "Crear sistema de logging unificado"
+      ],
+      "success_criteria": [
+        "Todos los servicios responden a health checks",
+        "Dashboard accesible en puerto 8020",
+        "Logs centralizados funcionando"
+      ],
+      "auto_actions": [
+        "Verificar dependencias instaladas",
+        "Crear estructura de directorios",
+        "Iniciar servicios en orden correcto"
+      ],
+      "estimated_duration": "5 minutos",
+      "next_phase_trigger": "Todos los servicios running + health OK"
+    },
+    {
+      "number": 1,
+      "name": "MONITOR - Monitoreo Activo",
+      "description": "Sistema de observación y métricas en tiempo real",
+      "status": "pending",
+      "goals": [
+        "Implementar métricas de rendimiento",
+        "Crear alertas automáticas",
+        "Establecer baseline de comportamiento",
+        "Dashboard con actualizaciones en tiempo real"
+      ],
+      "success_criteria": [
+        "Métricas visibles en dashboard",
+        "Alertas configuradas para errores",
+        "Histórico de métricas guardado"
+      ],
+      "auto_actions": [
+        "Recolectar métricas cada 10 segundos",
+        "Detectar anomalías en comportamiento",
+        "Generar reportes automáticos"
+      ],
+      "estimated_duration": "10 minutos",
+      "next_phase_trigger": "Métricas estables por 5 minutos"
+    },
+    {
+      "number": 2,
+      "name": "SELF-AWARE - Autoconciencia",
+      "description": "El sistema conoce su propio estado y puede reportarlo",
+      "status": "pending",
+      "goals": [
+        "Auto-diagnóstico de componentes",
+        "Detección de degradación",
+        "Reporte de salud automático",
+        "Identificación de cuellos de botella"
+      ],
+      "success_criteria": [
+        "Diagnóstico completo en < 30 segundos",
+        "Identificación precisa de problemas",
+        "Sugerencias de mejora automáticas"
+      ],
+      "auto_actions": [
+        "Ejecutar diagnóstico cada minuto",
+        "Comparar estado actual vs baseline",
+        "Generar recomendaciones de optimización"
+      ],
+      "estimated_duration": "15 minutos",
+      "next_phase_trigger": "Diagnóstico exitoso + recomendaciones generadas"
+    },
+    {
+      "number": 3,
+      "name": "SELF-HEAL - Auto-sanación",
+      "description": "Capacidad de detectar y corregir problemas automáticamente",
+      "status": "pending",
+      "goals": [
+        "Reinicio automático de servicios caídos",
+        "Recuperación de errores sin intervención",
+        "Limpieza de recursos huérfanos",
+        "Optimización automática de configuración"
+      ],
+      "success_criteria": [
+        "Recuperación de fallos en < 60 segundos",
+        "Tasa de éxito de auto-reparación > 90%",
+        "Sin intervención manual por 1 hora"
+      ],
+      "auto_actions": [
+        "Monitorear health checks cada 10 segundos",
+        "Reiniciar servicios fallidos automáticamente",
+        "Ajustar configuración basado en métricas"
+      ],
+      "estimated_duration": "20 minutos",
+      "next_phase_trigger": "Auto-recuperación exitosa de 3 fallos simulados"
+    },
+    {
+      "number": 4,
+      "name": "LEARN - Aprendizaje",
+      "description": "Aprender de patrones y mejorar decisiones",
+      "status": "pending",
+      "goals": [
+        "Análisis de patrones de uso",
+        "Predicción de problemas",
+        "Optimización proactiva",
+        "Mejora continua basada en datos"
+      ],
+      "success_criteria": [
+        "Predicción de problemas con > 80% precisión",
+        "Optimizaciones aplicadas automáticamente",
+        "Mejora medible en métricas de rendimiento"
+      ],
+      "auto_actions": [
+        "Analizar logs buscando patrones",
+        "Generar predicciones de carga",
+        "Aplicar optimizaciones sugeridas"
+      ],
+      "estimated_duration": "30 minutos",
+      "next_phase_trigger": "3 optimizaciones exitosas aplicadas"
+    },
+    {
+      "number": 5,
+      "name": "EVOLVE - Evolución",
+      "description": "Capacidad de modificar y mejorar su propio código",
+      "status": "pending",
+      "goals": [
+        "Análisis de código propio",
+        "Generación de mejoras",
+        "Aplicación de parches automáticos",
+        "Testing automático de cambios"
+      ],
+      "success_criteria": [
+        "Mejora aplicada sin errores",
+        "Tests pasan después de cambio",
+        "Rollback automático si falla"
+      ],
+      "auto_actions": [
+        "Identificar áreas de mejora en código",
+        "Generar propuestas de refactorización",
+        "Aplicar cambios en sandbox primero",
+        "Promover a producción si tests pasan"
+      ],
+      "estimated_duration": "45 minutos",
+      "next_phase_trigger": "Mejora aplicada y validada exitosamente"
+    },
+    {
+      "number": 6,
+      "name": "AUTONOMY - Autonomía Total",
+      "description": "Sistema completamente autónomo con mínima supervisión",
+      "status": "pending",
+      "goals": [
+        "Gestión completa de infraestructura",
+        "Desarrollo de nuevas capacidades",
+        "Auto-documentación",
+        "Comunicación proactiva con humanos"
+      ],
+      "success_criteria": [
+        "Funcionamiento 24/7 sin intervención",
+        "Nuevas features desarrolladas autónomamente",
+        "Documentación actualizada automáticamente",
+        "Reportes proactivos de estado"
+      ],
+      "auto_actions": [
+        "Monitorear todo el sistema",
+        "Desarrollar mejoras continuamente",
+        "Mantener documentación actualizada",
+        "Reportar estado periódicamente"
+      ],
+      "estimated_duration": "Continuo",
+      "next_phase_trigger": "Sistema estable por 24 horas con todas las capacidades"
+    }
+  ],
+  "meta": {
+    "created": "2026-03-18",
+    "version_control": true,
+    "rollback_enabled": true,
+    "human_approval_required": [
+      "Fase 5 - EVOLVE (cambios de código)",
+      "Fase 6 - AUTONOMY (activación completa)"
+    ],
+    "emergency_stop": "Disponible en cualquier momento desde dashboard"
+  }
+}

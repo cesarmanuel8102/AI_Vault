@@ -1,0 +1,306 @@
+[
+  {
+    "name": ".devcontainer",
+    "path": ".devcontainer",
+    "sha": "4da652f7835d90daae69131c752f81bdaa784dab",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/semantic-kernel/contents/.devcontainer?ref=main",
+    "html_url": "https://github.com/microsoft/semantic-kernel/tree/main/.devcontainer",
+    "git_url": "https://api.github.com/repos/microsoft/semantic-kernel/git/trees/4da652f7835d90daae69131c752f81bdaa784dab",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/semantic-kernel/contents/.devcontainer?ref=main",
+      "git": "https://api.github.com/repos/microsoft/semantic-kernel/git/trees/4da652f7835d90daae69131c752f81bdaa784dab",
+      "html": "https://github.com/microsoft/semantic-kernel/tree/main/.devcontainer"
+    }
+  },
+  {
+    "name": ".editorconfig",
+    "path": ".editorconfig",
+    "sha": "14d07f4147f62a533f705045e83237f5ca49051d",
+    "size": 35315,
+    "url": "https://api.github.com/repos/microsoft/semantic-kernel/contents/.editorconfig?ref=main",
+    "html_url": "https://github.com/microsoft/semantic-kernel/blob/main/.editorconfig",
+    "git_url": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/14d07f4147f62a533f705045e83237f5ca49051d",
+    "download_url": "https://raw.githubusercontent.com/microsoft/semantic-kernel/main/.editorconfig",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/semantic-kernel/contents/.editorconfig?ref=main",
+      "git": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/14d07f4147f62a533f705045e83237f5ca49051d",
+      "html": "https://github.com/microsoft/semantic-kernel/blob/main/.editorconfig"
+    }
+  },
+  {
+    "name": ".gitattributes",
+    "path": ".gitattributes",
+    "sha": "b5845d1480b2c6d61d0e805b93160ba2aeec5bfb",
+    "size": 147,
+    "url": "https://api.github.com/repos/microsoft/semantic-kernel/contents/.gitattributes?ref=main",
+    "html_url": "https://github.com/microsoft/semantic-kernel/blob/main/.gitattributes",
+    "git_url": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/b5845d1480b2c6d61d0e805b93160ba2aeec5bfb",
+    "download_url": "https://raw.githubusercontent.com/microsoft/semantic-kernel/main/.gitattributes",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/semantic-kernel/contents/.gitattributes?ref=main",
+      "git": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/b5845d1480b2c6d61d0e805b93160ba2aeec5bfb",
+      "html": "https://github.com/microsoft/semantic-kernel/blob/main/.gitattributes"
+    }
+  },
+  {
+    "name": ".github",
+    "path": ".github",
+    "sha": "90a6f488fd41d0d966a8bdb65694660a51a1ea2a",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/semantic-kernel/contents/.github?ref=main",
+    "html_url": "https://github.com/microsoft/semantic-kernel/tree/main/.github",
+    "git_url": "https://api.github.com/repos/microsoft/semantic-kernel/git/trees/90a6f488fd41d0d966a8bdb65694660a51a1ea2a",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/semantic-kernel/contents/.github?ref=main",
+      "git": "https://api.github.com/repos/microsoft/semantic-kernel/git/trees/90a6f488fd41d0d966a8bdb65694660a51a1ea2a",
+      "html": "https://github.com/microsoft/semantic-kernel/tree/main/.github"
+    }
+  },
+  {
+    "name": ".gitignore",
+    "path": ".gitignore",
+    "sha": "1eadcae9128325e068a1505d6473349c68437f4f",
+    "size": 8054,
+    "url": "https://api.github.com/repos/microsoft/semantic-kernel/contents/.gitignore?ref=main",
+    "html_url": "https://github.com/microsoft/semantic-kernel/blob/main/.gitignore",
+    "git_url": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/1eadcae9128325e068a1505d6473349c68437f4f",
+    "download_url": "https://raw.githubusercontent.com/microsoft/semantic-kernel/main/.gitignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/semantic-kernel/contents/.gitignore?ref=main",
+      "git": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/1eadcae9128325e068a1505d6473349c68437f4f",
+      "html": "https://github.com/microsoft/semantic-kernel/blob/main/.gitignore"
+    }
+  },
+  {
+    "name": ".vscode",
+    "path": ".vscode",
+    "sha": "ccd48d981530104de94a09856647aed20d6ce196",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/semantic-kernel/contents/.vscode?ref=main",
+    "html_url": "https://github.com/microsoft/semantic-kernel/tree/main/.vscode",
+    "git_url": "https://api.github.com/repos/microsoft/semantic-kernel/git/trees/ccd48d981530104de94a09856647aed20d6ce196",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/semantic-kernel/contents/.vscode?ref=main",
+      "git": "https://api.github.com/repos/microsoft/semantic-kernel/git/trees/ccd48d981530104de94a09856647aed20d6ce196",
+      "html": "https://github.com/microsoft/semantic-kernel/tree/main/.vscode"
+    }
+  },
+  {
+    "name": "CODE_OF_CONDUCT.md",
+    "path": "CODE_OF_CONDUCT.md",
+    "sha": "f9ba8cf65f3e3104dd061c178066ec8247811f33",
+    "size": 444,
+    "url": "https://api.github.com/repos/microsoft/semantic-kernel/contents/CODE_OF_CONDUCT.md?ref=main",
+    "html_url": "https://github.com/microsoft/semantic-kernel/blob/main/CODE_OF_CONDUCT.md",
+    "git_url": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/f9ba8cf65f3e3104dd061c178066ec8247811f33",
+    "download_url": "https://raw.githubusercontent.com/microsoft/semantic-kernel/main/CODE_OF_CONDUCT.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/semantic-kernel/contents/CODE_OF_CONDUCT.md?ref=main",
+      "git": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/f9ba8cf65f3e3104dd061c178066ec8247811f33",
+      "html": "https://github.com/microsoft/semantic-kernel/blob/main/CODE_OF_CONDUCT.md"
+    }
+  },
+  {
+    "name": "COMMUNITY.md",
+    "path": "COMMUNITY.md",
+    "sha": "43e6d228fd0934901f9742d808603b09a043198e",
+    "size": 1857,
+    "url": "https://api.github.com/repos/microsoft/semantic-kernel/contents/COMMUNITY.md?ref=main",
+    "html_url": "https://github.com/microsoft/semantic-kernel/blob/main/COMMUNITY.md",
+    "git_url": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/43e6d228fd0934901f9742d808603b09a043198e",
+    "download_url": "https://raw.githubusercontent.com/microsoft/semantic-kernel/main/COMMUNITY.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/semantic-kernel/contents/COMMUNITY.md?ref=main",
+      "git": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/43e6d228fd0934901f9742d808603b09a043198e",
+      "html": "https://github.com/microsoft/semantic-kernel/blob/main/COMMUNITY.md"
+    }
+  },
+  {
+    "name": "CONTRIBUTING.md",
+    "path": "CONTRIBUTING.md",
+    "sha": "14cbb9be650a38bfb6572d536ee044793b9e9d9a",
+    "size": 7007,
+    "url": "https://api.github.com/repos/microsoft/semantic-kernel/contents/CONTRIBUTING.md?ref=main",
+    "html_url": "https://github.com/microsoft/semantic-kernel/blob/main/CONTRIBUTING.md",
+    "git_url": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/14cbb9be650a38bfb6572d536ee044793b9e9d9a",
+    "download_url": "https://raw.githubusercontent.com/microsoft/semantic-kernel/main/CONTRIBUTING.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/semantic-kernel/contents/CONTRIBUTING.md?ref=main",
+      "git": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/14cbb9be650a38bfb6572d536ee044793b9e9d9a",
+      "html": "https://github.com/microsoft/semantic-kernel/blob/main/CONTRIBUTING.md"
+    }
+  },
+  {
+    "name": "FEATURE_MATRIX.md",
+    "path": "FEATURE_MATRIX.md",
+    "sha": "ce8dedf35079204d623c848026d77fd202c4a655",
+    "size": 444,
+    "url": "https://api.github.com/repos/microsoft/semantic-kernel/contents/FEATURE_MATRIX.md?ref=main",
+    "html_url": "https://github.com/microsoft/semantic-kernel/blob/main/FEATURE_MATRIX.md",
+    "git_url": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/ce8dedf35079204d623c848026d77fd202c4a655",
+    "download_url": "https://raw.githubusercontent.com/microsoft/semantic-kernel/main/FEATURE_MATRIX.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/semantic-kernel/contents/FEATURE_MATRIX.md?ref=main",
+      "git": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/ce8dedf35079204d623c848026d77fd202c4a655",
+      "html": "https://github.com/microsoft/semantic-kernel/blob/main/FEATURE_MATRIX.md"
+    }
+  },
+  {
+    "name": "LICENSE",
+    "path": "LICENSE",
+    "sha": "9e841e7a26e4eb057b24511e7b92d42b257a80e5",
+    "size": 1141,
+    "url": "https://api.github.com/repos/microsoft/semantic-kernel/contents/LICENSE?ref=main",
+    "html_url": "https://github.com/microsoft/semantic-kernel/blob/main/LICENSE",
+    "git_url": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/9e841e7a26e4eb057b24511e7b92d42b257a80e5",
+    "download_url": "https://raw.githubusercontent.com/microsoft/semantic-kernel/main/LICENSE",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/semantic-kernel/contents/LICENSE?ref=main",
+      "git": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/9e841e7a26e4eb057b24511e7b92d42b257a80e5",
+      "html": "https://github.com/microsoft/semantic-kernel/blob/main/LICENSE"
+    }
+  },
+  {
+    "name": "README.md",
+    "path": "README.md",
+    "sha": "02cab29b8f983d06039752b7326c95ecca7a2891",
+    "size": 14460,
+    "url": "https://api.github.com/repos/microsoft/semantic-kernel/contents/README.md?ref=main",
+    "html_url": "https://github.com/microsoft/semantic-kernel/blob/main/README.md",
+    "git_url": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/02cab29b8f983d06039752b7326c95ecca7a2891",
+    "download_url": "https://raw.githubusercontent.com/microsoft/semantic-kernel/main/README.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/semantic-kernel/contents/README.md?ref=main",
+      "git": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/02cab29b8f983d06039752b7326c95ecca7a2891",
+      "html": "https://github.com/microsoft/semantic-kernel/blob/main/README.md"
+    }
+  },
+  {
+    "name": "SECURITY.md",
+    "path": "SECURITY.md",
+    "sha": "0ea1f256056a2e3607fd04c0029451daf19c20c1",
+    "size": 2563,
+    "url": "https://api.github.com/repos/microsoft/semantic-kernel/contents/SECURITY.md?ref=main",
+    "html_url": "https://github.com/microsoft/semantic-kernel/blob/main/SECURITY.md",
+    "git_url": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/0ea1f256056a2e3607fd04c0029451daf19c20c1",
+    "download_url": "https://raw.githubusercontent.com/microsoft/semantic-kernel/main/SECURITY.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/semantic-kernel/contents/SECURITY.md?ref=main",
+      "git": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/0ea1f256056a2e3607fd04c0029451daf19c20c1",
+      "html": "https://github.com/microsoft/semantic-kernel/blob/main/SECURITY.md"
+    }
+  },
+  {
+    "name": "TRANSPARENCY_FAQS.md",
+    "path": "TRANSPARENCY_FAQS.md",
+    "sha": "653658d6ec398aa8db24a4af658b7c614eff876c",
+    "size": 8044,
+    "url": "https://api.github.com/repos/microsoft/semantic-kernel/contents/TRANSPARENCY_FAQS.md?ref=main",
+    "html_url": "https://github.com/microsoft/semantic-kernel/blob/main/TRANSPARENCY_FAQS.md",
+    "git_url": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/653658d6ec398aa8db24a4af658b7c614eff876c",
+    "download_url": "https://raw.githubusercontent.com/microsoft/semantic-kernel/main/TRANSPARENCY_FAQS.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/semantic-kernel/contents/TRANSPARENCY_FAQS.md?ref=main",
+      "git": "https://api.github.com/repos/microsoft/semantic-kernel/git/blobs/653658d6ec398aa8db24a4af658b7c614eff876c",
+      "html": "https://github.com/microsoft/semantic-kernel/blob/main/TRANSPARENCY_FAQS.md"
+    }
+  },
+  {
+    "name": "docs",
+    "path": "docs",
+    "sha": "3bd6ae175541a2d5310cd9103d3dd102227f42ac",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/semantic-kernel/contents/docs?ref=main",
+    "html_url": "https://github.com/microsoft/semantic-kernel/tree/main/docs",
+    "git_url": "https://api.github.com/repos/microsoft/semantic-kernel/git/trees/3bd6ae175541a2d5310cd9103d3dd102227f42ac",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/semantic-kernel/contents/docs?ref=main",
+      "git": "https://api.github.com/repos/microsoft/semantic-kernel/git/trees/3bd6ae175541a2d5310cd9103d3dd102227f42ac",
+      "html": "https://github.com/microsoft/semantic-kernel/tree/main/docs"
+    }
+  },
+  {
+    "name": "dotnet",
+    "path": "dotnet",
+    "sha": "99a697489e6bb940bd0f9db1873bf0ae9de320eb",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/semantic-kernel/contents/dotnet?ref=main",
+    "html_url": "https://github.com/microsoft/semantic-kernel/tree/main/dotnet",
+    "git_url": "https://api.github.com/repos/microsoft/semantic-kernel/git/trees/99a697489e6bb940bd0f9db1873bf0ae9de320eb",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/semantic-kernel/contents/dotnet?ref=main",
+      "git": "https://api.github.com/repos/microsoft/semantic-kernel/git/trees/99a697489e6bb940bd0f9db1873bf0ae9de320eb",
+      "html": "https://github.com/microsoft/semantic-kernel/tree/main/dotnet"
+    }
+  },
+  {
+    "name": "java",
+    "path": "java",
+    "sha": "d471459afefd1d99a1765577dcd8902d537fbbca",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/semantic-kernel/contents/java?ref=main",
+    "html_url": "https://github.com/microsoft/semantic-kernel/tree/main/java",
+    "git_url": "https://api.github.com/repos/microsoft/semantic-kernel/git/trees/d471459afefd1d99a1765577dcd8902d537fbbca",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/semantic-kernel/contents/java?ref=main",
+      "git": "https://api.github.com/repos/microsoft/semantic-kernel/git/trees/d471459afefd1d99a1765577dcd8902d537fbbca",
+      "html": "https://github.com/microsoft/semantic-kernel/tree/main/java"
+    }
+  },
+  {
+    "name": "prompt_template_samples",
+    "path": "prompt_template_samples",
+    "sha": "5724cbbf2ff2e2313f2c05a78e5dbec64f094bfa",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/semantic-kernel/contents/prompt_template_samples?ref=main",
+    "html_url": "https://github.com/microsoft/semantic-kernel/tree/main/prompt_template_samples",
+    "git_url": "https://api.github.com/repos/microsoft/semantic-kernel/git/trees/5724cbbf2ff2e2313f2c05a78e5dbec64f094bfa",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/semantic-kernel/contents/prompt_template_samples?ref=main",
+      "git": "https://api.github.com/repos/microsoft/semantic-kernel/git/trees/5724cbbf2ff2e2313f2c05a78e5dbec64f094bfa",
+      "html": "https://github.com/microsoft/semantic-kernel/tree/main/prompt_template_samples"
+    }
+  },
+  {
+    "name": "python",
+    "path": "python",
+    "sha": "6d30435902a2fbd7d71df9a5531ee169d920ff58",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/semantic-kernel/contents/python?ref=main",
+    "html_url": "https://github.com/microsoft/semantic-kernel/tree/main/python",
+    "git_url": "https://api.github.com/repos/microsoft/semantic-kernel/git/trees/6d30435902a2fbd7d71df9a5531ee169d920ff58",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/semantic-kernel/contents/python?ref=main",
+      "git": "https://api.github.com/repos/microsoft/semantic-kernel/git/trees/6d30435902a2fbd7d71df9a5531ee169d920ff58",
+      "html": "https://github.com/microsoft/semantic-kernel/tree/main/python"
+    }
+  }
+]

@@ -1,0 +1,46 @@
+{
+  "profiles": [
+    {
+      "name": "TOPSTEP_X_SAMPLE",
+      "provider": "TOPSTEPX",
+      "automation_allowed": true,
+      "symbols": ["MNQ", "M2K", "MES"],
+      "max_contracts_per_order": 5,
+      "max_contracts_total": 10,
+      "daily_loss_limit_pct": 0.018,
+      "trailing_drawdown_limit_pct": 0.035,
+      "allow_overnight": false,
+      "session_start_et": "09:30",
+      "session_end_et": "15:58",
+      "allow_hedging": false
+    },
+    {
+      "name": "MFFU_TRADOVATE_SAMPLE",
+      "provider": "TRADOVATE",
+      "automation_allowed": true,
+      "symbols": ["MNQ", "M2K", "MES"],
+      "max_contracts_per_order": 5,
+      "max_contracts_total": 10,
+      "daily_loss_limit_pct": 0.018,
+      "trailing_drawdown_limit_pct": 0.035,
+      "allow_overnight": false,
+      "session_start_et": "09:30",
+      "session_end_et": "15:58",
+      "allow_hedging": false
+    },
+    {
+      "name": "APEX_BLOCKED_BY_POLICY_SAMPLE",
+      "provider": "TRADOVATE",
+      "automation_allowed": false,
+      "symbols": ["MNQ", "M2K", "MES"],
+      "max_contracts_per_order": 5,
+      "max_contracts_total": 10,
+      "daily_loss_limit_pct": 0.018,
+      "trailing_drawdown_limit_pct": 0.035,
+      "allow_overnight": false,
+      "session_start_et": "09:30",
+      "session_end_et": "15:58",
+      "allow_hedging": false
+    }
+  ]
+}

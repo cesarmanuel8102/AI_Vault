@@ -1,0 +1,1185 @@
+{
+  "episode_id": "ep_room_demo_1772059651_51220",
+  "room_id": "room_demo",
+  "created_at": 1772059651,
+  "mission": {
+    "room_id": "room_demo",
+    "objective": "validate one-shot + step",
+    "constraints": [],
+    "status": "active",
+    "created_at": 1772059651,
+    "updated_at": 1772059651
+  },
+  "events": [
+    {
+      "ts_epoch": 1772059651,
+      "type": "mission_set",
+      "mission": {
+        "room_id": "room_demo",
+        "objective": "validate one-shot + step",
+        "constraints": [],
+        "status": "active",
+        "created_at": 1772059651,
+        "updated_at": 1772059651
+      }
+    },
+    {
+      "ts_epoch": 1772064761,
+      "type": "plan_created",
+      "plan": {
+        "room_id": "room_demo",
+        "mission_objective": "validate one-shot + step",
+        "mission_updated_at": 1772059651,
+        "created_at": 1772064761,
+        "updated_at": 1772064761,
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Listar archivos en el directorio de trabajo",
+            "action": "TOOL",
+            "tool": "list_dir",
+            "args": {
+              "path": "C:\\AI_VAULT\\workspace\\brainlab"
+            },
+            "success_criteria": "Se listan correctamente los archivos del directorio",
+            "status": "pending",
+            "result": null,
+            "started_at": null,
+            "ended_at": null
+          }
+        ]
+      }
+    },
+    {
+      "ts_epoch": 1772065853,
+      "type": "plan_created",
+      "plan": {
+        "room_id": "room_demo",
+        "mission_objective": "plan must persist 2",
+        "mission_updated_at": 1772065800,
+        "created_at": 1772065853,
+        "updated_at": 1772065853,
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Crear un archivo de configuración",
+            "action": "TOOL",
+            "tool": "write_file",
+            "args": {
+              "path": "C:\\AI_VAULT\\workspace\\brainlab\\config.txt",
+              "content": "Configuración inicial del proyecto"
+            },
+            "success_criteria": "Archivo config.txt creado con éxito en el directorio workspace",
+            "status": "pending",
+            "result": null,
+            "started_at": null,
+            "ended_at": null
+          },
+          {
+            "id": "s2",
+            "title": "Agregar una línea al archivo de configuración",
+            "action": "TOOL",
+            "tool": "append_file",
+            "args": {
+              "path": "C:\\AI_VAULT\\workspace\\brainlab\\config.txt",
+              "content": "\nAgregando una nueva línea"
+            },
+            "success_criteria": "Nueva línea añadida al archivo config.txt",
+            "status": "pending",
+            "result": null,
+            "started_at": null,
+            "ended_at": null
+          }
+        ]
+      }
+    },
+    {
+      "ts_epoch": 1772066186,
+      "type": "plan_created",
+      "plan": {
+        "room_id": "room_demo",
+        "mission_objective": "execute plan",
+        "mission_updated_at": 1772066147,
+        "created_at": 1772066186,
+        "updated_at": 1772066186,
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Listar directorio raíz del workspace",
+            "action": "TOOL",
+            "tool": "list_dir",
+            "args": {
+              "path": "C:\\AI_VAULT\\workspace\\brainlab"
+            },
+            "success_criteria": "Se listan correctamente los archivos y carpetas en el directorio raíz del workspace",
+            "status": "pending",
+            "result": null,
+            "started_at": null,
+            "ended_at": null
+          },
+          {
+            "id": "s2",
+            "title": "Leer archivo de configuración",
+            "action": "TOOL",
+            "tool": "read_file",
+            "args": {
+              "path": "C:\\AI_VAULT\\workspace\\brainlab\\config.txt"
+            },
+            "success_criteria": "El contenido del archivo de configuración se lee correctamente",
+            "status": "pending",
+            "result": null,
+            "started_at": null,
+            "ended_at": null
+          }
+        ]
+      }
+    },
+    {
+      "ts_epoch": 1772066418,
+      "type": "plan_created",
+      "plan": {
+        "room_id": "room_demo",
+        "mission_objective": "execute plan steps",
+        "mission_updated_at": 1772066359,
+        "created_at": 1772066418,
+        "updated_at": 1772066418,
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Listar directorio raíz del workspace",
+            "action": "TOOL",
+            "tool": "list_dir",
+            "args": {
+              "path": "C:\\AI_VAULT\\workspace\\brainlab"
+            },
+            "success_criteria": "Se listan correctamente los archivos y carpetas en el directorio raíz del workspace",
+            "status": "pending",
+            "result": null,
+            "started_at": null,
+            "ended_at": null
+          },
+          {
+            "id": "s2",
+            "title": "Leer archivo de configuración",
+            "action": "TOOL",
+            "tool": "read_file",
+            "args": {
+              "path": "C:\\AI_VAULT\\workspace\\brainlab\\config.txt"
+            },
+            "success_criteria": "El contenido del archivo config.txt es leído correctamente",
+            "status": "pending",
+            "result": null,
+            "started_at": null,
+            "ended_at": null
+          },
+          {
+            "id": "s3",
+            "title": "Escribir en un nuevo archivo de registro",
+            "action": "TOOL",
+            "tool": "write_file",
+            "args": {
+              "path": "C:\\AI_VAULT\\workspace\\brainlab\\log.txt",
+              "content": "Operación realizada con éxito"
+            },
+            "success_criteria": "Se crea y escribe correctamente en el archivo log.txt",
+            "status": "pending",
+            "result": null,
+            "started_at": null,
+            "ended_at": null
+          }
+        ]
+      }
+    },
+    {
+      "ts_epoch": 1772066866,
+      "type": "plan_created",
+      "plan": {
+        "mission_id": "mission_e48a5eff794b",
+        "created_ts": "2026-02-26T00:46:41.979704Z",
+        "updated_ts": "2026-02-26T00:46:41.979704Z",
+        "profile": "default",
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Listar archivos en el directorio de trabajo",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "list_dir",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s2",
+            "title": "Leer el contenido de un archivo específico",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "read_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\example.txt"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s3",
+            "title": "Escribir en un nuevo archivo",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "write_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\newfile.txt",
+                  "content": "Este es el contenido del nuevo archivo."
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          }
+        ],
+        "updated_at": 1772066866
+      }
+    },
+    {
+      "ts_epoch": 1772072729,
+      "type": "plan_created",
+      "plan": {
+        "mission_id": "mission_fea8e46e2779",
+        "created_ts": "2026-02-26T02:25:05.731579Z",
+        "updated_ts": "2026-02-26T02:25:05.731579Z",
+        "profile": "default",
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Listar directorio raíz del workspace",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "list_dir",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          }
+        ],
+        "updated_at": 1772072729
+      }
+    },
+    {
+      "ts_epoch": 1772072809,
+      "type": "plan_created",
+      "plan": {
+        "mission_id": "mission_1a12f7dc3163",
+        "created_ts": "2026-02-26T02:26:25.206660Z",
+        "updated_ts": "2026-02-26T02:26:25.206660Z",
+        "profile": "default",
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Leer el archivo de resumen",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "read_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\README.md"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          }
+        ],
+        "updated_at": 1772072809
+      }
+    },
+    {
+      "ts_epoch": 1772072892,
+      "type": "plan_created",
+      "plan": {
+        "mission_id": "mission_8391f40db616",
+        "created_ts": "2026-02-26T02:27:46.349399Z",
+        "updated_ts": "2026-02-26T02:27:46.349399Z",
+        "profile": "default",
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Leer el archivo de resumen",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "read_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\README.md"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          }
+        ],
+        "updated_at": 1772072892
+      }
+    },
+    {
+      "ts_epoch": 1772073341,
+      "type": "plan_created",
+      "plan": {
+        "mission_id": "mission_01bff8aa78c4",
+        "created_ts": "2026-02-26T02:34:24.546375Z",
+        "updated_ts": "2026-02-26T02:34:24.546375Z",
+        "profile": "default",
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Listar archivos en el directorio raíz del workspace",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "list_dir",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s2",
+            "title": "Leer el archivo README.md si existe, de lo contrario demo.txt o permissions.txt",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "read_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\README.md"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s3",
+            "title": "Escribir un resumen del contenido leído en un nuevo archivo markdown",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "write_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\summary_1690435200.md",
+                  "content": "Aquí hay un resumen del contenido leído en el archivo README.md (o demo.txt o permissions.txt si README.md no existe)."
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          }
+        ],
+        "updated_at": 1772073341
+      }
+    },
+    {
+      "ts_epoch": 1772074623,
+      "type": "plan_created",
+      "plan": {
+        "mission_id": "mission_5e07f464ed6f",
+        "created_ts": "2026-02-26T02:55:44.925066Z",
+        "updated_ts": "2026-02-26T02:55:44.925066Z",
+        "profile": "default",
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Listar archivos en el directorio raíz del workspace",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "list_dir",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s2",
+            "title": "Leer el archivo README.md si existe, de lo contrario demo.txt o permissions.txt",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "read_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\README.md"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s3",
+            "title": "Escribir un resumen del contenido leído en un nuevo archivo markdown",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "write_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\summary_1689974400.md",
+                  "content": "Aquí hay un resumen del contenido leído en el archivo README.md."
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          }
+        ],
+        "updated_at": 1772074623
+      }
+    },
+    {
+      "ts_epoch": 1772074783,
+      "type": "plan_created",
+      "plan": {
+        "mission_id": "mission_fe6b5006a77f",
+        "created_ts": "2026-02-26T02:58:36.577100Z",
+        "updated_ts": "2026-02-26T02:58:36.577100Z",
+        "profile": "default",
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Listar archivos en el directorio raíz del workspace",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "list_dir",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s2",
+            "title": "Leer el archivo README.md si existe, de lo contrario demo.txt o permissions.txt",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "read_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\README.md"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s3",
+            "title": "Escribir un resumen del contenido leído en un nuevo archivo markdown",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "write_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\summary_1689072000.md",
+                  "content": "Aquí va el resumen del contenido leído en el archivo README.md o alternativo."
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          }
+        ],
+        "updated_at": 1772074783
+      }
+    },
+    {
+      "ts_epoch": 1772074970,
+      "type": "plan_created",
+      "plan": {
+        "mission_id": "mission_a8ebe76900d7",
+        "created_ts": "2026-02-26T03:01:44.905997Z",
+        "updated_ts": "2026-02-26T03:01:44.905997Z",
+        "profile": "default",
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Listar archivos en el directorio de trabajo",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "list_dir",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s2",
+            "title": "Leer el archivo README.md si existe, de lo contrario demo.txt o permissions.txt",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "read_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\README.md"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s3",
+            "title": "Escribir un resumen del contenido leído en un nuevo archivo",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "write_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\summary_1689324000.md",
+                  "content": "Aquí hay un resumen del archivo leído en el paso anterior."
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          }
+        ],
+        "updated_at": 1772074970
+      }
+    },
+    {
+      "ts_epoch": 1772075122,
+      "type": "plan_created",
+      "plan": {
+        "mission_id": "mission_237b92dd882f",
+        "created_ts": "2026-02-26T03:04:15.118044Z",
+        "updated_ts": "2026-02-26T03:04:15.118044Z",
+        "profile": "default",
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Listar archivos en el directorio raíz del workspace",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "list_dir",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s2",
+            "title": "Leer el archivo README.md si existe, de lo contrario demo.txt o permissions.txt",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "read_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\README.md"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s3",
+            "title": "Escribir un resumen del contenido leído en un nuevo archivo markdown",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "write_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\summary_1689926400.md",
+                  "content": "Aquí va el resumen del archivo leído en 5-10 líneas o bullets."
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          }
+        ],
+        "updated_at": 1772075122
+      }
+    },
+    {
+      "ts_epoch": 1772075299,
+      "type": "plan_created",
+      "plan": {
+        "mission_id": "mission_86c96f072dd0",
+        "created_ts": "2026-02-26T03:07:07.338349Z",
+        "updated_ts": "2026-02-26T03:07:07.338349Z",
+        "profile": "default",
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Listar archivos en el directorio raíz del workspace",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "list_dir",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s2",
+            "title": "Leer el archivo README.md si existe, de lo contrario demo.txt o permissions.txt",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "read_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\README.md"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s3",
+            "title": "Escribir un resumen del contenido leído en un nuevo archivo markdown",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "write_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\summary_1689974400.md",
+                  "content": "Aquí va el resumen del contenido leído en s2."
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          }
+        ],
+        "updated_at": 1772075299
+      }
+    },
+    {
+      "ts_epoch": 1772075514,
+      "type": "plan_created",
+      "plan": {
+        "mission_id": "mission_50ce249a4a23",
+        "created_ts": "2026-02-26T03:10:42.130159Z",
+        "updated_ts": "2026-02-26T03:10:42.130159Z",
+        "profile": "default",
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Listar archivos en el directorio raíz del workspace",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "list_dir",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s2",
+            "title": "Leer el archivo README.md si existe, de lo contrario demo.txt o permissions.txt",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "read_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\README.md"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s3",
+            "title": "Escribir un resumen del contenido leído en un nuevo archivo markdown",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "write_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\summary_1689974400.md",
+                  "content": "Aquí va el resumen del contenido leído en s2."
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          }
+        ],
+        "updated_at": 1772075514
+      }
+    },
+    {
+      "ts_epoch": 1772075743,
+      "type": "plan_created",
+      "plan": {
+        "mission_id": "mission_752d205b7bb2",
+        "created_ts": "2026-02-26T03:14:25.322884Z",
+        "updated_ts": "2026-02-26T03:14:25.322884Z",
+        "profile": "default",
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Listar archivos en el directorio raíz del workspace",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "list_dir",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s2",
+            "title": "Leer el archivo README.md si existe, de lo contrario demo.txt o permissions.txt",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "read_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\README.md"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s3",
+            "title": "Escribir un resumen del contenido leído en un nuevo archivo markdown",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "write_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\summary_1693247508.md",
+                  "content": "Aquí hay un resumen del contenido leído en el archivo README.md (o demo.txt o permissions.txt):"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          }
+        ],
+        "updated_at": 1772075743
+      }
+    },
+    {
+      "ts_epoch": 1772117015,
+      "type": "plan_created",
+      "plan": {
+        "mission_id": "mission_1b0db9287e8c",
+        "created_ts": "2026-02-26T14:42:09.130217Z",
+        "updated_ts": "2026-02-26T14:42:09.130217Z",
+        "profile": "default",
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Listar archivos en el directorio de trabajo",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "list_dir",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s2",
+            "title": "Leer el archivo README.md si existe, de lo contrario demo.txt o permissions.txt",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "read_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\README.md"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s3",
+            "title": "Escribir un resumen del contenido leído en un nuevo archivo",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "write_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\summary_1693852800.md",
+                  "content": "Aquí hay un resumen del contenido leído en el archivo README.md."
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          }
+        ],
+        "updated_at": 1772117015
+      }
+    },
+    {
+      "ts_epoch": 1772117387,
+      "type": "plan_created",
+      "plan": {
+        "mission_id": "mission_e1e3837ab88a",
+        "created_ts": "2026-02-26T14:48:12.419293Z",
+        "updated_ts": "2026-02-26T14:48:12.419293Z",
+        "profile": "default",
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Listar directorio raíz del workspace",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "list_dir",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s2",
+            "title": "Leer el archivo README.md si existe, de lo contrario demo.txt o permissions.txt",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "read_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\README.md"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s3",
+            "title": "Escribir un resumen del contenido leído en un nuevo archivo markdown",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "write_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\summary_1690784400.md",
+                  "content": "Aquí hay un resumen del contenido leído en el archivo README.md (o demo.txt o permissions.txt si no existe README.md):\n- Punto 1 del resumen\n- Punto 2 del resumen\n- Punto 3 del resumen"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          }
+        ],
+        "updated_at": 1772117387
+      }
+    },
+    {
+      "ts_epoch": 1772117880,
+      "type": "plan_created",
+      "plan": {
+        "mission_id": "mission_3def7e957279",
+        "created_ts": "2026-02-26T14:56:35.214505Z",
+        "updated_ts": "2026-02-26T14:56:35.214505Z",
+        "profile": "default",
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Listar archivos en el directorio raíz del workspace",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "list_dir",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s2",
+            "title": "Leer el archivo README.md o demo.txt o permissions.txt",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "read_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\README.md"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s3",
+            "title": "Escribir un resumen del archivo leído en summary_<ts>.md",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "write_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\summary_<ts>.md",
+                  "content": "Aquí se incluirá un resumen corto del contenido leído en el paso s2."
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          }
+        ],
+        "updated_at": 1772117880
+      }
+    },
+    {
+      "ts_epoch": 1772118074,
+      "type": "plan_created",
+      "plan": {
+        "mission_id": "mission_0eed9d9a3c00",
+        "created_ts": "2026-02-26T15:00:03.397457Z",
+        "updated_ts": "2026-02-26T15:00:03.397457Z",
+        "profile": "default",
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Listar directorio raíz del workspace",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "list_dir",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s2",
+            "title": "Leer el archivo README.md si existe, de lo contrario demo.txt o permissions.txt",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "read_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\README.md"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s3",
+            "title": "Escribir un resumen del contenido leído en un nuevo archivo markdown",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "write_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\summary_1689472800.md",
+                  "content": "Aquí hay un resumen del contenido leído en el archivo README.md."
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          }
+        ],
+        "updated_at": 1772118074
+      }
+    },
+    {
+      "ts_epoch": 1772118304,
+      "type": "plan_created",
+      "plan": {
+        "mission_id": "mission_598cae56bba3",
+        "created_ts": "2026-02-26T15:03:54.340959Z",
+        "updated_ts": "2026-02-26T15:03:54.340959Z",
+        "profile": "default",
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Listar archivos en el directorio raíz del workspace",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "list_dir",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s2",
+            "title": "Leer el archivo README.md si existe, de lo contrario demo.txt o permissions.txt",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "read_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\README.md"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s3",
+            "title": "Escribir un resumen del archivo leído en summary_<ts>.md",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "write_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\summary_1689043200.md",
+                  "content": "Aquí va el resumen del archivo leído."
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          }
+        ],
+        "updated_at": 1772118304
+      }
+    },
+    {
+      "ts_epoch": 1772118524,
+      "type": "plan_created",
+      "plan": {
+        "mission_id": "mission_8bfb4c4c7c8a",
+        "created_ts": "2026-02-26T15:07:28.916815Z",
+        "updated_ts": "2026-02-26T15:07:28.916815Z",
+        "profile": "default",
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Listar archivos en el directorio raíz del workspace",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "list_dir",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s2",
+            "title": "Leer el archivo README.md si existe, de lo contrario demo.txt o permissions.txt",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "read_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\README.md"
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          },
+          {
+            "id": "s3",
+            "title": "Escribir un resumen del archivo leído en summary_<ts>.md",
+            "status": "pending",
+            "tool_calls": [
+              {
+                "tool": "write_file",
+                "args": {
+                  "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\summary_1689379200.md",
+                  "content": "Aquí se incluirá un resumen corto del contenido leído en el paso s2."
+                }
+              }
+            ],
+            "result": null,
+            "error": null
+          }
+        ],
+        "updated_at": 1772118524
+      }
+    }
+  ]
+}

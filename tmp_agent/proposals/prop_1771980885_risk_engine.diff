@@ -1,0 +1,157 @@
+--- C:\AI_VAULT\workspace\brainlab\brainlab\risk\risk_engine.py
++++ C:\AI_VAULT\tmp_agent\workspace\risk_engine.py
+@@ -1,65 +1,90 @@
+-# risk_engine.py (sandbox scaffold)
+-from __future__ import annotations
+-
+-from dataclasses import dataclass
+-from typing import Dict, Any
+-
+-
+-@dataclass
+-class RiskLimits:
+-    max_daily_loss: float = 0.02           # 2% NLV por día
+-    max_weekly_drawdown: float = 0.06      # 6% NLV semanal
+-    max_total_exposure: float = 0.70       # 70% NLV
+-    kill_switch: bool = False             # bandera manual / automática
+-
+-
+-class RiskEngine:
+-    """
+-    Risk Engine v1 (scaffold).
+-    No decide trades. Solo valida si una acción/propuesta viola límites estructurales.
+-    """
+-
+-    def __init__(self, limits: RiskLimits):
+-        self.limits = limits
+-
+-    def assess(self, snapshot: Dict[str, Any]) -> Dict[str, Any]:
+-        """
+-        snapshot esperado (ejemplo):
+-          {
+-            "nlv": 1000.0,
+-            "daily_pnl": -5.0,
+-            "weekly_drawdown": 0.01,
+-            "total_exposure": 0.35
+-          }
+-        """
+-        nlv = float(snapshot.get("nlv", 0.0) or 0.0)
+-        daily_pnl = float(snapshot.get("daily_pnl", 0.0) or 0.0)
+-        weekly_dd = float(snapshot.get("weekly_drawdown", 0.0) or 0.0)
+-        exposure = float(snapshot.get("total_exposure", 0.0) or 0.0)
+-
+-        if self.limits.kill_switch:
+-            return {"verdict": "halt", "reason": "KILL_SWITCH", "limits": self.limits.__dict__}
+-
+-        # daily loss as fraction of NLV
+-        daily_loss_frac = 0.0
+-        if nlv > 0 and daily_pnl < 0:
+-            daily_loss_frac = abs(daily_pnl) / nlv
+-
+-        violations = []
+-        if daily_loss_frac > self.limits.max_daily_loss:
+-            violations.append({"type": "MaxDailyLoss", "value": daily_loss_frac, "limit": self.limits.max_daily_loss})
+-        if weekly_dd > self.limits.max_weekly_drawdown:
+-            violations.append({"type": "MaxWeeklyDrawdown", "value": weekly_dd, "limit": self.limits.max_weekly_drawdown})
+-        if exposure > self.limits.max_total_exposure:
+-            violations.append({"type": "MaxTotalExposure", "value": exposure, "limit": self.limits.max_total_exposure})
+-
+-        if violations:
+-            return {"verdict": "halt", "reason": "RISK_LIMIT_VIOLATION", "violations": violations}
+-
++# risk_engine.py (Phase 5 — contract-aware)
++from __future__ import annotations
++
++from dataclasses import dataclass
++from typing import Any, Dict, Optional
++from pathlib import Path
++
++# Contract loader lives in brainlab/contracts (repo)
++# Keep import optional to avoid hard crash if paths differ; error becomes explicit.
++try:
++    from brainlab.contracts.contract_loader import load_contract_json
++except Exception as _e:
++    load_contract_json = None
++
++
++@dataclass
++class RiskLimits:
++    max_daily_loss: float = 0.02
++    max_weekly_drawdown: float = 0.06
++    max_total_exposure: float = 0.70
++    kill_switch: bool = False
++
++    @staticmethod
++    def from_contract(contract: Dict[str, Any]) -> "RiskLimits":
++        limits = (((contract.get("risk") or {}).get("limits")) or {})
++        return RiskLimits(
++            max_daily_loss=float(limits.get("max_daily_loss_frac", 0.02)),
++            max_weekly_drawdown=float(limits.get("max_weekly_drawdown_frac", 0.06)),
++            max_total_exposure=float(limits.get("max_total_exposure_frac", 0.70)),
++            kill_switch=bool(limits.get("kill_switch", False)),
++        )
++
++
++class RiskEngine:
++    """
++    Risk Engine v1 (Phase 5): contract-aware.
++    - No decide trades
++    - Enforce hard limits and emits verdict/violations
++    """
++
++    def __init__(self, limits: RiskLimits):
++        self.limits = limits
++
++    @staticmethod
++    def from_contract_path(contract_path: str) -> "RiskEngine":
++        if load_contract_json is None:
++            raise RuntimeError("CONTRACT_LOADER_IMPORT_FAILED: cannot import brainlab.contracts.contract_loader")
++
++        res = load_contract_json(contract_path)
++        if not res.ok:
++            raise RuntimeError(f"CONTRACT_LOAD_FAILED: {res.detail} data={res.data}")
++
++        contract = res.data.get("contract") or {}
++        limits = RiskLimits.from_contract(contract)
++        return RiskEngine(limits)
++
++    def assess(self, snapshot: Dict[str, Any]) -> Dict[str, Any]:
++        """
++        snapshot example:
++          {
++            "nlv": 1000.0,
++            "daily_pnl": -5.0,
++            "weekly_drawdown": 0.01,
++            "total_exposure": 0.35
++          }
++        """
++        nlv = float(snapshot.get("nlv", 0.0) or 0.0)
++        daily_pnl = float(snapshot.get("daily_pnl", 0.0) or 0.0)
++        weekly_dd = float(snapshot.get("weekly_drawdown", 0.0) or 0.0)
++        exposure = float(snapshot.get("total_exposure", 0.0) or 0.0)
++
++        if self.limits.kill_switch:
++            return {"verdict": "halt", "reason": "KILL_SWITCH", "limits": self.limits.__dict__}
++
++        daily_loss_frac = 0.0
++        if nlv > 0 and daily_pnl < 0:
++            daily_loss_frac = abs(daily_pnl) / nlv
++
++        violations = []
++        if daily_loss_frac > self.limits.max_daily_loss:
++            violations.append({"type": "MaxDailyLoss", "value": daily_loss_frac, "limit": self.limits.max_daily_loss})
++        if weekly_dd > self.limits.max_weekly_drawdown:
++            violations.append({"type": "MaxWeeklyDrawdown", "value": weekly_dd, "limit": self.limits.max_weekly_drawdown})
++        if exposure > self.limits.max_total_exposure:
++            violations.append({"type": "MaxTotalExposure", "value": exposure, "limit": self.limits.max_total_exposure})
++
++        if violations:
++            return {"verdict": "halt", "reason": "RISK_LIMIT_VIOLATION", "violations": violations}
++
+         return {"verdict": "continue", "reason": "OK", "violations": []}
+-
+-# touch 2026-02-24T19:44:51.9464551-05:00
+-
+-
+-# touch3 2026-02-24T19:48:32.5467110-05:00
+-

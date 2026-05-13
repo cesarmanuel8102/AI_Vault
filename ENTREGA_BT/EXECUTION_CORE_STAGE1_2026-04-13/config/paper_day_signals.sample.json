@@ -1,0 +1,57 @@
+[
+  {
+    "timestamp_et": "2026-04-14T09:40:00",
+    "strategy_id": "PF100_FASTPASS_PRACTICAL_V1",
+    "symbol": "MNQ",
+    "side": "BUY",
+    "qty": 1,
+    "stop_price": 17890.0,
+    "target_price": 18010.0,
+    "note": "valid opening signal"
+  },
+  {
+    "timestamp_et": "2026-04-14T10:20:00",
+    "strategy_id": "PF100_FASTPASS_PRACTICAL_V1",
+    "symbol": "MNQ",
+    "side": "BUY",
+    "qty": 1,
+    "stop_price": 17910.0,
+    "target_price": 18040.0,
+    "note": "second valid signal"
+  },
+  {
+    "timestamp_et": "2026-04-14T10:25:00",
+    "strategy_id": "PF100_FASTPASS_PRACTICAL_V1",
+    "symbol": "MNQ",
+    "side": "BUY",
+    "qty": 1,
+    "stop_price": 17920.0,
+    "target_price": 18060.0,
+    "note": "expected reject by max contracts total"
+  },
+  {
+    "timestamp_et": "2026-04-14T14:10:00",
+    "strategy_id": "PF100_FASTPASS_PRACTICAL_V1",
+    "symbol": "MNQ",
+    "side": "SELL",
+    "qty": 1,
+    "stop_price": 18030.0,
+    "target_price": 17860.0,
+    "state_patch_before": {
+      "open_contracts": 0,
+      "open_positions": 0,
+      "day_pnl_pct": -0.0082
+    },
+    "note": "expected reject by daily loss guard"
+  },
+  {
+    "timestamp_et": "2026-04-14T16:05:00",
+    "strategy_id": "PF100_FASTPASS_PRACTICAL_V1",
+    "symbol": "MNQ",
+    "side": "BUY",
+    "qty": 1,
+    "stop_price": 17950.0,
+    "target_price": 18050.0,
+    "note": "expected reject outside allowed session"
+  }
+]

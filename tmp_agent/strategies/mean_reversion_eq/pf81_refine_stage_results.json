@@ -1,0 +1,125 @@
+{
+  "updated_utc": "2026-04-13T01:37:54Z",
+  "rows": [
+    {
+      "backtest_id": "3b934ecd82d3d4a8f392cedc43cc9940",
+      "net_profit_pct": -0.455,
+      "drawdown_pct": 3.2,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "consistency_pct": 999.0,
+      "candidate": "PF81_R1_A0_SAFE",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "backtest_id": "63caf7c59fa907e793fc6544f6dabd19",
+      "net_profit_pct": 17.759,
+      "drawdown_pct": 2.4,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "consistency_pct": 7.09,
+      "candidate": "PF81_R1_A0_SAFE",
+      "scenario": "FULL_2022_2026Q1"
+    },
+    {
+      "backtest_id": "4b9e75354889d5785c5549c9e1accaa8",
+      "net_profit_pct": 9.445,
+      "drawdown_pct": 2.2,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "consistency_pct": 13.32,
+      "candidate": "PF81_R1_A0_SAFE",
+      "scenario": "OOS_2025_2026Q1"
+    },
+    {
+      "backtest_id": "c1c52ecdc464137f5667b1daf82c7f1a",
+      "net_profit_pct": -0.455,
+      "drawdown_pct": 3.2,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "consistency_pct": 999.0,
+      "candidate": "PF81_R2_A0_STRESS_LIGHT",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "backtest_id": "ce2b0cf651d67e78018fd16830c0ce91",
+      "net_profit_pct": 17.759,
+      "drawdown_pct": 2.4,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "consistency_pct": 7.09,
+      "candidate": "PF81_R2_A0_STRESS_LIGHT",
+      "scenario": "FULL_2022_2026Q1"
+    },
+    {
+      "backtest_id": "f690b49468fd4dd2b494cbb32f82d314",
+      "net_profit_pct": 9.445,
+      "drawdown_pct": 2.2,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "consistency_pct": 13.32,
+      "candidate": "PF81_R2_A0_STRESS_LIGHT",
+      "scenario": "OOS_2025_2026Q1"
+    },
+    {
+      "backtest_id": "23ecf62aa50b639525f2a743b303feb8",
+      "net_profit_pct": -1.29,
+      "drawdown_pct": 3.5,
+      "daily_loss_breaches": 1,
+      "trailing_breaches": 1,
+      "consistency_pct": 999.0,
+      "candidate": "PF81_R3_B1_LITE",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "backtest_id": "dd947ebdb4bb78d2ef176dc2930a987d",
+      "net_profit_pct": -1.29,
+      "drawdown_pct": 3.5,
+      "daily_loss_breaches": 1,
+      "trailing_breaches": 1,
+      "consistency_pct": 999.0,
+      "candidate": "PF81_R4_B1_DEF",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "backtest_id": "33ff4a88a61ad7080975cf0769f8ce53",
+      "net_profit_pct": -1.439,
+      "drawdown_pct": 3.5,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "consistency_pct": 999.0,
+      "candidate": "PF81_R5_BAL_MID",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "backtest_id": "f743f0d3f2ab755708e19b0bdc6da74a",
+      "net_profit_pct": -1.057,
+      "drawdown_pct": 3.5,
+      "daily_loss_breaches": 1,
+      "trailing_breaches": 1,
+      "consistency_pct": 999.0,
+      "candidate": "PF81_R6_RET_MID",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "backtest_id": "f659cc2daed91845afd261be08b8f5af",
+      "net_profit_pct": -2.361,
+      "drawdown_pct": 3.5,
+      "daily_loss_breaches": 1,
+      "trailing_breaches": 1,
+      "consistency_pct": 999.0,
+      "candidate": "PF81_R7_RET_HI",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "backtest_id": "90ef47cebc80eb31089abf8650e9f066",
+      "net_profit_pct": -1.057,
+      "drawdown_pct": 3.5,
+      "daily_loss_breaches": 1,
+      "trailing_breaches": 1,
+      "consistency_pct": 999.0,
+      "candidate": "PF81_R8_STRESS_LONG",
+      "scenario": "STRESS_2020"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "project_id": 29652652,
+  "compile_id": "b392e968b08688288893b1a43aaa7490-f2efa15dd944baf08486465b6574597d",
+  "backtest_id": "c9d3a38fdf9373d21c58f12df62e0da0",
+  "backtest_name": "CMR-V2.0 OOS 2023-2024 Risk3",
+  "launched_at": "2026-04-03 22:48:21 UTC",
+  "parameters": {
+    "start_year": "2023",
+    "end_year": "2024",
+    "end_month": "12",
+    "lookback": "130",
+    "zscore_entry": "2.0",
+    "zscore_exit": "0",
+    "rsi_os": "30",
+    "rsi_ob": "70",
+    "adx_max": "25",
+    "adx_exit": "30",
+    "risk_per_trade": "0.03",
+    "use_eurgbp": "1",
+    "use_chf": "0",
+    "use_comchf": "0",
+    "max_positions": "3",
+    "max_cluster": "2",
+    "hard_stop_atr": "2.5",
+    "max_hold_days": "10",
+    "max_daily_risk": "0.04",
+    "max_weekly_risk": "0.06"
+  },
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/commodity_mr/main.py"
+}

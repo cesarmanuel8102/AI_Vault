@@ -1,0 +1,45 @@
+{
+  "optimizations": [
+    {
+      "name": "V2.0b Param Stability - PT/SL/Risk 45 combos",
+      "created": "2026-04-06 17:48:33",
+      "optimizationId": "O-c9eca3743f4933140d42879a0d38825e",
+      "snapshotId": null,
+      "status": "new",
+      "projectId": 29490680,
+      "nodeType": "O2-8",
+      "psr": null,
+      "sharpeRatio": null,
+      "trades": null,
+      "cloneId": null,
+      "outOfSampleDays": 0,
+      "outOfSampleMaxEndDate": "2026-04-06T00:00:00Z",
+      "parameters": [
+        {
+          "name": "profit_target_pct",
+          "min": 0.3,
+          "max": 0.5,
+          "step": 0.05
+        },
+        {
+          "name": "stop_loss_pct",
+          "min": -0.25,
+          "max": -0.15,
+          "step": 0.05
+        },
+        {
+          "name": "risk_per_trade",
+          "min": 0.04,
+          "max": 0.06,
+          "step": 0.01
+        }
+      ],
+      "criterion": {
+        "extremum": "max",
+        "target": "TotalPerformance.PortfolioStatistics.SharpeRatio",
+        "targetValue": null
+      }
+    }
+  ],
+  "success": true
+}

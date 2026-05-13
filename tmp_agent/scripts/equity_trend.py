@@ -1,0 +1,1 @@
+# Script para calcular equity trend, drawdown y win rate

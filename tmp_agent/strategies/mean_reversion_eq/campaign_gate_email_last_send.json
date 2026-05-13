@@ -1,0 +1,18 @@
+{
+  "generated_at_utc": "2026-05-13T21:36:52.668982+00:00",
+  "status_state": "NO_CAMPAIGN",
+  "status_action": "NO_BUY",
+  "subject": "PF Campaign Gate Diario: NO_CAMPAIGN",
+  "send_result": {
+    "ok": true,
+    "mode": "smtp_ssl",
+    "smtp_host": "smtp.gmail.com",
+    "smtp_port": 465,
+    "to": "cesarmanuel8102@gmail.com"
+  },
+  "loaded_env_files": [
+    "C:\\AI_VAULT\\Secrets\\email_alerts.env",
+    "C:\\AI_VAULT\\.env",
+    "C:\\Users\\cesar\\OneDrive\\Escritorio\\Memoria 32\\Personal\\TradingBot\\Proyecto 2. GitHub-Render-Alapaca-Tastytrade\\.env"
+  ]
+}

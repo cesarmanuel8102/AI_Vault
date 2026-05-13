@@ -1,0 +1,62 @@
+--- NUL
++++ C:\AI_VAULT\tmp_agent\workspace\risk_engine.py
+@@ -0,0 +1,59 @@
++# risk_engine.py (sandbox scaffold)
++from __future__ import annotations
++
++from dataclasses import dataclass
++from typing import Dict, Any
++
++
++@dataclass
++class RiskLimits:
++    max_daily_loss: float = 0.02           # 2% NLV por día
++    max_weekly_drawdown: float = 0.06      # 6% NLV semanal
++    max_total_exposure: float = 0.70       # 70% NLV
++    kill_switch: bool = False             # bandera manual / automática
++
++
++class RiskEngine:
++    """
++    Risk Engine v1 (scaffold).
++    No decide trades. Solo valida si una acción/propuesta viola límites estructurales.
++    """
++
++    def __init__(self, limits: RiskLimits):
++        self.limits = limits
++
++    def assess(self, snapshot: Dict[str, Any]) -> Dict[str, Any]:
++        """
++        snapshot esperado (ejemplo):
++          {
++            "nlv": 1000.0,
++            "daily_pnl": -5.0,
++            "weekly_drawdown": 0.01,
++            "total_exposure": 0.35
++          }
++        """
++        nlv = float(snapshot.get("nlv", 0.0) or 0.0)
++        daily_pnl = float(snapshot.get("daily_pnl", 0.0) or 0.0)
++        weekly_dd = float(snapshot.get("weekly_drawdown", 0.0) or 0.0)
++        exposure = float(snapshot.get("total_exposure", 0.0) or 0.0)
++
++        if self.limits.kill_switch:
++            return {"verdict": "halt", "reason": "KILL_SWITCH", "limits": self.limits.__dict__}
++
++        # daily loss as fraction of NLV
++        daily_loss_frac = 0.0
++        if nlv > 0 and daily_pnl < 0:
++            daily_loss_frac = abs(daily_pnl) / nlv
++
++        violations = []
++        if daily_loss_frac > self.limits.max_daily_loss:
++            violations.append({"type": "MaxDailyLoss", "value": daily_loss_frac, "limit": self.limits.max_daily_loss})
++        if weekly_dd > self.limits.max_weekly_drawdown:
++            violations.append({"type": "MaxWeeklyDrawdown", "value": weekly_dd, "limit": self.limits.max_weekly_drawdown})
++        if exposure > self.limits.max_total_exposure:
++            violations.append({"type": "MaxTotalExposure", "value": exposure, "limit": self.limits.max_total_exposure})
++
++        if violations:
++            return {"verdict": "halt", "reason": "RISK_LIMIT_VIOLATION", "violations": violations}
++
++        return {"verdict": "continue", "reason": "OK", "violations": []}

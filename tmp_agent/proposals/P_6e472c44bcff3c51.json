@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_6e472c44bcff3c51",
+  "tool_name": "append_file",
+  "tool_args": {
+    "content": "hello from autoloop room\n",
+    "path": "C:\\AI_VAULT\\tmp_agent\\state\\rooms\\autoloop_room_20260307_110040\\probe.txt",
+    "raw_content": "hello from autoloop room\n",
+    "text": "hello from autoloop room\n"
+  },
+  "room_id": "autoloop_room_20260307_110040",
+  "step_id": "S1",
+  "created_at": "2026-03-07T16:00:41.701644+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

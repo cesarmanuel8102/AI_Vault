@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="AI Vault">
+  <rect width="64" height="64" rx="14" fill="#0b1020"/>
+  <path d="M18 46 29 18h6l11 28h-7l-2-5H27l-2 5h-7Zm11-11h6l-3-8-3 8Z" fill="#7aa2ff"/>
+  <path d="M46 16h-8l-4 10h6l6-10Z" fill="#23d18b"/>
+</svg>

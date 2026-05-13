@@ -1,0 +1,58 @@
+{
+  "source_id": "github_microsoft_TaskWeaver_20260508",
+  "generated_at_utc": "2026-05-08T04:56:45.220792Z",
+  "patterns": [
+    {
+      "pattern_id": "ci_backed_regression_harness",
+      "semantic_family": "regression_harness",
+      "source_id": "github_microsoft_TaskWeaver_20260508",
+      "evidence_refs": [
+        {
+          "source_file": "tests/",
+          "reason": "Root index shows tests/CI structure.",
+          "evidence_type": "root_index_signal"
+        }
+      ]
+    },
+    {
+      "pattern_id": "dependency_manifest_governance",
+      "semantic_family": "dependency_governance",
+      "source_id": "github_microsoft_TaskWeaver_20260508",
+      "evidence_refs": [
+        {
+          "source_file": "requirements.txt",
+          "reason": "Root dependency manifest is present and can be audited.",
+          "evidence_type": "root_index_signal"
+        }
+      ]
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "HYP_MICROSOFT_TASKWEAVER_CI_BACKED_REGRESSION_HARNESS_001",
+      "semantic_key": "governance_quality:regression_harness",
+      "source_id": "github_microsoft_TaskWeaver_20260508",
+      "pattern_id": "ci_backed_regression_harness",
+      "evidence_refs": [
+        {
+          "source_file": "tests/",
+          "reason": "Root index shows tests/CI structure.",
+          "evidence_type": "root_index_signal"
+        }
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_MICROSOFT_TASKWEAVER_DEPENDENCY_MANIFEST_GOVERNANCE_002",
+      "semantic_key": "governance_quality:dependency_governance",
+      "source_id": "github_microsoft_TaskWeaver_20260508",
+      "pattern_id": "dependency_manifest_governance",
+      "evidence_refs": [
+        {
+          "source_file": "requirements.txt",
+          "reason": "Root dependency manifest is present and can be audited.",
+          "evidence_type": "root_index_signal"
+        }
+      ]
+    }
+  ]
+}

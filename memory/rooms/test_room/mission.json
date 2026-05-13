@@ -1,0 +1,18 @@
+{
+  "goal": "Brain Lab: baseline determinista + preparar PEE/STEP",
+  "constraints": [
+    "No ejecutar PowerShell",
+    "Solo escribir dentro del repo_root",
+    "Reportes solo en docs"
+  ],
+  "metrics": [
+    "progress",
+    "risk",
+    "time"
+  ],
+  "created_ts": "2026-02-22 21:17:38",
+  "updated_ts": "2026-02-22 21:17:38",
+  "status": "active",
+  "notes": "bootstrap_test_room",
+  "repo_root": "C:\\AI_VAULT\\workspace\\brainlab"
+}

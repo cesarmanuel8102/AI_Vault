@@ -1,0 +1,13 @@
+{
+  "proposal_id": "P_5eec729cf1727176",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "C:\\AI_VAULT\\tmp_agent\\workspace\\demo_write2.txt",
+    "content": "hello APPLY works\n"
+  },
+  "room_id": "room_write_demo2",
+  "step_id": "1",
+  "created_at": "2026-03-01T00:14:49.030281+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

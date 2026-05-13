@@ -1,0 +1,23 @@
+{
+  "source_id": "github_langchain_ai_langgraph_20260508",
+  "generated_at_utc": "2026-05-08T05:26:36.556931Z",
+  "source_risk_score": 2.0,
+  "pattern_risks": [
+    {
+      "pattern_id": "stateful_graph_orchestration",
+      "risk": 3.5
+    },
+    {
+      "pattern_id": "failure_recovery_checkpoints",
+      "risk": 3.0
+    },
+    {
+      "pattern_id": "ci_backed_regression_harness",
+      "risk": 2.5
+    },
+    {
+      "pattern_id": "structured_tool_dispatch",
+      "risk": 3.5
+    }
+  ]
+}

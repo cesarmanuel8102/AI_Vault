@@ -1,0 +1,13 @@
+{
+  "kind": "write_proposal",
+  "note": "Template: estructura base de proposal. No ejecutar; usar como referencia.",
+  "room_id": "TEMPLATE",
+  "proposal_id": "proposal_template",
+  "step_id": "TEMPLATE",
+  "created_at": "2026-03-01T13:04:54.7399707-05:00",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "C:\\AI_VAULT\\tmp_agent\\workspace\\example.txt",
+    "content": "example\n"
+  }
+}

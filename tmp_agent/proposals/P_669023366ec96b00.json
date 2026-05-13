@@ -1,0 +1,13 @@
+{
+  "proposal_id": "P_669023366ec96b00",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "C:\\AI_VAULT\\workspace\\brain_openai_fastapi\\run_dev.ps1",
+    "content": "param(\n  [string]$HostAddr = \"127.0.0.1\",\n  [int]$Port = 8040\n)\n$ErrorActionPreference=\"Stop\"\n$env:APP_HOST = $HostAddr\n$env:APP_PORT = $Port\n$env:APP_NAME = \"brain_openai_fastapi\"\n$env:LOG_LEVEL = \"INFO\"\n\npython -m uvicorn src.app.main:app --host $HostAddr --port $Port --reload"
+  },
+  "room_id": "autobuild_brain_openai",
+  "step_id": "B12",
+  "created_at": "2026-03-05T20:00:38.315997+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

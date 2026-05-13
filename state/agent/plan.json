@@ -1,0 +1,548 @@
+{
+  "mission_id": "mission_1772050723",
+  "created_ts": "2026-02-25T20:18:43.681509Z",
+  "updated_ts": "2026-02-25T20:18:43.732462Z",
+  "profile": "default",
+  "cursor": 1,
+  "steps": [
+    {
+      "id": "s1",
+      "title": "Inspeccionar estado actual",
+      "status": "done",
+      "tool_calls": [
+        {
+          "tool": "list_dir",
+          "args": {
+            "path": "C:\\AI_VAULT\\00_identity"
+          }
+        },
+        {
+          "tool": "list_dir",
+          "args": {
+            "path": "C:\\AI_VAULT\\tmp_agent"
+          }
+        }
+      ],
+      "result": [
+        {
+          "tool": "list_dir",
+          "ok": true,
+          "output": {
+            "path": "C:\\AI_VAULT\\00_identity",
+            "items": [
+              {
+                "name": "$null",
+                "is_dir": false,
+                "size": 0
+              },
+              {
+                "name": "$RUN",
+                "is_dir": false,
+                "size": 854
+              },
+              {
+                "name": ".venv",
+                "is_dir": true,
+                "size": 0
+              },
+              {
+                "name": "__pycache__",
+                "is_dir": true,
+                "size": 8192
+              },
+              {
+                "name": "_add_risk_meta_tables.py",
+                "is_dir": false,
+                "size": 879
+              },
+              {
+                "name": "_db_probe.py",
+                "is_dir": false,
+                "size": 576
+              },
+              {
+                "name": "_rag_indexer.py",
+                "is_dir": false,
+                "size": 2249
+              },
+              {
+                "name": "_rag_init.py",
+                "is_dir": false,
+                "size": 747
+              },
+              {
+                "name": "agent_loop.py",
+                "is_dir": false,
+                "size": 10230
+              },
+              {
+                "name": "agent_loop.py.bak_roomaware_20260225_151756",
+                "is_dir": false,
+                "size": 10143
+              },
+              {
+                "name": "agent_loop.py.bak_roomaware_20260225_151815",
+                "is_dir": false,
+                "size": 10228
+              },
+              {
+                "name": "agent_loop.py.bak_state_root_20260225_151227",
+                "is_dir": false,
+                "size": 9778
+              },
+              {
+                "name": "agent_state.py",
+                "is_dir": false,
+                "size": 2839
+              },
+              {
+                "name": "AI_LOCAL_DIAGNOSTIC.ps1",
+                "is_dir": false,
+                "size": 2120
+              },
+              {
+                "name": "approval_gate.py",
+                "is_dir": false,
+                "size": 1933
+              },
+              {
+                "name": "archive",
+                "is_dir": true,
+                "size": 0
+              },
+              {
+                "name": "brain.db",
+                "is_dir": false,
+                "size": 118784
+              },
+              {
+                "name": "brain_lab",
+                "is_dir": true,
+                "size": 4096
+              },
+              {
+                "name": "brain_router.py",
+                "is_dir": false,
+                "size": 41664
+              },
+              {
+                "name": "brain_router.py.pre_phase3_20260224.bak",
+                "is_dir": false,
+                "size": 40076
+              },
+              {
+                "name": "brain_server.py",
+                "is_dir": false,
+                "size": 4919
+              },
+              {
+                "name": "brain_server.py.bak_agent_endpoints_20260225_144444",
+                "is_dir": false,
+                "size": 957
+              },
+              {
+                "name": "brain_server.py.bak_capabilities_20260225_150552",
+                "is_dir": false,
+                "size": 4654
+              },
+              {
+                "name": "brain_server.py.bak_policy_tools_20260225_150359",
+                "is_dir": false,
+                "size": 4654
+              },
+              {
+                "name": "brain_server.py.bak_tools_shim_20260225_145639",
+                "is_dir": false,
+                "size": 2702
+              },
+              {
+                "name": "brain_server.py.pre_restore_20260222_202622.bak",
+                "is_dir": false,
+                "size": 119727
+              },
+              {
+                "name": "brain_server.py.pre_restore_20260222_202833.bak",
+                "is_dir": false,
+                "size": 119727
+              },
+              {
+                "name": "constitution.md",
+                "is_dir": false,
+                "size": 2076
+              },
+              {
+                "name": "constitution.txt",
+                "is_dir": false,
+                "size": 1861
+              },
+              {
+                "name": "decision_engine_protocol.md",
+                "is_dir": false,
+                "size": 1060
+              },
+              {
+                "name": "docs",
+                "is_dir": true,
+                "size": 0
+              },
+              {
+                "name": "episode_schema.py",
+                "is_dir": false,
+                "size": 2226
+              },
+              {
+                "name": "episodes.py",
+                "is_dir": false,
+                "size": 3679
+              },
+              {
+                "name": "evaluator_v2.py",
+                "is_dir": false,
+                "size": 2328
+              },
+              {
+                "name": "init_brain_db.py",
+                "is_dir": false,
+                "size": 1118
+              },
+              {
+                "name": "install_brain_service.ps1",
+                "is_dir": false,
+                "size": 962
+              },
+              {
+                "name": "logs",
+                "is_dir": true,
+                "size": 4096
+              },
+              {
+                "name": "memory_rank.py",
+                "is_dir": false,
+                "size": 6287
+              },
+              {
+                "name": "memory_rank_sort.py",
+                "is_dir": false,
+                "size": 3072
+              },
+              {
+                "name": "memory_store.py",
+                "is_dir": false,
+                "size": 6405
+              },
+              {
+                "name": "memory_system.md",
+                "is_dir": false,
+                "size": 974
+              },
+              {
+                "name": "patch_brain_server.py",
+                "is_dir": false,
+                "size": 5542
+              },
+              {
+                "name": "PEGA_AQUI_LA_RUTA_QUE_TE_SALIO",
+                "is_dir": false,
+                "size": 150
+              },
+              {
+                "name": "policy.py",
+                "is_dir": false,
+                "size": 3406
+              },
+              {
+                "name": "policy_eval.py",
+                "is_dir": false,
+                "size": 3489
+              },
+              {
+                "name": "policy_registry.py",
+                "is_dir": false,
+                "size": 2387
+              },
+              {
+                "name": "run_brain_server.ps1",
+                "is_dir": false,
+                "size": 2018
+              },
+              {
+                "name": "run_brain_server_hardened.ps1",
+                "is_dir": false,
+                "size": 1814
+              },
+              {
+                "name": "seed_memory.py",
+                "is_dir": false,
+                "size": 502
+              },
+              {
+                "name": "state",
+                "is_dir": true,
+                "size": 0
+              },
+              {
+                "name": "tools_fs.py",
+                "is_dir": false,
+                "size": 2537
+              }
+            ]
+          },
+          "error": null
+        },
+        {
+          "tool": "list_dir",
+          "ok": true,
+          "output": {
+            "path": "C:\\AI_VAULT\\tmp_agent",
+            "items": [
+              {
+                "name": "__pycache__",
+                "is_dir": true,
+                "size": 4096
+              },
+              {
+                "name": "_dummy_bundle.json",
+                "is_dir": false,
+                "size": 45
+              },
+              {
+                "name": "_patch_contract_limits.py",
+                "is_dir": false,
+                "size": 1169
+              },
+              {
+                "name": "_patch_contract_risk_limits.py",
+                "is_dir": false,
+                "size": 1405
+              },
+              {
+                "name": "apply_gate.py",
+                "is_dir": false,
+                "size": 9840
+              },
+              {
+                "name": "dev_loop.py",
+                "is_dir": false,
+                "size": 40306
+              },
+              {
+                "name": "dev_loop.py.bak_fix_ok_vs_halt_20260225_135830",
+                "is_dir": false,
+                "size": 36182
+              },
+              {
+                "name": "dev_loop.py.bak_fix_parse_args_psm_20260225_134753",
+                "is_dir": false,
+                "size": 36189
+              },
+              {
+                "name": "dev_loop.py.bak_fix_repo_root_fallback_20260225_135925",
+                "is_dir": false,
+                "size": 37375
+              },
+              {
+                "name": "dev_loop.py.bak_fix_return_args_20260225_134851",
+                "is_dir": false,
+                "size": 36179
+              },
+              {
+                "name": "dev_loop.py.bak_last_apply_update_20260225_142102",
+                "is_dir": false,
+                "size": 40124
+              },
+              {
+                "name": "dev_loop.py.bak_main_20260225_110335",
+                "is_dir": false,
+                "size": 36505
+              },
+              {
+                "name": "dev_loop.py.bak_polish_last_apply_smoke_summary_20260225_141810",
+                "is_dir": false,
+                "size": 39087
+              },
+              {
+                "name": "dev_loop.py.bak_polish_v2_20260225_142003",
+                "is_dir": false,
+                "size": 39087
+              },
+              {
+                "name": "dev_loop.py.bak_post_smoke_mode_20260225_134345",
+                "is_dir": false,
+                "size": 35641
+              },
+              {
+                "name": "dev_loop.py.bak_post_smoke_mode_FIX_20260225_134639",
+                "is_dir": false,
+                "size": 35641
+              },
+              {
+                "name": "dev_loop.py.bak_post_smoke_profile_20260225_141031",
+                "is_dir": false,
+                "size": 38502
+              },
+              {
+                "name": "dev_loop.py.bak_replace_smoke_mode_20260225_141553",
+                "is_dir": false,
+                "size": 38824
+              },
+              {
+                "name": "dev_loop.py.bak_smoke_env_profile_20260225_141403",
+                "is_dir": false,
+                "size": 38813
+              },
+              {
+                "name": "dev_loop.py.bak_wire_profile_hard_20260225_141235",
+                "is_dir": false,
+                "size": 38654
+              },
+              {
+                "name": "diff_engine.py",
+                "is_dir": false,
+                "size": 2524
+              },
+              {
+                "name": "logs",
+                "is_dir": true,
+                "size": 0
+              },
+              {
+                "name": "make_tools_snapshot.ps1",
+                "is_dir": false,
+                "size": 1075
+              },
+              {
+                "name": "policies.py",
+                "is_dir": false,
+                "size": 2598
+              },
+              {
+                "name": "proposal_packager.py",
+                "is_dir": false,
+                "size": 5138
+              },
+              {
+                "name": "proposals",
+                "is_dir": true,
+                "size": 16384
+              },
+              {
+                "name": "restore_tools.ps1",
+                "is_dir": false,
+                "size": 2061
+              },
+              {
+                "name": "runs",
+                "is_dir": true,
+                "size": 0
+              },
+              {
+                "name": "sandbox_executor.py",
+                "is_dir": false,
+                "size": 6310
+              },
+              {
+                "name": "sandbox_logger.py",
+                "is_dir": false,
+                "size": 1880
+              },
+              {
+                "name": "sandbox_state.json",
+                "is_dir": false,
+                "size": 1502
+              },
+              {
+                "name": "smoke_risk_engine.py",
+                "is_dir": false,
+                "size": 891
+              },
+              {
+                "name": "smoke_runner.py",
+                "is_dir": false,
+                "size": 6300
+              },
+              {
+                "name": "smoke_runner.py.bak_before_overwrite_v2_20260225_140205",
+                "is_dir": false,
+                "size": 1561
+              },
+              {
+                "name": "smoke_runner.py.bak_before_overwrite_v3_20260225_140500",
+                "is_dir": false,
+                "size": 2654
+              },
+              {
+                "name": "smoke_runner.py.bak_contract_autodetect_20260225_140626",
+                "is_dir": false,
+                "size": 4192
+              },
+              {
+                "name": "smoke_runner.py.bak_fix_smoke_utils_20260225_140302",
+                "is_dir": false,
+                "size": 2549
+              },
+              {
+                "name": "smoke_runner.py.bak_has_halt_20260225_140043",
+                "is_dir": false,
+                "size": 1561
+              },
+              {
+                "name": "smoke_runner.py.bak_profile_20260225_140823",
+                "is_dir": false,
+                "size": 5550
+              },
+              {
+                "name": "state",
+                "is_dir": true,
+                "size": 28672
+              },
+              {
+                "name": "workspace",
+                "is_dir": true,
+                "size": 4096
+              }
+            ]
+          },
+          "error": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "s2",
+      "title": "Validar archivos críticos",
+      "status": "pending",
+      "tool_calls": [
+        {
+          "tool": "read_file",
+          "args": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\dev_loop.py"
+          }
+        },
+        {
+          "tool": "read_file",
+          "args": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\smoke_runner.py"
+          }
+        }
+      ],
+      "result": null,
+      "error": null
+    },
+    {
+      "id": "s3",
+      "title": "Checkpoint",
+      "status": "pending",
+      "tool_calls": [
+        {
+          "tool": "append_file",
+          "args": {
+            "path": "C:\\AI_VAULT\\logs\\agent_checkpoints.ndjson",
+            "text": "{\"ts\": \"2026-02-25T20:18:43.681509Z\", \"goal\": \"RoomB checkpoint\"}\n"
+          }
+        }
+      ],
+      "result": null,
+      "error": null
+    }
+  ]
+}

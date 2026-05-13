@@ -1,0 +1,120 @@
+{
+  "version": "2.0",
+  "title": "AI_VAULT Autoconstrucci\u00c3\u00b3n Continua",
+  "description": "Roadmap de evoluci\u00c3\u00b3n aut\u00c3\u00b3noma post-fase 6",
+  "current_phase": 6,
+  "autonomy_level": "total",
+  "phases": [
+    {
+      "number": 6.1,
+      "name": "MOTOR_FINANCIERO",
+      "description": "Construcci\u00c3\u00b3n del motor financiero especializado",
+      "status": "completed",
+      "goals": [
+        "Implementar core de trading y an\u00c3\u00a1lisis de mercado",
+        "Crear sistema de gesti\u00c3\u00b3n de capital (Core/Sat\u00c3\u00a9lite/Explorador)",
+        "Desarrollar motor de simulaci\u00c3\u00b3n y backtesting",
+        "Integrar fuentes de datos de mercado en tiempo real"
+      ],
+      "success_criteria": [
+        "Motor de trading operativo con paper trading",
+        "Sistema de riesgo con VaR/CVaR implementado",
+        "Simulaci\u00c3\u00b3n de estrategias funcionando",
+        "Datos de mercado ingestados y procesados"
+      ],
+      "estimated_duration": "2 semanas",
+      "next_phase_trigger": "Motor financiero validado con paper trading exitoso"
+    },
+    {
+      "number": 6.2,
+      "name": "INTELIGENCIA_ESTRATEGICA",
+      "description": "Desarrollo de capacidades de an\u00c3\u00a1lisis y generaci\u00c3\u00b3n de estrategias",
+      "status": "completed",
+      "goals": [
+        "Implementar an\u00c3\u00a1lisis t\u00c3\u00a9cnico automatizado",
+        "Desarrollar an\u00c3\u00a1lisis fundamental y de sentimiento",
+        "Crear generador de estrategias cuantitativas",
+        "Implementar optimizaci\u00c3\u00b3n de portfolios"
+      ],
+      "success_criteria": [
+        "Estrategias generadas autom\u00c3\u00a1ticamente",
+        "Backtests con m\u00c3\u00a9tricas de rendimiento",
+        "Optimizaci\u00c3\u00b3n de portfolios funcionando",
+        "Sistema de ranking de estrategias"
+      ],
+      "estimated_duration": "3 semanas",
+      "next_phase_trigger": "3 estrategias validadas con backtests positivos"
+    },
+    {
+      "number": 6.3,
+      "name": "EJECUCION_AUTONOMA",
+      "description": "Capacidad de ejecuci\u00c3\u00b3n de operaciones de forma aut\u00c3\u00b3noma",
+      "status": "active",
+      "goals": [
+        "Integrar brokers y APIs de ejecuci\u00c3\u00b3n",
+        "Implementar sistema de \u00c3\u00b3rdenes inteligentes",
+        "Desarrollar gesti\u00c3\u00b3n de posiciones en tiempo real",
+        "Crear sistema de stop-loss y take-profit din\u00c3\u00a1mico"
+      ],
+      "success_criteria": [
+        "Conexi\u00c3\u00b3n con brokers estable",
+        "Ejecuci\u00c3\u00b3n de \u00c3\u00b3rdenes automatizada",
+        "Gesti\u00c3\u00b3n de riesgo en tiempo real",
+        "Sistema de alertas y notificaciones"
+      ],
+      "estimated_duration": "2 semanas",
+      "next_phase_trigger": "Operaciones ejecutadas aut\u00c3\u00b3nomamente en paper trading"
+    },
+    {
+      "number": 6.4,
+      "name": "APRENDIZAJE_CONTINUO",
+      "description": "Sistema de mejora continua basado en resultados",
+      "status": "pending",
+      "goals": [
+        "Implementar an\u00c3\u00a1lisis de rendimiento post-trade",
+        "Desarrollar ajuste autom\u00c3\u00a1tico de estrategias",
+        "Crear sistema de detecci\u00c3\u00b3n de reg\u00c3\u00admenes de mercado",
+        "Implementar adaptaci\u00c3\u00b3n a condiciones cambiantes"
+      ],
+      "success_criteria": [
+        "An\u00c3\u00a1lisis post-trade automatizado",
+        "Ajuste de par\u00c3\u00a1metros basado en rendimiento",
+        "Detecci\u00c3\u00b3n de cambios de r\u00c3\u00a9gimen",
+        "Mejora medible en m\u00c3\u00a9tricas de rendimiento"
+      ],
+      "estimated_duration": "continuo",
+      "next_phase_trigger": "Mejora del 10% en Sharpe ratio tras optimizaci\u00c3\u00b3n"
+    },
+    {
+      "number": 6.5,
+      "name": "EXPANSION_CAPACIDADES",
+      "description": "Ampliaci\u00c3\u00b3n de capacidades del sistema",
+      "status": "pending",
+      "goals": [
+        "Integrar nuevas clases de activos",
+        "Desarrollar estrategias multi-mercado",
+        "Implementar arbitraje y market making",
+        "Crear sistema de hedging autom\u00c3\u00a1tico"
+      ],
+      "success_criteria": [
+        "M\u00c3\u00baltiples clases de activos operando",
+        "Estrategias cross-market funcionando",
+        "Sistema de hedging implementado",
+        "Diversificaci\u00c3\u00b3n geogr\u00c3\u00a1fica"
+      ],
+      "estimated_duration": "4 semanas",
+      "next_phase_trigger": "Sistema operando en 3+ clases de activos"
+    }
+  ],
+  "meta": {
+    "created": "2026-03-18",
+    "autonomy_version": "2.0",
+    "human_oversight": "review_weekly",
+    "capital_deployment": "requires_approval",
+    "risk_limits": {
+      "max_drawdown": "10%",
+      "var_daily": "2%",
+      "position_size_max": "5%"
+    }
+  }
+}

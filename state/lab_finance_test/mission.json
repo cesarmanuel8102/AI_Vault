@@ -1,0 +1,11 @@
+{
+  "room_id": "lab_finance_test",
+  "objective": "Proponer operación financiera simulada.",
+  "constraints": [
+    "no ejecutar brokers",
+    "solo proposal"
+  ],
+  "status": "active",
+  "created_at": 1771972675,
+  "updated_at": 1771972675
+}

@@ -1,0 +1,12 @@
+{
+  "generated_at_utc": "2026-04-14T21:00:25Z",
+  "bridge_summary": {
+    "project_id": 29490680,
+    "deploy_id": "",
+    "trade_date_et": "",
+    "orders_fetched": 16,
+    "signals_built": 0,
+    "output": "C:\\AI_VAULT\\ENTREGA_BT\\EXECUTION_CORE_STAGE1_2026-04-13\\config\\paper_day_signals.qc_unknown.json"
+  },
+  "paper_day_stdout": "{\n  \"accepted\": 0,\n  \"rejected\": 0,\n  \"total\": 0,\n  \"reasons\": {}\n}\nreport=C:\\AI_VAULT\\ENTREGA_BT\\EXECUTION_CORE_STAGE1_2026-04-13\\artifacts\\paper_day_report_20260414_170025.json\naudit=C:\\AI_VAULT\\ENTREGA_BT\\EXECUTION_CORE_STAGE1_2026-04-13\\artifacts\\audit.jsonl"
+}

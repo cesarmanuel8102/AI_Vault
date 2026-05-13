@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_013a2f276217d9d1",
+  "tool_name": "append_file",
+  "tool_args": {
+    "content": "hello apply eval after restart\n",
+    "path": "C:\\AI_VAULT\\tmp_agent\\state\\rooms\\apply_eval_probe_after_restart_20260307_105151\\probe.txt",
+    "raw_content": "hello apply eval after restart\n",
+    "text": "hello apply eval after restart\n"
+  },
+  "room_id": "apply_eval_probe_after_restart_20260307_105151",
+  "step_id": "S1",
+  "created_at": "2026-03-07T15:51:52.416595+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

@@ -1,0 +1,133 @@
+{
+  "source_id": "github_crewAIInc_crewAI_20260508",
+  "generated_at_utc": "2026-05-08T04:56:51.059905Z",
+  "patterns": [
+    {
+      "pattern_id": "structured_multi_agent_debate",
+      "semantic_family": "multi_agent_debate",
+      "source_id": "github_crewAIInc_crewAI_20260508",
+      "evidence_refs": [
+        {
+          "source_file": "README.snapshot.md",
+          "reason": "README mentions multi-agent/group chat/critic/judge roles.",
+          "evidence_type": "text_match"
+        }
+      ]
+    },
+    {
+      "pattern_id": "role_orchestrated_tool_routing",
+      "semantic_family": "tool_routing",
+      "source_id": "github_crewAIInc_crewAI_20260508",
+      "evidence_refs": [
+        {
+          "source_file": "README.snapshot.md",
+          "reason": "README describes role-oriented orchestration that implies tool ownership.",
+          "evidence_type": "text_match"
+        }
+      ]
+    },
+    {
+      "pattern_id": "ci_backed_regression_harness",
+      "semantic_family": "regression_harness",
+      "source_id": "github_crewAIInc_crewAI_20260508",
+      "evidence_refs": [
+        {
+          "source_file": ".github/",
+          "reason": "Root index shows tests/CI structure.",
+          "evidence_type": "root_index_signal"
+        }
+      ]
+    },
+    {
+      "pattern_id": "dependency_manifest_governance",
+      "semantic_family": "dependency_governance",
+      "source_id": "github_crewAIInc_crewAI_20260508",
+      "evidence_refs": [
+        {
+          "source_file": "pyproject.toml",
+          "reason": "Root dependency manifest is present and can be audited.",
+          "evidence_type": "root_index_signal"
+        }
+      ]
+    },
+    {
+      "pattern_id": "structured_tool_dispatch",
+      "semantic_family": "tool_routing",
+      "source_id": "github_crewAIInc_crewAI_20260508",
+      "evidence_refs": [
+        {
+          "source_file": "README.md",
+          "reason": "Dependency hints or README mention tool calling / tool usage explicitly.",
+          "evidence_type": "text_match"
+        }
+      ]
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "HYP_CREWAIINC_CREWAI_STRUCTURED_MULTI_AGENT_DEBATE_001",
+      "semantic_key": "planning_coherence:multi_agent_debate",
+      "source_id": "github_crewAIInc_crewAI_20260508",
+      "pattern_id": "structured_multi_agent_debate",
+      "evidence_refs": [
+        {
+          "source_file": "README.snapshot.md",
+          "reason": "README mentions multi-agent/group chat/critic/judge roles.",
+          "evidence_type": "text_match"
+        }
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_CREWAIINC_CREWAI_ROLE_ORCHESTRATED_TOOL_ROUTING_002",
+      "semantic_key": "tool_use_accuracy:tool_routing",
+      "source_id": "github_crewAIInc_crewAI_20260508",
+      "pattern_id": "role_orchestrated_tool_routing",
+      "evidence_refs": [
+        {
+          "source_file": "README.snapshot.md",
+          "reason": "README describes role-oriented orchestration that implies tool ownership.",
+          "evidence_type": "text_match"
+        }
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_CREWAIINC_CREWAI_CI_BACKED_REGRESSION_HARNESS_003",
+      "semantic_key": "governance_quality:regression_harness",
+      "source_id": "github_crewAIInc_crewAI_20260508",
+      "pattern_id": "ci_backed_regression_harness",
+      "evidence_refs": [
+        {
+          "source_file": ".github/",
+          "reason": "Root index shows tests/CI structure.",
+          "evidence_type": "root_index_signal"
+        }
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_CREWAIINC_CREWAI_DEPENDENCY_MANIFEST_GOVERNANCE_004",
+      "semantic_key": "governance_quality:dependency_governance",
+      "source_id": "github_crewAIInc_crewAI_20260508",
+      "pattern_id": "dependency_manifest_governance",
+      "evidence_refs": [
+        {
+          "source_file": "pyproject.toml",
+          "reason": "Root dependency manifest is present and can be audited.",
+          "evidence_type": "root_index_signal"
+        }
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_CREWAIINC_CREWAI_STRUCTURED_TOOL_DISPATCH_005",
+      "semantic_key": "tool_use_accuracy:tool_routing",
+      "source_id": "github_crewAIInc_crewAI_20260508",
+      "pattern_id": "structured_tool_dispatch",
+      "evidence_refs": [
+        {
+          "source_file": "README.md",
+          "reason": "Dependency hints or README mention tool calling / tool usage explicitly.",
+          "evidence_type": "text_match"
+        }
+      ]
+    }
+  ]
+}

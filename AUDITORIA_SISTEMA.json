@@ -1,0 +1,596 @@
+{
+  "auditoria_sistema": {
+    "metadata": {
+      "version": "1.0",
+      "fecha_auditoria": "2026-03-19",
+      "ruta_proyecto": "C:\\AI_VAULT",
+      "tipo": "AUDITORIA_COMPLETA_SISTEMA"
+    },
+    "resumen_ejecutivo": {
+      "total_archivos": 28646,
+      "total_directorios": 6990,
+      "tamano_total_gb": 0.76,
+      "nota": "Cifras incluyen dependencias de .venv. Archivos de proyecto reales: aproximadamente 350-400 archivos sin contar .venv"
+    },
+    "estadisticas_archivos": {
+      "por_extension": [
+        {"extension": ".json", "cantidad": 11591, "porcentaje": 40.46},
+        {"extension": ".log", "cantidad": 6579, "porcentaje": 22.97},
+        {"extension": ".py", "cantidad": 2301, "porcentaje": 8.03},
+        {"extension": ".txt", "cantidad": 1623, "porcentaje": 5.67},
+        {"extension": ".ndjson", "cantidad": 1309, "porcentaje": 4.57},
+        {"extension": ".pyc", "cantidad": 1275, "porcentaje": 4.45},
+        {"extension": ".cpp", "cantidad": 440, "porcentaje": 1.54},
+        {"extension": ".ps1", "cantidad": 315, "porcentaje": 1.10},
+        {"extension": ".md", "cantidad": 240, "porcentaje": 0.84},
+        {"extension": ".svelte", "cantidad": 235, "porcentaje": 0.82},
+        {"extension": ".ts", "cantidad": 192, "porcentaje": 0.67},
+        {"extension": ".h", "cantidad": 190, "porcentaje": 0.66},
+        {"extension": ".bat", "cantidad": 18, "porcentaje": 0.06},
+        {"extension": ".html", "cantidad": 56, "porcentaje": 0.20}
+      ]
+    },
+    "estructura_directorios": {
+      "nivel_raiz": [
+        {
+          "nombre": "00_identity",
+          "tipo": "CORE_SYSTEM",
+          "descripcion": "Sistema central del Brain - nucleo de identidad y procesamiento",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "10_CEI_FDOT",
+          "tipo": "PROJECT_SPECIFIC",
+          "descripcion": "Proyecto CEI FDOT - Port Miami",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "20_TRADING",
+          "tipo": "TRADING_SYSTEM",
+          "descripcion": "Sistema de trading y estrategias",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "30_CODE",
+          "tipo": "CODE_REPOSITORY",
+          "descripcion": "Repositorio de codigo QC Lean y utilidades",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "40_EXPERIMENTS",
+          "tipo": "EXPERIMENTAL",
+          "descripcion": "Experimentos activos y archivados",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "50_LOGS",
+          "tipo": "LOGGING",
+          "descripcion": "Registros de decisiones y logs financieros",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "60_METRICS",
+          "tipo": "METRICS",
+          "descripcion": "Metricas y mediciones del sistema",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "70_SCORING_ENGINE",
+          "tipo": "SCORING",
+          "descripcion": "Motor de puntuacion y evaluacion de leads",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "80_CAPITAL_ENGINE",
+          "tipo": "CAPITAL",
+          "descripcion": "Motor de asignacion de capital",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "90_EVALS",
+          "tipo": "EVALUATION",
+          "descripcion": "Sistema de evaluaciones y pruebas",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "99_inbox_to_sort",
+          "tipo": "INBOX",
+          "descripcion": "Bandeja de entrada para archivos por clasificar",
+          "estado": "PENDIENTE"
+        },
+        {
+          "nombre": "BrainLab",
+          "tipo": "LABORATORY",
+          "descripcion": "Laboratorio de Brain con endpoints y logs",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "docs",
+          "tipo": "DOCUMENTATION",
+          "descripcion": "Documentacion del proyecto y contratos",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "financial_autonomy",
+          "tipo": "FINANCIAL_SYSTEM",
+          "descripcion": "Sistema de autonomia financiera",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "logs",
+          "tipo": "LOGGING",
+          "descripcion": "Logs generales del sistema",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "memory",
+          "tipo": "MEMORY",
+          "descripcion": "Sistema de memoria y rooms",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "policy",
+          "tipo": "POLICY",
+          "descripcion": "Reglas y permisos del sistema",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "rooms",
+          "tipo": "ROOMS",
+          "descripcion": "Espacios de trabajo y rooms",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "state",
+          "tipo": "STATE",
+          "descripcion": "Estados de agentes y episodios",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "tmp_agent",
+          "tipo": "TEMPORAL",
+          "descripcion": "Agente temporal con dashboards",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "tmpmp_agent",
+          "tipo": "TEMPORAL",
+          "descripcion": "Agente temporal MP",
+          "estado": "ACTIVO"
+        },
+        {
+          "nombre": "workspace",
+          "tipo": "WORKSPACE",
+          "descripcion": "Espacio de trabajo y reportes",
+          "estado": "ACTIVO"
+        }
+      ]
+    },
+    "componentes_principales": {
+      "core_brain_system": {
+        "ubicacion": "00_identity/",
+        "archivos_clave": [
+          "advisor_server.py",
+          "brain_server.py",
+          "brain_chat_ui_server.py",
+          "brain_router.py",
+          "agent_loop.py",
+          "chat_interface.html",
+          "brain_monitor.py",
+          "capital_manager.py",
+          "trading_engine.py",
+          "risk_manager.py",
+          "strategy_generator.py",
+          "backtest_engine.py",
+          "data_integrator.py",
+          "pocketoption_integrator.py"
+        ],
+        "subdirectorios": [
+          ".venv (entorno Python)",
+          "archive/",
+          "autonomy_system/",
+          "brain_lab/",
+          "docs/",
+          "logs/",
+          "rooms/",
+          "state/",
+          "ui/"
+        ],
+        "tamano_aproximado": "234 MB (incluye FULL_DNA.json)",
+        "estado": "OPERATIVO",
+        "notas": "Nucleo del sistema con multiples versiones de backup"
+      },
+      "financial_autonomy_system": {
+        "ubicacion": "financial_autonomy/",
+        "archivos_clave": [
+          "financial_autonomy_bridge.py",
+          "trust_score_integration.py",
+          "financial_autonomy_autobuild.py",
+          "integration_setup.py"
+        ],
+        "subdirectorios": [
+          "api/",
+          "bridge/",
+          "config/",
+          "monitoring/",
+          "optimization/"
+        ],
+        "estado": "OPERATIVO",
+        "notas": "Sistema de autonomia financiera integrado"
+      },
+      "tmp_agent": {
+        "ubicacion": "tmp_agent/",
+        "archivos_clave": [
+          "advisor_server.py",
+          "advisor_server_simple.py",
+          "advisor_server_working.py",
+          "dashboard_server.py",
+          "dashboard_alternative.py",
+          "brain_router.py",
+          "agent_loop.py",
+          "agent_state.py",
+          "diff_engine.py",
+          "apply_gate.py",
+          "approval_gate.py"
+        ],
+        "subdirectorios": [
+          "dashboard/",
+          "dashboard_professional/",
+          "diag/",
+          "logs/",
+          "ops/ (mas de 500 carpetas de operaciones)",
+          "proposals/",
+          "runs/",
+          "Secrets/",
+          "state/",
+          "static/",
+          "templates/",
+          "workspace/"
+        ],
+        "estado": "OPERATIVO",
+        "notas": "Contiene extensivo historial de operaciones y versiones"
+      },
+      "dashboard_systems": {
+        "ubicaciones": [
+          "tmp_agent/dashboard/",
+          "tmp_agent/dashboard_professional/",
+          "00_identity/ui/",
+          "BrainLab/"
+        ],
+        "componentes": [
+          "Dashboard basico",
+          "Dashboard profesional",
+          "Consola Brain",
+          "BrainLab endpoints"
+        ],
+        "estado": "MULTI_VERSION",
+        "notas": "Multiples implementaciones de dashboards"
+      },
+      "chat_systems": {
+        "ubicaciones": [
+          "00_identity/chat_interface.html",
+          "00_identity/brain_chat_ui_server.py",
+          "00_identity/brain_chat_system.py"
+        ],
+        "estado": "OPERATIVO",
+        "notas": "Sistema de chat integrado al Brain"
+      },
+      "pocketoption_integration": {
+        "ubicacion": "00_identity/pocketoption_integrator.py",
+        "estado": "OPERATIVO",
+        "notas": "Integracion con PocketOption para trading"
+      },
+      "scoring_engine": {
+        "ubicacion": "70_SCORING_ENGINE/",
+        "archivos": [
+          "brain_evaluator.py",
+          "opportunity_scoring.py",
+          "lead_harvester_osm.py",
+          "daily_targets.py",
+          "daily_brief.py",
+          "outbound_pack.py",
+          "mark_lead.py",
+          "send_queue.py",
+          "smtp_selftest.py"
+        ],
+        "estado": "OPERATIVO"
+      },
+      "capital_engine": {
+        "ubicacion": "80_CAPITAL_ENGINE/",
+        "archivos": [
+          "capital_allocator.py",
+          "daily_cycle_full.ps1",
+          "lead_console.ps1",
+          "mark_lead.ps1",
+          "run_daily_cycle.ps1",
+          "commit_initial_budgets.ps1"
+        ],
+        "estado": "OPERATIVO"
+      }
+    },
+    "archivos_obsoletos_y_backup": {
+      "resumen": {
+        "total_backup_files": "Aproximadamente 300-400 archivos",
+        "patrones_detectados": [
+          "*.bak_*",
+          "*.BAK_*",
+          "*.LKG_*",
+          "*.BROKEN_*",
+          "*.pre_*",
+          "*.pre_lkg*",
+          "*.pre_recovery*"
+        ]
+      },
+      "categorias": {
+        "versiones_advisor_server": {
+          "cantidad": "~50 archivos",
+          "ejemplos": [
+            "advisor_server.py.bak_*",
+            "advisor_server_fixed.py",
+            "advisor_server_clean.py"
+          ],
+          "recomendacion": "CONSOLIDAR - Mantener solo ultima version estable"
+        },
+        "versiones_brain_server": {
+          "cantidad": "~40 archivos",
+          "ejemplos": [
+            "brain_server.py.BAK_*",
+            "brain_server.py.LKG_*",
+            "brain_server_backup.py"
+          ],
+          "recomendacion": "CONSOLIDAR - Crear version LKG definitiva"
+        },
+        "versiones_agent_loop": {
+          "cantidad": "~20 archivos",
+          "ejemplos": [
+            "agent_loop.py.BAK_*",
+            "agent_loop.py.bak_*"
+          ],
+          "recomendacion": "ELIMINAR backups antiguos"
+        },
+        "versiones_brain_router": {
+          "cantidad": "~30 archivos",
+          "ejemplos": [
+            "brain_router.py.BAK_*",
+            "brain_router.py.bak_*"
+          ],
+          "recomendacion": "ELIMINAR backups antiguos"
+        },
+        "versiones_ui_proxy": {
+          "cantidad": "~30 archivos",
+          "ejemplos": [
+            "ui_proxy_server.py.bak_*"
+          ],
+          "recomendacion": "ELIMINAR backups antiguos"
+        },
+        "operaciones_tmp_agent": {
+          "cantidad": "~500+ carpetas en tmp_agent/ops/",
+          "descripcion": "Historial de operaciones y auditorias",
+          "recomendacion": "ARCHIVAR - Comprimir y mover a storage"
+        }
+      }
+    },
+    "archivos_grandes": {
+      "top_10": [
+        {
+          "archivo": "FULL_DNA.json",
+          "tamano_mb": 234,
+          "descripcion": "Archivo DNA completo del sistema"
+        },
+        {
+          "archivo": "repomix-output.xml",
+          "tamano_mb": 0.45,
+          "descripcion": "Salida de analisis RepoMix"
+        },
+        {
+          "archivo": "00_identity/brain_server.py",
+          "tamano_mb": 0.59,
+          "descripcion": "Servidor principal del Brain"
+        },
+        {
+          "archivo": "00_identity/brain_server_reparado.py",
+          "tamano_mb": 0.58,
+          "descripcion": "Version reparada del servidor"
+        },
+        {
+          "archivo": "00_identity/brain_server_limpio.py",
+          "tamano_mb": 0.56,
+          "descripcion": "Version limpia del servidor"
+        },
+        {
+          "archivo": "00_identity/brain_chat_ui_server.py",
+          "tamano_mb": 0.07,
+          "descripcion": "Servidor UI de chat"
+        },
+        {
+          "archivo": "00_identity/advisor_server.py",
+          "tamano_mb": 0.05,
+          "descripcion": "Servidor del asesor"
+        },
+        {
+          "archivo": "contexto_inicial.json",
+          "tamano_mb": 1.1,
+          "descripcion": "Contexto inicial del sistema"
+        },
+        {
+          "archivo": "00_identity/ui_proxy_server.py",
+          "tamano_mb": 0.03,
+          "descripcion": "Servidor proxy UI"
+        },
+        {
+          "archivo": "00_identity/brain_server_backup.py",
+          "tamano_mb": 0.38,
+          "descripcion": "Backup del servidor"
+        }
+      ]
+    },
+    "analisis_duplicados": {
+      "estado": "DETECTADOS",
+      "hallazgos": [
+        {
+          "tipo": "Duplicados advisor_server.py",
+          "ubicaciones": [
+            "00_identity/advisor_server.py",
+            "tmp_agent/advisor_server.py",
+            "tmp_agent/advisor_server_working.py",
+            "tmp_agent/advisor_server_simple.py"
+          ],
+          "recomendacion": "UNIFICAR - Usar version canonica en 00_identity/"
+        },
+        {
+          "tipo": "Duplicados dashboard_server.py",
+          "ubicaciones": [
+            "tmp_agent/dashboard_server.py",
+            "tmp_agent/dashboard_alternative.py",
+            "tmp_agent/dashboard_simple_working.py",
+            "tmp_agent/dashboard_super_simple.py",
+            "tmp_agent/dashboard_professional_simple.py"
+          ],
+          "recomendacion": "CONSOLIDAR - Elegir implementacion principal"
+        },
+        {
+          "tipo": "Codigo duplicado brain_router",
+          "ubicaciones": [
+            "00_identity/brain_router.py",
+            "tmp_agent/brain_router.py"
+          ],
+          "recomendacion": "UNIFICAR"
+        },
+        {
+          "tipo": "Codigo duplicado agent_loop",
+          "ubicaciones": [
+            "00_identity/agent_loop.py",
+            "tmp_agent/agent_loop.py"
+          ],
+          "recomendacion": "UNIFICAR"
+        },
+        {
+          "tipo": "Duplicados trust_score_integration",
+          "ubicaciones": [
+            "financial_autonomy/trust_score_integration.py",
+            "financial_autonomy/bridge/trust_score_integration.py"
+          ],
+          "recomendacion": "ELIMINAR duplicado"
+        },
+        {
+          "tipo": "Duplicados financial_autonomy_bridge",
+          "ubicaciones": [
+            "financial_autonomy/financial_autonomy_bridge.py",
+            "financial_autonomy/bridge/financial_autonomy_bridge.py"
+          ],
+          "recomendacion": "ELIMINAR duplicado"
+        }
+      ]
+    },
+    "archivos_temporales_logs": {
+      "estadisticas": {
+        "archivos_log": 6579,
+        "archivos_ndjson": 1309,
+        "archivos_temporales": "~200",
+        "porcentaje_total": "27.5%"
+      },
+      "categorias_logs": [
+        "Logs de uvicorn (servidor web)",
+        "Logs de agente (agent_events.ndjson)",
+        "Logs de Brain (brain_requests.ndjson)",
+        "Logs de seguridad (brain_security.ndjson)",
+        "Logs de chat (chat.log)",
+        "Logs de motor (motor.log)",
+        "Logs de promocion (promotion.log)"
+      ],
+      "recomendacion": "Implementar rotacion de logs y archivado automatico"
+    },
+    "hallazgos_seguridad": {
+      "archivos_sensibles": [
+        {
+          "archivo": ".secrets/openai_api_key.txt",
+          "tipo": "API_KEY",
+          "recomendacion": "MOVER a .env o gestor de secretos"
+        }
+      ],
+      "permisos": {
+        "archivo": "policy/permissions.json",
+        "descripcion": "Configuracion de permisos del sistema"
+      }
+    },
+    "recomendaciones_prioritarias": [
+      {
+        "prioridad": "ALTA",
+        "accion": "Consolidar versiones de advisor_server.py",
+        "impacto": "Reducir confusion y mantenimiento",
+        "archivos_afectados": "~50"
+      },
+      {
+        "prioridad": "ALTA",
+        "accion": "Limpiar backups antiguos de brain_server",
+        "impacto": "Liberar espacio y claridad",
+        "archivos_afectados": "~40"
+      },
+      {
+        "prioridad": "ALTA",
+        "accion": "Unificar codigo duplicado entre 00_identity/ y tmp_agent/",
+        "impacto": "Mantenibilidad",
+        "archivos_afectados": "~10"
+      },
+      {
+        "prioridad": "MEDIA",
+        "accion": "Archivar operaciones antiguas de tmp_agent/ops/",
+        "impacto": "Liberar espacio (potencialmente 100+ MB)",
+        "archivos_afectados": "~500 carpetas"
+      },
+      {
+        "prioridad": "MEDIA",
+        "accion": "Implementar rotacion de logs",
+        "impacto": "Control de espacio",
+        "archivos_afectados": "~8000 archivos"
+      },
+      {
+        "prioridad": "MEDIA",
+        "accion": "Consolidar multiples dashboards",
+        "impacto": "Simplificacion UI",
+        "archivos_afectados": "~15"
+      },
+      {
+        "prioridad": "BAJA",
+        "accion": "Limpiar archivos .pyc compilados",
+        "impacto": "Limpieza",
+        "archivos_afectados": "~1275"
+      },
+      {
+        "prioridad": "BAJA",
+        "accion": "Organizar 99_inbox_to_sort/",
+        "impacto": "Organizacion",
+        "archivos_afectados": "Variable"
+      }
+    ],
+    "estadisticas_temporales": {
+      "archivos_modificados_recientemente": {
+        "ultimas_24h": "~50 archivos",
+        "ultima_semana": "~200 archivos",
+        "ultimo_mes": "~1000 archivos"
+      },
+      "archivos_antiguos": {
+        "mayo_2026": "Detectar archivos con fecha futura",
+        "febrero_2026": "Archivos iniciales del sistema"
+      }
+    },
+    "conclusion": {
+      "estado_general": "SISTEMA OPERATIVO CON DEBT TECNICO",
+      "puntos_fuertes": [
+        "Arquitectura modular bien definida",
+        "Sistema completo y funcional",
+        "Documentacion presente",
+        "Versionado y backups frecuentes"
+      ],
+      "areas_mejora": [
+        "Alto numero de archivos duplicados y backups",
+        "Codigo duplicado entre componentes",
+        "Acumulacion de logs sin rotacion",
+        "Multiples versiones de dashboards",
+        "Historial de operaciones muy extenso"
+      ],
+      "estimacion_deuda_tecnica": "MEDIA-ALTA",
+      "tiempo_estimado_limpieza": "4-8 horas de trabajo enfocado"
+    }
+  }
+}

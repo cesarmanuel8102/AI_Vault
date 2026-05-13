@@ -1,0 +1,2387 @@
+{
+  "projects": [
+    {
+      "projectId": 29652652,
+      "organizationId": "6d487993ca17881264c2ac55e41ae539",
+      "name": "Brain V9 Forex V1",
+      "modified": "2026-05-05 19:54:06",
+      "created": "2026-04-03 19:12:07",
+      "ownerId": 384945,
+      "language": "Py",
+      "collaborators": [
+        {
+          "uid": 384945,
+          "liveControl": true,
+          "permission": "write",
+          "publicId": "cesar_13",
+          "profileImage": "https://cdn.quantconnect.com/web/i/users/profile/default.jpg",
+          "email": "cesarmanuel8102@gmail.com",
+          "name": "Cesar",
+          "bio": "",
+          "owner": true
+        }
+      ],
+      "leanVersionId": 17695,
+      "leanPinnedToMaster": true,
+      "owner": true,
+      "description": "",
+      "channelId": "P29652652-76e2a227efac22ebe01b8a064267d977",
+      "parameters": [
+        {
+          "key": "profile_label",
+          "value": "P63_1100_R75_MOM15_DIAG"
+        },
+        {
+          "key": "trade_mnq",
+          "value": "1"
+        },
+        {
+          "key": "trade_mes",
+          "value": "1"
+        },
+        {
+          "key": "allow_shorts",
+          "value": "1"
+        },
+        {
+          "key": "alpha_orb_enabled",
+          "value": "1"
+        },
+        {
+          "key": "alpha_stress_enabled",
+          "value": "1"
+        },
+        {
+          "key": "alpha_mr_enabled",
+          "value": "0"
+        },
+        {
+          "key": "or_risk",
+          "value": "0.009"
+        },
+        {
+          "key": "max_contracts_per_trade",
+          "value": "12"
+        },
+        {
+          "key": "max_trades_per_symbol_day",
+          "value": "2"
+        },
+        {
+          "key": "or_minutes",
+          "value": "15"
+        },
+        {
+          "key": "or_breakout_buffer_pct",
+          "value": "0.0007"
+        },
+        {
+          "key": "or_target_atr_mult",
+          "value": "1.55"
+        },
+        {
+          "key": "or_stop_atr_mult",
+          "value": "0.75"
+        },
+        {
+          "key": "or_min_gap_pct",
+          "value": "0.0015"
+        },
+        {
+          "key": "or_mom_entry_pct",
+          "value": "0.001"
+        },
+        {
+          "key": "or_min_width_atr",
+          "value": "0.22"
+        },
+        {
+          "key": "or_max_width_atr",
+          "value": "1.1"
+        },
+        {
+          "key": "or_require_gap_alignment",
+          "value": "1"
+        },
+        {
+          "key": "trailing_lock_mode",
+          "value": "EOD"
+        },
+        {
+          "key": "guard_enabled",
+          "value": "1"
+        },
+        {
+          "key": "or_slot2_enabled",
+          "value": "1"
+        },
+        {
+          "key": "or_slot2_hour",
+          "value": "11"
+        },
+        {
+          "key": "or_slot2_min",
+          "value": "0"
+        },
+        {
+          "key": "or_slot2_risk_mult",
+          "value": "0.75"
+        },
+        {
+          "key": "or_slot2_mom_entry_pct",
+          "value": "0.0015"
+        }
+      ],
+      "libraries": [],
+      "grid": {
+        "xs": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 9,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 3,
+            "height": 10,
+            "row": 1,
+            "column": 10,
+            "sort": 20
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 9,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 1,
+            "sort": 111
+          },
+          {
+            "chartName": "Exposure",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 5,
+            "sort": 115
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 9,
+            "sort": 119
+          }
+        ],
+        "sm": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 9,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 3,
+            "height": 10,
+            "row": 1,
+            "column": 10,
+            "sort": 20
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 9,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 1,
+            "sort": 111
+          },
+          {
+            "chartName": "Exposure",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 5,
+            "sort": 115
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 9,
+            "sort": 119
+          }
+        ],
+        "md": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 9,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 3,
+            "height": 10,
+            "row": 1,
+            "column": 10,
+            "sort": 20
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 9,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 1,
+            "sort": 111
+          },
+          {
+            "chartName": "Exposure",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 5,
+            "sort": 115
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 9,
+            "sort": 119
+          }
+        ],
+        "lg": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 9,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 3,
+            "height": 10,
+            "row": 1,
+            "column": 10,
+            "sort": 20
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 9,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 1,
+            "sort": 111
+          },
+          {
+            "chartName": "Exposure",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 5,
+            "sort": 115
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 9,
+            "sort": 119
+          }
+        ],
+        "xl": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 9,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 3,
+            "height": 10,
+            "row": 1,
+            "column": 10,
+            "sort": 20
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 9,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 1,
+            "sort": 111
+          },
+          {
+            "chartName": "Exposure",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 5,
+            "sort": 115
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 9,
+            "sort": 119
+          }
+        ]
+      },
+      "liveGrid": {
+        "xs": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 12,
+            "height": 6,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 12,
+            "height": 5,
+            "row": 13,
+            "column": 1,
+            "sort": 131
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 12,
+            "height": 4,
+            "row": 18,
+            "column": 1,
+            "sort": 181
+          }
+        ],
+        "sm": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 12,
+            "height": 6,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 12,
+            "height": 5,
+            "row": 13,
+            "column": 1,
+            "sort": 131
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 12,
+            "height": 4,
+            "row": 18,
+            "column": 1,
+            "sort": 181
+          }
+        ],
+        "md": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 12,
+            "height": 6,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 12,
+            "height": 5,
+            "row": 13,
+            "column": 1,
+            "sort": 131
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 12,
+            "height": 4,
+            "row": 18,
+            "column": 1,
+            "sort": 181
+          }
+        ],
+        "lg": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 12,
+            "height": 6,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 12,
+            "height": 5,
+            "row": 13,
+            "column": 1,
+            "sort": 131
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 12,
+            "height": 4,
+            "row": 18,
+            "column": 1,
+            "sort": 181
+          }
+        ],
+        "xl": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 12,
+            "height": 6,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 12,
+            "height": 5,
+            "row": 13,
+            "column": 1,
+            "sort": 131
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 12,
+            "height": 4,
+            "row": 18,
+            "column": 1,
+            "sort": 181
+          }
+        ]
+      },
+      "paperEquity": 49915.22,
+      "lastLiveDeployment": "2026-05-05 19:06:52",
+      "liveForm": null,
+      "encrypted": false,
+      "codeRunning": false,
+      "leanEnvironment": 1,
+      "encryptionKey": null,
+      "maxFileSize": 64000,
+      "isPinned": false,
+      "sharingTokenBacktest": "e21d2cd927bd6ea6465b8fed081234580ad8cf1f96155357088c0e26a43d154c"
+    },
+    {
+      "projectId": 30874635,
+      "organizationId": "6d487993ca17881264c2ac55e41ae539",
+      "name": "PF_CAMPAIGN_GATE_MONITOR",
+      "modified": "2026-05-04 18:38:15",
+      "created": "2026-04-29 22:00:41",
+      "ownerId": 384945,
+      "language": "Py",
+      "collaborators": [
+        {
+          "uid": 384945,
+          "liveControl": true,
+          "permission": "write",
+          "publicId": "cesar_13",
+          "profileImage": "https://cdn.quantconnect.com/web/i/users/profile/default.jpg",
+          "email": "cesarmanuel8102@gmail.com",
+          "name": "Cesar",
+          "bio": "",
+          "owner": true
+        }
+      ],
+      "leanVersionId": 17695,
+      "leanPinnedToMaster": true,
+      "owner": true,
+      "description": "",
+      "channelId": "P30874635-e2f9e73fcbd28931866fcebafe378557",
+      "parameters": [
+        {
+          "key": "monitor_label",
+          "value": "PHASE54_CAMPAIGN_GATE_MONITOR"
+        },
+        {
+          "key": "start_year",
+          "value": "2024"
+        },
+        {
+          "key": "start_month",
+          "value": "10"
+        },
+        {
+          "key": "start_day",
+          "value": "1"
+        }
+      ],
+      "libraries": [],
+      "grid": {
+        "xs": [],
+        "sm": [],
+        "md": [],
+        "lg": [],
+        "xl": []
+      },
+      "liveGrid": {
+        "xs": [],
+        "sm": [],
+        "md": [],
+        "lg": [],
+        "xl": []
+      },
+      "paperEquity": null,
+      "lastLiveDeployment": null,
+      "liveForm": null,
+      "encrypted": false,
+      "codeRunning": false,
+      "leanEnvironment": 1,
+      "encryptionKey": null,
+      "maxFileSize": 64000,
+      "isPinned": false
+    },
+    {
+      "projectId": 30507388,
+      "organizationId": "6d487993ca17881264c2ac55e41ae539",
+      "name": "IBKR10K_GROWTH_MOMENTUM_1776892803",
+      "modified": "2026-04-24 08:06:51",
+      "created": "2026-04-22 21:20:04",
+      "ownerId": 384945,
+      "language": "Py",
+      "collaborators": [
+        {
+          "uid": 384945,
+          "liveControl": true,
+          "permission": "write",
+          "publicId": "cesar_13",
+          "profileImage": "https://cdn.quantconnect.com/web/i/users/profile/default.jpg",
+          "email": "cesarmanuel8102@gmail.com",
+          "name": "Cesar",
+          "bio": "",
+          "owner": true
+        }
+      ],
+      "leanVersionId": 17695,
+      "leanPinnedToMaster": true,
+      "owner": true,
+      "description": "",
+      "channelId": "P30507388-8693bf3985093147458b62e46d0f83a6",
+      "parameters": [
+        {
+          "key": "initial_cash",
+          "value": "10000"
+        },
+        {
+          "key": "core_gross_base",
+          "value": "4.1"
+        },
+        {
+          "key": "turbo_gross_base",
+          "value": "5.6"
+        },
+        {
+          "key": "max_total_gross",
+          "value": "9.5"
+        },
+        {
+          "key": "max_single_weight",
+          "value": "3.5"
+        },
+        {
+          "key": "bull_vixy_max",
+          "value": "1.23"
+        },
+        {
+          "key": "stress_vixy_min",
+          "value": "1.1"
+        },
+        {
+          "key": "stress_vixy_max",
+          "value": "1.28"
+        },
+        {
+          "key": "exp_stress_up",
+          "value": "0.65"
+        },
+        {
+          "key": "exp_chop",
+          "value": "0.22"
+        },
+        {
+          "key": "exp_neutral",
+          "value": "0.38"
+        },
+        {
+          "key": "turbo_mult_stress",
+          "value": "0.05"
+        },
+        {
+          "key": "safe_overlay_stress",
+          "value": "0.12"
+        },
+        {
+          "key": "safe_overlay_chop",
+          "value": "0.12"
+        },
+        {
+          "key": "safe_overlay_neutral",
+          "value": "0.08"
+        },
+        {
+          "key": "circuit_dd_pct",
+          "value": "0.3"
+        },
+        {
+          "key": "daily_loss_limit_pct",
+          "value": "0.5"
+        },
+        {
+          "key": "dll_bull",
+          "value": "0.5"
+        },
+        {
+          "key": "dll_neu",
+          "value": "0.5"
+        },
+        {
+          "key": "dll_str",
+          "value": "0.035"
+        },
+        {
+          "key": "dll_chop",
+          "value": "0.03"
+        },
+        {
+          "key": "dll_bear",
+          "value": "0.2"
+        },
+        {
+          "key": "monthly_dd_throttle_trigger",
+          "value": "1.0"
+        },
+        {
+          "key": "monthly_dd_throttle_mult",
+          "value": "1.0"
+        },
+        {
+          "key": "mtr_str",
+          "value": "0.14"
+        },
+        {
+          "key": "mtm_str",
+          "value": "0.75"
+        },
+        {
+          "key": "mtr_chop",
+          "value": "0.12"
+        },
+        {
+          "key": "mtm_chop",
+          "value": "0.7"
+        },
+        {
+          "key": "mtr_bear",
+          "value": "0.15"
+        },
+        {
+          "key": "mtm_bear",
+          "value": "0.8"
+        },
+        {
+          "key": "max_wchg_per_reb",
+          "value": "1.0"
+        },
+        {
+          "key": "friction_mode",
+          "value": "0"
+        },
+        {
+          "key": "start_year",
+          "value": "2018"
+        },
+        {
+          "key": "start_month",
+          "value": "1"
+        },
+        {
+          "key": "start_day",
+          "value": "1"
+        },
+        {
+          "key": "end_year",
+          "value": "2026"
+        },
+        {
+          "key": "end_month",
+          "value": "3"
+        },
+        {
+          "key": "end_day",
+          "value": "31"
+        }
+      ],
+      "libraries": [],
+      "grid": {
+        "xs": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 12,
+            "height": 6,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 12,
+            "height": 5,
+            "row": 13,
+            "column": 1,
+            "sort": 131
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 12,
+            "height": 4,
+            "row": 18,
+            "column": 1,
+            "sort": 181
+          }
+        ],
+        "sm": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 12,
+            "height": 6,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 12,
+            "height": 5,
+            "row": 13,
+            "column": 1,
+            "sort": 131
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 12,
+            "height": 4,
+            "row": 18,
+            "column": 1,
+            "sort": 181
+          }
+        ],
+        "md": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 12,
+            "height": 6,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 12,
+            "height": 5,
+            "row": 13,
+            "column": 1,
+            "sort": 131
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 12,
+            "height": 4,
+            "row": 18,
+            "column": 1,
+            "sort": 181
+          }
+        ],
+        "lg": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 12,
+            "height": 6,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 12,
+            "height": 5,
+            "row": 13,
+            "column": 1,
+            "sort": 131
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 12,
+            "height": 4,
+            "row": 18,
+            "column": 1,
+            "sort": 181
+          }
+        ],
+        "xl": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 12,
+            "height": 6,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 12,
+            "height": 5,
+            "row": 13,
+            "column": 1,
+            "sort": 131
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 12,
+            "height": 4,
+            "row": 18,
+            "column": 1,
+            "sort": 181
+          }
+        ]
+      },
+      "liveGrid": {
+        "xs": [],
+        "sm": [],
+        "md": [],
+        "lg": [],
+        "xl": []
+      },
+      "paperEquity": null,
+      "lastLiveDeployment": null,
+      "liveForm": null,
+      "encrypted": false,
+      "codeRunning": false,
+      "leanEnvironment": 1,
+      "encryptionKey": null,
+      "maxFileSize": 64000,
+      "isPinned": false
+    },
+    {
+      "projectId": 30507341,
+      "organizationId": "6d487993ca17881264c2ac55e41ae539",
+      "name": "IBKR10K_GROWTH_MOMENTUM_1776892712",
+      "modified": "2026-04-23 03:39:44",
+      "created": "2026-04-22 21:18:33",
+      "ownerId": 384945,
+      "language": "Py",
+      "collaborators": [
+        {
+          "uid": 384945,
+          "liveControl": true,
+          "permission": "write",
+          "publicId": "cesar_13",
+          "profileImage": "https://cdn.quantconnect.com/web/i/users/profile/default.jpg",
+          "email": "cesarmanuel8102@gmail.com",
+          "name": "Cesar",
+          "bio": "",
+          "owner": true
+        }
+      ],
+      "leanVersionId": 17695,
+      "leanPinnedToMaster": true,
+      "owner": true,
+      "description": "",
+      "channelId": "P30507341-53f3a5f0b06cdf8af64acb8f777ff7a4",
+      "parameters": [],
+      "libraries": [],
+      "grid": {
+        "xs": [],
+        "sm": [],
+        "md": [],
+        "lg": [],
+        "xl": []
+      },
+      "liveGrid": {
+        "xs": [],
+        "sm": [],
+        "md": [],
+        "lg": [],
+        "xl": []
+      },
+      "paperEquity": null,
+      "lastLiveDeployment": null,
+      "liveForm": null,
+      "encrypted": false,
+      "codeRunning": false,
+      "leanEnvironment": 1,
+      "encryptionKey": null,
+      "maxFileSize": 64000,
+      "isPinned": false
+    },
+    {
+      "projectId": 29490680,
+      "organizationId": "6d487993ca17881264c2ac55e41ae539",
+      "name": "Brain V9 Options V1",
+      "modified": "2026-04-21 17:05:26",
+      "created": "2026-03-29 23:52:02",
+      "ownerId": 384945,
+      "language": "Py",
+      "collaborators": [
+        {
+          "uid": 384945,
+          "liveControl": true,
+          "permission": "write",
+          "publicId": "cesar_13",
+          "profileImage": "https://cdn.quantconnect.com/web/i/users/profile/default.jpg",
+          "email": "cesarmanuel8102@gmail.com",
+          "name": "Cesar",
+          "bio": "",
+          "owner": true
+        }
+      ],
+      "leanVersionId": 17695,
+      "leanPinnedToMaster": true,
+      "owner": true,
+      "description": "",
+      "channelId": "P29490680-60b7093698e7d5e2d126bb30ba06a437",
+      "parameters": [
+        {
+          "key": "start_year",
+          "value": "2024"
+        },
+        {
+          "key": "start_month",
+          "value": "1"
+        },
+        {
+          "key": "start_day",
+          "value": "1"
+        },
+        {
+          "key": "end_year",
+          "value": "2026"
+        },
+        {
+          "key": "end_month",
+          "value": "4"
+        },
+        {
+          "key": "end_day",
+          "value": "10"
+        },
+        {
+          "key": "trade_symbol",
+          "value": "SPY"
+        },
+        {
+          "key": "entry_mode",
+          "value": "pullback"
+        },
+        {
+          "key": "min_atr_ratio",
+          "value": "0.12"
+        },
+        {
+          "key": "min_trend_strength",
+          "value": "0.0008"
+        },
+        {
+          "key": "trade_start_min",
+          "value": "5"
+        },
+        {
+          "key": "trade_end_min",
+          "value": "30"
+        },
+        {
+          "key": "rsi_low",
+          "value": "42"
+        },
+        {
+          "key": "rsi_high",
+          "value": "60"
+        },
+        {
+          "key": "stop_loss",
+          "value": "0.004"
+        },
+        {
+          "key": "profit_target",
+          "value": "0.010"
+        },
+        {
+          "key": "max_daily_trades",
+          "value": "2"
+        },
+        {
+          "key": "min_gross_edge_usd",
+          "value": "2.0"
+        },
+        {
+          "key": "vwap_pullback_buffer",
+          "value": "0.006"
+        },
+        {
+          "key": "risk_per_trade",
+          "value": "0.01"
+        },
+        {
+          "key": "max_risk_per_trade",
+          "value": "0.015"
+        },
+        {
+          "key": "catchup_risk_mult",
+          "value": "1.0"
+        },
+        {
+          "key": "target_multiplier",
+          "value": "2.0"
+        },
+        {
+          "key": "target_cycle_days",
+          "value": "126"
+        },
+        {
+          "key": "diag_every_min",
+          "value": "60"
+        }
+      ],
+      "libraries": [],
+      "grid": {
+        "xs": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 9,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 3,
+            "height": 10,
+            "row": 1,
+            "column": 10,
+            "sort": 20
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 9,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 1,
+            "sort": 111
+          },
+          {
+            "chartName": "Exposure",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 5,
+            "sort": 115
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 9,
+            "sort": 119
+          },
+          {
+            "chartName": "Benchmark",
+            "width": 12,
+            "height": 4,
+            "row": 15,
+            "column": 1,
+            "sort": 151
+          },
+          {
+            "chartName": "Capacity",
+            "width": 12,
+            "height": 4,
+            "row": 22,
+            "column": 1,
+            "sort": 221
+          }
+        ],
+        "sm": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 9,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 3,
+            "height": 10,
+            "row": 1,
+            "column": 10,
+            "sort": 20
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 9,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 1,
+            "sort": 111
+          },
+          {
+            "chartName": "Exposure",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 5,
+            "sort": 115
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 9,
+            "sort": 119
+          },
+          {
+            "chartName": "Benchmark",
+            "width": 12,
+            "height": 4,
+            "row": 15,
+            "column": 1,
+            "sort": 151
+          },
+          {
+            "chartName": "Capacity",
+            "width": 12,
+            "height": 4,
+            "row": 22,
+            "column": 1,
+            "sort": 221
+          }
+        ],
+        "md": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 9,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 3,
+            "height": 10,
+            "row": 1,
+            "column": 10,
+            "sort": 20
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 9,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 1,
+            "sort": 111
+          },
+          {
+            "chartName": "Exposure",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 5,
+            "sort": 115
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 9,
+            "sort": 119
+          },
+          {
+            "chartName": "Benchmark",
+            "width": 12,
+            "height": 4,
+            "row": 15,
+            "column": 1,
+            "sort": 151
+          },
+          {
+            "chartName": "Capacity",
+            "width": 12,
+            "height": 4,
+            "row": 22,
+            "column": 1,
+            "sort": 221
+          }
+        ],
+        "lg": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 9,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 3,
+            "height": 10,
+            "row": 1,
+            "column": 10,
+            "sort": 20
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 9,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 1,
+            "sort": 111
+          },
+          {
+            "chartName": "Exposure",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 5,
+            "sort": 115
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 9,
+            "sort": 119
+          },
+          {
+            "chartName": "Benchmark",
+            "width": 12,
+            "height": 4,
+            "row": 15,
+            "column": 1,
+            "sort": 151
+          },
+          {
+            "chartName": "Capacity",
+            "width": 12,
+            "height": 4,
+            "row": 22,
+            "column": 1,
+            "sort": 221
+          }
+        ],
+        "xl": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 9,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 3,
+            "height": 10,
+            "row": 1,
+            "column": 10,
+            "sort": 20
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 9,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 1,
+            "sort": 111
+          },
+          {
+            "chartName": "Exposure",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 5,
+            "sort": 115
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 9,
+            "sort": 119
+          },
+          {
+            "chartName": "Benchmark",
+            "width": 12,
+            "height": 4,
+            "row": 15,
+            "column": 1,
+            "sort": 151
+          },
+          {
+            "chartName": "Capacity",
+            "width": 12,
+            "height": 4,
+            "row": 22,
+            "column": 1,
+            "sort": 221
+          }
+        ]
+      },
+      "liveGrid": {
+        "xs": [],
+        "sm": [],
+        "md": [],
+        "lg": [],
+        "xl": []
+      },
+      "paperEquity": 249556.59,
+      "lastLiveDeployment": "2026-04-10 22:54:12",
+      "liveForm": {
+        "brokerageData": {
+          "id": "InteractiveBrokersBrokerage",
+          "authentication": {
+            "ib-user-name": "cesarmanuel81",
+            "ib-account": "DUM891854",
+            "ib-password": "Casiopea8102*",
+            "ib-weekly-restart-utc-time": "22:00:00"
+          }
+        },
+        "dataProvidersData": [
+          {
+            "id": "QuantConnectBrokerage"
+          }
+        ],
+        "node": "LN-64d4787830461ee45574254f643f69b3",
+        "notifyInsights": false,
+        "notifyOrderEvents": false,
+        "autoRestart": true
+      },
+      "encrypted": false,
+      "codeRunning": false,
+      "leanEnvironment": 1,
+      "encryptionKey": null,
+      "maxFileSize": 64000,
+      "isPinned": false
+    },
+    {
+      "projectId": 29811952,
+      "organizationId": "6d487993ca17881264c2ac55e41ae539",
+      "name": "Clone of Brain V9 Options V1",
+      "modified": "2026-04-11 17:19:18",
+      "created": "2026-04-08 02:47:05",
+      "ownerId": 384945,
+      "language": "Py",
+      "collaborators": [
+        {
+          "uid": 384945,
+          "liveControl": true,
+          "permission": "write",
+          "publicId": "cesar_13",
+          "profileImage": "https://cdn.quantconnect.com/web/i/users/profile/default.jpg",
+          "email": "cesarmanuel8102@gmail.com",
+          "name": "Cesar",
+          "bio": "",
+          "owner": true
+        }
+      ],
+      "leanVersionId": 17695,
+      "leanPinnedToMaster": true,
+      "owner": true,
+      "description": "",
+      "channelId": "P29811952-1cc1512dce14f86135932cf16bc09088",
+      "parameters": [
+        {
+          "key": "profit_target_pct",
+          "value": "0.35"
+        },
+        {
+          "key": "stop_loss_pct",
+          "value": "-0.20"
+        },
+        {
+          "key": "risk_per_trade",
+          "value": "0.06"
+        },
+        {
+          "key": "dte_min",
+          "value": "14"
+        },
+        {
+          "key": "dte_max",
+          "value": "30"
+        },
+        {
+          "key": "start_year",
+          "value": "2023"
+        },
+        {
+          "key": "end_year",
+          "value": "2026"
+        },
+        {
+          "key": "end_month",
+          "value": "4"
+        }
+      ],
+      "libraries": [],
+      "grid": {
+        "xs": [],
+        "sm": [],
+        "md": [],
+        "lg": [],
+        "xl": []
+      },
+      "liveGrid": {
+        "xs": [],
+        "sm": [],
+        "md": [],
+        "lg": [],
+        "xl": []
+      },
+      "paperEquity": null,
+      "lastLiveDeployment": null,
+      "liveForm": null,
+      "encrypted": false,
+      "codeRunning": false,
+      "leanEnvironment": 1,
+      "encryptionKey": null,
+      "maxFileSize": 64000,
+      "isPinned": false
+    },
+    {
+      "projectId": 29721803,
+      "organizationId": "6d487993ca17881264c2ac55e41ae539",
+      "name": "Brain V9 MTF Trend Pullback",
+      "modified": "2026-04-08 00:31:59",
+      "created": "2026-04-05 23:30:15",
+      "ownerId": 384945,
+      "language": "Py",
+      "collaborators": [
+        {
+          "uid": 384945,
+          "liveControl": true,
+          "permission": "write",
+          "publicId": "cesar_13",
+          "profileImage": "https://cdn.quantconnect.com/web/i/users/profile/default.jpg",
+          "email": "cesarmanuel8102@gmail.com",
+          "name": "Cesar",
+          "bio": "",
+          "owner": true
+        }
+      ],
+      "leanVersionId": 17695,
+      "leanPinnedToMaster": true,
+      "owner": true,
+      "description": "",
+      "channelId": "P29721803-7aeb0428ae4c51e79a7c6cbea316763c",
+      "parameters": [
+        {
+          "key": "start_year",
+          "value": "2023"
+        },
+        {
+          "key": "end_year",
+          "value": "2024"
+        },
+        {
+          "key": "end_month",
+          "value": "12"
+        }
+      ],
+      "libraries": [],
+      "grid": {
+        "xs": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 9,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 3,
+            "height": 10,
+            "row": 1,
+            "column": 10,
+            "sort": 20
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 9,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 1,
+            "sort": 111
+          },
+          {
+            "chartName": "Exposure",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 5,
+            "sort": 115
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 9,
+            "sort": 119
+          }
+        ],
+        "sm": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 9,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 3,
+            "height": 10,
+            "row": 1,
+            "column": 10,
+            "sort": 20
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 9,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 1,
+            "sort": 111
+          },
+          {
+            "chartName": "Exposure",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 5,
+            "sort": 115
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 9,
+            "sort": 119
+          }
+        ],
+        "md": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 9,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 3,
+            "height": 10,
+            "row": 1,
+            "column": 10,
+            "sort": 20
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 9,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 1,
+            "sort": 111
+          },
+          {
+            "chartName": "Exposure",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 5,
+            "sort": 115
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 9,
+            "sort": 119
+          }
+        ],
+        "lg": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 9,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 3,
+            "height": 10,
+            "row": 1,
+            "column": 10,
+            "sort": 20
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 9,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 1,
+            "sort": 111
+          },
+          {
+            "chartName": "Exposure",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 5,
+            "sort": 115
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 9,
+            "sort": 119
+          }
+        ],
+        "xl": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 9,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 3,
+            "height": 10,
+            "row": 1,
+            "column": 10,
+            "sort": 20
+          },
+          {
+            "chartName": "Portfolio Margin",
+            "width": 9,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 1,
+            "sort": 111
+          },
+          {
+            "chartName": "Exposure",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 5,
+            "sort": 115
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 4,
+            "height": 4,
+            "row": 11,
+            "column": 9,
+            "sort": 119
+          }
+        ]
+      },
+      "liveGrid": {
+        "xs": [],
+        "sm": [],
+        "md": [],
+        "lg": [],
+        "xl": []
+      },
+      "paperEquity": null,
+      "lastLiveDeployment": null,
+      "liveForm": null,
+      "encrypted": false,
+      "codeRunning": false,
+      "leanEnvironment": 1,
+      "encryptionKey": null,
+      "maxFileSize": 64000,
+      "isPinned": false
+    },
+    {
+      "projectId": 24654779,
+      "organizationId": "6d487993ca17881264c2ac55e41ae539",
+      "name": "Upgraded Sky Blue Butterfly",
+      "modified": "2026-03-31 21:16:30",
+      "created": "2025-08-19 22:32:11",
+      "ownerId": 384945,
+      "language": "Py",
+      "collaborators": [
+        {
+          "uid": 384945,
+          "liveControl": true,
+          "permission": "write",
+          "publicId": "cesar_13",
+          "profileImage": "https://cdn.quantconnect.com/web/i/users/profile/default.jpg",
+          "email": "cesarmanuel8102@gmail.com",
+          "name": "Cesar",
+          "bio": "",
+          "owner": true
+        }
+      ],
+      "leanVersionId": 17695,
+      "leanPinnedToMaster": true,
+      "owner": true,
+      "description": "",
+      "channelId": "P24654779-b53d64694cece3f567659acb7b66d177",
+      "parameters": [],
+      "libraries": [],
+      "grid": {
+        "xs": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 12,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          }
+        ],
+        "sm": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 12,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          }
+        ],
+        "md": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 12,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          }
+        ],
+        "lg": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 12,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          }
+        ],
+        "xl": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 6,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Drawdown",
+            "width": 12,
+            "height": 4,
+            "row": 7,
+            "column": 1,
+            "sort": 71
+          }
+        ]
+      },
+      "liveGrid": {
+        "xs": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 4,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 12,
+            "height": 4,
+            "row": 5,
+            "column": 1,
+            "sort": 51
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 12,
+            "height": 4,
+            "row": 9,
+            "column": 1,
+            "sort": 91
+          },
+          {
+            "chartName": "Benchmark",
+            "width": 12,
+            "height": 4,
+            "row": 13,
+            "column": 1,
+            "sort": 131
+          },
+          {
+            "chartName": "Exposure",
+            "width": 12,
+            "height": 4,
+            "row": 17,
+            "column": 1,
+            "sort": 171
+          }
+        ],
+        "sm": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 4,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 12,
+            "height": 4,
+            "row": 5,
+            "column": 1,
+            "sort": 51
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 12,
+            "height": 4,
+            "row": 9,
+            "column": 1,
+            "sort": 91
+          },
+          {
+            "chartName": "Benchmark",
+            "width": 12,
+            "height": 4,
+            "row": 13,
+            "column": 1,
+            "sort": 131
+          },
+          {
+            "chartName": "Exposure",
+            "width": 12,
+            "height": 4,
+            "row": 17,
+            "column": 1,
+            "sort": 171
+          }
+        ],
+        "md": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 4,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 12,
+            "height": 4,
+            "row": 5,
+            "column": 1,
+            "sort": 51
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 12,
+            "height": 4,
+            "row": 9,
+            "column": 1,
+            "sort": 91
+          },
+          {
+            "chartName": "Benchmark",
+            "width": 12,
+            "height": 4,
+            "row": 13,
+            "column": 1,
+            "sort": 131
+          },
+          {
+            "chartName": "Exposure",
+            "width": 12,
+            "height": 4,
+            "row": 17,
+            "column": 1,
+            "sort": 171
+          }
+        ],
+        "lg": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 4,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 12,
+            "height": 4,
+            "row": 5,
+            "column": 1,
+            "sort": 51
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 12,
+            "height": 4,
+            "row": 9,
+            "column": 1,
+            "sort": 91
+          },
+          {
+            "chartName": "Benchmark",
+            "width": 12,
+            "height": 4,
+            "row": 13,
+            "column": 1,
+            "sort": 131
+          },
+          {
+            "chartName": "Exposure",
+            "width": 12,
+            "height": 4,
+            "row": 17,
+            "column": 1,
+            "sort": 171
+          }
+        ],
+        "xl": [
+          {
+            "chartName": "Strategy Equity",
+            "width": 12,
+            "height": 4,
+            "row": 1,
+            "column": 1,
+            "sort": 11
+          },
+          {
+            "chartName": "Portfolio Turnover",
+            "width": 12,
+            "height": 4,
+            "row": 5,
+            "column": 1,
+            "sort": 51
+          },
+          {
+            "chartName": "Assets Sales Volume",
+            "width": 12,
+            "height": 4,
+            "row": 9,
+            "column": 1,
+            "sort": 91
+          },
+          {
+            "chartName": "Benchmark",
+            "width": 12,
+            "height": 4,
+            "row": 13,
+            "column": 1,
+            "sort": 131
+          },
+          {
+            "chartName": "Exposure",
+            "width": 12,
+            "height": 4,
+            "row": 17,
+            "column": 1,
+            "sort": 171
+          }
+        ]
+      },
+      "paperEquity": 58517.71,
+      "lastLiveDeployment": "2025-11-04 14:40:09",
+      "liveForm": {
+        "brokerageData": {
+          "id": "InteractiveBrokersBrokerage",
+          "authentication": {
+            "ib-user-name": "cesarmanuel81",
+            "ib-account": "DUM891854",
+            "ib-password": "Casiopea8102*",
+            "ib-weekly-restart-utc-time": "22:00:00"
+          }
+        },
+        "dataProvidersData": [
+          {
+            "id": "InteractiveBrokersBrokerage",
+            "authentication": {
+              "ib-user-name": "cesarmanuel81",
+              "ib-account": "DUM891854",
+              "ib-password": "Casiopea8102*",
+              "ib-weekly-restart-utc-time": "22:00:00"
+            }
+          }
+        ],
+        "node": "LN-8b8500235a6c397b918f3d24429decb7",
+        "notifyInsights": false,
+        "notifyOrderEvents": false,
+        "autoRestart": true
+      },
+      "encrypted": false,
+      "codeRunning": false,
+      "leanEnvironment": 1,
+      "encryptionKey": null,
+      "maxFileSize": 64000,
+      "isPinned": false
+    },
+    {
+      "projectId": 25550271,
+      "organizationId": "6d487993ca17881264c2ac55e41ae539",
+      "name": "Clone of Sleepy Black Buffalo",
+      "modified": "2025-10-09 22:49:28",
+      "created": "2025-10-09 22:49:28",
+      "ownerId": 384945,
+      "language": "Py",
+      "collaborators": [
+        {
+          "uid": 384945,
+          "liveControl": true,
+          "permission": "write",
+          "publicId": "cesar_13",
+          "profileImage": "https://cdn.quantconnect.com/web/i/users/profile/default.jpg",
+          "email": "cesarmanuel8102@gmail.com",
+          "name": "Cesar",
+          "bio": "",
+          "owner": true
+        }
+      ],
+      "leanVersionId": 17695,
+      "leanPinnedToMaster": true,
+      "owner": true,
+      "description": "",
+      "channelId": "P25550271-1ce12893df54acba89e9d3830a5f54dc",
+      "parameters": [],
+      "libraries": [],
+      "grid": {
+        "xs": [],
+        "sm": [],
+        "md": [],
+        "lg": [],
+        "xl": []
+      },
+      "liveGrid": {
+        "xs": [],
+        "sm": [],
+        "md": [],
+        "lg": [],
+        "xl": []
+      },
+      "paperEquity": null,
+      "lastLiveDeployment": null,
+      "liveForm": null,
+      "encrypted": false,
+      "codeRunning": false,
+      "leanEnvironment": 1,
+      "encryptionKey": null,
+      "maxFileSize": 64000,
+      "isPinned": false
+    }
+  ],
+  "versions": [
+    {
+      "id": 17695,
+      "created": "2026-05-04 18:23:17",
+      "description": "Ensured that runtime errors in result handling now correctly stop the algorithm, along with a small related cleanup.",
+      "leanHash": "3f5eefd87916082e2377fb03c4fff7cfcaa024fb",
+      "leanCloudHash": "236e3a144008ea57ce20ccab12032f5d14713565",
+      "name": "master",
+      "ref": "refs/heads/master",
+      "public": true
+    }
+  ],
+  "success": true
+}

@@ -1,0 +1,64 @@
+{
+  "source_id": "github_All_Hands_AI_OpenHands_20260508",
+  "generated_at_utc": "2026-05-08T05:07:38.774411Z",
+  "hypotheses": [
+    {
+      "hypothesis_id": "HYP_ALL_HANDS_AI_OPENHANDS_SANDBOXED_PATCH_PLANNING_001",
+      "semantic_key": "execution_reliability:patch_planning",
+      "inspired_by_sources": [
+        "github_All_Hands_AI_OpenHands_20260508"
+      ],
+      "target_capability": "execution_reliability",
+      "claim": "Adoptar el patron `sandboxed_patch_planning` puede mejorar `execution_reliability` sin copiar codigo externo.",
+      "expected_metric_lift": {
+        "plan_validity_score": "+3%",
+        "loop_failure_rate": "-15%",
+        "execution_success_rate": "+5%",
+        "tool_error_rate": "-2%"
+      },
+      "risk": "medium",
+      "recommended_next_step": "sandbox_patch_later",
+      "source_attribution": {
+        "source_id": "github_All_Hands_AI_OpenHands_20260508",
+        "pattern_id": "sandboxed_patch_planning",
+        "semantic_family": "patch_planning",
+        "evidence_refs": [
+          {
+            "source_file": "README.snapshot.md",
+            "reason": "README describes coding-agent / patch / diff behavior.",
+            "evidence_type": "text_match"
+          }
+        ]
+      }
+    },
+    {
+      "hypothesis_id": "HYP_ALL_HANDS_AI_OPENHANDS_TEST_FIRST_CODE_REPAIR_002",
+      "semantic_key": "tool_use_accuracy:test_first_repair",
+      "inspired_by_sources": [
+        "github_All_Hands_AI_OpenHands_20260508"
+      ],
+      "target_capability": "tool_use_accuracy",
+      "claim": "Adoptar el patron `test_first_code_repair` puede mejorar `tool_use_accuracy` sin copiar codigo externo.",
+      "expected_metric_lift": {
+        "plan_validity_score": "+3%",
+        "loop_failure_rate": "-5%",
+        "execution_success_rate": "+2%",
+        "tool_error_rate": "-10%"
+      },
+      "risk": "medium",
+      "recommended_next_step": "sandbox_patch_later",
+      "source_attribution": {
+        "source_id": "github_All_Hands_AI_OpenHands_20260508",
+        "pattern_id": "test_first_code_repair",
+        "semantic_family": "test_first_repair",
+        "evidence_refs": [
+          {
+            "source_file": "README.snapshot.md",
+            "reason": "README/repo description emphasizes repair or coding-agent workflows.",
+            "evidence_type": "text_match"
+          }
+        ]
+      }
+    }
+  ]
+}

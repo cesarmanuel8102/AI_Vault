@@ -1,0 +1,53 @@
+{
+  "generated_at_utc": "2026-04-22T03:30:19.104436+00:00",
+  "project_id": 29652652,
+  "steps": [
+    {
+      "step": "files_update_main",
+      "data": {
+        "source": "C:\\AI_VAULT\\tmp_agent\\strategies\\mean_reversion_eq\\main_phase10_pf200_guardrail.py",
+        "success": true
+      }
+    },
+    {
+      "step": "project_params_set",
+      "data": {
+        "count": 36
+      }
+    },
+    {
+      "step": "compile_done",
+      "data": {
+        "compileId": "5f7a4a43994b6592cd6ea3f6fb8ef942-a2b3e5c21556d1cd6cdc9d1ed62c897c"
+      }
+    },
+    {
+      "step": "live_before",
+      "data": {
+        "status": "Stopped",
+        "deployId": "L-5a8497fe8cad719ec9015067453ecd1f",
+        "nodeId": null,
+        "brokerage": "PaperBrokerage"
+      }
+    },
+    {
+      "step": "live_create_ok",
+      "data": {
+        "attempt": 1,
+        "retry": 1,
+        "deployId": "L-8ab5da48620a9a477de45a45ef045457"
+      }
+    },
+    {
+      "step": "live_confirm",
+      "data": {
+        "attempt": 1,
+        "deployId": "L-8ab5da48620a9a477de45a45ef045457",
+        "status": "Running",
+        "launched": "2026-04-14 21:16:58",
+        "brokerage": "PaperBrokerage",
+        "nodeId": null
+      }
+    }
+  ]
+}

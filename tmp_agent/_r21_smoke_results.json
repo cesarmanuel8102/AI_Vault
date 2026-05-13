@@ -1,0 +1,26 @@
+﻿[
+    {
+        "q":  "has estado mejorandote ultimamente?",
+        "dur_ms":  115,
+        "resp":  "Actividad de las Ãºltimas 6h (51 eventos):\n\nChats: 22 total\n  - route=agent: 14 (ok=14, fail=0)\n  - route=llm: 7 (ok=5, fail=2)\n  - route=fastpath: 1 (ok=1, fail=0)\n  - latencia chat: avg=39.7s, max=104.7s\n  - intents top: COMMAND=7, CONVERSATION=6, SYSTEM=3, QUERY=2, ANALYSIS=1\n\nDecisiones del agente: 18\n  - complexity=medium: 11\n  - complexity=complex: 4\n  - complexity=simple: 3\n\nFallos de capability: 11\n  - read_file (?): 3\n  - read_file (PermissionError): 3\n  - auto_promote_strategies (Accion P2 requiere confirmacion. Responde \u0027si\u0027 o u...): 2\n  - run_command (error=R17: PowerShell -Command con \u0027$\u0027 detectado. ...): 2\n  - get_live_autonomy_status (operation reported success=false without details): 1\n\nÃltimo chat: 2026-05-05 17:55:07",
+        "route":  "system"
+    },
+    {
+        "q":  "cuanto has estado trabajando ultimmente para eso?",
+        "dur_ms":  48,
+        "resp":  "Actividad de las Ãºltimas 6h (52 eventos):\n\nChats: 23 total\n  - route=agent: 14 (ok=14, fail=0)\n  - route=llm: 7 (ok=5, fail=2)\n  - route=fastpath: 2 (ok=2, fail=0)\n  - latencia chat: avg=38.0s, max=104.7s\n  - intents top: COMMAND=7, CONVERSATION=6, QUERY=3, SYSTEM=3, ANALYSIS=1\n\nDecisiones del agente: 18\n  - complexity=medium: 11\n  - complexity=complex: 4\n  - complexity=simple: 3\n\nFallos de capability: 11\n  - read_file (?): 3\n  - read_file (PermissionError): 3\n  - auto_promote_strategies (Accion P2 requiere confirmacion. Responde \u0027si\u0027 o u...): 2\n  - run_command (error=R17: PowerShell -Command con \u0027$\u0027 detectado. ...): 2\n  - get_live_autonomy_status (operation reported success=false without details): 1\n\nÃltimo chat: 2026-05-05 18:02:55",
+        "route":  "system"
+    },
+    {
+        "q":  "que has hecho ultimamente?",
+        "dur_ms":  23,
+        "resp":  "Actividad de las Ãºltimas 6h (53 eventos):\n\nChats: 24 total\n  - route=agent: 14 (ok=14, fail=0)\n  - route=llm: 7 (ok=5, fail=2)\n  - route=fastpath: 3 (ok=3, fail=0)\n  - latencia chat: avg=36.4s, max=104.7s\n  - intents top: COMMAND=7, CONVERSATION=6, QUERY=4, SYSTEM=3, ANALYSIS=1\n\nDecisiones del agente: 18\n  - complexity=medium: 11\n  - complexity=complex: 4\n  - complexity=simple: 3\n\nFallos de capability: 11\n  - read_file (?): 3\n  - read_file (PermissionError): 3\n  - auto_promote_strategies (Accion P2 requiere confirmacion. Responde \u0027si\u0027 o u...): 2\n  - run_command (error=R17: PowerShell -Command con \u0027$\u0027 detectado. ...): 2\n  - get_live_autonomy_status (operation reported success=false without details): 1\n\nÃltimo chat: 2026-05-05 18:02:55",
+        "route":  "system"
+    },
+    {
+        "q":  "que tools fallaron recientes?",
+        "dur_ms":  41,
+        "resp":  "Actividad de las Ãºltimas 6h (54 eventos):\n\nChats: 25 total\n  - route=agent: 14 (ok=14, fail=0)\n  - route=llm: 7 (ok=5, fail=2)\n  - route=fastpath: 4 (ok=4, fail=0)\n  - latencia chat: avg=35.0s, max=104.7s\n  - intents top: COMMAND=7, CONVERSATION=6, QUERY=5, SYSTEM=3, ANALYSIS=1\n\nDecisiones del agente: 18\n  - complexity=medium: 11\n  - complexity=complex: 4\n  - complexity=simple: 3\n\nFallos de capability: 11\n  - read_file (?): 3\n  - read_file (PermissionError): 3\n  - auto_promote_strategies (Accion P2 requiere confirmacion. Responde \u0027si\u0027 o u...): 2\n  - run_command (error=R17: PowerShell -Command con \u0027$\u0027 detectado. ...): 2\n  - get_live_autonomy_status (operation reported success=false without details): 1\n\nÃltimo chat: 2026-05-05 18:02:55",
+        "route":  "system"
+    }
+]

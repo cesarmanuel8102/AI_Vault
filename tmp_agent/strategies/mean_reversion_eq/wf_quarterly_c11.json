@@ -1,0 +1,172 @@
+[
+  {
+    "backtest_id": "128dda0d52d734513c6d3560442ad9e9",
+    "net_profit_pct": -6.682,
+    "drawdown_pct": 9.1,
+    "sharpe": -1.806,
+    "win_rate_pct": 50.0,
+    "profit_loss_ratio": 0.32,
+    "total_orders": "24",
+    "period": "2022Q1"
+  },
+  {
+    "backtest_id": "07da8e71a125417edc04b897dc069f23",
+    "net_profit_pct": 6.851,
+    "drawdown_pct": 3.8,
+    "sharpe": 1.706,
+    "win_rate_pct": 56.0,
+    "profit_loss_ratio": 5.38,
+    "total_orders": "18",
+    "period": "2022Q2"
+  },
+  {
+    "backtest_id": "92bf13692f0527c0edb524fc3ab7ca74",
+    "net_profit_pct": 5.023,
+    "drawdown_pct": 5.6,
+    "sharpe": 0.801,
+    "win_rate_pct": 62.0,
+    "profit_loss_ratio": 1.28,
+    "total_orders": "32",
+    "period": "2022Q3"
+  },
+  {
+    "backtest_id": "f31ca12d033bbf50b4007f66020d068e",
+    "net_profit_pct": 3.486,
+    "drawdown_pct": 3.9,
+    "sharpe": 0.831,
+    "win_rate_pct": 75.0,
+    "profit_loss_ratio": 0.88,
+    "total_orders": "16",
+    "period": "2022Q4"
+  },
+  {
+    "backtest_id": "11cc6ac2002784dbb9bb6997fc6976d7",
+    "net_profit_pct": -1.974,
+    "drawdown_pct": 3.9,
+    "sharpe": -1.103,
+    "win_rate_pct": 40.0,
+    "profit_loss_ratio": 0.53,
+    "total_orders": "21",
+    "period": "2023Q1"
+  },
+  {
+    "backtest_id": "082099ade1f81b75d8e9587d5c86221d",
+    "net_profit_pct": 6.556,
+    "drawdown_pct": 1.2,
+    "sharpe": 2.387,
+    "win_rate_pct": 100.0,
+    "profit_loss_ratio": 0.0,
+    "total_orders": "24",
+    "period": "2023Q2"
+  },
+  {
+    "backtest_id": "48f3fdc93ed99c1cfa528fea0a131eed",
+    "net_profit_pct": -1.392,
+    "drawdown_pct": 3.8,
+    "sharpe": -1.358,
+    "win_rate_pct": 40.0,
+    "profit_loss_ratio": 1.17,
+    "total_orders": "32",
+    "period": "2023Q3"
+  },
+  {
+    "backtest_id": "6e53a0bd1794ab926260886493e2a493",
+    "net_profit_pct": 1.089,
+    "drawdown_pct": 2.1,
+    "sharpe": -0.459,
+    "win_rate_pct": 71.0,
+    "profit_loss_ratio": 0.65,
+    "total_orders": "14",
+    "period": "2023Q4"
+  },
+  {
+    "backtest_id": "da1df5194822df3c2a1fc389c36a0d8c",
+    "net_profit_pct": 3.243,
+    "drawdown_pct": 1.2,
+    "sharpe": 0.809,
+    "win_rate_pct": 100.0,
+    "profit_loss_ratio": 0.0,
+    "total_orders": "12",
+    "period": "2024Q1"
+  },
+  {
+    "backtest_id": "8866b70bc977ecd2036ea9b5879737b6",
+    "net_profit_pct": -0.855,
+    "drawdown_pct": 3.9,
+    "sharpe": -1.473,
+    "win_rate_pct": 58.0,
+    "profit_loss_ratio": 0.55,
+    "total_orders": "24",
+    "period": "2024Q2"
+  },
+  {
+    "backtest_id": "3187ba9f8da9851dfcecd1c12ed39bc4",
+    "net_profit_pct": 6.636,
+    "drawdown_pct": 2.0,
+    "sharpe": 1.652,
+    "win_rate_pct": 85.0,
+    "profit_loss_ratio": 0.93,
+    "total_orders": "26",
+    "period": "2024Q3"
+  },
+  {
+    "backtest_id": "cc63cf3fed929265d97d2b351d9e45b7",
+    "net_profit_pct": 2.091,
+    "drawdown_pct": 3.5,
+    "sharpe": 0.094,
+    "win_rate_pct": 64.0,
+    "profit_loss_ratio": 0.89,
+    "total_orders": "30",
+    "period": "2024Q4"
+  },
+  {
+    "backtest_id": "7a1467149dff410ac4ab9c5d1f90f965",
+    "net_profit_pct": 2.756,
+    "drawdown_pct": 5.9,
+    "sharpe": 0.31,
+    "win_rate_pct": 69.0,
+    "profit_loss_ratio": 0.65,
+    "total_orders": "26",
+    "period": "2025Q1"
+  },
+  {
+    "backtest_id": "91276c3d0bc9ae47052dc5604c8aa4f8",
+    "net_profit_pct": -0.842,
+    "drawdown_pct": 5.9,
+    "sharpe": -1.014,
+    "win_rate_pct": 43.0,
+    "profit_loss_ratio": 1.07,
+    "total_orders": "14",
+    "period": "2025Q2"
+  },
+  {
+    "backtest_id": "501c13c1921d7ffc1badafe66600bc6f",
+    "net_profit_pct": 2.52,
+    "drawdown_pct": 0.8,
+    "sharpe": 0.358,
+    "win_rate_pct": 83.0,
+    "profit_loss_ratio": 8.39,
+    "total_orders": "12",
+    "period": "2025Q3"
+  },
+  {
+    "backtest_id": "e479bcb1d2db192da906197c51bce524",
+    "net_profit_pct": -0.256,
+    "drawdown_pct": 3.8,
+    "sharpe": -0.766,
+    "win_rate_pct": 62.0,
+    "profit_loss_ratio": 0.66,
+    "total_orders": "30",
+    "period": "2025Q4"
+  },
+  {
+    "backtest_id": "eb5d92ddebdec28b96aec3eed99ba606",
+    "net_profit_pct": 4.965,
+    "drawdown_pct": 2.7,
+    "sharpe": 1.276,
+    "win_rate_pct": 71.0,
+    "profit_loss_ratio": 1.39,
+    "total_orders": "28",
+    "period": "2026Q1"
+  }
+]

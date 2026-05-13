@@ -1,0 +1,434 @@
+[
+  {
+    "name": ".asset",
+    "path": ".asset",
+    "sha": "8ded92fe63055817a922e5cd3ca3efefdba1eaba",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/.asset?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/tree/main/.asset",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/8ded92fe63055817a922e5cd3ca3efefdba1eaba",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/.asset?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/8ded92fe63055817a922e5cd3ca3efefdba1eaba",
+      "html": "https://github.com/microsoft/TaskWeaver/tree/main/.asset"
+    }
+  },
+  {
+    "name": ".devcontainer",
+    "path": ".devcontainer",
+    "sha": "7b0654982f385159ab5f4e7db40ea35d2cfeb54a",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/.devcontainer?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/tree/main/.devcontainer",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/7b0654982f385159ab5f4e7db40ea35d2cfeb54a",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/.devcontainer?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/7b0654982f385159ab5f4e7db40ea35d2cfeb54a",
+      "html": "https://github.com/microsoft/TaskWeaver/tree/main/.devcontainer"
+    }
+  },
+  {
+    "name": ".gitattributes",
+    "path": ".gitattributes",
+    "sha": "dfdb8b771ce07609491fa2e83698969fd917a135",
+    "size": 17,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/.gitattributes?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/blob/main/.gitattributes",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/dfdb8b771ce07609491fa2e83698969fd917a135",
+    "download_url": "https://raw.githubusercontent.com/microsoft/TaskWeaver/main/.gitattributes",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/.gitattributes?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/dfdb8b771ce07609491fa2e83698969fd917a135",
+      "html": "https://github.com/microsoft/TaskWeaver/blob/main/.gitattributes"
+    }
+  },
+  {
+    "name": ".github",
+    "path": ".github",
+    "sha": "b7e22097faf5077224804474bbbfe538a7f89416",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/.github?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/tree/main/.github",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/b7e22097faf5077224804474bbbfe538a7f89416",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/.github?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/b7e22097faf5077224804474bbbfe538a7f89416",
+      "html": "https://github.com/microsoft/TaskWeaver/tree/main/.github"
+    }
+  },
+  {
+    "name": ".gitignore",
+    "path": ".gitignore",
+    "sha": "b67ecefe989b496d04c6650e44352611d1aa1c61",
+    "size": 4132,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/.gitignore?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/blob/main/.gitignore",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/b67ecefe989b496d04c6650e44352611d1aa1c61",
+    "download_url": "https://raw.githubusercontent.com/microsoft/TaskWeaver/main/.gitignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/.gitignore?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/b67ecefe989b496d04c6650e44352611d1aa1c61",
+      "html": "https://github.com/microsoft/TaskWeaver/blob/main/.gitignore"
+    }
+  },
+  {
+    "name": ".linters",
+    "path": ".linters",
+    "sha": "54f9274434c33622f1ed7434f5f6d034a08513ee",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/.linters?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/tree/main/.linters",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/54f9274434c33622f1ed7434f5f6d034a08513ee",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/.linters?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/54f9274434c33622f1ed7434f5f6d034a08513ee",
+      "html": "https://github.com/microsoft/TaskWeaver/tree/main/.linters"
+    }
+  },
+  {
+    "name": ".pre-commit-config.yaml",
+    "path": ".pre-commit-config.yaml",
+    "sha": "b62d2cf07c685df83157ff014381cfab288c435d",
+    "size": 1686,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/.pre-commit-config.yaml?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/blob/main/.pre-commit-config.yaml",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/b62d2cf07c685df83157ff014381cfab288c435d",
+    "download_url": "https://raw.githubusercontent.com/microsoft/TaskWeaver/main/.pre-commit-config.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/.pre-commit-config.yaml?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/b62d2cf07c685df83157ff014381cfab288c435d",
+      "html": "https://github.com/microsoft/TaskWeaver/blob/main/.pre-commit-config.yaml"
+    }
+  },
+  {
+    "name": ".secrets.baseline",
+    "path": ".secrets.baseline",
+    "sha": "81b59c8842da71a4fc95948aea464410bf0f8e13",
+    "size": 2313,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/.secrets.baseline?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/blob/main/.secrets.baseline",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/81b59c8842da71a4fc95948aea464410bf0f8e13",
+    "download_url": "https://raw.githubusercontent.com/microsoft/TaskWeaver/main/.secrets.baseline",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/.secrets.baseline?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/81b59c8842da71a4fc95948aea464410bf0f8e13",
+      "html": "https://github.com/microsoft/TaskWeaver/blob/main/.secrets.baseline"
+    }
+  },
+  {
+    "name": "CODE_OF_CONDUCT.md",
+    "path": "CODE_OF_CONDUCT.md",
+    "sha": "f9ba8cf65f3e3104dd061c178066ec8247811f33",
+    "size": 444,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/CODE_OF_CONDUCT.md?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/blob/main/CODE_OF_CONDUCT.md",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/f9ba8cf65f3e3104dd061c178066ec8247811f33",
+    "download_url": "https://raw.githubusercontent.com/microsoft/TaskWeaver/main/CODE_OF_CONDUCT.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/CODE_OF_CONDUCT.md?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/f9ba8cf65f3e3104dd061c178066ec8247811f33",
+      "html": "https://github.com/microsoft/TaskWeaver/blob/main/CODE_OF_CONDUCT.md"
+    }
+  },
+  {
+    "name": "CONTRIBUTING.md",
+    "path": "CONTRIBUTING.md",
+    "sha": "c97e7ed36f67cd1b9d3d8cf465e0ec35661c38f1",
+    "size": 933,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/CONTRIBUTING.md?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/blob/main/CONTRIBUTING.md",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/c97e7ed36f67cd1b9d3d8cf465e0ec35661c38f1",
+    "download_url": "https://raw.githubusercontent.com/microsoft/TaskWeaver/main/CONTRIBUTING.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/CONTRIBUTING.md?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/c97e7ed36f67cd1b9d3d8cf465e0ec35661c38f1",
+      "html": "https://github.com/microsoft/TaskWeaver/blob/main/CONTRIBUTING.md"
+    }
+  },
+  {
+    "name": "LICENSE",
+    "path": "LICENSE",
+    "sha": "9e841e7a26e4eb057b24511e7b92d42b257a80e5",
+    "size": 1141,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/LICENSE?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/blob/main/LICENSE",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/9e841e7a26e4eb057b24511e7b92d42b257a80e5",
+    "download_url": "https://raw.githubusercontent.com/microsoft/TaskWeaver/main/LICENSE",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/LICENSE?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/9e841e7a26e4eb057b24511e7b92d42b257a80e5",
+      "html": "https://github.com/microsoft/TaskWeaver/blob/main/LICENSE"
+    }
+  },
+  {
+    "name": "README.md",
+    "path": "README.md",
+    "sha": "ea1b5a2f25d83b3809f1154d0efb98ee72d02b85",
+    "size": 14759,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/README.md?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/blob/main/README.md",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/ea1b5a2f25d83b3809f1154d0efb98ee72d02b85",
+    "download_url": "https://raw.githubusercontent.com/microsoft/TaskWeaver/main/README.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/README.md?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/ea1b5a2f25d83b3809f1154d0efb98ee72d02b85",
+      "html": "https://github.com/microsoft/TaskWeaver/blob/main/README.md"
+    }
+  },
+  {
+    "name": "SECURITY.md",
+    "path": "SECURITY.md",
+    "sha": "b3c89efc852e22f71eabf5dfbc6ac62493425eb6",
+    "size": 2656,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/SECURITY.md?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/blob/main/SECURITY.md",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/b3c89efc852e22f71eabf5dfbc6ac62493425eb6",
+    "download_url": "https://raw.githubusercontent.com/microsoft/TaskWeaver/main/SECURITY.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/SECURITY.md?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/b3c89efc852e22f71eabf5dfbc6ac62493425eb6",
+      "html": "https://github.com/microsoft/TaskWeaver/blob/main/SECURITY.md"
+    }
+  },
+  {
+    "name": "SUPPORT.md",
+    "path": "SUPPORT.md",
+    "sha": "291d4d43733f4c15a81ff598ec1c99fd6c18f64c",
+    "size": 1244,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/SUPPORT.md?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/blob/main/SUPPORT.md",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/291d4d43733f4c15a81ff598ec1c99fd6c18f64c",
+    "download_url": "https://raw.githubusercontent.com/microsoft/TaskWeaver/main/SUPPORT.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/SUPPORT.md?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/291d4d43733f4c15a81ff598ec1c99fd6c18f64c",
+      "html": "https://github.com/microsoft/TaskWeaver/blob/main/SUPPORT.md"
+    }
+  },
+  {
+    "name": "auto_eval",
+    "path": "auto_eval",
+    "sha": "50c80cc1eef1a10a9efe9ad31c058c9cadd2c175",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/auto_eval?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/tree/main/auto_eval",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/50c80cc1eef1a10a9efe9ad31c058c9cadd2c175",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/auto_eval?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/50c80cc1eef1a10a9efe9ad31c058c9cadd2c175",
+      "html": "https://github.com/microsoft/TaskWeaver/tree/main/auto_eval"
+    }
+  },
+  {
+    "name": "docker",
+    "path": "docker",
+    "sha": "346a08a9f3ac44f0c087cf70330b2b46cbd593e2",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/docker?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/tree/main/docker",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/346a08a9f3ac44f0c087cf70330b2b46cbd593e2",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/docker?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/346a08a9f3ac44f0c087cf70330b2b46cbd593e2",
+      "html": "https://github.com/microsoft/TaskWeaver/tree/main/docker"
+    }
+  },
+  {
+    "name": "playground",
+    "path": "playground",
+    "sha": "8338609f585b5230320a86ebb7a4690f08b66c80",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/playground?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/tree/main/playground",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/8338609f585b5230320a86ebb7a4690f08b66c80",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/playground?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/8338609f585b5230320a86ebb7a4690f08b66c80",
+      "html": "https://github.com/microsoft/TaskWeaver/tree/main/playground"
+    }
+  },
+  {
+    "name": "project",
+    "path": "project",
+    "sha": "63c0e3cd4c2ad88a140dfe84829cbab6300d35c1",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/project?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/tree/main/project",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/63c0e3cd4c2ad88a140dfe84829cbab6300d35c1",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/project?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/63c0e3cd4c2ad88a140dfe84829cbab6300d35c1",
+      "html": "https://github.com/microsoft/TaskWeaver/tree/main/project"
+    }
+  },
+  {
+    "name": "pytest.ini",
+    "path": "pytest.ini",
+    "sha": "7ccf85a06c5aaec2901b0cdb5abd6cd8230300fb",
+    "size": 97,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/pytest.ini?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/blob/main/pytest.ini",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/7ccf85a06c5aaec2901b0cdb5abd6cd8230300fb",
+    "download_url": "https://raw.githubusercontent.com/microsoft/TaskWeaver/main/pytest.ini",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/pytest.ini?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/7ccf85a06c5aaec2901b0cdb5abd6cd8230300fb",
+      "html": "https://github.com/microsoft/TaskWeaver/blob/main/pytest.ini"
+    }
+  },
+  {
+    "name": "requirements.txt",
+    "path": "requirements.txt",
+    "sha": "f8b73c3dde32d0e7d85a0ab709794f686f7fed48",
+    "size": 394,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/requirements.txt?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/blob/main/requirements.txt",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/f8b73c3dde32d0e7d85a0ab709794f686f7fed48",
+    "download_url": "https://raw.githubusercontent.com/microsoft/TaskWeaver/main/requirements.txt",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/requirements.txt?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/f8b73c3dde32d0e7d85a0ab709794f686f7fed48",
+      "html": "https://github.com/microsoft/TaskWeaver/blob/main/requirements.txt"
+    }
+  },
+  {
+    "name": "scripts",
+    "path": "scripts",
+    "sha": "5e8e5e22fbfe96726df6f81be831615a7e6ff37e",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/scripts?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/tree/main/scripts",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/5e8e5e22fbfe96726df6f81be831615a7e6ff37e",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/scripts?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/5e8e5e22fbfe96726df6f81be831615a7e6ff37e",
+      "html": "https://github.com/microsoft/TaskWeaver/tree/main/scripts"
+    }
+  },
+  {
+    "name": "setup.py",
+    "path": "setup.py",
+    "sha": "0a8be3960d00cdf30d46910f4a310885faecbf98",
+    "size": 3166,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/setup.py?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/blob/main/setup.py",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/0a8be3960d00cdf30d46910f4a310885faecbf98",
+    "download_url": "https://raw.githubusercontent.com/microsoft/TaskWeaver/main/setup.py",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/setup.py?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/0a8be3960d00cdf30d46910f4a310885faecbf98",
+      "html": "https://github.com/microsoft/TaskWeaver/blob/main/setup.py"
+    }
+  },
+  {
+    "name": "taskweaver",
+    "path": "taskweaver",
+    "sha": "2a58a92cb34aef718123872a0e92e04ce7fc68ad",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/taskweaver?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/tree/main/taskweaver",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/2a58a92cb34aef718123872a0e92e04ce7fc68ad",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/taskweaver?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/2a58a92cb34aef718123872a0e92e04ce7fc68ad",
+      "html": "https://github.com/microsoft/TaskWeaver/tree/main/taskweaver"
+    }
+  },
+  {
+    "name": "tests",
+    "path": "tests",
+    "sha": "1d122edcd8328911059b15e5a47c861a3fb95042",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/tests?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/tree/main/tests",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/1d122edcd8328911059b15e5a47c861a3fb95042",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/tests?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/1d122edcd8328911059b15e5a47c861a3fb95042",
+      "html": "https://github.com/microsoft/TaskWeaver/tree/main/tests"
+    }
+  },
+  {
+    "name": "tracing",
+    "path": "tracing",
+    "sha": "c93aeb1c3a0802f9c8c7c6678a67eb9b46074443",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/tracing?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/tree/main/tracing",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/c93aeb1c3a0802f9c8c7c6678a67eb9b46074443",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/tracing?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/c93aeb1c3a0802f9c8c7c6678a67eb9b46074443",
+      "html": "https://github.com/microsoft/TaskWeaver/tree/main/tracing"
+    }
+  },
+  {
+    "name": "version.json",
+    "path": "version.json",
+    "sha": "1ef0b31d1107515a21b675f71908c83a9c705906",
+    "size": 52,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/version.json?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/blob/main/version.json",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/1ef0b31d1107515a21b675f71908c83a9c705906",
+    "download_url": "https://raw.githubusercontent.com/microsoft/TaskWeaver/main/version.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/version.json?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/blobs/1ef0b31d1107515a21b675f71908c83a9c705906",
+      "html": "https://github.com/microsoft/TaskWeaver/blob/main/version.json"
+    }
+  },
+  {
+    "name": "website",
+    "path": "website",
+    "sha": "202323c6db1862024a5f95326923c11e316f801d",
+    "size": 0,
+    "url": "https://api.github.com/repos/microsoft/TaskWeaver/contents/website?ref=main",
+    "html_url": "https://github.com/microsoft/TaskWeaver/tree/main/website",
+    "git_url": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/202323c6db1862024a5f95326923c11e316f801d",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/microsoft/TaskWeaver/contents/website?ref=main",
+      "git": "https://api.github.com/repos/microsoft/TaskWeaver/git/trees/202323c6db1862024a5f95326923c11e316f801d",
+      "html": "https://github.com/microsoft/TaskWeaver/tree/main/website"
+    }
+  }
+]

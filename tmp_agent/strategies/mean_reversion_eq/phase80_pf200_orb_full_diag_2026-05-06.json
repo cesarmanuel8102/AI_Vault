@@ -1,0 +1,262 @@
+{
+  "generated_at_utc": "2026-05-06T06:59:13.721194+00:00",
+  "compile_id": "804b83a1cee8da611686fbf45f6d540a-0284602247463d8180a417b05a3de1d5",
+  "results": {
+    "P80_BASE_REF": {
+      "overrides": {},
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "61644ec98b92362343962f4a708ae454",
+          "np_pct": -1.068,
+          "dd_pct": 3.1,
+          "orders": 169,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 43,
+          "orb1_fills": 43,
+          "orb2_fills": 0,
+          "orb3_fills": 0,
+          "candidate": "P80_BASE_REF",
+          "scenario": "IS_2022_2024",
+          "overrides": {}
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "f4be6c1db8f9dc578c2f113f7c8ed4da",
+          "np_pct": 7.451,
+          "dd_pct": 2.8,
+          "orders": 95,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 25,
+          "orb1_fills": 25,
+          "orb2_fills": 0,
+          "orb3_fills": 0,
+          "candidate": "P80_BASE_REF",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {}
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "7b6f10fe5975d674015ee87c5718a45f",
+          "np_pct": 0.331,
+          "dd_pct": 1.4,
+          "orders": 46,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 9,
+          "orb1_fills": 9,
+          "orb2_fills": 0,
+          "orb3_fills": 0,
+          "candidate": "P80_BASE_REF",
+          "scenario": "STRESS_2020",
+          "overrides": {}
+        }
+      },
+      "pass_all": true
+    },
+    "P80_1100_R75_MOM15": {
+      "overrides": {
+        "or_slot2_enabled": 1,
+        "or_slot2_hour": 11,
+        "or_slot2_min": 0,
+        "or_slot2_risk_mult": 0.75,
+        "or_slot2_mom_entry_pct": 0.0015
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "264c75b00b26ffa42db19abb8b875893",
+          "np_pct": 2.747,
+          "dd_pct": 2.5,
+          "orders": 390,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 100,
+          "orb1_fills": 76,
+          "orb2_fills": 24,
+          "orb3_fills": 0,
+          "candidate": "P80_1100_R75_MOM15",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "or_slot2_enabled": 1,
+            "or_slot2_hour": 11,
+            "or_slot2_min": 0,
+            "or_slot2_risk_mult": 0.75,
+            "or_slot2_mom_entry_pct": 0.0015
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "16136d090b7b1c9ec13c3772e52dac30",
+          "np_pct": 8.18,
+          "dd_pct": 2.7,
+          "orders": 111,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 29,
+          "orb1_fills": 25,
+          "orb2_fills": 4,
+          "orb3_fills": 0,
+          "candidate": "P80_1100_R75_MOM15",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "or_slot2_enabled": 1,
+            "or_slot2_hour": 11,
+            "or_slot2_min": 0,
+            "or_slot2_risk_mult": 0.75,
+            "or_slot2_mom_entry_pct": 0.0015
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "527eccd4fa5b40fa3e861c62084399fe",
+          "np_pct": 2.102,
+          "dd_pct": 1.4,
+          "orders": 73,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 15,
+          "orb1_fills": 9,
+          "orb2_fills": 6,
+          "orb3_fills": 0,
+          "candidate": "P80_1100_R75_MOM15",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "or_slot2_enabled": 1,
+            "or_slot2_hour": 11,
+            "or_slot2_min": 0,
+            "or_slot2_risk_mult": 0.75,
+            "or_slot2_mom_entry_pct": 0.0015
+          }
+        }
+      },
+      "pass_all": true,
+      "checks": {
+        "nodeg_IS_2022_2024": true,
+        "nodeg_OOS_2025_2026Q1": true,
+        "nodeg_STRESS_2020": true
+      }
+    }
+  },
+  "rows": [
+    {
+      "status": "Completed.",
+      "backtest_id": "61644ec98b92362343962f4a708ae454",
+      "np_pct": -1.068,
+      "dd_pct": 3.1,
+      "orders": 169,
+      "dbr": 0,
+      "tbr": 0,
+      "tr_orb": 43,
+      "orb1_fills": 43,
+      "orb2_fills": 0,
+      "orb3_fills": 0,
+      "candidate": "P80_BASE_REF",
+      "scenario": "IS_2022_2024",
+      "overrides": {}
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "f4be6c1db8f9dc578c2f113f7c8ed4da",
+      "np_pct": 7.451,
+      "dd_pct": 2.8,
+      "orders": 95,
+      "dbr": 0,
+      "tbr": 0,
+      "tr_orb": 25,
+      "orb1_fills": 25,
+      "orb2_fills": 0,
+      "orb3_fills": 0,
+      "candidate": "P80_BASE_REF",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {}
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "7b6f10fe5975d674015ee87c5718a45f",
+      "np_pct": 0.331,
+      "dd_pct": 1.4,
+      "orders": 46,
+      "dbr": 0,
+      "tbr": 0,
+      "tr_orb": 9,
+      "orb1_fills": 9,
+      "orb2_fills": 0,
+      "orb3_fills": 0,
+      "candidate": "P80_BASE_REF",
+      "scenario": "STRESS_2020",
+      "overrides": {}
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "264c75b00b26ffa42db19abb8b875893",
+      "np_pct": 2.747,
+      "dd_pct": 2.5,
+      "orders": 390,
+      "dbr": 0,
+      "tbr": 0,
+      "tr_orb": 100,
+      "orb1_fills": 76,
+      "orb2_fills": 24,
+      "orb3_fills": 0,
+      "candidate": "P80_1100_R75_MOM15",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "or_slot2_enabled": 1,
+        "or_slot2_hour": 11,
+        "or_slot2_min": 0,
+        "or_slot2_risk_mult": 0.75,
+        "or_slot2_mom_entry_pct": 0.0015
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "16136d090b7b1c9ec13c3772e52dac30",
+      "np_pct": 8.18,
+      "dd_pct": 2.7,
+      "orders": 111,
+      "dbr": 0,
+      "tbr": 0,
+      "tr_orb": 29,
+      "orb1_fills": 25,
+      "orb2_fills": 4,
+      "orb3_fills": 0,
+      "candidate": "P80_1100_R75_MOM15",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "or_slot2_enabled": 1,
+        "or_slot2_hour": 11,
+        "or_slot2_min": 0,
+        "or_slot2_risk_mult": 0.75,
+        "or_slot2_mom_entry_pct": 0.0015
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "527eccd4fa5b40fa3e861c62084399fe",
+      "np_pct": 2.102,
+      "dd_pct": 1.4,
+      "orders": 73,
+      "dbr": 0,
+      "tbr": 0,
+      "tr_orb": 15,
+      "orb1_fills": 9,
+      "orb2_fills": 6,
+      "orb3_fills": 0,
+      "candidate": "P80_1100_R75_MOM15",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "or_slot2_enabled": 1,
+        "or_slot2_hour": 11,
+        "or_slot2_min": 0,
+        "or_slot2_risk_mult": 0.75,
+        "or_slot2_mom_entry_pct": 0.0015
+      }
+    }
+  ],
+  "winners": [
+    "P80_1100_R75_MOM15"
+  ]
+}

@@ -1,0 +1,551 @@
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel
+import json
+import os
+import time
+import urllib.request
+import urllib.error
+import urllib.parse
+
+BRAIN_API = "http://127.0.0.1:8010"
+ADVISOR_API = "http://127.0.0.1:8030"
+
+app = FastAPI(title="Brain Chat Console", version="1.0.0")
+
+def _json_bytes(obj):
+    return json.dumps(obj).encode("utf-8")
+
+def _post_json(url, obj, headers=None, timeout=90):
+    headers = headers or {}
+    req = urllib.request.Request(
+        url,
+        data=_json_bytes(obj),
+        headers={"Content-Type": "application/json; charset=utf-8", **headers},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        raw = resp.read().decode("utf-8", errors="replace")
+        return json.loads(raw) if raw else {}
+
+def _get_json(url, headers=None, timeout=30):
+    headers = headers or {}
+    req = urllib.request.Request(url, headers=headers, method="GET")
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        raw = resp.read().decode("utf-8", errors="replace")
+        return json.loads(raw) if raw else {}
+
+def _safe_post(url, obj, headers=None, timeout=90):
+    try:
+        return {"ok": True, "data": _post_json(url, obj, headers=headers, timeout=timeout)}
+    except Exception as e:
+        return {"ok": False, "error": repr(e)}
+
+def _safe_get(url, headers=None, timeout=30):
+    try:
+        return {"ok": True, "data": _get_json(url, headers=headers, timeout=timeout)}
+    except Exception as e:
+        return {"ok": False, "error": repr(e)}
+
+def _extract_path(message: str) -> str:
+    msg = str(message or "")
+    candidates = []
+    parts = msg.replace('"', ' " ').replace("'", " ' ").split()
+    for p in parts:
+        if p.startswith("C:\\") or p.startswith("D:\\"):
+            candidates.append(p.strip('"\''))
+
+    if candidates:
+        return candidates[0]
+
+    lower = msg.lower()
+    if "tmp_agent\\state" in lower:
+        return r"C:\AI_VAULT\tmp_agent\state"
+    if "ai_vault" in lower:
+        return r"C:\AI_VAULT"
+    return ""
+
+def _local_fallback(message: str, room_id: str):
+    msg = str(message or "").strip()
+    low = msg.lower()
+    path = _extract_path(msg) or r"C:\AI_VAULT\tmp_agent\state"
+
+    explicit_list = any(x in low for x in ["lista", "listar", "directorio", "carpeta", "list directory", "list dir", "show files", "muestra archivos"])
+    explicit_read = any(x in low for x in ["lee", "leer", "read file", "abre archivo", "show file", "muestra archivo"])
+    ambiguous = any(x in low for x in ["avanza", "adelante", "continúa", "continua", "hazlo", "sigue", "resuelve"]) and not explicit_list and not explicit_read
+
+    if explicit_list:
+        return {
+            "mode": "plan",
+            "plan": {
+                "room_id": room_id,
+                "status": "active",
+                "steps": [
+                    {
+                        "id": "S1",
+                        "status": "todo",
+                        "tool_name": "list_dir",
+                        "tool_args": {"path": path},
+                        "why": "list_dir explicit fallback"
+                    }
+                ]
+            }
+        }
+
+    if explicit_read:
+        return {
+            "mode": "plan",
+            "plan": {
+                "room_id": room_id,
+                "status": "active",
+                "steps": [
+                    {
+                        "id": "S1",
+                        "status": "todo",
+                        "tool_name": "read_file",
+                        "tool_args": {"path": path},
+                        "why": "read_file explicit fallback"
+                    }
+                ]
+            }
+        }
+
+    if ambiguous:
+        return {
+            "mode": "clarification",
+            "question": "¿Qué acción exacta quieres que ejecute y sobre qué ruta o recurso concreto?"
+        }
+
+    return {
+        "mode": "noop",
+        "question": "Necesito más precisión para ejecutar algo útil. Indícame acción y ruta concreta."
+    }
+
+def _extract_plan_from_advisor(obj, room_id: str):
+    if not isinstance(obj, dict):
+        return {"room_id": room_id, "status": "complete", "steps": []}
+
+    plan = obj.get("plan")
+    if isinstance(plan, dict):
+        plan["room_id"] = room_id
+        if not isinstance(plan.get("steps"), list):
+            plan["steps"] = []
+        if not plan.get("status"):
+            plan["status"] = "complete" if len(plan["steps"]) == 0 else "active"
+        return plan
+
+    steps = obj.get("steps")
+    if isinstance(steps, list):
+        return {"room_id": room_id, "status": "active" if steps else "complete", "steps": steps}
+
+    return {"room_id": room_id, "status": "complete", "steps": []}
+
+def _approve_token_from_plan(plan):
+    if not isinstance(plan, dict):
+        return None
+    steps = plan.get("steps") or []
+    if isinstance(steps, list):
+        for s in steps:
+            if isinstance(s, dict):
+                tok = s.get("required_approve")
+                if tok:
+                    return tok
+    return None
+
+class ChatIn(BaseModel):
+    message: str
+    room_id: str = ""
+    auto_apply: bool = True
+
+@app.get("/healthz")
+def healthz():
+    advisor = _safe_get(f"{ADVISOR_API}/healthz")
+    brain = _safe_get(f"{BRAIN_API}/v1/agent/healthz")
+    return {
+        "ok": advisor.get("ok", False) and brain.get("ok", False),
+        "advisor_api": ADVISOR_API,
+        "brain_api": BRAIN_API,
+        "advisor_health": advisor.get("data"),
+        "brain_health": brain.get("data"),
+    }
+
+@app.get("/api/status")
+def api_status(room_id: str):
+    room_id = room_id or "default"
+    st = _safe_get(f"{BRAIN_API}/v1/agent/status?room_id={urllib.parse.quote(room_id)}")
+    return st.get("data") if st.get("ok") else {"ok": False, "error": st.get("error"), "room_id": room_id}
+
+@app.post("/api/chat")
+def api_chat(inp: ChatIn):
+    room_id = (inp.room_id or "").strip() or f"web_room_{int(time.time())}"
+    msg = (inp.message or "").strip()
+
+    advisor_payload = {
+        "room_id": room_id,
+        "publish": False,
+        "mode": "planner",
+        "prompt": msg
+    }
+
+    advisor_raw = _safe_post(f"{ADVISOR_API}/v1/advisor/next", advisor_payload)
+
+    if advisor_raw.get("ok"):
+        advisor = advisor_raw["data"]
+    else:
+        advisor = {"status": "error", "error": advisor_raw.get("error")}
+
+    if isinstance(advisor, dict) and advisor.get("status") == "clarification_required":
+        return {
+            "ok": True,
+            "kind": "clarification",
+            "room_id": room_id,
+            "reply": advisor.get("clarification_question") or "Necesito una aclaración puntual.",
+            "advisor": advisor,
+            "brain": None
+        }
+
+    plan = _extract_plan_from_advisor(advisor, room_id)
+
+    if not isinstance(plan.get("steps"), list) or len(plan.get("steps")) == 0:
+        fb = _local_fallback(msg, room_id)
+        if fb["mode"] == "clarification":
+            return {
+                "ok": True,
+                "kind": "clarification",
+                "room_id": room_id,
+                "reply": fb["question"],
+                "advisor": advisor,
+                "brain": None
+            }
+        if fb["mode"] == "plan":
+            plan = fb["plan"]
+        else:
+            return {
+                "ok": True,
+                "kind": "noop",
+                "room_id": room_id,
+                "reply": fb["question"],
+                "advisor": advisor,
+                "brain": None
+            }
+
+    plan_pub = _safe_post(
+        f"{BRAIN_API}/v1/agent/plan",
+        plan,
+        headers={"x-room-id": room_id}
+    )
+    run1 = _safe_post(
+        f"{BRAIN_API}/v1/agent/run_once",
+        {"room_id": room_id, "max_steps": 1},
+        headers={"x-room-id": room_id}
+    )
+
+    apply_resp = None
+    run2 = None
+
+    approve_token = None
+    if run1.get("ok") and isinstance(run1.get("data"), dict):
+        blocked = run1["data"].get("blocked")
+        if isinstance(blocked, dict):
+            approve_token = blocked.get("required_approve")
+
+    if not approve_token and plan_pub.get("ok") and isinstance(plan_pub.get("data"), dict):
+        approve_token = _approve_token_from_plan(plan_pub["data"].get("plan"))
+
+    if inp.auto_apply and approve_token:
+        apply_resp = _safe_post(
+            f"{BRAIN_API}/v1/agent/apply",
+            {"room_id": room_id, "approve_token": approve_token},
+            headers={"x-room-id": room_id}
+        )
+        run2 = _safe_post(
+            f"{BRAIN_API}/v1/agent/run_once",
+            {"room_id": room_id, "max_steps": 1},
+            headers={"x-room-id": room_id}
+        )
+
+    st = _safe_get(f"{BRAIN_API}/v1/agent/status?room_id={urllib.parse.quote(room_id)}")
+    status_data = st.get("data") if st.get("ok") else {"ok": False, "error": st.get("error")}
+
+    steps_n = len(plan.get("steps") or [])
+    reply = f"Procesé la petición en room {room_id}. Pasos del plan: {steps_n}."
+
+    if approve_token and apply_resp and apply_resp.get("ok"):
+        reply += " Hubo approval y fue autoaplicado."
+    elif approve_token:
+        reply += " Hubo approval pendiente."
+
+    return {
+        "ok": True,
+        "kind": "result",
+        "room_id": room_id,
+        "reply": reply,
+        "advisor": advisor,
+        "brain": {
+            "plan_publish": plan_pub,
+            "run_once_1": run1,
+            "apply": apply_resp,
+            "run_once_2": run2,
+            "status": status_data
+        }
+    }
+
+PAGE_HTML = r"""
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Brain Chat Console</title>
+<style>
+:root{
+  --bg:#0b0f19;
+  --panel:#121826;
+  --muted:#8a94a6;
+  --text:#eef2f7;
+  --accent:#19c37d;
+  --line:#1f2937;
+  --bubble-user:#1b2435;
+  --bubble-ai:#111827;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+.app{display:grid;grid-template-columns:260px 1fr;height:100%}
+.side{border-right:1px solid var(--line);background:#0f1523;padding:16px}
+.main{display:grid;grid-template-rows:auto 1fr auto;height:100%}
+.brand{font-size:18px;font-weight:700;margin-bottom:8px}
+.sub{font-size:12px;color:var(--muted);margin-bottom:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:12px}
+.small{font-size:12px;color:var(--muted)}
+.header{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.title{font-size:16px;font-weight:700}
+.chat{padding:20px;overflow:auto;display:flex;flex-direction:column;gap:14px}
+.msg{max-width:900px}
+.bubble{padding:14px 16px;border-radius:16px;border:1px solid var(--line);white-space:pre-wrap;line-height:1.45}
+.user .bubble{background:var(--bubble-user)}
+.ai .bubble{background:var(--bubble-ai)}
+.role{font-size:12px;color:var(--muted);margin-bottom:6px}
+.tools{padding:14px 20px;border-top:1px solid var(--line);display:flex;gap:10px;align-items:center}
+.inputWrap{display:flex;gap:10px;width:100%;align-items:flex-end}
+textarea{
+  flex:1;min-height:56px;max-height:180px;resize:vertical;
+  border-radius:16px;border:1px solid var(--line);background:var(--panel);color:var(--text);padding:14px
+}
+button{
+  border:none;border-radius:14px;padding:12px 14px;background:var(--accent);color:#052b1b;font-weight:700;cursor:pointer
+}
+button.secondary{background:#243044;color:var(--text)}
+button.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;border:1px solid var(--line);font-size:12px;color:var(--muted)}
+.hidden{display:none}
+details{margin-top:8px}
+summary{cursor:pointer;color:var(--muted)}
+code{font-family:Consolas,monospace}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">Brain Chat Console</div>
+    <div class="sub">UI real para interactuar con Brain sin scripts.</div>
+
+    <div class="card">
+      <div class="small">Room actual</div>
+      <div id="roomLabel"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="secondary" id="newRoomBtn">Nuevo room</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="small">Voz</div>
+      <div class="row" style="margin-top:10px">
+        <button class="secondary" id="micBtn">🎤 Hablar</button>
+        <button class="secondary" id="ttsBtn">🔊 Voz ON</button>
+      </div>
+      <div class="small" style="margin-top:8px">Usa reconocimiento y síntesis del navegador.</div>
+    </div>
+
+    <div class="card">
+      <div class="small">Estado</div>
+      <div id="healthBox" style="margin-top:8px"></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="header">
+      <div class="title">Chat operativo Brain ↔ advisor ↔ UI</div>
+      <div class="pill" id="statusPill">listo</div>
+    </div>
+
+    <div id="chat" class="chat"></div>
+
+    <div class="tools">
+      <div class="inputWrap">
+        <textarea id="input" placeholder="Escribe aquí. Ejemplo: Lista C:\AI_VAULT\tmp_agent\state o lee C:\AI_VAULT\tmp_agent\state\roadmap.json"></textarea>
+        <button id="sendBtn">Enviar</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const chat = document.getElementById("chat");
+const input = document.getElementById("input");
+const sendBtn = document.getElementById("sendBtn");
+const micBtn = document.getElementById("micBtn");
+const ttsBtn = document.getElementById("ttsBtn");
+const roomLabel = document.getElementById("roomLabel");
+const newRoomBtn = document.getElementById("newRoomBtn");
+const statusPill = document.getElementById("statusPill");
+const healthBox = document.getElementById("healthBox");
+
+let speechOn = true;
+let currentRoom = localStorage.getItem("brain_room_id") || ("webui_" + Date.now());
+
+function setRoom(room){
+  currentRoom = room;
+  localStorage.setItem("brain_room_id", currentRoom);
+  roomLabel.textContent = currentRoom;
+}
+setRoom(currentRoom);
+
+function addMessage(role, text, meta){
+  const wrap = document.createElement("div");
+  wrap.className = "msg " + (role === "user" ? "user" : "ai");
+
+  const roleDiv = document.createElement("div");
+  roleDiv.className = "role";
+  roleDiv.textContent = role === "user" ? "Tú" : "Brain";
+
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
+  bubble.textContent = text || "";
+
+  wrap.appendChild(roleDiv);
+  wrap.appendChild(bubble);
+
+  if (meta) {
+    const det = document.createElement("details");
+    const sum = document.createElement("summary");
+    sum.textContent = "detalles";
+    const pre = document.createElement("pre");
+    pre.style.whiteSpace = "pre-wrap";
+    pre.style.fontSize = "12px";
+    pre.textContent = JSON.stringify(meta, null, 2);
+    det.appendChild(sum);
+    det.appendChild(pre);
+    wrap.appendChild(det);
+  }
+
+  chat.appendChild(wrap);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+async function refreshHealth(){
+  try{
+    const r = await fetch("/healthz");
+    const j = await r.json();
+    healthBox.innerHTML = "";
+    const div = document.createElement("div");
+    div.className = "small";
+    div.textContent = j.ok ? "UI/Brain/advisor OK" : "Hay fallos de health";
+    healthBox.appendChild(div);
+  } catch {
+    healthBox.textContent = "healthz no disponible";
+  }
+}
+
+async function sendMessage(){
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  addMessage("user", msg);
+  input.value = "";
+  statusPill.textContent = "procesando";
+
+  try{
+    const r = await fetch("/api/chat", {
+      method: "POST",
+      headers: {"Content-Type":"application/json; charset=utf-8"},
+      body: JSON.stringify({
+        message: msg,
+        room_id: currentRoom,
+        auto_apply: true
+      })
+    });
+
+    const j = await r.json();
+    if (j.room_id) setRoom(j.room_id);
+
+    addMessage("assistant", j.reply || "Sin respuesta.", j);
+    statusPill.textContent = j.kind || "ok";
+
+    if (speechOn && window.speechSynthesis && j.reply) {
+      const u = new SpeechSynthesisUtterance(j.reply);
+      u.lang = "es-US";
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    }
+  } catch (e){
+    addMessage("assistant", "Error llamando a la UI/Brain.", {error: String(e)});
+    statusPill.textContent = "error";
+  }
+}
+
+sendBtn.addEventListener("click", sendMessage);
+input.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+});
+
+newRoomBtn.addEventListener("click", () => {
+  setRoom("webui_" + Date.now());
+  addMessage("assistant", "Nuevo room creado: " + currentRoom);
+});
+
+ttsBtn.addEventListener("click", () => {
+  speechOn = !speechOn;
+  ttsBtn.textContent = speechOn ? "🔊 Voz ON" : "🔇 Voz OFF";
+});
+
+let recognition = null;
+if (window.SpeechRecognition || window.webkitSpeechRecognition) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = "es-US";
+  recognition.interimResults = false;
+  recognition.maxAlternatives = 1;
+
+  recognition.onresult = (event) => {
+    const txt = event.results[0][0].transcript || "";
+    input.value = txt;
+    sendMessage();
+  };
+
+  recognition.onerror = (event) => {
+    addMessage("assistant", "Error de voz: " + event.error);
+  };
+}
+
+micBtn.addEventListener("click", () => {
+  if (!recognition) {
+    addMessage("assistant", "Este navegador no soporta reconocimiento de voz.");
+    return;
+  }
+  recognition.start();
+});
+
+refreshHealth();
+addMessage("assistant", "UI lista. Ya puedes escribir o hablar.");
+</script>
+</body>
+</html>
+"""
+
+@app.get("/", response_class=HTMLResponse)
+def index():
+    return HTMLResponse(PAGE_HTML)

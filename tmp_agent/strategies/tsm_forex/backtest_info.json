@@ -1,0 +1,25 @@
+{
+  "project_id": 29652652,
+  "compile_id": "fbdb735c5eac98452fb50a42146c3a19-f4a636217877f0aa1571a1c1ee3933de",
+  "backtest_id": "5f57c03577d8bb9aaf1e8705b8875c83",
+  "backtest_name": "TSM-V1.5 ADX Entry Only + Monthly Rebal",
+  "launched_at": "2026-04-03 22:32:59 UTC",
+  "parameters": {
+    "start_year": "2020",
+    "end_year": "2024",
+    "end_month": "12",
+    "mom_fast": "63",
+    "mom_med": "126",
+    "mom_slow": "252",
+    "vol_lookback": "63",
+    "vol_target": "0.05",
+    "port_vol_target": "0.10",
+    "emergency_stop": "0.02",
+    "max_positions": "6",
+    "signal_threshold": "0.15",
+    "rebal_freq": "4",
+    "adx_min": "20",
+    "adx_exit": "15"
+  },
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/tsm_forex/main.py"
+}

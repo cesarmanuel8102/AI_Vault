@@ -1,0 +1,41 @@
+{
+  "source_id": "github_Significant_Gravitas_AutoGPT_20260508",
+  "curated_at_utc": "2026-05-08T04:56:56.379904Z",
+  "repo": {
+    "full_name": "Significant-Gravitas/AutoGPT",
+    "default_branch": "master",
+    "updated_at": "2026-05-08T04:49:02Z",
+    "stargazers_count": 184068,
+    "open_issues_count": 389,
+    "size_kb": 567158,
+    "language": "Python",
+    "topics": [
+      "agentic-ai",
+      "agents",
+      "ai",
+      "artificial-intelligence",
+      "autonomous-agents",
+      "claude",
+      "gpt",
+      "llama-api",
+      "llm",
+      "openai",
+      "python"
+    ],
+    "tests_present": true,
+    "docs_present": true,
+    "dependency_files": []
+  },
+  "curation_score": 10.5,
+  "risk_score": 2.5,
+  "license_status": "compatible_review_required",
+  "recommended_action": "analyze",
+  "reject_reasons": [],
+  "notes": [
+    "dependency_manifest_not_detected",
+    "source_host_not_in_allowlist_seed"
+  ],
+  "dependency_risk_flags": [],
+  "suspicious_binaries": [],
+  "apparent_secrets": []
+}

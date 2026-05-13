@@ -1,0 +1,287 @@
+{
+  "phase_a": [
+    {
+      "backtest_id": "da9521539eee0d33b5e15d9dc074ba8c",
+      "net_profit_pct": 8.172,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "calendar_days_to_pass": 145,
+      "trading_days_to_pass": 17,
+      "candidate": "S11_01_M18_R72_T120",
+      "window": "CH_2025"
+    },
+    {
+      "backtest_id": "e31834bd60cb43254bb600180532e348",
+      "net_profit_pct": 8.172,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "calendar_days_to_pass": 145,
+      "trading_days_to_pass": 17,
+      "candidate": "S11_02_M18_R72_T130",
+      "window": "CH_2025"
+    },
+    {
+      "backtest_id": "3ec8789dcf202e63709b95c835fcff63",
+      "net_profit_pct": 8.172,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "calendar_days_to_pass": 145,
+      "trading_days_to_pass": 17,
+      "candidate": "S11_03_M18_R80_T120",
+      "window": "CH_2025"
+    },
+    {
+      "backtest_id": "e067063cf5a9727fe589843bf23aa852",
+      "net_profit_pct": 8.172,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "calendar_days_to_pass": 145,
+      "trading_days_to_pass": 17,
+      "candidate": "S11_04_M18_R80_T130",
+      "window": "CH_2025"
+    },
+    {
+      "backtest_id": "403373b3ba91e70a5c8ed6a211271484",
+      "net_profit_pct": 8.172,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "calendar_days_to_pass": 145,
+      "trading_days_to_pass": 17,
+      "candidate": "S11_05_M18_R88_T120",
+      "window": "CH_2025"
+    },
+    {
+      "backtest_id": "b52e6e6eb672285737f7439e812ec48e",
+      "net_profit_pct": 8.172,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "calendar_days_to_pass": 145,
+      "trading_days_to_pass": 17,
+      "candidate": "S11_06_M18_R88_T130",
+      "window": "CH_2025"
+    },
+    {
+      "backtest_id": "31082e3da76a15941d239da3fefd2a1a",
+      "net_profit_pct": 8.172,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "calendar_days_to_pass": 145,
+      "trading_days_to_pass": 17,
+      "candidate": "S11_07_M18_R95_T120",
+      "window": "CH_2025"
+    },
+    {
+      "backtest_id": "f1b427ccd22b81559201705e6aaf9e05",
+      "net_profit_pct": 8.172,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "calendar_days_to_pass": 145,
+      "trading_days_to_pass": 17,
+      "candidate": "S11_08_M18_R95_T130",
+      "window": "CH_2025"
+    },
+    {
+      "backtest_id": "51efdaee4eed73670f81fb5252e3e4d7",
+      "net_profit_pct": 8.172,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "calendar_days_to_pass": 145,
+      "trading_days_to_pass": 17,
+      "candidate": "S11_09_M22_R72_T120",
+      "window": "CH_2025"
+    },
+    {
+      "backtest_id": "3db7f4e6e9ad8c1b97bb12c95f0c6471",
+      "net_profit_pct": 8.172,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "calendar_days_to_pass": 145,
+      "trading_days_to_pass": 17,
+      "candidate": "S11_10_M22_R72_T130",
+      "window": "CH_2025"
+    },
+    {
+      "backtest_id": "3ae83465639e7a348bb3d347a5afa48e",
+      "net_profit_pct": 8.172,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "calendar_days_to_pass": 145,
+      "trading_days_to_pass": 17,
+      "candidate": "S11_11_M22_R80_T120",
+      "window": "CH_2025"
+    },
+    {
+      "backtest_id": "3fb0edb0584a56cf012273787a761d2a",
+      "net_profit_pct": 8.172,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "calendar_days_to_pass": 145,
+      "trading_days_to_pass": 17,
+      "candidate": "S11_12_M22_R80_T130",
+      "window": "CH_2025"
+    },
+    {
+      "backtest_id": "923f70ddfa6fefc6ac5dafb15e6bc861",
+      "net_profit_pct": 0.0,
+      "drawdown_pct": 0.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": false,
+      "calendar_days_to_pass": null,
+      "trading_days_to_pass": 0,
+      "candidate": "S11_13_M22_R88_T120",
+      "window": "CH_2025"
+    },
+    {
+      "candidate": "S11_14_M22_R88_T130",
+      "window": "CH_2025",
+      "error": "create_backtest_failed: {'errors': ['There are no spare nodes available in your cluster. To launch a new backtest please stop an existing running backtest or add more compute nodes to your organization.'], 'success': False}"
+    },
+    {
+      "candidate": "S11_15_M22_R95_T120",
+      "window": "CH_2025",
+      "error": "create_backtest_failed: {'errors': ['There are no spare nodes available in your cluster. To launch a new backtest please stop an existing running backtest or add more compute nodes to your organization.'], 'success': False}"
+    },
+    {
+      "candidate": "S11_16_M22_R95_T130",
+      "window": "CH_2025",
+      "error": "create_backtest_failed: {'errors': ['There are no spare nodes available in your cluster. To launch a new backtest please stop an existing running backtest or add more compute nodes to your organization.'], 'success': False}"
+    },
+    {
+      "candidate": "S11_17_M25_R72_T120",
+      "window": "CH_2025",
+      "error": "create_backtest_failed: {'errors': ['There are no spare nodes available in your cluster. To launch a new backtest please stop an existing running backtest or add more compute nodes to your organization.'], 'success': False}"
+    },
+    {
+      "candidate": "S11_18_M25_R72_T130",
+      "window": "CH_2025",
+      "error": "create_backtest_failed: {'errors': ['There are no spare nodes available in your cluster. To launch a new backtest please stop an existing running backtest or add more compute nodes to your organization.'], 'success': False}"
+    },
+    {
+      "candidate": "S11_19_M25_R80_T120",
+      "window": "CH_2025",
+      "error": "create_backtest_failed: {'errors': ['There are no spare nodes available in your cluster. To launch a new backtest please stop an existing running backtest or add more compute nodes to your organization.'], 'success': False}"
+    },
+    {
+      "candidate": "S11_20_M25_R80_T130",
+      "window": "CH_2025",
+      "error": "create_backtest_failed: {'errors': ['There are no spare nodes available in your cluster. To launch a new backtest please stop an existing running backtest or add more compute nodes to your organization.'], 'success': False}"
+    },
+    {
+      "backtest_id": "37f38738c352bfbe495f091311b24168",
+      "net_profit_pct": 8.172,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "calendar_days_to_pass": 145,
+      "trading_days_to_pass": 17,
+      "candidate": "S11_21_M25_R88_T120",
+      "window": "CH_2025"
+    },
+    {
+      "candidate": "S11_22_M25_R88_T130",
+      "window": "CH_2025",
+      "error": "create_backtest_failed: {'errors': ['There are no spare nodes available in your cluster. To launch a new backtest please stop an existing running backtest or add more compute nodes to your organization.'], 'success': False}"
+    },
+    {
+      "candidate": "S11_23_M25_R95_T120",
+      "window": "CH_2025",
+      "error": "create_backtest_failed: {'errors': ['There are no spare nodes available in your cluster. To launch a new backtest please stop an existing running backtest or add more compute nodes to your organization.'], 'success': False}"
+    },
+    {
+      "candidate": "S11_24_M25_R95_T130",
+      "window": "CH_2025",
+      "error": "create_backtest_failed: {'errors': ['There are no spare nodes available in your cluster. To launch a new backtest please stop an existing running backtest or add more compute nodes to your organization.'], 'success': False}"
+    }
+  ],
+  "phase_b": [
+    {
+      "backtest_id": "b0010fe5da2f796c65322a687282147f",
+      "net_profit_pct": 7.922,
+      "drawdown_pct": 1.9,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "calendar_days_to_pass": 177,
+      "trading_days_to_pass": 43,
+      "candidate": "S11_01_M18_R72_T120",
+      "window": "CH_2024"
+    },
+    {
+      "backtest_id": "aca343569bf778c4a1f24577fd3368f7",
+      "net_profit_pct": 7.922,
+      "drawdown_pct": 1.9,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "calendar_days_to_pass": 177,
+      "trading_days_to_pass": 43,
+      "candidate": "S11_02_M18_R72_T130",
+      "window": "CH_2024"
+    },
+    {
+      "candidate": "S11_03_M18_R80_T120",
+      "window": "CH_2024",
+      "error": "create_backtest_failed: {'errors': ['There are no spare nodes available in your cluster. To launch a new backtest please stop an existing running backtest or add more compute nodes to your organization.'], 'success': False}"
+    },
+    {
+      "candidate": "S11_04_M18_R80_T130",
+      "window": "CH_2024",
+      "error": "create_backtest_failed: {'errors': ['There are no spare nodes available in your cluster. To launch a new backtest please stop an existing running backtest or add more compute nodes to your organization.'], 'success': False}"
+    },
+    {
+      "candidate": "S11_05_M18_R88_T120",
+      "window": "CH_2024",
+      "error": "create_backtest_failed: {'errors': ['There are no spare nodes available in your cluster. To launch a new backtest please stop an existing running backtest or add more compute nodes to your organization.'], 'success': False}"
+    },
+    {
+      "candidate": "S11_06_M18_R88_T130",
+      "window": "CH_2024",
+      "error": "create_backtest_failed: {'errors': ['There are no spare nodes available in your cluster. To launch a new backtest please stop an existing running backtest or add more compute nodes to your organization.'], 'success': False}"
+    }
+  ],
+  "ranked": [
+    {
+      "candidate": "S11_01_M18_R72_T120",
+      "ch2025_days": 145,
+      "ch2024_days": 177,
+      "ch2025_np": 8.172,
+      "ch2024_np": 7.922,
+      "score": 658.47
+    },
+    {
+      "candidate": "S11_02_M18_R72_T130",
+      "ch2025_days": 145,
+      "ch2024_days": 177,
+      "ch2025_np": 8.172,
+      "ch2024_np": 7.922,
+      "score": 658.47
+    }
+  ],
+  "updated_utc": "2026-04-14T13:22:33Z"
+}

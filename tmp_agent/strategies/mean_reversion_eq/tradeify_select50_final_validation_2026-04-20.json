@@ -1,0 +1,63 @@
+{
+  "generated_at_utc": "2026-04-20T23:26:34Z",
+  "profile": "TF_SELECT50_FINAL_TC_R40_L15",
+  "results": [
+    {
+      "status": "Completed.",
+      "backtest_id": "0440c53ab84697d6ba09454788376089",
+      "np_pct": null,
+      "dd_pct": null,
+      "sharpe": null,
+      "orders": null,
+      "dbr": 0,
+      "tbr": 0,
+      "challenge_hit": false,
+      "challenge_days": -1,
+      "consistency_pct": 128.39,
+      "window": "CH_2025"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "078e28264e46ee7cf7dc6ddf67dd8f1e",
+      "np_pct": 6.059,
+      "dd_pct": 2.4,
+      "sharpe": 2.086,
+      "orders": 20,
+      "dbr": 0,
+      "tbr": 0,
+      "challenge_hit": true,
+      "challenge_days": 10,
+      "consistency_pct": 37.16,
+      "window": "CH_2026_Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "32688d95421e9d612779a63777ad15c3",
+      "np_pct": 5.872,
+      "dd_pct": 4.4,
+      "sharpe": -0.423,
+      "orders": 86,
+      "dbr": 0,
+      "tbr": 1,
+      "challenge_hit": false,
+      "challenge_days": -1,
+      "consistency_pct": 34.75,
+      "window": "OOS_2025_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "b0727dc4400be32be7b2965a91898342",
+      "np_pct": -3.039,
+      "dd_pct": 4.8,
+      "sharpe": -0.627,
+      "orders": 6,
+      "dbr": 0,
+      "tbr": 1,
+      "challenge_hit": false,
+      "challenge_days": -1,
+      "consistency_pct": 999.0,
+      "window": "STRESS_2020"
+    }
+  ],
+  "compile_id": "6fdcd6e2e24f927f97f57988b3902d73-545aa20525ba956e6033f5b8e3b002f8"
+}

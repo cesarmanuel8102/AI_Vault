@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_b961ab0fb9169278",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "C:\\AI_VAULT\\tmp_agent\\state\\rooms\\autoloop_advisor_v4_20260307_115029\\next_action.json",
+    "content": "{\n  \"ts\": \"2026-03-07T16:50:36Z\",\n  \"room_id\": \"autoloop_advisor_v4_20260307_115029\",\n  \"mode\": \"fallback_next_action\",\n  \"note\": \"Deterministic advisor fallback. Replace with planner-generated actionable step when parsing succeeds.\",\n  \"next_recommended_phase\": \"P2_PLANNER_HARDENING_SCHEMA_NORMALIZATION\",\n  \"next_recommended_work_items\": [\n    \"P2.1\",\n    \"P2.2\"\n  ],\n  \"accepted_by_policy_intent\": true,\n  \"why\": [\n    \"Avoid low-value roadmap_progress.json artifacts.\",\n    \"Preserve deterministic low-risk fallback behavior.\",\n    \"Keep write target inside room SSOT.\"\n  ]\n}\n",
+    "raw_content": "{\n  \"ts\": \"2026-03-07T16:50:36Z\",\n  \"room_id\": \"autoloop_advisor_v4_20260307_115029\",\n  \"mode\": \"fallback_next_action\",\n  \"note\": \"Deterministic advisor fallback. Replace with planner-generated actionable step when parsing succeeds.\",\n  \"next_recommended_phase\": \"P2_PLANNER_HARDENING_SCHEMA_NORMALIZATION\",\n  \"next_recommended_work_items\": [\n    \"P2.1\",\n    \"P2.2\"\n  ],\n  \"accepted_by_policy_intent\": true,\n  \"why\": [\n    \"Avoid low-value roadmap_progress.json artifacts.\",\n    \"Preserve deterministic low-risk fallback behavior.\",\n    \"Keep write target inside room SSOT.\"\n  ]\n}\n",
+    "text": "{\n  \"ts\": \"2026-03-07T16:50:36Z\",\n  \"room_id\": \"autoloop_advisor_v4_20260307_115029\",\n  \"mode\": \"fallback_next_action\",\n  \"note\": \"Deterministic advisor fallback. Replace with planner-generated actionable step when parsing succeeds.\",\n  \"next_recommended_phase\": \"P2_PLANNER_HARDENING_SCHEMA_NORMALIZATION\",\n  \"next_recommended_work_items\": [\n    \"P2.1\",\n    \"P2.2\"\n  ],\n  \"accepted_by_policy_intent\": true,\n  \"why\": [\n    \"Avoid low-value roadmap_progress.json artifacts.\",\n    \"Preserve deterministic low-risk fallback behavior.\",\n    \"Keep write target inside room SSOT.\"\n  ]\n}\n"
+  },
+  "room_id": "autoloop_advisor_v4_20260307_115029",
+  "step_id": "FB1",
+  "created_at": "2026-03-07T16:50:37.918029+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

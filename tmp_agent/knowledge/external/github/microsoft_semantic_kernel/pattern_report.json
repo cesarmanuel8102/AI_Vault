@@ -1,0 +1,87 @@
+{
+  "source_id": "github_microsoft_semantic_kernel_20260508",
+  "generated_at_utc": "2026-05-08T04:57:06.343363Z",
+  "recommended_action": "analyze",
+  "patterns": [
+    {
+      "pattern_id": "structured_multi_agent_debate",
+      "description": "Role-based proposal, critique, defense and judge loop for complex planning.",
+      "relevance_to_brain": 9.0,
+      "risk": 4.0,
+      "applicable_modules": [
+        "planner",
+        "evaluator",
+        "governance"
+      ],
+      "do_not_copy_code": true,
+      "semantic_family": "multi_agent_debate",
+      "evidence_refs": [
+        {
+          "source_file": "README.snapshot.md",
+          "reason": "README mentions multi-agent/group chat/critic/judge roles.",
+          "evidence_type": "text_match"
+        }
+      ]
+    },
+    {
+      "pattern_id": "role_orchestrated_tool_routing",
+      "description": "Different agent roles own different tools and execution scopes.",
+      "relevance_to_brain": 8.5,
+      "risk": 4.0,
+      "applicable_modules": [
+        "agent",
+        "governance",
+        "tools"
+      ],
+      "do_not_copy_code": true,
+      "semantic_family": "tool_routing",
+      "evidence_refs": [
+        {
+          "source_file": "README.snapshot.md",
+          "reason": "README describes role-oriented orchestration that implies tool ownership.",
+          "evidence_type": "text_match"
+        }
+      ]
+    },
+    {
+      "pattern_id": "ci_backed_regression_harness",
+      "description": "The repo exposes CI/test structure that can inspire stronger regression gates.",
+      "relevance_to_brain": 7.4,
+      "risk": 2.5,
+      "applicable_modules": [
+        "evaluator",
+        "governance",
+        "tests"
+      ],
+      "do_not_copy_code": true,
+      "semantic_family": "regression_harness",
+      "evidence_refs": [
+        {
+          "source_file": ".github/",
+          "reason": "Root index shows tests/CI structure.",
+          "evidence_type": "root_index_signal"
+        }
+      ]
+    },
+    {
+      "pattern_id": "structured_tool_dispatch",
+      "description": "Tool usage is modeled explicitly enough to inspire safer routing and observation loops.",
+      "relevance_to_brain": 8.0,
+      "risk": 3.5,
+      "applicable_modules": [
+        "agent",
+        "tools",
+        "governance"
+      ],
+      "do_not_copy_code": true,
+      "semantic_family": "tool_routing",
+      "evidence_refs": [
+        {
+          "source_file": "README.md",
+          "reason": "Dependency hints or README mention tool calling / tool usage explicitly.",
+          "evidence_type": "text_match"
+        }
+      ]
+    }
+  ]
+}

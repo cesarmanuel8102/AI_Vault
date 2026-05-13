@@ -1,0 +1,35 @@
+{
+  "V5a FIX3-only": {
+    "bt_id": "c1a821cc9a6b06962bed23ea91a04b6a",
+    "return": "108.643%",
+    "cagr": "25.259%",
+    "sharpe": "0.653",
+    "dd": "29.200%",
+    "trades": "480",
+    "wr": "45%",
+    "pf": "1.71",
+    "end_equity": "20864.3"
+  },
+  "V5b FIX2-only-loose": {
+    "bt_id": "c0fac48a599f1f0bdf3b798343e3c646",
+    "return": "57.581%",
+    "cagr": "14.942%",
+    "sharpe": "0.352",
+    "dd": "30.600%",
+    "trades": "456",
+    "wr": "50%",
+    "pf": "1.31",
+    "end_equity": "15758.1"
+  },
+  "V5c FIX2+FIX3": {
+    "bt_id": "e12d459b07d5d5055ca3a62360582d20",
+    "return": "56.341%",
+    "cagr": "14.664%",
+    "sharpe": "0.344",
+    "dd": "30.600%",
+    "trades": "448",
+    "wr": "49%",
+    "pf": "1.36",
+    "end_equity": "15634.1"
+  }
+}

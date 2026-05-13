@@ -1,0 +1,457 @@
+[CmdletBinding()]
+param(
+  [string]$Base = "http://127.0.0.1:8010",
+  [string]$Goal = "BOOTSTRAP_RUN_SMOKE",
+  [string]$Room = "",
+  [int]$MaxIters = 25,
+  [switch]$ForcePlan,
+  [string]$ReceiptDir = "C:\AI_VAULT\tmp_agent\workspace\receipts",
+  [switch]$Strict,
+
+  # Operabilidad
+  [switch]$ShowSummary,
+  [int]$StopOnNoProgress = 0,
+  [switch]$OutText,
+
+  # Local gate apply (Opción A)
+  [switch]$LocalApplyGate,
+  [switch]$SafeWrite,
+  [switch]$NoLocalApplyFallback,
+  [switch]$DryRunLocalApplyGate,
+  [string]$TmpAgentRoot = "C:\AI_VAULT\tmp_agent"
+)
+$ErrorActionPreference = "Stop"
+function NZ($v,$d){ if($null -eq $v){ return $d } else { return $v } }
+
+function New-RoomId([string]$prefix) {
+  return ("{0}_{1}" -f $prefix, (Get-Date -Format "yyyyMMdd_HHmmss"))
+}
+
+function Ensure-Dir([string]$path) {
+  if (-not (Test-Path $path)) { New-Item -ItemType Directory -Force -Path $path | Out-Null }
+}
+
+function Invoke-Json([string]$Method, [string]$Url, [hashtable]$Headers, [object]$BodyObj = $null) {
+  $bodyJson = $null
+  if ($null -ne $BodyObj) { $bodyJson = ($BodyObj | ConvertTo-Json -Depth 20) }
+
+  $status = $null
+  $content = ""
+  $respObj = $null
+
+  try {
+    $respObj = Invoke-WebRequest -UseBasicParsing -Method $Method -Uri $Url -Headers $Headers -Body $bodyJson -ContentType "application/json"
+    $status = [int]$respObj.StatusCode
+    $content = $respObj.Content
+  } catch {
+    $ex = $_.Exception
+    if ($ex.Response) {
+      try { $status = [int]$ex.Response.StatusCode } catch { $status = 0 }
+      try {
+        $sr = New-Object System.IO.StreamReader($ex.Response.GetResponseStream())
+        $content = $sr.ReadToEnd()
+        $sr.Close()
+      } catch { $content = "" }
+    } else {
+      $status = 0
+      $content = "$($_)"
+    }
+  }
+
+  $obj = $null
+  try { if ($content) { $obj = ($content | ConvertFrom-Json) } } catch { $obj = $null }
+
+  return [pscustomobject]@{
+    Status  = $status
+    Raw     = $content
+    Json    = $obj
+    Url     = $Url
+    Method  = $Method
+    Body    = $bodyJson
+    Headers = $Headers
+  }
+}
+
+function Get-PlanStatusFromRunJson($runJson) {
+  $ps = $null
+  try {
+    if ($runJson -and $runJson.summary -and ($runJson.summary.PSObject.Properties.Name -contains "status")) { $ps = $runJson.summary.status }
+    if (-not $ps -and $runJson -and $runJson.plan -and ($runJson.plan.PSObject.Properties.Name -contains "status")) { $ps = $runJson.plan.status }
+  } catch {}
+  return $ps
+}
+
+function Get-CountsFromRunJson($runJson) {
+  $counts = $null
+  try {
+    if ($runJson -and $runJson.summary -and ($runJson.summary.PSObject.Properties.Name -contains "counts")) { $counts = $runJson.summary.counts }
+  } catch {}
+  return $counts
+}
+
+function Fingerprint-Run($runJson) {
+  if (-not $runJson) { return "" }
+
+  $status  = Get-PlanStatusFromRunJson $runJson
+  $counts  = Get-CountsFromRunJson $runJson
+  $pending = $null
+  try {
+    if ($runJson.summary -and ($runJson.summary.PSObject.Properties.Name -contains "pending_approvals_count")) {
+      $pending = $runJson.summary.pending_approvals_count
+    }
+  } catch {}
+
+  $c = ""
+  try {
+    if ($counts) { $c = "t={0},p={1},d={2},e={3}" -f ($counts.todo),($counts.proposed),($counts.done),($counts.error) }
+  } catch {}
+
+  $s0 = NZ $status ""
+  $p0 = NZ $pending ""
+  return ("status={0}|{1}|pending={2}" -f $s0, $c, $p0)
+}
+
+function Find-BundleByProposalId([string]$proposalId, [string]$proposalsDir) {
+  if (-not (Test-Path $proposalsDir)) { return $null }
+  $cand = Get-ChildItem -LiteralPath $proposalsDir -Filter "bundle_*.json" -File -ErrorAction SilentlyContinue |
+          Sort-Object LastWriteTime -Descending
+  foreach ($f in $cand) {
+    try {
+      $raw = Get-Content -LiteralPath $f.FullName -Raw -ErrorAction Stop
+      if ($raw -match [regex]::Escape($proposalId)) { return $f.FullName }
+    } catch {}
+  }
+  return $null
+}
+
+function Local-ApplyGate([string]$proposalId, [string]$approveToken, [string]$destDir, [string]$tmpAgentRoot) {
+  $applyGate = Join-Path $tmpAgentRoot "apply_gate.py"
+  $proposalsDir = Join-Path $tmpAgentRoot "proposals"
+
+  if (-not (Test-Path $applyGate)) {
+    return [pscustomobject]@{ ok=$false; error="APPLY_GATE_MISSING"; detail=$applyGate }
+  }
+
+  $bundle = Find-BundleByProposalId $proposalId $proposalsDir
+  if (-not $bundle) {
+    return [pscustomobject]@{ ok=$false; error="BUNDLE_NOT_FOUND"; detail=@{ proposal_id=$proposalId; proposals_dir=$proposalsDir } }
+  }
+
+  if (-not $destDir) {
+    return [pscustomobject]@{ ok=$false; error="DEST_DIR_MISSING"; detail=@{ proposal_id=$proposalId; bundle=$bundle } }
+  }
+
+  $cmd = @("python", $applyGate, $bundle, $destDir, ("--approve={0}" -f $approveToken))
+  try {
+    $out = & $cmd[0] $cmd[1] $cmd[2] $cmd[3] $cmd[4] 2>&1
+    $raw = ($out | Out-String).Trim()
+    $obj = $null
+    try { $obj = ($raw | ConvertFrom-Json) } catch { $obj = $null }
+    return [pscustomobject]@{ ok=$true; cmd=$cmd; raw=$raw; json=$obj; bundle=$bundle; dest_dir=$destDir }
+  } catch {
+    return [pscustomobject]@{ ok=$false; error="APPLY_GATE_FAILED"; detail="$($_)"; cmd=$cmd; bundle=$bundle; dest_dir=$destDir }
+  }
+}
+
+
+function Local-PreflightGate([string]$proposalId, [string]$approveToken, [string]$destDir, [string]$tmpAgentRoot) {
+  $applyGate    = Join-Path $tmpAgentRoot "apply_gate.py"
+  $proposalsDir = Join-Path $tmpAgentRoot "proposals"
+
+  $checks = New-Object System.Collections.Generic.List[object]
+  $ok = $true
+
+  $checks.Add([pscustomobject]@{ name="apply_gate_exists"; ok=(Test-Path $applyGate); value=$applyGate })
+  if (-not (Test-Path $applyGate)) { $ok = $false }
+
+  $checks.Add([pscustomobject]@{ name="proposal_id_present"; ok=([bool]$proposalId); value=$proposalId })
+  if (-not $proposalId) { $ok = $false }
+
+  $bundle = $null
+  if ($proposalId) { $bundle = Find-BundleByProposalId $proposalId $proposalsDir }
+  $checks.Add([pscustomobject]@{ name="bundle_found"; ok=([bool]$bundle); value=$bundle })
+  if (-not $bundle) { $ok = $false }
+
+  $checks.Add([pscustomobject]@{ name="dest_dir_present"; ok=([bool]$destDir); value=$destDir })
+  if (-not $destDir) { $ok = $false }
+
+  $isAbs = $false
+  try { $isAbs = [System.IO.Path]::IsPathRooted($destDir) } catch { $isAbs = $false }
+  $checks.Add([pscustomobject]@{ name="dest_dir_is_absolute"; ok=$isAbs; value=$destDir })
+  if (-not $isAbs) { $ok = $false }
+
+  return [pscustomobject]@{
+    ok           = $ok
+    proposal_id  = $proposalId
+    approve_token= $approveToken
+    dest_dir     = $destDir
+    bundle       = $bundle
+    apply_gate   = $applyGate
+    proposals_dir= $proposalsDir
+    checks       = $checks
+  }
+}
+Ensure-Dir $ReceiptDir
+# === SAFE_WRITE_ENFORCEMENT_V2 BEGIN ===
+if ($SafeWrite) {
+  if (-not $LocalApplyGate) { $LocalApplyGate = $true }
+}
+$__localAppliedOk = $false
+# === SAFE_WRITE_ENFORCEMENT_V2 END ===
+
+if (-not $Room) { $Room = New-RoomId "room_devloop_run" }
+
+$hdr = @{
+  "x-room-id"    = $Room
+  "Content-Type" = "application/json"
+}
+
+$receiptPath = Join-Path $ReceiptDir ("run_{0}.json" -f $Room)
+$receiptTxt  = Join-Path $ReceiptDir ("run_{0}.txt" -f $Room)
+
+$receipt = [ordered]@{
+  ts_local         = (Get-Date).ToString("o")
+  base             = $Base
+  room_id          = $Room
+  goal             = $Goal
+  max_iters        = $MaxIters
+  strict           = [bool]$Strict
+  force_plan       = [bool]$ForcePlan
+  show_summary     = [bool]$ShowSummary
+  stop_no_progress = $StopOnNoProgress
+  local_apply_gate = [bool]$LocalApplyGate
+  steps            = @()
+  final            = $null
+}
+
+Write-Host ("ROOM={0}" -f $Room) -ForegroundColor Green
+Write-Host ("BASE={0}" -f $Base) -ForegroundColor Yellow
+Write-Host ("GOAL={0}" -f $Goal) -ForegroundColor Yellow
+
+$txtLines = New-Object System.Collections.Generic.List[string]
+$txtLines.Add(("=== DEV_LOOP_RUN {0} ===" -f (Get-Date).ToString("o")))
+$txtLines.Add(("ROOM={0}" -f $Room))
+$txtLines.Add(("BASE={0}" -f $Base))
+$txtLines.Add(("GOAL={0}" -f $Goal))
+$txtLines.Add(("LOCAL_APPLY_GATE={0}" -f ([bool]$LocalApplyGate)))
+$txtLines.Add("")
+
+# PLAN
+$doPlan = $ForcePlan.IsPresent
+$prePlan = Invoke-Json -Method "GET" -Url "$Base/v1/agent/plan" -Headers $hdr
+$receipt.steps += [ordered]@{ kind="get_plan_pre"; status=$prePlan.Status; body=$prePlan.Json; raw=$prePlan.Raw }
+
+if (-not $doPlan) {
+  try {
+    $stepsCount = 0
+    if ($prePlan.Json -and $prePlan.Json.plan -and $prePlan.Json.plan.steps) { $stepsCount = @($prePlan.Json.plan.steps).Count }
+    if ($stepsCount -le 0) { $doPlan = $true }
+  } catch { $doPlan = $true }
+}
+
+if ($doPlan) {
+  $planReq = @{ goal = $Goal }
+  $planResp = Invoke-Json -Method "POST" -Url "$Base/v1/agent/plan" -Headers $hdr -BodyObj $planReq
+  $receipt.steps += [ordered]@{ kind="post_plan"; status=$planResp.Status; body=$planResp.Json; raw=$planResp.Raw }
+
+  if ($Strict -and $planResp.Status -ne 200) {
+    $receipt.final = [ordered]@{ ok=$false; error="PLAN_FAILED"; detail=@{ status=$planResp.Status; raw=$planResp.Raw } }
+    ($receipt | ConvertTo-Json -Depth 50) | Set-Content -Encoding UTF8 $receiptPath
+    if ($OutText) { $txtLines.Add("PLAN_FAILED"); $txtLines.Add($planResp.Raw); $txtLines | Set-Content -Encoding UTF8 $receiptTxt }
+    throw "PLAN_FAILED status=$($planResp.Status) body=$($planResp.Raw)"
+  }
+}
+
+# RUN LOOP
+$noProgress = 0
+$lastFingerprint = ""
+
+for ($i=1; $i -le $MaxIters; $i++) {
+  $runResp = Invoke-Json -Method "POST" -Url "$Base/v1/agent/run_once" -Headers $hdr -BodyObj @{ room_id = $Room; max_steps = 1 }
+  $receipt.steps += [ordered]@{ kind="run"; iter=$i; status=$runResp.Status; body=$runResp.Json; raw=$runResp.Raw }
+
+  if ($Strict -and $runResp.Status -ne 200) {
+    $receipt.final = [ordered]@{ ok=$false; error="RUN_HTTP_FAILED"; detail=@{ iter=$i; status=$runResp.Status; raw=$runResp.Raw } }
+    $txtLines.Add(("ITER {0}: RUN_HTTP_FAILED status={1}" -f $i, $runResp.Status))
+    break
+  }
+
+  $ok = $true
+  $needsApproval = $false
+  $approveToken = $null
+  $planStatus = $null
+
+  try {
+    if ($runResp.Json -and ($runResp.Json.PSObject.Properties.Name -contains "ok")) { $ok = [bool]$runResp.Json.ok }
+    if ($runResp.Json -and ($runResp.Json.PSObject.Properties.Name -contains "needs_approval")) { $needsApproval = [bool]$runResp.Json.needs_approval }
+    if ($runResp.Json -and ($runResp.Json.PSObject.Properties.Name -contains "approve_token")) { $approveToken = $runResp.Json.approve_token }
+    $planStatus = Get-PlanStatusFromRunJson $runResp.Json
+  } catch {}
+
+  $fp = Fingerprint-Run $runResp.Json
+  if ($fp -and ($fp -eq $lastFingerprint)) { $noProgress++ } else { $noProgress = 0; $lastFingerprint = $fp }
+
+  if ($ShowSummary) {
+    $counts = Get-CountsFromRunJson $runResp.Json
+    $pending = $null
+    try { if ($runResp.Json.summary -and ($runResp.Json.summary.PSObject.Properties.Name -contains "pending_approvals_count")) { $pending = $runResp.Json.summary.pending_approvals_count } } catch {}
+    $cstr = ""
+    if ($counts) { $cstr = ("todo={0} proposed={1} done={2} err={3}" -f $counts.todo, $counts.proposed, $counts.done, $counts.error) }
+    $psOut = NZ $planStatus ""
+    $pdOut = NZ $pending ""
+    Write-Host ("ITER={0} status={1} {2} pending={3} noProg={4}" -f $i, $psOut, $cstr, $pdOut, $noProgress) -ForegroundColor Cyan
+    $txtLines.Add(("ITER={0} status={1} {2} pending={3} noProg={4}" -f $i, $psOut, $cstr, $pdOut, $noProgress))
+  } else {
+    $txtLines.Add(("ITER={0} status={1}" -f $i, (NZ $planStatus "")))
+  }
+
+  if ($Strict -and (-not $ok)) {
+    $receipt.final = [ordered]@{ ok=$false; error="RUN_OK_FALSE"; detail=@{ iter=$i; raw=$runResp.Raw } }
+    break
+  }
+
+  if (($StopOnNoProgress -gt 0) -and ($noProgress -ge $StopOnNoProgress)) {
+    $receipt.final = [ordered]@{ ok=$true; status=(NZ $planStatus "unknown"); iter=$i; note=("StopOnNoProgress hit: {0}" -f $StopOnNoProgress) }
+    break
+  }
+
+  if ($planStatus -eq "complete") {
+    $receipt.final = [ordered]@{ ok=$true; status="complete"; iter=$i; note="Plan completed" }
+    break
+  }
+
+  if ($needsApproval -or ($approveToken -and $approveToken.ToString().Trim())) {
+    # If no token, fetch from GET /plan
+    if (-not $approveToken) {
+      $planNow = Invoke-Json -Method "GET" -Url "$Base/v1/agent/plan" -Headers $hdr
+      $receipt.steps += [ordered]@{ kind="get_plan_for_token"; iter=$i; status=$planNow.Status; body=$planNow.Json; raw=$planNow.Raw }
+
+      try {
+        $tok = $null
+        if ($planNow.Json -and $planNow.Json.plan -and $planNow.Json.plan.steps) {
+          foreach ($st in $planNow.Json.plan.steps) {
+            if ($st.required_approve) { $tok = $st.required_approve; break }
+          }
+        }
+        $approveToken = $tok
+      } catch {}
+    }
+
+    if (-not $approveToken) {
+      $receipt.final = [ordered]@{ ok=$false; error="APPROVAL_NEEDED_BUT_NO_TOKEN"; detail=@{ iter=$i; raw=$runResp.Raw } }
+      break
+    }
+
+    # Local gate apply (optional)
+    if ($LocalApplyGate) {
+  # Siempre leer plan para obtener proposal_id + dest_dir vinculados a approve_token
+  $planNow2 = Invoke-Json -Method "GET" -Url "$Base/v1/agent/plan" -Headers $hdr
+  $receipt.steps += [ordered]@{ kind="get_plan_for_local_apply"; iter=$i; status=$planNow2.Status; body=$planNow2.Json; raw=$planNow2.Raw }
+
+  $proposalId = $null
+  $destDir = $null
+
+  try {
+    if ($planNow2.Json -and $planNow2.Json.plan -and $planNow2.Json.plan.steps) {
+      foreach ($st in $planNow2.Json.plan.steps) {
+        if ($st.required_approve -eq $approveToken) {
+          $proposalId = $st.proposal_id
+          $destDir    = $st.dest_dir
+          break
+        }
+      }
+    }
+  } catch {}
+
+  # DRY RUN: preflight only (no writes)
+  if ($DryRunLocalApplyGate) {
+    $pf = Local-PreflightGate $proposalId $approveToken $destDir $TmpAgentRoot
+    $receipt.steps += [ordered]@{ kind="local_apply_preflight"; iter=$i; ok=$pf.ok; detail=$pf }
+    Write-Host ("ITER={0} PREFLIGHT ok={1} proposal_id={2}" -f $i, $pf.ok, (NZ $proposalId "")) -ForegroundColor Yellow
+    if (-not $pf.ok) {
+      Write-Host ("ITER={0} PREFLIGHT_FAIL" -f $i) -ForegroundColor Red
+      if ($Strict) {
+        $receipt.final = [ordered]@{ ok=$false; error="LOCAL_PREFLIGHT_FAILED"; detail=$pf }
+        break
+      }
+    }
+  } else {
+    # Apply real: run apply_gate locally
+    $la = Local-ApplyGate $proposalId $approveToken $destDir $TmpAgentRoot
+      # === SAFE_WRITE_LOCAL_OK_MARK_V2 BEGIN ===
+      if ($la -and ($la.PSObject.Properties.Name -contains "ok") -and $la.ok) { $__localAppliedOk = $true }
+      # === SAFE_WRITE_LOCAL_OK_MARK_V2 END ===
+    $receipt.steps += [ordered]@{ kind="local_apply_gate"; iter=$i; proposal_id=$proposalId; dest_dir=$destDir; token=$approveToken; ok=$la.ok; detail=$la }
+    Write-Host ("ITER={0} LOCAL_APPLY ok={1} proposal_id={2}" -f $i, $la.ok, (NZ $proposalId "")) -ForegroundColor Yellow
+
+    if (-not $la.ok) {
+        # === LOCAL_APPLY_NO_FALLBACK_V2 BEGIN ===
+        if ($NoLocalApplyFallback) {
+          $receipt.final = [ordered]@{ ok=$false; error="LOCAL_APPLY_FAILED_NO_FALLBACK"; detail=$la }
+          $txtLines.Add(("ITER={0} LOCAL_APPLY_FAILED_NO_FALLBACK" -f $i))
+          break
+        }
+        # === LOCAL_APPLY_NO_FALLBACK_V2 END ===
+      Write-Host ("ITER={0} LOCAL_APPLY_FAIL error={1}" -f $i, (NZ $la.error "")) -ForegroundColor Red
+      if ($Strict) {
+        $receipt.final = [ordered]@{ ok=$false; error="LOCAL_APPLY_FAILED"; detail=$la }
+        break
+      } else {
+        $txtLines.Add(("ITER={0} LOCAL_APPLY_FAIL (non-strict): continuing with server apply" -f $i))
+      }
+    }
+  }
+}
+# Ask server to mark apply (and proceed)
+    # === SAFE_WRITE_GATE_BEFORE_SERVER_APPLY_V2 BEGIN ===
+    if ($SafeWrite -and (-not $__localAppliedOk)) {
+      $receipt.final = [ordered]@{ ok=$false; error="SAFE_WRITE_BLOCKED"; detail=@{ iter=$i; note="Local apply not performed/ok"; approve_token=$approveToken } }
+      $txtLines.Add(("ITER={0} SAFE_WRITE_BLOCKED (no local apply ok)" -f $i))
+      break
+    }
+    # === SAFE_WRITE_GATE_BEFORE_SERVER_APPLY_V2 END ===
+    $applyResp = Invoke-Json -Method "POST" -Url "$Base/v1/agent/apply" -Headers $hdr -BodyObj @{ room_id = $Room; approve_token = $approveToken }
+    $receipt.steps += [ordered]@{ kind="run_apply"; iter=$i; token=$approveToken; status=$applyResp.Status; body=$applyResp.Json; raw=$applyResp.Raw }
+
+    if ($Strict -and $applyResp.Status -ne 200) {
+      $receipt.final = [ordered]@{ ok=$false; error="RUN_APPLY_HTTP_FAILED"; detail=@{ iter=$i; status=$applyResp.Status; raw=$applyResp.Raw } }
+      break
+    }
+
+    $ps2 = Get-PlanStatusFromRunJson $applyResp.Json
+    if ($ShowSummary) {
+      $ps2Out = NZ $ps2 ""
+      Write-Host ("ITER={0} APPLY token={1} => status={2}" -f $i, $approveToken, $ps2Out) -ForegroundColor Yellow
+      $txtLines.Add(("ITER={0} APPLY token={1} => status={2}" -f $i, $approveToken, $ps2Out))
+    }
+
+    if ($ps2 -eq "complete") {
+      $receipt.final = [ordered]@{ ok=$true; status="complete"; iter=$i; note="Completed after apply" }
+      break
+    }
+  }
+
+  if ($i -eq $MaxIters) {
+    $receipt.final = [ordered]@{ ok=$true; status=(NZ $planStatus "unknown"); iter=$i; note="Reached MaxIters" }
+  }
+}
+
+($receipt | ConvertTo-Json -Depth 60) | Set-Content -Encoding UTF8 $receiptPath
+Write-Host ("OK: receipt => {0}" -f $receiptPath) -ForegroundColor Green
+
+if ($OutText) {
+  $txtLines.Add("")
+  $txtLines.Add(("RECEIPT_JSON={0}" -f $receiptPath))
+  if ($receipt.final) { $txtLines.Add(("FINAL={0}" -f (($receipt.final | ConvertTo-Json -Depth 20)))) }
+  $txtLines | Set-Content -Encoding UTF8 $receiptTxt
+  Write-Host ("OK: receipt txt => {0}" -f $receiptTxt) -ForegroundColor Green
+}
+
+if ($receipt.final -and ($receipt.final.ok -eq $false)) {
+  throw ("DEV_LOOP_FAILED: {0}" -f ($receipt.final.error))
+}
+
+
+
+
+

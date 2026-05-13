@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_49e92a647cb4356a",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\notes\\p3_1_design.md",
+    "content": "---\n# Diseño de episode.json\n\n## Schema\n- room_id: string\n- timestamp: string\n- tool_calls: array\n- violations: array\n\n## Campos Mínimos\n- room_id\n- inputs\n- plan snapshot\n\n## Evidencia\n- Los archivos necesarios están bien formados y disponibles.\n---\n",
+    "value": null,
+    "text": "---\n# Diseño de episode.json\n\n## Schema\n- room_id: string\n- timestamp: string\n- tool_calls: array\n- violations: array\n\n## Campos Mínimos\n- room_id\n- inputs\n- plan snapshot\n\n## Evidencia\n- Los archivos necesarios están bien formados y disponibles.\n---\n"
+  },
+  "room_id": "room_p3_1_20260303_104350",
+  "step_id": "S4",
+  "created_at": "2026-03-03T16:01:46.922688+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

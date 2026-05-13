@@ -1,0 +1,83 @@
+{
+  "source_id": "github_BerriAI_litellm_20260508",
+  "generated_at_utc": "2026-05-08T04:57:02.351745Z",
+  "patterns": [
+    {
+      "pattern_id": "ci_backed_regression_harness",
+      "semantic_family": "regression_harness",
+      "source_id": "github_BerriAI_litellm_20260508",
+      "evidence_refs": [
+        {
+          "source_file": "tests/",
+          "reason": "Root index shows tests/CI structure.",
+          "evidence_type": "root_index_signal"
+        }
+      ]
+    },
+    {
+      "pattern_id": "dependency_manifest_governance",
+      "semantic_family": "dependency_governance",
+      "source_id": "github_BerriAI_litellm_20260508",
+      "evidence_refs": [
+        {
+          "source_file": "pyproject.toml",
+          "reason": "Root dependency manifest is present and can be audited.",
+          "evidence_type": "root_index_signal"
+        }
+      ]
+    },
+    {
+      "pattern_id": "structured_tool_dispatch",
+      "semantic_family": "tool_routing",
+      "source_id": "github_BerriAI_litellm_20260508",
+      "evidence_refs": [
+        {
+          "source_file": "README.md",
+          "reason": "Dependency hints or README mention tool calling / tool usage explicitly.",
+          "evidence_type": "text_match"
+        }
+      ]
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "HYP_BERRIAI_LITELLM_CI_BACKED_REGRESSION_HARNESS_001",
+      "semantic_key": "governance_quality:regression_harness",
+      "source_id": "github_BerriAI_litellm_20260508",
+      "pattern_id": "ci_backed_regression_harness",
+      "evidence_refs": [
+        {
+          "source_file": "tests/",
+          "reason": "Root index shows tests/CI structure.",
+          "evidence_type": "root_index_signal"
+        }
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_BERRIAI_LITELLM_DEPENDENCY_MANIFEST_GOVERNANCE_002",
+      "semantic_key": "governance_quality:dependency_governance",
+      "source_id": "github_BerriAI_litellm_20260508",
+      "pattern_id": "dependency_manifest_governance",
+      "evidence_refs": [
+        {
+          "source_file": "pyproject.toml",
+          "reason": "Root dependency manifest is present and can be audited.",
+          "evidence_type": "root_index_signal"
+        }
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_BERRIAI_LITELLM_STRUCTURED_TOOL_DISPATCH_003",
+      "semantic_key": "tool_use_accuracy:tool_routing",
+      "source_id": "github_BerriAI_litellm_20260508",
+      "pattern_id": "structured_tool_dispatch",
+      "evidence_refs": [
+        {
+          "source_file": "README.md",
+          "reason": "Dependency hints or README mention tool calling / tool usage explicitly.",
+          "evidence_type": "text_match"
+        }
+      ]
+    }
+  ]
+}

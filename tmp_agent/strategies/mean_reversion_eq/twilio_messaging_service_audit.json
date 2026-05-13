@@ -1,0 +1,30 @@
+[
+  {
+    "url": "https://messaging.twilio.com/v1/Services/MG557e0cbb63dbd1d54b40a2ee6397b472/PhoneNumbers",
+    "status": 200,
+    "keys": [
+      "meta",
+      "phone_numbers"
+    ],
+    "phone_numbers_count": 0,
+    "phone_numbers": []
+  },
+  {
+    "url": "https://messaging.twilio.com/v1/Services/MG557e0cbb63dbd1d54b40a2ee6397b472/AlphaSenders",
+    "status": 200,
+    "keys": [
+      "alpha_senders",
+      "meta"
+    ],
+    "alpha_senders_count": 0,
+    "alpha_senders": []
+  },
+  {
+    "url": "https://messaging.twilio.com/v1/Services/MG557e0cbb63dbd1d54b40a2ee6397b472/ChannelSenders",
+    "status": 200,
+    "keys": [
+      "meta",
+      "senders"
+    ]
+  }
+]

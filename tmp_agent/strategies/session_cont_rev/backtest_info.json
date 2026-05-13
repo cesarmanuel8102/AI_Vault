@@ -1,0 +1,26 @@
+{
+  "project_id": 29652652,
+  "compile_id": "c382b159406be02c9b49474111036b1b-2e423ac966b2732625ec51cbf0c7ee52",
+  "backtest_id": "914222baabcc09bde3974ff142acb8cc",
+  "backtest_name": "SCR-V1.1 ContOnly LonMin0.5 2020-2024",
+  "launched_at": "2026-04-03 23:20:15 UTC",
+  "parameters": {
+    "start_year": "2020",
+    "end_year": "2024",
+    "end_month": "12",
+    "risk_per_trade": "0.015",
+    "max_positions": "2",
+    "london_min_move": "0.5",
+    "cont_confirm_hrs": "3",
+    "rev_rsi_thresh": "35",
+    "atr_period": "14",
+    "rsi_period": "14",
+    "stop_atr_mult": "1.5",
+    "tp_atr_mult": "3.0",
+    "max_hold_hours": "20",
+    "trail_atr_mult": "2.0",
+    "mode": "cont",
+    "max_daily_risk": "0.02"
+  },
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/session_cont_rev/main.py"
+}

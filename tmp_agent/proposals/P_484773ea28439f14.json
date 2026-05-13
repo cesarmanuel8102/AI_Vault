@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_484773ea28439f14",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\patches\\brain_episode_v1.diff",
+    "content": "diff --git a/brain_server.py b/brain_server.py\nindex abcdef1..abcdef2 100644\n--- a/brain_server.py\n+++ b/brain_server.py\n@@ -1,3 +1,3 @@\n def some_function():\n-    pass\n+    print('Updated version')\n",
+    "value": null,
+    "text": "diff --git a/brain_server.py b/brain_server.py\nindex abcdef1..abcdef2 100644\n--- a/brain_server.py\n+++ b/brain_server.py\n@@ -1,3 +1,3 @@\n def some_function():\n-    pass\n+    print('Updated version')\n"
+  },
+  "room_id": "room_p3_1_20260303_104350",
+  "step_id": "S1",
+  "created_at": "2026-03-03T15:51:08.741456+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

@@ -1,0 +1,41 @@
+{
+  "source_id": "github_run_llama_llama_index_20260508",
+  "curated_at_utc": "2026-05-08T04:56:53.440069Z",
+  "repo": {
+    "full_name": "run-llama/llama_index",
+    "default_branch": "main",
+    "updated_at": "2026-05-08T04:38:06Z",
+    "stargazers_count": 49230,
+    "open_issues_count": 334,
+    "size_kb": 459992,
+    "language": "Python",
+    "topics": [
+      "agents",
+      "application",
+      "data",
+      "fine-tuning",
+      "framework",
+      "llamaindex",
+      "llm",
+      "multi-agents",
+      "rag",
+      "vector-database"
+    ],
+    "tests_present": true,
+    "docs_present": true,
+    "dependency_files": [
+      "pyproject.toml"
+    ]
+  },
+  "curation_score": 11.6,
+  "risk_score": 1.25,
+  "license_status": "compatible",
+  "recommended_action": "analyze",
+  "reject_reasons": [],
+  "notes": [
+    "source_host_not_in_allowlist_seed"
+  ],
+  "dependency_risk_flags": [],
+  "suspicious_binaries": [],
+  "apparent_secrets": []
+}

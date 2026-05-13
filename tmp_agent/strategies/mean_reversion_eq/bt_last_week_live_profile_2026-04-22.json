@@ -1,0 +1,51 @@
+{
+  "generated_at_utc": "2026-04-22T20:30:04.269312+00:00",
+  "project_id": 29652652,
+  "window": {
+    "start": "2026-04-15",
+    "end": "2026-04-21"
+  },
+  "profile_label": "P20_QF3_REF_FAST",
+  "steps": [
+    {
+      "step": "params_set_for_week_bt",
+      "count": 25
+    },
+    {
+      "step": "compile_ok",
+      "compileId": "f6242f672dda2d67bcc2e91a8fcb4bd7-51e40e81cc7153f5e39772f9f42617ac"
+    },
+    {
+      "step": "params_restored",
+      "count": 19
+    }
+  ],
+  "backtest_name": "LAST_WEEK_LIVE_PROFILE_1776889808",
+  "summary": {
+    "status": "Completed.",
+    "backtest_id": "a2dd92655e83438adf75a9e1bca31e33",
+    "np_pct": 0.0,
+    "dd_pct": 0.0,
+    "sharpe": 0.0,
+    "sortino": 0.0,
+    "win_rate_pct": 0.0,
+    "profit_factor": null,
+    "expectancy": 0.0,
+    "total_orders": 0,
+    "closed_trades": 0,
+    "trade_days": 0,
+    "best_day_usd": 0.0,
+    "worst_day_usd": 0.0,
+    "daily_loss_breaches": 0,
+    "trailing_breaches": 0,
+    "consistency_pct": 999.0,
+    "external_stress_days": 0,
+    "alpha_pnl_mr": 0.0,
+    "alpha_pnl_orb": 0.0,
+    "alpha_pnl_stress": 0.0,
+    "alpha_tr_mr": 0,
+    "alpha_tr_orb": 0,
+    "alpha_tr_stress": 0,
+    "by_day": {}
+  }
+}

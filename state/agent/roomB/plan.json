@@ -1,0 +1,67 @@
+{
+  "mission_id": "mission_6a2b75e69a68",
+  "created_ts": "2026-02-25T20:35:20.682883Z",
+  "updated_ts": "2026-02-25T20:35:20.683884Z",
+  "profile": "default",
+  "cursor": 0,
+  "steps": [
+    {
+      "id": "s1",
+      "title": "Inspeccionar estado actual",
+      "status": "pending",
+      "tool_calls": [
+        {
+          "tool": "list_dir",
+          "args": {
+            "path": "C:\\AI_VAULT\\00_identity"
+          }
+        },
+        {
+          "tool": "list_dir",
+          "args": {
+            "path": "C:\\AI_VAULT\\tmp_agent"
+          }
+        }
+      ],
+      "result": null,
+      "error": null
+    },
+    {
+      "id": "s2",
+      "title": "Validar archivos críticos",
+      "status": "pending",
+      "tool_calls": [
+        {
+          "tool": "read_file",
+          "args": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\dev_loop.py"
+          }
+        },
+        {
+          "tool": "read_file",
+          "args": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\smoke_runner.py"
+          }
+        }
+      ],
+      "result": null,
+      "error": null
+    },
+    {
+      "id": "s3",
+      "title": "Checkpoint",
+      "status": "pending",
+      "tool_calls": [
+        {
+          "tool": "append_file",
+          "args": {
+            "path": "C:\\AI_VAULT\\logs\\agent_checkpoints.ndjson",
+            "text": "{\"ts\": \"2026-02-25T20:35:20.682883Z\", \"goal\": \"ID test B\"}\n"
+          }
+        }
+      ],
+      "result": null,
+      "error": null
+    }
+  ]
+}

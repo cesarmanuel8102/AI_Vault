@@ -1,0 +1,16 @@
+{
+  "proposal_id": "P_40b44a796de90a47",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\patches\\brain_episode_v1.diff",
+    "content": "diff --git a/brain_server.py b/brain_server.py\nindex 83db48f..b444c28 100644\n--- a/brain_server.py\n+++ b/brain_server.py\n@@ -1,3 +1,3 @@\n def example_function():\n-    pass\n+    print('Hello World')\n",
+    "value": null,
+    "raw_content": "diff --git a/brain_server.py b/brain_server.py\\nindex 83db48f..b444c28 100644\\n--- a/brain_server.py\\n+++ b/brain_server.py\\n@@ -1,3 +1,3 @@\\n def example_function():\\n-    pass\\n+    print('Hello World')\\n",
+    "text": "diff --git a/brain_server.py b/brain_server.py\nindex 83db48f..b444c28 100644\n--- a/brain_server.py\n+++ b/brain_server.py\n@@ -1,3 +1,3 @@\n def example_function():\n-    pass\n+    print('Hello World')\n"
+  },
+  "room_id": "room_p3_1_20260303_104350",
+  "step_id": "S1",
+  "created_at": "2026-03-03T16:06:01.017424+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

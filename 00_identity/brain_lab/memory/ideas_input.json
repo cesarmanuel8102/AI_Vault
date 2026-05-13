@@ -1,0 +1,22 @@
+﻿[
+  {
+    "id": "IDEA_01",
+    "scores": {
+      "time_to_first_dollar": 8,
+      "margin": 8,
+      "scalability": 7,
+      "distribution_access": 6,
+      "confidence": 6
+    }
+  },
+  {
+    "id": "IDEA_02",
+    "scores": {
+      "time_to_first_dollar": 7,
+      "margin": 9,
+      "scalability": 8,
+      "distribution_access": 7,
+      "confidence": 7
+    }
+  }
+]

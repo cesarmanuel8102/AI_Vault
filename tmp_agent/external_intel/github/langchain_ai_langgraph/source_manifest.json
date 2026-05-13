@@ -1,0 +1,19 @@
+{
+  "source_id": "github_langchain_ai_langgraph_20260508",
+  "source_type": "github_repo",
+  "url": "https://github.com/langchain-ai/langgraph",
+  "owner": "langchain-ai",
+  "repo": "langgraph",
+  "ingested_at_utc": "2026-05-08T05:26:36.493686Z",
+  "local_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\langchain_ai_langgraph",
+  "status": "downloaded",
+  "hash": "1a0c53929ba38b289943661b15920aaf26e6af4bd92ccb412c3437464cb09ea6",
+  "files_indexed": 12,
+  "repo_api_url": "https://api.github.com/repos/langchain-ai/langgraph",
+  "readme_download_url": "https://raw.githubusercontent.com/langchain-ai/langgraph/main/README.md",
+  "root_index_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\langchain_ai_langgraph\\root_index.json",
+  "dependency_hints_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\langchain_ai_langgraph\\dependency_hints.json",
+  "repo_tree_index_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\langchain_ai_langgraph\\repo_tree_index.json",
+  "priority_file_catalog_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\langchain_ai_langgraph\\priority_file_catalog.json",
+  "priority_file_snippets_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\langchain_ai_langgraph\\priority_file_snippets.json"
+}

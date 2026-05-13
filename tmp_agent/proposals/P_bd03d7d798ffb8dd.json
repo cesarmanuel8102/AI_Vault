@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_bd03d7d798ffb8dd",
+  "tool_name": "append_file",
+  "tool_args": {
+    "content": "loop 2026-03-05T14:19:47Z\n",
+    "path": "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_smoke_p3_4_noapply_20260305_091947\\loop.txt",
+    "raw_content": "loop {{now_iso}}\\n",
+    "text": "loop 2026-03-05T14:19:47Z\n"
+  },
+  "room_id": "room_smoke_p3_4_noapply_20260305_091947",
+  "step_id": "S1",
+  "created_at": "2026-03-05T14:19:47.921334+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

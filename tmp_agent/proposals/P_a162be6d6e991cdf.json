@@ -1,0 +1,14 @@
+{
+  "proposal_id": "P_a162be6d6e991cdf",
+  "tool_name": "write_file",
+  "tool_args": {
+    "content": "{\r\n  \"note\": \"executor diag\",\r\n  \"room_id\": \"brain_executor_diag_v7\",\r\n  \"route\": \"run_once\",\r\n  \"utc\": \"2026-03-13T21:47:34Z\"\r\n}",
+    "path": "C:\\AI_VAULT\\tmp_agent\\state\\rooms\\brain_executor_diag_v7\\executor_diag_artifact.json",
+    "text": "{\r\n  \"note\": \"executor diag\",\r\n  \"room_id\": \"brain_executor_diag_v7\",\r\n  \"route\": \"run_once\",\r\n  \"utc\": \"2026-03-13T21:47:34Z\"\r\n}"
+  },
+  "room_id": "brain_executor_diag_v7",
+  "step_id": "EXECUTOR_DIAG_STEP",
+  "created_at": "2026-03-13T21:47:35.079494+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

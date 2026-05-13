@@ -1,0 +1,990 @@
+--- NUL
++++ C:\AI_VAULT\tmp_agent\workspace\receipts\run_room_minreal_plan_20260228_135122.json
+@@ -0,0 +1,987 @@
++﻿{
++    "ts_local":  "2026-02-28T13:51:24.9324573-05:00",
++    "base":  "http://127.0.0.1:8010",
++    "room_id":  "room_minreal_plan_20260228_135122",
++    "goal":  "BOOTSTRAP_RUN_SMOKE",
++    "max_iters":  25,
++    "strict":  false,
++    "force_plan":  false,
++    "show_summary":  true,
++    "stop_no_progress":  0,
++    "local_apply_gate":  true,
++    "steps":  [
++                  {
++                      "kind":  "get_plan_pre",
++                      "status":  200,
++                      "body":  {
++                                   "ok":  true,
++                                   "room_id":  "room_minreal_plan_20260228_135122",
++                                   "plan":  {
++                                                "status":  "planned",
++                                                "steps":  [
++                                                              {
++                                                                  "id":  "S1",
++                                                                  "title":  "Inspect risk folder (list_dir)",
++                                                                  "status":  "todo",
++                                                                  "tool_name":  "list_dir",
++                                                                  "mode":  "read",
++                                                                  "tool_args":  {
++                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk"
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S2",
++                                                                  "title":  "Read risk_engine.py (read_file)",
++                                                                  "status":  "todo",
++                                                                  "tool_name":  "read_file",
++                                                                  "mode":  "read",
++                                                                  "tool_args":  {
++                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk\\risk_engine.py",
++                                                                                    "max_bytes":  200000
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S3",
++                                                                  "title":  "Create real_log.txt (append_file new_file) â gated SAFE (repo)",
++                                                                  "status":  "todo",
++                                                                  "tool_name":  "append_file",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "new_file",
++                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122",
++                                                                  "tool_args":  {
++                                                                                    "path":  "real_log.txt",
++                                                                                    "content":  "REAL_V3B START\\n"
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S4",
++                                                                  "title":  "Modify real_log.txt (append marker) â gated SAFE (repo)",
++                                                                  "status":  "todo",
++                                                                  "tool_name":  "append_file",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "modify",
++                                                                  "repo_path":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122\\real_log.txt",
++                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122",
++                                                                  "tool_args":  {
++                                                                                    "path":  "real_log.txt",
++                                                                                    "content":  "REAL_V3B MARK 2026-02-28T18:51:22.946625+00:00\\n"
++                                                                                }
++                                                              }
++                                                          ],
++                                                "updated_at":  "2026-02-28T18:51:05.570720+00:00",
++                                                "created_at":  "2026-02-28T18:51:05.333454+00:00",
++                                                "history":  [
++                                                                {
++                                                                    "kind":  "plan",
++                                                                    "goal":  "RUNNER_PARITY_TEST",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "can_plan":  true,
++                                                                    "status_before":  "idle"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S1",
++                                                                    "tool_name":  "append_file",
++                                                                    "mode":  "propose"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S2",
++                                                                    "tool_name":  "runtime_snapshot_set",
++                                                                    "mode":  "propose"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S3",
++                                                                    "tool_name":  "runtime_snapshot_get",
++                                                                    "mode":  "propose"
++                                                                }
++                                                            ],
++                                                "room_id":  "room_minreal_plan_20260228_135122",
++                                                "goal":  "MIN_REAL_PLAN"
++                                            }
++                               },
++                      "raw":  "{\"ok\":true,\"room_id\":\"room_minreal_plan_20260228_135122\",\"plan\":{\"status\":\"planned\",\"steps\":[{\"id\":\"S1\",\"title\":\"Inspect risk folder (list_dir)\",\"status\":\"todo\",\"tool_name\":\"list_dir\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\"}},{\"id\":\"S2\",\"title\":\"Read risk_engine.py (read_file)\",\"status\":\"todo\",\"tool_name\":\"read_file\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\\\\risk_engine.py\",\"max_bytes\":200000}},{\"id\":\"S3\",\"title\":\"Create real_log.txt (append_file new_file) â gated SAFE (repo)\",\"status\":\"todo\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"new_file\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B START\\\\n\"}},{\"id\":\"S4\",\"title\":\"Modify real_log.txt (append marker) â gated SAFE (repo)\",\"status\":\"todo\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"modify\",\"repo_path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\\\\real_log.txt\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B MARK 2026-02-28T18:51:22.946625+00:00\\\\n\"}}],\"updated_at\":\"2026-02-28T18:51:05.570720+00:00\",\"created_at\":\"2026-02-28T18:51:05.333454+00:00\",\"history\":[{\"kind\":\"plan\",\"goal\":\"RUNNER_PARITY_TEST\",\"room_id\":\"room_runner_parity_20260228_135105\",\"can_plan\":true,\"status_before\":\"idle\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S1\",\"tool_name\":\"append_file\",\"mode\":\"propose\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S2\",\"tool_name\":\"runtime_snapshot_set\",\"mode\":\"propose\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S3\",\"tool_name\":\"runtime_snapshot_get\",\"mode\":\"propose\"}],\"room_id\":\"room_minreal_plan_20260228_135122\",\"goal\":\"MIN_REAL_PLAN\"}}"
++                  },
++                  {
++                      "kind":  "run",
++                      "iter":  1,
++                      "status":  200,
++                      "body":  {
++                                   "ok":  true,
++                                   "room_id":  "room_minreal_plan_20260228_135122",
++                                   "executed":  [
++                                                    {
++                                                        "action":  "propose_read_step",
++                                                        "step_id":  "S1"
++                                                    },
++                                                    {
++                                                        "action":  "propose_read_step",
++                                                        "step_id":  "S2"
++                                                    },
++                                                    {
++                                                        "action":  "propose_write_step",
++                                                        "step_id":  "S3"
++                                                    }
++                                                ],
++                                   "needs_approval":  true,
++                                   "approve_token":  "APPLY_p1772304685097286500",
++                                   "summary":  {
++                                                   "plan_id":  null,
++                                                   "status":  "planned",
++                                                   "steps_total":  4,
++                                                   "counts":  {
++                                                                  "todo":  1,
++                                                                  "proposed":  1,
++                                                                  "done":  2,
++                                                                  "error":  0,
++                                                                  "other":  0
++                                                              },
++                                                   "pending_approvals_count":  1,
++                                                   "last_eval":  null,
++                                                   "updated_at":  "2026-02-28T18:51:25.103313+00:00"
++                                               },
++                                   "pending_approvals":  {
++                                                             "S3":  "APPLY_p1772304685097286500"
++                                                         },
++                                   "plan":  {
++                                                "status":  "planned",
++                                                "steps":  [
++                                                              {
++                                                                  "id":  "S1",
++                                                                  "title":  "Inspect risk folder (list_dir)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "list_dir",
++                                                                  "mode":  "read",
++                                                                  "tool_args":  {
++                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk"
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S2",
++                                                                  "title":  "Read risk_engine.py (read_file)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "read_file",
++                                                                  "mode":  "read",
++                                                                  "tool_args":  {
++                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk\\risk_engine.py",
++                                                                                    "max_bytes":  200000
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S3",
++                                                                  "title":  "Create real_log.txt (append_file new_file) â gated SAFE (repo)",
++                                                                  "status":  "proposed",
++                                                                  "tool_name":  "append_file",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "new_file",
++                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122",
++                                                                  "tool_args":  {
++                                                                                    "path":  "real_log.txt",
++                                                                                    "content":  "REAL_V3B START\\n"
++                                                                                },
++                                                                  "proposal_id":  "p1772304685097286500",
++                                                                  "required_approve":  "APPLY_p1772304685097286500"
++                                                              },
++                                                              {
++                                                                  "id":  "S4",
++                                                                  "title":  "Modify real_log.txt (append marker) â gated SAFE (repo)",
++                                                                  "status":  "todo",
++                                                                  "tool_name":  "append_file",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "modify",
++                                                                  "repo_path":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122\\real_log.txt",
++                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122",
++                                                                  "tool_args":  {
++                                                                                    "path":  "real_log.txt",
++                                                                                    "content":  "REAL_V3B MARK 2026-02-28T18:51:22.946625+00:00\\n"
++                                                                                }
++                                                              }
++                                                          ],
++                                                "updated_at":  "2026-02-28T18:51:25.103313+00:00",
++                                                "created_at":  "2026-02-28T18:51:05.333454+00:00",
++                                                "history":  [
++                                                                {
++                                                                    "kind":  "plan",
++                                                                    "goal":  "RUNNER_PARITY_TEST",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "can_plan":  true,
++                                                                    "status_before":  "idle"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S1",
++                                                                    "tool_name":  "append_file",
++                                                                    "mode":  "propose"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S2",
++                                                                    "tool_name":  "runtime_snapshot_set",
++                                                                    "mode":  "propose"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S3",
++                                                                    "tool_name":  "runtime_snapshot_get",
++                                                                    "mode":  "propose"
++                                                                }
++                                                            ],
++                                                "room_id":  "room_minreal_plan_20260228_135122",
++                                                "goal":  "MIN_REAL_PLAN"
++                                            },
++                                   "mission":  {
++                                                   "version":  1,
++                                                   "mission_id":  "brainlab-default",
++                                                   "title":  "Brain Lab â Local Governed Agent",
++                                                   "objectives":  [
++                                                                      "Implement PlannerâEvaluator endpoints with persistent mission/plan state.",
++                                                                      "Maintain governance: no destructive actions, auditable logs, reproducible workflow."
++                                                                  ],
++                                                   "constraints":  [
++                                                                       "No auto-executing PowerShell from the assistant.",
++                                                                       "All writes confined to C:\\AI_VAULT\\tmp_agent",
++                                                                       "All changes must be logged."
++                                                                   ],
++                                                   "created_at":  null,
++                                                   "updated_at":  "2026-02-28T18:51:25.079743+00:00",
++                                                   "room_id":  "room_minreal_plan_20260228_135122"
++                                               }
++                               },
++                      "raw":  "{\"ok\":true,\"room_id\":\"room_minreal_plan_20260228_135122\",\"executed\":[{\"action\":\"propose_read_step\",\"step_id\":\"S1\"},{\"action\":\"propose_read_step\",\"step_id\":\"S2\"},{\"action\":\"propose_write_step\",\"step_id\":\"S3\"}],\"needs_approval\":true,\"approve_token\":\"APPLY_p1772304685097286500\",\"summary\":{\"plan_id\":null,\"status\":\"planned\",\"steps_total\":4,\"counts\":{\"todo\":1,\"proposed\":1,\"done\":2,\"error\":0,\"other\":0},\"pending_approvals_count\":1,\"last_eval\":null,\"updated_at\":\"2026-02-28T18:51:25.103313+00:00\"},\"pending_approvals\":{\"S3\":\"APPLY_p1772304685097286500\"},\"plan\":{\"status\":\"planned\",\"steps\":[{\"id\":\"S1\",\"title\":\"Inspect risk folder (list_dir)\",\"status\":\"done\",\"tool_name\":\"list_dir\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\"}},{\"id\":\"S2\",\"title\":\"Read risk_engine.py (read_file)\",\"status\":\"done\",\"tool_name\":\"read_file\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\\\\risk_engine.py\",\"max_bytes\":200000}},{\"id\":\"S3\",\"title\":\"Create real_log.txt (append_file new_file) â gated SAFE (repo)\",\"status\":\"proposed\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"new_file\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B START\\\\n\"},\"proposal_id\":\"p1772304685097286500\",\"required_approve\":\"APPLY_p1772304685097286500\"},{\"id\":\"S4\",\"title\":\"Modify real_log.txt (append marker) â gated SAFE (repo)\",\"status\":\"todo\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"modify\",\"repo_path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\\\\real_log.txt\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B MARK 2026-02-28T18:51:22.946625+00:00\\\\n\"}}],\"updated_at\":\"2026-02-28T18:51:25.103313+00:00\",\"created_at\":\"2026-02-28T18:51:05.333454+00:00\",\"history\":[{\"kind\":\"plan\",\"goal\":\"RUNNER_PARITY_TEST\",\"room_id\":\"room_runner_parity_20260228_135105\",\"can_plan\":true,\"status_before\":\"idle\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S1\",\"tool_name\":\"append_file\",\"mode\":\"propose\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S2\",\"tool_name\":\"runtime_snapshot_set\",\"mode\":\"propose\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S3\",\"tool_name\":\"runtime_snapshot_get\",\"mode\":\"propose\"}],\"room_id\":\"room_minreal_plan_20260228_135122\",\"goal\":\"MIN_REAL_PLAN\"},\"mission\":{\"version\":1,\"mission_id\":\"brainlab-default\",\"title\":\"Brain Lab â Local Governed Agent\",\"objectives\":[\"Implement PlannerâEvaluator endpoints with persistent mission/plan state.\",\"Maintain governance: no destructive actions, auditable logs, reproducible workflow.\"],\"constraints\":[\"No auto-executing PowerShell from the assistant.\",\"All writes confined to C:\\\\AI_VAULT\\\\tmp_agent\",\"All changes must be logged.\"],\"created_at\":null,\"updated_at\":\"2026-02-28T18:51:25.079743+00:00\",\"room_id\":\"room_minreal_plan_20260228_135122\"}}"
++                  },
++                  {
++                      "kind":  "get_plan_for_local_apply",
++                      "iter":  1,
++                      "status":  200,
++                      "body":  {
++                                   "ok":  true,
++                                   "room_id":  "room_minreal_plan_20260228_135122",
++                                   "plan":  {
++                                                "status":  "planned",
++                                                "steps":  [
++                                                              {
++                                                                  "id":  "S1",
++                                                                  "title":  "Inspect risk folder (list_dir)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "list_dir",
++                                                                  "mode":  "read",
++                                                                  "tool_args":  {
++                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk"
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S2",
++                                                                  "title":  "Read risk_engine.py (read_file)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "read_file",
++                                                                  "mode":  "read",
++                                                                  "tool_args":  {
++                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk\\risk_engine.py",
++                                                                                    "max_bytes":  200000
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S3",
++                                                                  "title":  "Create real_log.txt (append_file new_file) â gated SAFE (repo)",
++                                                                  "status":  "proposed",
++                                                                  "tool_name":  "append_file",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "new_file",
++                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122",
++                                                                  "tool_args":  {
++                                                                                    "path":  "real_log.txt",
++                                                                                    "content":  "REAL_V3B START\\n"
++                                                                                },
++                                                                  "proposal_id":  "p1772304685097286500",
++                                                                  "required_approve":  "APPLY_p1772304685097286500"
++                                                              },
++                                                              {
++                                                                  "id":  "S4",
++                                                                  "title":  "Modify real_log.txt (append marker) â gated SAFE (repo)",
++                                                                  "status":  "todo",
++                                                                  "tool_name":  "append_file",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "modify",
++                                                                  "repo_path":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122\\real_log.txt",
++                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122",
++                                                                  "tool_args":  {
++                                                                                    "path":  "real_log.txt",
++                                                                                    "content":  "REAL_V3B MARK 2026-02-28T18:51:22.946625+00:00\\n"
++                                                                                }
++                                                              }
++                                                          ],
++                                                "updated_at":  "2026-02-28T18:51:25.103313+00:00",
++                                                "created_at":  "2026-02-28T18:51:05.333454+00:00",
++                                                "history":  [
++                                                                {
++                                                                    "kind":  "plan",
++                                                                    "goal":  "RUNNER_PARITY_TEST",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "can_plan":  true,
++                                                                    "status_before":  "idle"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S1",
++                                                                    "tool_name":  "append_file",
++                                                                    "mode":  "propose"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S2",
++                                                                    "tool_name":  "runtime_snapshot_set",
++                                                                    "mode":  "propose"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S3",
++                                                                    "tool_name":  "runtime_snapshot_get",
++                                                                    "mode":  "propose"
++                                                                }
++                                                            ],
++                                                "room_id":  "room_minreal_plan_20260228_135122",
++                                                "goal":  "MIN_REAL_PLAN"
++                                            }
++                               },
++                      "raw":  "{\"ok\":true,\"room_id\":\"room_minreal_plan_20260228_135122\",\"plan\":{\"status\":\"planned\",\"steps\":[{\"id\":\"S1\",\"title\":\"Inspect risk folder (list_dir)\",\"status\":\"done\",\"tool_name\":\"list_dir\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\"}},{\"id\":\"S2\",\"title\":\"Read risk_engine.py (read_file)\",\"status\":\"done\",\"tool_name\":\"read_file\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\\\\risk_engine.py\",\"max_bytes\":200000}},{\"id\":\"S3\",\"title\":\"Create real_log.txt (append_file new_file) â gated SAFE (repo)\",\"status\":\"proposed\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"new_file\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B START\\\\n\"},\"proposal_id\":\"p1772304685097286500\",\"required_approve\":\"APPLY_p1772304685097286500\"},{\"id\":\"S4\",\"title\":\"Modify real_log.txt (append marker) â gated SAFE (repo)\",\"status\":\"todo\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"modify\",\"repo_path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\\\\real_log.txt\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B MARK 2026-02-28T18:51:22.946625+00:00\\\\n\"}}],\"updated_at\":\"2026-02-28T18:51:25.103313+00:00\",\"created_at\":\"2026-02-28T18:51:05.333454+00:00\",\"history\":[{\"kind\":\"plan\",\"goal\":\"RUNNER_PARITY_TEST\",\"room_id\":\"room_runner_parity_20260228_135105\",\"can_plan\":true,\"status_before\":\"idle\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S1\",\"tool_name\":\"append_file\",\"mode\":\"propose\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S2\",\"tool_name\":\"runtime_snapshot_set\",\"mode\":\"propose\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S3\",\"tool_name\":\"runtime_snapshot_get\",\"mode\":\"propose\"}],\"room_id\":\"room_minreal_plan_20260228_135122\",\"goal\":\"MIN_REAL_PLAN\"}}"
++                  },
++                  {
++                      "kind":  "local_apply_gate",
++                      "iter":  1,
++                      "proposal_id":  "p1772304685097286500",
++                      "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122",
++                      "token":  "APPLY_p1772304685097286500",
++                      "ok":  true,
++                      "detail":  {
++                                     "ok":  true,
++                                     "cmd":  [
++                                                 "python",
++                                                 "C:\\AI_VAULT\\tmp_agent\\apply_gate.py",
++                                                 "C:\\AI_VAULT\\tmp_agent\\proposals\\bundle_p1772304685097286500.json",
++                                                 "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122",
++                                                 "--approve=APPLY_p1772304685097286500"
++                                             ],
++                                     "raw":  "{\r\n  \"ok\": true,\r\n  \"run_id\": \"apply_1772304685\",\r\n  \"proposal_id\": \"p1772304685097286500\",\r\n  \"applied\": [\r\n    {\r\n      \"kind\": \"new_file\",\r\n      \"workspace_path\": \"C:\\\\AI_VAULT\\\\tmp_agent\\\\workspace\\\\real_log.txt\",\r\n      \"dest\": \"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\\\\real_log.txt\"\r\n    }\r\n  ],\r\n  \"backups\": [],\r\n  \"validation\": {\r\n    \"py\": null,\r\n    \"json\": null,\r\n    \"ok\": true,\r\n    \"detail\": \"OK\"\r\n  },\r\n  \"receipt\": \"C:\\\\AI_VAULT\\\\tmp_agent\\\\state\\\\applied_p1772304685097286500.json\"\r\n}",
++                                     "json":  {
++                                                  "ok":  true,
++                                                  "run_id":  "apply_1772304685",
++                                                  "proposal_id":  "p1772304685097286500",
++                                                  "applied":  [
++                                                                  {
++                                                                      "kind":  "new_file",
++                                                                      "workspace_path":  "C:\\AI_VAULT\\tmp_agent\\workspace\\real_log.txt",
++                                                                      "dest":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122\\real_log.txt"
++                                                                  }
++                                                              ],
++                                                  "backups":  [
++
++                                                              ],
++                                                  "validation":  {
++                                                                     "py":  null,
++                                                                     "json":  null,
++                                                                     "ok":  true,
++                                                                     "detail":  "OK"
++                                                                 },
++                                                  "receipt":  "C:\\AI_VAULT\\tmp_agent\\state\\applied_p1772304685097286500.json"
++                                              },
++                                     "bundle":  "C:\\AI_VAULT\\tmp_agent\\proposals\\bundle_p1772304685097286500.json",
++                                     "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122"
++                                 }
++                  },
++                  {
++                      "kind":  "run_apply",
++                      "iter":  1,
++                      "token":  "APPLY_p1772304685097286500",
++                      "status":  200,
++                      "body":  {
++                                   "ok":  true,
++                                   "room_id":  "room_minreal_plan_20260228_135122",
++                                   "executed":  [
++                                                    {
++                                                        "action":  "apply_step",
++                                                        "step_id":  "S3"
++                                                    },
++                                                    {
++                                                        "action":  "propose_write_step",
++                                                        "step_id":  "S4"
++                                                    }
++                                                ],
++                                   "needs_approval":  true,
++                                   "approve_token":  "APPLY_p1772304685399389200",
++                                   "summary":  {
++                                                   "plan_id":  null,
++                                                   "status":  "planned",
++                                                   "steps_total":  4,
++                                                   "counts":  {
++                                                                  "todo":  0,
++                                                                  "proposed":  1,
++                                                                  "done":  3,
++                                                                  "error":  0,
++                                                                  "other":  0
++                                                              },
++                                                   "pending_approvals_count":  1,
++                                                   "last_eval":  null,
++                                                   "updated_at":  "2026-02-28T18:51:25.414413+00:00"
++                                               },
++                                   "pending_approvals":  {
++                                                             "S4":  "APPLY_p1772304685399389200"
++                                                         },
++                                   "plan":  {
++                                                "status":  "planned",
++                                                "steps":  [
++                                                              {
++                                                                  "id":  "S1",
++                                                                  "title":  "Inspect risk folder (list_dir)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "list_dir",
++                                                                  "mode":  "read",
++                                                                  "tool_args":  {
++                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk"
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S2",
++                                                                  "title":  "Read risk_engine.py (read_file)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "read_file",
++                                                                  "mode":  "read",
++                                                                  "tool_args":  {
++                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk\\risk_engine.py",
++                                                                                    "max_bytes":  200000
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S3",
++                                                                  "title":  "Create real_log.txt (append_file new_file) â gated SAFE (repo)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "append_file",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "new_file",
++                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122",
++                                                                  "tool_args":  {
++                                                                                    "path":  "real_log.txt",
++                                                                                    "content":  "REAL_V3B START\\n"
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S4",
++                                                                  "title":  "Modify real_log.txt (append marker) â gated SAFE (repo)",
++                                                                  "status":  "proposed",
++                                                                  "tool_name":  "append_file",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "modify",
++                                                                  "repo_path":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122\\real_log.txt",
++                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122",
++                                                                  "tool_args":  {
++                                                                                    "path":  "real_log.txt",
++                                                                                    "content":  "REAL_V3B MARK 2026-02-28T18:51:22.946625+00:00\\n"
++                                                                                },
++                                                                  "proposal_id":  "p1772304685399389200",
++                                                                  "required_approve":  "APPLY_p1772304685399389200"
++                                                              }
++                                                          ],
++                                                "updated_at":  "2026-02-28T18:51:25.414413+00:00",
++                                                "created_at":  "2026-02-28T18:51:05.333454+00:00",
++                                                "history":  [
++                                                                {
++                                                                    "kind":  "plan",
++                                                                    "goal":  "RUNNER_PARITY_TEST",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "can_plan":  true,
++                                                                    "status_before":  "idle"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S1",
++                                                                    "tool_name":  "append_file",
++                                                                    "mode":  "propose"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S2",
++                                                                    "tool_name":  "runtime_snapshot_set",
++                                                                    "mode":  "propose"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S3",
++                                                                    "tool_name":  "runtime_snapshot_get",
++                                                                    "mode":  "propose"
++                                                                }
++                                                            ],
++                                                "room_id":  "room_minreal_plan_20260228_135122",
++                                                "goal":  "MIN_REAL_PLAN"
++                                            },
++                                   "mission":  {
++                                                   "version":  1,
++                                                   "mission_id":  "brainlab-default",
++                                                   "title":  "Brain Lab â Local Governed Agent",
++                                                   "objectives":  [
++                                                                      "Implement PlannerâEvaluator endpoints with persistent mission/plan state.",
++                                                                      "Maintain governance: no destructive actions, auditable logs, reproducible workflow."
++                                                                  ],
++                                                   "constraints":  [
++                                                                       "No auto-executing PowerShell from the assistant.",
++                                                                       "All writes confined to C:\\AI_VAULT\\tmp_agent",
++                                                                       "All changes must be logged."
++                                                                   ],
++                                                   "created_at":  null,
++                                                   "updated_at":  "2026-02-28T18:51:25.079743+00:00",
++                                                   "room_id":  "room_minreal_plan_20260228_135122"
++                                               }
++                               },
++                      "raw":  "{\"ok\":true,\"room_id\":\"room_minreal_plan_20260228_135122\",\"executed\":[{\"action\":\"apply_step\",\"step_id\":\"S3\"},{\"action\":\"propose_write_step\",\"step_id\":\"S4\"}],\"needs_approval\":true,\"approve_token\":\"APPLY_p1772304685399389200\",\"summary\":{\"plan_id\":null,\"status\":\"planned\",\"steps_total\":4,\"counts\":{\"todo\":0,\"proposed\":1,\"done\":3,\"error\":0,\"other\":0},\"pending_approvals_count\":1,\"last_eval\":null,\"updated_at\":\"2026-02-28T18:51:25.414413+00:00\"},\"pending_approvals\":{\"S4\":\"APPLY_p1772304685399389200\"},\"plan\":{\"status\":\"planned\",\"steps\":[{\"id\":\"S1\",\"title\":\"Inspect risk folder (list_dir)\",\"status\":\"done\",\"tool_name\":\"list_dir\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\"}},{\"id\":\"S2\",\"title\":\"Read risk_engine.py (read_file)\",\"status\":\"done\",\"tool_name\":\"read_file\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\\\\risk_engine.py\",\"max_bytes\":200000}},{\"id\":\"S3\",\"title\":\"Create real_log.txt (append_file new_file) â gated SAFE (repo)\",\"status\":\"done\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"new_file\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B START\\\\n\"}},{\"id\":\"S4\",\"title\":\"Modify real_log.txt (append marker) â gated SAFE (repo)\",\"status\":\"proposed\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"modify\",\"repo_path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\\\\real_log.txt\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B MARK 2026-02-28T18:51:22.946625+00:00\\\\n\"},\"proposal_id\":\"p1772304685399389200\",\"required_approve\":\"APPLY_p1772304685399389200\"}],\"updated_at\":\"2026-02-28T18:51:25.414413+00:00\",\"created_at\":\"2026-02-28T18:51:05.333454+00:00\",\"history\":[{\"kind\":\"plan\",\"goal\":\"RUNNER_PARITY_TEST\",\"room_id\":\"room_runner_parity_20260228_135105\",\"can_plan\":true,\"status_before\":\"idle\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S1\",\"tool_name\":\"append_file\",\"mode\":\"propose\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S2\",\"tool_name\":\"runtime_snapshot_set\",\"mode\":\"propose\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S3\",\"tool_name\":\"runtime_snapshot_get\",\"mode\":\"propose\"}],\"room_id\":\"room_minreal_plan_20260228_135122\",\"goal\":\"MIN_REAL_PLAN\"},\"mission\":{\"version\":1,\"mission_id\":\"brainlab-default\",\"title\":\"Brain Lab â Local Governed Agent\",\"objectives\":[\"Implement PlannerâEvaluator endpoints with persistent mission/plan state.\",\"Maintain governance: no destructive actions, auditable logs, reproducible workflow.\"],\"constraints\":[\"No auto-executing PowerShell from the assistant.\",\"All writes confined to C:\\\\AI_VAULT\\\\tmp_agent\",\"All changes must be logged.\"],\"created_at\":null,\"updated_at\":\"2026-02-28T18:51:25.079743+00:00\",\"room_id\":\"room_minreal_plan_20260228_135122\"}}"
++                  },
++                  {
++                      "kind":  "run",
++                      "iter":  2,
++                      "status":  200,
++                      "body":  {
++                                   "ok":  true,
++                                   "room_id":  "room_minreal_plan_20260228_135122",
++                                   "executed":  [
++                                                    {
++                                                        "action":  "noop_no_todo",
++                                                        "step_id":  null
++                                                    }
++                                                ],
++                                   "needs_approval":  true,
++                                   "approve_token":  "APPLY_p1772304685399389200",
++                                   "summary":  {
++                                                   "plan_id":  null,
++                                                   "status":  "planned",
++                                                   "steps_total":  4,
++                                                   "counts":  {
++                                                                  "todo":  0,
++                                                                  "proposed":  1,
++                                                                  "done":  3,
++                                                                  "error":  0,
++                                                                  "other":  0
++                                                              },
++                                                   "pending_approvals_count":  1,
++                                                   "last_eval":  null,
++                                                   "updated_at":  "2026-02-28T18:51:25.414413+00:00"
++                                               },
++                                   "pending_approvals":  {
++                                                             "S4":  "APPLY_p1772304685399389200"
++                                                         },
++                                   "plan":  {
++                                                "status":  "planned",
++                                                "steps":  [
++                                                              {
++                                                                  "id":  "S1",
++                                                                  "title":  "Inspect risk folder (list_dir)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "list_dir",
++                                                                  "mode":  "read",
++                                                                  "tool_args":  {
++                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk"
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S2",
++                                                                  "title":  "Read risk_engine.py (read_file)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "read_file",
++                                                                  "mode":  "read",
++                                                                  "tool_args":  {
++                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk\\risk_engine.py",
++                                                                                    "max_bytes":  200000
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S3",
++                                                                  "title":  "Create real_log.txt (append_file new_file) â gated SAFE (repo)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "append_file",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "new_file",
++                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122",
++                                                                  "tool_args":  {
++                                                                                    "path":  "real_log.txt",
++                                                                                    "content":  "REAL_V3B START\\n"
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S4",
++                                                                  "title":  "Modify real_log.txt (append marker) â gated SAFE (repo)",
++                                                                  "status":  "proposed",
++                                                                  "tool_name":  "append_file",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "modify",
++                                                                  "repo_path":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122\\real_log.txt",
++                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122",
++                                                                  "tool_args":  {
++                                                                                    "path":  "real_log.txt",
++                                                                                    "content":  "REAL_V3B MARK 2026-02-28T18:51:22.946625+00:00\\n"
++                                                                                },
++                                                                  "proposal_id":  "p1772304685399389200",
++                                                                  "required_approve":  "APPLY_p1772304685399389200"
++                                                              }
++                                                          ],
++                                                "updated_at":  "2026-02-28T18:51:25.414413+00:00",
++                                                "created_at":  "2026-02-28T18:51:05.333454+00:00",
++                                                "history":  [
++                                                                {
++                                                                    "kind":  "plan",
++                                                                    "goal":  "RUNNER_PARITY_TEST",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "can_plan":  true,
++                                                                    "status_before":  "idle"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S1",
++                                                                    "tool_name":  "append_file",
++                                                                    "mode":  "propose"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S2",
++                                                                    "tool_name":  "runtime_snapshot_set",
++                                                                    "mode":  "propose"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S3",
++                                                                    "tool_name":  "runtime_snapshot_get",
++                                                                    "mode":  "propose"
++                                                                }
++                                                            ],
++                                                "room_id":  "room_minreal_plan_20260228_135122",
++                                                "goal":  "MIN_REAL_PLAN"
++                                            },
++                                   "mission":  {
++                                                   "version":  1,
++                                                   "mission_id":  "brainlab-default",
++                                                   "title":  "Brain Lab â Local Governed Agent",
++                                                   "objectives":  [
++                                                                      "Implement PlannerâEvaluator endpoints with persistent mission/plan state.",
++                                                                      "Maintain governance: no destructive actions, auditable logs, reproducible workflow."
++                                                                  ],
++                                                   "constraints":  [
++                                                                       "No auto-executing PowerShell from the assistant.",
++                                                                       "All writes confined to C:\\AI_VAULT\\tmp_agent",
++                                                                       "All changes must be logged."
++                                                                   ],
++                                                   "created_at":  null,
++                                                   "updated_at":  "2026-02-28T18:51:25.079743+00:00",
++                                                   "room_id":  "room_minreal_plan_20260228_135122"
++                                               }
++                               },
++                      "raw":  "{\"ok\":true,\"room_id\":\"room_minreal_plan_20260228_135122\",\"executed\":[{\"action\":\"noop_no_todo\",\"step_id\":null}],\"needs_approval\":true,\"approve_token\":\"APPLY_p1772304685399389200\",\"summary\":{\"plan_id\":null,\"status\":\"planned\",\"steps_total\":4,\"counts\":{\"todo\":0,\"proposed\":1,\"done\":3,\"error\":0,\"other\":0},\"pending_approvals_count\":1,\"last_eval\":null,\"updated_at\":\"2026-02-28T18:51:25.414413+00:00\"},\"pending_approvals\":{\"S4\":\"APPLY_p1772304685399389200\"},\"plan\":{\"status\":\"planned\",\"steps\":[{\"id\":\"S1\",\"title\":\"Inspect risk folder (list_dir)\",\"status\":\"done\",\"tool_name\":\"list_dir\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\"}},{\"id\":\"S2\",\"title\":\"Read risk_engine.py (read_file)\",\"status\":\"done\",\"tool_name\":\"read_file\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\\\\risk_engine.py\",\"max_bytes\":200000}},{\"id\":\"S3\",\"title\":\"Create real_log.txt (append_file new_file) â gated SAFE (repo)\",\"status\":\"done\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"new_file\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B START\\\\n\"}},{\"id\":\"S4\",\"title\":\"Modify real_log.txt (append marker) â gated SAFE (repo)\",\"status\":\"proposed\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"modify\",\"repo_path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\\\\real_log.txt\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B MARK 2026-02-28T18:51:22.946625+00:00\\\\n\"},\"proposal_id\":\"p1772304685399389200\",\"required_approve\":\"APPLY_p1772304685399389200\"}],\"updated_at\":\"2026-02-28T18:51:25.414413+00:00\",\"created_at\":\"2026-02-28T18:51:05.333454+00:00\",\"history\":[{\"kind\":\"plan\",\"goal\":\"RUNNER_PARITY_TEST\",\"room_id\":\"room_runner_parity_20260228_135105\",\"can_plan\":true,\"status_before\":\"idle\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S1\",\"tool_name\":\"append_file\",\"mode\":\"propose\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S2\",\"tool_name\":\"runtime_snapshot_set\",\"mode\":\"propose\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S3\",\"tool_name\":\"runtime_snapshot_get\",\"mode\":\"propose\"}],\"room_id\":\"room_minreal_plan_20260228_135122\",\"goal\":\"MIN_REAL_PLAN\"},\"mission\":{\"version\":1,\"mission_id\":\"brainlab-default\",\"title\":\"Brain Lab â Local Governed Agent\",\"objectives\":[\"Implement PlannerâEvaluator endpoints with persistent mission/plan state.\",\"Maintain governance: no destructive actions, auditable logs, reproducible workflow.\"],\"constraints\":[\"No auto-executing PowerShell from the assistant.\",\"All writes confined to C:\\\\AI_VAULT\\\\tmp_agent\",\"All changes must be logged.\"],\"created_at\":null,\"updated_at\":\"2026-02-28T18:51:25.079743+00:00\",\"room_id\":\"room_minreal_plan_20260228_135122\"}}"
++                  },
++                  {
++                      "kind":  "get_plan_for_local_apply",
++                      "iter":  2,
++                      "status":  200,
++                      "body":  {
++                                   "ok":  true,
++                                   "room_id":  "room_minreal_plan_20260228_135122",
++                                   "plan":  {
++                                                "status":  "planned",
++                                                "steps":  [
++                                                              {
++                                                                  "id":  "S1",
++                                                                  "title":  "Inspect risk folder (list_dir)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "list_dir",
++                                                                  "mode":  "read",
++                                                                  "tool_args":  {
++                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk"
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S2",
++                                                                  "title":  "Read risk_engine.py (read_file)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "read_file",
++                                                                  "mode":  "read",
++                                                                  "tool_args":  {
++                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk\\risk_engine.py",
++                                                                                    "max_bytes":  200000
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S3",
++                                                                  "title":  "Create real_log.txt (append_file new_file) â gated SAFE (repo)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "append_file",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "new_file",
++                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122",
++                                                                  "tool_args":  {
++                                                                                    "path":  "real_log.txt",
++                                                                                    "content":  "REAL_V3B START\\n"
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S4",
++                                                                  "title":  "Modify real_log.txt (append marker) â gated SAFE (repo)",
++                                                                  "status":  "proposed",
++                                                                  "tool_name":  "append_file",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "modify",
++                                                                  "repo_path":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122\\real_log.txt",
++                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122",
++                                                                  "tool_args":  {
++                                                                                    "path":  "real_log.txt",
++                                                                                    "content":  "REAL_V3B MARK 2026-02-28T18:51:22.946625+00:00\\n"
++                                                                                },
++                                                                  "proposal_id":  "p1772304685399389200",
++                                                                  "required_approve":  "APPLY_p1772304685399389200"
++                                                              }
++                                                          ],
++                                                "updated_at":  "2026-02-28T18:51:25.414413+00:00",
++                                                "created_at":  "2026-02-28T18:51:05.333454+00:00",
++                                                "history":  [
++                                                                {
++                                                                    "kind":  "plan",
++                                                                    "goal":  "RUNNER_PARITY_TEST",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "can_plan":  true,
++                                                                    "status_before":  "idle"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S1",
++                                                                    "tool_name":  "append_file",
++                                                                    "mode":  "propose"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S2",
++                                                                    "tool_name":  "runtime_snapshot_set",
++                                                                    "mode":  "propose"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S3",
++                                                                    "tool_name":  "runtime_snapshot_get",
++                                                                    "mode":  "propose"
++                                                                }
++                                                            ],
++                                                "room_id":  "room_minreal_plan_20260228_135122",
++                                                "goal":  "MIN_REAL_PLAN"
++                                            }
++                               },
++                      "raw":  "{\"ok\":true,\"room_id\":\"room_minreal_plan_20260228_135122\",\"plan\":{\"status\":\"planned\",\"steps\":[{\"id\":\"S1\",\"title\":\"Inspect risk folder (list_dir)\",\"status\":\"done\",\"tool_name\":\"list_dir\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\"}},{\"id\":\"S2\",\"title\":\"Read risk_engine.py (read_file)\",\"status\":\"done\",\"tool_name\":\"read_file\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\\\\risk_engine.py\",\"max_bytes\":200000}},{\"id\":\"S3\",\"title\":\"Create real_log.txt (append_file new_file) â gated SAFE (repo)\",\"status\":\"done\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"new_file\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B START\\\\n\"}},{\"id\":\"S4\",\"title\":\"Modify real_log.txt (append marker) â gated SAFE (repo)\",\"status\":\"proposed\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"modify\",\"repo_path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\\\\real_log.txt\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B MARK 2026-02-28T18:51:22.946625+00:00\\\\n\"},\"proposal_id\":\"p1772304685399389200\",\"required_approve\":\"APPLY_p1772304685399389200\"}],\"updated_at\":\"2026-02-28T18:51:25.414413+00:00\",\"created_at\":\"2026-02-28T18:51:05.333454+00:00\",\"history\":[{\"kind\":\"plan\",\"goal\":\"RUNNER_PARITY_TEST\",\"room_id\":\"room_runner_parity_20260228_135105\",\"can_plan\":true,\"status_before\":\"idle\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S1\",\"tool_name\":\"append_file\",\"mode\":\"propose\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S2\",\"tool_name\":\"runtime_snapshot_set\",\"mode\":\"propose\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S3\",\"tool_name\":\"runtime_snapshot_get\",\"mode\":\"propose\"}],\"room_id\":\"room_minreal_plan_20260228_135122\",\"goal\":\"MIN_REAL_PLAN\"}}"
++                  },
++                  {
++                      "kind":  "local_apply_gate",
++                      "iter":  2,
++                      "proposal_id":  "p1772304685399389200",
++                      "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122",
++                      "token":  "APPLY_p1772304685399389200",
++                      "ok":  true,
++                      "detail":  {
++                                     "ok":  true,
++                                     "cmd":  [
++                                                 "python",
++                                                 "C:\\AI_VAULT\\tmp_agent\\apply_gate.py",
++                                                 "C:\\AI_VAULT\\tmp_agent\\proposals\\bundle_p1772304685399389200.json",
++                                                 "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122",
++                                                 "--approve=APPLY_p1772304685399389200"
++                                             ],
++                                     "raw":  "{\r\n  \"ok\": true,\r\n  \"run_id\": \"apply_1772304685\",\r\n  \"proposal_id\": \"p1772304685399389200\",\r\n  \"applied\": [\r\n    {\r\n      \"kind\": \"modify\",\r\n      \"workspace_path\": \"C:\\\\AI_VAULT\\\\tmp_agent\\\\workspace\\\\real_log.txt\",\r\n      \"dest\": \"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\\\\real_log.txt\"\r\n    }\r\n  ],\r\n  \"backups\": [\r\n    {\r\n      \"dest\": \"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\\\\real_log.txt\",\r\n      \"bak\": \"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\\\\real_log.txt.bak_20260228_135125\"\r\n    }\r\n  ],\r\n  \"validation\": {\r\n    \"py\": null,\r\n    \"json\": null,\r\n    \"ok\": true,\r\n    \"detail\": \"OK\"\r\n  },\r\n  \"receipt\": \"C:\\\\AI_VAULT\\\\tmp_agent\\\\state\\\\applied_p1772304685399389200.json\"\r\n}",
++                                     "json":  {
++                                                  "ok":  true,
++                                                  "run_id":  "apply_1772304685",
++                                                  "proposal_id":  "p1772304685399389200",
++                                                  "applied":  [
++                                                                  {
++                                                                      "kind":  "modify",
++                                                                      "workspace_path":  "C:\\AI_VAULT\\tmp_agent\\workspace\\real_log.txt",
++                                                                      "dest":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122\\real_log.txt"
++                                                                  }
++                                                              ],
++                                                  "backups":  [
++                                                                  {
++                                                                      "dest":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122\\real_log.txt",
++                                                                      "bak":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122\\real_log.txt.bak_20260228_135125"
++                                                                  }
++                                                              ],
++                                                  "validation":  {
++                                                                     "py":  null,
++                                                                     "json":  null,
++                                                                     "ok":  true,
++                                                                     "detail":  "OK"
++                                                                 },
++                                                  "receipt":  "C:\\AI_VAULT\\tmp_agent\\state\\applied_p1772304685399389200.json"
++                                              },
++                                     "bundle":  "C:\\AI_VAULT\\tmp_agent\\proposals\\bundle_p1772304685399389200.json",
++                                     "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122"
++                                 }
++                  },
++                  {
++                      "kind":  "run_apply",
++                      "iter":  2,
++                      "token":  "APPLY_p1772304685399389200",
++                      "status":  200,
++                      "body":  {
++                                   "ok":  true,
++                                   "room_id":  "room_minreal_plan_20260228_135122",
++                                   "executed":  [
++                                                    {
++                                                        "action":  "apply_step",
++                                                        "step_id":  "S4"
++                                                    },
++                                                    {
++                                                        "action":  "noop_complete",
++                                                        "step_id":  null
++                                                    }
++                                                ],
++                                   "needs_approval":  false,
++                                   "approve_token":  null,
++                                   "summary":  {
++                                                   "plan_id":  null,
++                                                   "status":  "complete",
++                                                   "steps_total":  4,
++                                                   "counts":  {
++                                                                  "todo":  0,
++                                                                  "proposed":  0,
++                                                                  "done":  4,
++                                                                  "error":  0,
++                                                                  "other":  0
++                                                              },
++                                                   "pending_approvals_count":  0,
++                                                   "last_eval":  null,
++                                                   "updated_at":  "2026-02-28T18:51:25.698064+00:00"
++                                               },
++                                   "pending_approvals":  {
++
++                                                         },
++                                   "plan":  {
++                                                "status":  "complete",
++                                                "steps":  [
++                                                              {
++                                                                  "id":  "S1",
++                                                                  "title":  "Inspect risk folder (list_dir)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "list_dir",
++                                                                  "mode":  "read",
++                                                                  "tool_args":  {
++                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk"
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S2",
++                                                                  "title":  "Read risk_engine.py (read_file)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "read_file",
++                                                                  "mode":  "read",
++                                                                  "tool_args":  {
++                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk\\risk_engine.py",
++                                                                                    "max_bytes":  200000
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S3",
++                                                                  "title":  "Create real_log.txt (append_file new_file) â gated SAFE (repo)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "append_file",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "new_file",
++                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122",
++                                                                  "tool_args":  {
++                                                                                    "path":  "real_log.txt",
++                                                                                    "content":  "REAL_V3B START\\n"
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S4",
++                                                                  "title":  "Modify real_log.txt (append marker) â gated SAFE (repo)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "append_file",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "modify",
++                                                                  "repo_path":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122\\real_log.txt",
++                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135122",
++                                                                  "tool_args":  {
++                                                                                    "path":  "real_log.txt",
++                                                                                    "content":  "REAL_V3B MARK 2026-02-28T18:51:22.946625+00:00\\n"
++                                                                                }
++                                                              }
++                                                          ],
++                                                "updated_at":  "2026-02-28T18:51:25.698064+00:00",
++                                                "created_at":  "2026-02-28T18:51:05.333454+00:00",
++                                                "history":  [
++                                                                {
++                                                                    "kind":  "plan",
++                                                                    "goal":  "RUNNER_PARITY_TEST",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "can_plan":  true,
++                                                                    "status_before":  "idle"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S1",
++                                                                    "tool_name":  "append_file",
++                                                                    "mode":  "propose"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S2",
++                                                                    "tool_name":  "runtime_snapshot_set",
++                                                                    "mode":  "propose"
++                                                                },
++                                                                {
++                                                                    "kind":  "execute_step",
++                                                                    "room_id":  "room_runner_parity_20260228_135105",
++                                                                    "step_id":  "S3",
++                                                                    "tool_name":  "runtime_snapshot_get",
++                                                                    "mode":  "propose"
++                                                                }
++                                                            ],
++                                                "room_id":  "room_minreal_plan_20260228_135122",
++                                                "goal":  "MIN_REAL_PLAN"
++                                            },
++                                   "mission":  {
++                                                   "version":  1,
++                                                   "mission_id":  "brainlab-default",
++                                                   "title":  "Brain Lab â Local Governed Agent",
++                                                   "objectives":  [
++                                                                      "Implement PlannerâEvaluator endpoints with persistent mission/plan state.",
++                                                                      "Maintain governance: no destructive actions, auditable logs, reproducible workflow."
++                                                                  ],
++                                                   "constraints":  [
++                                                                       "No auto-executing PowerShell from the assistant.",
++                                                                       "All writes confined to C:\\AI_VAULT\\tmp_agent",
++                                                                       "All changes must be logged."
++                                                                   ],
++                                                   "created_at":  null,
++                                                   "updated_at":  "2026-02-28T18:51:25.079743+00:00",
++                                                   "room_id":  "room_minreal_plan_20260228_135122"
++                                               }
++                               },
++                      "raw":  "{\"ok\":true,\"room_id\":\"room_minreal_plan_20260228_135122\",\"executed\":[{\"action\":\"apply_step\",\"step_id\":\"S4\"},{\"action\":\"noop_complete\",\"step_id\":null}],\"needs_approval\":false,\"approve_token\":null,\"summary\":{\"plan_id\":null,\"status\":\"complete\",\"steps_total\":4,\"counts\":{\"todo\":0,\"proposed\":0,\"done\":4,\"error\":0,\"other\":0},\"pending_approvals_count\":0,\"last_eval\":null,\"updated_at\":\"2026-02-28T18:51:25.698064+00:00\"},\"pending_approvals\":{},\"plan\":{\"status\":\"complete\",\"steps\":[{\"id\":\"S1\",\"title\":\"Inspect risk folder (list_dir)\",\"status\":\"done\",\"tool_name\":\"list_dir\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\"}},{\"id\":\"S2\",\"title\":\"Read risk_engine.py (read_file)\",\"status\":\"done\",\"tool_name\":\"read_file\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\\\\risk_engine.py\",\"max_bytes\":200000}},{\"id\":\"S3\",\"title\":\"Create real_log.txt (append_file new_file) â gated SAFE (repo)\",\"status\":\"done\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"new_file\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B START\\\\n\"}},{\"id\":\"S4\",\"title\":\"Modify real_log.txt (append marker) â gated SAFE (repo)\",\"status\":\"done\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"modify\",\"repo_path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\\\\real_log.txt\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_plan_20260228_135122\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B MARK 2026-02-28T18:51:22.946625+00:00\\\\n\"}}],\"updated_at\":\"2026-02-28T18:51:25.698064+00:00\",\"created_at\":\"2026-02-28T18:51:05.333454+00:00\",\"history\":[{\"kind\":\"plan\",\"goal\":\"RUNNER_PARITY_TEST\",\"room_id\":\"room_runner_parity_20260228_135105\",\"can_plan\":true,\"status_before\":\"idle\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S1\",\"tool_name\":\"append_file\",\"mode\":\"propose\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S2\",\"tool_name\":\"runtime_snapshot_set\",\"mode\":\"propose\"},{\"kind\":\"execute_step\",\"room_id\":\"room_runner_parity_20260228_135105\",\"step_id\":\"S3\",\"tool_name\":\"runtime_snapshot_get\",\"mode\":\"propose\"}],\"room_id\":\"room_minreal_plan_20260228_135122\",\"goal\":\"MIN_REAL_PLAN\"},\"mission\":{\"version\":1,\"mission_id\":\"brainlab-default\",\"title\":\"Brain Lab â Local Governed Agent\",\"objectives\":[\"Implement PlannerâEvaluator endpoints with persistent mission/plan state.\",\"Maintain governance: no destructive actions, auditable logs, reproducible workflow.\"],\"constraints\":[\"No auto-executing PowerShell from the assistant.\",\"All writes confined to C:\\\\AI_VAULT\\\\tmp_agent\",\"All changes must be logged.\"],\"created_at\":null,\"updated_at\":\"2026-02-28T18:51:25.079743+00:00\",\"room_id\":\"room_minreal_plan_20260228_135122\"}}"
++                  }
++              ],
++    "final":  {
++                  "ok":  true,
++                  "status":  "complete",
++                  "iter":  2,
++                  "note":  "Completed after apply"
++              }
++}

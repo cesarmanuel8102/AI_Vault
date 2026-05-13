@@ -1,0 +1,150 @@
+{
+  "generated_at_utc": "2026-04-22T21:36:59.374646+00:00",
+  "project_id": 30507388,
+  "rows": [
+    {
+      "status": "Completed.",
+      "backtest_id": "8a8179e60654c2e3469bf94367de8377",
+      "np_pct": 68.474,
+      "cagr_pct": 6.526,
+      "dd_pct": 19.7,
+      "sharpe": 0.179,
+      "sortino": 0.191,
+      "win_rate_pct": 57.0,
+      "candidate": "V2B_12M_CORE",
+      "scenario": "FULL_2018_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "853dbf222897f8146a8e4571a1caafd4",
+      "np_pct": 56.485,
+      "cagr_pct": 14.781,
+      "dd_pct": 10.7,
+      "sharpe": 0.47,
+      "sortino": 0.525,
+      "win_rate_pct": 60.0,
+      "candidate": "V2B_12M_CORE",
+      "scenario": "OOS_2023_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "442fa03f83e6731de12aeddaa5f4d477",
+      "np_pct": 2.453,
+      "cagr_pct": 2.449,
+      "dd_pct": 11.0,
+      "sharpe": 0.148,
+      "sortino": 0.163,
+      "win_rate_pct": 48.0,
+      "candidate": "V2B_12M_CORE",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "ccfa7bdc301d3c12733c91156c33ee2a",
+      "np_pct": -18.783,
+      "cagr_pct": -2.49,
+      "dd_pct": 27.9,
+      "sharpe": -0.54,
+      "sortino": -0.332,
+      "win_rate_pct": 47.0,
+      "candidate": "V2B_FAST126",
+      "scenario": "FULL_2018_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "195ea7baf78b6dd8dff553fb432643ff",
+      "np_pct": 23.884,
+      "cagr_pct": 6.816,
+      "dd_pct": 17.4,
+      "sharpe": -0.008,
+      "sortino": -0.009,
+      "win_rate_pct": 54.0,
+      "candidate": "V2B_FAST126",
+      "scenario": "OOS_2023_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "6482896db180aede28793a1acf3b7e06",
+      "np_pct": 12.68,
+      "cagr_pct": 12.656,
+      "dd_pct": 22.9,
+      "sharpe": 0.504,
+      "sortino": 0.545,
+      "win_rate_pct": 46.0,
+      "candidate": "V2B_FAST126",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "6e894c4b99c113af05689a20ec892d0f",
+      "np_pct": -18.574,
+      "cagr_pct": -2.459,
+      "dd_pct": 22.9,
+      "sharpe": -1.178,
+      "sortino": -0.511,
+      "win_rate_pct": 46.0,
+      "candidate": "V2B_CONSERVE_LONG",
+      "scenario": "FULL_2018_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "d5ff0914a22b05243c059164ddf43a46",
+      "np_pct": 28.416,
+      "cagr_pct": 8.004,
+      "dd_pct": 8.7,
+      "sharpe": 0.054,
+      "sortino": 0.06,
+      "win_rate_pct": 54.0,
+      "candidate": "V2B_CONSERVE_LONG",
+      "scenario": "OOS_2023_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "c1b3a60c42b0c5d15df73264c5e9b97f",
+      "np_pct": -3.74,
+      "cagr_pct": -3.733,
+      "dd_pct": 15.5,
+      "sharpe": -0.223,
+      "sortino": -0.242,
+      "win_rate_pct": 36.0,
+      "candidate": "V2B_CONSERVE_LONG",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "213e839ccf94e2e152064c7c21d1c4d0",
+      "np_pct": 65.043,
+      "cagr_pct": 6.261,
+      "dd_pct": 22.7,
+      "sharpe": 0.159,
+      "sortino": 0.166,
+      "win_rate_pct": 54.0,
+      "candidate": "V2B_AGGR_NO_PENALTY",
+      "scenario": "FULL_2018_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "9f2f8782793aa44711c145e6f9d02c05",
+      "np_pct": 57.858,
+      "cagr_pct": 15.09,
+      "dd_pct": 11.0,
+      "sharpe": 0.44,
+      "sortino": 0.476,
+      "win_rate_pct": 57.0,
+      "candidate": "V2B_AGGR_NO_PENALTY",
+      "scenario": "OOS_2023_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "70512c8a0f3758e85de6c841260e18d4",
+      "np_pct": -1.866,
+      "cagr_pct": -1.862,
+      "dd_pct": 19.1,
+      "sharpe": -0.037,
+      "sortino": -0.037,
+      "win_rate_pct": 52.0,
+      "candidate": "V2B_AGGR_NO_PENALTY",
+      "scenario": "STRESS_2020"
+    }
+  ]
+}

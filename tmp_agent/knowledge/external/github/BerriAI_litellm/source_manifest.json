@@ -1,0 +1,16 @@
+{
+  "source_id": "github_BerriAI_litellm_20260508",
+  "source_type": "github_repo",
+  "url": "https://github.com/BerriAI/litellm",
+  "owner": "BerriAI",
+  "repo": "litellm",
+  "ingested_at_utc": "2026-05-08T04:57:02.312719Z",
+  "local_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\BerriAI_litellm",
+  "status": "downloaded",
+  "hash": "09b2bee3365959b450e07430b62294e88355d98c7080125c0ead780e5f274cb8",
+  "files_indexed": 59,
+  "repo_api_url": "https://api.github.com/repos/BerriAI/litellm",
+  "readme_download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/README.md",
+  "root_index_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\BerriAI_litellm\\root_index.json",
+  "dependency_hints_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\BerriAI_litellm\\dependency_hints.json"
+}

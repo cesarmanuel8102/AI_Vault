@@ -1,0 +1,16 @@
+{
+  "source_id": "github_langchain_ai_langchain_20260508",
+  "source_type": "github_repo",
+  "url": "https://github.com/langchain-ai/langchain",
+  "owner": "langchain-ai",
+  "repo": "langchain",
+  "ingested_at_utc": "2026-05-08T04:56:47.734070Z",
+  "local_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\langchain_ai_langchain",
+  "status": "downloaded",
+  "hash": "fc5c712caa50d50ca00cd74a4344559cba4a35846607027cf446a2d1757fecec",
+  "files_indexed": 17,
+  "repo_api_url": "https://api.github.com/repos/langchain-ai/langchain",
+  "readme_download_url": "https://raw.githubusercontent.com/langchain-ai/langchain/master/README.md",
+  "root_index_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\langchain_ai_langchain\\root_index.json",
+  "dependency_hints_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\langchain_ai_langchain\\dependency_hints.json"
+}

@@ -1,0 +1,15 @@
+[project]
+name = "brain_v9"
+version = "9.0.0"
+description = "AI_VAULT Brain V9 — Autonomous financial brain system"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+python_classes = ["Test*"]
+# Ensure brain_v9 is importable from the repo root
+pythonpath = ["."]
+# Show short test summary, verbose output
+addopts = "-v --tb=short -q"

@@ -1,0 +1,47 @@
+{
+  "source_id": "github_All_Hands_AI_OpenHands_20260508",
+  "generated_at_utc": "2026-05-08T05:07:38.769545Z",
+  "recommended_action": "analyze",
+  "patterns": [
+    {
+      "pattern_id": "sandboxed_patch_planning",
+      "description": "Patch planning should happen with explicit diffs, tests and sandbox boundaries.",
+      "relevance_to_brain": 8.9,
+      "risk": 5.0,
+      "applicable_modules": [
+        "self_improvement",
+        "governance",
+        "code"
+      ],
+      "do_not_copy_code": true,
+      "semantic_family": "patch_planning",
+      "evidence_refs": [
+        {
+          "source_file": "README.snapshot.md",
+          "reason": "README describes coding-agent / patch / diff behavior.",
+          "evidence_type": "text_match"
+        }
+      ]
+    },
+    {
+      "pattern_id": "test_first_code_repair",
+      "description": "Repair loops that center the patch around reproducible failing tests.",
+      "relevance_to_brain": 8.4,
+      "risk": 4.5,
+      "applicable_modules": [
+        "self_improvement",
+        "tests",
+        "governance"
+      ],
+      "do_not_copy_code": true,
+      "semantic_family": "test_first_repair",
+      "evidence_refs": [
+        {
+          "source_file": "README.snapshot.md",
+          "reason": "README/repo description emphasizes repair or coding-agent workflows.",
+          "evidence_type": "text_match"
+        }
+      ]
+    }
+  ]
+}

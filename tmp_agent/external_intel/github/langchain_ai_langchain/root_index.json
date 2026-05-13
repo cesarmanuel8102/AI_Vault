@@ -1,0 +1,258 @@
+[
+  {
+    "name": ".devcontainer",
+    "path": ".devcontainer",
+    "sha": "953eccae1453a57c81d62a7016e64f23875bc0e2",
+    "size": 0,
+    "url": "https://api.github.com/repos/langchain-ai/langchain/contents/.devcontainer?ref=master",
+    "html_url": "https://github.com/langchain-ai/langchain/tree/master/.devcontainer",
+    "git_url": "https://api.github.com/repos/langchain-ai/langchain/git/trees/953eccae1453a57c81d62a7016e64f23875bc0e2",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/langchain-ai/langchain/contents/.devcontainer?ref=master",
+      "git": "https://api.github.com/repos/langchain-ai/langchain/git/trees/953eccae1453a57c81d62a7016e64f23875bc0e2",
+      "html": "https://github.com/langchain-ai/langchain/tree/master/.devcontainer"
+    }
+  },
+  {
+    "name": ".dockerignore",
+    "path": ".dockerignore",
+    "sha": "ec73567d601badaa753686a033a1032931d8cf4d",
+    "size": 258,
+    "url": "https://api.github.com/repos/langchain-ai/langchain/contents/.dockerignore?ref=master",
+    "html_url": "https://github.com/langchain-ai/langchain/blob/master/.dockerignore",
+    "git_url": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/ec73567d601badaa753686a033a1032931d8cf4d",
+    "download_url": "https://raw.githubusercontent.com/langchain-ai/langchain/master/.dockerignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/langchain-ai/langchain/contents/.dockerignore?ref=master",
+      "git": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/ec73567d601badaa753686a033a1032931d8cf4d",
+      "html": "https://github.com/langchain-ai/langchain/blob/master/.dockerignore"
+    }
+  },
+  {
+    "name": ".editorconfig",
+    "path": ".editorconfig",
+    "sha": "0d6ddd9fd4b73afae95af71d246e94667cdd9d77",
+    "size": 806,
+    "url": "https://api.github.com/repos/langchain-ai/langchain/contents/.editorconfig?ref=master",
+    "html_url": "https://github.com/langchain-ai/langchain/blob/master/.editorconfig",
+    "git_url": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/0d6ddd9fd4b73afae95af71d246e94667cdd9d77",
+    "download_url": "https://raw.githubusercontent.com/langchain-ai/langchain/master/.editorconfig",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/langchain-ai/langchain/contents/.editorconfig?ref=master",
+      "git": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/0d6ddd9fd4b73afae95af71d246e94667cdd9d77",
+      "html": "https://github.com/langchain-ai/langchain/blob/master/.editorconfig"
+    }
+  },
+  {
+    "name": ".gitattributes",
+    "path": ".gitattributes",
+    "sha": "5dc46e6b38b22707894ced126270b15e2f22f64e",
+    "size": 88,
+    "url": "https://api.github.com/repos/langchain-ai/langchain/contents/.gitattributes?ref=master",
+    "html_url": "https://github.com/langchain-ai/langchain/blob/master/.gitattributes",
+    "git_url": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/5dc46e6b38b22707894ced126270b15e2f22f64e",
+    "download_url": "https://raw.githubusercontent.com/langchain-ai/langchain/master/.gitattributes",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/langchain-ai/langchain/contents/.gitattributes?ref=master",
+      "git": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/5dc46e6b38b22707894ced126270b15e2f22f64e",
+      "html": "https://github.com/langchain-ai/langchain/blob/master/.gitattributes"
+    }
+  },
+  {
+    "name": ".github",
+    "path": ".github",
+    "sha": "6776f3738d3f083150b57eb8d2d5dfa0383c70d1",
+    "size": 0,
+    "url": "https://api.github.com/repos/langchain-ai/langchain/contents/.github?ref=master",
+    "html_url": "https://github.com/langchain-ai/langchain/tree/master/.github",
+    "git_url": "https://api.github.com/repos/langchain-ai/langchain/git/trees/6776f3738d3f083150b57eb8d2d5dfa0383c70d1",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/langchain-ai/langchain/contents/.github?ref=master",
+      "git": "https://api.github.com/repos/langchain-ai/langchain/git/trees/6776f3738d3f083150b57eb8d2d5dfa0383c70d1",
+      "html": "https://github.com/langchain-ai/langchain/tree/master/.github"
+    }
+  },
+  {
+    "name": ".gitignore",
+    "path": ".gitignore",
+    "sha": "b2492fb7d29cb5270b052bebf761b1ddd2504366",
+    "size": 2339,
+    "url": "https://api.github.com/repos/langchain-ai/langchain/contents/.gitignore?ref=master",
+    "html_url": "https://github.com/langchain-ai/langchain/blob/master/.gitignore",
+    "git_url": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/b2492fb7d29cb5270b052bebf761b1ddd2504366",
+    "download_url": "https://raw.githubusercontent.com/langchain-ai/langchain/master/.gitignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/langchain-ai/langchain/contents/.gitignore?ref=master",
+      "git": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/b2492fb7d29cb5270b052bebf761b1ddd2504366",
+      "html": "https://github.com/langchain-ai/langchain/blob/master/.gitignore"
+    }
+  },
+  {
+    "name": ".markdownlint.json",
+    "path": ".markdownlint.json",
+    "sha": "1da2ca701c0809bdd63b81065b0d2ec248b9300a",
+    "size": 195,
+    "url": "https://api.github.com/repos/langchain-ai/langchain/contents/.markdownlint.json?ref=master",
+    "html_url": "https://github.com/langchain-ai/langchain/blob/master/.markdownlint.json",
+    "git_url": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/1da2ca701c0809bdd63b81065b0d2ec248b9300a",
+    "download_url": "https://raw.githubusercontent.com/langchain-ai/langchain/master/.markdownlint.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/langchain-ai/langchain/contents/.markdownlint.json?ref=master",
+      "git": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/1da2ca701c0809bdd63b81065b0d2ec248b9300a",
+      "html": "https://github.com/langchain-ai/langchain/blob/master/.markdownlint.json"
+    }
+  },
+  {
+    "name": ".mcp.json",
+    "path": ".mcp.json",
+    "sha": "c55e4cb21cc4840304a8d96ee3029abbd1c42f06",
+    "size": 233,
+    "url": "https://api.github.com/repos/langchain-ai/langchain/contents/.mcp.json?ref=master",
+    "html_url": "https://github.com/langchain-ai/langchain/blob/master/.mcp.json",
+    "git_url": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/c55e4cb21cc4840304a8d96ee3029abbd1c42f06",
+    "download_url": "https://raw.githubusercontent.com/langchain-ai/langchain/master/.mcp.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/langchain-ai/langchain/contents/.mcp.json?ref=master",
+      "git": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/c55e4cb21cc4840304a8d96ee3029abbd1c42f06",
+      "html": "https://github.com/langchain-ai/langchain/blob/master/.mcp.json"
+    }
+  },
+  {
+    "name": ".pre-commit-config.yaml",
+    "path": ".pre-commit-config.yaml",
+    "sha": "07b64ed1bc6a2a861689efb19091aecf4fc51e23",
+    "size": 4600,
+    "url": "https://api.github.com/repos/langchain-ai/langchain/contents/.pre-commit-config.yaml?ref=master",
+    "html_url": "https://github.com/langchain-ai/langchain/blob/master/.pre-commit-config.yaml",
+    "git_url": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/07b64ed1bc6a2a861689efb19091aecf4fc51e23",
+    "download_url": "https://raw.githubusercontent.com/langchain-ai/langchain/master/.pre-commit-config.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/langchain-ai/langchain/contents/.pre-commit-config.yaml?ref=master",
+      "git": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/07b64ed1bc6a2a861689efb19091aecf4fc51e23",
+      "html": "https://github.com/langchain-ai/langchain/blob/master/.pre-commit-config.yaml"
+    }
+  },
+  {
+    "name": ".vscode",
+    "path": ".vscode",
+    "sha": "d32d993c2183231612ee61e5b730c584081d07f6",
+    "size": 0,
+    "url": "https://api.github.com/repos/langchain-ai/langchain/contents/.vscode?ref=master",
+    "html_url": "https://github.com/langchain-ai/langchain/tree/master/.vscode",
+    "git_url": "https://api.github.com/repos/langchain-ai/langchain/git/trees/d32d993c2183231612ee61e5b730c584081d07f6",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/langchain-ai/langchain/contents/.vscode?ref=master",
+      "git": "https://api.github.com/repos/langchain-ai/langchain/git/trees/d32d993c2183231612ee61e5b730c584081d07f6",
+      "html": "https://github.com/langchain-ai/langchain/tree/master/.vscode"
+    }
+  },
+  {
+    "name": "AGENTS.md",
+    "path": "AGENTS.md",
+    "sha": "8b8a51a152c4d091a5ba6ef69de30487eabf1db1",
+    "size": 13113,
+    "url": "https://api.github.com/repos/langchain-ai/langchain/contents/AGENTS.md?ref=master",
+    "html_url": "https://github.com/langchain-ai/langchain/blob/master/AGENTS.md",
+    "git_url": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/8b8a51a152c4d091a5ba6ef69de30487eabf1db1",
+    "download_url": "https://raw.githubusercontent.com/langchain-ai/langchain/master/AGENTS.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/langchain-ai/langchain/contents/AGENTS.md?ref=master",
+      "git": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/8b8a51a152c4d091a5ba6ef69de30487eabf1db1",
+      "html": "https://github.com/langchain-ai/langchain/blob/master/AGENTS.md"
+    }
+  },
+  {
+    "name": "CITATION.cff",
+    "path": "CITATION.cff",
+    "sha": "9c78892d619467e904f79330c4422effd7d7ee9b",
+    "size": 234,
+    "url": "https://api.github.com/repos/langchain-ai/langchain/contents/CITATION.cff?ref=master",
+    "html_url": "https://github.com/langchain-ai/langchain/blob/master/CITATION.cff",
+    "git_url": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/9c78892d619467e904f79330c4422effd7d7ee9b",
+    "download_url": "https://raw.githubusercontent.com/langchain-ai/langchain/master/CITATION.cff",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/langchain-ai/langchain/contents/CITATION.cff?ref=master",
+      "git": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/9c78892d619467e904f79330c4422effd7d7ee9b",
+      "html": "https://github.com/langchain-ai/langchain/blob/master/CITATION.cff"
+    }
+  },
+  {
+    "name": "CLAUDE.md",
+    "path": "CLAUDE.md",
+    "sha": "8b8a51a152c4d091a5ba6ef69de30487eabf1db1",
+    "size": 13113,
+    "url": "https://api.github.com/repos/langchain-ai/langchain/contents/CLAUDE.md?ref=master",
+    "html_url": "https://github.com/langchain-ai/langchain/blob/master/CLAUDE.md",
+    "git_url": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/8b8a51a152c4d091a5ba6ef69de30487eabf1db1",
+    "download_url": "https://raw.githubusercontent.com/langchain-ai/langchain/master/CLAUDE.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/langchain-ai/langchain/contents/CLAUDE.md?ref=master",
+      "git": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/8b8a51a152c4d091a5ba6ef69de30487eabf1db1",
+      "html": "https://github.com/langchain-ai/langchain/blob/master/CLAUDE.md"
+    }
+  },
+  {
+    "name": "LICENSE",
+    "path": "LICENSE",
+    "sha": "3957738673765912ca83a0048f833e095d61e087",
+    "size": 1067,
+    "url": "https://api.github.com/repos/langchain-ai/langchain/contents/LICENSE?ref=master",
+    "html_url": "https://github.com/langchain-ai/langchain/blob/master/LICENSE",
+    "git_url": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/3957738673765912ca83a0048f833e095d61e087",
+    "download_url": "https://raw.githubusercontent.com/langchain-ai/langchain/master/LICENSE",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/langchain-ai/langchain/contents/LICENSE?ref=master",
+      "git": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/3957738673765912ca83a0048f833e095d61e087",
+      "html": "https://github.com/langchain-ai/langchain/blob/master/LICENSE"
+    }
+  },
+  {
+    "name": "README.md",
+    "path": "README.md",
+    "sha": "ddb693769fa47ef4046362a23d7f22112f72a85d",
+    "size": 6088,
+    "url": "https://api.github.com/repos/langchain-ai/langchain/contents/README.md?ref=master",
+    "html_url": "https://github.com/langchain-ai/langchain/blob/master/README.md",
+    "git_url": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/ddb693769fa47ef4046362a23d7f22112f72a85d",
+    "download_url": "https://raw.githubusercontent.com/langchain-ai/langchain/master/README.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/langchain-ai/langchain/contents/README.md?ref=master",
+      "git": "https://api.github.com/repos/langchain-ai/langchain/git/blobs/ddb693769fa47ef4046362a23d7f22112f72a85d",
+      "html": "https://github.com/langchain-ai/langchain/blob/master/README.md"
+    }
+  },
+  {
+    "name": "libs",
+    "path": "libs",
+    "sha": "6c1116e5bb4170d8a3b92acc5ef21a6683301eec",
+    "size": 0,
+    "url": "https://api.github.com/repos/langchain-ai/langchain/contents/libs?ref=master",
+    "html_url": "https://github.com/langchain-ai/langchain/tree/master/libs",
+    "git_url": "https://api.github.com/repos/langchain-ai/langchain/git/trees/6c1116e5bb4170d8a3b92acc5ef21a6683301eec",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/langchain-ai/langchain/contents/libs?ref=master",
+      "git": "https://api.github.com/repos/langchain-ai/langchain/git/trees/6c1116e5bb4170d8a3b92acc5ef21a6683301eec",
+      "html": "https://github.com/langchain-ai/langchain/tree/master/libs"
+    }
+  }
+]

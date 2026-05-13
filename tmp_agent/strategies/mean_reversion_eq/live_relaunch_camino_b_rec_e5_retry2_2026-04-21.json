@@ -1,0 +1,20 @@
+{
+  "ok": true,
+  "steps": [
+    {
+      "step": "live_create",
+      "payload": 1,
+      "attempt": 1,
+      "ok": true,
+      "deployId": "L-5a8497fe8cad719ec9015067453ecd1f"
+    },
+    {
+      "step": "live_confirm",
+      "deployId": "L-5a8497fe8cad719ec9015067453ecd1f",
+      "status": "Running",
+      "launched": "2026-04-14 21:16:58"
+    }
+  ],
+  "deployId": "L-5a8497fe8cad719ec9015067453ecd1f",
+  "status": "Running"
+}

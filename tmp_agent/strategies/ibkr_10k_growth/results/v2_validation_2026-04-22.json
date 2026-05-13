@@ -1,0 +1,90 @@
+{
+  "generated_at_utc": "2026-04-22T21:30:09.779727+00:00",
+  "project_id": 30507388,
+  "rows": [
+    {
+      "status": "Completed.",
+      "backtest_id": "7c379648f8c6cc50178ce2409dc86578",
+      "np_pct": -14.899,
+      "cagr_pct": -1.936,
+      "dd_pct": 20.0,
+      "sharpe": -1.1,
+      "sortino": -0.406,
+      "win_rate_pct": 42.0,
+      "profit_factor": null,
+      "trades": null,
+      "candidate": "V2_BALANCED",
+      "scenario": "FULL_2018_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "095102647390dedfc65f13cc2d038fe1",
+      "np_pct": 34.498,
+      "cagr_pct": 9.553,
+      "dd_pct": 9.4,
+      "sharpe": 0.165,
+      "sortino": 0.181,
+      "win_rate_pct": 54.0,
+      "profit_factor": null,
+      "trades": null,
+      "candidate": "V2_BALANCED",
+      "scenario": "OOS_2023_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "0e31bdeb20483ffc7a45db5b9f502d56",
+      "np_pct": -0.627,
+      "cagr_pct": -0.626,
+      "dd_pct": 17.4,
+      "sharpe": -0.021,
+      "sortino": -0.023,
+      "win_rate_pct": 43.0,
+      "profit_factor": null,
+      "trades": null,
+      "candidate": "V2_BALANCED",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "4dc6d7eb4c34e9b7745333816566eefb",
+      "np_pct": -10.037,
+      "cagr_pct": -1.274,
+      "dd_pct": 24.7,
+      "sharpe": -0.622,
+      "sortino": -0.275,
+      "win_rate_pct": 47.0,
+      "profit_factor": null,
+      "trades": null,
+      "candidate": "V2_AGGRESSIVE",
+      "scenario": "FULL_2018_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "ca1244080db48d411e20a6ff65c00cc8",
+      "np_pct": 46.116,
+      "cagr_pct": 12.384,
+      "dd_pct": 10.5,
+      "sharpe": 0.32,
+      "sortino": 0.353,
+      "win_rate_pct": 57.0,
+      "profit_factor": null,
+      "trades": null,
+      "candidate": "V2_AGGRESSIVE",
+      "scenario": "OOS_2023_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "bf979b6595f839de702fea673594c67c",
+      "np_pct": -1.218,
+      "cagr_pct": -1.216,
+      "dd_pct": 20.6,
+      "sharpe": -0.022,
+      "sortino": -0.024,
+      "win_rate_pct": 43.0,
+      "profit_factor": null,
+      "trades": null,
+      "candidate": "V2_AGGRESSIVE",
+      "scenario": "STRESS_2020"
+    }
+  ]
+}

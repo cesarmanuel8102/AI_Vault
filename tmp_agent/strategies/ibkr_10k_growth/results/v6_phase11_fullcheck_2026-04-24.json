@@ -1,0 +1,34 @@
+{
+  "generated_at_utc": "2026-04-24T01:10:13.112095+00:00",
+  "project_id": 30507388,
+  "rows": [
+    {
+      "status": "Completed.",
+      "backtest_id": "56785b56116ee9a8d97a6cde08392fa0",
+      "np_pct": 313.387,
+      "cagr_pct": 18.768,
+      "monthly_equiv_pct": 1.443670233029315,
+      "dd_pct": 41.5,
+      "sharpe": 0.508,
+      "sortino": 0.516,
+      "win_rate_pct": 63.0,
+      "psr_pct": 7.443,
+      "candidate": "V6P11_REF",
+      "scenario": "FULL_2018_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "cbf04626468072df3b246dd7ceb9c280",
+      "np_pct": 5.945,
+      "cagr_pct": 0.702,
+      "monthly_equiv_pct": 0.05831261613598038,
+      "dd_pct": 19.9,
+      "sharpe": -0.3,
+      "sortino": -0.188,
+      "win_rate_pct": 48.0,
+      "psr_pct": 0.091,
+      "candidate": "V6P11_LS10",
+      "scenario": "FULL_2018_2026Q1"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "source_id": "github_langchain_ai_langgraph_20260508",
+  "curated_at_utc": "2026-05-08T05:26:36.528885Z",
+  "repo": {
+    "full_name": "langchain-ai/langgraph",
+    "default_branch": "main",
+    "updated_at": "2026-05-08T05:24:39Z",
+    "stargazers_count": 31465,
+    "open_issues_count": 519,
+    "size_kb": 519097,
+    "language": "Python",
+    "topics": [
+      "agents",
+      "ai",
+      "ai-agents",
+      "chatgpt",
+      "deepagents",
+      "enterprise",
+      "framework",
+      "gemini",
+      "generative-ai",
+      "langchain",
+      "langgraph",
+      "llm",
+      "multiagent",
+      "open-source",
+      "openai",
+      "pydantic",
+      "python",
+      "rag"
+    ],
+    "tests_present": true,
+    "docs_present": true,
+    "dependency_files": [],
+    "tree_entries": 721,
+    "priority_files_scanned": 14
+  },
+  "curation_score": 11.25,
+  "risk_score": 2.0,
+  "license_status": "compatible",
+  "recommended_action": "analyze",
+  "reject_reasons": [],
+  "notes": [
+    "high_issue_volume",
+    "dependency_manifest_not_detected",
+    "source_host_not_in_allowlist_seed"
+  ],
+  "dependency_risk_flags": [],
+  "suspicious_binaries": [],
+  "apparent_secrets": []
+}

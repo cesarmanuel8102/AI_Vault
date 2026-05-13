@@ -1,0 +1,13 @@
+{
+  "project_id": 29652652,
+  "compile_id": "4ebd5476931fc760b9a0ea770dae0451-55cfd48ac6a339ac228950c7777eb966",
+  "backtest_id": "1f48f6f0a536ec7a0db795c3e6ab0fba",
+  "backtest_name": "MTF-PB V2.0 IS-REAL",
+  "launched_at": "2026-04-04 02:11:13 UTC",
+  "parameters": {
+    "start_year": "2010",
+    "end_year": "2020",
+    "end_month": "12"
+  },
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/mtf_pullback/main.py"
+}

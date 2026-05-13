@@ -1,0 +1,366 @@
+{
+  "generated_at_utc": "2026-04-22T01:40:41.482991+00:00",
+  "compile_id": "a9382f8a2409daa09ec44769bce5ce50-80b28c81e9e6120f40e696a911c42cb8",
+  "rows": [
+    {
+      "status": "Completed.",
+      "backtest_id": "59497732834f53d59e7c58a00965425c",
+      "np_pct": 2.272,
+      "dd_pct": 2.7,
+      "orders": 102,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 66,
+      "monthly_mean_pct": 0.219,
+      "monthly_median_pct": 0.128,
+      "monthly_count": 11,
+      "candidate": "P7B_A0_BASE",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "trailing_dd_limit_pct": 0.035
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "85623eb425084db599304b4b584d23dc",
+      "np_pct": 0.25,
+      "dd_pct": 3.5,
+      "orders": 134,
+      "dbr": 0,
+      "tbr": 1,
+      "stress_days": 45,
+      "monthly_mean_pct": 0.046,
+      "monthly_median_pct": 0.015,
+      "monthly_count": 10,
+      "candidate": "P7B_A0_BASE",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "trailing_dd_limit_pct": 0.035
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "8d332fd8e953a0d07e902b74fed7fba0",
+      "np_pct": -0.901,
+      "dd_pct": 2.7,
+      "orders": 160,
+      "dbr": 0,
+      "tbr": 1,
+      "stress_days": 90,
+      "monthly_mean_pct": -0.038,
+      "monthly_median_pct": -0.193,
+      "monthly_count": 17,
+      "candidate": "P7B_A0_BASE",
+      "scenario": "FULL_2022_2026Q1",
+      "overrides": {
+        "trailing_dd_limit_pct": 0.035
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "5b1ef0ca51f6224f5a0c6fb42d803931",
+      "np_pct": 2.272,
+      "dd_pct": 2.7,
+      "orders": 102,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 66,
+      "monthly_mean_pct": 0.219,
+      "monthly_median_pct": 0.128,
+      "monthly_count": 11,
+      "candidate": "P7B_A1_TRAIL40",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "trailing_dd_limit_pct": 0.04
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "a285389cf488ed3386535f4fab3d2e07",
+      "np_pct": 0.496,
+      "dd_pct": 4.0,
+      "orders": 210,
+      "dbr": 0,
+      "tbr": 1,
+      "stress_days": 55,
+      "monthly_mean_pct": 0.067,
+      "monthly_median_pct": 0.07,
+      "monthly_count": 13,
+      "candidate": "P7B_A1_TRAIL40",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "trailing_dd_limit_pct": 0.04
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "b8d892a81c761b9840fa6183fabd2649",
+      "np_pct": -1.345,
+      "dd_pct": 3.2,
+      "orders": 160,
+      "dbr": 0,
+      "tbr": 1,
+      "stress_days": 90,
+      "monthly_mean_pct": -0.064,
+      "monthly_median_pct": -0.193,
+      "monthly_count": 17,
+      "candidate": "P7B_A1_TRAIL40",
+      "scenario": "FULL_2022_2026Q1",
+      "overrides": {
+        "trailing_dd_limit_pct": 0.04
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "c3cb36a711ba0fbcb11994b23adc1436",
+      "np_pct": 2.272,
+      "dd_pct": 2.7,
+      "orders": 102,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 66,
+      "monthly_mean_pct": 0.219,
+      "monthly_median_pct": 0.128,
+      "monthly_count": 11,
+      "candidate": "P7B_A2_TRAIL45",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "trailing_dd_limit_pct": 0.045
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "12c9279c890d6356ff398736d33f05fb",
+      "np_pct": -0.021,
+      "dd_pct": 4.5,
+      "orders": 216,
+      "dbr": 0,
+      "tbr": 1,
+      "stress_days": 55,
+      "monthly_mean_pct": 0.029,
+      "monthly_median_pct": 0.07,
+      "monthly_count": 13,
+      "candidate": "P7B_A2_TRAIL45",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "trailing_dd_limit_pct": 0.045
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "3cfe4124cc32fb111b88560beadda3dd",
+      "np_pct": -1.141,
+      "dd_pct": 3.6,
+      "orders": 336,
+      "dbr": 0,
+      "tbr": 1,
+      "stress_days": 130,
+      "monthly_mean_pct": -0.018,
+      "monthly_median_pct": -0.191,
+      "monthly_count": 29,
+      "candidate": "P7B_A2_TRAIL45",
+      "scenario": "FULL_2022_2026Q1",
+      "overrides": {
+        "trailing_dd_limit_pct": 0.045
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "c2efdc8b05d5b4bdd0b4c224b077201c",
+      "np_pct": 4.873,
+      "dd_pct": 2.9,
+      "orders": 120,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 66,
+      "monthly_mean_pct": 0.452,
+      "monthly_median_pct": 0.473,
+      "monthly_count": 11,
+      "candidate": "P7B_A3_TRAIL40_R17",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "trailing_dd_limit_pct": 0.04,
+        "risk_per_trade": 0.017,
+        "n_risk": 0.012,
+        "or_risk": 0.009
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "8be96696171b7f101c208d1cb2682d10",
+      "np_pct": 3.861,
+      "dd_pct": 4.0,
+      "orders": 76,
+      "dbr": 1,
+      "tbr": 1,
+      "stress_days": 36,
+      "monthly_mean_pct": 0.818,
+      "monthly_median_pct": 0.439,
+      "monthly_count": 5,
+      "candidate": "P7B_A3_TRAIL40_R17",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "trailing_dd_limit_pct": 0.04,
+        "risk_per_trade": 0.017,
+        "n_risk": 0.012,
+        "or_risk": 0.009
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "e22da85e8b6b65de21e6546c05761d5c",
+      "np_pct": 2.915,
+      "dd_pct": 2.9,
+      "orders": 122,
+      "dbr": 0,
+      "tbr": 1,
+      "stress_days": 77,
+      "monthly_mean_pct": 0.205,
+      "monthly_median_pct": 0.324,
+      "monthly_count": 15,
+      "candidate": "P7B_A3_TRAIL40_R17",
+      "scenario": "FULL_2022_2026Q1",
+      "overrides": {
+        "trailing_dd_limit_pct": 0.04,
+        "risk_per_trade": 0.017,
+        "n_risk": 0.012,
+        "or_risk": 0.009
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "ef956f7f8b57f4c54c5bd099812ee162",
+      "np_pct": 4.532,
+      "dd_pct": 3.4,
+      "orders": 124,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 66,
+      "monthly_mean_pct": 0.424,
+      "monthly_median_pct": 0.474,
+      "monthly_count": 11,
+      "candidate": "P7B_A4_TRAIL45_R18",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "trailing_dd_limit_pct": 0.045,
+        "risk_per_trade": 0.018,
+        "n_risk": 0.013,
+        "or_risk": 0.01,
+        "max_contracts_per_trade": 12
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "2db643be259de47dbaae9c4388956228",
+      "np_pct": 6.429,
+      "dd_pct": 4.4,
+      "orders": 80,
+      "dbr": 0,
+      "tbr": 1,
+      "stress_days": 36,
+      "monthly_mean_pct": 1.317,
+      "monthly_median_pct": 0.04,
+      "monthly_count": 5,
+      "candidate": "P7B_A4_TRAIL45_R18",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "trailing_dd_limit_pct": 0.045,
+        "risk_per_trade": 0.018,
+        "n_risk": 0.013,
+        "or_risk": 0.01,
+        "max_contracts_per_trade": 12
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "b33c4eae09e540e567d410f6f940f52a",
+      "np_pct": 5.385,
+      "dd_pct": 3.5,
+      "orders": 144,
+      "dbr": 0,
+      "tbr": 1,
+      "stress_days": 72,
+      "monthly_mean_pct": 0.397,
+      "monthly_median_pct": 0.271,
+      "monthly_count": 14,
+      "candidate": "P7B_A4_TRAIL45_R18",
+      "scenario": "FULL_2022_2026Q1",
+      "overrides": {
+        "trailing_dd_limit_pct": 0.045,
+        "risk_per_trade": 0.018,
+        "n_risk": 0.013,
+        "or_risk": 0.01,
+        "max_contracts_per_trade": 12
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "fe519d29bac8e04085fb816f886bb3cd",
+      "np_pct": 1.403,
+      "dd_pct": 2.0,
+      "orders": 60,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 66,
+      "monthly_mean_pct": 0.164,
+      "monthly_median_pct": 0.154,
+      "monthly_count": 9,
+      "candidate": "P7B_A5_MNQ_ONLY",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "trailing_dd_limit_pct": 0.04,
+        "trade_mes": 0,
+        "risk_per_trade": 0.018,
+        "n_risk": 0.014,
+        "or_risk": 0.01,
+        "max_contracts_per_trade": 12
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "a99b745b6dfa5b1e813af5430297febd",
+      "np_pct": -0.787,
+      "dd_pct": 4.0,
+      "orders": 56,
+      "dbr": 0,
+      "tbr": 1,
+      "stress_days": 38,
+      "monthly_mean_pct": -0.135,
+      "monthly_median_pct": -0.559,
+      "monthly_count": 5,
+      "candidate": "P7B_A5_MNQ_ONLY",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "trailing_dd_limit_pct": 0.04,
+        "trade_mes": 0,
+        "risk_per_trade": 0.018,
+        "n_risk": 0.014,
+        "or_risk": 0.01,
+        "max_contracts_per_trade": 12
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "dd0edb1c55118265718710de792fb380",
+      "np_pct": 8.303,
+      "dd_pct": 3.4,
+      "orders": 298,
+      "dbr": 0,
+      "tbr": 1,
+      "stress_days": 199,
+      "monthly_mean_pct": 0.242,
+      "monthly_median_pct": 0.135,
+      "monthly_count": 35,
+      "candidate": "P7B_A5_MNQ_ONLY",
+      "scenario": "FULL_2022_2026Q1",
+      "overrides": {
+        "trailing_dd_limit_pct": 0.04,
+        "trade_mes": 0,
+        "risk_per_trade": 0.018,
+        "n_risk": 0.014,
+        "or_risk": 0.01,
+        "max_contracts_per_trade": 12
+      }
+    }
+  ]
+}

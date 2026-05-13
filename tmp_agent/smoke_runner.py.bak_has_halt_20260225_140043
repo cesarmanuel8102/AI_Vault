@@ -1,0 +1,41 @@
+from __future__ import annotations
+
+import json
+import os
+from datetime import datetime, timezone
+
+def utc_iso() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+def main() -> int:
+    repo = os.environ.get("PYTHONPATH", "")
+    contract = os.environ.get("BRAINLAB_CONTRACT", "")
+
+    if not repo:
+        raise SystemExit("Missing env: PYTHONPATH must be set to repo root (e.g. C:\\AI_VAULT\\workspace\\brainlab)")
+    if not contract:
+        raise SystemExit("Missing env: BRAINLAB_CONTRACT must be set to contract json path")
+
+    from brainlab.risk.risk_engine import RiskEngine
+
+    re = RiskEngine.from_contract_path(contract)
+
+    tests = [
+        {"name": "ok", "snapshot": {"nlv": 1000.0, "daily_pnl": -5.0, "weekly_drawdown": 0.01, "total_exposure": 0.35}},
+        {"name": "daily_loss_violation", "snapshot": {"nlv": 1000.0, "daily_pnl": -25.0, "weekly_drawdown": 0.01, "total_exposure": 0.35}},
+        {"name": "weekly_dd_violation", "snapshot": {"nlv": 1000.0, "daily_pnl": 0.0, "weekly_drawdown": 0.10, "total_exposure": 0.35}},
+        {"name": "exposure_violation", "snapshot": {"nlv": 1000.0, "daily_pnl": 0.0, "weekly_drawdown": 0.01, "total_exposure": 0.95}},
+    ]
+
+    out = {
+        "ts": utc_iso(),
+        "contract_path": contract,
+        "limits": re.limits.__dict__,
+        "results": [{"name": t["name"], "assess": re.assess(t["snapshot"])} for t in tests],
+    }
+
+    print(json.dumps(out, ensure_ascii=False, indent=2))
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "mission_id": "brainlab-default",
+  "title": "Brain Lab — Local Governed Agent",
+  "objectives": [
+    "Implement Planner→Evaluator endpoints with persistent mission/plan state.",
+    "Maintain governance: no destructive actions, auditable logs, reproducible workflow."
+  ],
+  "constraints": [
+    [
+      "c0",
+      "No auto-executing PowerShell from the assistant."
+    ],
+    [
+      "c1",
+      "All writes confined to C:\\AI_VAULT\\tmp_agent"
+    ],
+    [
+      "c2",
+      "All changes must be logged."
+    ]
+  ],
+  "created_at": null,
+  "updated_at": null,
+  "objective": "Brain Lab — Local Governed Agent",
+  "constraints_list": [
+    "No auto-executing PowerShell from the assistant.",
+    "All writes confined to C:\\AI_VAULT\\tmp_agent",
+    "All changes must be logged."
+  ]
+}

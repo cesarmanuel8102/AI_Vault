@@ -1,0 +1,14 @@
+{
+  "proposal_id": "P_e7376c1ce38fa349",
+  "tool_name": "append_file",
+  "tool_args": {
+    "content": "hola 2026-03-05T19:03:51Z\n",
+    "path": "C:\\AI_VAULT\\tmp_agent\\workspace\\ui_write_from_nl.txt",
+    "raw_content": "hola {{now_iso}}\\n"
+  },
+  "room_id": "room_smoke_20260305_140351",
+  "step_id": "1",
+  "created_at": "2026-03-05T19:03:51.657180+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

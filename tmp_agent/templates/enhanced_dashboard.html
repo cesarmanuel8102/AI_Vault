@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brain Lab Dashboard Enhanced v2.1</title>
+    <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --success: #4CAF50;
+            --warning: #FFA500;
+            --danger: #f44336;
+            --dark: #1a1a1a;
+            --light: #f8f9fa;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: rgba(255,255,255,0.15);
+            padding: 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+            border-left: 4px solid var(--success);
+        }
+        
+        .card.warning { border-left-color: var(--warning); }
+        .card.danger { border-left-color: var(--danger); }
+        
+        .server-status {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        
+        .online { background: var(--success); }
+        .offline { background: var(--danger); }
+        
+        .phase-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .phase-item {
+            padding: 8px 12px;
+            margin: 5px 0;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+        }
+        
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .metric {
+            text-align: center;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 Brain Lab Dashboard Enhanced v2.1</h1>
+            <p>Sistema Autónomo - GL Series Completado - Fase ADV Activa</p>
+            <p>Última actualización: {{ current_time }}</p>
+        </div>
+        
+        <div class="status-grid">
+            <div class="card">
+                <h3>🌐 Estado de Servidores</h3>
+                {% for server_name, server_data in status.servers.items() %}
+                <div class="server-status">
+                    <div class="status-indicator {{ server_data.status }}"></div>
+                    <span>{{ server_name|title }} Server: 
+                        <strong>{{ server_data.status|upper }}</strong>
+                        {% if server_data.response_time %}
+                        ({{ "%.3f"|format(server_data.response_time) }}s)
+                        {% endif %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="card">
+                <h3>📊 Métricas de Rendimiento</h3>
+                <div class="metric-grid">
+                    <div class="metric">
+                        <div style="font-size: 2em;">{{ status.performance_metrics.uptime }}</div>
+                        <small>Uptime</small>
+                    </div>
+                    <div class="metric">
+                        <div style="font-size: 2em;">{{ status.performance_metrics.completed_phases }}</div>
+                        <small>Fases Completadas</small>
+                    </div>
+                    <div class="metric">
+                        <div style="font-size: 2em;">{{ status.trust_score }}/100</div>
+                        <small>Trust Score</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>🏆 Roadmap del Sistema</h3>
+            <ul class="phase-list">
+                {% if status.roadmap.work_items %}
+                    {% for item in status.roadmap.work_items %}
+                    <li class="phase-item">
+                        {% if item.status == 'done' %}✅{% elif item.status == 'in_progress' %}🔄{% else %}⏳{% endif %}
+                        {{ item.id }}: {{ item.title }} - {{ item.status }}
+                    </li>
+                    {% endfor %}
+                {% else %}
+                    <li class="phase-item">Roadmap no disponible</li>
+                {% endif %}
+            </ul>
+        </div>
+        
+        <div class="card">
+            <h3>🚀 Próximas Fases (ADV Series)</h3>
+            <ul class="phase-list">
+                <li class="phase-item">🔄 ADV-01: Sistema Auto-Optimizante</li>
+                <li class="phase-item">⏳ ADV-02: Coordinación Multi-Agente</li>
+                <li class="phase-item">⏳ ADV-03: Memoria de Largo Plazo</li>
+                <li class="phase-item">⏳ ADV-04: Monitorización Avanzada</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

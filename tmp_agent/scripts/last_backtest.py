@@ -1,0 +1,2 @@
+import qc_orchestrator
+qc_orchestrator.get_last_backtest_results()

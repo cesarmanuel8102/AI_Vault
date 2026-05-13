@@ -1,0 +1,13 @@
+{
+  "project_id": 29652652,
+  "compile_id": "10297278ddd71b8515f91a01bf12692d-b45534666596eb79ecf31c8577c675c6",
+  "backtest_id": "e766d74fcd632a3547108712bb6e084e",
+  "backtest_name": "MA-TF V1.2 OOS",
+  "launched_at": "2026-04-04 01:29:39 UTC",
+  "parameters": {
+    "start_year": "2021",
+    "end_year": "2024",
+    "end_month": "12"
+  },
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/multi_asset_tf/main_v12.py"
+}

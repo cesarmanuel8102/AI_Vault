@@ -1,0 +1,386 @@
+[
+  {
+    "name": ".github",
+    "path": ".github",
+    "sha": "2f0914c3ced2dd31e17498adab57ad569ffce930",
+    "size": 0,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/.github?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/tree/main/.github",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/trees/2f0914c3ced2dd31e17498adab57ad569ffce930",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/.github?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/trees/2f0914c3ced2dd31e17498adab57ad569ffce930",
+      "html": "https://github.com/run-llama/llama_index/tree/main/.github"
+    }
+  },
+  {
+    "name": ".gitignore",
+    "path": ".gitignore",
+    "sha": "d4516537a732dfbb49d6e066f298e8a916dedcb2",
+    "size": 586,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/.gitignore?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/blob/main/.gitignore",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/blobs/d4516537a732dfbb49d6e066f298e8a916dedcb2",
+    "download_url": "https://raw.githubusercontent.com/run-llama/llama_index/main/.gitignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/.gitignore?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/blobs/d4516537a732dfbb49d6e066f298e8a916dedcb2",
+      "html": "https://github.com/run-llama/llama_index/blob/main/.gitignore"
+    }
+  },
+  {
+    "name": ".pre-commit-config.yaml",
+    "path": ".pre-commit-config.yaml",
+    "sha": "1901387946b19b17c60fd38b9c470e9d030230ff",
+    "size": 3674,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/.pre-commit-config.yaml?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/blob/main/.pre-commit-config.yaml",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/blobs/1901387946b19b17c60fd38b9c470e9d030230ff",
+    "download_url": "https://raw.githubusercontent.com/run-llama/llama_index/main/.pre-commit-config.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/.pre-commit-config.yaml?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/blobs/1901387946b19b17c60fd38b9c470e9d030230ff",
+      "html": "https://github.com/run-llama/llama_index/blob/main/.pre-commit-config.yaml"
+    }
+  },
+  {
+    "name": ".readthedocs.yaml",
+    "path": ".readthedocs.yaml",
+    "sha": "c367c4d102569b9bbdc8c5ec54103bb5c3dee005",
+    "size": 608,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/.readthedocs.yaml?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/blob/main/.readthedocs.yaml",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/blobs/c367c4d102569b9bbdc8c5ec54103bb5c3dee005",
+    "download_url": "https://raw.githubusercontent.com/run-llama/llama_index/main/.readthedocs.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/.readthedocs.yaml?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/blobs/c367c4d102569b9bbdc8c5ec54103bb5c3dee005",
+      "html": "https://github.com/run-llama/llama_index/blob/main/.readthedocs.yaml"
+    }
+  },
+  {
+    "name": "CHANGELOG.md",
+    "path": "CHANGELOG.md",
+    "sha": "46242b80a2d1e536bffeb6289311f1f71269c606",
+    "size": 529505,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/CHANGELOG.md?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/blob/main/CHANGELOG.md",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/blobs/46242b80a2d1e536bffeb6289311f1f71269c606",
+    "download_url": "https://raw.githubusercontent.com/run-llama/llama_index/main/CHANGELOG.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/CHANGELOG.md?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/blobs/46242b80a2d1e536bffeb6289311f1f71269c606",
+      "html": "https://github.com/run-llama/llama_index/blob/main/CHANGELOG.md"
+    }
+  },
+  {
+    "name": "CITATION.cff",
+    "path": "CITATION.cff",
+    "sha": "84232c3aa11c7087690dc9988aa6f842185876b5",
+    "size": 308,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/CITATION.cff?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/blob/main/CITATION.cff",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/blobs/84232c3aa11c7087690dc9988aa6f842185876b5",
+    "download_url": "https://raw.githubusercontent.com/run-llama/llama_index/main/CITATION.cff",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/CITATION.cff?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/blobs/84232c3aa11c7087690dc9988aa6f842185876b5",
+      "html": "https://github.com/run-llama/llama_index/blob/main/CITATION.cff"
+    }
+  },
+  {
+    "name": "CODE_OF_CONDUCT.md",
+    "path": "CODE_OF_CONDUCT.md",
+    "sha": "64f2d04d38e5e6ecf89c1ee02e5e8ff4ebc2ef45",
+    "size": 5217,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/CODE_OF_CONDUCT.md?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/blob/main/CODE_OF_CONDUCT.md",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/blobs/64f2d04d38e5e6ecf89c1ee02e5e8ff4ebc2ef45",
+    "download_url": "https://raw.githubusercontent.com/run-llama/llama_index/main/CODE_OF_CONDUCT.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/CODE_OF_CONDUCT.md?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/blobs/64f2d04d38e5e6ecf89c1ee02e5e8ff4ebc2ef45",
+      "html": "https://github.com/run-llama/llama_index/blob/main/CODE_OF_CONDUCT.md"
+    }
+  },
+  {
+    "name": "CONTRIBUTING.md",
+    "path": "CONTRIBUTING.md",
+    "sha": "67ad3c45a82a5a84134d5bce4d0bf688422b152e",
+    "size": 6215,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/CONTRIBUTING.md?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/blob/main/CONTRIBUTING.md",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/blobs/67ad3c45a82a5a84134d5bce4d0bf688422b152e",
+    "download_url": "https://raw.githubusercontent.com/run-llama/llama_index/main/CONTRIBUTING.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/CONTRIBUTING.md?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/blobs/67ad3c45a82a5a84134d5bce4d0bf688422b152e",
+      "html": "https://github.com/run-llama/llama_index/blob/main/CONTRIBUTING.md"
+    }
+  },
+  {
+    "name": "LICENSE",
+    "path": "LICENSE",
+    "sha": "e6074042d0391061b7d7d45d21e6693ae108daec",
+    "size": 1065,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/LICENSE?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/blob/main/LICENSE",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/blobs/e6074042d0391061b7d7d45d21e6693ae108daec",
+    "download_url": "https://raw.githubusercontent.com/run-llama/llama_index/main/LICENSE",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/LICENSE?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/blobs/e6074042d0391061b7d7d45d21e6693ae108daec",
+      "html": "https://github.com/run-llama/llama_index/blob/main/LICENSE"
+    }
+  },
+  {
+    "name": "Makefile",
+    "path": "Makefile",
+    "sha": "cbf5c2c79c266a1b0cbb03a707648048b37b4ed8",
+    "size": 1252,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/Makefile?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/blob/main/Makefile",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/blobs/cbf5c2c79c266a1b0cbb03a707648048b37b4ed8",
+    "download_url": "https://raw.githubusercontent.com/run-llama/llama_index/main/Makefile",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/Makefile?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/blobs/cbf5c2c79c266a1b0cbb03a707648048b37b4ed8",
+      "html": "https://github.com/run-llama/llama_index/blob/main/Makefile"
+    }
+  },
+  {
+    "name": "README.md",
+    "path": "README.md",
+    "sha": "c1c7af8256b4d278748ea9b5c8b1a5da1858e691",
+    "size": 13365,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/README.md?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/blob/main/README.md",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/blobs/c1c7af8256b4d278748ea9b5c8b1a5da1858e691",
+    "download_url": "https://raw.githubusercontent.com/run-llama/llama_index/main/README.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/README.md?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/blobs/c1c7af8256b4d278748ea9b5c8b1a5da1858e691",
+      "html": "https://github.com/run-llama/llama_index/blob/main/README.md"
+    }
+  },
+  {
+    "name": "RELEASE_HEAD.md",
+    "path": "RELEASE_HEAD.md",
+    "sha": "38bf0d779f19cbacbc7cb8b57fc6a7b7ef9ce615",
+    "size": 16,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/RELEASE_HEAD.md?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/blob/main/RELEASE_HEAD.md",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/blobs/38bf0d779f19cbacbc7cb8b57fc6a7b7ef9ce615",
+    "download_url": "https://raw.githubusercontent.com/run-llama/llama_index/main/RELEASE_HEAD.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/RELEASE_HEAD.md?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/blobs/38bf0d779f19cbacbc7cb8b57fc6a7b7ef9ce615",
+      "html": "https://github.com/run-llama/llama_index/blob/main/RELEASE_HEAD.md"
+    }
+  },
+  {
+    "name": "SECURITY.md",
+    "path": "SECURITY.md",
+    "sha": "75f264dc65aa699968bc6b3314b4344fda56b1ee",
+    "size": 5045,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/SECURITY.md?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/blob/main/SECURITY.md",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/blobs/75f264dc65aa699968bc6b3314b4344fda56b1ee",
+    "download_url": "https://raw.githubusercontent.com/run-llama/llama_index/main/SECURITY.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/SECURITY.md?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/blobs/75f264dc65aa699968bc6b3314b4344fda56b1ee",
+      "html": "https://github.com/run-llama/llama_index/blob/main/SECURITY.md"
+    }
+  },
+  {
+    "name": "STALE.md",
+    "path": "STALE.md",
+    "sha": "3d521ff268c779c0daad10cdc2cac7064b3471c2",
+    "size": 2298,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/STALE.md?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/blob/main/STALE.md",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/blobs/3d521ff268c779c0daad10cdc2cac7064b3471c2",
+    "download_url": "https://raw.githubusercontent.com/run-llama/llama_index/main/STALE.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/STALE.md?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/blobs/3d521ff268c779c0daad10cdc2cac7064b3471c2",
+      "html": "https://github.com/run-llama/llama_index/blob/main/STALE.md"
+    }
+  },
+  {
+    "name": "docs.config.mjs",
+    "path": "docs.config.mjs",
+    "sha": "d5dfb830bb6255c420481ec48b0d009f9e76b251",
+    "size": 454,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/docs.config.mjs?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/blob/main/docs.config.mjs",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/blobs/d5dfb830bb6255c420481ec48b0d009f9e76b251",
+    "download_url": "https://raw.githubusercontent.com/run-llama/llama_index/main/docs.config.mjs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/docs.config.mjs?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/blobs/d5dfb830bb6255c420481ec48b0d009f9e76b251",
+      "html": "https://github.com/run-llama/llama_index/blob/main/docs.config.mjs"
+    }
+  },
+  {
+    "name": "docs",
+    "path": "docs",
+    "sha": "d08c45b7f0ec8d56450ded3f58920c27027a28e8",
+    "size": 0,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/docs?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/tree/main/docs",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/trees/d08c45b7f0ec8d56450ded3f58920c27027a28e8",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/docs?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/trees/d08c45b7f0ec8d56450ded3f58920c27027a28e8",
+      "html": "https://github.com/run-llama/llama_index/tree/main/docs"
+    }
+  },
+  {
+    "name": "llama-dev",
+    "path": "llama-dev",
+    "sha": "a2f359f5454d3f2c6534462d142f2c3facaf202a",
+    "size": 0,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/llama-dev?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/tree/main/llama-dev",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/trees/a2f359f5454d3f2c6534462d142f2c3facaf202a",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/llama-dev?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/trees/a2f359f5454d3f2c6534462d142f2c3facaf202a",
+      "html": "https://github.com/run-llama/llama_index/tree/main/llama-dev"
+    }
+  },
+  {
+    "name": "llama-index-core",
+    "path": "llama-index-core",
+    "sha": "97b5dc8cac80decffe5531965db7d382f1a8e63d",
+    "size": 0,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/llama-index-core?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/tree/main/llama-index-core",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/trees/97b5dc8cac80decffe5531965db7d382f1a8e63d",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/llama-index-core?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/trees/97b5dc8cac80decffe5531965db7d382f1a8e63d",
+      "html": "https://github.com/run-llama/llama_index/tree/main/llama-index-core"
+    }
+  },
+  {
+    "name": "llama-index-instrumentation",
+    "path": "llama-index-instrumentation",
+    "sha": "0e17265154607cddf3a5d2611976ea7e9262b674",
+    "size": 0,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/llama-index-instrumentation?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/tree/main/llama-index-instrumentation",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/trees/0e17265154607cddf3a5d2611976ea7e9262b674",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/llama-index-instrumentation?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/trees/0e17265154607cddf3a5d2611976ea7e9262b674",
+      "html": "https://github.com/run-llama/llama_index/tree/main/llama-index-instrumentation"
+    }
+  },
+  {
+    "name": "llama-index-integrations",
+    "path": "llama-index-integrations",
+    "sha": "f2fac8c8964643f4228916122b0a2836b8cad4ba",
+    "size": 0,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/llama-index-integrations?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/tree/main/llama-index-integrations",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/trees/f2fac8c8964643f4228916122b0a2836b8cad4ba",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/llama-index-integrations?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/trees/f2fac8c8964643f4228916122b0a2836b8cad4ba",
+      "html": "https://github.com/run-llama/llama_index/tree/main/llama-index-integrations"
+    }
+  },
+  {
+    "name": "llama-index-utils",
+    "path": "llama-index-utils",
+    "sha": "7aa56f0fa2654f92318358f140313eeaacbf969c",
+    "size": 0,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/llama-index-utils?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/tree/main/llama-index-utils",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/trees/7aa56f0fa2654f92318358f140313eeaacbf969c",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/llama-index-utils?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/trees/7aa56f0fa2654f92318358f140313eeaacbf969c",
+      "html": "https://github.com/run-llama/llama_index/tree/main/llama-index-utils"
+    }
+  },
+  {
+    "name": "pyproject.toml",
+    "path": "pyproject.toml",
+    "sha": "acb2a39023eae2f759eda7589f2a246e5f5fa494",
+    "size": 4854,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/pyproject.toml?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/blob/main/pyproject.toml",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/blobs/acb2a39023eae2f759eda7589f2a246e5f5fa494",
+    "download_url": "https://raw.githubusercontent.com/run-llama/llama_index/main/pyproject.toml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/pyproject.toml?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/blobs/acb2a39023eae2f759eda7589f2a246e5f5fa494",
+      "html": "https://github.com/run-llama/llama_index/blob/main/pyproject.toml"
+    }
+  },
+  {
+    "name": "scripts",
+    "path": "scripts",
+    "sha": "b7367eb4294ddcb8550a940b104c57b1239aced4",
+    "size": 0,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/scripts?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/tree/main/scripts",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/trees/b7367eb4294ddcb8550a940b104c57b1239aced4",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/scripts?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/trees/b7367eb4294ddcb8550a940b104c57b1239aced4",
+      "html": "https://github.com/run-llama/llama_index/tree/main/scripts"
+    }
+  },
+  {
+    "name": "uv.lock",
+    "path": "uv.lock",
+    "sha": "1fd86334a039a4a77948dfb1205a50edbcc31c68",
+    "size": 687271,
+    "url": "https://api.github.com/repos/run-llama/llama_index/contents/uv.lock?ref=main",
+    "html_url": "https://github.com/run-llama/llama_index/blob/main/uv.lock",
+    "git_url": "https://api.github.com/repos/run-llama/llama_index/git/blobs/1fd86334a039a4a77948dfb1205a50edbcc31c68",
+    "download_url": "https://raw.githubusercontent.com/run-llama/llama_index/main/uv.lock",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/run-llama/llama_index/contents/uv.lock?ref=main",
+      "git": "https://api.github.com/repos/run-llama/llama_index/git/blobs/1fd86334a039a4a77948dfb1205a50edbcc31c68",
+      "html": "https://github.com/run-llama/llama_index/blob/main/uv.lock"
+    }
+  }
+]

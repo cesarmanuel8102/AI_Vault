@@ -1,0 +1,24 @@
+{
+  "phase": "P93B_UTILITY_FIRST_PULLBACK_RETRACE",
+  "baseline_label": "UF_PB_R1_BASE",
+  "candidate_label": "UF_PB_R1_A",
+  "verdict": "reject",
+  "reason": "V1 retrace gating eliminated all pullback fills and reverted the system to ORB-only behavior.",
+  "evidence": {
+    "baseline_pb_fills": {
+      "IS_2022_2024": 12,
+      "OOS_2025_2026Q1": 18,
+      "STRESS_2020": 5
+    },
+    "candidate_pb_fills": {
+      "IS_2022_2024": 0,
+      "OOS_2025_2026Q1": 0,
+      "STRESS_2020": 0
+    },
+    "baseline_utility_score": 5.817146,
+    "candidate_utility_score": 3.87653,
+    "baseline_oos_weekly": 0.8287,
+    "candidate_oos_weekly": 0.4809
+  },
+  "hypothesis": "The current pullback alpha retests too deeply toward the OR anchor for a 0.35-0.65 retrace band to be compatible with executed setups."
+}

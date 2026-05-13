@@ -1,0 +1,14 @@
+{
+  "proposal_id": "P_d30ac290c8cdd44a",
+  "tool_name": "append_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\notes\\p3_1_design.md",
+    "content": "# Episode JSON Schema\n\n## Minimum Required Fields\n- Room ID\n- Episode ID\n- Tool Calls\n\n## Evidence\n- Success criteria\n- Applied proposals\n",
+    "text": "# Episode JSON Schema\n\n## Minimum Required Fields\n- Room ID\n- Episode ID\n- Tool Calls\n\n## Evidence\n- Success criteria\n- Applied proposals\n"
+  },
+  "room_id": "room_p3_1_20260303_104350",
+  "step_id": "S4",
+  "created_at": "2026-03-03T16:05:29.708794+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

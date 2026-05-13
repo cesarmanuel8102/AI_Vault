@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_2900d974f4165dae",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "C:\\AI_VAULT\\tmp_agent\\state\\rooms\\autoloop_advisor_v10_20260307_222517\\planner_hardening_request.json",
+    "content": "{\"schema_version\":\"brainlab.roadmap.v1\",\"generated_utc\":\"2026-03-07T01:57:18.2063895Z\",\"project\":{\"name\":\"Brain Lab\",\"goal_primary\":\"Construir un agente local autónomo (con supervisión humana) que planifica, ejecuta y evalúa iterativamente tareas hacia objetivos, respetando legalidad/ética, con SSOT por room, auditoría completa y gobernanza por políticas.\"}}",
+    "raw_content": "{\"schema_version\":\"brainlab.roadmap.v1\",\"generated_utc\":\"2026-03-07T01:57:18.2063895Z\",\"project\":{\"name\":\"Brain Lab\",\"goal_primary\":\"Construir un agente local autónomo (con supervisión humana) que planifica, ejecuta y evalúa iterativamente tareas hacia objetivos, respetando legalidad/ética, con SSOT por room, auditoría completa y gobernanza por políticas.\"}}",
+    "text": "{\"schema_version\":\"brainlab.roadmap.v1\",\"generated_utc\":\"2026-03-07T01:57:18.2063895Z\",\"project\":{\"name\":\"Brain Lab\",\"goal_primary\":\"Construir un agente local autónomo (con supervisión humana) que planifica, ejecuta y evalúa iterativamente tareas hacia objetivos, respetando legalidad/ética, con SSOT por room, auditoría completa y gobernanza por políticas.\"}}"
+  },
+  "room_id": "autoloop_advisor_v10_20260307_222517",
+  "step_id": "P2.1",
+  "created_at": "2026-03-08T03:25:25.453948+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

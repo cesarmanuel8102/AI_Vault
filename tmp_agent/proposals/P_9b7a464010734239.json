@@ -1,0 +1,14 @@
+{
+  "proposal_id": "P_9b7a464010734239",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_autodev_20260303_152119\\plan.json",
+    "content": "{\n  \"schema_version\": \"brainlab.plan.v1\",\n  \"phase\": \"P1_UI_ORCHESTRATION_SSOT_ONLY\",\n  \"work_item\": \"P1.1 Align Blocked panel with /v1/agent/status\",\n  \"objective\": \"Gather code context for status endpoint and UI proxy to design minimal change.\",\n  \"steps\": [\n    {\n      \"id\": \"S1\",\n      \"step_id\": \"S1\",\n      \"status\": \"todo\",\n      \"tool_name\": \"list_dir\",\n      \"tool_args\": {\n        \"path\": \"C:\\\\AI_VAULT\\\\00_identity\"\n      }\n    },\n    {\n      \"id\": \"S2\",\n      \"step_id\": \"S2\",\n      \"status\": \"todo\",\n      \"tool_name\": \"read_file\",\n      \"tool_args\": {\n        \"path\": \"C:\\\\AI_VAULT\\\\00_identity\\\\brain_server.py\"\n      }\n    },\n    {\n      \"id\": \"S3\",\n      \"step_id\": \"S3\",\n      \"status\": \"todo\",\n      \"tool_name\": \"read_file\",\n      \"tool_args\": {\n        \"path\": \"C:\\\\AI_VAULT\\\\00_identity\\\\ui_proxy_server.py\"\n      }\n    }\n  ]\n}\n",
+    "text": "{\n  \"schema_version\": \"brainlab.plan.v1\",\n  \"phase\": \"P1_UI_ORCHESTRATION_SSOT_ONLY\",\n  \"work_item\": \"P1.1 Align Blocked panel with /v1/agent/status\",\n  \"objective\": \"Gather code context for status endpoint and UI proxy to design minimal change.\",\n  \"steps\": [\n    {\n      \"id\": \"S1\",\n      \"step_id\": \"S1\",\n      \"status\": \"todo\",\n      \"tool_name\": \"list_dir\",\n      \"tool_args\": {\n        \"path\": \"C:\\\\AI_VAULT\\\\00_identity\"\n      }\n    },\n    {\n      \"id\": \"S2\",\n      \"step_id\": \"S2\",\n      \"status\": \"todo\",\n      \"tool_name\": \"read_file\",\n      \"tool_args\": {\n        \"path\": \"C:\\\\AI_VAULT\\\\00_identity\\\\brain_server.py\"\n      }\n    },\n    {\n      \"id\": \"S3\",\n      \"step_id\": \"S3\",\n      \"status\": \"todo\",\n      \"tool_name\": \"read_file\",\n      \"tool_args\": {\n        \"path\": \"C:\\\\AI_VAULT\\\\00_identity\\\\ui_proxy_server.py\"\n      }\n    }\n  ]\n}\n"
+  },
+  "room_id": "room_autodev_20260303_152119",
+  "step_id": "S1",
+  "created_at": "2026-03-03T20:22:17.251880+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

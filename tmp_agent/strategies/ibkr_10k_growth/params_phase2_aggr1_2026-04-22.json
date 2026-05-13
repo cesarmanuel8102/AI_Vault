@@ -1,0 +1,19 @@
+{
+  "profile_label": "P2_AGGR1",
+  "initial_cash": 10000,
+  "lookback_fast": 63,
+  "lookback_slow": 252,
+  "sma_filter_period": 200,
+  "atr_period": 20,
+  "max_active": 6,
+  "rebalance_buffer": 0.03,
+  "cooldown_days": 20,
+  "max_single_weight": 0.38,
+  "w_fast": 0.0,
+  "w_slow": 1.0,
+  "vol_penalty": 0.8,
+  "min_abs_signal": 0.0,
+  "gross_risk_on": 1.7,
+  "gross_risk_off": 1.05,
+  "circuit_dd_pct": 0.26
+}

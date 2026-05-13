@@ -1,0 +1,13 @@
+{
+  "proposal_id": "P_9bfab3c79b15bc81",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "C:\\AI_VAULT\\tmp_agent\\proposals\\P1.1_blocked_panel_proposal.txt",
+    "content": "Proposal: P1.1 — Alinear panel Blocked con /v1/agent/status\nRoom: autobuild_brain_openai\nCreated: 2026-03-06T00:00:00Z\n\nObjetivo\n- El panel Blocked en la UI debe leer el estado desde el brain (proxy) y reflejar blocked actual.\n- Tras Apply/Reject, refrescar el estado y mostrar Blocked: — cuando blocked=null.\n\nCambios propuestos (ui_proxy_server.py)\n1) Exponer /ui/api/status que proxyee GET -> brain /v1/agent/status, preservando room_id del query.\n2) UI JS: obtener blocked desde /ui/api/status y renderizar:\n   - Cuando status.blocked existe: mostrar step_id/proposal_id y botones Apply/Reject.\n   - Cuando no existe: mostrar \"Blocked: —\".\n3) Botones Apply/Reject: POST a /ui/api/apply o /ui/api/reject con room_id y proposal_id si aplica; al resolver, en <=2s reconsultar /ui/api/status y actualizar vista.\n4) Manejo de estados: deshabilitar botones durante la solicitud; mostrar errores en un banner.\n\nPruebas (smoke)\n- Positivo: plan con append_file -> run -> aparece blocked; Apply desde UI cambia archivo; /ui/api/status -> blocked=null y UI muestra \"Blocked: —\".\n- Negativo: si no hay blocked, Apply/Reject devuelven no-op y se loggea el intento.\n\nNotas de implementación\n- Reutilizar cliente HTTP del proxy existente para /ui/api/apply|reject.\n- Asegurar coherencia de room_id: la UI lo adjunta en todas las llamadas.\n- Logging mínimo en proxy: request_id, room_id, endpoint, resultado.\n\nCriterios de Hecho\n- Panel refleja correctamente estado blocked según /v1/agent/status.\n- Tras Apply/Reject exitosos, el panel muestra Blocked: — y no persisten propuestas activas.\n"
+  },
+  "room_id": "autobuild_brain_openai",
+  "step_id": "P1.1-S6-proposal-notes",
+  "created_at": "2026-03-06T02:04:55.214107+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

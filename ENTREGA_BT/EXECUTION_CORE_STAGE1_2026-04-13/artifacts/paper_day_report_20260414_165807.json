@@ -1,0 +1,22 @@
+{
+  "generated_at_utc": "2026-04-14T20:58:07Z",
+  "profile_path": "C:\\AI_VAULT\\ENTREGA_BT\\EXECUTION_CORE_STAGE1_2026-04-13\\config\\firm_profiles.mffu_flex50.paper.json",
+  "signals_path": "C:\\AI_VAULT\\ENTREGA_BT\\EXECUTION_CORE_STAGE1_2026-04-13\\config\\paper_day_signals.qc_2026-04-14.json",
+  "summary": {
+    "accepted": 0,
+    "rejected": 0,
+    "total": 0,
+    "reasons": {}
+  },
+  "final_state": {
+    "account_id": "A001",
+    "equity": 50000.0,
+    "day_start_equity": 50000.0,
+    "peak_equity": 50000.0,
+    "open_contracts": 0,
+    "open_positions": 0,
+    "day_pnl_pct": 0.0,
+    "trailing_dd_pct": 0.0
+  },
+  "events": []
+}

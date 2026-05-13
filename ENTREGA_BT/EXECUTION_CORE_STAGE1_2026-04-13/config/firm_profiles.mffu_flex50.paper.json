@@ -1,0 +1,18 @@
+{
+  "profiles": [
+    {
+      "name": "MFFU_FLEX50_PAPER_PILOT",
+      "provider": "TRADOVATE",
+      "automation_allowed": true,
+      "symbols": ["MNQ", "M2K", "MES"],
+      "max_contracts_per_order": 2,
+      "max_contracts_total": 2,
+      "daily_loss_limit_pct": 0.0070,
+      "trailing_drawdown_limit_pct": 0.0300,
+      "allow_overnight": false,
+      "session_start_et": "09:30",
+      "session_end_et": "15:58",
+      "allow_hedging": false
+    }
+  ]
+}

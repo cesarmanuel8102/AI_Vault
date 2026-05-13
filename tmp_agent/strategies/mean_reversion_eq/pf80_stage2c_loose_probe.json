@@ -1,0 +1,70 @@
+{
+  "rows": [
+    {
+      "candidate": "LOOSE_L1",
+      "scenario": "STRESS",
+      "np": -3.1,
+      "dd": 7.5,
+      "dbr": 0,
+      "tbr": 0,
+      "mmean": -0.545,
+      "mmed": -0.114,
+      "id": "bb4bc1a30237494d2bdf397a56f705e8"
+    },
+    {
+      "candidate": "LOOSE_L2",
+      "scenario": "STRESS",
+      "np": -7.872,
+      "dd": 10.0,
+      "dbr": 0,
+      "tbr": 1,
+      "mmean": -7.598,
+      "mmed": -7.598,
+      "id": "572a1b60f9a77df668934895558bda1b"
+    },
+    {
+      "candidate": "LOOSE_L3",
+      "scenario": "STRESS",
+      "np": -7.343,
+      "dd": 10.0,
+      "dbr": 1,
+      "tbr": 1,
+      "mmean": -6.996,
+      "mmed": -6.996,
+      "id": "f59b73a2f10e722e1344219887b43a65"
+    },
+    {
+      "candidate": "LOOSE_L4",
+      "scenario": "STRESS",
+      "np": -6.828,
+      "dd": 10.0,
+      "dbr": 1,
+      "tbr": 1,
+      "mmean": -6.486,
+      "mmed": -6.486,
+      "id": "cbf6429d25f2f08cb5561830d02ac4e5"
+    },
+    {
+      "candidate": "LOOSE_B1",
+      "scenario": "STRESS",
+      "np": -7.872,
+      "dd": 10.0,
+      "dbr": 0,
+      "tbr": 1,
+      "mmean": -7.598,
+      "mmed": -7.598,
+      "id": "d13b0d78b6591712fe2b39ccf8a12c92"
+    },
+    {
+      "candidate": "LOOSE_M1",
+      "scenario": "STRESS",
+      "np": -7.218,
+      "dd": 10.1,
+      "dbr": 1,
+      "tbr": 1,
+      "mmean": -6.73,
+      "mmed": -6.73,
+      "id": "392d62aa3aa9c647873d31056aa9c31c"
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "source_id": "github_BerriAI_litellm_20260508",
+  "curated_at_utc": "2026-05-08T04:57:02.324097Z",
+  "repo": {
+    "full_name": "BerriAI/litellm",
+    "default_branch": "litellm_internal_staging",
+    "updated_at": "2026-05-08T04:55:38Z",
+    "stargazers_count": 46096,
+    "open_issues_count": 2891,
+    "size_kb": 1068338,
+    "language": "Python",
+    "topics": [
+      "ai-gateway",
+      "anthropic",
+      "azure-openai",
+      "bedrock",
+      "gateway",
+      "langchain",
+      "litellm",
+      "llm",
+      "llm-gateway",
+      "llmops",
+      "mcp-gateway",
+      "openai",
+      "openai-proxy",
+      "vertex-ai"
+    ],
+    "tests_present": true,
+    "docs_present": true,
+    "dependency_files": [
+      "package.json",
+      "pyproject.toml"
+    ]
+  },
+  "curation_score": 10.85,
+  "risk_score": 5.75,
+  "license_status": "compatible_review_required",
+  "recommended_action": "reject",
+  "reject_reasons": [
+    "apparent_secrets_in_root"
+  ],
+  "notes": [
+    "high_issue_volume",
+    "source_host_not_in_allowlist_seed"
+  ],
+  "dependency_risk_flags": [],
+  "suspicious_binaries": [],
+  "apparent_secrets": [
+    ".npmrc"
+  ]
+}

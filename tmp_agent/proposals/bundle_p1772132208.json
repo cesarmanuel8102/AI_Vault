@@ -1,0 +1,10 @@
+{
+  "proposal_id": "p1772132208",
+  "items": [
+    {
+      "kind": "modify",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\risk_engine.py",
+      "repo_path": "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk\\risk_engine.py"
+    }
+  ]
+}

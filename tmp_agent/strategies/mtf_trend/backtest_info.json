@@ -1,0 +1,13 @@
+{
+  "project_id": 29721803,
+  "compile_id": "74ea62e753edeb0027854f4fe74fc39b-796ce87bdbf27790b4800f7f9a360508",
+  "backtest_id": "7d6fc2e5ca3bbf86db6adf100a1c98b6",
+  "backtest_name": "MTF-TP V3.4 EOD 2023-2024",
+  "launched_at": "2026-04-06 01:22:52 UTC",
+  "parameters": {
+    "start_year": "2023",
+    "end_year": "2024",
+    "end_month": "12"
+  },
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/mtf_trend/main.py"
+}

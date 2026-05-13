@@ -1,0 +1,434 @@
+[
+  {
+    "name": ".agents",
+    "path": ".agents",
+    "sha": "db97ca74a08f1490534f662a2663d66e3e2f808d",
+    "size": 0,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.agents?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/tree/master/.agents",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/trees/db97ca74a08f1490534f662a2663d66e3e2f808d",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.agents?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/trees/db97ca74a08f1490534f662a2663d66e3e2f808d",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/tree/master/.agents"
+    }
+  },
+  {
+    "name": ".branchlet.json",
+    "path": ".branchlet.json",
+    "sha": "d02cd60e2044826a6ff99493003a039c2391498b",
+    "size": 936,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.branchlet.json?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.branchlet.json",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/d02cd60e2044826a6ff99493003a039c2391498b",
+    "download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/.branchlet.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.branchlet.json?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/d02cd60e2044826a6ff99493003a039c2391498b",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.branchlet.json"
+    }
+  },
+  {
+    "name": ".claude",
+    "path": ".claude",
+    "sha": "b36d1f7fc238bdda28824833559bded294f07a90",
+    "size": 0,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.claude?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/tree/master/.claude",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/trees/b36d1f7fc238bdda28824833559bded294f07a90",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.claude?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/trees/b36d1f7fc238bdda28824833559bded294f07a90",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/tree/master/.claude"
+    }
+  },
+  {
+    "name": ".deepsource.toml",
+    "path": ".deepsource.toml",
+    "sha": "c68a25b032067ed893ca8add91bae346718bd167",
+    "size": 300,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.deepsource.toml?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.deepsource.toml",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/c68a25b032067ed893ca8add91bae346718bd167",
+    "download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/.deepsource.toml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.deepsource.toml?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/c68a25b032067ed893ca8add91bae346718bd167",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.deepsource.toml"
+    }
+  },
+  {
+    "name": ".dockerignore",
+    "path": ".dockerignore",
+    "sha": "427cab29f426a9540e93beca699fb57bdd3a8ea2",
+    "size": 1490,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.dockerignore?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.dockerignore",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/427cab29f426a9540e93beca699fb57bdd3a8ea2",
+    "download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/.dockerignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.dockerignore?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/427cab29f426a9540e93beca699fb57bdd3a8ea2",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.dockerignore"
+    }
+  },
+  {
+    "name": ".gitattributes",
+    "path": ".gitattributes",
+    "sha": "fe0de10e0b4ea886b2baaccbd9944d53f9b77f6c",
+    "size": 231,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.gitattributes?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.gitattributes",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/fe0de10e0b4ea886b2baaccbd9944d53f9b77f6c",
+    "download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/.gitattributes",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.gitattributes?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/fe0de10e0b4ea886b2baaccbd9944d53f9b77f6c",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.gitattributes"
+    }
+  },
+  {
+    "name": ".github",
+    "path": ".github",
+    "sha": "5636bf6ddf6270d37ad73f20f4c833574bbbc403",
+    "size": 0,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.github?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/tree/master/.github",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/trees/5636bf6ddf6270d37ad73f20f4c833574bbbc403",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.github?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/trees/5636bf6ddf6270d37ad73f20f4c833574bbbc403",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/tree/master/.github"
+    }
+  },
+  {
+    "name": ".gitignore",
+    "path": ".gitignore",
+    "sha": "b17115c95a7f711b731893bba5f76220cff97651",
+    "size": 2962,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.gitignore?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.gitignore",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/b17115c95a7f711b731893bba5f76220cff97651",
+    "download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/.gitignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.gitignore?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/b17115c95a7f711b731893bba5f76220cff97651",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.gitignore"
+    }
+  },
+  {
+    "name": ".gitleaks.toml",
+    "path": ".gitleaks.toml",
+    "sha": "75867a7f5046b0de4d1032464324ad945c56d8fd",
+    "size": 1156,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.gitleaks.toml?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.gitleaks.toml",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/75867a7f5046b0de4d1032464324ad945c56d8fd",
+    "download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/.gitleaks.toml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.gitleaks.toml?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/75867a7f5046b0de4d1032464324ad945c56d8fd",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.gitleaks.toml"
+    }
+  },
+  {
+    "name": ".nvmrc",
+    "path": ".nvmrc",
+    "sha": "2bd5a0a98a36cc08ada88b804d3be047e6aa5b8a",
+    "size": 3,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.nvmrc?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.nvmrc",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/2bd5a0a98a36cc08ada88b804d3be047e6aa5b8a",
+    "download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/.nvmrc",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.nvmrc?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/2bd5a0a98a36cc08ada88b804d3be047e6aa5b8a",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.nvmrc"
+    }
+  },
+  {
+    "name": ".pr_agent.toml",
+    "path": ".pr_agent.toml",
+    "sha": "913bf111294945db2bdb4d4af006db86726f77bc",
+    "size": 79,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.pr_agent.toml?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.pr_agent.toml",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/913bf111294945db2bdb4d4af006db86726f77bc",
+    "download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/.pr_agent.toml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.pr_agent.toml?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/913bf111294945db2bdb4d4af006db86726f77bc",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.pr_agent.toml"
+    }
+  },
+  {
+    "name": ".pre-commit-config.yaml",
+    "path": ".pre-commit-config.yaml",
+    "sha": "b5527825ac7359fc59cf375aacaa57e38eb0cb9e",
+    "size": 10541,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.pre-commit-config.yaml?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.pre-commit-config.yaml",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/b5527825ac7359fc59cf375aacaa57e38eb0cb9e",
+    "download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/.pre-commit-config.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.pre-commit-config.yaml?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/b5527825ac7359fc59cf375aacaa57e38eb0cb9e",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.pre-commit-config.yaml"
+    }
+  },
+  {
+    "name": ".secrets.baseline",
+    "path": ".secrets.baseline",
+    "sha": "ebbb89c81317540c23ec6ab6a8292daeffa88f0f",
+    "size": 16035,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.secrets.baseline?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.secrets.baseline",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/ebbb89c81317540c23ec6ab6a8292daeffa88f0f",
+    "download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/.secrets.baseline",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.secrets.baseline?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/ebbb89c81317540c23ec6ab6a8292daeffa88f0f",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/.secrets.baseline"
+    }
+  },
+  {
+    "name": ".vscode",
+    "path": ".vscode",
+    "sha": "6035426f5f58e839fd07092bbe9fe109e3c1f7bf",
+    "size": 0,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.vscode?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/tree/master/.vscode",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/trees/6035426f5f58e839fd07092bbe9fe109e3c1f7bf",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/.vscode?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/trees/6035426f5f58e839fd07092bbe9fe109e3c1f7bf",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/tree/master/.vscode"
+    }
+  },
+  {
+    "name": "AGENTS.md",
+    "path": "AGENTS.md",
+    "sha": "d0b325167cd16fa8dcf131cce1cf7f4d1c2ebbd8",
+    "size": 3818,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/AGENTS.md?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/AGENTS.md",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/d0b325167cd16fa8dcf131cce1cf7f4d1c2ebbd8",
+    "download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/AGENTS.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/AGENTS.md?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/d0b325167cd16fa8dcf131cce1cf7f4d1c2ebbd8",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/AGENTS.md"
+    }
+  },
+  {
+    "name": "CITATION.cff",
+    "path": "CITATION.cff",
+    "sha": "3f6fd8561db3a2db173a57e28b8207022a45b79c",
+    "size": 561,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/CITATION.cff?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/CITATION.cff",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/3f6fd8561db3a2db173a57e28b8207022a45b79c",
+    "download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/CITATION.cff",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/CITATION.cff?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/3f6fd8561db3a2db173a57e28b8207022a45b79c",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/CITATION.cff"
+    }
+  },
+  {
+    "name": "CLAUDE.md",
+    "path": "CLAUDE.md",
+    "sha": "43c994c2d3617f947bcb5adf1933e21dabe46bb5",
+    "size": 11,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/CLAUDE.md?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/CLAUDE.md",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/43c994c2d3617f947bcb5adf1933e21dabe46bb5",
+    "download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/CLAUDE.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/CLAUDE.md?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/43c994c2d3617f947bcb5adf1933e21dabe46bb5",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/CLAUDE.md"
+    }
+  },
+  {
+    "name": "CODE_OF_CONDUCT.md",
+    "path": "CODE_OF_CONDUCT.md",
+    "sha": "a92ea4bd2fd3496e127bbef803d37d28df086513",
+    "size": 1841,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/CODE_OF_CONDUCT.md?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/CODE_OF_CONDUCT.md",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/a92ea4bd2fd3496e127bbef803d37d28df086513",
+    "download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/CODE_OF_CONDUCT.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/CODE_OF_CONDUCT.md?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/a92ea4bd2fd3496e127bbef803d37d28df086513",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/CODE_OF_CONDUCT.md"
+    }
+  },
+  {
+    "name": "CONTRIBUTING.md",
+    "path": "CONTRIBUTING.md",
+    "sha": "e75f545a94a59b62a1f20e9b88bb6ae89e2fbf10",
+    "size": 2224,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/CONTRIBUTING.md?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/CONTRIBUTING.md",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/e75f545a94a59b62a1f20e9b88bb6ae89e2fbf10",
+    "download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/CONTRIBUTING.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/CONTRIBUTING.md?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/e75f545a94a59b62a1f20e9b88bb6ae89e2fbf10",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/CONTRIBUTING.md"
+    }
+  },
+  {
+    "name": "LICENSE",
+    "path": "LICENSE",
+    "sha": "f141042fa4c9cd98aae33c4ede28c266961eaa3f",
+    "size": 8547,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/LICENSE?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/LICENSE",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/f141042fa4c9cd98aae33c4ede28c266961eaa3f",
+    "download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/LICENSE",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/LICENSE?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/f141042fa4c9cd98aae33c4ede28c266961eaa3f",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/LICENSE"
+    }
+  },
+  {
+    "name": "README.md",
+    "path": "README.md",
+    "sha": "9b8ce8b4a9d59fa53c461589b5e133ef0d0aaebc",
+    "size": 11844,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/README.md?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/README.md",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/9b8ce8b4a9d59fa53c461589b5e133ef0d0aaebc",
+    "download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/README.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/README.md?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/9b8ce8b4a9d59fa53c461589b5e133ef0d0aaebc",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/README.md"
+    }
+  },
+  {
+    "name": "SECURITY.md",
+    "path": "SECURITY.md",
+    "sha": "45705d71066916867b90088cd8fb9f6fdf24a2f6",
+    "size": 2435,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/SECURITY.md?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/SECURITY.md",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/45705d71066916867b90088cd8fb9f6fdf24a2f6",
+    "download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/SECURITY.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/SECURITY.md?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/45705d71066916867b90088cd8fb9f6fdf24a2f6",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/SECURITY.md"
+    }
+  },
+  {
+    "name": "assets",
+    "path": "assets",
+    "sha": "a0d9d159eb2c92a6b745e1668a339d606e36322a",
+    "size": 0,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/assets?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/tree/master/assets",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/trees/a0d9d159eb2c92a6b745e1668a339d606e36322a",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/assets?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/trees/a0d9d159eb2c92a6b745e1668a339d606e36322a",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/tree/master/assets"
+    }
+  },
+  {
+    "name": "autogpt_platform",
+    "path": "autogpt_platform",
+    "sha": "9917d7f386c8764dda6554f6fafda39e94e1936e",
+    "size": 0,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/autogpt_platform?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/tree/master/autogpt_platform",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/trees/9917d7f386c8764dda6554f6fafda39e94e1936e",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/autogpt_platform?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/trees/9917d7f386c8764dda6554f6fafda39e94e1936e",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/tree/master/autogpt_platform"
+    }
+  },
+  {
+    "name": "classic",
+    "path": "classic",
+    "sha": "eb2b273402eeb47f126242cae7f794c502c42b1d",
+    "size": 0,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/classic?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/tree/master/classic",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/trees/eb2b273402eeb47f126242cae7f794c502c42b1d",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/classic?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/trees/eb2b273402eeb47f126242cae7f794c502c42b1d",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/tree/master/classic"
+    }
+  },
+  {
+    "name": "codecov.yml",
+    "path": "codecov.yml",
+    "sha": "a0973b571752a766c7f5bdee93637a21f97f2252",
+    "size": 2102,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/codecov.yml?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/codecov.yml",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/a0973b571752a766c7f5bdee93637a21f97f2252",
+    "download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/codecov.yml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/codecov.yml?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/blobs/a0973b571752a766c7f5bdee93637a21f97f2252",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/blob/master/codecov.yml"
+    }
+  },
+  {
+    "name": "docs",
+    "path": "docs",
+    "sha": "62adf3a5f8ab1f3ec4a348e9228bebaf72d37eea",
+    "size": 0,
+    "url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/docs?ref=master",
+    "html_url": "https://github.com/Significant-Gravitas/AutoGPT/tree/master/docs",
+    "git_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/trees/62adf3a5f8ab1f3ec4a348e9228bebaf72d37eea",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/contents/docs?ref=master",
+      "git": "https://api.github.com/repos/Significant-Gravitas/AutoGPT/git/trees/62adf3a5f8ab1f3ec4a348e9228bebaf72d37eea",
+      "html": "https://github.com/Significant-Gravitas/AutoGPT/tree/master/docs"
+    }
+  }
+]

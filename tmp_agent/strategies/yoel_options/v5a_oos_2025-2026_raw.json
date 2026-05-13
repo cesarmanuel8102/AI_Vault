@@ -1,0 +1,84 @@
+{
+  "backtest": {
+    "note": "",
+    "name": "V5a OOS 2025-2026",
+    "organizationId": "6d487993ca17881264c2ac55e41ae539",
+    "projectId": 29490680,
+    "completed": true,
+    "optimizationId": null,
+    "backtestId": "cad6ffbf6a0720036d952a7b5af1dd5b",
+    "tradeableDates": 314,
+    "researchGuide": {
+      "minutes": 403,
+      "backtestCount": 274,
+      "parameters": 0
+    },
+    "backtestStart": "2025-01-01 00:00:00",
+    "backtestEnd": "2026-04-06 23:59:59",
+    "created": "2026-04-07 15:17:46",
+    "snapshotId": 29789653,
+    "status": "Completed.",
+    "error": null,
+    "stacktrace": null,
+    "progress": 1,
+    "hasInitializeError": false,
+    "charts": {
+      "Strategy Equity": {
+        "name": "Strategy Equity"
+      },
+      "Benchmark": {
+        "name": "Benchmark"
+      },
+      "Portfolio Margin": {
+        "name": "Portfolio Margin"
+      },
+      "Assets Sales Volume": {
+        "name": "Assets Sales Volume"
+      },
+      "Drawdown": {
+        "name": "Drawdown"
+      },
+      "Portfolio Turnover": {
+        "name": "Portfolio Turnover"
+      },
+      "Exposure": {
+        "name": "Exposure"
+      },
+      "Capacity": {
+        "name": "Capacity"
+      }
+    },
+    "parameterSet": {
+      "enable_fix2": "0",
+      "enable_fix3": "1",
+      "enable_fix4": "0",
+      "trail_act": "0.20",
+      "trail_pct": "0.50",
+      "profit_target_pct": "0.35",
+      "stop_loss_pct": "-0.20",
+      "risk_per_trade": "0.04",
+      "dte_min": "14",
+      "dte_max": "30",
+      "start_year": "2025",
+      "end_year": "2026",
+      "end_month": "4"
+    },
+    "rollingWindow": null,
+    "runtimeStatistics": {
+      "Equity": "$9,592.70",
+      "Fees": "-$116.30",
+      "Holdings": "$0.00",
+      "Net Profit": "$-407.30",
+      "Probabilistic Sharpe Ratio": "9.964%",
+      "Return": "-4.07 %",
+      "Unrealized": "$0.00",
+      "Volume": "$112,529.00"
+    },
+    "statistics": {},
+    "totalPerformance": null,
+    "nodeName": "B2-8 node c2b99bc1",
+    "outOfSampleMaxEndDate": null,
+    "outOfSampleDays": null
+  },
+  "success": true
+}

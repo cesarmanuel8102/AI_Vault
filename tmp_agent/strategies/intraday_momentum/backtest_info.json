@@ -1,0 +1,13 @@
+{
+  "project_id": 29652652,
+  "compile_id": "9a19056704e7dd15b255eb0a2f78bcc6-c413a691d88ea931e22df155e9d12144",
+  "backtest_id": "5d7c0f89071f9a3ee7e1cd3dd66b4bfd",
+  "backtest_name": "IM-V1.0 IS",
+  "launched_at": "2026-04-04 02:37:10 UTC",
+  "parameters": {
+    "start_year": "2010",
+    "end_year": "2020",
+    "end_month": "12"
+  },
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/intraday_momentum/main.py"
+}

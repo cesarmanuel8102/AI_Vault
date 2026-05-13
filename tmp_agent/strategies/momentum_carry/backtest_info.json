@@ -1,0 +1,18 @@
+{
+  "project_id": 29652652,
+  "compile_id": "f65f086cfbea4e85799f7e4b4412aa0e-dd1f50b2e01cd3be59db72ddb3fa725e",
+  "backtest_id": "3d06dda540774da2c1af23770f4ad9ea",
+  "backtest_name": "MC V1.3b mom252d monthly 3L3S noStop risk5",
+  "launched_at": "2026-04-03 21:38:52 UTC",
+  "parameters": {
+    "mom_window": "252",
+    "short_mom": "63",
+    "num_long": "3",
+    "num_short": "3",
+    "risk_pos": "0.05",
+    "vol_crash": "2.0",
+    "atr_stop": "0",
+    "rebal_freq": "4"
+  },
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/momentum_carry/main.py"
+}

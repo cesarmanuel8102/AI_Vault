@@ -1,0 +1,67 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Logs
+logs/
+*.log
+*.ndjson
+
+# Runtime state
+tmp_agent/state/
+tmp_agent/runtime/
+tmp_agent/cache/
+
+# Databases
+*.db
+*.sqlite
+
+# Secrets
+.env
+*.env
+secrets/
+keys/
+
+# Ollama / models
+models/
+*.gguf
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Backups
+*.bak
+*.tmp
+agent_endpoint_hits.txt
+agent_config_hits_clean.txt
+*.txt
+
+agent_endpoint_hits.txt
+agent_config_hits_clean.txt
+*.txt
+tmp_agent/state/
+50_LOGS/
+backups/
+*.log
+*.ndjson
+*.db
+*.sqlite
+.env
+*.env
+*.bat
+
+tmp_agent/state/
+repos/
+tmp_agent/Secrets/
+agent_config_hits_clean.txt
+agent_endpoint_hits.txt
+*.har.json
+*.ndjson
+*.txt

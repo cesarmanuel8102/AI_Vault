@@ -1,0 +1,15 @@
+{
+  "project_id": 29652652,
+  "compile_id": "17b2123688b8330a46f860092d747f04-e247dc0520e700256fbcec2631cb9f10",
+  "backtest_id": "bf8c06666ac2a27c4620f3a57c18c463",
+  "backtest_name": "VRMR-V1.2 IS 2010-2020 HV50",
+  "launched_at": "2026-04-04 00:41:31 UTC",
+  "parameters": {
+    "start_year": "2010",
+    "end_year": "2020",
+    "zscore_entry": "2.0",
+    "hv_pctl_max": "50",
+    "adx_max": "22"
+  },
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/vol_regime_mr/main.py"
+}

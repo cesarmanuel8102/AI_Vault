@@ -1,0 +1,16 @@
+{
+  "source_id": "github_crewAIInc_crewAI_20260508",
+  "source_type": "github_repo",
+  "url": "https://github.com/crewAIInc/crewAI",
+  "owner": "crewAIInc",
+  "repo": "crewAI",
+  "ingested_at_utc": "2026-05-08T04:56:51.014447Z",
+  "local_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\crewAIInc_crewAI",
+  "status": "downloaded",
+  "hash": "03c6f73e19e7a4583f609b0d44e4a86fe5eea355dabb8c4076110d8ee0e08605",
+  "files_indexed": 14,
+  "repo_api_url": "https://api.github.com/repos/crewAIInc/crewAI",
+  "readme_download_url": "https://raw.githubusercontent.com/crewAIInc/crewAI/main/README.md",
+  "root_index_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\crewAIInc_crewAI\\root_index.json",
+  "dependency_hints_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\crewAIInc_crewAI\\dependency_hints.json"
+}

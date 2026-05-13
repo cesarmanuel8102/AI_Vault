@@ -1,0 +1,273 @@
+{
+  "mission_id": "mission_8bfb4c4c7c8a",
+  "created_ts": "2026-02-26T15:07:28.916815Z",
+  "updated_ts": "2026-02-26T15:08:44.584067Z",
+  "profile": "default",
+  "cursor": 3,
+  "steps": [
+    {
+      "id": "s1",
+      "title": "Listar archivos en el directorio raíz del workspace",
+      "status": "done",
+      "tool_calls": [
+        {
+          "tool": "list_dir",
+          "args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          }
+        }
+      ],
+      "result": [
+        {
+          "tool": "list_dir",
+          "ok": true,
+          "output": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab",
+            "items": [
+              {
+                "name": ".git",
+                "is_dir": true,
+                "size": 4096
+              },
+              {
+                "name": ".gitattributes",
+                "is_dir": false,
+                "size": 87
+              },
+              {
+                "name": ".gitignore",
+                "is_dir": false,
+                "size": 72
+              },
+              {
+                "name": ".gitkeep",
+                "is_dir": false,
+                "size": 0
+              },
+              {
+                "name": ".pytest_cache",
+                "is_dir": true,
+                "size": 0
+              },
+              {
+                "name": "bad.txt",
+                "is_dir": false,
+                "size": 43
+              },
+              {
+                "name": "brainlab",
+                "is_dir": true,
+                "size": 0
+              },
+              {
+                "name": "compat_content.txt",
+                "is_dir": false,
+                "size": 14
+              },
+              {
+                "name": "config",
+                "is_dir": true,
+                "size": 0
+              },
+              {
+                "name": "data",
+                "is_dir": true,
+                "size": 0
+              },
+              {
+                "name": "demo.txt",
+                "is_dir": false,
+                "size": 36
+              },
+              {
+                "name": "docs",
+                "is_dir": true,
+                "size": 49152
+              },
+              {
+                "name": "dummy_apply.txt",
+                "is_dir": false,
+                "size": 41
+              },
+              {
+                "name": "dummy_apply.txt.bak_20260224_215609",
+                "is_dir": false,
+                "size": 41
+              },
+              {
+                "name": "dummy_apply.txt.bak_20260224_220203",
+                "is_dir": false,
+                "size": 41
+              },
+              {
+                "name": "dummy_apply.txt.bak_20260224_220504",
+                "is_dir": false,
+                "size": 41
+              },
+              {
+                "name": "dummy_apply.txt.bak_20260225_135248",
+                "is_dir": false,
+                "size": 41
+              },
+              {
+                "name": "dummy_apply.txt.bak_20260225_135255",
+                "is_dir": false,
+                "size": 41
+              },
+              {
+                "name": "dummy_apply.txt.bak_20260225_135840",
+                "is_dir": false,
+                "size": 41
+              },
+              {
+                "name": "dummy_apply.txt.bak_20260225_141042",
+                "is_dir": false,
+                "size": 41
+              },
+              {
+                "name": "dummy_apply.txt.bak_20260225_141249",
+                "is_dir": false,
+                "size": 41
+              },
+              {
+                "name": "dummy_apply.txt.bak_20260225_141421",
+                "is_dir": false,
+                "size": 41
+              },
+              {
+                "name": "dummy_apply.txt.bak_20260225_141604",
+                "is_dir": false,
+                "size": 41
+              },
+              {
+                "name": "dummy_apply.txt.bak_20260225_141708",
+                "is_dir": false,
+                "size": 41
+              },
+              {
+                "name": "dummy_apply.txt.bak_20260225_142019",
+                "is_dir": false,
+                "size": 41
+              },
+              {
+                "name": "example.txt",
+                "is_dir": false,
+                "size": 24
+              },
+              {
+                "name": "good.txt",
+                "is_dir": false,
+                "size": 30
+              },
+              {
+                "name": "hack.txt",
+                "is_dir": false,
+                "size": 31
+              },
+              {
+                "name": "logs",
+                "is_dir": true,
+                "size": 0
+              },
+              {
+                "name": "newfile.txt",
+                "is_dir": false,
+                "size": 39
+              },
+              {
+                "name": "note.txt",
+                "is_dir": false,
+                "size": 27
+              },
+              {
+                "name": "permissions.txt",
+                "is_dir": false,
+                "size": 896
+              },
+              {
+                "name": "ranked_test.txt",
+                "is_dir": false,
+                "size": 0
+              },
+              {
+                "name": "README.md",
+                "is_dir": false,
+                "size": 79
+              },
+              {
+                "name": "src",
+                "is_dir": true,
+                "size": 0
+              },
+              {
+                "name": "sync_rank.txt",
+                "is_dir": false,
+                "size": 0
+              },
+              {
+                "name": "tests",
+                "is_dir": true,
+                "size": 4096
+              }
+            ]
+          },
+          "error": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "s2",
+      "title": "Leer el archivo README.md si existe, de lo contrario demo.txt o permissions.txt",
+      "status": "done",
+      "tool_calls": [
+        {
+          "tool": "read_file",
+          "args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\README.md"
+          }
+        }
+      ],
+      "result": [
+        {
+          "tool": "read_file",
+          "ok": true,
+          "output": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\README.md",
+            "text": "# Bienvenido a BrainLab\r\nAquí es donde almacenamos nuestros proyectos y datos.",
+            "truncated": false
+          },
+          "error": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "s3",
+      "title": "Escribir un resumen del archivo leído en summary_<ts>.md",
+      "status": "done",
+      "tool_calls": [
+        {
+          "tool": "write_file",
+          "args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\summary_1689379200.md",
+            "text": "- # Bienvenido a BrainLab\n- Aquí es donde almacenamos nuestros proyectos y datos."
+          }
+        }
+      ],
+      "result": [
+        {
+          "tool": "write_file",
+          "ok": true,
+          "output": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\summary_1689379200.md",
+            "bytes": 82
+          },
+          "error": null
+        }
+      ],
+      "error": null
+    }
+  ],
+  "updated_at": 1772118524
+}

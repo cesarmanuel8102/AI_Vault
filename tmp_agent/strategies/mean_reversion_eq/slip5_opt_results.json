@@ -1,0 +1,170 @@
+[
+  {
+    "label": "S01_C11",
+    "params": {
+      "rsi_entry": 9,
+      "risk_per_trade": 0.03,
+      "atr_stop_mult": 1.6,
+      "max_alloc_pct": 0.5,
+      "max_positions": 4
+    },
+    "is_np": 16.782,
+    "is_dd": 9.3,
+    "is_orders": "274",
+    "is_id": "a410e157009736442bf2f544bd93bec9",
+    "oos_np": 8.614,
+    "oos_dd": 10.7,
+    "oos_orders": "112",
+    "oos_id": "f9fd7d9a6de115ef1664c4d49a5b1beb",
+    "is_error": null,
+    "oos_error": null,
+    "score": 9.798000000000005
+  },
+  {
+    "label": "S02_C08",
+    "params": {
+      "rsi_entry": 9,
+      "risk_per_trade": 0.025,
+      "atr_stop_mult": 1.6,
+      "max_alloc_pct": 0.45,
+      "max_positions": 4
+    },
+    "is_np": 14.789,
+    "is_dd": 8.4,
+    "is_orders": "274",
+    "is_id": "f7be548c32e5203d0b794467329090b5",
+    "oos_np": 7.803,
+    "oos_dd": 9.5,
+    "oos_orders": "112",
+    "oos_id": "16b011789ff0ad7ed9ceca24f631af90",
+    "is_error": null,
+    "oos_error": null,
+    "score": 8.891000000000002
+  },
+  {
+    "label": "S03",
+    "params": {
+      "rsi_entry": 8,
+      "risk_per_trade": 0.03,
+      "atr_stop_mult": 1.7,
+      "max_alloc_pct": 0.5,
+      "max_positions": 4
+    },
+    "is_np": 14.614,
+    "is_dd": 11.8,
+    "is_orders": "247",
+    "is_id": "bc2cf5d2be9d47f98b6f12556b82c530",
+    "oos_np": 6.872,
+    "oos_dd": 10.1,
+    "oos_orders": "102",
+    "oos_id": "b98e9c46ef1078808ee7830eef94110b",
+    "is_error": null,
+    "oos_error": null,
+    "score": 5.585200000000001
+  },
+  {
+    "label": "S04",
+    "params": {
+      "rsi_entry": 7,
+      "risk_per_trade": 0.03,
+      "atr_stop_mult": 1.8,
+      "max_alloc_pct": 0.5,
+      "max_positions": 4
+    },
+    "is_np": 17.053,
+    "is_dd": 10.0,
+    "is_orders": "215",
+    "is_id": "325a5958a48d8405a648d54523296203",
+    "oos_np": 4.576,
+    "oos_dd": 10.8,
+    "oos_orders": "90",
+    "oos_id": "e112687ece4dc171ed337d05c09af323",
+    "is_error": null,
+    "oos_error": null,
+    "score": 2.337999999999999
+  },
+  {
+    "label": "S05",
+    "params": {
+      "rsi_entry": 6,
+      "risk_per_trade": 0.03,
+      "atr_stop_mult": 2.0,
+      "max_alloc_pct": 0.5,
+      "max_positions": 4
+    },
+    "is_np": 19.914,
+    "is_dd": 8.8,
+    "is_orders": "192",
+    "is_id": "62c7a450ae50d03fa1e502f92551d0d0",
+    "oos_np": 7.119,
+    "oos_dd": 11.1,
+    "oos_orders": "86",
+    "oos_id": "f0708fd64a66bd4dc0264ef4f4eeb1c6",
+    "is_error": null,
+    "oos_error": null,
+    "score": 8.149799999999999
+  },
+  {
+    "label": "S06",
+    "params": {
+      "rsi_entry": 8,
+      "risk_per_trade": 0.025,
+      "atr_stop_mult": 1.8,
+      "max_alloc_pct": 0.45,
+      "max_positions": 3
+    },
+    "is_np": 12.652,
+    "is_dd": 11.2,
+    "is_orders": "245",
+    "is_id": "2e7ea8332b2e0fde2550f068a5ce5e3d",
+    "oos_np": 7.214,
+    "oos_dd": 7.1,
+    "oos_orders": "94",
+    "oos_id": "7ea027555ddfb2c46fdae04f1ae88e10",
+    "is_error": null,
+    "oos_error": null,
+    "score": 8.296000000000003
+  },
+  {
+    "label": "S07",
+    "params": {
+      "rsi_entry": 7,
+      "risk_per_trade": 0.025,
+      "atr_stop_mult": 2.0,
+      "max_alloc_pct": 0.45,
+      "max_positions": 3
+    },
+    "is_np": 17.578,
+    "is_dd": 8.1,
+    "is_orders": "209",
+    "is_id": "ce3e0d4eab0c31aee892bbe71f43df9c",
+    "oos_np": 6.217,
+    "oos_dd": 8.5,
+    "oos_orders": "86",
+    "oos_id": "a68c8db07dfd034524cb22803e2d77e0",
+    "is_error": null,
+    "oos_error": null,
+    "score": 8.1418
+  },
+  {
+    "label": "S08",
+    "params": {
+      "rsi_entry": 10,
+      "risk_per_trade": 0.02,
+      "atr_stop_mult": 2.0,
+      "max_alloc_pct": 0.35,
+      "max_positions": 3
+    },
+    "is_np": 17.962,
+    "is_dd": 7.1,
+    "is_orders": "282",
+    "is_id": "7c8e1b304dcb0c57e15a553fde757501",
+    "oos_np": 7.949,
+    "oos_dd": 6.6,
+    "oos_orders": "114",
+    "oos_id": "88c725fc6f8a8f1d48365355bb6ccb1d",
+    "is_error": null,
+    "oos_error": null,
+    "score": 13.423000000000002
+  }
+]

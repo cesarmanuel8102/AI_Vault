@@ -1,0 +1,1 @@
+import QuantConnect as QC; # agregar código de backtest aquí

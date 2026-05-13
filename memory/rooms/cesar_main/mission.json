@@ -1,0 +1,18 @@
+{
+  "goal": "Brain Lab: reportes SOLO en brainlab\\docs (NO fuera del repo_root).",
+  "constraints": [
+    "No ejecutar PowerShell",
+    "Solo escribir dentro del repo_root",
+    "Reportes solo en docs"
+  ],
+  "metrics": [
+    "progress",
+    "risk",
+    "time"
+  ],
+  "created_ts": "2026-02-21 15:15:00",
+  "updated_ts": "2026-02-22 21:36:50",
+  "status": "active",
+  "notes": "run_agent_full 20260222_213650",
+  "repo_root": "C:\\AI_VAULT\\workspace\\brainlab"
+}

@@ -1,0 +1,13 @@
+{
+  "project_id": 29652652,
+  "compile_id": "ce6b32d8bacf6f7860058ee192bb1dd3-4c18e7bfd30f03d6464396114e35b8e0",
+  "backtest_id": "5ae6b56da17facdeb12707911f372421",
+  "backtest_name": "SA-V1.0 IS",
+  "launched_at": "2026-04-04 02:18:19 UTC",
+  "parameters": {
+    "start_year": "2010",
+    "end_year": "2020",
+    "end_month": "12"
+  },
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/stat_arb_pairs/main.py"
+}

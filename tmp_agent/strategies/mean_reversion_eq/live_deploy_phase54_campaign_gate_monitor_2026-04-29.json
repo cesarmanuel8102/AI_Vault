@@ -1,0 +1,55 @@
+{
+  "generated_at_utc": "2026-04-29T22:08:55.946955+00:00",
+  "project_id": 30874635,
+  "profile": "PHASE54_CAMPAIGN_GATE_MONITOR",
+  "steps": [
+    {
+      "step": "files_update_main",
+      "data": {
+        "source": "C:\\AI_VAULT\\tmp_agent\\strategies\\mean_reversion_eq\\main_phase54_campaign_gate_monitor.py",
+        "success": true
+      }
+    },
+    {
+      "step": "project_params_set",
+      "data": {
+        "monitor_label": "PHASE54_CAMPAIGN_GATE_MONITOR",
+        "start_year": 2024,
+        "start_month": 10,
+        "start_day": 1
+      }
+    },
+    {
+      "step": "compile_done",
+      "data": {
+        "compileId": "e5a63ca8bcf6d423bb9a02bb80ca3ae3-6368ed22a8f7084d3afc78d32350b0d5"
+      }
+    },
+    {
+      "step": "live_before",
+      "data": {
+        "status": "",
+        "deployId": null,
+        "brokerage": null,
+        "nodeId": null
+      }
+    },
+    {
+      "step": "live_create_failed",
+      "data": [
+        {
+          "retry": 1,
+          "errors": [
+            "Given node is currently being used."
+          ],
+          "response": {
+            "errors": [
+              "Given node is currently being used."
+            ],
+            "success": false
+          }
+        }
+      ]
+    }
+  ]
+}

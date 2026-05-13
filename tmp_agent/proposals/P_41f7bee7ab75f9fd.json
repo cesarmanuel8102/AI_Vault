@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_41f7bee7ab75f9fd",
+  "tool_name": "append_file",
+  "tool_args": {
+    "content": "loop 2026-03-04T22:56:21Z\n",
+    "path": "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_loop_inline_20260304_175620\\loop.txt",
+    "raw_content": "loop {{now_iso}}\\n",
+    "text": "loop 2026-03-04T22:56:21Z\n"
+  },
+  "room_id": "room_loop_inline_20260304_175620",
+  "step_id": "S1",
+  "created_at": "2026-03-04T22:56:21.082178+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

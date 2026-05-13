@@ -1,0 +1,23 @@
+{
+  "project_id": 29652652,
+  "compile_id": "93e603b9ed062ea1e0bf8c761ba2c599-429336e16f3642b59dde426cc9c51899",
+  "backtest_id": "2701a1365282ea5cf9c13582dd6258d5",
+  "backtest_name": "Carry-V1.1 OOS 2023-2024",
+  "launched_at": "2026-04-03 23:17:13 UTC",
+  "parameters": {
+    "start_year": "2023",
+    "end_year": "2024",
+    "end_month": "12",
+    "risk_per_trade": "0.02",
+    "top_n": "3",
+    "bottom_n": "3",
+    "atr_period": "14",
+    "stop_atr_mult": "1.5",
+    "rebalance_freq": "10",
+    "trend_filter": "0",
+    "sma_period": "50",
+    "max_dd_pct": "0.20",
+    "max_daily_risk": "0.04"
+  },
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/carry_trade/main.py"
+}

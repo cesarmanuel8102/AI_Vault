@@ -1,0 +1,14 @@
+{
+  "proposal_id": "P_c257f1006aac20df",
+  "tool_name": "append_file",
+  "tool_args": {
+    "path": "C:\\AI_VAULT\\tmp_agent\\state\\rooms\\room_p3_1_smoke_20260303_150142\\smoke.txt",
+    "content": "hello_episode\n",
+    "text": "hello_episode\n"
+  },
+  "room_id": "room_p3_1_smoke_20260303_150142",
+  "step_id": "S1",
+  "created_at": "2026-03-03T20:01:42.531264+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

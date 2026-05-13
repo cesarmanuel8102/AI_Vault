@@ -1,0 +1,1053 @@
+{
+  "generated_at_utc": "2026-05-04T00:34:33.140001+00:00",
+  "compile_id": "c3b7c1088afac28af4a6011b620bb19a-59de6c7fd36dbdf4b26033df649d6ae0",
+  "results": {
+    "P59_BASE_REF": {
+      "overrides": {},
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "1f0c90c23745ea6cfae0b8000622eb0f",
+          "np_pct": -1.068,
+          "dd_pct": 3.1,
+          "orders": 169,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 148,
+          "tr_mr": 0,
+          "tr_orb": 43,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_BASE_REF",
+          "scenario": "IS_2022_2024",
+          "overrides": {}
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "9941af6df2e06add1d085de5bb0defb9",
+          "np_pct": 7.451,
+          "dd_pct": 2.8,
+          "orders": 95,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 64,
+          "tr_mr": 0,
+          "tr_orb": 25,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_BASE_REF",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {}
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "543665137240c4c1d905bcf0d9197698",
+          "np_pct": 0.321,
+          "dd_pct": 1.2,
+          "orders": 35,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 63,
+          "tr_mr": 0,
+          "tr_orb": 9,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_BASE_REF",
+          "scenario": "STRESS_2020",
+          "overrides": {}
+        }
+      },
+      "pass_all": true
+    },
+    "P59_G08": {
+      "overrides": {
+        "s_max_gap_pct": 0.08
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "ada2139f4cb2330403711e3af679bad0",
+          "np_pct": -1.068,
+          "dd_pct": 3.1,
+          "orders": 169,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 148,
+          "tr_mr": 0,
+          "tr_orb": 43,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_G08",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "s_max_gap_pct": 0.08
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "58b525809de9ac5d73d2ef078ccf3ffb",
+          "np_pct": 7.451,
+          "dd_pct": 2.8,
+          "orders": 95,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 64,
+          "tr_mr": 0,
+          "tr_orb": 25,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_G08",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "s_max_gap_pct": 0.08
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "fa850ec94d42db72e6891d96b7ea91b0",
+          "np_pct": 0.321,
+          "dd_pct": 1.2,
+          "orders": 35,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 63,
+          "tr_mr": 0,
+          "tr_orb": 9,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_G08",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "s_max_gap_pct": 0.08
+          }
+        }
+      },
+      "pass_all": true,
+      "checks": {
+        "nodeg_IS_2022_2024": true,
+        "nodeg_OOS_2025_2026Q1": true,
+        "nodeg_STRESS_2020": true
+      }
+    },
+    "P59_G10": {
+      "overrides": {
+        "s_max_gap_pct": 0.1
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "a99dab9317e7e037d32fb053b2d434df",
+          "np_pct": -1.068,
+          "dd_pct": 3.1,
+          "orders": 169,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 148,
+          "tr_mr": 0,
+          "tr_orb": 43,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_G10",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "s_max_gap_pct": 0.1
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "a336e89d6ee22e695e4784e53ce9e6ac",
+          "np_pct": 7.451,
+          "dd_pct": 2.8,
+          "orders": 95,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 64,
+          "tr_mr": 0,
+          "tr_orb": 25,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_G10",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "s_max_gap_pct": 0.1
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "52dab5313a474bf657e45db64cc745c8",
+          "np_pct": 0.321,
+          "dd_pct": 1.2,
+          "orders": 35,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 63,
+          "tr_mr": 0,
+          "tr_orb": 9,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_G10",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "s_max_gap_pct": 0.1
+          }
+        }
+      },
+      "pass_all": true,
+      "checks": {
+        "nodeg_IS_2022_2024": true,
+        "nodeg_OOS_2025_2026Q1": true,
+        "nodeg_STRESS_2020": true
+      }
+    },
+    "P59_G12": {
+      "overrides": {
+        "s_max_gap_pct": 0.12
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "38df5ba557dcca2c1d741c146ca057bd",
+          "np_pct": -1.068,
+          "dd_pct": 3.1,
+          "orders": 169,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 148,
+          "tr_mr": 0,
+          "tr_orb": 43,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_G12",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "s_max_gap_pct": 0.12
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "08580719d8ba136dd60164db98ce300a",
+          "np_pct": 7.451,
+          "dd_pct": 2.8,
+          "orders": 95,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 64,
+          "tr_mr": 0,
+          "tr_orb": 25,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_G12",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "s_max_gap_pct": 0.12
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "9297949f797cba4ce761dd19753248be",
+          "np_pct": 0.331,
+          "dd_pct": 1.4,
+          "orders": 46,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 63,
+          "tr_mr": 0,
+          "tr_orb": 9,
+          "tr_stress": 3,
+          "pnl_stress": 10.0,
+          "candidate": "P59_G12",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "s_max_gap_pct": 0.12
+          }
+        }
+      },
+      "pass_all": false,
+      "checks": {
+        "nodeg_IS_2022_2024": true,
+        "nodeg_OOS_2025_2026Q1": true,
+        "nodeg_STRESS_2020": false
+      }
+    },
+    "P59_G10_SHORTS": {
+      "overrides": {
+        "s_max_gap_pct": 0.1,
+        "s_disable_longs": 1
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "3fc52bb8e8ee9ef9e79ce1447f84d908",
+          "np_pct": -1.068,
+          "dd_pct": 3.1,
+          "orders": 169,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 148,
+          "tr_mr": 0,
+          "tr_orb": 43,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_G10_SHORTS",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "s_max_gap_pct": 0.1,
+            "s_disable_longs": 1
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "f4f3bf0aff0456a83deba113ac41f2ca",
+          "np_pct": 7.451,
+          "dd_pct": 2.8,
+          "orders": 95,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 64,
+          "tr_mr": 0,
+          "tr_orb": 25,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_G10_SHORTS",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "s_max_gap_pct": 0.1,
+            "s_disable_longs": 1
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "05789b0c5f2c835c7c310a4e8c250c09",
+          "np_pct": 0.321,
+          "dd_pct": 1.2,
+          "orders": 35,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 63,
+          "tr_mr": 0,
+          "tr_orb": 9,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_G10_SHORTS",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "s_max_gap_pct": 0.1,
+            "s_disable_longs": 1
+          }
+        }
+      },
+      "pass_all": true,
+      "checks": {
+        "nodeg_IS_2022_2024": true,
+        "nodeg_OOS_2025_2026Q1": true,
+        "nodeg_STRESS_2020": true
+      }
+    },
+    "P59_G12_SHORTS": {
+      "overrides": {
+        "s_max_gap_pct": 0.12,
+        "s_disable_longs": 1
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "ef0aff92319e595b5d3aeaaa4b130100",
+          "np_pct": -1.068,
+          "dd_pct": 3.1,
+          "orders": 169,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 148,
+          "tr_mr": 0,
+          "tr_orb": 43,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_G12_SHORTS",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "s_max_gap_pct": 0.12,
+            "s_disable_longs": 1
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "f890ea0ae96e4441e1b4d4230242fd71",
+          "np_pct": 7.451,
+          "dd_pct": 2.8,
+          "orders": 95,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 64,
+          "tr_mr": 0,
+          "tr_orb": 25,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_G12_SHORTS",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "s_max_gap_pct": 0.12,
+            "s_disable_longs": 1
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "1f4c48ac3695fbffb3f6cc0178e46daa",
+          "np_pct": 0.331,
+          "dd_pct": 1.4,
+          "orders": 46,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 63,
+          "tr_mr": 0,
+          "tr_orb": 9,
+          "tr_stress": 3,
+          "pnl_stress": 10.0,
+          "candidate": "P59_G12_SHORTS",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "s_max_gap_pct": 0.12,
+            "s_disable_longs": 1
+          }
+        }
+      },
+      "pass_all": false,
+      "checks": {
+        "nodeg_IS_2022_2024": true,
+        "nodeg_OOS_2025_2026Q1": true,
+        "nodeg_STRESS_2020": false
+      }
+    },
+    "P59_G10_SHORTS_R4": {
+      "overrides": {
+        "s_max_gap_pct": 0.1,
+        "s_disable_longs": 1,
+        "s_risk": 0.004
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "26bca61e10781c50c7cbf41b667dc725",
+          "np_pct": 2.323,
+          "dd_pct": 2.8,
+          "orders": 304,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 148,
+          "tr_mr": 0,
+          "tr_orb": 76,
+          "tr_stress": 2,
+          "pnl_stress": 97.5,
+          "candidate": "P59_G10_SHORTS_R4",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "s_max_gap_pct": 0.1,
+            "s_disable_longs": 1,
+            "s_risk": 0.004
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "8799c5b5cb2b3ddaede7165464754ea5",
+          "np_pct": 7.451,
+          "dd_pct": 2.8,
+          "orders": 95,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 64,
+          "tr_mr": 0,
+          "tr_orb": 25,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_G10_SHORTS_R4",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "s_max_gap_pct": 0.1,
+            "s_disable_longs": 1,
+            "s_risk": 0.004
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "56ea616952ca40ce059b6c8606b497ec",
+          "np_pct": 0.321,
+          "dd_pct": 1.2,
+          "orders": 35,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 63,
+          "tr_mr": 0,
+          "tr_orb": 9,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_G10_SHORTS_R4",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "s_max_gap_pct": 0.1,
+            "s_disable_longs": 1,
+            "s_risk": 0.004
+          }
+        }
+      },
+      "pass_all": true,
+      "checks": {
+        "nodeg_IS_2022_2024": true,
+        "nodeg_OOS_2025_2026Q1": true,
+        "nodeg_STRESS_2020": true
+      }
+    },
+    "P59_G12_SHORTS_R4": {
+      "overrides": {
+        "s_max_gap_pct": 0.12,
+        "s_disable_longs": 1,
+        "s_risk": 0.004
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "a45db8c4df2b24f7524b4645e36f6ac3",
+          "np_pct": null,
+          "dd_pct": null,
+          "orders": null,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 10,
+          "tr_mr": 0,
+          "tr_orb": 0,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_G12_SHORTS_R4",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "s_max_gap_pct": 0.12,
+            "s_disable_longs": 1,
+            "s_risk": 0.004
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "1e970e596d00468f6696c73c89acc305",
+          "np_pct": 7.451,
+          "dd_pct": 2.8,
+          "orders": 95,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 64,
+          "tr_mr": 0,
+          "tr_orb": 25,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P59_G12_SHORTS_R4",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "s_max_gap_pct": 0.12,
+            "s_disable_longs": 1,
+            "s_risk": 0.004
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "94f9911e73cac28e5e4f94434d7e3d11",
+          "np_pct": 0.917,
+          "dd_pct": 1.6,
+          "orders": 61,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 63,
+          "tr_mr": 0,
+          "tr_orb": 9,
+          "tr_stress": 7,
+          "pnl_stress": 309.38,
+          "candidate": "P59_G12_SHORTS_R4",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "s_max_gap_pct": 0.12,
+            "s_disable_longs": 1,
+            "s_risk": 0.004
+          }
+        }
+      },
+      "pass_all": false,
+      "checks": {
+        "nodeg_IS_2022_2024": false,
+        "nodeg_OOS_2025_2026Q1": true,
+        "nodeg_STRESS_2020": false
+      }
+    }
+  },
+  "rows": [
+    {
+      "status": "Completed.",
+      "backtest_id": "1f0c90c23745ea6cfae0b8000622eb0f",
+      "np_pct": -1.068,
+      "dd_pct": 3.1,
+      "orders": 169,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 148,
+      "tr_mr": 0,
+      "tr_orb": 43,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_BASE_REF",
+      "scenario": "IS_2022_2024",
+      "overrides": {}
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "9941af6df2e06add1d085de5bb0defb9",
+      "np_pct": 7.451,
+      "dd_pct": 2.8,
+      "orders": 95,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 64,
+      "tr_mr": 0,
+      "tr_orb": 25,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_BASE_REF",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {}
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "543665137240c4c1d905bcf0d9197698",
+      "np_pct": 0.321,
+      "dd_pct": 1.2,
+      "orders": 35,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 63,
+      "tr_mr": 0,
+      "tr_orb": 9,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_BASE_REF",
+      "scenario": "STRESS_2020",
+      "overrides": {}
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "ada2139f4cb2330403711e3af679bad0",
+      "np_pct": -1.068,
+      "dd_pct": 3.1,
+      "orders": 169,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 148,
+      "tr_mr": 0,
+      "tr_orb": 43,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_G08",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "s_max_gap_pct": 0.08
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "58b525809de9ac5d73d2ef078ccf3ffb",
+      "np_pct": 7.451,
+      "dd_pct": 2.8,
+      "orders": 95,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 64,
+      "tr_mr": 0,
+      "tr_orb": 25,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_G08",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "s_max_gap_pct": 0.08
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "fa850ec94d42db72e6891d96b7ea91b0",
+      "np_pct": 0.321,
+      "dd_pct": 1.2,
+      "orders": 35,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 63,
+      "tr_mr": 0,
+      "tr_orb": 9,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_G08",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "s_max_gap_pct": 0.08
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "a99dab9317e7e037d32fb053b2d434df",
+      "np_pct": -1.068,
+      "dd_pct": 3.1,
+      "orders": 169,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 148,
+      "tr_mr": 0,
+      "tr_orb": 43,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_G10",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "s_max_gap_pct": 0.1
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "a336e89d6ee22e695e4784e53ce9e6ac",
+      "np_pct": 7.451,
+      "dd_pct": 2.8,
+      "orders": 95,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 64,
+      "tr_mr": 0,
+      "tr_orb": 25,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_G10",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "s_max_gap_pct": 0.1
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "52dab5313a474bf657e45db64cc745c8",
+      "np_pct": 0.321,
+      "dd_pct": 1.2,
+      "orders": 35,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 63,
+      "tr_mr": 0,
+      "tr_orb": 9,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_G10",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "s_max_gap_pct": 0.1
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "38df5ba557dcca2c1d741c146ca057bd",
+      "np_pct": -1.068,
+      "dd_pct": 3.1,
+      "orders": 169,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 148,
+      "tr_mr": 0,
+      "tr_orb": 43,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_G12",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "s_max_gap_pct": 0.12
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "08580719d8ba136dd60164db98ce300a",
+      "np_pct": 7.451,
+      "dd_pct": 2.8,
+      "orders": 95,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 64,
+      "tr_mr": 0,
+      "tr_orb": 25,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_G12",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "s_max_gap_pct": 0.12
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "9297949f797cba4ce761dd19753248be",
+      "np_pct": 0.331,
+      "dd_pct": 1.4,
+      "orders": 46,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 63,
+      "tr_mr": 0,
+      "tr_orb": 9,
+      "tr_stress": 3,
+      "pnl_stress": 10.0,
+      "candidate": "P59_G12",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "s_max_gap_pct": 0.12
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "3fc52bb8e8ee9ef9e79ce1447f84d908",
+      "np_pct": -1.068,
+      "dd_pct": 3.1,
+      "orders": 169,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 148,
+      "tr_mr": 0,
+      "tr_orb": 43,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_G10_SHORTS",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "s_max_gap_pct": 0.1,
+        "s_disable_longs": 1
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "f4f3bf0aff0456a83deba113ac41f2ca",
+      "np_pct": 7.451,
+      "dd_pct": 2.8,
+      "orders": 95,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 64,
+      "tr_mr": 0,
+      "tr_orb": 25,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_G10_SHORTS",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "s_max_gap_pct": 0.1,
+        "s_disable_longs": 1
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "05789b0c5f2c835c7c310a4e8c250c09",
+      "np_pct": 0.321,
+      "dd_pct": 1.2,
+      "orders": 35,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 63,
+      "tr_mr": 0,
+      "tr_orb": 9,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_G10_SHORTS",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "s_max_gap_pct": 0.1,
+        "s_disable_longs": 1
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "ef0aff92319e595b5d3aeaaa4b130100",
+      "np_pct": -1.068,
+      "dd_pct": 3.1,
+      "orders": 169,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 148,
+      "tr_mr": 0,
+      "tr_orb": 43,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_G12_SHORTS",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "s_max_gap_pct": 0.12,
+        "s_disable_longs": 1
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "f890ea0ae96e4441e1b4d4230242fd71",
+      "np_pct": 7.451,
+      "dd_pct": 2.8,
+      "orders": 95,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 64,
+      "tr_mr": 0,
+      "tr_orb": 25,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_G12_SHORTS",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "s_max_gap_pct": 0.12,
+        "s_disable_longs": 1
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "1f4c48ac3695fbffb3f6cc0178e46daa",
+      "np_pct": 0.331,
+      "dd_pct": 1.4,
+      "orders": 46,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 63,
+      "tr_mr": 0,
+      "tr_orb": 9,
+      "tr_stress": 3,
+      "pnl_stress": 10.0,
+      "candidate": "P59_G12_SHORTS",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "s_max_gap_pct": 0.12,
+        "s_disable_longs": 1
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "26bca61e10781c50c7cbf41b667dc725",
+      "np_pct": 2.323,
+      "dd_pct": 2.8,
+      "orders": 304,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 148,
+      "tr_mr": 0,
+      "tr_orb": 76,
+      "tr_stress": 2,
+      "pnl_stress": 97.5,
+      "candidate": "P59_G10_SHORTS_R4",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "s_max_gap_pct": 0.1,
+        "s_disable_longs": 1,
+        "s_risk": 0.004
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "8799c5b5cb2b3ddaede7165464754ea5",
+      "np_pct": 7.451,
+      "dd_pct": 2.8,
+      "orders": 95,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 64,
+      "tr_mr": 0,
+      "tr_orb": 25,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_G10_SHORTS_R4",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "s_max_gap_pct": 0.1,
+        "s_disable_longs": 1,
+        "s_risk": 0.004
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "56ea616952ca40ce059b6c8606b497ec",
+      "np_pct": 0.321,
+      "dd_pct": 1.2,
+      "orders": 35,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 63,
+      "tr_mr": 0,
+      "tr_orb": 9,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_G10_SHORTS_R4",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "s_max_gap_pct": 0.1,
+        "s_disable_longs": 1,
+        "s_risk": 0.004
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "a45db8c4df2b24f7524b4645e36f6ac3",
+      "np_pct": null,
+      "dd_pct": null,
+      "orders": null,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 10,
+      "tr_mr": 0,
+      "tr_orb": 0,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_G12_SHORTS_R4",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "s_max_gap_pct": 0.12,
+        "s_disable_longs": 1,
+        "s_risk": 0.004
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "1e970e596d00468f6696c73c89acc305",
+      "np_pct": 7.451,
+      "dd_pct": 2.8,
+      "orders": 95,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 64,
+      "tr_mr": 0,
+      "tr_orb": 25,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P59_G12_SHORTS_R4",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "s_max_gap_pct": 0.12,
+        "s_disable_longs": 1,
+        "s_risk": 0.004
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "94f9911e73cac28e5e4f94434d7e3d11",
+      "np_pct": 0.917,
+      "dd_pct": 1.6,
+      "orders": 61,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 63,
+      "tr_mr": 0,
+      "tr_orb": 9,
+      "tr_stress": 7,
+      "pnl_stress": 309.38,
+      "candidate": "P59_G12_SHORTS_R4",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "s_max_gap_pct": 0.12,
+        "s_disable_longs": 1,
+        "s_risk": 0.004
+      }
+    }
+  ],
+  "winners": [
+    "P59_G08",
+    "P59_G10",
+    "P59_G10_SHORTS",
+    "P59_G10_SHORTS_R4"
+  ]
+}

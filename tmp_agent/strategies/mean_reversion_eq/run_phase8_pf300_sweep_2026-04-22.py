@@ -1,0 +1,262 @@
+import base64, hashlib, json, re, time, statistics
+from collections import defaultdict
+from datetime import datetime, timezone
+from pathlib import Path
+import requests
+
+BASE = "https://www.quantconnect.com/api/v2"
+PROJECT_ID = 29652652
+SECRETS_PATH = Path(r"C:/AI_VAULT/tmp_agent/Secrets/quantconnect_access.json")
+MAIN_PATH = Path(r"C:/AI_VAULT/tmp_agent/strategies/mean_reversion_eq/main_phase8_pf300.py")
+OUT_JSON = Path(r"C:/AI_VAULT/tmp_agent/strategies/mean_reversion_eq/phase8_pf300_sweep_2026-04-22.json")
+OUT_TXT = Path(r"C:/AI_VAULT/tmp_agent/strategies/mean_reversion_eq/phase8_pf300_sweep_2026-04-22.txt")
+
+
+def load_creds():
+    d = json.loads(SECRETS_PATH.read_text(encoding="utf-8"))
+    uid = str(d.get("user_id") or d.get("userId") or "").strip()
+    tok = str(d.get("api_token") or d.get("apiToken") or d.get("token") or "").strip()
+    return uid, tok
+
+
+def headers(uid, tok, ts=None):
+    ts = int(ts or time.time())
+    sig = hashlib.sha256(f"{tok}:{ts}".encode()).hexdigest()
+    basic = base64.b64encode(f"{uid}:{sig}".encode()).decode()
+    return {"Authorization": f"Basic {basic}", "Timestamp": str(ts), "Content-Type": "application/json"}
+
+
+def api_post(uid, tok, endpoint, payload, timeout=120):
+    ts = int(time.time())
+    r = requests.post(f"{BASE}/{endpoint}", headers=headers(uid, tok, ts), json=payload, timeout=timeout)
+    try:
+        data = r.json()
+    except Exception:
+        data = {"success": False, "errors": [f"HTTP {r.status_code}", r.text[:500]]}
+    if r.status_code >= 400:
+        data.setdefault("success", False)
+        data.setdefault("errors", [f"HTTP {r.status_code}"])
+    if data.get("success", False):
+        return data
+    errs = " ".join(data.get("errors") or [])
+    m = re.search(r"Server Time:\s*(\d+)", errs)
+    if m:
+        ts2 = int(m.group(1)) - 1
+        r2 = requests.post(f"{BASE}/{endpoint}", headers=headers(uid, tok, ts2), json=payload, timeout=timeout)
+        try:
+            return r2.json()
+        except Exception:
+            return {"success": False, "errors": [f"HTTP {r2.status_code}", r2.text[:500]]}
+    return data
+
+
+def pf(x):
+    try:
+        return float(str(x).replace("%", "").replace("$", "").replace(",", "").strip())
+    except Exception:
+        return None
+
+
+def pi(x):
+    try:
+        return int(float(str(x).replace(",", "").strip()))
+    except Exception:
+        return None
+
+
+def rt_get(rt, key):
+    if isinstance(rt, dict):
+        return rt.get(key)
+    if isinstance(rt, list):
+        for it in rt:
+            if isinstance(it, dict) and str(it.get("name") or it.get("Name")) == key:
+                return it.get("value") or it.get("Value")
+    return None
+
+
+def monthly_stats(bt):
+    perf = bt.get("totalPerformance") or {}
+    trades = perf.get("closedTrades") or []
+    start = pf((perf.get("portfolioStatistics") or {}).get("startEquity")) or 50000.0
+    bym = defaultdict(float)
+    for t in trades:
+        et = t.get("exitTime")
+        pnl = t.get("profitLoss")
+        if et is None or pnl is None:
+            continue
+        try:
+            d = datetime.fromisoformat(str(et).replace("Z", "+00:00"))
+        except Exception:
+            continue
+        bym[f"{d.year:04d}-{d.month:02d}"] += float(pnl)
+    if not bym:
+        return {"monthly_mean_pct": None, "monthly_median_pct": None, "monthly_count": 0}
+    eq = float(start)
+    arr = []
+    for m in sorted(bym):
+        pnl = bym[m]
+        arr.append(0.0 if eq <= 0 else (pnl / eq) * 100.0)
+        eq += pnl
+    return {
+        "monthly_mean_pct": round(statistics.mean(arr), 3),
+        "monthly_median_pct": round(statistics.median(arr), 3),
+        "monthly_count": len(arr),
+    }
+
+
+def upload_main(uid, tok):
+    payload = {"projectId": PROJECT_ID, "name": "main.py", "content": MAIN_PATH.read_text(encoding="utf-8")}
+    resp = api_post(uid, tok, "files/update", payload, timeout=180)
+    if not resp.get("success", False):
+        raise RuntimeError(resp)
+
+
+def clear_params(uid, tok):
+    resp = api_post(uid, tok, "projects/update", {"projectId": PROJECT_ID, "parameters": []}, timeout=60)
+    if not resp.get("success", False):
+        raise RuntimeError(resp)
+
+
+def set_params(uid, tok, params):
+    payload = {"projectId": PROJECT_ID, "parameters": [{"key": k, "value": str(v)} for k, v in params.items()]}
+    resp = api_post(uid, tok, "projects/update", payload, timeout=60)
+    if not resp.get("success", False):
+        raise RuntimeError(resp)
+
+
+def compile_project(uid, tok):
+    c = api_post(uid, tok, "compile/create", {"projectId": PROJECT_ID}, timeout=120)
+    cid = c.get("compileId")
+    if not cid:
+        raise RuntimeError(c)
+    for _ in range(180):
+        r = api_post(uid, tok, "compile/read", {"projectId": PROJECT_ID, "compileId": cid}, timeout=60)
+        st = r.get("state", "")
+        if st in ("BuildSuccess", "BuildWarning", "BuildError", "BuildAborted"):
+            if st != "BuildSuccess":
+                raise RuntimeError(r)
+            return cid
+        time.sleep(2)
+    raise RuntimeError("compile timeout")
+
+
+def run_bt(uid, tok, cid, name):
+    b = api_post(uid, tok, "backtests/create", {"projectId": PROJECT_ID, "compileId": cid, "backtestName": name}, timeout=120)
+    bid = ((b.get("backtest") or {}).get("backtestId"))
+    if not bid:
+        return {"status": "CreateFailed", "error": str(b)}
+    for _ in range(420):
+        rd = api_post(uid, tok, "backtests/read", {"projectId": PROJECT_ID, "backtestId": bid}, timeout=120)
+        bt = rd.get("backtest") or {}
+        st = str(bt.get("status", ""))
+        if "Completed" in st:
+            s = bt.get("statistics") or {}
+            rts = bt.get("runtimeStatistics") or {}
+            row = {
+                "status": st,
+                "backtest_id": bid,
+                "np_pct": pf(s.get("Net Profit")),
+                "dd_pct": pf(s.get("Drawdown")),
+                "orders": pi(s.get("Total Orders")),
+                "sharpe": pf(s.get("Sharpe Ratio")),
+                "dbr": pi(rt_get(rts, "DailyLossBreaches")),
+                "tbr": pi(rt_get(rts, "TrailingBreaches")),
+                "stress_days": pi(rt_get(rts, "ExternalStressDays")),
+                "error": bt.get("error") or bt.get("message"),
+            }
+            row.update(monthly_stats(bt))
+            return row
+        if any(x in st for x in ("Error", "Runtime", "Aborted", "Cancelled")):
+            return {"status": st, "backtest_id": bid, "error": bt.get("error") or bt.get("message")}
+        time.sleep(10)
+    return {"status": "Timeout", "backtest_id": bid}
+
+
+def stress_ok(r):
+    return r.get("np_pct") is not None and r.get("np_pct") >= 0 and int(r.get("dbr") or 0) == 0 and int(r.get("tbr") or 0) == 0
+
+
+def main():
+    uid, tok = load_creds()
+
+    base = {
+        "trade_mes": 1,
+        "trade_mnq": 1,
+        "trade_gc": 0,
+        "trade_cl": 0,
+        "allow_shorts": 1,
+        "daily_loss_limit_pct": 0.018,
+        "daily_profit_lock_pct": 0.040,
+        "trailing_dd_limit_pct": 0.035,
+        "trailing_lock_mode": "EOD",
+        "max_contracts_per_trade": 10,
+        "max_open_positions": 3,
+        "max_trades_per_symbol_day": 2,
+        "ext_vixy_ratio_threshold": 1.03,
+        "ext_vixy_sma_period": 5,
+        "ext_rv_threshold": 1.0,
+        "ext_gap_abs_threshold": 1.0,
+        "idx_mr_risk": 0.009,
+        "idx_or_risk": 0.008,
+        "idx_stress_risk": 0.003,
+        "alt_risk": 0.0025,
+        "alt_use_only_normal": 1,
+        "flatten_hour": 15,
+        "flatten_min": 58,
+    }
+
+    candidates = [
+        ("P8_A0_IDX_ONLY", {}),
+        ("P8_A1_IDX_GC", {"trade_gc": 1}),
+        ("P8_A2_IDX_GC_CL", {"trade_gc": 1, "trade_cl": 1, "max_open_positions": 4}),
+        ("P8_A3_IDX_GC_ALTUP", {"trade_gc": 1, "alt_risk": 0.0035, "max_open_positions": 4}),
+        ("P8_A4_IDX_GC_RELAX", {"trade_gc": 1, "ext_vixy_ratio_threshold": 1.02, "ext_rv_threshold": 0.30, "ext_gap_abs_threshold": 0.007}),
+        ("P8_A5_GC_ONLY", {"trade_mes": 0, "trade_mnq": 0, "trade_gc": 1, "max_open_positions": 1, "max_trades_per_symbol_day": 1}),
+        ("P8_A6_IDX_CL", {"trade_cl": 1, "max_open_positions": 4, "alt_risk": 0.0030}),
+        ("P8_A7_IDX_GC_TRAIL40", {"trade_gc": 1, "trailing_dd_limit_pct": 0.040, "idx_or_risk": 0.009, "alt_risk": 0.0030}),
+    ]
+
+    scenarios = [
+        ("STRESS_2020", {"start_year": 2020, "start_month": 1, "start_day": 1, "end_year": 2020, "end_month": 12, "end_day": 31}),
+        ("OOS_2025_2026Q1", {"start_year": 2025, "start_month": 1, "start_day": 1, "end_year": 2026, "end_month": 3, "end_day": 31}),
+        ("FULL_2022_2026Q1", {"start_year": 2022, "start_month": 1, "start_day": 1, "end_year": 2026, "end_month": 3, "end_day": 31}),
+    ]
+
+    upload_main(uid, tok)
+    clear_params(uid, tok)
+    cid = compile_project(uid, tok)
+
+    rows = []
+    for label, ov in candidates:
+        cfg = dict(base)
+        cfg.update(ov)
+
+        p = dict(cfg)
+        p.update(scenarios[0][1])
+        set_params(uid, tok, p)
+        r0 = run_bt(uid, tok, cid, f"{label}_STRESS_{int(time.time())}")
+        r0.update({"candidate": label, "scenario": "STRESS_2020", "overrides": ov})
+        rows.append(r0)
+
+        if stress_ok(r0):
+            for sname, sdates in scenarios[1:]:
+                p2 = dict(cfg)
+                p2.update(sdates)
+                set_params(uid, tok, p2)
+                r = run_bt(uid, tok, cid, f"{label}_{sname}_{int(time.time())}")
+                r.update({"candidate": label, "scenario": sname, "overrides": ov})
+                rows.append(r)
+
+        OUT_JSON.write_text(json.dumps({"generated_at_utc": datetime.now(timezone.utc).isoformat(), "compile_id": cid, "rows": rows}, indent=2), encoding="utf-8")
+
+    lines = [f"generated_at_utc={datetime.now(timezone.utc).isoformat()}", f"compile_id={cid}", ""]
+    for r in rows:
+        lines.append(
+            f"{r['candidate']} {r['scenario']} np={r.get('np_pct')} dd={r.get('dd_pct')} dbr={r.get('dbr')} tbr={r.get('tbr')} m_mean={r.get('monthly_mean_pct')} m_med={r.get('monthly_median_pct')} orders={r.get('orders')} stress_days={r.get('stress_days')} id={r.get('backtest_id')}"
+        )
+    OUT_TXT.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    print(str(OUT_JSON))
+
+
+if __name__ == "__main__":
+    main()

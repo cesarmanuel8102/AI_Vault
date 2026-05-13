@@ -1,0 +1,33 @@
+{
+  "episode_id": "ep_lab1_smoke_1771967544_44746",
+  "room_id": "lab1_smoke",
+  "created_at": 1771967544,
+  "mission": {
+    "room_id": "lab1_smoke",
+    "objective": "Crear good.txt en WORKSPACE_ROOT y luego listar el directorio para verificar.",
+    "constraints": [
+      "Todos los writes deben ser dentro de WORKSPACE_ROOT",
+      "No escribir secretos"
+    ],
+    "status": "active",
+    "created_at": 1771967544,
+    "updated_at": 1771967544
+  },
+  "events": [
+    {
+      "ts_epoch": 1771967544,
+      "type": "mission_set",
+      "mission": {
+        "room_id": "lab1_smoke",
+        "objective": "Crear good.txt en WORKSPACE_ROOT y luego listar el directorio para verificar.",
+        "constraints": [
+          "Todos los writes deben ser dentro de WORKSPACE_ROOT",
+          "No escribir secretos"
+        ],
+        "status": "active",
+        "created_at": 1771967544,
+        "updated_at": 1771967544
+      }
+    }
+  ]
+}

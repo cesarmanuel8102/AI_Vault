@@ -1,0 +1,980 @@
+﻿{
+    "ts_local":  "2026-02-28T14:17:14.5694012-05:00",
+    "base":  "http://127.0.0.1:8010",
+    "room_id":  "room_minreal_smoke_20260228_141713",
+    "goal":  "BOOTSTRAP_RUN_SMOKE",
+    "max_iters":  25,
+    "strict":  false,
+    "force_plan":  false,
+    "show_summary":  true,
+    "stop_no_progress":  0,
+    "local_apply_gate":  true,
+    "steps":  [
+                  {
+                      "kind":  "get_plan_pre",
+                      "status":  200,
+                      "body":  {
+                                   "ok":  true,
+                                   "room_id":  "room_minreal_smoke_20260228_141713",
+                                   "plan":  {
+                                                "status":  "planned",
+                                                "steps":  [
+                                                              {
+                                                                  "id":  "S1",
+                                                                  "title":  "Inspect risk folder (list_dir)",
+                                                                  "status":  "todo",
+                                                                  "tool_name":  "list_dir",
+                                                                  "mode":  "read",
+                                                                  "tool_args":  {
+                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk"
+                                                                                }
+                                                              },
+                                                              {
+                                                                  "id":  "S2",
+                                                                  "title":  "Read risk_engine.py (read_file)",
+                                                                  "status":  "todo",
+                                                                  "tool_name":  "read_file",
+                                                                  "mode":  "read",
+                                                                  "tool_args":  {
+                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk\\risk_engine.py",
+                                                                                    "max_bytes":  200000
+                                                                                }
+                                                              },
+                                                              {
+                                                                  "id":  "S3",
+                                                                  "title":  "Create real_log.txt (append_file new_file) â gated SAFE (repo)",
+                                                                  "status":  "todo",
+                                                                  "tool_name":  "append_file",
+                                                                  "mode":  "propose",
+                                                                  "kind":  "new_file",
+                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713",
+                                                                  "tool_args":  {
+                                                                                    "path":  "real_log.txt",
+                                                                                    "content":  "REAL_V3B START\n"
+                                                                                }
+                                                              },
+                                                              {
+                                                                  "id":  "S4",
+                                                                  "title":  "Modify real_log.txt (append marker) â gated SAFE (repo)",
+                                                                  "status":  "todo",
+                                                                  "tool_name":  "append_file",
+                                                                  "mode":  "propose",
+                                                                  "kind":  "modify",
+                                                                  "repo_path":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713\\real_log.txt",
+                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713",
+                                                                  "tool_args":  {
+                                                                                    "path":  "real_log.txt",
+                                                                                    "content":  "REAL_V3B MARK 2026-02-28T19:17:14.120664+00:00\n"
+                                                                                }
+                                                              }
+                                                          ],
+                                                "updated_at":  "2026-02-28T19:11:09.089421+00:00",
+                                                "room_id":  "room_minreal_smoke_20260228_141713",
+                                                "last_eval":  {
+                                                                  "room_id":  null,
+                                                                  "observation":  {
+                                                                                      "ok":  true,
+                                                                                      "room_id":  "room_minreal_smoke_20260228_141107",
+                                                                                      "note":  "post-run evaluate (minreal smoke)"
+                                                                                  }
+                                                              },
+                                                "created_at":  "2026-02-28T19:11:09.089421+00:00",
+                                                "history":  [
+                                                                {
+                                                                    "kind":  "evaluate",
+                                                                    "room_id":  null,
+                                                                    "observation":  {
+                                                                                        "ok":  true,
+                                                                                        "room_id":  "room_minreal_smoke_20260228_141107",
+                                                                                        "note":  "post-run evaluate (minreal smoke)"
+                                                                                    },
+                                                                    "verdict":  {
+                                                                                    "status":  "no_change",
+                                                                                    "notes":  [
+
+                                                                                              ]
+                                                                                }
+                                                                }
+                                                            ],
+                                                "goal":  "MIN_REAL_PLAN"
+                                            }
+                               },
+                      "raw":  "{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141713\",\"plan\":{\"status\":\"planned\",\"steps\":[{\"id\":\"S1\",\"title\":\"Inspect risk folder (list_dir)\",\"status\":\"todo\",\"tool_name\":\"list_dir\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\"}},{\"id\":\"S2\",\"title\":\"Read risk_engine.py (read_file)\",\"status\":\"todo\",\"tool_name\":\"read_file\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\\\\risk_engine.py\",\"max_bytes\":200000}},{\"id\":\"S3\",\"title\":\"Create real_log.txt (append_file new_file) â gated SAFE (repo)\",\"status\":\"todo\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"new_file\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B START\\n\"}},{\"id\":\"S4\",\"title\":\"Modify real_log.txt (append marker) â gated SAFE (repo)\",\"status\":\"todo\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"modify\",\"repo_path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\\\\real_log.txt\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B MARK 2026-02-28T19:17:14.120664+00:00\\n\"}}],\"updated_at\":\"2026-02-28T19:11:09.089421+00:00\",\"room_id\":\"room_minreal_smoke_20260228_141713\",\"last_eval\":{\"room_id\":null,\"observation\":{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141107\",\"note\":\"post-run evaluate (minreal smoke)\"}},\"created_at\":\"2026-02-28T19:11:09.089421+00:00\",\"history\":[{\"kind\":\"evaluate\",\"room_id\":null,\"observation\":{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141107\",\"note\":\"post-run evaluate (minreal smoke)\"},\"verdict\":{\"status\":\"no_change\",\"notes\":[]}}],\"goal\":\"MIN_REAL_PLAN\"}}"
+                  },
+                  {
+                      "kind":  "run",
+                      "iter":  1,
+                      "status":  200,
+                      "body":  {
+                                   "ok":  true,
+                                   "room_id":  "room_minreal_smoke_20260228_141713",
+                                   "executed":  [
+                                                    {
+                                                        "action":  "propose_read_step",
+                                                        "step_id":  "S1"
+                                                    },
+                                                    {
+                                                        "action":  "propose_read_step",
+                                                        "step_id":  "S2"
+                                                    },
+                                                    {
+                                                        "action":  "propose_write_step",
+                                                        "step_id":  "S3"
+                                                    }
+                                                ],
+                                   "needs_approval":  true,
+                                   "approve_token":  "APPLY_p1772306234751464900",
+                                   "summary":  {
+                                                   "plan_id":  null,
+                                                   "status":  "planned",
+                                                   "steps_total":  4,
+                                                   "counts":  {
+                                                                  "todo":  1,
+                                                                  "proposed":  1,
+                                                                  "done":  2,
+                                                                  "error":  0,
+                                                                  "other":  0
+                                                              },
+                                                   "pending_approvals_count":  1,
+                                                   "last_eval":  {
+                                                                     "room_id":  null,
+                                                                     "observation":  {
+                                                                                         "ok":  true,
+                                                                                         "room_id":  "room_minreal_smoke_20260228_141107",
+                                                                                         "note":  "post-run evaluate (minreal smoke)"
+                                                                                     }
+                                                                 },
+                                                   "updated_at":  "2026-02-28T19:17:14.762463+00:00"
+                                               },
+                                   "pending_approvals":  {
+                                                             "S3":  "APPLY_p1772306234751464900"
+                                                         },
+                                   "plan":  {
+                                                "status":  "planned",
+                                                "steps":  [
+                                                              {
+                                                                  "id":  "S1",
+                                                                  "title":  "Inspect risk folder (list_dir)",
+                                                                  "status":  "done",
+                                                                  "tool_name":  "list_dir",
+                                                                  "mode":  "read",
+                                                                  "tool_args":  {
+                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk"
+                                                                                }
+                                                              },
+                                                              {
+                                                                  "id":  "S2",
+                                                                  "title":  "Read risk_engine.py (read_file)",
+                                                                  "status":  "done",
+                                                                  "tool_name":  "read_file",
+                                                                  "mode":  "read",
+                                                                  "tool_args":  {
+                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk\\risk_engine.py",
+                                                                                    "max_bytes":  200000
+                                                                                }
+                                                              },
+                                                              {
+                                                                  "id":  "S3",
+                                                                  "title":  "Create real_log.txt (append_file new_file) â gated SAFE (repo)",
+                                                                  "status":  "proposed",
+                                                                  "tool_name":  "append_file",
+                                                                  "mode":  "propose",
+                                                                  "kind":  "new_file",
+                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713",
+                                                                  "tool_args":  {
+                                                                                    "path":  "real_log.txt",
+                                                                                    "content":  "REAL_V3B START\n"
+                                                                                },
+                                                                  "proposal_id":  "p1772306234751464900",
+                                                                  "required_approve":  "APPLY_p1772306234751464900"
+                                                              },
+                                                              {
+                                                                  "id":  "S4",
+                                                                  "title":  "Modify real_log.txt (append marker) â gated SAFE (repo)",
+                                                                  "status":  "todo",
+                                                                  "tool_name":  "append_file",
+                                                                  "mode":  "propose",
+                                                                  "kind":  "modify",
+                                                                  "repo_path":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713\\real_log.txt",
+                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713",
+                                                                  "tool_args":  {
+                                                                                    "path":  "real_log.txt",
+                                                                                    "content":  "REAL_V3B MARK 2026-02-28T19:17:14.120664+00:00\n"
+                                                                                }
+                                                              }
+                                                          ],
+                                                "updated_at":  "2026-02-28T19:17:14.762463+00:00",
+                                                "room_id":  "room_minreal_smoke_20260228_141713",
+                                                "last_eval":  {
+                                                                  "room_id":  null,
+                                                                  "observation":  {
+                                                                                      "ok":  true,
+                                                                                      "room_id":  "room_minreal_smoke_20260228_141107",
+                                                                                      "note":  "post-run evaluate (minreal smoke)"
+                                                                                  }
+                                                              },
+                                                "created_at":  "2026-02-28T19:11:09.089421+00:00",
+                                                "history":  [
+                                                                {
+                                                                    "kind":  "evaluate",
+                                                                    "room_id":  null,
+                                                                    "observation":  {
+                                                                                        "ok":  true,
+                                                                                        "room_id":  "room_minreal_smoke_20260228_141107",
+                                                                                        "note":  "post-run evaluate (minreal smoke)"
+                                                                                    },
+                                                                    "verdict":  {
+                                                                                    "status":  "no_change",
+                                                                                    "notes":  [
+
+                                                                                              ]
+                                                                                }
+                                                                }
+                                                            ],
+                                                "goal":  "MIN_REAL_PLAN"
+                                            },
+                                   "mission":  {
+                                                   "version":  1,
+                                                   "mission_id":  "brainlab-default",
+                                                   "title":  "Brain Lab â Local Governed Agent",
+                                                   "objectives":  [
+                                                                      "Implement PlannerâEvaluator endpoints with persistent mission/plan state.",
+                                                                      "Maintain governance: no destructive actions, auditable logs, reproducible workflow."
+                                                                  ],
+                                                   "constraints":  [
+                                                                       "No auto-executing PowerShell from the assistant.",
+                                                                       "All writes confined to C:\\AI_VAULT\\tmp_agent",
+                                                                       "All changes must be logged."
+                                                                   ],
+                                                   "created_at":  null,
+                                                   "updated_at":  "2026-02-28T19:17:14.733466+00:00",
+                                                   "room_id":  "room_minreal_smoke_20260228_141713"
+                                               }
+                               },
+                      "raw":  "{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141713\",\"executed\":[{\"action\":\"propose_read_step\",\"step_id\":\"S1\"},{\"action\":\"propose_read_step\",\"step_id\":\"S2\"},{\"action\":\"propose_write_step\",\"step_id\":\"S3\"}],\"needs_approval\":true,\"approve_token\":\"APPLY_p1772306234751464900\",\"summary\":{\"plan_id\":null,\"status\":\"planned\",\"steps_total\":4,\"counts\":{\"todo\":1,\"proposed\":1,\"done\":2,\"error\":0,\"other\":0},\"pending_approvals_count\":1,\"last_eval\":{\"room_id\":null,\"observation\":{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141107\",\"note\":\"post-run evaluate (minreal smoke)\"}},\"updated_at\":\"2026-02-28T19:17:14.762463+00:00\"},\"pending_approvals\":{\"S3\":\"APPLY_p1772306234751464900\"},\"plan\":{\"status\":\"planned\",\"steps\":[{\"id\":\"S1\",\"title\":\"Inspect risk folder (list_dir)\",\"status\":\"done\",\"tool_name\":\"list_dir\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\"}},{\"id\":\"S2\",\"title\":\"Read risk_engine.py (read_file)\",\"status\":\"done\",\"tool_name\":\"read_file\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\\\\risk_engine.py\",\"max_bytes\":200000}},{\"id\":\"S3\",\"title\":\"Create real_log.txt (append_file new_file) â gated SAFE (repo)\",\"status\":\"proposed\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"new_file\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B START\\n\"},\"proposal_id\":\"p1772306234751464900\",\"required_approve\":\"APPLY_p1772306234751464900\"},{\"id\":\"S4\",\"title\":\"Modify real_log.txt (append marker) â gated SAFE (repo)\",\"status\":\"todo\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"modify\",\"repo_path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\\\\real_log.txt\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B MARK 2026-02-28T19:17:14.120664+00:00\\n\"}}],\"updated_at\":\"2026-02-28T19:17:14.762463+00:00\",\"room_id\":\"room_minreal_smoke_20260228_141713\",\"last_eval\":{\"room_id\":null,\"observation\":{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141107\",\"note\":\"post-run evaluate (minreal smoke)\"}},\"created_at\":\"2026-02-28T19:11:09.089421+00:00\",\"history\":[{\"kind\":\"evaluate\",\"room_id\":null,\"observation\":{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141107\",\"note\":\"post-run evaluate (minreal smoke)\"},\"verdict\":{\"status\":\"no_change\",\"notes\":[]}}],\"goal\":\"MIN_REAL_PLAN\"},\"mission\":{\"version\":1,\"mission_id\":\"brainlab-default\",\"title\":\"Brain Lab â Local Governed Agent\",\"objectives\":[\"Implement PlannerâEvaluator endpoints with persistent mission/plan state.\",\"Maintain governance: no destructive actions, auditable logs, reproducible workflow.\"],\"constraints\":[\"No auto-executing PowerShell from the assistant.\",\"All writes confined to C:\\\\AI_VAULT\\\\tmp_agent\",\"All changes must be logged.\"],\"created_at\":null,\"updated_at\":\"2026-02-28T19:17:14.733466+00:00\",\"room_id\":\"room_minreal_smoke_20260228_141713\"}}"
+                  },
+                  {
+                      "kind":  "get_plan_for_local_apply",
+                      "iter":  1,
+                      "status":  200,
+                      "body":  {
+                                   "ok":  true,
+                                   "room_id":  "room_minreal_smoke_20260228_141713",
+                                   "plan":  {
+                                                "status":  "planned",
+                                                "steps":  [
+                                                              {
+                                                                  "id":  "S1",
+                                                                  "title":  "Inspect risk folder (list_dir)",
+                                                                  "status":  "done",
+                                                                  "tool_name":  "list_dir",
+                                                                  "mode":  "read",
+                                                                  "tool_args":  {
+                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk"
+                                                                                }
+                                                              },
+                                                              {
+                                                                  "id":  "S2",
+                                                                  "title":  "Read risk_engine.py (read_file)",
+                                                                  "status":  "done",
+                                                                  "tool_name":  "read_file",
+                                                                  "mode":  "read",
+                                                                  "tool_args":  {
+                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk\\risk_engine.py",
+                                                                                    "max_bytes":  200000
+                                                                                }
+                                                              },
+                                                              {
+                                                                  "id":  "S3",
+                                                                  "title":  "Create real_log.txt (append_file new_file) â gated SAFE (repo)",
+                                                                  "status":  "proposed",
+                                                                  "tool_name":  "append_file",
+                                                                  "mode":  "propose",
+                                                                  "kind":  "new_file",
+                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713",
+                                                                  "tool_args":  {
+                                                                                    "path":  "real_log.txt",
+                                                                                    "content":  "REAL_V3B START\n"
+                                                                                },
+                                                                  "proposal_id":  "p1772306234751464900",
+                                                                  "required_approve":  "APPLY_p1772306234751464900"
+                                                              },
+                                                              {
+                                                                  "id":  "S4",
+                                                                  "title":  "Modify real_log.txt (append marker) â gated SAFE (repo)",
+                                                                  "status":  "todo",
+                                                                  "tool_name":  "append_file",
+                                                                  "mode":  "propose",
+                                                                  "kind":  "modify",
+                                                                  "repo_path":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713\\real_log.txt",
+                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713",
+                                                                  "tool_args":  {
+                                                                                    "path":  "real_log.txt",
+                                                                                    "content":  "REAL_V3B MARK 2026-02-28T19:17:14.120664+00:00\n"
+                                                                                }
+                                                              }
+                                                          ],
+                                                "updated_at":  "2026-02-28T19:17:14.762463+00:00",
+                                                "room_id":  "room_minreal_smoke_20260228_141713",
+                                                "last_eval":  {
+                                                                  "room_id":  null,
+                                                                  "observation":  {
+                                                                                      "ok":  true,
+                                                                                      "room_id":  "room_minreal_smoke_20260228_141107",
+                                                                                      "note":  "post-run evaluate (minreal smoke)"
+                                                                                  }
+                                                              },
+                                                "created_at":  "2026-02-28T19:11:09.089421+00:00",
+                                                "history":  [
+                                                                {
+                                                                    "kind":  "evaluate",
+                                                                    "room_id":  null,
+                                                                    "observation":  {
+                                                                                        "ok":  true,
+                                                                                        "room_id":  "room_minreal_smoke_20260228_141107",
+                                                                                        "note":  "post-run evaluate (minreal smoke)"
+                                                                                    },
+                                                                    "verdict":  {
+                                                                                    "status":  "no_change",
+                                                                                    "notes":  [
+
+                                                                                              ]
+                                                                                }
+                                                                }
+                                                            ],
+                                                "goal":  "MIN_REAL_PLAN"
+                                            }
+                               },
+                      "raw":  "{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141713\",\"plan\":{\"status\":\"planned\",\"steps\":[{\"id\":\"S1\",\"title\":\"Inspect risk folder (list_dir)\",\"status\":\"done\",\"tool_name\":\"list_dir\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\"}},{\"id\":\"S2\",\"title\":\"Read risk_engine.py (read_file)\",\"status\":\"done\",\"tool_name\":\"read_file\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\\\\risk_engine.py\",\"max_bytes\":200000}},{\"id\":\"S3\",\"title\":\"Create real_log.txt (append_file new_file) â gated SAFE (repo)\",\"status\":\"proposed\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"new_file\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B START\\n\"},\"proposal_id\":\"p1772306234751464900\",\"required_approve\":\"APPLY_p1772306234751464900\"},{\"id\":\"S4\",\"title\":\"Modify real_log.txt (append marker) â gated SAFE (repo)\",\"status\":\"todo\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"modify\",\"repo_path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\\\\real_log.txt\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B MARK 2026-02-28T19:17:14.120664+00:00\\n\"}}],\"updated_at\":\"2026-02-28T19:17:14.762463+00:00\",\"room_id\":\"room_minreal_smoke_20260228_141713\",\"last_eval\":{\"room_id\":null,\"observation\":{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141107\",\"note\":\"post-run evaluate (minreal smoke)\"}},\"created_at\":\"2026-02-28T19:11:09.089421+00:00\",\"history\":[{\"kind\":\"evaluate\",\"room_id\":null,\"observation\":{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141107\",\"note\":\"post-run evaluate (minreal smoke)\"},\"verdict\":{\"status\":\"no_change\",\"notes\":[]}}],\"goal\":\"MIN_REAL_PLAN\"}}"
+                  },
+                  {
+                      "kind":  "local_apply_gate",
+                      "iter":  1,
+                      "proposal_id":  "p1772306234751464900",
+                      "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713",
+                      "token":  "APPLY_p1772306234751464900",
+                      "ok":  true,
+                      "detail":  {
+                                     "ok":  true,
+                                     "cmd":  [
+                                                 "python",
+                                                 "C:\\AI_VAULT\\tmp_agent\\apply_gate.py",
+                                                 "C:\\AI_VAULT\\tmp_agent\\proposals\\bundle_p1772306234751464900.json",
+                                                 "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713",
+                                                 "--approve=APPLY_p1772306234751464900"
+                                             ],
+                                     "raw":  "{\r\n  \"ok\": true,\r\n  \"run_id\": \"apply_1772306234\",\r\n  \"proposal_id\": \"p1772306234751464900\",\r\n  \"applied\": [\r\n    {\r\n      \"kind\": \"new_file\",\r\n      \"workspace_path\": \"C:\\\\AI_VAULT\\\\tmp_agent\\\\workspace\\\\real_log.txt\",\r\n      \"dest\": \"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\\\\real_log.txt\"\r\n    }\r\n  ],\r\n  \"backups\": [],\r\n  \"validation\": {\r\n    \"py\": null,\r\n    \"json\": null,\r\n    \"ok\": true,\r\n    \"detail\": \"OK\"\r\n  },\r\n  \"receipt\": \"C:\\\\AI_VAULT\\\\tmp_agent\\\\state\\\\applied_p1772306234751464900.json\"\r\n}",
+                                     "json":  {
+                                                  "ok":  true,
+                                                  "run_id":  "apply_1772306234",
+                                                  "proposal_id":  "p1772306234751464900",
+                                                  "applied":  [
+                                                                  {
+                                                                      "kind":  "new_file",
+                                                                      "workspace_path":  "C:\\AI_VAULT\\tmp_agent\\workspace\\real_log.txt",
+                                                                      "dest":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713\\real_log.txt"
+                                                                  }
+                                                              ],
+                                                  "backups":  [
+
+                                                              ],
+                                                  "validation":  {
+                                                                     "py":  null,
+                                                                     "json":  null,
+                                                                     "ok":  true,
+                                                                     "detail":  "OK"
+                                                                 },
+                                                  "receipt":  "C:\\AI_VAULT\\tmp_agent\\state\\applied_p1772306234751464900.json"
+                                              },
+                                     "bundle":  "C:\\AI_VAULT\\tmp_agent\\proposals\\bundle_p1772306234751464900.json",
+                                     "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713"
+                                 }
+                  },
+                  {
+                      "kind":  "run_apply",
+                      "iter":  1,
+                      "token":  "APPLY_p1772306234751464900",
+                      "status":  200,
+                      "body":  {
+                                   "ok":  true,
+                                   "room_id":  "room_minreal_smoke_20260228_141713",
+                                   "executed":  [
+                                                    {
+                                                        "action":  "apply_step",
+                                                        "step_id":  "S3"
+                                                    },
+                                                    {
+                                                        "action":  "propose_write_step",
+                                                        "step_id":  "S4"
+                                                    }
+                                                ],
+                                   "needs_approval":  true,
+                                   "approve_token":  "APPLY_p1772306234984279800",
+                                   "summary":  {
+                                                   "plan_id":  null,
+                                                   "status":  "planned",
+                                                   "steps_total":  4,
+                                                   "counts":  {
+                                                                  "todo":  0,
+                                                                  "proposed":  1,
+                                                                  "done":  3,
+                                                                  "error":  0,
+                                                                  "other":  0
+                                                              },
+                                                   "pending_approvals_count":  1,
+                                                   "last_eval":  {
+                                                                     "room_id":  null,
+                                                                     "observation":  {
+                                                                                         "ok":  true,
+                                                                                         "room_id":  "room_minreal_smoke_20260228_141107",
+                                                                                         "note":  "post-run evaluate (minreal smoke)"
+                                                                                     }
+                                                                 },
+                                                   "updated_at":  "2026-02-28T19:17:14.992110+00:00"
+                                               },
+                                   "pending_approvals":  {
+                                                             "S4":  "APPLY_p1772306234984279800"
+                                                         },
+                                   "plan":  {
+                                                "status":  "planned",
+                                                "steps":  [
+                                                              {
+                                                                  "id":  "S1",
+                                                                  "title":  "Inspect risk folder (list_dir)",
+                                                                  "status":  "done",
+                                                                  "tool_name":  "list_dir",
+                                                                  "mode":  "read",
+                                                                  "tool_args":  {
+                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk"
+                                                                                }
+                                                              },
+                                                              {
+                                                                  "id":  "S2",
+                                                                  "title":  "Read risk_engine.py (read_file)",
+                                                                  "status":  "done",
+                                                                  "tool_name":  "read_file",
+                                                                  "mode":  "read",
+                                                                  "tool_args":  {
+                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk\\risk_engine.py",
+                                                                                    "max_bytes":  200000
+                                                                                }
+                                                              },
+                                                              {
+                                                                  "id":  "S3",
+                                                                  "title":  "Create real_log.txt (append_file new_file) â gated SAFE (repo)",
+                                                                  "status":  "done",
+                                                                  "tool_name":  "append_file",
+                                                                  "mode":  "propose",
+                                                                  "kind":  "new_file",
+                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713",
+                                                                  "tool_args":  {
+                                                                                    "path":  "real_log.txt",
+                                                                                    "content":  "REAL_V3B START\n"
+                                                                                }
+                                                              },
+                                                              {
+                                                                  "id":  "S4",
+                                                                  "title":  "Modify real_log.txt (append marker) â gated SAFE (repo)",
+                                                                  "status":  "proposed",
+                                                                  "tool_name":  "append_file",
+                                                                  "mode":  "propose",
+                                                                  "kind":  "modify",
+                                                                  "repo_path":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713\\real_log.txt",
+                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713",
+                                                                  "tool_args":  {
+                                                                                    "path":  "real_log.txt",
+                                                                                    "content":  "REAL_V3B MARK 2026-02-28T19:17:14.120664+00:00\n"
+                                                                                },
+                                                                  "proposal_id":  "p1772306234984279800",
+                                                                  "required_approve":  "APPLY_p1772306234984279800"
+                                                              }
+                                                          ],
+                                                "updated_at":  "2026-02-28T19:17:14.992110+00:00",
+                                                "room_id":  "room_minreal_smoke_20260228_141713",
+                                                "last_eval":  {
+                                                                  "room_id":  null,
+                                                                  "observation":  {
+                                                                                      "ok":  true,
+                                                                                      "room_id":  "room_minreal_smoke_20260228_141107",
+                                                                                      "note":  "post-run evaluate (minreal smoke)"
+                                                                                  }
+                                                              },
+                                                "created_at":  "2026-02-28T19:11:09.089421+00:00",
+                                                "history":  [
+                                                                {
+                                                                    "kind":  "evaluate",
+                                                                    "room_id":  null,
+                                                                    "observation":  {
+                                                                                        "ok":  true,
+                                                                                        "room_id":  "room_minreal_smoke_20260228_141107",
+                                                                                        "note":  "post-run evaluate (minreal smoke)"
+                                                                                    },
+                                                                    "verdict":  {
+                                                                                    "status":  "no_change",
+                                                                                    "notes":  [
+
+                                                                                              ]
+                                                                                }
+                                                                }
+                                                            ],
+                                                "goal":  "MIN_REAL_PLAN"
+                                            },
+                                   "mission":  {
+                                                   "version":  1,
+                                                   "mission_id":  "brainlab-default",
+                                                   "title":  "Brain Lab â Local Governed Agent",
+                                                   "objectives":  [
+                                                                      "Implement PlannerâEvaluator endpoints with persistent mission/plan state.",
+                                                                      "Maintain governance: no destructive actions, auditable logs, reproducible workflow."
+                                                                  ],
+                                                   "constraints":  [
+                                                                       "No auto-executing PowerShell from the assistant.",
+                                                                       "All writes confined to C:\\AI_VAULT\\tmp_agent",
+                                                                       "All changes must be logged."
+                                                                   ],
+                                                   "created_at":  null,
+                                                   "updated_at":  "2026-02-28T19:17:14.733466+00:00",
+                                                   "room_id":  "room_minreal_smoke_20260228_141713"
+                                               }
+                               },
+                      "raw":  "{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141713\",\"executed\":[{\"action\":\"apply_step\",\"step_id\":\"S3\"},{\"action\":\"propose_write_step\",\"step_id\":\"S4\"}],\"needs_approval\":true,\"approve_token\":\"APPLY_p1772306234984279800\",\"summary\":{\"plan_id\":null,\"status\":\"planned\",\"steps_total\":4,\"counts\":{\"todo\":0,\"proposed\":1,\"done\":3,\"error\":0,\"other\":0},\"pending_approvals_count\":1,\"last_eval\":{\"room_id\":null,\"observation\":{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141107\",\"note\":\"post-run evaluate (minreal smoke)\"}},\"updated_at\":\"2026-02-28T19:17:14.992110+00:00\"},\"pending_approvals\":{\"S4\":\"APPLY_p1772306234984279800\"},\"plan\":{\"status\":\"planned\",\"steps\":[{\"id\":\"S1\",\"title\":\"Inspect risk folder (list_dir)\",\"status\":\"done\",\"tool_name\":\"list_dir\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\"}},{\"id\":\"S2\",\"title\":\"Read risk_engine.py (read_file)\",\"status\":\"done\",\"tool_name\":\"read_file\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\\\\risk_engine.py\",\"max_bytes\":200000}},{\"id\":\"S3\",\"title\":\"Create real_log.txt (append_file new_file) â gated SAFE (repo)\",\"status\":\"done\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"new_file\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B START\\n\"}},{\"id\":\"S4\",\"title\":\"Modify real_log.txt (append marker) â gated SAFE (repo)\",\"status\":\"proposed\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"modify\",\"repo_path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\\\\real_log.txt\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B MARK 2026-02-28T19:17:14.120664+00:00\\n\"},\"proposal_id\":\"p1772306234984279800\",\"required_approve\":\"APPLY_p1772306234984279800\"}],\"updated_at\":\"2026-02-28T19:17:14.992110+00:00\",\"room_id\":\"room_minreal_smoke_20260228_141713\",\"last_eval\":{\"room_id\":null,\"observation\":{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141107\",\"note\":\"post-run evaluate (minreal smoke)\"}},\"created_at\":\"2026-02-28T19:11:09.089421+00:00\",\"history\":[{\"kind\":\"evaluate\",\"room_id\":null,\"observation\":{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141107\",\"note\":\"post-run evaluate (minreal smoke)\"},\"verdict\":{\"status\":\"no_change\",\"notes\":[]}}],\"goal\":\"MIN_REAL_PLAN\"},\"mission\":{\"version\":1,\"mission_id\":\"brainlab-default\",\"title\":\"Brain Lab â Local Governed Agent\",\"objectives\":[\"Implement PlannerâEvaluator endpoints with persistent mission/plan state.\",\"Maintain governance: no destructive actions, auditable logs, reproducible workflow.\"],\"constraints\":[\"No auto-executing PowerShell from the assistant.\",\"All writes confined to C:\\\\AI_VAULT\\\\tmp_agent\",\"All changes must be logged.\"],\"created_at\":null,\"updated_at\":\"2026-02-28T19:17:14.733466+00:00\",\"room_id\":\"room_minreal_smoke_20260228_141713\"}}"
+                  },
+                  {
+                      "kind":  "run",
+                      "iter":  2,
+                      "status":  200,
+                      "body":  {
+                                   "ok":  true,
+                                   "room_id":  "room_minreal_smoke_20260228_141713",
+                                   "executed":  [
+                                                    {
+                                                        "action":  "noop_no_todo",
+                                                        "step_id":  null
+                                                    }
+                                                ],
+                                   "needs_approval":  true,
+                                   "approve_token":  "APPLY_p1772306234984279800",
+                                   "summary":  {
+                                                   "plan_id":  null,
+                                                   "status":  "planned",
+                                                   "steps_total":  4,
+                                                   "counts":  {
+                                                                  "todo":  0,
+                                                                  "proposed":  1,
+                                                                  "done":  3,
+                                                                  "error":  0,
+                                                                  "other":  0
+                                                              },
+                                                   "pending_approvals_count":  1,
+                                                   "last_eval":  {
+                                                                     "room_id":  null,
+                                                                     "observation":  {
+                                                                                         "ok":  true,
+                                                                                         "room_id":  "room_minreal_smoke_20260228_141107",
+                                                                                         "note":  "post-run evaluate (minreal smoke)"
+                                                                                     }
+                                                                 },
+                                                   "updated_at":  "2026-02-28T19:17:14.992110+00:00"
+                                               },
+                                   "pending_approvals":  {
+                                                             "S4":  "APPLY_p1772306234984279800"
+                                                         },
+                                   "plan":  {
+                                                "status":  "planned",
+                                                "steps":  [
+                                                              {
+                                                                  "id":  "S1",
+                                                                  "title":  "Inspect risk folder (list_dir)",
+                                                                  "status":  "done",
+                                                                  "tool_name":  "list_dir",
+                                                                  "mode":  "read",
+                                                                  "tool_args":  {
+                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk"
+                                                                                }
+                                                              },
+                                                              {
+                                                                  "id":  "S2",
+                                                                  "title":  "Read risk_engine.py (read_file)",
+                                                                  "status":  "done",
+                                                                  "tool_name":  "read_file",
+                                                                  "mode":  "read",
+                                                                  "tool_args":  {
+                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk\\risk_engine.py",
+                                                                                    "max_bytes":  200000
+                                                                                }
+                                                              },
+                                                              {
+                                                                  "id":  "S3",
+                                                                  "title":  "Create real_log.txt (append_file new_file) â gated SAFE (repo)",
+                                                                  "status":  "done",
+                                                                  "tool_name":  "append_file",
+                                                                  "mode":  "propose",
+                                                                  "kind":  "new_file",
+                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713",
+                                                                  "tool_args":  {
+                                                                                    "path":  "real_log.txt",
+                                                                                    "content":  "REAL_V3B START\n"
+                                                                                }
+                                                              },
+                                                              {
+                                                                  "id":  "S4",
+                                                                  "title":  "Modify real_log.txt (append marker) â gated SAFE (repo)",
+                                                                  "status":  "proposed",
+                                                                  "tool_name":  "append_file",
+                                                                  "mode":  "propose",
+                                                                  "kind":  "modify",
+                                                                  "repo_path":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713\\real_log.txt",
+                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713",
+                                                                  "tool_args":  {
+                                                                                    "path":  "real_log.txt",
+                                                                                    "content":  "REAL_V3B MARK 2026-02-28T19:17:14.120664+00:00\n"
+                                                                                },
+                                                                  "proposal_id":  "p1772306234984279800",
+                                                                  "required_approve":  "APPLY_p1772306234984279800"
+                                                              }
+                                                          ],
+                                                "updated_at":  "2026-02-28T19:17:14.992110+00:00",
+                                                "room_id":  "room_minreal_smoke_20260228_141713",
+                                                "last_eval":  {
+                                                                  "room_id":  null,
+                                                                  "observation":  {
+                                                                                      "ok":  true,
+                                                                                      "room_id":  "room_minreal_smoke_20260228_141107",
+                                                                                      "note":  "post-run evaluate (minreal smoke)"
+                                                                                  }
+                                                              },
+                                                "created_at":  "2026-02-28T19:11:09.089421+00:00",
+                                                "history":  [
+                                                                {
+                                                                    "kind":  "evaluate",
+                                                                    "room_id":  null,
+                                                                    "observation":  {
+                                                                                        "ok":  true,
+                                                                                        "room_id":  "room_minreal_smoke_20260228_141107",
+                                                                                        "note":  "post-run evaluate (minreal smoke)"
+                                                                                    },
+                                                                    "verdict":  {
+                                                                                    "status":  "no_change",
+                                                                                    "notes":  [
+
+                                                                                              ]
+                                                                                }
+                                                                }
+                                                            ],
+                                                "goal":  "MIN_REAL_PLAN"
+                                            },
+                                   "mission":  {
+                                                   "version":  1,
+                                                   "mission_id":  "brainlab-default",
+                                                   "title":  "Brain Lab â Local Governed Agent",
+                                                   "objectives":  [
+                                                                      "Implement PlannerâEvaluator endpoints with persistent mission/plan state.",
+                                                                      "Maintain governance: no destructive actions, auditable logs, reproducible workflow."
+                                                                  ],
+                                                   "constraints":  [
+                                                                       "No auto-executing PowerShell from the assistant.",
+                                                                       "All writes confined to C:\\AI_VAULT\\tmp_agent",
+                                                                       "All changes must be logged."
+                                                                   ],
+                                                   "created_at":  null,
+                                                   "updated_at":  "2026-02-28T19:17:14.733466+00:00",
+                                                   "room_id":  "room_minreal_smoke_20260228_141713"
+                                               }
+                               },
+                      "raw":  "{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141713\",\"executed\":[{\"action\":\"noop_no_todo\",\"step_id\":null}],\"needs_approval\":true,\"approve_token\":\"APPLY_p1772306234984279800\",\"summary\":{\"plan_id\":null,\"status\":\"planned\",\"steps_total\":4,\"counts\":{\"todo\":0,\"proposed\":1,\"done\":3,\"error\":0,\"other\":0},\"pending_approvals_count\":1,\"last_eval\":{\"room_id\":null,\"observation\":{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141107\",\"note\":\"post-run evaluate (minreal smoke)\"}},\"updated_at\":\"2026-02-28T19:17:14.992110+00:00\"},\"pending_approvals\":{\"S4\":\"APPLY_p1772306234984279800\"},\"plan\":{\"status\":\"planned\",\"steps\":[{\"id\":\"S1\",\"title\":\"Inspect risk folder (list_dir)\",\"status\":\"done\",\"tool_name\":\"list_dir\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\"}},{\"id\":\"S2\",\"title\":\"Read risk_engine.py (read_file)\",\"status\":\"done\",\"tool_name\":\"read_file\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\\\\risk_engine.py\",\"max_bytes\":200000}},{\"id\":\"S3\",\"title\":\"Create real_log.txt (append_file new_file) â gated SAFE (repo)\",\"status\":\"done\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"new_file\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B START\\n\"}},{\"id\":\"S4\",\"title\":\"Modify real_log.txt (append marker) â gated SAFE (repo)\",\"status\":\"proposed\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"modify\",\"repo_path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\\\\real_log.txt\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B MARK 2026-02-28T19:17:14.120664+00:00\\n\"},\"proposal_id\":\"p1772306234984279800\",\"required_approve\":\"APPLY_p1772306234984279800\"}],\"updated_at\":\"2026-02-28T19:17:14.992110+00:00\",\"room_id\":\"room_minreal_smoke_20260228_141713\",\"last_eval\":{\"room_id\":null,\"observation\":{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141107\",\"note\":\"post-run evaluate (minreal smoke)\"}},\"created_at\":\"2026-02-28T19:11:09.089421+00:00\",\"history\":[{\"kind\":\"evaluate\",\"room_id\":null,\"observation\":{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141107\",\"note\":\"post-run evaluate (minreal smoke)\"},\"verdict\":{\"status\":\"no_change\",\"notes\":[]}}],\"goal\":\"MIN_REAL_PLAN\"},\"mission\":{\"version\":1,\"mission_id\":\"brainlab-default\",\"title\":\"Brain Lab â Local Governed Agent\",\"objectives\":[\"Implement PlannerâEvaluator endpoints with persistent mission/plan state.\",\"Maintain governance: no destructive actions, auditable logs, reproducible workflow.\"],\"constraints\":[\"No auto-executing PowerShell from the assistant.\",\"All writes confined to C:\\\\AI_VAULT\\\\tmp_agent\",\"All changes must be logged.\"],\"created_at\":null,\"updated_at\":\"2026-02-28T19:17:14.733466+00:00\",\"room_id\":\"room_minreal_smoke_20260228_141713\"}}"
+                  },
+                  {
+                      "kind":  "get_plan_for_local_apply",
+                      "iter":  2,
+                      "status":  200,
+                      "body":  {
+                                   "ok":  true,
+                                   "room_id":  "room_minreal_smoke_20260228_141713",
+                                   "plan":  {
+                                                "status":  "planned",
+                                                "steps":  [
+                                                              {
+                                                                  "id":  "S1",
+                                                                  "title":  "Inspect risk folder (list_dir)",
+                                                                  "status":  "done",
+                                                                  "tool_name":  "list_dir",
+                                                                  "mode":  "read",
+                                                                  "tool_args":  {
+                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk"
+                                                                                }
+                                                              },
+                                                              {
+                                                                  "id":  "S2",
+                                                                  "title":  "Read risk_engine.py (read_file)",
+                                                                  "status":  "done",
+                                                                  "tool_name":  "read_file",
+                                                                  "mode":  "read",
+                                                                  "tool_args":  {
+                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk\\risk_engine.py",
+                                                                                    "max_bytes":  200000
+                                                                                }
+                                                              },
+                                                              {
+                                                                  "id":  "S3",
+                                                                  "title":  "Create real_log.txt (append_file new_file) â gated SAFE (repo)",
+                                                                  "status":  "done",
+                                                                  "tool_name":  "append_file",
+                                                                  "mode":  "propose",
+                                                                  "kind":  "new_file",
+                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713",
+                                                                  "tool_args":  {
+                                                                                    "path":  "real_log.txt",
+                                                                                    "content":  "REAL_V3B START\n"
+                                                                                }
+                                                              },
+                                                              {
+                                                                  "id":  "S4",
+                                                                  "title":  "Modify real_log.txt (append marker) â gated SAFE (repo)",
+                                                                  "status":  "proposed",
+                                                                  "tool_name":  "append_file",
+                                                                  "mode":  "propose",
+                                                                  "kind":  "modify",
+                                                                  "repo_path":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713\\real_log.txt",
+                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713",
+                                                                  "tool_args":  {
+                                                                                    "path":  "real_log.txt",
+                                                                                    "content":  "REAL_V3B MARK 2026-02-28T19:17:14.120664+00:00\n"
+                                                                                },
+                                                                  "proposal_id":  "p1772306234984279800",
+                                                                  "required_approve":  "APPLY_p1772306234984279800"
+                                                              }
+                                                          ],
+                                                "updated_at":  "2026-02-28T19:17:14.992110+00:00",
+                                                "room_id":  "room_minreal_smoke_20260228_141713",
+                                                "last_eval":  {
+                                                                  "room_id":  null,
+                                                                  "observation":  {
+                                                                                      "ok":  true,
+                                                                                      "room_id":  "room_minreal_smoke_20260228_141107",
+                                                                                      "note":  "post-run evaluate (minreal smoke)"
+                                                                                  }
+                                                              },
+                                                "created_at":  "2026-02-28T19:11:09.089421+00:00",
+                                                "history":  [
+                                                                {
+                                                                    "kind":  "evaluate",
+                                                                    "room_id":  null,
+                                                                    "observation":  {
+                                                                                        "ok":  true,
+                                                                                        "room_id":  "room_minreal_smoke_20260228_141107",
+                                                                                        "note":  "post-run evaluate (minreal smoke)"
+                                                                                    },
+                                                                    "verdict":  {
+                                                                                    "status":  "no_change",
+                                                                                    "notes":  [
+
+                                                                                              ]
+                                                                                }
+                                                                }
+                                                            ],
+                                                "goal":  "MIN_REAL_PLAN"
+                                            }
+                               },
+                      "raw":  "{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141713\",\"plan\":{\"status\":\"planned\",\"steps\":[{\"id\":\"S1\",\"title\":\"Inspect risk folder (list_dir)\",\"status\":\"done\",\"tool_name\":\"list_dir\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\"}},{\"id\":\"S2\",\"title\":\"Read risk_engine.py (read_file)\",\"status\":\"done\",\"tool_name\":\"read_file\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\\\\risk_engine.py\",\"max_bytes\":200000}},{\"id\":\"S3\",\"title\":\"Create real_log.txt (append_file new_file) â gated SAFE (repo)\",\"status\":\"done\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"new_file\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B START\\n\"}},{\"id\":\"S4\",\"title\":\"Modify real_log.txt (append marker) â gated SAFE (repo)\",\"status\":\"proposed\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"modify\",\"repo_path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\\\\real_log.txt\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B MARK 2026-02-28T19:17:14.120664+00:00\\n\"},\"proposal_id\":\"p1772306234984279800\",\"required_approve\":\"APPLY_p1772306234984279800\"}],\"updated_at\":\"2026-02-28T19:17:14.992110+00:00\",\"room_id\":\"room_minreal_smoke_20260228_141713\",\"last_eval\":{\"room_id\":null,\"observation\":{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141107\",\"note\":\"post-run evaluate (minreal smoke)\"}},\"created_at\":\"2026-02-28T19:11:09.089421+00:00\",\"history\":[{\"kind\":\"evaluate\",\"room_id\":null,\"observation\":{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141107\",\"note\":\"post-run evaluate (minreal smoke)\"},\"verdict\":{\"status\":\"no_change\",\"notes\":[]}}],\"goal\":\"MIN_REAL_PLAN\"}}"
+                  },
+                  {
+                      "kind":  "local_apply_gate",
+                      "iter":  2,
+                      "proposal_id":  "p1772306234984279800",
+                      "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713",
+                      "token":  "APPLY_p1772306234984279800",
+                      "ok":  true,
+                      "detail":  {
+                                     "ok":  true,
+                                     "cmd":  [
+                                                 "python",
+                                                 "C:\\AI_VAULT\\tmp_agent\\apply_gate.py",
+                                                 "C:\\AI_VAULT\\tmp_agent\\proposals\\bundle_p1772306234984279800.json",
+                                                 "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713",
+                                                 "--approve=APPLY_p1772306234984279800"
+                                             ],
+                                     "raw":  "{\r\n  \"ok\": true,\r\n  \"run_id\": \"apply_1772306235\",\r\n  \"proposal_id\": \"p1772306234984279800\",\r\n  \"applied\": [\r\n    {\r\n      \"kind\": \"modify\",\r\n      \"workspace_path\": \"C:\\\\AI_VAULT\\\\tmp_agent\\\\workspace\\\\real_log.txt\",\r\n      \"dest\": \"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\\\\real_log.txt\"\r\n    }\r\n  ],\r\n  \"backups\": [\r\n    {\r\n      \"dest\": \"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\\\\real_log.txt\",\r\n      \"bak\": \"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\\\\real_log.txt.bak_20260228_141715\"\r\n    }\r\n  ],\r\n  \"validation\": {\r\n    \"py\": null,\r\n    \"json\": null,\r\n    \"ok\": true,\r\n    \"detail\": \"OK\"\r\n  },\r\n  \"receipt\": \"C:\\\\AI_VAULT\\\\tmp_agent\\\\state\\\\applied_p1772306234984279800.json\"\r\n}",
+                                     "json":  {
+                                                  "ok":  true,
+                                                  "run_id":  "apply_1772306235",
+                                                  "proposal_id":  "p1772306234984279800",
+                                                  "applied":  [
+                                                                  {
+                                                                      "kind":  "modify",
+                                                                      "workspace_path":  "C:\\AI_VAULT\\tmp_agent\\workspace\\real_log.txt",
+                                                                      "dest":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713\\real_log.txt"
+                                                                  }
+                                                              ],
+                                                  "backups":  [
+                                                                  {
+                                                                      "dest":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713\\real_log.txt",
+                                                                      "bak":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713\\real_log.txt.bak_20260228_141715"
+                                                                  }
+                                                              ],
+                                                  "validation":  {
+                                                                     "py":  null,
+                                                                     "json":  null,
+                                                                     "ok":  true,
+                                                                     "detail":  "OK"
+                                                                 },
+                                                  "receipt":  "C:\\AI_VAULT\\tmp_agent\\state\\applied_p1772306234984279800.json"
+                                              },
+                                     "bundle":  "C:\\AI_VAULT\\tmp_agent\\proposals\\bundle_p1772306234984279800.json",
+                                     "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713"
+                                 }
+                  },
+                  {
+                      "kind":  "run_apply",
+                      "iter":  2,
+                      "token":  "APPLY_p1772306234984279800",
+                      "status":  200,
+                      "body":  {
+                                   "ok":  true,
+                                   "room_id":  "room_minreal_smoke_20260228_141713",
+                                   "executed":  [
+                                                    {
+                                                        "action":  "apply_step",
+                                                        "step_id":  "S4"
+                                                    },
+                                                    {
+                                                        "action":  "noop_complete",
+                                                        "step_id":  null
+                                                    }
+                                                ],
+                                   "needs_approval":  false,
+                                   "approve_token":  null,
+                                   "summary":  {
+                                                   "plan_id":  null,
+                                                   "status":  "complete",
+                                                   "steps_total":  4,
+                                                   "counts":  {
+                                                                  "todo":  0,
+                                                                  "proposed":  0,
+                                                                  "done":  4,
+                                                                  "error":  0,
+                                                                  "other":  0
+                                                              },
+                                                   "pending_approvals_count":  0,
+                                                   "last_eval":  {
+                                                                     "room_id":  null,
+                                                                     "observation":  {
+                                                                                         "ok":  true,
+                                                                                         "room_id":  "room_minreal_smoke_20260228_141107",
+                                                                                         "note":  "post-run evaluate (minreal smoke)"
+                                                                                     }
+                                                                 },
+                                                   "updated_at":  "2026-02-28T19:17:15.210640+00:00"
+                                               },
+                                   "pending_approvals":  {
+
+                                                         },
+                                   "plan":  {
+                                                "status":  "complete",
+                                                "steps":  [
+                                                              {
+                                                                  "id":  "S1",
+                                                                  "title":  "Inspect risk folder (list_dir)",
+                                                                  "status":  "done",
+                                                                  "tool_name":  "list_dir",
+                                                                  "mode":  "read",
+                                                                  "tool_args":  {
+                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk"
+                                                                                }
+                                                              },
+                                                              {
+                                                                  "id":  "S2",
+                                                                  "title":  "Read risk_engine.py (read_file)",
+                                                                  "status":  "done",
+                                                                  "tool_name":  "read_file",
+                                                                  "mode":  "read",
+                                                                  "tool_args":  {
+                                                                                    "path":  "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk\\risk_engine.py",
+                                                                                    "max_bytes":  200000
+                                                                                }
+                                                              },
+                                                              {
+                                                                  "id":  "S3",
+                                                                  "title":  "Create real_log.txt (append_file new_file) â gated SAFE (repo)",
+                                                                  "status":  "done",
+                                                                  "tool_name":  "append_file",
+                                                                  "mode":  "propose",
+                                                                  "kind":  "new_file",
+                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713",
+                                                                  "tool_args":  {
+                                                                                    "path":  "real_log.txt",
+                                                                                    "content":  "REAL_V3B START\n"
+                                                                                }
+                                                              },
+                                                              {
+                                                                  "id":  "S4",
+                                                                  "title":  "Modify real_log.txt (append marker) â gated SAFE (repo)",
+                                                                  "status":  "done",
+                                                                  "tool_name":  "append_file",
+                                                                  "mode":  "propose",
+                                                                  "kind":  "modify",
+                                                                  "repo_path":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713\\real_log.txt",
+                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_smoke_20260228_141713",
+                                                                  "tool_args":  {
+                                                                                    "path":  "real_log.txt",
+                                                                                    "content":  "REAL_V3B MARK 2026-02-28T19:17:14.120664+00:00\n"
+                                                                                }
+                                                              }
+                                                          ],
+                                                "updated_at":  "2026-02-28T19:17:15.210640+00:00",
+                                                "room_id":  "room_minreal_smoke_20260228_141713",
+                                                "last_eval":  {
+                                                                  "room_id":  null,
+                                                                  "observation":  {
+                                                                                      "ok":  true,
+                                                                                      "room_id":  "room_minreal_smoke_20260228_141107",
+                                                                                      "note":  "post-run evaluate (minreal smoke)"
+                                                                                  }
+                                                              },
+                                                "created_at":  "2026-02-28T19:11:09.089421+00:00",
+                                                "history":  [
+                                                                {
+                                                                    "kind":  "evaluate",
+                                                                    "room_id":  null,
+                                                                    "observation":  {
+                                                                                        "ok":  true,
+                                                                                        "room_id":  "room_minreal_smoke_20260228_141107",
+                                                                                        "note":  "post-run evaluate (minreal smoke)"
+                                                                                    },
+                                                                    "verdict":  {
+                                                                                    "status":  "no_change",
+                                                                                    "notes":  [
+
+                                                                                              ]
+                                                                                }
+                                                                }
+                                                            ],
+                                                "goal":  "MIN_REAL_PLAN"
+                                            },
+                                   "mission":  {
+                                                   "version":  1,
+                                                   "mission_id":  "brainlab-default",
+                                                   "title":  "Brain Lab â Local Governed Agent",
+                                                   "objectives":  [
+                                                                      "Implement PlannerâEvaluator endpoints with persistent mission/plan state.",
+                                                                      "Maintain governance: no destructive actions, auditable logs, reproducible workflow."
+                                                                  ],
+                                                   "constraints":  [
+                                                                       "No auto-executing PowerShell from the assistant.",
+                                                                       "All writes confined to C:\\AI_VAULT\\tmp_agent",
+                                                                       "All changes must be logged."
+                                                                   ],
+                                                   "created_at":  null,
+                                                   "updated_at":  "2026-02-28T19:17:14.733466+00:00",
+                                                   "room_id":  "room_minreal_smoke_20260228_141713"
+                                               }
+                               },
+                      "raw":  "{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141713\",\"executed\":[{\"action\":\"apply_step\",\"step_id\":\"S4\"},{\"action\":\"noop_complete\",\"step_id\":null}],\"needs_approval\":false,\"approve_token\":null,\"summary\":{\"plan_id\":null,\"status\":\"complete\",\"steps_total\":4,\"counts\":{\"todo\":0,\"proposed\":0,\"done\":4,\"error\":0,\"other\":0},\"pending_approvals_count\":0,\"last_eval\":{\"room_id\":null,\"observation\":{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141107\",\"note\":\"post-run evaluate (minreal smoke)\"}},\"updated_at\":\"2026-02-28T19:17:15.210640+00:00\"},\"pending_approvals\":{},\"plan\":{\"status\":\"complete\",\"steps\":[{\"id\":\"S1\",\"title\":\"Inspect risk folder (list_dir)\",\"status\":\"done\",\"tool_name\":\"list_dir\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\"}},{\"id\":\"S2\",\"title\":\"Read risk_engine.py (read_file)\",\"status\":\"done\",\"tool_name\":\"read_file\",\"mode\":\"read\",\"tool_args\":{\"path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\brainlab\\\\risk\\\\risk_engine.py\",\"max_bytes\":200000}},{\"id\":\"S3\",\"title\":\"Create real_log.txt (append_file new_file) â gated SAFE (repo)\",\"status\":\"done\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"new_file\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B START\\n\"}},{\"id\":\"S4\",\"title\":\"Modify real_log.txt (append marker) â gated SAFE (repo)\",\"status\":\"done\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"modify\",\"repo_path\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\\\\real_log.txt\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_minreal_smoke_20260228_141713\",\"tool_args\":{\"path\":\"real_log.txt\",\"content\":\"REAL_V3B MARK 2026-02-28T19:17:14.120664+00:00\\n\"}}],\"updated_at\":\"2026-02-28T19:17:15.210640+00:00\",\"room_id\":\"room_minreal_smoke_20260228_141713\",\"last_eval\":{\"room_id\":null,\"observation\":{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141107\",\"note\":\"post-run evaluate (minreal smoke)\"}},\"created_at\":\"2026-02-28T19:11:09.089421+00:00\",\"history\":[{\"kind\":\"evaluate\",\"room_id\":null,\"observation\":{\"ok\":true,\"room_id\":\"room_minreal_smoke_20260228_141107\",\"note\":\"post-run evaluate (minreal smoke)\"},\"verdict\":{\"status\":\"no_change\",\"notes\":[]}}],\"goal\":\"MIN_REAL_PLAN\"},\"mission\":{\"version\":1,\"mission_id\":\"brainlab-default\",\"title\":\"Brain Lab â Local Governed Agent\",\"objectives\":[\"Implement PlannerâEvaluator endpoints with persistent mission/plan state.\",\"Maintain governance: no destructive actions, auditable logs, reproducible workflow.\"],\"constraints\":[\"No auto-executing PowerShell from the assistant.\",\"All writes confined to C:\\\\AI_VAULT\\\\tmp_agent\",\"All changes must be logged.\"],\"created_at\":null,\"updated_at\":\"2026-02-28T19:17:14.733466+00:00\",\"room_id\":\"room_minreal_smoke_20260228_141713\"}}"
+                  }
+              ],
+    "final":  {
+                  "ok":  true,
+                  "status":  "complete",
+                  "iter":  2,
+                  "note":  "Completed after apply"
+              }
+}

@@ -1,0 +1,385 @@
+{
+  "results": [
+    {
+      "backtest_id": "dca6af3d486c3397eac323c6d1c5b155",
+      "net_profit_pct": -0.178,
+      "drawdown_pct": 2.5,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_01_R150_S60_T120_D25"
+    },
+    {
+      "backtest_id": "d8c4529957faf8dd7f484eb27fca4d1b",
+      "net_profit_pct": -0.852,
+      "drawdown_pct": 3.2,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_02_R150_S60_T120_D30"
+    },
+    {
+      "backtest_id": "42e03c546ffc42ce132de4a97802c475",
+      "net_profit_pct": -1.298,
+      "drawdown_pct": 3.6,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_03_R150_S60_T120_D35"
+    },
+    {
+      "backtest_id": "ddfa9a66efe7c4626e5adbf325184cb7",
+      "net_profit_pct": 0.0,
+      "drawdown_pct": 0.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_04_R150_S70_T140_D25"
+    },
+    {
+      "backtest_id": "15f4e344a955a48762a14def6b966ac1",
+      "net_profit_pct": -1.944,
+      "drawdown_pct": 3.8,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_05_R150_S70_T140_D30"
+    },
+    {
+      "backtest_id": "e5dc34cf68da7ccd26da094c1e8a0ef4",
+      "net_profit_pct": -2.63,
+      "drawdown_pct": 4.5,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_06_R150_S70_T140_D35"
+    },
+    {
+      "backtest_id": "e911ff7f598b2916e56dbe88d49c86cb",
+      "net_profit_pct": -1.964,
+      "drawdown_pct": 3.1,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_07_R150_S80_T160_D25"
+    },
+    {
+      "backtest_id": "b00f6a525e1356020e33e60efca4e325",
+      "net_profit_pct": -2.484,
+      "drawdown_pct": 3.6,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_08_R150_S80_T160_D30"
+    },
+    {
+      "backtest_id": "e97580d886f3da286af29ecc0da3e947",
+      "net_profit_pct": 0.0,
+      "drawdown_pct": 0.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_09_R150_S80_T160_D35"
+    },
+    {
+      "backtest_id": "f98296bff14dfa84bc356605529da1f5",
+      "net_profit_pct": 0.789,
+      "drawdown_pct": 2.4,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_10_R200_S60_T120_D25"
+    },
+    {
+      "backtest_id": "cfa132f08690e01aae5dfca400205e66",
+      "net_profit_pct": 0.642,
+      "drawdown_pct": 2.5,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_11_R200_S60_T120_D30"
+    },
+    {
+      "backtest_id": "11fff537137ea0da0ad5234615386b99",
+      "net_profit_pct": 0.047,
+      "drawdown_pct": 3.1,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_12_R200_S60_T120_D35"
+    },
+    {
+      "backtest_id": "3bd50c9ec39c25cb3e5efb4a536fb60f",
+      "net_profit_pct": -0.178,
+      "drawdown_pct": 2.5,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_13_R200_S70_T140_D25"
+    },
+    {
+      "backtest_id": "a652f09c89d03b219cac2da6692cf3ff",
+      "net_profit_pct": -0.681,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_14_R200_S70_T140_D30"
+    },
+    {
+      "backtest_id": "24cb580ac1357ab4bf10cab1049042b4",
+      "net_profit_pct": -1.089,
+      "drawdown_pct": 3.4,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_15_R200_S70_T140_D35"
+    },
+    {
+      "backtest_id": "81de71111688292510da8eba2fa836b7",
+      "net_profit_pct": -0.178,
+      "drawdown_pct": 2.5,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_16_R200_S80_T160_D25"
+    },
+    {
+      "backtest_id": "9678d4aa917647bdc089632046f82314",
+      "net_profit_pct": -0.681,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_17_R200_S80_T160_D30"
+    },
+    {
+      "backtest_id": "8531852bc965b512bac8c4b59f31bb00",
+      "net_profit_pct": -1.105,
+      "drawdown_pct": 3.4,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_18_R200_S80_T160_D35"
+    }
+  ],
+  "ranked": [
+    {
+      "backtest_id": "dca6af3d486c3397eac323c6d1c5b155",
+      "net_profit_pct": -0.178,
+      "drawdown_pct": 2.5,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_01_R150_S60_T120_D25",
+      "score": 10000000
+    },
+    {
+      "backtest_id": "d8c4529957faf8dd7f484eb27fca4d1b",
+      "net_profit_pct": -0.852,
+      "drawdown_pct": 3.2,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_02_R150_S60_T120_D30",
+      "score": 10000000
+    },
+    {
+      "backtest_id": "42e03c546ffc42ce132de4a97802c475",
+      "net_profit_pct": -1.298,
+      "drawdown_pct": 3.6,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_03_R150_S60_T120_D35",
+      "score": 10000000
+    },
+    {
+      "backtest_id": "ddfa9a66efe7c4626e5adbf325184cb7",
+      "net_profit_pct": 0.0,
+      "drawdown_pct": 0.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_04_R150_S70_T140_D25",
+      "score": 10000000
+    },
+    {
+      "backtest_id": "15f4e344a955a48762a14def6b966ac1",
+      "net_profit_pct": -1.944,
+      "drawdown_pct": 3.8,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_05_R150_S70_T140_D30",
+      "score": 10000000
+    },
+    {
+      "backtest_id": "e5dc34cf68da7ccd26da094c1e8a0ef4",
+      "net_profit_pct": -2.63,
+      "drawdown_pct": 4.5,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_06_R150_S70_T140_D35",
+      "score": 10000000
+    },
+    {
+      "backtest_id": "e911ff7f598b2916e56dbe88d49c86cb",
+      "net_profit_pct": -1.964,
+      "drawdown_pct": 3.1,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_07_R150_S80_T160_D25",
+      "score": 10000000
+    },
+    {
+      "backtest_id": "b00f6a525e1356020e33e60efca4e325",
+      "net_profit_pct": -2.484,
+      "drawdown_pct": 3.6,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_08_R150_S80_T160_D30",
+      "score": 10000000
+    },
+    {
+      "backtest_id": "e97580d886f3da286af29ecc0da3e947",
+      "net_profit_pct": 0.0,
+      "drawdown_pct": 0.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_09_R150_S80_T160_D35",
+      "score": 10000000
+    },
+    {
+      "backtest_id": "f98296bff14dfa84bc356605529da1f5",
+      "net_profit_pct": 0.789,
+      "drawdown_pct": 2.4,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_10_R200_S60_T120_D25",
+      "score": 10000000
+    },
+    {
+      "backtest_id": "cfa132f08690e01aae5dfca400205e66",
+      "net_profit_pct": 0.642,
+      "drawdown_pct": 2.5,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_11_R200_S60_T120_D30",
+      "score": 10000000
+    },
+    {
+      "backtest_id": "11fff537137ea0da0ad5234615386b99",
+      "net_profit_pct": 0.047,
+      "drawdown_pct": 3.1,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_12_R200_S60_T120_D35",
+      "score": 10000000
+    },
+    {
+      "backtest_id": "3bd50c9ec39c25cb3e5efb4a536fb60f",
+      "net_profit_pct": -0.178,
+      "drawdown_pct": 2.5,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_13_R200_S70_T140_D25",
+      "score": 10000000
+    },
+    {
+      "backtest_id": "a652f09c89d03b219cac2da6692cf3ff",
+      "net_profit_pct": -0.681,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_14_R200_S70_T140_D30",
+      "score": 10000000
+    },
+    {
+      "backtest_id": "24cb580ac1357ab4bf10cab1049042b4",
+      "net_profit_pct": -1.089,
+      "drawdown_pct": 3.4,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_15_R200_S70_T140_D35",
+      "score": 10000000
+    },
+    {
+      "backtest_id": "81de71111688292510da8eba2fa836b7",
+      "net_profit_pct": -0.178,
+      "drawdown_pct": 2.5,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_16_R200_S80_T160_D25",
+      "score": 10000000
+    },
+    {
+      "backtest_id": "9678d4aa917647bdc089632046f82314",
+      "net_profit_pct": -0.681,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_17_R200_S80_T160_D30",
+      "score": 10000000
+    },
+    {
+      "backtest_id": "8531852bc965b512bac8c4b59f31bb00",
+      "net_profit_pct": -1.105,
+      "drawdown_pct": 3.4,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "days_from_start": null,
+      "days_from_first_trade": null,
+      "candidate": "PFB4_18_R200_S80_T160_D35",
+      "score": 10000000
+    }
+  ],
+  "updated_utc": "2026-04-14T16:01:15Z"
+}

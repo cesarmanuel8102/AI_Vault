@@ -1,0 +1,96 @@
+import os
+import json
+import time
+from typing import Any, Dict, Optional
+from fastapi import Request
+
+VAULT_ROOT = r"C:\AI_VAULT"
+STATE_ROOT = os.path.join(VAULT_ROOT, "state", "agent")  # aligned with runtime
+LOG_ROOT = os.path.join(VAULT_ROOT, "logs")
+LOG_FILE = os.path.join(LOG_ROOT, "brain_requests.ndjson")
+
+def get_room_id(request: Request) -> str:
+    rid = request.headers.get("x-room-id", "default")
+    rid = rid.strip() if isinstance(rid, str) else "default"
+    return rid if rid else "default"
+
+def ensure_room_dirs(room_id: str) -> str:
+    os.makedirs(STATE_ROOT, exist_ok=True)
+    os.makedirs(LOG_ROOT, exist_ok=True)
+    room_dir = os.path.join(STATE_ROOT, room_id)
+    os.makedirs(room_dir, exist_ok=True)
+    return room_dir
+
+def _mission_path(room_id: str) -> str:
+    return os.path.join(STATE_ROOT, room_id, "mission.json")
+
+def _plan_path(room_id: str) -> str:
+    return os.path.join(STATE_ROOT, room_id, "plan.json")
+
+def load_mission(room_id: str) -> Dict[str, Any]:
+    ensure_room_dirs(room_id)
+    p = _mission_path(room_id)
+    if not os.path.exists(p):
+        return {}
+    try:
+        with open(p, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def save_mission(room_id: str, mission: Dict[str, Any]) -> None:
+    ensure_room_dirs(room_id)
+    p = _mission_path(room_id)
+    mission["updated_at"] = int(time.time())
+    with open(p, "w", encoding="utf-8") as f:
+        json.dump(mission, f, ensure_ascii=False, indent=2)
+
+def load_plan(room_id: str) -> Dict[str, Any]:
+    ensure_room_dirs(room_id)
+    p = _plan_path(room_id)
+    if not os.path.exists(p):
+        return {}
+    try:
+        with open(p, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+def save_plan(room_id: str, plan: Dict[str, Any]) -> None:
+    ensure_room_dirs(room_id)
+    p = _plan_path(room_id)
+    plan["updated_at"] = int(time.time())
+    with open(p, "w", encoding="utf-8") as f:
+        json.dump(plan, f, ensure_ascii=False, indent=2)
+
+def reset_plan(room_id: str) -> None:
+    ensure_room_dirs(room_id)
+    p = _plan_path(room_id)
+    if os.path.exists(p):
+        try:
+            os.remove(p)
+        except Exception:
+            pass
+
+def append_log_ndjson(room_id: str, event: Dict[str, Any]) -> None:
+    os.makedirs(LOG_ROOT, exist_ok=True)
+
+    ts_epoch = int(time.time())
+    # ISO UTC (sin depender de tz local)
+    ts_iso = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ts_epoch))
+
+    line = {
+        # nuevos campos normalizados
+        "ts_epoch": ts_epoch,
+        "ts_iso": ts_iso,
+
+        # compat: dejamos ts también (epoch int)
+        "ts": ts_epoch,
+
+        "room_id": room_id,
+        **event,
+    }
+
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(json.dumps(line, ensure_ascii=False) + "\n")
+

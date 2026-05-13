@@ -1,0 +1,26 @@
+{
+    "t4":  {
+               "ok":  true,
+               "reply_len":  66,
+               "ms":  17
+           },
+    "settings":  {
+                     "require_approval":  false,
+                     "enabled":  true
+                 },
+    "t1":  {
+               "ok":  true,
+               "reply_len":  370,
+               "ms":  67585
+           },
+    "t3":  {
+               "ok":  true,
+               "reply_len":  310,
+               "ms":  99067
+           },
+    "t2":  {
+               "ok":  true,
+               "reply_len":  472,
+               "ms":  61935
+           }
+}

@@ -1,0 +1,41 @@
+{
+  "source_id": "github_microsoft_TaskWeaver_20260508",
+  "curated_at_utc": "2026-05-08T04:56:45.206337Z",
+  "repo": {
+    "full_name": "microsoft/TaskWeaver",
+    "default_branch": "main",
+    "updated_at": "2026-05-07T15:27:37Z",
+    "stargazers_count": 6161,
+    "open_issues_count": 53,
+    "size_kb": 37379,
+    "language": "Python",
+    "topics": [
+      "agent",
+      "ai-agents",
+      "code-interpreter",
+      "copilot",
+      "data-analysis",
+      "llm",
+      "openai"
+    ],
+    "tests_present": true,
+    "docs_present": true,
+    "dependency_files": [
+      "requirements.txt",
+      "setup.py"
+    ]
+  },
+  "curation_score": 10.85,
+  "risk_score": 3.5,
+  "license_status": "compatible",
+  "recommended_action": "reject",
+  "reject_reasons": [
+    "repo_archived_or_disabled"
+  ],
+  "notes": [
+    "source_host_not_in_allowlist_seed"
+  ],
+  "dependency_risk_flags": [],
+  "suspicious_binaries": [],
+  "apparent_secrets": []
+}

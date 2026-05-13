@@ -1,0 +1,16 @@
+{
+  "proposal_id": "P_da97939f31350c88",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\patches\\apply_brain_episode_v1.ps1",
+    "content": "# Backup current state\nCopy-Item -Path 'C:\\AI_VAULT\\00_identity\\brain_server.py' -Destination 'C:\\AI_VAULT\\00_identity\\brain_server_backup.py'\n# Apply patch\nApply-Patch -PatchFile 'C:\\AI_VAULT\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\patches\\brain_episode_v1.diff'\n# Compile python file\npy_compile 'C:\\AI_VAULT\\00_identity\\brain_server.py'\n# Execute smoke tests\nInvoke-SmokeTests -File 'C:\\AI_VAULT\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\patches\\smoke_p3_1.ps1'",
+    "value": null,
+    "raw_content": "# Backup current state\\nCopy-Item -Path 'C:\\AI_VAULT\\00_identity\\brain_server.py' -Destination 'C:\\AI_VAULT\\00_identity\\brain_server_backup.py'\\n# Apply patch\\nApply-Patch -PatchFile 'C:\\AI_VAULT\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\patches\\brain_episode_v1.diff'\\n# Compile python file\\npy_compile 'C:\\AI_VAULT\\00_identity\\brain_server.py'\\n# Execute smoke tests\\nInvoke-SmokeTests -File 'C:\\AI_VAULT\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\patches\\smoke_p3_1.ps1'",
+    "text": "# Backup current state\nCopy-Item -Path 'C:\\AI_VAULT\\00_identity\\brain_server.py' -Destination 'C:\\AI_VAULT\\00_identity\\brain_server_backup.py'\n# Apply patch\nApply-Patch -PatchFile 'C:\\AI_VAULT\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\patches\\brain_episode_v1.diff'\n# Compile python file\npy_compile 'C:\\AI_VAULT\\00_identity\\brain_server.py'\n# Execute smoke tests\nInvoke-SmokeTests -File 'C:\\AI_VAULT\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\patches\\smoke_p3_1.ps1'"
+  },
+  "room_id": "room_p3_1_20260303_104350",
+  "step_id": "S2",
+  "created_at": "2026-03-03T15:59:29.049619+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

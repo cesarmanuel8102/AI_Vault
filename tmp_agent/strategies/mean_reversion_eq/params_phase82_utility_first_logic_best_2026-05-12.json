@@ -1,0 +1,13 @@
+{
+  "or_risk": 0.03,
+  "or_target_atr_mult": 2.0,
+  "max_contracts_per_trade": 50,
+  "max_open_positions": 8,
+  "max_trades_per_symbol_day": 6,
+  "or_slot2_enabled": 1,
+  "or_slot2_risk_mult": 1.75,
+  "or_slot3_enabled": 1,
+  "guard_enabled": 0,
+  "daily_loss_limit_pct": 0.12,
+  "trailing_dd_limit_pct": 0.2
+}

@@ -1,0 +1,37 @@
+{
+  "source_id": "github_OpenInterpreter_open_interpreter_20260508",
+  "curated_at_utc": "2026-05-08T04:56:59.584967Z",
+  "repo": {
+    "full_name": "openinterpreter/open-interpreter",
+    "default_branch": "main",
+    "updated_at": "2026-05-08T03:48:19Z",
+    "stargazers_count": 63423,
+    "open_issues_count": 322,
+    "size_kb": 100555,
+    "language": "Python",
+    "topics": [
+      "chatgpt",
+      "gpt-4",
+      "interpreter",
+      "javascript",
+      "nodejs",
+      "python"
+    ],
+    "tests_present": true,
+    "docs_present": true,
+    "dependency_files": [
+      "pyproject.toml"
+    ]
+  },
+  "curation_score": 9.6,
+  "risk_score": 1.5,
+  "license_status": "compatible_review_required",
+  "recommended_action": "analyze",
+  "reject_reasons": [],
+  "notes": [
+    "source_host_not_in_allowlist_seed"
+  ],
+  "dependency_risk_flags": [],
+  "suspicious_binaries": [],
+  "apparent_secrets": []
+}

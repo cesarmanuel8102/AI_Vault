@@ -1,0 +1,68 @@
+{
+  "ts_local": "2026-02-28T08:51:53.3191751-05:00",
+  "base": "http://127.0.0.1:8010",
+  "room_id": "room_run_apply_smoke_20260228_084653",
+  "goal": null,
+  "max_iters": null,
+  "strict": false,
+  "force_plan": false,
+  "steps": [
+    {
+      "kind": "get_plan_pre",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "room_id": "room_run_apply_smoke_20260228_084653",
+        "plan": {
+          "status": "complete",
+          "steps": [
+            {
+              "id": "S1",
+              "title": "Write mission_log.txt (append_file) — gated (repo-safe)",
+              "status": "done",
+              "tool_name": "append_file",
+              "mode": "propose",
+              "kind": "new_file",
+              "dest_dir": "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_run_apply_smoke_20260228_084653",
+              "tool_args": {
+                "path": "mission_log.txt",
+                "content": "MISSION START\\n"
+              }
+            },
+            {
+              "id": "S2",
+              "title": "Snapshot set mission_state.json (runtime_snapshot_set)",
+              "status": "done",
+              "tool_name": "runtime_snapshot_set",
+              "mode": "propose",
+              "kind": "state",
+              "tool_args": {
+                "path": "mission_state.json",
+                "value": {
+                  "ts": "",
+                  "goal": "",
+                  "room_id": ""
+                }
+              }
+            },
+            {
+              "id": "S3",
+              "title": "Snapshot get mission_state.json (runtime_snapshot_get)",
+              "status": "done",
+              "tool_name": "runtime_snapshot_get",
+              "mode": "propose",
+              "kind": "state",
+              "tool_args": {
+                "path": "mission_state.json"
+              }
+            }
+          ],
+          "updated_at": "2026-02-28T08:46:54.288793-05:00",
+          "room_id": "room_run_apply_smoke_20260228_084653"
+        }
+      },
+      "raw": "{\"ok\":true,\"room_id\":\"room_run_apply_smoke_20260228_084653\",\"plan\":{\"status\":\"complete\",\"steps\":[{\"id\":\"S1\",\"title\":\"Write mission_log.txt (append_file) — gated (repo-safe)\",\"status\":\"done\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"new_file\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_run_apply_smoke_20260228_084653\",\"tool_args\":{\"path\":\"mission_log.txt\",\"content\":\"MISSION START\\\\n\"}},{\"id\":\"S2\",\"title\":\"Snapshot set mission_state.json (runtime_snapshot_set)\",\"status\":\"done\",\"tool_name\":\"runtime_snapshot_set\",\"mode\":\"propose\",\"kind\":\"state\",\"tool_args\":{\"path\":\"mission_state.json\",\"value\":{\"ts\":\"\",\"goal\":\"\",\"room_id\":\"\"}}},{\"id\":\"S3\",\"title\":\"Snapshot get mission_state.json (runtime_snapshot_get)\",\"status\":\"done\",\"tool_name\":\"runtime_snapshot_get\",\"mode\":\"propose\",\"kind\":\"state\",\"tool_args\":{\"path\":\"mission_state.json\"}}],\"updated_at\":\"2026-02-28T13:46:54.288793+00:00\",\"room_id\":\"room_run_apply_smoke_20260228_084653\"}}"
+    }
+  ],
+  "final": null
+}

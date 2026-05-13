@@ -1,0 +1,41 @@
+{
+  "phase": "4.5",
+  "notes": [
+    "2026-02-24T23:15:48.436545Z run_id=dev_1771974948_519757f9 iters=1 verdict=continue",
+    "2026-02-24T23:20:51.988739Z run_id=dev_1771975251_2972d166 iters=1 verdict=continue",
+    "2026-02-25T00:37:09.454637Z run_id=dev_1771979829_37c9d522 iters=1 verdict=continue"
+  ],
+  "last_run": {
+    "ts": "2026-03-01T23:46:15.636256Z",
+    "run_id": "dev_1772408775_9a84cbd1",
+    "mode": "run",
+    "analysis": {
+      "workspace_hash": "658055416a9a5bcb094b62eb44496e5dbdfdeb5a79a0597efcb75cb3cf6f27f0"
+    },
+    "evaluation": {
+      "verdict": "continue"
+    }
+  },
+  "last_package": {
+    "ts": "2026-02-25T02:02:00.971970Z",
+    "workspace_hash": "983d8adf26c5fc47ff78791116c51d2e96009cc5ec13316f35f51a874326fb5a",
+    "bundle_path": null,
+    "proposal_id": null
+  },
+  "last_apply": {
+    "ts": "2026-02-25T19:20:19.961682Z",
+    "bundle_path": "C:\\AI_VAULT\\tmp_agent\\proposals\\bundle_post_smoke_test.json",
+    "ok": true,
+    "proposal_id": "post_smoke_test",
+    "run_id": "apply_1772047219",
+    "preapply_snapshot_dir": "C:\\AI_VAULT\\tmp_agent\\state\\tools_snapshot_PREAPPLY_dev_1772047219_41048134_20260225_142019",
+    "post_smoke": "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\contracts\\financial_motor_contract_v1.json"
+  },
+  "scope_current": "all",
+  "last_smoke": {
+    "ts": "2026-02-25T19:14:21.812976Z",
+    "ok": true,
+    "contract_path": "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\contracts\\financial_motor_contract_v1.json",
+    "run_id": "dev_1772046861_77bf216c"
+  }
+}

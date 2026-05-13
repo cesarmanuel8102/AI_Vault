@@ -1,0 +1,11 @@
+{
+  "room_id": "cesar_main",
+  "objective": "Smoke test: crear good.txt y listar WORKSPACE_ROOT.",
+  "constraints": [
+    "Todos los writes deben ser dentro de WORKSPACE_ROOT",
+    "No escribir secretos"
+  ],
+  "status": "active",
+  "created_at": 1771956996,
+  "updated_at": 1771956996
+}

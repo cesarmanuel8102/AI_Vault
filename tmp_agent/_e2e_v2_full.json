@@ -1,0 +1,67 @@
+{
+    "t4":  {
+               "reply":  "Fecha y hora actual: 2026-05-05 23:47:27 (hora local del servidor)",
+               "ok":  true,
+               "raw":  {
+                           "response":  "Fecha y hora actual: 2026-05-05 23:47:27 (hora local del servidor)",
+                           "session_id":  "e2e2_t4_time",
+                           "model_used":  "system",
+                           "success":  true,
+                           "pending_action":  null
+                       },
+               "name":  "t4_time",
+               "ms":  17
+           },
+    "t5":  {
+               "reply":  "El escaneo de puertos falló: timeout de 60 segundos en run_powershell. No tengo evidencia suficiente sobre cuántos puertos están abiertos entre 8000-8100.\n\nSugerencia: ejecutar un comando más específico como `Test-NetConnection -ComputerName 127.0.0.1 -Port X` en bucle para puertos clave conocidos (8090, 11434, 8000, 8765), o usar `Get-NetTCPConnection -LocalAddress 127.0.0.1 | Where-Object {$_.LocalPort -ge 8000 -and $_.LocalPort -le 8100}` con timeout extendido.",
+               "ok":  true,
+               "raw":  {
+                           "response":  "El escaneo de puertos falló: timeout de 60 segundos en run_powershell. No tengo evidencia suficiente sobre cuántos puertos están abiertos entre 8000-8100.\n\nSugerencia: ejecutar un comando más específico como `Test-NetConnection -ComputerName 127.0.0.1 -Port X` en bucle para puertos clave conocidos (8090, 11434, 8000, 8765), o usar `Get-NetTCPConnection -LocalAddress 127.0.0.1 | Where-Object {$_.LocalPort -ge 8000 -and $_.LocalPort -le 8100}` con timeout extendido.",
+                           "session_id":  "e2e2_t5_count",
+                           "model_used":  "agent_orav",
+                           "success":  true,
+                           "pending_action":  null
+                       },
+               "name":  "t5_count",
+               "ms":  104002
+           },
+    "t1":  {
+               "reply":  "Escaneo completado en 192.168.1.0/24: **254 hosts activos** detectados.\nPrimeros: 192.168.1.1, 192.168.1.2, 192.168.1.3, 192.168.1.4, 192.168.1.5 (+249 mas)",
+               "ok":  true,
+               "raw":  {
+                           "response":  "Escaneo completado en 192.168.1.0/24: **254 hosts activos** detectados.\nPrimeros: 192.168.1.1, 192.168.1.2, 192.168.1.3, 192.168.1.4, 192.168.1.5 (+249 mas)",
+                           "session_id":  "e2e2_t1_scan",
+                           "model_used":  "agent_orav",
+                           "success":  true,
+                           "pending_action":  null
+                       },
+               "name":  "t1_scan",
+               "ms":  43597
+           },
+    "t3":  {
+               "reply":  "Comando ejecutado correctamente (exit=0):\n```\nName               \n----               \nAcPowerNotification\nAdobeCollabSync    \nAgent\n```",
+               "ok":  true,
+               "raw":  {
+                           "response":  "Comando ejecutado correctamente (exit=0):\n```\nName               \n----               \nAcPowerNotification\nAdobeCollabSync    \nAgent\n```",
+                           "session_id":  "e2e2_t3_psdollar",
+                           "model_used":  "agent_orav",
+                           "success":  true,
+                           "pending_action":  null
+                       },
+               "name":  "t3_psdollar",
+               "ms":  6461
+           },
+    "t2":  {
+               "reply":  "Comando ejecutado correctamente (exit=0):\n```\nnmap no disponible; scan_local_network nativo escaneo 192.168.1.0/24 y detecto 254 hosts vivos.\nHosts detectados: 192.168.1.1, 192.168.1.2, 192.168.1.3, 192.168.1.4, 192.168.1.5, 192.168.1.6, 192.168.1.7, 192.168.1.8, 192.168.1.9, 192.168.1.10, 192.168.1.11, 192.168.1.12, 192.168.1.13, 192.168.1.14, 192.168.1.15, 192.168.1.16, 192.168.1.17, 192.168.1.18, 192.168.1.19, 192.168.1.20 ... (+234 mas)\n```",
+               "ok":  true,
+               "raw":  {
+                           "response":  "Comando ejecutado correctamente (exit=0):\n```\nnmap no disponible; scan_local_network nativo escaneo 192.168.1.0/24 y detecto 254 hosts vivos.\nHosts detectados: 192.168.1.1, 192.168.1.2, 192.168.1.3, 192.168.1.4, 192.168.1.5, 192.168.1.6, 192.168.1.7, 192.168.1.8, 192.168.1.9, 192.168.1.10, 192.168.1.11, 192.168.1.12, 192.168.1.13, 192.168.1.14, 192.168.1.15, 192.168.1.16, 192.168.1.17, 192.168.1.18, 192.168.1.19, 192.168.1.20 ... (+234 mas)\n```",
+                           "session_id":  "e2e2_t2_nmap",
+                           "model_used":  "agent_orav",
+                           "success":  true,
+                           "pending_action":  null
+                       },
+               "name":  "t2_nmap",
+               "ms":  50512
+           }
+}

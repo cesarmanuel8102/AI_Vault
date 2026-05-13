@@ -1,0 +1,72 @@
+[
+  {
+    "path": "docs/design/04 - Agent and Topic ID Specs.md",
+    "score": 8,
+    "size": 1689
+  },
+  {
+    "path": ".github/workflows/pytest-redis-memory.yml",
+    "score": 8,
+    "size": 1758
+  },
+  {
+    "path": "docs/design/03 - Agent Worker Protocol.md",
+    "score": 8,
+    "size": 3686
+  },
+  {
+    "path": "dotnet/samples/dev-team/seed-memory/README.md",
+    "score": 7,
+    "size": 6
+  },
+  {
+    "path": "python/packages/magentic-one-cli/README.md",
+    "score": 7,
+    "size": 19
+  },
+  {
+    "path": "python/samples/agentchat_azure_postgresql/README.md",
+    "score": 7,
+    "size": 533
+  },
+  {
+    "path": "python/samples/core_xlang_hello_python_agent/README.md",
+    "score": 7,
+    "size": 722
+  },
+  {
+    "path": "dotnet/test/Microsoft.AutoGen.Integration.Tests.AppHosts/core_xlang_hello_python_agent/README.md",
+    "score": 7,
+    "size": 722
+  },
+  {
+    "path": "python/packages/autogen-agentchat/README.md",
+    "score": 7,
+    "size": 857
+  },
+  {
+    "path": "python/samples/agentchat_streamlit/README.md",
+    "score": 7,
+    "size": 1340
+  },
+  {
+    "path": "python/samples/agentchat_chess_game/README.md",
+    "score": 7,
+    "size": 2192
+  },
+  {
+    "path": "python/packages/agbench/benchmarks/HumanEval/README.md",
+    "score": 7,
+    "size": 2299
+  },
+  {
+    "path": "python/samples/agentchat_fastapi/README.md",
+    "score": 7,
+    "size": 2465
+  },
+  {
+    "path": "python/samples/agentchat_chainlit/README.md",
+    "score": 7,
+    "size": 3015
+  }
+]

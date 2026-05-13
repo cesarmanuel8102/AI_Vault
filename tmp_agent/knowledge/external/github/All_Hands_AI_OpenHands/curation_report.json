@@ -1,0 +1,41 @@
+{
+  "source_id": "github_All_Hands_AI_OpenHands_20260508",
+  "curated_at_utc": "2026-05-08T05:07:38.764387Z",
+  "repo": {
+    "full_name": "OpenHands/OpenHands",
+    "default_branch": "main",
+    "updated_at": "2026-05-08T04:26:15Z",
+    "stargazers_count": 72862,
+    "open_issues_count": 410,
+    "size_kb": 324164,
+    "language": "Python",
+    "topics": [
+      "agent",
+      "artificial-intelligence",
+      "chatgpt",
+      "claude-ai",
+      "cli",
+      "developer-tools",
+      "gpt",
+      "llm",
+      "openai"
+    ],
+    "tests_present": false,
+    "docs_present": false,
+    "dependency_files": []
+  },
+  "curation_score": 9.25,
+  "risk_score": 3.25,
+  "license_status": "compatible_review_required",
+  "recommended_action": "analyze",
+  "reject_reasons": [],
+  "notes": [
+    "tests_not_obvious_at_root",
+    "docs_not_obvious_at_root",
+    "dependency_manifest_not_detected",
+    "source_host_not_in_allowlist_seed"
+  ],
+  "dependency_risk_flags": [],
+  "suspicious_binaries": [],
+  "apparent_secrets": []
+}

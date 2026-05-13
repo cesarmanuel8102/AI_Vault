@@ -1,0 +1,121 @@
+﻿<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Brain Lab  UI</title>
+  <style>
+    body { font-family: system-ui, Arial; margin: 0; background:#0b0d12; color:#e7eaf0; }
+    header { padding: 14px 16px; border-bottom: 1px solid #1d2330; display:flex; gap:12px; align-items:center; }
+    header b { font-size: 14px; letter-spacing: .3px; }
+    #status { font-size: 12px; color:#a9b2c7; }
+    main { display:flex; height: calc(100vh - 56px); }
+    #left { flex: 1; display:flex; flex-direction:column; }
+    #chat { flex: 1; padding: 16px; overflow:auto; }
+    .msg { max-width: 900px; padding: 10px 12px; margin: 10px 0; border: 1px solid #1d2330; border-radius: 10px; white-space: pre-wrap; }
+    .me { background:#0f1625; }
+    .brain { background:#0f1f15; }
+    #bar { display:flex; gap:10px; padding: 12px; border-top: 1px solid #1d2330; }
+    input { flex:1; padding: 10px 12px; border-radius:10px; border:1px solid #1d2330; background:#0b0d12; color:#e7eaf0; }
+    button { padding: 10px 14px; border-radius:10px; border:1px solid #1d2330; background:#111827; color:#e7eaf0; cursor:pointer; }
+    button:hover { background:#172036; }
+    #right { width: 360px; border-left:1px solid #1d2330; padding: 12px; overflow:auto; }
+    .card { border:1px solid #1d2330; border-radius:10px; padding:10px; margin-bottom:10px; background:#0b0d12; }
+    .small { font-size:12px; color:#a9b2c7; }
+    code { background:#0b0d12; padding:2px 6px; border-radius:6px; border:1px solid #1d2330; }
+  </style>
+</head>
+<body>
+  <header>
+    <b>Brain Lab</b>
+    <span id="status">conectando</span>
+  </header>
+
+  <main>
+    <section id="left">
+      <div id="chat"></div>
+
+      <div id="bar">
+        <input id="in" placeholder="Escribe aquí (ej: 'status', 'plan14d', 'generate outreach')" />
+        <button id="send">Enviar</button>
+      </div>
+    </section>
+
+    <aside id="right">
+      <div class="card">
+        <div><b>Comandos rápidos</b></div>
+        <div class="small">Sin pedirte ideas. El cerebro decide.</div>
+        <div style="margin-top:8px" class="small">
+          <div><code>status</code>  estado del laboratorio</div>
+          <div><code>plan14d</code>  genera plan 14 días (top2)</div>
+          <div><code>generate outreach</code>  genera emails/followups</div>
+          <div><code>kpi 0 0 0 0 0 0 0</code>  log KPI (outreach,responses,calls,proposals,deals,revenue,cost)</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div><b>Gobernanza</b></div>
+        <div class="small">
+          El sistema bloquea spam/fraude. Dinero/ads/trading  <code>review</code>.
+        </div>
+      </div>
+
+      <div class="card">
+        <div><b>Archivos</b></div>
+        <div class="small">
+          <div><code>memory\ranked_ideas.json</code></div>
+          <div><code>kpi\kpi_daily.jsonl</code></div>
+          <div><code>memory\outreach\</code></div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+<script>
+const chat = document.getElementById('chat');
+const input = document.getElementById('in');
+const send = document.getElementById('send');
+const statusEl = document.getElementById('status');
+
+function add(role, text){
+  const div = document.createElement('div');
+  div.className = 'msg ' + (role === 'me' ? 'me' : 'brain');
+  div.textContent = (role === 'me' ? 'Tú: ' : 'Cerebro: ') + text;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+async function api(path, body){
+  const r = await fetch(path, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body||{})});
+  const j = await r.json();
+  return j;
+}
+
+async function refreshStatus(){
+  try{
+    const r = await fetch('/api/status');
+    const j = await r.json();
+    statusEl.textContent = `OK | ethics=${j.ethics} | planner=${j.planner} | kpi=${j.kpi_entries} | ollama=${j.ollama}`;
+  }catch(e){
+    statusEl.textContent = 'offline';
+  }
+}
+
+send.onclick = async () => {
+  const text = input.value.trim();
+  if(!text) return;
+  add('me', text);
+  input.value='';
+
+  const j = await api('/api/chat', {message:text});
+  add('brain', j.reply || JSON.stringify(j, null, 2));
+  refreshStatus();
+};
+
+input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') send.onclick(); });
+
+add('brain', 'Interfaz lista. Prueba: "status", "plan14d", "generate outreach".');
+refreshStatus();
+</script>
+</body>
+</html>

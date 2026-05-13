@@ -1,0 +1,16 @@
+{
+  "proposal_id": "P_f9390e7802e1f094",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\patches\\smoke_p3_1.ps1",
+    "content": "# Smoke test script for room creation and verification\nCreate-Room -RoomId 'room_p3_1_20260303_104350'\nRun-Plan -RoomId 'room_p3_1_20260303_104350'\nVerify-Episode -Expected 'episode.json'\n",
+    "value": null,
+    "raw_content": "# Smoke test script for room creation and verification\\nCreate-Room -RoomId 'room_p3_1_20260303_104350'\\nRun-Plan -RoomId 'room_p3_1_20260303_104350'\\nVerify-Episode -Expected 'episode.json'\\n",
+    "text": "# Smoke test script for room creation and verification\nCreate-Room -RoomId 'room_p3_1_20260303_104350'\nRun-Plan -RoomId 'room_p3_1_20260303_104350'\nVerify-Episode -Expected 'episode.json'\n"
+  },
+  "room_id": "room_p3_1_20260303_104350",
+  "step_id": "S3",
+  "created_at": "2026-03-03T15:53:29.309975+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

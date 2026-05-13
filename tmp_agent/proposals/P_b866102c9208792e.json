@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_b866102c9208792e",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_loop_probe_20260303_211428\\patches\\brain_episode_v1.diff",
+    "content": "diff --git a/brain_server.py b/brain_server.py\nindex abcdef1..abcdef2 100644\n--- a/brain_server.py\n+++ b/brain_server.py\n@@ -1,5 +1,5 @@\n import json\n def main():\n-    print(\"Hello, World!\")\n+    print(\"Hello, Brain Lab!\")\n     return 0\n",
+    "value": null,
+    "text": "diff --git a/brain_server.py b/brain_server.py\nindex abcdef1..abcdef2 100644\n--- a/brain_server.py\n+++ b/brain_server.py\n@@ -1,5 +1,5 @@\n import json\n def main():\n-    print(\"Hello, World!\")\n+    print(\"Hello, Brain Lab!\")\n     return 0\n"
+  },
+  "room_id": "room_loop_probe_20260303_211428",
+  "step_id": "S1",
+  "created_at": "2026-03-04T02:14:48.731474+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

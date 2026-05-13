@@ -1,0 +1,23 @@
+{
+    \"integration_version\": \"1.0\",
+    \"auto_optimization\": {
+        \"enabled\": true,
+        \"frequency_minutes\": 60,
+        \"risk_tolerance\": \"medium\"
+    },
+    \"financial_metrics\": {
+        \"target_sharpe\": 1.5,
+        \"max_drawdown\": 0.1,
+        \"target_return\": 0.15
+    },
+    \"autonomy_hooks\": {
+        \"parameter_optimization\": true,
+        \"strategy_selection\": true,
+        \"risk_auto_adjustment\": true
+    },
+    \"monitoring\": {
+        \"performance_tracking\": true,
+        \"autonomy_effectiveness\": true,
+        \"financial_feedback\": true
+    }
+}

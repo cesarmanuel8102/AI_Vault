@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_595353ec601edd43",
+  "tool_name": "append_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\patches\\apply_brain_episode_v1.ps1",
+    "content": "# PowerShell script to apply brain_episode_v1 diff\nCopy-Item -Path brain_server.py -Destination brain_server_backup.py\npatch brain_server.py < brain_episode_v1.diff\npy_compile brain_server.py\n# Additional smokes tests would be invoked here\n",
+    "value": null,
+    "text": "# PowerShell script to apply brain_episode_v1 diff\nCopy-Item -Path brain_server.py -Destination brain_server_backup.py\npatch brain_server.py < brain_episode_v1.diff\npy_compile brain_server.py\n# Additional smokes tests would be invoked here\n"
+  },
+  "room_id": "room_p3_1_20260303_104350",
+  "step_id": "S2",
+  "created_at": "2026-03-03T15:57:28.866978+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

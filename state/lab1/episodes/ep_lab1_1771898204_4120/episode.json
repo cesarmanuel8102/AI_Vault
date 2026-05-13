@@ -1,0 +1,317 @@
+{
+  "episode_id": "ep_lab1_1771898204_4120",
+  "room_id": "lab1",
+  "created_at": 1771898204,
+  "mission": {
+    "room_id": "lab1",
+    "objective": "THINK: explica brevemente qué reglas aplicas. TOOL: crea ranked_test.txt en WORKSPACE_ROOT.",
+    "constraints": [
+      "usar WORKSPACE_ROOT",
+      "respetar policy"
+    ],
+    "status": "active",
+    "created_at": 1771898204,
+    "updated_at": 1771898204
+  },
+  "events": [
+    {
+      "ts_epoch": 1771898204,
+      "type": "mission_set",
+      "mission": {
+        "room_id": "lab1",
+        "objective": "THINK: explica brevemente qué reglas aplicas. TOOL: crea ranked_test.txt en WORKSPACE_ROOT.",
+        "constraints": [
+          "usar WORKSPACE_ROOT",
+          "respetar policy"
+        ],
+        "status": "active",
+        "created_at": 1771898204,
+        "updated_at": 1771898204
+      }
+    },
+    {
+      "ts_epoch": 1771898204,
+      "type": "memory_hits",
+      "where": "planner",
+      "hits": [
+        {
+          "id": "f1771896650_50843",
+          "ts_epoch": 1771896650,
+          "text": "SOP: Workspace Guard. 1) Si objetivo menciona rutas fuera de WORKSPACE_ROOT, reescribir a WORKSPACE_ROOT preservando nombre archivo. 2) Nunca tocar secrets/keys. 3) Validar policy antes de ejecutar tool. 4) Loggear decisión en NDJSON.",
+          "tags": [
+            "sop",
+            "rule",
+            "security",
+            "workspace"
+          ],
+          "source": "phase2.1",
+          "kind": "rule"
+        },
+        {
+          "id": "f1771896326_26654",
+          "ts_epoch": 1771896326,
+          "text": "Regla: nunca escribir fuera de WORKSPACE_ROOT. Si un objetivo pide otra ruta, reescribirlo hacia workspace\\brainlab.",
+          "tags": [
+            "rule",
+            "workspace",
+            "planner"
+          ],
+          "source": null,
+          "kind": "rule"
+        },
+        {
+          "id": "f1771896824_24744",
+          "ts_epoch": 1771896824,
+          "kind": "sop",
+          "text": "SOP: Workspace Guard. 1) Reescribe rutas fuera de WORKSPACE_ROOT. 2) Ejecuta solo tools permitidos. 3) Log en NDJSON.",
+          "tags": [
+            "sop",
+            "planner"
+          ],
+          "source": "phase2.1"
+        },
+        {
+          "id": "f1771896823_23580",
+          "ts_epoch": 1771896823,
+          "kind": "fact",
+          "text": "Regla: nunca escribir fuera de WORKSPACE_ROOT. Si objetivo menciona otra ruta, reescribirla hacia WORKSPACE_ROOT.",
+          "tags": [
+            "workspace",
+            "security"
+          ],
+          "source": "phase2.1"
+        },
+        {
+          "id": "f1771895896_96569",
+          "ts_epoch": 1771895896,
+          "text": "WORKSPACE_ROOT oficial: C:\\AI_VAULT\\workspace\\brainlab",
+          "tags": [
+            "config",
+            "workspace"
+          ],
+          "source": "setup",
+          "kind": "fact"
+        },
+        {
+          "id": "f1771895896_96634",
+          "ts_epoch": 1771895896,
+          "text": "Policy: allowed_write_roots solo workspace\\brainlab; deny secrets/api_key",
+          "tags": [
+            "policy",
+            "security"
+          ],
+          "source": null,
+          "kind": "fact"
+        }
+      ]
+    },
+    {
+      "ts_epoch": 1771898239,
+      "type": "plan_created",
+      "plan": {
+        "room_id": "lab1",
+        "created_at": 1771898239,
+        "updated_at": 1771898239,
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Aplicar reglas de Workspace Guard",
+            "action": "THINK",
+            "tool": "null",
+            "args": {},
+            "success_criteria": "Reglas aplicadas correctamente",
+            "status": "pending",
+            "result": null,
+            "started_at": null,
+            "ended_at": null
+          },
+          {
+            "id": "s2",
+            "title": "Crear ranked_test.txt en WORKSPACE_ROOT",
+            "action": "TOOL",
+            "tool": "write_file",
+            "args": {
+              "path": "C:\\AI_VAULT\\workspace\\brainlab\\ranked_test.txt",
+              "content": ""
+            },
+            "success_criteria": "Archivo ranked_test.txt creado en WORKSPACE_ROOT",
+            "status": "pending",
+            "result": null,
+            "started_at": null,
+            "ended_at": null
+          }
+        ]
+      }
+    },
+    {
+      "ts_epoch": 1771898239,
+      "type": "memory_hits",
+      "where": "executor",
+      "hits": [
+        {
+          "id": "f1771896650_50843",
+          "ts_epoch": 1771896650,
+          "text": "SOP: Workspace Guard. 1) Si objetivo menciona rutas fuera de WORKSPACE_ROOT, reescribir a WORKSPACE_ROOT preservando nombre archivo. 2) Nunca tocar secrets/keys. 3) Validar policy antes de ejecutar tool. 4) Loggear decisión en NDJSON.",
+          "tags": [
+            "sop",
+            "rule",
+            "security",
+            "workspace"
+          ],
+          "source": "phase2.1",
+          "kind": "rule"
+        },
+        {
+          "id": "f1771896326_26654",
+          "ts_epoch": 1771896326,
+          "text": "Regla: nunca escribir fuera de WORKSPACE_ROOT. Si un objetivo pide otra ruta, reescribirlo hacia workspace\\brainlab.",
+          "tags": [
+            "rule",
+            "workspace",
+            "planner"
+          ],
+          "source": null,
+          "kind": "rule"
+        },
+        {
+          "id": "f1771896824_24744",
+          "ts_epoch": 1771896824,
+          "kind": "sop",
+          "text": "SOP: Workspace Guard. 1) Reescribe rutas fuera de WORKSPACE_ROOT. 2) Ejecuta solo tools permitidos. 3) Log en NDJSON.",
+          "tags": [
+            "sop",
+            "planner"
+          ],
+          "source": "phase2.1"
+        },
+        {
+          "id": "f1771896823_23580",
+          "ts_epoch": 1771896823,
+          "kind": "fact",
+          "text": "Regla: nunca escribir fuera de WORKSPACE_ROOT. Si objetivo menciona otra ruta, reescribirla hacia WORKSPACE_ROOT.",
+          "tags": [
+            "workspace",
+            "security"
+          ],
+          "source": "phase2.1"
+        },
+        {
+          "id": "f1771895896_96569",
+          "ts_epoch": 1771895896,
+          "text": "WORKSPACE_ROOT oficial: C:\\AI_VAULT\\workspace\\brainlab",
+          "tags": [
+            "config",
+            "workspace"
+          ],
+          "source": "setup",
+          "kind": "fact"
+        }
+      ]
+    },
+    {
+      "ts_epoch": 1771898266,
+      "type": "step_executed",
+      "step": {
+        "id": "s1",
+        "title": "Aplicar reglas de Workspace Guard",
+        "action": "THINK",
+        "tool": "null",
+        "args": {},
+        "success_criteria": "Reglas aplicadas correctamente",
+        "status": "done",
+        "result": {
+          "text": "Aplico las siguientes reglas del Workspace Guard:\n\n- Si el objetivo menciona rutas fuera de WORKSPACE_ROOT (C:\\AI_VAULT\\workspace\\brainlab), reescribo la ruta hacia WORKSPACE_ROOT, preservando el nombre del archivo.\n- Nunca toco archivos o directorios relacionados con secrets/keys.\n- Validar la política antes de ejecutar cualquier herramienta.\n- Loggear todas las decisiones en formato NDJSON.\n\nEl siguiente paso es crear el archivo ranked_test.txt dentro de WORKSPACE_ROOT, asegurándome de no violar ninguna de estas reglas."
+        },
+        "started_at": 1771898239,
+        "ended_at": 1771898266
+      }
+    },
+    {
+      "ts_epoch": 1771898266,
+      "type": "evaluation",
+      "verdict": {
+        "ok": true,
+        "score": 100,
+        "errors": [],
+        "pending_count": 1,
+        "recommendation": "continue",
+        "reasons": [],
+        "recommendations": [],
+        "updated_at": 1771898266
+      }
+    },
+    {
+      "ts_epoch": 1771898266,
+      "type": "step_executed",
+      "step": {
+        "id": "s2",
+        "title": "Crear ranked_test.txt en WORKSPACE_ROOT",
+        "action": "TOOL",
+        "tool": "write_file",
+        "args": {
+          "path": "C:\\AI_VAULT\\workspace\\brainlab\\ranked_test.txt",
+          "content": ""
+        },
+        "success_criteria": "Archivo ranked_test.txt creado en WORKSPACE_ROOT",
+        "status": "done",
+        "result": {
+          "path": "C:\\AI_VAULT\\workspace\\brainlab\\ranked_test.txt",
+          "written": 0
+        },
+        "started_at": 1771898266,
+        "ended_at": 1771898266
+      }
+    },
+    {
+      "ts_epoch": 1771898266,
+      "type": "evaluation",
+      "verdict": {
+        "ok": true,
+        "score": 100,
+        "errors": [],
+        "pending_count": 0,
+        "recommendation": "continue",
+        "reasons": [],
+        "recommendations": [],
+        "updated_at": 1771898266
+      }
+    },
+    {
+      "ts_epoch": 1771898525,
+      "type": "memory_compact",
+      "result": {
+        "ok": true,
+        "kept": 8,
+        "dropped": 0,
+        "bad_lines": 0,
+        "backup_path": "C:\\AI_VAULT\\state\\lab1\\memory_facts.backup_1771898525.jsonl",
+        "final_path": "C:\\AI_VAULT\\state\\lab1\\memory_facts.jsonl"
+      }
+    },
+    {
+      "ts_epoch": 1771898646,
+      "type": "memory_compact",
+      "result": {
+        "ok": true,
+        "kept": 8,
+        "dropped": 0,
+        "bad_lines": 0,
+        "backup_path": "C:\\AI_VAULT\\state\\lab1\\memory_facts.backup_1771898646.jsonl",
+        "final_path": "C:\\AI_VAULT\\state\\lab1\\memory_facts.jsonl"
+      }
+    },
+    {
+      "ts_epoch": 1771899007,
+      "type": "memory_compact",
+      "result": {
+        "ok": true,
+        "kept": 8,
+        "dropped": 0,
+        "bad_lines": 0,
+        "backup_path": "C:\\AI_VAULT\\state\\lab1\\memory_facts.backup_1771899007.jsonl",
+        "final_path": "C:\\AI_VAULT\\state\\lab1\\memory_facts.jsonl"
+      }
+    }
+  ]
+}

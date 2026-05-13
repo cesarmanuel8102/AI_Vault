@@ -1,0 +1,58 @@
+{
+  "checks": [
+    {
+      "url": "https://messaging.twilio.com/v2/Channels/Senders?Channel=whatsapp",
+      "status_code": 200,
+      "keys": [
+        "meta",
+        "senders"
+      ],
+      "senders_count": 0,
+      "senders": []
+    },
+    {
+      "url": "https://messaging.twilio.com/v2/Channels/Senders",
+      "status_code": 400,
+      "keys": [
+        "code",
+        "message",
+        "more_info",
+        "status"
+      ],
+      "message": "Missing required parameter Channel in the query",
+      "code": 20001
+    },
+    {
+      "url": "https://api.twilio.com/2010-04-01/Accounts/AC***/IncomingPhoneNumbers.json",
+      "status_code": 200,
+      "keys": [
+        "end",
+        "first_page_uri",
+        "incoming_phone_numbers",
+        "next_page_uri",
+        "page",
+        "page_size",
+        "previous_page_uri",
+        "start",
+        "uri"
+      ],
+      "incoming_phone_numbers_count": 0,
+      "incoming_phone_numbers": []
+    },
+    {
+      "url": "https://messaging.twilio.com/v1/Services",
+      "status_code": 200,
+      "keys": [
+        "meta",
+        "services"
+      ],
+      "services_count": 1,
+      "services": [
+        {
+          "friendly_name": "My New Notifications Service",
+          "sid": "MG557e0cbb63dbd1d54b40a2ee6397b472"
+        }
+      ]
+    }
+  ]
+}

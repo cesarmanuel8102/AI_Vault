@@ -1,0 +1,107 @@
+{
+  "source_id": "github_langchain_ai_langgraph_20260508",
+  "generated_at_utc": "2026-05-08T05:26:36.538316Z",
+  "recommended_action": "analyze",
+  "patterns": [
+    {
+      "pattern_id": "stateful_graph_orchestration",
+      "description": "Graph-based orchestration with explicit state transitions and checkpoints.",
+      "relevance_to_brain": 8.8,
+      "risk": 3.5,
+      "applicable_modules": [
+        "planner",
+        "session",
+        "autonomy"
+      ],
+      "do_not_copy_code": true,
+      "semantic_family": "graph_orchestration",
+      "evidence_refs": [
+        {
+          "source_file": ".github/workflows/_test_langgraph.yml",
+          "reason": "Priority file snippet contains: graph.",
+          "evidence_type": "priority_file_snippet"
+        },
+        {
+          "source_file": ".github/scripts/run_langgraph_cli_test.py",
+          "reason": "Priority file snippet contains: graph.",
+          "evidence_type": "priority_file_snippet"
+        },
+        {
+          "source_file": "libs/langgraph/README.md",
+          "reason": "Priority file snippet contains: graph.",
+          "evidence_type": "priority_file_snippet"
+        }
+      ]
+    },
+    {
+      "pattern_id": "failure_recovery_checkpoints",
+      "description": "Persist checkpoints so long-horizon tasks can resume after faults.",
+      "relevance_to_brain": 8.1,
+      "risk": 3.0,
+      "applicable_modules": [
+        "autonomy",
+        "governance",
+        "session"
+      ],
+      "do_not_copy_code": true,
+      "semantic_family": "checkpoint_recovery",
+      "evidence_refs": [
+        {
+          "source_file": "libs/checkpoint-sqlite/README.md",
+          "reason": "Priority file snippet contains: checkpoint.",
+          "evidence_type": "priority_file_snippet"
+        },
+        {
+          "source_file": "libs/checkpoint-conformance/README.md",
+          "reason": "Priority file snippet contains: checkpoint.",
+          "evidence_type": "priority_file_snippet"
+        },
+        {
+          "source_file": "libs/checkpoint-postgres/README.md",
+          "reason": "Priority file snippet contains: checkpoint.",
+          "evidence_type": "priority_file_snippet"
+        }
+      ]
+    },
+    {
+      "pattern_id": "ci_backed_regression_harness",
+      "description": "The repo exposes CI/test structure that can inspire stronger regression gates.",
+      "relevance_to_brain": 7.4,
+      "risk": 2.5,
+      "applicable_modules": [
+        "evaluator",
+        "governance",
+        "tests"
+      ],
+      "do_not_copy_code": true,
+      "semantic_family": "regression_harness",
+      "evidence_refs": [
+        {
+          "source_file": ".github/",
+          "reason": "Root index shows tests/CI structure.",
+          "evidence_type": "root_index_signal"
+        }
+      ]
+    },
+    {
+      "pattern_id": "structured_tool_dispatch",
+      "description": "Tool usage is modeled explicitly enough to inspire safer routing and observation loops.",
+      "relevance_to_brain": 8.0,
+      "risk": 3.5,
+      "applicable_modules": [
+        "agent",
+        "tools",
+        "governance"
+      ],
+      "do_not_copy_code": true,
+      "semantic_family": "tool_routing",
+      "evidence_refs": [
+        {
+          "source_file": "README.md",
+          "reason": "Dependency hints or README mention tool calling / tool usage explicitly.",
+          "evidence_type": "text_match"
+        }
+      ]
+    }
+  ]
+}

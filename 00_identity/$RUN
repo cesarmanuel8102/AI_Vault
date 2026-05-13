@@ -1,0 +1,30 @@
+﻿# install_brain_service.ps1
+# Servicio BrainServer como Scheduled Task estable
+
+$ErrorActionPreference = "Stop"
+
+$BASE  = "C:\AI_VAULT\00_identity"
+$TASK  = "BrainServer"
+$TASK2 = "BrainServer_OnLogon"
+
+$LOGD = Join-Path $BASE "logs"
+$OUT  = Join-Path $LOGD "brain_server.out.log"
+$RUN  = Join-Path $BASE "run_brain_server.ps1"
+
+if (!(Test-Path $LOGD)) { New-Item -ItemType Directory -Path $LOGD | Out-Null }
+
+@"
+$ErrorActionPreference = 'Continue'
+$BASE = 'C:\AI_VAULT\00_identity'
+$LOGD = Join-Path $BASE 'logs'
+if (!(Test-Path $LOGD)) { New-Item -ItemType Directory -Path $LOGD | Out-Null }
+
+$OUT = Join-Path $LOGD 'brain_server.out.log'
+
+Set-Location $BASE
+
+try {
+  if (Get-NetTCPConnection -State Listen -LocalPort 8000 -ErrorAction SilentlyContinue) { exit 0 }
+} catch {}
+
+python -m uvicorn brain_server:app --host 0.0.0.0 --port 8000 *>> $OUT

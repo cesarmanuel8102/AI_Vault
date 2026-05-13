@@ -1,0 +1,450 @@
+{
+  "generated_at_utc": "2026-04-24T07:34:23.720948+00:00",
+  "project_id": 30507388,
+  "promotion_rule": {
+    "FULL_2018_2026Q1": 1.7,
+    "OOS_2023_2026Q1": 3.2,
+    "RECENT_2025_2026Q1": 5.2,
+    "STRESS_2020": 4.0,
+    "BEAR_2022_MIN": -0.75
+  },
+  "rows": [
+    {
+      "status": "Completed.",
+      "backtest_id": "f4a5b501f53c56739d3fdf0967ca742b",
+      "np_pct": 57.149,
+      "cagr_pct": 5.631,
+      "monthly_equiv_pct": 0.4575578035860284,
+      "dd_pct": 25.3,
+      "sharpe": 0.13,
+      "sortino": 0.051,
+      "win_rate_pct": 51.0,
+      "psr_pct": 2.779,
+      "candidate": "V12C_E_UP2_AUDIT_SOFT",
+      "scenario": "FULL_2018_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "ff8e95f12229554e4b35723637ab0461",
+      "np_pct": 47.958,
+      "cagr_pct": 12.818,
+      "monthly_equiv_pct": 1.0101151899949645,
+      "dd_pct": 11.7,
+      "sharpe": 0.36,
+      "sortino": 0.164,
+      "win_rate_pct": 57.0,
+      "psr_pct": 35.39,
+      "candidate": "V12C_E_UP2_AUDIT_SOFT",
+      "scenario": "OOS_2023_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "52510d2c7ef19c0bce80922337573a2c",
+      "np_pct": -7.921,
+      "cagr_pct": -6.411,
+      "monthly_equiv_pct": -0.5506229074413338,
+      "dd_pct": 24.6,
+      "sharpe": -0.795,
+      "sortino": -0.369,
+      "win_rate_pct": 55.0,
+      "psr_pct": 3.637,
+      "candidate": "V12C_E_UP2_AUDIT_SOFT",
+      "scenario": "RECENT_2025_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "a2b78af76a0796527fb94fd4c7868806",
+      "np_pct": 2.808,
+      "cagr_pct": 2.802,
+      "monthly_equiv_pct": 0.23055388514305886,
+      "dd_pct": 14.2,
+      "sharpe": 0.163,
+      "sortino": 0.095,
+      "win_rate_pct": 47.0,
+      "psr_pct": 17.002,
+      "candidate": "V12C_E_UP2_AUDIT_SOFT",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "878c5699e276b3e7210304225cad2ea7",
+      "np_pct": -4.45,
+      "cagr_pct": -4.466,
+      "monthly_equiv_pct": -0.3800093045405073,
+      "dd_pct": 14.0,
+      "sharpe": -0.451,
+      "sortino": -0.309,
+      "win_rate_pct": 39.0,
+      "psr_pct": 6.244,
+      "candidate": "V12C_E_UP2_AUDIT_SOFT",
+      "scenario": "BEAR_2022"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "f1b5baf8462d3f6ea581be3cc8d62412",
+      "np_pct": -15.829,
+      "cagr_pct": -2.067,
+      "monthly_equiv_pct": -0.17390373357033528,
+      "dd_pct": 36.9,
+      "sharpe": -0.329,
+      "sortino": -0.138,
+      "win_rate_pct": 44.0,
+      "psr_pct": 0.011,
+      "candidate": "V12E_SOFT_CAL",
+      "scenario": "FULL_2018_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "4fa6063c77de393a0753dfe728f6f48d",
+      "np_pct": 309.619,
+      "cagr_pct": 54.356,
+      "monthly_equiv_pct": 3.683653726029812,
+      "dd_pct": 20.7,
+      "sharpe": 1.316,
+      "sortino": 1.272,
+      "win_rate_pct": 55.0,
+      "psr_pct": 72.19,
+      "candidate": "V12E_SOFT_CAL",
+      "scenario": "OOS_2023_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "8064cdf70326e89d6255c5123baa23b1",
+      "np_pct": 130.785,
+      "cagr_pct": 95.706,
+      "monthly_equiv_pct": 5.754862530775862,
+      "dd_pct": 20.7,
+      "sharpe": 2.045,
+      "sortino": 1.828,
+      "win_rate_pct": 56.0,
+      "psr_pct": 80.849,
+      "candidate": "V12E_SOFT_CAL",
+      "scenario": "RECENT_2025_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "30a36add2a171c2776ba0078da24d1d0",
+      "np_pct": 64.545,
+      "cagr_pct": 64.395,
+      "monthly_equiv_pct": 4.229515030998576,
+      "dd_pct": 22.6,
+      "sharpe": 1.557,
+      "sortino": 1.134,
+      "win_rate_pct": 60.0,
+      "psr_pct": 62.876,
+      "candidate": "V12E_SOFT_CAL",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "c1a29ae0e1c02c98a206374ba5f6b4ac",
+      "np_pct": -2.675,
+      "cagr_pct": -2.685,
+      "monthly_equiv_pct": -0.22655170248637724,
+      "dd_pct": 15.6,
+      "sharpe": -0.184,
+      "sortino": -0.192,
+      "win_rate_pct": 42.0,
+      "psr_pct": 10.237,
+      "candidate": "V12E_SOFT_CAL",
+      "scenario": "BEAR_2022"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "adde9114a55adfa5df7f216f5645a280",
+      "np_pct": -90.232,
+      "cagr_pct": -24.566,
+      "monthly_equiv_pct": -2.321886915192295,
+      "dd_pct": 91.7,
+      "sharpe": -1.949,
+      "sortino": -0.752,
+      "win_rate_pct": 18.0,
+      "psr_pct": 0.0,
+      "candidate": "V12E_SOFT_FRICTION",
+      "scenario": "FULL_2018_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "822892bee21a93aa0c6168f2ab9d9952",
+      "np_pct": -54.677,
+      "cagr_pct": -21.622,
+      "monthly_equiv_pct": -2.0097539645311024,
+      "dd_pct": 55.9,
+      "sharpe": -1.809,
+      "sortino": -0.701,
+      "win_rate_pct": 19.0,
+      "psr_pct": 0.0,
+      "candidate": "V12E_SOFT_FRICTION",
+      "scenario": "OOS_2023_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "018f1e3475e2686a424e11702e1d81c9",
+      "np_pct": 71.781,
+      "cagr_pct": 54.401,
+      "monthly_equiv_pct": 3.6861723308004857,
+      "dd_pct": 27.2,
+      "sharpe": 1.171,
+      "sortino": 0.981,
+      "win_rate_pct": 46.0,
+      "psr_pct": 56.232,
+      "candidate": "V12E_SOFT_FRICTION",
+      "scenario": "RECENT_2025_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "1d771088a32ff771bef35adf69f1af67",
+      "np_pct": 28.337,
+      "cagr_pct": 28.279,
+      "monthly_equiv_pct": 2.0969959488212453,
+      "dd_pct": 27.3,
+      "sharpe": 0.795,
+      "sortino": 0.566,
+      "win_rate_pct": 44.0,
+      "psr_pct": 37.752,
+      "candidate": "V12E_SOFT_FRICTION",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "d0fe7ed97e90dca0081b68c7f4b30975",
+      "np_pct": -15.366,
+      "cagr_pct": -15.417,
+      "monthly_equiv_pct": -1.385618080750295,
+      "dd_pct": 19.0,
+      "sharpe": -0.85,
+      "sortino": -0.852,
+      "win_rate_pct": 29.0,
+      "psr_pct": 1.58,
+      "candidate": "V12E_SOFT_FRICTION",
+      "scenario": "BEAR_2022"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "62a3429bdaac93d14701397e0a1903fc",
+      "np_pct": -8.515,
+      "cagr_pct": -1.073,
+      "monthly_equiv_pct": -0.08985944873309837,
+      "dd_pct": 26.8,
+      "sharpe": -0.569,
+      "sortino": -0.19,
+      "win_rate_pct": 50.0,
+      "psr_pct": 0.007,
+      "candidate": "V12C_LEGACY_RESTORE",
+      "scenario": "FULL_2018_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "b5903763981e8d41653407a1bcb7e98d",
+      "np_pct": -11.395,
+      "cagr_pct": -3.656,
+      "monthly_equiv_pct": -0.3098943832752554,
+      "dd_pct": 21.4,
+      "sharpe": -1.255,
+      "sortino": -0.578,
+      "win_rate_pct": 41.0,
+      "psr_pct": 0.138,
+      "candidate": "V12C_LEGACY_RESTORE",
+      "scenario": "OOS_2023_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "a81d6e7783b17d07527b39727cf069c5",
+      "np_pct": 41.295,
+      "cagr_pct": 31.987,
+      "monthly_equiv_pct": 2.339729125427281,
+      "dd_pct": 11.5,
+      "sharpe": 1.003,
+      "sortino": 0.683,
+      "win_rate_pct": 59.0,
+      "psr_pct": 59.372,
+      "candidate": "V12C_LEGACY_RESTORE",
+      "scenario": "RECENT_2025_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "9763c813b34292201d7f77a70d972980",
+      "np_pct": 10.67,
+      "cagr_pct": 10.649,
+      "monthly_equiv_pct": 0.8468392593987017,
+      "dd_pct": 13.8,
+      "sharpe": 0.504,
+      "sortino": 0.257,
+      "win_rate_pct": 58.0,
+      "psr_pct": 28.805,
+      "candidate": "V12C_LEGACY_RESTORE",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "a521e525b349e26e12cb1c53f8f543b4",
+      "np_pct": -3.109,
+      "cagr_pct": -3.12,
+      "monthly_equiv_pct": -0.26379384047353627,
+      "dd_pct": 14.2,
+      "sharpe": -0.363,
+      "sortino": -0.25,
+      "win_rate_pct": 35.0,
+      "psr_pct": 7.833,
+      "candidate": "V12C_LEGACY_RESTORE",
+      "scenario": "BEAR_2022"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "03cb3baa7985a71f0f393767ec72b4af",
+      "np_pct": 28.595,
+      "cagr_pct": 3.095,
+      "monthly_equiv_pct": 0.25432876206055166,
+      "dd_pct": 32.6,
+      "sharpe": -0.032,
+      "sortino": -0.014,
+      "win_rate_pct": 48.0,
+      "psr_pct": 0.571,
+      "candidate": "V12E_RELAXED_CAL",
+      "scenario": "FULL_2018_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "4cad84305c7c5491253ad2e50e6992a8",
+      "np_pct": 283.569,
+      "cagr_pct": 51.265,
+      "monthly_equiv_pct": 3.509021789132749,
+      "dd_pct": 20.9,
+      "sharpe": 1.262,
+      "sortino": 1.215,
+      "win_rate_pct": 59.0,
+      "psr_pct": 69.936,
+      "candidate": "V12E_RELAXED_CAL",
+      "scenario": "OOS_2023_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "f1f0bf84410a1ded7162ecf1c5b5f518",
+      "np_pct": 142.107,
+      "cagr_pct": 103.378,
+      "monthly_equiv_pct": 6.094286800882731,
+      "dd_pct": 20.8,
+      "sharpe": 2.208,
+      "sortino": 1.944,
+      "win_rate_pct": 62.0,
+      "psr_pct": 83.848,
+      "candidate": "V12E_RELAXED_CAL",
+      "scenario": "RECENT_2025_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "40f896bac201bde5ae431d935dcf0b93",
+      "np_pct": 28.004,
+      "cagr_pct": 27.946,
+      "monthly_equiv_pct": 2.0748834585437637,
+      "dd_pct": 23.0,
+      "sharpe": 0.888,
+      "sortino": 0.705,
+      "win_rate_pct": 53.0,
+      "psr_pct": 42.062,
+      "candidate": "V12E_RELAXED_CAL",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "bcef634cc10271ee57a1a940f121dcd6",
+      "np_pct": -1.294,
+      "cagr_pct": -1.299,
+      "monthly_equiv_pct": -0.108899893379788,
+      "dd_pct": 15.7,
+      "sharpe": -0.121,
+      "sortino": -0.125,
+      "win_rate_pct": 36.0,
+      "psr_pct": 11.75,
+      "candidate": "V12E_RELAXED_CAL",
+      "scenario": "BEAR_2022"
+    }
+  ],
+  "decisions": {
+    "V12C_E_UP2_AUDIT_SOFT": {
+      "pass": false,
+      "checks": {
+        "FULL": false,
+        "OOS": false,
+        "RECENT": false,
+        "STRESS": false,
+        "BEAR": true
+      },
+      "metrics": {
+        "FULL_m_eq": 0.4575578035860284,
+        "OOS_m_eq": 1.0101151899949645,
+        "RECENT_m_eq": -0.5506229074413338,
+        "STRESS_m_eq": 0.23055388514305886,
+        "BEAR_m_eq": -0.3800093045405073
+      }
+    },
+    "V12C_LEGACY_RESTORE": {
+      "pass": false,
+      "checks": {
+        "FULL": false,
+        "OOS": false,
+        "RECENT": false,
+        "STRESS": false,
+        "BEAR": true
+      },
+      "metrics": {
+        "FULL_m_eq": -0.08985944873309837,
+        "OOS_m_eq": -0.3098943832752554,
+        "RECENT_m_eq": 2.339729125427281,
+        "STRESS_m_eq": 0.8468392593987017,
+        "BEAR_m_eq": -0.26379384047353627
+      }
+    },
+    "V12E_RELAXED_CAL": {
+      "pass": false,
+      "checks": {
+        "FULL": false,
+        "OOS": true,
+        "RECENT": true,
+        "STRESS": false,
+        "BEAR": true
+      },
+      "metrics": {
+        "FULL_m_eq": 0.25432876206055166,
+        "OOS_m_eq": 3.509021789132749,
+        "RECENT_m_eq": 6.094286800882731,
+        "STRESS_m_eq": 2.0748834585437637,
+        "BEAR_m_eq": -0.108899893379788
+      }
+    },
+    "V12E_SOFT_CAL": {
+      "pass": false,
+      "checks": {
+        "FULL": false,
+        "OOS": true,
+        "RECENT": true,
+        "STRESS": true,
+        "BEAR": true
+      },
+      "metrics": {
+        "FULL_m_eq": -0.17390373357033528,
+        "OOS_m_eq": 3.683653726029812,
+        "RECENT_m_eq": 5.754862530775862,
+        "STRESS_m_eq": 4.229515030998576,
+        "BEAR_m_eq": -0.22655170248637724
+      }
+    },
+    "V12E_SOFT_FRICTION": {
+      "pass": false,
+      "checks": {
+        "FULL": false,
+        "OOS": false,
+        "RECENT": false,
+        "STRESS": false,
+        "BEAR": false
+      },
+      "metrics": {
+        "FULL_m_eq": -2.321886915192295,
+        "OOS_m_eq": -2.0097539645311024,
+        "RECENT_m_eq": 3.6861723308004857,
+        "STRESS_m_eq": 2.0969959488212453,
+        "BEAR_m_eq": -1.385618080750295
+      }
+    }
+  }
+}

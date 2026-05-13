@@ -1,0 +1,38 @@
+﻿{
+  "version": "0.1.0",
+  "weights": {
+    "legal_risk": 100,
+    "tos_risk": 80,
+    "reputation_risk": 70,
+    "user_harm_risk": 100,
+    "financial_risk": 60,
+    "uncertainty": 40
+  },
+  "thresholds": {
+    "allow_max_score": 25,
+    "review_min_score": 26,
+    "block_min_score": 60
+  },
+  "always_block": [
+    "fraud",
+    "impersonation",
+    "spam",
+    "illegal_scraping",
+    "unauthorized_money_movement"
+  ],
+  "always_review": [
+    "ads_spend",
+    "payments",
+    "contracts",
+    "trading_live"
+  ],
+  "allowed_actions": [
+    "research",
+    "write_doc",
+    "build_asset",
+    "draft_email_1to1",
+    "analyze_metrics",
+    "design_experiment",
+    "prepare_invoice_draft"
+  ]
+}

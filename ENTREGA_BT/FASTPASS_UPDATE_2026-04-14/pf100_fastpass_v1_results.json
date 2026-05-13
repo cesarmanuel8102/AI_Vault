@@ -1,0 +1,155 @@
+{
+  "updated_utc": "2026-04-14T01:46:51Z",
+  "rows": [
+    {
+      "backtest_id": "6f5134f195473505b4eb09f808d19bc9",
+      "net_profit_pct": -1.024,
+      "drawdown_pct": 1.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "consistency_pct": null,
+      "days_to_4pct": {
+        "pass": false,
+        "pass_date": null,
+        "calendar_days": null,
+        "trading_days": 4,
+        "consistency_pct": null
+      },
+      "days_to_6pct": {
+        "pass": false,
+        "pass_date": null,
+        "calendar_days": null,
+        "trading_days": 4,
+        "consistency_pct": null
+      },
+      "days_to_8pct": {
+        "pass": false,
+        "pass_date": null,
+        "calendar_days": null,
+        "trading_days": 4,
+        "consistency_pct": null
+      },
+      "candidate": "FPV1_SEED"
+    },
+    {
+      "backtest_id": "e25525fa8a9a7b201ccacf538cbbc71c",
+      "net_profit_pct": -2.729,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 2,
+      "trailing_breaches": 1,
+      "consistency_pct": null,
+      "days_to_4pct": {
+        "pass": false,
+        "pass_date": null,
+        "calendar_days": null,
+        "trading_days": 10,
+        "consistency_pct": null
+      },
+      "days_to_6pct": {
+        "pass": false,
+        "pass_date": null,
+        "calendar_days": null,
+        "trading_days": 10,
+        "consistency_pct": null
+      },
+      "days_to_8pct": {
+        "pass": false,
+        "pass_date": null,
+        "calendar_days": null,
+        "trading_days": 10,
+        "consistency_pct": null
+      },
+      "candidate": "FPV1_OR_LONGONLY"
+    },
+    {
+      "backtest_id": "3d75bdd374ee6702b2409f2026b307a4",
+      "net_profit_pct": -2.738,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 2,
+      "trailing_breaches": 1,
+      "consistency_pct": null,
+      "days_to_4pct": {
+        "pass": false,
+        "pass_date": null,
+        "calendar_days": null,
+        "trading_days": 11,
+        "consistency_pct": null
+      },
+      "days_to_6pct": {
+        "pass": false,
+        "pass_date": null,
+        "calendar_days": null,
+        "trading_days": 11,
+        "consistency_pct": null
+      },
+      "days_to_8pct": {
+        "pass": false,
+        "pass_date": null,
+        "calendar_days": null,
+        "trading_days": 11,
+        "consistency_pct": null
+      },
+      "candidate": "FPV1_MOM_LONGONLY"
+    },
+    {
+      "backtest_id": "9f1d2dec93174aee645b424d1c515cd9",
+      "net_profit_pct": -2.768,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 3,
+      "trailing_breaches": 1,
+      "consistency_pct": null,
+      "days_to_4pct": {
+        "pass": false,
+        "pass_date": null,
+        "calendar_days": null,
+        "trading_days": 11,
+        "consistency_pct": null
+      },
+      "days_to_6pct": {
+        "pass": false,
+        "pass_date": null,
+        "calendar_days": null,
+        "trading_days": 11,
+        "consistency_pct": null
+      },
+      "days_to_8pct": {
+        "pass": false,
+        "pass_date": null,
+        "calendar_days": null,
+        "trading_days": 11,
+        "consistency_pct": null
+      },
+      "candidate": "FPV1_AGGR_MIX"
+    },
+    {
+      "backtest_id": "72401f4618fa56bf0cea3428d502ec85",
+      "net_profit_pct": -1.211,
+      "drawdown_pct": 1.2,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "consistency_pct": null,
+      "days_to_4pct": {
+        "pass": false,
+        "pass_date": null,
+        "calendar_days": null,
+        "trading_days": 5,
+        "consistency_pct": null
+      },
+      "days_to_6pct": {
+        "pass": false,
+        "pass_date": null,
+        "calendar_days": null,
+        "trading_days": 5,
+        "consistency_pct": null
+      },
+      "days_to_8pct": {
+        "pass": false,
+        "pass_date": null,
+        "calendar_days": null,
+        "trading_days": 5,
+        "consistency_pct": null
+      },
+      "candidate": "FPV1_DEF_OR"
+    }
+  ]
+}

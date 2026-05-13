@@ -1,0 +1,14 @@
+{
+  "proposal_id": "P_b060320af873efa6",
+  "tool_name": "write_file",
+  "tool_args": {
+    "content": "{\r\n  \"cycle\": 1,\r\n  \"note\": \"Smoke del executor route discovery\",\r\n  \"source\": \"nl03_executor_route_discovery\",\r\n  \"room_id\": \"brain_executor_discovery_v1\",\r\n  \"step_id\": \"DISCOVERY_RUN_ONCE_1\",\r\n  \"utc\": \"2026-03-13T21:40:42Z\"\r\n}",
+    "path": "C:\\AI_VAULT\\tmp_agent\\state\\rooms\\brain_executor_discovery_v1\\artifact_run_once_20260313_174042.json",
+    "text": "{\r\n  \"cycle\": 1,\r\n  \"note\": \"Smoke del executor route discovery\",\r\n  \"source\": \"nl03_executor_route_discovery\",\r\n  \"room_id\": \"brain_executor_discovery_v1\",\r\n  \"step_id\": \"DISCOVERY_RUN_ONCE_1\",\r\n  \"utc\": \"2026-03-13T21:40:42Z\"\r\n}"
+  },
+  "room_id": "brain_executor_discovery_v1",
+  "step_id": "DISCOVERY_RUN_ONCE_1",
+  "created_at": "2026-03-13T21:40:43.170826+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

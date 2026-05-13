@@ -1,0 +1,4 @@
+{
+  "path": "state/plan.json",
+  "content": "{\r\n  \"mission_id\": \"mission_a3be61e8c67e\",\r\n  \"created_ts\": \"2026-02-27T00:39:24.954701Z\",\r\n  \"updated_ts\": \"2026-02-27T00:39:24.954701Z\",\r\n  \"profile\": \"default\",\r\n  \"cursor\": 0,\r\n  \"steps\": [],\r\n  \"_meta\": {\r\n    \"reset_reason\": \"no_reset\",\r\n    \"ts\": \"2026-02-27T00:39:24.954701Z\"\r\n  }\r\n}\r\n"
+}

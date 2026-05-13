@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_4b7af20337de31e4",
+  "tool_name": "append_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\patches\\apply_brain_episode_v1.ps1",
+    "content": "# Backup and apply script\nBackup-File 'C:\\AI_VAULT\\00_identity\\brain_server.py'\nApply-Patch 'brain_episode_v1.diff'\nCompile-Python 'brain_server.py'\nRun-Smoke-Test",
+    "value": null,
+    "text": "# Backup and apply script\nBackup-File 'C:\\AI_VAULT\\00_identity\\brain_server.py'\nApply-Patch 'brain_episode_v1.diff'\nCompile-Python 'brain_server.py'\nRun-Smoke-Test"
+  },
+  "room_id": "room_p3_1_20260303_104350",
+  "step_id": "S2",
+  "created_at": "2026-03-03T16:00:26.907924+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

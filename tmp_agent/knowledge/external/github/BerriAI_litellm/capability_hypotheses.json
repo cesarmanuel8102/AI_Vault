@@ -1,0 +1,93 @@
+{
+  "source_id": "github_BerriAI_litellm_20260508",
+  "generated_at_utc": "2026-05-08T04:57:02.345177Z",
+  "hypotheses": [
+    {
+      "hypothesis_id": "HYP_BERRIAI_LITELLM_CI_BACKED_REGRESSION_HARNESS_001",
+      "semantic_key": "governance_quality:regression_harness",
+      "inspired_by_sources": [
+        "github_BerriAI_litellm_20260508"
+      ],
+      "target_capability": "governance_quality",
+      "claim": "Adoptar el patron `ci_backed_regression_harness` puede mejorar `governance_quality` sin copiar codigo externo.",
+      "expected_metric_lift": {
+        "plan_validity_score": "+3%",
+        "loop_failure_rate": "-5%",
+        "execution_success_rate": "+2%",
+        "tool_error_rate": "-2%"
+      },
+      "risk": "low",
+      "recommended_next_step": "sandbox_patch_later",
+      "source_attribution": {
+        "source_id": "github_BerriAI_litellm_20260508",
+        "pattern_id": "ci_backed_regression_harness",
+        "semantic_family": "regression_harness",
+        "evidence_refs": [
+          {
+            "source_file": "tests/",
+            "reason": "Root index shows tests/CI structure.",
+            "evidence_type": "root_index_signal"
+          }
+        ]
+      }
+    },
+    {
+      "hypothesis_id": "HYP_BERRIAI_LITELLM_DEPENDENCY_MANIFEST_GOVERNANCE_002",
+      "semantic_key": "governance_quality:dependency_governance",
+      "inspired_by_sources": [
+        "github_BerriAI_litellm_20260508"
+      ],
+      "target_capability": "governance_quality",
+      "claim": "Adoptar el patron `dependency_manifest_governance` puede mejorar `governance_quality` sin copiar codigo externo.",
+      "expected_metric_lift": {
+        "plan_validity_score": "+3%",
+        "loop_failure_rate": "-5%",
+        "execution_success_rate": "+2%",
+        "tool_error_rate": "-2%"
+      },
+      "risk": "low",
+      "recommended_next_step": "sandbox_patch_later",
+      "source_attribution": {
+        "source_id": "github_BerriAI_litellm_20260508",
+        "pattern_id": "dependency_manifest_governance",
+        "semantic_family": "dependency_governance",
+        "evidence_refs": [
+          {
+            "source_file": "pyproject.toml",
+            "reason": "Root dependency manifest is present and can be audited.",
+            "evidence_type": "root_index_signal"
+          }
+        ]
+      }
+    },
+    {
+      "hypothesis_id": "HYP_BERRIAI_LITELLM_STRUCTURED_TOOL_DISPATCH_003",
+      "semantic_key": "tool_use_accuracy:tool_routing",
+      "inspired_by_sources": [
+        "github_BerriAI_litellm_20260508"
+      ],
+      "target_capability": "tool_use_accuracy",
+      "claim": "Adoptar el patron `structured_tool_dispatch` puede mejorar `tool_use_accuracy` sin copiar codigo externo.",
+      "expected_metric_lift": {
+        "plan_validity_score": "+3%",
+        "loop_failure_rate": "-5%",
+        "execution_success_rate": "+2%",
+        "tool_error_rate": "-10%"
+      },
+      "risk": "low",
+      "recommended_next_step": "sandbox_patch_later",
+      "source_attribution": {
+        "source_id": "github_BerriAI_litellm_20260508",
+        "pattern_id": "structured_tool_dispatch",
+        "semantic_family": "tool_routing",
+        "evidence_refs": [
+          {
+            "source_file": "README.md",
+            "reason": "Dependency hints or README mention tool calling / tool usage explicitly.",
+            "evidence_type": "text_match"
+          }
+        ]
+      }
+    }
+  ]
+}

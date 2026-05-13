@@ -1,0 +1,12 @@
+phase,item,owner,status,notes
+P0,Confirm firm automation policy,ops,pending,Must be documented with URL and date
+P0,Confirm platform API path,ops,pending,TopstepX or Tradovate direct
+P0,Set one account profile in execution core,dev,pending,No copier in phase 0
+P0,Enable audit logging,dev,pending,JSONL immutable append
+P0,Manual dry-run order lifecycle,ops,pending,Create cancel replace close
+P1,Run 20 trading days with zero hard breaches,ops,pending,Required for promotion
+P1,Weekly reconciliation report approved,ops,pending,Expected vs realized
+P2,Enable copier for 1 follower at 0.5x,dev,pending,Progressive scale
+P2,Kill-switch tested under load,dev,pending,Per-account and global
+P3,Brain integration in read-only mode,dev,pending,No direct order rights
+P3,Brain write-permissions staged rollout,dev,pending,After 2 clean weeks read-only

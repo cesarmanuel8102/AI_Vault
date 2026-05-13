@@ -1,0 +1,122 @@
+{
+  "updated_utc": "2026-04-14T13:37:03Z",
+  "rows": [
+    {
+      "model": "BASELINE",
+      "cfg": "CFG_A_MNQ",
+      "window": "CH_2026_Q1",
+      "backtest_id": "e86898c7b0ab43fd4d01c678ec23a716",
+      "net_profit_pct": 3.037,
+      "drawdown_pct": 0.7,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": false,
+      "calendar_days_to_pass": null,
+      "trading_days_to_pass": 9
+    },
+    {
+      "model": "CALDENSITY_FIXED",
+      "cfg": "CFG_A_MNQ",
+      "window": "CH_2024",
+      "backtest_id": "b20f9c9a153072d97b7bb110709f740c",
+      "net_profit_pct": 7.626,
+      "drawdown_pct": 1.9,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "calendar_days_to_pass": 177,
+      "trading_days_to_pass": 45
+    },
+    {
+      "model": "CALDENSITY_FIXED",
+      "cfg": "CFG_A_MNQ",
+      "window": "CH_2025",
+      "backtest_id": "28ff4d255c2950382753afbf0e1e0862",
+      "net_profit_pct": 9.138,
+      "drawdown_pct": 3.1,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "calendar_days_to_pass": 160,
+      "trading_days_to_pass": 16
+    },
+    {
+      "model": "CALDENSITY_FIXED",
+      "cfg": "CFG_A_MNQ",
+      "window": "CH_2026_Q1",
+      "backtest_id": "644ac25d0282f220761829ccad2afcd7",
+      "net_profit_pct": 3.188,
+      "drawdown_pct": 0.7,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": false,
+      "calendar_days_to_pass": null,
+      "trading_days_to_pass": 10
+    },
+    {
+      "model": "CALDENSITY_FIXED",
+      "cfg": "CFG_A_MNQ",
+      "window": "STRESS_2020",
+      "backtest_id": "1a6aebebafd803ce3e81c958bf4ce668",
+      "net_profit_pct": -2.899,
+      "drawdown_pct": 4.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "pass_achieved": false,
+      "calendar_days_to_pass": null,
+      "trading_days_to_pass": 7
+    },
+    {
+      "model": "CALDENSITY_FIXED",
+      "cfg": "CFG_B_MNQ_M2K",
+      "window": "CH_2024",
+      "backtest_id": "2f47ce5af843796a29a7231c40b251d9",
+      "net_profit_pct": 5.959,
+      "drawdown_pct": 2.8,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "calendar_days_to_pass": 196,
+      "trading_days_to_pass": 69
+    },
+    {
+      "model": "CALDENSITY_FIXED",
+      "cfg": "CFG_B_MNQ_M2K",
+      "window": "CH_2025",
+      "backtest_id": "73ab6381b61045fc62fbc6683bf3a0e3",
+      "net_profit_pct": 4.951,
+      "drawdown_pct": 4.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "pass_achieved": true,
+      "calendar_days_to_pass": 196,
+      "trading_days_to_pass": 50
+    },
+    {
+      "model": "CALDENSITY_FIXED",
+      "cfg": "CFG_B_MNQ_M2K",
+      "window": "CH_2026_Q1",
+      "backtest_id": "3adea702a908f197c5dc10f3eef477ef",
+      "net_profit_pct": 3.324,
+      "drawdown_pct": 1.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": false,
+      "calendar_days_to_pass": null,
+      "trading_days_to_pass": 15
+    },
+    {
+      "model": "CALDENSITY_FIXED",
+      "cfg": "CFG_B_MNQ_M2K",
+      "window": "STRESS_2020",
+      "backtest_id": "fac091723f65185d873c4543ef11723a",
+      "net_profit_pct": -2.528,
+      "drawdown_pct": 4.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "pass_achieved": false,
+      "calendar_days_to_pass": null,
+      "trading_days_to_pass": 8
+    }
+  ]
+}

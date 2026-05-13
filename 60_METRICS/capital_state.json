@@ -1,0 +1,15 @@
+{
+  "updated_at": "2026-02-20T13:57:49",
+  "version": "mvp_v1",
+  "notes": "Estado inicial. No modificar manualmente excepto notes. Cambios de reglas solo en evaluaci\u00f3n semanal.",
+  "max_drawdown_pct": 0.35,
+  "max_total_commit_abs": 200,
+  "max_per_experiment_abs": 75,
+  "max_loss_abs": 175,
+  "status": "ACTIVE",
+  "unrealized_pnl": 0,
+  "starting_capital": 500,
+  "current_cash": 425.0,
+  "committed_cash": 125.0,
+  "realized_pnl": 0.0
+}

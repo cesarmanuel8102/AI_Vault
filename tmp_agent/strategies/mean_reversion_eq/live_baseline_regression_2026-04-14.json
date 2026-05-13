@@ -1,0 +1,67 @@
+{
+  "generated_at_utc": "2026-04-14T22:47:24Z",
+  "project_id": 29652652,
+  "results": [
+    {
+      "name": "REG_FULL_2022_2026Q1_1776206848",
+      "backtest_id": "076942eba7360b3937a300749dbec8b7",
+      "status": "Completed.",
+      "np_pct": -2.57,
+      "dd_pct": 4.1,
+      "sharpe": -4.908,
+      "dbr": 0.0,
+      "tbr": 1.0,
+      "orders": 18.0,
+      "scenario": "REG_FULL_2022_2026Q1",
+      "date_params": {
+        "start_year": "2022",
+        "start_month": "1",
+        "start_day": "1",
+        "end_year": "2026",
+        "end_month": "3",
+        "end_day": "31"
+      }
+    },
+    {
+      "name": "REG_OOS_2025_2026Q1_1776206926",
+      "backtest_id": "62ef72971d51bcb60ad9d86d9cd634b9",
+      "status": "Completed.",
+      "np_pct": 6.038,
+      "dd_pct": 0.5,
+      "sharpe": -1.155,
+      "dbr": 0.0,
+      "tbr": 0.0,
+      "orders": 34.0,
+      "scenario": "REG_OOS_2025_2026Q1",
+      "date_params": {
+        "start_year": "2025",
+        "start_month": "1",
+        "start_day": "1",
+        "end_year": "2026",
+        "end_month": "3",
+        "end_day": "31"
+      }
+    },
+    {
+      "name": "REG_STRESS_2020_1776206971",
+      "backtest_id": "447592d24ec6b707a3d9a408a2ea9910",
+      "status": "Completed.",
+      "np_pct": -2.604,
+      "dd_pct": 4.0,
+      "sharpe": -0.673,
+      "dbr": 1.0,
+      "tbr": 1.0,
+      "orders": 8.0,
+      "scenario": "REG_STRESS_2020",
+      "date_params": {
+        "start_year": "2020",
+        "start_month": "1",
+        "start_day": "1",
+        "end_year": "2020",
+        "end_month": "12",
+        "end_day": "31"
+      }
+    }
+  ],
+  "compile_id": "866d2029757dc231072dd2a2f629f47d-67e924f4f4693f557d0a602e57f0d42c"
+}

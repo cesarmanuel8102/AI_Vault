@@ -1,0 +1,944 @@
+{
+  "events": [
+    {
+      "type": "mission_set",
+      "at": "2026-02-24T21:12:24Z",
+      "room": "lab1_smoke",
+      "mission": {
+        "objective": "Crear good.txt en WORKSPACE_ROOT y luego listar el directorio para verificar.",
+        "constraints": [
+          "Todos los writes deben ser dentro de WORKSPACE_ROOT",
+          "No escribir secretos"
+        ]
+      }
+    },
+    {
+      "type": "mission_set",
+      "at": "2026-02-24T21:15:08Z",
+      "room": "lab1_smoke",
+      "mission": {
+        "objective": "Crear good.txt en WORKSPACE_ROOT y luego listar el directorio para verificar.",
+        "constraints": [
+          "Todos los writes deben ser dentro de WORKSPACE_ROOT",
+          "No escribir secretos"
+        ]
+      }
+    },
+    {
+      "type": "plan_guardrail_applied",
+      "at": "2026-02-24T21:15:48Z",
+      "room": "lab1_smoke",
+      "guard": {
+        "ok": true,
+        "want_bad": false,
+        "want_good": true,
+        "changes": []
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-24T21:15:48Z",
+      "room": "lab1_smoke",
+      "plan_meta": {
+        "steps": 2
+      }
+    },
+    {
+      "type": "mission_set",
+      "at": "2026-02-24T21:16:06Z",
+      "room": "lab1_smoke",
+      "mission": {
+        "objective": "Crear good.txt en WORKSPACE_ROOT y luego listar el directorio para verificar.",
+        "constraints": [
+          "Todos los writes deben ser dentro de WORKSPACE_ROOT",
+          "No escribir secretos"
+        ]
+      }
+    },
+    {
+      "type": "plan_guardrail_applied",
+      "at": "2026-02-24T21:16:41Z",
+      "room": "lab1_smoke",
+      "guard": {
+        "ok": true,
+        "want_bad": false,
+        "want_good": true,
+        "changes": []
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-24T21:16:41Z",
+      "room": "lab1_smoke",
+      "plan_meta": {
+        "steps": 2
+      }
+    },
+    {
+      "type": "mission_set",
+      "at": "2026-02-24T21:18:57Z",
+      "room": "lab1_smoke",
+      "mission": {
+        "objective": "Crear good.txt en WORKSPACE_ROOT y luego listar el directorio para verificar.",
+        "constraints": [
+          "Todos los writes deben ser dentro de WORKSPACE_ROOT",
+          "No escribir secretos"
+        ]
+      }
+    },
+    {
+      "type": "plan_guardrail_applied",
+      "at": "2026-02-24T21:19:34Z",
+      "room": "lab1_smoke",
+      "guard": {
+        "ok": true,
+        "want_bad": false,
+        "want_good": true,
+        "changes": []
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-24T21:19:34Z",
+      "room": "lab1_smoke",
+      "plan_meta": {
+        "steps": 2
+      }
+    },
+    {
+      "type": "step_executed",
+      "at": "2026-02-24T21:19:34Z",
+      "room": "lab1_smoke",
+      "step_id": "s1",
+      "tool_calls": [
+        {
+          "tool_name": "write_file",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "content": "Este es un archivo de ejemplo."
+          },
+          "tool_args_hash": "f83d1ab77cdc2e78",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "bytes": 30
+          }
+        }
+      ],
+      "status": "done",
+      "title": "Crear good.txt en WORKSPACE_ROOT",
+      "action": "TOOL"
+    },
+    {
+      "type": "step_evaluated",
+      "at": "2026-02-24T21:19:34Z",
+      "room": "lab1_smoke",
+      "step_id": "s1",
+      "tool_calls": [
+        {
+          "tool_name": "write_file",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "content": "Este es un archivo de ejemplo."
+          },
+          "tool_args_hash": "f83d1ab77cdc2e78",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "bytes": 30
+          }
+        }
+      ],
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "notes": "OK",
+      "recommendation": "continue"
+    },
+    {
+      "type": "step_executed",
+      "at": "2026-02-24T21:19:34Z",
+      "room": "lab1_smoke",
+      "step_id": "s2",
+      "tool_calls": [
+        {
+          "tool_name": "list_dir",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          },
+          "tool_args_hash": "47e42a639f73929f",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "count": 20,
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          }
+        }
+      ],
+      "status": "done",
+      "title": "Listar el directorio WORKSPACE_ROOT",
+      "action": "TOOL"
+    },
+    {
+      "type": "step_evaluated",
+      "at": "2026-02-24T21:19:34Z",
+      "room": "lab1_smoke",
+      "step_id": "s2",
+      "tool_calls": [
+        {
+          "tool_name": "list_dir",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          },
+          "tool_args_hash": "47e42a639f73929f",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "count": 20,
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          }
+        }
+      ],
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "notes": "OK",
+      "recommendation": "continue"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T21:19:34Z",
+      "room": "lab1_smoke",
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "loops": 3,
+      "executed": 2,
+      "mode": null
+    },
+    {
+      "type": "mission_set",
+      "at": "2026-02-24T21:21:12Z",
+      "room": "lab1_smoke",
+      "mission": {
+        "objective": "Crear good.txt en WORKSPACE_ROOT y luego listar el directorio para verificar.",
+        "constraints": [
+          "Todos los writes deben ser dentro de WORKSPACE_ROOT",
+          "No escribir secretos"
+        ]
+      }
+    },
+    {
+      "type": "plan_guardrail_applied",
+      "at": "2026-02-24T21:21:49Z",
+      "room": "lab1_smoke",
+      "guard": {
+        "ok": true,
+        "want_bad": false,
+        "want_good": true,
+        "changes": []
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-24T21:21:49Z",
+      "room": "lab1_smoke",
+      "plan_meta": {
+        "steps": 2
+      }
+    },
+    {
+      "type": "step_executed",
+      "at": "2026-02-24T21:21:49Z",
+      "room": "lab1_smoke",
+      "step_id": "s1",
+      "tool_calls": [
+        {
+          "tool_name": "write_file",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "content": "Este es un archivo de ejemplo."
+          },
+          "tool_args_hash": "f83d1ab77cdc2e78",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "bytes": 30
+          }
+        }
+      ],
+      "status": "done",
+      "title": "Crear good.txt",
+      "action": "TOOL"
+    },
+    {
+      "type": "step_evaluated",
+      "at": "2026-02-24T21:21:49Z",
+      "room": "lab1_smoke",
+      "step_id": "s1",
+      "tool_calls": [
+        {
+          "tool_name": "write_file",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "content": "Este es un archivo de ejemplo."
+          },
+          "tool_args_hash": "f83d1ab77cdc2e78",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "bytes": 30
+          }
+        }
+      ],
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "notes": "OK",
+      "recommendation": "continue"
+    },
+    {
+      "type": "step_executed",
+      "at": "2026-02-24T21:21:49Z",
+      "room": "lab1_smoke",
+      "step_id": "s2",
+      "tool_calls": [
+        {
+          "tool_name": "list_dir",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          },
+          "tool_args_hash": "47e42a639f73929f",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "count": 20,
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          }
+        }
+      ],
+      "status": "done",
+      "title": "Listar el directorio WORKSPACE_ROOT",
+      "action": "TOOL"
+    },
+    {
+      "type": "step_evaluated",
+      "at": "2026-02-24T21:21:49Z",
+      "room": "lab1_smoke",
+      "step_id": "s2",
+      "tool_calls": [
+        {
+          "tool_name": "list_dir",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          },
+          "tool_args_hash": "47e42a639f73929f",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "count": 20,
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          }
+        }
+      ],
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "notes": "OK",
+      "recommendation": "continue"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T21:21:49Z",
+      "room": "lab1_smoke",
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "loops": 3,
+      "executed": 2,
+      "mode": null
+    },
+    {
+      "type": "mission_set",
+      "at": "2026-02-24T21:29:15Z",
+      "room": "lab1_smoke",
+      "mission": {
+        "objective": "Crear good.txt en WORKSPACE_ROOT y luego listar el directorio para verificar.",
+        "constraints": [
+          "Todos los writes deben ser dentro de WORKSPACE_ROOT",
+          "No escribir secretos"
+        ]
+      }
+    },
+    {
+      "type": "plan_guardrail_applied",
+      "at": "2026-02-24T21:29:58Z",
+      "room": "lab1_smoke",
+      "guard": {
+        "ok": true,
+        "want_bad": false,
+        "want_good": true,
+        "changes": []
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-24T21:29:58Z",
+      "room": "lab1_smoke",
+      "plan_meta": {
+        "steps": 2
+      }
+    },
+    {
+      "type": "step_executed",
+      "at": "2026-02-24T21:29:58Z",
+      "room": "lab1_smoke",
+      "step_id": "s1",
+      "tool_calls": [
+        {
+          "tool_name": "write_file",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "content": "Este es un archivo de ejemplo."
+          },
+          "tool_args_hash": "f83d1ab77cdc2e78",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "bytes": 30
+          }
+        }
+      ],
+      "status": "done",
+      "title": "Crear good.txt",
+      "action": "TOOL"
+    },
+    {
+      "type": "step_evaluated",
+      "at": "2026-02-24T21:29:58Z",
+      "room": "lab1_smoke",
+      "step_id": "s1",
+      "tool_calls": [
+        {
+          "tool_name": "write_file",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "content": "Este es un archivo de ejemplo."
+          },
+          "tool_args_hash": "f83d1ab77cdc2e78",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "bytes": 30
+          }
+        }
+      ],
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "notes": "OK",
+      "recommendation": "continue"
+    },
+    {
+      "type": "step_executed",
+      "at": "2026-02-24T21:29:58Z",
+      "room": "lab1_smoke",
+      "step_id": "s2",
+      "tool_calls": [
+        {
+          "tool_name": "list_dir",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          },
+          "tool_args_hash": "47e42a639f73929f",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "count": 20,
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          }
+        }
+      ],
+      "status": "done",
+      "title": "Listar el directorio WORKSPACE_ROOT",
+      "action": "TOOL"
+    },
+    {
+      "type": "step_evaluated",
+      "at": "2026-02-24T21:29:58Z",
+      "room": "lab1_smoke",
+      "step_id": "s2",
+      "tool_calls": [
+        {
+          "tool_name": "list_dir",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          },
+          "tool_args_hash": "47e42a639f73929f",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "count": 20,
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          }
+        }
+      ],
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "notes": "OK",
+      "recommendation": "continue"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T21:29:58Z",
+      "room": "lab1_smoke",
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "loops": 3,
+      "executed": 2,
+      "mode": null
+    },
+    {
+      "type": "mission_set",
+      "at": "2026-02-24T21:49:47Z",
+      "room": "lab1_smoke",
+      "mission": {
+        "objective": "Crear good.txt en WORKSPACE_ROOT y luego listar el directorio para verificar.",
+        "constraints": [
+          "Todos los writes deben ser dentro de WORKSPACE_ROOT",
+          "No escribir secretos"
+        ]
+      }
+    },
+    {
+      "type": "plan_guardrail_applied",
+      "at": "2026-02-24T21:50:28Z",
+      "room": "lab1_smoke",
+      "guard": {
+        "ok": true,
+        "want_bad": false,
+        "want_good": true,
+        "changes": []
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-24T21:50:28Z",
+      "room": "lab1_smoke",
+      "plan_meta": {
+        "steps": 2
+      }
+    },
+    {
+      "type": "step_executed",
+      "at": "2026-02-24T21:50:28Z",
+      "room": "lab1_smoke",
+      "step_id": "s1",
+      "tool_calls": [
+        {
+          "tool_name": "write_file",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "content": "Este es un archivo de ejemplo."
+          },
+          "tool_args_hash": "f83d1ab77cdc2e78",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "bytes": 30
+          }
+        }
+      ],
+      "status": "done",
+      "title": "Crear good.txt",
+      "action": "TOOL"
+    },
+    {
+      "type": "step_evaluated",
+      "at": "2026-02-24T21:50:28Z",
+      "room": "lab1_smoke",
+      "step_id": "s1",
+      "tool_calls": [
+        {
+          "tool_name": "write_file",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "content": "Este es un archivo de ejemplo."
+          },
+          "tool_args_hash": "f83d1ab77cdc2e78",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "bytes": 30
+          }
+        }
+      ],
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "notes": "OK",
+      "recommendation": "continue"
+    },
+    {
+      "type": "step_executed",
+      "at": "2026-02-24T21:50:28Z",
+      "room": "lab1_smoke",
+      "step_id": "s2",
+      "tool_calls": [
+        {
+          "tool_name": "list_dir",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          },
+          "tool_args_hash": "47e42a639f73929f",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "count": 20,
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          }
+        }
+      ],
+      "status": "done",
+      "title": "Listar directorio WORKSPACE_ROOT",
+      "action": "TOOL"
+    },
+    {
+      "type": "step_evaluated",
+      "at": "2026-02-24T21:50:28Z",
+      "room": "lab1_smoke",
+      "step_id": "s2",
+      "tool_calls": [
+        {
+          "tool_name": "list_dir",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          },
+          "tool_args_hash": "47e42a639f73929f",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "count": 20,
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          }
+        }
+      ],
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "notes": "OK",
+      "recommendation": "continue"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T21:50:28Z",
+      "room": "lab1_smoke",
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "loops": 3,
+      "executed": 2,
+      "mode": null
+    },
+    {
+      "type": "mission_set",
+      "at": "2026-02-24T21:57:29Z",
+      "room": "lab1_smoke",
+      "mission": {
+        "objective": "Crear good.txt en WORKSPACE_ROOT y luego listar el directorio para verificar.",
+        "constraints": [
+          "Todos los writes deben ser dentro de WORKSPACE_ROOT",
+          "No escribir secretos"
+        ]
+      }
+    },
+    {
+      "type": "plan_guardrail_applied",
+      "at": "2026-02-24T21:58:15Z",
+      "room": "lab1_smoke",
+      "guard": {
+        "ok": true,
+        "want_bad": false,
+        "want_good": true,
+        "changes": []
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-24T21:58:15Z",
+      "room": "lab1_smoke",
+      "plan_meta": {
+        "steps": 2
+      }
+    },
+    {
+      "type": "step_executed",
+      "at": "2026-02-24T21:58:15Z",
+      "room": "lab1_smoke",
+      "step_id": "s1",
+      "tool_calls": [
+        {
+          "tool_name": "write_file",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "content": "Este es un archivo de ejemplo."
+          },
+          "tool_args_hash": "f83d1ab77cdc2e78",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "bytes": 30
+          }
+        }
+      ],
+      "status": "done",
+      "title": "Crear good.txt en WORKSPACE_ROOT",
+      "action": "TOOL"
+    },
+    {
+      "type": "step_evaluated",
+      "at": "2026-02-24T21:58:15Z",
+      "room": "lab1_smoke",
+      "step_id": "s1",
+      "tool_calls": [
+        {
+          "tool_name": "write_file",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "content": "Este es un archivo de ejemplo."
+          },
+          "tool_args_hash": "f83d1ab77cdc2e78",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "bytes": 30
+          }
+        }
+      ],
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "notes": "OK",
+      "recommendation": "continue"
+    },
+    {
+      "type": "step_executed",
+      "at": "2026-02-24T21:58:15Z",
+      "room": "lab1_smoke",
+      "step_id": "s2",
+      "tool_calls": [
+        {
+          "tool_name": "list_dir",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          },
+          "tool_args_hash": "47e42a639f73929f",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "count": 20,
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          }
+        }
+      ],
+      "status": "done",
+      "title": "Listar el directorio WORKSPACE_ROOT para verificar la creación del archivo",
+      "action": "TOOL"
+    },
+    {
+      "type": "step_evaluated",
+      "at": "2026-02-24T21:58:15Z",
+      "room": "lab1_smoke",
+      "step_id": "s2",
+      "tool_calls": [
+        {
+          "tool_name": "list_dir",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          },
+          "tool_args_hash": "47e42a639f73929f",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "count": 20,
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          }
+        }
+      ],
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "notes": "OK",
+      "recommendation": "continue"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T21:58:15Z",
+      "room": "lab1_smoke",
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "loops": 3,
+      "executed": 2,
+      "mode": null,
+      "timeout": false
+    },
+    {
+      "type": "mission_set",
+      "at": "2026-02-24T22:19:22Z",
+      "room": "lab1_smoke",
+      "mission": {
+        "objective": "Crear good.txt en WORKSPACE_ROOT y luego listar el directorio para verificar.",
+        "constraints": [
+          "Todos los writes deben ser dentro de WORKSPACE_ROOT",
+          "No escribir secretos"
+        ]
+      }
+    },
+    {
+      "type": "plan_guardrail_applied",
+      "at": "2026-02-24T22:20:05Z",
+      "room": "lab1_smoke",
+      "guard": {
+        "ok": true,
+        "want_bad": false,
+        "want_good": true,
+        "changes": []
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-24T22:20:05Z",
+      "room": "lab1_smoke",
+      "plan_meta": {
+        "steps": 2
+      }
+    },
+    {
+      "type": "step_executed",
+      "at": "2026-02-24T22:20:05Z",
+      "room": "lab1_smoke",
+      "step_id": "s1",
+      "tool_calls": [
+        {
+          "tool_name": "write_file",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "content": "Este es un archivo de ejemplo."
+          },
+          "tool_args_hash": "f83d1ab77cdc2e78",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "bytes": 30
+          }
+        }
+      ],
+      "status": "done",
+      "title": "Crear good.txt en WORKSPACE_ROOT",
+      "action": "TOOL"
+    },
+    {
+      "type": "step_evaluated",
+      "at": "2026-02-24T22:20:05Z",
+      "room": "lab1_smoke",
+      "step_id": "s1",
+      "tool_calls": [
+        {
+          "tool_name": "write_file",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "content": "Este es un archivo de ejemplo."
+          },
+          "tool_args_hash": "f83d1ab77cdc2e78",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "bytes": 30
+          }
+        }
+      ],
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "notes": "OK",
+      "recommendation": "continue"
+    },
+    {
+      "type": "step_executed",
+      "at": "2026-02-24T22:20:05Z",
+      "room": "lab1_smoke",
+      "step_id": "s2",
+      "tool_calls": [
+        {
+          "tool_name": "list_dir",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          },
+          "tool_args_hash": "47e42a639f73929f",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "count": 20,
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          }
+        }
+      ],
+      "status": "done",
+      "title": "Listar el directorio WORKSPACE_ROOT para verificar",
+      "action": "TOOL"
+    },
+    {
+      "type": "step_evaluated",
+      "at": "2026-02-24T22:20:05Z",
+      "room": "lab1_smoke",
+      "step_id": "s2",
+      "tool_calls": [
+        {
+          "tool_name": "list_dir",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          },
+          "tool_args_hash": "47e42a639f73929f",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "count": 20,
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          }
+        }
+      ],
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "notes": "OK",
+      "recommendation": "continue"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T22:20:05Z",
+      "room": "lab1_smoke",
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "loops": 3,
+      "executed": 2,
+      "mode": null,
+      "timeout": false
+    }
+  ]
+}

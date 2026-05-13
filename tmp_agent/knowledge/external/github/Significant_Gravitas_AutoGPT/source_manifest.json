@@ -1,0 +1,16 @@
+{
+  "source_id": "github_Significant_Gravitas_AutoGPT_20260508",
+  "source_type": "github_repo",
+  "url": "https://github.com/Significant-Gravitas/AutoGPT",
+  "owner": "Significant-Gravitas",
+  "repo": "AutoGPT",
+  "ingested_at_utc": "2026-05-08T04:56:56.369042Z",
+  "local_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\Significant_Gravitas_AutoGPT",
+  "status": "downloaded",
+  "hash": "8275530cd95320ae32a6b04f8a01169f841ed0f60b4ee84eb70fc919bf7d17c4",
+  "files_indexed": 28,
+  "repo_api_url": "https://api.github.com/repos/Significant-Gravitas/AutoGPT",
+  "readme_download_url": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/README.md",
+  "root_index_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\Significant_Gravitas_AutoGPT\\root_index.json",
+  "dependency_hints_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\Significant_Gravitas_AutoGPT\\dependency_hints.json"
+}

@@ -1,0 +1,9 @@
+{
+  "project_id": 29652652,
+  "compile_id": "7347c194b655e3072298341fda0d7c4b-30fbf51e710a3ab43b5a556e49f7aee9",
+  "backtest_id": "88bfc5b01223df4875aec0e270304767",
+  "backtest_name": "Test CFD v2",
+  "launched_at": "2026-04-04 00:58:13 UTC",
+  "parameters": {},
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/test_cfd_v2/main.py"
+}

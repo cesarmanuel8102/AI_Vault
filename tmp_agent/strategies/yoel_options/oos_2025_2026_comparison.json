@@ -1,0 +1,38 @@
+{
+  "V4-B OOS 2025-2026": {
+    "bt_id": "b2c767ac725c6b148bd45743bbf0649f",
+    "stats": {
+      "Total Orders": "145",
+      "Average Win": "3.15%",
+      "Average Loss": "-2.87%",
+      "Compounding Annual Return": "1.059%",
+      "Drawdown": "16.500%",
+      "Expectancy": "0.029",
+      "Start Equity": "10000",
+      "End Equity": "10133.9",
+      "Net Profit": "1.339%",
+      "Sharpe Ratio": "-0.13",
+      "Sortino Ratio": "-0.118",
+      "Probabilistic Sharpe Ratio": "12.086%",
+      "Loss Rate": "51%",
+      "Win Rate": "49%",
+      "Profit-Loss Ratio": "1.10",
+      "Alpha": "0",
+      "Beta": "0",
+      "Annual Standard Deviation": "0.205",
+      "Annual Variance": "0.042",
+      "Information Ratio": "0.139",
+      "Tracking Error": "0.205",
+      "Treynor Ratio": "0",
+      "Total Fees": "$128.10",
+      "Estimated Strategy Capacity": "$95000.00",
+      "Lowest Capacity Asset": "NVDA Z05BJT3UQFWM|NVDA RHM8UTD8DT2D",
+      "Portfolio Turnover": "2.83%",
+      "Drawdown Recovery": "213"
+    }
+  },
+  "V5a OOS 2025-2026": {
+    "bt_id": "cad6ffbf6a0720036d952a7b5af1dd5b",
+    "stats": {}
+  }
+}

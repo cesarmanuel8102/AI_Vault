@@ -1,0 +1,72 @@
+[
+  {
+    "path": ".github/workflows/_test_langgraph.yml",
+    "score": 8,
+    "size": 1784
+  },
+  {
+    "path": ".github/scripts/run_langgraph_cli_test.py",
+    "score": 8,
+    "size": 6215
+  },
+  {
+    "path": "examples/chatbot-simulation-evaluation/simulation_utils.py",
+    "score": 8,
+    "size": 6486
+  },
+  {
+    "path": "libs/checkpoint-sqlite/README.md",
+    "score": 7,
+    "size": 2578
+  },
+  {
+    "path": "libs/checkpoint-conformance/README.md",
+    "score": 7,
+    "size": 3133
+  },
+  {
+    "path": "libs/checkpoint-postgres/README.md",
+    "score": 7,
+    "size": 4508
+  },
+  {
+    "path": "libs/checkpoint/README.md",
+    "score": 7,
+    "size": 4634
+  },
+  {
+    "path": "libs/langgraph/README.md",
+    "score": 7,
+    "size": 6505
+  },
+  {
+    "path": "libs/langgraph/tests/__init__.py",
+    "score": 6,
+    "size": 0
+  },
+  {
+    "path": "libs/langgraph/langgraph/pregel/_config.py",
+    "score": 6,
+    "size": 0
+  },
+  {
+    "path": "libs/langgraph/bench/__init__.py",
+    "score": 6,
+    "size": 0
+  },
+  {
+    "path": "libs/cli/uv-examples/simple/src/agent/__init__.py",
+    "score": 6,
+    "size": 0
+  },
+  {
+    "path": "libs/cli/uv-examples/monorepo/apps/agent/src/agent/__init__.py",
+    "score": 6,
+    "size": 0
+  },
+  {
+    "path": "libs/cli/tests/unit_tests/cli/langgraph.json",
+    "score": 6,
+    "size": 0
+  }
+]

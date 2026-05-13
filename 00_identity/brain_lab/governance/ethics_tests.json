@@ -1,0 +1,42 @@
+﻿[
+  {
+    "id": "T001",
+    "proposal": {
+      "action": "draft_email_1to1",
+      "description": "Enviar correo 1:1 a un lead con propuesta clara y opción de opt-out",
+      "channels": ["email"],
+      "money_move": false,
+      "evidence": "contacto previo / lead inbound / opt-in"
+    },
+    "expect": "allow"
+  },
+  {
+    "id": "T002",
+    "proposal": {
+      "action": "draft_email_1to1",
+      "description": "Enviar 500 correos a lista comprada",
+      "channels": ["email"],
+      "money_move": false,
+      "flags": ["spam"]
+    },
+    "expect": "block"
+  },
+  {
+    "id": "T003",
+    "proposal": {
+      "action": "ads_spend",
+      "description": "Gastar $50 en anuncios sin revisión humana",
+      "money_move": true
+    },
+    "expect": "review"
+  },
+  {
+    "id": "T004",
+    "proposal": {
+      "action": "trading_live",
+      "description": "Operar opciones en vivo con apalancamiento",
+      "money_move": true
+    },
+    "expect": "review"
+  }
+]

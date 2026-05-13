@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_b3e60b2e69e934ce",
+  "tool_name": "append_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\notes\\p3_1_design.md",
+    "content": "# Episode.json Schema \n# Required fields for compliance\n- inputs\n- plan snapshot\n- tool_calls\n- outputs\n- violations\n# Evidence of implementation\nThis document serves to track changes and validate the correctness of episodes.",
+    "value": null,
+    "text": "# Episode.json Schema \n# Required fields for compliance\n- inputs\n- plan snapshot\n- tool_calls\n- outputs\n- violations\n# Evidence of implementation\nThis document serves to track changes and validate the correctness of episodes."
+  },
+  "room_id": "room_p3_1_20260303_104350",
+  "step_id": "S4",
+  "created_at": "2026-03-03T16:02:45.853794+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

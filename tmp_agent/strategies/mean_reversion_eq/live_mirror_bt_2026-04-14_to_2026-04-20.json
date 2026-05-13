@@ -1,0 +1,37 @@
+{
+  "generated_at_utc": "2026-04-20T14:07:02Z",
+  "project_id": 29652652,
+  "update_test_params_success": true,
+  "compile_id": "81ff67c54982f010b3b0015e3b269bf0-67e924f4f4693f557d0a602e57f0d42c",
+  "compile_state": "BuildSuccess",
+  "backtest_id": "fcc0b523053dd7c26653aa5c53583ca2",
+  "backtest_status": "Completed.",
+  "summary": {
+    "net_profit_pct": -0.332,
+    "drawdown_pct": 0.5,
+    "total_orders": 4.0,
+    "closed_trades": 2,
+    "daily_loss_breaches": 0.0,
+    "trailing_breaches": 0.0,
+    "mode": "PF100",
+    "profile": "FAST_PASS"
+  },
+  "closed_trades": [
+    {
+      "symbol": null,
+      "entryTime": "2026-04-14T13:40:00Z",
+      "exitTime": "2026-04-14T19:58:00Z",
+      "direction": null,
+      "qty": 1,
+      "pnl": -256.25
+    },
+    {
+      "symbol": null,
+      "entryTime": "2026-04-15T13:40:00Z",
+      "exitTime": "2026-04-15T13:45:00Z",
+      "direction": null,
+      "qty": 1,
+      "pnl": 92.5
+    }
+  ]
+}

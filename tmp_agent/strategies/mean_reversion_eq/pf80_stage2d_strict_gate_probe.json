@@ -1,0 +1,103 @@
+{
+  "rows": [
+    {
+      "candidate": "STRICT_G1",
+      "scenario": "STRESS",
+      "np": -4.621,
+      "dd": 6.0,
+      "dbr": 1,
+      "tbr": 1,
+      "mmean": -4.452,
+      "mmed": -4.452,
+      "id": "d9818552d3e11ed7520117c54ca7380e"
+    },
+    {
+      "candidate": "STRICT_G1",
+      "scenario": "FULL",
+      "np": null,
+      "dd": null,
+      "dbr": 0,
+      "tbr": 0,
+      "mmean": null,
+      "mmed": null,
+      "id": "ea40322c4fca357e6414f8eb1b283311"
+    },
+    {
+      "candidate": "STRICT_G1",
+      "scenario": "OOS",
+      "np": 21.197,
+      "dd": 3.3,
+      "dbr": 0,
+      "tbr": 0,
+      "mmean": 1.851,
+      "mmed": 0.296,
+      "id": "97b8ccf4557c6f2f9122c96be0642ca6"
+    },
+    {
+      "candidate": "STRICT_G2",
+      "scenario": "STRESS",
+      "np": -4.122,
+      "dd": 6.1,
+      "dbr": 1,
+      "tbr": 1,
+      "mmean": -3.926,
+      "mmed": -3.926,
+      "id": "a1b65d7b42d2b39955e2007f3c674637"
+    },
+    {
+      "candidate": "STRICT_G2",
+      "scenario": "FULL",
+      "np": 2.367,
+      "dd": 6.1,
+      "dbr": 0,
+      "tbr": 1,
+      "mmean": 0.33,
+      "mmed": 0.454,
+      "id": "09c242954d0d7a5adfb2aee9a0d24f06"
+    },
+    {
+      "candidate": "STRICT_G2",
+      "scenario": "OOS",
+      "np": 25.263,
+      "dd": 4.8,
+      "dbr": 1,
+      "tbr": 0,
+      "mmean": 2.197,
+      "mmed": 0.061,
+      "id": "704d743fbe3abd3bae51771ff1c4a02d"
+    },
+    {
+      "candidate": "STRICT_G3",
+      "scenario": "STRESS",
+      "np": -3.563,
+      "dd": 6.1,
+      "dbr": 1,
+      "tbr": 1,
+      "mmean": -3.31,
+      "mmed": -3.31,
+      "id": "b812bb0861af429c29250616d242c7f3"
+    },
+    {
+      "candidate": "STRICT_G3",
+      "scenario": "FULL",
+      "np": 5.647,
+      "dd": 6.1,
+      "dbr": 2,
+      "tbr": 1,
+      "mmean": 0.855,
+      "mmed": 0.629,
+      "id": "16e9701122c5b2afeba4f0ed30dbb54a"
+    },
+    {
+      "candidate": "STRICT_G3",
+      "scenario": "OOS",
+      "np": 14.794,
+      "dd": 6.2,
+      "dbr": 3,
+      "tbr": 1,
+      "mmean": 2.633,
+      "mmed": 0.256,
+      "id": "acf6ce2c9df7aa6fe6c2bf5ee66d16dc"
+    }
+  ]
+}

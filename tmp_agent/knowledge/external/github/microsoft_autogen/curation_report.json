@@ -1,0 +1,43 @@
+{
+  "source_id": "github_microsoft_autogen_20260508",
+  "curated_at_utc": "2026-05-08T05:26:24.653738Z",
+  "repo": {
+    "full_name": "microsoft/autogen",
+    "default_branch": "main",
+    "updated_at": "2026-05-08T05:16:11Z",
+    "stargazers_count": 57812,
+    "open_issues_count": 807,
+    "size_kb": 148692,
+    "language": "Python",
+    "topics": [
+      "agentic",
+      "agentic-agi",
+      "agents",
+      "ai",
+      "autogen",
+      "autogen-ecosystem",
+      "chatgpt",
+      "framework",
+      "llm-agent",
+      "llm-framework"
+    ],
+    "tests_present": true,
+    "docs_present": true,
+    "dependency_files": [],
+    "tree_entries": 2319,
+    "priority_files_scanned": 14
+  },
+  "curation_score": 10.25,
+  "risk_score": 2.25,
+  "license_status": "compatible_review_required",
+  "recommended_action": "analyze",
+  "reject_reasons": [],
+  "notes": [
+    "high_issue_volume",
+    "dependency_manifest_not_detected",
+    "source_host_not_in_allowlist_seed"
+  ],
+  "dependency_risk_flags": [],
+  "suspicious_binaries": [],
+  "apparent_secrets": []
+}

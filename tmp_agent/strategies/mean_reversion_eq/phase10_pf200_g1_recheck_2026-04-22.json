@@ -1,0 +1,60 @@
+{
+  "generated_at_utc": "2026-04-22T03:20:01.325134+00:00",
+  "compile_id": "61e4aafa089c3622db0b1901ea65f571-a2b3e5c21556d1cd6cdc9d1ed62c897c",
+  "rows": [
+    {
+      "status": "Completed.",
+      "backtest_id": "98063eb4f935fb78b4b132295687793d",
+      "np_pct": 4.454,
+      "dd_pct": 3.4,
+      "dbr": 0,
+      "tbr": 0,
+      "orders": 245,
+      "stress_days": 66,
+      "monthly_mean_pct": 0.417,
+      "monthly_median_pct": 0.474,
+      "monthly_count": 11,
+      "profit_factor": 1.54,
+      "max_consec_losses": 5,
+      "best_day_share_pct": 43.27,
+      "candidate": "P10_G1_RECHECK",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "b9c9943f3199dc4491aa2a44a93d0f00",
+      "np_pct": 6.958,
+      "dd_pct": 3.9,
+      "dbr": 0,
+      "tbr": 0,
+      "orders": 153,
+      "stress_days": 72,
+      "monthly_mean_pct": 1.413,
+      "monthly_median_pct": 0.04,
+      "monthly_count": 5,
+      "profit_factor": 1.933,
+      "max_consec_losses": 8,
+      "best_day_share_pct": 51.16,
+      "candidate": "P10_G1_RECHECK",
+      "scenario": "OOS_2025_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "e1a5830a3887ed897cb8e959c117b44b",
+      "np_pct": 5.813,
+      "dd_pct": 3.1,
+      "dbr": 0,
+      "tbr": 0,
+      "orders": 281,
+      "stress_days": 233,
+      "monthly_mean_pct": 0.426,
+      "monthly_median_pct": 0.271,
+      "monthly_count": 14,
+      "profit_factor": 1.565,
+      "max_consec_losses": 5,
+      "best_day_share_pct": 47.58,
+      "candidate": "P10_G1_RECHECK",
+      "scenario": "FULL_2022_2026Q1"
+    }
+  ]
+}

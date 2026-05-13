@@ -1,0 +1,7 @@
+﻿{
+    "response":  "nmap no estÃ¡ disponible en el sistema; usÃ© el escÃ¡ner nativo `scan_local_network` como fallback. Se detectaron **al menos 121 hosts activos** (desde 192.168.1.1 hasta .121, con output truncado), todos con puerto 80 abierto. Nota: hay una inconsistencia en el mensaje inicial que menciona \"0 hosts vivos\", pero los datos reales del JSON muestran extensa actividad en la red. No puedo determinar el total exacto de hosts en el rango completo porque el resultado estÃ¡ truncado (12KB+ de datos).",
+    "session_id":  "r26_e2e_v3",
+    "model_used":  "agent_orav",
+    "success":  true,
+    "pending_action":  null
+}

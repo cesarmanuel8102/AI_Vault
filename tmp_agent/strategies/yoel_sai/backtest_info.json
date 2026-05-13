@@ -1,0 +1,13 @@
+{
+  "project_id": 29490680,
+  "compile_id": "80c6ce70d9d7d31e1d2f9c3dd7378bc9-b68247b694bae5fc928a231c582b4cac",
+  "backtest_id": "9a3eb29ef50ced7cb4ce16738f19890c",
+  "backtest_name": "YoelSAI V1.7 NoTS IS 2021-2024",
+  "launched_at": "2026-04-05 22:13:06 UTC",
+  "parameters": {
+    "start_year": "2021",
+    "end_year": "2024",
+    "end_month": "12"
+  },
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/yoel_sai/main.py"
+}

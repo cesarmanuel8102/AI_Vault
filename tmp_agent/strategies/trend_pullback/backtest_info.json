@@ -1,0 +1,27 @@
+{
+  "project_id": 29652652,
+  "compile_id": "b3ec6c4e4ceb0dbac4a68a834bf5e399-4ae48437c6c20dc0cc6d36eebd347767",
+  "backtest_id": "8ea59a4893632372ca431ab7b6f97700",
+  "backtest_name": "TP-V1.2 OOS 2023-2024",
+  "launched_at": "2026-04-03 22:58:54 UTC",
+  "parameters": {
+    "start_year": "2023",
+    "end_year": "2024",
+    "end_month": "12",
+    "ema_fast": "20",
+    "ema_slow": "50",
+    "adx_min": "25",
+    "adx_exit": "22",
+    "rsi_period": "14",
+    "rsi_pullback_low": "40",
+    "rsi_pullback_high": "60",
+    "atr_period": "14",
+    "stop_atr_mult": "1.5",
+    "chandelier_mult": "2.5",
+    "risk_per_trade": "0.015",
+    "max_positions": "4",
+    "max_hold_days": "12",
+    "max_daily_risk": "0.03"
+  },
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/trend_pullback/main.py"
+}

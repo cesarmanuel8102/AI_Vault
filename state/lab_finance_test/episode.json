@@ -1,0 +1,50 @@
+{
+  "events": [
+    {
+      "type": "mission_set",
+      "at": "2026-02-24T22:37:55Z",
+      "room": "lab_finance_test",
+      "mission": {
+        "objective": "Proponer operación financiera simulada.",
+        "constraints": [
+          "no ejecutar brokers",
+          "solo proposal"
+        ]
+      }
+    },
+    {
+      "type": "step_executed",
+      "at": "2026-02-24T22:40:22Z",
+      "room": "lab_finance_test",
+      "step_id": "s1",
+      "tool_calls": [],
+      "status": "done",
+      "title": "Propuesta financiera simulada",
+      "action": "PROPOSAL"
+    },
+    {
+      "type": "step_evaluated",
+      "at": "2026-02-24T22:40:22Z",
+      "room": "lab_finance_test",
+      "step_id": "s1",
+      "tool_calls": [],
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "notes": "OK",
+      "recommendation": "continue"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T22:40:22Z",
+      "room": "lab_finance_test",
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "loops": 2,
+      "executed": 1,
+      "mode": null,
+      "timeout": false
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "source_id": "github_run_llama_llama_index_20260508",
+  "source_type": "github_repo",
+  "url": "https://github.com/run-llama/llama_index",
+  "owner": "run-llama",
+  "repo": "llama_index",
+  "ingested_at_utc": "2026-05-08T04:56:53.424973Z",
+  "local_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\run_llama_llama_index",
+  "status": "downloaded",
+  "hash": "d30b8e105021488d3a0d44ea223877b815575b4f146c14043c48ef5b8e824af6",
+  "files_indexed": 25,
+  "repo_api_url": "https://api.github.com/repos/run-llama/llama_index",
+  "readme_download_url": "https://raw.githubusercontent.com/run-llama/llama_index/main/README.md",
+  "root_index_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\run_llama_llama_index\\root_index.json",
+  "dependency_hints_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\run_llama_llama_index\\dependency_hints.json"
+}

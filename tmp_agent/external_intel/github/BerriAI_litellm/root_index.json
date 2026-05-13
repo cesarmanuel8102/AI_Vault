@@ -1,0 +1,930 @@
+[
+  {
+    "name": ".circleci",
+    "path": ".circleci",
+    "sha": "d4ff8b353fb39ddae0c878340bf1a2f0b1f5dc19",
+    "size": 0,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/.circleci?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/.circleci",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/trees/d4ff8b353fb39ddae0c878340bf1a2f0b1f5dc19",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/.circleci?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/trees/d4ff8b353fb39ddae0c878340bf1a2f0b1f5dc19",
+      "html": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/.circleci"
+    }
+  },
+  {
+    "name": ".devcontainer",
+    "path": ".devcontainer",
+    "sha": "14d3f651fb26a7c306f23cec6cb22c8530234f4f",
+    "size": 0,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/.devcontainer?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/.devcontainer",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/trees/14d3f651fb26a7c306f23cec6cb22c8530234f4f",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/.devcontainer?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/trees/14d3f651fb26a7c306f23cec6cb22c8530234f4f",
+      "html": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/.devcontainer"
+    }
+  },
+  {
+    "name": ".dockerignore",
+    "path": ".dockerignore",
+    "sha": "a487d2a859abc87ba71d239cfb330008f3923951",
+    "size": 635,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/.dockerignore?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/.dockerignore",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/a487d2a859abc87ba71d239cfb330008f3923951",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/.dockerignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/.dockerignore?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/a487d2a859abc87ba71d239cfb330008f3923951",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/.dockerignore"
+    }
+  },
+  {
+    "name": ".env.example",
+    "path": ".env.example",
+    "sha": "24c2b6084149eb6939906af93d239490e6e7b6bc",
+    "size": 624,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/.env.example?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/.env.example",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/24c2b6084149eb6939906af93d239490e6e7b6bc",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/.env.example",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/.env.example?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/24c2b6084149eb6939906af93d239490e6e7b6bc",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/.env.example"
+    }
+  },
+  {
+    "name": ".flake8",
+    "path": ".flake8",
+    "sha": "afd4596076bcfdbebeea32b0e1828a238816cd8c",
+    "size": 1477,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/.flake8?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/.flake8",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/afd4596076bcfdbebeea32b0e1828a238816cd8c",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/.flake8",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/.flake8?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/afd4596076bcfdbebeea32b0e1828a238816cd8c",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/.flake8"
+    }
+  },
+  {
+    "name": ".git-blame-ignore-revs",
+    "path": ".git-blame-ignore-revs",
+    "sha": "f0ced6bedb8a833c0a152b472a6798d1cf698c60",
+    "size": 386,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/.git-blame-ignore-revs?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/.git-blame-ignore-revs",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/f0ced6bedb8a833c0a152b472a6798d1cf698c60",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/.git-blame-ignore-revs",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/.git-blame-ignore-revs?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/f0ced6bedb8a833c0a152b472a6798d1cf698c60",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/.git-blame-ignore-revs"
+    }
+  },
+  {
+    "name": ".gitattributes",
+    "path": ".gitattributes",
+    "sha": "9030923a781909e4293ef5232ecd37a00d3c4e55",
+    "size": 25,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/.gitattributes?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/.gitattributes",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/9030923a781909e4293ef5232ecd37a00d3c4e55",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/.gitattributes",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/.gitattributes?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/9030923a781909e4293ef5232ecd37a00d3c4e55",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/.gitattributes"
+    }
+  },
+  {
+    "name": ".gitguardian.yaml",
+    "path": ".gitguardian.yaml",
+    "sha": "2a16ffe0c5200aaebb9bd744d406e71f398b939e",
+    "size": 3966,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/.gitguardian.yaml?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/.gitguardian.yaml",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/2a16ffe0c5200aaebb9bd744d406e71f398b939e",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/.gitguardian.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/.gitguardian.yaml?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/2a16ffe0c5200aaebb9bd744d406e71f398b939e",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/.gitguardian.yaml"
+    }
+  },
+  {
+    "name": ".github",
+    "path": ".github",
+    "sha": "17cf3841714462c9354a2f040dcd3ea5014e602f",
+    "size": 0,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/.github?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/.github",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/trees/17cf3841714462c9354a2f040dcd3ea5014e602f",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/.github?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/trees/17cf3841714462c9354a2f040dcd3ea5014e602f",
+      "html": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/.github"
+    }
+  },
+  {
+    "name": ".gitignore",
+    "path": ".gitignore",
+    "sha": "20355a8e4ef8ca11a0d0f5bab0ad22451830345f",
+    "size": 2548,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/.gitignore?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/.gitignore",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/20355a8e4ef8ca11a0d0f5bab0ad22451830345f",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/.gitignore",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/.gitignore?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/20355a8e4ef8ca11a0d0f5bab0ad22451830345f",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/.gitignore"
+    }
+  },
+  {
+    "name": ".npmrc",
+    "path": ".npmrc",
+    "sha": "7999681cc35127273901457f2c391a21bb8d34c4",
+    "size": 190,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/.npmrc?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/.npmrc",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/7999681cc35127273901457f2c391a21bb8d34c4",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/.npmrc",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/.npmrc?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/7999681cc35127273901457f2c391a21bb8d34c4",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/.npmrc"
+    }
+  },
+  {
+    "name": ".semgrep",
+    "path": ".semgrep",
+    "sha": "a7039e15a96364a733e1c16eafa4100bc8d49d43",
+    "size": 0,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/.semgrep?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/.semgrep",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/trees/a7039e15a96364a733e1c16eafa4100bc8d49d43",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/.semgrep?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/trees/a7039e15a96364a733e1c16eafa4100bc8d49d43",
+      "html": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/.semgrep"
+    }
+  },
+  {
+    "name": "AGENTS.md",
+    "path": "AGENTS.md",
+    "sha": "4bdbf26ae9d93adf326663ea846811353b0ee935",
+    "size": 13506,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/AGENTS.md?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/AGENTS.md",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/4bdbf26ae9d93adf326663ea846811353b0ee935",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/AGENTS.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/AGENTS.md?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/4bdbf26ae9d93adf326663ea846811353b0ee935",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/AGENTS.md"
+    }
+  },
+  {
+    "name": "ARCHITECTURE.md",
+    "path": "ARCHITECTURE.md",
+    "sha": "c114a838d6d26ad3e6661ea36166d228cf6492c7",
+    "size": 16648,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/ARCHITECTURE.md?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/ARCHITECTURE.md",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/c114a838d6d26ad3e6661ea36166d228cf6492c7",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/ARCHITECTURE.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/ARCHITECTURE.md?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/c114a838d6d26ad3e6661ea36166d228cf6492c7",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/ARCHITECTURE.md"
+    }
+  },
+  {
+    "name": "CLAUDE.md",
+    "path": "CLAUDE.md",
+    "sha": "71e5af28ee715aea7c58cad65e642d5ed5999342",
+    "size": 14659,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/CLAUDE.md?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/CLAUDE.md",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/71e5af28ee715aea7c58cad65e642d5ed5999342",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/CLAUDE.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/CLAUDE.md?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/71e5af28ee715aea7c58cad65e642d5ed5999342",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/CLAUDE.md"
+    }
+  },
+  {
+    "name": "CONTRIBUTING.md",
+    "path": "CONTRIBUTING.md",
+    "sha": "8ac83341f649a08189a88ec188db40b49aacdaa0",
+    "size": 9875,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/CONTRIBUTING.md?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/CONTRIBUTING.md",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/8ac83341f649a08189a88ec188db40b49aacdaa0",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/CONTRIBUTING.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/CONTRIBUTING.md?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/8ac83341f649a08189a88ec188db40b49aacdaa0",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/CONTRIBUTING.md"
+    }
+  },
+  {
+    "name": "Dockerfile",
+    "path": "Dockerfile",
+    "sha": "9ad9ab31b65db319552a564c2238dbc27ba14c89",
+    "size": 3455,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/Dockerfile?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/Dockerfile",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/9ad9ab31b65db319552a564c2238dbc27ba14c89",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/Dockerfile",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/Dockerfile?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/9ad9ab31b65db319552a564c2238dbc27ba14c89",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/Dockerfile"
+    }
+  },
+  {
+    "name": "GEMINI.md",
+    "path": "GEMINI.md",
+    "sha": "9e950d89b330a03f43625c1cab3591e473d1e690",
+    "size": 4288,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/GEMINI.md?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/GEMINI.md",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/9e950d89b330a03f43625c1cab3591e473d1e690",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/GEMINI.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/GEMINI.md?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/9e950d89b330a03f43625c1cab3591e473d1e690",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/GEMINI.md"
+    }
+  },
+  {
+    "name": "LICENSE",
+    "path": "LICENSE",
+    "sha": "3bfef5bae9b48c334acf426d5b7f21bc1913aab9",
+    "size": 1419,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/LICENSE?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/LICENSE",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/3bfef5bae9b48c334acf426d5b7f21bc1913aab9",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/LICENSE",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/LICENSE?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/3bfef5bae9b48c334acf426d5b7f21bc1913aab9",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/LICENSE"
+    }
+  },
+  {
+    "name": "Makefile",
+    "path": "Makefile",
+    "sha": "5dbd308a3e23c9375a5cdd3a8b9e039a0ff98be7",
+    "size": 9293,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/Makefile?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/Makefile",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/5dbd308a3e23c9375a5cdd3a8b9e039a0ff98be7",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/Makefile",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/Makefile?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/5dbd308a3e23c9375a5cdd3a8b9e039a0ff98be7",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/Makefile"
+    }
+  },
+  {
+    "name": "README.md",
+    "path": "README.md",
+    "sha": "72fd43925c9422962370b46f1df4e6a7af4a83b9",
+    "size": 28783,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/README.md?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/README.md",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/72fd43925c9422962370b46f1df4e6a7af4a83b9",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/README.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/README.md?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/72fd43925c9422962370b46f1df4e6a7af4a83b9",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/README.md"
+    }
+  },
+  {
+    "name": "ci_cd",
+    "path": "ci_cd",
+    "sha": "bf39101cfbe958c8f4db0aadb8933bb684c90eb0",
+    "size": 0,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/ci_cd?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/ci_cd",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/trees/bf39101cfbe958c8f4db0aadb8933bb684c90eb0",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/ci_cd?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/trees/bf39101cfbe958c8f4db0aadb8933bb684c90eb0",
+      "html": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/ci_cd"
+    }
+  },
+  {
+    "name": "codecov.yaml",
+    "path": "codecov.yaml",
+    "sha": "8609d3143d6f9280aab06b7dc9c2676098708703",
+    "size": 1041,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/codecov.yaml?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/codecov.yaml",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/8609d3143d6f9280aab06b7dc9c2676098708703",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/codecov.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/codecov.yaml?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/8609d3143d6f9280aab06b7dc9c2676098708703",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/codecov.yaml"
+    }
+  },
+  {
+    "name": "cookbook",
+    "path": "cookbook",
+    "sha": "e237966d46cfb11fe8e1650528213f6fa325a248",
+    "size": 0,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/cookbook?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/cookbook",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/trees/e237966d46cfb11fe8e1650528213f6fa325a248",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/cookbook?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/trees/e237966d46cfb11fe8e1650528213f6fa325a248",
+      "html": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/cookbook"
+    }
+  },
+  {
+    "name": "cosign.pub",
+    "path": "cosign.pub",
+    "sha": "2c2a555ab0909e3640a0183bc3042b9045d71b18",
+    "size": 178,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/cosign.pub?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/cosign.pub",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/2c2a555ab0909e3640a0183bc3042b9045d71b18",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/cosign.pub",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/cosign.pub?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/2c2a555ab0909e3640a0183bc3042b9045d71b18",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/cosign.pub"
+    }
+  },
+  {
+    "name": "db_scripts",
+    "path": "db_scripts",
+    "sha": "d9da251e00ecd2e88e91941911e2d169ef7199fa",
+    "size": 0,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/db_scripts?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/db_scripts",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/trees/d9da251e00ecd2e88e91941911e2d169ef7199fa",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/db_scripts?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/trees/d9da251e00ecd2e88e91941911e2d169ef7199fa",
+      "html": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/db_scripts"
+    }
+  },
+  {
+    "name": "deploy",
+    "path": "deploy",
+    "sha": "c58fcbfde782bc34d35385f1dfb3952f6c101c33",
+    "size": 0,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/deploy?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/deploy",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/trees/c58fcbfde782bc34d35385f1dfb3952f6c101c33",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/deploy?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/trees/c58fcbfde782bc34d35385f1dfb3952f6c101c33",
+      "html": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/deploy"
+    }
+  },
+  {
+    "name": "dev_config.yaml",
+    "path": "dev_config.yaml",
+    "sha": "64e3c14703e3f9fb7636a69a0ab3b053f493a826",
+    "size": 296,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/dev_config.yaml?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/dev_config.yaml",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/64e3c14703e3f9fb7636a69a0ab3b053f493a826",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/dev_config.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/dev_config.yaml?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/64e3c14703e3f9fb7636a69a0ab3b053f493a826",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/dev_config.yaml"
+    }
+  },
+  {
+    "name": "dist",
+    "path": "dist",
+    "sha": "0291d5c1feae9c180ce896e553c0222ec0b5eb23",
+    "size": 0,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/dist?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/dist",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/trees/0291d5c1feae9c180ce896e553c0222ec0b5eb23",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/dist?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/trees/0291d5c1feae9c180ce896e553c0222ec0b5eb23",
+      "html": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/dist"
+    }
+  },
+  {
+    "name": "docker-compose.hardened.yml",
+    "path": "docker-compose.hardened.yml",
+    "sha": "31d0c2e9ef2aee6cd11c00b92471b6efa2f476b9",
+    "size": 1420,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/docker-compose.hardened.yml?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/docker-compose.hardened.yml",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/31d0c2e9ef2aee6cd11c00b92471b6efa2f476b9",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/docker-compose.hardened.yml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/docker-compose.hardened.yml?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/31d0c2e9ef2aee6cd11c00b92471b6efa2f476b9",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/docker-compose.hardened.yml"
+    }
+  },
+  {
+    "name": "docker-compose.yml",
+    "path": "docker-compose.yml",
+    "sha": "988860a7877afa6f79ac2cd9bfbc0c31273708a8",
+    "size": 2365,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/docker-compose.yml?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/docker-compose.yml",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/988860a7877afa6f79ac2cd9bfbc0c31273708a8",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/docker-compose.yml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/docker-compose.yml?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/988860a7877afa6f79ac2cd9bfbc0c31273708a8",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/docker-compose.yml"
+    }
+  },
+  {
+    "name": "docker",
+    "path": "docker",
+    "sha": "45aed507de3f12afe9c15e8a61b79a5ea2bc3804",
+    "size": 0,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/docker?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/docker",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/trees/45aed507de3f12afe9c15e8a61b79a5ea2bc3804",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/docker?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/trees/45aed507de3f12afe9c15e8a61b79a5ea2bc3804",
+      "html": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/docker"
+    }
+  },
+  {
+    "name": "docs",
+    "path": "docs",
+    "sha": "3e008edba9e33fd40ea264607515e15b0a222430",
+    "size": 0,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/docs?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/docs",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/trees/3e008edba9e33fd40ea264607515e15b0a222430",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/docs?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/trees/3e008edba9e33fd40ea264607515e15b0a222430",
+      "html": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/docs"
+    }
+  },
+  {
+    "name": "enterprise",
+    "path": "enterprise",
+    "sha": "436828825bd58e454126948e7f6f071f9464026c",
+    "size": 0,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/enterprise?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/enterprise",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/trees/436828825bd58e454126948e7f6f071f9464026c",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/enterprise?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/trees/436828825bd58e454126948e7f6f071f9464026c",
+      "html": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/enterprise"
+    }
+  },
+  {
+    "name": "index.yaml",
+    "path": "index.yaml",
+    "sha": "9b2461c36b5831d65bfcef4ae561be5de3dbf759",
+    "size": 3700,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/index.yaml?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/index.yaml",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/9b2461c36b5831d65bfcef4ae561be5de3dbf759",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/index.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/index.yaml?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/9b2461c36b5831d65bfcef4ae561be5de3dbf759",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/index.yaml"
+    }
+  },
+  {
+    "name": "license_cache.json",
+    "path": "license_cache.json",
+    "sha": "4b09afacaa319f41ecb3760ae89e5efc9baf3d75",
+    "size": 18501,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/license_cache.json?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/license_cache.json",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/4b09afacaa319f41ecb3760ae89e5efc9baf3d75",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/license_cache.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/license_cache.json?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/4b09afacaa319f41ecb3760ae89e5efc9baf3d75",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/license_cache.json"
+    }
+  },
+  {
+    "name": "litellm-js",
+    "path": "litellm-js",
+    "sha": "85c534fa6e5e84783d9d26973bb7d9de79cf58c7",
+    "size": 0,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/litellm-js?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/litellm-js",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/trees/85c534fa6e5e84783d9d26973bb7d9de79cf58c7",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/litellm-js?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/trees/85c534fa6e5e84783d9d26973bb7d9de79cf58c7",
+      "html": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/litellm-js"
+    }
+  },
+  {
+    "name": "litellm-proxy-extras",
+    "path": "litellm-proxy-extras",
+    "sha": "3dfac80f714d6b418f1942b0bfaba862c221d5b2",
+    "size": 0,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/litellm-proxy-extras?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/litellm-proxy-extras",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/trees/3dfac80f714d6b418f1942b0bfaba862c221d5b2",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/litellm-proxy-extras?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/trees/3dfac80f714d6b418f1942b0bfaba862c221d5b2",
+      "html": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/litellm-proxy-extras"
+    }
+  },
+  {
+    "name": "litellm",
+    "path": "litellm",
+    "sha": "25fe20d52568f8bae309e2bfcca57795538aa7e6",
+    "size": 0,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/litellm?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/litellm",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/trees/25fe20d52568f8bae309e2bfcca57795538aa7e6",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/litellm?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/trees/25fe20d52568f8bae309e2bfcca57795538aa7e6",
+      "html": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/litellm"
+    }
+  },
+  {
+    "name": "mcp_servers.json",
+    "path": "mcp_servers.json",
+    "sha": "3dd21c0d65fc03cc38a3a7d2479f975c80881231",
+    "size": 1136,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/mcp_servers.json?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/mcp_servers.json",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/3dd21c0d65fc03cc38a3a7d2479f975c80881231",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/mcp_servers.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/mcp_servers.json?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/3dd21c0d65fc03cc38a3a7d2479f975c80881231",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/mcp_servers.json"
+    }
+  },
+  {
+    "name": "model_prices_and_context_window.json",
+    "path": "model_prices_and_context_window.json",
+    "sha": "92e87c00ef644e26c9030a40bedd9c141f343c90",
+    "size": 1427090,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/model_prices_and_context_window.json?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/model_prices_and_context_window.json",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/92e87c00ef644e26c9030a40bedd9c141f343c90",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/model_prices_and_context_window.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/model_prices_and_context_window.json?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/92e87c00ef644e26c9030a40bedd9c141f343c90",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/model_prices_and_context_window.json"
+    }
+  },
+  {
+    "name": "package-lock.json",
+    "path": "package-lock.json",
+    "sha": "c1c90370ddf9cef492427dc3fbb200f5efb07e68",
+    "size": 191633,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/package-lock.json?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/package-lock.json",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/c1c90370ddf9cef492427dc3fbb200f5efb07e68",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/package-lock.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/package-lock.json?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/c1c90370ddf9cef492427dc3fbb200f5efb07e68",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/package-lock.json"
+    }
+  },
+  {
+    "name": "package.json",
+    "path": "package.json",
+    "sha": "be91e4170abf5d0d4d5e5a8724d1c11d1c13bd3a",
+    "size": 498,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/package.json?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/package.json",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/be91e4170abf5d0d4d5e5a8724d1c11d1c13bd3a",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/package.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/package.json?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/be91e4170abf5d0d4d5e5a8724d1c11d1c13bd3a",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/package.json"
+    }
+  },
+  {
+    "name": "policy_templates.json",
+    "path": "policy_templates.json",
+    "sha": "c9591dd7a4a13d7194e6294c5219ce7a6e51fa23",
+    "size": 96821,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/policy_templates.json?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/policy_templates.json",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/c9591dd7a4a13d7194e6294c5219ce7a6e51fa23",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/policy_templates.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/policy_templates.json?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/c9591dd7a4a13d7194e6294c5219ce7a6e51fa23",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/policy_templates.json"
+    }
+  },
+  {
+    "name": "prometheus.yml",
+    "path": "prometheus.yml",
+    "sha": "5cb4f90d787d04d3e939b02b5a317347c6dcbb5d",
+    "size": 175,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/prometheus.yml?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/prometheus.yml",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/5cb4f90d787d04d3e939b02b5a317347c6dcbb5d",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/prometheus.yml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/prometheus.yml?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/5cb4f90d787d04d3e939b02b5a317347c6dcbb5d",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/prometheus.yml"
+    }
+  },
+  {
+    "name": "provider_endpoints_support.json",
+    "path": "provider_endpoints_support.json",
+    "sha": "1d577213a1bb73558b42ffebe9684a9ace49e722",
+    "size": 86869,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/provider_endpoints_support.json?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/provider_endpoints_support.json",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/1d577213a1bb73558b42ffebe9684a9ace49e722",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/provider_endpoints_support.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/provider_endpoints_support.json?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/1d577213a1bb73558b42ffebe9684a9ace49e722",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/provider_endpoints_support.json"
+    }
+  },
+  {
+    "name": "proxy_server_config.yaml",
+    "path": "proxy_server_config.yaml",
+    "sha": "5d3d810926adee4e7dcad4a87de3927d6dc7c2bf",
+    "size": 8405,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/proxy_server_config.yaml?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/proxy_server_config.yaml",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/5d3d810926adee4e7dcad4a87de3927d6dc7c2bf",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/proxy_server_config.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/proxy_server_config.yaml?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/5d3d810926adee4e7dcad4a87de3927d6dc7c2bf",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/proxy_server_config.yaml"
+    }
+  },
+  {
+    "name": "pyproject.toml",
+    "path": "pyproject.toml",
+    "sha": "d194d4679139fbfd8fec95aa154412f52bdb3bef",
+    "size": 8277,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/pyproject.toml?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/pyproject.toml",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/d194d4679139fbfd8fec95aa154412f52bdb3bef",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/pyproject.toml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/pyproject.toml?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/d194d4679139fbfd8fec95aa154412f52bdb3bef",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/pyproject.toml"
+    }
+  },
+  {
+    "name": "pyrightconfig.json",
+    "path": "pyrightconfig.json",
+    "sha": "f930e44d305c4195c70a6853b3ae708407991f00",
+    "size": 204,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/pyrightconfig.json?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/pyrightconfig.json",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/f930e44d305c4195c70a6853b3ae708407991f00",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/pyrightconfig.json",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/pyrightconfig.json?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/f930e44d305c4195c70a6853b3ae708407991f00",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/pyrightconfig.json"
+    }
+  },
+  {
+    "name": "render.yaml",
+    "path": "render.yaml",
+    "sha": "18ad8ff20785e422878e99dbd2fd6e5cc82deaf7",
+    "size": 256,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/render.yaml?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/render.yaml",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/18ad8ff20785e422878e99dbd2fd6e5cc82deaf7",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/render.yaml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/render.yaml?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/18ad8ff20785e422878e99dbd2fd6e5cc82deaf7",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/render.yaml"
+    }
+  },
+  {
+    "name": "ruff.toml",
+    "path": "ruff.toml",
+    "sha": "6c854b7ad03ff4e91e53a3bb3fa7fb641f8ba7ae",
+    "size": 996,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/ruff.toml?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/ruff.toml",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/6c854b7ad03ff4e91e53a3bb3fa7fb641f8ba7ae",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/ruff.toml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/ruff.toml?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/6c854b7ad03ff4e91e53a3bb3fa7fb641f8ba7ae",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/ruff.toml"
+    }
+  },
+  {
+    "name": "schema.prisma",
+    "path": "schema.prisma",
+    "sha": "84ce99557e34d33b4ee19ff4bd82c4f102c0f86e",
+    "size": 54329,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/schema.prisma?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/schema.prisma",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/84ce99557e34d33b4ee19ff4bd82c4f102c0f86e",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/schema.prisma",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/schema.prisma?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/84ce99557e34d33b4ee19ff4bd82c4f102c0f86e",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/schema.prisma"
+    }
+  },
+  {
+    "name": "scripts",
+    "path": "scripts",
+    "sha": "b13da63decd3e686a8b811e90927dc6ad0c4e653",
+    "size": 0,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/scripts?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/scripts",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/trees/b13da63decd3e686a8b811e90927dc6ad0c4e653",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/scripts?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/trees/b13da63decd3e686a8b811e90927dc6ad0c4e653",
+      "html": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/scripts"
+    }
+  },
+  {
+    "name": "security.md",
+    "path": "security.md",
+    "sha": "c6cd64ddaac336858fcb490d42b2a2f81a316fd2",
+    "size": 3404,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/security.md?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/security.md",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/c6cd64ddaac336858fcb490d42b2a2f81a316fd2",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/security.md",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/security.md?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/c6cd64ddaac336858fcb490d42b2a2f81a316fd2",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/security.md"
+    }
+  },
+  {
+    "name": "taplo.toml",
+    "path": "taplo.toml",
+    "sha": "e5065a696162638e0d91bacd2c27d3ab62fc8a42",
+    "size": 574,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/taplo.toml?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/taplo.toml",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/e5065a696162638e0d91bacd2c27d3ab62fc8a42",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/taplo.toml",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/taplo.toml?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/e5065a696162638e0d91bacd2c27d3ab62fc8a42",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/taplo.toml"
+    }
+  },
+  {
+    "name": "tests",
+    "path": "tests",
+    "sha": "a9cc1f91e0147e56ebfed238064382ecdb1d25d7",
+    "size": 0,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/tests?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/tests",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/trees/a9cc1f91e0147e56ebfed238064382ecdb1d25d7",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/tests?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/trees/a9cc1f91e0147e56ebfed238064382ecdb1d25d7",
+      "html": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/tests"
+    }
+  },
+  {
+    "name": "ui",
+    "path": "ui",
+    "sha": "d2c1a56d1f47aa5c2d3e60964e5966cb48fcd362",
+    "size": 0,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/ui?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/ui",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/trees/d2c1a56d1f47aa5c2d3e60964e5966cb48fcd362",
+    "download_url": null,
+    "type": "dir",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/ui?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/trees/d2c1a56d1f47aa5c2d3e60964e5966cb48fcd362",
+      "html": "https://github.com/BerriAI/litellm/tree/litellm_internal_staging/ui"
+    }
+  },
+  {
+    "name": "uv.lock",
+    "path": "uv.lock",
+    "sha": "f8d78fe8794edc1b68cf679430d31967b140ffa2",
+    "size": 1230035,
+    "url": "https://api.github.com/repos/BerriAI/litellm/contents/uv.lock?ref=litellm_internal_staging",
+    "html_url": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/uv.lock",
+    "git_url": "https://api.github.com/repos/BerriAI/litellm/git/blobs/f8d78fe8794edc1b68cf679430d31967b140ffa2",
+    "download_url": "https://raw.githubusercontent.com/BerriAI/litellm/litellm_internal_staging/uv.lock",
+    "type": "file",
+    "_links": {
+      "self": "https://api.github.com/repos/BerriAI/litellm/contents/uv.lock?ref=litellm_internal_staging",
+      "git": "https://api.github.com/repos/BerriAI/litellm/git/blobs/f8d78fe8794edc1b68cf679430d31967b140ffa2",
+      "html": "https://github.com/BerriAI/litellm/blob/litellm_internal_staging/uv.lock"
+    }
+  }
+]

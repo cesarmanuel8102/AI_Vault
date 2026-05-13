@@ -1,0 +1,19 @@
+{
+  "source_id": "github_microsoft_autogen_20260508",
+  "source_type": "github_repo",
+  "url": "https://github.com/microsoft/autogen",
+  "owner": "microsoft",
+  "repo": "autogen",
+  "ingested_at_utc": "2026-05-08T05:26:24.629483Z",
+  "local_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\microsoft_autogen",
+  "status": "downloaded",
+  "hash": "28f2027071a69089511d8dbc4e77a66a505932d189b792c6c902ffe198b243f8",
+  "files_indexed": 21,
+  "repo_api_url": "https://api.github.com/repos/microsoft/autogen",
+  "readme_download_url": "https://raw.githubusercontent.com/microsoft/autogen/main/README.md",
+  "root_index_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\microsoft_autogen\\root_index.json",
+  "dependency_hints_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\microsoft_autogen\\dependency_hints.json",
+  "repo_tree_index_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\microsoft_autogen\\repo_tree_index.json",
+  "priority_file_catalog_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\microsoft_autogen\\priority_file_catalog.json",
+  "priority_file_snippets_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\microsoft_autogen\\priority_file_snippets.json"
+}

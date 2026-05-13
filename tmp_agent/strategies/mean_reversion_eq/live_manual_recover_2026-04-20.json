@@ -1,0 +1,8 @@
+{
+  "generated_at_utc": "2026-04-20T17:45:04Z",
+  "action": "manual_live_recover",
+  "project_id": 29652652,
+  "deploy_id": "L-6c6d27b66514446c493ab7e7366b052e",
+  "brokerage_id_used": "QuantConnectBrokerage",
+  "status": "Running"
+}

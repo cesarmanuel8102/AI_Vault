@@ -1,0 +1,243 @@
+{
+  "events": [
+    {
+      "type": "mission_set",
+      "at": "2026-02-25T22:20:32Z",
+      "room": "room_demo",
+      "mission": {
+        "objective": "validate one-shot + step",
+        "constraints": []
+      }
+    },
+    {
+      "type": "mission_set",
+      "at": "2026-02-25T22:27:58Z",
+      "room": "room_demo",
+      "mission": {
+        "objective": "validate one-shot + step",
+        "constraints": []
+      }
+    },
+    {
+      "type": "mission_set",
+      "at": "2026-02-25T22:30:16Z",
+      "room": "room_demo",
+      "mission": {
+        "objective": "validate one-shot + step",
+        "constraints": []
+      }
+    },
+    {
+      "type": "mission_set",
+      "at": "2026-02-25T22:32:53Z",
+      "room": "room_demo",
+      "mission": {
+        "objective": "validate one-shot + step",
+        "constraints": []
+      }
+    },
+    {
+      "type": "mission_set",
+      "at": "2026-02-25T22:41:07Z",
+      "room": "room_demo",
+      "mission": {
+        "objective": "validate one-shot + step",
+        "constraints": []
+      }
+    },
+    {
+      "type": "mission_set",
+      "at": "2026-02-25T22:43:41Z",
+      "room": "room_demo",
+      "mission": {
+        "objective": "validate one-shot + step",
+        "constraints": []
+      }
+    },
+    {
+      "type": "mission_set",
+      "at": "2026-02-25T22:47:31Z",
+      "room": "room_demo",
+      "mission": {
+        "objective": "validate one-shot + step",
+        "constraints": []
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T00:12:41Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 1
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T00:30:53Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 2
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T00:36:26Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 2
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T00:40:18Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 3
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T00:47:46Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 3
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T02:25:29Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 1
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T02:26:49Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 1
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T02:28:12Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 1
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T02:35:41Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 3
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T02:57:03Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 3
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T02:59:43Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 3
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T03:02:50Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 3
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T03:05:22Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 3
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T03:08:19Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 3
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T03:11:54Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 3
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T03:15:43Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 3
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T14:43:35Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 3
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T14:49:47Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 3
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T14:58:00Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 3
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T15:01:14Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 3
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T15:05:04Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 3
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-26T15:08:44Z",
+      "room": "room_demo",
+      "plan_meta": {
+        "steps": 3
+      }
+    }
+  ]
+}

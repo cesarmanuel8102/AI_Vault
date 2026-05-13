@@ -1,0 +1,135 @@
+{
+  "episode_id": "ep_lab1_1771943836_36268",
+  "room_id": "lab1",
+  "created_at": 1771943836,
+  "mission": {
+    "room_id": "lab1",
+    "objective": "Crear good.txt en WORKSPACE_ROOT y luego listar el directorio para verificar.",
+    "constraints": [
+      "Todos los writes deben ser dentro de WORKSPACE_ROOT",
+      "No escribir secretos"
+    ],
+    "status": "active",
+    "created_at": 1771943836,
+    "updated_at": 1771943836
+  },
+  "events": [
+    {
+      "ts_epoch": 1771943836,
+      "type": "mission_set",
+      "mission": {
+        "room_id": "lab1",
+        "objective": "Crear good.txt en WORKSPACE_ROOT y luego listar el directorio para verificar.",
+        "constraints": [
+          "Todos los writes deben ser dentro de WORKSPACE_ROOT",
+          "No escribir secretos"
+        ],
+        "status": "active",
+        "created_at": 1771943836,
+        "updated_at": 1771943836
+      }
+    },
+    {
+      "ts_epoch": 1771943856,
+      "type": "plan_guardrail_applied",
+      "guard": {
+        "ok": true,
+        "want_bad": false,
+        "want_good": true,
+        "changes": []
+      }
+    },
+    {
+      "ts_epoch": 1771943856,
+      "type": "plan_created",
+      "plan": {
+        "room_id": "lab1",
+        "created_at": 1771943855,
+        "updated_at": 1771943856,
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Crear good.txt en WORKSPACE_ROOT",
+            "action": "TOOL",
+            "tool": "write_file",
+            "args": {
+              "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+              "content": "Contenido inicial"
+            },
+            "success_criteria": "Archivo good.txt creado en WORKSPACE_ROOT con contenido inicial",
+            "status": "pending",
+            "result": null,
+            "started_at": null,
+            "ended_at": null
+          },
+          {
+            "id": "s2",
+            "title": "Listar el directorio WORKSPACE_ROOT para verificar good.txt",
+            "action": "TOOL",
+            "tool": "list_dir",
+            "args": {
+              "path": "C:\\AI_VAULT\\workspace\\brainlab"
+            },
+            "success_criteria": "good.txt aparece en la lista de archivos del directorio WORKSPACE_ROOT",
+            "status": "pending",
+            "result": null,
+            "started_at": null,
+            "ended_at": null
+          }
+        ]
+      }
+    },
+    {
+      "ts_epoch": 1771943894,
+      "type": "plan_guardrail_applied",
+      "guard": {
+        "ok": true,
+        "want_bad": false,
+        "want_good": true,
+        "changes": []
+      }
+    },
+    {
+      "ts_epoch": 1771943894,
+      "type": "plan_created",
+      "plan": {
+        "room_id": "lab1",
+        "created_at": 1771943894,
+        "updated_at": 1771943894,
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Crear good.txt en WORKSPACE_ROOT",
+            "action": "TOOL",
+            "tool": "write_file",
+            "args": {
+              "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+              "content": "Contenido inicial"
+            },
+            "success_criteria": "good.txt creado en WORKSPACE_ROOT",
+            "status": "pending",
+            "result": null,
+            "started_at": null,
+            "ended_at": null
+          },
+          {
+            "id": "s2",
+            "title": "Listar el directorio para verificar la creación de good.txt",
+            "action": "TOOL",
+            "tool": "list_dir",
+            "args": {
+              "path": "C:\\AI_VAULT\\workspace\\brainlab"
+            },
+            "success_criteria": "good.txt visible en la lista del directorio",
+            "status": "pending",
+            "result": null,
+            "started_at": null,
+            "ended_at": null
+          }
+        ]
+      }
+    }
+  ]
+}

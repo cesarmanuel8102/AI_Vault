@@ -1,0 +1,34 @@
+--- NUL
++++ C:\AI_VAULT\tmp_agent\workspace\receipts\run_room_devloop_run_20260228_090334.json
+@@ -0,0 +1,31 @@
++﻿{
++    "ts_local":  "2026-02-28T09:03:34.6054100-05:00",
++    "base":  "http://127.0.0.1:8010",
++    "room_id":  "room_devloop_run_20260228_090334",
++    "goal":  "RUN_ENDPOINT_SMOKE",
++    "max_iters":  25,
++    "strict":  true,
++    "force_plan":  true,
++    "steps":  [
++                  {
++                      "kind":  "get_plan_pre",
++                      "status":  0,
++                      "body":  null,
++                      "raw":  "Cannot bind parameter because parameter \u0027UseBasicParsing\u0027 is specified more than once. To provide multiple values to parameters that can accept multiple values, use the array syntax. For example, \"-parameter value1,value2,value3\"."
++                  },
++                  {
++                      "kind":  "post_plan",
++                      "status":  0,
++                      "body":  null,
++                      "raw":  "Cannot bind parameter because parameter \u0027UseBasicParsing\u0027 is specified more than once. To provide multiple values to parameters that can accept multiple values, use the array syntax. For example, \"-parameter value1,value2,value3\"."
++                  }
++              ],
++    "final":  {
++                  "ok":  false,
++                  "error":  "PLAN_FAILED",
++                  "detail":  {
++                                 "raw":  "Cannot bind parameter because parameter \u0027UseBasicParsing\u0027 is specified more than once. To provide multiple values to parameters that can accept multiple values, use the array syntax. For example, \"-parameter value1,value2,value3\".",
++                                 "status":  0
++                             }
++              }
++}

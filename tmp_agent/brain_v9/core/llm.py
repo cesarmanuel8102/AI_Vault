@@ -1,0 +1,1083 @@
+"""
+Brain Chat V9 — LLMManager v3
+==============================
+Changes from v2:
+  - Migrated Ollama from /api/generate to /api/chat (structured messages)
+  - Added token estimation (estimate_tokens / estimate_messages_tokens)
+  - Dynamic num_ctx: expands context window when prompt needs it (within VRAM budget)
+  - Removed dead code: deepseek32b (never in any chain), MODEL_PRIORITY unused
+  - _fmt_tools now returns structured text for system prompt injection
+"""
+import asyncio
+import json
+import logging
+import os
+import subprocess
+import time
+from collections import deque
+from pathlib import Path
+from tempfile import NamedTemporaryFile
+from typing import Any, Deque, Dict, List, Optional, Tuple
+
+from aiohttp import ClientSession, ClientTimeout, ClientConnectorError
+
+from brain_v9.config import (
+    API_ENDPOINTS, API_KEYS, LLM_CONFIG, SYSTEM_IDENTITY, OLLAMA_MODEL, OLLAMA_AGENT_MODEL, OPENAI_CODEX_MODEL,
+    CODEX_CLI_MODEL, CODEX_CLI_PATH
+)
+
+log = logging.getLogger("LLMManager")
+
+
+# ── Cadenas de fallback por tipo de tarea ─────────────────────────────────────
+# Estrategia (post-restructure 2026-04): CALIDAD primero usando solo recursos
+# disponibles sin coste extra. Orden: cloud-libre → mejor local → liviano.
+#  - kimi_cloud (Ollama Cloud, calidad alta, sin API key)
+#  - deepseek-r1:14b (mejor local, razonamiento fuerte)
+#  - llama3.1:8b (rapido pero modesto, ultimo recurso)
+# Circuit breaker (2 fallos -> cooldown 180s) absorbe latencia de modelos caidos.
+CHAINS = {
+    # Agente / razonamiento — cloud calidad primero, local 14B segundo
+    "agent":    ["kimi_cloud",   "deepseek14b", "llama8b"],
+    # Frontier — anteriormente Anthropic primero. R3.1: usuario prohibe Anthropic/OpenAI por coste.
+    # Ahora kimi_cloud (Ollama Cloud, calidad alta, sin API key) lidera.
+    # sonnet4 queda al final como fallback de emergencia (solo si kimi+local todos fallan).
+    "agent_frontier": ["kimi_cloud", "deepseek14b", "llama8b", "sonnet4"],
+    # Analisis no operativo: Codex primero para explicaciones tecnicas/causales,
+    # sin meterlo en todo el carril agente general.
+    "analysis_frontier": ["codex", "kimi_cloud", "deepseek14b", "llama8b"],
+    # Codigo — coder especializado, fallback a razonadores generales
+    "code":     ["codex", "coder14b",     "deepseek14b", "kimi_cloud",   "llama8b"],
+    # Conversacion — calidad primero
+    "chat":     ["kimi_cloud",   "codex", "deepseek14b", "llama8b"],
+    # Sin internet — solo locales
+    "offline":  ["deepseek14b",  "llama8b"],
+    # Por nombre explicito (legacy "ollama") — locales primero, cloud fallback
+    "ollama":   ["deepseek14b",  "llama8b",     "kimi_cloud"],
+    "codex":    ["codex", "kimi_cloud", "deepseek14b", "llama8b"],
+    "agent_legacy": ["kimi_cloud", "deepseek14b", "llama8b"],
+    "agent_frontier_legacy": ["kimi_cloud", "deepseek14b", "llama8b", "sonnet4"],
+    "analysis_frontier_legacy": ["kimi_cloud", "deepseek14b", "llama8b"],
+    "code_legacy": ["coder14b", "deepseek14b", "kimi_cloud", "llama8b"],
+    "chat_legacy": ["kimi_cloud", "deepseek14b", "llama8b"],
+    "gpt4":     ["gpt4",         "kimi_cloud",  "llama8b"],
+    "claude":   ["claude",       "kimi_cloud",  "llama8b"],
+}
+
+# ── Definicion de modelos ──────────────────────────────────────────────────────
+MODELS = {
+    "deepseek14b": {
+        "type":    "ollama",
+        "model":   OLLAMA_AGENT_MODEL,
+        "timeout": 90,   # ampliado: queries largas y cold-starts locales pesados
+        "local":   True,
+    },
+    "coder14b": {
+        "type":    "ollama",
+        "model":   "qwen2.5-coder:14b",
+        "timeout": 90,
+        "local":   True,
+    },
+    "llama8b": {
+        "type":    "ollama",
+        "model":   OLLAMA_MODEL,
+        "timeout": 60,   # ampliado: consultas generales con contexto grande
+        "local":   True,
+    },
+    "kimi_cloud": {
+        "type":    "ollama",
+        "model":   "kimi-k2.5:cloud",
+        "timeout": 75,   # ampliado: latencia de red + colas cloud
+        "local":   False,
+    },
+    "gpt4": {
+        "type":    "openai",
+        "timeout": 90,
+        "local":   False,
+    },
+    "codex": {
+        "type":    "codex_cli",
+        "model":   CODEX_CLI_MODEL,
+        "timeout": 120,
+        "local":   False,
+    },
+    "codex_api": {
+        "type":    "openai_responses",
+        "model":   OPENAI_CODEX_MODEL,
+        "timeout": 120,
+        "local":   False,
+    },
+    "claude": {
+        "type":    "anthropic",
+        "model":   "claude-sonnet-4-20250514",
+        "timeout": 120,
+        "local":   False,
+    },
+    "sonnet4": {
+        "type":    "anthropic",
+        "model":   "claude-sonnet-4-20250514",
+        "timeout": 120,
+        "local":   False,
+    },
+}
+
+
+class LLMManager:
+
+    _METRICS_PATH = Path("C:/AI_VAULT/tmp_agent/state/brain_metrics/llm_metrics_latest.json")
+    _PERSIST_EVERY = 3  # write to disk every N queries
+
+    # Circuit breaker: si un modelo tiene >=N fallos consecutivos en una
+    # ventana corta, lo saltamos durante COOLDOWN segundos. Evita que
+    # llama8b gastando 30s timeout en cada chat cuando esta caido.
+    _CB_FAIL_THRESHOLD = 2
+    _CB_COOLDOWN_S = 60  # Reduced from 180s for faster recovery
+    _CB_PERMANENT_COOLDOWN_S = 1800
+
+    # ── R8.1: per-model latency buffers (class-level → shared across sessions)
+    # We keep a rolling window of the last N successful latencies per model
+    # so the /brain/validators endpoint can expose p50/p95/p99 without an
+    # extra service. Bounded deque keeps memory tiny (~200 floats per model).
+    _LATENCY_WINDOW = 200
+    _GLOBAL_LATENCY_BUFFERS: Dict[str, Deque[float]] = {}
+
+    # ── R8.2: per-chain health window (class-level → shared across sessions).
+    # Each entry is (success_bool, timestamp). A chain is considered degraded
+    # when failure_rate over the last _CHAIN_HEALTH_WINDOW chats exceeds the
+    # threshold. While degraded, pre-flight ctx routing is forced ON for
+    # every query (not just est_input>4500) for the cooldown period.
+    _CHAIN_HEALTH_WINDOW = 100
+    _CHAIN_FAIL_RATE_THRESHOLD = 0.05  # 5%
+    _CHAIN_COOLDOWN_S = 600  # 10 min
+    _GLOBAL_CHAIN_HEALTH: Dict[str, Deque[Tuple[bool, float]]] = {}
+    _GLOBAL_CHAIN_COOLDOWN_UNTIL: Dict[str, float] = {}
+
+    # ── R9.8: per-model circuit breaker promoted to class-level so it is
+    # shared across LLMManager instances (one per session). Otherwise the CB
+    # would reset every time a new session is created, neutering the breaker.
+    _GLOBAL_CB_STATE: Dict[str, Dict] = {}
+
+    def __init__(self):
+        self.session: Optional[ClientSession] = None
+        self._internet: Optional[bool] = None   # cache de conectividad
+        self._internet_checked_at: float = 0
+        self.metrics = {
+            "total":      0,
+            "success":    0,
+            "failed":     0,
+            "fallbacks":  0,
+            "avg_latency": 0.0,
+        }
+        # Per-model circuit breaker state — alias to the class-level dict so
+        # CB decisions persist across the multiple LLMManager instances created
+        # by sessions (R9.8).
+        self._cb_state: Dict[str, Dict] = type(self)._GLOBAL_CB_STATE
+        self._load_metrics()
+
+    def _cb_is_open(self, model_key: str) -> bool:
+        st = self._cb_state.get(model_key)
+        if not st:
+            return False
+        return st.get("open_until", 0) > time.time()
+
+    def _cb_record_failure(self, model_key: str):
+        st = self._cb_state.setdefault(model_key, {"fails": 0, "open_until": 0})
+        st["fails"] += 1
+        if st["fails"] >= self._CB_FAIL_THRESHOLD:
+            st["open_until"] = time.time() + self._CB_COOLDOWN_S
+            log.warning("Circuit breaker OPEN para %s (%d fallos) por %ds",
+                        model_key, st["fails"], self._CB_COOLDOWN_S)
+            st["fails"] = 0  # reset counter
+
+    def _cb_record_success(self, model_key: str):
+        if model_key in self._cb_state:
+            self._cb_state[model_key] = {"fails": 0, "open_until": 0}
+
+    def _cb_open_immediately(self, model_key: str, cooldown_s: Optional[int] = None):
+        wait = int(cooldown_s or self._CB_PERMANENT_COOLDOWN_S)
+        self._cb_state[model_key] = {"fails": 0, "open_until": time.time() + wait}
+        log.warning("Circuit breaker OPEN inmediato para %s por %ds", model_key, wait)
+
+    # ── R8.1: Latency observability ────────────────────────────────────────
+    @classmethod
+    def _record_latency(cls, model_key: str, latency: float) -> None:
+        """Append a successful query latency to the per-model rolling window."""
+        buf = cls._GLOBAL_LATENCY_BUFFERS.get(model_key)
+        if buf is None:
+            buf = deque(maxlen=cls._LATENCY_WINDOW)
+            cls._GLOBAL_LATENCY_BUFFERS[model_key] = buf
+        buf.append(float(latency))
+
+    @classmethod
+    def latency_percentiles(cls) -> Dict[str, Dict[str, float]]:
+        """Return {model_key: {count, p50, p95, p99, avg, min, max}} from buffers."""
+        out: Dict[str, Dict[str, float]] = {}
+        for mk, buf in cls._GLOBAL_LATENCY_BUFFERS.items():
+            if not buf:
+                continue
+            arr = sorted(buf)
+            n = len(arr)
+            def _pct(p: float) -> float:
+                if n == 1:
+                    return arr[0]
+                # nearest-rank, clamped
+                idx = min(n - 1, max(0, int(round(p * (n - 1)))))
+                return arr[idx]
+            out[mk] = {
+                "count": n,
+                "p50":   round(_pct(0.50), 3),
+                "p95":   round(_pct(0.95), 3),
+                "p99":   round(_pct(0.99), 3),
+                "avg":   round(sum(arr) / n, 3),
+                "min":   round(arr[0], 3),
+                "max":   round(arr[-1], 3),
+            }
+        return out
+
+    # ── R8.2: Chain health observability ───────────────────────────────────
+    @classmethod
+    def _record_chain_outcome(cls, chain_key: str, success: bool) -> None:
+        """Append (success, ts) for a given chain priority so we can compute
+        rolling failure rate and trigger pre-flight reorder during cooldown."""
+        buf = cls._GLOBAL_CHAIN_HEALTH.get(chain_key)
+        if buf is None:
+            buf = deque(maxlen=cls._CHAIN_HEALTH_WINDOW)
+            cls._GLOBAL_CHAIN_HEALTH[chain_key] = buf
+        buf.append((bool(success), time.time()))
+        # Evaluate degradation
+        n = len(buf)
+        if n >= 20:  # need a minimum sample size
+            fails = sum(1 for ok, _ in buf if not ok)
+            rate = fails / n
+            if rate > cls._CHAIN_FAIL_RATE_THRESHOLD:
+                until = time.time() + cls._CHAIN_COOLDOWN_S
+                prev = cls._GLOBAL_CHAIN_COOLDOWN_UNTIL.get(chain_key, 0)
+                if until > prev:
+                    cls._GLOBAL_CHAIN_COOLDOWN_UNTIL[chain_key] = until
+                    log.warning(
+                        "Chain '%s' degraded: failure_rate=%.1f%% (%d/%d) — "
+                        "forcing pre-flight reorder for %ds",
+                        chain_key, rate * 100, fails, n, cls._CHAIN_COOLDOWN_S
+                    )
+                    try:
+                        from brain_v9.core import validator_metrics as _vm
+                        _vm.record("chain_degraded_cooldown")
+                    except Exception:
+                        pass
+
+    @classmethod
+    def _chain_in_cooldown(cls, chain_key: str) -> bool:
+        return cls._GLOBAL_CHAIN_COOLDOWN_UNTIL.get(chain_key, 0) > time.time()
+
+    @classmethod
+    def chain_health_snapshot(cls) -> Dict[str, Dict]:
+        """Return per-chain {count, fails, fail_rate, in_cooldown, cooldown_remaining_s}."""
+        now = time.time()
+        out: Dict[str, Dict] = {}
+        for ck, buf in cls._GLOBAL_CHAIN_HEALTH.items():
+            n = len(buf)
+            fails = sum(1 for ok, _ in buf if not ok)
+            cd_until = cls._GLOBAL_CHAIN_COOLDOWN_UNTIL.get(ck, 0)
+            out[ck] = {
+                "count": n,
+                "fails": fails,
+                "fail_rate": round(fails / n, 4) if n else 0.0,
+                "in_cooldown": cd_until > now,
+                "cooldown_remaining_s": max(0, int(cd_until - now)),
+            }
+        return out
+
+    # ── Sesion HTTP lazy ───────────────────────────────────────────────────────
+    async def _get_session(self, timeout: int = 60) -> ClientSession:
+        if self.session is None or self.session.closed:
+            self.session = ClientSession(
+                timeout=ClientTimeout(total=timeout)
+            )
+        return self.session
+
+    # ── Deteccion de internet (cacheada 60s) ────────────────────────────────────
+    async def _has_internet(self) -> bool:
+        now = time.time()
+        if now - self._internet_checked_at < 60 and self._internet is not None:
+            return self._internet
+        try:
+            s = await self._get_session(5)
+            async with s.get(
+                "http://ollama.com", allow_redirects=False
+            ) as r:
+                self._internet = r.status < 500
+        except Exception as _inet_err:
+            log.debug("Internet check failed: %s", _inet_err)
+            self._internet = False
+        self._internet_checked_at = now
+        log.debug("Conectividad: %s", "online" if self._internet else "offline")
+        return self._internet
+
+    # ── API publica ────────────────────────────────────────────────────────────
+    async def query(
+        self,
+        messages:       List[Dict],
+        tools_context:  Optional[Dict] = None,
+        model_priority: str = "ollama",
+        max_time:       Optional[float] = None,
+    ) -> Dict:
+        """
+        Consulta al LLM usando la cadena de fallback adecuada.
+        Nunca falla mientras Ollama este corriendo localmente.
+
+        Args:
+            max_time: Optional time budget in seconds. If set, the chain
+                      will skip models whose timeout exceeds the remaining
+                      budget, preventing the query from blowing past the
+                      caller's deadline (e.g. AgentLoop wall-clock).
+        """
+        self.metrics["total"] += 1
+        start = time.time()
+
+        if model_priority in MODELS:
+            chain = [model_priority]
+        else:
+            chain = CHAINS.get(model_priority, CHAINS["ollama"])
+
+        # R7.3: Pre-flight ctx routing. If the prompt is large, models with
+        # tight ctx caps (e.g. kimi_cloud max_num_ctx=6144) will skip via
+        # R6.1 anyway — wasting a chain slot. Reorder so larger-ctx ollama
+        # models come first when est_input > 4500 tokens.
+        # R8.2: While the chain is in cooldown (degraded by failure rate),
+        # force the same reorder unconditionally (safer fallback order).
+        try:
+            _est = self.estimate_messages_tokens([
+                {"role": m.get("role", "user"),
+                 "content": m.get("content", "")}
+                for m in messages if m.get("role") in ("user", "assistant", "system")
+            ])
+            _force_reorder = self._chain_in_cooldown(model_priority)
+            if (_est > 4500 or _force_reorder) and len(chain) > 1:
+                # Build a sortable chain: ollama models sorted by max_num_ctx desc,
+                # then non-ollama in original order. Only reorder if it changes.
+                pinned_prefix: List[str] = []
+                mutable_chain = list(chain)
+                if mutable_chain and MODELS.get(mutable_chain[0], {}).get("type") == "codex_cli":
+                    pinned_prefix = [mutable_chain.pop(0)]
+                def _ctx_score(mk: str) -> int:
+                    c = MODELS.get(mk, {})
+                    if c.get("type") != "ollama":
+                        return -1  # non-ollama: keep relative order via stable sort
+                    om = c.get("model", "")
+                    lim = self._OLLAMA_LIMITS.get(om, self._OLLAMA_LIMITS_DEFAULT)
+                    return lim.get("max_num_ctx", 4096)
+                ollamas = [m for m in mutable_chain if MODELS.get(m, {}).get("type") == "ollama"]
+                others = [m for m in mutable_chain if MODELS.get(m, {}).get("type") != "ollama"]
+                ollamas_sorted = sorted(ollamas, key=_ctx_score, reverse=True)
+                new_chain = pinned_prefix + ollamas_sorted + others
+                if new_chain != list(chain):
+                    log.info(
+                        "Pre-flight ctx routing: prompt~%d tok, reordering "
+                        "%s -> %s%s", _est, list(chain), new_chain,
+                        " [chain-cooldown]" if _force_reorder else ""
+                    )
+                    chain = new_chain
+                    try:
+                        from brain_v9.core import validator_metrics as _vm
+                        _vm.record("preflight_ctx_reroute")
+                    except Exception:
+                        pass
+        except Exception as _e:
+            log.debug("Pre-flight ctx routing failed (ignored): %s", _e)
+
+        has_net = await self._has_internet()
+
+        last_error = None
+        for idx, model_key in enumerate(chain):
+            cfg = MODELS.get(model_key)
+            if cfg is None:
+                continue
+
+            # Saltar modelos cloud si no hay internet
+            if not cfg["local"] and not has_net:
+                log.debug("Sin internet — saltando %s", model_key)
+                continue
+            if cfg["type"] in {"openai", "openai_responses"} and not API_KEYS.get("openai"):
+                log.debug("Sin OPENAI_API_KEY — saltando %s", model_key)
+                last_error = f"{model_key}: OPENAI_API_KEY no configurada"
+                continue
+
+            # Circuit breaker: saltar modelos en cooldown
+            if self._cb_is_open(model_key):
+                log.info("CB-skip %s (cooldown activo)", model_key)
+                last_error = f"{model_key}: circuit_open"
+                continue
+
+            # P-OP58: Budget-aware chain — skip models that can't finish
+            # within the remaining time budget.
+            if max_time is not None:
+                elapsed = time.time() - start
+                remaining = max_time - elapsed
+                model_timeout = cfg["timeout"]
+                # Need at least model_timeout + 2s margin for the model to
+                # actually complete (not just start).
+                if remaining < model_timeout + 2:
+                    log.info(
+                        "Budget-skip %s: remaining=%.1fs < needed=%ds",
+                        model_key, remaining, model_timeout + 2,
+                    )
+                    last_error = f"{model_key}: skipped (budget exhausted, {remaining:.0f}s left)"
+                    continue
+
+            # R6.1: Skip ollama models when their context budget is too tight
+            # to produce a useful response. We saw kimi_cloud get capped to 256
+            # tokens of num_predict and return EMPTY responses. Skip and let
+            # the next model (with bigger ctx) handle it.
+            if cfg.get("type") == "ollama":
+                ollama_model = cfg.get("model", "")
+                limits = self._OLLAMA_LIMITS.get(
+                    ollama_model, self._OLLAMA_LIMITS_DEFAULT
+                )
+                # Build the same chat_messages shape _ollama() uses for est.
+                est_input = self.estimate_messages_tokens([
+                    {"role": m.get("role", "user"),
+                     "content": m.get("content", "")}
+                    for m in messages
+                    if m.get("role") in ("user", "assistant", "system")
+                ])
+                room_for_predict = limits["max_num_ctx"] - est_input - 128
+                MIN_USEFUL_PREDICT = 512
+                if room_for_predict < MIN_USEFUL_PREDICT:
+                    try:
+                        from brain_v9.core import validator_metrics as _vm
+                        _vm.record("ctx_too_tight_skip")
+                    except Exception:
+                        pass
+                    log.info(
+                        "Ctx-skip %s: prompt ~%d tokens leaves only %d for predict "
+                        "(< %d min); skipping to next model",
+                        model_key, est_input, room_for_predict, MIN_USEFUL_PREDICT,
+                    )
+                    last_error = (
+                        f"{model_key}: ctx_too_tight "
+                        f"(prompt~{est_input}, room={room_for_predict})"
+                    )
+                    continue
+
+            try:
+                if idx > 0:
+                    self.metrics["fallbacks"] += 1
+                    log.info("Fallback a %s (%s)", model_key, cfg.get("model",""))
+
+                # If we have a budget, cap the model timeout to the remaining time
+                effective_timeout = cfg["timeout"]
+                if max_time is not None:
+                    remaining = max_time - (time.time() - start)
+                    effective_timeout = min(cfg["timeout"], max(5, remaining - 1))
+
+                result = await self._query_model(
+                    {**cfg, "timeout": effective_timeout}, messages, tools_context
+                )
+                latency = time.time() - start
+                self._update_latency(latency)
+                self.metrics["success"] += 1
+                self._cb_record_success(model_key)
+                # R8.1 + R8.2: per-model latency buffer + chain success
+                self._record_latency(model_key, latency)
+                self._record_chain_outcome(model_priority, True)
+                if self.metrics["total"] % self._PERSIST_EVERY == 0:
+                    self._persist_metrics()
+                result["model_key"] = model_key
+                result["latency"]   = latency
+                result["fallback"]  = idx > 0
+                log.info("LLM query OK: model_key=%s latency=%.2fs fallback=%s",
+                         model_key, latency, idx > 0)
+                return result
+
+            except asyncio.TimeoutError:
+                last_error = f"{model_key}: timeout ({cfg['timeout']}s)"
+                log.warning("Timeout en %s", model_key)
+                self._cb_record_failure(model_key)
+            except ClientConnectorError:
+                last_error = f"{model_key}: no se puede conectar"
+                log.warning("Sin conexion a %s", model_key)
+                self._cb_record_failure(model_key)
+            except Exception as e:
+                last_error = f"{model_key}: {e}"
+                log.warning("Error en %s: %s", model_key, e)
+                err_l = str(e).lower()
+                if any(token in err_l for token in ("insufficient_quota", "billing", "429")):
+                    self._cb_open_immediately(model_key)
+                else:
+                    self._cb_record_failure(model_key)
+
+            # Pequena pausa antes del siguiente modelo
+            if idx < len(chain) - 1:
+                await asyncio.sleep(0.5)
+
+        self.metrics["failed"] += 1
+        self._persist_metrics()   # always persist on failure
+        # R8.2: register chain-level failure for cooldown tracking
+        self._record_chain_outcome(model_priority, False)
+        return {
+            "success": False,
+            "error":   last_error or "Todos los modelos fallaron",
+            "content": None,
+            "response": None,
+            # R7.1: surface the full attempted chain so the caller can give
+            # the user an honest, actionable message instead of "(sin respuesta)".
+            "models_tried": list(chain),
+        }
+
+    # ── Dispatcher de backends ────────────────────────────────────────────────
+    async def _query_model(
+        self, cfg: Dict, messages: List[Dict],
+        tools_context: Optional[Dict]
+    ) -> Dict:
+        t = cfg["type"]
+        if t == "ollama":
+            content = await self._ollama(
+                cfg["model"], cfg["timeout"], messages, tools_context
+            )
+        elif t == "openai":
+            content = await self._openai(messages, tools_context)
+        elif t == "openai_responses":
+            content = await self._openai_responses(
+                messages,
+                tools_context,
+                model=cfg.get("model", OPENAI_CODEX_MODEL),
+                timeout=cfg.get("timeout", 120),
+            )
+        elif t == "codex_cli":
+            content = await self._codex_cli(
+                messages,
+                tools_context,
+                model=cfg.get("model", CODEX_CLI_MODEL),
+                timeout=cfg.get("timeout", 120),
+            )
+        elif t == "anthropic":
+            content = await self._anthropic(
+                messages, tools_context,
+                model=cfg.get("model", "claude-sonnet-4-20250514"),
+                timeout=cfg.get("timeout", 60),
+            )
+        else:
+            raise ValueError(f"Tipo desconocido: {t}")
+
+        return {
+            "success":  True,
+            "content":  content,
+            "response": content,
+            "model":    cfg.get("model", t),
+            "model_used": cfg.get("model", t),
+        }
+
+    @staticmethod
+    def _build_codex_cli_prompt(messages: List[Dict], tools_context: Optional[Dict]) -> str:
+        system = SYSTEM_IDENTITY
+        if tools_context:
+            parts = ["HERRAMIENTAS DISPONIBLES:"]
+            for tool in tools_context.get("available_tools", []):
+                if not isinstance(tool, dict):
+                    continue
+                name = tool.get("name", "?")
+                desc = tool.get("description", "")
+                parts.append(f"- {name}: {desc}")
+            system += "\n\n" + "\n".join(parts)
+
+        convo_parts = ["Responde solo con la respuesta final del asistente. No incluyas razonamiento oculto ni metadatos.", "", "<system>", system, "</system>", "", "<conversation>"]
+        for m in messages:
+            role = str(m.get("role") or "user").lower()
+            if role not in {"user", "assistant", "system"}:
+                continue
+            content = str(m.get("content") or "").strip()
+            if not content:
+                continue
+            convo_parts.append(f"[{role}]")
+            convo_parts.append(content)
+        convo_parts.extend(["</conversation>", "", "Entrega solo la respuesta final al ultimo mensaje del usuario."])
+        return "\n".join(convo_parts)
+
+    @staticmethod
+    def _build_codex_cli_command(output_path: str, model: Optional[str] = None) -> List[str]:
+        is_ps1 = str(CODEX_CLI_PATH).lower().endswith(".ps1")
+        base = (
+            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", CODEX_CLI_PATH]
+            if is_ps1 else
+            [CODEX_CLI_PATH]
+        )
+        cmd = base + [
+            "exec",
+            "--skip-git-repo-check",
+            "--ephemeral",
+            "--color",
+            "never",
+            "--output-last-message",
+            output_path,
+            "-C",
+            str(Path.cwd()),
+            "-s",
+            "danger-full-access",
+        ]
+        if model:
+            cmd.extend(["-m", model])
+        if not is_ps1:
+            cmd.append("-")
+        return cmd
+
+    async def _codex_cli(
+        self,
+        messages: List[Dict],
+        tools_context: Optional[Dict],
+        model: str = CODEX_CLI_MODEL,
+        timeout: int = 120,
+    ) -> str:
+        prompt = self._build_codex_cli_prompt(messages, tools_context)
+        temp = NamedTemporaryFile(prefix="brain_codex_", suffix=".txt", delete=False)
+        output_path = temp.name
+        temp.close()
+        cmd = self._build_codex_cli_command(output_path, model=model)
+        try:
+            if str(CODEX_CLI_PATH).lower().endswith(".ps1"):
+                proc = await asyncio.create_subprocess_shell(
+                    subprocess.list2cmdline(cmd),
+                    cwd=str(Path.cwd()),
+                    stdin=asyncio.subprocess.PIPE,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+            else:
+                proc = await asyncio.create_subprocess_exec(
+                    *cmd,
+                    cwd=str(Path.cwd()),
+                    stdin=asyncio.subprocess.PIPE,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                )
+            try:
+                stdout_b, stderr_b = await asyncio.wait_for(
+                    proc.communicate(input=prompt.encode("utf-8")),
+                    timeout=timeout,
+                )
+            except asyncio.TimeoutError:
+                proc.kill()
+                await proc.communicate()
+                raise
+            stdout = stdout_b.decode("utf-8", errors="replace")
+            stderr = stderr_b.decode("utf-8", errors="replace")
+            if proc.returncode != 0:
+                raise RuntimeError(f"codex exec exit={proc.returncode}: {(stderr or stdout).strip()[:1000]}")
+            output_file = Path(output_path)
+            if output_file.exists():
+                text = output_file.read_text(encoding="utf-8", errors="replace").strip()
+                if text:
+                    return text
+            # Fallback if output-last-message was not populated.
+            for blob in (stdout, stderr):
+                lines = [ln.strip() for ln in blob.splitlines() if ln.strip()]
+                if lines:
+                    tail = lines[-1]
+                    if tail and not tail.lower().startswith(("tokens used", "reading additional input")):
+                        return tail
+            raise RuntimeError("codex exec no produjo mensaje final util")
+        finally:
+            try:
+                os.unlink(output_path)
+            except Exception:
+                pass
+
+    # ── VRAM-aware limits per model size (RTX 4050 6GB) ─────────────────────
+    # num_predict = max output tokens, num_ctx = total context window
+    # max_num_ctx = absolute ceiling for dynamic expansion (VRAM constrained)
+    _OLLAMA_LIMITS = {
+        "llama3.1:8b":        {"num_predict": 4096, "num_ctx": 8192,  "max_num_ctx": 16384},
+        "deepseek-r1:14b":    {"num_predict": 2048, "num_ctx": 6144,  "max_num_ctx": 8192},
+        "qwen2.5-coder:14b":  {"num_predict": 2048, "num_ctx": 6144,  "max_num_ctx": 8192},
+    }
+    _OLLAMA_LIMITS_DEFAULT = {"num_predict": 2048, "num_ctx": 4096, "max_num_ctx": 6144}
+
+    # ── Token Estimation ──────────────────────────────────────────────────────
+    # ~3.5 chars per token for English, ~2.5 for Spanish/mixed.
+    # Using 3.0 as a safe middle ground. This is intentionally conservative
+    # (overestimates token count) to avoid silent context overflow.
+    CHARS_PER_TOKEN = 3.0
+
+    @classmethod
+    def estimate_tokens(cls, text: str) -> int:
+        """Estimate token count for a string. Conservative (overestimates)."""
+        if not text:
+            return 0
+        return int(len(text) / cls.CHARS_PER_TOKEN) + 1
+
+    @classmethod
+    def estimate_messages_tokens(cls, messages: List[Dict]) -> int:
+        """Estimate total tokens for a list of chat messages."""
+        total = 0
+        for m in messages:
+            # Each message has ~4 tokens overhead (role, separators)
+            total += 4
+            total += cls.estimate_tokens(m.get("content", ""))
+        return total
+
+    @classmethod
+    def _cap_num_predict_for_prompt(
+        cls,
+        messages: List[Dict],
+        estimated_input: int,
+        default_num_predict: int,
+    ) -> int:
+        """Reduce num_predict for short prompts so trivial chat/status turns do
+        not pay the latency cost of a huge generation budget.
+        """
+        last_user = ""
+        for item in reversed(messages):
+            if item.get("role") == "user":
+                last_user = item.get("content", "") or ""
+                break
+        last_user_tokens = cls.estimate_tokens(last_user)
+
+        if last_user_tokens <= 24 and estimated_input <= 800:
+            return min(default_num_predict, 256)
+        if last_user_tokens <= 80 and estimated_input <= 1600:
+            return min(default_num_predict, 512)
+        if last_user_tokens <= 180 and estimated_input <= 2600:
+            return min(default_num_predict, 768)
+        return default_num_predict
+
+    def _prepare_chat_messages(
+        self,
+        messages: List[Dict],
+        tools_context: Optional[Dict],
+    ) -> List[Dict]:
+        """Build the final chat message list without duplicating the system
+        prompt when the caller already provided one.
+        """
+        tool_suffix = self._fmt_tools(tools_context)
+        chat_messages: List[Dict] = []
+        system_seen = False
+
+        for m in messages:
+            role = m.get("role")
+            content = m.get("content", "")
+            if role not in ("user", "assistant", "system"):
+                continue
+            if role == "system":
+                if system_seen:
+                    continue
+                merged = (content or SYSTEM_IDENTITY) + tool_suffix
+                chat_messages.append({"role": "system", "content": merged})
+                system_seen = True
+                continue
+            chat_messages.append({"role": role, "content": content})
+
+        if not system_seen:
+            chat_messages.insert(0, {"role": "system", "content": SYSTEM_IDENTITY + tool_suffix})
+        return chat_messages
+
+    # ── Ollama (/api/chat — structured messages) ─────────────────────────────
+    async def _ollama(
+        self, model: str, timeout: int,
+        messages: List[Dict], tools_context: Optional[Dict]
+    ) -> str:
+        """Call Ollama via /api/chat with structured messages and dynamic num_ctx."""
+
+        # Build structured messages array without duplicating the system prompt.
+        chat_messages = self._prepare_chat_messages(messages, tools_context)
+
+        # Token estimation for dynamic num_ctx
+        limits = self._OLLAMA_LIMITS.get(model, self._OLLAMA_LIMITS_DEFAULT)
+        estimated_input = self.estimate_messages_tokens(chat_messages)
+        num_predict = limits["num_predict"]
+        capped_predict = self._cap_num_predict_for_prompt(
+            chat_messages, estimated_input, num_predict
+        )
+        if capped_predict != num_predict:
+            log.info(
+                "Prompt-aware num_predict cap: %d -> %d for %s (prompt ~%d tokens)",
+                num_predict, capped_predict, model, estimated_input
+            )
+            num_predict = capped_predict
+
+        # R4.3: Cap num_predict dynamically when prompt is large to avoid
+        # context overflow (esp. on kimi_cloud max_num_ctx=6144). Reserve at
+        # least `min_predict` tokens for the response.
+        max_ctx = limits["max_num_ctx"]
+        max_allowed_predict = max(256, max_ctx - estimated_input - 128)
+        if num_predict > max_allowed_predict:
+            try:
+                from brain_v9.core import validator_metrics as _vm
+                _vm.record("num_predict_capped")
+            except Exception:
+                pass
+            log.info(
+                "num_predict capped: %d -> %d for %s (prompt ~%d tokens, max_ctx=%d)",
+                num_predict, max_allowed_predict, model, estimated_input, max_ctx
+            )
+            num_predict = max_allowed_predict
+
+        needed_ctx = estimated_input + num_predict + 128  # 128 token safety margin
+
+        # Dynamic num_ctx: expand if needed, but never exceed VRAM ceiling
+        base_ctx = limits["num_ctx"]
+        num_ctx = min(max(base_ctx, needed_ctx), max_ctx)
+
+        if needed_ctx > max_ctx:
+            log.warning(
+                "Prompt (~%d tokens) + num_predict (%d) exceeds max_num_ctx (%d) for %s. "
+                "Context will be truncated by Ollama.",
+                estimated_input, num_predict, max_ctx, model
+            )
+
+        if num_ctx > base_ctx:
+            log.info(
+                "Dynamic num_ctx: %d -> %d for %s (prompt ~%d tokens)",
+                base_ctx, num_ctx, model, estimated_input
+            )
+
+        s = await self._get_session(timeout)
+        async with s.post(
+            API_ENDPOINTS["ollama"],
+            json={
+                "model":    model,
+                "messages": chat_messages,
+                "stream":   False,
+                "keep_alive": "15m",
+                "options": {
+                    "temperature": LLM_CONFIG["temperature"],
+                    "num_predict": num_predict,
+                    "num_ctx":     num_ctx,
+                },
+            },
+            timeout=ClientTimeout(total=timeout),
+        ) as r:
+            if r.status != 200:
+                raise RuntimeError(f"Ollama HTTP {r.status}")
+            # R6.3: force UTF-8 decode of raw bytes to avoid mojibake when
+            # upstream Content-Type charset is missing/wrong (aiohttp may
+            # otherwise fall back to latin-1, mangling Spanish accents).
+            data = json.loads(await r.read())
+            # /api/chat returns {"message": {"role": "assistant", "content": "..."}}
+            msg = data.get("message", {})
+            resp = msg.get("content", "")
+            if not resp:
+                raise RuntimeError("Ollama devolvio respuesta vacia")
+            return resp
+
+    # ── OpenAI ────────────────────────────────────────────────────────────────
+    async def _openai(
+        self, messages: List[Dict], tools_context: Optional[Dict]
+    ) -> str:
+        key = API_KEYS.get("openai", "")
+        if not key:
+            raise ValueError("OPENAI_API_KEY no configurada")
+        system = SYSTEM_IDENTITY + self._fmt_tools(tools_context)
+        msgs   = [{"role":"system","content":system}] + [
+            m for m in messages if m.get("role") in ("user","assistant")
+        ]
+        s = await self._get_session(30)
+        async with s.post(
+            API_ENDPOINTS["gpt4"],
+            headers={"Authorization":f"Bearer {key}",
+                     "Content-Type":"application/json"},
+            json={"model":"gpt-4","messages":msgs,
+                  "temperature":LLM_CONFIG["temperature"],
+                  "max_tokens":LLM_CONFIG["max_tokens"]},
+        ) as r:
+            if r.status != 200:
+                raise RuntimeError(f"OpenAI HTTP {r.status}: {await r.text()}")
+            return json.loads(await r.read())["choices"][0]["message"]["content"]
+
+    @staticmethod
+    def _extract_openai_responses_text(data: Dict[str, Any]) -> str:
+        direct = data.get("output_text")
+        if isinstance(direct, str) and direct.strip():
+            return direct.strip()
+        pieces: List[str] = []
+        for item in data.get("output", []) if isinstance(data.get("output"), list) else []:
+            if not isinstance(item, dict):
+                continue
+            for content in item.get("content", []) if isinstance(item.get("content"), list) else []:
+                if not isinstance(content, dict):
+                    continue
+                text = content.get("text") or content.get("output_text")
+                if isinstance(text, str) and text.strip():
+                    pieces.append(text.strip())
+        if pieces:
+            return "\n".join(pieces).strip()
+        try:
+            return data["choices"][0]["message"]["content"].strip()
+        except Exception as exc:
+            raise RuntimeError(f"OpenAI Responses devolvio payload sin texto util: keys={list(data.keys())}") from exc
+
+    async def _openai_responses(
+        self,
+        messages: List[Dict],
+        tools_context: Optional[Dict],
+        model: str = OPENAI_CODEX_MODEL,
+        timeout: int = 120,
+    ) -> str:
+        key = API_KEYS.get("openai", "")
+        if not key:
+            raise ValueError("OPENAI_API_KEY no configurada")
+        instructions = SYSTEM_IDENTITY + self._fmt_tools(tools_context)
+        convo = []
+        for m in messages:
+            role = m.get("role")
+            if role not in ("user", "assistant"):
+                continue
+            convo.append(
+                {
+                    "role": role,
+                    "content": [
+                        {
+                            "type": "input_text",
+                            "text": m.get("content", ""),
+                        }
+                    ],
+                }
+            )
+        s = await self._get_session(timeout)
+        async with s.post(
+            API_ENDPOINTS["openai_responses"],
+            headers={
+                "Authorization": f"Bearer {key}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": model,
+                "instructions": instructions,
+                "input": convo,
+                "max_output_tokens": LLM_CONFIG["max_tokens"],
+            },
+            timeout=ClientTimeout(total=timeout),
+        ) as r:
+            if r.status != 200:
+                raise RuntimeError(f"OpenAI Responses HTTP {r.status}: {await r.text()}")
+            data = json.loads(await r.read())
+            return self._extract_openai_responses_text(data)
+
+    # ── Anthropic ─────────────────────────────────────────────────────────────
+    async def _anthropic(
+        self, messages: List[Dict], tools_context: Optional[Dict],
+        model: str = "claude-sonnet-4-20250514",
+        timeout: int = 60,
+    ) -> str:
+        key = API_KEYS.get("anthropic", "")
+        if not key:
+            raise ValueError("ANTHROPIC_API_KEY no configurada")
+        log.info("Anthropic API call: model=%s timeout=%ds", model, timeout)
+        system = SYSTEM_IDENTITY + self._fmt_tools(tools_context)
+        convo  = [m for m in messages if m.get("role") in ("user","assistant")]
+        s = await self._get_session(timeout)
+        async with s.post(
+            API_ENDPOINTS["claude"],
+            headers={"x-api-key":key,"anthropic-version":"2023-06-01",
+                     "Content-Type":"application/json"},
+            json={"model":model,"system":system,
+                  "messages":convo,"max_tokens":LLM_CONFIG["max_tokens"],
+                  "temperature":LLM_CONFIG["temperature"]},
+            timeout=ClientTimeout(total=timeout),
+        ) as r:
+            if r.status != 200:
+                raise RuntimeError(f"Anthropic HTTP {r.status}: {await r.text()}")
+            return json.loads(await r.read())["content"][0]["text"]
+
+    # ── Helpers ───────────────────────────────────────────────────────────────
+    def _fmt_tools(self, ctx: Optional[Dict]) -> str:
+        if not ctx:
+            return ""
+        parts = ["\nHERRAMIENTAS:"]
+        for t in ctx.get("available_tools", []):
+            parts.append(f"- {t['name']}: {t.get('description','')}")
+        return "\n".join(parts)
+
+    def _update_latency(self, new: float):
+        n = self.metrics["success"]
+        if n <= 1:
+            self.metrics["avg_latency"] = new
+        else:
+            self.metrics["avg_latency"] = (
+                self.metrics["avg_latency"] * (n-1) + new
+            ) / n
+
+    def get_metrics(self) -> Dict:
+        return self.metrics.copy()
+
+    def _load_metrics(self):
+        """Load persisted metrics from disk (if any) so counters survive restarts."""
+        try:
+            if self._METRICS_PATH.exists():
+                data = json.loads(self._METRICS_PATH.read_text(encoding="utf-8"))
+                for key in ("total", "success", "failed", "fallbacks"):
+                    if key in data:
+                        self.metrics[key] = int(data[key])
+                if "avg_latency" in data:
+                    self.metrics["avg_latency"] = float(data["avg_latency"])
+                log.info("Loaded LLM metrics from disk: total=%d", self.metrics["total"])
+        except Exception as exc:
+            log.debug("Could not load LLM metrics: %s", exc)
+
+    def _persist_metrics(self):
+        """Write current metrics to disk. Called every _PERSIST_EVERY queries.
+
+        R9.8: Enriched payload includes:
+          - circuit_breaker per-model state (so chat_excellence loop can SEE
+            that a CB already exists and propose refinements, not redundant
+            re-implementations)
+          - chain_health snapshot (degraded chains + cooldown)
+          - latency_per_model with p50/p95/p99 (so the brain can spot which
+            specific model is slow, not just global avg)
+        """
+        try:
+            self._METRICS_PATH.parent.mkdir(parents=True, exist_ok=True)
+            # Build enriched observability section, defensive to runtime errors
+            cb_payload: Dict[str, Any] = {}
+            try:
+                for model_key, cb in (self._cb_state or {}).items():
+                    cb_payload[model_key] = {
+                        "is_open": self._cb_is_open(model_key),
+                        "fails": cb.get("fails", 0),
+                        "open_until": cb.get("open_until", 0),
+                        "open_in_s": max(0, int(cb.get("open_until", 0) - time.time())),
+                    }
+            except Exception as e:
+                cb_payload = {"_error": str(e)}
+
+            try:
+                latency_payload = type(self).latency_percentiles()
+            except Exception as e:
+                latency_payload = {"_error": str(e)}
+
+            try:
+                chain_payload = type(self).chain_health_snapshot()
+            except Exception as e:
+                chain_payload = {"_error": str(e)}
+
+            payload = {
+                **self.metrics,
+                "persisted_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
+                "circuit_breaker": {
+                    "config": {
+                        "fail_threshold": self._CB_FAIL_THRESHOLD,
+                        "cooldown_s": self._CB_COOLDOWN_S,
+                    },
+                    "models": cb_payload,
+                },
+                "chain_health": {
+                    "config": {
+                        "window": self._CHAIN_HEALTH_WINDOW,
+                        "fail_rate_threshold": self._CHAIN_FAIL_RATE_THRESHOLD,
+                        "cooldown_s": self._CHAIN_COOLDOWN_S,
+                    },
+                    "chains": chain_payload,
+                },
+                "latency_per_model": latency_payload,
+            }
+            self._METRICS_PATH.write_text(
+                json.dumps(payload, indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+            log.info("LLM metrics persisted: total=%d success=%d cb_models=%d",
+                     self.metrics["total"], self.metrics["success"], len(cb_payload))
+        except Exception as exc:
+            log.warning("Could not persist LLM metrics: %s", exc)
+
+    async def close(self):
+        self._persist_metrics()   # save final metrics before shutdown
+        if self.session and not self.session.closed:
+            await self.session.close()

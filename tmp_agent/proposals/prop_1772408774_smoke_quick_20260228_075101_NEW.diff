@@ -1,0 +1,8 @@
+--- NUL
++++ C:\AI_VAULT\tmp_agent\workspace\smoke_quick_20260228_075101.json
+@@ -0,0 +1,5 @@
++{
++  "ok": false,
++  "error": "IMPORT_FAILED",
++  "detail": "ModuleNotFoundError(\"No module named 'brainlab'\")"
++}

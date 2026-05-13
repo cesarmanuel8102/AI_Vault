@@ -1,0 +1,152 @@
+{
+  "room_id": "lab1",
+  "mission_objective": "Crear good.txt en WORKSPACE_ROOT y luego listar el directorio para verificar.",
+  "mission_updated_at": 1771955399,
+  "created_at": 1771955434,
+  "updated_at": 1771955434,
+  "cursor": 0,
+  "steps": [
+    {
+      "id": "s1",
+      "title": "Crear good.txt en WORKSPACE_ROOT",
+      "action": "TOOL",
+      "tool": "write_file",
+      "args": {
+        "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+        "content": "Contenido inicial"
+      },
+      "success_criteria": "good.txt creado en WORKSPACE_ROOT",
+      "status": "done",
+      "result": {
+        "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+        "written": 17
+      },
+      "started_at": 1771955434,
+      "ended_at": 1771955434
+    },
+    {
+      "id": "s2",
+      "title": "Listar el directorio para verificar la creación de good.txt",
+      "action": "TOOL",
+      "tool": "list_dir",
+      "args": {
+        "path": "C:\\AI_VAULT\\workspace\\brainlab"
+      },
+      "success_criteria": "good.txt visible en lista de directorio",
+      "status": "done",
+      "result": {
+        "path": "C:\\AI_VAULT\\workspace\\brainlab",
+        "items": [
+          {
+            "name": ".git",
+            "is_dir": true,
+            "size": null
+          },
+          {
+            "name": ".gitattributes",
+            "is_dir": false,
+            "size": 87
+          },
+          {
+            "name": ".gitignore",
+            "is_dir": false,
+            "size": 72
+          },
+          {
+            "name": ".gitkeep",
+            "is_dir": false,
+            "size": 0
+          },
+          {
+            "name": ".pytest_cache",
+            "is_dir": true,
+            "size": null
+          },
+          {
+            "name": "bad.txt",
+            "is_dir": false,
+            "size": 43
+          },
+          {
+            "name": "config",
+            "is_dir": true,
+            "size": null
+          },
+          {
+            "name": "data",
+            "is_dir": true,
+            "size": null
+          },
+          {
+            "name": "demo.txt",
+            "is_dir": false,
+            "size": 36
+          },
+          {
+            "name": "docs",
+            "is_dir": true,
+            "size": null
+          },
+          {
+            "name": "good.txt",
+            "is_dir": false,
+            "size": 17
+          },
+          {
+            "name": "hack.txt",
+            "is_dir": false,
+            "size": 31
+          },
+          {
+            "name": "logs",
+            "is_dir": true,
+            "size": null
+          },
+          {
+            "name": "note.txt",
+            "is_dir": false,
+            "size": 27
+          },
+          {
+            "name": "permissions.txt",
+            "is_dir": false,
+            "size": 896
+          },
+          {
+            "name": "ranked_test.txt",
+            "is_dir": false,
+            "size": 0
+          },
+          {
+            "name": "README.md",
+            "is_dir": false,
+            "size": 79
+          },
+          {
+            "name": "src",
+            "is_dir": true,
+            "size": null
+          },
+          {
+            "name": "sync_rank.txt",
+            "is_dir": false,
+            "size": 0
+          },
+          {
+            "name": "tests",
+            "is_dir": true,
+            "size": null
+          }
+        ]
+      },
+      "started_at": 1771955434,
+      "ended_at": 1771955434
+    }
+  ],
+  "policy_gate": {
+    "score": 0.75,
+    "violations": [],
+    "verdict": "continue",
+    "notes": "OK"
+  }
+}

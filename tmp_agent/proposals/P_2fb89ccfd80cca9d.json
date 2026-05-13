@@ -1,0 +1,14 @@
+{
+  "proposal_id": "P_2fb89ccfd80cca9d",
+  "tool_name": "append_file",
+  "tool_args": {
+    "path": "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_plan_from_goal_v1_2_20260305_115730\\patch_P1_1.diff",
+    "content": "diff --git a/ui_proxy_server.py b/ui_proxy_server.py\n--- a/ui_proxy_server.py\n+++ b/ui_proxy_server.py\n@@ Blocked panel JS @@\n-    document.getElementById('btnRejectBlocked').onclick = async ()=>{\n-      const out = await fetch('/ui/api/reject', {method:'POST', headers:{'Content-Type':'application/json','x-room-id':rid()}, body: JSON.stringify({proposal_id:b.proposal_id, approve_token:b.required_approve})});\n-      console.log('REJECT', await out.json());\n-      tick();\n-    };\n+    document.getElementById('btnRejectBlocked').onclick = async ()=>{\n+      const out = await fetch('/ui/api/reject', {method:'POST', headers:{'Content-Type':'application/json','x-room-id':rid()}, body: JSON.stringify({proposal_id:b.proposal_id, approve_token:b.required_approve, reason:'ui_reject'})});\n+      console.log('REJECT', await out.json());\n+      try { if (typeof window.refreshAll === 'function') { window.refreshAll(); } } catch(e){}\n+      tick();\n+    };\n@@ tick loop @@\n-  let n=0; const t=setInterval(()=>{ n++; tick(); if(n>50) clearInterval(t); }, 500);\n+  setInterval(()=>{ tick(); }, 500);\n\n",
+    "text": "diff --git a/ui_proxy_server.py b/ui_proxy_server.py\n--- a/ui_proxy_server.py\n+++ b/ui_proxy_server.py\n@@ Blocked panel JS @@\n-    document.getElementById('btnRejectBlocked').onclick = async ()=>{\n-      const out = await fetch('/ui/api/reject', {method:'POST', headers:{'Content-Type':'application/json','x-room-id':rid()}, body: JSON.stringify({proposal_id:b.proposal_id, approve_token:b.required_approve})});\n-      console.log('REJECT', await out.json());\n-      tick();\n-    };\n+    document.getElementById('btnRejectBlocked').onclick = async ()=>{\n+      const out = await fetch('/ui/api/reject', {method:'POST', headers:{'Content-Type':'application/json','x-room-id':rid()}, body: JSON.stringify({proposal_id:b.proposal_id, approve_token:b.required_approve, reason:'ui_reject'})});\n+      console.log('REJECT', await out.json());\n+      try { if (typeof window.refreshAll === 'function') { window.refreshAll(); } } catch(e){}\n+      tick();\n+    };\n@@ tick loop @@\n-  let n=0; const t=setInterval(()=>{ n++; tick(); if(n>50) clearInterval(t); }, 500);\n+  setInterval(()=>{ tick(); }, 500);\n\n"
+  },
+  "room_id": "room_plan_from_goal_v1_2_20260305_115730",
+  "step_id": "S3",
+  "created_at": "2026-03-05T16:59:16.661378+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

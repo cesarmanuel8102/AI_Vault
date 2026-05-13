@@ -1,0 +1,115 @@
+{
+  "contract_id": "utility_u_operational_v1",
+  "version": "1.0.0",
+  "created_at": "2026-03-19T04:20:00Z",
+  "status": "active",
+  "description": "Contrato operativo para la función U (Utilidad) - Convierte la función objetivo canónica en un driver operativo real para scoring, evaluación, promotion gates, capital allocation y decisiones financieras",
+  
+  "utility_function": {
+    "formula": "U(x) = α·Return(x) + β·RiskAdjustedReturn(x) - γ·MaxDrawdown(x) - δ·Volatility(x)",
+    "parameters": {
+      "alpha": 0.4,
+      "beta": 0.3,
+      "gamma": 0.2,
+      "delta": 0.1
+    },
+    "components": {
+      "return": {
+        "weight": 0.4,
+        "metric": "total_return_pct",
+        "description": "Retorno total de la estrategia"
+      },
+      "risk_adjusted_return": {
+        "weight": 0.3,
+        "metric": "sharpe_ratio",
+        "description": "Retorno ajustado por riesgo (Sharpe Ratio)"
+      },
+      "max_drawdown": {
+        "weight": 0.2,
+        "metric": "max_drawdown_pct",
+        "description": "Máximo drawdown (penalización)"
+      },
+      "volatility": {
+        "weight": 0.1,
+        "metric": "volatility_annual",
+        "description": "Volatilidad anualizada (penalización)"
+      }
+    }
+  },
+  
+  "scoring_gates": {
+    "explorer_to_satellite": {
+      "min_utility_score": 0.6,
+      "min_sharpe": 1.0,
+      "max_drawdown": 0.10,
+      "min_trades": 10,
+      "time_period_days": 30
+    },
+    "satellite_to_core": {
+      "min_utility_score": 0.8,
+      "min_sharpe": 1.5,
+      "max_drawdown": 0.07,
+      "min_trades": 50,
+      "time_period_days": 90
+    },
+    "demotion_threshold": {
+      "max_drawdown": 0.15,
+      "consecutive_losses": 5,
+      "min_utility_score": 0.3
+    }
+  },
+  
+  "capital_allocation_rules": {
+    "explorer": {
+      "max_allocation_pct": 0.10,
+      "max_position_size": 0.02,
+      "risk_multiplier": 2.0
+    },
+    "satellite": {
+      "max_allocation_pct": 0.30,
+      "max_position_size": 0.05,
+      "risk_multiplier": 1.0
+    },
+    "core": {
+      "max_allocation_pct": 0.60,
+      "max_position_size": 0.10,
+      "risk_multiplier": 0.5
+    }
+  },
+  
+  "decision_matrix": {
+    "approve_strategy": {
+      "condition": "utility_score >= 0.7 AND sharpe_ratio >= 1.2",
+      "action": "approve_for_paper_trading"
+    },
+    "promote_strategy": {
+      "condition": "utility_score >= 0.8 AND sharpe_ratio >= 1.5 AND max_drawdown <= 0.10",
+      "action": "promote_to_next_layer"
+    },
+    "demote_strategy": {
+      "condition": "utility_score < 0.4 OR max_drawdown > 0.15",
+      "action": "demote_or_liquidate"
+    },
+    "emergency_stop": {
+      "condition": "max_drawdown > 0.20 OR consecutive_losses > 10",
+      "action": "immediate_liquidation"
+    }
+  },
+  
+  "implementation": {
+    "module": "utility_function.py",
+    "class": "UtilityFunction",
+    "methods": [
+      "calculate_utility_score()",
+      "evaluate_strategy()",
+      "check_promotion_gates()",
+      "allocate_capital()"
+    ]
+  },
+  
+  "validation": {
+    "test_cases": 100,
+    "backtest_periods": ["1M", "3M", "6M", "1Y"],
+    "required_pass_rate": 0.95
+  }
+}

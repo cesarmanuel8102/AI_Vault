@@ -1,0 +1,14 @@
+{
+  "mission_id": "mission_361e1bd253cb",
+  "created_ts": "2026-02-27T01:12:49.079817Z",
+  "updated_ts": "2026-02-27T01:12:49.079817Z",
+  "goal": "audit_v6",
+  "status": "running",
+  "notes": [],
+  "room_id": "roomA",
+  "objective": "audit_v6",
+  "constraints": [],
+  "created_at": 1772154769,
+  "updated_at": 1772154769,
+  "status_legacy": "active"
+}

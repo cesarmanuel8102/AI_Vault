@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_77c826887e41b473",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "C:\\AI_VAULT\\tmp_agent\\state\\rooms\\autoloop_advisor_v10_20260308_214701\\pipeline_status.json",
+    "content": "El trabajo de operacionalizar Core/Satélite/Explorador con risk budget está en progreso. Se requiere supervisión para garantizar la alineación con los límites y el presupuesto de riesgo.",
+    "raw_content": "El trabajo de operacionalizar Core/Satélite/Explorador con risk budget está en progreso. Se requiere supervisión para garantizar la alineación con los límites y el presupuesto de riesgo.",
+    "text": "El trabajo de operacionalizar Core/Satélite/Explorador con risk budget está en progreso. Se requiere supervisión para garantizar la alineación con los límites y el presupuesto de riesgo."
+  },
+  "room_id": "autoloop_advisor_v10_20260308_214701",
+  "step_id": "CM-05",
+  "created_at": "2026-03-09T01:47:09.549577+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

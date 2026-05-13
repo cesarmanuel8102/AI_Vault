@@ -1,0 +1,364 @@
+--- NUL
++++ C:\AI_VAULT\tmp_agent\workspace\receipts\run_room_ssot_e2e_20260228_174329.json
+@@ -0,0 +1,361 @@
++﻿{
++    "ts_local":  "2026-02-28T17:43:30.0199287-05:00",
++    "base":  "http://127.0.0.1:8010",
++    "room_id":  "room_ssot_e2e_20260228_174329",
++    "goal":  "BOOTSTRAP_RUN_SMOKE",
++    "max_iters":  25,
++    "strict":  false,
++    "force_plan":  false,
++    "show_summary":  true,
++    "stop_no_progress":  0,
++    "local_apply_gate":  true,
++    "steps":  [
++                  {
++                      "kind":  "get_plan_pre",
++                      "status":  200,
++                      "body":  {
++                                   "ok":  true,
++                                   "room_id":  "room_ssot_e2e_20260228_174329",
++                                   "plan":  {
++                                                "status":  "planned",
++                                                "steps":  [
++                                                              {
++                                                                  "id":  "S1",
++                                                                  "title":  "Write mission_log.txt (append_file) â gated (repo-safe)",
++                                                                  "status":  "proposed",
++                                                                  "tool_name":  "append_file",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "new_file",
++                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_ssot_e2e_20260228_174329",
++                                                                  "tool_args":  {
++                                                                                    "path":  "mission_log.txt",
++                                                                                    "content":  "MISSION START\\n"
++                                                                                },
++                                                                  "proposal_id":  "p1772318609442390500",
++                                                                  "required_approve":  "APPLY_p1772318609442390500"
++                                                              },
++                                                              {
++                                                                  "id":  "S2",
++                                                                  "title":  "Snapshot set mission_state.json (runtime_snapshot_set)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "runtime_snapshot_set",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "state",
++                                                                  "tool_args":  {
++                                                                                    "path":  "mission_state.json",
++                                                                                    "value":  {
++                                                                                                  "ts":  "",
++                                                                                                  "goal":  "",
++                                                                                                  "room_id":  ""
++                                                                                              }
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S3",
++                                                                  "title":  "Snapshot get mission_state.json (runtime_snapshot_get)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "runtime_snapshot_get",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "state",
++                                                                  "tool_args":  {
++                                                                                    "path":  "mission_state.json"
++                                                                                }
++                                                              }
++                                                          ],
++                                                "room_id":  "room_ssot_e2e_20260228_174329",
++                                                "updated_at":  "2026-02-28T22:43:29.592295+00:00"
++                                            }
++                               },
++                      "raw":  "{\"ok\":true,\"room_id\":\"room_ssot_e2e_20260228_174329\",\"plan\":{\"status\":\"planned\",\"steps\":[{\"id\":\"S1\",\"title\":\"Write mission_log.txt (append_file) â gated (repo-safe)\",\"status\":\"proposed\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"new_file\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_ssot_e2e_20260228_174329\",\"tool_args\":{\"path\":\"mission_log.txt\",\"content\":\"MISSION START\\\\n\"},\"proposal_id\":\"p1772318609442390500\",\"required_approve\":\"APPLY_p1772318609442390500\"},{\"id\":\"S2\",\"title\":\"Snapshot set mission_state.json (runtime_snapshot_set)\",\"status\":\"done\",\"tool_name\":\"runtime_snapshot_set\",\"mode\":\"propose\",\"kind\":\"state\",\"tool_args\":{\"path\":\"mission_state.json\",\"value\":{\"ts\":\"\",\"goal\":\"\",\"room_id\":\"\"}}},{\"id\":\"S3\",\"title\":\"Snapshot get mission_state.json (runtime_snapshot_get)\",\"status\":\"done\",\"tool_name\":\"runtime_snapshot_get\",\"mode\":\"propose\",\"kind\":\"state\",\"tool_args\":{\"path\":\"mission_state.json\"}}],\"room_id\":\"room_ssot_e2e_20260228_174329\",\"updated_at\":\"2026-02-28T22:43:29.592295+00:00\"}}"
++                  },
++                  {
++                      "kind":  "run",
++                      "iter":  1,
++                      "status":  200,
++                      "body":  {
++                                   "ok":  true,
++                                   "room_id":  "room_ssot_e2e_20260228_174329",
++                                   "executed":  [
++                                                    {
++                                                        "action":  "noop_no_todo",
++                                                        "step_id":  null
++                                                    }
++                                                ],
++                                   "needs_approval":  true,
++                                   "approve_token":  "APPLY_p1772318609442390500",
++                                   "summary":  {
++                                                   "plan_id":  null,
++                                                   "status":  "planned",
++                                                   "steps_total":  3,
++                                                   "counts":  {
++                                                                  "todo":  0,
++                                                                  "proposed":  1,
++                                                                  "done":  2,
++                                                                  "error":  0,
++                                                                  "other":  0
++                                                              },
++                                                   "pending_approvals_count":  1,
++                                                   "last_eval":  null,
++                                                   "updated_at":  "2026-02-28T22:43:29.592295+00:00"
++                                               },
++                                   "pending_approvals":  {
++                                                             "S1":  "APPLY_p1772318609442390500"
++                                                         },
++                                   "plan":  {
++                                                "status":  "planned",
++                                                "steps":  [
++                                                              {
++                                                                  "id":  "S1",
++                                                                  "title":  "Write mission_log.txt (append_file) â gated (repo-safe)",
++                                                                  "status":  "proposed",
++                                                                  "tool_name":  "append_file",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "new_file",
++                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_ssot_e2e_20260228_174329",
++                                                                  "tool_args":  {
++                                                                                    "path":  "mission_log.txt",
++                                                                                    "content":  "MISSION START\\n"
++                                                                                },
++                                                                  "proposal_id":  "p1772318609442390500",
++                                                                  "required_approve":  "APPLY_p1772318609442390500"
++                                                              },
++                                                              {
++                                                                  "id":  "S2",
++                                                                  "title":  "Snapshot set mission_state.json (runtime_snapshot_set)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "runtime_snapshot_set",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "state",
++                                                                  "tool_args":  {
++                                                                                    "path":  "mission_state.json",
++                                                                                    "value":  {
++                                                                                                  "ts":  "",
++                                                                                                  "goal":  "",
++                                                                                                  "room_id":  ""
++                                                                                              }
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S3",
++                                                                  "title":  "Snapshot get mission_state.json (runtime_snapshot_get)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "runtime_snapshot_get",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "state",
++                                                                  "tool_args":  {
++                                                                                    "path":  "mission_state.json"
++                                                                                }
++                                                              }
++                                                          ],
++                                                "room_id":  "room_ssot_e2e_20260228_174329",
++                                                "updated_at":  "2026-02-28T22:43:29.592295+00:00"
++                                            },
++                                   "mission":  {
++                                                   "room_id":  "room_ssot_e2e_20260228_174329",
++                                                   "updated_at":  "2026-02-28T22:43:29.592295+00:00"
++                                               }
++                               },
++                      "raw":  "{\"ok\":true,\"room_id\":\"room_ssot_e2e_20260228_174329\",\"executed\":[{\"action\":\"noop_no_todo\",\"step_id\":null}],\"needs_approval\":true,\"approve_token\":\"APPLY_p1772318609442390500\",\"summary\":{\"plan_id\":null,\"status\":\"planned\",\"steps_total\":3,\"counts\":{\"todo\":0,\"proposed\":1,\"done\":2,\"error\":0,\"other\":0},\"pending_approvals_count\":1,\"last_eval\":null,\"updated_at\":\"2026-02-28T22:43:29.592295+00:00\"},\"pending_approvals\":{\"S1\":\"APPLY_p1772318609442390500\"},\"plan\":{\"status\":\"planned\",\"steps\":[{\"id\":\"S1\",\"title\":\"Write mission_log.txt (append_file) â gated (repo-safe)\",\"status\":\"proposed\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"new_file\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_ssot_e2e_20260228_174329\",\"tool_args\":{\"path\":\"mission_log.txt\",\"content\":\"MISSION START\\\\n\"},\"proposal_id\":\"p1772318609442390500\",\"required_approve\":\"APPLY_p1772318609442390500\"},{\"id\":\"S2\",\"title\":\"Snapshot set mission_state.json (runtime_snapshot_set)\",\"status\":\"done\",\"tool_name\":\"runtime_snapshot_set\",\"mode\":\"propose\",\"kind\":\"state\",\"tool_args\":{\"path\":\"mission_state.json\",\"value\":{\"ts\":\"\",\"goal\":\"\",\"room_id\":\"\"}}},{\"id\":\"S3\",\"title\":\"Snapshot get mission_state.json (runtime_snapshot_get)\",\"status\":\"done\",\"tool_name\":\"runtime_snapshot_get\",\"mode\":\"propose\",\"kind\":\"state\",\"tool_args\":{\"path\":\"mission_state.json\"}}],\"room_id\":\"room_ssot_e2e_20260228_174329\",\"updated_at\":\"2026-02-28T22:43:29.592295+00:00\"},\"mission\":{\"room_id\":\"room_ssot_e2e_20260228_174329\",\"updated_at\":\"2026-02-28T22:43:29.592295+00:00\"}}"
++                  },
++                  {
++                      "kind":  "get_plan_for_local_apply",
++                      "iter":  1,
++                      "status":  200,
++                      "body":  {
++                                   "ok":  true,
++                                   "room_id":  "room_ssot_e2e_20260228_174329",
++                                   "plan":  {
++                                                "status":  "planned",
++                                                "steps":  [
++                                                              {
++                                                                  "id":  "S1",
++                                                                  "title":  "Write mission_log.txt (append_file) â gated (repo-safe)",
++                                                                  "status":  "proposed",
++                                                                  "tool_name":  "append_file",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "new_file",
++                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_ssot_e2e_20260228_174329",
++                                                                  "tool_args":  {
++                                                                                    "path":  "mission_log.txt",
++                                                                                    "content":  "MISSION START\\n"
++                                                                                },
++                                                                  "proposal_id":  "p1772318609442390500",
++                                                                  "required_approve":  "APPLY_p1772318609442390500"
++                                                              },
++                                                              {
++                                                                  "id":  "S2",
++                                                                  "title":  "Snapshot set mission_state.json (runtime_snapshot_set)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "runtime_snapshot_set",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "state",
++                                                                  "tool_args":  {
++                                                                                    "path":  "mission_state.json",
++                                                                                    "value":  {
++                                                                                                  "ts":  "",
++                                                                                                  "goal":  "",
++                                                                                                  "room_id":  ""
++                                                                                              }
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S3",
++                                                                  "title":  "Snapshot get mission_state.json (runtime_snapshot_get)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "runtime_snapshot_get",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "state",
++                                                                  "tool_args":  {
++                                                                                    "path":  "mission_state.json"
++                                                                                }
++                                                              }
++                                                          ],
++                                                "room_id":  "room_ssot_e2e_20260228_174329",
++                                                "updated_at":  "2026-02-28T22:43:29.592295+00:00"
++                                            }
++                               },
++                      "raw":  "{\"ok\":true,\"room_id\":\"room_ssot_e2e_20260228_174329\",\"plan\":{\"status\":\"planned\",\"steps\":[{\"id\":\"S1\",\"title\":\"Write mission_log.txt (append_file) â gated (repo-safe)\",\"status\":\"proposed\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"new_file\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_ssot_e2e_20260228_174329\",\"tool_args\":{\"path\":\"mission_log.txt\",\"content\":\"MISSION START\\\\n\"},\"proposal_id\":\"p1772318609442390500\",\"required_approve\":\"APPLY_p1772318609442390500\"},{\"id\":\"S2\",\"title\":\"Snapshot set mission_state.json (runtime_snapshot_set)\",\"status\":\"done\",\"tool_name\":\"runtime_snapshot_set\",\"mode\":\"propose\",\"kind\":\"state\",\"tool_args\":{\"path\":\"mission_state.json\",\"value\":{\"ts\":\"\",\"goal\":\"\",\"room_id\":\"\"}}},{\"id\":\"S3\",\"title\":\"Snapshot get mission_state.json (runtime_snapshot_get)\",\"status\":\"done\",\"tool_name\":\"runtime_snapshot_get\",\"mode\":\"propose\",\"kind\":\"state\",\"tool_args\":{\"path\":\"mission_state.json\"}}],\"room_id\":\"room_ssot_e2e_20260228_174329\",\"updated_at\":\"2026-02-28T22:43:29.592295+00:00\"}}"
++                  },
++                  {
++                      "kind":  "local_apply_gate",
++                      "iter":  1,
++                      "proposal_id":  "p1772318609442390500",
++                      "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_ssot_e2e_20260228_174329",
++                      "token":  "APPLY_p1772318609442390500",
++                      "ok":  true,
++                      "detail":  {
++                                     "ok":  true,
++                                     "cmd":  [
++                                                 "python",
++                                                 "C:\\AI_VAULT\\tmp_agent\\apply_gate.py",
++                                                 "C:\\AI_VAULT\\tmp_agent\\proposals\\bundle_p1772318609442390500.json",
++                                                 "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_ssot_e2e_20260228_174329",
++                                                 "--approve=APPLY_p1772318609442390500"
++                                             ],
++                                     "raw":  "{\r\n  \"ok\": true,\r\n  \"run_id\": \"apply_1772318610\",\r\n  \"proposal_id\": \"p1772318609442390500\",\r\n  \"applied\": [\r\n    {\r\n      \"kind\": \"new_file\",\r\n      \"workspace_path\": \"C:\\\\AI_VAULT\\\\tmp_agent\\\\workspace\\\\mission_log.txt\",\r\n      \"dest\": \"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_ssot_e2e_20260228_174329\\\\mission_log.txt\"\r\n    }\r\n  ],\r\n  \"backups\": [],\r\n  \"validation\": {\r\n    \"py\": null,\r\n    \"json\": null,\r\n    \"ok\": true,\r\n    \"detail\": \"OK\"\r\n  },\r\n  \"receipt\": \"C:\\\\AI_VAULT\\\\tmp_agent\\\\state\\\\applied_p1772318609442390500.json\"\r\n}",
++                                     "json":  {
++                                                  "ok":  true,
++                                                  "run_id":  "apply_1772318610",
++                                                  "proposal_id":  "p1772318609442390500",
++                                                  "applied":  [
++                                                                  {
++                                                                      "kind":  "new_file",
++                                                                      "workspace_path":  "C:\\AI_VAULT\\tmp_agent\\workspace\\mission_log.txt",
++                                                                      "dest":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_ssot_e2e_20260228_174329\\mission_log.txt"
++                                                                  }
++                                                              ],
++                                                  "backups":  [
++
++                                                              ],
++                                                  "validation":  {
++                                                                     "py":  null,
++                                                                     "json":  null,
++                                                                     "ok":  true,
++                                                                     "detail":  "OK"
++                                                                 },
++                                                  "receipt":  "C:\\AI_VAULT\\tmp_agent\\state\\applied_p1772318609442390500.json"
++                                              },
++                                     "bundle":  "C:\\AI_VAULT\\tmp_agent\\proposals\\bundle_p1772318609442390500.json",
++                                     "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_ssot_e2e_20260228_174329"
++                                 }
++                  },
++                  {
++                      "kind":  "run_apply",
++                      "iter":  1,
++                      "token":  "APPLY_p1772318609442390500",
++                      "status":  200,
++                      "body":  {
++                                   "ok":  true,
++                                   "room_id":  "room_ssot_e2e_20260228_174329",
++                                   "executed":  [
++                                                    {
++                                                        "action":  "apply_step",
++                                                        "step_id":  "S1"
++                                                    },
++                                                    {
++                                                        "action":  "noop_complete",
++                                                        "step_id":  null
++                                                    }
++                                                ],
++                                   "needs_approval":  false,
++                                   "approve_token":  null,
++                                   "summary":  {
++                                                   "plan_id":  null,
++                                                   "status":  "complete",
++                                                   "steps_total":  3,
++                                                   "counts":  {
++                                                                  "todo":  0,
++                                                                  "proposed":  0,
++                                                                  "done":  3,
++                                                                  "error":  0,
++                                                                  "other":  0
++                                                              },
++                                                   "pending_approvals_count":  0,
++                                                   "last_eval":  null,
++                                                   "updated_at":  "2026-02-28T22:43:30.403082+00:00"
++                                               },
++                                   "pending_approvals":  {
++
++                                                         },
++                                   "plan":  {
++                                                "status":  "complete",
++                                                "steps":  [
++                                                              {
++                                                                  "id":  "S1",
++                                                                  "title":  "Write mission_log.txt (append_file) â gated (repo-safe)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "append_file",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "new_file",
++                                                                  "dest_dir":  "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_ssot_e2e_20260228_174329",
++                                                                  "tool_args":  {
++                                                                                    "path":  "mission_log.txt",
++                                                                                    "content":  "MISSION START\\n"
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S2",
++                                                                  "title":  "Snapshot set mission_state.json (runtime_snapshot_set)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "runtime_snapshot_set",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "state",
++                                                                  "tool_args":  {
++                                                                                    "path":  "mission_state.json",
++                                                                                    "value":  {
++                                                                                                  "ts":  "",
++                                                                                                  "goal":  "",
++                                                                                                  "room_id":  ""
++                                                                                              }
++                                                                                }
++                                                              },
++                                                              {
++                                                                  "id":  "S3",
++                                                                  "title":  "Snapshot get mission_state.json (runtime_snapshot_get)",
++                                                                  "status":  "done",
++                                                                  "tool_name":  "runtime_snapshot_get",
++                                                                  "mode":  "propose",
++                                                                  "kind":  "state",
++                                                                  "tool_args":  {
++                                                                                    "path":  "mission_state.json"
++                                                                                }
++                                                              }
++                                                          ],
++                                                "room_id":  "room_ssot_e2e_20260228_174329",
++                                                "updated_at":  "2026-02-28T22:43:30.403082+00:00"
++                                            },
++                                   "mission":  {
++                                                   "room_id":  "room_ssot_e2e_20260228_174329",
++                                                   "updated_at":  "2026-02-28T22:43:29.592295+00:00"
++                                               }
++                               },
++                      "raw":  "{\"ok\":true,\"room_id\":\"room_ssot_e2e_20260228_174329\",\"executed\":[{\"action\":\"apply_step\",\"step_id\":\"S1\"},{\"action\":\"noop_complete\",\"step_id\":null}],\"needs_approval\":false,\"approve_token\":null,\"summary\":{\"plan_id\":null,\"status\":\"complete\",\"steps_total\":3,\"counts\":{\"todo\":0,\"proposed\":0,\"done\":3,\"error\":0,\"other\":0},\"pending_approvals_count\":0,\"last_eval\":null,\"updated_at\":\"2026-02-28T22:43:30.403082+00:00\"},\"pending_approvals\":{},\"plan\":{\"status\":\"complete\",\"steps\":[{\"id\":\"S1\",\"title\":\"Write mission_log.txt (append_file) â gated (repo-safe)\",\"status\":\"done\",\"tool_name\":\"append_file\",\"mode\":\"propose\",\"kind\":\"new_file\",\"dest_dir\":\"C:\\\\AI_VAULT\\\\workspace\\\\brainlab\\\\_agent_runs\\\\room_ssot_e2e_20260228_174329\",\"tool_args\":{\"path\":\"mission_log.txt\",\"content\":\"MISSION START\\\\n\"}},{\"id\":\"S2\",\"title\":\"Snapshot set mission_state.json (runtime_snapshot_set)\",\"status\":\"done\",\"tool_name\":\"runtime_snapshot_set\",\"mode\":\"propose\",\"kind\":\"state\",\"tool_args\":{\"path\":\"mission_state.json\",\"value\":{\"ts\":\"\",\"goal\":\"\",\"room_id\":\"\"}}},{\"id\":\"S3\",\"title\":\"Snapshot get mission_state.json (runtime_snapshot_get)\",\"status\":\"done\",\"tool_name\":\"runtime_snapshot_get\",\"mode\":\"propose\",\"kind\":\"state\",\"tool_args\":{\"path\":\"mission_state.json\"}}],\"room_id\":\"room_ssot_e2e_20260228_174329\",\"updated_at\":\"2026-02-28T22:43:30.403082+00:00\"},\"mission\":{\"room_id\":\"room_ssot_e2e_20260228_174329\",\"updated_at\":\"2026-02-28T22:43:29.592295+00:00\"}}"
++                  }
++              ],
++    "final":  {
++                  "ok":  true,
++                  "status":  "complete",
++                  "iter":  1,
++                  "note":  "Completed after apply"
++              }
++}

@@ -1,0 +1,22 @@
+{
+  "room_id": "room_demo",
+  "contract_path": "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\contracts\\financial_motor_contract_v1.json",
+  "last_assess_utc": "2026-02-26T15:08:44.575370Z",
+  "last_assess": {
+    "verdict": "continue",
+    "reason": "OK",
+    "metrics": {
+      "nlv": 1000.0,
+      "daily_pnl": 5.0,
+      "daily_loss_frac": 0.0,
+      "weekly_drawdown": 0.01,
+      "total_exposure": 0.2
+    },
+    "violations": []
+  },
+  "last_violation_types": [],
+  "kill_switch_policy": {
+    "auto_on_violation": true,
+    "manual_override_required": true
+  }
+}

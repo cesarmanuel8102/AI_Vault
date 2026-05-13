@@ -1,0 +1,35 @@
+{
+  "source_id": "github_microsoft_semantic_kernel_20260508",
+  "curated_at_utc": "2026-05-08T04:57:06.328571Z",
+  "repo": {
+    "full_name": "microsoft/semantic-kernel",
+    "default_branch": "main",
+    "updated_at": "2026-05-08T04:03:09Z",
+    "stargazers_count": 27858,
+    "open_issues_count": 286,
+    "size_kb": 102264,
+    "language": "C#",
+    "topics": [
+      "ai",
+      "artificial-intelligence",
+      "llm",
+      "openai",
+      "sdk"
+    ],
+    "tests_present": true,
+    "docs_present": true,
+    "dependency_files": []
+  },
+  "curation_score": 10.75,
+  "risk_score": 0.75,
+  "license_status": "compatible",
+  "recommended_action": "analyze",
+  "reject_reasons": [],
+  "notes": [
+    "dependency_manifest_not_detected",
+    "source_host_not_in_allowlist_seed"
+  ],
+  "dependency_risk_flags": [],
+  "suspicious_binaries": [],
+  "apparent_secrets": []
+}

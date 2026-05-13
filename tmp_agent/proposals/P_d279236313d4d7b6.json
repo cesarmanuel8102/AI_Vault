@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_d279236313d4d7b6",
+  "tool_name": "append_file",
+  "tool_args": {
+    "content": "hello from advisor-aware fallback\n",
+    "path": "C:\\AI_VAULT\\tmp_agent\\state\\rooms\\autoloop_advisor_20260307_110334\\probe.txt",
+    "raw_content": "hello from advisor-aware fallback\n",
+    "text": "hello from advisor-aware fallback\n"
+  },
+  "room_id": "autoloop_advisor_20260307_110334",
+  "step_id": "S1",
+  "created_at": "2026-03-07T16:03:37.030573+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

@@ -1,0 +1,91 @@
+{
+  "generated_at_utc": "2026-04-22T21:23:48.211588+00:00",
+  "project_id": 30507388,
+  "project_name": "IBKR10K_GROWTH_MOMENTUM_1776892803",
+  "rows": [
+    {
+      "status": "Completed.",
+      "backtest_id": "a79691fe48ce549f89eb8a0f1ace0746",
+      "np_pct": -39.529,
+      "cagr_pct": -5.914,
+      "dd_pct": 53.4,
+      "sharpe": -0.639,
+      "sortino": -0.143,
+      "win_rate_pct": 42.0,
+      "profit_factor": null,
+      "trades": null,
+      "candidate": "IB10K_BALANCED",
+      "scenario": "FULL_2018_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "a970344907d11bd6756901892ebe8f33",
+      "np_pct": 60.561,
+      "cagr_pct": 15.693,
+      "dd_pct": 22.0,
+      "sharpe": 0.36,
+      "sortino": 0.226,
+      "win_rate_pct": 82.0,
+      "profit_factor": null,
+      "trades": null,
+      "candidate": "IB10K_BALANCED",
+      "scenario": "OOS_2023_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "09d317f1f00247714ab427ace8eff23f",
+      "np_pct": -5.728,
+      "cagr_pct": -5.718,
+      "dd_pct": 28.8,
+      "sharpe": -0.087,
+      "sortino": -0.036,
+      "win_rate_pct": 48.0,
+      "profit_factor": null,
+      "trades": null,
+      "candidate": "IB10K_BALANCED",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "189ac3adecae2f5652e4ff40c2735bf8",
+      "np_pct": -43.799,
+      "cagr_pct": -6.746,
+      "dd_pct": 57.4,
+      "sharpe": -0.612,
+      "sortino": -0.137,
+      "win_rate_pct": 42.0,
+      "profit_factor": null,
+      "trades": null,
+      "candidate": "IB10K_AGGRESSIVE",
+      "scenario": "FULL_2018_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "c9d47c93967765a378a0bdc53ce84882",
+      "np_pct": 46.295,
+      "cagr_pct": 12.426,
+      "dd_pct": 36.8,
+      "sharpe": 0.254,
+      "sortino": 0.161,
+      "win_rate_pct": 68.0,
+      "profit_factor": null,
+      "trades": null,
+      "candidate": "IB10K_AGGRESSIVE",
+      "scenario": "OOS_2023_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "6cc4456ecf3cacf60b77ad71b12d56bb",
+      "np_pct": -5.347,
+      "cagr_pct": -5.338,
+      "dd_pct": 29.6,
+      "sharpe": 0.007,
+      "sortino": 0.003,
+      "win_rate_pct": 56.0,
+      "profit_factor": null,
+      "trades": null,
+      "candidate": "IB10K_AGGRESSIVE",
+      "scenario": "STRESS_2020"
+    }
+  ]
+}

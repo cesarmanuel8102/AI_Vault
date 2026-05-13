@@ -1,0 +1,93 @@
+{
+  "ts_local": "2026-03-03T15:28:13.5933106-05:00",
+  "base": "http://127.0.0.1:8010",
+  "room_id": "room_autodev_driver_20260303_152810",
+  "goal": "ROADMAP_AUTODEV",
+  "max_iters": 25,
+  "strict": false,
+  "force_plan": true,
+  "show_summary": true,
+  "stop_no_progress": 3,
+  "local_apply_gate": false,
+  "steps": [
+    {
+      "kind": "get_plan_pre",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "room_id": "room_autodev_driver_20260303_152810",
+        "plan": {
+          "room_id": "room_autodev_driver_20260303_152810",
+          "status": "empty",
+          "steps": [],
+          "last_eval": null,
+          "updated_at": "2026-03-03T15:28:13.623023-05:00"
+        },
+        "error": null
+      },
+      "raw": "{\"ok\":true,\"room_id\":\"room_autodev_driver_20260303_152810\",\"plan\":{\"room_id\":\"room_autodev_driver_20260303_152810\",\"status\":\"empty\",\"steps\":[],\"last_eval\":null,\"updated_at\":\"2026-03-03T20:28:13.623023+00:00\"},\"error\":null}"
+    },
+    {
+      "kind": "post_plan",
+      "status": 200,
+      "body": {
+        "ok": false,
+        "error": "plan_validation_failed",
+        "details": [
+          "steps_empty_or_invalid"
+        ]
+      },
+      "raw": "{\"ok\":false,\"error\":\"plan_validation_failed\",\"details\":[\"steps_empty_or_invalid\"]}"
+    },
+    {
+      "kind": "run",
+      "iter": 1,
+      "status": 200,
+      "body": {
+        "ok": false,
+        "room_id": "room_autodev_driver_20260303_152810",
+        "error": "missing approve_token"
+      },
+      "raw": "{\"ok\":false,\"room_id\":\"room_autodev_driver_20260303_152810\",\"error\":\"missing approve_token\"}"
+    },
+    {
+      "kind": "run",
+      "iter": 2,
+      "status": 200,
+      "body": {
+        "ok": false,
+        "room_id": "room_autodev_driver_20260303_152810",
+        "error": "missing approve_token"
+      },
+      "raw": "{\"ok\":false,\"room_id\":\"room_autodev_driver_20260303_152810\",\"error\":\"missing approve_token\"}"
+    },
+    {
+      "kind": "run",
+      "iter": 3,
+      "status": 200,
+      "body": {
+        "ok": false,
+        "room_id": "room_autodev_driver_20260303_152810",
+        "error": "missing approve_token"
+      },
+      "raw": "{\"ok\":false,\"room_id\":\"room_autodev_driver_20260303_152810\",\"error\":\"missing approve_token\"}"
+    },
+    {
+      "kind": "run",
+      "iter": 4,
+      "status": 200,
+      "body": {
+        "ok": false,
+        "room_id": "room_autodev_driver_20260303_152810",
+        "error": "missing approve_token"
+      },
+      "raw": "{\"ok\":false,\"room_id\":\"room_autodev_driver_20260303_152810\",\"error\":\"missing approve_token\"}"
+    }
+  ],
+  "final": {
+    "ok": true,
+    "status": "unknown",
+    "iter": 4,
+    "note": "StopOnNoProgress hit: 3"
+  }
+}

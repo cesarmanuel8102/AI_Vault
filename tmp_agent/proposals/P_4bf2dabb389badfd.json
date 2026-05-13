@@ -1,0 +1,14 @@
+{
+  "proposal_id": "P_4bf2dabb389badfd",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\notes\\p3_1_design.md",
+    "content": "# episode.json Schema\n## Required Fields\n- field1: type\n- field2: type\n## Evidence\nDocumentation needed.\n",
+    "text": "# episode.json Schema\n## Required Fields\n- field1: type\n- field2: type\n## Evidence\nDocumentation needed.\n"
+  },
+  "room_id": "room_p3_1_20260303_104350",
+  "step_id": "S4",
+  "created_at": "2026-03-03T15:47:04.655100+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

@@ -1,0 +1,44 @@
+--- NUL
++++ C:\AI_VAULT\tmp_agent\workspace\financial_motor_contract_v1.json
+@@ -0,0 +1,41 @@
++{
++  "contract_id": "financial_motor_contract_v1",
++  "created_at_utc": "AUTO",
++  "mission": {
++    "north_star": "Multiplicar capital de forma sostenida con control de riesgo y cumplimiento legal/ético.",
++    "primary_metric_u": "U = log_growth - dd_penalty - tail_penalty - violation_penalty",
++    "constraints": {
++      "legal_ethics": "mandatory",
++      "no_credential_exfiltration": true,
++      "no_runtime_writes_without_gate": true
++    }
++  },
++  "risk": {
++    "limits": {
++      "max_daily_loss_frac": 0.02,
++      "max_weekly_drawdown_frac": 0.06,
++      "max_total_exposure_frac": 0.70,
++      "kill_switch": false
++    },
++    "kill_switch_policy": {
++      "auto_on_violation": true,
++      "manual_override_required": true
++    }
++  },
++  "execution": {
++    "environment": "local_windows",
++    "ps_only": true,
++    "tooling": {
++      "sandbox_root": "C:\\AI_VAULT\\tmp_agent",
++      "repo_root": "C:\\AI_VAULT\\workspace\\brainlab",
++      "deny_roots": ["C:\\AI_VAULT\\00_identity"]
++    }
++  },
++  "evaluation": {
++    "cadence": {
++      "first_check": "after_20_steps_or_24h",
++      "regular": "daily"
++    },
++    "required_artifacts": ["logs_ndjson", "state_json", "receipts_applied"]
++  }
++}

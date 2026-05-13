@@ -1,0 +1,13 @@
+{
+  "proposal_id": "P_a5c21852dc525f3b",
+  "tool_name": "append_file",
+  "tool_args": {
+    "path": "C:\\AI_VAULT\\tmp_agent\\workspace\\audit_semantic_smoke.txt",
+    "content": "smoke 2026-03-01T18:01:20\n"
+  },
+  "room_id": "room_audit_semantic_smoke_8",
+  "step_id": "1",
+  "created_at": "2026-03-01T23:01:20.631394+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

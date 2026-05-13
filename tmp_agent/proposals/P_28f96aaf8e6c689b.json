@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_28f96aaf8e6c689b",
+  "tool_name": "append_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\notes\\p3_1_design.md",
+    "content": "# p3_1 Design Document\n\n## Schema for episode.json\n- run_id: Unique identifier for the run.\n- inputs: Inputs provided for the run.\n- plan_snapshot: Snapshot of the plan used.\n- tool_calls: List of tools called during execution.\n- outputs: Outputs generated during execution.\n- violations: Any policy violations encountered.\n- evidence: Supporting evidence for decisions.\n\n## Minimum Fields Required\n- run_id\n- inputs\n- tool_calls\n\n## Evidence\n- All data should be traceable through audit logs.",
+    "value": null,
+    "text": "# p3_1 Design Document\n\n## Schema for episode.json\n- run_id: Unique identifier for the run.\n- inputs: Inputs provided for the run.\n- plan_snapshot: Snapshot of the plan used.\n- tool_calls: List of tools called during execution.\n- outputs: Outputs generated during execution.\n- violations: Any policy violations encountered.\n- evidence: Supporting evidence for decisions.\n\n## Minimum Fields Required\n- run_id\n- inputs\n- tool_calls\n\n## Evidence\n- All data should be traceable through audit logs."
+  },
+  "room_id": "room_p3_1_20260303_104350",
+  "step_id": "S4",
+  "created_at": "2026-03-03T15:57:30.276558+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

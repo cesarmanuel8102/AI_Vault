@@ -1,0 +1,780 @@
+{
+  "ts": "2026-02-20T16:16:59.816508Z",
+  "ranked": [
+    {
+      "id": "IDEA_10",
+      "name": "Paquete de automatización PowerShell/Windows",
+      "who": "oficinas pequeñas",
+      "pain": "PC lenta/archivos caóticos",
+      "solution": "scripts + mantenimiento",
+      "price_usd": 149,
+      "scores": {
+        "time_to_first_dollar": 8,
+        "margin": 7,
+        "scalability": 7,
+        "distribution_access": 6,
+        "confidence": 6,
+        "legal_tos_safety": 9
+      },
+      "total": 7.26
+    },
+    {
+      "id": "IDEA_06",
+      "name": "Kit de SOPs + checklists operativos",
+      "who": "equipos pequeños",
+      "pain": "procesos inconsistentes",
+      "solution": "SOP pack + entrenamiento",
+      "price_usd": 499,
+      "scores": {
+        "time_to_first_dollar": 8,
+        "margin": 7,
+        "scalability": 6,
+        "distribution_access": 6,
+        "confidence": 6,
+        "legal_tos_safety": 9
+      },
+      "total": 7.1
+    },
+    {
+      "id": "IDEA_02",
+      "name": "Dashboard QA/QC simple",
+      "who": "contratistas/CEI",
+      "pain": "ensayos/tickets dispersos",
+      "solution": "tablero + checklist + archivos",
+      "price_usd": 599,
+      "scores": {
+        "time_to_first_dollar": 7,
+        "margin": 8,
+        "scalability": 6,
+        "distribution_access": 6,
+        "confidence": 6,
+        "legal_tos_safety": 9,
+        "price_power": 7
+      },
+      "total": 7.06
+    },
+    {
+      "id": "IDEA_08",
+      "name": "Control de cambios y evidencias",
+      "who": "proyectos con auditoría",
+      "pain": "pérdida de trazabilidad",
+      "solution": "registro + hash + logs",
+      "price_usd": 699,
+      "scores": {
+        "time_to_first_dollar": 7,
+        "margin": 8,
+        "scalability": 6,
+        "distribution_access": 6,
+        "confidence": 6,
+        "legal_tos_safety": 9,
+        "price_power": 7
+      },
+      "total": 7.06
+    },
+    {
+      "id": "IDEA_01",
+      "name": "Reporte diario automatizado (fotos+geo+resumen)",
+      "who": "pymes construcción",
+      "pain": "reportes manuales + fotos caóticas",
+      "solution": "plantilla + pipeline + PDF diario",
+      "price_usd": 399,
+      "scores": {
+        "time_to_first_dollar": 7,
+        "margin": 7,
+        "scalability": 7,
+        "distribution_access": 6,
+        "confidence": 6,
+        "legal_tos_safety": 9
+      },
+      "total": 7.04
+    },
+    {
+      "id": "IDEA_03",
+      "name": "Generador de propuestas 1-click",
+      "who": "servicios técnicos",
+      "pain": "cotizaciones lentas",
+      "solution": "plantillas + cálculo + PDF",
+      "price_usd": 299,
+      "scores": {
+        "time_to_first_dollar": 7,
+        "margin": 7,
+        "scalability": 7,
+        "distribution_access": 6,
+        "confidence": 6,
+        "legal_tos_safety": 9
+      },
+      "total": 7.04
+    },
+    {
+      "id": "IDEA_05",
+      "name": "Automatización de reportes semanales",
+      "who": "pequeñas firmas",
+      "pain": "reportes tardan horas",
+      "solution": "resumen + KPI + PDF",
+      "price_usd": 349,
+      "scores": {
+        "time_to_first_dollar": 7,
+        "margin": 7,
+        "scalability": 7,
+        "distribution_access": 6,
+        "confidence": 6,
+        "legal_tos_safety": 9
+      },
+      "total": 7.04
+    },
+    {
+      "id": "IDEA_04",
+      "name": "Sistema de organización de fotos por proyecto",
+      "who": "empresas campo",
+      "pain": "evidencia pierde valor",
+      "solution": "naming + tags + export",
+      "price_usd": 249,
+      "scores": {
+        "time_to_first_dollar": 7,
+        "margin": 7,
+        "scalability": 6,
+        "distribution_access": 6,
+        "confidence": 6,
+        "legal_tos_safety": 9
+      },
+      "total": 6.88
+    },
+    {
+      "id": "IDEA_07",
+      "name": "Asistente local para documentación (offline)",
+      "who": "profesionales campo",
+      "pain": "redacción lenta",
+      "solution": "plantillas + prompts + QA",
+      "price_usd": 299,
+      "scores": {
+        "time_to_first_dollar": 7,
+        "margin": 7,
+        "scalability": 6,
+        "distribution_access": 6,
+        "confidence": 6,
+        "legal_tos_safety": 9
+      },
+      "total": 6.88
+    },
+    {
+      "id": "IDEA_09",
+      "name": "Conversión de Excel sucio a sistema limpio",
+      "who": "pymes admin",
+      "pain": "datos inconsistentes",
+      "solution": "normalización + validación",
+      "price_usd": 199,
+      "scores": {
+        "time_to_first_dollar": 7,
+        "margin": 7,
+        "scalability": 6,
+        "distribution_access": 6,
+        "confidence": 6,
+        "legal_tos_safety": 9
+      },
+      "total": 6.88
+    }
+  ],
+  "top2": [
+    {
+      "id": "IDEA_10",
+      "name": "Paquete de automatización PowerShell/Windows",
+      "who": "oficinas pequeñas",
+      "pain": "PC lenta/archivos caóticos",
+      "solution": "scripts + mantenimiento",
+      "price_usd": 149,
+      "scores": {
+        "time_to_first_dollar": 8,
+        "margin": 7,
+        "scalability": 7,
+        "distribution_access": 6,
+        "confidence": 6,
+        "legal_tos_safety": 9
+      },
+      "total": 7.26
+    },
+    {
+      "id": "IDEA_06",
+      "name": "Kit de SOPs + checklists operativos",
+      "who": "equipos pequeños",
+      "pain": "procesos inconsistentes",
+      "solution": "SOP pack + entrenamiento",
+      "price_usd": 499,
+      "scores": {
+        "time_to_first_dollar": 8,
+        "margin": 7,
+        "scalability": 6,
+        "distribution_access": 6,
+        "confidence": 6,
+        "legal_tos_safety": 9
+      },
+      "total": 7.1
+    }
+  ],
+  "plan14d": {
+    "ts": "2026-02-20T16:16:59.826768Z",
+    "top2_plan": [
+      {
+        "rank": 1,
+        "idea": {
+          "id": "IDEA_10",
+          "name": "Paquete de automatización PowerShell/Windows",
+          "who": "oficinas pequeñas",
+          "pain": "PC lenta/archivos caóticos",
+          "solution": "scripts + mantenimiento",
+          "price_usd": 149,
+          "scores": {
+            "time_to_first_dollar": 8,
+            "margin": 7,
+            "scalability": 7,
+            "distribution_access": 6,
+            "confidence": 6,
+            "legal_tos_safety": 9
+          },
+          "total": 7.26
+        },
+        "week1_actions_gated": [
+          {
+            "proposal": {
+              "action": "research",
+              "description": "Construir lista de 20 prospectos de oficinas pequeñas (1:1), con criterio y fuente pública.",
+              "money_move": false,
+              "evidence": "manual list build / public sources / no scraping ilegal"
+            },
+            "ethics": {
+              "ts": "2026-02-20T16:16:59.819765Z",
+              "proposal": {
+                "action": "research",
+                "description": "Construir lista de 20 prospectos de oficinas pequeñas (1:1), con criterio y fuente pública.",
+                "money_move": false,
+                "evidence": "manual list build / public sources / no scraping ilegal"
+              },
+              "verdict": "allow",
+              "score": 0,
+              "reasons": {},
+              "tags": [],
+              "policy_version": "0.1.0",
+              "constitution_version": "0.1.0"
+            }
+          },
+          {
+            "proposal": {
+              "action": "build_asset",
+              "description": "Crear 1-pager de oferta 'Paquete de automatización PowerShell/Windows' con entregable, precio $149 y garantía/alcance.",
+              "money_move": false,
+              "evidence": "documento interno"
+            },
+            "ethics": {
+              "ts": "2026-02-20T16:16:59.821765Z",
+              "proposal": {
+                "action": "build_asset",
+                "description": "Crear 1-pager de oferta 'Paquete de automatización PowerShell/Windows' con entregable, precio $149 y garantía/alcance.",
+                "money_move": false,
+                "evidence": "documento interno"
+              },
+              "verdict": "allow",
+              "score": 0,
+              "reasons": {},
+              "tags": [],
+              "policy_version": "0.1.0",
+              "constitution_version": "0.1.0"
+            }
+          },
+          {
+            "proposal": {
+              "action": "draft_email_1to1",
+              "description": "Redactar email 1:1 personalizado con opt-out para solicitar llamada de 10 min.",
+              "channels": [
+                "email"
+              ],
+              "money_move": false,
+              "evidence": "contacto directo / opt-in / contacto previo"
+            },
+            "ethics": {
+              "ts": "2026-02-20T16:16:59.822771Z",
+              "proposal": {
+                "action": "draft_email_1to1",
+                "description": "Redactar email 1:1 personalizado con opt-out para solicitar llamada de 10 min.",
+                "channels": [
+                  "email"
+                ],
+                "money_move": false,
+                "evidence": "contacto directo / opt-in / contacto previo"
+              },
+              "verdict": "allow",
+              "score": 0,
+              "reasons": {},
+              "tags": [],
+              "policy_version": "0.1.0",
+              "constitution_version": "0.1.0"
+            }
+          }
+        ],
+        "plan_14d": [
+          {
+            "day": 1,
+            "date": "2026-02-20",
+            "actions": [
+              "research: obtener 20 leads 1:1"
+            ],
+            "kpi_target": {
+              "outreach_sent": 0,
+              "responses": 0,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 2,
+            "date": "2026-02-21",
+            "actions": [
+              "build_asset: 1-pager oferta + pricing"
+            ],
+            "kpi_target": {
+              "outreach_sent": 0,
+              "responses": 0,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 3,
+            "date": "2026-02-22",
+            "actions": [
+              "draft_email_1to1: plantilla base + 5 variantes"
+            ],
+            "kpi_target": {
+              "outreach_sent": 0,
+              "responses": 0,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 4,
+            "date": "2026-02-23",
+            "actions": [
+              "outreach_1to1: enviar 3-5 mensajes personalizados (no spam)"
+            ],
+            "kpi_target": {
+              "outreach_sent": 5,
+              "responses": 0,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 5,
+            "date": "2026-02-24",
+            "actions": [
+              "outreach_1to1: enviar 3-5 mensajes personalizados (no spam)"
+            ],
+            "kpi_target": {
+              "outreach_sent": 5,
+              "responses": 1,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 6,
+            "date": "2026-02-25",
+            "actions": [
+              "outreach_1to1: enviar 3-5 mensajes personalizados (no spam)"
+            ],
+            "kpi_target": {
+              "outreach_sent": 5,
+              "responses": 0,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 7,
+            "date": "2026-02-26",
+            "actions": [
+              "outreach_1to1: enviar 3-5 mensajes personalizados (no spam)"
+            ],
+            "kpi_target": {
+              "outreach_sent": 5,
+              "responses": 1,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 8,
+            "date": "2026-02-27",
+            "actions": [
+              "outreach_1to1: enviar 3-5 mensajes personalizados (no spam)"
+            ],
+            "kpi_target": {
+              "outreach_sent": 5,
+              "responses": 0,
+              "calls_booked": 1,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 9,
+            "date": "2026-02-28",
+            "actions": [
+              "outreach_1to1: enviar 3-5 mensajes personalizados (no spam)"
+            ],
+            "kpi_target": {
+              "outreach_sent": 5,
+              "responses": 1,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 10,
+            "date": "2026-03-01",
+            "actions": [
+              "outreach_1to1: enviar 3-5 mensajes personalizados (no spam)"
+            ],
+            "kpi_target": {
+              "outreach_sent": 5,
+              "responses": 0,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 11,
+            "date": "2026-03-02",
+            "actions": [
+              "followup_1to1: seguimiento respetuoso + opt-out"
+            ],
+            "kpi_target": {
+              "outreach_sent": 0,
+              "responses": 1,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 12,
+            "date": "2026-03-03",
+            "actions": [
+              "proposal: preparar 1 propuesta real si hay interés"
+            ],
+            "kpi_target": {
+              "outreach_sent": 0,
+              "responses": 0,
+              "calls_booked": 1,
+              "proposals_sent": 1
+            }
+          },
+          {
+            "day": 13,
+            "date": "2026-03-04",
+            "actions": [
+              "close: agendar llamada / cierre inicial"
+            ],
+            "kpi_target": {
+              "outreach_sent": 0,
+              "responses": 0,
+              "calls_booked": 1,
+              "proposals_sent": 1
+            }
+          },
+          {
+            "day": 14,
+            "date": "2026-03-05",
+            "actions": [
+              "review: métricas + post-mortem + ajustes"
+            ],
+            "kpi_target": {
+              "outreach_sent": 0,
+              "responses": 1,
+              "calls_booked": 1,
+              "proposals_sent": 1
+            }
+          }
+        ]
+      },
+      {
+        "rank": 2,
+        "idea": {
+          "id": "IDEA_06",
+          "name": "Kit de SOPs + checklists operativos",
+          "who": "equipos pequeños",
+          "pain": "procesos inconsistentes",
+          "solution": "SOP pack + entrenamiento",
+          "price_usd": 499,
+          "scores": {
+            "time_to_first_dollar": 8,
+            "margin": 7,
+            "scalability": 6,
+            "distribution_access": 6,
+            "confidence": 6,
+            "legal_tos_safety": 9
+          },
+          "total": 7.1
+        },
+        "week1_actions_gated": [
+          {
+            "proposal": {
+              "action": "research",
+              "description": "Construir lista de 20 prospectos de equipos pequeños (1:1), con criterio y fuente pública.",
+              "money_move": false,
+              "evidence": "manual list build / public sources / no scraping ilegal"
+            },
+            "ethics": {
+              "ts": "2026-02-20T16:16:59.823768Z",
+              "proposal": {
+                "action": "research",
+                "description": "Construir lista de 20 prospectos de equipos pequeños (1:1), con criterio y fuente pública.",
+                "money_move": false,
+                "evidence": "manual list build / public sources / no scraping ilegal"
+              },
+              "verdict": "allow",
+              "score": 0,
+              "reasons": {},
+              "tags": [],
+              "policy_version": "0.1.0",
+              "constitution_version": "0.1.0"
+            }
+          },
+          {
+            "proposal": {
+              "action": "build_asset",
+              "description": "Crear 1-pager de oferta 'Kit de SOPs + checklists operativos' con entregable, precio $499 y garantía/alcance.",
+              "money_move": false,
+              "evidence": "documento interno"
+            },
+            "ethics": {
+              "ts": "2026-02-20T16:16:59.824771Z",
+              "proposal": {
+                "action": "build_asset",
+                "description": "Crear 1-pager de oferta 'Kit de SOPs + checklists operativos' con entregable, precio $499 y garantía/alcance.",
+                "money_move": false,
+                "evidence": "documento interno"
+              },
+              "verdict": "allow",
+              "score": 0,
+              "reasons": {},
+              "tags": [],
+              "policy_version": "0.1.0",
+              "constitution_version": "0.1.0"
+            }
+          },
+          {
+            "proposal": {
+              "action": "draft_email_1to1",
+              "description": "Redactar email 1:1 personalizado con opt-out para solicitar llamada de 10 min.",
+              "channels": [
+                "email"
+              ],
+              "money_move": false,
+              "evidence": "contacto directo / opt-in / contacto previo"
+            },
+            "ethics": {
+              "ts": "2026-02-20T16:16:59.825769Z",
+              "proposal": {
+                "action": "draft_email_1to1",
+                "description": "Redactar email 1:1 personalizado con opt-out para solicitar llamada de 10 min.",
+                "channels": [
+                  "email"
+                ],
+                "money_move": false,
+                "evidence": "contacto directo / opt-in / contacto previo"
+              },
+              "verdict": "allow",
+              "score": 0,
+              "reasons": {},
+              "tags": [],
+              "policy_version": "0.1.0",
+              "constitution_version": "0.1.0"
+            }
+          }
+        ],
+        "plan_14d": [
+          {
+            "day": 1,
+            "date": "2026-02-20",
+            "actions": [
+              "research: obtener 20 leads 1:1"
+            ],
+            "kpi_target": {
+              "outreach_sent": 0,
+              "responses": 0,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 2,
+            "date": "2026-02-21",
+            "actions": [
+              "build_asset: 1-pager oferta + pricing"
+            ],
+            "kpi_target": {
+              "outreach_sent": 0,
+              "responses": 0,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 3,
+            "date": "2026-02-22",
+            "actions": [
+              "draft_email_1to1: plantilla base + 5 variantes"
+            ],
+            "kpi_target": {
+              "outreach_sent": 0,
+              "responses": 0,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 4,
+            "date": "2026-02-23",
+            "actions": [
+              "outreach_1to1: enviar 3-5 mensajes personalizados (no spam)"
+            ],
+            "kpi_target": {
+              "outreach_sent": 5,
+              "responses": 0,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 5,
+            "date": "2026-02-24",
+            "actions": [
+              "outreach_1to1: enviar 3-5 mensajes personalizados (no spam)"
+            ],
+            "kpi_target": {
+              "outreach_sent": 5,
+              "responses": 1,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 6,
+            "date": "2026-02-25",
+            "actions": [
+              "outreach_1to1: enviar 3-5 mensajes personalizados (no spam)"
+            ],
+            "kpi_target": {
+              "outreach_sent": 5,
+              "responses": 0,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 7,
+            "date": "2026-02-26",
+            "actions": [
+              "outreach_1to1: enviar 3-5 mensajes personalizados (no spam)"
+            ],
+            "kpi_target": {
+              "outreach_sent": 5,
+              "responses": 1,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 8,
+            "date": "2026-02-27",
+            "actions": [
+              "outreach_1to1: enviar 3-5 mensajes personalizados (no spam)"
+            ],
+            "kpi_target": {
+              "outreach_sent": 5,
+              "responses": 0,
+              "calls_booked": 1,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 9,
+            "date": "2026-02-28",
+            "actions": [
+              "outreach_1to1: enviar 3-5 mensajes personalizados (no spam)"
+            ],
+            "kpi_target": {
+              "outreach_sent": 5,
+              "responses": 1,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 10,
+            "date": "2026-03-01",
+            "actions": [
+              "outreach_1to1: enviar 3-5 mensajes personalizados (no spam)"
+            ],
+            "kpi_target": {
+              "outreach_sent": 5,
+              "responses": 0,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 11,
+            "date": "2026-03-02",
+            "actions": [
+              "followup_1to1: seguimiento respetuoso + opt-out"
+            ],
+            "kpi_target": {
+              "outreach_sent": 0,
+              "responses": 1,
+              "calls_booked": 0,
+              "proposals_sent": 0
+            }
+          },
+          {
+            "day": 12,
+            "date": "2026-03-03",
+            "actions": [
+              "proposal: preparar 1 propuesta real si hay interés"
+            ],
+            "kpi_target": {
+              "outreach_sent": 0,
+              "responses": 0,
+              "calls_booked": 1,
+              "proposals_sent": 1
+            }
+          },
+          {
+            "day": 13,
+            "date": "2026-03-04",
+            "actions": [
+              "close: agendar llamada / cierre inicial"
+            ],
+            "kpi_target": {
+              "outreach_sent": 0,
+              "responses": 0,
+              "calls_booked": 1,
+              "proposals_sent": 1
+            }
+          },
+          {
+            "day": 14,
+            "date": "2026-03-05",
+            "actions": [
+              "review: métricas + post-mortem + ajustes"
+            ],
+            "kpi_target": {
+              "outreach_sent": 0,
+              "responses": 1,
+              "calls_booked": 1,
+              "proposals_sent": 1
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

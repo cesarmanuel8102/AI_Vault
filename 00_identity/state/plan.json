@@ -1,0 +1,554 @@
+{
+  "mission_id": "mission_1772049076",
+  "created_ts": "2026-02-25T19:51:16.593491Z",
+  "updated_ts": "2026-02-25T20:00:06.304047Z",
+  "profile": "default",
+  "cursor": 3,
+  "steps": [
+    {
+      "id": "s1",
+      "title": "Inspeccionar estado actual",
+      "status": "done",
+      "tool_calls": [
+        {
+          "tool": "list_dir",
+          "args": {
+            "path": "C:\\AI_VAULT\\00_identity"
+          }
+        },
+        {
+          "tool": "list_dir",
+          "args": {
+            "path": "C:\\AI_VAULT\\tmp_agent"
+          }
+        }
+      ],
+      "result": [
+        {
+          "tool": "list_dir",
+          "ok": true,
+          "output": {
+            "path": "C:\\AI_VAULT\\00_identity",
+            "items": [
+              {
+                "name": "$null",
+                "is_dir": false,
+                "size": 0
+              },
+              {
+                "name": "$RUN",
+                "is_dir": false,
+                "size": 854
+              },
+              {
+                "name": ".venv",
+                "is_dir": true,
+                "size": 0
+              },
+              {
+                "name": "__pycache__",
+                "is_dir": true,
+                "size": 8192
+              },
+              {
+                "name": "_add_risk_meta_tables.py",
+                "is_dir": false,
+                "size": 879
+              },
+              {
+                "name": "_db_probe.py",
+                "is_dir": false,
+                "size": 576
+              },
+              {
+                "name": "_rag_indexer.py",
+                "is_dir": false,
+                "size": 2249
+              },
+              {
+                "name": "_rag_init.py",
+                "is_dir": false,
+                "size": 747
+              },
+              {
+                "name": "agent_loop.py",
+                "is_dir": false,
+                "size": 9778
+              },
+              {
+                "name": "agent_state.py",
+                "is_dir": false,
+                "size": 2839
+              },
+              {
+                "name": "AI_LOCAL_DIAGNOSTIC.ps1",
+                "is_dir": false,
+                "size": 2120
+              },
+              {
+                "name": "approval_gate.py",
+                "is_dir": false,
+                "size": 1933
+              },
+              {
+                "name": "archive",
+                "is_dir": true,
+                "size": 0
+              },
+              {
+                "name": "brain.db",
+                "is_dir": false,
+                "size": 118784
+              },
+              {
+                "name": "brain_lab",
+                "is_dir": true,
+                "size": 4096
+              },
+              {
+                "name": "brain_router.py",
+                "is_dir": false,
+                "size": 41664
+              },
+              {
+                "name": "brain_router.py.pre_phase3_20260224.bak",
+                "is_dir": false,
+                "size": 40076
+              },
+              {
+                "name": "brain_server.py",
+                "is_dir": false,
+                "size": 4654
+              },
+              {
+                "name": "brain_server.py.bak_agent_endpoints_20260225_144444",
+                "is_dir": false,
+                "size": 957
+              },
+              {
+                "name": "brain_server.py.bak_tools_shim_20260225_145639",
+                "is_dir": false,
+                "size": 2702
+              },
+              {
+                "name": "brain_server.py.pre_restore_20260222_202622.bak",
+                "is_dir": false,
+                "size": 119727
+              },
+              {
+                "name": "brain_server.py.pre_restore_20260222_202833.bak",
+                "is_dir": false,
+                "size": 119727
+              },
+              {
+                "name": "constitution.md",
+                "is_dir": false,
+                "size": 2076
+              },
+              {
+                "name": "constitution.txt",
+                "is_dir": false,
+                "size": 1861
+              },
+              {
+                "name": "decision_engine_protocol.md",
+                "is_dir": false,
+                "size": 1060
+              },
+              {
+                "name": "docs",
+                "is_dir": true,
+                "size": 0
+              },
+              {
+                "name": "episode_schema.py",
+                "is_dir": false,
+                "size": 2226
+              },
+              {
+                "name": "episodes.py",
+                "is_dir": false,
+                "size": 3679
+              },
+              {
+                "name": "evaluator_v2.py",
+                "is_dir": false,
+                "size": 2328
+              },
+              {
+                "name": "init_brain_db.py",
+                "is_dir": false,
+                "size": 1118
+              },
+              {
+                "name": "install_brain_service.ps1",
+                "is_dir": false,
+                "size": 962
+              },
+              {
+                "name": "logs",
+                "is_dir": true,
+                "size": 4096
+              },
+              {
+                "name": "memory_rank.py",
+                "is_dir": false,
+                "size": 6287
+              },
+              {
+                "name": "memory_rank_sort.py",
+                "is_dir": false,
+                "size": 3072
+              },
+              {
+                "name": "memory_store.py",
+                "is_dir": false,
+                "size": 6405
+              },
+              {
+                "name": "memory_system.md",
+                "is_dir": false,
+                "size": 974
+              },
+              {
+                "name": "patch_brain_server.py",
+                "is_dir": false,
+                "size": 5542
+              },
+              {
+                "name": "PEGA_AQUI_LA_RUTA_QUE_TE_SALIO",
+                "is_dir": false,
+                "size": 150
+              },
+              {
+                "name": "policy.py",
+                "is_dir": false,
+                "size": 3406
+              },
+              {
+                "name": "policy_eval.py",
+                "is_dir": false,
+                "size": 3489
+              },
+              {
+                "name": "policy_registry.py",
+                "is_dir": false,
+                "size": 2387
+              },
+              {
+                "name": "run_brain_server.ps1",
+                "is_dir": false,
+                "size": 2018
+              },
+              {
+                "name": "run_brain_server_hardened.ps1",
+                "is_dir": false,
+                "size": 1814
+              },
+              {
+                "name": "seed_memory.py",
+                "is_dir": false,
+                "size": 502
+              },
+              {
+                "name": "state",
+                "is_dir": true,
+                "size": 0
+              },
+              {
+                "name": "tools_fs.py",
+                "is_dir": false,
+                "size": 2537
+              }
+            ]
+          },
+          "error": null
+        },
+        {
+          "tool": "list_dir",
+          "ok": true,
+          "output": {
+            "path": "C:\\AI_VAULT\\tmp_agent",
+            "items": [
+              {
+                "name": "__pycache__",
+                "is_dir": true,
+                "size": 4096
+              },
+              {
+                "name": "_dummy_bundle.json",
+                "is_dir": false,
+                "size": 45
+              },
+              {
+                "name": "_patch_contract_limits.py",
+                "is_dir": false,
+                "size": 1169
+              },
+              {
+                "name": "_patch_contract_risk_limits.py",
+                "is_dir": false,
+                "size": 1405
+              },
+              {
+                "name": "apply_gate.py",
+                "is_dir": false,
+                "size": 9840
+              },
+              {
+                "name": "dev_loop.py",
+                "is_dir": false,
+                "size": 40306
+              },
+              {
+                "name": "dev_loop.py.bak_fix_ok_vs_halt_20260225_135830",
+                "is_dir": false,
+                "size": 36182
+              },
+              {
+                "name": "dev_loop.py.bak_fix_parse_args_psm_20260225_134753",
+                "is_dir": false,
+                "size": 36189
+              },
+              {
+                "name": "dev_loop.py.bak_fix_repo_root_fallback_20260225_135925",
+                "is_dir": false,
+                "size": 37375
+              },
+              {
+                "name": "dev_loop.py.bak_fix_return_args_20260225_134851",
+                "is_dir": false,
+                "size": 36179
+              },
+              {
+                "name": "dev_loop.py.bak_last_apply_update_20260225_142102",
+                "is_dir": false,
+                "size": 40124
+              },
+              {
+                "name": "dev_loop.py.bak_main_20260225_110335",
+                "is_dir": false,
+                "size": 36505
+              },
+              {
+                "name": "dev_loop.py.bak_polish_last_apply_smoke_summary_20260225_141810",
+                "is_dir": false,
+                "size": 39087
+              },
+              {
+                "name": "dev_loop.py.bak_polish_v2_20260225_142003",
+                "is_dir": false,
+                "size": 39087
+              },
+              {
+                "name": "dev_loop.py.bak_post_smoke_mode_20260225_134345",
+                "is_dir": false,
+                "size": 35641
+              },
+              {
+                "name": "dev_loop.py.bak_post_smoke_mode_FIX_20260225_134639",
+                "is_dir": false,
+                "size": 35641
+              },
+              {
+                "name": "dev_loop.py.bak_post_smoke_profile_20260225_141031",
+                "is_dir": false,
+                "size": 38502
+              },
+              {
+                "name": "dev_loop.py.bak_replace_smoke_mode_20260225_141553",
+                "is_dir": false,
+                "size": 38824
+              },
+              {
+                "name": "dev_loop.py.bak_smoke_env_profile_20260225_141403",
+                "is_dir": false,
+                "size": 38813
+              },
+              {
+                "name": "dev_loop.py.bak_wire_profile_hard_20260225_141235",
+                "is_dir": false,
+                "size": 38654
+              },
+              {
+                "name": "diff_engine.py",
+                "is_dir": false,
+                "size": 2524
+              },
+              {
+                "name": "logs",
+                "is_dir": true,
+                "size": 0
+              },
+              {
+                "name": "make_tools_snapshot.ps1",
+                "is_dir": false,
+                "size": 1075
+              },
+              {
+                "name": "policies.py",
+                "is_dir": false,
+                "size": 2598
+              },
+              {
+                "name": "proposal_packager.py",
+                "is_dir": false,
+                "size": 5138
+              },
+              {
+                "name": "proposals",
+                "is_dir": true,
+                "size": 16384
+              },
+              {
+                "name": "restore_tools.ps1",
+                "is_dir": false,
+                "size": 2061
+              },
+              {
+                "name": "runs",
+                "is_dir": true,
+                "size": 0
+              },
+              {
+                "name": "sandbox_executor.py",
+                "is_dir": false,
+                "size": 6310
+              },
+              {
+                "name": "sandbox_logger.py",
+                "is_dir": false,
+                "size": 1880
+              },
+              {
+                "name": "sandbox_state.json",
+                "is_dir": false,
+                "size": 1502
+              },
+              {
+                "name": "smoke_risk_engine.py",
+                "is_dir": false,
+                "size": 891
+              },
+              {
+                "name": "smoke_runner.py",
+                "is_dir": false,
+                "size": 6300
+              },
+              {
+                "name": "smoke_runner.py.bak_before_overwrite_v2_20260225_140205",
+                "is_dir": false,
+                "size": 1561
+              },
+              {
+                "name": "smoke_runner.py.bak_before_overwrite_v3_20260225_140500",
+                "is_dir": false,
+                "size": 2654
+              },
+              {
+                "name": "smoke_runner.py.bak_contract_autodetect_20260225_140626",
+                "is_dir": false,
+                "size": 4192
+              },
+              {
+                "name": "smoke_runner.py.bak_fix_smoke_utils_20260225_140302",
+                "is_dir": false,
+                "size": 2549
+              },
+              {
+                "name": "smoke_runner.py.bak_has_halt_20260225_140043",
+                "is_dir": false,
+                "size": 1561
+              },
+              {
+                "name": "smoke_runner.py.bak_profile_20260225_140823",
+                "is_dir": false,
+                "size": 5550
+              },
+              {
+                "name": "state",
+                "is_dir": true,
+                "size": 28672
+              },
+              {
+                "name": "workspace",
+                "is_dir": true,
+                "size": 4096
+              }
+            ]
+          },
+          "error": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "s2",
+      "title": "Validar archivos críticos",
+      "status": "done",
+      "tool_calls": [
+        {
+          "tool": "read_file",
+          "args": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\dev_loop.py"
+          }
+        },
+        {
+          "tool": "read_file",
+          "args": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\smoke_runner.py"
+          }
+        }
+      ],
+      "result": [
+        {
+          "tool": "read_file",
+          "ok": true,
+          "output": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\dev_loop.py",
+            "text": "# dev_loop.py (v0.3.1)\r\n# Dev Sandbox Agent Loop (C:\\AI_VAULT\\tmp_agent)\r\n#\r\n# Phase 4.5 objectives:\r\n# - Sandbox dev loop con logging NDJSON\r\n# - Pipeline: generate -> diff -> bundle -> apply (gated)\r\n# - No tocar 00_identity\r\n#\r\n# Modes:\r\n#   --mode=run        : analyze/decide/act/validate (1 iter)\r\n#   --mode=package    : bundle diffs desde tmp_agent/workspace contra workspace/brainlab\r\n#   --mode=apply      : aplica bundle al repo (gated con token)\r\n#\r\n# PS-only usage:\r\n#   python dev_loop.py --mode=run\r\n#   python dev_loop.py --mode=package\r\n#   python dev_loop.py --mode=apply --bundle=C:\\...\\prop_XXX_bundle.json --approve=APPLY_prop_XXX\r\n\r\nfrom __future__ import annotations\r\n\r\nimport json\r\nimport time\r\nimport uuid\r\nimport hashlib\r\nfrom dataclasses import dataclass\r\nfrom datetime import datetime, timezone\r\nfrom pathlib import Path\r\nfrom typing import Any, Dict, List, Optional\r\n\r\nfrom sandbox_logger import SandboxLogger\r\nfrom policies import SandboxPolicy\r\nfrom sandbox_executor import SandboxExecutor\r\n\r\nimport proposal_packager\r\nimport apply_gate\r\n\r\nSANDBOX_ROOT = Path(r\"C:\\AI_VAULT\\tmp_agent\").resolve()\r\nLOG_PATH = SANDBOX_ROOT / \"logs\" / \"dev.ndjson\"\r\nSTATE_PATH = SANDBOX_ROOT / \"sandbox_state.json\"\r\nPROPOSALS_DIR = SANDBOX_ROOT / \"proposals\"\r\nRUNS_DIR = SANDBOX_ROOT / \"runs\"\r\nWORK_DIR = SANDBOX_ROOT / \"workspace\"\r\nSTATE_DIR = SANDBOX_ROOT / \"state\"\r\n\r\nREPO_ROOT = Path(r\"C:\\AI_VAULT\\workspace\\brainlab\").resolve()\r\n\r\nMAX_ITERS_DEFAULT = 1\r\nTIMEOUT_SECONDS_DEFAULT = 60\r\n\r\ndef utc_now_iso() -> str:\r\n    return datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\")\r\n\r\ndef ensure_dirs() -> None:\r\n    for p in (SANDBOX_ROOT, PROPOSALS_DIR, RUNS_DIR, WORK_DIR, STATE_DIR, LOG_PATH.parent):\r\n        p.mkdir(parents=True, exist_ok=True)\r\n\r\ndef load_state() -> Dict[str, Any]:\r\n    if STATE_PATH.exists():\r\n        try:\r\n            return json.loads(STATE_PATH.read_text(encoding=\"utf-8\"))\r\n        except Exception:\r\n            return {}\r\n    return {}\r\n\r\ndef save_state(st: Dict[str, Any]) -> None:\r\n    STATE_PATH.write_text(json.dumps(st, ensure_ascii=False, indent=2), encoding=\"utf-8\")\r\n\r\ndef sha256_file(p: Path) -> str:\r\n    h = hashlib.sha256()\r\n    with p.open(\"rb\") as f:\r\n        for chunk in iter(lambda: f.read(1024 * 1024), b\"\"):\r\n            h.update(chunk)\r\n    return h.hexdigest()\r\n\r\ndef workspace_fingerprint(include_patterns: Optional[List[str]] = None) -> Dict[str, Any]:\r\n    include_patterns = include_patterns or [\"*.py\", \"*.json\"]\r\n    files: List[Path] = []\r\n    for pat in include_patterns:\r\n        files.extend(list(WORK_DIR.rglob(pat)))\r\n    files = sorted({p.resolve() for p in files}, key=lambda x: str(x).lower())\r\n\r\n    entries = []\r\n    agg = hashlib.sha256()\r\n    for p in files:\r\n        rel = str(p.relative_to(WORK_DIR)).replace(\"/\", \"\\\\\")\r\n        h = sha256_file(p)\r\n        entries.append({\"rel\": rel, \"sha256\": h})\r\n        agg.update(rel.encode(\"utf-8\"))\r\n        agg.update(h.encode(\"utf-8\"))\r\n\r\n    return {\"count\": len(entries), \"entries\": entries, \"workspace_hash\": agg.hexdigest()}\r\n\r\n@dataclass\r\nclass LoopConfig:\r\n    max_iters: int = MAX_ITERS_DEFAULT\r\n    timeout_seconds: int = TIMEOUT_SECONDS_DEFAULT\r\n\r\nclass DevSandboxAgent:\r\n    def __init__(self, cfg: LoopConfig):\r\n        ensure_dirs()\r\n        self.cfg = cfg\r\n        self.run_id = f\"dev_{int(time.time())}_{uuid.uuid4().hex[:8]}\"\r\n        self.logger = SandboxLogger(log_path=str(LOG_PATH), run_id=self.run_id)\r\n        self.state = load_state()\r\n        self.policy = SandboxPolicy.default()\r\n        self.exec = SandboxExecutor(policy=self.policy)\r\n\r\n    def analyze_project(self) -> Dict[str, Any]:\r\n        info: Dict[str, Any] = {\r\n            \"ts\": utc_now_iso(),\r\n            \"known_phase\": self.state.get(\"phase\", \"4.5\"),\r\n            \"last_run\": self.state.get(\"last_run\", None),\r\n            \"repo_root\": str(REPO_ROOT),\r\n            \"workspace_root\": str(WORK_DIR),\r\n        }\r\n\r\n        if REPO_ROOT.exists():\r\n            res = self.exec.list_dir(str(REPO_ROOT))\r\n            info[\"repo_list_ok\"] = res.ok\r\n            info[\"repo_list_detail\"] = res.detail\r\n            if res.ok:\r\n                items = res.data.get(\"items\", [])\r\n                info[\"repo_top_items\"] = [x.get(\"name\") for x in items[:50]]\r\n        else:\r\n            info[\"repo_list_ok\"] = False\r\n            info[\"repo_list_detail\"] = \"REPO_ROOT_NOT_FOUND\"\r\n\r\n        scope = (self.state.get(\"scope_current\") or \"all\").strip().lower()\r\n        if scope == \"contracts\":\r\n            patterns = [\"*.json\"]\r\n        elif scope == \"risk\":\r\n            patterns = [\"*.py\"]\r\n        else:\r\n            patterns = [\"*.py\", \"*.json\"]\r\n\r\n        fp = workspace_fingerprint(include_patterns=patterns)\r\n        info[\"workspace_hash\"] = fp[\"workspace_hash\"]\r\n        info[\"workspace_file_count\"] = fp[\"count\"]\r\n        return info\r\n\r\n    def decide_next_step(self, analysis: Dict[str, Any]) -> Dict[str, Any]:\r\n        risk = WORK_DIR / \"risk_engine.py\"\r\n        if not risk.exists():\r\n            return {\"intent\": \"create_risk_engine_scaffold\"}\r\n        return {\"intent\": \"noop\"}\r\n\r\n    def _risk_engine_scaffold(self) -> str:\r\n        return '''# risk_engine.py (sandbox scaffold)\r\nfrom __future__ import annotations\r\n\r\nfrom dataclasses import dataclass\r\nfrom typing import Dict, Any\r\n\r\n@dataclass\r\nclass RiskLimits:\r\n    max_daily_loss: float = 0.02\r\n    max_weekly_drawdown: float = 0.06\r\n    max_total_exposure: float = 0.70\r\n    kill_switch: bool = False\r\n\r\nclass RiskEngine:\r\n    def __init__(self, limits: RiskLimits):\r\n        self.limits = limits\r\n\r\n    def assess(self, snapshot: Dict[str, Any]) -> Dict[str, Any]:\r\n        nlv = float(snapshot.get(\"nlv\", 0.0) or 0.0)\r\n        daily_pnl = float(snapshot.get(\"daily_pnl\", 0.0) or 0.0)\r\n        weekly_dd = float(snapshot.get(\"weekly_drawdown\", 0.0) or 0.0)\r\n        exposure = float(snapshot.get(\"total_exposure\", 0.0) or 0.0)\r\n\r\n        if self.limits.kill_switch:\r\n            return {\"verdict\": \"halt\", \"reason\": \"KILL_SWITCH\", \"limits\": self.limits.__dict__}\r\n\r\n        daily_loss_frac = 0.0\r\n        if nlv > 0 and daily_pnl < 0:\r\n            daily_loss_frac = abs(daily_pnl) / nlv\r\n\r\n        violations = []\r\n        if daily_loss_frac > self.limits.max_daily_loss:\r\n            violations.append({\"type\": \"MaxDailyLoss\", \"value\": daily_loss_frac, \"limit\": self.limits.max_daily_loss})\r\n        if weekly_dd > self.limits.max_weekly_drawdown:\r\n            violations.append({\"type\": \"MaxWeeklyDrawdown\", \"value\": weekly_dd, \"limit\": self.limits.max_weekly_drawdown})\r\n        if exposure > self.limits.max_total_exposure:\r\n            violations.append({\"type\": \"MaxTotalExposure\", \"value\": exposure, \"limit\": self.limits.max_total_exposure})\r\n\r\n        if violations:\r\n            return {\"verdict\": \"halt\", \"reason\": \"RISK_LIMIT_VIOLATION\", \"violations\": violations}\r\n\r\n        return {\"verdict\": \"continue\", \"reason\": \"OK\", \"violations\": []}\r\n'''\r\n\r\n    def act(self, decision: Dict[str, Any]) -> Dict[str, Any]:\r\n        if decision.get(\"intent\") == \"create_risk_engine_scaffold\":\r\n            out_path = str(WORK_DIR / \"risk_engine.py\")\r\n            wr = self.exec.write_text(out_path, self._risk_engine_scaffold())\r\n            return {\"ok\": wr.ok, \"detail\": wr.detail, \"artifact\": out_path}\r\n        return {\"ok\": True, \"detail\": \"noop\"}\r\n\r\n    def validate(self) -> Dict[str, Any]:\r\n        files = [\r\n            str(SANDBOX_ROOT / \"dev_loop.py\"),\r\n            str(SANDBOX_ROOT / \"policies.py\"),\r\n            str(SANDBOX_ROOT / \"sandbox_executor.py\"),\r\n            str(SANDBOX_ROOT / \"sandbox_logger.py\"),\r\n            str(SANDBOX_ROOT / \"diff_engine.py\"),\r\n            str(SANDBOX_ROOT / \"proposal_packager.py\"),\r\n            str(SANDBOX_ROOT / \"apply_gate.py\"),\r\n        ]\r\n        re_path = WORK_DIR / \"risk_engine.py\"\r\n        if re_path.exists():\r\n            files.append(str(re_path))\r\n\r\n        res = self.exec.run_cmd([\"python\", \"-m\", \"py_compile\", *files], cwd=str(SANDBOX_ROOT))\r\n        return {\"ok\": res.ok, \"detail\": res.detail, \"returncode\": res.data.get(\"returncode\"), \"stderr\": res.data.get(\"stderr\", \"\")}\r\n\r\n    def run_mode(self) -> Dict[str, Any]:\r\n        self.logger.emit(\"run_start\", {\"mode\": \"run\", \"sandbox_root\": str(SANDBOX_ROOT), \"repo_root\": str(REPO_ROOT)})\r\n\r\n        analysis = self.analyze_project()\r\n        self.logger.emit(\"analysis\", analysis)\r\n\r\n        decision = self.decide_next_step(analysis)\r\n        self.logger.emit(\"decision\", decision)\r\n\r\n        result = self.act(decision)\r\n        self.logger.emit(\"result\", result)\r\n\r\n        validation = self.validate()\r\n        self.logger.emit(\"validation\", validation)\r\n\r\n        verdict = {\"verdict\": \"continue\" if (result.get(\"ok\") and validation.get(\"ok\")) else \"halt\"}\r\n        self.logger.emit(\"evaluation\", verdict)\r\n\r\n        self.state[\"phase\"] = \"4.5\"\r\n        self.state[\"last_run\"] = {\r\n            \"ts\": utc_now_iso(),\r\n            \"run_id\": self.run_id,\r\n            \"mode\": \"run\",\r\n            \"analysis\": {\"workspace_hash\": analysis.get(\"workspace_hash\")},\r\n            \"evaluation\": verdict\r\n        }\r\n        save_state(self.state)\r\n\r\n        self.logger.emit(\"run_end\", {\"evaluation\": verdict})\r\n        return {\"ok\": True, \"run_id\": self.run_id, \"mode\": \"run\", \"evaluation\": verdict, \"analysis\": {\"workspace_hash\": analysis.get(\"workspace_hash\")}}\r\n\r\n    def package_mode(self) -> Dict[str, Any]:\r\n        self.logger.emit(\"run_start\", {\"mode\": \"package\"})\r\n\r\n        scope = (self.state.get(\"scope_current\") or \"all\").strip().lower()\r\n        if scope == \"contracts\":\r\n            patterns = [\"*.json\"]\r\n        elif scope == \"risk\":\r\n            patterns = [\"*.py\"]\r\n        else:\r\n            patterns = [\"*.py\", \"*.json\"]\r\n\r\n        fp = workspace_fingerprint(include_patterns=patterns)\r\n        lp = self.state.get(\"last_package\") or {}\r\n        last_pkg_hash = lp.get(\"workspace_hash\")\r\n\r\n        if last_pkg_hash == fp[\"workspace_hash\"]:\r\n            out = {\"ok\": True, \"skipped\": True, \"reason\": \"NO_WORKSPACE_CHANGES\", \"workspace_hash\": fp[\"workspace_hash\"]}\r\n            self.logger.emit(\"package_skipped\", out)\r\n    \r\n        # --- cleanup PREAPPLY snapshots (best-effort) ---\r\n        try:\r\n            st = (SANDBOX_ROOT / \"state\")\r\n            if st.exists():\r\n                snaps = sorted([p for p in st.glob(\"tools_snapshot_PREAPPLY_*\") if p.is_dir()],\r\n                               key=lambda p: p.stat().st_mtime, reverse=True)\r\n                keep = 30\r\n                for p in snaps[keep:]:\r\n                    try:\r\n                        # remove dir tree\r\n                        for child in p.rglob(\"*\"):\r\n                            try:\r\n                                if child.is_file():\r\n                                    child.unlink()\r\n                            except Exception:\r\n                                pass\r\n                        for child in sorted([d for d in p.rglob(\"*\") if d.is_dir()], key=lambda d: len(str(d)), reverse=True):\r\n                            try:\r\n                                child.rmdir()\r\n                            except Exception:\r\n                                pass\r\n                        p.rmdir()\r\n                    except Exception:\r\n                        pass\r\n        except Exception:\r\n            pass\r\n        return out\r\n\r\n        out = proposal_packager.package_workspace_to_repo_proposal(\r\n            title=\"Sandbox proposal bundle (auto)\",\r\n            rationale=\"Empaquetar diffs desde tmp_agent/workspace contra workspace/brainlab (read-only).\",\r\n            include_patterns=patterns\r\n        )\r\n\r\n        # v0.3.1: no bundles vacíos -> NO_DIFFS\r\n        if out.get(\"skipped\") and out.get(\"reason\") == \"NO_DIFFS\":\r\n            self.state[\"last_package\"] = {\"ts\": utc_now_iso(), \"workspace_hash\": fp[\"workspace_hash\"], \"bundle_path\": None, \"proposal_id\": None}\r\n            save_state(self.state)\r\n            self.logger.emit(\"package_skipped\", out)\r\n    \r\n        # --- cleanup PREAPPLY snapshots (best-effort) ---\r\n        try:\r\n            st = (SANDBOX_ROOT / \"state\")\r\n            if st.exists():\r\n                snaps = sorted([p for p in st.glob(\"tools_snapshot_PREAPPLY_*\") if p.is_dir()],\r\n                               key=lambda p: p.stat().st_mtime, reverse=True)\r\n                keep = 30\r\n                for p in snaps[keep:]:\r\n                    try:\r\n                        # remove dir tree\r\n                        for child in p.rglob(\"*\"):\r\n                            try:\r\n                                if child.is_file():\r\n                                    child.unlink()\r\n                            except Exception:\r\n                                pass\r\n                        for child in sorted([d for d in p.rglob(\"*\") if d.is_dir()], key=lambda d: len(str(d)), reverse=True):\r\n                            try:\r\n                                child.rmdir()\r\n                            except Exception:\r\n                                pass\r\n                        p.rmdir()\r\n                    except Exception:\r\n                        pass\r\n        except Exception:\r\n            pass\r\n        return out\r\n\r\n        self.logger.emit(\"package_result\", out)\r\n        self.state[\"last_package\"] = {\"ts\": utc_now_iso(), \"workspace_hash\": fp[\"workspace_hash\"], \"bundle_path\": out.get(\"bundle_path\"), \"proposal_id\": out.get(\"proposal_id\")}\r\n        save_state(self.state)\r\n\r\n        # --- cleanup PREAPPLY snapshots (best-effort) ---\r\n        try:\r\n            st = (SANDBOX_ROOT / \"state\")\r\n            if st.exists():\r\n                snaps = sorted([p for p in st.glob(\"tools_snapshot_PREAPPLY_*\") if p.is_dir()],\r\n                               key=lambda p: p.stat().st_mtime, reverse=True)\r\n                keep = 30\r\n                for p in snaps[keep:]:\r\n                    try:\r\n                        # remove dir tree\r\n                        for child in p.rglob(\"*\"):\r\n                            try:\r\n                                if child.is_file():\r\n                                    child.unlink()\r\n                            except Exception:\r\n                                pass\r\n                        for child in sorted([d for d in p.rglob(\"*\") if d.is_dir()], key=lambda d: len(str(d)), reverse=True):\r\n                            try:\r\n                                child.rmdir()\r\n                            except Exception:\r\n                                pass\r\n                        p.rmdir()\r\n                    except Exception:\r\n                        pass\r\n        except Exception:\r\n            pass\r\n        return out\r\n\r\n    def smoke_mode(self, contract_path: str, profile: Optional[str] = None) -> Dict[str, Any]:\r\n            \"\"\"\r\n            Runs smoke_runner.py with explicit argv:\r\n                python smoke_runner.py --contract <path> --profile <quick|full|violations>\r\n\r\n            Returns a dict compatible with the rest of dev_loop:\r\n                ok/detail/returncode/stdout/stderr/cmd/parsed/contract_path/runner/repo_root\r\n            \"\"\"\r\n            import json\r\n            import subprocess\r\n            from pathlib import Path\r\n\r\n            runner = str((SANDBOX_ROOT / \"smoke_runner.py\").resolve())\r\n            prof = (profile or \"quick\").strip().lower()\r\n            if prof not in (\"quick\", \"full\", \"violations\"):\r\n                prof = \"quick\"\r\n\r\n            cmd = [\"python\", runner, \"--contract=\" + str(contract_path), \"--profile=\" + prof]\r\n\r\n            try:\r\n                proc = subprocess.run(cmd, capture_output=True, text=True)\r\n                rc = int(proc.returncode)\r\n                stdout = proc.stdout or \"\"\r\n                stderr = proc.stderr or \"\"\r\n\r\n                parsed = None\r\n                try:\r\n                    parsed = json.loads(stdout) if stdout.strip() else None\r\n                except Exception:\r\n                    parsed = None\r\n\r\n                repo_root = None\r\n                try:\r\n                    if isinstance(parsed, dict):\r\n                        repo_root = parsed.get(\"repo_root\")\r\n                except Exception:\r\n                    repo_root = None\r\n                if not repo_root:\r\n                    try:\r\n                        # contracts live under <repo_root>\\brainlab\\contracts\\*.json\r\n                        p = Path(contract_path).resolve()\r\n                        for parent in p.parents:\r\n                            if parent.name.lower() == \"brainlab\":\r\n                                repo_root = str(parent.parent)\r\n                                break\r\n                        if not repo_root:\r\n                            repo_root = str(p.parent)\r\n                    except Exception:\r\n                        repo_root = None\r\n\r\n                # ok means: runner exit code == 0 AND parsed ok == True (if present)\r\n                ok_flag = (rc == 0)\r\n                try:\r\n                    if isinstance(parsed, dict) and (\"ok\" in parsed):\r\n                        ok_flag = ok_flag and bool(parsed.get(\"ok\"))\r\n                except Exception:\r\n                    pass\r\n\r\n                out = {\r\n                    \"ok\": bool(ok_flag),\r\n                    \"detail\": \"OK\" if ok_flag else \"NONZERO_EXIT\",\r\n                    \"returncode\": rc,\r\n                    \"stdout\": stdout,\r\n                    \"stderr\": stderr,\r\n                    \"cmd\": cmd,\r\n                    \"parsed\": parsed,\r\n                    \"contract_path\": str(contract_path),\r\n                    \"runner\": runner,\r\n                    \"repo_root\": str(repo_root) if repo_root else None,\r\n                }\r\n                return out\r\n            except Exception as e:\r\n                return {\r\n                    \"ok\": False,\r\n                    \"detail\": \"EXCEPTION\",\r\n                    \"returncode\": 1,\r\n                    \"stdout\": \"\",\r\n                    \"stderr\": repr(e),\r\n                    \"cmd\": cmd,\r\n                    \"parsed\": None,\r\n                    \"contract_path\": str(contract_path),\r\n                    \"runner\": runner,\r\n                    \"repo_root\": None,\r\n                }\r\n    def apply_mode(self, bundle_path: str, approve: str, dest_dir: Optional[str] = None, post_smoke: Optional[str] = None, post_smoke_mode: Optional[str] = None, post_smoke_profile: Optional[str] = None) -> Dict[str, Any]:\n        self.logger.emit(\"run_start\", {\"mode\": \"apply\", \"bundle_path\": bundle_path})\r\n        out = {\"ok\": False}  # init out to avoid UnboundLocalError\r\n        # --- pre-apply tools snapshot (per-run) ---\r\n        preapply_snapshot_dir = None\r\n        try:\r\n            import time, hashlib\r\n\r\n            st = (SANDBOX_ROOT / \"state\")\r\n            st.mkdir(parents=True, exist_ok=True)\r\n\r\n            ts = time.strftime(\"%Y%m%d_%H%M%S\")\r\n            snap = st / f\"tools_snapshot_PREAPPLY_{self.run_id}_{ts}\"\r\n            snap.mkdir(parents=True, exist_ok=True)\r\n\r\n            # copy *.py tools from SANDBOX_ROOT to snapshot\r\n            py_files = list(SANDBOX_ROOT.glob(\"*.py\"))\r\n            for p in py_files:\r\n                try:\r\n                    (snap / p.name).write_bytes(p.read_bytes())\r\n                except Exception:\r\n                    pass\r\n\r\n            # hashes file: \"<sha256>  <absolute_path_under_root>\"\r\n            lines = []\r\n            for sp in snap.glob(\"*.py\"):\r\n                try:\r\n                    h = hashlib.sha256(sp.read_bytes()).hexdigest().upper()\r\n                    dst_abs = str((SANDBOX_ROOT / sp.name).resolve())\r\n                    lines.append(f\"{h}  {dst_abs}\")\r\n                except Exception:\r\n                    pass\r\n            (snap / \"_hashes.sha256.txt\").write_text(\"\\n\".join(lines), encoding=\"utf-8\")\r\n            preapply_snapshot_dir = str(snap.resolve())\r\n            try:\r\n                self.logger.emit(\"preapply_tools_snapshot\", {\"snapshot_dir\": preapply_snapshot_dir, \"count\": len(lines)})\r\n            except Exception:\r\n                pass\r\n        except Exception:\r\n            preapply_snapshot_dir = None\r\n\r\n        try:\r\n            import time, hashlib\r\n\r\n            st = (SANDBOX_ROOT / \"state\")\r\n            st.mkdir(parents=True, exist_ok=True)\r\n\r\n            ts = time.strftime(\"%Y%m%d_%H%M%S\")\r\n            snap = st / f\"tools_snapshot_PREAPPLY_{self.run_id}_{ts}\"\r\n            snap.mkdir(parents=True, exist_ok=True)\r\n\r\n            # copy *.py tools from SANDBOX_ROOT to snapshot\r\n            py_files = list(SANDBOX_ROOT.glob(\"*.py\"))\r\n            for p in py_files:\r\n                try:\r\n                    (snap / p.name).write_bytes(p.read_bytes())\r\n                except Exception:\r\n                    pass\r\n\r\n            # hashes file: \"<sha256>  <absolute_path_under_root>\"\r\n            lines = []\r\n            for sp in snap.glob(\"*.py\"):\r\n                try:\r\n                    h = hashlib.sha256(sp.read_bytes()).hexdigest().upper()\r\n                    dst_abs = str((SANDBOX_ROOT / sp.name).resolve())\r\n                    lines.append(f\"{h}  {dst_abs}\")\r\n                except Exception:\r\n                    pass\r\n            (snap / \"_hashes.sha256.txt\").write_text(\"\\n\".join(lines), encoding=\"utf-8\")\r\n            preapply_snapshot_dir = str(snap.resolve())\r\n            try:\r\n                self.logger.emit(\"preapply_tools_snapshot\", {\"snapshot_dir\": preapply_snapshot_dir, \"count\": len(lines)})\r\n            except Exception:\r\n                pass\r\n        except Exception:\r\n            preapply_snapshot_dir = None\r\n\r\n        out = apply_gate.apply_bundle(bundle_path=bundle_path, dest_dir=dest_dir, approve_token=approve)\r\n        self.logger.emit(\"apply_result\", out)\r\n        # --- post-smoke gating (optional) ---\n        post_mode = (post_smoke_mode or \"strict\").strip().lower()\n        if post_mode not in (\"strict\", \"warn\", \"off\"):\n            post_mode = \"strict\"\n\n        if (post_mode != \"off\") and post_smoke and bool(out.get(\"ok\", False)):\n            smoke_out = self.smoke_mode(contract_path=post_smoke, profile=post_smoke_profile or \"full\") or {}\r\n\r\n            # audit log (best-effort)\r\n            try:\r\n                self.logger.emit(\"post_smoke\", {\"post_smoke\": post_smoke, \"smoke\": smoke_out})\r\n            except Exception:\r\n                pass\r\n\r\n            ok = bool(smoke_out.get(\"ok\", False))\r\n            rc = smoke_out.get(\"returncode\", 0)\r\n            try:\r\n                rc = int(rc)\r\n            except Exception:\r\n                rc = 999\r\n\r\n            parsed = smoke_out.get(\"parsed\") or {}\r\n            results = parsed.get(\"results\") or []\r\n            has_halt = False\r\n            # normalize: any HALT means post-smoke not OK\n            if has_halt:\n                ok = False\n            # propagate into smoke_out for clearer logs/rollback context\n            try:\n                smoke_out[\"has_halt\"] = bool(has_halt)\n                smoke_out[\"ok\"] = bool(ok)\n            except Exception:\n                pass\n            try:\r\n                for r in results:\r\n                    assess = (r or {}).get(\"assess\") or {}\r\n                    if str(assess.get(\"verdict\", \"\")).lower() == \"halt\":\r\n                        has_halt = True\r\n                        # normalize: any HALT means post-smoke not OK\n                        if has_halt:\n                            ok = False\n                        # propagate into smoke_out for clearer logs/rollback context\n                        try:\n                            smoke_out[\"has_halt\"] = bool(has_halt)\n                            smoke_out[\"ok\"] = bool(ok)\n                        except Exception:\n                            pass\n                        break\r\n            except Exception:\r\n                has_halt = True\r\n                # normalize: any HALT means post-smoke not OK\n                if has_halt:\n                    ok = False\n                # propagate into smoke_out for clearer logs/rollback context\n                try:\n                    smoke_out[\"has_halt\"] = bool(has_halt)\n                    smoke_out[\"ok\"] = bool(ok)\n                except Exception:\n                    pass\n\r\n            failed = (not ok) or (rc != 0) or has_halt\n            if failed and post_mode == \"warn\":\r\n                try:\r\n                    smoke_summary = {}\r\n                    try:\r\n                        p = smoke_out.get(\"parsed\") if isinstance(smoke_out, dict) else None\r\n                        if isinstance(p, dict):\r\n                            vio_types = []\r\n                            for hr in (p.get(\"halt_reasons\") or []):\r\n                                for v in (hr.get(\"violations\") or []):\r\n                                    t = v.get(\"type\")\r\n                                    if t and t not in vio_types:\r\n                                        vio_types.append(t)\r\n                            smoke_summary = {\r\n                                \"profile\": p.get(\"profile\"),\r\n                                \"rc\": smoke_out.get(\"returncode\"),\r\n                                \"has_halt\": bool(p.get(\"has_halt\")),\r\n                                \"violation_types\": vio_types\r\n                            }\r\n                    except Exception:\r\n                        smoke_summary = {}\r\n                    self.logger.emit(\"post_smoke_warn\", {\"smoke_summary\": smoke_summary,\"post_smoke\": post_smoke, \"ok\": ok, \"rc\": rc, \"has_halt\": has_halt})\r\n                except Exception:\r\n                    pass\n            if failed and post_mode == \"strict\":\n                # --- rollback best-effort ---\r\n                revert_bundle = None\r\n                try:\r\n                    if isinstance(out, dict):\r\n                        for k in (\"revert_bundle\",\"rollback_bundle\",\"revert\",\"rollback\",\"bundle_revert\",\"bundle_rollback\"):\r\n                            v = out.get(k)\r\n                            if isinstance(v, str) and v.strip():\r\n                                revert_bundle = v.strip()\r\n                                break\r\n                except Exception:\r\n                    revert_bundle = None\r\n\r\n                if revert_bundle:\r\n                    try:\r\n                        self.logger.emit(\"rollback_apply_bundle\", {\"revert_bundle\": revert_bundle, \"reason\": \"post_smoke_failed\"})\r\n                    except Exception:\r\n                        pass\r\n                    try:\r\n                        apply_gate.apply_bundle(bundle_path=revert_bundle, dest_dir=dest_dir, approve_token=approve)\r\n                    except Exception:\r\n                        pass\r\n                else:\r\n                    # --- rollback repo using apply receipt (best-effort) ---\r\n                    try:\r\n                        import shutil\r\n\r\n                        # repo_root from smoke parsed output if available; fallback to C:\\AI_VAULT\\workspace\\brainlab\r\n                        repo_root = None\r\n                        try:\r\n                            repo_root = (smoke_out.get(\"repo_root\") or (smoke_out.get(\"parsed\") or {}).get(\"repo_root\"))\r\n                        except Exception:\r\n                            repo_root = None\r\n                        if not repo_root:\n                            # Prefer dest_dir (apply target), else derive from post_smoke path\n                            try:\n                                if dest_dir:\n                                    repo_root = str(Path(dest_dir).resolve())\n                                elif post_smoke:\n                                    # contracts live under <repo_root>\\brainlab\\contracts\\*.json\n                                    psm = Path(post_smoke).resolve()\n                                    # walk up to find repo root by locating \"brainlab\" dir\n                                    repo_root = None\n                                    for parent in [psm.parent, psm.parent.parent, psm.parent.parent.parent, psm.parent.parent.parent.parent]:\n                                        if parent.name.lower() == \"brainlab\":\n                                            repo_root = str(parent.parent)\n                                            break\n                                    if not repo_root:\n                                        repo_root = str(psm.parent.parent.parent)  # best-effort\n                            except Exception:\n                                repo_root = None\n                        repo_root_p = Path(repo_root).resolve()\r\n                        restored_count = 0\r\n                        deleted_count = 0\r\n                        restored_paths = []\r\n                        deleted_paths = []\r\n\r\n                        # 1) restore modified files from backups\r\n                        backups = out.get(\"backups\") if isinstance(out, dict) else None\r\n                        if isinstance(backups, list):\r\n                            for b in backups:\r\n                                try:\r\n                                    dest = Path(b.get(\"dest\",\"\")).resolve()\r\n                                    bak = Path(b.get(\"bak\",\"\")).resolve()\r\n                                    if repo_root_p not in dest.parents and dest != repo_root_p:\r\n                                        continue\r\n                                    if bak.exists():\r\n                                        shutil.copy2(str(bak), str(dest))\r\n                                        restored_count += 1\r\n                                        if len(restored_paths) < 10:\r\n                                            restored_paths.append(str(dest))\r\n                                except Exception:\r\n                                    pass\r\n\r\n                        # 2) delete newly created files that have no backup\r\n                        applied = out.get(\"applied\") if isinstance(out, dict) else None\r\n                        if isinstance(applied, list):\r\n                            backed_dests = set()\r\n                            if isinstance(backups, list):\r\n                                for b in backups:\r\n                                    try:\r\n                                        backed_dests.add(str(Path(b.get(\"dest\",\"\")).resolve()))\r\n                                    except Exception:\r\n                                        pass\r\n\r\n                            for a in applied:\r\n                                try:\r\n                                    if (a.get(\"kind\") != \"new_file\"):\r\n                                        continue\r\n                                    dest = Path(a.get(\"dest\",\"\")).resolve()\r\n                                    if repo_root_p not in dest.parents and dest != repo_root_p:\r\n                                        continue\r\n                                    if str(dest) in backed_dests:\r\n                                        continue\r\n                                    if dest.exists() and dest.is_file():\r\n                                        dest.unlink()\r\n                                        deleted_count += 1\r\n                                        if len(deleted_paths) < 10:\r\n                                            deleted_paths.append(str(dest))\r\n                                except Exception:\r\n                                    pass\r\n\r\n                        try:\r\n                            self.logger.emit(\"rollback_repo_applied\", {\r\n                                \"reason\": \"post_smoke_failed\",\r\n                                \"repo_root\": str(repo_root_p),\r\n                                \"restored\": restored_count,\r\n                                \"deleted\": deleted_count,\r\n                                \"restored_paths\": restored_paths,\r\n                                \"deleted_paths\": deleted_paths\r\n                            })\r\n                        except Exception:\r\n                            pass\r\n                    except Exception:\r\n                        pass\r\n\r\n                    # restore tools snapshot (baseline-with-gating)\r\n                    snapshot_dir = None\r\n                    try:\r\n                        st = SANDBOX_ROOT / \"state\"\r\n                        if st.exists():\r\n                            cands = sorted([p for p in st.glob(\"tools_snapshot*\") if p.is_dir()], key=lambda p: p.stat().st_mtime, reverse=True)\r\n                            for p in cands:\r\n                                if \"BASELINE_WITH_GATING\" in p.name:\r\n                                    snapshot_dir = str(p)\r\n                                    break\r\n                            if not snapshot_dir:\r\n                                for p in cands:\r\n                                    if \"BASELINE\" in p.name:\r\n                                        snapshot_dir = str(p)\r\n                                        break\r\n                            if not snapshot_dir and cands:\r\n                                snapshot_dir = str(cands[0])\r\n                    except Exception:\r\n                        snapshot_dir = None\r\n\r\n                    if snapshot_dir:\r\n                        try:\r\n                            # force preapply snapshot (final override)\r\n                            if preapply_snapshot_dir:\r\n                                snapshot_dir = preapply_snapshot_dir\r\n                            self.logger.emit(\"rollback_restore_tools_snapshot\", {\"snapshot_dir\": snapshot_dir, \"reason\": \"post_smoke_failed\"})\r\n                        except Exception:\r\n                            pass\r\n                        try:\r\n                            import subprocess\r\n                            # Prefer PowerShell 7 if available, else Windows PowerShell\r\n                            ps_exe = \"pwsh.exe\"\r\n                            try:\r\n                                import shutil\r\n                                if not shutil.which(ps_exe):\r\n                                    ps_exe = \"powershell.exe\"\r\n                            except Exception:\r\n                                ps_exe = \"powershell.exe\"\r\n\r\n                            cmd = [\r\n                                ps_exe,\r\n                                \"-ExecutionPolicy\", \"Bypass\",\r\n                                \"-File\", str(SANDBOX_ROOT / \"restore_tools.ps1\"),\r\n                                \"-SnapshotDir\", snapshot_dir,\r\n                                \"-NoSmoke\"\r\n                            ]\r\n                            proc = subprocess.run(cmd, capture_output=True, text=True, env=env)\r\n                            try:\r\n                                self.logger.emit(\"rollback_restore_tools_snapshot_result\", {\"snapshot_dir\": snapshot_dir, \"rc\": proc.returncode, \"stdout\": (proc.stdout or \"\")[-2000:], \"stderr\": (proc.stderr or \"\")[-2000:]})\r\n                            except Exception:\r\n                                pass\r\n                        except Exception:\r\n                            pass\r\n\r\n                raise RuntimeError(f\"POST_SMOKE_FAILED: ok={ok} rc={rc} has_halt={has_halt} smoke={smoke_out}\")\r\n\r\n        self.state[\"last_apply\"] = {\"ts\": utc_now_iso(), \"bundle_path\": bundle_path, \"ok\": out.get(\"ok\"), \"proposal_id\": out.get(\"proposal_id\"), \"run_id\": out.get(\"run_id\"), \"preapply_snapshot_dir\": preapply_snapshot_dir, \"post_smoke\": post_smoke}\r\n        try:\n            self.state[\"last_apply\"].update({\"post_smoke_mode\": post_smoke_mode, \"post_smoke_profile\": post_smoke_profile})\n        except Exception:\n            pass\n        save_state(self.state)\r\n\r\n        # --- cleanup PREAPPLY snapshots (best-effort) ---\r\n        try:\r\n            st = (SANDBOX_ROOT / \"state\")\r\n            if st.exists():\r\n                snaps = sorted([p for p in st.glob(\"tools_snapshot_PREAPPLY_*\") if p.is_dir()],\r\n                               key=lambda p: p.stat().st_mtime, reverse=True)\r\n                keep = 30\r\n                for p in snaps[keep:]:\r\n                    try:\r\n                        # remove dir tree\r\n                        for child in p.rglob(\"*\"):\r\n                            try:\r\n                                if child.is_file():\r\n                                    child.unlink()\r\n                            except Exception:\r\n                                pass\r\n                        for child in sorted([d for d in p.rglob(\"*\") if d.is_dir()], key=lambda d: len(str(d)), reverse=True):\r\n                            try:\r\n                                child.rmdir()\r\n                            except Exception:\r\n                                pass\r\n                        p.rmdir()\r\n                    except Exception:\r\n                        pass\r\n        except Exception:\r\n            pass\r\n        return out\r\n\r\ndef parse_args(argv: List[str]) -> Dict[str, Any]:\r\n    args: Dict[str, Any] = {\"mode\": \"run\", \"bundle\": None, \"approve\": None, \"dest\": None, \"scope\": \"all\", \"contract\": None, \"post_smoke\": None, \"post_smoke_mode\": \"strict\", \"post_smoke_profile\": \"full\"}\r\n    for a in argv[1:]:\r\n        if a.startswith(\"--mode=\"):\r\n            args[\"mode\"] = a.split(\"=\", 1)[1].strip()\r\n        elif a.startswith(\"--bundle=\"):\r\n            args[\"bundle\"] = a.split(\"=\", 1)[1].strip()\r\n        elif a.startswith(\"--approve=\"):\r\n            args[\"approve\"] = a.split(\"=\", 1)[1].strip()\r\n        elif a.startswith(\"--dest=\"):\r\n            args[\"dest\"] = a.split(\"=\", 1)[1].strip()\r\n        elif a.startswith(\"--scope=\"):\r\n            args[\"scope\"] = a.split(\"=\", 1)[1].strip()\r\n        elif a.startswith(\"--contract=\"):\r\n            args[\"contract\"] = a.split(\"=\", 1)[1].strip()\r\n        elif a.startswith(\"--post_smoke=\"):\r\n            args[\"post_smoke\"] = a.split(\"=\", 1)[1].strip()\r\n        elif a.startswith(\"--post_smoke_mode=\"):\n            args[\"post_smoke_mode\"] = a.split(\"=\", 1)[1].strip()\n        elif a.startswith(\"--post_smoke_profile=\"):\n            args[\"post_smoke_profile\"] = a.split(\"=\", 1)[1].strip()\n    return args\ndef main(argv: List[str]) -> int:\r\n    import json\r\n\r\n    agent = DevSandboxAgent(LoopConfig())\r\n\r\n    try:\r\n        a = parse_args(argv)\r\n        mode = a.get(\"mode\") or \"run\"\r\n\r\n        if mode == \"run\":\r\n            out = agent.run_mode()\r\n\r\n        elif mode == \"package\":\r\n            agent.state[\"scope_current\"] = a.get(\"scope\") or \"all\"\r\n            save_state(agent.state)\r\n            out = agent.package_mode()\r\n\r\n        elif mode == \"apply\":\r\n            if not a.get(\"bundle\") or not a.get(\"approve\"):\r\n                raise SystemExit(\"apply mode requires --bundle=<path> and --approve=APPLY_<proposal_id>\")\r\n            out = agent.apply_mode(\r\n                bundle_path=a[\"bundle\"],\r\n                approve=a[\"approve\"],\r\n                dest_dir=a.get(\"dest\"),\r\n                post_smoke=a.get(\"post_smoke\"), post_smoke_mode=a.get(\"post_smoke_mode\")\r\n            , post_smoke_profile=a.get(\"post_smoke_profile\"))\r\n\r\n        elif mode == \"smoke\":\r\n            if not a.get(\"contract\"):\r\n                raise SystemExit(\"smoke mode requires --contract=<path_to_contract_json>\")\r\n            out = agent.smoke_mode(contract_path=a[\"contract\"])\r\n\r\n        else:\r\n            raise SystemExit(f\"Unknown mode: {mode}\")\r\n\r\n        if out is None:\r\n            out = {\"ok\": True, \"detail\": \"OK\"}\r\n\r\n        # Print JSON result\r\n        try:\r\n            print(json.dumps(out, ensure_ascii=False, indent=2))\r\n        except Exception:\r\n            print(str(out))\r\n\r\n        ok = True\r\n        if isinstance(out, dict):\r\n            ok = bool(out.get(\"ok\", True))\r\n        return 0 if ok else 2\r\n\r\n    except SystemExit as e:\r\n        # Normalize to JSON\r\n        code = e.code if isinstance(e.code, int) else 2\r\n        err = {\"ok\": False, \"error_type\": \"SystemExit\", \"message\": str(e)}\r\n        try:\r\n            err[\"last_apply\"] = (agent.state or {}).get(\"last_apply\")\r\n        except Exception:\r\n            pass\r\n        print(json.dumps(err, ensure_ascii=False, indent=2))\r\n        return code\r\n\r\n    except Exception as e:\r\n        err = {\"ok\": False, \"error_type\": e.__class__.__name__, \"message\": str(e)}\r\n        try:\r\n            err[\"last_apply\"] = (agent.state or {}).get(\"last_apply\")\r\n        except Exception:\r\n            pass\r\n        print(json.dumps(err, ensure_ascii=False, indent=2))\r\n        return 2\r\n\r\nif __name__ == \"__main__\":\r\n    import sys\r\n    raise SystemExit(main(sys.argv))\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n",
+            "truncated": false
+          },
+          "error": null
+        },
+        {
+          "tool": "read_file",
+          "ok": true,
+          "output": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\smoke_runner.py",
+            "text": "import json\nimport os\nimport sys\nfrom pathlib import Path\nfrom datetime import datetime, timezone\nimport io\nimport contextlib\n\n\ndef utc_iso() -> str:\n    return datetime.now(timezone.utc).isoformat().replace(\"+00:00\", \"Z\")\n\n\ndef _derive_repo_root(contract_path: str) -> str:\n    \"\"\"\n    Best-effort: contracts live under <repo_root>\\\\brainlab\\\\contracts\\\\*.json\n    If we can find a parent named 'brainlab', repo_root = parent.parent.\n    Else fallback to the contract's parent directory.\n    \"\"\"\n    try:\n        p = Path(contract_path).resolve()\n        for parent in p.parents:\n            if parent.name.lower() == \"brainlab\":\n                return str(parent.parent)\n        return str(p.parent)\n    except Exception:\n        return \"\"\n\n\ndef _get_contract_from_argv_env(argv) -> str:\n    # argv supports:\n    #   --contract=PATH\n    #   --contract PATH\n    #   positional PATH\n    for i, a in enumerate(argv):\n        if a.startswith(\"--contract=\"):\n            return a.split(\"=\", 1)[1].strip()\n        if a == \"--contract\" and i + 1 < len(argv):\n            return (argv[i + 1] or \"\").strip()\n\n    # positional\n    if argv and not argv[0].startswith(\"--\"):\n        return (argv[0] or \"\").strip()\n\n    # explicit env fallbacks (known/common)\n    for k in (\n        \"CONTRACT_PATH\", \"SMOKE_CONTRACT\", \"SMOKE_CONTRACT_PATH\",\n        \"CONTRACT\", \"contract\", \"contract_path\",\n        \"POST_SMOKE\", \"POST_SMOKE_CONTRACT\", \"POST_SMOKE_CONTRACT_PATH\",\n        \"POST_SMOKE_PATH\", \"post_smoke\", \"post_smoke_path\",\n    ):\n        v = os.environ.get(k)\n        if v and v.strip():\n            return v.strip()\n\n    # last resort: scan env for anything that looks like a contract json path\n    # Prefer keys containing CONTRACT/SMOKE; prefer existing paths; prefer *.json\n    candidates = []\n    for k, v in os.environ.items():\n        if not v or not isinstance(v, str):\n            continue\n        vv = v.strip()\n        if not vv:\n            continue\n        lk = k.lower()\n        if (\"contract\" not in lk) and (\"smoke\" not in lk):\n            continue\n        # quick plausibility\n        if (\".json\" in vv.lower()) or (\":\\\\\" in vv) or (\"/\" in vv):\n            candidates.append((k, vv))\n\n    def score(item):\n        k, vv = item\n        lk = k.lower()\n        s = 0\n        if \"contract\" in lk: s += 5\n        if \"smoke\" in lk: s += 3\n        if \"post_smoke\" in lk: s += 4\n        if vv.lower().endswith(\".json\"): s += 5\n        try:\n            if Path(vv).exists(): s += 10\n        except Exception:\n            pass\n        return s\n\n    candidates.sort(key=score, reverse=True)\n    for k, vv in candidates:\n        try:\n            if Path(vv).exists() or vv.lower().endswith(\".json\"):\n                return vv\n        except Exception:\n            continue\n\n    return \"\"\ndef _get_profile_from_argv_env(argv) -> str:\n    # --profile=quick|full|violations\n    for a in argv:\n        if a.startswith(\"--profile=\"):\n            return a.split(\"=\", 1)[1].strip().lower()\n    # env fallback\n    v = os.environ.get(\"SMOKE_PROFILE\") or os.environ.get(\"smoke_profile\")\n    if v:\n        return v.strip().lower()\n    return \"quick\"\ndef main(argv=None) -> int:\n    argv = list(argv) if argv is not None else sys.argv[1:]\n    contract = _get_contract_from_argv_env(argv)\n\n    if not contract:\n        out = {\"ok\": False, \"error\": \"MISSING_CONTRACT_PATH\"}\n        sys.stdout.write(json.dumps(out, ensure_ascii=False, indent=2) + \"\\n\")\n        return 1\n\n    # Import RiskEngine with stdout suppressed to avoid extra prints corrupting JSON output\n    try:\n        with contextlib.redirect_stdout(io.StringIO()):\n            from smoke_risk_engine import RiskEngine\n    except Exception as e:\n        out = {\"ok\": False, \"error\": \"IMPORT_FAILED\", \"detail\": repr(e)}\n        sys.stdout.write(json.dumps(out, ensure_ascii=False, indent=2) + \"\\n\")\n        return 1\n\n    try:\n        re = RiskEngine.from_contract_path(contract)\n    except Exception as e:\n        out = {\"ok\": False, \"error\": \"LOAD_CONTRACT_FAILED\", \"contract_path\": contract, \"detail\": repr(e)}\n        sys.stdout.write(json.dumps(out, ensure_ascii=False, indent=2) + \"\\n\")\n        return 1\n    profile = _get_profile_from_argv_env(argv)\n    if profile not in (\"quick\", \"full\", \"violations\"):\n        profile = \"quick\"\n\n    # Profiles:\n    # - quick: only a safe \"ok\" snapshot\n    # - full: ok + violation cases (stress)\n    # - violations: only the violation cases\n    tests_ok = [\n        {\"name\": \"ok\", \"snapshot\": {\"nlv\": 1000.0, \"daily_pnl\": -5.0, \"weekly_drawdown\": 0.01, \"total_exposure\": 0.35}},\n    ]\n    tests_viol = [\n        {\"name\": \"daily_loss_violation\", \"snapshot\": {\"nlv\": 1000.0, \"daily_pnl\": -25.0, \"weekly_drawdown\": 0.01, \"total_exposure\": 0.35}},\n        {\"name\": \"weekly_dd_violation\", \"snapshot\": {\"nlv\": 1000.0, \"daily_pnl\": 0.0, \"weekly_drawdown\": 0.10, \"total_exposure\": 0.35}},\n        {\"name\": \"exposure_violation\", \"snapshot\": {\"nlv\": 1000.0, \"daily_pnl\": 0.0, \"weekly_drawdown\": 0.01, \"total_exposure\": 0.95}},\n    ]\n\n    if profile == \"quick\":\n        tests = tests_ok\n    elif profile == \"violations\":\n        tests = tests_viol\n    else:\n        tests = tests_ok + tests_viol\r\n    results = [{\"name\": t[\"name\"], \"assess\": re.assess(t[\"snapshot\"])} for t in tests]\n\n    has_halt = False\n    halt_reasons = []\n    for r in results:\n        a = r.get(\"assess\") or {}\n        if a.get(\"verdict\") == \"halt\":\n            has_halt = True\n            halt_reasons.append({\n                \"name\": r.get(\"name\"),\n                \"reason\": a.get(\"reason\"),\n                \"violations\": a.get(\"violations\") or []\n            })\n\n    limits = {}\n    try:\n        limits = getattr(re, \"limits\").__dict__ if getattr(re, \"limits\", None) is not None else {}\n    except Exception:\n        limits = {}\n\n    out = {\n        \"profile\": profile,\r\n        \"ts\": utc_iso(),\n        \"contract_path\": contract,\n        \"repo_root\": _derive_repo_root(contract),\n        \"limits\": limits,\n        \"results\": results,\n        \"has_halt\": bool(has_halt),\n        \"halt_reasons\": halt_reasons,\n        # ok means \"policy passed\"\n        \"ok\": (not has_halt),\n    }\n\n    sys.stdout.write(json.dumps(out, ensure_ascii=False, indent=2) + \"\\n\")\n    return 2 if has_halt else 0\n\n\nif __name__ == \"__main__\":\n    raise SystemExit(main())\r\n\r\n\r\n",
+            "truncated": false
+          },
+          "error": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "s3",
+      "title": "Checkpoint",
+      "status": "done",
+      "tool_calls": [
+        {
+          "tool": "append_file",
+          "args": {
+            "path": "C:\\AI_VAULT\\logs\\agent_checkpoints.ndjson",
+            "text": "{\"ts\": \"2026-02-25T19:51:16.593491Z\", \"goal\": \"Validar sandbox estable y registrar checkpoint\"}\n"
+          }
+        }
+      ],
+      "result": [
+        {
+          "tool": "append_file",
+          "ok": true,
+          "output": {
+            "path": "C:\\AI_VAULT\\logs\\agent_checkpoints.ndjson",
+            "bytes": 96
+          },
+          "error": null
+        }
+      ],
+      "error": null
+    }
+  ]
+}

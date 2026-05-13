@@ -1,0 +1,14 @@
+{
+  "project_id": 29652652,
+  "compile_id": "70ba5c0dd2e849a73310ff73b1100499-e3e5732643499af5ebdceecd3ef9c85f",
+  "backtest_id": "7a9d216ca120d561015ee236eeb00c49",
+  "backtest_name": "MR-FUT V1.0 Fenix IS",
+  "launched_at": "2026-04-04 16:16:29 UTC",
+  "parameters": {
+    "start_year": "2010",
+    "end_year": "2020",
+    "end_month": "12",
+    "rsi_entry": "10"
+  },
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/mean_reversion_fut/main.py"
+}

@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_e41ea021686ecffc",
+  "tool_name": "write_file",
+  "tool_args": {
+    "content": "{\"probe\":\"ok\",\"ts\":\"2026-03-08T03:29:20Z\"}",
+    "path": "C:\\AI_VAULT\\tmp_agent\\state\\rooms\\plan_persist_probe_20260307_222920\\planner_hardening_request.json",
+    "raw_content": "{\"probe\":\"ok\",\"ts\":\"2026-03-07T22:29:20\"}",
+    "text": "{\"probe\":\"ok\",\"ts\":\"2026-03-08T03:29:20Z\"}"
+  },
+  "room_id": "plan_persist_probe_20260307_222920",
+  "step_id": "P2_TEST",
+  "created_at": "2026-03-08T03:29:20.765802+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

@@ -1,0 +1,27 @@
+{
+    "t2_nmap_fast":  {
+                         "ok":  true,
+                         "len":  448,
+                         "ms":  50512
+                     },
+    "t5_count":  {
+                     "ok":  true,
+                     "len":  473,
+                     "ms":  104002
+                 },
+    "t3_psdollar":  {
+                        "ok":  true,
+                        "len":  135,
+                        "ms":  6461
+                    },
+    "t1_scan_fast":  {
+                         "ok":  true,
+                         "len":  156,
+                         "ms":  43597
+                     },
+    "t4_time":  {
+                    "ok":  true,
+                    "len":  66,
+                    "ms":  17
+                }
+}

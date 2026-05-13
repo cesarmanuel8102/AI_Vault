@@ -1,0 +1,598 @@
+import os
+import httpx
+from fastapi import FastAPI, Request, Response
+from fastapi.responses import HTMLResponse, PlainTextResponse
+
+# UI proxy: no SSOT. Solo UI + proxy a Brain Server para evitar CORS.
+BRAIN_BASE = os.environ.get("BRAIN_BASE", "http://127.0.0.1:8010").rstrip("/")
+
+app = FastAPI(title="BrainLab UI Proxy", version="0.1.0")
+
+UI_HTML = r"""<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Brain Lab — UI mínima</title>
+<style>
+:root{color-scheme:dark}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:#0b0f14;color:#d7dde7}
+.wrap{display:grid;grid-template-columns:260px 1fr 360px;height:100vh}
+.col{border-right:1px solid #1c2330;overflow:auto}
+.col:last-child{border-right:none}
+header{padding:10px 12px;border-bottom:1px solid #1c2330;background:#0f1520;position:sticky;top:0;z-index:2}
+h1{font-size:14px;margin:0;font-weight:600}
+.muted{color:#94a3b8;font-size:12px}
+.rooms{padding:10px 8px}
+.room{padding:8px 10px;border:1px solid #1c2330;border-radius:10px;margin-bottom:8px;cursor:pointer;background:#0d131d}
+.room.active{outline:2px solid #334155}
+.room .top{display:flex;justify-content:space-between;gap:8px}
+.badge{font-size:11px;padding:2px 6px;border-radius:999px;border:1px solid #233044;color:#cbd5e1}
+.badge.blocked{border-color:#7c2d12;color:#fdba74}
+.badge.ok{border-color:#14532d;color:#86efac}
+.main{display:flex;flex-direction:column}
+.chat{padding:12px;display:flex;flex-direction:column;gap:10px}
+.msg{border:1px solid #1c2330;border-radius:14px;padding:10px 12px;background:#0d131d}
+.msg.user{border-color:#2b3a55}
+.msg.sys{border-color:#223047}
+.msg .meta{display:flex;justify-content:space-between;font-size:12px;color:#94a3b8;margin-bottom:6px}
+.msg pre{white-space:pre-wrap;word-wrap:break-word;margin:0;font-size:12px;color:#d7dde7}
+.composer{padding:10px 12px;border-top:1px solid #1c2330;background:#0f1520;display:grid;gap:8px}
+textarea{width:100%;height:84px;resize:vertical;border-radius:12px;border:1px solid #1c2330;background:#0b0f14;color:#d7dde7;padding:10px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+button{border-radius:12px;border:1px solid #1c2330;background:#0d131d;color:#d7dde7;padding:8px 10px;cursor:pointer}
+button.primary{border-color:#334155;background:#111a26}
+button.danger{border-color:#7f1d1d;color:#fecaca}
+button:disabled{opacity:.5;cursor:not-allowed}
+.side{padding:12px;display:flex;flex-direction:column;gap:10px}
+.panel{border:1px solid #1c2330;border-radius:14px;background:#0d131d}
+.panel header{position:static;background:transparent;border-bottom:1px solid #1c2330}
+.panel .body{padding:10px 12px}
+.kv{font-size:12px;color:#cbd5e1}
+.kv div{margin:6px 0}
+.kv code{color:#93c5fd}
+.list{display:flex;flex-direction:column;gap:8px}
+.item{border:1px solid #1c2330;border-radius:12px;padding:8px 10px}
+.item .id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:#93c5fd}
+.item .small{font-size:12px;color:#94a3b8;margin-top:4px}
+.split{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+input,select{border-radius:12px;border:1px solid #1c2330;background:#0b0f14;color:#d7dde7;padding:8px 10px;width:100%}
+.hr{height:1px;background:#1c2330;margin:8px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="col">
+    <header><h1>Rooms</h1><div class="muted">SSOT por room</div></header>
+    <div class="rooms">
+      <div class="row"><button class="primary" id="btnRefreshRooms">Refresh</button></div>
+      <div class="hr"></div>
+      <div id="roomsList"></div>
+    </div>
+  </div>
+
+  <div class="col main">
+    <header><h1>Chat</h1><div class="muted">UI orquesta endpoints (no SSOT paralelo)</div></header>
+    <div class="chat" id="chat"></div>
+
+    <div class="composer">
+      <div class="row">
+        <div style="flex:1;">
+          <div class="muted">Room activo</div>
+          <input id="roomId" placeholder="room_id (se guarda en localStorage)" />
+        </div>
+        <div style="flex:1;">
+          <div class="muted">Acción rápida</div>
+          <select id="quickAction">
+            <option value="status">GET /status</option>
+            <option value="plan_get">GET /plan</option>
+            <option value="mission_get">GET /mission</option>
+            <option value="proposals_active">GET /proposals_active</option>
+            <option value="audit_tail">GET /audits?limit=5</option>
+            <option value="eval_tail">GET /evaluations?limit=5</option>
+          </select>
+        </div>
+      </div>
+
+      <textarea id="userText" placeholder="Pega JSON para POST /plan, o escribe notas (log local UI)."></textarea>
+
+      <div class="row">
+        <button class="primary" id="btnSend">Enviar (log local)</button>
+        <button id="btnQuick">Ejecutar acción rápida</button>
+        <button class="primary" id="btnRun">POST /run</button>
+        <button id="btnEvaluate">POST /evaluate</button>
+      </div>
+
+      <div class="row">
+        <button id="btnPlanPost">POST /plan (pegar JSON)</button>
+        <button class="danger" id="btnClearChat">Clear chat (solo UI)</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="col">
+    <header><h1>Panel</h1><div class="muted">status / mission / plan / proposals</div></header>
+    <div class="side">
+      <div class="panel">
+        <header><h1>Status</h1></header>
+        <div class="body">
+          <div class="kv" id="statusBox">—</div>
+          <div class="split"><button id="btnRefreshAll" class="primary">Refresh All</button></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <header><h1>Mission</h1></header>
+        <div class="body">
+          <pre id="missionBox" style="margin:0;font-size:12px;white-space:pre-wrap;">—</pre>
+        </div>
+      </div>
+
+      <div class="panel">
+        <header><h1>Proposals activas</h1></header>
+        <div class="body"><div class="list" id="proposalsBox">—</div></div>
+      </div>
+
+      <div class="panel">
+        <header><h1>Plan</h1></header>
+        <div class="body"><pre id="planBox" style="margin:0;font-size:12px;white-space:pre-wrap;">—</pre></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/ui/app.js"></script>
+</body>
+</html>
+"""
+
+UI_JS = r"""
+const $ = (id) => document.getElementById(id);
+
+const state = {
+  chat: [],
+  rooms: [],
+  activeRoom: localStorage.getItem("brainlab_room_id") || "",
+};
+
+function nowIso(){ return new Date().toISOString(); }
+
+function pushMsg(role, text){
+  state.chat.push({role, text, ts: nowIso()});
+  renderChat();
+}
+
+function renderChat(){
+  const chat = $("chat");
+  chat.innerHTML = "";
+  for (const m of state.chat){
+    const div = document.createElement("div");
+    div.className = "msg " + (m.role === "user" ? "user" : "sys");
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    meta.innerHTML = `<span>${m.role.toUpperCase()}</span><span>${m.ts}</span>`;
+    const pre = document.createElement("pre");
+    pre.textContent = m.text;
+    div.appendChild(meta);
+    div.appendChild(pre);
+    chat.appendChild(div);
+  }
+  chat.scrollTop = chat.scrollHeight;
+}
+
+async function api(method, path, body=null, roomId=null){
+  const headers = {};
+  const rid = roomId ?? state.activeRoom ?? "";
+  if (rid) headers["x-room-id"] = rid;
+
+  const opts = { method, headers };
+  if (body !== null){
+    headers["content-type"] = "application/json";
+    opts.body = JSON.stringify(body);
+  }
+
+  const res = await fetch("/proxy" + path, opts);
+  const text = await res.text();
+  let data = text;
+  try { data = JSON.parse(text); } catch {}
+  return { ok: res.ok, status: res.status, data };
+}
+
+function setActiveRoom(rid){
+  state.activeRoom = (rid || "").trim();
+  $("roomId").value = state.activeRoom;
+  localStorage.setItem("brainlab_room_id", state.activeRoom);
+}
+
+function renderRooms(){
+  const root = $("roomsList");
+  root.innerHTML = "";
+  for (const r of state.rooms){
+    const div = document.createElement("div");
+    div.className = "room" + (r.room_id === state.activeRoom ? " active" : "");
+    const blocked = !!r.blocked;
+    div.innerHTML = `
+      <div class="top">
+        <div style="font-weight:600;font-size:13px;">${r.room_id}</div>
+        <div class="badge ${blocked ? "blocked":"ok"}">${blocked ? "blocked":"ok"}</div>
+      </div>
+      <div class="small muted">${r.summary || ""}</div>
+    `;
+    div.onclick = async () => {
+      setActiveRoom(r.room_id);
+      pushMsg("sys", `Room activo: ${r.room_id}`);
+      await refreshAll();
+    };
+    root.appendChild(div);
+  }
+}
+
+function renderStatus(s){
+  const box = $("statusBox");
+  if (!s){ box.textContent="—"; return; }
+  box.innerHTML = `
+    <div>blocked: <code>${!!s.blocked}</code></div>
+    <div>plan_path: <code>${s.plan_path || ""}</code></div>
+    <div>step_counts: <code>${s.step_counts ? JSON.stringify(s.step_counts):""}</code></div>
+  `;
+}
+
+function renderProposals(list){
+  const box = $("proposalsBox");
+  box.innerHTML = "";
+  if (!Array.isArray(list) || list.length === 0){ box.textContent="—"; return; }
+
+  for (const p of list){
+    const pid = p.proposal_id || p.id || p;
+    const div = document.createElement("div");
+    div.className = "item";
+    div.innerHTML = `
+      <div class="id">${pid}</div>
+      <div class="small">${p.kind || ""} ${p.mtime || ""}</div>
+      <div class="split">
+        <button class="primary">View</button>
+        <button class="primary">APPLY</button>
+        <button class="danger">REJECT</button>
+      </div>
+    `;
+    const btns = div.querySelectorAll("button");
+    btns[0].onclick = async () => {
+      const r = await api("GET", `/v1/agent/proposal?proposal_id=${encodeURIComponent(pid)}`);
+      pushMsg("sys", `GET /proposal ${pid}\n` + JSON.stringify(r.data, null, 2));
+    };
+    btns[1].onclick = async () => {
+      const tok = prompt("approve_token para APPLY:");
+      if (!tok) return;
+      const r = await api("POST", "/v1/agent/apply", {proposal_id: pid, approve_token: tok});
+      pushMsg("sys", `POST /apply ${pid}\n` + JSON.stringify(r.data, null, 2));
+      await refreshAll();
+    };
+    btns[2].onclick = async () => {
+      const reason = prompt("reason (opcional) para REJECT:") || "";
+      const r = await api("POST", "/v1/agent/reject", {proposal_id: pid, reason});
+      pushMsg("sys", `POST /reject ${pid}\n` + JSON.stringify(r.data, null, 2));
+      await refreshAll();
+    };
+    box.appendChild(div);
+  }
+}
+
+async function refreshRooms(){
+  const r = await api("GET", "/v1/agent/rooms?limit=50&include_status=true");
+  if (!r.ok){
+    pushMsg("sys", `ERROR rooms: ${r.status}\n` + JSON.stringify(r.data, null, 2));
+    return;
+  }
+  state.rooms = Array.isArray(r.data?.rooms) ? r.data.rooms : (Array.isArray(r.data) ? r.data : []);
+  renderRooms();
+}
+
+async function refreshAll(){
+  if (!state.activeRoom){
+    pushMsg("sys", "No hay room_id activo. Selecciona uno o escríbelo.");
+    return;
+  }
+
+  const rid = encodeURIComponent(state.activeRoom);
+
+  const st = await api("GET", `/v1/agent/status?room_id=${rid}`);
+  if (st.ok) renderStatus(st.data);
+  else pushMsg("sys", `ERROR status: ${st.status}\n` + JSON.stringify(st.data, null, 2));
+
+  const mg = await api("GET", `/v1/agent/mission?room_id=${rid}`);
+  $("missionBox").textContent = mg.ok ? JSON.stringify(mg.data, null, 2) : ("ERROR mission: " + mg.status + "\n" + JSON.stringify(mg.data, null, 2));
+
+  const pa = await api("GET", `/v1/agent/proposals_active?room_id=${rid}`);
+  if (pa.ok) renderProposals(pa.data?.proposals || pa.data);
+  else pushMsg("sys", `ERROR proposals_active: ${pa.status}\n` + JSON.stringify(pa.data, null, 2));
+
+  const pg = await api("GET", `/v1/agent/plan?room_id=${rid}`);
+  $("planBox").textContent = pg.ok ? JSON.stringify(pg.data, null, 2) : ("ERROR plan: " + pg.status + "\n" + JSON.stringify(pg.data, null, 2));
+}
+
+async function doQuick(){
+  const a = $("quickAction").value;
+  if (!state.activeRoom){ pushMsg("sys", "No hay room_id activo."); return; }
+  const rid = encodeURIComponent(state.activeRoom);
+
+  let path = null;
+  if (a === "status") path = `/v1/agent/status?room_id=${rid}`;
+  if (a === "plan_get") path = `/v1/agent/plan?room_id=${rid}`;
+  if (a === "mission_get") path = `/v1/agent/mission?room_id=${rid}`;
+  if (a === "proposals_active") path = `/v1/agent/proposals_active?room_id=${rid}`;
+  if (a === "audit_tail") path = `/v1/agent/audits?limit=5&room_id=${rid}`;
+  if (a === "eval_tail") path = `/v1/agent/evaluations?limit=5&room_id=${rid}`;
+
+  const r = await api("GET", path);
+  pushMsg("sys", `GET ${path}\n` + JSON.stringify(r.data, null, 2));
+}
+
+async function doPlanPost(){
+  const raw = $("userText").value.trim();
+  if (!raw){ pushMsg("sys", "Pega el JSON del plan en el textarea."); return; }
+
+  let body = null;
+  try { body = JSON.parse(raw); }
+  catch { pushMsg("sys", "JSON inválido."); return; }
+
+  // Auto-set room_id desde el JSON si existe
+  try {
+    const rid = (body && typeof body === "object" && body.room_id) ? String(body.room_id).trim() : "";
+    if (rid) setActiveRoom(rid);
+  } catch {}
+
+  if (!state.activeRoom){
+    pushMsg("sys", "No hay room_id activo (ni en JSON).");
+    return;
+  }
+
+  const r = await api("POST", "/v1/agent/plan", body);
+  pushMsg("sys", "POST /plan
+" + JSON.stringify(r.data, null, 2));
+  await refreshAll();
+}
+
+async function doRun(){
+  if (!state.activeRoom){ pushMsg("sys", "No hay room_id activo."); return; }
+  const r = await api("POST", "/v1/agent/run", {});
+  pushMsg("sys", "POST /run\n" + JSON.stringify(r.data, null, 2));
+  await refreshAll();
+}
+
+async function doEvaluate(){
+  if (!state.activeRoom){ pushMsg("sys", "No hay room_id activo."); return; }
+  const body = { summary:"UI evaluate (manual)", ok:true, notes:"evaluación disparada desde UI mínima" };
+  const r = await api("POST", "/v1/agent/evaluate", body);
+  pushMsg("sys", "POST /evaluate\n" + JSON.stringify(r.data, null, 2));
+  await refreshAll();
+}
+
+function bind(){
+  $("roomId").value = state.activeRoom;
+
+  $("roomId").addEventListener("change", async () => {
+    setActiveRoom($("roomId").value);
+    pushMsg("sys", `Room activo: ${state.activeRoom}`);
+    await refreshAll();
+  });
+
+  $("btnSend").onclick = () => {
+    const t = $("userText").value.trim();
+    if (!t) return;
+    pushMsg("user", t);
+    $("userText").value = "";
+  };
+
+  $("btnClearChat").onclick = () => { state.chat=[]; renderChat(); };
+
+  $("btnRefreshRooms").onclick = refreshRooms;
+  $("btnRefreshAll").onclick = refreshAll;
+  $("btnQuick").onclick = doQuick;
+  $("btnPlanPost").onclick = doPlanPost;
+  $("btnRun").onclick = doRun;
+  $("btnEvaluate").onclick = doEvaluate;
+
+  // --- UI_OLLAMA_CHAT_TO_PLAN_V1 controls (runtime DOM inject) ---
+  try {
+    // Model input
+    const modelWrap = document.createElement("div");
+    modelWrap.style.flex = "1";
+    modelWrap.innerHTML = `<div class="muted">Ollama model</div><select id="ollamaModel"><option value="qwen2.5:14b">qwen2.5:14b</option><option value="llama3.1:8b">llama3.1:8b</option></select>`;
+    const qaRow = $("quickAction").parentElement.parentElement; // row that contains quickAction
+    qaRow.appendChild(modelWrap);
+
+    const m0 = localStorage.getItem("brainlab_ollama_model") || "qwen2.5:14b";
+    $("ollamaModel").value = m0;
+    $("ollamaModel").addEventListener("change", () => {
+      localStorage.setItem("brainlab_ollama_model", $("ollamaModel").value.trim() || "qwen2.5:14b");
+    });
+
+    // Buttons
+    const row = document.createElement("div");
+    row.className = "row";
+    row.innerHTML = `
+      <button class="primary" id="btnChatPlan">Chat→Plan (Ollama)</button>
+      <button class="primary" id="btnChatPlanRun">Chat→Plan→Run</button>
+    `;
+    document.querySelector(".composer").appendChild(row);
+
+    async function chatToPlan(autoRun){
+      if (!state.activeRoom){
+        pushMsg("sys","No hay room_id activo.");
+        return;
+      }
+      const msg = $("userText").value.trim();
+      if (!msg){
+        pushMsg("sys","Escribe tu instrucción en lenguaje natural en el textarea.");
+        return;
+      }
+      const model = ($("ollamaModel")?.value || "qwen2.5:14b").trim() || "qwen2.5:14b";
+
+      pushMsg("user", msg);
+
+      const r = await fetch("/ui/ollama_plan", {
+        method: "POST",
+        headers: {"content-type":"application/json","x-room-id": state.activeRoom},
+        body: JSON.stringify({room_id: state.activeRoom, message: msg, model})
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!data.ok){
+        pushMsg("sys", "Ollama→Plan ERROR\n" + JSON.stringify(data, null, 2));
+        return;
+      }
+
+      // Mostrar el plan y postearlo a SSOT
+      const planJson = JSON.stringify(data.plan, null, 2);
+      pushMsg("sys", "Ollama→Plan OK (model=" + data.model + ")\n" + planJson);
+
+      // Set textarea al plan y postear
+      $("userText").value = planJson;
+      await doPlanPost();
+
+      if (autoRun){
+        await doRun();
+      }
+    }
+
+    $("btnChatPlan").onclick = () => chatToPlan(false);
+    $("btnChatPlanRun").onclick = () => chatToPlan(true);
+  } catch (e) {
+    pushMsg("sys", "UI_OLLAMA_CHAT_TO_PLAN init failed: " + String(e));
+  }
+  // --- /UI_OLLAMA_CHAT_TO_PLAN_V1 controls ---
+
+}
+
+(async function init(){
+  bind();
+  pushMsg("sys", "UI lista. Selecciona un room a la izquierda o escribe room_id.");
+  await refreshRooms();
+  if (state.activeRoom) await refreshAll();
+})();
+"""
+
+@app.get("/ui", response_class=HTMLResponse)
+async def ui_page():
+    return HTMLResponse(UI_HTML)
+
+@app.get("/ui/app.js", response_class=PlainTextResponse)
+async def ui_js():
+    return PlainTextResponse(UI_JS, media_type="application/javascript")
+
+async def _proxy(req: Request, path: str) -> Response:
+    method = req.method.upper()
+    url = f"{BRAIN_BASE}/{path.lstrip('/')}"
+    params = dict(req.query_params)
+
+    hop = {"host","connection","keep-alive","proxy-authenticate","proxy-authorization",
+           "te","trailers","transfer-encoding","upgrade"}
+    headers = {k:v for k,v in req.headers.items() if k.lower() not in hop}
+
+    body = await req.body()
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        r = await client.request(method, url, params=params, content=body, headers=headers)
+
+    rh = {k:v for k,v in r.headers.items() if k.lower() not in hop}
+    return Response(content=r.content, status_code=r.status_code, headers=rh)
+
+@app.api_route("/proxy/{full_path:path}", methods=["GET","POST","PUT","PATCH","DELETE"])
+async def proxy(full_path: str, req: Request):
+    return await _proxy(req, full_path)
+
+
+
+# --- UI_OLLAMA_CHAT_TO_PLAN_V1: POST /ui/ollama_plan --------------------------------
+@app.post("/ui/ollama_plan")
+async def ui_ollama_plan(request: Request):
+    """
+    Convierte lenguaje natural -> plan JSON usando Ollama local.
+    No toca SSOT directo; la UI luego POSTea /proxy/v1/agent/plan.
+    Body: { room_id, message, model?, base_url?, auto_run? }
+    """
+    import re, json, os
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    room_id = str((body.get("room_id") or "").strip() or (request.headers.get("x-room-id") or "default").strip() or "default")
+    message = str(body.get("message") or "").strip()
+    if not message:
+        return {"ok": False, "error": "empty_message"}
+
+    model = str(body.get("model") or os.environ.get("OLLAMA_MODEL") or "qwen2.5:14b").strip()
+    base_url = str(body.get("base_url") or os.environ.get("OLLAMA_BASE") or "http://127.0.0.1:11434").rstrip("/")
+
+    # Prompt: devolver SOLO JSON de plan (room_id, mission, steps)
+    sys = (
+        "Eres un planner para un agente local. Devuelve SOLO un objeto JSON válido (sin markdown) "
+        "con esta forma:\n"
+        "{"
+        '"room_id": "<room_id>", '
+        '"mission": {"goal": "...", "constraints": {"write_gate":"proposal/apply"}, "context": {...}}, '
+        '"steps": [{"id":"1","status":"todo","tool_name":"list_dir|read_file|write_file|append_file|...","tool_args":{...}}]'
+        "}\n"
+        "Reglas:\n"
+        "- Usa paths Windows con doble backslash (C:\\\\...)\n"
+        "- Si la intención es lectura/listado, usa list_dir/read_file.\n"
+        "- Si es escritura, usa write_file o append_file (si aplica) y mantén write_gate.\n"
+        "- Mantén steps 1-5, simples, ejecutables.\n"
+        "Devuelve solo JSON."
+    )
+
+    prompt = f"{sys}\n\nroom_id={room_id}\nUSER:\n{message}\n"
+
+    try:
+        import httpx
+    except Exception as e:
+        return {"ok": False, "error": f"httpx_missing: {e}"}
+
+    url = f"{base_url}/api/generate"
+    payload = {"model": model, "prompt": prompt, "stream": False}
+
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            r = await client.post(url, json=payload)
+        if r.status_code != 200:
+            return {"ok": False, "error": f"ollama_http_{r.status_code}", "detail": r.text[:800]}
+        data = r.json()
+    except Exception as e:
+        return {"ok": False, "error": f"ollama_call_failed: {e}"}
+
+    text = (data.get("response") or "").strip()
+
+    # Extraer JSON robusto (primer bloque {...})
+    m = re.search(r"\{[\s\S]*\}\s*$", text)
+    if not m:
+        m = re.search(r"\{[\s\S]*\}", text)
+    if not m:
+        return {"ok": False, "error": "ollama_no_json", "raw": text[:1200]}
+
+    raw_json = m.group(0)
+    try:
+        plan = json.loads(raw_json)
+    except Exception as e:
+        return {"ok": False, "error": f"json_parse_failed: {e}", "raw": raw_json[:1200]}
+
+    # Enforce room_id
+    if isinstance(plan, dict):
+        plan["room_id"] = room_id
+        # Si falta constraints/write_gate, lo pone por defecto
+        mission = plan.get("mission")
+        if isinstance(mission, dict):
+            mission.setdefault("constraints", {})
+            if isinstance(mission.get("constraints"), dict):
+                mission["constraints"].setdefault("write_gate", "proposal/apply")
+        else:
+            plan["mission"] = {"goal": message[:120], "constraints": {"write_gate": "proposal/apply"}, "context": {}}
+    else:
+        return {"ok": False, "error": "plan_not_object", "raw": raw_json[:1200]}
+
+    return {"ok": True, "room_id": room_id, "model": model, "plan": plan, "raw": text[:1200]}
+
+# --- /UI_OLLAMA_CHAT_TO_PLAN_V1 ------------------------------------------------------
+
+
+@app.get("/healthz")
+async def healthz():
+    return {"ok": True, "brain_base": BRAIN_BASE}
+# UI_OLLAMA_CHAT_TO_PLAN_V1

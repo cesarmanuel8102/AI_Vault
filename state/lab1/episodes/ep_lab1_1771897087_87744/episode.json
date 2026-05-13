@@ -1,0 +1,143 @@
+{
+  "episode_id": "ep_lab1_1771897087_87744",
+  "room_id": "lab1",
+  "created_at": 1771897087,
+  "mission": {
+    "room_id": "lab1",
+    "objective": "Crear archivo demo.txt en workspace y registrar log",
+    "constraints": [
+      "usar WORKSPACE_ROOT"
+    ],
+    "status": "active",
+    "created_at": 1771897087,
+    "updated_at": 1771897087
+  },
+  "events": [
+    {
+      "ts_epoch": 1771897087,
+      "type": "mission_set",
+      "mission": {
+        "room_id": "lab1",
+        "objective": "Crear archivo demo.txt en workspace y registrar log",
+        "constraints": [
+          "usar WORKSPACE_ROOT"
+        ],
+        "status": "active",
+        "created_at": 1771897087,
+        "updated_at": 1771897087
+      }
+    },
+    {
+      "ts_epoch": 1771897116,
+      "type": "plan_created",
+      "plan": {
+        "room_id": "lab1",
+        "created_at": 1771897116,
+        "updated_at": 1771897116,
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Crear archivo demo.txt",
+            "action": "TOOL",
+            "tool": "write_file",
+            "args": {
+              "path": "C:\\AI_VAULT\\workspace\\brainlab\\demo.txt",
+              "content": "Este es un archivo de demostración."
+            },
+            "success_criteria": "Archivo demo.txt creado en WORKSPACE_ROOT",
+            "status": "pending",
+            "result": null,
+            "started_at": null,
+            "ended_at": null
+          }
+        ]
+      }
+    },
+    {
+      "ts_epoch": 1771897116,
+      "type": "step_executed",
+      "step": {
+        "id": "s1",
+        "title": "Crear archivo demo.txt",
+        "action": "TOOL",
+        "tool": "write_file",
+        "args": {
+          "path": "C:\\AI_VAULT\\workspace\\brainlab\\demo.txt",
+          "content": "Este es un archivo de demostración."
+        },
+        "success_criteria": "Archivo demo.txt creado en WORKSPACE_ROOT",
+        "status": "done",
+        "result": {
+          "path": "C:\\AI_VAULT\\workspace\\brainlab\\demo.txt",
+          "written": 35
+        },
+        "started_at": 1771897116,
+        "ended_at": 1771897116
+      }
+    },
+    {
+      "ts_epoch": 1771897116,
+      "type": "evaluation",
+      "verdict": {
+        "ok": true,
+        "errors": [],
+        "pending_count": 0,
+        "recommendation": "continue",
+        "updated_at": 1771897116
+      }
+    },
+    {
+      "ts_epoch": 1771897226,
+      "type": "evaluation",
+      "verdict": {
+        "ok": true,
+        "score": 100,
+        "errors": [],
+        "pending_count": 0,
+        "recommendation": "continue",
+        "reasons": [],
+        "recommendations": [],
+        "updated_at": 1771897226
+      }
+    },
+    {
+      "ts_epoch": 1771897387,
+      "type": "evaluation",
+      "verdict": {
+        "ok": true,
+        "score": 100,
+        "errors": [],
+        "pending_count": 0,
+        "recommendation": "continue",
+        "reasons": [],
+        "recommendations": [],
+        "updated_at": 1771897387
+      }
+    },
+    {
+      "ts_epoch": 1771897650,
+      "type": "memory_compact",
+      "result": {
+        "ok": true,
+        "kept": 8,
+        "dropped": 3,
+        "bad_lines": 0,
+        "backup_path": "C:\\AI_VAULT\\state\\lab1\\memory_facts.backup_1771897650.jsonl",
+        "final_path": "C:\\AI_VAULT\\state\\lab1\\memory_facts.jsonl"
+      }
+    },
+    {
+      "ts_epoch": 1771897691,
+      "type": "memory_compact",
+      "result": {
+        "ok": true,
+        "kept": 8,
+        "dropped": 0,
+        "bad_lines": 0,
+        "backup_path": "C:\\AI_VAULT\\state\\lab1\\memory_facts.backup_1771897691.jsonl",
+        "final_path": "C:\\AI_VAULT\\state\\lab1\\memory_facts.jsonl"
+      }
+    }
+  ]
+}

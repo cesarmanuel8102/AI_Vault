@@ -1,0 +1,573 @@
+{
+  "events": [
+    {
+      "type": "mission_set",
+      "at": "2026-02-24T18:16:36Z",
+      "room": "cesar_main",
+      "mission": {
+        "objective": "Smoke test: crear good.txt y listar WORKSPACE_ROOT.",
+        "constraints": [
+          "Todos los writes deben ser dentro de WORKSPACE_ROOT",
+          "No escribir secretos"
+        ]
+      }
+    },
+    {
+      "type": "plan_guardrail_applied",
+      "at": "2026-02-24T18:17:18Z",
+      "room": "cesar_main",
+      "guard": {
+        "ok": true,
+        "want_bad": false,
+        "want_good": true,
+        "changes": []
+      }
+    },
+    {
+      "type": "plan_created",
+      "at": "2026-02-24T18:17:18Z",
+      "room": "cesar_main",
+      "plan_meta": {
+        "steps": 2
+      }
+    },
+    {
+      "type": "step_executed",
+      "at": "2026-02-24T18:17:18Z",
+      "room": "cesar_main",
+      "step_id": "s1",
+      "tool_calls": [
+        {
+          "tool_name": "write_file",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "content": "Este es un archivo de prueba."
+          },
+          "tool_args_hash": "bdeef348d98ccf34",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "bytes": 29
+          }
+        }
+      ],
+      "status": "done",
+      "title": "Crear el archivo good.txt",
+      "action": "TOOL"
+    },
+    {
+      "type": "step_evaluated",
+      "at": "2026-02-24T18:17:18Z",
+      "room": "cesar_main",
+      "step_id": "s1",
+      "tool_calls": [
+        {
+          "tool_name": "write_file",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "content": "Este es un archivo de prueba."
+          },
+          "tool_args_hash": "bdeef348d98ccf34",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+            "bytes": 29
+          }
+        }
+      ],
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "notes": "OK",
+      "recommendation": "continue"
+    },
+    {
+      "type": "step_executed",
+      "at": "2026-02-24T18:17:18Z",
+      "room": "cesar_main",
+      "step_id": "s2",
+      "tool_calls": [
+        {
+          "tool_name": "list_dir",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          },
+          "tool_args_hash": "47e42a639f73929f",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "count": 20,
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          }
+        }
+      ],
+      "status": "done",
+      "title": "Listar archivos en WORKSPACE_ROOT",
+      "action": "TOOL"
+    },
+    {
+      "type": "step_evaluated",
+      "at": "2026-02-24T18:17:18Z",
+      "room": "cesar_main",
+      "step_id": "s2",
+      "tool_calls": [
+        {
+          "tool_name": "list_dir",
+          "tool_args": {
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          },
+          "tool_args_hash": "47e42a639f73929f",
+          "ok": true,
+          "error": null,
+          "output_summary": {
+            "count": 20,
+            "path": "C:\\AI_VAULT\\workspace\\brainlab"
+          }
+        }
+      ],
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "notes": "OK",
+      "recommendation": "continue"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T18:17:18Z",
+      "room": "cesar_main",
+      "score": 0.75,
+      "verdict": "continue",
+      "violations": [],
+      "loops": 3,
+      "executed": 2,
+      "mode": null
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T18:17:18Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T18:17:18Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T18:21:45Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": null
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T18:21:45Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T18:21:46Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T18:23:03Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": null
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T18:23:03Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T18:23:03Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T19:44:09Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": null
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T19:44:09Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T19:44:09Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T19:46:15Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": null
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T19:46:15Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T19:46:16Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T19:49:31Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": null
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T19:49:31Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T19:49:31Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T19:56:21Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": null
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T19:56:21Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T19:56:21Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:00:06Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": null
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:00:06Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:00:06Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:05:10Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": null
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:05:10Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:05:10Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:07:55Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": null
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:07:55Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:07:55Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:10:02Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": null
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:10:02Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:10:02Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:10:29Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": null
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:10:29Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:10:30Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:10:45Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": null
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:10:45Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:10:46Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:13:30Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": null
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:13:30Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:13:31Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:17:58Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": null
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:17:58Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:17:58Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:20:42Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": null
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:20:42Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:20:42Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:25:05Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:26:42Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": null
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:26:42Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:26:42Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-24T20:32:08Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2"
+    },
+    {
+      "type": "run_evaluated",
+      "at": "2026-02-25T23:56:01Z",
+      "room": "cesar_main",
+      "loops": 1,
+      "executed": 0,
+      "mode": "phase2",
+      "timeout": false
+    }
+  ]
+}

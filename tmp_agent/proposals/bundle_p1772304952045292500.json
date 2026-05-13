@@ -1,0 +1,10 @@
+{
+  "proposal_id": "p1772304952045292500",
+  "items": [
+    {
+      "kind": "modify",
+      "workspace_path": "C:\\AI_VAULT\\tmp_agent\\workspace\\real_log.txt",
+      "repo_path": "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_minreal_plan_20260228_135550\\real_log.txt"
+    }
+  ]
+}

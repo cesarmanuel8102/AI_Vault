@@ -1,0 +1,9 @@
+{
+  "project_id": 29652652,
+  "compile_id": "901add2fb70e33a9f44e74649d935f43-d17d3a33477eedcc2023ff9fb3d23a40",
+  "backtest_id": "bce39c0eb0b32c6aceb560009e8ebdf1",
+  "backtest_name": "MA-MR V1.0 IS",
+  "launched_at": "2026-04-04 01:11:48 UTC",
+  "parameters": {},
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/multi_asset_mr/main.py"
+}

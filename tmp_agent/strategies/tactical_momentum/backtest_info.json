@@ -1,0 +1,14 @@
+{
+  "project_id": 29652652,
+  "compile_id": "2de7c5b3dc689418f4267733a3d44ccf-04832627a9a2ab260a2239257379a8da",
+  "backtest_id": "7980ca47edfd78b3ee38a7182fe52937",
+  "backtest_name": "TAC-MOM V1.2 Sector OOS",
+  "launched_at": "2026-04-04 16:25:22 UTC",
+  "parameters": {
+    "start_year": "2021",
+    "end_year": "2024",
+    "end_month": "12",
+    "lookback_months": "3"
+  },
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/tactical_momentum/main_v12.py"
+}

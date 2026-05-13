@@ -1,0 +1,111 @@
+{
+  "optimization": {
+    "optimizationId": "O-c9eca3743f4933140d42879a0d38825e",
+    "snapshotId": null,
+    "name": "V2.0b Param Stability - PT/SL/Risk 45 combos",
+    "runtimeStatistics": {
+      "Completed": "0",
+      "Failed": "0",
+      "Running": "0",
+      "In Queue": "0",
+      "Average Length": "00:00:00",
+      "Total Runtime": "00:00:02",
+      "Total": "45",
+      "Consumed": "0 QCC"
+    },
+    "constraints": [
+      {
+        "target": "TotalPerformance.PortfolioStatistics.SharpeRatio",
+        "operator": "GreaterOrEqual",
+        "target-value": 0
+      }
+    ],
+    "parameters": [
+      {
+        "name": "profit_target_pct",
+        "min": 0.3,
+        "max": 0.5,
+        "step": 0.05
+      },
+      {
+        "name": "stop_loss_pct",
+        "min": -0.25,
+        "max": -0.15,
+        "step": 0.05
+      },
+      {
+        "name": "risk_per_trade",
+        "min": 0.04,
+        "max": 0.06,
+        "step": 0.01
+      }
+    ],
+    "nodeType": "O2-8",
+    "parallelNodes": 6,
+    "projectId": 29490680,
+    "status": "aborted",
+    "backtests": {},
+    "strategy": "QuantConnect.Optimizer.Strategies.GridSearchOptimizationStrategy",
+    "optimizationTarget": "TotalPerformance.PortfolioStatistics.SharpeRatio",
+    "targetValue": null,
+    "extremum": "max",
+    "requested": "2026-04-06 17:48:35",
+    "gridLayout": [
+      {
+        "chartName": "Strategy Equities",
+        "column": 1,
+        "height": 4,
+        "row": 1,
+        "sort": 11,
+        "width": 12
+      },
+      {
+        "chartName": "Sharpe Ratio (profit_target_pct, stop_loss_pct, risk_per_trade)",
+        "column": 1,
+        "height": 4,
+        "row": 5,
+        "width": 4,
+        "definition": [
+          "Par.(profit_target_pct)",
+          "Par.(stop_loss_pct)",
+          "Par.(risk_per_trade)",
+          "Sharpe Ratio"
+        ]
+      },
+      {
+        "chartName": "Drawdown (profit_target_pct, stop_loss_pct, risk_per_trade)",
+        "column": 5,
+        "height": 4,
+        "row": 5,
+        "width": 4,
+        "definition": [
+          "Par.(profit_target_pct)",
+          "Par.(stop_loss_pct)",
+          "Par.(risk_per_trade)",
+          "Drawdown"
+        ]
+      },
+      {
+        "chartName": "Compounding Annual Return (profit_target_pct, stop_loss_pct, risk_per_trade)",
+        "column": 9,
+        "height": 4,
+        "row": 5,
+        "width": 4,
+        "definition": [
+          "Par.(profit_target_pct)",
+          "Par.(stop_loss_pct)",
+          "Par.(risk_per_trade)",
+          "Compounding Annual Return"
+        ]
+      }
+    ],
+    "outOfSampleMaxEndDate": "2026-04-06T00:00:00Z",
+    "outOfSampleDays": 0,
+    "criterion": {
+      "extremum": "max",
+      "target": "TotalPerformance.PortfolioStatistics.SharpeRatio",
+      "targetValue": null
+    }
+  },
+  "success": true
+}

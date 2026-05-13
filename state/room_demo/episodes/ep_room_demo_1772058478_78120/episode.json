@@ -1,0 +1,27 @@
+{
+  "episode_id": "ep_room_demo_1772058478_78120",
+  "room_id": "room_demo",
+  "created_at": 1772058478,
+  "mission": {
+    "room_id": "room_demo",
+    "objective": "validate one-shot + step",
+    "constraints": [],
+    "status": "active",
+    "created_at": 1772058478,
+    "updated_at": 1772058478
+  },
+  "events": [
+    {
+      "ts_epoch": 1772058478,
+      "type": "mission_set",
+      "mission": {
+        "room_id": "room_demo",
+        "objective": "validate one-shot + step",
+        "constraints": [],
+        "status": "active",
+        "created_at": 1772058478,
+        "updated_at": 1772058478
+      }
+    }
+  ]
+}

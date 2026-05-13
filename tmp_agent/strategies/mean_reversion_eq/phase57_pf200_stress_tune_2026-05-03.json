@@ -1,0 +1,1019 @@
+{
+  "generated_at_utc": "2026-05-03T23:30:05.485884+00:00",
+  "compile_id": "fdab95910e518dc04eb497b9fcc00aca-59de6c7fd36dbdf4b26033df649d6ae0",
+  "results": {
+    "P57_BASE_REF": {
+      "overrides": {},
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "7566945bbc156563233e867604ee9899",
+          "np_pct": -1.068,
+          "dd_pct": 3.1,
+          "orders": 169,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 148,
+          "tr_mr": 0,
+          "tr_orb": 43,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_BASE_REF",
+          "scenario": "IS_2022_2024",
+          "overrides": {}
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "ef65d781c79a9753b7c1f8c4fe1f5473",
+          "np_pct": 7.451,
+          "dd_pct": 2.8,
+          "orders": 95,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 64,
+          "tr_mr": 0,
+          "tr_orb": 25,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_BASE_REF",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {}
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "2fad4ce5a4f7f61eec0315c47d919f4b",
+          "np_pct": 0.321,
+          "dd_pct": 1.2,
+          "orders": 35,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 63,
+          "tr_mr": 0,
+          "tr_orb": 9,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_BASE_REF",
+          "scenario": "STRESS_2020",
+          "overrides": {}
+        }
+      },
+      "pass_all": true
+    },
+    "P57_S01_SHORT_ONLY": {
+      "overrides": {
+        "s_disable_longs": 1
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "45aa30198a4da917b7cf93d0a9db4741",
+          "np_pct": -1.068,
+          "dd_pct": 3.1,
+          "orders": 169,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 148,
+          "tr_mr": 0,
+          "tr_orb": 43,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_S01_SHORT_ONLY",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "s_disable_longs": 1
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "edecba3c01ed9d76e1b4f98b83a6d578",
+          "np_pct": 7.451,
+          "dd_pct": 2.8,
+          "orders": 95,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 64,
+          "tr_mr": 0,
+          "tr_orb": 25,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_S01_SHORT_ONLY",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "s_disable_longs": 1
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "7cfdb4b6c3d26672f6a278cb5ed92770",
+          "np_pct": 0.321,
+          "dd_pct": 1.2,
+          "orders": 35,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 63,
+          "tr_mr": 0,
+          "tr_orb": 9,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_S01_SHORT_ONLY",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "s_disable_longs": 1
+          }
+        }
+      },
+      "pass_all": true,
+      "checks": {
+        "nodeg_IS_2022_2024": true,
+        "nodeg_OOS_2025_2026Q1": true,
+        "nodeg_STRESS_2020": true
+      }
+    },
+    "P57_S02_SHORT_ONLY_TIGHTER": {
+      "overrides": {
+        "s_disable_longs": 1,
+        "s_stop_atr_mult": 0.8,
+        "s_target_atr_mult": 1.4
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "bdaaba69862406736e9370b996583a69",
+          "np_pct": -1.068,
+          "dd_pct": 3.1,
+          "orders": 169,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 148,
+          "tr_mr": 0,
+          "tr_orb": 43,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_S02_SHORT_ONLY_TIGHTER",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "s_disable_longs": 1,
+            "s_stop_atr_mult": 0.8,
+            "s_target_atr_mult": 1.4
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "c5e8e62eb74a922b915ee5bf3c640a10",
+          "np_pct": 7.451,
+          "dd_pct": 2.8,
+          "orders": 95,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 64,
+          "tr_mr": 0,
+          "tr_orb": 25,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_S02_SHORT_ONLY_TIGHTER",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "s_disable_longs": 1,
+            "s_stop_atr_mult": 0.8,
+            "s_target_atr_mult": 1.4
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "d890c909e99191485db8d7f4378892d2",
+          "np_pct": 0.321,
+          "dd_pct": 1.2,
+          "orders": 35,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 63,
+          "tr_mr": 0,
+          "tr_orb": 9,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_S02_SHORT_ONLY_TIGHTER",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "s_disable_longs": 1,
+            "s_stop_atr_mult": 0.8,
+            "s_target_atr_mult": 1.4
+          }
+        }
+      },
+      "pass_all": true,
+      "checks": {
+        "nodeg_IS_2022_2024": true,
+        "nodeg_OOS_2025_2026Q1": true,
+        "nodeg_STRESS_2020": true
+      }
+    },
+    "P57_S03_SHORT_ONLY_DELAYED": {
+      "overrides": {
+        "s_disable_longs": 1,
+        "s_entry_hour": 10,
+        "s_entry_min": 20,
+        "s_stop_atr_mult": 0.8,
+        "s_target_atr_mult": 1.4
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "b45fb99b69551e325044c3659eec6197",
+          "np_pct": -1.068,
+          "dd_pct": 3.1,
+          "orders": 169,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 142,
+          "tr_mr": 0,
+          "tr_orb": 43,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_S03_SHORT_ONLY_DELAYED",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "s_disable_longs": 1,
+            "s_entry_hour": 10,
+            "s_entry_min": 20,
+            "s_stop_atr_mult": 0.8,
+            "s_target_atr_mult": 1.4
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "d8060509460db80db5e0f373c4acbe86",
+          "np_pct": 7.451,
+          "dd_pct": 2.8,
+          "orders": 95,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 62,
+          "tr_mr": 0,
+          "tr_orb": 25,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_S03_SHORT_ONLY_DELAYED",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "s_disable_longs": 1,
+            "s_entry_hour": 10,
+            "s_entry_min": 20,
+            "s_stop_atr_mult": 0.8,
+            "s_target_atr_mult": 1.4
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "528159f983e0d193e7667011692d89d4",
+          "np_pct": 0.321,
+          "dd_pct": 1.2,
+          "orders": 35,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 60,
+          "tr_mr": 0,
+          "tr_orb": 9,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_S03_SHORT_ONLY_DELAYED",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "s_disable_longs": 1,
+            "s_entry_hour": 10,
+            "s_entry_min": 20,
+            "s_stop_atr_mult": 0.8,
+            "s_target_atr_mult": 1.4
+          }
+        }
+      },
+      "pass_all": true,
+      "checks": {
+        "nodeg_IS_2022_2024": true,
+        "nodeg_OOS_2025_2026Q1": true,
+        "nodeg_STRESS_2020": true
+      }
+    },
+    "P57_S04_SHORT_ONLY_STRICT": {
+      "overrides": {
+        "s_disable_longs": 1,
+        "s_entry_hour": 10,
+        "s_entry_min": 20,
+        "s_intraday_mom_pct": 0.0015,
+        "s_min_gap_pct": 0.008,
+        "s_stop_atr_mult": 0.8,
+        "s_target_atr_mult": 1.35
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "c4202c723823f45b38a2ad81fca80ab8",
+          "np_pct": -1.068,
+          "dd_pct": 3.1,
+          "orders": 169,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 142,
+          "tr_mr": 0,
+          "tr_orb": 43,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_S04_SHORT_ONLY_STRICT",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "s_disable_longs": 1,
+            "s_entry_hour": 10,
+            "s_entry_min": 20,
+            "s_intraday_mom_pct": 0.0015,
+            "s_min_gap_pct": 0.008,
+            "s_stop_atr_mult": 0.8,
+            "s_target_atr_mult": 1.35
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "3d5e0a6edc2e608f1aa07f80765050d9",
+          "np_pct": 7.451,
+          "dd_pct": 2.8,
+          "orders": 95,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 62,
+          "tr_mr": 0,
+          "tr_orb": 25,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_S04_SHORT_ONLY_STRICT",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "s_disable_longs": 1,
+            "s_entry_hour": 10,
+            "s_entry_min": 20,
+            "s_intraday_mom_pct": 0.0015,
+            "s_min_gap_pct": 0.008,
+            "s_stop_atr_mult": 0.8,
+            "s_target_atr_mult": 1.35
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "02f7f3f72a8d00e69e3ead1dd6302cc1",
+          "np_pct": 0.321,
+          "dd_pct": 1.2,
+          "orders": 35,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 60,
+          "tr_mr": 0,
+          "tr_orb": 9,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_S04_SHORT_ONLY_STRICT",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "s_disable_longs": 1,
+            "s_entry_hour": 10,
+            "s_entry_min": 20,
+            "s_intraday_mom_pct": 0.0015,
+            "s_min_gap_pct": 0.008,
+            "s_stop_atr_mult": 0.8,
+            "s_target_atr_mult": 1.35
+          }
+        }
+      },
+      "pass_all": true,
+      "checks": {
+        "nodeg_IS_2022_2024": true,
+        "nodeg_OOS_2025_2026Q1": true,
+        "nodeg_STRESS_2020": true
+      }
+    },
+    "P57_S05_DELAYED_BOTH": {
+      "overrides": {
+        "s_entry_hour": 10,
+        "s_entry_min": 20,
+        "s_stop_atr_mult": 0.85,
+        "s_target_atr_mult": 1.45
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "8b70d3478add8b7ac45eadc341650172",
+          "np_pct": -1.068,
+          "dd_pct": 3.1,
+          "orders": 169,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 142,
+          "tr_mr": 0,
+          "tr_orb": 43,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_S05_DELAYED_BOTH",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "s_entry_hour": 10,
+            "s_entry_min": 20,
+            "s_stop_atr_mult": 0.85,
+            "s_target_atr_mult": 1.45
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "c6e372a1aa7fd69baf91022f0ae5be9d",
+          "np_pct": 7.451,
+          "dd_pct": 2.8,
+          "orders": 95,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 62,
+          "tr_mr": 0,
+          "tr_orb": 25,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_S05_DELAYED_BOTH",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "s_entry_hour": 10,
+            "s_entry_min": 20,
+            "s_stop_atr_mult": 0.85,
+            "s_target_atr_mult": 1.45
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "bb703e2b4c96007d7683459ee50cda9d",
+          "np_pct": 0.321,
+          "dd_pct": 1.2,
+          "orders": 35,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 60,
+          "tr_mr": 0,
+          "tr_orb": 9,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_S05_DELAYED_BOTH",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "s_entry_hour": 10,
+            "s_entry_min": 20,
+            "s_stop_atr_mult": 0.85,
+            "s_target_atr_mult": 1.45
+          }
+        }
+      },
+      "pass_all": true,
+      "checks": {
+        "nodeg_IS_2022_2024": true,
+        "nodeg_OOS_2025_2026Q1": true,
+        "nodeg_STRESS_2020": true
+      }
+    },
+    "P57_S06_SHORT_ONLY_EARLY_TIGHT": {
+      "overrides": {
+        "s_disable_longs": 1,
+        "s_intraday_mom_pct": 0.0012,
+        "s_stop_atr_mult": 0.75,
+        "s_target_atr_mult": 1.3,
+        "s_min_gap_pct": 0.006
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "19d38de4638acb0cc2b69ef87e6a0c13",
+          "np_pct": -1.068,
+          "dd_pct": 3.1,
+          "orders": 169,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 148,
+          "tr_mr": 0,
+          "tr_orb": 43,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_S06_SHORT_ONLY_EARLY_TIGHT",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "s_disable_longs": 1,
+            "s_intraday_mom_pct": 0.0012,
+            "s_stop_atr_mult": 0.75,
+            "s_target_atr_mult": 1.3,
+            "s_min_gap_pct": 0.006
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "95f7068eb60a2a439d6bc2c748a57ef5",
+          "np_pct": 7.451,
+          "dd_pct": 2.8,
+          "orders": 95,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 64,
+          "tr_mr": 0,
+          "tr_orb": 25,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_S06_SHORT_ONLY_EARLY_TIGHT",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "s_disable_longs": 1,
+            "s_intraday_mom_pct": 0.0012,
+            "s_stop_atr_mult": 0.75,
+            "s_target_atr_mult": 1.3,
+            "s_min_gap_pct": 0.006
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "083336eb1a50c22e2d57018d953d4456",
+          "np_pct": 0.321,
+          "dd_pct": 1.2,
+          "orders": 35,
+          "dbr": 0,
+          "tbr": 0,
+          "stress_days": 63,
+          "tr_mr": 0,
+          "tr_orb": 9,
+          "tr_stress": 0,
+          "pnl_stress": 0.0,
+          "candidate": "P57_S06_SHORT_ONLY_EARLY_TIGHT",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "s_disable_longs": 1,
+            "s_intraday_mom_pct": 0.0012,
+            "s_stop_atr_mult": 0.75,
+            "s_target_atr_mult": 1.3,
+            "s_min_gap_pct": 0.006
+          }
+        }
+      },
+      "pass_all": true,
+      "checks": {
+        "nodeg_IS_2022_2024": true,
+        "nodeg_OOS_2025_2026Q1": true,
+        "nodeg_STRESS_2020": true
+      }
+    }
+  },
+  "rows": [
+    {
+      "status": "Completed.",
+      "backtest_id": "7566945bbc156563233e867604ee9899",
+      "np_pct": -1.068,
+      "dd_pct": 3.1,
+      "orders": 169,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 148,
+      "tr_mr": 0,
+      "tr_orb": 43,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_BASE_REF",
+      "scenario": "IS_2022_2024",
+      "overrides": {}
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "ef65d781c79a9753b7c1f8c4fe1f5473",
+      "np_pct": 7.451,
+      "dd_pct": 2.8,
+      "orders": 95,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 64,
+      "tr_mr": 0,
+      "tr_orb": 25,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_BASE_REF",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {}
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "2fad4ce5a4f7f61eec0315c47d919f4b",
+      "np_pct": 0.321,
+      "dd_pct": 1.2,
+      "orders": 35,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 63,
+      "tr_mr": 0,
+      "tr_orb": 9,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_BASE_REF",
+      "scenario": "STRESS_2020",
+      "overrides": {}
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "45aa30198a4da917b7cf93d0a9db4741",
+      "np_pct": -1.068,
+      "dd_pct": 3.1,
+      "orders": 169,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 148,
+      "tr_mr": 0,
+      "tr_orb": 43,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_S01_SHORT_ONLY",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "s_disable_longs": 1
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "edecba3c01ed9d76e1b4f98b83a6d578",
+      "np_pct": 7.451,
+      "dd_pct": 2.8,
+      "orders": 95,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 64,
+      "tr_mr": 0,
+      "tr_orb": 25,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_S01_SHORT_ONLY",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "s_disable_longs": 1
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "7cfdb4b6c3d26672f6a278cb5ed92770",
+      "np_pct": 0.321,
+      "dd_pct": 1.2,
+      "orders": 35,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 63,
+      "tr_mr": 0,
+      "tr_orb": 9,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_S01_SHORT_ONLY",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "s_disable_longs": 1
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "bdaaba69862406736e9370b996583a69",
+      "np_pct": -1.068,
+      "dd_pct": 3.1,
+      "orders": 169,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 148,
+      "tr_mr": 0,
+      "tr_orb": 43,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_S02_SHORT_ONLY_TIGHTER",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "s_disable_longs": 1,
+        "s_stop_atr_mult": 0.8,
+        "s_target_atr_mult": 1.4
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "c5e8e62eb74a922b915ee5bf3c640a10",
+      "np_pct": 7.451,
+      "dd_pct": 2.8,
+      "orders": 95,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 64,
+      "tr_mr": 0,
+      "tr_orb": 25,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_S02_SHORT_ONLY_TIGHTER",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "s_disable_longs": 1,
+        "s_stop_atr_mult": 0.8,
+        "s_target_atr_mult": 1.4
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "d890c909e99191485db8d7f4378892d2",
+      "np_pct": 0.321,
+      "dd_pct": 1.2,
+      "orders": 35,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 63,
+      "tr_mr": 0,
+      "tr_orb": 9,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_S02_SHORT_ONLY_TIGHTER",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "s_disable_longs": 1,
+        "s_stop_atr_mult": 0.8,
+        "s_target_atr_mult": 1.4
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "b45fb99b69551e325044c3659eec6197",
+      "np_pct": -1.068,
+      "dd_pct": 3.1,
+      "orders": 169,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 142,
+      "tr_mr": 0,
+      "tr_orb": 43,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_S03_SHORT_ONLY_DELAYED",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "s_disable_longs": 1,
+        "s_entry_hour": 10,
+        "s_entry_min": 20,
+        "s_stop_atr_mult": 0.8,
+        "s_target_atr_mult": 1.4
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "d8060509460db80db5e0f373c4acbe86",
+      "np_pct": 7.451,
+      "dd_pct": 2.8,
+      "orders": 95,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 62,
+      "tr_mr": 0,
+      "tr_orb": 25,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_S03_SHORT_ONLY_DELAYED",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "s_disable_longs": 1,
+        "s_entry_hour": 10,
+        "s_entry_min": 20,
+        "s_stop_atr_mult": 0.8,
+        "s_target_atr_mult": 1.4
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "528159f983e0d193e7667011692d89d4",
+      "np_pct": 0.321,
+      "dd_pct": 1.2,
+      "orders": 35,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 60,
+      "tr_mr": 0,
+      "tr_orb": 9,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_S03_SHORT_ONLY_DELAYED",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "s_disable_longs": 1,
+        "s_entry_hour": 10,
+        "s_entry_min": 20,
+        "s_stop_atr_mult": 0.8,
+        "s_target_atr_mult": 1.4
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "c4202c723823f45b38a2ad81fca80ab8",
+      "np_pct": -1.068,
+      "dd_pct": 3.1,
+      "orders": 169,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 142,
+      "tr_mr": 0,
+      "tr_orb": 43,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_S04_SHORT_ONLY_STRICT",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "s_disable_longs": 1,
+        "s_entry_hour": 10,
+        "s_entry_min": 20,
+        "s_intraday_mom_pct": 0.0015,
+        "s_min_gap_pct": 0.008,
+        "s_stop_atr_mult": 0.8,
+        "s_target_atr_mult": 1.35
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "3d5e0a6edc2e608f1aa07f80765050d9",
+      "np_pct": 7.451,
+      "dd_pct": 2.8,
+      "orders": 95,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 62,
+      "tr_mr": 0,
+      "tr_orb": 25,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_S04_SHORT_ONLY_STRICT",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "s_disable_longs": 1,
+        "s_entry_hour": 10,
+        "s_entry_min": 20,
+        "s_intraday_mom_pct": 0.0015,
+        "s_min_gap_pct": 0.008,
+        "s_stop_atr_mult": 0.8,
+        "s_target_atr_mult": 1.35
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "02f7f3f72a8d00e69e3ead1dd6302cc1",
+      "np_pct": 0.321,
+      "dd_pct": 1.2,
+      "orders": 35,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 60,
+      "tr_mr": 0,
+      "tr_orb": 9,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_S04_SHORT_ONLY_STRICT",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "s_disable_longs": 1,
+        "s_entry_hour": 10,
+        "s_entry_min": 20,
+        "s_intraday_mom_pct": 0.0015,
+        "s_min_gap_pct": 0.008,
+        "s_stop_atr_mult": 0.8,
+        "s_target_atr_mult": 1.35
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "8b70d3478add8b7ac45eadc341650172",
+      "np_pct": -1.068,
+      "dd_pct": 3.1,
+      "orders": 169,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 142,
+      "tr_mr": 0,
+      "tr_orb": 43,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_S05_DELAYED_BOTH",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "s_entry_hour": 10,
+        "s_entry_min": 20,
+        "s_stop_atr_mult": 0.85,
+        "s_target_atr_mult": 1.45
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "c6e372a1aa7fd69baf91022f0ae5be9d",
+      "np_pct": 7.451,
+      "dd_pct": 2.8,
+      "orders": 95,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 62,
+      "tr_mr": 0,
+      "tr_orb": 25,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_S05_DELAYED_BOTH",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "s_entry_hour": 10,
+        "s_entry_min": 20,
+        "s_stop_atr_mult": 0.85,
+        "s_target_atr_mult": 1.45
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "bb703e2b4c96007d7683459ee50cda9d",
+      "np_pct": 0.321,
+      "dd_pct": 1.2,
+      "orders": 35,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 60,
+      "tr_mr": 0,
+      "tr_orb": 9,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_S05_DELAYED_BOTH",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "s_entry_hour": 10,
+        "s_entry_min": 20,
+        "s_stop_atr_mult": 0.85,
+        "s_target_atr_mult": 1.45
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "19d38de4638acb0cc2b69ef87e6a0c13",
+      "np_pct": -1.068,
+      "dd_pct": 3.1,
+      "orders": 169,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 148,
+      "tr_mr": 0,
+      "tr_orb": 43,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_S06_SHORT_ONLY_EARLY_TIGHT",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "s_disable_longs": 1,
+        "s_intraday_mom_pct": 0.0012,
+        "s_stop_atr_mult": 0.75,
+        "s_target_atr_mult": 1.3,
+        "s_min_gap_pct": 0.006
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "95f7068eb60a2a439d6bc2c748a57ef5",
+      "np_pct": 7.451,
+      "dd_pct": 2.8,
+      "orders": 95,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 64,
+      "tr_mr": 0,
+      "tr_orb": 25,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_S06_SHORT_ONLY_EARLY_TIGHT",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "s_disable_longs": 1,
+        "s_intraday_mom_pct": 0.0012,
+        "s_stop_atr_mult": 0.75,
+        "s_target_atr_mult": 1.3,
+        "s_min_gap_pct": 0.006
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "083336eb1a50c22e2d57018d953d4456",
+      "np_pct": 0.321,
+      "dd_pct": 1.2,
+      "orders": 35,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 63,
+      "tr_mr": 0,
+      "tr_orb": 9,
+      "tr_stress": 0,
+      "pnl_stress": 0.0,
+      "candidate": "P57_S06_SHORT_ONLY_EARLY_TIGHT",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "s_disable_longs": 1,
+        "s_intraday_mom_pct": 0.0012,
+        "s_stop_atr_mult": 0.75,
+        "s_target_atr_mult": 1.3,
+        "s_min_gap_pct": 0.006
+      }
+    }
+  ],
+  "winners": [
+    "P57_S01_SHORT_ONLY",
+    "P57_S02_SHORT_ONLY_TIGHTER",
+    "P57_S03_SHORT_ONLY_DELAYED",
+    "P57_S04_SHORT_ONLY_STRICT",
+    "P57_S05_DELAYED_BOTH",
+    "P57_S06_SHORT_ONLY_EARLY_TIGHT"
+  ]
+}

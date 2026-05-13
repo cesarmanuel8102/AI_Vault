@@ -1,0 +1,23 @@
+{
+  "generated_at_utc": "2026-04-29T23:13:54.010013+00:00",
+  "status_state": "NO_CAMPAIGN",
+  "status_action": "NO_BUY",
+  "message_preview": "PF Campaign Gate Diario\nEstado: NO_CAMPAIGN\nAccion: NO_BUY\nCampana inicio: NONE\nUltima senal: NONE\nEdad campana: -1 dias\nDias a ventana: -1\nBase gate hoy: False\nIWM_DD50: -0.02755645926297745\nQQQ_RV20: 0.15621213614702267\nIWM_RNG10: 0.014169874862199611\nTimestamp UTC: 2026-04-29T23:13:52+00:00\n",
+  "send_result": {
+    "ok": false,
+    "mode": "twilio_whatsapp",
+    "status_code": 400,
+    "sid": null,
+    "status": 400,
+    "error_code": 63007,
+    "error_message": "Twilio could not find a Channel with the specified From address",
+    "from": "whatsapp:+14155238886",
+    "to": "whatsapp:+17865868970",
+    "fallback_from_sms_number": "whatsapp:+18559709020",
+    "fallback_reason": "configured sender is not a WhatsApp channel"
+  },
+  "loaded_env_files": [
+    "C:\\AI_VAULT\\.env",
+    "C:\\Users\\cesar\\OneDrive\\Escritorio\\Memoria 32\\Personal\\TradingBot\\Proyecto 2. GitHub-Render-Alapaca-Tastytrade\\.env"
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "project_id": 29652652,
+  "compile_id": "33149a0d8a03e22f41a5cb7e8d54218f-75bd5b20fdbb4bd6142935c6f7669923",
+  "backtest_id": "ae49c0d1e32e774af7ace5657a87ab80",
+  "backtest_name": "SMOKE_DEFAULTS_OOS",
+  "launched_at": "2026-04-11 16:35:39 UTC",
+  "parameters": {
+    "start_year": "2025",
+    "start_month": "1",
+    "start_day": "1",
+    "end_year": "2026",
+    "end_month": "3",
+    "end_day": "31",
+    "initial_cash": "10000"
+  },
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/mean_reversion_eq/main.py"
+}

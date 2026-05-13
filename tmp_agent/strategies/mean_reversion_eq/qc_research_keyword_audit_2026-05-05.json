@@ -1,0 +1,194 @@
+[
+  {
+    "projectId": 29652652,
+    "name": "Brain V9 Forex V1",
+    "research.ipynb": {
+      "len": 1029,
+      "hits": [
+        "research",
+        "QuantBook"
+      ]
+    },
+    "main.py": {
+      "len": 58380,
+      "hits": []
+    }
+  },
+  {
+    "projectId": 30874635,
+    "name": "PF_CAMPAIGN_GATE_MONITOR",
+    "research.ipynb": {
+      "len": 1029,
+      "hits": [
+        "research",
+        "QuantBook"
+      ]
+    },
+    "main.py": {
+      "len": 11208,
+      "hits": [
+        "signal",
+        "signals"
+      ]
+    }
+  },
+  {
+    "projectId": 30507388,
+    "name": "IBKR10K_GROWTH_MOMENTUM_1776892803",
+    "research.ipynb": {
+      "len": 1029,
+      "hits": [
+        "research",
+        "QuantBook"
+      ]
+    },
+    "main.py": {
+      "len": 21893,
+      "hits": [
+        "classifier",
+        "signal"
+      ]
+    }
+  },
+  {
+    "projectId": 30507341,
+    "name": "IBKR10K_GROWTH_MOMENTUM_1776892712",
+    "research.ipynb": {
+      "len": 1029,
+      "hits": [
+        "research",
+        "QuantBook"
+      ]
+    },
+    "main.py": {
+      "len": 557,
+      "hits": []
+    }
+  },
+  {
+    "projectId": 29490680,
+    "name": "Brain V9 Options V1",
+    "research.ipynb": {
+      "len": 28627,
+      "hits": [
+        "sklearn",
+        "lightgbm",
+        "classifier",
+        "predict",
+        "signal",
+        "signals",
+        "json",
+        "pickle",
+        "research",
+        "QuantBook",
+        "train",
+        "fit("
+      ]
+    },
+    "main.py": {
+      "len": 10421,
+      "hits": []
+    }
+  },
+  {
+    "projectId": 29811952,
+    "name": "Clone of Brain V9 Options V1",
+    "research.ipynb": {
+      "len": 1029,
+      "hits": [
+        "research",
+        "QuantBook"
+      ]
+    },
+    "main.py": {
+      "len": 27208,
+      "hits": [
+        "signal",
+        "signals"
+      ]
+    }
+  },
+  {
+    "projectId": 29721803,
+    "name": "Brain V9 MTF Trend Pullback",
+    "research.ipynb": {
+      "len": 1029,
+      "hits": [
+        "research",
+        "QuantBook"
+      ]
+    },
+    "main.py": {
+      "len": 16193,
+      "hits": []
+    }
+  },
+  {
+    "projectId": 24654779,
+    "name": "Upgraded Sky Blue Butterfly",
+    "research.ipynb": {
+      "len": 90887,
+      "hits": [
+        "sklearn",
+        "lightgbm",
+        "randomforest",
+        "classifier",
+        "predict",
+        "signal",
+        "signals",
+        "object_store",
+        "json",
+        "pickle",
+        "joblib",
+        "research",
+        "QuantBook",
+        "train",
+        "fit(",
+        "predict(",
+        "probability"
+      ]
+    },
+    "main.py": {
+      "len": 14212,
+      "hits": [
+        "signal",
+        "signals"
+      ]
+    }
+  },
+  {
+    "projectId": 25550271,
+    "name": "Clone of Sleepy Black Buffalo",
+    "research.ipynb": {
+      "len": 89862,
+      "hits": [
+        "sklearn",
+        "xgboost",
+        "lightgbm",
+        "randomforest",
+        "classifier",
+        "regress",
+        "predict",
+        "signal",
+        "object_store",
+        "json",
+        "pickle",
+        "research",
+        "QuantBook",
+        "train",
+        "fit(",
+        "predict("
+      ]
+    },
+    "main.py": {
+      "len": 19438,
+      "hits": [
+        "predict",
+        "signal",
+        "json",
+        "pickle",
+        "research"
+      ]
+    }
+  }
+]

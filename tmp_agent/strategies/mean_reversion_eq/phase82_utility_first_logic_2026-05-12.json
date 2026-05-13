@@ -1,0 +1,1684 @@
+{
+  "generated_at_utc": "2026-05-12T23:18:51.146716+00:00",
+  "project_id": 31204537,
+  "compile_id": "acb38cea15a013c7d9ec70b025f624cd-85baf7b41341baebd5cfa2eeda4a8766",
+  "objective": "UTILITY_FIRST_EXPERIMENT",
+  "target_weekly_pct_band": [
+    5.0,
+    10.0
+  ],
+  "scenarios": {
+    "IS_2022_2024": {
+      "dates": {
+        "start_year": 2022,
+        "start_month": 1,
+        "start_day": 1,
+        "end_year": 2024,
+        "end_month": 12,
+        "end_day": 31
+      },
+      "weeks": 156.42857142857142,
+      "weight": 0.3
+    },
+    "OOS_2025_2026Q1": {
+      "dates": {
+        "start_year": 2025,
+        "start_month": 1,
+        "start_day": 1,
+        "end_year": 2026,
+        "end_month": 3,
+        "end_day": 31
+      },
+      "weeks": 64.85714285714286,
+      "weight": 0.5
+    },
+    "STRESS_2020": {
+      "dates": {
+        "start_year": 2020,
+        "start_month": 1,
+        "start_day": 1,
+        "end_year": 2020,
+        "end_month": 12,
+        "end_day": 31
+      },
+      "weeks": 52.142857142857146,
+      "weight": 0.2
+    }
+  },
+  "results": {
+    "UF_LOGIC_BASE": {
+      "overrides": {
+        "or_slot2_enabled": 1,
+        "or_slot2_hour": 11,
+        "or_slot2_min": 0
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "7ba0b9961ca8a4ea1ca765de83428eec",
+          "np_pct": 2.13,
+          "dd_pct": 3.2,
+          "orders": 218,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 55,
+          "orb1_fills": 27,
+          "orb2_fills": 28,
+          "orb3_fills": 0,
+          "candidate": "UF_LOGIC_BASE",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "or_slot2_enabled": 1,
+            "or_slot2_hour": 11,
+            "or_slot2_min": 0
+          },
+          "utility": {
+            "weekly_pct": 0.0136,
+            "trades_per_week": 0.3516,
+            "target_band_hit": false
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "874ff28f01473deea53b627186fe662c",
+          "np_pct": 10.507,
+          "dd_pct": 2.7,
+          "orders": 131,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 34,
+          "orb1_fills": 25,
+          "orb2_fills": 9,
+          "orb3_fills": 0,
+          "candidate": "UF_LOGIC_BASE",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "or_slot2_enabled": 1,
+            "or_slot2_hour": 11,
+            "or_slot2_min": 0
+          },
+          "utility": {
+            "weekly_pct": 0.162,
+            "trades_per_week": 0.5242,
+            "target_band_hit": false
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "afe9a46f25489dfecdf1e3e63cbb2ce9",
+          "np_pct": 2.729,
+          "dd_pct": 1.4,
+          "orders": 74,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 15,
+          "orb1_fills": 9,
+          "orb2_fills": 6,
+          "orb3_fills": 0,
+          "candidate": "UF_LOGIC_BASE",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "or_slot2_enabled": 1,
+            "or_slot2_hour": 11,
+            "or_slot2_min": 0
+          },
+          "utility": {
+            "weekly_pct": 0.0523,
+            "trades_per_week": 0.2877,
+            "target_band_hit": false
+          }
+        }
+      },
+      "target_band_hits": 0,
+      "utility_score": 1.019304,
+      "positive_scenarios": 3
+    },
+    "UF_LOGIC_A": {
+      "overrides": {
+        "or_risk": 0.018,
+        "max_contracts_per_trade": 24,
+        "max_open_positions": 4,
+        "max_trades_per_symbol_day": 3,
+        "or_slot2_enabled": 1,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.05,
+        "trailing_dd_limit_pct": 0.1
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "988bd1a67dd03d1d1445a1c44966b6ca",
+          "np_pct": 28.529,
+          "dd_pct": 10.0,
+          "orders": 1036,
+          "dbr": 0,
+          "tbr": 1,
+          "tr_orb": 259,
+          "orb1_fills": 63,
+          "orb2_fills": 42,
+          "orb3_fills": 154,
+          "candidate": "UF_LOGIC_A",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "or_risk": 0.018,
+            "max_contracts_per_trade": 24,
+            "max_open_positions": 4,
+            "max_trades_per_symbol_day": 3,
+            "or_slot2_enabled": 1,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.05,
+            "trailing_dd_limit_pct": 0.1
+          },
+          "utility": {
+            "weekly_pct": 0.1824,
+            "trades_per_week": 1.6557,
+            "target_band_hit": false
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "564dd3702bf423f52e9478524c5dd005",
+          "np_pct": 3.586,
+          "dd_pct": 10.2,
+          "orders": 191,
+          "dbr": 0,
+          "tbr": 1,
+          "tr_orb": 49,
+          "orb1_fills": 20,
+          "orb2_fills": 2,
+          "orb3_fills": 27,
+          "candidate": "UF_LOGIC_A",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "or_risk": 0.018,
+            "max_contracts_per_trade": 24,
+            "max_open_positions": 4,
+            "max_trades_per_symbol_day": 3,
+            "or_slot2_enabled": 1,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.05,
+            "trailing_dd_limit_pct": 0.1
+          },
+          "utility": {
+            "weekly_pct": 0.0553,
+            "trades_per_week": 0.7555,
+            "target_band_hit": false
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "16e9c28e96dc8bd827765dd2c809d0d2",
+          "np_pct": 10.068,
+          "dd_pct": 4.2,
+          "orders": 322,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 77,
+          "orb1_fills": 12,
+          "orb2_fills": 7,
+          "orb3_fills": 58,
+          "candidate": "UF_LOGIC_A",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "or_risk": 0.018,
+            "max_contracts_per_trade": 24,
+            "max_open_positions": 4,
+            "max_trades_per_symbol_day": 3,
+            "or_slot2_enabled": 1,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.05,
+            "trailing_dd_limit_pct": 0.1
+          },
+          "utility": {
+            "weekly_pct": 0.1931,
+            "trades_per_week": 1.4767,
+            "target_band_hit": false
+          }
+        }
+      },
+      "target_band_hits": 0,
+      "utility_score": 1.385226,
+      "positive_scenarios": 3
+    },
+    "UF_LOGIC_B": {
+      "overrides": {
+        "or_risk": 0.025,
+        "or_target_atr_mult": 1.8,
+        "max_contracts_per_trade": 36,
+        "max_open_positions": 6,
+        "max_trades_per_symbol_day": 4,
+        "or_slot2_enabled": 1,
+        "or_slot2_risk_mult": 1.4,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.08,
+        "trailing_dd_limit_pct": 0.15
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "64255e39e11b6b595e77d7c6bf85cd2d",
+          "np_pct": 33.305,
+          "dd_pct": 15.0,
+          "orders": 1045,
+          "dbr": 0,
+          "tbr": 1,
+          "tr_orb": 259,
+          "orb1_fills": 63,
+          "orb2_fills": 42,
+          "orb3_fills": 154,
+          "candidate": "UF_LOGIC_B",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "or_risk": 0.025,
+            "or_target_atr_mult": 1.8,
+            "max_contracts_per_trade": 36,
+            "max_open_positions": 6,
+            "max_trades_per_symbol_day": 4,
+            "or_slot2_enabled": 1,
+            "or_slot2_risk_mult": 1.4,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.08,
+            "trailing_dd_limit_pct": 0.15
+          },
+          "utility": {
+            "weekly_pct": 0.2129,
+            "trades_per_week": 1.6557,
+            "target_band_hit": false
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "14635ca3fe0ce6c2b965c07c7f07e56a",
+          "np_pct": -1.487,
+          "dd_pct": 15.7,
+          "orders": 215,
+          "dbr": 0,
+          "tbr": 1,
+          "tr_orb": 55,
+          "orb1_fills": 22,
+          "orb2_fills": 2,
+          "orb3_fills": 31,
+          "candidate": "UF_LOGIC_B",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "or_risk": 0.025,
+            "or_target_atr_mult": 1.8,
+            "max_contracts_per_trade": 36,
+            "max_open_positions": 6,
+            "max_trades_per_symbol_day": 4,
+            "or_slot2_enabled": 1,
+            "or_slot2_risk_mult": 1.4,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.08,
+            "trailing_dd_limit_pct": 0.15
+          },
+          "utility": {
+            "weekly_pct": -0.0229,
+            "trades_per_week": 0.848,
+            "target_band_hit": false
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "88187f8e169904aeff1212036007cc04",
+          "np_pct": 14.662,
+          "dd_pct": 6.5,
+          "orders": 326,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 79,
+          "orb1_fills": 13,
+          "orb2_fills": 7,
+          "orb3_fills": 59,
+          "candidate": "UF_LOGIC_B",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "or_risk": 0.025,
+            "or_target_atr_mult": 1.8,
+            "max_contracts_per_trade": 36,
+            "max_open_positions": 6,
+            "max_trades_per_symbol_day": 4,
+            "or_slot2_enabled": 1,
+            "or_slot2_risk_mult": 1.4,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.08,
+            "trailing_dd_limit_pct": 0.15
+          },
+          "utility": {
+            "weekly_pct": 0.2812,
+            "trades_per_week": 1.5151,
+            "target_band_hit": false
+          }
+        }
+      },
+      "target_band_hits": 0,
+      "utility_score": 0.154778,
+      "positive_scenarios": 2
+    },
+    "UF_LOGIC_C": {
+      "overrides": {
+        "or_risk": 0.03,
+        "or_target_atr_mult": 2.0,
+        "max_contracts_per_trade": 50,
+        "max_open_positions": 8,
+        "max_trades_per_symbol_day": 6,
+        "or_slot2_enabled": 1,
+        "or_slot2_risk_mult": 1.75,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.12,
+        "trailing_dd_limit_pct": 0.2
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "6e2254e0b7aa434f55fa6be73b03c9b9",
+          "np_pct": 41.389,
+          "dd_pct": 20.2,
+          "orders": 740,
+          "dbr": 0,
+          "tbr": 1,
+          "tr_orb": 185,
+          "orb1_fills": 41,
+          "orb2_fills": 27,
+          "orb3_fills": 117,
+          "candidate": "UF_LOGIC_C",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "or_risk": 0.03,
+            "or_target_atr_mult": 2.0,
+            "max_contracts_per_trade": 50,
+            "max_open_positions": 8,
+            "max_trades_per_symbol_day": 6,
+            "or_slot2_enabled": 1,
+            "or_slot2_risk_mult": 1.75,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.12,
+            "trailing_dd_limit_pct": 0.2
+          },
+          "utility": {
+            "weekly_pct": 0.2646,
+            "trades_per_week": 1.1826,
+            "target_band_hit": false
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "d29b45a57164ceafe4627ee08c22df15",
+          "np_pct": 31.19,
+          "dd_pct": 18.3,
+          "orders": 358,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 91,
+          "orb1_fills": 35,
+          "orb2_fills": 13,
+          "orb3_fills": 43,
+          "candidate": "UF_LOGIC_C",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "or_risk": 0.03,
+            "or_target_atr_mult": 2.0,
+            "max_contracts_per_trade": 50,
+            "max_open_positions": 8,
+            "max_trades_per_symbol_day": 6,
+            "or_slot2_enabled": 1,
+            "or_slot2_risk_mult": 1.75,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.12,
+            "trailing_dd_limit_pct": 0.2
+          },
+          "utility": {
+            "weekly_pct": 0.4809,
+            "trades_per_week": 1.4031,
+            "target_band_hit": false
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "848ac6ba23c3f84c58c22e173f990baa",
+          "np_pct": 12.367,
+          "dd_pct": 8.2,
+          "orders": 326,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 79,
+          "orb1_fills": 13,
+          "orb2_fills": 7,
+          "orb3_fills": 59,
+          "candidate": "UF_LOGIC_C",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "or_risk": 0.03,
+            "or_target_atr_mult": 2.0,
+            "max_contracts_per_trade": 50,
+            "max_open_positions": 8,
+            "max_trades_per_symbol_day": 6,
+            "or_slot2_enabled": 1,
+            "or_slot2_risk_mult": 1.75,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.12,
+            "trailing_dd_limit_pct": 0.2
+          },
+          "utility": {
+            "weekly_pct": 0.2372,
+            "trades_per_week": 1.5151,
+            "target_band_hit": false
+          }
+        }
+      },
+      "target_band_hits": 0,
+      "utility_score": 3.87653,
+      "positive_scenarios": 3
+    },
+    "UF_LOGIC_D": {
+      "overrides": {
+        "or_risk": 0.035,
+        "or_target_atr_mult": 2.2,
+        "or_breakout_buffer_pct": 0.0002,
+        "or_min_gap_pct": 0.0,
+        "or_mom_entry_pct": 0.0,
+        "or_require_gap_alignment": 0,
+        "max_contracts_per_trade": 60,
+        "max_open_positions": 8,
+        "max_trades_per_symbol_day": 6,
+        "or_slot2_enabled": 1,
+        "or_slot2_risk_mult": 1.9,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.16,
+        "trailing_dd_limit_pct": 0.24
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "fea18c9f968373f3e5c6dbca05d5d619",
+          "np_pct": 39.077,
+          "dd_pct": 24.1,
+          "orders": 1043,
+          "dbr": 0,
+          "tbr": 1,
+          "tr_orb": 259,
+          "orb1_fills": 66,
+          "orb2_fills": 41,
+          "orb3_fills": 152,
+          "candidate": "UF_LOGIC_D",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "or_risk": 0.035,
+            "or_target_atr_mult": 2.2,
+            "or_breakout_buffer_pct": 0.0002,
+            "or_min_gap_pct": 0.0,
+            "or_mom_entry_pct": 0.0,
+            "or_require_gap_alignment": 0,
+            "max_contracts_per_trade": 60,
+            "max_open_positions": 8,
+            "max_trades_per_symbol_day": 6,
+            "or_slot2_enabled": 1,
+            "or_slot2_risk_mult": 1.9,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.16,
+            "trailing_dd_limit_pct": 0.24
+          },
+          "utility": {
+            "weekly_pct": 0.2498,
+            "trades_per_week": 1.6557,
+            "target_band_hit": false
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "aa04377c4fb23e827c54be12a8ef5901",
+          "np_pct": -4.344,
+          "dd_pct": 24.7,
+          "orders": 266,
+          "dbr": 0,
+          "tbr": 1,
+          "tr_orb": 68,
+          "orb1_fills": 23,
+          "orb2_fills": 3,
+          "orb3_fills": 42,
+          "candidate": "UF_LOGIC_D",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "or_risk": 0.035,
+            "or_target_atr_mult": 2.2,
+            "or_breakout_buffer_pct": 0.0002,
+            "or_min_gap_pct": 0.0,
+            "or_mom_entry_pct": 0.0,
+            "or_require_gap_alignment": 0,
+            "max_contracts_per_trade": 60,
+            "max_open_positions": 8,
+            "max_trades_per_symbol_day": 6,
+            "or_slot2_enabled": 1,
+            "or_slot2_risk_mult": 1.9,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.16,
+            "trailing_dd_limit_pct": 0.24
+          },
+          "utility": {
+            "weekly_pct": -0.067,
+            "trades_per_week": 1.0485,
+            "target_band_hit": false
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "fcbd9e3572d09da9a5ffc2a22258b587",
+          "np_pct": 6.106,
+          "dd_pct": 9.5,
+          "orders": 359,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 88,
+          "orb1_fills": 16,
+          "orb2_fills": 7,
+          "orb3_fills": 65,
+          "candidate": "UF_LOGIC_D",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "or_risk": 0.035,
+            "or_target_atr_mult": 2.2,
+            "or_breakout_buffer_pct": 0.0002,
+            "or_min_gap_pct": 0.0,
+            "or_mom_entry_pct": 0.0,
+            "or_require_gap_alignment": 0,
+            "max_contracts_per_trade": 60,
+            "max_open_positions": 8,
+            "max_trades_per_symbol_day": 6,
+            "or_slot2_enabled": 1,
+            "or_slot2_risk_mult": 1.9,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.16,
+            "trailing_dd_limit_pct": 0.24
+          },
+          "utility": {
+            "weekly_pct": 0.1171,
+            "trades_per_week": 1.6877,
+            "target_band_hit": false
+          }
+        }
+      },
+      "target_band_hits": 0,
+      "utility_score": -2.405494,
+      "positive_scenarios": 2
+    }
+  },
+  "rows": [
+    {
+      "status": "Completed.",
+      "backtest_id": "7ba0b9961ca8a4ea1ca765de83428eec",
+      "np_pct": 2.13,
+      "dd_pct": 3.2,
+      "orders": 218,
+      "dbr": 0,
+      "tbr": 0,
+      "tr_orb": 55,
+      "orb1_fills": 27,
+      "orb2_fills": 28,
+      "orb3_fills": 0,
+      "candidate": "UF_LOGIC_BASE",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "or_slot2_enabled": 1,
+        "or_slot2_hour": 11,
+        "or_slot2_min": 0
+      },
+      "utility": {
+        "weekly_pct": 0.0136,
+        "trades_per_week": 0.3516,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "874ff28f01473deea53b627186fe662c",
+      "np_pct": 10.507,
+      "dd_pct": 2.7,
+      "orders": 131,
+      "dbr": 0,
+      "tbr": 0,
+      "tr_orb": 34,
+      "orb1_fills": 25,
+      "orb2_fills": 9,
+      "orb3_fills": 0,
+      "candidate": "UF_LOGIC_BASE",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "or_slot2_enabled": 1,
+        "or_slot2_hour": 11,
+        "or_slot2_min": 0
+      },
+      "utility": {
+        "weekly_pct": 0.162,
+        "trades_per_week": 0.5242,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "afe9a46f25489dfecdf1e3e63cbb2ce9",
+      "np_pct": 2.729,
+      "dd_pct": 1.4,
+      "orders": 74,
+      "dbr": 0,
+      "tbr": 0,
+      "tr_orb": 15,
+      "orb1_fills": 9,
+      "orb2_fills": 6,
+      "orb3_fills": 0,
+      "candidate": "UF_LOGIC_BASE",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "or_slot2_enabled": 1,
+        "or_slot2_hour": 11,
+        "or_slot2_min": 0
+      },
+      "utility": {
+        "weekly_pct": 0.0523,
+        "trades_per_week": 0.2877,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "988bd1a67dd03d1d1445a1c44966b6ca",
+      "np_pct": 28.529,
+      "dd_pct": 10.0,
+      "orders": 1036,
+      "dbr": 0,
+      "tbr": 1,
+      "tr_orb": 259,
+      "orb1_fills": 63,
+      "orb2_fills": 42,
+      "orb3_fills": 154,
+      "candidate": "UF_LOGIC_A",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "or_risk": 0.018,
+        "max_contracts_per_trade": 24,
+        "max_open_positions": 4,
+        "max_trades_per_symbol_day": 3,
+        "or_slot2_enabled": 1,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.05,
+        "trailing_dd_limit_pct": 0.1
+      },
+      "utility": {
+        "weekly_pct": 0.1824,
+        "trades_per_week": 1.6557,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "564dd3702bf423f52e9478524c5dd005",
+      "np_pct": 3.586,
+      "dd_pct": 10.2,
+      "orders": 191,
+      "dbr": 0,
+      "tbr": 1,
+      "tr_orb": 49,
+      "orb1_fills": 20,
+      "orb2_fills": 2,
+      "orb3_fills": 27,
+      "candidate": "UF_LOGIC_A",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "or_risk": 0.018,
+        "max_contracts_per_trade": 24,
+        "max_open_positions": 4,
+        "max_trades_per_symbol_day": 3,
+        "or_slot2_enabled": 1,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.05,
+        "trailing_dd_limit_pct": 0.1
+      },
+      "utility": {
+        "weekly_pct": 0.0553,
+        "trades_per_week": 0.7555,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "16e9c28e96dc8bd827765dd2c809d0d2",
+      "np_pct": 10.068,
+      "dd_pct": 4.2,
+      "orders": 322,
+      "dbr": 0,
+      "tbr": 0,
+      "tr_orb": 77,
+      "orb1_fills": 12,
+      "orb2_fills": 7,
+      "orb3_fills": 58,
+      "candidate": "UF_LOGIC_A",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "or_risk": 0.018,
+        "max_contracts_per_trade": 24,
+        "max_open_positions": 4,
+        "max_trades_per_symbol_day": 3,
+        "or_slot2_enabled": 1,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.05,
+        "trailing_dd_limit_pct": 0.1
+      },
+      "utility": {
+        "weekly_pct": 0.1931,
+        "trades_per_week": 1.4767,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "64255e39e11b6b595e77d7c6bf85cd2d",
+      "np_pct": 33.305,
+      "dd_pct": 15.0,
+      "orders": 1045,
+      "dbr": 0,
+      "tbr": 1,
+      "tr_orb": 259,
+      "orb1_fills": 63,
+      "orb2_fills": 42,
+      "orb3_fills": 154,
+      "candidate": "UF_LOGIC_B",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "or_risk": 0.025,
+        "or_target_atr_mult": 1.8,
+        "max_contracts_per_trade": 36,
+        "max_open_positions": 6,
+        "max_trades_per_symbol_day": 4,
+        "or_slot2_enabled": 1,
+        "or_slot2_risk_mult": 1.4,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.08,
+        "trailing_dd_limit_pct": 0.15
+      },
+      "utility": {
+        "weekly_pct": 0.2129,
+        "trades_per_week": 1.6557,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "14635ca3fe0ce6c2b965c07c7f07e56a",
+      "np_pct": -1.487,
+      "dd_pct": 15.7,
+      "orders": 215,
+      "dbr": 0,
+      "tbr": 1,
+      "tr_orb": 55,
+      "orb1_fills": 22,
+      "orb2_fills": 2,
+      "orb3_fills": 31,
+      "candidate": "UF_LOGIC_B",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "or_risk": 0.025,
+        "or_target_atr_mult": 1.8,
+        "max_contracts_per_trade": 36,
+        "max_open_positions": 6,
+        "max_trades_per_symbol_day": 4,
+        "or_slot2_enabled": 1,
+        "or_slot2_risk_mult": 1.4,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.08,
+        "trailing_dd_limit_pct": 0.15
+      },
+      "utility": {
+        "weekly_pct": -0.0229,
+        "trades_per_week": 0.848,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "88187f8e169904aeff1212036007cc04",
+      "np_pct": 14.662,
+      "dd_pct": 6.5,
+      "orders": 326,
+      "dbr": 0,
+      "tbr": 0,
+      "tr_orb": 79,
+      "orb1_fills": 13,
+      "orb2_fills": 7,
+      "orb3_fills": 59,
+      "candidate": "UF_LOGIC_B",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "or_risk": 0.025,
+        "or_target_atr_mult": 1.8,
+        "max_contracts_per_trade": 36,
+        "max_open_positions": 6,
+        "max_trades_per_symbol_day": 4,
+        "or_slot2_enabled": 1,
+        "or_slot2_risk_mult": 1.4,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.08,
+        "trailing_dd_limit_pct": 0.15
+      },
+      "utility": {
+        "weekly_pct": 0.2812,
+        "trades_per_week": 1.5151,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "6e2254e0b7aa434f55fa6be73b03c9b9",
+      "np_pct": 41.389,
+      "dd_pct": 20.2,
+      "orders": 740,
+      "dbr": 0,
+      "tbr": 1,
+      "tr_orb": 185,
+      "orb1_fills": 41,
+      "orb2_fills": 27,
+      "orb3_fills": 117,
+      "candidate": "UF_LOGIC_C",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "or_risk": 0.03,
+        "or_target_atr_mult": 2.0,
+        "max_contracts_per_trade": 50,
+        "max_open_positions": 8,
+        "max_trades_per_symbol_day": 6,
+        "or_slot2_enabled": 1,
+        "or_slot2_risk_mult": 1.75,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.12,
+        "trailing_dd_limit_pct": 0.2
+      },
+      "utility": {
+        "weekly_pct": 0.2646,
+        "trades_per_week": 1.1826,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "d29b45a57164ceafe4627ee08c22df15",
+      "np_pct": 31.19,
+      "dd_pct": 18.3,
+      "orders": 358,
+      "dbr": 0,
+      "tbr": 0,
+      "tr_orb": 91,
+      "orb1_fills": 35,
+      "orb2_fills": 13,
+      "orb3_fills": 43,
+      "candidate": "UF_LOGIC_C",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "or_risk": 0.03,
+        "or_target_atr_mult": 2.0,
+        "max_contracts_per_trade": 50,
+        "max_open_positions": 8,
+        "max_trades_per_symbol_day": 6,
+        "or_slot2_enabled": 1,
+        "or_slot2_risk_mult": 1.75,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.12,
+        "trailing_dd_limit_pct": 0.2
+      },
+      "utility": {
+        "weekly_pct": 0.4809,
+        "trades_per_week": 1.4031,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "848ac6ba23c3f84c58c22e173f990baa",
+      "np_pct": 12.367,
+      "dd_pct": 8.2,
+      "orders": 326,
+      "dbr": 0,
+      "tbr": 0,
+      "tr_orb": 79,
+      "orb1_fills": 13,
+      "orb2_fills": 7,
+      "orb3_fills": 59,
+      "candidate": "UF_LOGIC_C",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "or_risk": 0.03,
+        "or_target_atr_mult": 2.0,
+        "max_contracts_per_trade": 50,
+        "max_open_positions": 8,
+        "max_trades_per_symbol_day": 6,
+        "or_slot2_enabled": 1,
+        "or_slot2_risk_mult": 1.75,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.12,
+        "trailing_dd_limit_pct": 0.2
+      },
+      "utility": {
+        "weekly_pct": 0.2372,
+        "trades_per_week": 1.5151,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "fea18c9f968373f3e5c6dbca05d5d619",
+      "np_pct": 39.077,
+      "dd_pct": 24.1,
+      "orders": 1043,
+      "dbr": 0,
+      "tbr": 1,
+      "tr_orb": 259,
+      "orb1_fills": 66,
+      "orb2_fills": 41,
+      "orb3_fills": 152,
+      "candidate": "UF_LOGIC_D",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "or_risk": 0.035,
+        "or_target_atr_mult": 2.2,
+        "or_breakout_buffer_pct": 0.0002,
+        "or_min_gap_pct": 0.0,
+        "or_mom_entry_pct": 0.0,
+        "or_require_gap_alignment": 0,
+        "max_contracts_per_trade": 60,
+        "max_open_positions": 8,
+        "max_trades_per_symbol_day": 6,
+        "or_slot2_enabled": 1,
+        "or_slot2_risk_mult": 1.9,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.16,
+        "trailing_dd_limit_pct": 0.24
+      },
+      "utility": {
+        "weekly_pct": 0.2498,
+        "trades_per_week": 1.6557,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "aa04377c4fb23e827c54be12a8ef5901",
+      "np_pct": -4.344,
+      "dd_pct": 24.7,
+      "orders": 266,
+      "dbr": 0,
+      "tbr": 1,
+      "tr_orb": 68,
+      "orb1_fills": 23,
+      "orb2_fills": 3,
+      "orb3_fills": 42,
+      "candidate": "UF_LOGIC_D",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "or_risk": 0.035,
+        "or_target_atr_mult": 2.2,
+        "or_breakout_buffer_pct": 0.0002,
+        "or_min_gap_pct": 0.0,
+        "or_mom_entry_pct": 0.0,
+        "or_require_gap_alignment": 0,
+        "max_contracts_per_trade": 60,
+        "max_open_positions": 8,
+        "max_trades_per_symbol_day": 6,
+        "or_slot2_enabled": 1,
+        "or_slot2_risk_mult": 1.9,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.16,
+        "trailing_dd_limit_pct": 0.24
+      },
+      "utility": {
+        "weekly_pct": -0.067,
+        "trades_per_week": 1.0485,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "fcbd9e3572d09da9a5ffc2a22258b587",
+      "np_pct": 6.106,
+      "dd_pct": 9.5,
+      "orders": 359,
+      "dbr": 0,
+      "tbr": 0,
+      "tr_orb": 88,
+      "orb1_fills": 16,
+      "orb2_fills": 7,
+      "orb3_fills": 65,
+      "candidate": "UF_LOGIC_D",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "or_risk": 0.035,
+        "or_target_atr_mult": 2.2,
+        "or_breakout_buffer_pct": 0.0002,
+        "or_min_gap_pct": 0.0,
+        "or_mom_entry_pct": 0.0,
+        "or_require_gap_alignment": 0,
+        "max_contracts_per_trade": 60,
+        "max_open_positions": 8,
+        "max_trades_per_symbol_day": 6,
+        "or_slot2_enabled": 1,
+        "or_slot2_risk_mult": 1.9,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.16,
+        "trailing_dd_limit_pct": 0.24
+      },
+      "utility": {
+        "weekly_pct": 0.1171,
+        "trades_per_week": 1.6877,
+        "target_band_hit": false
+      }
+    }
+  ],
+  "ranked": [
+    {
+      "label": "UF_LOGIC_C",
+      "overrides": {
+        "or_risk": 0.03,
+        "or_target_atr_mult": 2.0,
+        "max_contracts_per_trade": 50,
+        "max_open_positions": 8,
+        "max_trades_per_symbol_day": 6,
+        "or_slot2_enabled": 1,
+        "or_slot2_risk_mult": 1.75,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.12,
+        "trailing_dd_limit_pct": 0.2
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "6e2254e0b7aa434f55fa6be73b03c9b9",
+          "np_pct": 41.389,
+          "dd_pct": 20.2,
+          "orders": 740,
+          "dbr": 0,
+          "tbr": 1,
+          "tr_orb": 185,
+          "orb1_fills": 41,
+          "orb2_fills": 27,
+          "orb3_fills": 117,
+          "candidate": "UF_LOGIC_C",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "or_risk": 0.03,
+            "or_target_atr_mult": 2.0,
+            "max_contracts_per_trade": 50,
+            "max_open_positions": 8,
+            "max_trades_per_symbol_day": 6,
+            "or_slot2_enabled": 1,
+            "or_slot2_risk_mult": 1.75,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.12,
+            "trailing_dd_limit_pct": 0.2
+          },
+          "utility": {
+            "weekly_pct": 0.2646,
+            "trades_per_week": 1.1826,
+            "target_band_hit": false
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "d29b45a57164ceafe4627ee08c22df15",
+          "np_pct": 31.19,
+          "dd_pct": 18.3,
+          "orders": 358,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 91,
+          "orb1_fills": 35,
+          "orb2_fills": 13,
+          "orb3_fills": 43,
+          "candidate": "UF_LOGIC_C",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "or_risk": 0.03,
+            "or_target_atr_mult": 2.0,
+            "max_contracts_per_trade": 50,
+            "max_open_positions": 8,
+            "max_trades_per_symbol_day": 6,
+            "or_slot2_enabled": 1,
+            "or_slot2_risk_mult": 1.75,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.12,
+            "trailing_dd_limit_pct": 0.2
+          },
+          "utility": {
+            "weekly_pct": 0.4809,
+            "trades_per_week": 1.4031,
+            "target_band_hit": false
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "848ac6ba23c3f84c58c22e173f990baa",
+          "np_pct": 12.367,
+          "dd_pct": 8.2,
+          "orders": 326,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 79,
+          "orb1_fills": 13,
+          "orb2_fills": 7,
+          "orb3_fills": 59,
+          "candidate": "UF_LOGIC_C",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "or_risk": 0.03,
+            "or_target_atr_mult": 2.0,
+            "max_contracts_per_trade": 50,
+            "max_open_positions": 8,
+            "max_trades_per_symbol_day": 6,
+            "or_slot2_enabled": 1,
+            "or_slot2_risk_mult": 1.75,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.12,
+            "trailing_dd_limit_pct": 0.2
+          },
+          "utility": {
+            "weekly_pct": 0.2372,
+            "trades_per_week": 1.5151,
+            "target_band_hit": false
+          }
+        }
+      },
+      "target_band_hits": 0,
+      "utility_score": 3.87653,
+      "positive_scenarios": 3
+    },
+    {
+      "label": "UF_LOGIC_A",
+      "overrides": {
+        "or_risk": 0.018,
+        "max_contracts_per_trade": 24,
+        "max_open_positions": 4,
+        "max_trades_per_symbol_day": 3,
+        "or_slot2_enabled": 1,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.05,
+        "trailing_dd_limit_pct": 0.1
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "988bd1a67dd03d1d1445a1c44966b6ca",
+          "np_pct": 28.529,
+          "dd_pct": 10.0,
+          "orders": 1036,
+          "dbr": 0,
+          "tbr": 1,
+          "tr_orb": 259,
+          "orb1_fills": 63,
+          "orb2_fills": 42,
+          "orb3_fills": 154,
+          "candidate": "UF_LOGIC_A",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "or_risk": 0.018,
+            "max_contracts_per_trade": 24,
+            "max_open_positions": 4,
+            "max_trades_per_symbol_day": 3,
+            "or_slot2_enabled": 1,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.05,
+            "trailing_dd_limit_pct": 0.1
+          },
+          "utility": {
+            "weekly_pct": 0.1824,
+            "trades_per_week": 1.6557,
+            "target_band_hit": false
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "564dd3702bf423f52e9478524c5dd005",
+          "np_pct": 3.586,
+          "dd_pct": 10.2,
+          "orders": 191,
+          "dbr": 0,
+          "tbr": 1,
+          "tr_orb": 49,
+          "orb1_fills": 20,
+          "orb2_fills": 2,
+          "orb3_fills": 27,
+          "candidate": "UF_LOGIC_A",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "or_risk": 0.018,
+            "max_contracts_per_trade": 24,
+            "max_open_positions": 4,
+            "max_trades_per_symbol_day": 3,
+            "or_slot2_enabled": 1,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.05,
+            "trailing_dd_limit_pct": 0.1
+          },
+          "utility": {
+            "weekly_pct": 0.0553,
+            "trades_per_week": 0.7555,
+            "target_band_hit": false
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "16e9c28e96dc8bd827765dd2c809d0d2",
+          "np_pct": 10.068,
+          "dd_pct": 4.2,
+          "orders": 322,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 77,
+          "orb1_fills": 12,
+          "orb2_fills": 7,
+          "orb3_fills": 58,
+          "candidate": "UF_LOGIC_A",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "or_risk": 0.018,
+            "max_contracts_per_trade": 24,
+            "max_open_positions": 4,
+            "max_trades_per_symbol_day": 3,
+            "or_slot2_enabled": 1,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.05,
+            "trailing_dd_limit_pct": 0.1
+          },
+          "utility": {
+            "weekly_pct": 0.1931,
+            "trades_per_week": 1.4767,
+            "target_band_hit": false
+          }
+        }
+      },
+      "target_band_hits": 0,
+      "utility_score": 1.385226,
+      "positive_scenarios": 3
+    },
+    {
+      "label": "UF_LOGIC_BASE",
+      "overrides": {
+        "or_slot2_enabled": 1,
+        "or_slot2_hour": 11,
+        "or_slot2_min": 0
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "7ba0b9961ca8a4ea1ca765de83428eec",
+          "np_pct": 2.13,
+          "dd_pct": 3.2,
+          "orders": 218,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 55,
+          "orb1_fills": 27,
+          "orb2_fills": 28,
+          "orb3_fills": 0,
+          "candidate": "UF_LOGIC_BASE",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "or_slot2_enabled": 1,
+            "or_slot2_hour": 11,
+            "or_slot2_min": 0
+          },
+          "utility": {
+            "weekly_pct": 0.0136,
+            "trades_per_week": 0.3516,
+            "target_band_hit": false
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "874ff28f01473deea53b627186fe662c",
+          "np_pct": 10.507,
+          "dd_pct": 2.7,
+          "orders": 131,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 34,
+          "orb1_fills": 25,
+          "orb2_fills": 9,
+          "orb3_fills": 0,
+          "candidate": "UF_LOGIC_BASE",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "or_slot2_enabled": 1,
+            "or_slot2_hour": 11,
+            "or_slot2_min": 0
+          },
+          "utility": {
+            "weekly_pct": 0.162,
+            "trades_per_week": 0.5242,
+            "target_band_hit": false
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "afe9a46f25489dfecdf1e3e63cbb2ce9",
+          "np_pct": 2.729,
+          "dd_pct": 1.4,
+          "orders": 74,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 15,
+          "orb1_fills": 9,
+          "orb2_fills": 6,
+          "orb3_fills": 0,
+          "candidate": "UF_LOGIC_BASE",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "or_slot2_enabled": 1,
+            "or_slot2_hour": 11,
+            "or_slot2_min": 0
+          },
+          "utility": {
+            "weekly_pct": 0.0523,
+            "trades_per_week": 0.2877,
+            "target_band_hit": false
+          }
+        }
+      },
+      "target_band_hits": 0,
+      "utility_score": 1.019304,
+      "positive_scenarios": 3
+    },
+    {
+      "label": "UF_LOGIC_B",
+      "overrides": {
+        "or_risk": 0.025,
+        "or_target_atr_mult": 1.8,
+        "max_contracts_per_trade": 36,
+        "max_open_positions": 6,
+        "max_trades_per_symbol_day": 4,
+        "or_slot2_enabled": 1,
+        "or_slot2_risk_mult": 1.4,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.08,
+        "trailing_dd_limit_pct": 0.15
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "64255e39e11b6b595e77d7c6bf85cd2d",
+          "np_pct": 33.305,
+          "dd_pct": 15.0,
+          "orders": 1045,
+          "dbr": 0,
+          "tbr": 1,
+          "tr_orb": 259,
+          "orb1_fills": 63,
+          "orb2_fills": 42,
+          "orb3_fills": 154,
+          "candidate": "UF_LOGIC_B",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "or_risk": 0.025,
+            "or_target_atr_mult": 1.8,
+            "max_contracts_per_trade": 36,
+            "max_open_positions": 6,
+            "max_trades_per_symbol_day": 4,
+            "or_slot2_enabled": 1,
+            "or_slot2_risk_mult": 1.4,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.08,
+            "trailing_dd_limit_pct": 0.15
+          },
+          "utility": {
+            "weekly_pct": 0.2129,
+            "trades_per_week": 1.6557,
+            "target_band_hit": false
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "14635ca3fe0ce6c2b965c07c7f07e56a",
+          "np_pct": -1.487,
+          "dd_pct": 15.7,
+          "orders": 215,
+          "dbr": 0,
+          "tbr": 1,
+          "tr_orb": 55,
+          "orb1_fills": 22,
+          "orb2_fills": 2,
+          "orb3_fills": 31,
+          "candidate": "UF_LOGIC_B",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "or_risk": 0.025,
+            "or_target_atr_mult": 1.8,
+            "max_contracts_per_trade": 36,
+            "max_open_positions": 6,
+            "max_trades_per_symbol_day": 4,
+            "or_slot2_enabled": 1,
+            "or_slot2_risk_mult": 1.4,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.08,
+            "trailing_dd_limit_pct": 0.15
+          },
+          "utility": {
+            "weekly_pct": -0.0229,
+            "trades_per_week": 0.848,
+            "target_band_hit": false
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "88187f8e169904aeff1212036007cc04",
+          "np_pct": 14.662,
+          "dd_pct": 6.5,
+          "orders": 326,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 79,
+          "orb1_fills": 13,
+          "orb2_fills": 7,
+          "orb3_fills": 59,
+          "candidate": "UF_LOGIC_B",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "or_risk": 0.025,
+            "or_target_atr_mult": 1.8,
+            "max_contracts_per_trade": 36,
+            "max_open_positions": 6,
+            "max_trades_per_symbol_day": 4,
+            "or_slot2_enabled": 1,
+            "or_slot2_risk_mult": 1.4,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.08,
+            "trailing_dd_limit_pct": 0.15
+          },
+          "utility": {
+            "weekly_pct": 0.2812,
+            "trades_per_week": 1.5151,
+            "target_band_hit": false
+          }
+        }
+      },
+      "target_band_hits": 0,
+      "utility_score": 0.154778,
+      "positive_scenarios": 2
+    },
+    {
+      "label": "UF_LOGIC_D",
+      "overrides": {
+        "or_risk": 0.035,
+        "or_target_atr_mult": 2.2,
+        "or_breakout_buffer_pct": 0.0002,
+        "or_min_gap_pct": 0.0,
+        "or_mom_entry_pct": 0.0,
+        "or_require_gap_alignment": 0,
+        "max_contracts_per_trade": 60,
+        "max_open_positions": 8,
+        "max_trades_per_symbol_day": 6,
+        "or_slot2_enabled": 1,
+        "or_slot2_risk_mult": 1.9,
+        "or_slot3_enabled": 1,
+        "guard_enabled": 0,
+        "daily_loss_limit_pct": 0.16,
+        "trailing_dd_limit_pct": 0.24
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "fea18c9f968373f3e5c6dbca05d5d619",
+          "np_pct": 39.077,
+          "dd_pct": 24.1,
+          "orders": 1043,
+          "dbr": 0,
+          "tbr": 1,
+          "tr_orb": 259,
+          "orb1_fills": 66,
+          "orb2_fills": 41,
+          "orb3_fills": 152,
+          "candidate": "UF_LOGIC_D",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "or_risk": 0.035,
+            "or_target_atr_mult": 2.2,
+            "or_breakout_buffer_pct": 0.0002,
+            "or_min_gap_pct": 0.0,
+            "or_mom_entry_pct": 0.0,
+            "or_require_gap_alignment": 0,
+            "max_contracts_per_trade": 60,
+            "max_open_positions": 8,
+            "max_trades_per_symbol_day": 6,
+            "or_slot2_enabled": 1,
+            "or_slot2_risk_mult": 1.9,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.16,
+            "trailing_dd_limit_pct": 0.24
+          },
+          "utility": {
+            "weekly_pct": 0.2498,
+            "trades_per_week": 1.6557,
+            "target_band_hit": false
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "aa04377c4fb23e827c54be12a8ef5901",
+          "np_pct": -4.344,
+          "dd_pct": 24.7,
+          "orders": 266,
+          "dbr": 0,
+          "tbr": 1,
+          "tr_orb": 68,
+          "orb1_fills": 23,
+          "orb2_fills": 3,
+          "orb3_fills": 42,
+          "candidate": "UF_LOGIC_D",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "or_risk": 0.035,
+            "or_target_atr_mult": 2.2,
+            "or_breakout_buffer_pct": 0.0002,
+            "or_min_gap_pct": 0.0,
+            "or_mom_entry_pct": 0.0,
+            "or_require_gap_alignment": 0,
+            "max_contracts_per_trade": 60,
+            "max_open_positions": 8,
+            "max_trades_per_symbol_day": 6,
+            "or_slot2_enabled": 1,
+            "or_slot2_risk_mult": 1.9,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.16,
+            "trailing_dd_limit_pct": 0.24
+          },
+          "utility": {
+            "weekly_pct": -0.067,
+            "trades_per_week": 1.0485,
+            "target_band_hit": false
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "fcbd9e3572d09da9a5ffc2a22258b587",
+          "np_pct": 6.106,
+          "dd_pct": 9.5,
+          "orders": 359,
+          "dbr": 0,
+          "tbr": 0,
+          "tr_orb": 88,
+          "orb1_fills": 16,
+          "orb2_fills": 7,
+          "orb3_fills": 65,
+          "candidate": "UF_LOGIC_D",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "or_risk": 0.035,
+            "or_target_atr_mult": 2.2,
+            "or_breakout_buffer_pct": 0.0002,
+            "or_min_gap_pct": 0.0,
+            "or_mom_entry_pct": 0.0,
+            "or_require_gap_alignment": 0,
+            "max_contracts_per_trade": 60,
+            "max_open_positions": 8,
+            "max_trades_per_symbol_day": 6,
+            "or_slot2_enabled": 1,
+            "or_slot2_risk_mult": 1.9,
+            "or_slot3_enabled": 1,
+            "guard_enabled": 0,
+            "daily_loss_limit_pct": 0.16,
+            "trailing_dd_limit_pct": 0.24
+          },
+          "utility": {
+            "weekly_pct": 0.1171,
+            "trades_per_week": 1.6877,
+            "target_band_hit": false
+          }
+        }
+      },
+      "target_band_hits": 0,
+      "utility_score": -2.405494,
+      "positive_scenarios": 2
+    }
+  ],
+  "best_label": "UF_LOGIC_C",
+  "best_summary": {
+    "utility_score": 3.87653,
+    "target_band_hits": 0,
+    "positive_scenarios": 3
+  }
+}

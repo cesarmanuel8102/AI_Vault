@@ -1,0 +1,54 @@
+{
+  "generated_at_utc": "2026-04-30T17:39:34.960133+00:00",
+  "window": {
+    "start": "2026-04-23",
+    "end": "2026-04-29"
+  },
+  "source": "C:\\AI_VAULT\\tmp_agent\\strategies\\mean_reversion_eq\\main_phase11_pf200_entryfill_consistency.py",
+  "params": "C:\\AI_VAULT\\tmp_agent\\strategies\\mean_reversion_eq\\params_p42_fastpass_hitrate_orb_r0135_2026-04-26.json",
+  "steps": [
+    {
+      "step": "files_update_main",
+      "source": "C:\\AI_VAULT\\tmp_agent\\strategies\\mean_reversion_eq\\main_phase11_pf200_entryfill_consistency.py"
+    },
+    {
+      "step": "params_set_for_week_bt",
+      "count": 31
+    },
+    {
+      "step": "compile_ok",
+      "compileId": "d7cb40cbea82f6b2316f519fae42d87b-51e40e81cc7153f5e39772f9f42617ac"
+    },
+    {
+      "step": "params_restored",
+      "count": 22
+    }
+  ],
+  "backtest_name": "LAST_WEEK_P33_R0135_PHASE11_1777570778",
+  "summary": {
+    "status": "Completed.",
+    "backtest_id": "300b7d26a5b63245478076d26bdd223c",
+    "np_pct": 0.0,
+    "dd_pct": 0.0,
+    "sharpe": 0.0,
+    "sortino": 0.0,
+    "win_rate_pct": 0.0,
+    "profit_factor": null,
+    "expectancy": 0.0,
+    "total_orders": 0,
+    "closed_trades": 0,
+    "trade_days": 0,
+    "best_day_usd": 0.0,
+    "worst_day_usd": 0.0,
+    "daily_loss_breaches": 0,
+    "trailing_breaches": 0,
+    "consistency_pct": 999.0,
+    "external_stress_days": 0,
+    "alpha_pnl_mr": 0.0,
+    "alpha_pnl_orb": 0.0,
+    "alpha_pnl_stress": 0.0,
+    "alpha_tr_mr": 0,
+    "alpha_tr_orb": 0,
+    "alpha_tr_stress": 0
+  }
+}

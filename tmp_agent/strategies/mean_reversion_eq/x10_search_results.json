@@ -1,0 +1,202 @@
+[
+  {
+    "label": "C01",
+    "params": {
+      "rsi_entry": 10,
+      "allow_shorts": 1,
+      "risk_per_trade": 0.015,
+      "atr_stop_mult": 2.0,
+      "max_alloc_pct": 0.3,
+      "max_positions": 4
+    },
+    "is_np": 18.992,
+    "is_dd": 5.8,
+    "is_id": "6d1e694b8e31aaa30ac2d6b80a0bc4de",
+    "oos_np": 8.278,
+    "oos_dd": 5.8,
+    "oos_id": "056d4c578fd50bce1b0be010736a9a02",
+    "is_error": null,
+    "oos_error": null,
+    "score": 15.528800000000002
+  },
+  {
+    "label": "C02",
+    "params": {
+      "rsi_entry": 10,
+      "allow_shorts": 1,
+      "risk_per_trade": 0.02,
+      "atr_stop_mult": 2.0,
+      "max_alloc_pct": 0.3,
+      "max_positions": 4
+    },
+    "is_np": 20.363,
+    "is_dd": 5.9,
+    "is_id": "6699b095a9b0666fbfe222a11fa39423",
+    "oos_np": 7.713,
+    "oos_dd": 6.5,
+    "oos_id": "a8abd4ef369c76578b71fff80b21dcb1",
+    "is_error": null,
+    "oos_error": null,
+    "score": 15.153399999999998
+  },
+  {
+    "label": "C03",
+    "params": {
+      "rsi_entry": 10,
+      "allow_shorts": 1,
+      "risk_per_trade": 0.025,
+      "atr_stop_mult": 2.0,
+      "max_alloc_pct": 0.35,
+      "max_positions": 4
+    },
+    "is_np": 24.339,
+    "is_dd": 7.0,
+    "is_id": "265edc90b3f89f06db6616bf1d838bfc",
+    "oos_np": 9.077,
+    "oos_dd": 7.8,
+    "oos_id": "0bd368ae1d1a4b7bf655b549088a938e",
+    "is_error": null,
+    "oos_error": null,
+    "score": 17.935799999999997
+  },
+  {
+    "label": "C04",
+    "params": {
+      "rsi_entry": 10,
+      "allow_shorts": 1,
+      "risk_per_trade": 0.03,
+      "atr_stop_mult": 1.8,
+      "max_alloc_pct": 0.4,
+      "max_positions": 4
+    },
+    "is_np": 23.221,
+    "is_dd": 8.7,
+    "is_id": "66c8c81c139c3cf6e86bcefcc19ac4ff",
+    "oos_np": 9.521,
+    "oos_dd": 9.0,
+    "oos_id": "42628f8b3f2d44439afb4bc69af01afa",
+    "is_error": null,
+    "oos_error": null,
+    "score": 16.4478
+  },
+  {
+    "label": "C05",
+    "params": {
+      "rsi_entry": 12,
+      "allow_shorts": 1,
+      "risk_per_trade": 0.02,
+      "atr_stop_mult": 2.2,
+      "max_alloc_pct": 0.35,
+      "max_positions": 4
+    },
+    "is_np": 25.775,
+    "is_dd": 7.5,
+    "is_id": "e3f8d3060d42f98e4eac4cd08907fbdf",
+    "oos_np": 8.931,
+    "oos_dd": 6.9,
+    "oos_id": "b8d6b41c1a7f544c0494fa6b37ab2efd",
+    "is_error": null,
+    "oos_error": null,
+    "score": 19.102199999999996
+  },
+  {
+    "label": "C06",
+    "params": {
+      "rsi_entry": 8,
+      "allow_shorts": 1,
+      "risk_per_trade": 0.02,
+      "atr_stop_mult": 1.8,
+      "max_alloc_pct": 0.35,
+      "max_positions": 4
+    },
+    "is_np": 17.099,
+    "is_dd": 8.0,
+    "is_id": "5939ad40584fcdf0814b86448e825ae2",
+    "oos_np": 6.881,
+    "oos_dd": 6.4,
+    "oos_id": "5f5e00c7fa7983c9debc8f8949adac33",
+    "is_error": null,
+    "oos_error": null,
+    "score": 11.6366
+  },
+  {
+    "label": "C07",
+    "params": {
+      "rsi_entry": 12,
+      "allow_shorts": 1,
+      "risk_per_trade": 0.03,
+      "atr_stop_mult": 1.5,
+      "max_alloc_pct": 0.5,
+      "max_positions": 4
+    },
+    "is_np": 32.285,
+    "is_dd": 9.6,
+    "is_id": "6fe64ba78e1ec2df536d6c7d88bf4e90",
+    "oos_np": 8.638,
+    "oos_dd": 9.8,
+    "oos_id": "442d77ff3ab08abe4aa05d114e9f9487",
+    "is_error": null,
+    "oos_error": null,
+    "score": 19.996599999999997
+  },
+  {
+    "label": "C08",
+    "params": {
+      "rsi_entry": 9,
+      "allow_shorts": 1,
+      "risk_per_trade": 0.025,
+      "atr_stop_mult": 1.6,
+      "max_alloc_pct": 0.45,
+      "max_positions": 4
+    },
+    "is_np": 21.525,
+    "is_dd": 8.1,
+    "is_id": "f41e434f1bdf4d005535c54b25a7a617",
+    "oos_np": 10.649,
+    "oos_dd": 9.1,
+    "oos_id": "d4ee89477be69e1ba02e995b12b255b1",
+    "is_error": null,
+    "oos_error": null,
+    "score": 16.8938
+  },
+  {
+    "label": "C09",
+    "params": {
+      "rsi_entry": 10,
+      "allow_shorts": 0,
+      "risk_per_trade": 0.03,
+      "atr_stop_mult": 1.5,
+      "max_alloc_pct": 0.6,
+      "max_positions": 4
+    },
+    "is_np": 11.325,
+    "is_dd": 8.5,
+    "is_id": "d9492eb8d00f3e17ad14b379b126d19e",
+    "oos_np": 13.419,
+    "oos_dd": 6.5,
+    "oos_id": "f9c3af7c52d3b5f87713687ea94bf3e0",
+    "is_error": null,
+    "oos_error": null,
+    "score": 15.797799999999995
+  },
+  {
+    "label": "C10",
+    "params": {
+      "rsi_entry": 12,
+      "allow_shorts": 0,
+      "risk_per_trade": 0.035,
+      "atr_stop_mult": 1.5,
+      "max_alloc_pct": 0.6,
+      "max_positions": 4
+    },
+    "is_np": 16.036,
+    "is_dd": 9.6,
+    "is_id": "9cd10dddebb96e3958e57fa6964c754b",
+    "oos_np": 12.825,
+    "oos_dd": 7.6,
+    "oos_id": "8d0fb33c59ea0febf84c8737dd8b148e",
+    "is_error": null,
+    "oos_error": null,
+    "score": 16.811600000000002
+  }
+]

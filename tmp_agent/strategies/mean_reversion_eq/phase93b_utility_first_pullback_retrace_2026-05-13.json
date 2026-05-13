@@ -1,0 +1,925 @@
+{
+  "generated_at_utc": "2026-05-13T21:48:21.590193+00:00",
+  "project_id": 31204537,
+  "compile_id": "4408a4e89c64681498c4aa3106a555e8-4e87eca7986e5cca5922b0ea02c37e29",
+  "objective": "UTILITY_FIRST_EXPERIMENT",
+  "target_weekly_pct_band": [
+    5.0,
+    10.0
+  ],
+  "scenarios": {
+    "IS_2022_2024": {
+      "dates": {
+        "start_year": 2022,
+        "start_month": 1,
+        "start_day": 1,
+        "end_year": 2024,
+        "end_month": 12,
+        "end_day": 31
+      },
+      "weeks": 156.42857142857142,
+      "weight": 0.3
+    },
+    "OOS_2025_2026Q1": {
+      "dates": {
+        "start_year": 2025,
+        "start_month": 1,
+        "start_day": 1,
+        "end_year": 2026,
+        "end_month": 3,
+        "end_day": 31
+      },
+      "weeks": 64.85714285714286,
+      "weight": 0.5
+    },
+    "STRESS_2020": {
+      "dates": {
+        "start_year": 2020,
+        "start_month": 1,
+        "start_day": 1,
+        "end_year": 2020,
+        "end_month": 12,
+        "end_day": 31
+      },
+      "weeks": 52.142857142857146,
+      "weight": 0.2
+    }
+  },
+  "results": {
+    "UF_PB_R1_BASE": {
+      "overrides": {
+        "pb_r1_enable": 0
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "88dca57e08bb0456faf50fc0016bc859",
+          "np_pct": 44.028,
+          "dd_pct": 20.2,
+          "orders": 1062,
+          "dbr": null,
+          "tbr": null,
+          "tr_orb": 260,
+          "orb1_fills": 63,
+          "orb2_fills": 40,
+          "orb3_fills": 145,
+          "pb_fills": 12,
+          "candidate": "UF_PB_R1_BASE",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "pb_r1_enable": 0
+          },
+          "utility": {
+            "weekly_pct": 0.2815,
+            "trades_per_week": 1.6621,
+            "target_band_hit": false
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "3da613121c57a8af23751ebadf47f2d6",
+          "np_pct": 53.744,
+          "dd_pct": 16.7,
+          "orders": 413,
+          "dbr": null,
+          "tbr": null,
+          "tr_orb": 105,
+          "orb1_fills": 35,
+          "orb2_fills": 12,
+          "orb3_fills": 40,
+          "pb_fills": 18,
+          "candidate": "UF_PB_R1_BASE",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "pb_r1_enable": 0
+          },
+          "utility": {
+            "weekly_pct": 0.8287,
+            "trades_per_week": 1.6189,
+            "target_band_hit": false
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "90e19153b5a87a154f29c396c19f55eb",
+          "np_pct": 15.326,
+          "dd_pct": 8.2,
+          "orders": 326,
+          "dbr": null,
+          "tbr": null,
+          "tr_orb": 79,
+          "orb1_fills": 13,
+          "orb2_fills": 6,
+          "orb3_fills": 55,
+          "pb_fills": 5,
+          "candidate": "UF_PB_R1_BASE",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "pb_r1_enable": 0
+          },
+          "utility": {
+            "weekly_pct": 0.2939,
+            "trades_per_week": 1.5151,
+            "target_band_hit": false
+          }
+        }
+      },
+      "target_band_hits": 0,
+      "utility_score": 5.817146,
+      "positive_scenarios": 3
+    },
+    "UF_PB_R1_A": {
+      "overrides": {
+        "pb_r1_enable": 1,
+        "pb_r1_imp_min_atr": 0.8,
+        "pb_r1_zone_lo": 0.35,
+        "pb_r1_zone_mid": 0.5,
+        "pb_r1_zone_hi": 0.65,
+        "pb_r1_size_bad": 0.5,
+        "pb_r1_size_ok": 1.0,
+        "pb_r1_size_best": 1.25
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "fa9e1c7c66c09911fc31090cbb0107e6",
+          "np_pct": 41.389,
+          "dd_pct": 20.2,
+          "orders": 740,
+          "dbr": null,
+          "tbr": null,
+          "tr_orb": 185,
+          "orb1_fills": 41,
+          "orb2_fills": 27,
+          "orb3_fills": 117,
+          "pb_fills": 0,
+          "candidate": "UF_PB_R1_A",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "pb_r1_enable": 1,
+            "pb_r1_imp_min_atr": 0.8,
+            "pb_r1_zone_lo": 0.35,
+            "pb_r1_zone_mid": 0.5,
+            "pb_r1_zone_hi": 0.65,
+            "pb_r1_size_bad": 0.5,
+            "pb_r1_size_ok": 1.0,
+            "pb_r1_size_best": 1.25
+          },
+          "utility": {
+            "weekly_pct": 0.2646,
+            "trades_per_week": 1.1826,
+            "target_band_hit": false
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "53ff0f5227495ebecfb8f4c50874f9a1",
+          "np_pct": 31.19,
+          "dd_pct": 18.3,
+          "orders": 358,
+          "dbr": null,
+          "tbr": null,
+          "tr_orb": 91,
+          "orb1_fills": 35,
+          "orb2_fills": 13,
+          "orb3_fills": 43,
+          "pb_fills": 0,
+          "candidate": "UF_PB_R1_A",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "pb_r1_enable": 1,
+            "pb_r1_imp_min_atr": 0.8,
+            "pb_r1_zone_lo": 0.35,
+            "pb_r1_zone_mid": 0.5,
+            "pb_r1_zone_hi": 0.65,
+            "pb_r1_size_bad": 0.5,
+            "pb_r1_size_ok": 1.0,
+            "pb_r1_size_best": 1.25
+          },
+          "utility": {
+            "weekly_pct": 0.4809,
+            "trades_per_week": 1.4031,
+            "target_band_hit": false
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "72a176394d1281db7135f080a861407a",
+          "np_pct": 12.367,
+          "dd_pct": 8.2,
+          "orders": 326,
+          "dbr": null,
+          "tbr": null,
+          "tr_orb": 79,
+          "orb1_fills": 13,
+          "orb2_fills": 7,
+          "orb3_fills": 59,
+          "pb_fills": 0,
+          "candidate": "UF_PB_R1_A",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "pb_r1_enable": 1,
+            "pb_r1_imp_min_atr": 0.8,
+            "pb_r1_zone_lo": 0.35,
+            "pb_r1_zone_mid": 0.5,
+            "pb_r1_zone_hi": 0.65,
+            "pb_r1_size_bad": 0.5,
+            "pb_r1_size_ok": 1.0,
+            "pb_r1_size_best": 1.25
+          },
+          "utility": {
+            "weekly_pct": 0.2372,
+            "trades_per_week": 1.5151,
+            "target_band_hit": false
+          }
+        }
+      },
+      "target_band_hits": 0,
+      "utility_score": 3.87653,
+      "positive_scenarios": 3
+    },
+    "UF_PB_R1_B": {
+      "overrides": {
+        "pb_r1_enable": 1,
+        "pb_r1_imp_min_atr": 1.0,
+        "pb_r1_zone_lo": 0.35,
+        "pb_r1_zone_mid": 0.5,
+        "pb_r1_zone_hi": 0.65,
+        "pb_r1_size_bad": 0.5,
+        "pb_r1_size_ok": 1.0,
+        "pb_r1_size_best": 1.25
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "932aa8dfb24dbbdc7afbbfbf99cb410b",
+          "np_pct": 41.389,
+          "dd_pct": 20.2,
+          "orders": 740,
+          "dbr": null,
+          "tbr": null,
+          "tr_orb": 185,
+          "orb1_fills": 41,
+          "orb2_fills": 27,
+          "orb3_fills": 117,
+          "pb_fills": 0,
+          "candidate": "UF_PB_R1_B",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "pb_r1_enable": 1,
+            "pb_r1_imp_min_atr": 1.0,
+            "pb_r1_zone_lo": 0.35,
+            "pb_r1_zone_mid": 0.5,
+            "pb_r1_zone_hi": 0.65,
+            "pb_r1_size_bad": 0.5,
+            "pb_r1_size_ok": 1.0,
+            "pb_r1_size_best": 1.25
+          },
+          "utility": {
+            "weekly_pct": 0.2646,
+            "trades_per_week": 1.1826,
+            "target_band_hit": false
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "9656b3e4c4ac4809799aa0c06be4efbe",
+          "np_pct": 31.19,
+          "dd_pct": 18.3,
+          "orders": 358,
+          "dbr": null,
+          "tbr": null,
+          "tr_orb": 91,
+          "orb1_fills": 35,
+          "orb2_fills": 13,
+          "orb3_fills": 43,
+          "pb_fills": 0,
+          "candidate": "UF_PB_R1_B",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "pb_r1_enable": 1,
+            "pb_r1_imp_min_atr": 1.0,
+            "pb_r1_zone_lo": 0.35,
+            "pb_r1_zone_mid": 0.5,
+            "pb_r1_zone_hi": 0.65,
+            "pb_r1_size_bad": 0.5,
+            "pb_r1_size_ok": 1.0,
+            "pb_r1_size_best": 1.25
+          },
+          "utility": {
+            "weekly_pct": 0.4809,
+            "trades_per_week": 1.4031,
+            "target_band_hit": false
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "4b144c4d6fbe56af1f58c92879ee73ce",
+          "np_pct": 12.367,
+          "dd_pct": 8.2,
+          "orders": 326,
+          "dbr": null,
+          "tbr": null,
+          "tr_orb": 79,
+          "orb1_fills": 13,
+          "orb2_fills": 7,
+          "orb3_fills": 59,
+          "pb_fills": 0,
+          "candidate": "UF_PB_R1_B",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "pb_r1_enable": 1,
+            "pb_r1_imp_min_atr": 1.0,
+            "pb_r1_zone_lo": 0.35,
+            "pb_r1_zone_mid": 0.5,
+            "pb_r1_zone_hi": 0.65,
+            "pb_r1_size_bad": 0.5,
+            "pb_r1_size_ok": 1.0,
+            "pb_r1_size_best": 1.25
+          },
+          "utility": {
+            "weekly_pct": 0.2372,
+            "trades_per_week": 1.5151,
+            "target_band_hit": false
+          }
+        }
+      },
+      "target_band_hits": 0,
+      "utility_score": 3.87653,
+      "positive_scenarios": 3
+    }
+  },
+  "rows": [
+    {
+      "status": "Completed.",
+      "backtest_id": "88dca57e08bb0456faf50fc0016bc859",
+      "np_pct": 44.028,
+      "dd_pct": 20.2,
+      "orders": 1062,
+      "dbr": null,
+      "tbr": null,
+      "tr_orb": 260,
+      "orb1_fills": 63,
+      "orb2_fills": 40,
+      "orb3_fills": 145,
+      "pb_fills": 12,
+      "candidate": "UF_PB_R1_BASE",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "pb_r1_enable": 0
+      },
+      "utility": {
+        "weekly_pct": 0.2815,
+        "trades_per_week": 1.6621,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "3da613121c57a8af23751ebadf47f2d6",
+      "np_pct": 53.744,
+      "dd_pct": 16.7,
+      "orders": 413,
+      "dbr": null,
+      "tbr": null,
+      "tr_orb": 105,
+      "orb1_fills": 35,
+      "orb2_fills": 12,
+      "orb3_fills": 40,
+      "pb_fills": 18,
+      "candidate": "UF_PB_R1_BASE",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "pb_r1_enable": 0
+      },
+      "utility": {
+        "weekly_pct": 0.8287,
+        "trades_per_week": 1.6189,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "90e19153b5a87a154f29c396c19f55eb",
+      "np_pct": 15.326,
+      "dd_pct": 8.2,
+      "orders": 326,
+      "dbr": null,
+      "tbr": null,
+      "tr_orb": 79,
+      "orb1_fills": 13,
+      "orb2_fills": 6,
+      "orb3_fills": 55,
+      "pb_fills": 5,
+      "candidate": "UF_PB_R1_BASE",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "pb_r1_enable": 0
+      },
+      "utility": {
+        "weekly_pct": 0.2939,
+        "trades_per_week": 1.5151,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "fa9e1c7c66c09911fc31090cbb0107e6",
+      "np_pct": 41.389,
+      "dd_pct": 20.2,
+      "orders": 740,
+      "dbr": null,
+      "tbr": null,
+      "tr_orb": 185,
+      "orb1_fills": 41,
+      "orb2_fills": 27,
+      "orb3_fills": 117,
+      "pb_fills": 0,
+      "candidate": "UF_PB_R1_A",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "pb_r1_enable": 1,
+        "pb_r1_imp_min_atr": 0.8,
+        "pb_r1_zone_lo": 0.35,
+        "pb_r1_zone_mid": 0.5,
+        "pb_r1_zone_hi": 0.65,
+        "pb_r1_size_bad": 0.5,
+        "pb_r1_size_ok": 1.0,
+        "pb_r1_size_best": 1.25
+      },
+      "utility": {
+        "weekly_pct": 0.2646,
+        "trades_per_week": 1.1826,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "53ff0f5227495ebecfb8f4c50874f9a1",
+      "np_pct": 31.19,
+      "dd_pct": 18.3,
+      "orders": 358,
+      "dbr": null,
+      "tbr": null,
+      "tr_orb": 91,
+      "orb1_fills": 35,
+      "orb2_fills": 13,
+      "orb3_fills": 43,
+      "pb_fills": 0,
+      "candidate": "UF_PB_R1_A",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "pb_r1_enable": 1,
+        "pb_r1_imp_min_atr": 0.8,
+        "pb_r1_zone_lo": 0.35,
+        "pb_r1_zone_mid": 0.5,
+        "pb_r1_zone_hi": 0.65,
+        "pb_r1_size_bad": 0.5,
+        "pb_r1_size_ok": 1.0,
+        "pb_r1_size_best": 1.25
+      },
+      "utility": {
+        "weekly_pct": 0.4809,
+        "trades_per_week": 1.4031,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "72a176394d1281db7135f080a861407a",
+      "np_pct": 12.367,
+      "dd_pct": 8.2,
+      "orders": 326,
+      "dbr": null,
+      "tbr": null,
+      "tr_orb": 79,
+      "orb1_fills": 13,
+      "orb2_fills": 7,
+      "orb3_fills": 59,
+      "pb_fills": 0,
+      "candidate": "UF_PB_R1_A",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "pb_r1_enable": 1,
+        "pb_r1_imp_min_atr": 0.8,
+        "pb_r1_zone_lo": 0.35,
+        "pb_r1_zone_mid": 0.5,
+        "pb_r1_zone_hi": 0.65,
+        "pb_r1_size_bad": 0.5,
+        "pb_r1_size_ok": 1.0,
+        "pb_r1_size_best": 1.25
+      },
+      "utility": {
+        "weekly_pct": 0.2372,
+        "trades_per_week": 1.5151,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "932aa8dfb24dbbdc7afbbfbf99cb410b",
+      "np_pct": 41.389,
+      "dd_pct": 20.2,
+      "orders": 740,
+      "dbr": null,
+      "tbr": null,
+      "tr_orb": 185,
+      "orb1_fills": 41,
+      "orb2_fills": 27,
+      "orb3_fills": 117,
+      "pb_fills": 0,
+      "candidate": "UF_PB_R1_B",
+      "scenario": "IS_2022_2024",
+      "overrides": {
+        "pb_r1_enable": 1,
+        "pb_r1_imp_min_atr": 1.0,
+        "pb_r1_zone_lo": 0.35,
+        "pb_r1_zone_mid": 0.5,
+        "pb_r1_zone_hi": 0.65,
+        "pb_r1_size_bad": 0.5,
+        "pb_r1_size_ok": 1.0,
+        "pb_r1_size_best": 1.25
+      },
+      "utility": {
+        "weekly_pct": 0.2646,
+        "trades_per_week": 1.1826,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "9656b3e4c4ac4809799aa0c06be4efbe",
+      "np_pct": 31.19,
+      "dd_pct": 18.3,
+      "orders": 358,
+      "dbr": null,
+      "tbr": null,
+      "tr_orb": 91,
+      "orb1_fills": 35,
+      "orb2_fills": 13,
+      "orb3_fills": 43,
+      "pb_fills": 0,
+      "candidate": "UF_PB_R1_B",
+      "scenario": "OOS_2025_2026Q1",
+      "overrides": {
+        "pb_r1_enable": 1,
+        "pb_r1_imp_min_atr": 1.0,
+        "pb_r1_zone_lo": 0.35,
+        "pb_r1_zone_mid": 0.5,
+        "pb_r1_zone_hi": 0.65,
+        "pb_r1_size_bad": 0.5,
+        "pb_r1_size_ok": 1.0,
+        "pb_r1_size_best": 1.25
+      },
+      "utility": {
+        "weekly_pct": 0.4809,
+        "trades_per_week": 1.4031,
+        "target_band_hit": false
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "4b144c4d6fbe56af1f58c92879ee73ce",
+      "np_pct": 12.367,
+      "dd_pct": 8.2,
+      "orders": 326,
+      "dbr": null,
+      "tbr": null,
+      "tr_orb": 79,
+      "orb1_fills": 13,
+      "orb2_fills": 7,
+      "orb3_fills": 59,
+      "pb_fills": 0,
+      "candidate": "UF_PB_R1_B",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "pb_r1_enable": 1,
+        "pb_r1_imp_min_atr": 1.0,
+        "pb_r1_zone_lo": 0.35,
+        "pb_r1_zone_mid": 0.5,
+        "pb_r1_zone_hi": 0.65,
+        "pb_r1_size_bad": 0.5,
+        "pb_r1_size_ok": 1.0,
+        "pb_r1_size_best": 1.25
+      },
+      "utility": {
+        "weekly_pct": 0.2372,
+        "trades_per_week": 1.5151,
+        "target_band_hit": false
+      }
+    }
+  ],
+  "ranked": [
+    {
+      "label": "UF_PB_R1_BASE",
+      "overrides": {
+        "pb_r1_enable": 0
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "88dca57e08bb0456faf50fc0016bc859",
+          "np_pct": 44.028,
+          "dd_pct": 20.2,
+          "orders": 1062,
+          "dbr": null,
+          "tbr": null,
+          "tr_orb": 260,
+          "orb1_fills": 63,
+          "orb2_fills": 40,
+          "orb3_fills": 145,
+          "pb_fills": 12,
+          "candidate": "UF_PB_R1_BASE",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "pb_r1_enable": 0
+          },
+          "utility": {
+            "weekly_pct": 0.2815,
+            "trades_per_week": 1.6621,
+            "target_band_hit": false
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "3da613121c57a8af23751ebadf47f2d6",
+          "np_pct": 53.744,
+          "dd_pct": 16.7,
+          "orders": 413,
+          "dbr": null,
+          "tbr": null,
+          "tr_orb": 105,
+          "orb1_fills": 35,
+          "orb2_fills": 12,
+          "orb3_fills": 40,
+          "pb_fills": 18,
+          "candidate": "UF_PB_R1_BASE",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "pb_r1_enable": 0
+          },
+          "utility": {
+            "weekly_pct": 0.8287,
+            "trades_per_week": 1.6189,
+            "target_band_hit": false
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "90e19153b5a87a154f29c396c19f55eb",
+          "np_pct": 15.326,
+          "dd_pct": 8.2,
+          "orders": 326,
+          "dbr": null,
+          "tbr": null,
+          "tr_orb": 79,
+          "orb1_fills": 13,
+          "orb2_fills": 6,
+          "orb3_fills": 55,
+          "pb_fills": 5,
+          "candidate": "UF_PB_R1_BASE",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "pb_r1_enable": 0
+          },
+          "utility": {
+            "weekly_pct": 0.2939,
+            "trades_per_week": 1.5151,
+            "target_band_hit": false
+          }
+        }
+      },
+      "target_band_hits": 0,
+      "utility_score": 5.817146,
+      "positive_scenarios": 3
+    },
+    {
+      "label": "UF_PB_R1_A",
+      "overrides": {
+        "pb_r1_enable": 1,
+        "pb_r1_imp_min_atr": 0.8,
+        "pb_r1_zone_lo": 0.35,
+        "pb_r1_zone_mid": 0.5,
+        "pb_r1_zone_hi": 0.65,
+        "pb_r1_size_bad": 0.5,
+        "pb_r1_size_ok": 1.0,
+        "pb_r1_size_best": 1.25
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "fa9e1c7c66c09911fc31090cbb0107e6",
+          "np_pct": 41.389,
+          "dd_pct": 20.2,
+          "orders": 740,
+          "dbr": null,
+          "tbr": null,
+          "tr_orb": 185,
+          "orb1_fills": 41,
+          "orb2_fills": 27,
+          "orb3_fills": 117,
+          "pb_fills": 0,
+          "candidate": "UF_PB_R1_A",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "pb_r1_enable": 1,
+            "pb_r1_imp_min_atr": 0.8,
+            "pb_r1_zone_lo": 0.35,
+            "pb_r1_zone_mid": 0.5,
+            "pb_r1_zone_hi": 0.65,
+            "pb_r1_size_bad": 0.5,
+            "pb_r1_size_ok": 1.0,
+            "pb_r1_size_best": 1.25
+          },
+          "utility": {
+            "weekly_pct": 0.2646,
+            "trades_per_week": 1.1826,
+            "target_band_hit": false
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "53ff0f5227495ebecfb8f4c50874f9a1",
+          "np_pct": 31.19,
+          "dd_pct": 18.3,
+          "orders": 358,
+          "dbr": null,
+          "tbr": null,
+          "tr_orb": 91,
+          "orb1_fills": 35,
+          "orb2_fills": 13,
+          "orb3_fills": 43,
+          "pb_fills": 0,
+          "candidate": "UF_PB_R1_A",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "pb_r1_enable": 1,
+            "pb_r1_imp_min_atr": 0.8,
+            "pb_r1_zone_lo": 0.35,
+            "pb_r1_zone_mid": 0.5,
+            "pb_r1_zone_hi": 0.65,
+            "pb_r1_size_bad": 0.5,
+            "pb_r1_size_ok": 1.0,
+            "pb_r1_size_best": 1.25
+          },
+          "utility": {
+            "weekly_pct": 0.4809,
+            "trades_per_week": 1.4031,
+            "target_band_hit": false
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "72a176394d1281db7135f080a861407a",
+          "np_pct": 12.367,
+          "dd_pct": 8.2,
+          "orders": 326,
+          "dbr": null,
+          "tbr": null,
+          "tr_orb": 79,
+          "orb1_fills": 13,
+          "orb2_fills": 7,
+          "orb3_fills": 59,
+          "pb_fills": 0,
+          "candidate": "UF_PB_R1_A",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "pb_r1_enable": 1,
+            "pb_r1_imp_min_atr": 0.8,
+            "pb_r1_zone_lo": 0.35,
+            "pb_r1_zone_mid": 0.5,
+            "pb_r1_zone_hi": 0.65,
+            "pb_r1_size_bad": 0.5,
+            "pb_r1_size_ok": 1.0,
+            "pb_r1_size_best": 1.25
+          },
+          "utility": {
+            "weekly_pct": 0.2372,
+            "trades_per_week": 1.5151,
+            "target_band_hit": false
+          }
+        }
+      },
+      "target_band_hits": 0,
+      "utility_score": 3.87653,
+      "positive_scenarios": 3
+    },
+    {
+      "label": "UF_PB_R1_B",
+      "overrides": {
+        "pb_r1_enable": 1,
+        "pb_r1_imp_min_atr": 1.0,
+        "pb_r1_zone_lo": 0.35,
+        "pb_r1_zone_mid": 0.5,
+        "pb_r1_zone_hi": 0.65,
+        "pb_r1_size_bad": 0.5,
+        "pb_r1_size_ok": 1.0,
+        "pb_r1_size_best": 1.25
+      },
+      "scenarios": {
+        "IS_2022_2024": {
+          "status": "Completed.",
+          "backtest_id": "932aa8dfb24dbbdc7afbbfbf99cb410b",
+          "np_pct": 41.389,
+          "dd_pct": 20.2,
+          "orders": 740,
+          "dbr": null,
+          "tbr": null,
+          "tr_orb": 185,
+          "orb1_fills": 41,
+          "orb2_fills": 27,
+          "orb3_fills": 117,
+          "pb_fills": 0,
+          "candidate": "UF_PB_R1_B",
+          "scenario": "IS_2022_2024",
+          "overrides": {
+            "pb_r1_enable": 1,
+            "pb_r1_imp_min_atr": 1.0,
+            "pb_r1_zone_lo": 0.35,
+            "pb_r1_zone_mid": 0.5,
+            "pb_r1_zone_hi": 0.65,
+            "pb_r1_size_bad": 0.5,
+            "pb_r1_size_ok": 1.0,
+            "pb_r1_size_best": 1.25
+          },
+          "utility": {
+            "weekly_pct": 0.2646,
+            "trades_per_week": 1.1826,
+            "target_band_hit": false
+          }
+        },
+        "OOS_2025_2026Q1": {
+          "status": "Completed.",
+          "backtest_id": "9656b3e4c4ac4809799aa0c06be4efbe",
+          "np_pct": 31.19,
+          "dd_pct": 18.3,
+          "orders": 358,
+          "dbr": null,
+          "tbr": null,
+          "tr_orb": 91,
+          "orb1_fills": 35,
+          "orb2_fills": 13,
+          "orb3_fills": 43,
+          "pb_fills": 0,
+          "candidate": "UF_PB_R1_B",
+          "scenario": "OOS_2025_2026Q1",
+          "overrides": {
+            "pb_r1_enable": 1,
+            "pb_r1_imp_min_atr": 1.0,
+            "pb_r1_zone_lo": 0.35,
+            "pb_r1_zone_mid": 0.5,
+            "pb_r1_zone_hi": 0.65,
+            "pb_r1_size_bad": 0.5,
+            "pb_r1_size_ok": 1.0,
+            "pb_r1_size_best": 1.25
+          },
+          "utility": {
+            "weekly_pct": 0.4809,
+            "trades_per_week": 1.4031,
+            "target_band_hit": false
+          }
+        },
+        "STRESS_2020": {
+          "status": "Completed.",
+          "backtest_id": "4b144c4d6fbe56af1f58c92879ee73ce",
+          "np_pct": 12.367,
+          "dd_pct": 8.2,
+          "orders": 326,
+          "dbr": null,
+          "tbr": null,
+          "tr_orb": 79,
+          "orb1_fills": 13,
+          "orb2_fills": 7,
+          "orb3_fills": 59,
+          "pb_fills": 0,
+          "candidate": "UF_PB_R1_B",
+          "scenario": "STRESS_2020",
+          "overrides": {
+            "pb_r1_enable": 1,
+            "pb_r1_imp_min_atr": 1.0,
+            "pb_r1_zone_lo": 0.35,
+            "pb_r1_zone_mid": 0.5,
+            "pb_r1_zone_hi": 0.65,
+            "pb_r1_size_bad": 0.5,
+            "pb_r1_size_ok": 1.0,
+            "pb_r1_size_best": 1.25
+          },
+          "utility": {
+            "weekly_pct": 0.2372,
+            "trades_per_week": 1.5151,
+            "target_band_hit": false
+          }
+        }
+      },
+      "target_band_hits": 0,
+      "utility_score": 3.87653,
+      "positive_scenarios": 3
+    }
+  ],
+  "best_label": "UF_PB_R1_BASE",
+  "best_summary": {
+    "utility_score": 5.817146,
+    "target_band_hits": 0,
+    "positive_scenarios": 3
+  }
+}

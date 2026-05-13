@@ -1,0 +1,52 @@
+{
+  "generated_at_utc": "2026-04-21T16:40:30.442219Z",
+  "steps": [
+    {
+      "step": "upload_main",
+      "ok": true,
+      "errors": null
+    },
+    {
+      "step": "set_params",
+      "ok": true,
+      "errors": null,
+      "param_count": 44
+    },
+    {
+      "step": "compile",
+      "compileId": "88965a287c19bc02970efeac9ce28652-e900d9e443108b337b80b4a34013ef3d",
+      "state": "BuildSuccess"
+    },
+    {
+      "step": "live_read_before",
+      "status": "Running",
+      "deployId": "L-6e0be314debcd3872c1b24dda1b8eff2"
+    },
+    {
+      "step": "live_stop",
+      "ok": true,
+      "errors": null
+    },
+    {
+      "step": "live_stopped_confirm",
+      "attempt": 1,
+      "status": "Stopped",
+      "deployId": "L-6e0be314debcd3872c1b24dda1b8eff2"
+    },
+    {
+      "step": "live_create",
+      "ok": false,
+      "errors": [
+        "Previous live deployment is still being processing please try again in 74 seconds."
+      ],
+      "deployId": null
+    }
+  ],
+  "error": "live_create_failed",
+  "resp": {
+    "errors": [
+      "Previous live deployment is still being processing please try again in 74 seconds."
+    ],
+    "success": false
+  }
+}

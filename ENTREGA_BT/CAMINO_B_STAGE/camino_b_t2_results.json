@@ -1,0 +1,53 @@
+{
+  "updated_utc": "2026-04-13T14:27:04Z",
+  "rows": [
+    {
+      "backtest_id": "d195e66f12bcee04ad5e302933e6c6e6",
+      "net_profit_pct": -1.848,
+      "drawdown_pct": 3.6,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "stress_trades": 0,
+      "normal_trades": 12,
+      "external_stress_days": 0,
+      "candidate": "CB_T2_B",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "backtest_id": "14408c91ef2fc90bcb25056013ecd766",
+      "net_profit_pct": -1.848,
+      "drawdown_pct": 3.6,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "stress_trades": 0,
+      "normal_trades": 12,
+      "external_stress_days": 0,
+      "candidate": "CB_T2_E",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "backtest_id": "7f261d11db16e12cdfa0cde6952ffc9e",
+      "net_profit_pct": 0.0,
+      "drawdown_pct": 0.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "stress_trades": 0,
+      "normal_trades": 0,
+      "external_stress_days": 57,
+      "candidate": "CB_T2_E_DEF",
+      "scenario": "STRESS_2020"
+    },
+    {
+      "backtest_id": "17072325e6d32f73ea5df61694a97549",
+      "net_profit_pct": -1.848,
+      "drawdown_pct": 3.6,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "stress_trades": 0,
+      "normal_trades": 12,
+      "external_stress_days": 0,
+      "candidate": "CB_T2_E_LONG",
+      "scenario": "STRESS_2020"
+    }
+  ]
+}

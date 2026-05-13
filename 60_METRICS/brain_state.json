@@ -1,0 +1,35 @@
+{
+  "version": "bayes_v1",
+  "created_at": "2026-02-20T15:39:45",
+  "updated_at": "2026-02-20T15:39:45",
+  "priors": {
+    "a": 1.0,
+    "b": 9.0
+  },
+  "segments": {
+    "osm:amenity=dentist__Miami Springs": {
+      "a": 1.0,
+      "b": 9.0,
+      "n_sent": 1,
+      "n_pos": 0,
+      "n_neg": 0
+    }
+  },
+  "campaigns": {
+    "NA": {
+      "a": 1.0,
+      "b": 9.0,
+      "n_sent": 1,
+      "n_pos": 0,
+      "n_neg": 0
+    }
+  },
+  "global": {
+    "a": 1.0,
+    "b": 9.0,
+    "n_sent": 1,
+    "n_pos": 0,
+    "n_neg": 0
+  },
+  "notes": "Bayesian reply learning. Updates use explicit negatives only."
+}

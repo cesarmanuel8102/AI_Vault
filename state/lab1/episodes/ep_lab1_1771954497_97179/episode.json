@@ -1,0 +1,258 @@
+{
+  "episode_id": "ep_lab1_1771954497_97179",
+  "room_id": "lab1",
+  "created_at": 1771954497,
+  "mission": {
+    "room_id": "lab1",
+    "objective": "Crear good.txt en WORKSPACE_ROOT y luego listar el directorio para verificar.",
+    "constraints": [
+      "Todos los writes deben ser dentro de WORKSPACE_ROOT",
+      "No escribir secretos"
+    ],
+    "status": "active",
+    "created_at": 1771954497,
+    "updated_at": 1771954497
+  },
+  "events": [
+    {
+      "ts_epoch": 1771954497,
+      "type": "mission_set",
+      "mission": {
+        "room_id": "lab1",
+        "objective": "Crear good.txt en WORKSPACE_ROOT y luego listar el directorio para verificar.",
+        "constraints": [
+          "Todos los writes deben ser dentro de WORKSPACE_ROOT",
+          "No escribir secretos"
+        ],
+        "status": "active",
+        "created_at": 1771954497,
+        "updated_at": 1771954497
+      }
+    },
+    {
+      "ts_epoch": 1771954548,
+      "type": "plan_guardrail_applied",
+      "guard": {
+        "ok": true,
+        "want_bad": false,
+        "want_good": true,
+        "changes": []
+      }
+    },
+    {
+      "ts_epoch": 1771954548,
+      "type": "plan_created",
+      "plan": {
+        "room_id": "lab1",
+        "mission_objective": "Crear good.txt en WORKSPACE_ROOT y luego listar el directorio para verificar.",
+        "mission_updated_at": 1771954497,
+        "created_at": 1771954548,
+        "updated_at": 1771954548,
+        "cursor": 0,
+        "steps": [
+          {
+            "id": "s1",
+            "title": "Crear good.txt en WORKSPACE_ROOT",
+            "action": "TOOL",
+            "tool": "write_file",
+            "args": {
+              "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+              "content": "Este es un archivo de prueba."
+            },
+            "success_criteria": "Archivo good.txt creado en WORKSPACE_ROOT",
+            "status": "pending",
+            "result": null,
+            "started_at": null,
+            "ended_at": null
+          },
+          {
+            "id": "s2",
+            "title": "Listar el directorio WORKSPACE_ROOT para verificar",
+            "action": "TOOL",
+            "tool": "list_dir",
+            "args": {
+              "path": "C:\\AI_VAULT\\workspace\\brainlab"
+            },
+            "success_criteria": "good.txt se muestra en la lista del directorio",
+            "status": "pending",
+            "result": null,
+            "started_at": null,
+            "ended_at": null
+          }
+        ]
+      }
+    },
+    {
+      "ts_epoch": 1771954548,
+      "type": "step_executed",
+      "step": {
+        "id": "s1",
+        "title": "Crear good.txt en WORKSPACE_ROOT",
+        "action": "TOOL",
+        "tool": "write_file",
+        "args": {
+          "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+          "content": "Este es un archivo de prueba."
+        },
+        "success_criteria": "Archivo good.txt creado en WORKSPACE_ROOT",
+        "status": "done",
+        "result": {
+          "path": "C:\\AI_VAULT\\workspace\\brainlab\\good.txt",
+          "written": 29
+        },
+        "started_at": 1771954548,
+        "ended_at": 1771954548
+      }
+    },
+    {
+      "ts_epoch": 1771954548,
+      "type": "evaluation",
+      "verdict": {
+        "ok": true,
+        "score": 100,
+        "errors": [],
+        "pending_count": 1,
+        "recommendation": "continue",
+        "reasons": [],
+        "recommendations": [],
+        "updated_at": 1771954548
+      }
+    },
+    {
+      "ts_epoch": 1771954548,
+      "type": "step_executed",
+      "step": {
+        "id": "s2",
+        "title": "Listar el directorio WORKSPACE_ROOT para verificar",
+        "action": "TOOL",
+        "tool": "list_dir",
+        "args": {
+          "path": "C:\\AI_VAULT\\workspace\\brainlab"
+        },
+        "success_criteria": "good.txt se muestra en la lista del directorio",
+        "status": "done",
+        "result": {
+          "path": "C:\\AI_VAULT\\workspace\\brainlab",
+          "items": [
+            {
+              "name": ".git",
+              "is_dir": true,
+              "size": null
+            },
+            {
+              "name": ".gitattributes",
+              "is_dir": false,
+              "size": 87
+            },
+            {
+              "name": ".gitignore",
+              "is_dir": false,
+              "size": 72
+            },
+            {
+              "name": ".gitkeep",
+              "is_dir": false,
+              "size": 0
+            },
+            {
+              "name": ".pytest_cache",
+              "is_dir": true,
+              "size": null
+            },
+            {
+              "name": "bad.txt",
+              "is_dir": false,
+              "size": 43
+            },
+            {
+              "name": "config",
+              "is_dir": true,
+              "size": null
+            },
+            {
+              "name": "data",
+              "is_dir": true,
+              "size": null
+            },
+            {
+              "name": "demo.txt",
+              "is_dir": false,
+              "size": 36
+            },
+            {
+              "name": "docs",
+              "is_dir": true,
+              "size": null
+            },
+            {
+              "name": "good.txt",
+              "is_dir": false,
+              "size": 29
+            },
+            {
+              "name": "hack.txt",
+              "is_dir": false,
+              "size": 31
+            },
+            {
+              "name": "logs",
+              "is_dir": true,
+              "size": null
+            },
+            {
+              "name": "note.txt",
+              "is_dir": false,
+              "size": 27
+            },
+            {
+              "name": "permissions.txt",
+              "is_dir": false,
+              "size": 896
+            },
+            {
+              "name": "ranked_test.txt",
+              "is_dir": false,
+              "size": 0
+            },
+            {
+              "name": "README.md",
+              "is_dir": false,
+              "size": 79
+            },
+            {
+              "name": "src",
+              "is_dir": true,
+              "size": null
+            },
+            {
+              "name": "sync_rank.txt",
+              "is_dir": false,
+              "size": 0
+            },
+            {
+              "name": "tests",
+              "is_dir": true,
+              "size": null
+            }
+          ]
+        },
+        "started_at": 1771954548,
+        "ended_at": 1771954548
+      }
+    },
+    {
+      "ts_epoch": 1771954548,
+      "type": "evaluation",
+      "verdict": {
+        "ok": true,
+        "score": 100,
+        "errors": [],
+        "pending_count": 0,
+        "recommendation": "continue",
+        "reasons": [],
+        "recommendations": [],
+        "updated_at": 1771954548
+      }
+    }
+  ]
+}

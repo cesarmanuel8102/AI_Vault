@@ -1,0 +1,25 @@
+{
+  "phase": 0,
+  "phase_name": "INIT",
+  "current_goal": "Inicializar sistema de autonom\u00eda",
+  "services": {
+    "brain_server": {
+      "name": "brain_server",
+      "port": 8000,
+      "pid": null,
+      "status": "running",
+      "last_check": "2026-03-18T23:22:49.760946+00:00",
+      "health": null
+    },
+    "advisor_server": {
+      "name": "advisor_server",
+      "port": 8010,
+      "pid": null,
+      "status": "running",
+      "last_check": "2026-03-18T23:22:56.822650+00:00",
+      "health": null
+    }
+  },
+  "last_update": "2026-03-18T23:22:36.666961+00:00",
+  "metrics": {}
+}

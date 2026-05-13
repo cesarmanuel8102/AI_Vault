@@ -1,0 +1,13 @@
+{
+  "proposal_id": "P_08f1ee6a796118ae",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "C:\\AI_VAULT\\tmp_agent\\state\\rooms\\ui_brain_authority_smoke_06\\ui_brain_authority_smoke_06-001_artifact.json",
+    "content": "{\n  \"request\": \"Mejora la consola del Brain para explicar mejor cuando usa OpenAI y cuando usa Brain\"\n}\\n"
+  },
+  "room_id": "ui_brain_authority_smoke_06",
+  "step_id": "EP_smoke_06-001",
+  "created_at": "2026-03-16T16:35:19.772181+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

@@ -1,0 +1,16 @@
+{
+  "proposal_id": "P_4de9478422a097bb",
+  "tool_name": "append_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\patches\\brain_episode_v1.diff",
+    "content": "diff --git a/brain_server.py b/brain_server.py\nindex 87a10c2..f5d2e63 100644\n--- a/brain_server.py\n+++ b/brain_server.py\n@@ -1,5 +1,5 @@\n # Brain Server\n \n-def main():\n-    print('Running Brain Server')\n+def main_new():\n+    print('Running Brain Server with new implementation')\n \n if __name__ == '__main__':\n-    main()\n+    main_new()\n",
+    "value": null,
+    "raw_content": "diff --git a/brain_server.py b/brain_server.py\\nindex 87a10c2..f5d2e63 100644\\n--- a/brain_server.py\\n+++ b/brain_server.py\\n@@ -1,5 +1,5 @@\\n # Brain Server\\n \\n-def main():\\n-    print('Running Brain Server')\\n+def main_new():\\n+    print('Running Brain Server with new implementation')\\n \\n if __name__ == '__main__':\\n-    main()\\n+    main_new()\\n",
+    "text": "diff --git a/brain_server.py b/brain_server.py\nindex 87a10c2..f5d2e63 100644\n--- a/brain_server.py\n+++ b/brain_server.py\n@@ -1,5 +1,5 @@\n # Brain Server\n \n-def main():\n-    print('Running Brain Server')\n+def main_new():\n+    print('Running Brain Server with new implementation')\n \n if __name__ == '__main__':\n-    main()\n+    main_new()\n"
+  },
+  "room_id": "room_p3_1_20260303_104350",
+  "step_id": "S1",
+  "created_at": "2026-03-03T15:45:30.232156+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

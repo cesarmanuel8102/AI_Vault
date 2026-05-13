@@ -1,0 +1,15 @@
+{
+  "source_id": "github_All_Hands_AI_OpenHands_20260508",
+  "generated_at_utc": "2026-05-08T05:07:38.776824Z",
+  "source_risk_score": 3.25,
+  "pattern_risks": [
+    {
+      "pattern_id": "sandboxed_patch_planning",
+      "risk": 5.0
+    },
+    {
+      "pattern_id": "test_first_code_repair",
+      "risk": 4.5
+    }
+  ]
+}

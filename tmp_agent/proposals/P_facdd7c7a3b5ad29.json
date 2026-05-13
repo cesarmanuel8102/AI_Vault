@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_facdd7c7a3b5ad29",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_p3_complete_20260302_185110\\plan.json",
+    "content": "{\"schema_version\": \"brainlab.plan.v1\", \"generated_utc\": \"2026-03-02T14:01:03.611789Z\", \"steps\": [{\"id\": \"P2.1\", \"title\": \"Garantizar tool_args.content no-null y string\", \"status\": \"next\", \"description\": \"Antes de persistir plan, validar/corregir steps: tool_args.content debe ser string; si planner da null, generar fallback desde prompt.\", \"done_criteria\": [\"No se observan tool_args.content = null en plan.json final.\"]}]}",
+    "value": null,
+    "text": "{\"schema_version\": \"brainlab.plan.v1\", \"generated_utc\": \"2026-03-02T14:01:03.611789Z\", \"steps\": [{\"id\": \"P2.1\", \"title\": \"Garantizar tool_args.content no-null y string\", \"status\": \"next\", \"description\": \"Antes de persistir plan, validar/corregir steps: tool_args.content debe ser string; si planner da null, generar fallback desde prompt.\", \"done_criteria\": [\"No se observan tool_args.content = null en plan.json final.\"]}]}"
+  },
+  "room_id": "room_p3_complete_20260302_185110",
+  "step_id": "S1",
+  "created_at": "2026-03-02T23:51:17.458086+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

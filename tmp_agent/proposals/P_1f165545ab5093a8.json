@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_1f165545ab5093a8",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_loop_probe_20260303_211428\\patches\\apply_brain_episode_v1.ps1",
+    "content": "# Backup current brain_server.py\nCopy-Item -Path 'C:\\AI_VAULT\\00_identity\\brain_server.py' -Destination 'C:\\AI_VAULT\\00_identity\\brain_server_backup.py'\n# Apply the patch\ngit apply 'C:\\AI_VAULT\\tmp_agent\\state\\rooms\\room_loop_probe_20260303_211428\\patches\\brain_episode_v1.diff'\n# Compile Python code\npython -m py_compile 'C:\\AI_VAULT\\00_identity\\brain_server.py'\n# Run smoke test\npython -m smoke_test\n",
+    "value": null,
+    "text": "# Backup current brain_server.py\nCopy-Item -Path 'C:\\AI_VAULT\\00_identity\\brain_server.py' -Destination 'C:\\AI_VAULT\\00_identity\\brain_server_backup.py'\n# Apply the patch\ngit apply 'C:\\AI_VAULT\\tmp_agent\\state\\rooms\\room_loop_probe_20260303_211428\\patches\\brain_episode_v1.diff'\n# Compile Python code\npython -m py_compile 'C:\\AI_VAULT\\00_identity\\brain_server.py'\n# Run smoke test\npython -m smoke_test\n"
+  },
+  "room_id": "room_loop_probe_20260303_211428",
+  "step_id": "S2",
+  "created_at": "2026-03-04T02:19:44.505340+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

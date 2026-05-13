@@ -1,0 +1,13 @@
+{
+  "proposal_id": "P_5594cc838ebad78f",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "C:\\AI_VAULT\\tmp_agent\\workspace\\p_list_2.txt",
+    "content": "b\n"
+  },
+  "room_id": "room_proposals_list_smoke",
+  "step_id": "2",
+  "created_at": "2026-03-01T17:30:34.141542+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

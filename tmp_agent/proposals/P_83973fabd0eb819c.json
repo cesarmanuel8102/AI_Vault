@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_83973fabd0eb819c",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "C:\\AI_VAULT\\tmp_agent\\state\\rooms\\autoloop_advisor_v10_20260309_122121\\metadata_normalization.json",
+    "content": "Eliminar texto corrupto, campos stale y huecos de telemetría en roadmap, latest_run, route_lock y dashboards.\nActualización en progreso...\n",
+    "raw_content": "Eliminar texto corrupto, campos stale y huecos de telemetría en roadmap, latest_run, route_lock y dashboards.\nActualización en progreso...\n",
+    "text": "Eliminar texto corrupto, campos stale y huecos de telemetría en roadmap, latest_run, route_lock y dashboards.\nActualización en progreso...\n"
+  },
+  "room_id": "autoloop_advisor_v10_20260309_122121",
+  "step_id": "EX-02",
+  "created_at": "2026-03-09T16:21:28.428237+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

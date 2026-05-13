@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brain Chat V9</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0f1117;
+    --surface:  #1a1d27;
+    --surface2: #22263a;
+    --border:   #2e3350;
+    --accent:   #6c63ff;
+    --accent2:  #9d97ff;
+    --text:     #e4e6f0;
+    --text2:    #8b90b0;
+    --green:    #3ecf8e;
+    --red:      #f06060;
+    --amber:    #f5a623;
+    --radius:   12px;
+    --font:     -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; height: 100vh; display: flex; flex-direction: column; }
+
+  /* Header */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  header .logo {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 700; color: #fff;
+  }
+  header h1 { font-size: 16px; font-weight: 600; color: var(--text); }
+  header .badge {
+    font-size: 11px; padding: 2px 8px; border-radius: 20px;
+    background: var(--surface2); color: var(--text2); border: 1px solid var(--border);
+  }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--text2); margin-left: auto;
+    transition: background .3s;
+  }
+  .status-dot.ok  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-dot.err { background: var(--red); }
+
+  /* Nav tabs */
+  nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    padding: 0 20px;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  nav button {
+    background: none; border: none; cursor: pointer;
+    padding: 10px 16px; color: var(--text2); font-size: 13px;
+    border-bottom: 2px solid transparent; transition: all .2s;
+  }
+  nav button:hover { color: var(--text); }
+  nav button.active { color: var(--accent2); border-bottom-color: var(--accent); }
+
+  /* Panels */
+  .panel { display: none; flex: 1; overflow: hidden; }
+  .panel.active { display: flex; flex-direction: column; }
+
+  /* ── Chat ── */
+  #messages {
+    flex: 1; overflow-y: auto; padding: 20px;
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .msg { display: flex; gap: 12px; max-width: 820px; animation: fadeIn .2s; }
+  .msg.user { flex-direction: row-reverse; align-self: flex-end; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } }
+
+  .avatar {
+    width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 600;
+  }
+  .msg.user   .avatar { background: var(--accent);  color: #fff; }
+  .msg.agent  .avatar { background: var(--surface2); color: var(--accent2); }
+  .msg.system .avatar { background: var(--surface2); color: var(--amber); }
+
+  .bubble {
+    padding: 12px 16px; border-radius: var(--radius);
+    line-height: 1.6; max-width: 680px; word-break: break-word;
+  }
+  .msg.user   .bubble { background: var(--accent); color: #fff; border-radius: var(--radius) 4px var(--radius) var(--radius); }
+  .msg.agent  .bubble { background: var(--surface); border: 1px solid var(--border); border-radius: 4px var(--radius) var(--radius) var(--radius); }
+  .msg.system .bubble { background: var(--surface2); border: 1px solid var(--border); color: var(--text2); font-size: 13px; }
+
+  .bubble pre  { background: #0d1117; border-radius: 6px; padding: 12px; overflow-x: auto; font-size: 13px; margin-top: 8px; }
+  .bubble code { font-family: "Fira Code", "Cascadia Code", monospace; font-size: 13px; }
+  .bubble p    { margin-bottom: 8px; }
+  .bubble p:last-child { margin-bottom: 0; }
+
+  .meta { font-size: 11px; color: var(--text2); margin-top: 4px; padding: 0 4px; }
+
+  /* Input bar */
+  .input-bar {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 16px 20px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    flex-shrink: 0;
+  }
+  .input-bar select {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text2); border-radius: 8px; padding: 8px 10px;
+    font-size: 13px; cursor: pointer; flex-shrink: 0;
+  }
+  .input-bar textarea {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px; color: var(--text);
+    font-size: 15px; resize: none; min-height: 44px; max-height: 160px;
+    font-family: var(--font); line-height: 1.5;
+    transition: border-color .2s;
+  }
+  .input-bar textarea:focus { outline: none; border-color: var(--accent); }
+  .input-bar button {
+    background: var(--accent); border: none; border-radius: 10px;
+    width: 44px; height: 44px; cursor: pointer; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .2s;
+  }
+  .input-bar button:hover  { background: var(--accent2); }
+  .input-bar button:disabled { background: var(--surface2); cursor: not-allowed; }
+  .input-bar button svg { width: 18px; height: 18px; fill: #fff; }
+
+  /* ── Status / Metrics ── */
+  .panel-content { flex: 1; overflow-y: auto; padding: 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px;
+  }
+  .card .label { font-size: 12px; color: var(--text2); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+  .card .value { font-size: 24px; font-weight: 600; }
+  .card .value.ok  { color: var(--green); }
+  .card .value.err { color: var(--red); }
+  .card .value.warn{ color: var(--amber); }
+  .card .sub { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; }
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  th { color: var(--text2); font-weight: 500; font-size: 12px; text-transform: uppercase; }
+  tr:hover td { background: var(--surface2); }
+
+  /* Typing indicator */
+  .typing { display: flex; gap: 5px; padding: 14px 16px; align-items: center; }
+  .typing span {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--text2);
+    animation: bounce .9s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: .15s; }
+  .typing span:nth-child(3) { animation-delay: .30s; }
+  @keyframes bounce { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  .endpoint-list { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+  .ep { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 13px; }
+  .ep .method { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 4px; flex-shrink: 0; }
+  .ep .method.GET  { background: #1a3a2a; color: var(--green); }
+  .ep .method.POST { background: #2a2a3a; color: var(--accent2); }
+  .ep .method.DEL  { background: #3a1a1a; color: var(--red); }
+  .ep .path { font-family: monospace; color: var(--text); }
+  .ep .desc { color: var(--text2); margin-left: auto; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">B</div>
+  <h1>Brain Chat V9</h1>
+  <span class="badge">AI_VAULT</span>
+  <div class="status-dot" id="status-dot" title="Estado del sistema"></div>
+</header>
+
+<nav>
+  <button class="active" onclick="showPanel('chat')">💬 Chat</button>
+  <button onclick="showPanel('status')">📊 Estado</button>
+  <button onclick="showPanel('brain')">🧠 Brain RSI</button>
+  <button onclick="showPanel('api')">🔌 API</button>
+</nav>
+
+<!-- CHAT -->
+<div class="panel active" id="panel-chat">
+  <div id="messages"></div>
+  <div class="input-bar">
+    <select id="model-select" title="Modelo LLM">
+      <option value="deepseek-r1:14b">🦙 DeepSeek R1 14B</option>
+      <option value="deepseek-r1:32b">🦙 DeepSeek R1 32B</option>
+      <option value="qwen2.5:14b">🦙 Qwen2.5 14B</option>
+      <option value="llama3.1:8b">🦙 Llama3.1 8B</option>
+      <option value="claude">🤖 Claude</option>
+      <option value="gemini">🔷 Gemini</option>
+      <option value="gpt4">✨ GPT-4</option>
+    </select>
+    <button id="agent-toggle" title="Activar modo agente ORAV" onclick="toggleAgentMode()"
+      style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:0 12px;height:44px;cursor:pointer;font-size:13px;transition:all .2s;white-space:nowrap;">
+      ⚙ Auto
+    </button>
+    <textarea id="input" placeholder="Escribe tu mensaje… (Enter para enviar, Shift+Enter para nueva línea)"
+              rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button id="send-btn" onclick="sendMessage()" title="Enviar">
+      <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- STATUS -->
+<div class="panel" id="panel-status">
+  <div class="panel-content">
+    <div class="grid" id="status-grid">
+      <div class="card"><div class="label">Estado</div><div class="value" id="s-status">…</div></div>
+      <div class="card"><div class="label">Versión</div><div class="value" id="s-version">…</div></div>
+      <div class="card"><div class="label">Sesiones</div><div class="value" id="s-sessions">…</div></div>
+      <div class="card"><div class="label">CPU</div><div class="value" id="s-cpu">…</div><div class="sub">Uso actual</div></div>
+      <div class="card"><div class="label">Memoria</div><div class="value" id="s-mem">…</div><div class="sub">Uso actual</div></div>
+      <div class="card"><div class="label">Errores (logs)</div><div class="value" id="s-err">…</div><div class="sub">Últimos logs</div></div>
+    </div>
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Servicios</h3>
+    <div id="services-table"></div>
+    <button onclick="refreshStatus()" style="margin-top:16px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">↻ Actualizar</button>
+  </div>
+</div>
+
+<!-- BRAIN RSI -->
+<div class="panel" id="panel-brain">
+  <div class="panel-content">
+    <div class="grid" id="rsi-grid"></div>
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Recomendaciones</h3>
+    <div id="rsi-recs"></div>
+    <h3 style="margin-top:24px;margin-bottom:12px;color:var(--text2);font-size:13px;text-transform:uppercase">Fases</h3>
+    <div id="rsi-fases"></div>
+    <button onclick="refreshBrain()" style="margin-top:16px;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">↻ Actualizar RSI</button>
+  </div>
+</div>
+
+<!-- API -->
+<div class="panel" id="panel-api">
+  <div class="panel-content">
+    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">Brain Chat V9 — Referencia de endpoints</p>
+    <div class="endpoint-list" id="ep-list"></div>
+  </div>
+</div>
+
+<script>
+const BASE = '';
+let sessionId = 'default';
+
+// ── Utilities ──────────────────────────────────────────────────────────────
+async function api(path, opts = {}) {
+  const r = await fetch(BASE + path, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts,
+  });
+  return r.json();
+}
+
+function ts() {
+  return new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderMarkdown(text) {
+  return text
+    .replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) =>
+      `<pre><code class="lang-${lang}">${escapeHtml(code.trim())}</code></pre>`)
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
+// ── Panel navigation ───────────────────────────────────────────────────────
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (id === 'status') refreshStatus();
+  if (id === 'brain')  refreshBrain();
+  if (id === 'api')    renderApi();
+}
+
+// ── Chat ───────────────────────────────────────────────────────────────────
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function addMsg(role, content, meta = '') {
+  const wrap  = document.getElementById('messages');
+  const avatars = { user: 'U', agent: 'B', system: '⚙' };
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.innerHTML = `
+    <div class="avatar">${avatars[role] || '?'}</div>
+    <div>
+      <div class="bubble">${role === 'user' ? escapeHtml(content) : renderMarkdown(content)}</div>
+      ${meta ? `<div class="meta">${meta}</div>` : ''}
+    </div>`;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+  return div;
+}
+
+function addTyping() {
+  const wrap = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'msg agent';
+  div.id = 'typing';
+  div.innerHTML = `<div class="avatar">B</div><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+function removeTyping() {
+  document.getElementById('typing')?.remove();
+}
+
+function addMsg(role, content, meta = '') {
+  const wrap  = document.getElementById('messages');
+  const avatars = { user: 'U', agent: 'B', system: '⚙' };
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.innerHTML = `
+    <div class="avatar">${avatars[role] || '?'}</div>
+    <div>
+      <div class="bubble">${role === 'user' ? escapeHtml(content) : renderMarkdown(content)}</div>
+      ${meta ? `<div class="meta">${meta}</div>` : ''}
+    </div>`;
+  wrap.appendChild(div);
+  wrap.scrollTop = wrap.scrollHeight;
+  return div;
+}
+
+let agentMode = false;
+
+function toggleAgentMode() {
+  agentMode = !agentMode;
+  const btn = document.getElementById('agent-toggle');
+  if (agentMode) {
+    btn.style.background = 'var(--accent)';
+    btn.style.color = '#fff';
+    btn.style.borderColor = 'var(--accent)';
+    btn.textContent = '⚙ Agente ON';
+    addMsg('system', 'Modo agente activado — el chat usará herramientas reales para acciones (revisar, analizar, ejecutar).', ts());
+  } else {
+    btn.style.background = 'var(--surface2)';
+    btn.style.color = 'var(--text2)';
+    btn.style.borderColor = 'var(--border)';
+    btn.textContent = '⚙ Auto';
+    addMsg('system', 'Modo automático — el sistema decide si usar LLM o agente según el mensaje.', ts());
+  }
+}
+
+async function sendMessage() {
+  const inp   = document.getElementById('input');
+  const msg   = inp.value.trim();
+  if (!msg) return;
+  const model = document.getElementById('model-select').value;
+
+  inp.value = '';
+  inp.style.height = 'auto';
+  document.getElementById('send-btn').disabled = true;
+
+  addMsg('user', msg, ts());
+  addTyping();
+
+  try {
+    // Si agentMode está ON, ir directo a /agent
+    // Si está en Auto, el backend decide según la intención
+    const endpoint = agentMode ? '/agent' : '/chat';
+    const body = agentMode
+      ? JSON.stringify({ task: msg, session_id: sessionId, model_priority: model })
+      : JSON.stringify({ message: msg, session_id: sessionId, model_priority: model });
+
+    const data = await api(endpoint, { method: 'POST', body });
+
+    removeTyping();
+
+    const route     = data.route || (agentMode ? 'agent' : 'llm');
+    const routeIcon = route === 'agent' ? '⚙' : '💬';
+    const modelUsed = data.model_used || data.model || (agentMode ? 'agent_orav' : '?');
+    const meta      = `${routeIcon} ${modelUsed} · ${ts()}`;
+
+    addMsg('agent', data.response || data.result || data.content || data.error || '(sin respuesta)', meta);
+  } catch (e) {
+    removeTyping();
+    addMsg('system', `Error de conexión: ${e.message}`, ts());
+  } finally {
+    document.getElementById('send-btn').disabled = false;
+    document.getElementById('input').focus();
+  }
+}
+
+// ── Status ─────────────────────────────────────────────────────────────────
+async function refreshStatus() {
+  try {
+    const [health, metrics, services] = await Promise.all([
+      api('/health'),
+      api('/brain/metrics'),
+      api('/brain/health'),
+    ]);
+
+    const dot = document.getElementById('status-dot');
+    dot.className = 'status-dot ' + (health.status === 'healthy' ? 'ok' : 'err');
+
+    document.getElementById('s-status').textContent  = health.status || '—';
+    document.getElementById('s-status').className    = 'value ' + (health.status === 'healthy' ? 'ok' : 'err');
+    document.getElementById('s-version').textContent = health.version || '—';
+    document.getElementById('s-sessions').textContent = health.sessions ?? '—';
+
+    const sys = metrics?.current?.system;
+    document.getElementById('s-cpu').textContent = sys?.cpu_percent != null ? sys.cpu_percent.toFixed(1) + '%' : '—';
+    document.getElementById('s-mem').textContent = sys?.memory_percent != null ? sys.memory_percent.toFixed(1) + '%' : '—';
+
+    const errs = metrics?.errors?.error_count;
+    const errEl = document.getElementById('s-err');
+    errEl.textContent = errs != null ? errs : '—';
+    errEl.className   = 'value ' + (errs > 0 ? 'warn' : 'ok');
+
+    // Services table
+    const svcHtml = services?.services ? `
+      <table>
+        <thead><tr><th>Servicio</th><th>Estado</th><th>Latencia</th></tr></thead>
+        <tbody>${Object.entries(services.services).map(([name, s]) => `
+          <tr>
+            <td>${name}</td>
+            <td style="color:${s.healthy ? 'var(--green)' : 'var(--red)'}">${s.healthy ? '● Online' : '● Offline'}</td>
+            <td>${s.latency_ms != null ? s.latency_ms + ' ms' : s.error || '—'}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>` : '<p style="color:var(--text2);font-size:13px">No se pudo cargar estado de servicios.</p>';
+    document.getElementById('services-table').innerHTML = svcHtml;
+  } catch(e) {
+    document.getElementById('s-status').textContent = 'Error';
+  }
+}
+
+// ── Brain RSI ──────────────────────────────────────────────────────────────
+async function refreshBrain() {
+  try {
+    const rsi = await api('/brain/rsi');
+    document.getElementById('rsi-grid').innerHTML = [
+      { label: 'Brechas totales',  value: rsi.brechas_count,     cls: rsi.brechas_count > 0 ? 'warn' : 'ok' },
+      { label: 'Brechas críticas', value: rsi.brechas_criticas,  cls: rsi.brechas_criticas > 0 ? 'err' : 'ok' },
+      { label: 'Fases activas',    value: rsi.fases_activas,     cls: 'ok' },
+      { label: 'Progreso general', value: (rsi.progreso_general || 0) + '%', cls: rsi.progreso_general >= 70 ? 'ok' : 'warn' },
+    ].map(c => `<div class="card"><div class="label">${c.label}</div><div class="value ${c.cls}">${c.value}</div></div>`).join('');
+
+    document.getElementById('rsi-recs').innerHTML = (rsi.recomendaciones || [])
+      .map(r => `<div style="padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;font-size:13px">💡 ${r}</div>`)
+      .join('') || '<p style="color:var(--text2);font-size:13px">Sin recomendaciones.</p>';
+
+    const fases = rsi.fases_completadas || [];
+    document.getElementById('rsi-fases').innerHTML = fases.length
+      ? fases.map(f => `<span style="display:inline-block;padding:4px 12px;margin:4px;background:var(--surface2);border:1px solid var(--green);border-radius:20px;color:var(--green);font-size:12px">✓ ${f}</span>`).join('')
+      : '<p style="color:var(--text2);font-size:13px">Sin fases completadas registradas.</p>';
+  } catch(e) {
+    document.getElementById('rsi-grid').innerHTML = '<p style="color:var(--red);font-size:13px">Error cargando RSI</p>';
+  }
+}
+
+// ── API Reference ──────────────────────────────────────────────────────────
+function renderApi() {
+  const endpoints = [
+    { method:'GET',  path:'/health',                desc:'Estado del sistema' },
+    { method:'GET',  path:'/status',                desc:'Sesiones activas' },
+    { method:'POST', path:'/chat',                  desc:'Enviar mensaje' },
+    { method:'GET',  path:'/brain/rsi',             desc:'Análisis RSI' },
+    { method:'GET',  path:'/brain/health',          desc:'Salud de servicios' },
+    { method:'GET',  path:'/brain/metrics',         desc:'Métricas del sistema' },
+    { method:'POST', path:'/brain/validate',        desc:'Validar acción vs premisas' },
+    { method:'GET',  path:'/trading/health',        desc:'Estado conectores trading' },
+    { method:'GET',  path:'/trading/market/{sym}',  desc:'Datos de mercado' },
+    { method:'GET',  path:'/trading/balance',       desc:'Balance PocketOption' },
+    { method:'GET',  path:'/trading/trades/open',   desc:'Trades abiertos' },
+    { method:'GET',  path:'/trading/trades/history',desc:'Historial de trades' },
+    { method:'GET',  path:'/autonomy/status',       desc:'Estado autonomía' },
+    { method:'GET',  path:'/autonomy/reports',      desc:'Reportes de autonomía' },
+    { method:'POST', path:'/autonomy/start',        desc:'Iniciar autonomía' },
+    { method:'DEL',  path:'/sessions/{id}',         desc:'Eliminar sesión' },
+    { method:'DEL',  path:'/sessions/{id}/memory',  desc:'Limpiar memoria' },
+    { method:'GET',  path:'/docs',                  desc:'Swagger UI interactivo' },
+  ];
+  document.getElementById('ep-list').innerHTML = endpoints.map(e =>
+    `<div class="ep">
+      <span class="method ${e.method}">${e.method}</span>
+      <span class="path">${e.path}</span>
+      <span class="desc">${e.desc}</span>
+    </div>`).join('');
+}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+async function init() {
+  addMsg('system', 'Brain Chat V9 conectando…');
+  try {
+    const h = await api('/health');
+    document.getElementById('status-dot').className = 'status-dot ' + (h.status === 'healthy' ? 'ok' : 'err');
+    addMsg('system', h.status === 'healthy'
+      ? `Listo · ${h.version} · Ollama: qwen2.5:14b`
+      : `Iniciando… (${h.status})`);
+  } catch(e) {
+    addMsg('system', 'No se pudo conectar con el servidor. ¿Está corriendo en puerto 8090?');
+  }
+  document.getElementById('input').focus();
+}
+
+init();
+</script>
+</body>
+</html>

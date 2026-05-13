@@ -1,0 +1,65 @@
+{
+  "generated_at_utc": "2026-05-13T21:36:48.084621+00:00",
+  "today": "2026-05-13",
+  "state": "NO_CAMPAIGN",
+  "action": "NO_BUY",
+  "campaign_start": null,
+  "last_signal": null,
+  "campaign_age_days": -1,
+  "days_to_activation_window": -1,
+  "latest_features": {
+    "date": "2026-05-13",
+    "qqq_rv20": 0.15835731795519825,
+    "iwm_dd50": -0.017073417392685752,
+    "iwm_rng10": 0.014558289921969825,
+    "iwm_gap1": 0.0012386527035547355,
+    "base_gate": false
+  },
+  "signal_count": 0,
+  "signals": [],
+  "signal_details_tail": [],
+  "providers": {
+    "SPY": "yfinance",
+    "QQQ": "yfinance",
+    "IWM": "yfinance",
+    "VIXY": "yfinance"
+  },
+  "provider_errors": {},
+  "ibkr_status": {
+    "connected": false,
+    "host": "127.0.0.1",
+    "client_id": 197,
+    "attempts": [
+      {
+        "host": "127.0.0.1",
+        "port": 7497,
+        "error": "[WinError 1225] The remote computer refused the network connection"
+      },
+      {
+        "host": "127.0.0.1",
+        "port": 4002,
+        "error": "[WinError 1225] The remote computer refused the network connection"
+      },
+      {
+        "host": "127.0.0.1",
+        "port": 7496,
+        "error": "[WinError 1225] The remote computer refused the network connection"
+      },
+      {
+        "host": "127.0.0.1",
+        "port": 4001,
+        "error": "[WinError 1225] The remote computer refused the network connection"
+      }
+    ]
+  },
+  "rules": {
+    "iwm_dd50_lte": -0.0511294,
+    "qqq_rv20_gte": 0.174213,
+    "iwm_rng10_lte": 0.0152915,
+    "activation_days": [
+      21,
+      28
+    ],
+    "late_end_day": 35
+  }
+}

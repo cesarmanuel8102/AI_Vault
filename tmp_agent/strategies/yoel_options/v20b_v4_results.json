@@ -1,0 +1,44 @@
+[
+  {
+    "name": "V4 BASELINE (PT=0.35 SL=-0.20 R=0.05)",
+    "bt_id": "87a63642c62996dc3423d30f7e71a4af",
+    "params": {
+      "profit_target_pct": "0.35",
+      "stop_loss_pct": "-0.20",
+      "risk_per_trade": "0.05"
+    },
+    "net_profit": 190.948,
+    "cagr": 70.948,
+    "sharpe": 1.563,
+    "sortino": 1.603,
+    "max_dd": 34.1,
+    "total_trades": 312,
+    "win_rate": 49.0,
+    "profit_factor": 1.88,
+    "annual_vol": 0.292,
+    "psr": 77.404,
+    "v4_log_lines": [],
+    "gate": "PASS"
+  },
+  {
+    "name": "V4 G22 (PT=0.40 SL=-0.20 R=0.04)",
+    "bt_id": "fb8619f7105ab363b5c620f5718960cb",
+    "params": {
+      "profit_target_pct": "0.40",
+      "stop_loss_pct": "-0.20",
+      "risk_per_trade": "0.04"
+    },
+    "net_profit": 67.198,
+    "cagr": 29.442,
+    "sharpe": 0.727,
+    "sortino": 0.659,
+    "max_dd": 29.4,
+    "total_trades": 289,
+    "win_rate": 46.0,
+    "profit_factor": 1.68,
+    "annual_vol": 0.244,
+    "psr": 39.678,
+    "v4_log_lines": [],
+    "gate": "FAIL"
+  }
+]

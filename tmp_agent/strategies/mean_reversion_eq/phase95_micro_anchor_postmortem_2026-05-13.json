@@ -1,0 +1,22 @@
+{
+  "phase": "P95_UTILITY_FIRST_PULLBACK_MICRO_ANCHOR",
+  "verdict": "reject",
+  "reason": "Micro-anchor retrace filter still removed all pullback fills and reduced the branch to the weaker ORB-like profile.",
+  "evidence": {
+    "baseline_pb_fills": {
+      "IS_2022_2024": 12,
+      "OOS_2025_2026Q1": 18,
+      "STRESS_2020": 5
+    },
+    "candidate_pb_fills": {
+      "IS_2022_2024": 0,
+      "OOS_2025_2026Q1": 0,
+      "STRESS_2020": 0
+    },
+    "baseline_utility_score": 5.817146,
+    "candidate_utility_score": 3.87653,
+    "baseline_oos_weekly": 0.8287,
+    "candidate_oos_weekly": 0.4809
+  },
+  "hypothesis": "The current winner does not derive its edge from retracement quality under either OR-anchor or local micro-impulse anchor; its edge lives elsewhere in the setup geometry or risk allocation."
+}

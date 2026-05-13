@@ -1,0 +1,16 @@
+{
+  "source_id": "github_microsoft_semantic_kernel_20260508",
+  "source_type": "github_repo",
+  "url": "https://github.com/microsoft/semantic-kernel",
+  "owner": "microsoft",
+  "repo": "semantic-kernel",
+  "ingested_at_utc": "2026-05-08T04:57:06.317083Z",
+  "local_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\microsoft_semantic_kernel",
+  "status": "downloaded",
+  "hash": "7d92a6507333d4b062c77a71fc9f8cb13aa3970b62e16be16f8f8b1e92b5f087",
+  "files_indexed": 20,
+  "repo_api_url": "https://api.github.com/repos/microsoft/semantic-kernel",
+  "readme_download_url": "https://raw.githubusercontent.com/microsoft/semantic-kernel/main/README.md",
+  "root_index_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\microsoft_semantic_kernel\\root_index.json",
+  "dependency_hints_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\microsoft_semantic_kernel\\dependency_hints.json"
+}

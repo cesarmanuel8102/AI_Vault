@@ -1,0 +1,12 @@
+{
+  "project_id": 29652652,
+  "compile_id": "2e324002d2171a54ca928b098f41f6b3-2bf67c3fba2e1ef78d10c9d49ec08aaa",
+  "backtest_id": "e279b674b9a039961e9fd95955c9dbc5",
+  "backtest_name": "TF-V1.1 IS 2015-2020",
+  "launched_at": "2026-04-04 00:35:36 UTC",
+  "parameters": {
+    "start_year": "2015",
+    "end_year": "2020"
+  },
+  "source_file": "C:/AI_VAULT/tmp_agent/strategies/trend_following/main.py"
+}

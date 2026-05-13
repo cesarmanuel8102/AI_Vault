@@ -1,0 +1,66 @@
+{
+  "generated_at_utc": "2026-05-13T05:40:00Z",
+  "documents_used": [
+    "C:\\Users\\cesar\\OneDrive\\Escritorio\\Guia_Trading_Prop_Firms.docx",
+    "C:\\Users\\cesar\\OneDrive\\Escritorio\\PropFirm_Algo_Playbook_QC.docx"
+  ],
+  "safe_to_adopt_now": [
+    {
+      "theme": "validation_protocol",
+      "applies_to": "research process",
+      "action": "keep IS/OOS/STRESS and add formal OOS degradation thresholds before promotion",
+      "expected_value": "high",
+      "risk_of_degradation": "low"
+    },
+    {
+      "theme": "prop_compliance_layer",
+      "applies_to": "future challenge-safe branch, not utility-first objective",
+      "action": "separate strategy alpha from compliance/risk engine and firm-specific locks",
+      "expected_value": "high",
+      "risk_of_degradation": "low"
+    },
+    {
+      "theme": "instrument_role_framework",
+      "applies_to": "pullback alpha allocation",
+      "action": "preserve MES/MNQ differentiated treatment; docs support instrument-role separation, experiments confirm it",
+      "expected_value": "high",
+      "risk_of_degradation": "low"
+    },
+    {
+      "theme": "paper_before_live",
+      "applies_to": "promotion process",
+      "action": "never send utility-first winner direct to live; require paper branch first",
+      "expected_value": "high",
+      "risk_of_degradation": "low"
+    }
+  ],
+  "not_safe_to_adopt_now": [
+    {
+      "theme": "strict prop-firm objective during alpha discovery",
+      "reason": "conflicts with current utility-first exploration objective and would bias search away from finding raw edge"
+    },
+    {
+      "theme": "classic ORB centrality",
+      "reason": "best current edge came from pullback branch, not pure ORB tuning"
+    },
+    {
+      "theme": "weekday/or-width filters as edge source",
+      "reason": "Phase92 degraded materially under valid rerun"
+    }
+  ],
+  "experiment_outcome_from_docs": {
+    "phase": "P92_UTILITY_FIRST_PULLBACK_REGIME_DAY",
+    "verdict": "reject_no_degradation",
+    "why": "IS improved but OOS and STRESS turned negative; not promotable under non-degradation rule"
+  },
+  "next_doc_aligned_candidates": [
+    {
+      "phase": "P93_UTILITY_FIRST_PULLBACK_QUALITY_SIZING",
+      "reason": "documents emphasize risk architecture more than extra entry filters; current edge likely benefits more from better risk allocation than more gating"
+    },
+    {
+      "phase": "P93B_CHALLENGE_SAFE_COMPLIANCE_WRAPPER",
+      "reason": "use docs to wrap best alpha in a prop-compliance layer later, separate from alpha discovery"
+    }
+  ]
+}

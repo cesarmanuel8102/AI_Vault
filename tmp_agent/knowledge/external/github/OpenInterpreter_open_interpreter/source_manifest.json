@@ -1,0 +1,16 @@
+{
+  "source_id": "github_OpenInterpreter_open_interpreter_20260508",
+  "source_type": "github_repo",
+  "url": "https://github.com/OpenInterpreter/open-interpreter",
+  "owner": "OpenInterpreter",
+  "repo": "open-interpreter",
+  "ingested_at_utc": "2026-05-08T04:56:59.517732Z",
+  "local_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\OpenInterpreter_open_interpreter",
+  "status": "downloaded",
+  "hash": "8f1ff5023e7bc0523346551b9db40656733bf38e99cff11d43b09525727f63de",
+  "files_indexed": 16,
+  "repo_api_url": "https://api.github.com/repos/OpenInterpreter/open-interpreter",
+  "readme_download_url": "https://raw.githubusercontent.com/openinterpreter/open-interpreter/main/README.md",
+  "root_index_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\OpenInterpreter_open_interpreter\\root_index.json",
+  "dependency_hints_path": "C:\\AI_VAULT\\tmp_agent\\external_intel\\github\\OpenInterpreter_open_interpreter\\dependency_hints.json"
+}

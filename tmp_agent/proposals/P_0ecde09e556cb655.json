@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_0ecde09e556cb655",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_p3_1_probe_20260303_213252\\notes\\p3_1_design.md",
+    "content": "Schema for episode.json with minimum fields and evidence\n",
+    "value": null,
+    "text": "Schema for episode.json with minimum fields and evidence\n"
+  },
+  "room_id": "room_p3_1_probe_20260303_213252",
+  "step_id": "S4",
+  "created_at": "2026-03-04T02:33:05.144856+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

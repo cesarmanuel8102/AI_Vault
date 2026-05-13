@@ -1,0 +1,62 @@
+{
+  "schema_version": "layer_composition_v1",
+  "updated_utc": "2026-03-27T00:00:00Z",
+  "layers": {
+    "V3": {
+      "name": "control_layer",
+      "description": "Kill switch and immune control layer"
+    },
+    "V4": {
+      "name": "change_validation",
+      "description": "STATIC -> UNIT -> RUNTIME -> METRIC validation pipeline"
+    },
+    "V5": {
+      "name": "risk_contract",
+      "description": "Paper-only and capital risk guardrails"
+    },
+    "V6": {
+      "name": "meta_governance",
+      "description": "Priority engine, focus lock, and allocator discipline"
+    },
+    "V7": {
+      "name": "learning_feedback",
+      "description": "Post-trade learning, hypotheses, and memory feedback"
+    },
+    "V8": {
+      "name": "validated_edge_promotion",
+      "description": "Validated-edge promotion and exploitation layer"
+    }
+  },
+  "modes": {
+    "paper_mode": [
+      "V3",
+      "V4",
+      "V5"
+    ],
+    "paper_strict": [
+      "V3",
+      "V4",
+      "V5",
+      "V6"
+    ],
+    "learning_active": [
+      "V3",
+      "V4",
+      "V5",
+      "V6",
+      "V7"
+    ],
+    "edge_validated": [
+      "V3",
+      "V4",
+      "V5",
+      "V6",
+      "V7",
+      "V8"
+    ],
+    "frozen": [
+      "V3",
+      "V5"
+    ]
+  }
+}

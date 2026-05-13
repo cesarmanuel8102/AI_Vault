@@ -1,0 +1,115 @@
+{
+  "generated_at_utc": "2026-04-21T23:39:17.281920+00:00",
+  "compile_id": "1b0229e87ed61cb8375d1c5e25133c44-32f9d85d26776866149bd4e290ab83d4",
+  "rows": [
+    {
+      "status": "Completed.",
+      "backtest_id": "5c05fe2121f4f4bbf242646ddfd6b596",
+      "np_pct": -2.329,
+      "dd_pct": 4.0,
+      "dbr": 1,
+      "tbr": 1,
+      "stress_days": 136,
+      "trades": 0,
+      "monthly_mean_pct": -0.522,
+      "monthly_median_pct": -0.302,
+      "monthly_count": 4,
+      "candidate": "P6V4_T0_V098",
+      "scenario": "STRESS_2020",
+      "overrides": {}
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "1e2a4e4ace097a7fa191792f08b1ac07",
+      "np_pct": -3.503,
+      "dd_pct": 5.2,
+      "dbr": 2,
+      "tbr": 1,
+      "stress_days": 5,
+      "trades": 0,
+      "monthly_mean_pct": -3.254,
+      "monthly_median_pct": -3.254,
+      "monthly_count": 1,
+      "candidate": "P6V4_T1_V099",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "ext_vixy_ratio_threshold": 0.99
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "d39627d7cbb5eea704a571d18c2124b2",
+      "np_pct": -1.925,
+      "dd_pct": 5.0,
+      "dbr": 2,
+      "tbr": 0,
+      "stress_days": 101,
+      "trades": 0,
+      "monthly_mean_pct": -0.301,
+      "monthly_median_pct": -0.414,
+      "monthly_count": 5,
+      "candidate": "P6V4_T2_V100",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "ext_vixy_ratio_threshold": 1.0
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "cd37e49edd4722ef174c726f2b5b9d53",
+      "np_pct": -1.416,
+      "dd_pct": 3.6,
+      "dbr": 1,
+      "tbr": 0,
+      "stress_days": 170,
+      "trades": 0,
+      "monthly_mean_pct": -0.298,
+      "monthly_median_pct": -0.072,
+      "monthly_count": 4,
+      "candidate": "P6V4_T3_V097",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "ext_vixy_ratio_threshold": 0.97
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "c288816d13336cb3f8a8bc67d762761a",
+      "np_pct": -2.088,
+      "dd_pct": 4.5,
+      "dbr": 1,
+      "tbr": 1,
+      "stress_days": 17,
+      "trades": 0,
+      "monthly_mean_pct": -0.923,
+      "monthly_median_pct": -0.923,
+      "monthly_count": 2,
+      "candidate": "P6V4_T4_R30_V098",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "risk_per_trade": 0.03,
+        "max_contracts_per_trade": 14,
+        "second_risk_mult": 1.2
+      }
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "9e9d9194af9efd5f3bec51068b776d42",
+      "np_pct": -0.97,
+      "dd_pct": 3.3,
+      "dbr": 1,
+      "tbr": 0,
+      "stress_days": 151,
+      "trades": 0,
+      "monthly_mean_pct": -0.161,
+      "monthly_median_pct": -0.173,
+      "monthly_count": 4,
+      "candidate": "P6V4_T5_R24_M2K",
+      "scenario": "STRESS_2020",
+      "overrides": {
+        "trade_m2k": 1,
+        "max_open_positions": 4
+      }
+    }
+  ]
+}

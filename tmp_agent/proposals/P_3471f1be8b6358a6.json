@@ -1,0 +1,14 @@
+{
+  "proposal_id": "P_3471f1be8b6358a6",
+  "tool_name": "append_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\audit.ndjson",
+    "content": "{\"ts\": \"2026-03-03T15:55:12.549968+00:00\", \"room_id\": \"room_p3_1_20260303_104350\", \"event\": \"episode_update\", \"extra\": {\"status\": \"complete\", \"details\": \"All required artifacts for P3.1 established successfully.\"}}",
+    "text": "{\"ts\": \"2026-03-03T15:55:12.549968+00:00\", \"room_id\": \"room_p3_1_20260303_104350\", \"event\": \"episode_update\", \"extra\": {\"status\": \"complete\", \"details\": \"All required artifacts for P3.1 established successfully.\"}}"
+  },
+  "room_id": "room_p3_1_20260303_104350",
+  "step_id": "S1",
+  "created_at": "2026-03-03T15:55:19.175818+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

@@ -1,0 +1,7 @@
+﻿{
+    "response":  "Se completÃ³ el escaneo TCP del rango 192.168.1.0/24. Se detectaron 134 hosts activos conectados (IPs .1 a .134), todos respondiendo en el puerto 80. Esto representa el 52.7% de los 254 hosts probados en el segmento. La uniformidad del puerto 80 abierto sugiere dispositivos con interfaz web administrativa o un patrÃ³n de configuraciÃ³n homogÃ©neo en la red. No se detectaron otros puertos abiertos en el sweep estÃ¡ndar realizado.",
+    "session_id":  "r25_e2e3",
+    "model_used":  "agent_orav",
+    "success":  true,
+    "pending_action":  null
+}

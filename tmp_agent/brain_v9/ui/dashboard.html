@@ -1,0 +1,1110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI_VAULT Command Center</title>
+<link rel="icon" type="image/svg+xml" href="/ui/favicon.svg">
+<script src="/ui/chart.umd.min.js"></script>
+<link rel="stylesheet" href="/ui/dashboard_core.css">
+<link rel="stylesheet" href="/ui/dashboard_accessibility.css">
+</head>
+<body>
+
+<!-- ═══ Sidebar ═══ -->
+<div class="sidebar">
+  <div class="sidebar-brand">
+    <h1>AI_VAULT</h1>
+    <div class="version">Command Center v2.0</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Monitor</div>
+    <a class="sidebar-link active" onclick="showPanel('overview')">
+      <span class="icon">&#9632;</span> Overview
+    </a>
+    <a class="sidebar-link" onclick="showPanel('platforms')">
+      <span class="icon">&#9670;</span> Platforms
+    </a>
+    <a class="sidebar-link" onclick="showPanel('strategy')">
+      <span class="icon">&#9733;</span> Strategy Engine
+    </a>
+    <a class="sidebar-link" onclick="showPanel('autonomy')">
+      <span class="icon">&#8634;</span> Autonomy Loop
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Brain Systems</div>
+    <a class="sidebar-link" onclick="showPanel('roadmap')">
+      <span class="icon">&#9654;</span> Roadmap
+    </a>
+    <a class="sidebar-link" onclick="showPanel('meta')">
+      <span class="icon">&#9881;</span> Meta Systems
+    </a>
+    <a class="sidebar-link" onclick="showPanel('selfimprove')">
+      <span class="icon">&#8682;</span> Self-Improvement
+    </a>
+    <a class="sidebar-link" onclick="showPanel('surgeon')">
+      <span class="icon">&#9889;</span> Auto-Surgeon
+    </a>
+    <a class="sidebar-link" onclick="showPanel('learning')">
+      <span class="icon">&#9879;</span> Learning & Adapt
+    </a>
+  </div>
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">System</div>
+    <a class="sidebar-link" onclick="showPanel('system')">
+      <span class="icon">&#9881;</span> Health & Pipeline
+    </a>
+  </div>
+  <div class="sidebar-bottom">
+    <a href="/ui" target="_blank">Brain Chat V9</a>
+    <a href="/docs" target="_blank">API Docs (Swagger)</a>
+    <div class="mt-8 text-xs" id="sidebar-health">
+      Brain V9 <span class="health-dot" id="dot-brain"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Main Area ═══ -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbar-title">Overview</div>
+    <div class="topbar-right">
+      <span class="topbar-badge badge-blue" id="topbar-phase">--</span>
+      <span class="topbar-time" id="topbar-time">--</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ═══ OVERVIEW PANEL ═══ -->
+    <div class="panel active" id="panel-overview">
+      <div class="exec-grid mb-16" id="overview-decision-strip"></div>
+      <div class="col-2 mb-16">
+        <div class="section-card">
+          <div class="section-header">Modo Operativo</div>
+          <div class="section-body" id="overview-operating"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-header">Mantenimiento</div>
+          <div class="section-body" id="overview-maintenance"></div>
+        </div>
+      </div>
+      <div class="kpi-grid" id="overview-kpis"></div>
+      <div id="overview-kpi-note" class="mb-16"></div>
+      <div class="col-2">
+        <div class="section-card">
+          <div class="section-header">Platform U Scores</div>
+          <div class="section-body" id="overview-platform-u"></div>
+        </div>
+        <div class="section-card">
+        <div class="section-header">Top Ranked Candidates</div>
+        <div class="section-body" id="overview-top-strategies"></div>
+      </div>
+      </div>
+      <div class="section-card">
+        <div class="section-header">Governance Health</div>
+        <div class="section-body" id="overview-governance-health"></div>
+      </div>
+      <!-- R8.4: Brain Validators & LLM Latency mini-banner -->
+      <div class="section-card">
+        <div class="section-header">Brain Validators (R7+R8)
+          <span class="badge badge-blue" id="brain-validators-total">--</span>
+        </div>
+        <div class="section-body" id="brain-validators-panel">Cargando…</div>
+      </div>
+      <div class="section-card">
+        <div class="section-header">Autonomous Loops (R9.2)
+          <span class="badge badge-blue" id="proactive-tasks-count">--</span>
+        </div>
+        <div class="section-body" id="proactive-status-panel">Cargando…</div>
+      </div>
+      <div class="section-card">
+        <div class="section-header">Chat Excellence Iteration (R9.3)
+          <span class="badge badge-blue" id="chat-excellence-count">--</span>
+        </div>
+        <div class="section-body" id="chat-excellence-panel">Cargando…</div>
+      </div>
+      <div class="section-card">
+        <div class="section-header">LLM Circuit Breaker (R9.9)
+          <span class="badge badge-blue" id="llm-cb-open-count">--</span>
+        </div>
+        <div class="section-body" id="llm-cb-panel">Cargando…</div>
+      </div>
+      <div class="section-card">
+        <div class="section-header">Chat Excellence Proposals (R10.5)
+          <span class="badge badge-blue" id="ce-prop-pending-count">--</span>
+        </div>
+        <div class="section-body" id="ce-prop-panel">Cargando…</div>
+      </div>
+
+      <!-- R10.5b: modal for diff / health-gate-log inspection -->
+      <div id="ce-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;">
+        <div style="background:#1a1a1a;border:1px solid #444;border-radius:6px;width:88%;max-width:1100px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;">
+          <div style="padding:10px 14px;border-bottom:1px solid #333;display:flex;align-items:center;justify-content:space-between;">
+            <div style="font-weight:600;font-size:13px" id="ce-modal-title">Detail</div>
+            <button onclick="ceCloseModal()" style="font-size:11px;padding:3px 10px;cursor:pointer">✗ close</button>
+          </div>
+          <pre id="ce-modal-body" style="margin:0;padding:12px;overflow:auto;font-family:Consolas,monospace;font-size:11px;line-height:1.4;background:#0d0d0d;color:#ddd;flex:1;white-space:pre-wrap;word-break:break-word;"></pre>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-header">Recent Activity</div>
+        <div class="section-body no-pad scroll-y" id="overview-recent-trades"></div>
+      </div>
+    </div>
+
+    <!-- ═══ PLATFORMS PANEL ═══ -->
+    <div class="panel" id="panel-platforms">
+      <div class="section-card">
+        <div class="section-header">Operating Focus</div>
+        <div class="section-body" id="platform-focus"></div>
+      </div>
+      <div class="platform-tabs" id="platform-tabs"></div>
+      <div id="platform-views"></div>
+      <div class="section-card mt-16">
+        <div class="section-header">Platform Comparison</div>
+        <div class="section-body no-pad scroll-y" id="platform-compare"></div>
+      </div>
+    </div>
+
+    <!-- ═══ STRATEGY ENGINE PANEL ═══ -->
+    <div class="panel" id="panel-strategy">
+      <div class="exec-grid mb-16" id="strategy-decision-strip"></div>
+      <div class="col-2 mb-16">
+        <div class="section-card">
+          <div class="section-header">Selection Semantics</div>
+          <div class="section-body" id="strategy-semantics"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-header">Operating Summary</div>
+          <div class="section-body" id="strategy-operating-summary"></div>
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="section-header">Operating Focus</div>
+        <div class="section-body" id="strategy-focus"></div>
+      </div>
+      <div class="section-card mt-16">
+        <div class="section-header">Focus Lane Strategies</div>
+        <div class="section-body no-pad scroll-y" id="strategy-focus-candidates"></div>
+      </div>
+      <div class="kpi-grid" id="strategy-kpis"></div>
+      <div class="section-card">
+        <div class="section-header">Edge Validation</div>
+        <div class="section-body" id="strategy-edge-validation"></div>
+      </div>
+      <div class="section-card">
+        <div class="section-header">Global Ranked Candidates</div>
+        <div class="section-body no-pad scroll-y" id="strategy-ranking"></div>
+      </div>
+      <div class="col-2 mt-16">
+        <div class="section-card">
+          <div class="section-header">Scorecards</div>
+          <div class="section-body no-pad scroll-y" id="strategy-scorecards"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-header">Expectancy by Strategy</div>
+          <div class="section-body no-pad scroll-y" id="strategy-expectancy"></div>
+        </div>
+      </div>
+      <div class="section-card mt-16">
+        <div class="section-header">Hypotheses</div>
+        <div class="section-body no-pad scroll-y" id="strategy-hypotheses"></div>
+      </div>
+      <div class="section-card mt-16">
+        <div class="section-header">Active Strategy Catalog</div>
+        <div class="section-body no-pad scroll-y" id="strategy-active-catalog"></div>
+      </div>
+      <div class="section-card mt-16">
+        <div class="section-header">Learning Loop</div>
+        <div class="section-body" id="strategy-learning-loop"></div>
+      </div>
+    </div>
+
+    <!-- ═══ AUTONOMY LOOP PANEL ═══ -->
+    <div class="panel" id="panel-autonomy">
+      <div class="exec-grid mb-16" id="autonomy-decision-strip"></div>
+      <div class="kpi-grid" id="autonomy-kpis"></div>
+      <div id="autonomy-note" class="mb-16"></div>
+      <div class="col-2">
+        <div class="section-card">
+          <div class="section-header">Loop Status</div>
+          <div class="section-body" id="autonomy-loop"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-header">Sample Accumulator</div>
+          <div class="section-body" id="autonomy-accumulator"></div>
+        </div>
+      </div>
+      <div class="section-card mt-16">
+        <div class="section-header">IBKR Data Ingester</div>
+        <div class="section-body" id="autonomy-ibkr"></div>
+      </div>
+      <div class="section-card mt-16">
+        <div class="section-header">Recent Autonomy Reports</div>
+        <div class="section-body no-pad scroll-y" id="autonomy-reports"></div>
+      </div>
+    </div>
+
+    <!-- ═══ ROADMAP PANEL ═══ -->
+    <div class="panel" id="panel-roadmap">
+      <div class="exec-grid mb-16" id="roadmap-decision-strip"></div>
+      <div id="roadmap-note" class="mb-16"></div>
+      <div class="section-card">
+        <div class="section-header">Roadmap Governance</div>
+        <div class="section-body" id="roadmap-governance"></div>
+      </div>
+      <div class="section-card mt-16">
+        <div class="section-header">Development Status</div>
+        <div class="section-body" id="roadmap-development"></div>
+      </div>
+      <div class="section-card mt-16">
+        <div class="section-header">Post-BL Roadmap</div>
+        <div class="section-body" id="roadmap-postbl"></div>
+      </div>
+    </div>
+
+    <!-- ═══ META SYSTEMS PANEL ═══ -->
+    <div class="panel" id="panel-meta">
+      <div class="col-2">
+        <div class="section-card">
+          <div class="section-header">Meta Improvement</div>
+          <div class="section-body" id="meta-improvement"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-header">Utility Governance</div>
+          <div class="section-body" id="meta-utility-gov"></div>
+        </div>
+      </div>
+      <div class="section-card mt-16">
+        <div class="section-header">Chat Product</div>
+        <div class="section-body" id="meta-chat-product"></div>
+      </div>
+    </div>
+
+    <!-- ═══ SELF-IMPROVEMENT PANEL ═══ -->
+    <div class="panel" id="panel-selfimprove">
+      <div class="kpi-grid" id="selfimprove-kpis"></div>
+      <div class="section-card">
+        <div class="section-header">Change Ledger</div>
+        <div class="section-body no-pad scroll-y" id="selfimprove-ledger"></div>
+      </div>
+    </div>
+
+    <!-- ═══ AUTO-SURGEON PANEL ═══ -->
+    <div class="panel" id="panel-surgeon">
+      <div class="kpi-grid" id="surgeon-kpis"></div>
+      <div class="col-2">
+        <div class="section-card">
+          <div class="section-header">Surgeon Status</div>
+          <div class="section-body" id="surgeon-status"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-header">Diagnostics Overview</div>
+          <div class="section-body" id="surgeon-diagnostics"></div>
+        </div>
+      </div>
+      <div class="section-card mt-16">
+        <div class="section-header">Open Issues (Trade Diagnostics)</div>
+        <div class="section-body no-pad scroll-y" id="surgeon-issues"></div>
+      </div>
+      <div class="section-card mt-16">
+        <div class="section-header">Recent Patches</div>
+        <div class="section-body no-pad scroll-y" id="surgeon-patches"></div>
+      </div>
+      <div class="section-card mt-16">
+        <div class="section-header">Recent Issue History</div>
+        <div class="section-body no-pad scroll-y" id="surgeon-history"></div>
+      </div>
+    </div>
+
+    <!-- ═══ LEARNING & ADAPTATION PANEL ═══ -->
+    <div class="panel" id="panel-learning">
+      <div class="exec-grid mb-16" id="learning-decision-strip"></div>
+      <div class="kpi-grid" id="learning-kpis"></div>
+      <div id="learning-note" class="mb-16"></div>
+      <div class="section-card mb-16">
+        <div class="section-header">External Learning Pipeline
+          <button class="action-btn" onclick="refreshLearningPipelineNow()" style="margin-left:12px">Refresh Catalog</button>
+        </div>
+        <div class="section-body" id="learning-external-overview"></div>
+      </div>
+      <div class="col-2 mb-16">
+        <div class="section-card">
+          <div class="section-header">Curated Sources</div>
+          <div class="section-body no-pad scroll-y" id="learning-external-sources"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-header">Hypotheses & Semantic Clusters</div>
+          <div class="section-body no-pad scroll-y" id="learning-external-hypotheses"></div>
+        </div>
+      </div>
+      <div class="col-2 mb-16">
+        <div class="section-card">
+          <div class="section-header">Proposals & Ranking</div>
+          <div class="section-body no-pad scroll-y" id="learning-external-proposals"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-header">Sandbox & Evaluation</div>
+          <div class="section-body" id="learning-external-evaluation"></div>
+        </div>
+      </div>
+      <div class="section-card mb-16">
+        <div class="section-header">Capability Curves</div>
+        <div class="section-body no-pad scroll-y" id="learning-external-curves"></div>
+      </div>
+      <div class="section-card mb-16">
+        <div class="section-header">Recent Learning Events</div>
+        <div class="section-body no-pad scroll-y" id="learning-external-events"></div>
+      </div>
+      <div class="col-2">
+        <div class="section-card">
+          <div class="section-header">Session Performance</div>
+          <div class="section-body" id="learning-session-perf"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-header">Adaptation Summary</div>
+          <div class="section-body" id="learning-adaptation-summary"></div>
+        </div>
+      </div>
+      <div class="section-card mt-16">
+        <div class="section-header">Signal Threshold Adaptation (per strategy)</div>
+        <div class="section-body no-pad scroll-y" id="learning-thresholds"></div>
+      </div>
+      <div class="col-2 mt-16">
+        <div class="section-card">
+          <div class="section-header">Post-Trade Analysis</div>
+          <div class="section-body" id="learning-post-trade"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-header">Execution Audit</div>
+          <div class="section-body" id="learning-execution-audit"></div>
+        </div>
+      </div>
+      <div class="col-2 mt-16">
+        <div class="section-card">
+          <div class="section-header">ADN Code Quality</div>
+          <div class="section-body no-pad scroll-y" id="learning-adn-quality"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-header">Ethics Kernel</div>
+          <div class="section-body" id="learning-ethics"></div>
+        </div>
+      </div>
+      <div class="section-card mt-16">
+        <div class="section-header">Win Rate by Session Window
+          <span class="badge badge-blue" id="learning-session-mode">--</span>
+        </div>
+        <div class="section-body" style="position:relative;height:260px">
+          <canvas id="chart-session-wr"></canvas>
+        </div>
+      </div>
+      <div class="section-card mt-16">
+        <div class="section-header">Confidence Threshold Distribution</div>
+        <div class="section-body" style="position:relative;height:240px">
+          <canvas id="chart-confidence-dist"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SYSTEM HEALTH PANEL ═══ -->
+    <div class="panel" id="panel-system">
+      <div class="exec-grid mb-16" id="system-decision-strip"></div>
+      <div class="kpi-grid" id="system-kpis"></div>
+      <div id="system-note" class="mb-16"></div>
+      <div class="col-2">
+        <div class="section-card">
+          <div class="section-header">Operating Context</div>
+          <div class="section-body" id="system-operating"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-header">Maintenance Controls</div>
+          <div class="section-body" id="system-maintenance"></div>
+        </div>
+      </div>
+      <div class="section-card mt-16">
+        <div class="section-header">Maintenance Log</div>
+        <div class="section-body" id="system-maintenance-feedback" aria-live="polite">Sin acciones recientes.</div>
+      </div>
+      <div class="col-2">
+        <div class="section-card">
+          <div class="section-header">Service Health</div>
+          <div class="section-body" id="system-health"></div>
+        </div>
+        <div class="section-card">
+          <div class="section-header">Pipeline Health</div>
+          <div class="section-body" id="system-pipeline"></div>
+        </div>
+      </div>
+      <div class="section-card mt-16">
+        <div class="section-header">Trading Policy</div>
+        <div class="section-body" id="system-policy"></div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script src="/ui/dashboard_components.js"></script>
+<script src="/ui/dashboard_view_models.js"></script>
+<script src="/ui/dashboard_primary_panels.js"></script>
+<script src="/ui/dashboard_secondary_panels.js"></script>
+<script src="/ui/dashboard_runtime.js"></script>
+<script>
+/* ─────────────────────────────────────────────
+   API helper & globals
+───────────────────────────────────────────── */
+const BASE = '';
+let currentPanel = 'overview';
+let refreshTimer = null;
+
+async function api(path) {
+  try {
+    const r = await fetch(BASE + path, {headers: {'Accept': 'application/json'}});
+    if (!r.ok) throw new Error(`${r.status}`);
+    return await r.json();
+  } catch(e) {
+    console.warn('API error:', path, e);
+    return null;
+  }
+}
+
+async function apiPost(path, body) {
+  const r = await fetch(BASE + path, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+    body: JSON.stringify(body || {}),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.detail || data.error || `HTTP ${r.status}`);
+  return data;
+}
+
+/* Presenter utilities loaded from /ui/dashboard_components.js */
+/* Executive presentation helpers loaded from /ui/dashboard_components.js */
+
+/* View-model normalizers loaded from /ui/dashboard_view_models.js */
+
+/* Interaction and semantic helpers loaded from /ui/dashboard_components.js */
+
+/* Overview, platform, and strategy renderers loaded from /ui/dashboard_primary_panels.js */
+
+/* Navigation and refresh runtime loaded from /ui/dashboard_runtime.js */
+
+/* Overview panel logic extracted to /ui/dashboard_primary_panels.js */
+/* Platforms panel logic extracted to /ui/dashboard_primary_panels.js */
+/* Strategy Engine panel logic extracted to /ui/dashboard_primary_panels.js */
+
+/* Secondary panel logic extracted to /ui/dashboard_secondary_panels.js */
+
+/* ─────────────────────────────────────────────
+   R8.4: Brain Validators mini-banner
+   Polls /brain/validators every 30s and renders
+   merged validator counters + LLM latency p50/p95
+   + chain health (cooldown badge if degraded).
+───────────────────────────────────────────── */
+async function refreshBrainValidators() {
+  const panel = document.getElementById('brain-validators-panel');
+  const totalBadge = document.getElementById('brain-validators-total');
+  if (!panel) return;
+  const data = await api('/brain/validators');
+  if (!data) {
+    panel.innerHTML = '<span class="text-muted">Endpoint no disponible</span>';
+    if (totalBadge) totalBadge.textContent = '--';
+    return;
+  }
+  const merged = data.merged || {};
+  const total  = data.total_fires || 0;
+  const lat    = data.llm_latency || {};
+  const chain  = data.chain_health || {};
+  if (totalBadge) totalBadge.textContent = `${total} fires`;
+
+  // Validators table
+  const validatorRows = Object.entries(merged)
+    .sort((a,b) => b[1]-a[1])
+    .map(([k,v]) => `<tr><td>${k}</td><td style="text-align:right">${v}</td></tr>`)
+    .join('') || '<tr><td colspan="2" class="text-muted">sin datos</td></tr>';
+
+  // Latency table
+  const latRows = Object.entries(lat)
+    .filter(([k]) => k !== '_error')
+    .map(([mk, p]) => `<tr>
+        <td>${mk}</td>
+        <td style="text-align:right">${p.count}</td>
+        <td style="text-align:right">${p.p50}s</td>
+        <td style="text-align:right">${p.p95}s</td>
+        <td style="text-align:right">${p.p99}s</td>
+      </tr>`)
+    .join('') || '<tr><td colspan="5" class="text-muted">sin samples</td></tr>';
+
+  // Chain health
+  const chainRows = Object.entries(chain)
+    .filter(([k]) => k !== '_error')
+    .map(([ck, h]) => {
+      const badge = h.in_cooldown
+        ? `<span class="badge badge-red">cooldown ${h.cooldown_remaining_s}s</span>`
+        : `<span class="badge badge-green">healthy</span>`;
+      return `<tr>
+        <td>${ck}</td>
+        <td style="text-align:right">${h.count}</td>
+        <td style="text-align:right">${(h.fail_rate*100).toFixed(1)}%</td>
+        <td>${badge}</td>
+      </tr>`;
+    })
+    .join('') || '<tr><td colspan="4" class="text-muted">sin datos</td></tr>';
+
+  panel.innerHTML = `
+    <div class="col-2" style="gap:16px">
+      <div>
+        <div class="text-xs text-muted mb-4">Validators</div>
+        <table>
+          <thead><tr><th>Counter</th><th style="text-align:right">Fires</th></tr></thead>
+          <tbody>${validatorRows}</tbody>
+        </table>
+      </div>
+      <div>
+        <div class="text-xs text-muted mb-4">LLM Latency (rolling 200)</div>
+        <table>
+          <thead><tr><th>Model</th><th style="text-align:right">N</th>
+            <th style="text-align:right">p50</th><th style="text-align:right">p95</th>
+            <th style="text-align:right">p99</th></tr></thead>
+          <tbody>${latRows}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="mt-8">
+      <div class="text-xs text-muted mb-4">Chain Health (rolling 100 chats)</div>
+      <table>
+        <thead><tr><th>Chain</th><th style="text-align:right">N</th>
+          <th style="text-align:right">Fail %</th><th>Status</th></tr></thead>
+        <tbody>${chainRows}</tbody>
+      </table>
+    </div>
+  `;
+}
+// Poll every 30s + initial fetch on DOM ready
+setInterval(refreshBrainValidators, 30000);
+document.addEventListener('DOMContentLoaded', () => setTimeout(refreshBrainValidators, 1500));
+
+/* ─────────────────────────────────────────────
+   R9.4: Autonomous Loops (ProactiveScheduler)
+   Polls /brain/proactive/status every 30s
+───────────────────────────────────────────── */
+async function refreshProactiveStatus() {
+  const panel = document.getElementById('proactive-status-panel');
+  const countBadge = document.getElementById('proactive-tasks-count');
+  if (!panel) return;
+  const data = await api('/brain/proactive/status');
+  if (!data) {
+    panel.innerHTML = '<span class="text-muted">Endpoint no disponible</span>';
+    if (countBadge) countBadge.textContent = '--';
+    return;
+  }
+  const tasks = data.tasks || [];
+  const enabledCount = tasks.filter(t => t.enabled).length;
+  if (countBadge) countBadge.textContent = `${enabledCount}/${tasks.length}`;
+  const fmtAge = (s) => {
+    if (s === null || s === undefined) return 'never';
+    if (s < 60) return `${s}s ago`;
+    if (s < 3600) return `${Math.floor(s/60)}m ago`;
+    return `${Math.floor(s/3600)}h ${Math.floor((s%3600)/60)}m ago`;
+  };
+  const fmtNext = (s) => {
+    if (!s || s <= 0) return '<span class="badge-yellow">due</span>';
+    if (s < 60) return `${s}s`;
+    if (s < 3600) return `${Math.floor(s/60)}m`;
+    return `${Math.floor(s/3600)}h ${Math.floor((s%3600)/60)}m`;
+  };
+  const taskRows = tasks.map(t => {
+    const enBadge = t.enabled
+      ? '<span class="badge badge-green">on</span>'
+      : '<span class="badge badge-gray">off</span>';
+    const dueBadge = t.is_due && t.enabled
+      ? '<span class="badge badge-yellow">due</span>' : '';
+    return `<tr>
+      <td><b>${t.id}</b> ${dueBadge}</td>
+      <td>${enBadge}</td>
+      <td style="text-align:right">${t.interval_minutes}m</td>
+      <td>${fmtAge(t.last_run_age_s)}</td>
+      <td>${fmtNext(t.next_run_in_s)}</td>
+    </tr>`;
+  }).join('');
+  const recentHist = (data.recent_history || []).slice(-5).reverse();
+  const histRows = recentHist.map(h => {
+    const ok = h.success ? '<span class="badge badge-green">ok</span>'
+                         : '<span class="badge badge-red">fail</span>';
+    const ts = (h.timestamp || '').slice(11, 19);
+    return `<tr><td>${ts}</td><td><b>${h.task_id}</b></td><td>${ok}</td>
+      <td style="text-align:right">${h.elapsed_s}s</td></tr>`;
+  }).join('');
+  const alerts = data.alerts_unack || [];
+  const alertHtml = alerts.length
+    ? `<div class="mt-8"><div class="text-xs text-muted mb-4">Alerts (${alerts.length} unack)
+         <button onclick="ackAllAlerts()" style="margin-left:8px;font-size:10px;padding:2px 6px;cursor:pointer">Ack all</button>
+       </div>` +
+      alerts.slice(-3).map(a =>
+        `<div class="text-xs"><span class="badge badge-red">${a.type}</span> ${a.detail || ''} <span class="text-muted">@ ${(a.timestamp||'').slice(11,16)}</span></div>`
+      ).join('') + '</div>'
+    : '';
+  panel.innerHTML = `
+    <table>
+      <thead><tr><th>Task</th><th>State</th><th style="text-align:right">Interval</th>
+        <th>Last Run</th><th>Next In</th></tr></thead>
+      <tbody>${taskRows}</tbody>
+    </table>
+    <div class="mt-8">
+      <div class="text-xs text-muted mb-4">Recent Executions</div>
+      <table><tbody>${histRows || '<tr><td class="text-muted">No history yet</td></tr>'}</tbody></table>
+    </div>
+    ${alertHtml}
+  `;
+}
+setInterval(refreshProactiveStatus, 30000);
+document.addEventListener('DOMContentLoaded', () => setTimeout(refreshProactiveStatus, 2000));
+
+/* ─────────────────────────────────────────────
+   R9.5: Chat Excellence Self-Improvement Loop
+   Polls /brain/chat_excellence/status every 60s
+───────────────────────────────────────────── */
+async function refreshChatExcellence() {
+  const panel = document.getElementById('chat-excellence-panel');
+  const countBadge = document.getElementById('chat-excellence-count');
+  if (!panel) return;
+  const data = await api('/brain/chat_excellence/status');
+  if (!data) {
+    panel.innerHTML = '<span class="text-muted">Endpoint no disponible</span>';
+    if (countBadge) countBadge.textContent = '--';
+    return;
+  }
+  const total = data.total_iterations || 0;
+  if (countBadge) countBadge.textContent = `${total} iter`;
+  if (total === 0) {
+    panel.innerHTML = `<div class="text-muted">${data._note || 'Sin iteraciones aún. Loop corre cada 60min.'}</div>`;
+    return;
+  }
+  const latest = data.latest || {};
+  const recent = data.recent || [];
+  const parsedPct = Math.round((data.parsed_ratio || 0) * 100);
+  const statusBadge = (s) => {
+    if (s === 'documented') return '<span class="badge badge-blue">documented</span>';
+    if (s === 'unparsed') return '<span class="badge badge-yellow">unparsed</span>';
+    if (s === 'applied') return '<span class="badge badge-green">applied</span>';
+    if (s === 'measured') return '<span class="badge badge-green">measured</span>';
+    return `<span class="badge badge-gray">${s||'?'}</span>`;
+  };
+  const impactBadge = (n) => {
+    if (n === undefined || n === null) return '';
+    const cls = n >= 7 ? 'badge-red' : n >= 4 ? 'badge-yellow' : 'badge-blue';
+    return `<span class="badge ${cls}">impact ${n}/10</span>`;
+  };
+  const filesHtml = (latest.affected_files || []).length
+    ? `<div class="text-xs"><b>Files:</b> ${(latest.affected_files||[]).join(', ')}</div>` : '';
+  const latestHtml = `
+    <div class="mb-8">
+      <div class="text-xs text-muted">Iter #${latest.iter} @ ${(latest.timestamp||'').slice(0,19)}
+        — ${latest.elapsed_s}s — ${latest.model_used} ${statusBadge(latest.status)} ${impactBadge(latest.impact_score)}</div>
+    </div>
+    <div class="text-xs"><b>Weakness:</b> ${latest.weakness || latest.raw_response || '(unparsed)'}</div>
+    <div class="text-xs mt-4"><b>Root cause:</b> ${latest.root_cause_guess || latest.root_cause_hypothesis || '—'}</div>
+    <div class="text-xs mt-4"><b>Proposed change:</b> ${latest.proposed_change || '—'}</div>
+    <div class="text-xs mt-4"><b>Test plan:</b> ${latest.test_plan || '—'}</div>
+    <div class="text-xs mt-4"><b>Expected:</b> ${latest.expected_improvement || '—'}</div>
+    ${filesHtml}
+  `;
+  const recentRows = recent.slice(-8).reverse().map(r => `<tr>
+    <td>#${r.iter}</td>
+    <td>${(r.timestamp||'').slice(11,19)}</td>
+    <td>${impactBadge(r.impact_score)}</td>
+    <td>${statusBadge(r.status)}</td>
+    <td class="text-xs">${(r.weakness||'').slice(0,80)}</td>
+  </tr>`).join('');
+  panel.innerHTML = latestHtml + `
+    <div class="mt-8">
+      <div class="text-xs text-muted mb-4">Recent iterations (parsed ratio: ${parsedPct}%)</div>
+      <table><thead><tr><th>#</th><th>When</th><th>Impact</th><th>Status</th><th>Weakness</th></tr></thead>
+        <tbody>${recentRows}</tbody></table>
+    </div>
+  `;
+}
+setInterval(refreshChatExcellence, 60000);
+document.addEventListener('DOMContentLoaded', () => setTimeout(refreshChatExcellence, 2500));
+
+/* ─────────────────────────────────────────────
+   R9.6: Acknowledge scheduler alerts
+───────────────────────────────────────────── */
+async function ackAllAlerts() {
+  try {
+    const res = await fetch('/brain/scheduler/alerts/ack', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ all: true, actor: 'dashboard-ui' })
+    });
+    const j = await res.json();
+    console.log('ack result:', j);
+    refreshProactiveStatus();
+  } catch (e) {
+    console.error('ack failed', e);
+  }
+}
+window.ackAllAlerts = ackAllAlerts;
+
+/* ─────────────────────────────────────────────
+   R9.9: LLM Circuit Breaker observability
+   Polls /brain/llm/circuit_breaker every 30s
+───────────────────────────────────────────── */
+async function refreshLlmCb() {
+  const panel = document.getElementById('llm-cb-panel');
+  const badge = document.getElementById('llm-cb-open-count');
+  if (!panel) return;
+  const data = await api('/brain/llm/circuit_breaker');
+  if (!data) {
+    panel.innerHTML = '<span class="text-muted">Endpoint no disponible</span>';
+    if (badge) badge.textContent = '--';
+    return;
+  }
+  const cb = data.circuit_breaker || {};
+  const lat = data.latency_per_model || {};
+  const ch = data.chain_health || {};
+  const openCount = Object.values(cb).filter(v => v && v.is_open).length;
+  if (badge) {
+    badge.textContent = openCount > 0 ? `${openCount} open` : 'all closed';
+    badge.className = openCount > 0 ? 'badge badge-red' : 'badge badge-green';
+  }
+  const cbKeys = Object.keys(cb);
+  const latKeys = Object.keys(lat).filter(k => !k.startsWith('_'));
+  const allKeys = Array.from(new Set([...cbKeys, ...latKeys])).sort();
+  const rows = allKeys.map(k => {
+    const c = cb[k] || {};
+    const l = lat[k] || {};
+    const stateBadge = c.is_open
+      ? `<span class="badge badge-red">OPEN ${c.open_in_s||0}s</span>`
+      : (c.fails ? `<span class="badge badge-yellow">${c.fails} fails</span>`
+                 : '<span class="badge badge-green">closed</span>');
+    const p95 = l.p95 != null ? `${l.p95}s` : '—';
+    const p99 = l.p99 != null ? `${l.p99}s` : '—';
+    const n = l.count != null ? l.count : 0;
+    return `<tr>
+      <td><b>${k}</b></td>
+      <td>${stateBadge}</td>
+      <td style="text-align:right">${n}</td>
+      <td style="text-align:right">${p95}</td>
+      <td style="text-align:right">${p99}</td>
+    </tr>`;
+  }).join('');
+  const chainKeys = Object.keys(ch).filter(k => k !== 'config' && k !== '_error');
+  const chainRows = chainKeys.map(k => {
+    const c = (ch[k] || {});
+    const fr = c.fail_rate != null ? (c.fail_rate * 100).toFixed(1) + '%' : '—';
+    const cd = c.cooldown_remaining_s || 0;
+    const stateBadge = cd > 0
+      ? `<span class="badge badge-red">degraded ${cd}s</span>`
+      : '<span class="badge badge-green">healthy</span>';
+    return `<tr><td><b>${k}</b></td><td>${stateBadge}</td>
+      <td style="text-align:right">${fr}</td><td style="text-align:right">${c.count||0}</td></tr>`;
+  }).join('');
+  panel.innerHTML = `
+    <table><thead><tr><th>Model</th><th>CB</th>
+      <th style="text-align:right">n</th>
+      <th style="text-align:right">p95</th>
+      <th style="text-align:right">p99</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="5" class="text-muted">No data yet</td></tr>'}</tbody>
+    </table>
+    ${chainRows ? `<div class="mt-8">
+      <div class="text-xs text-muted mb-4">Chain Health</div>
+      <table><thead><tr><th>Chain</th><th>State</th>
+        <th style="text-align:right">Fail %</th><th style="text-align:right">N</th></tr></thead>
+        <tbody>${chainRows}</tbody></table>
+    </div>` : ''}
+  `;
+}
+setInterval(refreshLlmCb, 30000);
+document.addEventListener('DOMContentLoaded', () => setTimeout(refreshLlmCb, 3000));
+
+/* ─────────────────────────────────────────────
+   R10.5: Chat Excellence Proposals dashboard
+   Polls /brain/chat_excellence/proposals every 30s
+   Provides inline approve / reject for pending_review.
+───────────────────────────────────────────── */
+function _ceStatusBadge(s) {
+  const map = {
+    'pending_review':         'badge-yellow',
+    'auto_apply_pending':     'badge-blue',
+    'applied':                'badge-green',
+    'applied_pending_restart':'badge-yellow',
+    'applied_pending_health': 'badge-yellow',
+    'applied_active':         'badge-green',
+    'rolled_back':            'badge-blue',
+    'rolled_back_auto':       'badge-blue',
+    'rollback_failed':        'badge-red',
+    'health_gate_aborted':    'badge-grey',
+    'rejected':               'badge-grey',
+    'blocked_high_risk':      'badge-red',
+    'skipped':                'badge-grey',
+    'write_error':            'badge-red',
+  };
+  const cls = map[s] || 'badge-grey';
+  return `<span class="badge ${cls}">${s}</span>`;
+}
+function _ceRiskBadge(r) {
+  const map = {low:'badge-green', medium:'badge-yellow', high:'badge-red'};
+  return `<span class="badge ${map[r]||'badge-grey'}">${r||'?'}</span>`;
+}
+function _ceTrunc(s, n) {
+  s = s || '';
+  return s.length > n ? s.slice(0, n) + '…' : s;
+}
+async function ceDryRun(id) {
+  const r = await fetch(`/brain/chat_excellence/proposals/${id}/dry_run`, {method:'POST'});
+  if (!r.ok) { alert('dry_run failed: ' + r.status); return; }
+  const data = await r.json();
+  if (!data.ok) { alert('dry_run rejected: ' + (data.reason || data.error || 'unknown')); return; }
+  ceShowModal(`Dry-Run diff — ${id} (${data.edits_count} edits)`, _ceColorDiff(data.diff || '(no diff)'));
+  refreshCeProposals();
+}
+async function ceApplyReal(id) {
+  const autoRestart = confirm(
+    `APPLY REAL para ${id}\n\n`+
+    `Esto va a:\n`+
+    `  1) backup + editar core/llm.py\n`+
+    `  2) py_compile validation\n`+
+    `  3) status -> applied_pending_restart o applied_pending_health\n\n`+
+    `OK = auto-restart brain + health-gate (auto-rollback si no recupera)\n`+
+    `Cancel = solo apply, restart manual luego`
+  );
+  if (autoRestart === null) return;
+  // second confirm to make destructive op explicit
+  if (!confirm(`Confirmar APPLY REAL ${autoRestart ? 'CON auto-restart' : 'sin auto-restart'}?`)) return;
+  const body = {
+    by:'dashboard', note:'manual_apply_via_ui',
+    dry_run: false,
+    auto_restart: autoRestart,
+    poll_seconds: 90,
+    respawn_wait: 50,
+  };
+  const r = await fetch(`/brain/chat_excellence/proposals/${id}/apply`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify(body),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) { alert('apply failed: ' + r.status + '\n' + JSON.stringify(data)); return; }
+  if (autoRestart) {
+    alert(`Apply OK. Health-gate spawned.\nstatus=${data.status||'?'} gate_spawned=${data.gate_spawned||false}\n\nEl panel hará polling rápido los próximos minutos.`);
+  } else {
+    alert(`Apply OK. status=${data.status||'?'}\n\nReinicia brain manualmente con _kill_cim.ps1.`);
+  }
+  refreshCeProposals();
+}
+async function ceRollback(id) {
+  const reason = prompt(`Rollback ${id}?\nRestaura ficheros desde backup. Necesitarás reiniciar brain.\n\nRazón:`, 'manual rollback via ui');
+  if (reason === null) return;
+  const r = await fetch(`/brain/chat_excellence/proposals/${id}/rollback`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({reason: reason}),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) { alert('rollback failed: ' + r.status + '\n' + JSON.stringify(data)); return; }
+  alert(`Rollback OK. status=${data.status||'?'}\nRestaura/restart brain con _kill_cim.ps1 si era apply real.`);
+  refreshCeProposals();
+}
+async function ceShowGateLog(id) {
+  const r = await fetch(`/brain/chat_excellence/proposals/${id}/health_gate_log?tail=300`);
+  if (!r.ok) { alert('log fetch failed: ' + r.status); return; }
+  const data = await r.json();
+  let body = '';
+  if (data.lines && data.lines.length) {
+    body = data.lines.join('\n');
+  } else if (data.spawn_lines && data.spawn_lines.length) {
+    body = '[spawn log only — gate process did not produce its own log]\n\n' + data.spawn_lines.join('\n');
+  } else {
+    body = `(no log yet)\nlog_exists=${data.log_exists} spawn_log_exists=${data.spawn_log_exists}\npath=${data.log_path||'?'}`;
+  }
+  ceShowModal(`Health-Gate log — ${id} (${data.lines_total||0} lines total)`, _ceEscape(body));
+}
+async function ceRejectProposal(id) {
+  const reason = prompt(`Razón para rechazar ${id}:`, 'no longer relevant');
+  if (reason === null) return;
+  const r = await fetch(`/brain/chat_excellence/proposals/${id}/reject`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({reason: reason}),
+  });
+  if (r.ok) refreshCeProposals();
+  else alert('reject failed: ' + r.status);
+}
+function _ceEscape(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function _ceColorDiff(diff) {
+  return _ceEscape(diff).split('\n').map(line => {
+    if (line.startsWith('+++') || line.startsWith('---')) return `<span style="color:#88f">${line}</span>`;
+    if (line.startsWith('@@'))                            return `<span style="color:#fb0">${line}</span>`;
+    if (line.startsWith('+'))                              return `<span style="color:#5d5">${line}</span>`;
+    if (line.startsWith('-'))                              return `<span style="color:#f55">${line}</span>`;
+    return line;
+  }).join('\n');
+}
+function ceShowModal(title, htmlBody) {
+  document.getElementById('ce-modal-title').textContent = title;
+  document.getElementById('ce-modal-body').innerHTML = htmlBody;
+  const m = document.getElementById('ce-modal');
+  m.style.display = 'flex';
+}
+function ceCloseModal() {
+  document.getElementById('ce-modal').style.display = 'none';
+}
+window.ceDryRun         = ceDryRun;
+window.ceApplyReal      = ceApplyReal;
+window.ceRollback       = ceRollback;
+window.ceShowGateLog    = ceShowGateLog;
+window.ceRejectProposal = ceRejectProposal;
+window.ceCloseModal     = ceCloseModal;
+
+// R10.7: bulk apply pending proposals secuencialmente con UN solo restart.
+async function ceBulkApply(ids) {
+  if (!ids || !ids.length) return;
+  const dryFirst = confirm(
+    `Bulk apply ${ids.length} proposals?\n\n` +
+    `OK   = DRY-RUN first (preview each diff, no changes)\n` +
+    `CANCEL = skip dry-run, go to real apply prompt`
+  );
+  if (dryFirst) {
+    const dr = await fetch('/brain/chat_excellence/proposals/apply_batch', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ ids, dry_run: true })
+    }).then(r => r.json()).catch(e => ({ ok: false, error: String(e) }));
+    const summary = (dr.plans || []).map(p => {
+      const ok = p.plan && p.plan.ok;
+      return `${p.proposal_id}: ${ok ? 'OK ' + (p.plan.edits_count||0) + ' edits' : 'SKIP ' + (p.plan && p.plan.reason || 'err')}`;
+    }).join('\n');
+    ceShowModal(`Bulk DRY-RUN (${ids.length} proposals)`, summary || JSON.stringify(dr, null, 2));
+    if (!confirm(`Proceed with REAL apply of ${ids.length} proposals?`)) return;
+  } else {
+    if (!confirm(`Confirm REAL apply of ${ids.length} proposals (no dry-run)?`)) return;
+  }
+  const auto = confirm('Spawn detached health-gate restart at end?\n(OK=auto-restart with rollback if /health fails, CANCEL=manual restart)');
+  ceShowModal('Bulk apply running...', 'Posting batch to /apply_batch ...');
+  const result = await fetch('/brain/chat_excellence/proposals/apply_batch', {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      ids, dry_run: false, by: 'dashboard:bulk',
+      auto_restart: auto, stop_on_error: true,
+    })
+  }).then(r => r.json()).catch(e => ({ ok: false, error: String(e) }));
+  ceShowModal('Bulk apply result', JSON.stringify(result, null, 2));
+  setTimeout(refreshCeProposals, 1500);
+}
+window.ceBulkApply = ceBulkApply;
+
+async function refreshCeProposals() {
+  const panel = document.getElementById('ce-prop-panel');
+  const badge = document.getElementById('ce-prop-pending-count');
+  if (!panel) return;
+  const data = await api('/brain/chat_excellence/proposals?limit=20');
+  if (!data) {
+    panel.innerHTML = '<span class="text-muted">Endpoint no disponible</span>';
+    if (badge) badge.textContent = '--';
+    return;
+  }
+  const items = data.items || [];
+  const stats = data.stats || {};
+  const by = stats.by_status || {};
+  const pending = (by.pending_review || 0) + (by.auto_apply_pending || 0);
+  if (badge) {
+    badge.textContent = pending > 0 ? `${pending} pending` : `${stats.total || 0} total`;
+    badge.className = pending > 0 ? 'badge badge-yellow' : 'badge badge-grey';
+  }
+  if (items.length === 0) {
+    panel.innerHTML = `<div class="text-muted">No proposals yet. Auto-apply: <b>${stats.auto_apply_enabled ? 'ON' : 'OFF'}</b>. Min impact: ${stats.min_impact_required||7}.</div>`;
+    return;
+  }
+  const rows = items.map(p => {
+    const id = p.proposal_id || '';
+    const shortId = id.replace('ce_prop_', '');
+    const isPending = p.status === 'pending_review' || p.status === 'auto_apply_pending';
+    const isApplied = p.status === 'applied' || p.status === 'applied_active' ||
+                      p.status === 'applied_pending_restart' || p.status === 'applied_pending_health';
+    const hasGateLog = p.status === 'applied_pending_health' || p.status === 'applied_active' ||
+                       p.status === 'rolled_back_auto' || p.status === 'rollback_failed' ||
+                       p.status === 'health_gate_aborted';
+    const btnStyle = 'font-size:10px;padding:2px 6px;cursor:pointer;margin-right:3px';
+    let actions = '';
+    if (isPending) {
+      actions += `<button onclick="ceDryRun('${id}')" style="${btnStyle}" title="Generate diff without writing">⌕ dry-run</button>`;
+      actions += `<button onclick="ceApplyReal('${id}')" style="${btnStyle};background:#3a3" title="Apply real patch (backup+edit+compile)">▶ apply</button>`;
+      actions += `<button onclick="ceRejectProposal('${id}')" style="${btnStyle}" title="Reject proposal">✗ reject</button>`;
+    } else if (isApplied) {
+      actions += `<button onclick="ceRollback('${id}')" style="${btnStyle};background:#a53" title="Restore from backup">↶ rollback</button>`;
+      if (p.diff) actions += `<button onclick="ceDryRun('${id}')" style="${btnStyle}" title="Re-show diff">⌕ diff</button>`;
+    } else if (p.diff) {
+      actions += `<button onclick="ceDryRun('${id}')" style="${btnStyle}" title="Re-show diff">⌕ diff</button>`;
+    }
+    if (hasGateLog) {
+      actions += `<button onclick="ceShowGateLog('${id}')" style="${btnStyle}" title="Show health-gate log">📜 log</button>`;
+    }
+    if (!actions) actions = '—';
+    const filesStr = (p.affected_files || []).join(', ');
+    const reasonsStr = (p.risk_reasons || []).join('; ');
+    return `<tr title="${(p.proposed_change||'').replace(/"/g,'&quot;')}">
+      <td><code style="font-size:10px">${shortId}</code></td>
+      <td style="text-align:right">${p.iter ?? '?'}</td>
+      <td>${_ceStatusBadge(p.status)}</td>
+      <td>${_ceRiskBadge(p.risk_class)}${reasonsStr ? `<div class="text-xs text-muted">${_ceTrunc(reasonsStr,40)}</div>` : ''}</td>
+      <td style="text-align:right">${p.impact_score ?? '?'}</td>
+      <td>${_ceTrunc(p.weakness, 50)}</td>
+      <td><code style="font-size:10px">${_ceTrunc(filesStr, 40)}</code></td>
+      <td style="white-space:nowrap">${actions}</td>
+    </tr>`;
+  }).join('');
+  // R10.5b: fast-poll while any proposal is in transient applied_pending_health
+  const transient = items.some(p => p.status === 'applied_pending_health');
+  _ceScheduleFastPoll(transient);
+  const summaryParts = Object.entries(by).map(([k, v]) =>
+    `<span class="text-xs">${_ceStatusBadge(k)}&nbsp;${v}</span>`).join(' &nbsp; ');
+  // R10.7: bulk apply button - aparece solo si hay pending
+  const pendingIds = items.filter(p => p.status === 'pending_review' || p.status === 'auto_apply_pending')
+                          .map(p => p.proposal_id);
+  const bulkBtn = pendingIds.length >= 2
+    ? `<button onclick="ceBulkApply(${JSON.stringify(pendingIds).replace(/"/g,'&quot;')})"
+        style="font-size:10px;padding:3px 9px;cursor:pointer;background:#3a3;color:#fff;border:0;border-radius:3px;margin-left:8px"
+        title="Apply ${pendingIds.length} pending proposals sequentially with single restart">
+        ▶▶ bulk apply ${pendingIds.length} pending</button>`
+    : '';
+  panel.innerHTML = `
+    <div class="text-xs mb-4">
+      ${summaryParts || '<span class="text-muted">no proposals</span>'}
+      &nbsp;&nbsp;|&nbsp; auto-apply: <b>${stats.auto_apply_enabled ? 'ON' : 'OFF'}</b>
+      ${bulkBtn}
+    </div>
+    <table>
+      <thead><tr>
+        <th>ID</th>
+        <th style="text-align:right">iter</th>
+        <th>Status</th>
+        <th>Risk</th>
+        <th style="text-align:right">Imp</th>
+        <th>Weakness</th>
+        <th>Files</th>
+        <th>Actions</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+window.refreshCeProposals = refreshCeProposals;
+// R10.5b: while a proposal is in applied_pending_health, poll every 8s
+let _ceFastPollTimer = null;
+function _ceScheduleFastPoll(active) {
+  if (active && !_ceFastPollTimer) {
+    _ceFastPollTimer = setInterval(refreshCeProposals, 8000);
+  } else if (!active && _ceFastPollTimer) {
+    clearInterval(_ceFastPollTimer);
+    _ceFastPollTimer = null;
+  }
+}
+setInterval(refreshCeProposals, 30000);
+document.addEventListener('DOMContentLoaded', () => setTimeout(refreshCeProposals, 3500));
+
+document.addEventListener('DOMContentLoaded', initDashboardRuntime);
+</script>
+</body>
+</html>

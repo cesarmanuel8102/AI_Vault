@@ -1,0 +1,16 @@
+{
+  "proposal_id": "P_0c1fd706f7afa6cd",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\notes\\p3_1_design.md",
+    "content": "# Schema for episode.json\n## Minimum Fields\n- run_id\n- inputs\n- snapshots\n- tool_calls\n- outputs\n### Evidence for Artifacts\n- log access for debugging\n",
+    "value": null,
+    "raw_content": "# Schema for episode.json\\n## Minimum Fields\\n- run_id\\n- inputs\\n- snapshots\\n- tool_calls\\n- outputs\\n### Evidence for Artifacts\\n- log access for debugging\\n",
+    "text": "# Schema for episode.json\n## Minimum Fields\n- run_id\n- inputs\n- snapshots\n- tool_calls\n- outputs\n### Evidence for Artifacts\n- log access for debugging\n"
+  },
+  "room_id": "room_p3_1_20260303_104350",
+  "step_id": "S4",
+  "created_at": "2026-03-03T16:06:03.141529+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

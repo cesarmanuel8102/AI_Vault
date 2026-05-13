@@ -1,0 +1,71 @@
+--- C:\AI_VAULT\workspace\brainlab\brainlab\risk\risk_engine.py
++++ C:\AI_VAULT\tmp_agent\workspace\risk_engine.py
+@@ -1,68 +0,0 @@
+-import json
+-from dataclasses import dataclass
+-from pathlib import Path
+-from types import SimpleNamespace
+-from typing import Any, Dict, List
+-
+-
+-@dataclass
+-class RiskEngine:
+-    """
+-    Minimal RiskEngine to satisfy tmp_agent/smoke_runner.py expectations:
+-
+-    - RiskEngine.from_contract_path(contract_path) -> RiskEngine
+-    - instance.limits must be an object with __dict__ (runner reads limits.__dict__)
+-    - instance.assess(snapshot: dict) -> dict
+-    """
+-    contract_path: str
+-    contract: Dict[str, Any]
+-    limits: Any  # SimpleNamespace(**limits_dict)
+-
+-    @staticmethod
+-    def from_contract_path(contract_path: str) -> "RiskEngine":
+-        p = Path(contract_path).resolve()
+-        data = json.loads(p.read_text(encoding="utf-8"))
+-        limits_dict = (((data.get("risk") or {}).get("limits")) or {})
+-        limits_ns = SimpleNamespace(**limits_dict)
+-        return RiskEngine(contract_path=str(p), contract=data, limits=limits_ns)
+-
+-    def assess(self, snapshot: Dict[str, Any]) -> Dict[str, Any]:
+-        """
+-        Smoke assessment: deterministic, lightweight, JSON-serializable.
+-
+-        snapshot is provided by smoke_runner tests as dict.
+-        We'll produce a standard shape that smoke_runner can inspect.
+-        """
+-        violations: List[str] = []
+-
+-        # Basic contract checks
+-        if not self.contract.get("contract_id"):
+-            violations.append("CONTRACT_MISSING_ID")
+-
+-        # Limits checks (optional)
+-        max_daily = getattr(self.limits, "max_daily_loss_frac", None)
+-        if max_daily is None:
+-            violations.append("LIMITS_MISSING_max_daily_loss_frac")
+-        else:
+-            try:
+-                v = float(max_daily)
+-                if not (0.0 < v <= 1.0):
+-                    violations.append("LIMITS_BAD_max_daily_loss_frac")
+-            except Exception:
+-                violations.append("LIMITS_NAN_max_daily_loss_frac")
+-
+-        # Tooling checks (optional)
+-        tooling = (((self.contract.get("execution") or {}).get("tooling")) or {})
+-        if not tooling.get("sandbox_root"):
+-            violations.append("TOOLING_MISSING_SANDBOX_ROOT")
+-
+-        # Kill switch
+-        kill_switch = bool(getattr(self.limits, "kill_switch", False))
+-        has_halt = kill_switch or (len(violations) > 0 and snapshot.get("halt_on_violation", False) is True)
+-
+-        return {
+-            "ok": len(violations) == 0 and (not kill_switch),
+-            "kill_switch": kill_switch,
+-            "violations": violations,
+-            "has_halt": bool(has_halt),
+-        }

@@ -1,0 +1,53 @@
+{
+  "updated_utc": "2026-04-14T12:45:38Z",
+  "rows": [
+    {
+      "label": "CH_2024",
+      "backtest_id": "9ee4bbe55ab05007fc4c8226f5486fd9",
+      "net_profit_pct": 7.336,
+      "drawdown_pct": 2.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "pass_date": "2024-07-09",
+      "calendar_days_to_pass": 189,
+      "trading_days_to_pass": 49
+    },
+    {
+      "label": "CH_2025",
+      "backtest_id": "d09f1f032de915a306f62f223bfa5904",
+      "net_profit_pct": 8.172,
+      "drawdown_pct": 3.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": true,
+      "pass_date": "2025-07-29",
+      "calendar_days_to_pass": 145,
+      "trading_days_to_pass": 17
+    },
+    {
+      "label": "CH_2026_Q1",
+      "backtest_id": "402b0d514bec208d640c9f02291be93f",
+      "net_profit_pct": 2.975,
+      "drawdown_pct": 0.9,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 0,
+      "pass_achieved": false,
+      "pass_date": null,
+      "calendar_days_to_pass": null,
+      "trading_days_to_pass": 14
+    },
+    {
+      "label": "STRESS_2020",
+      "backtest_id": "c7acaea8d92f2271d5bee2acaffee9f4",
+      "net_profit_pct": -0.933,
+      "drawdown_pct": 4.0,
+      "daily_loss_breaches": 0,
+      "trailing_breaches": 1,
+      "pass_achieved": false,
+      "pass_date": null,
+      "calendar_days_to_pass": null,
+      "trading_days_to_pass": 10
+    }
+  ]
+}

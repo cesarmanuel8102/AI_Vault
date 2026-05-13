@@ -1,0 +1,112 @@
+{
+  "generated_at_utc": "2026-04-21T16:12:30.196311Z",
+  "compile_id": "c81f3dc7ee346552a2646abe1458fe3e-e900d9e443108b337b80b4a34013ef3d",
+  "rows": [
+    {
+      "candidate": "CB_T2E_E1_M2TRADES",
+      "window": "LIVE_WEEK",
+      "backtest_id": "e415552a9094e04e0e5a12396b7bb396",
+      "status": "Completed.",
+      "np": 0.0,
+      "dd": 0.0,
+      "orders": 0,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 0,
+      "stress_trades": 0,
+      "normal_trades": 0
+    },
+    {
+      "candidate": "CB_T2E_E1_M2TRADES",
+      "window": "CH_2026_Q1",
+      "backtest_id": "7966290115b9aef4c4f6fb20addefa16",
+      "status": "Completed.",
+      "np": 0.573,
+      "dd": 0.6,
+      "orders": 22,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 19,
+      "stress_trades": 0,
+      "normal_trades": 11
+    },
+    {
+      "candidate": "CB_T2E_E3_R65_M2TRADES",
+      "window": "LIVE_WEEK",
+      "backtest_id": "6b89e62cf9f75b343b5f6b05ab538e93",
+      "status": "Completed.",
+      "np": 0.0,
+      "dd": 0.0,
+      "orders": 0,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 0,
+      "stress_trades": 0,
+      "normal_trades": 0
+    },
+    {
+      "candidate": "CB_T2E_E3_R65_M2TRADES",
+      "window": "CH_2026_Q1",
+      "backtest_id": "f1c5673b14358e2e6e9f1581b232b1bf",
+      "status": "Completed.",
+      "np": 1.009,
+      "dd": 0.5,
+      "orders": 24,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 19,
+      "stress_trades": 0,
+      "normal_trades": 12
+    },
+    {
+      "candidate": "CB_T2E_E4_WIDER_GAP",
+      "window": "LIVE_WEEK",
+      "backtest_id": "79398796b386d3a99a458315653d870a",
+      "status": "Completed.",
+      "np": 0.0,
+      "dd": 0.0,
+      "orders": 0,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 0,
+      "stress_trades": 0,
+      "normal_trades": 0
+    },
+    {
+      "candidate": "CB_T2E_E4_WIDER_GAP",
+      "window": "CH_2026_Q1",
+      "backtest_id": "07f48f4a0406b7b16fed97531dae8f1b",
+      "status": "Completed.",
+      "np": 0.983,
+      "dd": 0.6,
+      "orders": 26,
+      "dbr": 0,
+      "tbr": 0,
+      "stress_days": 19,
+      "stress_trades": 0,
+      "normal_trades": 13
+    },
+    {
+      "candidate": "CB_T2E_E5_R60_M2TRADES",
+      "window": "LIVE_WEEK",
+      "error": "create",
+      "resp": {
+        "errors": [
+          "Too many backtest requests; please slow down."
+        ],
+        "success": false
+      }
+    },
+    {
+      "candidate": "CB_T2E_E5_R60_M2TRADES",
+      "window": "CH_2026_Q1",
+      "error": "create",
+      "resp": {
+        "errors": [
+          "Too many backtest requests; please slow down."
+        ],
+        "success": false
+      }
+    }
+  ]
+}

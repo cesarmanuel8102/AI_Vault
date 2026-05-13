@@ -1,0 +1,14 @@
+{
+  "proposal_id": "P_b988eb8436d1962a",
+  "tool_name": "append_file",
+  "tool_args": {
+    "path": "C:\\AI_VAULT\\workspace\\brainlab\\_agent_runs\\room_p2_1_server_normalize_20260305_120409\\proposal_P1_1.md",
+    "content": "PROPOSAL — 2026-03-05T17:04:09.171811+00:00\nWork Item: P1.1\nRoom: room_p2_1_server_normalize_20260305_120409\n\nObjective:\n- Alinear la fuente de verdad del panel Blocked con /proxy/v1/agent/status?room_id=<rid>\n\nKey fixes:\n1) Reject debe enviar reason (y no depender de approve_token como 'apply').\n2) Tick del panel Blocked no debe expirar a los 25s; mantener refresco.\n3) Tras Apply/Reject, refrescar panel Blocked y Panel lateral (refreshAll).\n\nAcceptance:\n- [\"Cuando status.blocked existe, se ven botones Apply/Reject.\", \"Al click Apply: POST /ui/api/apply devuelve ok=true y en <=2s el panel pasa a Blocked: — (porque blocked se consumió).\", \"Al click Reject: proposal queda rechazada y panel pasa a Blocked: —; plan refleja estado error/rejected según implementación.\"]\n\nTests:\n- smoke_pack PASS\n- UI manual: blocked aparece, apply/reject lo limpia en <=2s.\n\n",
+    "text": "PROPOSAL — 2026-03-05T17:04:09.171811+00:00\nWork Item: P1.1\nRoom: room_p2_1_server_normalize_20260305_120409\n\nObjective:\n- Alinear la fuente de verdad del panel Blocked con /proxy/v1/agent/status?room_id=<rid>\n\nKey fixes:\n1) Reject debe enviar reason (y no depender de approve_token como 'apply').\n2) Tick del panel Blocked no debe expirar a los 25s; mantener refresco.\n3) Tras Apply/Reject, refrescar panel Blocked y Panel lateral (refreshAll).\n\nAcceptance:\n- [\"Cuando status.blocked existe, se ven botones Apply/Reject.\", \"Al click Apply: POST /ui/api/apply devuelve ok=true y en <=2s el panel pasa a Blocked: — (porque blocked se consumió).\", \"Al click Reject: proposal queda rechazada y panel pasa a Blocked: —; plan refleja estado error/rejected según implementación.\"]\n\nTests:\n- smoke_pack PASS\n- UI manual: blocked aparece, apply/reject lo limpia en <=2s.\n\n"
+  },
+  "room_id": "room_p2_1_server_normalize_20260305_120409",
+  "step_id": "S2",
+  "created_at": "2026-03-05T17:04:09.947111+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

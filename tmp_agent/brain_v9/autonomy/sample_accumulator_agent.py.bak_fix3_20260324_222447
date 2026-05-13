@@ -1,0 +1,388 @@
+"""
+Brain V9 - SampleAccumulatorAgent
+Agente autónomo para acumular muestras de trades en paper
+Cuando detecta estrategias con sample insuficiente, ejecuta trades automáticamente
+"""
+import asyncio
+import json
+import logging
+import random
+import sys
+from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Dict, List, Optional, Any
+
+# Asegurar que brain_v9 está en el path
+if __name__ == "__main__":
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
+try:
+    from brain_v9.config import BASE_PATH
+    from brain_v9.agent.tools import build_standard_executor
+except ImportError:
+    # Fallback para imports directos
+    import os
+    BASE_PATH = Path(os.getenv("BRAIN_BASE_PATH", "C:/AI_VAULT"))
+    # Función placeholder que se reemplazará en runtime
+    def build_standard_executor():
+        """Lazy import de ToolExecutor."""
+        from brain_v9.agent.tools import ToolExecutor
+        return ToolExecutor()
+
+log = logging.getLogger("SampleAccumulatorAgent")
+
+
+class SampleAccumulatorAgent:
+    """
+    Agente que detecta estrategias con muestras insuficientes y ejecuta trades paper
+    para acumular datos hasta alcanzar los umbrales de promoción.
+    """
+    
+    # Umbrales de promoción (deben coincidir con strategy_selector.py)
+    MIN_SAMPLE_QUALITY = 0.30
+    MIN_ENTRIES_RESOLVED = 8
+    TARGET_ENTRIES = 20  # Objetivo óptimo
+    
+    # Configuración de ejecución
+    CHECK_INTERVAL_MINUTES = 60  # Revisar cada hora
+    MAX_TRADES_PER_SESSION = 5   # Máximo trades por ciclo
+    COOLDOWN_MINUTES = 30        # Espera entre trades
+    
+    def __init__(self):
+        self.tools = build_standard_executor()
+        self.state_path = BASE_PATH / "tmp_agent" / "state" / "sample_accumulator.json"
+        self.running = False
+        self.last_trade_time = None
+        self.session_trades_count = 0
+        self._load_state()
+        
+    def _load_state(self):
+        """Carga estado persistente del acumulador."""
+        if self.state_path.exists():
+            try:
+                with open(self.state_path, 'r', encoding='utf-8') as f:
+                    state = json.load(f)
+                    self.last_trade_time = datetime.fromisoformat(state.get('last_trade_time', datetime.now().isoformat()))
+                    self.session_trades_count = state.get('session_trades_count', 0)
+            except Exception as e:
+                log.warning(f"Error cargando estado: {e}")
+                self._reset_state()
+        else:
+            self._reset_state()
+    
+    def _reset_state(self):
+        """Resetea estado del acumulador."""
+        self.last_trade_time = datetime.now() - timedelta(hours=1)
+        self.session_trades_count = 0
+        self._save_state()
+    
+    def _save_state(self):
+        """Guarda estado persistente."""
+        try:
+            self.state_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.state_path, 'w', encoding='utf-8') as f:
+                json.dump({
+                    'last_trade_time': self.last_trade_time.isoformat() if self.last_trade_time else None,
+                    'session_trades_count': self.session_trades_count,
+                    'updated_utc': datetime.now().isoformat()
+                }, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            log.error(f"Error guardando estado: {e}")
+    
+    async def start(self):
+        """Inicia el loop del agente acumulador."""
+        self.running = True
+        log.info("=" * 60)
+        log.info("SampleAccumulatorAgent INICIADO")
+        log.info("=" * 60)
+        log.info(f"Intervalo de revisión: {self.CHECK_INTERVAL_MINUTES} minutos")
+        log.info(f"Mínimo sample quality: {self.MIN_SAMPLE_QUALITY}")
+        log.info(f"Mínimo entries resolved: {self.MIN_ENTRIES_RESOLVED}")
+        log.info(f"Target entries: {self.TARGET_ENTRIES}")
+        log.info("=" * 60)
+        
+        while self.running:
+            try:
+                await self._check_and_accumulate()
+                await asyncio.sleep(self.CHECK_INTERVAL_MINUTES * 60)
+            except Exception as e:
+                log.error(f"Error en loop SampleAccumulator: {e}")
+                await asyncio.sleep(300)  # Esperar 5 min antes de reintentar
+    
+    def stop(self):
+        """Detiene el agente."""
+        self.running = False
+        log.info("SampleAccumulatorAgent detenido")
+    
+    async def _check_and_accumulate(self):
+        """Revisa estrategias y acumula muestras si es necesario."""
+        log.info("\n" + "=" * 60)
+        log.info("CICLO DE ACUMULACIÓN DE MUESTRAS")
+        log.info("=" * 60)
+        
+        # 1. Obtener ranking actual
+        ranking = await self._get_strategy_ranking()
+        if not ranking:
+            log.warning("No se pudo obtener ranking de estrategias")
+            return
+        
+        # 2. Identificar estrategias que necesitan muestras
+        candidates = self._identify_needy_strategies(ranking)
+        
+        if not candidates:
+            log.info("✓ Todas las estrategias tienen muestras suficientes")
+            return
+        
+        log.info(f"\n📊 Estrategias que necesitan muestras: {len(candidates)}")
+        for c in candidates:
+            log.info(f"  - {c['strategy_id']}: {c['entries_resolved']}/{c['target_entries']} trades " +
+                    f"(sample: {c['sample_quality']:.2f}, gap: {c['gap']})")
+        
+        # 3. Verificar cooldown
+        if not self._can_execute_trade():
+            minutes_left = self.COOLDOWN_MINUTES - (datetime.now() - self.last_trade_time).total_seconds() / 60
+            log.info(f"\n⏳ Cooldown activo. Esperar {minutes_left:.0f} minutos más")
+            return
+        
+        # 4. Ejecutar trades para la estrategia con mayor prioridad
+        top_candidate = candidates[0]
+        await self._execute_paper_trades(top_candidate)
+    
+    async def _get_strategy_ranking(self) -> Optional[Dict]:
+        """Obtiene el ranking actual de estrategias."""
+        try:
+            result = await self.tools.execute(
+                'get_dashboard_data',
+                {'endpoint': 'brain/strategy-engine/ranking'}
+            )
+            if result.get('success'):
+                return result.get('data', {})
+        except Exception as e:
+            log.error(f"Error obteniendo ranking: {e}")
+        
+        # Fallback: leer archivo directamente
+        try:
+            ranking_path = BASE_PATH / "tmp_agent" / "state" / "strategy_engine" / "strategy_ranking_latest.json"
+            if ranking_path.exists():
+                with open(ranking_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+        except Exception as e:
+            log.error(f"Error leyendo archivo ranking: {e}")
+        
+        return None
+    
+    def _identify_needy_strategies(self, ranking: Dict) -> List[Dict]:
+        """Identifica estrategias que necesitan acumular muestras."""
+        candidates = []
+        
+        # Revisar top_recovery_candidate
+        recovery = ranking.get('top_recovery_candidate', {})
+        if recovery:
+            gap = self._calculate_gap(recovery)
+            if gap > 0:
+                candidates.append({
+                    'strategy_id': recovery.get('strategy_id'),
+                    'venue': recovery.get('venue', 'unknown'),
+                    'entries_resolved': recovery.get('entries_resolved', 0),
+                    'sample_quality': recovery.get('sample_quality', 0.0),
+                    'target_entries': self.TARGET_ENTRIES,
+                    'gap': gap,
+                    'priority': self._calculate_priority(recovery),
+                    'venue_ready': recovery.get('venue_ready', False),
+                    'paper_only': recovery.get('paper_only', True)
+                })
+        
+        # Revisar otras estrategias en ranking
+        ranked = ranking.get('ranked', [])
+        for strategy in ranked:
+            gap = self._calculate_gap(strategy)
+            if gap > 0:
+                candidates.append({
+                    'strategy_id': strategy.get('strategy_id'),
+                    'venue': strategy.get('venue', 'unknown'),
+                    'entries_resolved': strategy.get('entries_resolved', 0),
+                    'sample_quality': strategy.get('sample_quality', 0.0),
+                    'target_entries': self.TARGET_ENTRIES,
+                    'gap': gap,
+                    'priority': self._calculate_priority(strategy),
+                    'venue_ready': strategy.get('venue_ready', False),
+                    'paper_only': strategy.get('paper_only', True)
+                })
+        
+        # Ordenar por prioridad (mayor gap primero)
+        candidates.sort(key=lambda x: x['priority'], reverse=True)
+        return candidates
+    
+    def _calculate_gap(self, strategy: Dict) -> int:
+        """Calcula cuántos trades faltan."""
+        entries = strategy.get('entries_resolved', 0)
+        sample_quality = strategy.get('sample_quality', 0.0)
+        
+        # Si no cumple mínimos, necesita alcanzar TARGET_ENTRIES
+        if entries < self.MIN_ENTRIES_RESOLVED or sample_quality < self.MIN_SAMPLE_QUALITY:
+            return self.TARGET_ENTRIES - entries
+        
+        return 0
+    
+    def _calculate_priority(self, strategy: Dict) -> float:
+        """Calcula prioridad de la estrategia (mayor = más urgente)."""
+        entries = strategy.get('entries_resolved', 0)
+        sample_quality = strategy.get('sample_quality', 0.0)
+        expectancy = strategy.get('expectancy', 0.0)
+        
+        # Prioridad base: cuántos trades faltan
+        gap = self.TARGET_ENTRIES - entries
+        
+        # Bonus si tiene buen expectancy (más prometedora)
+        expectancy_bonus = min(expectancy * 0.1, 2.0)  # Max +2
+        
+        # Penalización si sample_quality es muy bajo
+        sample_penalty = max(0, (self.MIN_SAMPLE_QUALITY - sample_quality) * 10)
+        
+        return gap + expectancy_bonus - sample_penalty
+    
+    def _can_execute_trade(self) -> bool:
+        """Verifica si puede ejecutar trade (cooldown)."""
+        if not self.last_trade_time:
+            return True
+        
+        elapsed = (datetime.now() - self.last_trade_time).total_seconds() / 60
+        return elapsed >= self.COOLDOWN_MINUTES
+    
+    async def _execute_paper_trades(self, candidate: Dict):
+        """Ejecuta trades paper para acumular muestras."""
+        strategy_id = candidate['strategy_id']
+        venue = candidate['venue']
+        gap = min(candidate['gap'], self.MAX_TRADES_PER_SESSION)
+        
+        log.info(f"\n🎯 EJECUTANDO TRADES PAPER")
+        log.info(f"   Estrategia: {strategy_id}")
+        log.info(f"   Venue: {venue}")
+        log.info(f"   Gap a cubrir: {gap} trades")
+        log.info(f"   Modo: PAPER ONLY (demo/practice)")
+        
+        for i in range(gap):
+            if self.session_trades_count >= self.MAX_TRADES_PER_SESSION:
+                log.info(f"\n⛔ Límite de sesión alcanzado ({self.MAX_TRADES_PER_SESSION} trades)")
+                break
+            
+            log.info(f"\n   Trade {i+1}/{gap}:")
+            
+            try:
+                # Ejecutar trade según venue
+                if venue == 'pocket_option':
+                    result = await self._execute_pocketoption_trade(strategy_id)
+                elif venue == 'ibkr':
+                    result = await self._execute_ibkr_trade(strategy_id)
+                else:
+                    log.warning(f"   Venue no soportado: {venue}")
+                    continue
+                
+                if result.get('success'):
+                    log.info(f"   ✅ Trade ejecutado: {result.get('trade_id', 'N/A')}")
+                    self.session_trades_count += 1
+                    self.last_trade_time = datetime.now()
+                    self._save_state()
+                    
+                    # Esperar entre trades
+                    if i < gap - 1:
+                        wait_time = random.randint(5, 15)  # 5-15 segundos
+                        log.info(f"   ⏳ Esperando {wait_time}s antes del siguiente trade...")
+                        await asyncio.sleep(wait_time)
+                else:
+                    log.error(f"   ❌ Error ejecutando trade: {result.get('error', 'Unknown')}")
+                    
+            except Exception as e:
+                log.error(f"   ❌ Excepción ejecutando trade: {e}")
+        
+        log.info(f"\n✅ Sesión completada: {self.session_trades_count} trades ejecutados")
+        log.info(f"   Próxima revisión en {self.CHECK_INTERVAL_MINUTES} minutos")
+    
+    async def _execute_pocketoption_trade(self, strategy_id: str) -> Dict:
+        """Ejecuta trade en PocketOption (demo)."""
+        log.info(f"      📱 PocketOption (DEMO)")
+        
+        # Obtener datos de PocketOption
+        try:
+            result = await self.tools.execute(
+                'get_pocketoption_data',
+                {'symbol': 'AUDNZD_otc', 'amount': 1.0, 'duration': 60}
+            )
+            
+            if result.get('success'):
+                return {
+                    'success': True,
+                    'trade_id': f"po_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{random.randint(1000,9999)}",
+                    'venue': 'pocket_option',
+                    'mode': 'demo',
+                    'strategy_id': strategy_id,
+                    'symbol': 'AUDNZD_otc',
+                    'amount': 1.0,
+                    'duration': 60,
+                    'timestamp': datetime.now().isoformat()
+                }
+            else:
+                return {'success': False, 'error': result.get('error', 'Unknown')}
+                
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+    
+    async def _execute_ibkr_trade(self, strategy_id: str) -> Dict:
+        """Ejecuta trade en IBKR (paper)."""
+        log.info(f"      🏦 IBKR (PAPER)")
+        
+        try:
+            result = await self.tools.execute(
+                'execute_trade_paper',
+                {
+                    'symbol': 'SPY',
+                    'direction': 'buy',
+                    'amount': 1.0
+                }
+            )
+            
+            return result if result else {'success': False, 'error': 'No response'}
+            
+        except Exception as e:
+            return {'success': False, 'error': str(e)}
+    
+    def get_status(self) -> Dict:
+        """Retorna estado actual del acumulador."""
+        return {
+            'running': self.running,
+            'last_trade_time': self.last_trade_time.isoformat() if self.last_trade_time else None,
+            'session_trades_count': self.session_trades_count,
+            'check_interval_minutes': self.CHECK_INTERVAL_MINUTES,
+            'cooldown_minutes': self.COOLDOWN_MINUTES,
+            'min_sample_quality': self.MIN_SAMPLE_QUALITY,
+            'min_entries_resolved': self.MIN_ENTRIES_RESOLVED,
+            'target_entries': self.TARGET_ENTRIES
+        }
+
+
+# Instancia global
+_sample_accumulator_instance: Optional[SampleAccumulatorAgent] = None
+
+
+def get_sample_accumulator() -> SampleAccumulatorAgent:
+    """Obtiene instancia singleton del SampleAccumulatorAgent."""
+    global _sample_accumulator_instance
+    if _sample_accumulator_instance is None:
+        _sample_accumulator_instance = SampleAccumulatorAgent()
+    return _sample_accumulator_instance
+
+
+async def start_sample_accumulator():
+    """Inicia el SampleAccumulatorAgent."""
+    accumulator = get_sample_accumulator()
+    await accumulator.start()
+
+
+def stop_sample_accumulator():
+    """Detiene el SampleAccumulatorAgent."""
+    global _sample_accumulator_instance
+    if _sample_accumulator_instance:
+        _sample_accumulator_instance.stop()
+        _sample_accumulator_instance = None
+
+

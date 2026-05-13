@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Brain Lab - Acceso Rápido</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f0f0f0; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .link { display: block; padding: 15px; margin: 10px 0; background: #007cba; color: white; text-decoration: none; border-radius: 5px; text-align: center; }
+        .link:hover { background: #005a87; }
+        .status { padding: 5px 10px; border-radius: 3px; margin-left: 10px; }
+        .online { background: #4CAF50; color: white; }
+        .offline { background: #f44336; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 Brain Lab - Acceso Rápido</h1>
+        <p>Enlaces directos a todas las interfaces del sistema</p>
+        
+        <h2>🌐 Interfaces Principales</h2>
+        <a href="http://127.0.0.1:8010/ui/autobuild-dashboard-v3" class="link">
+            📊 Dashboard Principal (Autobuild Dashboard V3)
+        </a>
+        
+        <a href="http://127.0.0.1:8010/" class="link">
+            🧠 Brain Server API Root
+        </a>
+        
+        <a href="http://127.0.0.1:8030/healthz" class="link">
+            🎓 Advisor Server Status
+        </a>
+        
+        <h2>🔧 Herramientas de Desarrollo</h2>
+        <a href="http://127.0.0.1:8010/v1/agent/status" class="link">
+            🔍 Status del Agente
+        </a>
+        
+        <a href="http://127.0.0.1:8010/ui/" class="link">
+            📁 Interfaz UI del Brain Server
+        </a>
+        
+        <h2>📊 Estado del Sistema</h2>
+        <div id="status">
+            <p>🔄 Actualizando estado...</p>
+        </div>
+    </div>
+    
+    <script>
+        // Verificar estado de servicios
+        async function checkStatus() {
+            const services = [
+                { name: 'Brain Server', url: 'http://127.0.0.1:8010/' },
+                { name: 'Advisor Server', url: 'http://127.0.0.1:8030/healthz' },
+                { name: 'Dashboard', url: 'http://127.0.0.1:8010/ui/autobuild-dashboard-v3' }
+            ];
+            
+            let statusHTML = '';
+            
+            for (let service of services) {
+                try {
+                    const response = await fetch(service.url, { method: 'HEAD' });
+                    statusHTML += <p>✅ : <span class="status online">ONLINE</span></p>;
+                } catch (error) {
+                    statusHTML += <p>❌ : <span class="status offline">OFFLINE</span></p>;
+                }
+            }
+            
+            document.getElementById('status').innerHTML = statusHTML;
+        }
+        
+        checkStatus();
+        setInterval(checkStatus, 10000); // Actualizar cada 10 segundos
+    </script>
+</body>
+</html>

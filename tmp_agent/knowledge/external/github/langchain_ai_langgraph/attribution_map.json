@@ -1,0 +1,148 @@
+{
+  "source_id": "github_langchain_ai_langgraph_20260508",
+  "generated_at_utc": "2026-05-08T05:26:36.552149Z",
+  "patterns": [
+    {
+      "pattern_id": "stateful_graph_orchestration",
+      "semantic_family": "graph_orchestration",
+      "source_id": "github_langchain_ai_langgraph_20260508",
+      "evidence_refs": [
+        {
+          "source_file": ".github/workflows/_test_langgraph.yml",
+          "reason": "Priority file snippet contains: graph.",
+          "evidence_type": "priority_file_snippet"
+        },
+        {
+          "source_file": ".github/scripts/run_langgraph_cli_test.py",
+          "reason": "Priority file snippet contains: graph.",
+          "evidence_type": "priority_file_snippet"
+        },
+        {
+          "source_file": "libs/langgraph/README.md",
+          "reason": "Priority file snippet contains: graph.",
+          "evidence_type": "priority_file_snippet"
+        }
+      ]
+    },
+    {
+      "pattern_id": "failure_recovery_checkpoints",
+      "semantic_family": "checkpoint_recovery",
+      "source_id": "github_langchain_ai_langgraph_20260508",
+      "evidence_refs": [
+        {
+          "source_file": "libs/checkpoint-sqlite/README.md",
+          "reason": "Priority file snippet contains: checkpoint.",
+          "evidence_type": "priority_file_snippet"
+        },
+        {
+          "source_file": "libs/checkpoint-conformance/README.md",
+          "reason": "Priority file snippet contains: checkpoint.",
+          "evidence_type": "priority_file_snippet"
+        },
+        {
+          "source_file": "libs/checkpoint-postgres/README.md",
+          "reason": "Priority file snippet contains: checkpoint.",
+          "evidence_type": "priority_file_snippet"
+        }
+      ]
+    },
+    {
+      "pattern_id": "ci_backed_regression_harness",
+      "semantic_family": "regression_harness",
+      "source_id": "github_langchain_ai_langgraph_20260508",
+      "evidence_refs": [
+        {
+          "source_file": ".github/",
+          "reason": "Root index shows tests/CI structure.",
+          "evidence_type": "root_index_signal"
+        }
+      ]
+    },
+    {
+      "pattern_id": "structured_tool_dispatch",
+      "semantic_family": "tool_routing",
+      "source_id": "github_langchain_ai_langgraph_20260508",
+      "evidence_refs": [
+        {
+          "source_file": "README.md",
+          "reason": "Dependency hints or README mention tool calling / tool usage explicitly.",
+          "evidence_type": "text_match"
+        }
+      ]
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "HYP_LANGCHAIN_AI_LANGGRAPH_STATEFUL_GRAPH_ORCHESTRATION_001",
+      "semantic_key": "planning_coherence:graph_orchestration",
+      "source_id": "github_langchain_ai_langgraph_20260508",
+      "pattern_id": "stateful_graph_orchestration",
+      "evidence_refs": [
+        {
+          "source_file": ".github/workflows/_test_langgraph.yml",
+          "reason": "Priority file snippet contains: graph.",
+          "evidence_type": "priority_file_snippet"
+        },
+        {
+          "source_file": ".github/scripts/run_langgraph_cli_test.py",
+          "reason": "Priority file snippet contains: graph.",
+          "evidence_type": "priority_file_snippet"
+        },
+        {
+          "source_file": "libs/langgraph/README.md",
+          "reason": "Priority file snippet contains: graph.",
+          "evidence_type": "priority_file_snippet"
+        }
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_LANGCHAIN_AI_LANGGRAPH_FAILURE_RECOVERY_CHECKPOINTS_002",
+      "semantic_key": "execution_reliability:checkpoint_recovery",
+      "source_id": "github_langchain_ai_langgraph_20260508",
+      "pattern_id": "failure_recovery_checkpoints",
+      "evidence_refs": [
+        {
+          "source_file": "libs/checkpoint-sqlite/README.md",
+          "reason": "Priority file snippet contains: checkpoint.",
+          "evidence_type": "priority_file_snippet"
+        },
+        {
+          "source_file": "libs/checkpoint-conformance/README.md",
+          "reason": "Priority file snippet contains: checkpoint.",
+          "evidence_type": "priority_file_snippet"
+        },
+        {
+          "source_file": "libs/checkpoint-postgres/README.md",
+          "reason": "Priority file snippet contains: checkpoint.",
+          "evidence_type": "priority_file_snippet"
+        }
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_LANGCHAIN_AI_LANGGRAPH_CI_BACKED_REGRESSION_HARNESS_003",
+      "semantic_key": "governance_quality:regression_harness",
+      "source_id": "github_langchain_ai_langgraph_20260508",
+      "pattern_id": "ci_backed_regression_harness",
+      "evidence_refs": [
+        {
+          "source_file": ".github/",
+          "reason": "Root index shows tests/CI structure.",
+          "evidence_type": "root_index_signal"
+        }
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_LANGCHAIN_AI_LANGGRAPH_STRUCTURED_TOOL_DISPATCH_004",
+      "semantic_key": "tool_use_accuracy:tool_routing",
+      "source_id": "github_langchain_ai_langgraph_20260508",
+      "pattern_id": "structured_tool_dispatch",
+      "evidence_refs": [
+        {
+          "source_file": "README.md",
+          "reason": "Dependency hints or README mention tool calling / tool usage explicitly.",
+          "evidence_type": "text_match"
+        }
+      ]
+    }
+  ]
+}

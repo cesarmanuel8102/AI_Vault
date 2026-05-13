@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_1a57dab57a3aa9d6",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_p3_ok_20260302_185450\\plan.json",
+    "content": "{\"schema_version\": \"brainlab.roadmap.v1\", \"current_phase\": \"P2_PLANNER_HARDENING_SCHEMA_NORMALIZATION\", \"next_action\": \"P2.1\"}",
+    "value": null,
+    "text": "{\"schema_version\": \"brainlab.roadmap.v1\", \"current_phase\": \"P2_PLANNER_HARDENING_SCHEMA_NORMALIZATION\", \"next_action\": \"P2.1\"}"
+  },
+  "room_id": "room_p3_ok_20260302_185450",
+  "step_id": "S1",
+  "created_at": "2026-03-02T23:55:04.146195+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

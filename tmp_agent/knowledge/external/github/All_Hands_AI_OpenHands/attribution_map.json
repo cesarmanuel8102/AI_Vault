@@ -1,0 +1,58 @@
+{
+  "source_id": "github_All_Hands_AI_OpenHands_20260508",
+  "generated_at_utc": "2026-05-08T05:07:38.776824Z",
+  "patterns": [
+    {
+      "pattern_id": "sandboxed_patch_planning",
+      "semantic_family": "patch_planning",
+      "source_id": "github_All_Hands_AI_OpenHands_20260508",
+      "evidence_refs": [
+        {
+          "source_file": "README.snapshot.md",
+          "reason": "README describes coding-agent / patch / diff behavior.",
+          "evidence_type": "text_match"
+        }
+      ]
+    },
+    {
+      "pattern_id": "test_first_code_repair",
+      "semantic_family": "test_first_repair",
+      "source_id": "github_All_Hands_AI_OpenHands_20260508",
+      "evidence_refs": [
+        {
+          "source_file": "README.snapshot.md",
+          "reason": "README/repo description emphasizes repair or coding-agent workflows.",
+          "evidence_type": "text_match"
+        }
+      ]
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "HYP_ALL_HANDS_AI_OPENHANDS_SANDBOXED_PATCH_PLANNING_001",
+      "semantic_key": "execution_reliability:patch_planning",
+      "source_id": "github_All_Hands_AI_OpenHands_20260508",
+      "pattern_id": "sandboxed_patch_planning",
+      "evidence_refs": [
+        {
+          "source_file": "README.snapshot.md",
+          "reason": "README describes coding-agent / patch / diff behavior.",
+          "evidence_type": "text_match"
+        }
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_ALL_HANDS_AI_OPENHANDS_TEST_FIRST_CODE_REPAIR_002",
+      "semantic_key": "tool_use_accuracy:test_first_repair",
+      "source_id": "github_All_Hands_AI_OpenHands_20260508",
+      "pattern_id": "test_first_code_repair",
+      "evidence_refs": [
+        {
+          "source_file": "README.snapshot.md",
+          "reason": "README/repo description emphasizes repair or coding-agent workflows.",
+          "evidence_type": "text_match"
+        }
+      ]
+    }
+  ]
+}

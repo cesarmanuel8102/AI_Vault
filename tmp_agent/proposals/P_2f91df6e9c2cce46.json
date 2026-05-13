@@ -1,0 +1,15 @@
+{
+  "proposal_id": "P_2f91df6e9c2cce46",
+  "tool_name": "append_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_p3_1_20260303_104350\\patches\\p3_1_episode_logging.ndjson",
+    "content": "{\"timestamp\": \"2026-03-03T16:01:48.436319+00:00\", \"room_id\": \"room_p3_1_20260303_104350\", \"event\": \"episode_completed\", \"details\": \"All artifacts for P3.1 established successfully. Proceeding to episode update for P3.2.\"}",
+    "value": null,
+    "text": "{\"timestamp\": \"2026-03-03T16:01:48.436319+00:00\", \"room_id\": \"room_p3_1_20260303_104350\", \"event\": \"episode_completed\", \"details\": \"All artifacts for P3.1 established successfully. Proceeding to episode update for P3.2.\"}"
+  },
+  "room_id": "room_p3_1_20260303_104350",
+  "step_id": "S1",
+  "created_at": "2026-03-03T16:02:07.082408+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

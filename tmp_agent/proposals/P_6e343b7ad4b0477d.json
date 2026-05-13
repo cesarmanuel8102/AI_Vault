@@ -1,0 +1,16 @@
+{
+  "proposal_id": "P_6e343b7ad4b0477d",
+  "tool_name": "write_file",
+  "tool_args": {
+    "path": "c:\\ai_vault\\tmp_agent\\state\\rooms\\room_manual_loop_20260303_214154\\patches\\brain_episode_v1.diff",
+    "content": "diff --git a/brain_server.py b/brain_server.py\nindex abcdef..123456 100644\n--- a/brain_server.py\n+++ b/brain_server.py\n@@ -1,3 +1,3 @@\n-def old_function():\n+def new_function():\n    pass",
+    "value": null,
+    "raw_content": "diff --git a/brain_server.py b/brain_server.py\\nindex abcdef..123456 100644\\n--- a/brain_server.py\\n+++ b/brain_server.py\\n@@ -1,3 +1,3 @@\\n-def old_function():\\n+def new_function():\\n    pass",
+    "text": "diff --git a/brain_server.py b/brain_server.py\nindex abcdef..123456 100644\n--- a/brain_server.py\n+++ b/brain_server.py\n@@ -1,3 +1,3 @@\n-def old_function():\n+def new_function():\n    pass"
+  },
+  "room_id": "room_manual_loop_20260303_214154",
+  "step_id": "S1",
+  "created_at": "2026-03-04T02:42:06.559252+00:00",
+  "kind": "write_proposal",
+  "note": "SAFE_MIN: proposal only; requires APPLY_<proposal_id> to execute"
+}

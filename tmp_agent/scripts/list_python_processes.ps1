@@ -1,0 +1,1 @@
+Get-Process -Name "python" -ErrorAction SilentlyContinue | Select-Object Id, ProcessName, Path, @{Name="CPU(s)";Expression={$_.CPU}}, WorkingSet, StartTime | Format-Table -AutoSize

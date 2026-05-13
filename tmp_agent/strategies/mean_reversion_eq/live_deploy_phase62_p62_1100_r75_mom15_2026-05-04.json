@@ -1,0 +1,68 @@
+{
+  "generated_at_utc": "2026-05-04T01:51:56.195716+00:00",
+  "project_id": 29652652,
+  "profile": "P62_1100_R75_MOM15",
+  "steps": [
+    {
+      "step": "files_update_main",
+      "data": {
+        "source": "C:\\AI_VAULT\\tmp_agent\\strategies\\mean_reversion_eq\\main_phase62_pf200_orb_1100_defensive.py",
+        "success": true
+      }
+    },
+    {
+      "step": "project_params_set",
+      "data": {
+        "count": 26,
+        "params_path": "C:\\AI_VAULT\\tmp_agent\\strategies\\mean_reversion_eq\\params_phase62_p62_1100_r75_mom15_2026-05-04.json"
+      }
+    },
+    {
+      "step": "compile_done",
+      "data": {
+        "compileId": "3430dafa4fb396728e054acbfff9e823-5b907821aa5e26cc316eec986e52eba5"
+      }
+    },
+    {
+      "step": "live_before",
+      "data": {
+        "status": "Running",
+        "deployId": "L-8287f04765594d5bb1cdf0359d09e4c5",
+        "brokerage": "PaperBrokerage",
+        "nodeId": null
+      }
+    },
+    {
+      "step": "live_stop",
+      "data": {
+        "success": true,
+        "errors": null
+      }
+    },
+    {
+      "step": "live_stopped_confirm",
+      "data": {
+        "attempt": 1,
+        "status": "Stopped"
+      }
+    },
+    {
+      "step": "live_create_ok",
+      "data": {
+        "retry": 1,
+        "deployId": "L-5489e1f300b1aeeebd0c98a5bd1a5ef0"
+      }
+    },
+    {
+      "step": "live_confirm",
+      "data": {
+        "attempt": 1,
+        "deployId": "L-5489e1f300b1aeeebd0c98a5bd1a5ef0",
+        "status": "Running",
+        "launched": "2026-04-14 21:16:58",
+        "brokerage": "PaperBrokerage",
+        "nodeId": null
+      }
+    }
+  ]
+}

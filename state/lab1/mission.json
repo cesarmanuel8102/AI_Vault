@@ -1,0 +1,11 @@
+{
+  "room_id": "lab1",
+  "objective": "Crear good.txt en WORKSPACE_ROOT y luego listar el directorio para verificar.",
+  "constraints": [
+    "Todos los writes deben ser dentro de WORKSPACE_ROOT",
+    "No escribir secretos"
+  ],
+  "status": "active",
+  "created_at": 1771955399,
+  "updated_at": 1771955399
+}

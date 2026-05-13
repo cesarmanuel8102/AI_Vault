@@ -1,0 +1,14 @@
+{
+  "mission_id": "mission_010f253341fe",
+  "created_ts": "2026-02-26T16:18:16.362521Z",
+  "updated_ts": "2026-02-26T22:50:32.016478Z",
+  "goal": "",
+  "status": "running",
+  "notes": [],
+  "room_id": "default",
+  "objective": "Continuar Brain Lab: Planner→Evaluator con estado persistente y tools gobernados.",
+  "constraints": [],
+  "created_at": 1772122696,
+  "updated_at": 1772122696,
+  "status_legacy": "active"
+}

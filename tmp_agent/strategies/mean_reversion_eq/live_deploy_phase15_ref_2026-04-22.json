@@ -1,0 +1,66 @@
+{
+  "generated_at_utc": "2026-04-22T06:19:28.713057+00:00",
+  "project_id": 29652652,
+  "steps": [
+    {
+      "step": "files_update_main",
+      "data": {
+        "source": "C:\\AI_VAULT\\tmp_agent\\strategies\\mean_reversion_eq\\main_phase11_pf200_entryfill_consistency.py",
+        "success": true
+      }
+    },
+    {
+      "step": "project_params_set",
+      "data": {
+        "count": 41
+      }
+    },
+    {
+      "step": "compile_done",
+      "data": {
+        "compileId": "28aa66efacb28bf33594105861dfdd4a-885c63a6ee73321668b61485e032a6ef"
+      }
+    },
+    {
+      "step": "live_before",
+      "data": {
+        "status": "Running",
+        "deployId": "L-d42cb702146c01e8e6d1f44da8f93cce",
+        "brokerage": "PaperBrokerage",
+        "nodeId": null
+      }
+    },
+    {
+      "step": "live_stop",
+      "data": {
+        "success": true,
+        "errors": null
+      }
+    },
+    {
+      "step": "live_stopped_confirm",
+      "data": {
+        "attempt": 1,
+        "status": "Stopped"
+      }
+    },
+    {
+      "step": "live_create_ok",
+      "data": {
+        "retry": 1,
+        "deployId": "L-0bb732cb5e423ec4f4c28bd681641421"
+      }
+    },
+    {
+      "step": "live_confirm",
+      "data": {
+        "attempt": 1,
+        "deployId": "L-0bb732cb5e423ec4f4c28bd681641421",
+        "status": "Running",
+        "launched": "2026-04-14 21:16:58",
+        "brokerage": "PaperBrokerage",
+        "nodeId": null
+      }
+    }
+  ]
+}

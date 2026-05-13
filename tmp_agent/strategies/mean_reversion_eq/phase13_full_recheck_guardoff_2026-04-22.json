@@ -1,0 +1,15 @@
+{
+  "generated_at_utc": "2026-04-22T05:29:33.339587+00:00",
+  "compile_id": "6315011a6956a53060c2a74431d2c220-885c63a6ee73321668b61485e032a6ef",
+  "backtest_id": "cd61f5226b1cc9996465653033fe7ac8",
+  "status": "Completed.",
+  "error": null,
+  "stacktrace": null,
+  "np_pct": null,
+  "dd_pct": null,
+  "orders": null,
+  "closed_trades": 0,
+  "dbr": 0,
+  "tbr": 1,
+  "stress_days": 109
+}

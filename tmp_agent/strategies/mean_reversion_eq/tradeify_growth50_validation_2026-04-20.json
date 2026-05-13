@@ -1,0 +1,69 @@
+{
+  "generated_at_utc": "2026-04-20T22:19:00Z",
+  "project_id": 29652652,
+  "profile": "TF_G50_FAST_B1_COMPLIANT",
+  "results": [
+    {
+      "status": "Completed.",
+      "backtest_id": "6a17f7905f4e1de1fcdcbee08088ba18",
+      "np_pct": -1.865,
+      "dd_pct": 4.0,
+      "sharpe": -2.293,
+      "orders": 38,
+      "dbr": 1,
+      "tbr": 1,
+      "challenge_hit": false,
+      "challenge_days": -1,
+      "consistency_pct": 999.0,
+      "error": null,
+      "window": "CH_2025"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "129568118f3d3c4962f6ca62c9e6f713",
+      "np_pct": -4.314,
+      "dd_pct": 4.3,
+      "sharpe": -3.107,
+      "orders": 6,
+      "dbr": 1,
+      "tbr": 1,
+      "challenge_hit": false,
+      "challenge_days": -1,
+      "consistency_pct": 999.0,
+      "error": null,
+      "window": "CH_2026_Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "dc7eafd7bc1e43890d7d6ca2405ba1bc",
+      "np_pct": -1.865,
+      "dd_pct": 4.0,
+      "sharpe": -2.468,
+      "orders": 38,
+      "dbr": 1,
+      "tbr": 1,
+      "challenge_hit": false,
+      "challenge_days": -1,
+      "consistency_pct": 999.0,
+      "error": null,
+      "window": "OOS_2025_2026Q1"
+    },
+    {
+      "status": "Completed.",
+      "backtest_id": "54bd8de93e6955c9f672daf3187d6b68",
+      "np_pct": -0.693,
+      "dd_pct": 4.2,
+      "sharpe": -0.179,
+      "orders": 26,
+      "dbr": 3,
+      "tbr": 1,
+      "challenge_hit": false,
+      "challenge_days": -1,
+      "consistency_pct": 999.0,
+      "error": null,
+      "window": "STRESS_2020"
+    }
+  ],
+  "compile_id": "97e61c7ae974a7363124bb7e8f93dd1a-545aa20525ba956e6033f5b8e3b002f8",
+  "tradeify_growth50_should_pass": false
+}

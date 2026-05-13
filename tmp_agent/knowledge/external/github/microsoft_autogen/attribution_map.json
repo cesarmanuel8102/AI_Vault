@@ -1,0 +1,128 @@
+{
+  "source_id": "github_microsoft_autogen_20260508",
+  "generated_at_utc": "2026-05-08T05:26:24.680534Z",
+  "patterns": [
+    {
+      "pattern_id": "structured_multi_agent_debate",
+      "semantic_family": "multi_agent_debate",
+      "source_id": "github_microsoft_autogen_20260508",
+      "evidence_refs": [
+        {
+          "source_file": "python/samples/agentchat_azure_postgresql/README.md",
+          "reason": "Priority file snippet contains: multi-agent.",
+          "evidence_type": "priority_file_snippet"
+        },
+        {
+          "source_file": "python/packages/autogen-agentchat/README.md",
+          "reason": "Priority file snippet contains: multi-agent.",
+          "evidence_type": "priority_file_snippet"
+        },
+        {
+          "source_file": "python/samples/agentchat_fastapi/README.md",
+          "reason": "Priority file snippet contains: groupchat.",
+          "evidence_type": "priority_file_snippet"
+        }
+      ]
+    },
+    {
+      "pattern_id": "role_orchestrated_tool_routing",
+      "semantic_family": "tool_routing",
+      "source_id": "github_microsoft_autogen_20260508",
+      "evidence_refs": [
+        {
+          "source_file": "python/samples/agentchat_chainlit/README.md",
+          "reason": "Priority file snippet contains: tool.",
+          "evidence_type": "priority_file_snippet"
+        }
+      ]
+    },
+    {
+      "pattern_id": "ci_backed_regression_harness",
+      "semantic_family": "regression_harness",
+      "source_id": "github_microsoft_autogen_20260508",
+      "evidence_refs": [
+        {
+          "source_file": ".github/",
+          "reason": "Root index shows tests/CI structure.",
+          "evidence_type": "root_index_signal"
+        }
+      ]
+    },
+    {
+      "pattern_id": "structured_tool_dispatch",
+      "semantic_family": "tool_routing",
+      "source_id": "github_microsoft_autogen_20260508",
+      "evidence_refs": [
+        {
+          "source_file": "README.md",
+          "reason": "Dependency hints or README mention tool calling / tool usage explicitly.",
+          "evidence_type": "text_match"
+        }
+      ]
+    }
+  ],
+  "hypotheses": [
+    {
+      "hypothesis_id": "HYP_MICROSOFT_AUTOGEN_STRUCTURED_MULTI_AGENT_DEBATE_001",
+      "semantic_key": "planning_coherence:multi_agent_debate",
+      "source_id": "github_microsoft_autogen_20260508",
+      "pattern_id": "structured_multi_agent_debate",
+      "evidence_refs": [
+        {
+          "source_file": "python/samples/agentchat_azure_postgresql/README.md",
+          "reason": "Priority file snippet contains: multi-agent.",
+          "evidence_type": "priority_file_snippet"
+        },
+        {
+          "source_file": "python/packages/autogen-agentchat/README.md",
+          "reason": "Priority file snippet contains: multi-agent.",
+          "evidence_type": "priority_file_snippet"
+        },
+        {
+          "source_file": "python/samples/agentchat_fastapi/README.md",
+          "reason": "Priority file snippet contains: groupchat.",
+          "evidence_type": "priority_file_snippet"
+        }
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_MICROSOFT_AUTOGEN_ROLE_ORCHESTRATED_TOOL_ROUTING_002",
+      "semantic_key": "tool_use_accuracy:tool_routing",
+      "source_id": "github_microsoft_autogen_20260508",
+      "pattern_id": "role_orchestrated_tool_routing",
+      "evidence_refs": [
+        {
+          "source_file": "python/samples/agentchat_chainlit/README.md",
+          "reason": "Priority file snippet contains: tool.",
+          "evidence_type": "priority_file_snippet"
+        }
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_MICROSOFT_AUTOGEN_CI_BACKED_REGRESSION_HARNESS_003",
+      "semantic_key": "governance_quality:regression_harness",
+      "source_id": "github_microsoft_autogen_20260508",
+      "pattern_id": "ci_backed_regression_harness",
+      "evidence_refs": [
+        {
+          "source_file": ".github/",
+          "reason": "Root index shows tests/CI structure.",
+          "evidence_type": "root_index_signal"
+        }
+      ]
+    },
+    {
+      "hypothesis_id": "HYP_MICROSOFT_AUTOGEN_STRUCTURED_TOOL_DISPATCH_004",
+      "semantic_key": "tool_use_accuracy:tool_routing",
+      "source_id": "github_microsoft_autogen_20260508",
+      "pattern_id": "structured_tool_dispatch",
+      "evidence_refs": [
+        {
+          "source_file": "README.md",
+          "reason": "Dependency hints or README mention tool calling / tool usage explicitly.",
+          "evidence_type": "text_match"
+        }
+      ]
+    }
+  ]
+}

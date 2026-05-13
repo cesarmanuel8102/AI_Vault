@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "Brain PocketOption Bridge",
+  "version": "0.2.0",
+  "description": "Captura temprana de Pocket Option demo y relay al bridge local del Brain.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:8765/*",
+    "https://pocketoption.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://pocketoption.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start",
+      "all_frames": true,
+      "match_about_blank": true
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "page_hook.js"
+      ],
+      "matches": [
+        "https://pocketoption.com/*"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+﻿{
+    "max_write_bytes":  400000,
+    "allow_write_paths":  [
+                              "C:\\AI_VAULT\\"
+                          ],
+    "allow_exec":  false,
+    "blocked_commands":  [
+                             "rm",
+                             "del",
+                             "erase",
+                             "format",
+                             "diskpart",
+                             "cipher",
+                             "bcdedit",
+                             "reg",
+                             "takeown",
+                             "icacls"
+                         ],
+    "max_read_bytes":  200000,
+    "workspace_root":  "C:\\AI_VAULT\\workspace\\",
+    "allow_read_paths":  [
+                             "C:\\AI_VAULT\\"
+                         ]
+}

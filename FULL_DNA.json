@@ -1,0 +1,209 @@
+{
+  "metadatos_sistema": {
+    "nombre": "AI_VAULT Brain V9",
+    "version": "9.0.0",
+    "fecha_actualizacion": "2026-03-22",
+    "estado_general": "AGENTE_FUNCIONAL",
+    "ruta_base": "C:\\AI_VAULT",
+    "componente_principal": "brain_v9"
+  },
+  
+  "version_actual": {
+    "brain_v9": {
+      "version": "9.0.0",
+      "ubicacion": "C:\\AI_VAULT\\tmp_agent\\brain_v9",
+      "servidor": {
+        "host": "127.0.0.1",
+        "puerto": 8090,
+        "framework": "FastAPI",
+        "estado": "CORRIENDO"
+      },
+      "componentes": {
+        "agent_loop": {
+          "fichero": "agent/loop.py",
+          "ciclo": "ORAV (Observe-Reason-Act-Verify)",
+          "max_steps": 50,
+          "ejecucion_tools": "PARALELA (asyncio.gather)",
+          "estado": "FUNCIONAL"
+        },
+        "tools": {
+          "fichero": "agent/tools.py",
+          "herramientas": [
+            "check_port",
+            "list_processes", 
+            "check_url",
+            "run_command",
+            "list_directory",
+            "search_files",
+            "read_file",
+            "get_system_info",
+            "find_dashboard_files",
+            "analyze_python",
+            "find_in_code",
+            "check_syntax",
+            "start_dashboard",
+            "start_brain_server",
+            "get_dashboard_data"
+          ],
+          "estado": "FUNCIONAL"
+        },
+        "session": {
+          "fichero": "core/session.py",
+          "version": "v3-fixed",
+          "enrutamiento": "inteligente (LLM vs Agente)",
+          "interpretacion_resultados": "SI - LLM interpreta en español",
+          "normalizacion": "content + response",
+          "estado": "FUNCIONAL"
+        },
+        "llm_manager": {
+          "fichero": "core/llm.py",
+          "version": "v2",
+          "sistema": "cadenas_fallback_inteligentes",
+          "cadenas": {
+            "agent": ["deepseek14b", "deepseek32b", "kimi_cloud", "llama8b"],
+            "code": ["coder14b", "deepseek14b", "kimi_cloud", "llama8b"],
+            "chat": ["deepseek14b", "kimi_cloud", "llama8b"],
+            "offline": ["deepseek14b", "deepseek32b", "llama8b"]
+          },
+          "deteccion_internet": "cacheada_60s",
+          "metricas": "total,success,failed,fallbacks,avg_latency",
+          "estado": "FUNCIONAL"
+        },
+        "memory": {
+          "fichero": "core/memory.py",
+          "corto_plazo": "deque maxlen=50",
+          "persistencia": "JSON",
+          "estado": "FUNCIONAL"
+        },
+        "config": {
+          "fichero": "config.py",
+          "modelo_ollama": "deepseek-r1:14b",
+          "max_tokens": 8192,
+          "timeout": 90,
+          "contexto": 8192,
+          "estado": "FUNCIONAL"
+        }
+      }
+    }
+  },
+  
+  "sistema_modelos": {
+    "modelo_principal": "deepseek-r1:14b",
+    "fallback_orden": [
+      "deepseek-r1:14b (9GB, GPU, rápido)",
+      "deepseek-r1:32b (19GB, GPU, más inteligente)",
+      "qwen2.5-coder:14b (9GB, especializado código)",
+      "llama3.1:8b (5GB, último recurso)",
+      "kimi-k2.5:cloud (cloud, requiere internet)"
+    ],
+    "configuracion_ollama": {
+      "OLLAMA_NUM_CTX": 8192,
+      "OLLAMA_KEEP_ALIVE": "30m",
+      "OLLAMA_NUM_PARALLEL": 2,
+      "OLLAMA_MAX_LOADED_MODELS": 2
+    },
+    "pre_calentamiento": "SI - al iniciar servidor"
+  },
+  
+  "capacidades_agente": {
+    "ciclo_orav": "Funcional",
+    "ejecucion_paralela": "Funcional",
+    "interpretacion_llm": "Funcional - respuestas en español",
+    "no_dicts_crudos": "SI - LLM interpreta resultados",
+    "herramientas_sistema": [
+      "Verificación de puertos",
+      "Listado de procesos",
+      "Análisis de archivos Python (AST)",
+      "Búsqueda en código",
+      "Verificación sintaxis",
+      "Gestión de servicios (dashboard, brain_server)",
+      "Información del sistema"
+    ],
+    "deteccion_intenciones": {
+      "agent_intents": ["ANALYSIS", "SYSTEM", "CODE", "COMMAND"],
+      "keywords_agente": [
+        "revisa", "verifica", "analiza", "diagnostica", "chequea",
+        "que pasa", "por que", "no funciona", "busca", "encuentra",
+        "ejecuta", "corre", "inspecciona", "estado de", "puerto",
+        "proceso", "log", "archivo", "carpeta", "memoria", "cpu",
+        "dashboard", "servicio", "inicia", "arranca", "detén"
+      ]
+    }
+  },
+  
+  "cambios_recientes": [
+    {
+      "fecha": "2026-03-22",
+      "version": "9.0.0",
+      "cambios": [
+        "Reemplazo completo de LLMManager - sistema de cadenas de fallback",
+        "Configuración deepseek-r1:14b como modelo principal",
+        "Optimización hardware para ASUS TUF F16 (64GB RAM, RTX 4050)",
+        "AgentLoop con ejecución paralela de herramientas",
+        "Interpretación LLM de resultados en español",
+        "Fix de respuestas vacías en session.py",
+        "Pre-calentamiento del modelo al iniciar",
+        "Detección automática de internet (cache 60s)"
+      ],
+      "ficheros_modificados": [
+        "brain_v9/core/llm.py - Nuevo sistema de modelos",
+        "brain_v9/core/session.py - Interpretación LLM",
+        "brain_v9/agent/loop.py - Ejecución paralela",
+        "brain_v9/.env.bat - deepseek-r1:14b",
+        "brain_v9/config.py - Timeouts y tokens",
+        "brain_v9/ollama_config.bat - Optimización GPU",
+        "brain_v9/main.py - Pre-calentamiento"
+      ],
+      "autor": "OpenCode"
+    }
+  ],
+  
+  "configuracion_entorno": {
+    "variables_brain": {
+      "BRAIN_BASE_PATH": "C:\\AI_VAULT",
+      "BRAIN_HOST": "127.0.0.1",
+      "BRAIN_PORT": "8090",
+      "OLLAMA_URL": "http://localhost:11434/api/generate",
+      "OLLAMA_MODEL": "deepseek-r1:14b",
+      "LLM_TIMEOUT": "90",
+      "LLM_MAX_TOKENS": "8192"
+    },
+    "servicios": {
+      "Brain V9": "http://127.0.0.1:8090",
+      "Dashboard": "http://127.0.0.1:8070",
+      "Ollama": "http://localhost:11434"
+    }
+  },
+  
+  "dependencias": {
+    "core": ["fastapi", "uvicorn", "pydantic", "aiohttp"],
+    "modelos_locales": ["deepseek-r1:14b", "deepseek-r1:32b", "qwen2.5-coder:14b", "llama3.1:8b"],
+    "modelos_cloud": ["kimi-k2.5:cloud"]
+  },
+  
+  "roadmap_inmediato": {
+    "estado": "AGENTE_MEDIO_FUNCIONAL",
+    "siguientes_pasos": [
+      "Estabilizar UI web",
+      "Implementar memoria de largo plazo mejorada",
+      "Agregar más herramientas de análisis de código",
+      "Integrar con Brain Lab RSI",
+      "Implementar sistema de plugins"
+    ],
+    "notas": "Sistema base funcional con agente ORAV operativo"
+  },
+  
+  "estado_salud": {
+    "servidor": "CORRIENDO",
+    "agente": "FUNCIONAL",
+    "llm": "deepseek-r1:14b CARGADO",
+    "tools": "15 herramientas disponibles",
+    "ui": "OPERATIVA",
+    "ultima_verificacion": "2026-03-22"
+  },
+  
+  "referencias": {
+    "documento_completo": "FULL_ADN_INTEGRAL.json",
+    "nota": "FULL_DNA.json es el resumen ejecutivo. FULL_ADN_INTEGRAL.json contiene auditoría completa."
+  }
+}
