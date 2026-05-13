@@ -65,3 +65,5 @@ agent_endpoint_hits.txt
 *.har.json
 *.ndjson
 *.txt
+
+workspace/
