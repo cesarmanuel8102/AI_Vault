@@ -52,7 +52,7 @@ async def lifespan(app: FastAPI):
     await _shutdown()
 
 
-app = FastAPI(title="Brain Chat V9", version="9.0.0", lifespan=lifespan)
+app = FastAPI(title="Brain Chat V9.1", version="9.1.0", lifespan=lifespan)
 
 from brain_v9.trading.router  import router as trading_router
 from brain_v9.autonomy.router import router as autonomy_router
@@ -111,6 +111,19 @@ def _get_brain_orchestrator():
         except Exception as e:
             log.warning(f"[Introspect] Orchestrator no disponible: {e}")
     return _brain_orchestrator
+
+# ═══ V9.1: Router unificado + Autoconciencia always-on + Dashboard Reader ═══
+try:
+    from brain.unified_chat_router import get_router as _get_chat_router
+    from brain.self_awareness_injector import get_injector as _get_awareness_injector
+    from brain.dashboard_reader import get_dashboard_reader as _get_dashboard_reader
+    from brain.auto_tick_loop import get_auto_tick_loop as _get_tick_loop
+    from brain.semantic_memory_bridge import get_semantic_memory_bridge as _get_memory_bridge
+    _V91_MODULES = True
+    log.info("[V9.1] Módulos de autoconciencia + router unificado + dashboard disponibles")
+except ImportError as e:
+    _V91_MODULES = False
+    log.warning(f"[V9.1] Módulos no disponibles: {e}")
 
 _ui_path = os.path.join(os.path.dirname(__file__), "ui")
 if os.path.exists(_ui_path):
@@ -354,10 +367,97 @@ async def chat(req: ChatRequest):
                 success=False
             )
     
-    # Chat normal ORAV
+    # ═══ V9.1: Chat con router unificado + autoconciencia always-on ═══
     from brain_v9.core.session import get_or_create_session
     session = get_or_create_session(req.session_id, active_sessions)
-    result  = await session.chat(req.message, req.model_priority)
+
+    # V9.1 Enhancement: Classify intent + inject self-awareness + dashboard context
+    if _V91_MODULES:
+        import json as _json
+        try:
+            router = _get_chat_router()
+            injector = _get_awareness_injector()
+
+            # 1. Classify intent
+            decision = router.classify(req.message)
+
+            # 2. Build self-awareness block
+            orch = _get_brain_orchestrator()
+            meta_core = orch.meta if orch else None
+            awareness_block = injector.inject(
+                orchestrator=orch,
+                meta_core=meta_core,
+            )
+
+            # 3. Build dashboard context (for dashboard-related queries)
+            dashboard_text = ""
+            if decision.category.value == "dashboard_analysis":
+                try:
+                    reader = _get_dashboard_reader()
+                    analysis = await reader.analyze()
+                    dashboard_text = analysis.to_text()
+                except Exception as dash_err:
+                    dashboard_text = f"Dashboard no disponible: {dash_err}"
+
+            # 4. Enrich system prompt
+            from brain_v9.config import SYSTEM_IDENTITY
+            enriched_prompt = router.enrich_system_prompt(
+                SYSTEM_IDENTITY, decision,
+                self_awareness_block=awareness_block.text,
+                dashboard_block=dashboard_text,
+            )
+
+            # 5. Route to agent if needed
+            if router.should_use_agent(decision):
+                global _agent_executor
+                if _agent_executor is None:
+                    _agent_executor = build_standard_executor()
+                agent_loop = AgentLoop(session.llm, _agent_executor)
+                agent_loop.MAX_STEPS = 8
+                result = await agent_loop.run(req.message)
+                return ChatResponse(
+                    response=result.get("summary", result.get("result", "Sin resultado")),
+                    session_id=req.session_id,
+                    model_used="agent_orav",
+                    success=result.get("success", False),
+                )
+
+            # 6. Normal chat with enriched prompt
+            history = session.memory.get_context()
+            messages = [{"role": "system", "content": enriched_prompt}]
+            for msg in history[-20:]:
+                if msg.get("role") in ("user", "assistant"):
+                    messages.append({"role": msg["role"], "content": msg["content"]})
+            messages.append({"role": "user", "content": req.message})
+
+            result = await session.llm.query(messages, model_priority=req.model_priority)
+
+            # Auto-ingest to semantic memory
+            if result.get("success") and result.get("content"):
+                try:
+                    bridge = _get_memory_bridge()
+                    bridge.auto_ingest_if_relevant(
+                        req.message, result["content"], req.session_id,
+                    )
+                except Exception:
+                    pass
+
+            # Save to session memory
+            session.memory.save({"role": "user", "content": req.message})
+            if result.get("success") and result.get("content"):
+                session.memory.save({"role": "assistant", "content": result["content"]})
+
+            return ChatResponse(
+                response=result.get("content", result.get("error", "Sin respuesta")),
+                session_id=req.session_id,
+                model_used=result.get("model"),
+                success=result.get("success", False),
+            )
+        except Exception as v91_err:
+            log.warning(f"[V9.1] Error en enhanced chat, fallback a normal: {v91_err}")
+
+    # Fallback: Chat normal ORAV (sin V9.1)
+    result = await session.chat(req.message, req.model_priority)
     return ChatResponse(response=result.get("content", result.get("error","Sin respuesta")),
                         session_id=req.session_id, model_used=result.get("model"), success=result.get("success",False))
 
@@ -614,8 +714,20 @@ async def _startup_background():
         _mgr = AutonomyManager()
         asyncio.create_task(_mgr.start())
         log.info("  [OK] AutonomyManager en background")
+
+        # V9.1: Start auto tick loop
+        if _V91_MODULES:
+            try:
+                tick_loop = _get_tick_loop()
+                orch = _get_brain_orchestrator()
+                tick_loop.set_orchestrator(orch)
+                asyncio.create_task(tick_loop.start())
+                log.info("  [OK] AutoTickLoop en background (intervalo: 60s)")
+            except Exception as tick_err:
+                log.warning(f"  [WARN] AutoTickLoop no pudo iniciar: {tick_err}")
+
         _startup_done = True
-        log.info("Brain V9 listo -> http://%s:%d/docs", SERVER_HOST, SERVER_PORT)
+        log.info("Brain V9.1 listo -> http://%s:%d/docs", SERVER_HOST, SERVER_PORT)
     except Exception as e:
         _startup_error = str(e)
         log.critical("Brain V9 startup FALLO: %s", e, exc_info=True)
@@ -757,6 +869,37 @@ async def brain_v2_status():
             "status": "error",
             "error": str(e)
         }
+
+
+# ═══ V9.1: Auto-tick endpoints ═══
+if _V91_MODULES:
+    @app.get("/tick/status")
+    async def tick_status():
+        loop = _get_tick_loop()
+        return loop.get_status()
+
+    @app.get("/tick/notifications")
+    async def tick_notifications(unread_only: bool = False):
+        loop = _get_tick_loop()
+        return {"notifications": loop.get_notifications(unread_only=unread_only)}
+
+    @app.post("/tick/pause")
+    async def tick_pause():
+        loop = _get_tick_loop()
+        await loop.pause()
+        return {"status": "paused"}
+
+    @app.post("/tick/resume")
+    async def tick_resume():
+        loop = _get_tick_loop()
+        await loop.resume()
+        return {"status": "resumed"}
+
+    @app.post("/tick/force")
+    async def tick_force():
+        loop = _get_tick_loop()
+        result = await loop.force_tick()
+        return result
 
 
 if __name__ == "__main__":
