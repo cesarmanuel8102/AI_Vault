@@ -43,6 +43,32 @@ from brain_v9.core.session_memory_state import (
 from brain_v9.core.intent import IntentDetector
 from brain_v9.core.state_io import read_json, write_json
 
+# Import routing guards (Phase C modularization)
+try:
+    from brain_v9.core.routing.guards import (
+        NO_TOOL_MARKERS,
+        prefers_no_tool_analysis as _prefers_no_tool_analysis_guard,
+        has_explicit_tool_target as _has_explicit_tool_target_guard,
+        is_confirmation as _is_confirmation_guard,
+        is_code_change_request as _is_code_change_request_guard,
+        is_tool_confirmation_request_response as _is_tool_confirmation_request_response_guard,
+        requires_grounded_verification as _requires_grounded_verification_guard,
+        get_verification_priority as _get_verification_priority_guard,
+        should_degrade_fastpath as _should_degrade_fastpath_guard,
+    )
+    _ROUTING_GUARDS_AVAILABLE = True
+except ImportError:
+    _ROUTING_GUARDS_AVAILABLE = False
+    # Fallback to local definitions if module not available
+    _prefers_no_tool_analysis_guard = None
+    _has_explicit_tool_target_guard = None
+    _is_confirmation_guard = None
+    _is_code_change_request_guard = None
+    _is_tool_confirmation_request_response_guard = None
+    _requires_grounded_verification_guard = None
+    _get_verification_priority_guard = None
+    _should_degrade_fastpath_guard = None
+
 log = logging.getLogger("BrainSession")
 
 # ── Routing Constants ─────────────────────────────────────────────────────────
@@ -1758,16 +1784,11 @@ SLASH_COMMANDS = {
 # ═══════════════════════════════════════════════════════════════════════════
 # CONSOLIDATED HEURISTIC CONSTANTS (FASE B - Deduplication)
 # Centralized lists to prevent heuristic drift and duplication
+# NOTE: NO_TOOL_MARKERS imported from routing/guards.py (single source of truth)
 # ═══════════════════════════════════════════════════════════════════════════
 
-# Markers indicating user does NOT want tools to be used
-NO_TOOL_MARKERS = (
-    "solo analiza", "no uses tools", "sin herramientas",
-    "no ejecutes", "sin tools", "no modifiques nada",
-    "solo explica", "sin cambios", "no hagas cambios",
-    "no modificar", "no toques", "sin modificar",
-    "no cambies", "sin herramientas", "no uses herramientas",
-)
+# Use NO_TOOL_MARKERS from routing.guards (imported at line 49)
+# This ensures consistency between guards.py and session.py
 
 
 def _normalize(result: Dict, fallback_content: str = "") -> Dict:
@@ -1922,19 +1943,57 @@ class BrainSession:
             return self._maybe_dev_block(result)
 
         # 2. Fastpath checks (real data, no LLM needed)
-        fastpath = self._maybe_fastpath(msg_stripped, model_priority=model_priority)
-        if fastpath is not None:
-            result = _normalize(fastpath, fallback_content="(sin respuesta)")
-            await self._save_turn(message, result)
-            result["intent"] = "QUERY"
-            result["route"] = "fastpath"
-            self.chat_metrics.record("fastpath", result.get("success", True),
-                                     (_time.monotonic() - _t0) * 1000)
-            self._emit_chat_completed(
-                route="fastpath", message=message, result=result,
-                duration_ms=(_time.monotonic() - _t0) * 1000,
-            )
-            return self._maybe_dev_block(result)
+        # PHASE D: Grounded verification check - degrade fastpath when user asks for real status
+        verification_required = False
+        verification_priority = 0
+        if _ROUTING_GUARDS_AVAILABLE and _requires_grounded_verification_guard:
+            verification_required = _requires_grounded_verification_guard(msg_stripped)
+            verification_priority = _get_verification_priority_guard(msg_stripped) if _get_verification_priority_guard else 0
+            
+            # If high-priority verification needed, skip fastpath templates
+            if verification_required and verification_priority >= 2:
+                self.logger.info(
+                    "Grounded verification required (priority=%d), bypassing fastpath templates for: %s...",
+                    verification_priority,
+                    msg_stripped[:60]
+                )
+                # Continue to normal routing (not fastpath)
+            else:
+                # Normal fastpath processing
+                fastpath = self._maybe_fastpath(msg_stripped, model_priority=model_priority)
+                if fastpath is not None:
+                    # Add metadata about verification status
+                    fastpath["verification_needed"] = verification_required
+                    fastpath["verification_priority"] = verification_priority
+                    fastpath["advisory_source"] = "BrainSession"
+                    fastpath["semantic_origin"] = "fastpath_with_verification_check"
+                    
+                    result = _normalize(fastpath, fallback_content="(sin respuesta)")
+                    await self._save_turn(message, result)
+                    result["intent"] = "QUERY"
+                    result["route"] = "fastpath"
+                    self.chat_metrics.record("fastpath", result.get("success", True),
+                                             (_time.monotonic() - _t0) * 1000)
+                    self._emit_chat_completed(
+                        route="fastpath", message=message, result=result,
+                        duration_ms=(_time.monotonic() - _t0) * 1000,
+                    )
+                    return self._maybe_dev_block(result)
+        else:
+            # Original fastpath logic (no verification guards available)
+            fastpath = self._maybe_fastpath(msg_stripped, model_priority=model_priority)
+            if fastpath is not None:
+                result = _normalize(fastpath, fallback_content="(sin respuesta)")
+                await self._save_turn(message, result)
+                result["intent"] = "QUERY"
+                result["route"] = "fastpath"
+                self.chat_metrics.record("fastpath", result.get("success", True),
+                                         (_time.monotonic() - _t0) * 1000)
+                self._emit_chat_completed(
+                    route="fastpath", message=message, result=result,
+                    duration_ms=(_time.monotonic() - _t0) * 1000,
+                )
+                return self._maybe_dev_block(result)
 
         code_fastpath = await self._maybe_grounded_code_analysis_fastpath(msg_stripped)
         if code_fastpath is not None:
