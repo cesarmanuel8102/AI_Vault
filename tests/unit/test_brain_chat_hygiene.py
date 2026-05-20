@@ -217,6 +217,47 @@ async def test_grounded_ui_edit_fastpath_updates_bg(monkeypatch, tmp_path):
 
 @pytest.mark.asyncio
 @pytest.mark.unit
+@pytest.mark.parametrize(
+    ("message", "should_edit", "expected_fragment"),
+    [
+        ("analiza si deberíamos modificar el color de fondo del chat a uno mas claro, no modifiques nada", False, "#0f1117"),
+        ("audita el cambio de fondo del chat, no modifiques nada", False, "#0f1117"),
+        ("no modifiques el fondo del chat aunque mencione color claro", False, "#0f1117"),
+        ("no uses tools para mover el boton de enviar a la derecha", False, "#send-btn"),
+        ("cambia el fondo del chat a un color más claro", True, "#d9dee8"),
+        ("mueve el botón de enviar a la derecha", True, "translatex(20px)"),
+    ],
+)
+async def test_grounded_ui_edit_fastpath_respects_analysis_and_no_change_requests(
+    monkeypatch,
+    tmp_path,
+    message,
+    should_edit,
+    expected_fragment,
+):
+    import brain_v9.core.session as session_mod
+
+    ui_file = tmp_path / "index.html"
+    original = ":root { --bg: #0f1117; --surface: #1a1d27; }\n  /* ── Status / Metrics ── */\n"
+    ui_file.write_text(original, encoding="utf-8")
+    monkeypatch.setattr(session_mod, "_UI_INDEX", ui_file)
+    monkeypatch.setattr(session_mod, "_UI_EDIT_STATE_PATH", tmp_path / "ui_edit_state.json")
+
+    session = session_mod.BrainSession("test_ui_edit_negative_guard")
+    result = await session._maybe_grounded_ui_edit_fastpath(message)
+    current = ui_file.read_text(encoding="utf-8")
+
+    if should_edit:
+        assert result is not None
+        assert result["success"] is True
+        assert expected_fragment in current.lower()
+    else:
+        assert result is None
+        assert current == original
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
 async def test_grounded_ui_edit_fastpath_restores_previous_dark_color(monkeypatch, tmp_path):
     import brain_v9.core.session as session_mod
 

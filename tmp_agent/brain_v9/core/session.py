@@ -3421,7 +3421,27 @@ class BrainSession:
             and any(token in msg for token in ("izquierda", "derecha", "left", "right"))
         )
 
+    @staticmethod
+    def _blocks_grounded_ui_edit_fastpath(message: str) -> bool:
+        msg = (message or "").lower()
+        no_change_markers = (
+            "no modifiques", "no modificar", "no cambies", "no cambiar",
+            "no edites", "no editar", "no toques", "no uses tools",
+            "sin herramientas", "sin modificar", "sin cambios",
+            "no hagas cambios",
+        )
+        analysis_markers = (
+            "solo analiza", "analiza", "analizar", "audita", "auditar",
+        )
+        return (
+            any(marker in msg for marker in no_change_markers)
+            or any(marker in msg for marker in analysis_markers)
+        )
+
     async def _maybe_grounded_ui_edit_fastpath(self, message: str) -> Optional[Dict]:
+        if self._blocks_grounded_ui_edit_fastpath(message):
+            return None
+
         if not (
             self._is_chat_ui_background_change_query(message)
             or self._is_chat_send_button_move_query(message)
