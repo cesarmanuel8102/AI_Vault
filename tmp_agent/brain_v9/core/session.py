@@ -2766,12 +2766,18 @@ class BrainSession:
         if any(k in msg for k in ("que hora es", "qué hora es", "hora actual", "current time", "what time")):
             return self._current_time_fastpath()
         # P-OP56: Trading analysis composite fastpath
+        # Negative guard: skip if message is about conversational routing/debug
+        _ROUTING_DEBUG_TERMS = (
+            "brainsession", "/chat", "route=", "route=llm", "route=agent",
+            "grounded_code_fastpath", "grounded_ui_edit_fastpath", "router", "routing",
+            "pipeline conversacional", "no analices trading"
+        )
         if any(k in msg for k in (
             "estado del trading", "estado actual del trading", "analiza el trading",
             "analiza el estado actual del trading", "estado de trading",
             "trading status", "analisis de trading", "análisis de trading",
             "resumen de trading", "como va el trading", "cómo va el trading",
-        )):
+        )) and not any(r in msg for r in _ROUTING_DEBUG_TERMS):
             return self._cmd_trading_analysis()
         # ── End operational fastpaths ─────────────────────────────────────
 
