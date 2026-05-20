@@ -1616,8 +1616,62 @@ class BrainSession:
 
     # ── Agent Routing ─────────────────────────────────────────────────────────
 
+    @staticmethod
+    def _prefers_no_tool_analysis(message: str) -> bool:
+        """Detect explicit user preference for pure analysis/chat without tools."""
+        msg = (message or "").lower()
+        return any(
+            marker in msg
+            for marker in (
+                "no uses tools",
+                "no use tools",
+                "no herramientas",
+                "sin herramientas",
+                "sin tools",
+                "no ejecutes herramientas",
+                "no ejecutar herramientas",
+                "no modifiques",
+                "no modificar",
+                "no cambies",
+                "no cambiar",
+                "no edites",
+                "no editar",
+                "no toques",
+                "sin cambios",
+                "sin modificar",
+                "no hagas cambios",
+                "solo analiza",
+                "solo analizar",
+                "solo razona",
+                "solo explica",
+            )
+        )
+
+    @staticmethod
+    def _has_explicit_tool_target(message: str) -> bool:
+        """Keep agent routing when the user names a concrete file/service/command target."""
+        msg = (message or "").lower()
+        return bool(
+            _CODE_ANALYSIS_PATH_RE.search(message or "")
+            or re.search(r"\b(?:[a-z]:[\\/]|/[\w.-]+/)", message or "", re.IGNORECASE)
+            or re.search(r"\b(?:puerto|port)\s*\d{2,5}\b", msg)
+            or re.search(r"\b\d{1,3}(?:\.\d{1,3}){3}(?:/\d{1,2})?\b", msg)
+            or re.search(r"\b(?:ejecuta|ejecutar|corre|run|execute)\s+[\w./:-]+", msg)
+            or any(
+                token in msg
+                for token in (
+                    "servicio brain", "servicios brain", "ollama", "dashboard",
+                    "log", "logs", "archivo", "carpeta", "directorio",
+                    "file", "folder", "directory",
+                )
+            )
+        )
+
     def _should_use_agent(self, message: str, intent: str, confidence: float = 1.0) -> bool:
         """Decide if the message needs real tool execution (agent) or just LLM chat."""
+        if self._prefers_no_tool_analysis(message) and not self._has_explicit_tool_target(message):
+            self.logger.info("No-tool analysis preference without explicit target -> LLM")
+            return False
         if any(p.search(message) for p in _AGENT_PATTERNS):
             self.logger.info("Keyword match -> AGENT")
             return True

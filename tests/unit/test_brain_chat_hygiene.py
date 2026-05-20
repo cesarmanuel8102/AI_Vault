@@ -168,6 +168,40 @@ def test_analysis_frontier_selector_for_non_operational_analysis():
 
 
 @pytest.mark.unit
+def test_no_tool_conversational_analysis_stays_on_llm_route():
+    import brain_v9.core.session as session_mod
+
+    message = (
+        "no uses tools ni modifiques nada. Solo analiza por que el fondo actual "
+        "del chat podria cansar la vista en sesiones largas"
+    )
+    session = session_mod.BrainSession("test_no_tool_analysis_route")
+    intent, confidence, _ = session.intent.detect(message, [])
+
+    assert intent == "ANALYSIS"
+    assert any(pattern.search(message) for pattern in session_mod._AGENT_PATTERNS)
+    assert session._prefers_no_tool_analysis(message) is True
+    assert session._has_explicit_tool_target(message) is False
+    assert session._should_use_agent(message, intent, confidence) is False
+
+
+@pytest.mark.unit
+def test_no_tool_preference_does_not_hide_explicit_file_target():
+    from brain_v9.core.session import BrainSession
+
+    message = (
+        "no uses tools, solo revisa C:\\AI_VAULT\\tmp_agent\\brain_v9\\core\\session.py "
+        "y dime que regla aplica"
+    )
+    session = BrainSession("test_no_tool_explicit_file_route")
+    intent, confidence, _ = session.intent.detect(message, [])
+
+    assert session._prefers_no_tool_analysis(message) is True
+    assert session._has_explicit_tool_target(message) is True
+    assert session._should_use_agent(message, intent, confidence) is True
+
+
+@pytest.mark.unit
 def test_analysis_frontier_selector_for_brain_diagnostic_query():
     from brain_v9.core.session import BrainSession
 
@@ -687,3 +721,76 @@ def test_chat_endpoint_returns_clean_user_response(api_client, monkeypatch):
     assert payload["response"] == "Resultado útil"
     assert "Agente ORAV" not in payload["response"]
     assert "[DEV]" not in payload["response"]
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("message", "should_use_agent_expected"),
+    [
+        # Caso reproducible - mensaje con prohibición explícita
+        (
+            "no uses tools ni modifiques nada. Solo analiza por qué el fondo actual del chat podría cansar la vista en sesiones largas",
+            False,
+        ),
+        # Mensaje de análisis sin herramientas
+        ("solo analiza esta idea sin herramientas", False),
+        # Mensaje de análisis puro
+        ("solo explica el concepto de routing sin usar tools", False),
+        # Mensaje con archivo explícito - DEBE usar agent
+        (
+            "no uses tools, revisa el archivo tmp_agent/brain_v9/core/session.py",
+            True,
+        ),
+        # Mensaje con servicio explícito - DEBE usar agent
+        ("verifica servicios activos del sistema", True),
+        # Mensaje con ruta - DEBE usar agent
+        ("no uses tools, pero dime qué hay en /tmp/logs", True),
+    ],
+)
+def test_routing_respects_no_tool_analysis_preference(message, should_use_agent_expected):
+    """Verify that _should_use_agent respects explicit no-tool analysis requests."""
+    from brain_v9.core.session import BrainSession
+
+    session = BrainSession("test_routing_no_tools")
+    # Test _prefers_no_tool_analysis
+    prefers_no_tools = session._prefers_no_tool_analysis(message)
+    has_explicit_target = session._has_explicit_tool_target(message)
+
+    # If prefers no tools AND no explicit target, should NOT use agent
+    if prefers_no_tools and not has_explicit_target:
+        expected = False
+    else:
+        # Otherwise, let the normal logic decide
+        expected = should_use_agent_expected
+
+    result = session._should_use_agent(message, "QUERY", confidence=1.0)
+    assert result == expected, f"Message: '{message[:50]}...' - Expected agent={expected}, got={result}"
+
+
+@pytest.mark.unit
+def test_prefers_no_tool_analysis_with_various_markers():
+    """Test all markers in _prefers_no_tool_analysis."""
+    from brain_v9.core.session import BrainSession
+
+    # Should trigger no-tool preference
+    no_tool_messages = [
+        "no modifiques nada",
+        "no cambies el archivo",
+        "no edites este file",
+        "sin cambios",
+        "no hagas cambios",
+    ]
+
+    for msg in no_tool_messages:
+        assert BrainSession._prefers_no_tool_analysis(msg), f"Should prefer no tools: {msg}"
+
+    # Should NOT trigger no-tool preference
+    tool_messages = [
+        "revisa el archivo",
+        "verifica el servicio",
+        "analiza este código",
+        "solo una pregunta",
+    ]
+
+    for msg in tool_messages:
+        assert not BrainSession._prefers_no_tool_analysis(msg), f"Should not prefer no tools: {msg}"
