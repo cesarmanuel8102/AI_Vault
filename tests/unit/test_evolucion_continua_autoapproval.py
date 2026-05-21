@@ -127,7 +127,7 @@ class TestEvolucionContinuaAutoApproval:
         import re
         
         # Verificar que no hay "Auto-validado" hardcodeado en el código
-        source_file = Path("brain/evolucion_continua.py")
+        source_file = Path(__file__).resolve().parents[2] / "brain" / "evolucion_continua.py"
         content = source_file.read_text(encoding='utf-8')
         
         # Buscar patrones peligrosos de auto-validación hardcodeada
