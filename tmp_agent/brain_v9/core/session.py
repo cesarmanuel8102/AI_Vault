@@ -1954,10 +1954,47 @@ class BrainSession:
             return self._maybe_dev_block(result)
 
         # 2. Fastpath checks (real data, no LLM needed)
+        # PHASE E: Authority check before ANY fastpath emission (governs both guards and fallback)
+        fastpath = None  # Initialize FIRST to prevent UnboundLocalError
+        authority_allows_fastpath = True
+        
+        if _AUTHORITY_RESOLUTION_AVAILABLE:
+            msg_lower = msg_stripped.lower()
+            user_constraints = {
+                "explicit_reject_template": any(x in msg_lower for x in [
+                    "no me des teoría", "no me des plantilla", "no me des template",
+                    "dame real", "dame concreto", "solo datos", "solo hechos"
+                ]),
+                "asks_for_real_status": any(x in msg_lower for x in [
+                    "estado real", "verdadero estado", "comprueba", "verifica",
+                    "revisa", "diagnostica", "evidencia", "datos reales"
+                ]),
+            }
+            epistemic_risk = {
+                "fake_grounded_risk": (
+                    "estado real" in msg_lower and 
+                    any(x in msg_lower for x in ["dashboard", "http", "localhost", "127.0.0.1"])
+                )
+            }
+            
+            authority_result = resolve_authority_precedence(
+                user_constraints=user_constraints,
+                epistemic_risk=epistemic_risk,
+                verification_required=False,
+                proposed_route="fastpath",
+            )
+            
+            if not authority_result["allowed"]:
+                authority_allows_fastpath = False
+                self.logger.info(
+                    "Authority check: fastpath blocked for '%s...' - reason: %s",
+                    msg_stripped[:50], authority_result["reason"]
+                )
+        
         # PHASE D: Grounded verification check - degrade fastpath when user asks for real status
         verification_required = False
         verification_priority = 0
-        if _ROUTING_GUARDS_AVAILABLE and _requires_grounded_verification_guard:
+        if authority_allows_fastpath and _ROUTING_GUARDS_AVAILABLE and _requires_grounded_verification_guard:
             verification_required = _requires_grounded_verification_guard(msg_stripped)
             verification_priority = _get_verification_priority_guard(msg_stripped) if _get_verification_priority_guard else 0
             
@@ -1990,28 +2027,9 @@ class BrainSession:
                         duration_ms=(_time.monotonic() - _t0) * 1000,
                     )
                     return self._maybe_dev_block(result)
-        else:
-            # PHASE E: Authority check before fastpath (minimal patch)
-            fastpath = None  # Initialize FIRST to prevent UnboundLocalError
-            
-            # Check authority resolution if available
-            if _AUTHORITY_RESOLUTION_AVAILABLE:
-                authority_result = resolve_authority_precedence(
-                    user_msg=msg_stripped,
-                    session_context={"user": getattr(self, 'user', 'unknown')}
-                )
-                if not authority_result["allowed"]:
-                    # Authority requires real evidence - skip fastpath
-                    self.logger.info(
-                        "Authority check: fastpath blocked for '%s...' - reason: %s",
-                        msg_stripped[:50], authority_result["reason"]
-                    )
-                else:
-                    fastpath = self._maybe_fastpath(msg_stripped, model_priority=model_priority)
-            else:
-                # Authority resolution not available - proceed normally
-                fastpath = self._maybe_fastpath(msg_stripped, model_priority=model_priority)
-            
+        elif authority_allows_fastpath:
+            # Fallback fastpath when routing guards not available but authority allows
+            fastpath = self._maybe_fastpath(msg_stripped, model_priority=model_priority)
             if fastpath is not None:
                 result = _normalize(fastpath, fallback_content="(sin respuesta)")
                 await self._save_turn(message, result)
@@ -3824,6 +3842,33 @@ class BrainSession:
         msg = message.lower()
         # Dashboard fastpath inside agent route
         if self._is_dashboard_query(msg):
+            # PHASE E.2: Epistemic check - block dashboard fastpath when user asks
+            # about capability to verify without tools/http first
+            msg_lower = message.lower()
+            is_epistemic_question = (
+                ("primero dime" in msg_lower or "puedes afirmar" in msg_lower or 
+                 "sin http" in msg_lower or "sin evidencia" in msg_lower or
+                 "sin comprobación" in msg_lower or "no modifiques" in msg_lower) and
+                ("estado real" in msg_lower or "verdadero estado" in msg_lower) and
+                any(x in msg_lower for x in ["dashboard", "http://", "localhost", "127.0.0.1"])
+            )
+            
+            if is_epistemic_question:
+                # Block template emission - respond epistemically instead
+                epistemic_response = (
+                    "No puedo afirmar el estado real del dashboard sin verificación HTTP/tool actual. "
+                    "Puedo inferir por contexto, pero no verificarlo."
+                )
+                return {
+                    "success": True,
+                    "content": epistemic_response,
+                    "response": epistemic_response,
+                    "model": "agent_orav",
+                    "model_used": "agent_orav",
+                    "agent_steps": 1,
+                    "agent_status": "epistemic_restraint",
+                }
+            
             direct = self._dashboard_status_fastpath()
             full = direct.get("content") or "No pude verificar el dashboard."
             return {
