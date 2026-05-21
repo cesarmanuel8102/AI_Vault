@@ -3911,6 +3911,29 @@ class BrainSession:
                     "agent_status": "tool_confirmation_required",
                 }
             
+            # B3-v2 FIX: Bloquear cuando se pide contenido/análisis del dashboard (no solo infraestructura)
+            asks_for_dashboard_content = (
+                any(x in msg_lower for x in ["analiza", "muestra", "dime", "explica", "describe", "cuéntame", "cuentame"]) and
+                "dashboard" in msg_lower and
+                not any(x in msg_lower for x in ["infraestructura", "servidor", "host", "puerto", "url", "estatus simple", "estado simple"])
+            )
+            
+            if asks_for_dashboard_content:
+                # El usuario quiere ver/analizar el contenido del dashboard, no solo confirmar que existe
+                content_response = (
+                    "Para analizar/mostrar el contenido real del dashboard necesito hacer HTTP a la interfaz. "
+                    "El template solo muestra infraestructura. ¿Quieres que verifique el endpoint real con herramientas?"
+                )
+                return {
+                    "success": True,
+                    "content": content_response,
+                    "response": content_response,
+                    "model": "agent_orav",
+                    "model_used": "agent_orav",
+                    "agent_steps": 1,
+                    "agent_status": "tool_confirmation_required",
+                }
+            
             direct = self._dashboard_status_fastpath()
             full = direct.get("content") or "No pude verificar el dashboard."
             return {
@@ -4439,6 +4462,18 @@ class BrainSession:
                 any(x in msg_lower for x in ["dashboard", "http", "localhost", "127.0.0.1"])):
                 # No usar fastpath - requiere verificación real
                 return None
+            
+            # B3-v2 FIX: Bloquear cuando se pide análisis/contenido del dashboard (no solo infraestructura)
+            asks_for_content = (
+                any(x in msg_lower for x in ["analiza", "muestra", "dime", "explica", "describe", "cuéntame", "cuentame", "muéstrame", "muestrame"]) and
+                "dashboard" in msg_lower and
+                not any(x in msg_lower for x in ["infraestructura", "servidor", "host", "puerto", "url", "estatus simple", "estado simple", "estado operativo", "status"])
+            )
+            
+            if asks_for_content:
+                # No usar fastpath - el usuario quiere ver/analizar contenido real
+                return None
+            
             return self._dashboard_status_fastpath()
         if "estas operativo" in msg or "estás operativo" in msg:
             return self._health_fastpath()
