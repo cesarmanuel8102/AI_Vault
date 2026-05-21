@@ -190,6 +190,103 @@ class EvolucionContinua:
         with open(KNOWLEDGE_BASE_FILE, 'w', encoding='utf-8') as f:
             json.dump({"entries": {k: asdict(v) for k, v in self.knowledge_base.items()}}, f, indent=2)
     
+    # ─── N2 FIX: VALIDACIÓN CON EVIDENCIA EXTERNA ────────────────────────────────
+    
+    def _get_validation_evidence(self) -> Dict[str, Any]:
+        """
+        Obtiene evidencia de validación externa.
+        N2 FIX: No ejecuta tests, solo recupera evidencia ya existente.
+        """
+        evidence = {
+            "all_passed": False,
+            "score": 0.0,
+            "tests_passed": 0,
+            "tests_total": 0,
+            "tests_failed": 0,
+            "critical_failures": 0,
+            "report_path": None,
+            "evidence_hash": None,
+            "timestamp": None,
+            "source": None,
+        }
+        
+        # Buscar evidencia en archivo externo de validación
+        validation_file = Path("brain/validation_evidence.json")
+        if validation_file.exists():
+            try:
+                with open(validation_file, 'r', encoding='utf-8') as f:
+                    external_evidence = json.load(f)
+                    evidence.update(external_evidence)
+                    evidence["source"] = "external_file"
+            except Exception:
+                pass
+        
+        # Buscar evidencia en variable de entorno (CI/CD)
+        import os
+        ci_evidence = os.environ.get("BRAIN_VALIDATION_EVIDENCE")
+        if ci_evidence:
+            try:
+                external_evidence = json.loads(ci_evidence)
+                evidence.update(external_evidence)
+                evidence["source"] = "ci_environment"
+            except Exception:
+                pass
+        
+        return evidence
+    
+    def _can_auto_approve_from_evidence(self, evidence: Dict[str, Any]) -> bool:
+        """
+        N2 FIX: Determina si se puede auto-aprobar basándose en evidencia externa.
+        
+        Requisitos obligatorios:
+        - evidence existe
+        - evidence["all_passed"] is True
+        - evidence["score"] >= 0.95
+        - evidence["tests_total"] >= 1
+        - evidence["tests_failed"] == 0
+        - evidence["critical_failures"] == 0
+        - evidence["report_path"] presente
+        - evidence["evidence_hash"] presente
+        
+        NO ejecuta tests - solo evalúa evidencia ya recibida.
+        """
+        if not evidence:
+            return False
+        
+        # Verificar campos obligatorios
+        required_fields = [
+            "all_passed", "score", "tests_total", 
+            "tests_failed", "critical_failures", "report_path", "evidence_hash"
+        ]
+        
+        for field in required_fields:
+            if field not in evidence:
+                return False
+        
+        # Verificar condiciones de aprobación
+        if evidence["all_passed"] is not True:
+            return False
+        
+        if evidence.get("score", 0) < 0.95:
+            return False
+        
+        if evidence.get("tests_total", 0) < 1:
+            return False
+        
+        if evidence.get("tests_failed", 0) != 0:
+            return False
+        
+        if evidence.get("critical_failures", 0) != 0:
+            return False
+        
+        if not evidence.get("report_path"):
+            return False
+        
+        if not evidence.get("evidence_hash"):
+            return False
+        
+        return True
+    
     # ─── SISTEMA DE DETECCIÓN DE NECESIDADES ─────────────────────────────────────
     
     def analyze_learning_needs(self) -> Dict[str, Any]:
@@ -325,17 +422,34 @@ class EvolucionContinua:
             self.current_cycle.phases_completed.append("prueba")
             
         elif phase == "resultados":
-            # Simular validación exitosa para automatización
-            outcome = {
-                "passed": True,
-                "score": 0.85,
-                "feedback": "Auto-validado: comprensión adecuada"
-            }
+            # N2 FIX: Requerir evidencia externa para validación
+            # No hardcodear passed/score - usar HUMAN_REVIEW_REQUIRED por defecto
+            validation_evidence = self._get_validation_evidence()
+            
+            if self._can_auto_approve_from_evidence(validation_evidence):
+                outcome = {
+                    "passed": True,
+                    "score": validation_evidence["score"],
+                    "feedback": f"Auto-validado: {validation_evidence['tests_passed']}/{validation_evidence['tests_total']} tests passed con evidencia externa",
+                    "validation_type": "AUTO_APPROVED",
+                    "evidence": validation_evidence
+                }
+            else:
+                outcome = {
+                    "passed": False,
+                    "score": 0.0,
+                    "feedback": "Validación pendiente: no existe evidencia externa suficiente. Requiere revisión humana.",
+                    "validation_type": "HUMAN_REVIEW_REQUIRED",
+                    "evidence": validation_evidence
+                }
+            
             result = self.teaching.process_resultados(outcome)
             self.current_cycle.phases_completed.append("resultados")
             
-            # Actualizar métricas
+            # Actualizar métricas solo con score real
             self.current_cycle.metrics["score"] = outcome["score"]
+            self.current_cycle.metrics["validation_status"] = outcome["validation_type"]
+            self.current_cycle.metrics["validation_passed"] = outcome["passed"]
             
         elif phase == "evaluacion":
             result = self.teaching.process_evaluacion()
@@ -361,9 +475,16 @@ class EvolucionContinua:
         # Crear checkpoint
         checkpoint = self.teaching.create_checkpoint()
         
-        # Auto-aprobar (en modo autónomo)
+        # N2 FIX: Solo auto-aprobar con evidencia externa real
         if checkpoint:
-            self.teaching.approve_checkpoint(checkpoint.checkpoint_id, "Auto_Evolution")
+            validation_evidence = self._get_validation_evidence()
+            if self._can_auto_approve_from_evidence(validation_evidence):
+                self.teaching.approve_checkpoint(checkpoint.checkpoint_id, "Auto_Evolution")
+            else:
+                # No aprobar sin evidencia - requiere revisión humana
+                print(f"[Evolucion] Checkpoint {checkpoint.checkpoint_id} requiere revisión humana")
+                print(f"           Sin evidencia de validación suficiente")
+                print(f"           Status: HUMAN_REVIEW_REQUIRED")
         
         # Registrar en knowledge base
         entry = KnowledgeEntry(
