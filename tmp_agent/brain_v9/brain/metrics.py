@@ -132,9 +132,18 @@ class MetricsAggregator:
             return {"error": str(e)}
 
     async def _performance(self) -> Dict:
+        """Performance metrics - NOT MEASURED.
+        
+        Returns unavailable status because no real performance measurement source exists.
+        Hardcoded values removed as of N1 mitigation.
+        """
         return {
-            "response_times": {"avg_ms": 150, "p95_ms": 300, "p99_ms": 500},
-            "availability":   {"uptime_percentage": 99.5},
+            "status": "unavailable",
+            "response_times": {"avg_ms": None, "p95_ms": None, "p99_ms": None},
+            "availability": {"uptime_percentage": None},
+            "reason": "no_real_performance_source",
+            "generated_from": "not_measured",
+            "note": "Performance measurement requires instrumentation - see docs/AUTODESARROLLO_CONTINUIDAD_PLAN.md#N1"
         }
 
     async def get_error_rates(self) -> Dict:
