@@ -1970,10 +1970,22 @@ class BrainSession:
                     "revisa", "diagnostica", "evidencia", "datos reales"
                 ]),
             }
+            # B3 FIX: Detectar solicitudes de verificación real que deben bloquear fastpath
+            has_real_verification_request = (
+                ("verifica realmente" in msg_lower or 
+                 "verifiques realmente" in msg_lower or
+                 "revisa realmente" in msg_lower or
+                 "comprueba realmente" in msg_lower or
+                 "usando herramientas" in msg_lower or
+                 "usa herramientas" in msg_lower) and
+                any(x in msg_lower for x in ["dashboard", "http", "localhost", "127.0.0.1"])
+            )
+            
             epistemic_risk = {
                 "fake_grounded_risk": (
-                    "estado real" in msg_lower and 
-                    any(x in msg_lower for x in ["dashboard", "http", "localhost", "127.0.0.1"])
+                    ("estado real" in msg_lower and 
+                     any(x in msg_lower for x in ["dashboard", "http", "localhost", "127.0.0.1"]))
+                    or has_real_verification_request  # B3: Bloquear cuando se pide verificación real explícita
                 )
             }
             
@@ -3867,6 +3879,33 @@ class BrainSession:
                     "model_used": "agent_orav",
                     "agent_steps": 1,
                     "agent_status": "epistemic_restraint",
+                }
+            
+            # B3 FIX: Bloquear cuando se pide verificación real explícita con herramientas
+            has_real_verification_request = (
+                ("verifica realmente" in msg_lower or 
+                 "verifiques realmente" in msg_lower or
+                 "revisa realmente" in msg_lower or
+                 "comprueba realmente" in msg_lower or
+                 "usando herramientas" in msg_lower or
+                 "usa herramientas" in msg_lower) and
+                any(x in msg_lower for x in ["dashboard", "http", "localhost", "127.0.0.1"])
+            )
+            
+            if has_real_verification_request:
+                # B3: Bloquear template - requiere verificación real o confirmación de herramientas
+                b3_response = (
+                    "Para verificar realmente el dashboard necesito usar herramientas HTTP. "
+                    "¿Confirmas que puedo ejecutar verificación real del endpoint?"
+                )
+                return {
+                    "success": True,
+                    "content": b3_response,
+                    "response": b3_response,
+                    "model": "agent_orav",
+                    "model_used": "agent_orav",
+                    "agent_steps": 1,
+                    "agent_status": "tool_confirmation_required",
                 }
             
             direct = self._dashboard_status_fastpath()
