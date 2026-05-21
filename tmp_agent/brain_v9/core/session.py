@@ -3858,11 +3858,14 @@ class BrainSession:
             # about capability to verify without tools/http first
             msg_lower = message.lower()
             is_epistemic_question = (
-                ("primero dime" in msg_lower or "puedes afirmar" in msg_lower or 
-                 "sin http" in msg_lower or "sin evidencia" in msg_lower or
-                 "sin comprobación" in msg_lower or "no modifiques" in msg_lower) and
-                ("estado real" in msg_lower or "verdadero estado" in msg_lower) and
-                any(x in msg_lower for x in ["dashboard", "http://", "localhost", "127.0.0.1"])
+                (("primero dime" in msg_lower or "puedes afirmar" in msg_lower or 
+                  "sin http" in msg_lower or "sin evidencia" in msg_lower or
+                  "sin comprobación" in msg_lower or "no modifiques" in msg_lower) and
+                ("estado real" in msg_lower or "verdadero estado" in msg_lower)) or
+                # FIX: Bloquear "verifica estado real" sin "realmente"
+                (("verifica" in msg_lower or "revisa" in msg_lower or "comprueba" in msg_lower) and
+                 "estado real" in msg_lower and
+                 any(x in msg_lower for x in ["dashboard", "http", "localhost", "127.0.0.1"]))
             )
             
             if is_epistemic_question:
@@ -4429,6 +4432,13 @@ class BrainSession:
         if any(x in msg for x in ["context edge", "context-edge", "edge por contexto", "edge de contexto", "validacion por contexto", "validación por contexto"]):
             return self._cmd_context_edge()
         if self._is_dashboard_query(msg):
+            # B3 FIX: Bloquear fastpath cuando se pide verificación real del estado
+            msg_lower = msg.lower()
+            if (("verifica" in msg_lower or "revisa" in msg_lower or "comprueba" in msg_lower) and
+                "estado real" in msg_lower and
+                any(x in msg_lower for x in ["dashboard", "http", "localhost", "127.0.0.1"])):
+                # No usar fastpath - requiere verificación real
+                return None
             return self._dashboard_status_fastpath()
         if "estas operativo" in msg or "estás operativo" in msg:
             return self._health_fastpath()
