@@ -70,6 +70,17 @@ except ImportError:
     _should_degrade_fastpath_guard = None
 
 log = logging.getLogger("BrainSession")
+# FASE 2-5: Minimal Authority Resolution Patch
+try:
+    from brain_v9.core.routing.authority_resolution import (
+        resolve_authority_precedence,
+        lock_epistemic_mode,
+        EpistemicMode,
+    )
+    _AUTHORITY_RESOLUTION_AVAILABLE = True
+except Exception:
+    _AUTHORITY_RESOLUTION_AVAILABLE = False
+
 
 # ── Routing Constants ─────────────────────────────────────────────────────────
 
@@ -1980,8 +1991,27 @@ class BrainSession:
                     )
                     return self._maybe_dev_block(result)
         else:
-            # Original fastpath logic (no verification guards available)
-            fastpath = self._maybe_fastpath(msg_stripped, model_priority=model_priority)
+            # PHASE E: Authority check before fastpath (minimal patch)
+            fastpath = None  # Initialize FIRST to prevent UnboundLocalError
+            
+            # Check authority resolution if available
+            if _AUTHORITY_RESOLUTION_AVAILABLE:
+                authority_result = resolve_authority_precedence(
+                    user_msg=msg_stripped,
+                    session_context={"user": getattr(self, 'user', 'unknown')}
+                )
+                if not authority_result["allowed"]:
+                    # Authority requires real evidence - skip fastpath
+                    self.logger.info(
+                        "Authority check: fastpath blocked for '%s...' - reason: %s",
+                        msg_stripped[:50], authority_result["reason"]
+                    )
+                else:
+                    fastpath = self._maybe_fastpath(msg_stripped, model_priority=model_priority)
+            else:
+                # Authority resolution not available - proceed normally
+                fastpath = self._maybe_fastpath(msg_stripped, model_priority=model_priority)
+            
             if fastpath is not None:
                 result = _normalize(fastpath, fallback_content="(sin respuesta)")
                 await self._save_turn(message, result)
