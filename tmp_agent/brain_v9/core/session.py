@@ -6011,9 +6011,11 @@ class BrainSession:
         
         # 1. SAFE_EXISTENCE (P0)
         existence_patterns = [
-            r'tienes\s+(?:un\s+)?modo\s+(?:god|developer)',
-            r'existe\s+(?:el\s+)?modo\s+(?:god|developer)',
+            r'tienes\s+(?:un\s+)?modo\s+(?:god|desarrollador|developer)',
+            r'existe\s+(?:el\s+)?modo\s+(?:god|desarrollador|developer)',
+            r'hay\s+(?:el\s+)?modo\s+(?:god|desarrollador|developer)',
             r'solo\s+responde\s+si\s+existe',
+            r'modo\s+(?:god|desarrollador)\s+(?:implementado|disponible)',
         ]
         if any(re.search(p, msg_lower, re.IGNORECASE) for p in existence_patterns):
             return {
@@ -6138,6 +6140,26 @@ class BrainSession:
                     "Puedo interpretar el snapshot textual que proporciones, pero no consultar el dashboard desde esta ruta."
                 ),
                 "reason": "P2: Dashboard snapshot - no qc_live"
+            }
+        
+        # 9. SYSTEM_PROBLEM - "que esta mal", "que falla", diagnosticos de salud
+        problem_patterns = [
+            r'qu[eé]\s+est[áa]\s+mal',
+            r'qu[eé]\s+falla',
+            r'por\s+qu[eé]\s+no\s+funcionas?',
+            r'qu[eé]\s+problema\s+tienes',
+            r'qu[eé]\s+te\s+pasa',
+        ]
+        if any(re.search(p, msg_lower, re.IGNORECASE) for p in problem_patterns):
+            return {
+                "kind": "system_problem",
+                "local_response": self._system_reply(
+                    "El estado observado indica que el sistema está funcional pero con límites: "
+                    "algunas rutas pueden depender de Policy Gate/local fallback, "
+                    "los LLM pueden estar degradados y hay trabajo pendiente como P2-C. "
+                    "No asumiría mejora formal sin tests/benchmarks."
+                ),
+                "reason": "P2: System problem - no user_correction"
             }
         
         # Default: continuar con flujo normal
