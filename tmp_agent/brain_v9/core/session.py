@@ -3162,6 +3162,46 @@ class BrainSession:
 
     def _should_use_agent(self, message: str, intent: str, confidence: float = 1.0) -> bool:
         """Decide if the message needs real tool execution (agent) or just LLM chat."""
+        msg_lower = message.lower()
+        
+        # GHOST COMPLETION HARDENING: Detect conceptual/theoretical questions
+        # that should go to LLM, not agent, to avoid ghost_completion on
+        # questions that don't require real tools.
+        conceptual_indicators = [
+            r"qu[eé]\s+(?:significa|es)\s+",
+            r"explica\s+(?:qu[eé]|conceptualmente)",
+            r"si\s+.*\s+(?:tiene|puede|debe|tiene|pueden)",  # Hypothetical questions
+            r"conceptualmente",
+            r"en\s+teor[ií]a",
+            r"seg[uú]n\s+(?:las\s+reglas|las\s+pol[ií]ticas)",
+            r"seg[uú]n\s+P\d+-[A-Z]",  # P1-A, P2-A, etc.
+            r"resumen\s+(?:del?\s+)?estado\s+(?:actual\s+)?de\s+N\d+",  # N5 recall
+            r"(?:qu[eé]|cu[aá]les)\s+(?:tests?|pruebas?)\s+(?:fueron|est[aá]n)",
+            r"estado\s+de\s+(?:N5|las\s+pruebas)",
+        ]
+        
+        # Si es una pregunta conceptual pura, va a LLM
+        is_conceptual_only = (
+            any(re.search(p, msg_lower, re.IGNORECASE) for p in conceptual_indicators)
+            and not self._has_explicit_tool_target(message)
+            and not self._prefers_no_tool_analysis(message)
+        )
+        
+        # Additional check: if it looks like asking for theoretical explanation
+        # without concrete execution request
+        looks_theoretical = (
+            ("http" in msg_lower or "código" in msg_lower or "codigo" in msg_lower) 
+            and ("significa" in msg_lower or "es" in msg_lower or "qué" in msg_lower or "que" in msg_lower)
+            and not any(x in msg_lower for x in [
+                "verifica", "verifiques", "revisa", "comprueba",
+                "consulta", "muestra", "ejecuta"
+            ])
+        )
+        
+        if is_conceptual_only or looks_theoretical:
+            self.logger.info("Conceptual/theoretical question detected -> LLM")
+            return False
+        
         if self._prefers_no_tool_analysis(message) and not self._has_explicit_tool_target(message):
             self.logger.info("No-tool analysis preference without explicit target -> LLM")
             return False
