@@ -3339,6 +3339,22 @@ class BrainSession:
         cleaned2 = fake_tool_call_block.sub("", cleaned2)
         cleaned2 = raw_tool_markup.sub("", cleaned2)
         cleaned2 = placeholders.sub("[no_ejecutado]", cleaned2).strip()
+
+        # HARDENING: Bloquear afirmaciones de "verificación real" sin tool trace
+        # Si el contenido afirma haber verificado endpoints HTTP realmente sin evidencia de tool
+        fake_verification_patterns = _re.compile(
+            r'(?i)(verifiqu[ée]|verifique|consult[eé]).*?(realmente|real|endpoint|/brain/metrics|HTTP \d{3}|c[oó]digo HTTP|status \d{3})|'
+            r'(HTTP [12]\d{2}|c[oó]digo [12]\d{2}|status [12]\d{2}).*?(OK|200|éxito|success)',
+            _re.IGNORECASE
+        )
+
+        if fake_verification_patterns.search(cleaned2):
+            # Reemplazar afirmación de verificación fake con disclaimer
+            cleaned2 = (
+                "No puedo confirmar estado real sin ejecución HTTP/tool actual. "
+                "Necesito herramienta HTTP real o confirmación explícita para verificar ese endpoint."
+            )
+
         if had_theater and cleaned2:
             cleaned2 += (
                 "\n\n_Nota: respuesta del modulo de chat (sin ejecucion de herramientas). "
