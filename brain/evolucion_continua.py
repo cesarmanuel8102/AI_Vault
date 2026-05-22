@@ -32,6 +32,13 @@ except ImportError as e:
     print(f"Error importando módulos base: {e}")
     raise
 
+# P1-A: Import LearningValidator for mandatory validation gate
+try:
+    from learning_validator import LearningValidator, ValidationStatus
+except ImportError as e:
+    print(f"[Evolucion] Warning: LearningValidator no disponible: {e}")
+    LearningValidator = None
+
 
 # ─── CONFIGURACIÓN ─────────────────────────────────────────────────────────────
 EVOLUTION_PATH = Path("C:/AI_VAULT/tmp_agent/state/evolucion_continua")
@@ -287,6 +294,37 @@ class EvolucionContinua:
         
         return True
     
+    def _learning_validator_approves(self, content: str, context: Dict[str, Any] = None) -> bool:
+        """
+        P1-A: Validates content using LearningValidator.
+        Only returns True if status is VALIDATED.
+        """
+        if LearningValidator is None:
+            print("[Evolucion] LearningValidator no disponible, auto-aprobación denegada")
+            return False
+        
+        try:
+            validator = LearningValidator()
+            result = validator.validate(content, context)
+            
+            if hasattr(result, 'status'):
+                status = result.status
+            elif isinstance(result, dict):
+                status = result.get('status')
+            else:
+                status = result
+            
+            if status == ValidationStatus.VALIDATED:
+                print(f"[Evolucion] LearningValidator aprobó el contenido")
+                return True
+            else:
+                print(f"[Evolucion] LearningValidator rechazó el contenido: {status}")
+                return False
+                
+        except Exception as e:
+            print(f"[Evolucion] Error en LearningValidator: {e}")
+            return False
+    
     # ─── SISTEMA DE DETECCIÓN DE NECESIDADES ─────────────────────────────────────
     
     def analyze_learning_needs(self) -> Dict[str, Any]:
@@ -475,15 +513,24 @@ class EvolucionContinua:
         # Crear checkpoint
         checkpoint = self.teaching.create_checkpoint()
         
-        # N2 FIX: Solo auto-aprobar con evidencia externa real
+        # N2 FIX + P1-A: Solo auto-aprobar con evidencia externa Y aprobación de LearningValidator
         if checkpoint:
             validation_evidence = self._get_validation_evidence()
-            if self._can_auto_approve_from_evidence(validation_evidence):
+            evidence_approves = self._can_auto_approve_from_evidence(validation_evidence)
+            validator_approves = self._learning_validator_approves(
+                content=f"Checkpoint {checkpoint.checkpoint_id}",
+                context={"evidence": validation_evidence}
+            )
+            
+            if evidence_approves and validator_approves:
                 self.teaching.approve_checkpoint(checkpoint.checkpoint_id, "Auto_Evolution")
             else:
-                # No aprobar sin evidencia - requiere revisión humana
+                # No aprobar sin ambas validaciones - requiere revisión humana
                 print(f"[Evolucion] Checkpoint {checkpoint.checkpoint_id} requiere revisión humana")
-                print(f"           Sin evidencia de validación suficiente")
+                if not evidence_approves:
+                    print(f"           Sin evidencia de validación suficiente")
+                if not validator_approves:
+                    print(f"           LearningValidator no aprobó")
                 print(f"           Status: HUMAN_REVIEW_REQUIRED")
         
         # Registrar en knowledge base
