@@ -43,6 +43,13 @@ from brain_v9.core.session_memory_state import (
 from brain_v9.core.intent import IntentDetector
 from brain_v9.core.state_io import read_json, write_json
 
+# Import Project State Provider para P2 status grounding
+try:
+    from brain.project_state_provider import ProjectStateProvider, create_project_state_provider
+    _PROJECT_STATE_PROVIDER_AVAILABLE = True
+except ImportError:
+    _PROJECT_STATE_PROVIDER_AVAILABLE = False
+
 # Import routing guards (Phase C modularization)
 try:
     from brain_v9.core.routing.guards import (
@@ -6059,7 +6066,27 @@ class BrainSession:
                 "reason": "P1: Self awareness"
             }
         
-        # 4. CURATED_INGESTION (P1)
+        # 4. PROJECT_STATE (P1) - consultas de estado P2/adapter/FAISS/smoke
+        if _PROJECT_STATE_PROVIDER_AVAILABLE:
+            try:
+                provider = create_project_state_provider()  # type: ignore
+                project_response = provider.answer_project_state_query(message)
+                if project_response:
+                    return {
+                        "kind": "project_state",
+                        "local_response": self._system_reply(project_response),
+                        "reason": "Project state provider"
+                    }
+            except Exception:
+                return {
+                    "kind": "project_state_unavailable",
+                    "local_response": self._system_reply(
+                        "No puedo confirmar estado del proyecto desde fuente canónica local en este turno. No debo inventarlo."
+                    ),
+                    "reason": "Project state provider unavailable"
+                }
+        
+        # 5. CURATED_INGESTION (P1) - fallback si provider no está disponible
         curated_patterns = [
             r'ingesta\s+(?:de\s+)?informaci[oó]n\s+(?:curada)?',
             r'informationcurator',
@@ -6070,8 +6097,7 @@ class BrainSession:
             return {
                 "kind": "curated_ingestion",
                 "local_response": self._system_reply(
-                    "P2-A validó InformationCurator. P2-B validó contrato InformationCurator→LearningValidator. "
-                    "Falta P2-C adapter. No conectado aún a runtime/SemanticMemoryBridge/FAISS."
+                    self._get_curated_ingestion_response()
                 ),
                 "reason": "P1: Curated ingestion"
             }
@@ -6680,6 +6706,61 @@ class BrainSession:
         result["content"] = (result.get("content") or "") + dev_info
         result["response"] = (result.get("response") or "") + dev_info
         return result
+
+    def _get_curated_ingestion_response(self) -> str:
+        """
+        Obtener respuesta actualizada sobre estado P2 desde fuente canónica.
+        NO hardcodea estado; consulta ProjectStateProvider si disponible.
+        """
+        if not _PROJECT_STATE_PROVIDER_AVAILABLE:
+            return (
+                "No puedo confirmar estado P2 desde fuente canónica local en este turno. "
+                "No debo inventarlo."
+            )
+        
+        try:
+            provider = create_project_state_provider()  # type: ignore
+            state = provider.get_p2_state()
+            
+            lines = ["Estado Pipeline P2 (desde archivos locales):", ""]
+            
+            if state.p2_a_completed:
+                lines.append("P2-A: Completado (InformationCurator contract)")
+            else:
+                lines.append("P2-A: No detectado")
+            
+            if state.p2_b_completed:
+                lines.append("P2-B: Completado (contrato InformationCurator-LearningValidator)")
+            else:
+                lines.append("P2-B: No detectado")
+            
+            if state.p2_c_completed:
+                lines.append("P2-C: Completado (CurationValidationAdapter implementado)")
+                if state.p2_c_commit_hash:
+                    lines.append(f"       Commit: {state.p2_c_commit_hash}")
+            else:
+                lines.append("P2-C: No detectado (falta adapter)")
+            
+            if state.p2_d_completed:
+                lines.append("P2-D: Completado (documentacion + smoke tests)")
+                if state.p2_d_commit_hash:
+                    lines.append(f"       Commit: {state.p2_d_commit_hash}")
+            else:
+                lines.append("P2-D: No detectado (falta documentacion)")
+            
+            lines.append("")
+            lines.append("Limitaciones:")
+            lines.append("- Adapter NO escribe en SemanticMemoryBridge ni FAISS.")
+            lines.append("- Adapter NO conecta runtime/chat.")
+            lines.append("- Adapter NO activa autoaprendizaje.")
+            
+            return "\n".join(lines)
+            
+        except Exception as e:
+            return (
+                f"Error al consultar estado P2: {str(e)}. "
+                "No puedo confirmar estado desde fuente canónica local."
+            )
 
     async def close(self):
         # R5.1: do NOT force-persist global singleton on per-session close;

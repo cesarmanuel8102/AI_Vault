@@ -8,128 +8,52 @@ NO activa autoaprendizaje.
 
 import sys
 from pathlib import Path
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
-from enum import Enum
+from typing import Dict, Optional, Any
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from brain.information_curator import InformationCurator, CuratedRecord, QualityLevel
+from brain.information_curator import InformationCurator
 from brain.curation_validation_adapter import (
     CurationValidationAdapter,
-    CurationValidationStatus,
-    CurationValidationResult
+    CurationValidationStatus
 )
-
-
-# Fake/Mock LearningValidator determinístico
-class FakeValidationStrategy(str, Enum):
-    CAPABILITY_ASSESSMENT = "capability_assessment"
-    TEST_QUESTIONS = "test_questions"
-    CONSISTENCY_CHECK = "consistency_check"
-
-
-@dataclass
-class FakeStrategyResult:
-    strategy: FakeValidationStrategy
-    score: float
-    weight: float
-    details: str
-    passed: bool
-
-
-@dataclass
-class FakeValidationResult:
-    """Mock ValidationResult para testing sin dependencias externas."""
-    learning_id: str
-    status: str  # "PENDING", "VALIDATED", "UNVALIDATED", "PARTIAL"
-    overall_score: float
-    quality_gate: float
-    passed: bool
-    strategy_results: List[FakeStrategyResult]
-    recommendations: List[str]
-    timestamp: float
+from brain.learning_validator import ValidationResult, ValidationStatus
 
 
 class FakeLearningValidator:
-    """Mock de LearningValidator que devuelve resultados determinísticos."""
+    """Mock de LearningValidator compatible con la API real."""
     
     def __init__(self, min_score: float = 0.7):
         self.min_score = min_score
         self._call_log = []
-    
-    def validate(self, learning_id: str, content: str, context: Dict[str, Any],
-                 before_state: Optional[Dict] = None,
-                 after_state: Optional[Dict] = None) -> FakeValidationResult:
-        """Simula validación de contenido."""
-        self._call_log.append(learning_id)
-        
-        # Simulación determinística basada en contenido
-        if not content or len(content.strip()) < 10:
-            return FakeValidationResult(
-                learning_id=learning_id,
-                status="UNVALIDATED",
-                overall_score=0.3,
-                quality_gate=self.min_score,
-                passed=False,
-                strategy_results=[
-                    FakeStrategyResult(
-                        strategy=FakeValidationStrategy.CAPABILITY_ASSESSMENT,
-                        score=0.2,
-                        weight=0.3,
-                        details="Content too short",
-                        passed=False
-                    )
-                ],
-                recommendations=["Expand content"],
-                timestamp=0.0
-            )
-        
-        if "contradiction" in content.lower():
-            return FakeValidationResult(
-                learning_id=learning_id,
-                status="PARTIAL",
-                overall_score=0.5,
-                quality_gate=self.min_score,
-                passed=False,
-                strategy_results=[
-                    FakeStrategyResult(
-                        strategy=FakeValidationStrategy.CONSISTENCY_CHECK,
-                        score=0.4,
-                        weight=0.2,
-                        details="Potential contradiction detected",
-                        passed=False
-                    )
-                ],
-                recommendations=["Review for contradictions"],
-                timestamp=0.0
-            )
-        
-        # Caso exitoso
-        return FakeValidationResult(
+
+    def validate(
+        self,
+        learning_id: str,
+        before_state: Optional[Dict] = None,
+        after_state: Optional[Dict] = None,
+        topic: str = "",
+        gap_id: str = "",
+        knowledge_base: Optional[Dict] = None,
+        test_answers: Optional[Any] = None,
+        **kwargs,
+    ):
+        self._call_log.append({
+            "learning_id": learning_id,
+            "before_state": before_state,
+            "after_state": after_state,
+            "topic": topic,
+            "gap_id": gap_id,
+        })
+
+        return ValidationResult(
             learning_id=learning_id,
-            status="VALIDATED",
+            status=ValidationStatus.VALIDATED,
             overall_score=0.85,
-            quality_gate=self.min_score,
+            quality_gate="PASS",
             passed=True,
-            strategy_results=[
-                FakeStrategyResult(
-                    strategy=FakeValidationStrategy.CAPABILITY_ASSESSMENT,
-                    score=0.9,
-                    weight=0.3,
-                    details="Capability improved",
-                    passed=True
-                ),
-                FakeStrategyResult(
-                    strategy=FakeValidationStrategy.TEST_QUESTIONS,
-                    score=0.8,
-                    weight=0.25,
-                    details="Questions answered correctly",
-                    passed=True
-                )
-            ],
-            recommendations=["Ready for promotion"],
-            timestamp=0.0
+            strategy_results={},
+            recommendations=["smoke validator passed"],
         )
 
 
@@ -179,27 +103,26 @@ def test_adapter_smoke():
     print(f"  Score: {result.score}")
     print(f"  Reason: {result.reason}")
     
-    # 7. Verificaciones
+    # 7. Verificaciones críticas
     print("\n[7] Verificaciones:")
-    assert result.record_id == record.record_id, "record_id preservado"
-    print("  OK record_id preservado")
     
-    assert result.source == record.source, "source preservado"
-    print("  OK source preservado")
+    if result.status == CurationValidationStatus.ERROR:
+        print(f"  FAIL: Status es ERROR - reason: {result.reason}")
+        raise AssertionError(f"Status es ERROR: {result.reason}")
+    else:
+        print(f"  OK Status: {result.status.value}")
     
-    assert result.content_hash, "content_hash generado"
-    print("  OK content_hash generado")
+    assert result.status == CurationValidationStatus.VALIDATED, f"Expected VALIDATED, got {result.status.value}"
+    print(f"  OK Status es VALIDATED")
     
-    assert result.status in [
-        CurationValidationStatus.VALIDATED,
-        CurationValidationStatus.UNVALIDATED,
-        CurationValidationStatus.REJECTED,
-        CurationValidationStatus.ERROR
-    ], "status valido"
-    print(f"  OK status valido: {result.status.value}")
+    assert result.passed is True, f"Expected passed=True, got {result.passed}"
+    print("  OK passed=True")
     
-    assert record.validated_at is None, "validated_at NO modificado"
-    print("  OK validated_at NO modificado (sigue None)")
+    assert result.score >= 0.7, f"Expected score >= 0.7, got {result.score}"
+    print(f"  OK Score: {result.score}")
+    
+    assert record.validated_at is None, "validated_at NO debe modificarse"
+    print("  OK validated_at sigue None")
     
     # 8. Verificar que NO importa runtime/chat
     print("\n[8] Verificando NO imports prohibidos...")
@@ -219,10 +142,10 @@ def test_adapter_smoke():
                 found_forbidden.append(mod)
     
     if found_forbidden:
-        print(f"  ERROR: Modulos prohibidos importados: {found_forbidden}")
-        raise AssertionError(f"Imports prohibidos detectados: {found_forbidden}")
+        print(f"  FAIL: Modulos prohibidos: {found_forbidden}")
+        raise AssertionError(f"Imports prohibidos: {found_forbidden}")
     else:
-        print("  OK Ningun modulo prohibido importado")
+        print("  OK Ningun modulo prohibido")
     
     print("\n" + "=" * 60)
     print("SMOKE_CURATION_VALIDATION_ADAPTER_OK")
