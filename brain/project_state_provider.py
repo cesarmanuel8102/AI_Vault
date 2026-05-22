@@ -5,10 +5,46 @@ Expone API local y determinística para consultar estado de P2 sin depender de L
 No importa session.py, main.py, FAISS ni SemanticMemoryBridge.
 """
 
+import os
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional
+
+
+def _resolve_repo_root(repo_root: Optional[Path] = None) -> Path:
+    """
+    Resolver raíz del repositorio de forma canónica.
+    
+    Orden de prioridad:
+    1. repo_root explícito
+    2. env AI_VAULT_ROOT
+    3. Derivado de __file__ (project_state_provider.py está en C:\AI_VAULT\brain\)
+    4. Path.cwd() como fallback
+    
+    Args:
+        repo_root: Raíz explícita (opcional)
+        
+    Returns:
+        Path canónico del repo
+    """
+    if repo_root is not None:
+        return Path(repo_root).resolve()
+    
+    # Intentar desde variable de entorno
+    env_root = os.environ.get("AI_VAULT_ROOT")
+    if env_root:
+        return Path(env_root).resolve()
+    
+    # Derivar desde ubicación de este archivo: ...\brain\project_state_provider.py
+    # El repo root es parents[1]: ...\AI_VAULT\
+    try:
+        return Path(__file__).resolve().parents[1]
+    except Exception:
+        pass
+    
+    # Fallback final
+    return Path.cwd().resolve()
 
 
 @dataclass
@@ -74,9 +110,9 @@ class ProjectStateProvider:
         Inicializar provider.
         
         Args:
-            repo_root: Raíz del repositorio. Si es None, usa cwd.
+            repo_root: Raíz del repositorio. Si es None, se resuelve canónicamente.
         """
-        self.repo_root = repo_root or Path.cwd()
+        self.repo_root = _resolve_repo_root(repo_root)
         self._state: Optional[P2State] = None
     
     def _detect_files(self, state: P2State) -> None:

@@ -261,3 +261,37 @@ class TestProjectStateProvider:
         
         response = provider.answer_project_state_query("Que hora es?")
         assert response is None
+    
+    def test_default_repo_root_resolves_from_module_file(self):
+        """El repo root por defecto se resuelve desde la ubicacion del modulo."""
+        # Crear provider SIN repo_root explicito
+        provider = create_project_state_provider()
+        state = provider.get_p2_state(force_refresh=True)
+        
+        # Verificar que apunta a AI_VAULT (o que el directorio brain existe)
+        assert state.repo_root.name == "AI_VAULT" or (state.repo_root / "brain").exists(), \
+            f"repo_root={state.repo_root} no apunta a AI_VAULT"
+        
+        # Verificar que el propio archivo del provider existe
+        assert (state.repo_root / "brain" / "project_state_provider.py").exists(), \
+            "El archivo project_state_provider.py debe existir en repo_root/brain/"
+    
+    def test_env_ai_vault_root_takes_precedence(self, monkeypatch, tmp_path):
+        """AI_VAULT_ROOT env var tiene prioridad sobre __file__."""
+        import os
+        
+        # Crear estructura fake en tmp_path
+        (tmp_path / "brain").mkdir()
+        (tmp_path / "brain" / "curation_validation_adapter.py").write_text("# fake")
+        
+        # Setear env var
+        monkeypatch.setenv("AI_VAULT_ROOT", str(tmp_path))
+        
+        # Crear provider SIN repo_root explicito - debe usar env
+        provider = create_project_state_provider()
+        state = provider.get_p2_state(force_refresh=True)
+        
+        # Debe usar el tmp_path del env, no el repo real
+        assert state.repo_root == tmp_path
+        assert not state.p2_c_completed  # No hay archivos reales en tmp_path
+
