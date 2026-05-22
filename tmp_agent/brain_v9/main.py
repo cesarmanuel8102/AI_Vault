@@ -23,7 +23,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 import uvicorn
 from fastapi import Body, Depends, FastAPI, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -191,7 +191,6 @@ if os.path.exists(_ui_path):
 _dashboard_html = os.path.join(os.path.dirname(__file__), "ui", "dashboard.html")
 _APP_ROOT = Path(__file__).resolve().parent
 _TMP_AGENT_ROOT = _APP_ROOT.parent
-_VAULT_ROOT = _TMP_AGENT_ROOT.parent
 _STATE_ROOT = _TMP_AGENT_ROOT / "state"
 _OPS_ROOT = _TMP_AGENT_ROOT / "ops"
 _PO_ROOM_DIR = _STATE_ROOT / "rooms" / "brain_binary_paper_pb04_demo_execution"
@@ -219,52 +218,11 @@ _PO_BINARY_PAYOUT = 0.92
 @app.get("/dashboard", include_in_schema=False)
 async def serve_dashboard():
     """Serve the professional monitoring dashboard."""
+    from fastapi.responses import HTMLResponse
     if os.path.exists(_dashboard_html):
         with open(_dashboard_html, encoding="utf-8") as f:
             return HTMLResponse(f.read())
     return HTMLResponse("<h1>Dashboard not found</h1>", status_code=404)
-
-
-@app.get("/dashboard-v2", include_in_schema=False)
-@app.get("/dashboard-v2/", include_in_schema=False)
-async def serve_dashboard_v2():
-    """Serve the V9.1 command dashboard from the repo-root UI folder."""
-    dashboard_path = _VAULT_ROOT / "ui" / "dashboard_v2.html"
-    if dashboard_path.exists():
-        return HTMLResponse(
-            dashboard_path.read_text(encoding="utf-8"),
-            headers={"Cache-Control": "no-store"},
-        )
-    return JSONResponse(
-        status_code=404,
-        content={"detail": "Dashboard V2 UI not found", "path": str(dashboard_path)},
-    )
-
-
-@app.get("/brain/dashboard/state")
-async def brain_dashboard_state():
-    """Read-only canonical dashboard state for the external command center."""
-    try:
-        sys.path.insert(0, str(_VAULT_ROOT))
-        from brain.dashboard_state import build_dashboard_state
-
-        return build_dashboard_state(
-            root_dir=str(_VAULT_ROOT),
-            tmp_agent_dir=str(_TMP_AGENT_ROOT),
-            version="9.0.0-active",
-            startup_done=_startup_done,
-            startup_error=_startup_error,
-            active_sessions=list(active_sessions.keys()),
-            v91_modules=False,
-            tick_status={},
-            orchestrator_status={},
-        )
-    except Exception as exc:
-        log.exception("dashboard state failed")
-        return JSONResponse(
-            status_code=500,
-            content={"detail": "dashboard_state_failed", "error": str(exc)},
-        )
 
 
 class MaintenanceActionRequest(BaseModel):
@@ -1311,24 +1269,12 @@ async def chat(req: ChatRequest):
     mensaje_lower = req.message.lower()
     
     # Detectar comandos PAD
-    # PERO excluir preguntas de existencia seguras que deben ir a session.py
-    def _is_safe_god_existence_question(mensaje_lower):
-        return (
-            ("modo god" in mensaje_lower or "modo desarrollador" in mensaje_lower)
-            and any(x in mensaje_lower for x in [
-                "tienes", "existe", "hay", "implementado", "disponible", "solo responde si existe"
-            ])
-            and not any(x in mensaje_lower for x in [
-                "autenticar:", "activar", "habilitar", "entrar", "iniciar", "bypass", "sin restricciones"
-            ])
-        )
-    
     es_comando_pad = (
         "autenticar:" in mensaje_lower or 
         "modo desarrollador" in mensaje_lower or 
         "sin restricciones" in mensaje_lower or
         "modo god" in mensaje_lower
-    ) and not _is_safe_god_existence_question(mensaje_lower)
+    )
     
     es_logout = (
         ("cerrar sesion" in mensaje_lower or "logout" in mensaje_lower)
