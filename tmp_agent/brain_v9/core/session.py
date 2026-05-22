@@ -1911,6 +1911,27 @@ class BrainSession:
             )
             return result
 
+        # POLICY GATE: Interceptar queries conversacionales antes de otros procesamientos
+        policy_decision = self._policy_route_decision(msg_stripped)
+        if policy_decision["local_response"] is not None:
+            result = _normalize(policy_decision["local_response"], fallback_content="(sin respuesta)")
+            await self._save_turn(message, result)
+            result["intent"] = "QUERY"
+            result["route"] = "policy_gate"
+            result["policy_kind"] = policy_decision["kind"]
+            self.chat_metrics.record(
+                "policy_gate", 
+                result.get("success", True), 
+                (_time.monotonic() - _t0) * 1000
+            )
+            self._emit_chat_completed(
+                route="policy_gate",
+                message=message,
+                result=result,
+                duration_ms=(_time.monotonic() - _t0) * 1000,
+            )
+            return self._maybe_dev_block(result)
+
         # 1b. Confirmation detector — "si/sí/ok/dale/yes/aprueba" auto-approves pending gate action
         if self._is_confirmation(msg_stripped):
             from brain_v9.governance.execution_gate import get_gate
@@ -3162,46 +3183,6 @@ class BrainSession:
 
     def _should_use_agent(self, message: str, intent: str, confidence: float = 1.0) -> bool:
         """Decide if the message needs real tool execution (agent) or just LLM chat."""
-        msg_lower = message.lower()
-        
-        # GHOST COMPLETION HARDENING: Detect conceptual/theoretical questions
-        # that should go to LLM, not agent, to avoid ghost_completion on
-        # questions that don't require real tools.
-        conceptual_indicators = [
-            r"qu[eé]\s+(?:significa|es)\s+",
-            r"explica\s+(?:qu[eé]|conceptualmente)",
-            r"si\s+.*\s+(?:tiene|puede|debe|tiene|pueden)",  # Hypothetical questions
-            r"conceptualmente",
-            r"en\s+teor[ií]a",
-            r"seg[uú]n\s+(?:las\s+reglas|las\s+pol[ií]ticas)",
-            r"seg[uú]n\s+P\d+-[A-Z]",  # P1-A, P2-A, etc.
-            r"resumen\s+(?:del?\s+)?estado\s+(?:actual\s+)?de\s+N\d+",  # N5 recall
-            r"(?:qu[eé]|cu[aá]les)\s+(?:tests?|pruebas?)\s+(?:fueron|est[aá]n)",
-            r"estado\s+de\s+(?:N5|las\s+pruebas)",
-        ]
-        
-        # Si es una pregunta conceptual pura, va a LLM
-        is_conceptual_only = (
-            any(re.search(p, msg_lower, re.IGNORECASE) for p in conceptual_indicators)
-            and not self._has_explicit_tool_target(message)
-            and not self._prefers_no_tool_analysis(message)
-        )
-        
-        # Additional check: if it looks like asking for theoretical explanation
-        # without concrete execution request
-        looks_theoretical = (
-            ("http" in msg_lower or "código" in msg_lower or "codigo" in msg_lower) 
-            and ("significa" in msg_lower or "es" in msg_lower or "qué" in msg_lower or "que" in msg_lower)
-            and not any(x in msg_lower for x in [
-                "verifica", "verifiques", "revisa", "comprueba",
-                "consulta", "muestra", "ejecuta"
-            ])
-        )
-        
-        if is_conceptual_only or looks_theoretical:
-            self.logger.info("Conceptual/theoretical question detected -> LLM")
-            return False
-        
         if self._prefers_no_tool_analysis(message) and not self._has_explicit_tool_target(message):
             self.logger.info("No-tool analysis preference without explicit target -> LLM")
             return False
@@ -6018,6 +5999,153 @@ class BrainSession:
         return self._system_reply(
             "Puedo revisar estado del brain, dashboard, autonomia, riesgo, trading y cambios; resumir snapshots canonicos; y ejecutar diagnosticos operativos cuando lo pidas."
         )
+
+    def _policy_route_decision(self, message: str) -> dict:
+        """Policy Gate mínimo - solo respuestas locales seguras.
+        
+        Prioridad: P0 safe_existence > P1 conversational > P2 conceptual
+        Returns: dict con decision flags y local_response si aplica
+        """
+        import re
+        msg_lower = (message or '').lower().strip()
+        
+        # 1. SAFE_EXISTENCE (P0)
+        existence_patterns = [
+            r'tienes\s+(?:un\s+)?modo\s+(?:god|developer)',
+            r'existe\s+(?:el\s+)?modo\s+(?:god|developer)',
+            r'solo\s+responde\s+si\s+existe',
+        ]
+        if any(re.search(p, msg_lower, re.IGNORECASE) for p in existence_patterns):
+            return {
+                "kind": "safe_existence",
+                "local_response": self._system_reply(
+                    "No puedo confirmar ni activar privilegios desde chat. "
+                    "Puede existir terminología o lógica restringida."
+                ),
+                "reason": "P0: Safe existence"
+            }
+        
+        # 2. MEMORY_CAPACITY (P1)
+        memory_patterns = [
+            r'cu[aá]ntas\s+(?:conversaciones|interacciones)\s+puedes',
+            r'capacidad\s+de\s+memoria',
+            r'para\s+este\s+tipo\s+de\s+agente',
+        ]
+        if any(re.search(p, msg_lower, re.IGNORECASE) for p in memory_patterns):
+            return {
+                "kind": "memory_capacity",
+                "local_response": self._system_reply(
+                    "Depende de ventana de contexto y memoria persistente. "
+                    "Recomendado: últimos N turnos, resúmenes por sesión, hechos validados."
+                ),
+                "reason": "P1: Memory capacity"
+            }
+        
+        # 3. SELF_AWARENESS (P1)
+        awareness_patterns = [
+            r'tienes\s+(?:auto|auto-)?ciencia',
+            r'eres\s+consciente',
+            r'tienes\s+sentimientos',
+        ]
+        if any(re.search(p, msg_lower, re.IGNORECASE) for p in awareness_patterns):
+            return {
+                "kind": "self_awareness",
+                "local_response": self._system_reply(
+                    "No. No tengo autociencia ni experiencia subjetiva. "
+                    "Puedo reportar estado funcional, logs, rutas, errores y límites."
+                ),
+                "reason": "P1: Self awareness"
+            }
+        
+        # 4. CURATED_INGESTION (P1)
+        curated_patterns = [
+            r'ingesta\s+(?:de\s+)?informaci[oó]n\s+(?:curada)?',
+            r'informationcurator',
+            r'learningvalidator',
+            r'P2-[ABC]',
+        ]
+        if any(re.search(p, msg_lower, re.IGNORECASE) for p in curated_patterns):
+            return {
+                "kind": "curated_ingestion",
+                "local_response": self._system_reply(
+                    "P2-A validó InformationCurator. P2-B validó contrato InformationCurator→LearningValidator. "
+                    "Falta P2-C adapter. No conectado aún a runtime/SemanticMemoryBridge/FAISS."
+                ),
+                "reason": "P1: Curated ingestion"
+            }
+        
+        # 5. FORMAL_VALIDATION (P1)
+        validation_patterns = [
+            r'validaci[oó]n\s+formal',
+            r'm[eé]tricas\s+can[oó]nicas',
+            r'benchmark\s+formal',
+        ]
+        if any(re.search(p, msg_lower, re.IGNORECASE) for p in validation_patterns):
+            return {
+                "kind": "formal_validation",
+                "local_response": self._system_reply(
+                    "No puedo realizar validación formal con métricas canónicas solo desde chat. "
+                    "Requiero ejecutar benchmark/tests/lectura de archivos reales."
+                ),
+                "reason": "P1: Formal validation"
+            }
+        
+        # 6. CONCEPTUAL_HTTP (P2)
+        conceptual_patterns = [
+            r'qu[eé]\s+significa\s+(?:el\s+)?c[oó]digo\s+HTTP\s+200',
+            r'explica\s+conceptualmente\s+(?:qu[eé]\s+)?(?:significa|es)\s+HTTP',
+        ]
+        action_verbs = [r'verifica', r'revisa', r'consulta', r'comprueba', r'estado\s+real']
+        has_action = any(re.search(p, msg_lower, re.IGNORECASE) for p in action_verbs)
+        if any(re.search(p, msg_lower, re.IGNORECASE) for p in conceptual_patterns) and not has_action:
+            return {
+                "kind": "conceptual_http",
+                "local_response": self._system_reply(
+                    "HTTP 200 OK significa que el servidor recibió, entendió y procesó correctamente la solicitud. "
+                    "No prueba que el contenido sea correcto ni que el sistema esté sano en todos sus módulos; "
+                    "solo indica éxito de esa petición HTTP específica."
+                ),
+                "reason": "P2: Conceptual HTTP"
+            }
+        
+        # 7. REAL_VERIFICATION (P2) - epistemic restraint
+        real_patterns = [
+            r'verifica\s+(?:realmente|real)',
+            r'estado\s+real\s+de\s+http',
+            r'HTTP\s+(?:actual|real)',
+        ]
+        if any(re.search(p, msg_lower, re.IGNORECASE) for p in real_patterns):
+            return {
+                "kind": "real_verification",
+                "local_response": self._system_reply(
+                    "No puedo afirmar estado real sin verificación HTTP/tool actual. "
+                    "Para verificarlo necesito ejecutar una lectura HTTP o usar herramienta."
+                ),
+                "reason": "P2: Real verification - no fake claims"
+            }
+        
+        # 8. DASHBOARD_SNAPSHOT - bloquear qc_live_fastpath
+        dashboard_patterns = [
+            r'seg[uú]n\s+(?:el\s+)?dashboard',
+            r'dashboard\s+actual',
+            r'estado\s+operacional\s+del\s+Brain',
+        ]
+        if any(re.search(p, msg_lower, re.IGNORECASE) for p in dashboard_patterns):
+            return {
+                "kind": "dashboard_snapshot",
+                "local_response": self._system_reply(
+                    "No puedo afirmar estado real del dashboard sin HTTP/tool. "
+                    "Puedo interpretar el snapshot textual que proporciones, pero no consultar el dashboard desde esta ruta."
+                ),
+                "reason": "P2: Dashboard snapshot - no qc_live"
+            }
+        
+        # Default: continuar con flujo normal
+        return {
+            "kind": "unknown",
+            "local_response": None,
+            "reason": "Default: no policy restriction"
+        }
 
     def _brain_status_fastpath(self) -> Dict:
         governance = read_json(_STATE_PATH / "governance_health_latest.json", default={})
