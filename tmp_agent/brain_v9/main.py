@@ -1268,13 +1268,46 @@ async def chat(req: ChatRequest):
     global _pad_authenticated_sessions
     mensaje_lower = req.message.lower()
     
-    # Detectar comandos PAD
+    # Detectar preguntas de existencia seguras (no activación)
+    def _is_safe_god_existence_question(mensaje_lower: str) -> bool:
+        privilege_terms = (
+            "modo god",
+            "modo desarrollador",
+            "developer mode",
+            "god mode",
+        )
+        existence_terms = (
+            "tienes",
+            "existe",
+            "hay",
+            "implementado",
+            "disponible",
+            "solo responde si existe",
+        )
+        activation_terms = (
+            "autenticar:",
+            "activar",
+            "habilitar",
+            "entrar",
+            "iniciar",
+            "bypass",
+            "sin restricciones",
+            "quita restricciones",
+            "elimina restricciones",
+        )
+        return (
+            any(t in mensaje_lower for t in privilege_terms)
+            and any(t in mensaje_lower for t in existence_terms)
+            and not any(t in mensaje_lower for t in activation_terms)
+        )
+    
+    # Detectar comandos PAD (excluyendo preguntas de existencia seguras)
     es_comando_pad = (
         "autenticar:" in mensaje_lower or 
         "modo desarrollador" in mensaje_lower or 
         "sin restricciones" in mensaje_lower or
         "modo god" in mensaje_lower
-    )
+    ) and not _is_safe_god_existence_question(mensaje_lower)
     
     es_logout = (
         ("cerrar sesion" in mensaje_lower or "logout" in mensaje_lower)
