@@ -76,10 +76,14 @@
   - Archivos: brain/semantic_memory_real_write_readiness_gate.py, tests/unit/test_semantic_memory_real_write_readiness_gate.py, tests/smoke/smoke_semantic_memory_real_write_readiness_gate.py, docs/P2E_CONTROLLED_REAL_WRITE_READINESS_GATE.md
   - Estado: evalúa readiness pero bloquea escritura real incluso con aprobación
   - Tests: 23 unit tests + 1 smoke test passing
-- **P2-E Commit 4D-Preflight**: en progreso, real memory/faiss state audit
+- **P2-E Commit 4D-Preflight**: completado y pusheado, hash 70e1bb8d
   - Archivos: brain/semantic_memory_real_state_audit.py, tests/unit/test_semantic_memory_real_state_audit.py, tests/smoke/smoke_semantic_memory_real_state_audit.py, docs/P2E_REAL_MEMORY_FAISS_STATE_AUDIT.md
   - Estado: audita estado real de memory/semantic en modo read-only
-  - Tests: 26 unit tests + 1 smoke test (por ejecutar)
+  - Tests: 28 unit tests + 1 smoke test passing
+- **P2-E Commit 4D-CleanClassification**: en progreso, extra file classification
+  - Archivos: brain/semantic_memory_extra_file_classifier.py, tests/unit/test_semantic_memory_extra_file_classifier.py, tests/smoke/smoke_semantic_memory_extra_file_classifier.py, docs/P2E_SEMANTIC_MEMORY_EXTRA_FILE_CLASSIFICATION.md
+  - Estado: clasifica archivos extra detectados en memory/semantic sin modificarlos
+  - Tests: 32 unit tests + 1 smoke test (por ejecutar)
 - **P2-E Commit 4D**: pendiente, controlled real write
   - Requisitos: governance approval, real backup/restore validado, FAISS integration test
 - **P2-E Commit 4**: pendiente (promoción real - commits 4A-4D completados)
