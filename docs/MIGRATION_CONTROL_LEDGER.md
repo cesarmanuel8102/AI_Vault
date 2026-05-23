@@ -29,11 +29,14 @@
 - **P2-E Commit 2**: completado y pusheado, hash cabc8fb8
   - Archivos: tests/smoke/smoke_curated_memory_promotion_dry_run.py, docs/P2E_GOVERNED_CURATED_MEMORY_PROMOTION.md
   - Estado: tests passing (13 + 11 + smoke), documentación lista
-- **P2-E Commit 3A**: en progreso (governance contract/stub)
+- **P2-E Commit 3A**: completado y pusheado, hash ef01172c
   - Archivos: brain/curated_memory_governance.py, tests/unit/test_curated_memory_governance.py, docs/P2E_GOVERNANCE_CONTRACT.md
   - Estado: contract/stub only, allow_real_write=False hardcoded
-- **P2-E Commit 3B**: pendiente (promoción real)
-  - Requisitos: audit trail, rollback, observability, integración con SemanticMemory
+- **P2-E Commit 3B**: en progreso (audit trail local)
+  - Archivos: brain/curated_memory_governance_audit.py, tests/unit/test_curated_memory_governance_audit.py, docs/P2E_GOVERNANCE_AUDIT_TRAIL.md
+  - Estado: audit trail en tmp_agent/state/governance/, allow_real_write=False hardcoded
+- **P2-E Commit 4**: pendiente (promoción real)
+  - Requisitos: rollback, observability, integración con SemanticMemory validada
   - Blockers: allow_real_write=False (bloqueado hasta cumplir requisitos)
 - **P2-F GitHubSourceConnector**: pendiente, no activo
 
