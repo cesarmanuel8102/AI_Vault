@@ -68,10 +68,14 @@
   - Archivos: brain/semantic_memory_adapter_real.py, tests/unit/test_semantic_memory_adapter_real.py, tests/smoke/smoke_semantic_memory_adapter_real_skeleton.py, docs/P2E_SEMANTIC_MEMORY_REAL_ADAPTER_SKELETON.md
   - Estado: skeleton prepara infraestructura pero bloquea explícitamente escritura real, acepta snapshot_id de 4A
   - Tests: 30 unit tests + 1 smoke test passing
-- **P2-E Commit 4C**: en progreso, restore/rollback simulation
+- **P2-E Commit 4C**: completado y pusheado, hash 3ea68c28
   - Archivos: brain/semantic_memory_rollback_simulation.py, tests/unit/test_semantic_memory_rollback_simulation.py, tests/smoke/smoke_semantic_memory_rollback_simulation.py, docs/P2E_SEMANTIC_MEMORY_ROLLBACK_SIMULATION.md
   - Estado: simula restore/rollback vinculando 4A + 4B, bloquea rollback real
-  - Tests: 25 unit tests + 1 smoke test (por ejecutar)
+  - Tests: 27 unit tests + 1 smoke test passing
+- **P2-E Commit 4D-0**: en progreso, controlled real write readiness gate
+  - Archivos: brain/semantic_memory_real_write_readiness_gate.py, tests/unit/test_semantic_memory_real_write_readiness_gate.py, tests/smoke/smoke_semantic_memory_real_write_readiness_gate.py, docs/P2E_CONTROLLED_REAL_WRITE_READINESS_GATE.md
+  - Estado: evalúa readiness pero bloquea escritura real incluso con aprobación
+  - Tests: 22 unit tests + 1 smoke test (por ejecutar)
 - **P2-E Commit 4D**: pendiente, controlled real write
   - Requisitos: governance approval, real backup/restore validado, FAISS integration test
 - **P2-E Commit 4**: pendiente (promoción real - commits 4A-4D completados)
