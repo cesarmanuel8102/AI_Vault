@@ -44,9 +44,14 @@
 - **P2-E Commit 3E**: completado y pusheado, hash 53782af1
   - Archivos: brain/curated_memory_dry_run_flow.py, tests/unit/test_curated_memory_dry_run_flow.py, docs/P2E_DRY_RUN_FLOW.md
   - Estado: orquestador dry-run integrando promotion+governance+audit+rollback+observability, NO escritura real, allow_real_write=False hardcoded
-- **P2-E Commit 3F**: en progreso (SemanticMemory read-only probe)
+- **P2-E Commit 3F**: completado y pusheado, hash 563a40ea
   - Archivos: brain/semantic_memory_probe.py, tests/unit/test_semantic_memory_probe.py, docs/P2E_SEMANTIC_MEMORY_PROBE.md
   - Estado: probe read-only, inspección sin escritura, NO importa faiss, allow_real_write=False hardcoded
+  - Tests: 14 tests passing
+- **P2-E Commit 3G**: en progreso (SemanticMemory adapter dry-run contract)
+  - Archivos: brain/semantic_memory_adapter_dry_run.py, tests/unit/test_semantic_memory_adapter_dry_run.py, docs/P2E_SEMANTIC_MEMORY_ADAPTER_DRY_RUN.md
+  - Estado: adapter dry-run con validación de payloads, NO escritura real, NO importa faiss
+  - Requisito: integrar con flow en Commit 3H
 - **P2-E Commit 4**: pendiente (promoción real)
   - Requisitos: pruebas SemanticMemory controladas + runtime contract + rollback real validado
   - Blockers: allow_real_write=False (bloqueado hasta cumplir requisitos)
