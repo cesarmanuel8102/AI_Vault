@@ -23,10 +23,14 @@
 ## 3. Estado P2
 - **P2-C**: CuratedRecord → LearningValidator adapter (completado - commit e4c1fd2f)
 - **P2-D**: docs + smoke (completado - commit 54b8ccb4)
-- **P2-E Commit 1**: CuratedMemoryPromotion dry-run service (staged, listo para commit)
+- **P2-E Commit 1**: CuratedMemoryPromotion dry-run service (completado y pusheado - commit 7ad320c4)
   - Archivos: brain/curated_memory_promotion.py, tests/unit/test_curated_memory_promotion.py
   - Tests pasando: 13/13
-- **P2-E Commit 2**: pendiente
+- **P2-E Commit 2**: En progreso (smoke + docs dry-run)
+  - Archivos: tests/smoke/smoke_curated_memory_promotion_dry_run.py, docs/P2E_GOVERNED_CURATED_MEMORY_PROMOTION.md
+  - Estado: tests passing, documentación lista
+- **P2-E Commit 3**: pendiente (governance gate + promoción real)
+  - Requisitos: approval gate, observability, rollback capability
 - **P2-F GitHubSourceConnector**: pendiente, no activo
 
 ## 4. Brechas principales heredadas
