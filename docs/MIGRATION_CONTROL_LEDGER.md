@@ -80,10 +80,15 @@
   - Archivos: brain/semantic_memory_real_state_audit.py, tests/unit/test_semantic_memory_real_state_audit.py, tests/smoke/smoke_semantic_memory_real_state_audit.py, docs/P2E_REAL_MEMORY_FAISS_STATE_AUDIT.md
   - Estado: audita estado real de memory/semantic en modo read-only
   - Tests: 28 unit tests + 1 smoke test passing
-- **P2-E Commit 4D-CleanClassification**: en progreso, extra file classification
+- **P2-E Commit 4D-CleanClassification**: completado y pusheado, hash 704fb6bc
   - Archivos: brain/semantic_memory_extra_file_classifier.py, tests/unit/test_semantic_memory_extra_file_classifier.py, tests/smoke/smoke_semantic_memory_extra_file_classifier.py, docs/P2E_SEMANTIC_MEMORY_EXTRA_FILE_CLASSIFICATION.md
   - Estado: clasifica archivos extra detectados en memory/semantic sin modificarlos
-  - Tests: 32 unit tests + 1 smoke test (por ejecutar)
+  - Tests: 32 unit tests + 1 smoke test passing
+- **P2-E Commit 4D-DependencyMapping**: completado (listo para commit local), hash PENDING
+  - Archivos: brain/semantic_memory_extra_file_dependency_mapper.py, tests/unit/test_semantic_memory_extra_file_dependency_mapper.py, tests/smoke/smoke_semantic_memory_extra_file_dependency_mapper.py, docs/P2E_SEMANTIC_MEMORY_EXTRA_FILE_DEPENDENCY_MAPPING.md
+  - Estado: mapeo estático read-only de dependencias a archivos extra, NO ejecución, NO imports sensibles
+  - Tests: 41 unit tests passing + smoke test passing
+  - Seguridad: allow_real_write=False, dry_run_only=True, SECURITY_VALIDATION_OK
 - **P2-E Commit 4D**: pendiente, controlled real write
   - Requisitos: governance approval, real backup/restore validado, FAISS integration test
 - **P2-E Commit 4**: pendiente (promoción real - commits 4A-4D completados)
