@@ -211,20 +211,143 @@ if should_block_write():
     # blocked.status == REAL_WRITE_BLOCKED
 ```
 
-## 8. Requisitos Antes de Integración con SemanticMemory
+## 8. SemanticMemoryAdapterDryRun Integration (P2-E Commit 3H)
+
+A partir del Commit 3H, el flujo integra `SemanticMemoryAdapterDryRun` para validar payloads antes de promoción:
+
+### 8.1 ¿Qué se Integra?
+
+El flujo ahora incluye:
+- **SemanticMemoryAdapterDryRun**: Valida payloads sin escribir memoria real
+- **SemanticMemoryPayload**: Estructura de datos validada
+- **prepare_dry_run()**: Simula escritura en SemanticMemory
+
+### 8.2 Cuándo se Ejecuta el Adapter
+
+```
+si approve=True:
+    → Construir SemanticMemoryPayload
+    → Ejecutar semantic_adapter.prepare_dry_run(payload)
+    → Guardar semantic_adapter_run_id
+    → Guardar semantic_adapter_status
+    → Si adapter rechaza: status = REJECTED_DRY_RUN
+    → Si adapter aprueba: status = COMPLETED_DRY_RUN
+    
+si approve=False:
+    → NO ejecutar semantic adapter
+    → semantic_adapter_skipped = True
+    → status = REJECTED_DRY_RUN
+```
+
+### 8.3 Campos Añadidos al Resultado
+
+```python
+@dataclass
+class CuratedMemoryDryRunFlowResult:
+    # ... campos existentes ...
+    
+    # Nuevos campos (P2-E Commit 3H)
+    semantic_adapter_run_id: Optional[str] = None
+    semantic_adapter_status: Optional[str] = None
+    
+    # Metadata del adapter
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    # metadata contiene:
+    #   semantic_adapter_dry_run: True
+    #   semantic_adapter_would_call_method: "add_memory"
+    #   semantic_adapter_validation_errors: []
+    #   semantic_adapter_warnings: []
+    #   semantic_adapter_skipped: True (si approve=False)
+    #   semantic_adapter_rejected: True (si adapter rechaza)
+```
+
+### 8.4 Ejemplo de Uso con Adapter
+
+```python
+from brain.curated_memory_dry_run_flow import CuratedMemoryDryRunFlow
+from brain.semantic_memory_adapter_dry_run import SemanticMemoryAdapterDryRun
+
+# Crear flow con adapter
+adapter = SemanticMemoryAdapterDryRun()
+flow = CuratedMemoryDryRunFlow(semantic_adapter=adapter)
+
+# Ejecutar flujo aprobado
+result = flow.run_approval_flow(
+    record_id="rec_001",
+    content_hash="abc123",
+    source="curated",
+    validation_score=0.95,
+    actor="admin",
+    approve=True,
+)
+
+# Verificar integración con adapter
+print(result.semantic_adapter_run_id)      # "adapter_run_..."
+print(result.semantic_adapter_status)      # "DRY_RUN_READY"
+print(result.metadata["semantic_adapter_dry_run"])  # True
+
+# El adapter NO escribió memoria real
+assert result.allow_real_write is False
+assert result.dry_run_only is True
+```
+
+### 8.5 Reglas de Seguridad del Adapter
+
+1. **Solo dry-run**: `semantic_adapter_dry_run=True` siempre
+2. **NO add_memory real**: Solo referencia textual `would_call_method="add_memory"`
+3. **NO escritura en memory/semantic**: Solo validación de payloads
+4. **NO FAISS**: No se importa faiss en el adapter
+5. **NO endpoints HTTP**: No se llaman endpoints externos
+6. **Bloqueo explícito**: Si `approve=False`, adapter no se ejecuta
+
+### 8.6 Estados del Adapter
+
+| Estado | Descripción |
+|--------|-------------|
+| `DRY_RUN_READY` | Payload válido, listo para dry-run |
+| `REJECTED` | Payload inválido (errores de validación) |
+| `VALIDATED` | Payload pasó validaciones básicas |
+
+### 8.7 Validaciones del Adapter
+
+El adapter valida:
+- `record_id` requerido y no vacío
+- `text` requerido y no vacío
+- `source` requerido y no vacío
+- `content_hash` requerido y no vacío
+- `metadata` debe ser dict
+- `validation_score` entre 0.0 y 1.0
+- Warning si `text > 20,000` caracteres
+- Warning si `validation_score < 0.70`
+
+### 8.8 Próximo Paso Después de 3H
+
+**P2-E Commit 3I**: Smoke test del pipeline completo
+- Validar que el flujo end-to-end funciona
+- Verificar que todos los componentes se integran
+- Confirmar que NO hay escritura real accidental
+
+**P2-E Commit 4** (futuro): Promoción real
+- Implementar `add_memory` real con FAISS
+- Permitir `allow_real_write=True` con governance
+- Implementar `execute_rollback_real()`
+
+## 9. Requisitos Antes de Integración con SemanticMemory
 
 Para habilitar promoción real sobre memoria semántica:
 
 1. ✅ Flujo dry-run validado (P2-E Commit 3E)
 2. ✅ Governance completo (P2-E 3A-3D)
 3. ✅ Observabilidad mínima (P2-E 3D)
-4. ⏸️ Permitir `allow_real_write=True` con governance completo
-5. ⏸️ Implementar `promote_real()` con integración SemanticMemory
-6. ⏸️ Implementar `execute_rollback_real()` con integración FAISS
-7. ⏸️ Pruebas de integración controladas
-8. ⏸️ Dashboard de observabilidad (opcional)
+4. ✅ SemanticMemory adapter dry-run (P2-E Commit 3G)
+5. ✅ SemanticMemory adapter integrado con flow (P2-E Commit 3H)
+6. ⏸️ Smoke test pipeline completo (P2-E Commit 3I)
+7. ⏸️ Permitir `allow_real_write=True` con governance completo
+8. ⏸️ Implementar `promote_real()` con integración SemanticMemory
+9. ⏸️ Implementar `execute_rollback_real()` con integración FAISS
+10. ⏸️ Dashboard de observabilidad (opcional)
 
-## 9. Riesgos Abiertos
+## 10. Riesgos Abiertos
 
 | ID | Riesgo | Severidad | Mitigación |
 |----|--------|-----------|------------|
@@ -232,12 +355,19 @@ Para habilitar promoción real sobre memoria semántica:
 | R8 | Flujo sin observabilidad | Medio | Todos los pasos registran eventos, `observability_event_ids` trazable |
 | R10 | Modificación directa FAISS | Crítico | No se importa faiss, solo dry-run simulation |
 | R12 | Tests pasan pero runtime no usa | Medio | Tests unitarios independientes, ready para integración |
+| R15 | Adapter rechaza payload válido | Bajo | Warnings conservadores, no rechazo automático por score |
 
-## 10. Próximo Paso
+## 11. Próximo Paso
+
+**P2-E Commit 3I:** Smoke test del pipeline completo
+- Validar que el flujo end-to-end funciona con adapter integrado
+- Verificar que todos los componentes se integran correctamente
+- Confirmar que NO hay escritura real accidental
+- Preparar para Commit 4 (promoción real)
 
 **P2-E Commit 4 (cuando estén listos los requisitos):**
 
-1. Implementar `promote_real()` con integración SemanticMemory
+1. Implementar `add_memory` real con FAISS
 2. Implementar `execute_rollback_real()` con integración FAISS
 3. Permitir `allow_real_write=True` con governance completo
 4. Agregar persistencia de eventos observability
@@ -249,8 +379,8 @@ Para habilitar promoción real sobre memoria semántica:
 
 ---
 
-**Estado:** P2-E Commit 3E completado  
-**Scope:** Orquestador dry-run unificado  
-**Módulos integrados:** Promotion + Governance + Audit + Rollback + Observability  
+**Estado:** P2-E Commit 3H completado  
+**Scope:** Orquestador dry-run unificado + SemanticMemory adapter integration  
+**Módulos integrados:** Promotion + Governance + Audit + Rollback + Observability + SemanticMemoryAdapter  
 **Escritura real:** BLOQUEADA  
 **Branch:** codex/own-capital-sustainable-return

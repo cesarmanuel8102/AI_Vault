@@ -61,6 +61,11 @@ from brain.curated_memory_observability import (
     CuratedMemoryObservability,
     CuratedMemoryEventType,
 )
+from brain.semantic_memory_adapter_dry_run import (
+    SemanticMemoryAdapterDryRun,
+    SemanticMemoryAdapterDryRunResult,
+    SemanticMemoryAdapterStatus,
+)
 
 
 class DryRunFlowStatus(str, Enum):
@@ -99,6 +104,10 @@ class CuratedMemoryDryRunFlowResult:
     rollback_id: Optional[str] = None
     observability_event_ids: List[str] = field(default_factory=list)
     
+    # SemanticMemory adapter integration (P2-E Commit 3H)
+    semantic_adapter_run_id: Optional[str] = None
+    semantic_adapter_status: Optional[str] = None
+    
     # Control de seguridad - SIEMPRE True en este commit
     dry_run_only: bool = True
     
@@ -121,6 +130,8 @@ class CuratedMemoryDryRunFlowResult:
             "audit_entry_ids": self.audit_entry_ids,
             "rollback_id": self.rollback_id,
             "observability_event_ids": self.observability_event_ids,
+            "semantic_adapter_run_id": self.semantic_adapter_run_id,
+            "semantic_adapter_status": self.semantic_adapter_status,
             "dry_run_only": self.dry_run_only,
             "allow_real_write": self.allow_real_write,
             "metadata": self.metadata,
@@ -158,6 +169,7 @@ class CuratedMemoryDryRunFlow:
         audit_trail: Optional[CuratedMemoryGovernanceAuditTrail] = None,
         rollback_service: Optional[CuratedMemoryRollbackService] = None,
         observability: Optional[CuratedMemoryObservability] = None,
+        semantic_adapter: Optional[SemanticMemoryAdapterDryRun] = None,
     ):
         """
         Inicializar orquestador de flujo dry-run.
@@ -168,12 +180,14 @@ class CuratedMemoryDryRunFlow:
             audit_trail: Servicio de audit trail (opcional)
             rollback_service: Servicio de rollback (opcional)
             observability: Servicio de observabilidad (opcional)
+            semantic_adapter: Adapter de SemanticMemory (opcional, Commit 3H)
         """
         self._promotion = promotion_service or CuratedMemoryPromotionService()
         self._governance = governance_service or CuratedMemoryGovernanceService()
         self._audit = audit_trail or CuratedMemoryGovernanceAuditTrail()
         self._rollback = rollback_service or CuratedMemoryRollbackService()
         self._observability = observability or CuratedMemoryObservability()
+        self._semantic_adapter = semantic_adapter or SemanticMemoryAdapterDryRun()
     
     def run_approval_flow(
         self,
@@ -332,9 +346,47 @@ class CuratedMemoryDryRunFlow:
         if result.status != DryRunFlowStatus.REJECTED_DRY_RUN:
             result.status = DryRunFlowStatus.AUDITED
         
-        # 8. Marcar como completado (dry-run) solo si no fue rechazado
+        # 8. Integrar con SemanticMemory adapter dry-run (P2-E Commit 3H)
+        # Solo ejecutar adapter si approve=True y no fue rechazado
         if result.status != DryRunFlowStatus.REJECTED_DRY_RUN:
-            result.status = DryRunFlowStatus.COMPLETED_DRY_RUN
+            # Construir payload para semantic adapter
+            adapter_payload = self._semantic_adapter.build_payload(
+                record_id=record_id,
+                text=content_hash,  # Usar content_hash como fallback
+                source=source,
+                content_hash=content_hash,
+                metadata={
+                    "flow_id": flow_id,
+                    "actor": actor,
+                    "approval_request_id": result.approval_request_id,
+                    "approval_decision_id": result.approval_decision_id,
+                },
+                validation_score=validation_score if validation_score else 1.0,
+            )
+            
+            # Ejecutar prepare_dry_run (simulación, NO escritura real)
+            adapter_result = self._semantic_adapter.prepare_dry_run(adapter_payload)
+            
+            # Guardar resultados del adapter
+            result.semantic_adapter_run_id = adapter_result.adapter_run_id
+            result.semantic_adapter_status = adapter_result.status.value
+            
+            # Agregar metadata del adapter
+            result.metadata["semantic_adapter_dry_run"] = True
+            result.metadata["semantic_adapter_would_call_method"] = adapter_result.would_call_method
+            result.metadata["semantic_adapter_validation_errors"] = adapter_result.validation_errors
+            result.metadata["semantic_adapter_warnings"] = adapter_result.warnings
+            
+            # Si el adapter rechaza el payload, marcar como REJECTED_DRY_RUN
+            if adapter_result.status == SemanticMemoryAdapterStatus.REJECTED:
+                result.status = DryRunFlowStatus.REJECTED_DRY_RUN
+                result.metadata["semantic_adapter_rejected"] = True
+            else:
+                # Marcar como completado (dry-run)
+                result.status = DryRunFlowStatus.COMPLETED_DRY_RUN
+        else:
+            # Si fue rechazado, no ejecutar adapter
+            result.metadata["semantic_adapter_skipped"] = True
         
         return result
     

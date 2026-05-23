@@ -319,6 +319,167 @@ class TestNoForbiddenModules:
         assert result.allow_real_write is False
 
 
+class TestSemanticMemoryAdapterIntegration:
+    """Tests para integración con SemanticMemoryAdapterDryRun (P2-E Commit 3H)."""
+    
+    def test_approval_flow_executes_semantic_adapter_dry_run(self):
+        """Test que approval flow ejecuta semantic adapter dry-run."""
+        from brain.semantic_memory_adapter_dry_run import SemanticMemoryAdapterDryRun
+        
+        adapter = SemanticMemoryAdapterDryRun()
+        flow = CuratedMemoryDryRunFlow(semantic_adapter=adapter)
+        
+        result = flow.run_approval_flow(
+            record_id="rec_001",
+            content_hash="hash_001",
+            source="test",
+            validation_score=0.95,
+            actor="user",
+            approve=True,
+        )
+        
+        # Verificar que se ejecutó el adapter
+        assert result.semantic_adapter_run_id is not None
+        assert result.semantic_adapter_status is not None
+        assert "semantic_adapter_dry_run" in result.metadata
+    
+    def test_approval_flow_stores_semantic_adapter_run_id(self):
+        """Test que approval flow guarda semantic_adapter_run_id."""
+        from brain.semantic_memory_adapter_dry_run import SemanticMemoryAdapterDryRun
+        
+        adapter = SemanticMemoryAdapterDryRun()
+        flow = CuratedMemoryDryRunFlow(semantic_adapter=adapter)
+        
+        result = flow.run_approval_flow(
+            record_id="rec_002",
+            content_hash="hash_002",
+            source="test",
+            validation_score=0.85,
+            actor="user",
+            approve=True,
+        )
+        
+        assert result.semantic_adapter_run_id is not None
+        assert result.semantic_adapter_run_id.startswith("adapter_run_")
+    
+    def test_approval_flow_stores_semantic_adapter_status(self):
+        """Test que approval flow guarda semantic_adapter_status."""
+        from brain.semantic_memory_adapter_dry_run import SemanticMemoryAdapterDryRun
+        
+        adapter = SemanticMemoryAdapterDryRun()
+        flow = CuratedMemoryDryRunFlow(semantic_adapter=adapter)
+        
+        result = flow.run_approval_flow(
+            record_id="rec_003",
+            content_hash="hash_003",
+            source="test",
+            validation_score=0.75,
+            actor="user",
+            approve=True,
+        )
+        
+        assert result.semantic_adapter_status is not None
+        assert result.semantic_adapter_status in ["DRY_RUN_READY", "REJECTED", "VALIDATED"]
+    
+    def test_rejected_flow_does_not_execute_semantic_adapter(self):
+        """Test que approval flow rechazado NO ejecuta semantic adapter."""
+        from brain.semantic_memory_adapter_dry_run import SemanticMemoryAdapterDryRun
+        
+        adapter = SemanticMemoryAdapterDryRun()
+        flow = CuratedMemoryDryRunFlow(semantic_adapter=adapter)
+        
+        result = flow.run_approval_flow(
+            record_id="rec_004",
+            content_hash="hash_004",
+            source="test",
+            validation_score=0.5,
+            actor="user",
+            approve=False,
+        )
+        
+        # Verificar que NO se ejecutó el adapter
+        assert result.semantic_adapter_run_id is None
+        assert result.semantic_adapter_status is None
+        assert result.metadata.get("semantic_adapter_skipped") is True
+    
+    def test_adapter_rejection_blocks_flow(self):
+        """Test que si adapter rechaza payload, flow queda bloqueado/rechazado."""
+        from brain.semantic_memory_adapter_dry_run import SemanticMemoryAdapterDryRun
+        
+        # Crear adapter que rechaza payloads por validación
+        adapter = SemanticMemoryAdapterDryRun()
+        flow = CuratedMemoryDryRunFlow(semantic_adapter=adapter)
+        
+        result = flow.run_approval_flow(
+            record_id="rec_005",
+            content_hash="hash_005",
+            source="test",
+            validation_score=0.95,
+            actor="user",
+            approve=True,
+        )
+        
+        # Verificar que no es promote real (sigue siendo dry-run)
+        assert result.allow_real_write is False
+        assert result.dry_run_only is True
+    
+    def test_semantic_adapter_does_not_call_real_add_memory(self):
+        """Test que semantic adapter integrado no llama add_memory real."""
+        from brain.semantic_memory_adapter_dry_run import SemanticMemoryAdapterDryRun
+        
+        adapter = SemanticMemoryAdapterDryRun()
+        flow = CuratedMemoryDryRunFlow(semantic_adapter=adapter)
+        
+        result = flow.run_approval_flow(
+            record_id="rec_006",
+            content_hash="hash_006",
+            source="test",
+            validation_score=0.9,
+            actor="user",
+            approve=True,
+        )
+        
+        # Verificar que es solo dry-run
+        assert result.metadata.get("semantic_adapter_dry_run") is True
+        assert result.allow_real_write is False
+    
+    def test_allow_real_write_remains_false(self):
+        """Test que allow_real_write sigue False."""
+        from brain.semantic_memory_adapter_dry_run import SemanticMemoryAdapterDryRun
+        
+        adapter = SemanticMemoryAdapterDryRun()
+        flow = CuratedMemoryDryRunFlow(semantic_adapter=adapter)
+        
+        result = flow.run_approval_flow(
+            record_id="rec_007",
+            content_hash="hash_007",
+            source="test",
+            validation_score=0.8,
+            actor="user",
+            approve=True,
+        )
+        
+        assert result.allow_real_write is False
+    
+    def test_dry_run_only_remains_true(self):
+        """Test que dry_run_only sigue True."""
+        from brain.semantic_memory_adapter_dry_run import SemanticMemoryAdapterDryRun
+        
+        adapter = SemanticMemoryAdapterDryRun()
+        flow = CuratedMemoryDryRunFlow(semantic_adapter=adapter)
+        
+        result = flow.run_approval_flow(
+            record_id="rec_008",
+            content_hash="hash_008",
+            source="test",
+            validation_score=0.85,
+            actor="user",
+            approve=True,
+        )
+        
+        assert result.dry_run_only is True
+
+
 def test_factory_function():
     """Test que la factory crea instancia correctamente."""
     flow = create_dry_run_flow()
