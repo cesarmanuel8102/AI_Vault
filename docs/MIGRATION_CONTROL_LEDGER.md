@@ -26,11 +26,15 @@
 - **P2-E Commit 1**: CuratedMemoryPromotion dry-run service (completado y pusheado - commit 7ad320c4)
   - Archivos: brain/curated_memory_promotion.py, tests/unit/test_curated_memory_promotion.py
   - Tests pasando: 13/13
-- **P2-E Commit 2**: En progreso (smoke + docs dry-run)
+- **P2-E Commit 2**: completado y pusheado, hash cabc8fb8
   - Archivos: tests/smoke/smoke_curated_memory_promotion_dry_run.py, docs/P2E_GOVERNED_CURATED_MEMORY_PROMOTION.md
-  - Estado: tests passing, documentación lista
-- **P2-E Commit 3**: pendiente (governance gate + promoción real)
-  - Requisitos: approval gate, observability, rollback capability
+  - Estado: tests passing (13 + 11 + smoke), documentación lista
+- **P2-E Commit 3A**: en progreso (governance contract/stub)
+  - Archivos: brain/curated_memory_governance.py, tests/unit/test_curated_memory_governance.py, docs/P2E_GOVERNANCE_CONTRACT.md
+  - Estado: contract/stub only, allow_real_write=False hardcoded
+- **P2-E Commit 3B**: pendiente (promoción real)
+  - Requisitos: audit trail, rollback, observability, integración con SemanticMemory
+  - Blockers: allow_real_write=False (bloqueado hasta cumplir requisitos)
 - **P2-F GitHubSourceConnector**: pendiente, no activo
 
 ## 4. Brechas principales heredadas
