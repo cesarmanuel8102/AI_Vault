@@ -57,11 +57,17 @@
 - **P2-E Commit 3I**: completado y pusheado, hash 6576cd8d
   - Archivos: tests/smoke/smoke_p2e_curated_memory_pipeline_dry_run.py, docs/P2E_DRY_RUN_PIPELINE_SMOKE.md
   - Estado: smoke test valida pipeline end-to-end, NO escritura real, NO add_memory real
-- **P2-E Commit 3J**: en progreso, cierre formal dry-run y gate no-real-write
+- **P2-E Commit 3J**: completado y pusheado, hash ffe03c95
   - Archivos: tests/smoke/smoke_p2e_no_real_write_gate.py, docs/P2E_DRY_RUN_CLOSURE_REVIEW.md
   - Estado: gate valida que pipeline sigue sin escritura real, documenta requisitos Commit 4
-  - Requisito: cerrar fase 3 dry-run antes de Commit 4 (promoción real)
-- **P2-E Commit 4**: pendiente (promoción real)
+- **P2-E Commit 4A**: en progreso, backup/snapshot contract
+  - Archivos: brain/memory_semantic_backup.py, tests/unit/test_memory_semantic_backup.py, tests/smoke/smoke_memory_semantic_backup_contract.py, docs/P2E_MEMORY_SEMANTIC_BACKUP_CONTRACT.md
+  - Estado: contrato de snapshot/backup dry-run, NO escritura real, NO backup real todavía
+  - Requisito: completar 4A antes de 4B (real adapter skeleton)
+- **P2-E Commit 4B**: pendiente, real adapter skeleton
+- **P2-E Commit 4C**: pendiente, restore/rollback simulation
+- **P2-E Commit 4D**: pendiente, controlled real write
+- **P2-E Commit 4**: pendiente (promoción real - agregando sub-commits 4A-4D)
   - Requisitos: pruebas SemanticMemory controladas + runtime contract + rollback real validado
   - Blockers: allow_real_write=False (bloqueado hasta cumplir requisitos)
 - **P2-F GitHubSourceConnector**: pendiente, no activo
