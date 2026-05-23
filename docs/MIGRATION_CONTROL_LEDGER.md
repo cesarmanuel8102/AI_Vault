@@ -41,9 +41,12 @@
 - **P2-E Commit 3D**: completado y pusheado, hash f328b171
   - Archivos: brain/curated_memory_observability.py, tests/unit/test_curated_memory_observability.py, docs/P2E_OBSERVABILITY.md
   - Estado: observability en memoria solo, NO persistencia, NO runtime integration, allow_real_write=False hardcoded
-- **P2-E Commit 3E**: en progreso (integración dry-run unificada)
+- **P2-E Commit 3E**: completado y pusheado, hash 53782af1
   - Archivos: brain/curated_memory_dry_run_flow.py, tests/unit/test_curated_memory_dry_run_flow.py, docs/P2E_DRY_RUN_FLOW.md
   - Estado: orquestador dry-run integrando promotion+governance+audit+rollback+observability, NO escritura real, allow_real_write=False hardcoded
+- **P2-E Commit 3F**: en progreso (SemanticMemory read-only probe)
+  - Archivos: brain/semantic_memory_probe.py, tests/unit/test_semantic_memory_probe.py, docs/P2E_SEMANTIC_MEMORY_PROBE.md
+  - Estado: probe read-only, inspección sin escritura, NO importa faiss, allow_real_write=False hardcoded
 - **P2-E Commit 4**: pendiente (promoción real)
   - Requisitos: pruebas SemanticMemory controladas + runtime contract + rollback real validado
   - Blockers: allow_real_write=False (bloqueado hasta cumplir requisitos)
