@@ -84,11 +84,16 @@
   - Archivos: brain/semantic_memory_extra_file_classifier.py, tests/unit/test_semantic_memory_extra_file_classifier.py, tests/smoke/smoke_semantic_memory_extra_file_classifier.py, docs/P2E_SEMANTIC_MEMORY_EXTRA_FILE_CLASSIFICATION.md
   - Estado: clasifica archivos extra detectados en memory/semantic sin modificarlos
   - Tests: 32 unit tests + 1 smoke test passing
-- **P2-E Commit 4D-DependencyMapping**: completado (listo para commit local), hash PENDING
+- **P2-E Commit 4D-DependencyMapping**: completado y pusheado, hash b72803b7
   - Archivos: brain/semantic_memory_extra_file_dependency_mapper.py, tests/unit/test_semantic_memory_extra_file_dependency_mapper.py, tests/smoke/smoke_semantic_memory_extra_file_dependency_mapper.py, docs/P2E_SEMANTIC_MEMORY_EXTRA_FILE_DEPENDENCY_MAPPING.md
   - Estado: mapeo estático read-only de dependencias a archivos extra, NO ejecución, NO imports sensibles
   - Tests: 41 unit tests passing + smoke test passing
   - Seguridad: allow_real_write=False, dry_run_only=True, SECURITY_VALIDATION_OK
+- **P2-E Commit 4D-DecisionGate**: en progreso, real write governed decision gate
+  - Archivos: brain/semantic_memory_real_write_decision_gate.py, tests/unit/test_semantic_memory_real_write_decision_gate.py, tests/smoke/smoke_semantic_memory_real_write_decision_gate.py, docs/P2E_SEMANTIC_MEMORY_REAL_WRITE_DECISION_GATE.md
+  - Estado: compuerta de decisión gobernada, evalúa artefactos 4A-4D, emite decisiones read-only
+  - Tests: (por ejecutar)
+  - Seguridad: allow_real_write=False, dry_run_only=True, can_execute_real_write=False
 - **P2-E Commit 4D**: pendiente, controlled real write
   - Requisitos: governance approval, real backup/restore validado, FAISS integration test
 - **P2-E Commit 4**: pendiente (promoción real - commits 4A-4D completados)
