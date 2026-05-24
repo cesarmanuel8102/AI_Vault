@@ -99,6 +99,11 @@
   - Estado: contrato read-only para validar evidencia externa, inyectar a DecisionGate, SIEMPRE bloquea escritura real
   - Tests: 37 unit tests + 1 smoke test passing
   - Seguridad: allow_real_write=False, dry_run_only=True, SECURITY_VALIDATION_OK
+- **P2-E Commit 4D-DecisionGateEvidenceAdapter**: completado, hash PENDING
+  - Archivos: brain/semantic_memory_decision_gate_evidence_adapter.py, tests/unit/test_semantic_memory_decision_gate_evidence_adapter.py, tests/smoke/smoke_semantic_memory_decision_gate_evidence_adapter.py, docs/P2E_SEMANTIC_MEMORY_DECISION_GATE_EVIDENCE_ADAPTER.md
+  - Estado: adaptador read-only integra EvidenceContract con DecisionGate, mapea evidencia a decisiones, SIEMPRE bloquea escritura real
+  - Tests: 26 unit tests + 1 smoke test passing
+  - Seguridad: allow_real_write=False, dry_run_only=True, can_execute_real_write=False
 - **P2-E Commit 4D**: pendiente, controlled real write
   - Requisitos: governance approval, real backup/restore validado, FAISS integration test
 - **P2-E Commit 4**: pendiente (promoción real - commits 4A-4D completados)
