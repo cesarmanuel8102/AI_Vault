@@ -104,6 +104,11 @@
   - Estado: adaptador read-only integra EvidenceContract con DecisionGate, mapea evidencia a decisiones, SIEMPRE bloquea escritura real
   - Tests: 26 unit tests + 1 smoke test passing
   - Seguridad: allow_real_write=False, dry_run_only=True, can_execute_real_write=False
+- **P2-E Commit 4D-RealWriteCanaryPlan**: completado, hash PENDING
+  - Archivos: brain/semantic_memory_real_write_canary_plan.py, tests/unit/test_semantic_memory_real_write_canary_plan.py, tests/smoke/smoke_semantic_memory_real_write_canary_plan.py, docs/P2E_SEMANTIC_MEMORY_REAL_WRITE_CANARY_PLAN.md
+  - Estado: canary plan valida operaciones de escritura real sin ejecutarlas, invarianzas de seguridad hardcoded
+  - Tests: 48 unit tests + 1 smoke test passing
+  - Seguridad: allow_real_write=False, dry_run_only=True, can_execute_real_write=False, SECURITY_VALIDATION_OK
 - **P2-E Commit 4D**: pendiente, controlled real write
   - Requisitos: governance approval, real backup/restore validado, FAISS integration test
 - **P2-E Commit 4**: pendiente (promoción real - commits 4A-4D completados)
