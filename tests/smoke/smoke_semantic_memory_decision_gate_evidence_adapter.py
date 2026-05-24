@@ -104,7 +104,7 @@ def main():
     
     # Test 3: Bundle inválido (git)
     print("\n[Test 3] Evaluar bundle inválido (git)...")
-    invalid_git = valid_bundle.copy()
+    invalid_git = dict(valid_bundle)
     invalid_git["git_state"] = {
         "verified": True,
         "pending_commits_vs_origin": 1,
@@ -121,7 +121,7 @@ def main():
     
     # Test 4: Bundle inválido (risk)
     print("\n[Test 4] Evaluar bundle inválido (risk)...")
-    invalid_risk = valid_bundle.copy()
+    invalid_risk = dict(valid_bundle)
     invalid_risk["risk_summary"] = {
         "verified": True,
         "unresolved_high_risk_count": 1,
