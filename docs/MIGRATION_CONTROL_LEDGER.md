@@ -134,11 +134,16 @@
   - Estado: final pre-execution gate read-only, valida evidencia + intent antes de futura ejecución, emite PRE_EXECUTION_GATE_READY/MANUAL_REVIEW_REQUIRED/BLOCK_PRE_EXECUTION
   - Tests: 50 unit tests + 1 smoke test pasando
   - Seguridad: can_execute_real_write=False, allow_real_write=False, dry_run_only=True, simulated_only=True, requires_second_confirmation=True, requires_runtime_down=True, requires_clean_git_gate=True, requires_real_backup_before_execution=True, requires_real_rollback_before_execution=True
-- **P2-E Commit 4D-ControlledRealWriteExecutionPackage**: en progreso, read-only execution package
+- **P2-E Commit 4D-ControlledRealWriteExecutionPackage**: completado y pusheado, hash 5c41ba4b
   - Archivos: brain/semantic_memory_controlled_real_write_execution_package.py, tests/unit/test_semantic_memory_controlled_real_write_execution_package.py, tests/smoke/smoke_semantic_memory_controlled_real_write_execution_package.py, docs/P2E_SEMANTIC_MEMORY_CONTROLLED_REAL_WRITE_EXECUTION_PACKAGE.md
   - Estado: execution package read-only que define plan completo de ejecución futura, emite EXECUTION_PACKAGE_READY/MANUAL_REVIEW_REQUIRED/BLOCK_EXECUTION_PACKAGE
-  - Tests: (por ejecutar)
+  - Tests: 42 unit tests + 1 smoke test pasando
   - Seguridad: can_execute_real_write=False, allow_real_write=False, dry_run_only=True, simulated_only=True, package_only=True, requires_second_confirmation=True, requires_runtime_down=True, requires_clean_git_gate=True, requires_real_backup_before_execution=True, requires_real_rollback_before_execution=True
+- **P2-E Commit 4D-ControlledRealWritePreflightSnapshot**: en progreso, read-only preflight snapshot
+  - Archivos: brain/semantic_memory_controlled_real_write_preflight_snapshot.py, tests/unit/test_semantic_memory_controlled_real_write_preflight_snapshot.py, tests/smoke/smoke_semantic_memory_controlled_real_write_preflight_snapshot.py, docs/P2E_SEMANTIC_MEMORY_CONTROLLED_REAL_WRITE_PREFLIGHT_SNAPSHOT.md
+  - Estado: preflight snapshot read-only que valida estado del sistema antes de ejecución real, emite PREFLIGHT_SNAPSHOT_READY/MANUAL_REVIEW_REQUIRED/BLOCK_PREFLIGHT_SNAPSHOT
+  - Tests: (por ejecutar)
+  - Seguridad: can_execute_real_write=False, allow_real_write=False, dry_run_only=True, simulated_only=True, snapshot_only=True, requires_second_confirmation=True, requires_runtime_down=True, requires_clean_git_gate=True, requires_real_backup_before_execution=True, requires_real_rollback_before_execution=True
 - **P2-E Commit 4D-ControlledRealWriteExecution**: pendiente, requiere segunda confirmación explícita de Cesar
   - Requisitos: governance approval, real backup/restore validado, FAISS integration test
 - **P2-E Commit 4**: pendiente (promoción real - commits 4A-4D completados)
