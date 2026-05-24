@@ -124,11 +124,16 @@
   - Estado: authorization packet read-only que modela intención humana explícita, emite AUTHORIZATION_PACKET_READY/MANUAL_REVIEW_REQUIRED/BLOCK_AUTHORIZATION
   - Tests: 31 unit tests + 1 smoke test pasando
   - Seguridad: can_execute_real_write=False, allow_real_write=False, dry_run_only=True, simulated_only=True, requires_second_confirmation=True
-- **P2-E Commit 4D-ControlledRealWriteCandidateDesign**: en progreso, read-only candidate design
+- **P2-E Commit 4D-ControlledRealWriteCandidateDesign**: completado y pusheado, hash b21c22dd
   - Archivos: brain/semantic_memory_controlled_real_write_candidate_design.py, tests/unit/test_semantic_memory_controlled_real_write_candidate_design.py, tests/smoke/smoke_semantic_memory_controlled_real_write_candidate_design.py, docs/P2E_SEMANTIC_MEMORY_CONTROLLED_REAL_WRITE_CANDIDATE_DESIGN.md
   - Estado: candidate design read-only que especifica candidato exacto para futura escritura, emite CANDIDATE_DESIGN_READY/MANUAL_REVIEW_REQUIRED/BLOCK_CANDIDATE_DESIGN
-  - Tests: 35 unit tests + 1 smoke test (por ejecutar)
+  - Tests: 39 unit tests + 1 smoke test pasando
   - Seguridad: can_execute_real_write=False, allow_real_write=False, dry_run_only=True, simulated_only=True, requires_second_confirmation=True, requires_runtime_down=True, requires_clean_git_gate=True
+- **P2-E Commit 4D-FinalPreExecutionGate**: completado y pusheado, hash 4af110f5
+  - Archivos: brain/semantic_memory_final_pre_execution_gate.py, tests/unit/test_semantic_memory_final_pre_execution_gate.py, tests/smoke/smoke_semantic_memory_final_pre_execution_gate.py, docs/P2E_SEMANTIC_MEMORY_FINAL_PRE_EXECUTION_GATE.md
+  - Estado: final pre-execution gate read-only, valida evidencia + intent antes de futura ejecución, emite PRE_EXECUTION_GATE_READY/MANUAL_REVIEW_REQUIRED/BLOCK_PRE_EXECUTION
+  - Tests: 50 unit tests + 1 smoke test pasando
+  - Seguridad: can_execute_real_write=False, allow_real_write=False, dry_run_only=True, simulated_only=True, requires_second_confirmation=True, requires_runtime_down=True, requires_clean_git_gate=True, requires_real_backup_before_execution=True, requires_real_rollback_before_execution=True
 - **P2-E Commit 4D**: pendiente, controlled real write
   - Requisitos: governance approval, real backup/restore validado, FAISS integration test
 - **P2-E Commit 4**: pendiente (promoción real - commits 4A-4D completados)
