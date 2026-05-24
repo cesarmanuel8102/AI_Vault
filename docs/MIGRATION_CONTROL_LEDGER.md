@@ -94,6 +94,11 @@
   - Estado: compuerta de decisión gobernada, evalúa artefactos 4A-4D, emite decisiones read-only
   - Tests: (por ejecutar)
   - Seguridad: allow_real_write=False, dry_run_only=True, can_execute_real_write=False
+- **P2-E Commit 4D-EvidenceInjection**: completado, hash PENDING
+  - Archivos: brain/semantic_memory_external_evidence_contract.py, tests/unit/test_semantic_memory_external_evidence_contract.py, tests/smoke/smoke_semantic_memory_external_evidence_contract.py, docs/P2E_SEMANTIC_MEMORY_EXTERNAL_EVIDENCE_CONTRACT.md
+  - Estado: contrato read-only para validar evidencia externa, inyectar a DecisionGate, SIEMPRE bloquea escritura real
+  - Tests: 37 unit tests + 1 smoke test passing
+  - Seguridad: allow_real_write=False, dry_run_only=True, SECURITY_VALIDATION_OK
 - **P2-E Commit 4D**: pendiente, controlled real write
   - Requisitos: governance approval, real backup/restore validado, FAISS integration test
 - **P2-E Commit 4**: pendiente (promoción real - commits 4A-4D completados)
