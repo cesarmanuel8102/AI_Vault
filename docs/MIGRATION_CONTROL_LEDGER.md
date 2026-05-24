@@ -144,9 +144,22 @@
   - Estado: preflight snapshot read-only que valida estado del sistema antes de ejecución real, emite PREFLIGHT_SNAPSHOT_READY/MANUAL_REVIEW_REQUIRED/BLOCK_PREFLIGHT_SNAPSHOT
   - Tests: (por ejecutar)
   - Seguridad: can_execute_real_write=False, allow_real_write=False, dry_run_only=True, simulated_only=True, snapshot_only=True, requires_second_confirmation=True, requires_runtime_down=True, requires_clean_git_gate=True, requires_real_backup_before_execution=True, requires_real_rollback_before_execution=True
-- **P2-E Commit 4D-ControlledRealWriteExecution**: pendiente, requiere segunda confirmación explícita de Cesar
-  - Requisitos: governance approval, real backup/restore validado, FAISS integration test
-- **P2-E Commit 4**: pendiente (promoción real - commits 4A-4D completados)
+- **P2-E Commit 4D-ControlledRealWriteExecution**: EJECUTADO 2026-05-24, hash 01dacff6
+  - Archivos: memory/semantic/semantic_memory.jsonl (probe insertado línea 1694)
+  - Estado: controlled real write exitoso, probe validado, runtime restart OK
+  - Backup: C:\AI_VAULT\backups\semantic_memory\backup_20260524_114059\ verificado (6 archivos)
+  - Runtime: Brain V9 activo en 8090, /health healthy, /brain/chat-product/status responde
+  - Probe: p2e_probe_001 con metadatos completos de migration
+  - Autostart: AI_VAULT_BrainV9_AutoStart reactivado y corriendo
+  - Seguridad: allow_real_write=False preservado en código, memory/semantic NO commiteado
+  - JSONL audit: 1694 líneas, 0 corruptas, POST_RESTART_JSONL_OK
+  - Hash final: a1b6fe4559fcb554b5347e293dc82b2b83dd3ae47cbb0ab302cda29a843d7315
+  - PocketOption bridge: PID 98908 corriendo en 8765 (componente separado)
+  - Decisión: memory/semantic dirty tree preservado local sin commit pending policy
+  - Rollback: disponible desde backup verificado
+- **P2-E Commit 4**: CERRADO - Controlled real write validado, fase P2-E completa
+  - Estado: operación mínima exitosa valida pipeline completo P2-E
+  - Próximo: decisión de commit/persistencia de memory/semantic según policy
   - Requisitos: pruebas SemanticMemory controladas + runtime contract + rollback real validado
   - Blockers: allow_real_write=False (bloqueado hasta cumplir requisitos)
 - **P2-F GitHubSourceConnector**: pendiente, no activo
