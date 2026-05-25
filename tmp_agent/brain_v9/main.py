@@ -27,7 +27,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from brain_v9.api_security import require_operator_access
+from brain_v9.api_security import require_operator_access, StrictOperatorAccess
 from brain_v9.config import (
     BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS,
     BRAIN_SAFE_MODE,
@@ -1093,7 +1093,7 @@ def _get_brain_orchestrator():
 
 
 @app.get("/chat/introspectivo/debug")
-async def chat_introspectivo_debug():
+async def chat_introspectivo_debug(_operator: StrictOperatorAccess):
     """Debug: muestra el estado que se inyectaría."""
     import json as _json
     orch = _get_brain_orchestrator()
@@ -1119,7 +1119,7 @@ async def chat_introspectivo_debug():
 
 
 @app.post("/chat/introspectivo", response_model=ChatResponse)
-async def chat_introspectivo(req: ChatRequest):
+async def chat_introspectivo(req: ChatRequest, _operator: StrictOperatorAccess):
     """
     Chat con INTROSPECCIÓN REAL: inyecta el estado interno del brain en el system prompt.
     El brain puede responder honestamente sobre sus capacidades, limitaciones y mejoras.
@@ -1679,7 +1679,7 @@ async def delete_session(session_id: str):
 # ── Governance Gate API (for UI buttons) ───────────────────────────────────
 
 @app.post("/gate/approve/{pending_id}")
-async def gate_approve(pending_id: str):
+async def gate_approve(pending_id: str, _operator: StrictOperatorAccess):
     """Approve a pending gated action via API (used by UI button)."""
     from brain_v9.governance.execution_gate import get_gate
     gate = get_gate()
@@ -3424,7 +3424,7 @@ async def brain_introspection_gpu():
     return get_gpu_status()
 
 @app.post("/agent")
-async def run_agent(req: AgentRequest, _operator: OperatorAccess):
+async def run_agent(req: AgentRequest, _operator: StrictOperatorAccess):
     """
     Ejecuta una tarea usando el ciclo ORAV completo.
     Diferencia con /chat: el agente planifica, ejecuta tools reales
