@@ -3190,15 +3190,75 @@ class BrainSession:
 
     def _should_use_agent(self, message: str, intent: str, confidence: float = 1.0) -> bool:
         """Decide if the message needs real tool execution (agent) or just LLM chat."""
+        lower_msg = (message or "").lower().strip()
+
+        never_agent_exact = {
+            "ping", "pong", "hola", "hello", "hi", "hey",
+            "ok", "okay", "gracias", "thanks",
+            "si", "sí", "no",
+        }
+        if lower_msg in never_agent_exact:
+            self.logger.info("Simple conversational token -> LLM")
+            return False
+
+        conceptual_question_starters = (
+            "que es ", "qué es ", "como funciona ", "cómo funciona ",
+            "explica ", "explícame ", "explicame ",
+            "dime de ", "dime sobre ",
+            "por que ", "por qué ",
+            "cual es ", "cuál es ",
+            "vale la pena ", "que falta ", "qué falta ",
+            "haz tenido ", "como va ", "cómo va ",
+            "dime ", "cuentame ", "cuéntame ",
+        )
+
+        operational_verbs = (
+            "ejecuta", "ejecutar", "corre", "correr", "compila", "compilar",
+            "testea", "testear", "aplica", "aplicar", "modifica", "modificar",
+            "crea", "crear", "escribe", "escribir", "lista", "listar",
+            "abre", "abrir", "revisa", "revisar",
+            "verifica", "verificar", "diagnostica", "diagnosticar",
+            "escanea", "escanear", "reinicia", "reiniciar",
+        )
+
+        operational_targets = (
+            "archivo", "archivos", "ruta", "carpeta", "directorio",
+            "logs", "log", "puerto", "proceso", "servicio",
+            "endpoint", "runtime", "repo", "test", "tests",
+            ".py", ".json", ".md", "c:\\", "/c/", "http://", "https://",
+        )
+
+        has_operational_verb = any(v in lower_msg for v in operational_verbs)
+        has_operational_target = any(t in lower_msg for t in operational_targets)
+        is_conceptual_question = any(lower_msg.startswith(s) for s in conceptual_question_starters) or lower_msg.endswith("?")
+
+        compact_msg = lower_msg.replace("¿", "").replace("?", "").strip()
+        if len(compact_msg.split()) <= 2 and not any(t in compact_msg for t in operational_targets):
+            self.logger.info("Short conversational message without operational target -> LLM")
+            return False
+
+        if is_conceptual_question and not (has_operational_verb and has_operational_target):
+            self.logger.info("Conceptual question without explicit operational target -> LLM")
+            return False
+
+        if intent in {"QUERY", "CONVERSATION", "CREATIVE", "MEMORY"}:
+            self.logger.info("Intent '%s' (consultive) -> LLM", intent)
+            return False
+
+        if intent == "TRADING" and is_conceptual_question:
+            self.logger.info("Intent TRADING conceptual question -> LLM")
+            return False
+
+        if intent == "ANALYSIS" and not (has_operational_verb and has_operational_target):
+            self.logger.info("Intent ANALYSIS without explicit operational target -> LLM")
+            return False
+
         if self._prefers_no_tool_analysis(message) and not self._has_explicit_tool_target(message):
             self.logger.info("No-tool analysis preference without explicit target -> LLM")
             return False
         if any(p.search(message) for p in _AGENT_PATTERNS):
             self.logger.info("Keyword match -> AGENT")
             return True
-        if intent == "ANALYSIS":
-            self.logger.info("Intent 'ANALYSIS' sin señales operativas -> LLM")
-            return False
         if intent in AGENT_INTENTS:
             if confidence < 0.5:
                 self.logger.info("Intent '%s' con confianza baja (%.2f) -> LLM", intent, confidence)
@@ -3894,6 +3954,22 @@ class BrainSession:
         except Exception:
             pass
 
+    def _is_agent_execution_failure(self, agent_result: Dict) -> bool:
+        status = str(agent_result.get("status") or "").lower()
+        success = bool(agent_result.get("success", True))
+        return (not success) and status in {
+            "ghost_completion",
+            "max_steps_reached",
+            "retry_exhausted",
+            "timeout",
+        }
+
+    def _agent_failure_notice(self, status: str) -> str:
+        return (
+            "No pude ejecutar herramientas reales en este turno "
+            f"(agent_status={status}). Respondo con el modelo LLM disponible."
+        )
+
     async def _route_to_agent(self, message: str, model_priority: str) -> Dict:
         msg = message.lower()
         # Dashboard fastpath inside agent route
@@ -4188,16 +4264,40 @@ class BrainSession:
         status = agent_result.get("status", "?")
         complexity_tag = agent_result.get("complexity", complexity)
 
-        # Phase E: Prefer LLM-synthesized answer when available
-        synthesized = agent_result.get("synthesized_answer")
-
         # Collect tool outputs
         tool_actions = []
         for step in history:
             for action in step.get("actions", []):
                 tool_actions.append(action)
 
-        # Phase E: Use synthesized answer if available, else deterministic render
+        # Phase E: Prefer LLM-synthesized answer when available
+        synthesized = agent_result.get("synthesized_answer")
+
+        # BOR-2: Clean Agent Failure Fallback — LLM fallback for ghost/max_steps/timeout
+        if not tool_actions and self._is_agent_execution_failure(agent_result):
+            llm_result = await self._route_to_llm(
+                message, "ANALYSIS", self.memory.get_context() or [], "auto"
+            )
+            notice = self._agent_failure_notice(status)
+            llm_text = self._sanitize_user_visible_response(llm_result.get("content") or "")
+            if llm_text:
+                content = f"{notice}\n\n{llm_text}"
+            else:
+                content = notice
+            return {
+                "success": bool(llm_result.get("success")),
+                "content": content,
+                "response": content,
+                "model": llm_result.get("model_used") or llm_result.get("model", "llm"),
+                "model_used": llm_result.get("model_used") or llm_result.get("model", "llm"),
+                "route": "agent_fallback_llm",
+                "original_route": "agent",
+                "agent_status": status,
+                "agent_steps": steps,
+                "agent_success": False,
+                "fallback_success": bool(llm_result.get("success")),
+            }
+
         if synthesized:
             full = self._sanitize_user_visible_response(synthesized)
         elif tool_actions:
@@ -4209,8 +4309,6 @@ class BrainSession:
             )
             full = self._sanitize_user_visible_response(full)
         elif agent_result.get("result"):
-            # R26b: aceptamos `result` aun si success=False (e.g. ghost_completion).
-            # Mejor mostrar el result que un canned 'No obtuve resultados'.
             raw = agent_result["result"]
             full = raw if isinstance(raw, str) else str(raw)
             status_note = agent_result.get("status")
@@ -4222,8 +4320,6 @@ class BrainSession:
             if status in ("ghost_completion", "max_steps_reached", "retry_exhausted", "timeout"):
                 full = self._render_agent_failure_reply(status)
             else:
-                # R26b: ultimo recurso — pedir al LLM una respuesta directa al mensaje
-                # original en vez del canned generico.
                 try:
                     fallback_text = await self._llm_direct_fallback(message)
                     full = self._sanitize_user_visible_response(fallback_text) if fallback_text else (
