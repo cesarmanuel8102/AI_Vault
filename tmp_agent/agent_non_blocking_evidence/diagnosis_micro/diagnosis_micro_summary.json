@@ -1,0 +1,42 @@
+{
+  "diagnosis_exact_original": {
+    "http_ok": true,
+    "rc0_no_http": false,
+    "external_timeout": false,
+    "wrapper_timeout": false,
+    "model_used": "kimi-k2.5:cloud",
+    "intent": "ANALYSIS",
+    "bytes": 2220,
+    "accepted": true
+  },
+  "diagnosis_force_chat": {
+    "http_ok": true,
+    "rc0_no_http": false,
+    "external_timeout": false,
+    "wrapper_timeout": false,
+    "model_used": "kimi-k2.5:cloud",
+    "intent": "ANALYSIS",
+    "bytes": 2292,
+    "accepted": true
+  },
+  "diagnosis_force_code": {
+    "http_ok": true,
+    "rc0_no_http": false,
+    "external_timeout": false,
+    "wrapper_timeout": false,
+    "model_used": "kimi-k2.5:cloud",
+    "intent": "ANALYSIS",
+    "bytes": 2136,
+    "accepted": true
+  },
+  "diagnosis_simplified_ascii": {
+    "http_ok": true,
+    "rc0_no_http": false,
+    "external_timeout": false,
+    "wrapper_timeout": false,
+    "model_used": "kimi-k2.5:cloud",
+    "intent": "ANALYSIS",
+    "bytes": 2062,
+    "accepted": true
+  }
+}

@@ -75,6 +75,44 @@ class TestRouteToAgentFallbackBranch:
             else:
                 assert "agent_status=" in body
 
+    def test_bor3b_stable_chain_no_auto(self):
+        """BOR-3B+C: fallback should use direct llm.query with chat, not _route_to_llm."""
+        src = get_session_source()
+        lines = src.splitlines()
+        route_to_agent_idx = next(
+            (i for i, l in enumerate(lines) if "async def _route_to_agent(" in l), -1
+        )
+        assert route_to_agent_idx != -1
+        block = "\n".join(lines[route_to_agent_idx:route_to_agent_idx + 450])
+        assert "fallback_priority = \"chat\"" in block, (
+            "fallback_priority should be set to 'chat'"
+        )
+        # BOR-3C: use direct llm.query, not _route_to_llm
+        assert "self.llm.query" in block, (
+            "fallback should call self.llm.query directly per BOR-3C"
+        )
+        # Ensure _route_to_llm is not inside the fallback block
+        fp_idx = block.index("fallback_priority")
+        sub = block[fp_idx:fp_idx + 1200]
+        assert "_route_to_llm(" not in sub, (
+            "fallback block should NOT call _route_to_llm per BOR-3C"
+        )
+        assert "self.llm.query" in sub, (
+            "fallback should call self.llm.query directly per BOR-3C"
+        )
+        assert "model_priority=fallback_priority" in sub, (
+            "fallback should pass model_priority=fallback_priority to llm.query"
+        )
+        assert '"auto"' not in sub, (
+            "fallback block should not contain '\"auto\"'"
+        )
+        assert "model_priority=fallback_priority" in sub, (
+            "fallback should pass model_priority=fallback_priority to llm.query"
+        )
+        assert '"auto"' not in sub, (
+            "fallback block should not contain '\"auto\"'"
+        )
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-q", "--tb=short"])

@@ -1,0 +1,62 @@
+{
+  "agent_logs_timeout_guard": {
+    "http_ok": true,
+    "external_timeout": false,
+    "wrapper_timeout": false,
+    "route": "agent",
+    "intent": "ANALYSIS",
+    "model_used": "gpt-5.5",
+    "success": "True\",\"session_id\":\"default\",\"model_used\":\"gpt-5.5\",\"success\":true,\"pending_action\":null}",
+    "agent_status": "timeout",
+    "has_timeout_notice": true,
+    "has_useful_answer": true,
+    "quality": "good",
+    "accepted": true,
+    "bytes": 1100
+  },
+  "code_review_timeout_guard": {
+    "http_ok": true,
+    "external_timeout": false,
+    "wrapper_timeout": false,
+    "route": "agent",
+    "intent": "COMMAND",
+    "model_used": "gpt-5.5",
+    "success": "True\",\"session_id\":\"default\",\"model_used\":\"gpt-5.5\",\"success\":true,\"pending_action\":null}",
+    "agent_status": "timeout",
+    "has_timeout_notice": true,
+    "has_useful_answer": true,
+    "quality": "good",
+    "accepted": true,
+    "bytes": 1037
+  },
+  "diagnosis_timeout_guard": {
+    "http_ok": false,
+    "external_timeout": false,
+    "wrapper_timeout": false,
+    "route": null,
+    "intent": null,
+    "model_used": null,
+    "success": null,
+    "agent_status": null,
+    "has_timeout_notice": true,
+    "has_useful_answer": false,
+    "quality": "error",
+    "accepted": false,
+    "bytes": 159
+  },
+  "tools_available_timeout_guard": {
+    "http_ok": true,
+    "external_timeout": false,
+    "wrapper_timeout": false,
+    "route": "agent",
+    "intent": "COMMAND",
+    "model_used": "gpt-5.5",
+    "success": "True\",\"session_id\":\"default\",\"model_used\":\"gpt-5.5\",\"success\":true,\"pending_action\":null}",
+    "agent_status": "timeout",
+    "has_timeout_notice": true,
+    "has_useful_answer": true,
+    "quality": "good",
+    "accepted": true,
+    "bytes": 1420
+  }
+}

@@ -4232,7 +4232,7 @@ class BrainSession:
                 planner = MetaPlanner(self.llm, self._executor)
                 agent_result = await asyncio.wait_for(
                     planner.run(task=message, context=base_context),
-                    timeout=600,
+                    timeout=45,  # BOR-4B: non-blocking guard for interactive chat
                 )
                 meta_history = []
                 for sr in planner.subtask_results:
@@ -4243,7 +4243,7 @@ class BrainSession:
                 loop = probe_loop
                 agent_result = await asyncio.wait_for(
                     loop.run(task=message, context=base_context),
-                    timeout=300,
+                    timeout=35,  # BOR-4B: non-blocking guard for interactive chat
                 )
                 history = loop.get_history()
         except asyncio.TimeoutError:
@@ -4274,10 +4274,29 @@ class BrainSession:
         synthesized = agent_result.get("synthesized_answer")
 
         # BOR-2: Clean Agent Failure Fallback — LLM fallback for ghost/max_steps/timeout
+        # BOR-3B: stable fallback chain; avoid "auto" because it can resolve to weak local llm.
+        # BOR-3C: direct stable fallback via llm.query() to bypass _select_llm_chain re-mapping.
         if not tool_actions and self._is_agent_execution_failure(agent_result):
-            llm_result = await self._route_to_llm(
-                message, "ANALYSIS", self.memory.get_context() or [], "auto"
-            )
+            fallback_priority = "chat"
+            fallback_messages = [
+                {
+                    "role": "system",
+                    "content": (
+                        "Eres Brain V9. El agente de herramientas no pudo ejecutar acciones reales. "
+                        "Responde al usuario directamente, en español, de forma útil, breve y honesta. "
+                        "No afirmes que leíste archivos, ejecutaste comandos o revisaste logs si no ocurrió."
+                    ),
+                },
+                {"role": "user", "content": message[:1500]},
+            ]
+            llm_raw = await self.llm.query(fallback_messages, model_priority=fallback_priority)
+            llm_result = {
+                "success": bool(llm_raw.get("success")),
+                "content": llm_raw.get("content") or "",
+                "response": llm_raw.get("content") or "",
+                "model": llm_raw.get("model_used") or llm_raw.get("model", "llm"),
+                "model_used": llm_raw.get("model_used") or llm_raw.get("model", "llm"),
+            }
             notice = self._agent_failure_notice(status)
             llm_text = self._sanitize_user_visible_response(llm_result.get("content") or "")
             if llm_text:

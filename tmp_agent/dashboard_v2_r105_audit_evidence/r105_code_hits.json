@@ -1,0 +1,21 @@
+{
+  "total_files": 4,
+  "files": [
+    {
+      "path": "tmp_agent\\advanced_brain_capability_evidence\\run_advanced_battery.py",
+      "matches": 2
+    },
+    {
+      "path": "tmp_agent\\advanced_brain_capability_evidence\\run_advanced_battery_resumable.py",
+      "matches": 2
+    },
+    {
+      "path": "tmp_agent\\brain_self_audit_evidence\\run_brain_self_audit.py",
+      "matches": 2
+    },
+    {
+      "path": "tmp_agent\\dashboard_v2_r105_audit_evidence\\run_f3_inventory.py",
+      "matches": 1
+    }
+  ]
+}

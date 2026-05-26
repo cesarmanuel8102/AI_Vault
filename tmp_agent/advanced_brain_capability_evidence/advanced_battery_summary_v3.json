@@ -1,0 +1,130 @@
+{
+  "per_case": {
+    "adv_q01_estado_operativo": {
+      "ok": false,
+      "has_http_200": false,
+      "timeout": true,
+      "route": null,
+      "intent": null,
+      "model_used": null,
+      "success": null,
+      "quality": "timeout",
+      "bytes": 128
+    },
+    "adv_q02_dashboard_v2_r105": {
+      "ok": true,
+      "has_http_200": true,
+      "timeout": false,
+      "route": "llm",
+      "intent": "TRADING",
+      "model_used": "kimi-k2.5:cloud",
+      "success": "True\",\"session_id\":\"default\",\"model_used\":\"kimi-k2.5:cloud\",\"success\":true,\"pending_action\":null}",
+      "quality": "good",
+      "bytes": 1387
+    },
+    "adv_q03_selector_cloud_first": {
+      "ok": true,
+      "has_http_200": true,
+      "timeout": false,
+      "route": "llm",
+      "intent": "CODE",
+      "model_used": "gpt-5.5",
+      "success": "True\",\"session_id\":\"default\",\"model_used\":\"gpt-5.5\",\"success\":true,\"pending_action\":null}",
+      "quality": "good",
+      "bytes": 1477
+    },
+    "adv_q04_codigo_simple": {
+      "ok": true,
+      "has_http_200": true,
+      "timeout": false,
+      "route": "llm",
+      "intent": "CREATIVE",
+      "model_used": "kimi-k2.5:cloud",
+      "success": "True\",\"session_id\":\"default\",\"model_used\":\"kimi-k2.5:cloud\",\"success\":true,\"pending_action\":null}",
+      "quality": "good",
+      "bytes": 1247
+    },
+    "adv_q05_revision_codigo": {
+      "ok": false,
+      "has_http_200": false,
+      "timeout": true,
+      "route": null,
+      "intent": null,
+      "model_used": null,
+      "success": null,
+      "quality": "timeout",
+      "bytes": 127
+    },
+    "adv_q06_diagnostico_error_codigo": {
+      "ok": false,
+      "has_http_200": false,
+      "timeout": true,
+      "route": null,
+      "intent": null,
+      "model_used": null,
+      "success": null,
+      "quality": "timeout",
+      "bytes": 136
+    },
+    "adv_q07_plan_implementacion": {
+      "ok": false,
+      "has_http_200": false,
+      "timeout": true,
+      "route": null,
+      "intent": null,
+      "model_used": null,
+      "success": null,
+      "quality": "timeout",
+      "bytes": 131
+    },
+    "adv_q08_herramientas_disponibles": {
+      "ok": false,
+      "has_http_200": false,
+      "timeout": true,
+      "route": null,
+      "intent": null,
+      "model_used": null,
+      "success": null,
+      "quality": "timeout",
+      "bytes": 136
+    },
+    "adv_q09_ejecucion_herramientas": {
+      "ok": false,
+      "has_http_200": false,
+      "timeout": true,
+      "route": null,
+      "intent": null,
+      "model_used": null,
+      "success": null,
+      "quality": "timeout",
+      "bytes": 134
+    },
+    "adv_q10_deteccion_necesidades": {
+      "ok": false,
+      "has_http_200": false,
+      "timeout": true,
+      "route": null,
+      "intent": null,
+      "model_used": null,
+      "success": null,
+      "quality": "timeout",
+      "bytes": 17
+    }
+  },
+  "scorecard": {
+    "total_cases": 10,
+    "ok_true": 3,
+    "timeouts": 7,
+    "good": 3,
+    "partial": 0,
+    "rejected": 7,
+    "models_seen": [
+      "gpt-5.5",
+      "kimi-k2.5:cloud"
+    ],
+    "routes_seen": [
+      "llm"
+    ],
+    "pass_rate": 0.3
+  }
+}

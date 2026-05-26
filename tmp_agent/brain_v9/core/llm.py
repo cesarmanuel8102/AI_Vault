@@ -38,22 +38,22 @@ log = logging.getLogger("LLMManager")
 # Circuit breaker (2 fallos -> cooldown 180s) absorbe latencia de modelos caidos.
 CHAINS = {
     # Agente / razonamiento — cloud calidad primero, local 14B segundo
-    "agent":    ["kimi_cloud",   "deepseek14b", "llama8b"],
+"agent":    ["kimi_cloud", "codex", "deepseek14b", "llama8b"],
     # Frontier — anteriormente Anthropic primero. R3.1: usuario prohibe Anthropic/OpenAI por coste.
     # Ahora kimi_cloud (Ollama Cloud, calidad alta, sin API key) lidera.
     # sonnet4 queda al final como fallback de emergencia (solo si kimi+local todos fallan).
-    "agent_frontier": ["kimi_cloud", "deepseek14b", "llama8b", "sonnet4"],
+    "agent_frontier": ["kimi_cloud", "codex", "deepseek14b", "llama8b", "sonnet4"],
     # Analisis no operativo: Codex primero para explicaciones tecnicas/causales,
     # sin meterlo en todo el carril agente general.
     "analysis_frontier": ["codex", "kimi_cloud", "deepseek14b", "llama8b"],
     # Codigo — coder especializado, fallback a razonadores generales
-    "code":     ["codex", "coder14b",     "deepseek14b", "kimi_cloud",   "llama8b"],
+    "code":     ["codex", "coder14b", "deepseek14b", "kimi_cloud", "llama8b"],
     # Conversacion — calidad primero
-    "chat":     ["kimi_cloud",   "codex", "deepseek14b", "llama8b"],
+    "chat":     ["kimi_cloud", "codex", "deepseek14b", "llama8b"],
     # Sin internet — solo locales
     "offline":  ["deepseek14b",  "llama8b"],
-    # Por nombre explicito (legacy "ollama") — locales primero, cloud fallback
-    "ollama":   ["deepseek14b",  "llama8b",     "kimi_cloud"],
+    # Por nombre explicito (legacy "ollama") — igual que chat/cloud, NO bloquear con local
+    "ollama":   ["kimi_cloud", "codex", "deepseek14b", "llama8b"],
     "codex":    ["codex", "kimi_cloud", "deepseek14b", "llama8b"],
     "agent_legacy": ["kimi_cloud", "deepseek14b", "llama8b"],
     "agent_frontier_legacy": ["kimi_cloud", "deepseek14b", "llama8b", "sonnet4"],

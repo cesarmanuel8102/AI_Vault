@@ -1,0 +1,82 @@
+{
+  "audit_id": "DASH-01-v2-r105",
+  "timestamp_utc": "2026-05-26T19:21:09.652750",
+  "findings": {
+    "openapi_routes": {
+      "total": 211,
+      "dashboard_related": 22,
+      "chat_related": 16,
+      "proposal_related": 13
+    },
+    "live_endpoints": {
+      "dashboard_html": {
+        "status": 200,
+        "present": true
+      },
+      "ui_html": {
+        "status": 200,
+        "present": true
+      },
+      "brain_chat_product_status": {
+        "status": 200,
+        "present": true
+      },
+      "brain_utility_v2": {
+        "status": 200,
+        "present": true
+      },
+      "brain_utility_status": {
+        "status": 404,
+        "present": false,
+        "note": "Not registered live; utility routes are /brain/utility and /brain/utility/v2. /brain/utility/status is 404 but present in OpenAPI (legacy or route split)."
+      },
+      "brain_utility_governance_status": {
+        "status": 200,
+        "present": true
+      },
+      "brain_chat_excellence_status": {
+        "status": 200,
+        "present": true
+      },
+      "brain_chat_excellence_proposals": {
+        "status": 200,
+        "present": true
+      },
+      "brain_learning_proposals": {
+        "status": 404,
+        "present": false,
+        "note": "Only sub-routes exist (transition, sandbox-run, evaluate); no list route live."
+      },
+      "health": {
+        "status": 200,
+        "present": true
+      }
+    },
+    "code_inventory": {
+      "dashboard_html_files": 8,
+      "r105_code_hits": 4
+    }
+  },
+  "hypotheses": [
+    {
+      "id": "H1",
+      "text": "/brain/utility/status returns 404 at runtime but exists in OpenAPI; likely a legacy route or route split between /brain/utility and /brain/utility/v2. Recommend verifying in main.py router definitions.",
+      "severity": "low"
+    },
+    {
+      "id": "H2",
+      "text": "/brain/learning/proposals list route is missing at runtime; only sub-action routes exist. Likely intentional (proposals managed via chat-excellence), but could indicate incomplete wiring.",
+      "severity": "low"
+    },
+    {
+      "id": "H3",
+      "text": "Dashboard UI (/dashboard) renders an AI_VAULT Command Center page; chat UI (/ui) renders Brain Chat V9 page. Both are live and served correctly. No R10.5 source references exist in main code (only evidence scripts).",
+      "severity": "info"
+    }
+  ],
+  "recommendations": [
+    "Verify /brain/utility/status route registration in main.py or downstream utility router; remove from OpenAPI if stale.",
+    "If /brain/learning/proposals list is desired, add a GET list endpoint or document that chat-excellence proposals are canonical.",
+    "Run regression tests (tests/integration) to confirm no breakage from BOR-4A/4B/R1-A1b changes."
+  ]
+}

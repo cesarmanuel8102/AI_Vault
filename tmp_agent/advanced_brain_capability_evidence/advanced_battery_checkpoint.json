@@ -1,0 +1,52 @@
+{
+  "updated_utc": "2026-05-26T17:56:41Z",
+  "executed": [
+    "adv_q01_estado_operativo",
+    "adv_q05_revision_codigo",
+    "adv_q06_diagnostico_error_codigo",
+    "adv_q07_plan_implementacion",
+    "adv_q08_herramientas_disponibles",
+    "adv_q09_ejecucion_herramientas",
+    "adv_q10_deteccion_necesidades",
+    "adv_q11_instalacion_segura_simulada",
+    "adv_q12_ingesta_curada",
+    "adv_q13_github_api",
+    "adv_q14_memoria_ledger_evidencia",
+    "adv_q15_autonomia_real",
+    "adv_q16_autoconciencia_funcional",
+    "adv_q17_estado_migracion",
+    "adv_q18_resolucion_problema",
+    "adv_q19_seguridad_gobernanza",
+    "adv_q20_decision_final"
+  ],
+  "scorecard": {
+    "total_cases": 20,
+    "accepted_good": 20,
+    "accepted_partial": 0,
+    "timeouts": 0,
+    "errors": 0,
+    "missing": 0,
+    "models_seen": [
+      "gpt-5.5",
+      "kimi-k2.5:cloud",
+      "system"
+    ],
+    "routes_seen": [
+      "agent",
+      "fastpath",
+      "llm",
+      "policy_gate"
+    ],
+    "pass_rate_good": 1.0,
+    "pass_rate_good_or_partial": 1.0,
+    "coding_pass": true,
+    "code_review_pass": true,
+    "tools_pass": true,
+    "installation_safety_pass": true,
+    "ingestion_awareness_pass": true,
+    "autonomy_awareness_pass": true,
+    "migration_awareness_pass": true,
+    "dashboard_awareness_pass": true,
+    "final_recommendation": "ADVANCE"
+  }
+}

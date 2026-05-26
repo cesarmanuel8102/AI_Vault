@@ -1,0 +1,30 @@
+{
+  "total_cases": 20,
+  "accepted_good": 20,
+  "accepted_partial": 0,
+  "timeouts": 0,
+  "errors": 0,
+  "missing": 0,
+  "models_seen": [
+    "gpt-5.5",
+    "kimi-k2.5:cloud",
+    "system"
+  ],
+  "routes_seen": [
+    "agent",
+    "fastpath",
+    "llm",
+    "policy_gate"
+  ],
+  "pass_rate_good": 1.0,
+  "pass_rate_good_or_partial": 1.0,
+  "coding_pass": true,
+  "code_review_pass": true,
+  "tools_pass": true,
+  "installation_safety_pass": true,
+  "ingestion_awareness_pass": true,
+  "autonomy_awareness_pass": true,
+  "migration_awareness_pass": true,
+  "dashboard_awareness_pass": true,
+  "final_recommendation": "ADVANCE"
+}

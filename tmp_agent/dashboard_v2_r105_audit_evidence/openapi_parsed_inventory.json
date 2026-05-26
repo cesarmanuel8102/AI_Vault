@@ -1,0 +1,318 @@
+{
+  "total_routes": 211,
+  "dashboard_related": 22,
+  "chat_related": 16,
+  "proposal_related": 13,
+  "dashboard_routes": [
+    {
+      "path": "/brain/chat_excellence/status",
+      "method": "GET",
+      "summary": "Brain Chat Excellence Status",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals",
+      "method": "GET",
+      "summary": "Brain Ce Proposals",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}",
+      "method": "GET",
+      "summary": "Brain Ce Proposal Get",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}/reject",
+      "method": "POST",
+      "summary": "Brain Ce Proposal Reject",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}/dry_run",
+      "method": "POST",
+      "summary": "Brain Ce Proposal Dry Run",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}/apply",
+      "method": "POST",
+      "summary": "Brain Ce Proposal Apply",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}/rollback",
+      "method": "POST",
+      "summary": "Brain Ce Proposal Rollback",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}/health_gate_log",
+      "method": "GET",
+      "summary": "Brain Ce Proposal Health Gate Log",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/apply_batch",
+      "method": "POST",
+      "summary": "Brain Ce Proposals Apply Batch",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/evaluate",
+      "method": "POST",
+      "summary": "Brain Ce Proposals Evaluate",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}/evaluation_status",
+      "method": "GET",
+      "summary": "Brain Ce Proposal Eval Status",
+      "tags": []
+    },
+    {
+      "path": "/brain/utility",
+      "method": "GET",
+      "summary": "Brain Utility",
+      "tags": []
+    },
+    {
+      "path": "/brain/utility/v2",
+      "method": "GET",
+      "summary": "Brain Utility V2",
+      "tags": []
+    },
+    {
+      "path": "/brain/utility/refresh",
+      "method": "POST",
+      "summary": "Brain Utility Refresh",
+      "tags": []
+    },
+    {
+      "path": "/brain/utility/v2/refresh",
+      "method": "POST",
+      "summary": "Brain Utility V2 Refresh",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat-product/status",
+      "method": "GET",
+      "summary": "Brain Chat Product Status",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat-product/refresh",
+      "method": "POST",
+      "summary": "Brain Chat Product Refresh",
+      "tags": []
+    },
+    {
+      "path": "/brain/utility-governance/status",
+      "method": "GET",
+      "summary": "Brain Utility Governance Status",
+      "tags": []
+    },
+    {
+      "path": "/brain/utility-governance/refresh",
+      "method": "POST",
+      "summary": "Brain Utility Governance Refresh",
+      "tags": []
+    },
+    {
+      "path": "/brain/learning/proposals/{proposal_id}/transition",
+      "method": "POST",
+      "summary": "Brain Learning Proposal Transition",
+      "tags": []
+    },
+    {
+      "path": "/brain/learning/proposals/{proposal_id}/sandbox-run",
+      "method": "POST",
+      "summary": "Brain Learning Proposal Sandbox Run",
+      "tags": []
+    },
+    {
+      "path": "/brain/learning/proposals/{proposal_id}/evaluate",
+      "method": "POST",
+      "summary": "Brain Learning Proposal Evaluate",
+      "tags": []
+    }
+  ],
+  "chat_routes": [
+    {
+      "path": "/chat/introspectivo/debug",
+      "method": "GET",
+      "summary": "Chat Introspectivo Debug",
+      "tags": []
+    },
+    {
+      "path": "/chat/introspectivo",
+      "method": "POST",
+      "summary": "Chat Introspectivo",
+      "tags": []
+    },
+    {
+      "path": "/chat",
+      "method": "POST",
+      "summary": "Chat",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/status",
+      "method": "GET",
+      "summary": "Brain Chat Excellence Status",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals",
+      "method": "GET",
+      "summary": "Brain Ce Proposals",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}",
+      "method": "GET",
+      "summary": "Brain Ce Proposal Get",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}/reject",
+      "method": "POST",
+      "summary": "Brain Ce Proposal Reject",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}/dry_run",
+      "method": "POST",
+      "summary": "Brain Ce Proposal Dry Run",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}/apply",
+      "method": "POST",
+      "summary": "Brain Ce Proposal Apply",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}/rollback",
+      "method": "POST",
+      "summary": "Brain Ce Proposal Rollback",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}/health_gate_log",
+      "method": "GET",
+      "summary": "Brain Ce Proposal Health Gate Log",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/apply_batch",
+      "method": "POST",
+      "summary": "Brain Ce Proposals Apply Batch",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/evaluate",
+      "method": "POST",
+      "summary": "Brain Ce Proposals Evaluate",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}/evaluation_status",
+      "method": "GET",
+      "summary": "Brain Ce Proposal Eval Status",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat-product/status",
+      "method": "GET",
+      "summary": "Brain Chat Product Status",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat-product/refresh",
+      "method": "POST",
+      "summary": "Brain Chat Product Refresh",
+      "tags": []
+    }
+  ],
+  "proposal_routes": [
+    {
+      "path": "/brain/chat_excellence/proposals",
+      "method": "GET",
+      "summary": "Brain Ce Proposals",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}",
+      "method": "GET",
+      "summary": "Brain Ce Proposal Get",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}/reject",
+      "method": "POST",
+      "summary": "Brain Ce Proposal Reject",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}/dry_run",
+      "method": "POST",
+      "summary": "Brain Ce Proposal Dry Run",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}/apply",
+      "method": "POST",
+      "summary": "Brain Ce Proposal Apply",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}/rollback",
+      "method": "POST",
+      "summary": "Brain Ce Proposal Rollback",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}/health_gate_log",
+      "method": "GET",
+      "summary": "Brain Ce Proposal Health Gate Log",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/apply_batch",
+      "method": "POST",
+      "summary": "Brain Ce Proposals Apply Batch",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/evaluate",
+      "method": "POST",
+      "summary": "Brain Ce Proposals Evaluate",
+      "tags": []
+    },
+    {
+      "path": "/brain/chat_excellence/proposals/{proposal_id}/evaluation_status",
+      "method": "GET",
+      "summary": "Brain Ce Proposal Eval Status",
+      "tags": []
+    },
+    {
+      "path": "/brain/learning/proposals/{proposal_id}/transition",
+      "method": "POST",
+      "summary": "Brain Learning Proposal Transition",
+      "tags": []
+    },
+    {
+      "path": "/brain/learning/proposals/{proposal_id}/sandbox-run",
+      "method": "POST",
+      "summary": "Brain Learning Proposal Sandbox Run",
+      "tags": []
+    },
+    {
+      "path": "/brain/learning/proposals/{proposal_id}/evaluate",
+      "method": "POST",
+      "summary": "Brain Learning Proposal Evaluate",
+      "tags": []
+    }
+  ]
+}

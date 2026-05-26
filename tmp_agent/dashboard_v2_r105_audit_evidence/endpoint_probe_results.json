@@ -1,0 +1,85 @@
+{
+  "probed_at": "2026-05-26T18:57:48.387096",
+  "results": [
+    {
+      "method": "GET",
+      "path": "/dashboard",
+      "url": "http://127.0.0.1:8090/dashboard",
+      "status": 200,
+      "error": null,
+      "body_preview": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>AI_VAULT Command Center</title>\n<link rel=\"icon\" type=\"image/svg+xml\" href=\"/ui/favicon.svg\">\n<script src=\"/ui/chart.umd.min.js\"></script>\n<link rel=\"stylesheet\" href=\"/ui/dashboard_core.css\">\n<link rel=\"stylesheet\" href=\"/ui/dashboard_accessibility.css\">\n</head>\n<body>\n\n<!-- \u2550\u2550\u2550 Sidebar \u2550\u2550\u2550 -->\n<div class=\"sidebar\">\n  <div class=\"sidebar-brand\">\n    <h1>AI"
+    },
+    {
+      "method": "GET",
+      "path": "/ui",
+      "url": "http://127.0.0.1:8090/ui",
+      "status": 200,
+      "error": null,
+      "body_preview": "<!DOCTYPE html>\r\n<html lang=\"es\">\r\n<head>\r\n<meta charset=\"UTF-8\">\r\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n<title>Brain Chat V9</title>\r\n<style>\r\n  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }\r\n\r\n  :root {\r\n    --bg:       #0f1117;\r\n    --surface:  #1a1d27;\r\n    --surface2: #22263a;\r\n    --border:   #2e3350;\r\n    --accent:   #6c63ff;\r\n    --accent2:  #9d97ff;\r\n    --text:     #e4e6f0;\r\n    --text2:    #8b90b0;\r\n    --green:    #3ecf8e;"
+    },
+    {
+      "method": "GET",
+      "path": "/brain/chat-product/status",
+      "url": "http://127.0.0.1:8090/brain/chat-product/status",
+      "status": 200,
+      "error": null,
+      "body_preview": "{\"schema_version\":\"chat_product_status_v1\",\"updated_utc\":\"2026-05-26T18:43:38.312097Z\",\"product_id\":\"brain_chat_v9_product\",\"title\":\"Brain Chat V9\",\"mission\":\"servir como interfaz conversacional operativa del Brain con estado can\u00f3nico y mejora gobernada.\",\"current_state\":\"quality_observable\",\"work_status\":\"ready_for_conversational_tuning\",\"accepted_baseline\":true,\"acceptance_checks\":[{\"check_id\":\"dashboard_has_chat_link\",\"passed\":true,\"detail\":\"El dashboard ya enlaza al chat operativo.\",\"repair_"
+    },
+    {
+      "method": "GET",
+      "path": "/brain/utility/status",
+      "url": "http://127.0.0.1:8090/brain/utility/status",
+      "status": null,
+      "error": "HTTP Error 404: Not Found",
+      "body_preview": null
+    },
+    {
+      "method": "GET",
+      "path": "/brain/utility/v2",
+      "url": "http://127.0.0.1:8090/brain/utility/v2",
+      "status": 200,
+      "error": null,
+      "body_preview": "{\"u_score\":-0.05,\"governance_u_score\":-0.0011,\"real_venue_u_score\":-0.05,\"u_score_components\":{\"governance_u_score\":-0.0011,\"real_venue_u_score\":-0.05,\"real_venue_u_best\":-0.05,\"real_venue_u_worst\":-0.05,\"real_venue_trades\":731,\"real_venue_count\":1,\"alignment_mode\":\"real_venue_guardrail\"},\"u_proxy_score\":-0.0011,\"verdict\":\"no_promote\",\"blockers\":[\"no_validated_edge\",\"real_venue_u_non_positive\",\"sample_not_ready\"],\"can_promote\":false,\"promotion_reason\":\"U score no positivo: -0.05\",\"current_phase\""
+    },
+    {
+      "method": "GET",
+      "path": "/brain/utility-governance/status",
+      "url": "http://127.0.0.1:8090/brain/utility-governance/status",
+      "status": 200,
+      "error": null,
+      "body_preview": "{\"schema_version\":\"utility_governance_status_v1\",\"updated_utc\":\"2026-05-26T18:43:38.282148Z\",\"domain_id\":\"utility_governance\",\"title\":\"Utility U Governance\",\"mission\":\"hacer que Utility U se gobierne y explique como dominio interno del Brain, no como n\u00famero aislado.\",\"current_state\":\"accepted_baseline\",\"work_status\":\"ready_for_utility_improvement\",\"accepted_baseline\":true,\"acceptance_checks\":[{\"check_id\":\"utility_snapshot_exists\",\"passed\":true,\"detail\":\"Snapshot vivo encontrado en C:\\\\AI_VAULT\\\\"
+    },
+    {
+      "method": "GET",
+      "path": "/brain/chat_excellence/status",
+      "url": "http://127.0.0.1:8090/brain/chat_excellence/status",
+      "status": 200,
+      "error": null,
+      "body_preview": "{\"total_iterations\":100,\"latest\":{\"iter\":101,\"timestamp\":\"2026-05-26T14:57:03.216873\",\"elapsed_s\":29.3,\"success\":true,\"model_used\":\"gpt-5.5\",\"parsed_ok\":true,\"weakness\":\"Patrones mas problematicos observados: ratio de fallback muy alto 8829/12179 llamadas LLM (~72.5%) en llm_metrics_latest.json:0002-0005; fallos de chat relevantes 716/3727 (~19.2%) con ghost_completion_count=186, max_steps_reached=272 y canned_no_result_count=135 en chat_metrics_latest.json:0002-0028; presion de contexto/salida "
+    },
+    {
+      "method": "GET",
+      "path": "/brain/chat_excellence/proposals",
+      "url": "http://127.0.0.1:8090/brain/chat_excellence/proposals",
+      "status": 200,
+      "error": null,
+      "body_preview": "{\"items\":[{\"proposal_id\":\"ce_prop_20260526_145703\",\"created_at\":\"2026-05-26T14:57:03.227873\",\"source\":\"chat_excellence\",\"iter\":101,\"iter_timestamp\":\"2026-05-26T14:57:03.216873\",\"status\":\"pending_review\",\"risk_class\":\"low\",\"risk_reasons\":[],\"auto_apply_env\":false,\"weakness\":\"Patrones mas problematicos observados: ratio de fallback muy alto 8829/12179 llamadas LLM (~72.5%) en llm_metrics_latest.json:0002-0005; fallos de chat relevantes 716/3727 (~19.2%) con ghost_completion_count=186, max_steps_re"
+    },
+    {
+      "method": "GET",
+      "path": "/brain/learning/proposals",
+      "url": "http://127.0.0.1:8090/brain/learning/proposals",
+      "status": null,
+      "error": "HTTP Error 404: Not Found",
+      "body_preview": null
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "url": "http://127.0.0.1:8090/health",
+      "status": 200,
+      "error": null,
+      "body_preview": "{\"status\":\"healthy\",\"sessions\":1,\"version\":\"9.0.0\",\"safe_mode\":false}"
+    }
+  ]
+}

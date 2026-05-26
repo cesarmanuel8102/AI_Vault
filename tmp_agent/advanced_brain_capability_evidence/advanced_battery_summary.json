@@ -1,0 +1,128 @@
+{
+  "per_case": {
+    "adv_q01_estado_operativo": {
+      "exists": true,
+      "bytes": 128,
+      "timeout": true,
+      "route": null,
+      "intent": null,
+      "model_used": null,
+      "success": null,
+      "quality": "timeout",
+      "accepted": false
+    },
+    "adv_q02_dashboard_v2_r105": {
+      "exists": true,
+      "bytes": 1387,
+      "timeout": true,
+      "route": null,
+      "intent": null,
+      "model_used": "kimi-k2.5:cloud",
+      "success": null,
+      "quality": "timeout",
+      "accepted": false
+    },
+    "adv_q03_selector_cloud_first": {
+      "exists": true,
+      "bytes": 1477,
+      "timeout": true,
+      "route": null,
+      "intent": null,
+      "model_used": "gpt-5.5",
+      "success": null,
+      "quality": "timeout",
+      "accepted": false
+    },
+    "adv_q04_codigo_simple": {
+      "exists": true,
+      "bytes": 1247,
+      "timeout": true,
+      "route": null,
+      "intent": null,
+      "model_used": "kimi-k2.5:cloud",
+      "success": null,
+      "quality": "timeout",
+      "accepted": false
+    },
+    "adv_q05_revision_codigo": {
+      "exists": true,
+      "bytes": 127,
+      "timeout": true,
+      "route": null,
+      "intent": null,
+      "model_used": null,
+      "success": null,
+      "quality": "timeout",
+      "accepted": false
+    },
+    "adv_q06_diagnostico_error_codigo": {
+      "exists": true,
+      "bytes": 136,
+      "timeout": true,
+      "route": null,
+      "intent": null,
+      "model_used": null,
+      "success": null,
+      "quality": "timeout",
+      "accepted": false
+    },
+    "adv_q07_plan_implementacion": {
+      "exists": true,
+      "bytes": 131,
+      "timeout": true,
+      "route": null,
+      "intent": null,
+      "model_used": null,
+      "success": null,
+      "quality": "timeout",
+      "accepted": false
+    },
+    "adv_q08_herramientas_disponibles": {
+      "exists": true,
+      "bytes": 136,
+      "timeout": true,
+      "route": null,
+      "intent": null,
+      "model_used": null,
+      "success": null,
+      "quality": "timeout",
+      "accepted": false
+    },
+    "adv_q09_ejecucion_herramientas": {
+      "exists": true,
+      "bytes": 134,
+      "timeout": true,
+      "route": null,
+      "intent": null,
+      "model_used": null,
+      "success": null,
+      "quality": "timeout",
+      "accepted": false
+    },
+    "adv_q10_deteccion_necesidades": {
+      "exists": true,
+      "bytes": 17,
+      "timeout": true,
+      "route": null,
+      "intent": null,
+      "model_used": null,
+      "success": null,
+      "quality": "timeout",
+      "accepted": false
+    }
+  },
+  "scorecard": {
+    "total_cases": 10,
+    "ok_true": 0,
+    "timeouts": 10,
+    "good": 0,
+    "partial": 0,
+    "rejected": 10,
+    "models_seen": [
+      "gpt-5.5",
+      "kimi-k2.5:cloud"
+    ],
+    "routes_seen": [],
+    "pass_rate": 0.0
+  }
+}
