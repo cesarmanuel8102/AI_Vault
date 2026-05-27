@@ -1,0 +1,33 @@
+{
+  "options": [
+    {
+      "name": "validate_security_decision",
+      "priority": "primary",
+      "description": "Decide what to do with validate_security_*.py",
+      "choices": [
+        "A) commit as security audit artifacts",
+        "B) move to evidence/runtime local",
+        "C) ignore/archive",
+        "D) delete only with explicit user authorization"
+      ]
+    },
+    {
+      "name": "DASH-V2-MOUNT-retry",
+      "priority": "secondary",
+      "description": "Reattempt DASH-V2-MOUNT with lazy initialization",
+      "requirements": [
+        "No import-time mounting",
+        "No uvicorn startup blocking",
+        "Mount on-first-request or safe startup handler",
+        "Timeout/guardrails",
+        "Brain V9 health must pass before and after"
+      ]
+    },
+    {
+      "name": "next_roadmap_item",
+      "priority": "tertiary",
+      "description": "Open next roadmap item defined by user"
+    }
+  ],
+  "recommended_next": "validate_security_decision"
+}

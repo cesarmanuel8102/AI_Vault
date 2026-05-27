@@ -1,0 +1,40 @@
+{
+  "protected_do_not_stage": [
+    "memory/semantic/semantic_memory.jsonl",
+    "memory/semantic/semantic_memory_faiss.index",
+    "memory/semantic/semantic_memory_faiss_ids.json",
+    "memory/semantic/semantic_memory_index.npz",
+    "tmp_agent/strategies/mean_reversion_eq/campaign_gate_email_last_send.json",
+    "tmp_agent/strategies/mean_reversion_eq/campaign_gate_market_cache/IWM_yfinance.csv",
+    "tmp_agent/strategies/mean_reversion_eq/campaign_gate_market_cache/QQQ_yfinance.csv",
+    "tmp_agent/strategies/mean_reversion_eq/campaign_gate_market_cache/SPY_yfinance.csv",
+    "tmp_agent/strategies/mean_reversion_eq/campaign_gate_market_cache/VIXY_yfinance.csv",
+    "tmp_agent/strategies/mean_reversion_eq/campaign_gate_status_latest.json"
+  ],
+  "runtime_generated": [
+    "tmp_agent/brain_v9/ops/restart_brain_v9_result_20260331_221842.json",
+    "tmp_agent/bor2_runtime_evidence/",
+    "tmp_agent/bor3_agentloop_evidence/",
+    "tmp_agent/bor3_llm_audit_results.json",
+    "tmp_agent/bor3b_runtime_evidence/",
+    "tmp_agent/bor3c_runtime_evidence/",
+    "tmp_agent/brain_self_audit_evidence/",
+    "tmp_agent/cloud_first_policy_evidence/",
+    "tmp_agent/selector_matrix_evidence/",
+    "tmp_agent/dashboard_v2_mount_evidence/",
+    "tmp_agent/real_tools_evidence/codex_rescue_inspection.json",
+    "tmp_agent/real_tools_evidence/codex_tool01_smoke_summary.json",
+    "tmp_agent/real_tools_evidence/real_tool_probe_summary_before_patch.json",
+    "tmp_agent/real_tools_evidence/run_tool01_final_smoke.py",
+    "tmp_agent/real_tools_evidence/test_evidence.json",
+    "tmp_agent/real_tools_evidence/tool01_design.json",
+    "tmp_agent/real_tools_evidence/tooling_current_inventory.json"
+  ],
+  "unknown_needs_decision": [
+    "validate_security_3g.py",
+    "validate_security_4d_canary.py",
+    "validate_security_4d_evidence.py",
+    "tmp_agent/bor3_llm_audit.py"
+  ],
+  "note": "Protected files are tracked but modified in working tree. They must NEVER be staged."
+}

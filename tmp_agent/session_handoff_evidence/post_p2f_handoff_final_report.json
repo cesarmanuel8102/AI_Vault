@@ -1,0 +1,28 @@
+{
+  "SESSION_HANDOFF_POST_P2F_REPORT": {
+    "head": "bf02e2a7",
+    "remote_head": "bf02e2a7",
+    "branch": "codex/own-capital-sustainable-return",
+    "closed_items": 7,
+    "rejected_items": [
+      "DASH-V2-MOUNT"
+    ],
+    "dirty_tree_summary": {
+      "protected": 10,
+      "runtime": 16,
+      "unknown_needs_decision": 4
+    },
+    "protected_present": true,
+    "staged_files": 0,
+    "handoff_files_created": [
+      "tmp_agent/session_handoff_evidence/post_p2f_handoff_baseline.json",
+      "tmp_agent/session_handoff_evidence/post_p2f_repo_state.json",
+      "tmp_agent/session_handoff_evidence/post_p2f_dirty_tree_summary.json",
+      "tmp_agent/session_handoff_evidence/post_p2f_next_roadmap_recommendation.json",
+      "tmp_agent/session_handoff_evidence/SESSION_HANDOFF_POST_P2F.md",
+      "tmp_agent/session_handoff_evidence/post_p2f_handoff_final_report.json"
+    ],
+    "recommended_next_step": "validate_security_decision audit",
+    "acceptance": "ACCEPTED"
+  }
+}

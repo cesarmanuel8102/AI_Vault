@@ -1,0 +1,26 @@
+{
+  "branch": "codex/own-capital-sustainable-return",
+  "head": "bf02e2a7",
+  "remote_head": "bf02e2a7",
+  "closed_commits": [
+    "db21ae89",
+    "bbec35a2",
+    "75811d31",
+    "b4ac7d8e",
+    "4f23958d",
+    "9b2803d7",
+    "bf02e2a7"
+  ],
+  "closed_items": [
+    "TOOL-01A/B",
+    "TOOL-01 executor tools",
+    "DASH-02 stale dashboard routes",
+    "TOOL/DASH migration checkpoint",
+    ".gitignore hygiene",
+    "P2-F GitHubSourceConnector",
+    "P2-F ledger checkpoint"
+  ],
+  "rejected_or_deferred": [
+    "DASH-V2-MOUNT rejected and reverted due startup/blocking risk"
+  ]
+}
