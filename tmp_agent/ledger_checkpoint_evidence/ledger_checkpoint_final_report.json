@@ -1,0 +1,31 @@
+{
+  "LEDGER_CHECKPOINT_REPORT": {
+    "head_initial": "75811d31",
+    "head_current": "75811d31",
+    "branch": "codex/own-capital-sustainable-return",
+    "ledger_updated": true,
+    "files_modified_by_this_task": [
+      "docs/MIGRATION_CONTROL_LEDGER.md"
+    ],
+    "commits_recorded": {
+      "db21ae89": "Enable governed real tools permission gate in chat (TOOL-01A/B)",
+      "bbec35a2": "Register TOOL-01 governed real tools in executor",
+      "75811d31": "Fix stale dashboard routes with read-only aliases (DASH-02)"
+    },
+    "working_tree_classification": {
+      "ledger_documentation": 1,
+      "runtime_generated": 13,
+      "protected_do_not_stage": 120,
+      "roadmap_relevant": 5,
+      "unknown": 3
+    },
+    "protected_status": "Present in working tree but NEVER staged",
+    "validation": {
+      "ledger_diff_safe": true,
+      "no_staged_files": true,
+      "no_protected_files_touched": true
+    },
+    "acceptance": "ACCEPTED",
+    "next_step": "Autorizar commit/push SOLO del ledger checkpoint (docs/MIGRATION_CONTROL_LEDGER.md)"
+  }
+}

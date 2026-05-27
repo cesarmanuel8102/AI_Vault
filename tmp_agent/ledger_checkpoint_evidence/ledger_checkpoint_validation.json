@@ -1,0 +1,8 @@
+{
+  "ledger_modified": true,
+  "only_ledger_modified_by_this_task": true,
+  "no_staged_files": true,
+  "no_protected_files_touched": true,
+  "checkpoint_appended": true,
+  "diff_safe": true
+}

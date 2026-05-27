@@ -1,0 +1,224 @@
+{
+  "head": "75811d31",
+  "files": [
+    {
+      "path": "docs/MIGRATION_CONTROL_LEDGER.md",
+      "status": "M",
+      "category": "ledger/documentation",
+      "recommended_action": "stage_later",
+      "reason": "Migration ledger needs checkpoint append for TOOL-01/DASH-02."
+    },
+    {
+      "path": "memory/semantic/semantic_memory.jsonl",
+      "status": "M",
+      "category": "protected/do-not-stage",
+      "recommended_action": "protected_do_not_stage",
+      "reason": "Protected semantic memory."
+    },
+    {
+      "path": "memory/semantic/semantic_memory_index.npz",
+      "status": "M",
+      "category": "protected/do-not-stage",
+      "recommended_action": "protected_do_not_stage",
+      "reason": "Protected semantic memory index."
+    },
+    {
+      "path": "tmp_agent/brain_v9/ops/restart_brain_v9_result_20260331_221842.json",
+      "status": "M",
+      "category": "runtime/generated",
+      "recommended_action": "ignore_for_now",
+      "reason": "Runtime generated artifact."
+    },
+    {
+      "path": "tmp_agent/strategies/mean_reversion_eq/campaign_gate_email_last_send.json",
+      "status": "M",
+      "category": "protected/do-not-stage",
+      "recommended_action": "protected_do_not_stage",
+      "reason": "Campaign gate runtime data."
+    },
+    {
+      "path": "tmp_agent/strategies/mean_reversion_eq/campaign_gate_market_cache/IWM_yfinance.csv",
+      "status": "M",
+      "category": "protected/do-not-stage",
+      "recommended_action": "protected_do_not_stage",
+      "reason": "Market cache runtime data."
+    },
+    {
+      "path": "tmp_agent/strategies/mean_reversion_eq/campaign_gate_market_cache/QQQ_yfinance.csv",
+      "status": "M",
+      "category": "protected/do-not-stage",
+      "recommended_action": "protected_do_not_stage",
+      "reason": "Market cache runtime data."
+    },
+    {
+      "path": "tmp_agent/strategies/mean_reversion_eq/campaign_gate_market_cache/SPY_yfinance.csv",
+      "status": "M",
+      "category": "protected/do-not-stage",
+      "recommended_action": "protected_do_not_stage",
+      "reason": "Market cache runtime data."
+    },
+    {
+      "path": "tmp_agent/strategies/mean_reversion_eq/campaign_gate_market_cache/VIXY_yfinance.csv",
+      "status": "M",
+      "category": "protected/do-not-stage",
+      "recommended_action": "protected_do_not_stage",
+      "reason": "Market cache runtime data."
+    },
+    {
+      "path": "tmp_agent/strategies/mean_reversion_eq/campaign_gate_status_latest.json",
+      "status": "M",
+      "category": "protected/do-not-stage",
+      "recommended_action": "protected_do_not_stage",
+      "reason": "Campaign gate runtime status."
+    },
+    {
+      "path": "brain/github_source_connector.py",
+      "status": "??",
+      "category": "roadmap-relevant",
+      "recommended_action": "inspect_before_action",
+      "reason": "P2-F feature under construction."
+    },
+    {
+      "path": "docs/P2F_GITHUB_SOURCE_CONNECTOR.md",
+      "status": "??",
+      "category": "roadmap-relevant",
+      "recommended_action": "inspect_before_action",
+      "reason": "P2-F documentation."
+    },
+    {
+      "path": "nul",
+      "status": "??",
+      "category": "protected/do-not-stage",
+      "recommended_action": "protected_do_not_stage",
+      "reason": "Protected null file."
+    },
+    {
+      "path": "tests/smoke/smoke_github_source_connector_dry_run.py",
+      "status": "??",
+      "category": "roadmap-relevant",
+      "recommended_action": "inspect_before_action",
+      "reason": "P2-F smoke test."
+    },
+    {
+      "path": "tests/unit/test_github_source_connector.py",
+      "status": "??",
+      "category": "roadmap-relevant",
+      "recommended_action": "inspect_before_action",
+      "reason": "P2-F unit test."
+    },
+    {
+      "path": "tmp_agent/bor2_runtime_evidence/",
+      "status": "??",
+      "category": "runtime/generated",
+      "recommended_action": "ignore_for_now",
+      "reason": "BOR2 runtime evidence."
+    },
+    {
+      "path": "tmp_agent/bor3_agentloop_evidence/",
+      "status": "??",
+      "category": "runtime/generated",
+      "recommended_action": "ignore_for_now",
+      "reason": "BOR3 evidence."
+    },
+    {
+      "path": "tmp_agent/bor3_llm_audit.py",
+      "status": "??",
+      "category": "roadmap-relevant",
+      "recommended_action": "inspect_before_action",
+      "reason": "BOR3 audit script."
+    },
+    {
+      "path": "tmp_agent/bor3_llm_audit_results.json",
+      "status": "??",
+      "category": "runtime/generated",
+      "recommended_action": "ignore_for_now",
+      "reason": "BOR3 audit results."
+    },
+    {
+      "path": "tmp_agent/bor3b_runtime_evidence/",
+      "status": "??",
+      "category": "runtime/generated",
+      "recommended_action": "ignore_for_now",
+      "reason": "BOR3 evidence."
+    },
+    {
+      "path": "tmp_agent/bor3c_runtime_evidence/",
+      "status": "??",
+      "category": "runtime/generated",
+      "recommended_action": "ignore_for_now",
+      "reason": "BOR3 evidence."
+    },
+    {
+      "path": "tmp_agent/brain_self_audit_evidence/",
+      "status": "??",
+      "category": "runtime/generated",
+      "recommended_action": "ignore_for_now",
+      "reason": "Self audit evidence."
+    },
+    {
+      "path": "tmp_agent/cloud_first_policy_evidence/",
+      "status": "??",
+      "category": "runtime/generated",
+      "recommended_action": "ignore_for_now",
+      "reason": "Cloud first policy evidence."
+    },
+    {
+      "path": "tmp_agent/dash02_stale_routes_evidence/",
+      "status": "??",
+      "category": "runtime/generated",
+      "recommended_action": "ignore_for_now",
+      "reason": "DASH-02 evidence already committed."
+    },
+    {
+      "path": "tmp_agent/real_tools_evidence/",
+      "status": "??",
+      "category": "runtime/generated",
+      "recommended_action": "ignore_for_now",
+      "reason": "TOOL-01 evidence (mostly already committed)."
+    },
+    {
+      "path": "tmp_agent/reports/",
+      "status": "??",
+      "category": "protected/do-not-stage",
+      "recommended_action": "protected_do_not_stage",
+      "reason": "Protected reports directory."
+    },
+    {
+      "path": "tmp_agent/selector_matrix_evidence/",
+      "status": "??",
+      "category": "runtime/generated",
+      "recommended_action": "ignore_for_now",
+      "reason": "Selector matrix evidence."
+    },
+    {
+      "path": "tmp_agent/strategies/mean_reversion_eq/",
+      "status": "??",
+      "category": "protected/do-not-stage",
+      "recommended_action": "protected_do_not_stage",
+      "reason": "Protected strategies directory."
+    },
+    {
+      "path": "validate_security_3g.py",
+      "status": "??",
+      "category": "unknown",
+      "recommended_action": "inspect_before_action",
+      "reason": "Security validation script."
+    },
+    {
+      "path": "validate_security_4d_canary.py",
+      "status": "??",
+      "category": "unknown",
+      "recommended_action": "inspect_before_action",
+      "reason": "Security canary script."
+    },
+    {
+      "path": "validate_security_4d_evidence.py",
+      "status": "??",
+      "category": "unknown",
+      "recommended_action": "inspect_before_action",
+      "reason": "Security evidence script."
+    }
+  ],
+  "protected_present": true,
+  "unknown_present": true
+}

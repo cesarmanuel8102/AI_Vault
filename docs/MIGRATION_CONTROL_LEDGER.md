@@ -162,7 +162,15 @@
   - Próximo: decisión de commit/persistencia de memory/semantic según policy
   - Requisitos: pruebas SemanticMemory controladas + runtime contract + rollback real validado
   - Blockers: allow_real_write=False (bloqueado hasta cumplir requisitos)
-- **P2-F GitHubSourceConnector**: pendiente, no activo
+- **P2-F Commit 1**: implementado dry-run core, hash PENDING
+  - Archivos: brain/github_source_connector.py, tests/unit/test_github_source_connector.py, tests/smoke/smoke_github_source_connector_dry_run.py, docs/P2F_GITHUB_SOURCE_CONNECTOR.md
+  - Estado: conector read-only/dry-run para fuentes GitHub, NO escritura a SemanticMemory, NO GitHub write APIs
+  - Fuente: cesarmanuel8102/AI_Vault (público), branch codex/own-capital-sustainable-return
+  - Token: solo desde env var GITHUB_TOKEN, nunca logueado, nunca expuesto
+  - Evidence bundle: repo, branch, commit, files_seen, files_selected, content_hashes, promotion_allowed=False, semantic_write_allowed=False
+  - Tests: unit tests con fake opener, smoke test valida dry-run completo
+  - Seguridad: GITHUB_WRITE_ALLOWED=False, SEMANTIC_WRITE_ALLOWED=False, PROMOTION_ALLOWED=False, DRY_RUN_ONLY=True
+  - Pendiente: validación contra API real de GitHub, integración con evidence system P2-E
 
 ## 4. Brechas principales heredadas
 - **B1**: doble routing / autoridad de rutas
@@ -196,4 +204,28 @@
 - Todo commit debe ser pequeño.
 - Todo cambio debe tener scope explícito.
 - Si falla smoke runtime, no avanzar.
-- Si aparece modificación prohibida, detener y reportar.
+## 9. Checkpoint — TOOL-01A/B + DASH-02 closed
+- Date (UTC): 2026-05-27T05:00:00+00:00
+- Branch: codex/own-capital-sustainable-return
+- HEAD: 75811d31
+- Commits:
+  - db21ae89 — Enable governed real tools permission gate in chat (TOOL-01A/B)
+  - bbec35a2 — Register TOOL-01 governed real tools in executor
+  - 75811d31 — Fix stale dashboard routes with read-only aliases (DASH-02)
+- Acceptance:
+  - TOOL-01A deterministic real tools: ACCEPTED
+  - TOOL-01B permission gate + UI buttons: ACCEPTED
+  - TOOL-01 executor tools (health_check, git_status, run_pytest, write_evidence, protected paths): ACCEPTED
+  - DASH-02 stale dashboard routes (/brain/utility/status, /brain/learning/proposals): ACCEPTED
+- Evidence:
+  - tmp_agent/real_tools_evidence/tool01_final_smoke_report.json
+  - tmp_agent/real_tools_evidence/tool01b_ui_buttons_report.json
+  - tmp_agent/dash02_stale_routes_evidence/dash02_final_report.json
+- Tests:
+  - TOOL-01 final smoke: PASS (A-G all passed against Brain V9)
+  - DASH-02 tests: 63 passed / 0 failed
+- Protected files status: NOT staged during any commit
+- Next recommended item:
+  - Working tree hygiene audit / next roadmap item selection
+- Rollback policy applied: Yes
+
