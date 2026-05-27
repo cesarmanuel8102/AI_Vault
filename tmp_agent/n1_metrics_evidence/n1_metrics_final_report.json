@@ -1,0 +1,29 @@
+{
+  "N1_METRICS_FIX_REPORT": {
+    "head": "9a921186",
+    "files_reviewed": [
+      "brain/metrics.py",
+      "tests/unit/test_metrics_no_fabricated_performance.py"
+    ],
+    "files_modified": [
+      "brain/metrics.py"
+    ],
+    "hardcoded_metrics_found": {
+      "avg_ms": 150,
+      "p95_ms": 300,
+      "p99_ms": 500,
+      "uptime_percentage": 99.5
+    },
+    "patch_summary": "Replaced hardcoded values with None, added status=unavailable, reason=no_real_performance_source, generated_from=not_measured, note referencing N1",
+    "tests": {
+      "test_metrics_no_fabricated_performance": "10 passed / 0 failed"
+    },
+    "schema_compatibility": "Preserved: response_times and availability dicts still exist with same keys (avg_ms, p95_ms, p99_ms, uptime_percentage)",
+    "remaining_risks": [
+      "Future: if real performance measurement source is added, update _performance() to use real samples instead of None",
+      "metrics_history in MetricsAggregator still stores system metrics but not performance metrics"
+    ],
+    "recommendation": "ACCEPTED",
+    "next_step": "Autorizar commit/push SOLO de brain/metrics.py + evidence N1"
+  }
+}

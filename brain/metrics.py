@@ -96,8 +96,12 @@ class MetricsAggregator:
 
     async def _performance(self) -> Dict:
         return {
-            "response_times": {"avg_ms": 150, "p95_ms": 300, "p99_ms": 500},
-            "availability":   {"uptime_percentage": 99.5},
+            "status": "unavailable",
+            "response_times": {"avg_ms": None, "p95_ms": None, "p99_ms": None},
+            "availability":   {"uptime_percentage": None},
+            "reason": "no_real_performance_source",
+            "generated_from": "not_measured",
+            "note": "N1: Performance metrics not measured. No real measurement source available. See docs/AUTODESARROLLO_CONTINUIDAD_PLAN.md section N1.",
         }
 
     async def get_error_rates(self) -> Dict:

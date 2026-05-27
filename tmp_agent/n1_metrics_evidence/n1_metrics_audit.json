@@ -1,0 +1,26 @@
+{
+  "hardcoded_metrics_found": {
+    "brain/metrics.py": {
+      "_performance()": {
+        "before": {
+          "avg_ms": 150,
+          "p95_ms": 300,
+          "p99_ms": 500,
+          "uptime_percentage": 99.5
+        },
+        "after": {
+          "avg_ms": null,
+          "p95_ms": null,
+          "p99_ms": null,
+          "uptime_percentage": null
+        }
+      }
+    }
+  },
+  "test_exists": "tests/unit/test_metrics_no_fabricated_performance.py",
+  "test_assertions": 10,
+  "patch_type": "direct_replacement",
+  "backward_compatible": true,
+  "schema_preserved": true,
+  "data_source_available": false
+}
