@@ -1,0 +1,21 @@
+{
+  "F1_LEDGER_CHECKPOINT_REPORT": {
+    "head_initial": "15c700da",
+    "head_current": "15c700da",
+    "branch": "codex/own-capital-sustainable-return",
+    "ledger_updated": true,
+    "files_modified_by_this_task": [
+      "docs/MIGRATION_CONTROL_LEDGER.md"
+    ],
+    "commit_recorded": {
+      "15c700da": "Add F1 security validation suite for P2-E commits"
+    },
+    "validation": {
+      "ledger_diff_safe": true,
+      "no_staged_files": true,
+      "no_protected_files_touched": true
+    },
+    "acceptance": "ACCEPTED",
+    "next_step": "Autorizar commit/push SOLO de docs/MIGRATION_CONTROL_LEDGER.md"
+  }
+}

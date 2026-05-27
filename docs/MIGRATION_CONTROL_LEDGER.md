@@ -303,3 +303,28 @@
 - Next recommended item:
   - F1 Security Validation: fix validate_security_3g.py and migrate security validators to tests/security/
 
+## 12. Checkpoint — F1 Security Validation Suite closed
+- Date (UTC): 2026-05-27T07:30:00+00:00
+- Branch: codex/own-capital-sustainable-return
+- HEAD: 15c700da
+- Commit:
+  - 15c700da — Add F1 security validation suite for P2-E commits
+- Scope:
+  - tests/security/validate_p2e_3g.py
+  - tests/security/validate_p2e_4d_canary.py
+  - tests/security/validate_p2e_4d_evidence.py
+  - tmp_agent/security_validation_evidence/security_validation_fix_report.json
+- Acceptance:
+  - F1 Security Validation: ACCEPTED
+  - validate_p2e_3g.py: compile OK, execution PASS with expected WARN
+  - validate_p2e_4d_canary.py: SECURITY_VALIDATION_OK
+  - validate_p2e_4d_evidence.py: SECURITY_VALIDATION_OK
+  - protected_touched: false
+- Fixes:
+  - validate_p2e_3g.py: replaced emojis with ASCII markers for Windows/cp1252 compatibility
+  - validate_p2e_4d_canary.py: fixed sys.path to use repo root instead of tests directory
+- Runtime:
+  - Brain V9 /health: healthy
+- Next recommended item:
+  - B3 fake grounded dashboard/runtime, or N2 auto-approval API bypass depending on priority
+
