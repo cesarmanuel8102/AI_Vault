@@ -1,0 +1,21 @@
+{
+  "P2F_LEDGER_CHECKPOINT_REPORT": {
+    "head_initial": "9b2803d7",
+    "head_current": "9b2803d7",
+    "branch": "codex/own-capital-sustainable-return",
+    "ledger_updated": true,
+    "files_modified_by_this_task": [
+      "docs/MIGRATION_CONTROL_LEDGER.md"
+    ],
+    "commit_recorded": {
+      "9b2803d7": "Add P2-F GitHub Source Connector read-only dry-run"
+    },
+    "validation": {
+      "ledger_diff_safe": true,
+      "no_staged_files": true,
+      "no_protected_files_touched": true
+    },
+    "acceptance": "ACCEPTED",
+    "next_step": "Autorizar commit/push SOLO de docs/MIGRATION_CONTROL_LEDGER.md"
+  }
+}

@@ -162,7 +162,7 @@
   - Próximo: decisión de commit/persistencia de memory/semantic según policy
   - Requisitos: pruebas SemanticMemory controladas + runtime contract + rollback real validado
   - Blockers: allow_real_write=False (bloqueado hasta cumplir requisitos)
-- **P2-F Commit 1**: implementado dry-run core, hash PENDING
+- **P2-F Commit 1**: implementado dry-run core, hash 9b2803d7
   - Archivos: brain/github_source_connector.py, tests/unit/test_github_source_connector.py, tests/smoke/smoke_github_source_connector_dry_run.py, docs/P2F_GITHUB_SOURCE_CONNECTOR.md
   - Estado: conector read-only/dry-run para fuentes GitHub, NO escritura a SemanticMemory, NO GitHub write APIs
   - Fuente: cesarmanuel8102/AI_Vault (público), branch codex/own-capital-sustainable-return
@@ -171,6 +171,7 @@
   - Tests: unit tests con fake opener, smoke test valida dry-run completo
   - Seguridad: GITHUB_WRITE_ALLOWED=False, SEMANTIC_WRITE_ALLOWED=False, PROMOTION_ALLOWED=False, DRY_RUN_ONLY=True
   - Pendiente: validación contra API real de GitHub, integración con evidence system P2-E
+  - **Status**: ACCEPTED y commiteado/pusheado
 
 ## 4. Brechas principales heredadas
 - **B1**: doble routing / autoridad de rutas
@@ -228,4 +229,40 @@
 - Next recommended item:
   - Working tree hygiene audit / next roadmap item selection
 - Rollback policy applied: Yes
+
+## 10. Checkpoint — P2-F GitHubSourceConnector closed
+- Date (UTC): 2026-05-27T05:50:00+00:00
+- Branch: codex/own-capital-sustainable-return
+- HEAD: 9b2803d7
+- Commit:
+  - 9b2803d7 — Add P2-F GitHub Source Connector read-only dry-run
+- Scope:
+  - brain/github_source_connector.py
+  - docs/P2F_GITHUB_SOURCE_CONNECTOR.md
+  - tests/unit/test_github_source_connector.py
+  - tests/smoke/smoke_github_source_connector_dry_run.py
+  - tmp_agent/p2f_github_connector_evidence/p2f_safety_contract_audit.json
+  - tmp_agent/p2f_github_connector_evidence/p2f_github_connector_final_report.json
+- Acceptance:
+  - P2-F GitHubSourceConnector: ACCEPTED
+  - read_only: true
+  - dry_run_only: true
+  - semantic_write_blocked: true
+  - promotion_blocked: true
+  - secrets_safe: true
+- Tests:
+  - py_compile: OK
+  - unit: 31 passed / 0 failed
+  - smoke: passed
+- Safety:
+  - GitHub endpoint read-only only
+  - token from env var only
+  - token masked (mask_token function)
+  - no hardcoded secrets
+  - no SemanticMemory writes
+  - no promotion to production
+- Previous checkpoint updated:
+  - Section 3, P2-F Commit 1 hash updated from PENDING to 9b2803d7
+- Next recommended item:
+  - Working tree hygiene finalization / decision on validate_security_*.py and DASH-V2-MOUNT evidence
 

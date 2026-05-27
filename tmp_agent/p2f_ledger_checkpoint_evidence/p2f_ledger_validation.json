@@ -1,0 +1,5 @@
+{
+  "only_ledger_modified": true,
+  "no_staged_files": true,
+  "no_protected_touched": true
+}
