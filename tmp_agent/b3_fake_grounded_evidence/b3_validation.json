@@ -1,0 +1,25 @@
+{
+  "B3_VALIDATION": {
+    "timestamp_utc": "2026-05-27T07:54:53+00:00",
+    "head": "e3c46e2e",
+    "branch": "codex/own-capital-sustainable-return",
+    "static_check": {
+      "command": "rg \"runtime: activo|runtime healthy|server running|dashboard activo|healthy.*sin|active.*without\" tmp_agent/brain_v9/core/session.py",
+      "result": "no_matches",
+      "exit_code": 1,
+      "artifact": "tmp_agent/b3_fake_grounded_evidence/b3_static_check.txt"
+    },
+    "py_compile": {
+      "session_py": "OK",
+      "test_py": "OK"
+    },
+    "pytest": {
+      "command": "python -m pytest tests/unit/test_b3_fake_grounded_dashboard_runtime.py -q --tb=short",
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0,
+      "exit_status": 0
+    },
+    "protected_touched": false
+  }
+}

@@ -1,37 +1,32 @@
 {
   "B3_FAKE_GROUNDED_REPORT": {
-    "head": "4ab3d4b7",
-    "files_reviewed": [
+    "head": "e3c46e2e",
+    "status": "ACCEPTED",
+    "files_verified": [
       "tmp_agent/brain_v9/core/session.py",
       "tests/unit/test_b3_fake_grounded_dashboard_runtime.py"
     ],
-    "files_modified": [
-      "tmp_agent/brain_v9/core/session.py",
-      "tests/unit/test_b3_fake_grounded_dashboard_runtime.py"
+    "removed_claims": [
+      "runtime: activo"
     ],
-    "patch_summary": [
-      "session.py: Added urllib.request in imports",
-      "session.py: Modified `_dashboard_status_fastpath` to perform a real HTTP GET check to /health",
-      "session.py: Removed hardcoded `runtime: activo`, added `runtime_status` and `verified_by` fields",
-      "session.py: `_system_reply` now includes 'text' key for easier downstream access"
-    ],
-    "fake_grounded_locations_fixed": [
-      "tmp_agent/brain_v9/core/session.py:6924-6962 (_dashboard_status_fastpath)"
-    ],
-    "verification_policy": "HTTP real check with 2s timeout: http://localhost:{port}/health",
-    "tests": {
-      "test_dashboard_fastpath_no_fake_active_without_verification": "PASS",
-      "test_dashboard_fastpath_runtime_status_field_present": "PASS",
-      "test_dashboard_fastpath_verified_by_field_present": "PASS"
+    "verification_policy": {
+      "http_health": "required_before_verified_runtime_claim",
+      "http_health_failed": "unknown_degraded_no_fake_active_claim",
+      "file_system_only": "file_only_no_active_claim",
+      "static_check": "no_forbidden_strings_found"
     },
-    "runtime_smoke": "Brain V9 /health 200 healthy — verified via HTTP GET at runtime",
+    "tests": {
+      "py_compile_session": "OK",
+      "py_compile_test": "OK",
+      "pytest_b3": "4_passed_0_failed"
+    },
+    "static_check": {
+      "command": "rg \"runtime: activo|runtime healthy|server running|dashboard activo|healthy.*sin|active.*without\" tmp_agent/brain_v9/core/session.py",
+      "result": "no_matches",
+      "exit_code": 1
+    },
     "protected_touched": false,
-    "remaining_risks": [
-      "3-second HTTP timeout is short; if server is warming up, response may still degrade",
-      "If /health endpoint itself is compromised, verification may still pass",
-      "No persistent logging of failed health checks for future B3 audits"
-    ],
     "recommendation": "ACCEPTED",
-    "next_step": "Authorise commit/push of session.py and B3 test + evidence."
+    "next_step": "Ledger_checkpoint_B3"
   }
 }

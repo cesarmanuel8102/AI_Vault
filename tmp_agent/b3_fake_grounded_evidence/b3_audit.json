@@ -1,0 +1,21 @@
+{
+  "locations": {
+    "tmp_agent/brain_v9/core/session.py": {
+      "function": "_dashboard_status_fastpath",
+      "line": 6923,
+      "issue": "FAKE_GROUNDED",
+      "reason": "afirma runtime: activo solo basado en existencia de archivos UI, no verifica proceso/HTTP real",
+      "code_snippet": "runtime: activo",
+      "severity": "high",
+      "affected_function": "_dashboard_status_fastpath"
+    }
+  },
+  "classification": {
+    "tmp_agent/brain_v9/core/session.py:_dashboard_status_fastpath": "FAKE_GROUNDED"
+  },
+  "notes": [
+    "session.py ya tiene infraestructura para verificacion HTTP y proceso (check_port_status, check_http_service)",
+    "tools.py line 1210 y 1217 ya usan check_port_status y check_http_service",
+    "No necesitamos inventar helpers nuevos"
+  ]
+}
