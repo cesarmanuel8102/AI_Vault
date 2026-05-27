@@ -1657,6 +1657,15 @@ Las restricciones se reactivaran en 60 minutos o al escribir:
     # Chat normal ORAV
     from brain_v9.core.session import get_or_create_session
     session = get_or_create_session(req.session_id, active_sessions)
+    
+    # ── Emit trace event: user request received ──
+    _emit_agent_trace_internal(
+        req.session_id, "chat_ui", "thinking",
+        "User request received",
+        req.message[:240],
+        severity="info"
+    )
+    
     try:
         result = await asyncio.wait_for(
             session.chat(req.message, req.model_priority),
@@ -1664,12 +1673,31 @@ Las restricciones se reactivaran en 60 minutos o al escribir:
         )
     except asyncio.TimeoutError:
         log.warning("Chat request timed out after 600s for session %s", req.session_id)
+        _emit_agent_trace_internal(
+            req.session_id, "chat_ui", "error",
+            "Chat processing timeout",
+            "The request exceeded the 600s limit.",
+            severity="warning"
+        )
         result = {"content": "La consulta excedió el tiempo límite (600s). Intenta una pregunta más corta o usa `/model chat`.",
                   "success": False, "model": None}
 
     # Extract pending_action from response text if present
     pending_action = None
     content_str = result.get("content", result.get("error", "Sin respuesta"))
+    
+    # Emit routing / model info trace (if available)
+    _emit_agent_trace_internal(
+        req.session_id, "chat_ui", "status",
+        "Response generated",
+        f"model={result.get('model','unknown')}, success={result.get('success',False)}, len={len(content_str)}",
+        severity="info",
+        data={"model": result.get("model"), "success": result.get("success", False),
+              "permission_required": result.get("permission_required"),
+              "blocked_by_policy": result.get("blocked_by_policy"),
+              "blocked_by_user": result.get("blocked_by_user")}
+    )
+    
     if "pending_id" in str(result) or "Accion P2" in content_str or "requiere confirmacion" in content_str.lower():
         import re
         import re as _re
@@ -1685,6 +1713,39 @@ Las restricciones se reactivaran en 60 minutos o al escribir:
                 "risk": "P2",
                 "description": content_str.split("\n")[0] if "\n" in content_str else content_str[:200],
             }
+            _emit_agent_trace_internal(
+                req.session_id, "chat_ui", "governance",
+                f"Tool execution pending: {tool_name}",
+                f"Risk level: P2. Requires user confirmation.",
+                severity="high",
+                data={"pending_id": pending_id, "tool": tool_name}
+            )
+
+    # Emit tool or no-tool status
+    if result.get("tool01_real") or result.get("tool_name"): 
+        _emit_agent_trace_internal(
+            req.session_id, "chat_ui", "tool",
+            f"Tool executed: {result.get('tool_name','unknown')}",
+            f"result_preview={(json.dumps(result.get('tool_result',''))[:200] if result.get('tool_result') else 'No result')}",
+            severity="info",
+            data={"tool_name": result.get("tool_name"), "tool01_real": result.get("tool01_real"),
+                  "tool01_router_used": result.get("tool01_router_used")}
+        )
+    else:
+        _emit_agent_trace_internal(
+            req.session_id, "chat_ui", "status",
+            "No tools executed",
+            "Agent ghost completion or no tools available for this turn.",
+            severity="info"
+        )
+
+    # Emit completion event
+    _emit_agent_trace_internal(
+        req.session_id, "chat_ui", "decision",
+        "Response completed",
+        f"Turn ended for session {req.session_id[:12]}... Length={len(content_str)}",
+        severity="info"
+    )
 
     return ChatResponse(response=content_str, session_id=req.session_id, model_used=result.get("model"), success=result.get("success", False), pending_action=pending_action, permission_required=result.get("permission_required"), permission_id=result.get("permission_id"), tool_name=result.get("tool_name"), risk_level=result.get("risk_level"), options=result.get("options"), tool01_real=result.get("tool01_real"), tool01_router_used=result.get("tool01_router_used"), blocked_by_policy=result.get("blocked_by_policy"), blocked_by_user=result.get("blocked_by_user"), tool_result=result.get("tool_result"))
 
@@ -3969,6 +4030,28 @@ def _broadcast_trace_event(room_id: str, run_id: str, event: dict) -> None:
             q.put_nowait(msg)
         except Exception:
             pass
+
+# ── Internal trace emitter for live chat binding (no HTTP, no auth required internally) ──
+live_event_counter = 0
+def _emit_agent_trace_internal(room_id: str, run_id: str, type_: str, title: str, text: str, severity: str = "info", data: dict | None = None):
+    """Emit trace event server-side without HTTP token. Bypasses StrictOperatorAccess."""
+    global live_event_counter
+    live_event_counter += 1
+    event = {
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "room_id": room_id,
+        "run_id": run_id,
+        "type": type_,
+        "title": title,
+        "text": text,
+        "severity": severity,
+        "data": data or {},
+    }
+    try:
+        _append_trace_event(event)
+        _broadcast_trace_event(room_id, run_id, event)
+    except Exception:
+        pass
 
 @app.post("/brain/agent-trace/event")
 async def brain_agent_trace_event(

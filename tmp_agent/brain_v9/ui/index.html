@@ -556,8 +556,11 @@
 <button id="aw-toggle" title="Agent Workspace" onclick="toggleAwPanel()">Agent Workspace</button>
 <div id="aw-overlay">
   <div id="aw-header">
-    <span>🤖 Agent Workspace</span>
-    <button onclick="toggleAwPanel()" title="Cerrar">✕</button>
+    <span>orobot Agent Workspace</span>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button onclick="clearAwLocalView()" title="Clear local view">Limpiar</button>
+      <button onclick="toggleAwPanel()" title="Cerrar">✕</button>
+    </div>
   </div>
   <div id="aw-grid">
     <div class="aw-panel">
@@ -2031,6 +2034,15 @@ function showAwPlaceholder(action) {
   const msg = document.getElementById('aw-gov-msg');
   msg.textContent = action + ': Governance action endpoint not wired yet.';
   setTimeout(() => msg.textContent = '', 3000);
+}
+
+function clearAwLocalView() {
+  ['aw-timeline','aw-tools','aw-files','aw-gov-body'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+  _awEventCount = 0;
+  document.getElementById('aw-count').textContent = '0';
 }
 
 let _awEs = null, _awEventCount = 0;

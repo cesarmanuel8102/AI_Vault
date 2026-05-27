@@ -1,0 +1,36 @@
+{
+  "VTC_LIVE_CHAT_BINDING_REPORT": {
+    "head": "736a3308",
+    "status": "ACCEPTED",
+    "files_modified": [
+      "tmp_agent/brain_v9/main.py - internal trace emitter added; event emission in /chat endpoint added",
+      "tmp_agent/brain_v9/ui/index.html - clear local view button added; room/run coherence kept"
+    ],
+    "chat_to_trace_binding": true,
+    "server_side_internal_emit": true,
+    "frontend_post_required": false,
+    "room_run_coherence": true,
+    "real_turn_events": {
+      "user_request_received": true,
+      "routing_or_response_generated": true,
+      "tool_or_no_tool_status": true,
+      "response_completed": true
+    },
+    "workspace_reflects_current_turn": true,
+    "old_test_events_not_dominant": true,
+    "chat_not_broken": true,
+    "cot_safety": true,
+    "runtime_smoke": {
+      "brain_v9_reloaded": true,
+      "health_ok": true,
+      "chat_message_sent": true,
+      "response_received": true,
+      "trace_events_generated": true,
+      "trace_event_types_observed": ["thinking","status","status","decision"],
+      "titles_observed": ["User request received","Response generated","No tools executed","Response completed"],
+      "room_id_used": "vtc_live_binding_smoke",
+      "run_id_used": "chat_ui",
+      "event_count": 4
+    },
+  }
+}
