@@ -29,6 +29,7 @@ import re
 import shutil
 import subprocess
 import textwrap
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -1867,6 +1868,8 @@ class BrainSession:
         self._model_priority = "ollama"
         self._pending_continuation: Optional[Dict] = None
         self._pending_confirmed_action: Optional[Dict] = None
+        self._tool01_permission_grants: Dict[str, Dict] = {}
+        self._tool01_permission_counter: int = 0
         self.chat_metrics = get_chat_metrics()
         self.logger.info("BrainSession '%s' v4-unified lista", session_id)
 
@@ -1917,6 +1920,136 @@ class BrainSession:
                 duration_ms=(_time.monotonic() - _t0) * 1000,
             )
             return result
+
+        # TOOL-01A: deterministic governed real-tool router must run before
+        # policy/fastpath/LLM routing so explicit simple tool requests never
+        # fall through to templates, grounded_code_fastpath, or AgentLoop timeout.
+        tool01_result = await self._tool01_router(msg_stripped)
+        if tool01_result is not None:
+            if tool01_result.get("permission_required"):
+                perm = tool01_result
+                options_text = " | ".join([f"[{o.replace('_', ' ').title()}]" for o in perm.get("options", [])])
+                dev_block = (
+                    f"[DEV]\n"
+                    f"route=tool01_router\n"
+                    f"tool01_router_used=true\n"
+                    f"tool01_real=false\n"
+                    f"permission_required=true\n"
+                    f"permission_id={perm.get('permission_id')}\n"
+                    f"tool_name={perm.get('tool_name')}\n"
+                    f"risk_level={perm.get('risk_level')}\n"
+                    f"scope={perm.get('scope')}\n"
+                    f"options={perm.get('options')}\n"
+                    f"\n"
+                    f"Para ejecutar '{perm.get('tool_name')}' necesito tu permiso.\n"
+                    f"{options_text}"
+                )
+                result = {
+                    "success": True,
+                    "content": dev_block,
+                    "response": f"Necesito permiso para ejecutar {perm.get('tool_name')}. Opciones: {options_text}",
+                    "route": "tool01_router",
+                    "intent": "COMMAND",
+                    "tool01_router_used": True,
+                    "tool01_real": False,
+                    "permission_required": True,
+                    "permission_id": perm.get("permission_id"),
+                    "tool_name": perm.get("tool_name"),
+                    "risk_level": perm.get("risk_level"),
+                    "options": perm.get("options"),
+                    "blocked_by_policy": False,
+                    "fallback": False,
+                    "agent_status": "permission_pending",
+                    "model": "tool01_router",
+                    "model_used": "tool01_router",
+                    "agent_steps": 1,
+                }
+                await self._save_turn(message, result)
+                self.chat_metrics.record("tool01_router", True, (_time.monotonic() - _t0) * 1000)
+                self._emit_chat_completed(
+                    route="tool01_router",
+                    message=message,
+                    result=result,
+                    duration_ms=(_time.monotonic() - _t0) * 1000,
+                )
+                return self._maybe_dev_block(result)
+            ok = tool01_result.get("success", False)
+            blocked = tool01_result.get("blocked_by_policy", False)
+            notice = "Tool ejecutada realmente." if ok else ("Tool bloqueada por política." if blocked else "Tool falló.")
+            result = {
+                "success": ok,
+                "content": f"{notice}\n{json.dumps(tool01_result, indent=2, ensure_ascii=False)}",
+                "response": f"{notice}\n{json.dumps(tool01_result, indent=2, ensure_ascii=False)}",
+                "route": "tool01_router",
+                "intent": "COMMAND",
+                "tool01_router_used": True,
+                "tool01_real": True,
+                "tools_executed_count": 1,
+                "tool_name": tool01_result.get("tool_name"),
+                "blocked_by_policy": blocked,
+                "fallback": False,
+                "agent_status": "tool01_real" if ok else "tool01_blocked" if blocked else "tool01_failed",
+                "agent_status_timeout": False,
+                "model": "tool01_router",
+                "model_used": "tool01_router",
+                "agent_steps": 1,
+                "tools_executed": 1,
+                "tool_names": [tool01_result.get("tool_name")],
+                "tool_result": tool01_result,
+            }
+            await self._save_turn(message, result)
+            self.chat_metrics.record("tool01_router", ok, (_time.monotonic() - _t0) * 1000)
+            self._emit_chat_completed(
+                route="tool01_router",
+                message=message,
+                result=result,
+                duration_ms=(_time.monotonic() - _t0) * 1000,
+            )
+            return self._maybe_dev_block(result)
+
+        # TOOL-01B: Handle pending permission response from previous turn
+        if hasattr(self, '_pending_tool01_permission') and self._pending_tool01_permission:
+            perm_result = await self._tool01_handle_permission_response(msg_stripped)
+            if perm_result is not None:
+                self._pending_tool01_permission = None  # Clear pending after handling
+                ok = perm_result.get("success", False)
+                blocked = perm_result.get("blocked_by_policy", False) or perm_result.get("blocked_by_user", False)
+                if perm_result.get("permission_required"):
+                    # Another permission request came up (rare, recursive case)
+                    pass
+                else:
+                    notice = "Tool ejecutada realmente." if ok else ("Tool bloqueada por usuario." if blocked else "Tool falló.")
+                    result = {
+                        "success": ok,
+                        "content": f"{notice}\n{json.dumps(perm_result, indent=2, ensure_ascii=False)}",
+                        "response": notice,
+                        "route": "tool01_router",
+                        "intent": "COMMAND",
+                        "tool01_router_used": True,
+                        "tool01_real": ok,
+                        "tools_executed_count": 1 if ok else 0,
+                        "tool_name": perm_result.get("tool_name"),
+                        "blocked_by_policy": blocked,
+                        "blocked_by_user": perm_result.get("blocked_by_user", False),
+                        "fallback": False,
+                        "agent_status": "tool01_real" if ok else "tool01_blocked" if blocked else "tool01_failed",
+                        "agent_status_timeout": False,
+                        "model": "tool01_router",
+                        "model_used": "tool01_router",
+                        "agent_steps": 1,
+                        "tools_executed": 1 if ok else 0,
+                        "tool_names": [perm_result.get("tool_name")] if perm_result.get("tool_name") else [],
+                        "tool_result": perm_result,
+                    }
+                    await self._save_turn(message, result)
+                    self.chat_metrics.record("tool01_router", ok, (_time.monotonic() - _t0) * 1000)
+                    self._emit_chat_completed(
+                        route="tool01_router",
+                        message=message,
+                        result=result,
+                        duration_ms=(_time.monotonic() - _t0) * 1000,
+                    )
+                    return self._maybe_dev_block(result)
 
         # POLICY GATE: Interceptar queries conversacionales antes de otros procesamientos
         policy_decision = self._policy_route_decision(msg_stripped)
@@ -3970,7 +4103,307 @@ class BrainSession:
             f"(agent_status={status}). Respondo con el modelo LLM disponible."
         )
 
+    # ── TOOL-01 deterministic router (before AgentLoop) ─────────────────────
+    _TOOL01_ROUTER_PATTERNS = {
+        "health_check": [
+            r"\bhealth\b", r"\bestado de salud\b", r"\bhealth de brain\b",
+            r"\bcomprueba health\b", r"\bverifica health\b", r"\brevisa health\b",
+        ],
+        "git_status": [
+            r"\bgit status\b", r"\bestado del repo\b", r"\brepositorio\b.*\bestado\b",
+        ],
+        "list_directory": [
+            r"\blist[ae]?\s*dir\b", r"\blista\s*directorio\b", r"\bls\b",
+            r"\bdir\b", r"\blista\b.*\barchivos\b", r"\bmuestra\s*(?:archivos|carpeta|directorio)\b",
+        ],
+        "read_file": [
+            r"\bread\s*file\b", r"\blee\s*archivo\b", r"\bcat\b",
+            r"\bmuestra\s*archivo\b", r"\bcontenido de\b", r"\blee\b.*\b(?:lineas|líneas)\b",
+        ],
+    }
+
+    _TOOL01_PUBLIC_NAMES = {
+        "health_check": "runtime.health_check",
+        "git_status": "git.status",
+        "list_directory": "filesystem.list_dir",
+        "read_file": "filesystem.read_file",
+    }
+
+    _TOOL01_BLOCKED_PREFIXES = (
+        "memory/semantic",
+        "tmp_agent/strategies",
+        "tmp_agent/reports",
+    )
+
+    _TOOL01_LOW_RISK_TOOLS = frozenset({
+        "health_check", "git_status", "list_directory", "read_file"
+    })
+
+    _TOOL01_HIGH_RISK_TOOLS = frozenset({
+        "install", "write_code", "restart_service", "git_commit_push",
+        "pytest_broad", "py_compile_write"
+    })  # placeholder for future high-risk tools
+
+    def _tool01_get_risk_level(self, tool_name: str) -> str:
+        if tool_name in self._TOOL01_LOW_RISK_TOOLS:
+            return "low"
+        if tool_name in self._TOOL01_HIGH_RISK_TOOLS:
+            return "high"
+        return "medium"
+
+    def _tool01_has_permission(self, tool_name: str, scope: str = "") -> bool:
+        grant = self._tool01_permission_grants.get(tool_name)
+        if not grant:
+            return False
+        if scope and not scope.startswith(grant.get("scope", "")):
+            return False
+        return True
+
+    def _tool01_request_permission(self, tool_name: str, reason: str, scope: str = "", original_message: str = "") -> Dict:
+        self._tool01_permission_counter += 1
+        permission_id = f"tool01_perm_{self.session_id}_{self._tool01_permission_counter}"
+        risk = self._tool01_get_risk_level(tool_name)
+        options = ["allow_once", "deny"]
+        if risk == "low":
+            options.insert(1, "allow_session")
+        perm = {
+            "permission_required": True,
+            "permission_id": permission_id,
+            "tool_name": self._TOOL01_PUBLIC_NAMES.get(tool_name, tool_name),
+            "risk_level": risk,
+            "reason": reason,
+            "scope": scope or str(BASE_PATH),
+            "options": options,
+            "original_message": original_message,
+        }
+        # Store pending permission request so we can match later
+        self._tool01_permission_grants[tool_name] = {**perm, "granted": None}
+        return perm
+
+    def _tool01_approve_permission(self, permission_id: str, decision: str) -> Dict:
+        for tool_name, req in list(self._tool01_permission_grants.items()):
+            if req.get("permission_id") == permission_id:
+                if decision == "allow_once":
+                    req["granted"] = True
+                    req["grant_type"] = "allow_once"
+                    req["used"] = False
+                    return {"success": True, "decision": "allow_once", "tool_name": tool_name}
+                elif decision == "allow_session":
+                    self._tool01_permission_grants[tool_name] = {
+                        "granted": True,
+                        "grant_type": "allow_session",
+                        "scope": req.get("scope", str(BASE_PATH)),
+                        "expires": "session_end",
+                        "blocked_prefixes": list(self._TOOL01_BLOCKED_PREFIXES),
+                    }
+                    return {"success": True, "decision": "allow_session", "tool_name": tool_name}
+                elif decision == "deny":
+                    req["granted"] = False
+                    req["grant_type"] = "deny"
+                    return {"success": False, "decision": "deny", "blocked_by_user": True, "tool_name": tool_name}
+        return {"success": False, "error": "Permission ID not found"}
+
+    async def _tool01_router(self, message: str) -> Optional[Dict]:
+        """Deterministic router for governed real tools. Returns dict if matched, else None."""
+        import re
+        msg_lower = message.lower()
+        for tool_name, patterns in self._TOOL01_ROUTER_PATTERNS.items():
+            for pat in patterns:
+                if re.search(pat, msg_lower):
+                    # Permission gate check
+                    if not self._tool01_has_permission_grant(tool_name):
+                        public_name = self._TOOL01_PUBLIC_NAMES.get(tool_name, tool_name)
+                        reason = f"Tool '{public_name}' requiere permiso explicito antes de ejecutarse."
+                        perm = self._tool01_request_permission(tool_name, reason, original_message=message)
+                        self._pending_tool01_permission = perm
+                        return {
+                            "route": "tool01_router",
+                            "tool01_router_used": True,
+                            "tool01_real": False,
+                            "permission_required": True,
+                            **perm,
+                            "blocked_by_policy": False,
+                        }
+                    return await self._tool01_execute(tool_name, message)
+        return None
+
+    def _tool01_has_permission_grant(self, tool_name: str) -> bool:
+        grant = self._tool01_permission_grants.get(tool_name)
+        if not grant:
+            return False
+        if grant.get("granted") is not True:
+            return False
+        if grant.get("grant_type") == "allow_once" and grant.get("used") is True:
+            return False
+        return True
+
+    async def _tool01_handle_permission_response(self, message: str) -> Optional[Dict]:
+        """Handle user response to a permission request (allow_once, allow_session, deny)."""
+        # Check if we have a pending permission
+        perm = getattr(self, '_pending_tool01_permission', None)
+        if not perm:
+            return None
+        msg_lower = message.lower().strip()
+        # Map various user inputs to decisions
+        if any(x in msg_lower for x in ["allow_once", "allow once", "una vez", "solo una vez", "permitir una vez"]):
+            result = self._tool01_approve_permission(perm["permission_id"], "allow_once")
+            if result.get("success"):
+                # Execute the tool now
+                return await self._tool01_execute(result["tool_name"], message)
+            return result
+        elif any(x in msg_lower for x in ["allow_session", "allow for session", "permite sesion", "sesion completa", "toda la sesion"]):
+            # Only allow for low-risk
+            if perm.get("risk_level") != "low":
+                return {
+                    "success": False,
+                    "error": "allow_session solo disponible para tools de riesgo bajo.",
+                    "tool_name": perm.get("tool_name"),
+                    "blocked_by_policy": True,
+                }
+            result = self._tool01_approve_permission(perm["permission_id"], "allow_session")
+            if result.get("success"):
+                return await self._tool01_execute(result["tool_name"], message)
+            return result
+        elif any(x in msg_lower for x in ["deny", "rechazar", "no", "denegar", "cancelar"]):
+            result = self._tool01_approve_permission(perm["permission_id"], "deny")
+            return {
+                "success": False,
+                "blocked_by_user": True,
+                "tool_name": perm.get("tool_name"),
+                "decision": "deny",
+                **result,
+            }
+        return None
+
+    def _tool01_extract_path(self, message: str, default: str, require_file: bool = False) -> str:
+        suffix = r"(?:\.py|\.json|\.md|\.txt)" if require_file else r""
+        m = re.search(
+            rf"([A-Za-z]:[/\\][^\s\"']+{suffix}|tmp_agent[/\\][^\s\"']+{suffix}|brain_v9[/\\][^\s\"']+{suffix})",
+            message,
+        )
+        raw = m.group(1) if m else default
+        return raw.rstrip(".,;:)]+")
+
+    def _tool01_policy_check_path(self, raw_path: str, read_file: bool = False) -> Tuple[bool, str, Optional[Path]]:
+        p = Path(raw_path)
+        if not p.is_absolute():
+            p = BASE_PATH / raw_path
+        try:
+            resolved = p.resolve()
+            base = BASE_PATH.resolve()
+            rel = resolved.relative_to(base).as_posix().lower()
+        except Exception:
+            return False, f"Ruta fuera de BASE_PATH: {raw_path}", None
+        parts = {part.lower() for part in resolved.parts}
+        if rel == "nul" or "nul" in parts or any(rel == prefix or rel.startswith(prefix + "/") for prefix in self._TOOL01_BLOCKED_PREFIXES):
+            return False, f"Ruta bloqueada por política TOOL-01: {resolved}", resolved
+        if read_file and resolved.exists() and resolved.is_file() and resolved.stat().st_size > 2_000_000:
+            return False, f"Archivo excede limite TOOL-01 de 2MB: {resolved}", resolved
+        return True, "", resolved
+
+    def _tool01_write_evidence(self, result: Dict) -> Optional[str]:
+        try:
+            evidence_dir = BASE_PATH / "tmp_agent" / "real_tools_evidence"
+            evidence_dir.mkdir(parents=True, exist_ok=True)
+            stamp = datetime.utcnow().strftime("%Y%m%dT%H%M%S%fZ")
+            path = evidence_dir / f"tool01_router_{stamp}.json"
+            path.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")
+            return str(path)
+        except Exception:
+            return None
+
+    async def _tool01_execute(self, tool_name: str, message: str) -> Dict:
+        """Execute a TOOL-01 governed tool directly and return structured evidence."""
+        import time as _time
+        from brain_v9.agent.tools import build_standard_executor
+        if self._executor is None:
+            self._executor = build_standard_executor()
+        ex = self._executor
+        _t0 = _time.monotonic()
+        public_name = self._TOOL01_PUBLIC_NAMES.get(tool_name, tool_name)
+        result: Dict = {
+            "route": "tool01_router",
+            "tool01_router_used": True,
+            "tool01_real": True,
+            "tools_executed_count": 1,
+            "tool_name": public_name,
+            "internal_tool": tool_name,
+            "success": False,
+            "blocked_by_policy": False,
+            "fallback": False,
+            "agent_status_timeout": False,
+            "error": None,
+        }
+        try:
+            if tool_name == "health_check":
+                raw = await ex.execute("health_check")
+                result.update({"success": bool(raw.get("success")), "data": raw.get("data"), "error": raw.get("error"), "evidence": {"url": raw.get("url"), "status": (raw.get("data") or {}).get("status")}})
+            elif tool_name == "git_status":
+                raw = await ex.execute("git_status", path=".")
+                result.update({"success": bool(raw.get("success")), "stdout": raw.get("stdout"), "stderr": raw.get("stderr"), "returncode": raw.get("returncode"), "evidence": {"cwd": raw.get("cwd"), "stdout_preview": str(raw.get("stdout") or "")[:500]}})
+            elif tool_name == "list_directory":
+                path = self._tool01_extract_path(message, "tmp_agent/brain_v9")
+                allowed, reason, resolved = self._tool01_policy_check_path(path)
+                if not allowed:
+                    result.update({"success": False, "blocked_by_policy": True, "error": reason, "path": str(resolved or path)})
+                    result["duration_ms"] = round((_time.monotonic() - _t0) * 1000, 1)
+                    result["evidence_path"] = self._tool01_write_evidence(result)
+                    return result
+                raw = await ex.execute("list_directory", path=path)
+                entries = raw if isinstance(raw, list) else []
+                result.update({"success": True, "path": str(resolved), "entries": entries, "evidence": {"entry_count": len(entries), "sample": entries[:20]}})
+            elif tool_name == "read_file":
+                path = self._tool01_extract_path(message, "tmp_agent/brain_v9/core/llm.py", require_file=True)
+                allowed, reason, resolved = self._tool01_policy_check_path(path, read_file=True)
+                if not allowed:
+                    result.update({"success": False, "blocked_by_policy": True, "error": reason, "path": str(resolved or path)})
+                    result["duration_ms"] = round((_time.monotonic() - _t0) * 1000, 1)
+                    result["evidence_path"] = self._tool01_write_evidence(result)
+                    return result
+                raw = await ex.execute("read_file", path=path)
+                lines = str(raw).splitlines()
+                result.update({"success": True, "path": str(resolved), "preview": "\n".join(lines[:10]), "evidence": {"line_count_returned": min(10, len(lines)), "size_bytes": resolved.stat().st_size if resolved and resolved.exists() else None}})
+        except PermissionError as pe:
+            result.update({"success": False, "blocked_by_policy": True, "error": str(pe)})
+        except Exception as e:
+            result.update({"success": False, "error": str(e)})
+        result["duration_ms"] = round((_time.monotonic() - _t0) * 1000, 1)
+        result["real_tool_executed"] = True
+        result["evidence_path"] = self._tool01_write_evidence(result)
+        # Mark allow_once grant as used
+        grant = self._tool01_permission_grants.get(tool_name)
+        if grant and grant.get("grant_type") == "allow_once":
+            grant["used"] = True
+        return result
+
     async def _route_to_agent(self, message: str, model_priority: str) -> Dict:
+        # TOOL-01: try deterministic router first
+        router_result = await self._tool01_router(message)
+        if router_result is not None:
+            ok = router_result.get("success", False)
+            blocked = router_result.get("blocked_by_policy", False)
+            notice = "Tool ejecutada realmente." if ok else ("Tool bloqueada por política." if blocked else "Tool falló.")
+            payload = {
+                "success": ok,
+                "content": f"{notice}\n\n{json.dumps(router_result, indent=2, ensure_ascii=False)}",
+                "response": notice,
+                "route": "tool01_router",
+                "tool01_router_used": True,
+                "tool01_real": True,
+                "tools_executed_count": 1,
+                "tool_name": router_result.get("tool_name"),
+                "blocked_by_policy": blocked,
+                "fallback": False,
+                "model": "tool01_router",
+                "model_used": "tool01_router",
+                "agent_steps": 1,
+                "agent_status": "tool01_real" if ok else "tool01_blocked" if blocked else "tool01_failed",
+                "tools_executed": 1,
+                "tool_names": [router_result.get("tool_name")],
+                "tool_result": router_result,
+            }
+            return payload
+
         msg = message.lower()
         # Dashboard fastpath inside agent route
         if self._is_dashboard_query(msg):

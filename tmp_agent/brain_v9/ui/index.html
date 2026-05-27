@@ -150,6 +150,55 @@
   .approval-card .approval-result.ok { display: block; background: rgba(62,207,142,0.15); color: var(--green); }
   .approval-card .approval-result.err { display: block; background: rgba(240,96,96,0.15); color: var(--red); }
 
+  /* TOOL-01B permission card */
+  .tool01-permission-card {
+    margin-top: 12px; padding: 14px 16px; border-radius: 10px;
+    background: linear-gradient(135deg, #1e2140, #1a2a35);
+    border: 1px solid var(--amber);
+    animation: fadeIn .3s;
+  }
+  .tool01-permission-card .tool01-perm-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+    font-size: 13px; font-weight: 600; color: var(--amber);
+  }
+  .tool01-permission-card .tool01-perm-desc {
+    font-size: 13px; color: var(--text2); margin-bottom: 12px; line-height: 1.5;
+  }
+  .tool01-permission-card .tool01-perm-meta {
+    font-size: 11px; color: var(--text2); margin-bottom: 10px;
+    font-family: monospace;
+  }
+  .tool01-permission-card .tool01-perm-buttons {
+    display: flex; gap: 10px; flex-wrap: wrap;
+  }
+  .tool01-permission-card .btn-approve {
+    background: var(--green); color: #000; border: none; border-radius: 8px;
+    padding: 8px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: all .2s;
+  }
+  .tool01-permission-card .btn-approve:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .tool01-permission-card .btn-approve:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .tool01-permission-card .btn-session {
+    background: var(--accent2); color: #000; border: none; border-radius: 8px;
+    padding: 8px 20px; font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: all .2s;
+  }
+  .tool01-permission-card .btn-session:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .tool01-permission-card .btn-session:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .tool01-permission-card .btn-reject {
+    background: transparent; color: var(--red); border: 1px solid var(--red); border-radius: 8px;
+    padding: 8px 20px; font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: all .2s;
+  }
+  .tool01-permission-card .btn-reject:hover { background: rgba(240,96,96,0.1); }
+  .tool01-permission-card .btn-reject:disabled { opacity: 0.5; cursor: not-allowed; }
+  .tool01-permission-card .tool01-perm-result {
+    margin-top: 10px; padding: 8px 12px; border-radius: 6px; font-size: 13px;
+    display: none;
+  }
+  .tool01-permission-card .tool01-perm-result.ok { display: block; background: rgba(62,207,142,0.15); color: var(--green); }
+  .tool01-permission-card .tool01-perm-result.err { display: block; background: rgba(240,96,96,0.15); color: var(--red); }
+
   /* Input bar */
   .input-bar {
     background: var(--surface);
@@ -617,7 +666,18 @@ async function sendMessage() {
 
     addMsg('agent', data.response || data.result || data.content || data.error || '(sin respuesta)', meta);
 
-    // Render approval card if there's a pending action
+    // Render TOOL-01B permission gate card if permission_required
+    if (data.permission_required === true || data.permission_required === 'true') {
+      renderTool01PermissionCard(
+        data.permission_id,
+        data.tool_name,
+        data.risk_level,
+        data.options,
+        data.response || data.reason || 'Necesito permiso para ejecutar esta herramienta real.'
+      );
+    }
+
+    // Render legacy approval card if there's a pending action (backward compat)
     if (data.pending_action && data.pending_action.pending_id) {
       const pa = data.pending_action;
       renderApprovalCard(pa.pending_id, pa.tool, pa.risk, pa.description);
@@ -685,6 +745,66 @@ async function handleGateAction(action, pendingId, btn) {
     resultDiv.textContent = 'Error de conexion: ' + e.message;
     card.querySelectorAll('button').forEach(b => b.disabled = false);
     btn.textContent = action === 'approve' ? 'Aprobar' : 'Rechazar';
+  }
+}
+
+// ── TOOL-01B Permission Gate Card ──────────────────────────────────────────
+function renderTool01PermissionCard(permissionId, toolName, riskLevel, options, description) {
+  const wrap = document.getElementById('messages');
+  const card = document.createElement('div');
+  card.className = 'tool01-permission-card';
+  card.id = 'tool01-perm-' + permissionId;
+  card.innerHTML = `
+    <div class="tool01-perm-header">⚠ Herramienta real requiere permiso</div>
+    <div class="tool01-perm-desc">${escapeHtml(description)}</div>
+    <div class="tool01-perm-meta">
+      Tool: <strong>${escapeHtml(toolName)}</strong>  |  Riesgo: <strong>${escapeHtml(riskLevel)}</strong>  |  ID: ${escapeHtml(permissionId)}
+    </div>
+    <div class="tool01-perm-buttons" id="tool01-buttons-${permissionId}">
+      ${options.includes('allow_once') ? `<button class="btn-approve" onclick="handleTool01PermissionAction('allow_once','${permissionId}',this)">Allow once</button>` : ''}
+      ${options.includes('allow_session') ? `<button class="btn-session" onclick="handleTool01PermissionAction('allow_session','${permissionId}',this)">Allow for session</button>` : ''}
+      ${options.includes('deny') ? `<button class="btn-reject" onclick="handleTool01PermissionAction('deny','${permissionId}',this)">Deny</button>` : ''}
+    </div>
+    <div class="tool01-perm-result" id="tool01-result-${permissionId}"></div>
+  `;
+  wrap.appendChild(card);
+  wrap.scrollTop = wrap.scrollHeight;
+}
+
+async function handleTool01PermissionAction(decision, permissionId, btn) {
+  const card = document.getElementById('tool01-perm-' + permissionId);
+  const buttons = card.querySelectorAll('button');
+  buttons.forEach(b => b.disabled = true);
+  btn.textContent = decision === 'deny' ? 'Denegando...' : 'Aprobando...';
+
+  try {
+    const data = await api('/tool01/permission/approve', {
+      method: 'POST',
+      body: JSON.stringify({ session_id: sessionId, permission_id: permissionId, decision: decision }),
+    });
+    const resultDiv = document.getElementById('tool01-result-' + permissionId);
+    if (data.success) {
+      resultDiv.className = 'tool01-perm-result ok';
+      if (decision === 'deny') {
+        resultDiv.textContent = 'Permiso denegado.';
+      } else if (data.tool_executed) {
+        resultDiv.innerHTML = 'Tool ejecutada: <pre style="white-space:pre-wrap;word-break:break-word;">' + escapeHtml(JSON.stringify(data.tool_result, null, 2).substring(0, 600)) + '</pre>';
+      } else {
+        resultDiv.textContent = 'Permiso aprobado. Tool se ejecutará en la siguiente petición.';
+      }
+      card.querySelector('.tool01-perm-buttons').style.display = 'none';
+    } else {
+      resultDiv.className = 'tool01-perm-result err';
+      resultDiv.textContent = 'Error: ' + (data.error || 'unknown');
+      buttons.forEach(b => b.disabled = false);
+      btn.textContent = decision.replace('_', ' ');
+    }
+  } catch (e) {
+    const resultDiv = document.getElementById('tool01-result-' + permissionId);
+    resultDiv.className = 'tool01-perm-result err';
+    resultDiv.textContent = 'Error de conexión: ' + e.message;
+    buttons.forEach(b => b.disabled = false);
+    btn.textContent = decision.replace('_', ' ');
   }
 }
 

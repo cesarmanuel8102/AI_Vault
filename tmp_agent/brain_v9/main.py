@@ -859,6 +859,22 @@ class ChatResponse(BaseModel):
     model_used: Optional[str] = None
     success:    bool = True
     pending_action: Optional[dict] = None
+    permission_required: Optional[bool] = None
+    permission_id: Optional[str] = None
+    tool_name: Optional[str] = None
+    risk_level: Optional[str] = None
+    options: Optional[list] = None
+    tool01_real: Optional[bool] = None
+    tool01_router_used: Optional[bool] = None
+    blocked_by_policy: Optional[bool] = None
+    blocked_by_user: Optional[bool] = None
+    tool_result: Optional[dict] = None
+
+
+class Tool01PermissionRequest(BaseModel):
+    session_id: str
+    permission_id: str
+    decision: str  # allow_once, allow_session, deny
 
 
 class ChangeRequest(BaseModel):
@@ -1664,9 +1680,7 @@ Las restricciones se reactivaran en 60 minutos o al escribir:
                 "description": content_str.split("\n")[0] if "\n" in content_str else content_str[:200],
             }
 
-    return ChatResponse(response=content_str,
-                        session_id=req.session_id, model_used=result.get("model"), success=result.get("success",False),
-                        pending_action=pending_action)
+    return ChatResponse(response=content_str, session_id=req.session_id, model_used=result.get("model"), success=result.get("success", False), pending_action=pending_action, permission_required=result.get("permission_required"), permission_id=result.get("permission_id"), tool_name=result.get("tool_name"), risk_level=result.get("risk_level"), options=result.get("options"), tool01_real=result.get("tool01_real"), tool01_router_used=result.get("tool01_router_used"), blocked_by_policy=result.get("blocked_by_policy"), blocked_by_user=result.get("blocked_by_user"), tool_result=result.get("tool_result"))
 
 @app.delete("/sessions/{session_id}")
 async def delete_session(session_id: str):
@@ -1712,6 +1726,83 @@ async def gate_reject(pending_id: str):
     gate = get_gate()
     ok = gate.reject(pending_id)
     return {"success": ok, "pending_id": pending_id}
+
+
+# ── TOOL-01B Permission Gate API ───────────────────────────────────────────
+
+@app.post("/tool01/permission/approve")
+async def tool01_permission_approve(req: Tool01PermissionRequest):
+    """Approve a TOOL-01 permission request via API."""
+    session = active_sessions.get(req.session_id)
+    if not session:
+        return {"success": False, "error": "Session not found"}
+    result = session._tool01_approve_permission(req.permission_id, req.decision)
+    if result.get("success"):
+        # Buscar original_message para ejecutar la tool
+        tool_name = result.get("tool_name", "")
+        # mapear nombre público a interno
+        for internal_name, public_name in session._TOOL01_PUBLIC_NAMES.items():
+            if public_name == tool_name:
+                tool_name = internal_name
+                break
+        original_message = ""
+        for grant_info in session._tool01_permission_grants.values():
+            if grant_info.get("permission_id") == req.permission_id:
+                original_message = grant_info.get("original_message", "")
+                break
+        # Ejecutar la tool directamente si es allow_once o allow_session
+        tool_result = None
+        if req.decision in ("allow_once", "allow_session") and tool_name in session._TOOL01_ROUTER_PATTERNS:
+            tool_result = await session._tool01_execute(tool_name, original_message)
+        return {
+            "success": True,
+            "decision": result["decision"],
+            "tool_name": result.get("tool_name"),
+            "tool_executed": tool_result is not None,
+            "tool_result": tool_result,
+            "message": f"Permission {result['decision']} granted and tool executed for {result.get('tool_name')}",
+        }
+    if result.get("blocked_by_user"):
+        return {
+            "success": False,
+            "blocked_by_user": True,
+            "decision": result.get("decision"),
+            "tool_name": result.get("tool_name"),
+            "message": f"Permission denied for {result.get('tool_name')}",
+        }
+    return {"success": False, "error": result.get("error", "Unknown error")}
+
+
+@app.get("/tool01/permission/pending/{session_id}")
+async def tool01_permission_pending(session_id: str):
+    """Get pending TOOL-01 permission for a session."""
+    session = active_sessions.get(session_id)
+    if not session:
+        return {"success": False, "error": "Session not found"}
+    perm = getattr(session, '_pending_tool01_permission', None)
+    if not perm:
+        return {"success": True, "permission_required": False}
+    return {"success": True, "permission_required": True, **perm}
+
+
+@app.get("/tool01/permission/grants/{session_id}")
+async def tool01_permission_grants(session_id: str):
+    """List active TOOL-01 permission grants for a session."""
+    session = active_sessions.get(session_id)
+    if not session:
+        return {"success": False, "error": "Session not found"}
+    grants = session._tool01_permission_grants
+    # Sanitize: remove internal objects
+    safe_grants = {}
+    for tool_name, grant in grants.items():
+        safe_grants[tool_name] = {
+            "granted": grant.get("granted"),
+            "grant_type": grant.get("grant_type"),
+            "scope": grant.get("scope"),
+            "blocked_prefixes": grant.get("blocked_prefixes"),
+        }
+    return {"success": True, "grants": safe_grants}
+
 
 @app.delete("/sessions/{session_id}/memory")
 async def clear_memory(session_id: str, memory_type: str = "short"):

@@ -1,0 +1,17 @@
+{
+  "patterns": {
+    "renderTool01PermissionCard": true,
+    "handleTool01PermissionAction": true,
+    "POST_tool01_permission_approve": true,
+    "Allow_once": true,
+    "Allow_for_session": true,
+    "Deny": true,
+    "tool01_permission_card_class": true,
+    "tool01_perm_result": true,
+    "sessionId": true,
+    "render_after_permission_required": true
+  },
+  "all_present": true,
+  "static_validation": "pass",
+  "browser_smoke": "not_available"
+}

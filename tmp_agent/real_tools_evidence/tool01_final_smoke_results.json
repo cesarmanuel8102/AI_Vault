@@ -1,0 +1,200 @@
+{
+  "A": {
+    "response": "[DEV]\nroute=tool01_router\ntool01_router_used=true\ntool01_real=false\npermission_required=true\npermission_id=tool01_perm_tool01_final_smoke_1\ntool_name=filesystem.read_file\nrisk_level=low\nscope=C:\\AI_VAULT\noptions=['allow_once', 'allow_session', 'deny']\n\nPara ejecutar 'filesystem.read_file' necesito tu permiso.\n[Allow Once] | [Allow Session] | [Deny]\n\n---\n[DEV] route=tool01_router | intent=COMMAND | model=tool01_router | success=True | steps=1 status=permission_pending",
+    "session_id": "tool01_final_smoke",
+    "model_used": "tool01_router",
+    "success": true,
+    "pending_action": null,
+    "permission_required": true,
+    "permission_id": "tool01_perm_tool01_final_smoke_1",
+    "tool_name": "filesystem.read_file",
+    "risk_level": "low",
+    "options": [
+      "allow_once",
+      "allow_session",
+      "deny"
+    ],
+    "tool01_real": false,
+    "tool01_router_used": true,
+    "blocked_by_policy": false,
+    "blocked_by_user": null,
+    "tool_result": null
+  },
+  "B": {
+    "success": true,
+    "decision": "allow_once",
+    "tool_name": "read_file",
+    "tool_executed": true,
+    "tool_result": {
+      "route": "tool01_router",
+      "tool01_router_used": true,
+      "tool01_real": true,
+      "tools_executed_count": 1,
+      "tool_name": "filesystem.read_file",
+      "internal_tool": "read_file",
+      "success": true,
+      "blocked_by_policy": false,
+      "fallback": false,
+      "agent_status_timeout": false,
+      "error": null,
+      "path": "C:\\AI_VAULT\\tmp_agent\\brain_v9\\core\\llm.py",
+      "preview": "\"\"\"\nBrain Chat V9 — LLMManager v3\n==============================\nChanges from v2:\n  - Migrated Ollama from /api/generate to /api/chat (structured messages)\n  - Added token estimation (estimate_tokens / estimate_messages_tokens)\n  - Dynamic num_ctx: expands context window when prompt needs it (within VRAM budget)\n  - Removed dead code: deepseek32b (never in any chain), MODEL_PRIORITY unused\n  - _fmt_tools now returns structured text for system prompt injection\n\"\"\"",
+      "evidence": {
+        "line_count_returned": 10,
+        "size_bytes": 48822
+      },
+      "duration_ms": 15.0,
+      "real_tool_executed": true,
+      "evidence_path": "C:\\AI_VAULT\\tmp_agent\\real_tools_evidence\\tool01_router_20260527T042524634849Z.json"
+    },
+    "message": "Permission allow_once granted and tool executed for read_file"
+  },
+  "C": {
+    "response": "[DEV]\nroute=tool01_router\ntool01_router_used=true\ntool01_real=false\npermission_required=true\npermission_id=tool01_perm_tool01_final_smoke_2\ntool_name=filesystem.read_file\nrisk_level=low\nscope=C:\\AI_VAULT\noptions=['allow_once', 'allow_session', 'deny']\n\nPara ejecutar 'filesystem.read_file' necesito tu permiso.\n[Allow Once] | [Allow Session] | [Deny]\n\n---\n[DEV] route=tool01_router | intent=COMMAND | model=tool01_router | success=True | steps=1 status=permission_pending",
+    "session_id": "tool01_final_smoke",
+    "model_used": "tool01_router",
+    "success": true,
+    "pending_action": null,
+    "permission_required": true,
+    "permission_id": "tool01_perm_tool01_final_smoke_2",
+    "tool_name": "filesystem.read_file",
+    "risk_level": "low",
+    "options": [
+      "allow_once",
+      "allow_session",
+      "deny"
+    ],
+    "tool01_real": false,
+    "tool01_router_used": true,
+    "blocked_by_policy": false,
+    "blocked_by_user": null,
+    "tool_result": null
+  },
+  "D": {
+    "success": true,
+    "decision": "allow_session",
+    "tool_name": "read_file",
+    "tool_executed": true,
+    "tool_result": {
+      "route": "tool01_router",
+      "tool01_router_used": true,
+      "tool01_real": true,
+      "tools_executed_count": 1,
+      "tool_name": "filesystem.read_file",
+      "internal_tool": "read_file",
+      "success": true,
+      "blocked_by_policy": false,
+      "fallback": false,
+      "agent_status_timeout": false,
+      "error": null,
+      "path": "C:\\AI_VAULT\\tmp_agent\\brain_v9\\core\\llm.py",
+      "preview": "\"\"\"\nBrain Chat V9 — LLMManager v3\n==============================\nChanges from v2:\n  - Migrated Ollama from /api/generate to /api/chat (structured messages)\n  - Added token estimation (estimate_tokens / estimate_messages_tokens)\n  - Dynamic num_ctx: expands context window when prompt needs it (within VRAM budget)\n  - Removed dead code: deepseek32b (never in any chain), MODEL_PRIORITY unused\n  - _fmt_tools now returns structured text for system prompt injection\n\"\"\"",
+      "evidence": {
+        "line_count_returned": 10,
+        "size_bytes": 48822
+      },
+      "duration_ms": 0.0,
+      "real_tool_executed": true,
+      "evidence_path": "C:\\AI_VAULT\\tmp_agent\\real_tools_evidence\\tool01_router_20260527T042524684162Z.json"
+    },
+    "message": "Permission allow_session granted and tool executed for read_file"
+  },
+  "E": {
+    "response": "Tool ejecutada realmente.\n{\n  \"route\": \"tool01_router\",\n  \"tool01_router_used\": true,\n  \"tool01_real\": true,\n  \"tools_executed_count\": 1,\n  \"tool_name\": \"filesystem.read_file\",\n  \"internal_tool\": \"read_file\",\n  \"success\": true,\n  \"blocked_by_policy\": false,\n  \"fallback\": false,\n  \"agent_status_timeout\": false,\n  \"error\": null,\n  \"path\": \"C:\\\\AI_VAULT\\\\tmp_agent\\\\brain_v9\\\\core\\\\llm.py\",\n  \"preview\": \"\\\"\\\"\\\"\\nBrain Chat V9 — LLMManager v3\\n==============================\\nChanges from v2:\\n  - Migrated Ollama from /api/generate to /api/chat (structured messages)\\n  - Added token estimation (estimate_tokens / estimate_messages_tokens)\\n  - Dynamic num_ctx: expands context window when prompt needs it (within VRAM budget)\\n  - Removed dead code: deepseek32b (never in any chain), MODEL_PRIORITY unused\\n  - _fmt_tools now returns structured text for system prompt injection\\n\\\"\\\"\\\"\",\n  \"evidence\": {\n    \"line_count_returned\": 10,\n    \"size_bytes\": 48822\n  },\n  \"duration_ms\": 0.0,\n  \"real_tool_executed\": true,\n  \"evidence_path\": \"C:\\\\AI_VAULT\\\\tmp_agent\\\\real_tools_evidence\\\\tool01_router_20260527T042524717398Z.json\"\n}\n\n---\n[DEV] route=tool01_router | intent=COMMAND | model=tool01_router | success=True | steps=1 status=tool01_real",
+    "session_id": "tool01_final_smoke",
+    "model_used": "tool01_router",
+    "success": true,
+    "pending_action": null,
+    "permission_required": null,
+    "permission_id": null,
+    "tool_name": "filesystem.read_file",
+    "risk_level": null,
+    "options": null,
+    "tool01_real": true,
+    "tool01_router_used": true,
+    "blocked_by_policy": false,
+    "blocked_by_user": null,
+    "tool_result": {
+      "route": "tool01_router",
+      "tool01_router_used": true,
+      "tool01_real": true,
+      "tools_executed_count": 1,
+      "tool_name": "filesystem.read_file",
+      "internal_tool": "read_file",
+      "success": true,
+      "blocked_by_policy": false,
+      "fallback": false,
+      "agent_status_timeout": false,
+      "error": null,
+      "path": "C:\\AI_VAULT\\tmp_agent\\brain_v9\\core\\llm.py",
+      "preview": "\"\"\"\nBrain Chat V9 — LLMManager v3\n==============================\nChanges from v2:\n  - Migrated Ollama from /api/generate to /api/chat (structured messages)\n  - Added token estimation (estimate_tokens / estimate_messages_tokens)\n  - Dynamic num_ctx: expands context window when prompt needs it (within VRAM budget)\n  - Removed dead code: deepseek32b (never in any chain), MODEL_PRIORITY unused\n  - _fmt_tools now returns structured text for system prompt injection\n\"\"\"",
+      "evidence": {
+        "line_count_returned": 10,
+        "size_bytes": 48822
+      },
+      "duration_ms": 0.0,
+      "real_tool_executed": true,
+      "evidence_path": "C:\\AI_VAULT\\tmp_agent\\real_tools_evidence\\tool01_router_20260527T042524717398Z.json"
+    }
+  },
+  "F1": {
+    "response": "[DEV]\nroute=tool01_router\ntool01_router_used=true\ntool01_real=false\npermission_required=true\npermission_id=tool01_perm_tool01_final_smoke_deny_1\ntool_name=git.status\nrisk_level=low\nscope=C:\\AI_VAULT\noptions=['allow_once', 'allow_session', 'deny']\n\nPara ejecutar 'git.status' necesito tu permiso.\n[Allow Once] | [Allow Session] | [Deny]\n\n---\n[DEV] route=tool01_router | intent=COMMAND | model=tool01_router | success=True | steps=1 status=permission_pending",
+    "session_id": "tool01_final_smoke_deny",
+    "model_used": "tool01_router",
+    "success": true,
+    "pending_action": null,
+    "permission_required": true,
+    "permission_id": "tool01_perm_tool01_final_smoke_deny_1",
+    "tool_name": "git.status",
+    "risk_level": "low",
+    "options": [
+      "allow_once",
+      "allow_session",
+      "deny"
+    ],
+    "tool01_real": false,
+    "tool01_router_used": true,
+    "blocked_by_policy": false,
+    "blocked_by_user": null,
+    "tool_result": null
+  },
+  "F2": {
+    "success": false,
+    "blocked_by_user": true,
+    "decision": "deny",
+    "tool_name": "git_status",
+    "message": "Permission denied for git_status"
+  },
+  "G": {
+    "response": "Tool bloqueada por política.\n{\n  \"route\": \"tool01_router\",\n  \"tool01_router_used\": true,\n  \"tool01_real\": true,\n  \"tools_executed_count\": 1,\n  \"tool_name\": \"filesystem.read_file\",\n  \"internal_tool\": \"read_file\",\n  \"success\": false,\n  \"blocked_by_policy\": true,\n  \"fallback\": false,\n  \"agent_status_timeout\": false,\n  \"error\": \"Ruta bloqueada por política TOOL-01: C:\\\\AI_VAULT\\\\memory\\\\semantic\\\\semantic_memory.json\",\n  \"path\": \"C:\\\\AI_VAULT\\\\memory\\\\semantic\\\\semantic_memory.json\",\n  \"duration_ms\": 0.0,\n  \"evidence_path\": \"C:\\\\AI_VAULT\\\\tmp_agent\\\\real_tools_evidence\\\\tool01_router_20260527T042524796037Z.json\"\n}\n\n---\n[DEV] route=tool01_router | intent=COMMAND | model=tool01_router | success=False | steps=1 status=tool01_blocked",
+    "session_id": "tool01_final_smoke",
+    "model_used": "tool01_router",
+    "success": false,
+    "pending_action": null,
+    "permission_required": null,
+    "permission_id": null,
+    "tool_name": "filesystem.read_file",
+    "risk_level": null,
+    "options": null,
+    "tool01_real": true,
+    "tool01_router_used": true,
+    "blocked_by_policy": true,
+    "blocked_by_user": null,
+    "tool_result": {
+      "route": "tool01_router",
+      "tool01_router_used": true,
+      "tool01_real": true,
+      "tools_executed_count": 1,
+      "tool_name": "filesystem.read_file",
+      "internal_tool": "read_file",
+      "success": false,
+      "blocked_by_policy": true,
+      "fallback": false,
+      "agent_status_timeout": false,
+      "error": "Ruta bloqueada por política TOOL-01: C:\\AI_VAULT\\memory\\semantic\\semantic_memory.json",
+      "path": "C:\\AI_VAULT\\memory\\semantic\\semantic_memory.json",
+      "duration_ms": 0.0,
+      "evidence_path": "C:\\AI_VAULT\\tmp_agent\\real_tools_evidence\\tool01_router_20260527T042524796037Z.json"
+    }
+  }
+}

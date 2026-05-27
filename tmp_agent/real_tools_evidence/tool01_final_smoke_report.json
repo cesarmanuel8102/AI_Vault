@@ -1,0 +1,19 @@
+{
+  "head_initial": "6ee95ff2",
+  "tests": {
+    "test_tool_permission_gate": "8 passed",
+    "test_real_tools_execution": "7 passed",
+    "test_chat_routing": "33 passed",
+    "test_endpoints_auth": "8 passed",
+    "test_cloud_first_model_policy": "8 passed",
+    "test_agent_non_blocking_timeout": "7 passed",
+    "test_agent_fallback": "7 passed"
+  },
+  "smoke_backend": "passed (A-G)",
+  "smoke_ui": {
+    "static_validation": "pass",
+    "browser_smoke": "not_available"
+  },
+  "protected_status": "memory/semantic and tmp_agent/strategies modified but NOT staged",
+  "final_decision": "PASS"
+}

@@ -1,0 +1,63 @@
+{
+  "audit_version": "TOOL-01B-FASE1",
+  "timestamp": "2026-05-26",
+  "files_audited": [
+    "tmp_agent/brain_v9/core/session.py",
+    "tmp_agent/brain_v9/agent/tools.py",
+    "tmp_agent/brain_v9/main.py",
+    "tests/integration/test_real_tools_execution.py"
+  ],
+  "findings": {
+    "router_location": "BrainSession._tool01_router() @ session.py:4045",
+    "execution_location": "BrainSession._tool01_execute() @ session.py:4092",
+    "permission_gate_exists": false,
+    "current_behavior": "_tool01_router detects intent → _tool01_execute runs tool immediately WITHOUT user permission prompt",
+    "metadata_in_response": [
+      "route=tool01_router",
+      "tool01_router_used=true",
+      "tool01_real=true",
+      "tools_executed_count=1",
+      "tool_name",
+      "blocked_by_policy",
+      "evidence_path"
+    ],
+    "missing_metadata": [
+      "permission_state",
+      "risk_level",
+      "permission_id",
+      "options (allow_once, allow_session, deny)"
+    ],
+    "ui_status": {
+      "buttons_available": false,
+      "ui_framework": "Static HTML (index.html / dashboard.html)",
+      "chat_component": "FastAPI endpoint /chat returning JSON with ChatResponse model",
+      "pending_action_field_exists_in_ChatResponse": true,
+      "pending_action_current_usage": "Used for generic pending_action extraction, NOT for permission gate"
+    },
+    "approval_structure_reusable": false,
+    "old_approval_system": "Exists in 00_identity/chat_brain_v7/brain_chat_v8.py (PendingAction class) but is NOT imported or used in brain_v9",
+    "protected_paths_enforced": true,
+    "protected_paths_location": "_TOOL01_BLOCKED_PREFIXES in session.py and _is_tool01_protected_path() in tools.py",
+    "blocked_prefixes": [
+      "memory/semantic",
+      "tmp_agent/strategies",
+      "tmp_agent/reports",
+      "nul"
+    ]
+  },
+  "recommendations": {
+    "insert_permission_gate": "Between _tool01_router intent detection and _tool01_execute actual execution",
+    "backend_changes": [
+      "Add _tool01_permission_grants dict to BrainSession",
+      "Add _tool01_request_permission() method",
+      "Add _tool01_approve_permission() method",
+      "Modify _tool01_execute to check grants first",
+      "Add risk_level classification per tool"
+    ],
+    "ui_changes": [
+      "Return permission_required=true in ChatResponse when pending",
+      "Include permission_id, options in response",
+      "If UI cannot render buttons, use textual fallback with API endpoint to approve"
+    ]
+  }
+}

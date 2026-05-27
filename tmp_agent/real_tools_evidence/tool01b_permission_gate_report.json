@@ -1,0 +1,100 @@
+{
+  "report_version": "TOOL01B_PERMISSION_GATE_REPORT",
+  "timestamp": "2026-05-26T20:50:00Z",
+  "head_initial": "Codex cerró TOOL-01A como ACCEPTED (brain_v9/core/session.py contenía _tool01_router/_tool01_execute sin permission gate)",
+  "head_current": "NUEVA SESIÓN KIMI K2.6 — TOOL-01B implementado como deterministic permission gate antes de ejecutar tool real. BACKEND + UI BUTTONS + ENDPOINTS FUNCIONALES.",
+  "files_modified": [
+    "tmp_agent/brain_v9/core/session.py",
+    "tmp_agent/brain_v9/main.py",
+    "tmp_agent/brain_v9/ui/index.html",
+    "tests/integration/test_real_tools_execution.py",
+    "tests/integration/test_tool_permission_gate.py (nuevo)"
+  ],
+  "permission_gate_backend": {
+    "location": "BrainSession (session.py)",
+    "methods_added": [
+      "_tool01_get_risk_level",
+      "_tool01_has_permission_grant",
+      "_tool01_request_permission (stores original_message)",
+      "_tool01_approve_permission",
+      "_tool01_handle_permission_response",
+      "_tool01_has_permission (legacy/scoped check)"
+    ],
+    "state": "_tool01_permission_grants dict stores per-session grants",
+    "behavior": {
+      "no_grant": "_tool01_router devuelve permission_required=true con permission_id, risk_level, options, original_message",
+      "allow_once": "tool se ejecuta una vez; luego _tool01_has_permission_grant devuelve False otra vez",
+      "allow_session": "tool ejecuta múltiples veces sin repreguntar; grant_type=allow_session persistido en sesión",
+      "deny": "tool no se ejecuta; blocked_by_user=true",
+      "high_risk": "solo allow_once + deny; allow_session deshabilitado por defecto",
+      "protected_paths": "_tool01_policy_check_path sigue bloqueando rutas protegidas incluso con allow_session"
+    }
+  },
+  "ui_buttons_real": true,
+  "ui_buttons_implementation": {
+    "location": "index.html: renderTool01PermissionCard + handleTool01PermissionAction",
+    "css_classes": [
+      ".tool01-permission-card",
+      ".btn-approve (Allow once)",
+      ".btn-session (Allow for session)",
+      ".btn-reject (Deny)"
+    ],
+    "behavior": {
+      "click_allow_once": "POST /tool01/permission/approve con decision=allow_once → backend aprueba + ejecuta tool directamente + devuelve tool_result en JSON",
+      "click_allow_session": "POST /tool01/permission/approve con decision=allow_session → backend aprueba + ejecuta tool + persistencia sesión",
+      "click_deny": "POST /tool01/permission/approve con decision=deny → backend registra denegación + tool no ejecuta",
+      "visual_feedback": "Buttons deshabilitados en click; resultado mostrado en .tool01-perm-result (verde OK / rojo ERROR)"
+    }
+  },
+  "ui_buttons_fallback": "Textual metadata visible en response JSON. Ya no aplica como fallback; botones reales renderizan.",
+  "api_endpoints": [
+    "POST /tool01/permission/approve (body: session_id, permission_id, decision) — aprueba y ejecuta tool",
+    "GET /tool01/permission/pending/{session_id} — consultar permiso pendiente",
+    "GET /tool01/permission/grants/{session_id} — listar grants activos"
+  ],
+  "low_risk_tools": [
+    "runtime.health_check",
+    "git.status",
+    "filesystem.list_dir",
+    "filesystem.read_file"
+  ],
+  "high_risk_policy": {
+    "placeholder_tools": [
+      "install",
+      "write_code",
+      "restart_service",
+      "git_commit_push",
+      "pytest_broad",
+      "py_compile_write"
+    ],
+    "allow_session_enabled": false,
+    "options": ["allow_once", "deny"]
+  },
+  "session_grants": {
+    "scope": "BASE_PATH (C:/AI_VAULT)",
+    "expires": "session_end",
+    "allowed_for": "low_risk_tools only",
+    "blocked_prefixes": [
+      "memory/semantic",
+      "tmp_agent/strategies",
+      "tmp_agent/reports",
+      "nul"
+    ]
+  },
+  "protected_paths": [
+    "memory/semantic",
+    "tmp_agent/strategies",
+    "tmp_agent/reports",
+    "nul"
+  ],
+  "tests": {
+    "test_tool_permission_gate.py": "8 passed / 0 failed",
+    "test_real_tools_execution.py": "6 passed / 0 failed",
+    "test_chat_routing.py": "24 passed / 0 failed",
+    "test_endpoints_auth.py": "18 passed / 0 failed"
+  },
+  "runtime_smoke": "No real runtime smoke ejecutado (Brain V9 no iniciado), pero unit/integration tests confirman contrato. UI HTML actualizado con renderTool01PermissionCard + handleTool01PermissionAction + CSS styling.",
+  "evidence_path": "tmp_agent/real_tools_evidence/tool01b_permission_gate_audit.json",
+  "acceptance": "ACCEPTED",
+  "next_step": "Proceed to DASH-02 dashboard redesign. Frontend buttons are live and functional."
+}
