@@ -1,0 +1,39 @@
+{
+  "VTC_AUDIT": {
+    "timestamp": "2026-05-27T08:40:00+00:00",
+    "head": "80c919f3",
+    "method": "grep + targeted reads of main.py, session.py, and UI files",
+    "files_reviewed": [
+      "tmp_agent/brain_v9/main.py",
+      "tmp_agent/brain_v9/core/session.py",
+      "tmp_agent/brain_v9/ui/index.html",
+      "tmp_agent/brain_v9/ui/dashboard.html"
+    ],
+    "existing_ui": {
+      "index.html": "Brain Chat V9 UI (chat interface, 1765 lines). Already contains modular JS, event listeners, and a decision tree display. DOM-based, single-page app.",
+      "dashboard.html": "AI_VAULT Command Center (1110 lines). Full dashboard with WebSocket-like polling capability. Uses Chart.js.",
+      "favicon.svg": "Present in /ui directory."
+    },
+    "existing_events": {
+      "audit_log": "_pad_audit() in main.py (line 948) writes to C:/AI_VAULT/.dev_auth/god_audit.jsonl — used for PAD activity, not agent traces.",
+      "logging": "Uses standard Python logging, unstructured.",
+      "event_bus": "brain_v9.core.event_bus referenced but not traceable to agent actions."
+    },
+    "missing": [
+      "No SSE endpoint for real-time streaming",
+      "No EventSource in UI for live trace events",
+      "No structured trace persistence (ndjson format)",
+      "No room-based trace isolation",
+      "No run_id tracking for agent sessions"
+    ],
+    "design_decisions": {
+      "room_id": "Session UUID from BrainSession to identify an agent run",
+      "run_id": "Transaction ID or natural run identifier (e.g., 'phase_265_execution')",
+      "trace_format": "ndjson with typed events, no raw_chain_of_thought",
+      "persistence": "tmp_agent/state/rooms/{room_id}/agent_runs/{run_id}/trace.ndjson",
+      "sse_format": "id:{ts}\nevent:{type}\ndata:{json}\n\n"
+    },
+    "protected_touched": false,
+    "code_modified": false
+  }
+}

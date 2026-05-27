@@ -1,0 +1,20 @@
+{
+  "VTC_BASELINE": {
+    "timestamp": "2026-05-27T08:30:00+00:00",
+    "head": "80c919f3",
+    "branch": "codex/own-capital-sustainable-return",
+    "origin_head": "80c919f3",
+    "scope": "Agent Visual Trace Console v1",
+    "rules": "NO commit, NO push, NO protected touched",
+    "excluded_paths": [
+      "memory/semantic",
+      "tmp_agent/strategies",
+      "tmp_agent/reports",
+      "nul",
+      "CEI",
+      "FDOT",
+      "trading",
+      "DASH-V2-MOUNT"
+    ]
+  }
+}
