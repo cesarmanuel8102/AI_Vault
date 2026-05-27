@@ -1,0 +1,27 @@
+{
+  "read_only": true,
+  "dry_run_only": true,
+  "semantic_write_blocked": true,
+  "promotion_blocked": true,
+  "secrets_safe": true,
+  "token_source": "env_var_only",
+  "token_masking": true,
+  "no_hardcoded_secrets": true,
+  "no_github_write_apis": true,
+  "no_semantic_memory_writes": true,
+  "evidence_bundle_generated": true,
+  "fake_opener_supported": true,
+  "github_api_endpoint": "GET /repos/{owner}/{repo}/git/trees/{branch}?recursive=1 (read-only tree)",
+  "notes": [
+    "GITHUB_WRITE_ALLOWED = False (hardcoded)",
+    "SEMANTIC_WRITE_ALLOWED = False (hardcoded)",
+    "PROMOTION_ALLOWED = False (hardcoded)",
+    "DRY_RUN_ONLY = True (hardcoded)",
+    "Token read only from GITHUB_TOKEN env var",
+    "Token masked in logs (mask_token function)",
+    "No hardcoded secrets in source code",
+    "No write APIs used (only tree read)",
+    "No SemanticMemory writes",
+    "Evidence bundle is read-only audit artifact"
+  ]
+}

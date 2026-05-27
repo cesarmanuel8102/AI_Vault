@@ -1,0 +1,30 @@
+{
+  "P2F_GITHUB_CONNECTOR_REPORT": {
+    "head": "4f23958d",
+    "files_reviewed": [
+      "brain/github_source_connector.py",
+      "docs/P2F_GITHUB_SOURCE_CONNECTOR.md",
+      "tests/unit/test_github_source_connector.py",
+      "tests/smoke/smoke_github_source_connector_dry_run.py"
+    ],
+    "safety_contract": {
+      "read_only": true,
+      "dry_run_only": true,
+      "semantic_write_blocked": true,
+      "promotion_blocked": true,
+      "secrets_safe": true
+    },
+    "tests": {
+      "py_compile": "ok",
+      "unit": "31 passed",
+      "smoke": "passed"
+    },
+    "risks": [
+      "Low: urllib.request.urlopen real call possible if opener not provided (but DRY_RUN_ONLY and read-only endpoint)",
+      "Low: No network isolation in unit tests beyond fake opener (acceptable for dry-run test)",
+      "None: No secrets, no writes, no promotion"
+    ],
+    "recommendation": "ACCEPTED",
+    "next_step": "Autorizar commit/push SOLO de P2-F files + evidence"
+  }
+}
