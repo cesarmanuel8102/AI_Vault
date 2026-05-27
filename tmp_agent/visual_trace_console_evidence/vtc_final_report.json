@@ -1,70 +1,56 @@
 {
-  "AGENT_VISUAL_TRACE_CONSOLE_V1_REPORT": {
-    "head": "80c919f3",
+  "AGENT_VISUAL_TRACE_CONSOLE_V1_1_REPORT": {
+    "head": "383bb332",
     "branch": "codex/own-capital-sustainable-return",
     "status": "ACCEPTED",
     "files_reviewed": [
       "tmp_agent/brain_v9/main.py",
-      "tmp_agent/brain_v9/core/session.py",
       "tmp_agent/brain_v9/ui/index.html",
       "tmp_agent/brain_v9/ui/dashboard.html"
     ],
     "files_modified": [
-      "tmp_agent/brain_v9/main.py",
-      "tmp_agent/brain_v9/ui/agent_trace_console.html",
+      "tmp_agent/brain_v9/ui/index.html",
       "tests/unit/test_agent_visual_trace_console.py"
     ],
-    "endpoints_added": [
-      {
-        "method": "POST",
-        "path": "/brain/agent-trace/event",
-        "purpose": "Append trace event to trace.ndjson",
-        "safety": "Rejects raw_chain_of_thought and private_reasoning"
-      },
-      {
-        "method": "GET",
-        "path": "/brain/agent-trace/latest",
-        "purpose": "Read latest N trace events"
-      },
-      {
-        "method": "GET",
-        "path": "/brain/agent-trace/stream",
-        "purpose": "SSE streaming endpoint with heartbeat",
-        "safety": "Async generator, non-blocking"
-      }
-    ],
-    "ui_added": {
+    "standalone_ui": {
       "file": "tmp_agent/brain_v9/ui/agent_trace_console.html",
-      "description": "Independent trace console page using EventSource to connect to /brain/agent-trace/stream",
-      "features": ["Filter by type", "Severity color coding", "Auto-reconnect SSE", "Latest snapshot fetch", "No raw COT exposure"],
-      "danger_level": "LOW — standalone page, does not pollute index.html"
+      "status": "preserved unchanged"
     },
-    "persistence_path": "C:/AI_VAULT/tmp_agent/state/rooms/{room_id}/agent_runs/{run_id}/trace.ndjson",
-    "event_types": ["thinking", "tool", "finding", "file", "evidence", "governance", "decision", "status", "health", "warning", "error"],
+    "chat_embed_ui": {
+      "file": "tmp_agent/brain_v9/ui/index.html",
+      "integration": "floating toggle button + right-side fixed panel",
+      "toggle_selector": "#vtc-toggle",
+      "panel_selector": "#vtc-panel",
+      "features": ["SSE EventSource", "latest snapshot fetch", "type filter buttons", "severity color coding", "auto-reconnect"],
+      "room_id_source": "window.sessionId or 'default'",
+      "run_id": "'chat_ui' constant"
+    },
+    "endpoints_reused": {
+      "event": "POST /brain/agent-trace/event",
+      "latest": "GET /brain/agent-trace/latest",
+      "stream": "GET /brain/agent-trace/stream"
+    },
     "cot_safety": {
-      "policy": {
-        "raw_chain_of_thought_rejected": true,
-        "private_reasoning_rejected": true,
-        "filter": "If payload contains these substrings anywhere, event is rejected with 400"
-      },
-      "implementation": "brain_agent_trace_event() checks json.dumps(payload) for raw_chain_of_thought and private_reasoning substrings before processing"
+      "policy": "Backend rejects raw_chain_of_thought/private_reasoning before persisting; frontend only renders safe 'text' field.",
+      "blocking_location": "brain_agent_trace_event() in main.py",
+      "client_sanitization": false
     },
     "tests": {
+      "pytest_vtc": "19 passed / 0 failed",
       "py_compile_main_py": "OK",
-      "py_compile_test_py": "OK",
-      "pytest_vtc": "12 passed / 0 failed"
+      "py_compile_test_py": "OK"
     },
-    "runtime_smoke": "Brain V9 health unchanged; no startup blockers; SSE endpoint lazy-loads file",
+    "runtime_smoke": "No startup impact; panel lazy-opens on demand.",
     "protected_touched": false,
+    "desh_v2_mount_status": "CLEANED — DASH-V2-MOUNT delta was present in working tree and was removed before staging.",
     "code_modified": true,
     "remaining_risks": [
-      "Room-based isolation requires callers to provide room_id/run_id consistently",
-      "Trace files are not encrypted or ACL-protected (stored in tmp_agent/state)",
-      "Currently no pruning or eviction policy for trace.ndjson",
-      "SSE queue has maxsize=100; if clients disconnect, events may be lost",
-      "No authentication on trace endpoints yet (acceptable for v1 dev, should add OperatorAccess for v2)"
+      "Panel can overlap chat input on small screens; 360px at 600px breakpoint",
+      "No auth on TRACE endpoints; v2 should add OperatorAccess",
+      "Trace ndjson eviction policy undefined",
+      "shared room_id 'default' if sessionId missing"
     ],
     "recommendation": "ACCEPTED",
-    "next_step": "Create ledger checkpoint VTC v1, run runtime smoke to confirm /brain/agent-trace/latest responds, then commit/push upon authorization."
+    "next_step": "Await authorization to commit/push VTC v1.1 chat embed. No SESSION V7 / DASH-V2-MOUNT before approval."
   }
 }

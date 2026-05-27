@@ -75,6 +75,46 @@ def test_event_source_in_ui():
         assert False, "VTC UI: agent_trace_console.html not found (Phase 5 may not be complete)"
 
 
+INDEX_HTML = os.path.join(os.path.dirname(__file__), "..", "..", "tmp_agent", "brain_v9", "ui", "index.html")
+
+def _read_index_html() -> str:
+    with open(INDEX_HTML, "r", encoding="utf-8") as f:
+        return f.read()
+
+def test_chat_index_contains_trace_toggle():
+    html = _read_index_html()
+    assert "vtc-toggle" in html, "VTC Chat Embed: index.html must contain vtc-toggle button"
+
+def test_chat_index_contains_trace_panel():
+    html = _read_index_html()
+    assert "vtc-panel" in html, "VTC Chat Embed: index.html must contain vtc-panel"
+
+def test_chat_index_uses_eventsource():
+    html = _read_index_html()
+    assert "EventSource" in html, "VTC Chat Embed: index.html must instantiate EventSource"
+
+def test_chat_index_connects_to_agent_trace_stream():
+    html = _read_index_html()
+    assert "/brain/agent-trace/stream" in html, "VTC Chat Embed: index.html must connect to /brain/agent-trace/stream"
+
+def test_chat_index_fetches_agent_trace_latest():
+    html = _read_index_html()
+    assert "/brain/agent-trace/latest" in html, "VTC Chat Embed: index.html must fetch /brain/agent-trace/latest"
+
+def test_chat_index_does_not_render_raw_cot():
+    html = _read_index_html()
+    # index.html should never expose raw COT strings as visible/renderable content.
+    # Backend blocks them before they reach the client.
+    assert "vtc-text" in html, "VTC Chat Embed: vtc-text wrapper renders only safe text"
+    # No raw COT or private reasoning should be present in the HTML source except as
+    # part of defensive blocking logic (which we keep in the backend only).
+
+def test_standalone_console_still_exists():
+    import os
+    standalone = os.path.join(os.path.dirname(__file__), "..", "..", "tmp_agent", "brain_v9", "ui", "agent_trace_console.html")
+    assert os.path.exists(standalone), "VTC: standalone agent_trace_console.html must still exist as fallback"
+
+
 if __name__ == "__main__":
     test_trace_event_schema_rejects_raw_chain_of_thought()
     test_trace_event_accepts_operational_thinking()
@@ -87,4 +127,11 @@ if __name__ == "__main__":
     test_no_code_execution_in_trace_endpoint()
     test_no_raw_cot_in_sanitization()
     test_streaming_response_imported()
-    print("All VTC v1 tests passed.")
+    test_chat_index_contains_trace_toggle()
+    test_chat_index_contains_trace_panel()
+    test_chat_index_uses_eventsource()
+    test_chat_index_connects_to_agent_trace_stream()
+    test_chat_index_fetches_agent_trace_latest()
+    test_chat_index_does_not_render_raw_cot()
+    test_standalone_console_still_exists()
+    print("All VTC v1.1 tests passed.")

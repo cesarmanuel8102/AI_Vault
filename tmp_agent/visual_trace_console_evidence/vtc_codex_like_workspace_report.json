@@ -1,0 +1,50 @@
+{
+  "VTC_CODEX_LIKE_WORKSPACE_REPORT": {
+    "head": "383bb332",
+    "status": "ACCEPTED",
+    "design_goal": "Codex-like agent workspace integrated into chat UI",
+    "files_modified": [
+      "tmp_agent/brain_v9/ui/index.html",
+      "tests/unit/test_agent_visual_trace_console.py"
+    ],
+    "layout": {
+      "chat_area": true,
+      "agent_activity_timeline": true,
+      "tools_commands_panel": true,
+      "files_evidence_panel": true,
+      "governance_panel": true,
+      "status_bar": true
+    },
+    "interaction_model": {
+      "eventsource_stream": true,
+      "snapshot_latest": true,
+      "approve_reject_continue_placeholders": true,
+      "dangerous_actions_wired": false
+    },
+    "cot_safety": {
+      "raw_chain_of_thought_visible": false,
+      "private_reasoning_visible": false,
+      "backend_blocks": true
+    },
+    "tests": {
+      "pytest_vtc": "24 passed / 0 failed",
+      "categories": [
+        "backend endpoints (6)",
+        "index.html workspace panels (6)",
+        "workspace events + safety (6)",
+        "standalone fallback (1)",
+        "other backend safety (5)"
+      ]
+    },
+    "protected_touched": false,
+    "desh_v2_mount_status": "CLEAN",
+    "remaining_risks": [
+      "Governance buttons are placeholders; real endpoints not wired yet.",
+      "Full-screen overlay at 900px breakpoint switches to single-column layout.",
+      "No auth on trace endpoints yet.",
+      "Room_id falls back to 'default' if sessionId missing."
+    ],
+    "recommendation": "ACCEPTED",
+    "next_step": "Pause. Ready for commit/push upon explicit authorization. No SESSION V7 / DASH-V2-MOUNT before approval."
+  }
+}

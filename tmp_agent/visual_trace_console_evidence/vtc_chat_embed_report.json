@@ -1,0 +1,62 @@
+{
+  "VTC_CHAT_EMBED_REPORT": {
+    "head": "383bb332",
+    "status": "ACCEPTED",
+    "files_modified": [
+      "tmp_agent/brain_v9/ui/index.html",
+      "tests/unit/test_agent_visual_trace_console.py"
+    ],
+    "chat_integration": true,
+    "panel_location": {
+      "position": "fixed-right-drawer",
+      "width": "360px",
+      "top": "80px",
+      "bottom": "0",
+      "z-index": 9998,
+      "toggle_button": {
+        "position": "fixed",
+        "bottom": "90px",
+        "right": "16px",
+        "z-index": 9999
+      }
+    },
+    "eventsource_endpoint": "/brain/agent-trace/stream?room_id=<room_id>&run_id=chat_ui",
+    "snapshot_endpoint": "/brain/agent-trace/latest?room_id=<room_id>&run_id=chat_ui&limit=100",
+    "room_run_policy": {
+      "room_id": "derived from window.sessionId (from existing chat init) or 'default'",
+      "run_id": "'chat_ui' constant for the chat session"
+    },
+    "standalone_fallback": {
+      "file": "tmp_agent/brain_v9/ui/agent_trace_console.html",
+      "status": "unchanged and preserved as dev/tool",
+      "reached_via": "open in separate browser tab"
+    },
+    "cot_safety": {
+      "raw_chain_of_thought_visible": false,
+      "private_reasoning_visible": false,
+      "blocking_location": "backend only — brain_agent_trace_event rejects events containing these strings",
+      "client_policy": "index.html renders only the sanitized 'text' field from each event"
+    },
+    "tests": {
+      "pytest_vtc": "19 passed / 0 failed",
+      "test_categories": [
+        "backend endpoints and helpers",
+        "SSE format",
+        "COT safety backend",
+        "index.html contains toggle and panel",
+        "index.html uses EventSource and connects to correct endpoints",
+        "index.html does not render raw COT",
+        "standalone console still exists"
+      ]
+    },
+    "protected_touched": false,
+    "recommendation": "ACCEPTED — ready for commit/push",
+    "remaining_risks": [
+      "Panel may overlap with small-screen chat input; responsive adjustment for <600px needs verification",
+      "No server-side auth on SSE endpoint yet; v2 should add at least OperatorAccess for /brain/agent-trace/event",
+      "trace.ndjson eviction policy not defined",
+      "If sessionId is not set in chat UI, room_id falls back to 'default' — shared between users"
+    ],
+    "next_step": "Pause before SESSION V7 / DASH-V2-MOUNT or commit/push on authorization."
+  }
+}
