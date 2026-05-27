@@ -266,3 +266,40 @@
 - Next recommended item:
   - Working tree hygiene finalization / decision on validate_security_*.py and DASH-V2-MOUNT evidence
 
+## 11. Checkpoint — N1 Fabricated Metrics fixed
+- Date (UTC): 2026-05-27T07:00:00+00:00
+- Branch: codex/own-capital-sustainable-return
+- HEAD: 901dd9d4
+- Commit:
+  - 901dd9d4 — Fix N1 fabricated metrics in performance aggregator
+- Scope:
+  - brain/metrics.py
+  - tmp_agent/n1_metrics_evidence/n1_metrics_audit.json
+  - tmp_agent/n1_metrics_evidence/n1_metrics_final_report.json
+- Finding:
+  - N1 fabricated metrics
+- Previous behavior:
+  - avg_ms=150
+  - p95_ms=300
+  - p99_ms=500
+  - uptime_percentage=99.5
+- New behavior:
+  - avg_ms=None
+  - p95_ms=None
+  - p99_ms=None
+  - uptime_percentage=None
+  - status=unavailable
+  - reason=no_real_performance_source
+  - generated_from=not_measured
+- Acceptance:
+  - N1 metrics fix: ACCEPTED
+  - no fabricated performance values
+  - schema compatibility preserved
+- Tests:
+  - py_compile brain/metrics.py: OK
+  - test_metrics_no_fabricated_performance: 10 passed / 0 failed
+- Runtime:
+  - Brain V9 /health: healthy
+- Next recommended item:
+  - F1 Security Validation: fix validate_security_3g.py and migrate security validators to tests/security/
+
