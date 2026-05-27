@@ -1,0 +1,27 @@
+{
+  "patch_target": "_dashboard_status_fastpath in tmp_agent/brain_v9/core/session.py",
+  "issue": "FAKE_GROUNDED: claims runtime: activo without HTTP/process verification",
+  "fix_strategy": [
+    "Add urllib.request to imports at top of session.py",
+    "In _dashboard_status_fastpath: verify HTTP GET http://{SERVER_HOST}:{SERVER_PORT}/health with timeout=2s",
+    "If HTTP OK: runtime=verified, source=http_health",
+    "If HTTP fails: runtime=unknown/unavailable, source=not_verified",
+    "Keep file existence check but do not claim runtime: activo without HTTP proof",
+    "Add field verified_by=http_health or verified_by=file_only",
+    "Add status_verified boolean"
+  ],
+  "files_to_modify": [
+    "tmp_agent/brain_v9/core/session.py (add urllib.request import and fix _dashboard_status_fastpath)"
+  ],
+  "no_touch": [
+    "main.py (DASH-V2 mount)",
+    "memory/semantic",
+    "tmp_agent/strategies",
+    "tmp_agent/reports",
+    "validate_security",
+    "CEI/FDOT",
+    "trading"
+  ],
+  "backward_compat": true,
+  "notes": "session.py line 23 already has urllib.request imported (via brain_v9.agent.tools health_check function uses it)"
+}
