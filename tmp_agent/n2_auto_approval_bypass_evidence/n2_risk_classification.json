@@ -1,0 +1,139 @@
+{
+  "N2_RISK_CLASSIFICATION": {
+    "timestamp": "2026-05-27T08:25:00+00:00",
+    "head": "1d9ac067",
+    "method": "Manual targeted read of critical endpoints in tmp_agent/brain_v9/main.py + session.py + grep for bypass keywords",
+    "classification_levels": {
+      "SAFE_GATED": {
+        "description": "Requiere autorizacion explicita, token, firma, role, gate o human approval real.",
+        "count": 6,
+        "items": [
+          {
+            "endpoint": "POST /gate/approve/{pending_id}",
+            "location": "main.py:1701",
+            "auth": "StrictOperatorAccess",
+            "notes": "Gate debe crear accion pendiente primero. El bypass flag _bypass_gate solo se aplica después de la aprobacion."
+          },
+          {
+            "endpoint": "POST /brain/chat_excellence/proposals/{proposal_id}/dry_run",
+            "location": "main.py:2451",
+            "auth": "None visible but read-only",
+            "notes": "dry_run no escribe nada, solo genera diff."
+          },
+          {
+            "endpoint": "POST /brain/self-improvement/change/{change_id}/promote",
+            "location": "main.py:3407",
+            "auth": "OperatorAccess",
+            "notes": "Requires OperatorAccess. Note: OperatorAccess may be weaker than StrictOperatorAccess but still an auth layer."
+          },
+          {
+            "endpoint": "POST /brain/self-improvement/change/{change_id}/rollback",
+            "location": "main.py:3411",
+            "auth": "OperatorAccess",
+            "notes": "Requires OperatorAccess."
+          },
+          {
+            "endpoint": "POST /brain/validate",
+            "location": "main.py:3415",
+            "auth": "OperatorAccess",
+            "notes": "Read-only compliance check."
+          },
+          {
+            "function": "session.py:_cmd_approve",
+            "location": "session.py:3135",
+            "auth": "Human chat command /approve",
+            "notes": "Requiere que el humano escriba el comando. Gate verifica que el item exista."
+          }
+        ]
+      },
+      "PARTIAL_GATED": {
+        "description": "Tiene gate nominal pero puede ser evadido por payload, flag, evidence_score, dry_run=false, trusted=true, etc.",
+        "count": 3,
+        "items": [
+          {
+            "endpoint": "POST /tool01/permission/approve",
+            "location": "main.py:1739",
+            "auth": "Session lookup (active_sessions.get(req.session_id))",
+            "bypass_risk": "Si un atacante adivina o conoce el session_id y permission_id, puede aprobar permisos sin human-in-the-loop. No hay HMAC, timestamp anti-replay, ni role check.",
+            "notes": "Session lookup solo. No validacion de origen humano (browser vs script)."
+          },
+          {
+            "function": "main.py:gate_approve _bypass_gate flag",
+            "location": "main.py:1719",
+            "auth": "StrictOperatorAccess",
+            "bypass_risk": "El flag _bypass_gate se activa solo después de StrictOperatorAccess, pero el nombre de flag es un anti-pattern. Si StrictOperatorAccess es el unico guard, cualquier compromiso de credenciales de operador permite ejecucion directa saltando la puerta interna.",
+            "notes": "Esperado, pero observar."
+          },
+          {
+            "endpoint": "POST /brain/chat_excellence/proposals/{proposal_id}/apply",
+            "location": "main.py:2467",
+            "auth": "None visible",
+            "bypass_risk": "payload.get('dry_run', True) por defecto, pero payload.get('audit_only', False) permite marcar proposal como applied sin ningun patch real. payload.get('by', 'manual') sin verificacion de identidad. Sin auth visible, cualquier cliente puede auto-aprobar un proposal.",
+            "notes": "El bypass mas critico actualmente empatado con /brain/mutations/test_apply."
+          }
+        ]
+      },
+      "AUTO_APPROVAL_BYPASS": {
+        "description": "Puede aprobar/aplicar/promover acciones por API sin validacion fuerte.",
+        "count": 3,
+        "items": [
+          {
+            "endpoint": "POST /brain/mutations/test_apply",
+            "location": "main.py:2146",
+            "auth": "None visible in function signature",
+            "severity": "CRITICAL",
+            "bypass_risk": "No auth param visible. payload permite aplicar ediciones a cualquier file_path, con allow_critical=False por defecto, pero no se identifica que bloquea allow_critical=True sin auth. Si no hay auth externa (middleware/API key), cualquier entidad conectada puede mutar codigo.",
+            "missing_controls": [
+              "No StrictOperatorAccess / OperatorAccess param",
+              "No HMAC/signature",
+              "No timestamp/nonce",
+              "No role check",
+              "No human-in-the-loop marker",
+              "No dry_run forced",
+              "No audit log obligatorio del call origin"
+            ]
+          },
+          {
+            "endpoint": "POST /brain/chat_excellence/proposals/{proposal_id}/reject",
+            "location": "main.py:2436",
+            "auth": "None visible",
+            "severity": "HIGH",
+            "bypass_risk": "No auth param. Cualquier cliente puede rechazar proposals sin permiso. Esto es un ataque DoS/anti-pattern directo.",
+            "missing_controls": [
+              "No StrictOperatorAccess / OperatorAccess param",
+              "No signature",
+              "No role check",
+              "No audit log obligatorio"
+            ]
+          },
+          {
+            "endpoint": "POST /brain/chat_excellence/proposals/{proposal_id}/apply (audit_only path)",
+            "location": "main.py:2467 (audit_only branch)",
+            "auth": "None visible",
+            "severity": "CRITICAL",
+            "bypass_risk": "Si audit_only=True, marca el proposal como applied sin realizar ningun cambio de codigo. Esto es un auto-approval directo de estado de proposal.",
+            "missing_controls": [
+              "No StrictOperatorAccess / OperatorAccess param",
+              "No human approval marker",
+              "No audit log obligatorio del identity real del caller"
+            ]
+          }
+        ]
+      },
+      "UNKNOWN": {
+        "description": "Requiere lectura adicional.",
+        "count": 1,
+        "items": [
+          {
+            "endpoint": "POST /gate/reject/{pending_id}",
+            "location": "main.py:1728",
+            "auth": "None visible (depends on context / middleware)",
+            "notes": "Se asume protegido por middleware general o StrictOperatorAccess del router padre, pero no se ve en la firma de funcion. Necesita verificacion."
+          }
+        ]
+      }
+    },
+    "protected_touched": false,
+    "code_modified": false
+  }
+}

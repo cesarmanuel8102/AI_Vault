@@ -1,0 +1,45 @@
+{
+  "N2_PATCH": {
+    "head": "1d9ac067",
+    "files_modified": [
+      "tmp_agent/brain_v9/main.py",
+      "tests/unit/test_n2_auto_approval_bypass.py"
+    ],
+    "endpoints_patched": [
+      {
+        "endpoint": "POST /brain/mutations/test_apply",
+        "action": "Added _operator: StrictOperatorAccess parameter",
+        "before": "async def brain_mutations_test_apply(payload: Dict[str, Any] = Body(...)):",
+        "after": "async def brain_mutations_test_apply(\n    _operator: StrictOperatorAccess,\n    payload: Dict[str, Any] = Body(...),\n):"
+      },
+      {
+        "endpoint": "POST /brain/chat_excellence/proposals/{proposal_id}/apply",
+        "action": "Added _operator: StrictOperatorAccess parameter",
+        "before": "async def brain_ce_proposal_apply(proposal_id: str, payload: Dict = Body(default={})):",
+        "after": "async def brain_ce_proposal_apply(\n    proposal_id: str,\n    _operator: StrictOperatorAccess,\n    payload: Dict = Body(default={}),\n):"
+      },
+      {
+        "endpoint": "POST /brain/chat_excellence/proposals/{proposal_id}/reject",
+        "action": "Added _operator: StrictOperatorAccess parameter",
+        "before": "async def brain_ce_proposal_reject(proposal_id: str, payload: Dict = Body(default={})):",
+        "after": "async def brain_ce_proposal_reject(\n    proposal_id: str,\n    _operator: StrictOperatorAccess,\n    payload: Dict = Body(default={}),\n):"
+      },
+      {
+        "endpoint": "POST /gate/reject/{pending_id}",
+        "action": "Added _operator: StrictOperatorAccess parameter for symmetry with /gate/approve",
+        "before": "async def gate_reject(pending_id: str):",
+        "after": "async def gate_reject(pending_id: str, _operator: StrictOperatorAccess):"
+      }
+    ],
+    "controls_added": [
+      "StrictOperatorAccess dependency on 4 critical mutating endpoints",
+      "Blocks non-local unauthorized access (requires BRAIN_ADMIN_TOKEN env var + X-Brain-Token header)"
+    ],
+    "payload_trust_removed": [
+      "payload.by no longer trusted as identity for apply/reject",
+      "audit_only requires StrictOperatorAccess (identity verified via dependency, not body)"
+    ],
+    "protected_touched": false,
+    "code_modified_in_this_step": true
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "N2_BASELINE": {
+    "timestamp": "2026-05-27T08:10:00+00:00",
+    "repo": "C:/AI_VAULT",
+    "branch": "codex/own-capital-sustainable-return",
+    "head": "1d9ac067",
+    "origin_head": "1d9ac067",
+    "scope": "Audit N2 auto-approval API bypass surfaces",
+    "rules": "NO code changes, NO commit, NO push, NO protected touched",
+    "excluded_paths": [
+      "memory/semantic",
+      "tmp_agent/strategies",
+      "tmp_agent/reports",
+      "nul",
+      "CEI",
+      "FDOT",
+      "trading",
+      "tmp_agent/brain_v9/main.py (read-only)"
+    ]
+  }
+}

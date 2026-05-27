@@ -1726,7 +1726,7 @@ async def gate_approve(pending_id: str, _operator: StrictOperatorAccess):
         return {"success": False, "tool": tool_name, "error": str(exc)}
 
 @app.post("/gate/reject/{pending_id}")
-async def gate_reject(pending_id: str):
+async def gate_reject(pending_id: str, _operator: StrictOperatorAccess):
     """Reject a pending gated action via API (used by UI button)."""
     from brain_v9.governance.execution_gate import get_gate
     gate = get_gate()
@@ -2144,7 +2144,10 @@ async def brain_reasoning_history(limit: int = 20):
 
 
 @app.post("/brain/mutations/test_apply")
-async def brain_mutations_test_apply(payload: Dict[str, Any] = Body(...)):
+async def brain_mutations_test_apply(
+    _operator: StrictOperatorAccess,
+    payload: Dict[str, Any] = Body(...),
+):
     """C-Sprint test endpoint: Apply a code mutation directly.
 
     Body: {
@@ -2434,7 +2437,11 @@ async def brain_ce_proposal_get(proposal_id: str):
 
 
 @app.post("/brain/chat_excellence/proposals/{proposal_id}/reject")
-async def brain_ce_proposal_reject(proposal_id: str, payload: Dict = Body(default={})):
+async def brain_ce_proposal_reject(
+    proposal_id: str,
+    _operator: StrictOperatorAccess,
+    payload: Dict = Body(default={}),
+):
     try:
         from brain_v9.autonomy.chat_excellence_executor import reject_proposal
         reason = (payload or {}).get("reason", "manual")
@@ -2465,7 +2472,11 @@ async def brain_ce_proposal_dry_run(proposal_id: str):
 
 
 @app.post("/brain/chat_excellence/proposals/{proposal_id}/apply")
-async def brain_ce_proposal_apply(proposal_id: str, payload: Dict = Body(default={})):
+async def brain_ce_proposal_apply(
+    proposal_id: str,
+    _operator: StrictOperatorAccess,
+    payload: Dict = Body(default={}),
+):
     """R10.2b: aplica realmente el patch (backup + edit + py_compile).
     Si payload.dry_run=true (default) solo genera el diff sin tocar nada.
     Si payload.audit_only=true, marca el proposal como 'applied' sin patch

@@ -1,0 +1,145 @@
+{
+  "N2_SURFACE_SCAN": {
+    "timestamp": "2026-05-27T08:20:00+00:00",
+    "head": "1d9ac067",
+    "branch": "codex/own-capital-sustainable-return",
+    "method": "Manual targeted read of known critical paths + grep for @app decorators and bypass keywords",
+    "files_reviewed": [
+      "tmp_agent/brain_v9/main.py",
+      "tmp_agent/brain_v9/core/session.py"
+    ],
+    "endpoints_reviewed": {
+      "1701": {
+        "method": "POST",
+        "path": "/gate/approve/{pending_id}",
+        "auth": "StrictOperatorAccess",
+        "category": "SAFE_GATED",
+        "notes": "Requires _operator: StrictOperatorAccess param. Gate must first create pending action. No auto-approve."
+      },
+      "1728": {
+        "method": "POST",
+        "path": "/gate/reject/{pending_id}",
+        "auth": "None visible (depends on route registration context)",
+        "category": "PARTIAL_GATED",
+        "notes": "No auth param shown in read; but likely protected by overall middleware. Needs verification."
+      },
+      "1739": {
+        "method": "POST",
+        "path": "/tool01/permission/approve",
+        "auth": "Session-based lookup",
+        "category": "PARTIAL_GATED",
+        "notes": "Session lookup from active_sessions table. No explicit role/human approval marker. Can bypass human-in-the-loop if tool_name/original_message mapping is guessed."
+      },
+      "2146": {
+        "method": "POST",
+        "path": "/brain/mutations/test_apply",
+        "auth": "None visible in read snippet (need full function)",
+        "category": "AUTO_APPROVAL_BYPASS",
+        "notes": "Endpoint name suggests applying code mutations. If exposed to non-operator, this is a serious bypass. Need full read."
+      },
+      "2436": {
+        "method": "POST",
+        "path": "/brain/chat_excellence/proposals/{proposal_id}/reject",
+        "auth": "None visible",
+        "category": "AUTO_APPROVAL_BYPASS",
+        "notes": "No auth parameter shown. Rejects proposals via reject_proposal(). Risk: unauth rejection."
+      },
+      "2467": {
+        "method": "POST",
+        "path": "/brain/chat_excellence/proposals/{proposal_id}/apply",
+        "auth": "None visible",
+        "category": "AUTO_APPROVAL_BYPASS",
+        "notes": "No auth param. Body has dry_run default True, but audit_only mode exists. If reachable without auth, allows marking proposals as applied."
+      },
+      "2451": {
+        "method": "POST",
+        "path": "/brain/chat_excellence/proposals/{proposal_id}/dry_run",
+        "auth": "None visible",
+        "category": "SAFE_GATED",
+        "notes": "dry_run only, no writes"
+      },
+      "3407": {
+        "method": "POST",
+        "path": "/brain/self-improvement/change/{change_id}/promote",
+        "auth": "_operator: OperatorAccess",
+        "category": "SAFE_GATED",
+        "notes": "Requires OperatorAccess, which is stricter. However OperatorAccess may be weaker than StrictOperatorAccess."
+      },
+      "3411": {
+        "method": "POST",
+        "path": "/brain/self-improvement/change/{change_id}/rollback",
+        "auth": "_operator: OperatorAccess",
+        "category": "SAFE_GATED",
+        "notes": "OperatorAccess required."
+      },
+      "3415": {
+        "method": "POST",
+        "path": "/brain/validate",
+        "auth": "_operator: OperatorAccess",
+        "category": "SAFE_GATED",
+        "notes": "Read-only compliance check."
+      }
+    },
+    "functions_reviewed": {
+      "session.py:3135": {
+        "name": "_cmd_approve",
+        "category": "SAFE_GATED",
+        "notes": "Used by chat command /approve. Requires human to type command. Gate verifies item exists."
+      },
+      "session.py:2076": {
+        "name": "auto-approve detector",
+        "category": "SAFE_GATED",
+        "notes": "Keyword auto-approval from 'si/sí/ok/dale/yes/aprueba' only triggers _cmd_approve with no args (latest for session). Still requires human text input."
+      },
+      "session.py:4834": {
+        "name": "generic command confirmation",
+        "category": "SAFE_GATED",
+        "notes": "Regex based confirmation. Human in loop."
+      }
+    },
+    "risky_patterns": [
+      {
+        "pattern": "_bypass_gate",
+        "location": "tmp_agent/brain_v9/main.py:1719",
+        "file": "main.py",
+        "function": "gate_approve",
+        "category": "PARTIAL_GATED",
+        "notes": "Approved items skip tool internal gate. Safe because it requires StrictOperatorAccess to reach this point, but flagname is suspicious."
+      },
+      {
+        "pattern": "_bypass_gate",
+        "location": "tmp_agent/brain_v9/core/session.py:3158",
+        "file": "session.py",
+        "function": "_cmd_approve",
+        "category": "PARTIAL_GATED",
+        "notes": "Same bypass pattern. Only reachable via human /approve command or auto-approve detector."
+      },
+      {
+        "pattern": "payload.get(\"dry_run\", True)",
+        "location": "tmp_agent/brain_v9/main.py:2477",
+        "file": "main.py",
+        "function": "brain_ce_proposal_apply",
+        "category": "PARTIAL_GATED",
+        "notes": "Default dry_run=True. But if body contains dry_run=False with no auth, this becomes a bypass."
+      },
+      {
+        "pattern": "payload.get(\"audit_only\", False)",
+        "location": "tmp_agent/brain_v9/main.py:2478",
+        "file": "main.py",
+        "function": "brain_ce_proposal_apply",
+        "category": "AUTO_APPROVAL_BYPASS",
+        "notes": "audit_only=True marks proposal applied with no patch. If this endpoint is reachable without auth, it auto-approves proposals."
+      },
+      {
+        "pattern": "payload.get(\"by\", \"manual\")",
+        "location": "tmp_agent/brain_v9/main.py:2479",
+        "file": "main.py",
+        "function": "brain_ce_proposal_apply",
+        "category": "AUTO_APPROVAL_BYPASS",
+        "notes": "No verification of identity in body. Any client can claim 'by=manual'. If no auth, bypass."
+      }
+    ],
+    "protected_touched": false,
+    "code_modified": false
+  }
+}

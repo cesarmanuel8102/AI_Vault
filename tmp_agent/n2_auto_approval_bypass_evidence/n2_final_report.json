@@ -1,0 +1,62 @@
+{
+  "N2_AUTO_APPROVAL_BYPASS_PATCH_REPORT": {
+    "head": "1d9ac067",
+    "branch": "codex/own-capital-sustainable-return",
+    "status": "PARTIAL / ACCEPTED_PENDING_LEDGER",
+    "files_modified": [
+      "tmp_agent/brain_v9/main.py",
+      "tests/unit/test_n2_auto_approval_bypass.py"
+    ],
+    "endpoints_patched": [
+      {
+        "endpoint": "POST /brain/mutations/test_apply",
+        "control_added": "_operator: StrictOperatorAccess",
+        "severity_before": "CRITICAL",
+        "severity_after": "MEDIUM (token env-var dependency)"
+      },
+      {
+        "endpoint": "POST /brain/chat_excellence/proposals/{proposal_id}/apply",
+        "control_added": "_operator: StrictOperatorAccess",
+        "severity_before": "CRITICAL",
+        "severity_after": "MEDIUM"
+      },
+      {
+        "endpoint": "POST /brain/chat_excellence/proposals/{proposal_id}/reject",
+        "control_added": "_operator: StrictOperatorAccess",
+        "severity_before": "HIGH",
+        "severity_after": "LOW"
+      },
+      {
+        "endpoint": "POST /gate/reject/{pending_id}",
+        "control_added": "_operator: StrictOperatorAccess (symmetry with /gate/approve)",
+        "severity_before": "UNKNOWN/PARTIAL",
+        "severity_after": "LOW"
+      }
+    ],
+    "controls_added": [
+      "StrictOperatorAccess dependency on 4 critical mutating endpoints",
+      "Blocks non-local unauthorized access (requires BRAIN_ADMIN_TOKEN env var + X-Brain-Token header)",
+      "No local-address bypass for these endpoints (StrictOperatorAccess disallows localhost)"
+    ],
+    "payload_trust_removed": [
+      "payload.by is no longer sufficient to bypass approval because StrictOperatorAccess is required before proposal apply/reject execution.",
+      "audit_only no longer allows auto-apply without StrictOperatorAccess (identity verified by dependency, not body)"
+    ],
+    "tests": {
+      "py_compile_main_py": "OK",
+      "py_compile_test_py": "OK",
+      "pytest_n2": "6 passed / 0 failed"
+    },
+    "remaining_risks": [
+      "StrictOperatorAccess requires BRAIN_ADMIN_TOKEN env var. If not configured, all StrictOperatorAccess endpoints return 403.",
+      "If BRAIN_ADMIN_TOKEN is leaked, all StrictOperatorAccess endpoints are compromised.",
+      "No HMAC/signature per-request anti-replay. Token is reusable.",
+      "No audit log written to disk for every approved/rejected action. Only in-memory gate state.",
+      "POST /tool01/permission/approve still only uses session lookup (not StrictOperatorAccess)."
+    ],
+    "protected_touched": false,
+    "code_modified_in_this_step": true,
+    "recommendation": "ACCEPTED (pending ledger update and runtime smoke)",
+    "next_step": "Create ledger checkpoint N2, run runtime smoke on Brain V9 to confirm StrictOperatorAccess endpoints return 403 without token, then commit/push upon authorization."
+  }
+}
