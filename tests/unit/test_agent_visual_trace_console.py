@@ -64,6 +64,31 @@ def test_streaming_response_imported():
     text = _read_main()
     assert "StreamingResponse" in text, "VTC: StreamingResponse must be imported"
 
+def test_trace_event_endpoint_requires_operator_access():
+    text = _read_main()
+    sig_start = text.find("async def brain_agent_trace_event")
+    sig_end = text.find("):", sig_start) + 2
+    sig = text[sig_start:sig_end]
+    assert "StrictOperatorAccess" in sig, "VTC Auth: POST /brain/agent-trace/event must require StrictOperatorAccess"
+
+def test_trace_latest_endpoint_requires_operator_access():
+    text = _read_main()
+    sig_start = text.find("async def brain_agent_trace_latest")
+    sig_end = text.find("):", sig_start) + 2
+    sig = text[sig_start:sig_end]
+    assert "OperatorAccess" in sig, "VTC Auth: GET /brain/agent-trace/latest must require OperatorAccess"
+
+def test_trace_stream_endpoint_requires_operator_access():
+    text = _read_main()
+    sig_start = text.find("async def brain_agent_trace_stream")
+    sig_end = text.find("):", sig_start) + 2
+    sig = text[sig_start:sig_end]
+    assert "OperatorAccess" in sig, "VTC Auth: GET /brain/agent-trace/stream must require OperatorAccess"
+
+def test_trace_auth_does_not_remove_cot_rejection():
+    text = _read_main()
+    assert "raw_chain_of_thought" in text.lower() and "private_reasoning" in text.lower(), "VTC Auth: COT rejection must still be present after auth addition"
+
 def test_event_source_in_ui():
     ui_path = os.path.join(os.path.dirname(__file__), "..", "..", "tmp_agent", "brain_v9", "ui", "agent_trace_console.html")
     if os.path.exists(ui_path):
@@ -81,33 +106,51 @@ def _read_index_html() -> str:
     with open(INDEX_HTML, "r", encoding="utf-8") as f:
         return f.read()
 
-def test_chat_index_contains_trace_toggle():
+def test_chat_index_contains_agent_workspace():
     html = _read_index_html()
-    assert "vtc-toggle" in html, "VTC Chat Embed: index.html must contain vtc-toggle button"
+    assert "aw-toggle" in html, "VTC Codex-like: index.html must contain Agent Workspace toggle button"
 
-def test_chat_index_contains_trace_panel():
+def test_chat_index_contains_activity_timeline():
     html = _read_index_html()
-    assert "vtc-panel" in html, "VTC Chat Embed: index.html must contain vtc-panel"
+    assert "aw-timeline" in html, "VTC Codex-like: index.html must contain Activity Timeline panel"
 
-def test_chat_index_uses_eventsource():
+def test_chat_index_contains_tools_panel():
     html = _read_index_html()
-    assert "EventSource" in html, "VTC Chat Embed: index.html must instantiate EventSource"
+    assert "aw-tools" in html, "VTC Codex-like: index.html must contain Tools panel"
 
-def test_chat_index_connects_to_agent_trace_stream():
+def test_chat_index_contains_files_evidence_panel():
     html = _read_index_html()
-    assert "/brain/agent-trace/stream" in html, "VTC Chat Embed: index.html must connect to /brain/agent-trace/stream"
+    assert "aw-files" in html, "VTC Codex-like: index.html must contain Files / Evidence panel"
 
-def test_chat_index_fetches_agent_trace_latest():
+def test_chat_index_contains_governance_panel():
     html = _read_index_html()
-    assert "/brain/agent-trace/latest" in html, "VTC Chat Embed: index.html must fetch /brain/agent-trace/latest"
+    assert "aw-gov-body" in html, "VTC Codex-like: index.html must contain Governance panel"
 
-def test_chat_index_does_not_render_raw_cot():
+def test_chat_index_contains_status_bar():
     html = _read_index_html()
-    # index.html should never expose raw COT strings as visible/renderable content.
-    # Backend blocks them before they reach the client.
-    assert "vtc-text" in html, "VTC Chat Embed: vtc-text wrapper renders only safe text"
-    # No raw COT or private reasoning should be present in the HTML source except as
-    # part of defensive blocking logic (which we keep in the backend only).
+    assert "aw-status" in html, "VTC Codex-like: index.html must contain Status bar"
+
+def test_workspace_uses_eventsource():
+    html = _read_index_html()
+    assert "EventSource" in html, "VTC Codex-like: index.html must instantiate EventSource"
+
+def test_workspace_fetches_latest_snapshot():
+    html = _read_index_html()
+    assert "/brain/agent-trace/latest" in html, "VTC Codex-like: index.html must fetch /brain/agent-trace/latest"
+
+def test_workspace_governance_buttons_are_safe_placeholders():
+    html = _read_index_html()
+    assert "showAwPlaceholder" in html, "VTC Codex-like: governance buttons must be safe placeholders"
+    assert "Governance action endpoint not wired yet" in html, "VTC Codex-like: governance must show placeholder msg"
+
+def test_workspace_does_not_wire_dangerous_approval_endpoints():
+    html = _read_index_html()
+    assert '"/gate/approve"' not in html, "VTC Codex-like: must not wire real /gate/approve"
+    assert '"/brain/chat_excellence/proposals/' not in html, "VTC Codex-like: must not wire real proposal endpoints"
+
+def test_workspace_does_not_expose_raw_cot():
+    html = _read_index_html()
+    assert "aw-text" in html, "VTC Codex-like: aw-text wrapper renders only safe text"
 
 def test_standalone_console_still_exists():
     import os
@@ -127,11 +170,21 @@ if __name__ == "__main__":
     test_no_code_execution_in_trace_endpoint()
     test_no_raw_cot_in_sanitization()
     test_streaming_response_imported()
-    test_chat_index_contains_trace_toggle()
-    test_chat_index_contains_trace_panel()
-    test_chat_index_uses_eventsource()
-    test_chat_index_connects_to_agent_trace_stream()
-    test_chat_index_fetches_agent_trace_latest()
-    test_chat_index_does_not_render_raw_cot()
+    test_trace_event_endpoint_requires_operator_access()
+    test_trace_latest_endpoint_requires_operator_access()
+    test_trace_stream_endpoint_requires_operator_access()
+    test_trace_auth_does_not_remove_cot_rejection()
+    test_event_source_in_ui()
+    test_chat_index_contains_agent_workspace()
+    test_chat_index_contains_activity_timeline()
+    test_chat_index_contains_tools_panel()
+    test_chat_index_contains_files_evidence_panel()
+    test_chat_index_contains_governance_panel()
+    test_chat_index_contains_status_bar()
+    test_workspace_uses_eventsource()
+    test_workspace_fetches_latest_snapshot()
+    test_workspace_governance_buttons_are_safe_placeholders()
+    test_workspace_does_not_wire_dangerous_approval_endpoints()
+    test_workspace_does_not_expose_raw_cot()
     test_standalone_console_still_exists()
-    print("All VTC v1.1 tests passed.")
+    print("All VTC Codex-like + Auth tests passed.")

@@ -1,0 +1,41 @@
+{
+  "VTC_TRACE_AUTH_HARDENING_REPORT": {
+    "head": "f771bac6",
+    "status": "ACCEPTED",
+    "endpoints_hardened": {
+      "POST /brain/agent-trace/event": true,
+      "GET /brain/agent-trace/latest": true,
+      "GET /brain/agent-trace/stream": true
+    },
+    "auth_type": "mixed (StrictOperatorAccess on write, OperatorAccess on read/stream)",
+    "changes": {
+      "main.py": "Added _operator dependency to brain_agent_trace_event (StrictOperatorAccess), brain_agent_trace_latest (OperatorAccess), brain_agent_trace_stream (OperatorAccess)"
+    },
+    "cot_rejection_preserved": true,
+    "eventsource_preserved": true,
+    "workspace_ui_unchanged": true,
+    "dangerous_actions_wired": false,
+    "tests": {
+      "pytest": "28 passed / 0 failed",
+      "auth_tests": [
+        "test_trace_event_endpoint_requires_operator_access (StrictOperatorAccess)",
+        "test_trace_latest_endpoint_requires_operator_access (OperatorAccess)",
+        "test_trace_stream_endpoint_requires_operator_access (OperatorAccess)",
+        "test_trace_auth_does_not_remove_cot_rejection"
+      ]
+    },
+    "runtime_behavior": {
+      "brain_v9_running": true,
+      "health_ok": true,
+      "auth_blocks_post_without_token": false,
+      "note": "OperatorAccess requires BRAIN_ADMIN_TOKEN env var; if not configured, local access may still succeed"
+    },
+    "protected_touched": false,
+    "remaining_risks": [
+      "OperatorAccess may allow localhost if BRAIN_ADMIN_TOKEN is not set (dev convenience)",
+      "StrictOperatorAccess always requires X-Brain-Token header and BRAIN_ADMIN_TOKEN env var",
+      "UI does not yet send auth headers (not wired); UI can still read from latest endpoint if OperatorAccess allows localhost",
+      "If BRAIN_ADMIN_TOKEN is configured, UI must be updated to send X-Brain-Token header for EventSource (next step)"
+    ]
+  }
+}

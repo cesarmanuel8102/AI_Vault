@@ -3971,7 +3971,10 @@ def _broadcast_trace_event(room_id: str, run_id: str, event: dict) -> None:
             pass
 
 @app.post("/brain/agent-trace/event")
-async def brain_agent_trace_event(payload: dict = Body(...)):
+async def brain_agent_trace_event(
+    _operator: StrictOperatorAccess,
+    payload: dict = Body(...),
+):
     if not isinstance(payload, dict):
         return JSONResponse(content={"error": "Body must be a JSON object"}, status_code=422)
     allowed_types = {"thinking", "tool", "finding", "file", "evidence", "governance", "decision", "status", "health", "warning", "error"}
@@ -3996,12 +3999,21 @@ async def brain_agent_trace_event(payload: dict = Body(...)):
     return {"success": True, "stored": True}
 
 @app.get("/brain/agent-trace/latest")
-async def brain_agent_trace_latest(room_id: str = "default", run_id: str = "default", limit: int = 200):
+async def brain_agent_trace_latest(
+    _operator: OperatorAccess,
+    room_id: str = "default",
+    run_id: str = "default",
+    limit: int = 200,
+):
     events = _read_trace_events(room_id, run_id, limit=limit)
     return {"success": True, "count": len(events), "events": events}
 
 @app.get("/brain/agent-trace/stream")
-async def brain_agent_trace_stream(room_id: str = "default", run_id: str = "default"):
+async def brain_agent_trace_stream(
+    _operator: OperatorAccess,
+    room_id: str = "default",
+    run_id: str = "default",
+):
     queue: _trace_async.Queue[str] = _trace_async.Queue(maxsize=100)
     key = (room_id, run_id)
     if key not in _agent_trace_queues:
