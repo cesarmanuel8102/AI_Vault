@@ -90,6 +90,25 @@ def _path_under_any(path: Path, roots: List[Path]) -> bool:
     return any(str(resolved).startswith(str(root)) for root in roots)
 
 
+_TOOL01_BLOCKED_PREFIXES = (
+    "memory/semantic",
+    "tmp_agent/strategies",
+    "tmp_agent/reports",
+)
+
+
+def _is_tool01_protected_path(path: Path) -> bool:
+    try:
+        rel = path.resolve().relative_to(BASE_PATH.resolve()).as_posix().lower()
+    except Exception:
+        rel = path.as_posix().lower()
+    parts = {part.lower() for part in path.parts}
+    return rel == "nul" or "nul" in parts or any(
+        rel == prefix or rel.startswith(prefix + "/")
+        for prefix in _TOOL01_BLOCKED_PREFIXES
+    )
+
+
 # ─── Filesystem ───────────────────────────────────────────────────────────────
 def _god_active() -> bool:
     """True si hay una sesion god mode activa (ContextVar del execution_gate)."""
@@ -119,6 +138,8 @@ def _safe_path(path_str: str) -> Path:
     base = BASE_PATH.resolve()
     if not str(p).startswith(str(base)):
         raise PermissionError(f"Ruta fuera de BASE_PATH: {p}")
+    if _is_tool01_protected_path(p):
+        raise PermissionError(f"Ruta bloqueada por política TOOL-01: {p}")
     return p
 
 
@@ -145,6 +166,8 @@ async def read_file(path: str, encoding: str = "utf-8") -> str:
     p = _safe_path(path)
     if not p.exists():
         raise FileNotFoundError(f"No existe: {p}")
+    if p.is_file() and p.stat().st_size > 2_000_000:
+        raise PermissionError(f"Archivo excede limite TOOL-01 de 2MB: {p}")
     if p.is_dir():
         # R16: auto-fallback a listing
         try:
@@ -330,6 +353,100 @@ async def get_gpu_status() -> Dict[str, Any]:
 async def get_technical_introspection() -> Dict[str, Any]:
     from brain_v9.brain.technical_introspection import build_introspection_status
     return build_introspection_status()
+
+
+async def health_check() -> Dict[str, Any]:
+    """TOOL-01: Real health check against localhost:8090."""
+    import urllib.request
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:8090/health", timeout=10) as resp:
+            body = resp.read(4096)
+            data = json.loads(body)
+            return {"success": True, "data": data, "url": "http://127.0.0.1:8090/health"}
+    except Exception as e:
+        return {"success": False, "error": str(e), "url": "http://127.0.0.1:8090/health"}
+
+
+async def git_status(path: str = ".") -> Dict[str, Any]:
+    """TOOL-01: Read-only git status --short within BASE_PATH."""
+    import subprocess
+    p = _safe_path(path)
+    try:
+        result = subprocess.run(
+            ["git", "status", "--short"],
+            cwd=str(p),
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        return {
+            "success": result.returncode == 0,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "returncode": result.returncode,
+            "cwd": str(p),
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e), "cwd": str(p)}
+
+
+async def run_pytest(test_path: str) -> Dict[str, Any]:
+    """TOOL-01: Run pytest on a single allowlisted test file."""
+    import subprocess
+    ALLOWED = {
+        "tests/integration/test_agent_non_blocking_timeout.py",
+        "tests/integration/test_agent_fallback.py",
+        "tests/integration/test_chat_routing.py",
+        "tests/integration/test_endpoints_auth.py",
+        "tests/integration/test_cloud_first_model_policy.py",
+    }
+    rel = Path(test_path).as_posix().replace("\\", "/")
+    if rel not in ALLOWED:
+        return {
+            "success": False,
+            "error": f"Test file not in allowlist: {rel}",
+            "allowed": sorted(ALLOWED),
+        }
+    full = BASE_PATH / test_path
+    if not full.exists():
+        return {"success": False, "error": f"File not found: {full}"}
+    try:
+        result = subprocess.run(
+            ["python", "-m", "pytest", str(full), "-q", "--tb=short"],
+            cwd=str(BASE_PATH),
+            capture_output=True,
+            text=True,
+            timeout=180,
+        )
+        return {
+            "success": result.returncode == 0,
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "returncode": result.returncode,
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+async def write_evidence(path: str, content: str) -> Dict[str, Any]:
+    """TOOL-01: Write content to tmp_agent/real_tools_evidence only."""
+    import os
+    rel = Path(path).as_posix().replace("\\", "/")
+    if not rel.startswith("tmp_agent/real_tools_evidence/"):
+        return {
+            "success": False,
+            "error": f"Write blocked: path must be under tmp_agent/real_tools_evidence/",
+            "path": rel,
+        }
+    full = BASE_PATH / rel
+    if len(content.encode("utf-8")) > 1_000_000:
+        return {"success": False, "error": "Content exceeds 1MB limit"}
+    try:
+        full.parent.mkdir(parents=True, exist_ok=True)
+        full.write_text(content, encoding="utf-8")
+        return {"success": True, "written": str(full), "bytes": len(content.encode("utf-8"))}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 async def request_clarification(
@@ -3166,6 +3283,12 @@ def build_standard_executor() -> ToolExecutor:
     ex.register("get_technical_introspection", get_technical_introspection, "Snapshot tecnico del Brain: proceso, VRAM, codigo y capacidades", "system")
     ex.register("run_command",     run_command,     "Ejecuta un comando de shell (lectura)",      "system")
     ex.register("run_powershell",  run_powershell,  "Ejecuta script PowerShell via -File (sin double-parse cmd.exe). args: file_path o script (ASCII), args, cwd, timeout", "system")
+
+    # TOOL-01: governed real tools
+    ex.register("health_check",    health_check,    "GET http://127.0.0.1:8090/health con timeout 10s", "system")
+    ex.register("git_status",      git_status,      "Ejecuta git status --short dentro de BASE_PATH", "filesystem")
+    ex.register("run_pytest",      run_pytest,      "Ejecuta pytest sobre un test allowlisted", "code")
+    ex.register("write_evidence",  write_evidence,  "Escribe evidencia solo en tmp_agent/real_tools_evidence/", "filesystem")
 
     # Memoria semantica / metacognicion visible
     ex.register("semantic_memory_status", semantic_memory_status, "Estado de la memoria semantica persistente", "memory")
