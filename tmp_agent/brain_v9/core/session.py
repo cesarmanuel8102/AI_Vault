@@ -29,6 +29,7 @@ import re
 import shutil
 import subprocess
 import textwrap
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -6925,16 +6926,40 @@ class BrainSession:
         dashboard_ready = _UI_DASHBOARD.exists()
         host = SERVER_HOST or "127.0.0.1"
         localhost_host = "localhost" if host == "127.0.0.1" else host
+        port = SERVER_PORT or 8090
+
+        runtime_status = "unknown"
+        verified_by = "not_verified"
+        http_ok = False
+        try:
+            req = urllib.request.Request(
+                f"http://{localhost_host}:{port}/health",
+                method="GET",
+            )
+            with urllib.request.urlopen(req, timeout=2) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                if data.get("status") == "healthy":
+                    runtime_status = "verified"
+                    verified_by = "http_health"
+                    http_ok = True
+                else:
+                    runtime_status = "degraded"
+                    verified_by = "http_health"
+        except Exception:
+            runtime_status = "unknown"
+            verified_by = "http_health_failed"
+
         text = (
             f"El dashboard esta integrado en Brain V9.\n"
-            f"runtime: activo\n"
+            f"runtime_status: {runtime_status}\n"
+            f"verified_by: {verified_by}\n"
             f"host: {host}\n"
-            f"puerto: {SERVER_PORT}\n"
-            f"ui_url: http://{localhost_host}:{SERVER_PORT}/ui\n"
-            f"dashboard_url: http://{localhost_host}:{SERVER_PORT}/dashboard\n"
+            f"puerto: {port}\n"
+            f"ui_url: http://{localhost_host}:{port}/ui\n"
+            f"dashboard_url: http://{localhost_host}:{port}/dashboard\n"
             f"ui_files: index={'ok' if ui_ready else 'missing'} | dashboard={'ok' if dashboard_ready else 'missing'}"
         )
-        return self._system_reply(text, success=ui_ready or dashboard_ready)
+        return self._system_reply(text, success=(ui_ready or dashboard_ready) and http_ok)
 
     def _utility_status_fastpath(self) -> Dict:
         utility = read_json(_STATE_PATH / "utility_u_latest.json", default={})
@@ -7147,16 +7172,8 @@ class BrainSession:
     # ── Helpers ───────────────────────────────────────────────────────────────
 
     def _system_reply(self, text: str, success: bool = True) -> Dict:
-        """Build a standardized system reply dict."""
-        return {
-            "success": success,
-            "content": text,
-            "response": text,
-            "model": "system",
-            "model_used": "system",
-            "intent": "SYSTEM",
-            "route": "command",
-        }
+        """Return a system reply dict with content key."""
+        return {"response": text, "content": text, "text": text, "success": success, "source": "fastpath"}
 
     def _maybe_persist_correction(self, user_msg: str, history: List[Dict]) -> bool:
         """R4.4 / R5.3: When the user corrects the assistant, persist the

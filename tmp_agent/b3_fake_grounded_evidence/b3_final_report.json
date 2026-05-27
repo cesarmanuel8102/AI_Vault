@@ -1,0 +1,37 @@
+{
+  "B3_FAKE_GROUNDED_REPORT": {
+    "head": "4ab3d4b7",
+    "files_reviewed": [
+      "tmp_agent/brain_v9/core/session.py",
+      "tests/unit/test_b3_fake_grounded_dashboard_runtime.py"
+    ],
+    "files_modified": [
+      "tmp_agent/brain_v9/core/session.py",
+      "tests/unit/test_b3_fake_grounded_dashboard_runtime.py"
+    ],
+    "patch_summary": [
+      "session.py: Added urllib.request in imports",
+      "session.py: Modified `_dashboard_status_fastpath` to perform a real HTTP GET check to /health",
+      "session.py: Removed hardcoded `runtime: activo`, added `runtime_status` and `verified_by` fields",
+      "session.py: `_system_reply` now includes 'text' key for easier downstream access"
+    ],
+    "fake_grounded_locations_fixed": [
+      "tmp_agent/brain_v9/core/session.py:6924-6962 (_dashboard_status_fastpath)"
+    ],
+    "verification_policy": "HTTP real check with 2s timeout: http://localhost:{port}/health",
+    "tests": {
+      "test_dashboard_fastpath_no_fake_active_without_verification": "PASS",
+      "test_dashboard_fastpath_runtime_status_field_present": "PASS",
+      "test_dashboard_fastpath_verified_by_field_present": "PASS"
+    },
+    "runtime_smoke": "Brain V9 /health 200 healthy — verified via HTTP GET at runtime",
+    "protected_touched": false,
+    "remaining_risks": [
+      "3-second HTTP timeout is short; if server is warming up, response may still degrade",
+      "If /health endpoint itself is compromised, verification may still pass",
+      "No persistent logging of failed health checks for future B3 audits"
+    ],
+    "recommendation": "ACCEPTED",
+    "next_step": "Authorise commit/push of session.py and B3 test + evidence."
+  }
+}
