@@ -1,0 +1,13 @@
+{
+  "patch_needed": true,
+  "utility_status": {
+    "action": "alias_readonly",
+    "target": "brain_utility_v2",
+    "reason": "Dashboard and probes expect /brain/utility/status; canonical is /brain/utility/v2. Alias keeps compatibility without duplicating logic."
+  },
+  "learning_proposals": {
+    "action": "alias_readonly",
+    "target": "brain_ce_proposals",
+    "reason": "No separate learning proposals source; chat_excellence/proposals is canonical. Alias returns same data with canonical pointer for transparency."
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "utility_status": {
+    "exists_in_openapi": false,
+    "exists_in_main": false,
+    "used_by_ui": false,
+    "canonical_alternative": "/brain/utility/v2",
+    "root_cause": "Endpoint never implemented; utility governance moved to /brain/utility/v2 and /brain/utility-governance/status. DASH-01 probe detected 404."
+  },
+  "learning_proposals": {
+    "exists_in_openapi": false,
+    "exists_in_main": false,
+    "used_by_ui": false,
+    "canonical_alternative": "/brain/chat_excellence/proposals",
+    "root_cause": "No standalone learning proposals endpoint; proposals are served under chat_excellence namespace. DASH-01 probe detected 404."
+  }
+}

@@ -225,6 +225,12 @@ async def serve_dashboard():
     return HTMLResponse("<h1>Dashboard not found</h1>", status_code=404)
 
 
+@app.get("/dashboard-v2", include_in_schema=False)
+async def serve_dashboard_v2():
+    """Compatibility alias for the Command Center v2 dashboard."""
+    return await serve_dashboard()
+
+
 class MaintenanceActionRequest(BaseModel):
     service: str
     action: str
@@ -2406,6 +2412,13 @@ async def brain_ce_proposals(status: Optional[str] = None, limit: int = 50):
         raise HTTPException(status_code=500, detail=f"ce proposals list failed: {e}")
 
 
+@app.get("/brain/learning/proposals")
+async def brain_learning_proposals(status: Optional[str] = None, limit: int = 50):
+    """Alias: learning proposals served from chat_excellence source."""
+    data = await brain_ce_proposals(status=status, limit=limit)
+    return {"ok": True, "route": "/brain/learning/proposals", "canonical": "/brain/chat_excellence/proposals", **data}
+
+
 @app.get("/brain/chat_excellence/proposals/{proposal_id}")
 async def brain_ce_proposal_get(proposal_id: str):
     try:
@@ -2667,6 +2680,14 @@ async def brain_utility():
 @app.get("/brain/utility/v2")
 async def brain_utility_v2():
     return await brain_utility()
+
+
+@app.get("/brain/utility/status")
+async def brain_utility_status():
+    """Alias: utility status served from canonical /brain/utility/v2."""
+    data = await brain_utility_v2()
+    return {"ok": True, "route": "/brain/utility/status", "canonical": "/brain/utility/v2", **data}
+
 
 @app.post("/brain/utility/refresh")
 async def brain_utility_refresh(_operator: OperatorAccess):

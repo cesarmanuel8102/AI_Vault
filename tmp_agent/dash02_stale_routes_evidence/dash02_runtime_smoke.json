@@ -1,0 +1,27 @@
+{
+  "health": {
+    "status": 200,
+    "body_preview": "healthy"
+  },
+  "utility_status": {
+    "status": 200,
+    "has_ok": true,
+    "has_canonical": true
+  },
+  "learning_proposals": {
+    "status": 200,
+    "has_ok": true,
+    "has_canonical": true,
+    "has_items": true
+  },
+  "utility_v2": {
+    "status": 200
+  },
+  "utility_governance_status": {
+    "status": 200
+  },
+  "chat_excellence_proposals": {
+    "status": 200
+  },
+  "all_pass": true
+}

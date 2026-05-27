@@ -1,0 +1,50 @@
+{
+  "DASH02_FINAL_REPORT": {
+    "head_initial": "bbec35a2",
+    "head_current": "bbec35a2",
+    "files_modified": [
+      "tmp_agent/brain_v9/main.py",
+      "tests/integration/test_dashboard_stale_routes.py"
+    ],
+    "audit": {
+      "utility_status_root_cause": "Endpoint never implemented; canonical moved to /brain/utility/v2 and /brain/utility-governance/status. DASH-01 probe detected 404.",
+      "learning_proposals_root_cause": "No standalone learning proposals endpoint; proposals served under chat_excellence namespace. DASH-01 probe detected 404.",
+      "used_by_ui": false,
+      "canonical_routes": {
+        "utility_status": "/brain/utility/v2",
+        "learning_proposals": "/brain/chat_excellence/proposals"
+      }
+    },
+    "patch": {
+      "patch_applied": true,
+      "endpoints_added": [
+        "GET /brain/utility/status (alias to /brain/utility/v2)",
+        "GET /brain/learning/proposals (alias to /brain/chat_excellence/proposals)"
+      ],
+      "aliases_created": [
+        "/brain/utility/status \u2192 /brain/utility/v2",
+        "/brain/learning/proposals \u2192 /brain/chat_excellence/proposals"
+      ],
+      "no_patch_reason": null
+    },
+    "tests": {
+      "test_dashboard_stale_routes": "7 passed",
+      "test_tool_permission_gate": "8 passed",
+      "test_real_tools_execution": "7 passed",
+      "test_chat_routing": "33 passed",
+      "test_endpoints_auth": "8 passed",
+      "py_compile_main": "ok"
+    },
+    "runtime_smoke": {
+      "health": 200,
+      "utility_status": 200,
+      "learning_proposals": 200,
+      "utility_v2": 200,
+      "utility_governance_status": 200,
+      "chat_excellence_proposals": 200
+    },
+    "protected_status": "memory/semantic, tmp_agent/strategies, tmp_agent/reports, nul: NOT staged",
+    "acceptance": "ACCEPTED",
+    "next_step": "Commit/push DASH-02 upon authorization"
+  }
+}
