@@ -328,3 +328,35 @@
 - Next recommended item:
   - B3 fake grounded dashboard/runtime, or N2 auto-approval API bypass depending on priority
 
+## 13. Checkpoint — B3 Fake Grounded Dashboard/Runtime fixed
+- Date (UTC): 2026-05-27T08:00:00+00:00
+- Branch: codex/own-capital-sustainable-return
+- HEAD: c07cd180 (already committed), evidence files committed at dc96b680
+- Commit:
+  - c07cd180 — Fix B3 fake grounded dashboard/runtime: add HTTP health verification
+- Scope:
+  - tmp_agent/brain_v9/core/session.py
+  - tests/unit/test_b3_fake_grounded_dashboard_runtime.py
+  - tmp_agent/b3_fake_grounded_evidence/b3_final_report.json
+  - tmp_agent/b3_fake_grounded_evidence/b3_baseline.json
+  - tmp_agent/b3_fake_grounded_evidence/b3_patch_report.json
+- Finding:
+  - B3 fake grounded: `_dashboard_status_fastpath` returned hardcoded `"runtime: activo"` without verifying actual Brain V9 state
+- Fix:
+  - Added real HTTP GET check to `http://localhost:{port}/health` with 2-second timeout
+  - `_dashboard_status_fastpath` now returns `runtime_status`, `verified_by`, and `verification_method` fields
+  - `_system_reply` extended with `"text"` key to prevent `KeyError` in downstream access patterns
+- Tests:
+  - test_dashboard_fastpath_no_fake_active_without_verification: PASS
+  - test_dashboard_fastpath_runtime_status_field_present: PASS
+  - test_dashboard_fastpath_verified_by_field_present: PASS
+- Evidence:
+  - tmp_agent/b3_fake_grounded_evidence/b3_final_report.json: ACCEPTED
+- Runtime:
+  - Brain V9 /health: healthy (verified via HTTP GET at runtime)
+- Protected files status: NOT staged during any commit
+- Ledger updated: evidence files committed, ledger checkpoint added
+- Next recommended item:
+  - Clean up legacy `validate_security_*.py` from repo root (superseded by tests/security/ versions)
+  - Scope next roadmap item: B7 session.py cognitive monolith or N2 auto-approval API bypass priority
+
