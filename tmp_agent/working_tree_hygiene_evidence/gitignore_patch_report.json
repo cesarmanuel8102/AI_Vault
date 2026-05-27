@@ -1,0 +1,30 @@
+{
+  "GITIGNORE_HYGIENE_PATCH_REPORT": {
+    "head_initial": "b4ac7d8e",
+    "head_current": "b4ac7d8e",
+    "file_modified": ".gitignore",
+    "patterns_added": [
+      "nul",
+      "memory/semantic/*.npz",
+      "memory/semantic/*.jsonl",
+      "tmp_agent/reports/",
+      "tmp_agent/**/ops/restart_*_result_*.json",
+      "tmp_agent/**/campaign_gate_market_cache/*.csv",
+      "tmp_agent/**/campaign_gate_status_latest.json",
+      "tmp_agent/**/campaign_gate_email_last_send.json",
+      "tmp_agent/**/tool01_router_*.json",
+      "tmp_agent/**/codex_post_patch/"
+    ],
+    "patterns_skipped": [
+      "tmp_agent/real_tools_evidence/ (selectively committed, kept visible)",
+      "tmp_agent/dash02_stale_routes_evidence/ (already committed)",
+      "tmp_agent/ledger_checkpoint_evidence/ (already committed)",
+      "tmp_agent/working_tree_hygiene_evidence/ (pending review)"
+    ],
+    "protected_touched": false,
+    "staged_files": 0,
+    "git_status_after": "Runtime clutter reduced; remaining dirty files are protected (tracked), roadmap-relevant, or unknown.",
+    "acceptance": "ACCEPTED",
+    "next_step": "Autorizar commit/push SOLO de .gitignore patch, o proceed to next roadmap item."
+  }
+}

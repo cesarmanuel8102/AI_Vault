@@ -1,0 +1,7 @@
+{
+  "only_gitignore_modified": true,
+  "no_protected_files_touched": true,
+  "no_staged_files": true,
+  "runtime_hidden_count": 107,
+  "git_status_after": "cleaner (runtime files hidden)"
+}

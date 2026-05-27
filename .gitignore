@@ -67,3 +67,15 @@ agent_endpoint_hits.txt
 *.txt
 
 workspace/
+
+# AI_VAULT local runtime/protected artifacts
+nul
+memory/semantic/*.npz
+memory/semantic/*.jsonl
+tmp_agent/reports/
+tmp_agent/**/ops/restart_*_result_*.json
+tmp_agent/**/campaign_gate_market_cache/*.csv
+tmp_agent/**/campaign_gate_status_latest.json
+tmp_agent/**/campaign_gate_email_last_send.json
+tmp_agent/**/tool01_router_*.json
+tmp_agent/**/codex_post_patch/
