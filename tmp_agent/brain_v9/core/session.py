@@ -897,9 +897,7 @@ class ChatMetrics:
         
         # Check for agent on no-tool query
         if selected_route == "agent":
-            no_tool_indicators = ["solo analiza", "no uses tools", "sin herramientas",
-                                 "solo explica", "no modifiques"]
-            if any(ind in msg_lower for ind in no_tool_indicators):
+            if any(ind in msg_lower for ind in NO_TOOL_MARKERS):
                 if "prefers_no_tools" in guards_triggered or not any(
                     c.get("name") == "_has_explicit_tool_target" for c in candidates
                 ):
@@ -1114,13 +1112,7 @@ class ChatMetrics:
         
         # ── Detection 2: Tool Usage Contradiction ──────────────────────────────
         # User says "no tools" but tools were used
-        no_tool_indicators = [
-            "no uses tools", "no herramientas", "sin herramientas",
-            "no ejecutes", "sin tools", "no modifiques nada",
-            "solo analiza", "solo explica", "sin cambios",
-        ]
-        
-        if any(ind in msg_lower for ind in no_tool_indicators):
+        if any(ind in msg_lower for ind in NO_TOOL_MARKERS):
             if tools_used and len(tools_used) > 0:
                 contradictions.append({
                     "type": "tool_contradiction",

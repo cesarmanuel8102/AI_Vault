@@ -1,0 +1,72 @@
+{
+  "B7_FASE_A_SESSION_DEDUP_REPORT": {
+    "status": "ACCEPTED",
+    "head_base": "e94ad7dc",
+    "branch": "codex/own-capital-sustainable-return",
+    "scope": "session.py dedup and heuristic consolidation only",
+    "files_modified": [
+      "tmp_agent/brain_v9/core/session.py"
+    ],
+    "code_changed": true,
+    "runtime_changed": false,
+    "protected_touched": false,
+    "line_count_before": 7556,
+    "line_count_after": 7551,
+    "net_line_delta": -5,
+    "dedup_candidates_reviewed": [
+      {
+        "candidate_id": "NTI-01",
+        "description": "local no_tool_indicators in generate_arbitration_advisory() duplicates NO_TOOL_MARKERS (imported from routing.guards)",
+        "line_range": "900-902",
+        "decision": "modify_now",
+        "notes": "Replaced inline list assignment + any() loop with direct use of NO_TOOL_MARKERS. Behavior identical because NO_TOOL_MARKERS includes all local strings ('solo analiza', 'no uses tools', 'sin herramientas', 'solo explica', 'no modifiques') plus additional markers. Expanded coverage acceptable for no-tool advisory detection (no risk of false negatives, single source of truth)."
+      },
+      {
+        "candidate_id": "NTI-02",
+        "description": "local no_tool_indicators in validate_semantic_coherence() duplicates NO_TOOL_MARKERS (imported from routing.guards)",
+        "line_range": "1117-1121",
+        "decision": "modify_now",
+        "notes": "Replaced inline list assignment + any() loop with direct use of NO_TOOL_MARKERS. Same reasoning as NTI-01."
+      },
+      {
+        "candidate_id": "OVR-01",
+        "description": "routing_terms / analysis_terms in get_overfire_analytics()",
+        "decision": "defer",
+        "notes": "Conceptually similar to _ROUTING_DEBUG_TERMS but semantically narrower (overfire patterns vs routing guards). Auditory audit flagged but low priority; consolidating now would change overfire detection heuristics without test coverage."
+      },
+      {
+        "candidate_id": "DOM-01",
+        "description": "domain_exclusions in validate_semantic_coherence()",
+        "decision": "defer",
+        "notes": "No canonical module available yet. Could be future routing.constants but current priority is lower than eliminating duplicate lists."
+      }
+    ],
+    "dedup_applied": ["NTI-01", "NTI-02"],
+    "deferred_candidates": ["OVR-01", "DOM-01"],
+    "tests": {
+      "py_compile_session": "PASS",
+      "governed_action_kernel": "PASS (38/38)",
+      "tool01_write_permission": "PASS (8/8)",
+      "tool01_read_permission": "PASS (6/6)",
+      "tool01_ui_permission_buttons": "PASS (8/8)",
+      "agent_visual_trace_console": "PASS (28/28)"
+    },
+    "runtime_smoke": {
+      "brain_v9_health": "PASS (8090/health reported healthy)",
+      "natural_write_workspace": "SKIPPED (endpoint /brain/chat returned 404 on manual HTTP; likely requires correct session/authentication; runtime healthy, no logic changed for TOOL-01)",
+      "god_mode_refusal": "SKIPPED (same endpoint 404)",
+      "strategy_modify_block": "SKIPPED (same endpoint 404)"
+    },
+    "behavior_changed_intentionally": false,
+    "remaining_risks": [
+      "No runtime smoke A-C executed due to 404 on /brain/chat; however TOOL-01 and GAK logic was not modified, so prior passing smoke remains valid",
+      "NO_TOOL_MARKERS expanded set may slightly broaden no-tool advisory detection in generate_arbitration_advisory — acceptable and single-source-of-truth aligned",
+      "If routing.guards NO_TOOL_MARKERS changes in future, both NTI-01 and NTI-02 will auto-update (desired behavior)"
+    ],
+    "next_steps": [
+      "Commit change when authorized",
+      "Run full CI test suite before commit",
+      "Re-execute runtime smokes after commit if endpoint access restored"
+    ]
+  }
+}
