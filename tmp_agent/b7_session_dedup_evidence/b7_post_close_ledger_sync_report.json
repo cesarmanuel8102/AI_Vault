@@ -1,0 +1,22 @@
+{
+  "B7_POST_CLOSE_LEDGER_SYNC_REPORT": {
+    "status": "ACCEPTED",
+    "head_base": "ebf9ba85",
+    "branch": "codex/own-capital-sustainable-return",
+    "scope": "post-B7 documentation and roadmap synchronization only",
+    "b7_closed": true,
+    "b7_completion_percent": 100,
+    "session_py_refactor_continues": false,
+    "final_decision": "B7 closed; do not continue session.py micro-refactor in this cycle",
+    "next_recommended_front": "B1 routing authority audit",
+    "files_modified": [
+      "ROADMAP_STATUS.json",
+      "docs/MIGRATION_CONTROL_LEDGER.md",
+      "tmp_agent/migration_reconciliation_preview.json",
+      "tmp_agent/migration_reconciliation_apply_report.json"
+    ],
+    "code_changed": false,
+    "protected_touched": false,
+    "ready_for_commit": true
+  }
+}

@@ -1,33 +1,34 @@
 {
   "MRC01_RECONCILIATION_REPORT": {
     "status": "APPLIED_DOCUMENTATION_ONLY",
-    "head": "cf0ed882",
+    "head": "ebf9ba85",
     "branch": "codex/own-capital-sustainable-return",
-    "timestamp_utc": "2026-05-28T04:00:00Z",
+    "timestamp_utc": "2026-05-28T05:15:00Z",
     "ledger_found": true,
     "roadmap_found": true,
     "applied_to_ledger": true,
     "applied_to_roadmap_status": true,
-    "applied_head": "cf0ed882",
+    "applied_head": "ebf9ba85",
     "evidence_reports_found": [],
     "closed_fronts_detected": [],
     "open_fronts_detected": [],
     "blocked_fronts_detected": [],
     "inconsistencies": [],
     "recommended_next_front": {
-      "id": "B7-FASE-A",
-      "title": "B7-FASE-A: Dedup and heuristic consolidation in session.py",
-      "reason": "Next recommended front per MRC-01A reconciliation"
+      "id": "B1",
+      "title": "B1: Routing authority audit",
+      "reason": "Post-B7 next recommended front per updated ledger"
     },
     "preview_file": "tmp_agent/migration_reconciliation_preview.json",
     "applied_files": [
       "docs/MIGRATION_CONTROL_LEDGER.md",
       "ROADMAP_STATUS.json",
       "tmp_agent/migration_reconciliation_preview.json",
-      "tmp_agent/migration_reconciliation_apply_report.json"
+      "tmp_agent/migration_reconciliation_apply_report.json",
+      "tmp_agent/b7_session_dedup_evidence/b7_post_close_ledger_sync_report.json"
     ],
     "next_front_ready": true,
-    "next_front_id": "B7-FASE-A",
+    "next_front_id": "B1",
     "protected_touched": false,
     "ready_for_apply": false
   }

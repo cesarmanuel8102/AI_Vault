@@ -527,3 +527,31 @@
   - Acceptance: 88/88 tests still pass, runtime smoke A+D still pass
 - Rollback policy applied: Yes (documentation only, no code changes to roll back)
 
+## 19. Checkpoint — Post-B7 Closure
+- Date (UTC): 2026-05-28T05:15:00+00:00
+- Branch: codex/own-capital-sustainable-return
+- HEAD: ebf9ba85
+- Type: DOCUMENTATION ONLY — B7 series formally closed
+- Scope:
+  - docs/MIGRATION_CONTROL_LEDGER.md (section 19 added)
+  - ROADMAP_STATUS.json (B7 finalized, next front updated)
+- B7 Final Status:
+  - B7-FASE-A: CLOSED (dedup no_tool_indicators via NO_TOOL_MARKERS; commit 8a085c33)
+  - B7-FASE-B: CLOSED as NO_SAFE_CHANGE (heuristic constants audit; local lists kept)
+  - B7-FASE-C: CLOSED (9 characterization tests added; commit d5d94010)
+  - B7-FASE-D: CLOSED as NO_SAFE_CHANGE (_ROUTING_DEBUG_TERMS kept local; commit ebf9ba85)
+- Decision:
+  - Do not continue session.py micro-refactor in this cycle
+  - session.py remains large (~7,500 lines); future refactor requires dedicated front and stronger test coverage
+- Tests:
+  - All regression suites PASS (97/97 total)
+- Protected files status: NOT staged during any commit
+- Inconsistencies resolved:
+  - IC-03 (auditoria FASE A no ejecutada): RESOLVED — B7-A executed, B7-B/C/D completed
+- Next recommended front:
+  - PRIMARY: B1 routing authority audit
+  - SECONDARY: B2 orphan modules audit
+  - TERTIARY: N5 import/path/test hygiene
+- Rollback policy: N/A (documentation only)
+
+

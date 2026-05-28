@@ -1,7 +1,7 @@
 {
   "MRC01A_APPLY_REPORT": {
     "status": "ACCEPTED_DOCUMENTATION_ONLY",
-    "head": "cf0ed882",
+    "head": "ebf9ba85",
     "branch": "codex/own-capital-sustainable-return",
     "ledger_updated": true,
     "roadmap_status_updated": true,
@@ -12,31 +12,31 @@
     "files_modified": [
       "docs/MIGRATION_CONTROL_LEDGER.md",
       "ROADMAP_STATUS.json",
-      "tmp_agent/migration_reconciliation_preview.json"
+      "tmp_agent/migration_reconciliation_preview.json",
+      "tmp_agent/b7_session_dedup_evidence/b7_post_close_ledger_sync_report.json"
     ],
     "closed_fronts_formalized": [
       { "id": "N2", "name": "N2 auto-approval API bypass", "commit": "80c919f3" },
       { "id": "VTC", "name": "Agent Visual Trace Console", "commits": ["383bb332", "59fc02d0", "f771bac6", "736a3308"] },
       { "id": "TOOL-01", "name": "TOOL-01 governed filesistem read/write", "commit": "e5c21b0e" },
-      { "id": "GAK", "name": "Governed Action Kernel natural-language", "commit": "cf0ed882" }
+      { "id": "GAK", "name": "Governed Action Kernel natural-language", "commit": "cf0ed882" },
+      { "id": "B7", "name": "B7 session.py dedup and heuristic audit", "commit": "ebf9ba85" }
     ],
     "open_fronts_preserved": [
-      { "id": "B7", "name": "session.py cognitive monolith", "status": "next_recommended" },
-      { "id": "B1", "name": "doble routing / autoridad de rutas", "status": "deferred" },
+      { "id": "B1", "name": "doble routing / autoridad de rutas", "status": "next_recommended" },
       { "id": "B2", "name": "modulos huerfanos", "status": "deferred" },
       { "id": "N5", "name": "failing/import/path tests", "status": "in_progress" }
     ],
     "inconsistencies_resolved": {
-      "IC-01": { "severity": "medium", "status": "PARTIALLY_RESOLVED", "note": "VTC, TOOL-01, GAK, N2 formalized" },
+      "IC-01": { "severity": "medium", "status": "PARTIALLY_RESOLVED", "note": "VTC, TOOL-01, GAK, N2, B7 formalized" },
       "IC-02": { "severity": "low", "status": "RESOLVED", "note": "ROADMAP_STATUS.json updated" },
-      "IC-03": { "severity": "medium", "status": "PRESERVED", "note": "B7-FASE-A declared next recommended front" },
+      "IC-03": { "severity": "medium", "status": "RESOLVED", "note": "B7 series completed" },
       "IC-04": { "severity": "low", "status": "RESOLVED", "note": "head mismatch noted in checkpoint 15" }
     },
-    "next_front": "B7-FASE-A: Dedup and heuristic consolidation in session.py",
+    "next_front": "B1: Routing authority audit",
     "ready_for_next_front": true,
     "remaining_risks": [
       "memory/semantic dirty tree may be accidentally committed if not in .gitignore",
-      "session.py still growing despite audit recommendations; refactor is urgent",
       "N5 test hygiene requires CI enforcement"
     ]
   }
