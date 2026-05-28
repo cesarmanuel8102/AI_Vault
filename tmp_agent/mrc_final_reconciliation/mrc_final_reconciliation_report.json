@@ -1,0 +1,66 @@
+{
+  "MRC_FINAL_RECONCILIATION_REPORT": {
+    "status": "APPLIED_READ_ONLY",
+    "head_base": "089fe933",
+    "branch": "codex/own-capital-sustainable-return",
+    "migration_status": "post_n5_closed",
+    "roadmap_consistent": true,
+    "ledger_consistent": true,
+    "inconsistencies": [],
+    "open_fronts": [],
+    "blocked_fronts": [],
+    "completed_fronts_verified": [
+      "B1_routing_authority_mitigation",
+      "B2_orphan_modules_audit",
+      "N5_import_path_test_hygiene"
+    ],
+    "evidence_verified": {
+      "B1": [
+        "tmp_agent/b1_routing_authority_audit/b1_route_inventory.json — EXISTS",
+        "tmp_agent/b1_routing_authority_audit/b1_findings_report.json — EXISTS",
+        "tmp_agent/b1_routing_authority_audit/b1_b_patch_plan.json — EXISTS",
+        "tmp_agent/b1_routing_authority_audit/b1_c_patch_report.json — EXISTS",
+        "tmp_agent/b1_routing_authority_audit/b1_d_ledger_sync_report.json — EXISTS"
+      ],
+      "B2": [
+        "tmp_agent/b2_orphan_modules_audit/b2_orphan_inventory.json — EXISTS",
+        "tmp_agent/b2_orphan_modules_audit/b2_orphan_findings_report.json — EXISTS",
+        "tmp_agent/b2_orphan_modules_audit/b2_c_decision_report.json — EXISTS"
+      ],
+      "N5": [
+        "tmp_agent/n5_import_path_test_hygiene/n5_import_inventory.json — EXISTS",
+        "tmp_agent/n5_import_path_test_hygiene/n5_findings_report.json — EXISTS",
+        "tmp_agent/n5_import_path_test_hygiene/n5_b_validation_plan.json — EXISTS",
+        "tmp_agent/n5_import_path_test_hygiene/n5_b_validation_report.json — EXISTS",
+        "tmp_agent/n5_import_path_test_hygiene/n5_c_patch_plan.json — EXISTS",
+        "tmp_agent/n5_import_path_test_hygiene/n5_c_risk_matrix.json — EXISTS",
+        "tmp_agent/n5_import_path_test_hygiene/n5_d_roadmap_ledger_sync_report.json — EXISTS"
+      ]
+    },
+    "commit_chain_verified": {
+      "B1": [
+        "fc208107 — Add B1 routing authority audit evidence",
+        "9f42b4d5 — Add B1-B TOOL01 GAK patch plan",
+        "0a00f565 — Add B1-C GAK preflight for TOOL01 router",
+        "7df3d37d — Reconcile B1-C patch report after commit",
+        "9a18eafc — Sync ledger and roadmap after B1 closure"
+      ],
+      "B2": [
+        "a17e10f4 — B2-D: Orphan modules audit completion",
+        "95c58d84 — B2 sync: Close orphan modules audit in ledger and roadmap"
+      ],
+      "N5": [
+        "3ed30eb8 — Add N5 import path test hygiene audit",
+        "378b9134 — Add N5-B import finding validation evidence",
+        "641cddff — Add N5-C import path patch plan",
+        "089fe933 — Sync roadmap and ledger after N5 closure"
+      ]
+    },
+    "protected_paths_committed": false,
+    "code_changed_now": false,
+    "protected_touched_now": false,
+    "ready_for_final_commit": true,
+    "ready_for_patch": false,
+    "recommended_next_action": "Commit ROADMAP_STATUS.json current_head fix plus MRC final evidence; then declare this migration phase formally closed."
+  }
+}
