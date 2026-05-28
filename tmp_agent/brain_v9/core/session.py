@@ -4303,6 +4303,21 @@ class BrainSession:
         for tool_name, patterns in self._TOOL01_ROUTER_PATTERNS.items():
             for pat in patterns:
                 if re.search(pat, msg_lower):
+                    # GAK preflight: check policy before TOOL-01 permission/execution
+                    gak_action = detect_action_intent(message)
+                    if gak_action.is_action:
+                        gak_policy = evaluate_action_policy(gak_action)
+                        if gak_policy.blocked_by_policy:
+                            return {
+                                "route": "tool01_router",
+                                "tool01_router_used": True,
+                                "tool01_real": False,
+                                "permission_required": False,
+                                "blocked_by_policy": True,
+                                "error": gak_policy.error or "Accion bloqueada por politica de gobierno.",
+                                "reason": gak_policy.reason,
+                                "tool_name": tool_name,
+                            }
                     # Permission gate check
                     if not self._tool01_has_permission_grant(tool_name):
                         public_name = self._TOOL01_PUBLIC_NAMES.get(tool_name, tool_name)

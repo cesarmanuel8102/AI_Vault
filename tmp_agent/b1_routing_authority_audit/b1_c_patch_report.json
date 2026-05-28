@@ -1,0 +1,45 @@
+{
+  "B1_C_PATCH_REPORT": {
+    "status": "APPLIED",
+    "head_base": "9f42b4d5",
+    "branch": "codex/own-capital-sustainable-return",
+    "scope": "surgical GAK preflight for TOOL-01 execution",
+    "files_modified_or_new": [
+      "tmp_agent/brain_v9/core/session.py",
+      "tmp_agent/b1_routing_authority_audit/b1_c_patch_report.json",
+      "tmp_agent/b1_routing_authority_audit/backups/session_py_pre_b1c_20260528_073011.bak",
+      "tmp_agent/b1_routing_authority_audit/backups/session_py_pre_b1c_20260528_073011.json"
+    ],
+    "backup_created": true,
+    "backup_file": "tmp_agent/b1_routing_authority_audit/backups/session_py_pre_b1c_20260528_073011.bak",
+    "backup_metadata_file": "tmp_agent/b1_routing_authority_audit/backups/session_py_pre_b1c_20260528_073011.json",
+    "backup_integrity_verified": true,
+    "backup_matches_source": "backup metadata confirms sha256_source == sha256_backup at backup time",
+    "code_changed": true,
+    "protected_touched": false,
+    "git_destructive_commands_used": false,
+    "patch_summary": "Added GAK policy preflight inside _tool01_router() before permission grant or execution. When TOOL-01 pattern matches, detect_action_intent() and evaluate_action_policy() are invoked first. If GAK policy returns blocked_by_policy=True, TOOL-01 returns early with blocked_by_policy flag and skips permission request/execution. Preserves existing permission_required flow for safe workspace paths.",
+    "behavior_change": "TOOL-01 now enforces GAK policy before executing or requesting permission. Protected paths and policy-blocked actions are blocked immediately. Safe workspace paths unchanged. allow_once/allow_session/deny flow preserved.",
+    "session_py_diff_lines": 26,
+    "tests_total_passed": 97,
+    "tests_total_failed": 0,
+    "tests_run": [
+      "test_tool01_write_permission (8/8)",
+      "test_tool01_read_permission (6/6)",
+      "test_governed_action_kernel (38/38)",
+      "test_tool01_ui_permission_buttons (8/8)",
+      "test_b7_routing_heuristics_characterization (9/9)",
+      "test_agent_visual_trace_console (28/28)"
+    ],
+    "tests_passed": [
+      "test_tool01_write_permission (8/8)",
+      "test_tool01_read_permission (6/6)",
+      "test_governed_action_kernel (38/38)",
+      "test_tool01_ui_permission_buttons (8/8)",
+      "test_b7_routing_heuristics_characterization (9/9)",
+      "test_agent_visual_trace_console (28/28)"
+    ],
+    "tests_failed": [],
+    "ready_for_commit": true
+  }
+}
