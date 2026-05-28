@@ -1,0 +1,50 @@
+{
+  "B7_FASE_C_CHARACTERIZATION_TESTS_REPORT": {
+    "status": "ACCEPTED",
+    "head_base": "3cb4c9f6",
+    "branch": "codex/own-capital-sustainable-return",
+    "scope": "characterization tests for routing/overfire/semantic heuristics only",
+    "files_created": [
+      "tests/unit/test_b7_routing_heuristics_characterization.py",
+      "tmp_agent/b7_session_dedup_evidence/b7_fase_c_api_inspection.json"
+    ],
+    "code_changed": false,
+    "session_py_changed": false,
+    "runtime_changed": false,
+    "protected_touched": false,
+    "tests_added": [
+      "test_agent_keywords_module_level",
+      "test_chatmetrics_class_exists",
+      "test_brainsession_class_exists",
+      "test_get_overfire_analytics_exists_in_chatmetrics",
+      "test_validate_semantic_coherence_exists_in_chatmetrics",
+      "test_chatmetrics_instantiable_without_crashing",
+      "test_get_overfire_analytics_return_type",
+      "test_validate_semantic_coherence_returns_dict",
+      "test_routing_debug_terms_local_not_module_level"
+    ],
+    "behaviors_characterized": [
+      "AGENT_KEYWORDS exists as a non-empty list/tuple at module level",
+      "ChatMetrics class exists, is instantiable, and contains get_overfire_analytics / validate_semantic_coherence methods",
+      "BrainSession class exists",
+      "get_overfire_analytics returns a dict with 'patterns' or 'status' key",
+      "validate_semantic_coherence returns a dict for a domain-exclusion-like message (trading blocked)",
+      "_ROUTING_DEBUG_TERMS is NOT a module-level constant — it is localized inside a method"
+    ],
+    "tests": {
+      "b7_routing_heuristics_characterization": "PASS (9/9)",
+      "py_compile_session": "PASS",
+      "py_compile_test_file": "PASS"
+    },
+    "runtime_smoke": {
+      "status": "SKIPPED",
+      "reason": "test-only change, no runtime behavior modified"
+    },
+    "ready_for_commit": true,
+    "remaining_risks": [
+      "Nine characterization tests capture current behavior but do not exhaustively cover all overfire analytics patterns or semantic coherence heuristics",
+      "Future refactor of _ROUTING_DEBUG_TERMS extraction requires updating test_routing_debug_terms_local_not_module_level",
+      "Session.py still contains multiple local heuristic lists with no canonical centralization"
+    ]
+  }
+}

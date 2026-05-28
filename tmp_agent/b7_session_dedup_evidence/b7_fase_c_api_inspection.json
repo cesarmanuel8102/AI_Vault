@@ -1,0 +1,1514 @@
+{
+  "AGENT_KEYWORDS": [
+    {
+      "target": "AGENT_KEYWORDS",
+      "line": 109,
+      "context": [
+        {
+          "line": 99,
+          "text": "except Exception:"
+        },
+        {
+          "line": 100,
+          "text": "    _AUTHORITY_RESOLUTION_AVAILABLE = False"
+        },
+        {
+          "line": 101,
+          "text": ""
+        },
+        {
+          "line": 102,
+          "text": ""
+        },
+        {
+          "line": 103,
+          "text": "# ── Routing Constants ─────────────────────────────────────────────────────────"
+        },
+        {
+          "line": 104,
+          "text": ""
+        },
+        {
+          "line": 105,
+          "text": "AGENT_INTENTS = {\"SYSTEM\", \"CODE\", \"COMMAND\", \"TRADING\"}"
+        },
+        {
+          "line": 106,
+          "text": ""
+        },
+        {
+          "line": 107,
+          "text": "# Words that REQUIRE tool execution (not just informational questions)."
+        },
+        {
+          "line": 108,
+          "text": "# Matched with word boundaries to avoid false positives like \"log\" in \"lograr\"."
+        },
+        {
+          "line": 109,
+          "text": "AGENT_KEYWORDS = ["
+        },
+        {
+          "line": 110,
+          "text": "    # ── Spanish imperative actions ──"
+        },
+        {
+          "line": 111,
+          "text": "    r\"\\brevisa\\b\", r\"\\bverifica\\b\", r\"\\bdiagnostica\\b\", r\"\\bchequea\\b\","
+        },
+        {
+          "line": 112,
+          "text": "    r\"\\bejecutar?\\b\", r\"\\bcorre\\b\", r\"\\binspecciona\\b\","
+        },
+        {
+          "line": 113,
+          "text": "    r\"\\barregla\\b\", r\"\\binicia\\b\", r\"\\barranca\\b\","
+        },
+        {
+          "line": 114,
+          "text": "    r\"\\bdetén\\b\", r\"\\breinicia\\b\","
+        },
+        {
+          "line": 115,
+          "text": "    r\"\\blee\\b\", r\"\\bleer\\b\", r\"\\bmuestra\\b\", r\"\\babre\\b\","
+        },
+        {
+          "line": 116,
+          "text": "    r\"\\blista\\b\", r\"\\blistar\\b\", r\"\\blistame\\b\", r\"\\blistá\\b\","
+        },
+        {
+          "line": 117,
+          "text": "    r\"\\bdescribe\\b\", r\"\\bdescribir\\b\", r\"\\benumera\\b\","
+        },
+        {
+          "line": 118,
+          "text": "    r\"\\bcambios?\\b\", r\"\\bmodificaci[oó]n(?:es)?\\b\", r\"\\bmejoras?\\b\","
+        },
+        {
+          "line": 119,
+          "text": "    r\"\\brecientes?\\b\", r\"\\bultimos?\\b\", r\"\\bú?ltimos?\\b\","
+        },
+        {
+          "line": 120,
+          "text": "    r\"\\bbrain\\b\", r\"\\bcerebro\\b\", r\"\\bsistema\\b\","
+        },
+        {
+          "line": 121,
+          "text": "    # PHASE R3.1: UI / dashboard queries — must fetch HTML, not search backend code"
+        },
+        {
+          "line": 122,
+          "text": "    r\"\\bpesta[ñn]a\\b\", r\"\\btab\\b\", r\"\\bdashboard\\b\", r\"\\bui\\b\", r\"\\bgui\\b\","
+        },
+        {
+          "line": 123,
+          "text": "    r\"\\binterfaz\\b\", r\"\\bventana\\b\", r\"\\bpantalla\\b\", r\"\\bvista\\b\","
+        },
+        {
+          "line": 124,
+          "text": "    # ── English imperative actions ──"
+        },
+        {
+          "line": 125,
+          "text": "    r\"\\bcheck\\b\", r\"\\bverify\\b\", r\"\\bdiagnose\\b\", r\"\\binspect\\b\","
+        },
+        {
+          "line": 126,
+          "text": "    r\"\\bexecute\\b\", r\"\\brun\\b\", r\"\\bfix\\b\", r\"\\bstart\\b\", r\"\\bstop\\b\","
+        },
+        {
+          "line": 127,
+          "text": "    r\"\\brestart\\b\", r\"\\blaunch\\b\","
+        },
+        {
+          "line": 128,
+          "text": "    r\"\\bread\\b\", r\"\\bopen\\b\", r\"\\bcat\\b\","
+        },
+        {
+          "line": 129,
+          "text": "    # ── Spanish system queries (need live data) ──"
+        },
+        {
+          "line": 130,
+          "text": "    r\"\\bestado de\\b\", r\"\\bestado del\\b\","
+        },
+        {
+          "line": 131,
+          "text": "    r\"\\bpuerto\\b\", r\"\\bproceso\\b\", r\"\\blogs?\\b\","
+        },
+        {
+          "line": 132,
+          "text": "    r\"\\barchivo\\b\", r\"\\bcarpeta\\b\", r\"\\bdirectorio\\b\","
+        },
+        {
+          "line": 133,
+          "text": "    r\"\\bque hay en\\b\", r\"\\bqué hay en\\b\","
+        },
+        {
+          "line": 134,
+          "text": "    r\"\\bque esta corriendo\\b\", r\"\\bqué está corriendo\\b\","
+        },
+        {
+          "line": 135,
+          "text": "    r\"\\bcorriendo en\\b\","
+        },
+        {
+          "line": 136,
+          "text": "    # ── Path-like patterns (user referencing a file path) ──"
+        },
+        {
+          "line": 137,
+          "text": "    r\"\\b\\w+\\.py\\b\", r\"\\b\\w+\\.json\\b\", r\"\\b\\w+\\.log\\b\", r\"\\b\\w+\\.yaml\\b\","
+        },
+        {
+          "line": 138,
+          "text": "    # ── English system queries (need live data) ──"
+        },
+        {
+          "line": 139,
+          "text": "    r\"\\bstatus of\\b\", r\"\\bstatus\\b\","
+        },
+        {
+          "line": 140,
+          "text": "    r\"\\bport\\b\", r\"\\bprocess\\b\", r\"\\blogs?\\b\","
+        },
+        {
+          "line": 141,
+          "text": "    r\"\\bfile\\b\", r\"\\bfolder\\b\", r\"\\bdirectory\\b\","
+        },
+        {
+          "line": 142,
+          "text": "    r\"\\bwhat.?s running\\b\", r\"\\bshow me\\b\","
+        },
+        {
+          "line": 143,
+          "text": "    r\"\\blist\\b\","
+        },
+        {
+          "line": 144,
+          "text": "    # ── R22: anti-hallucination — quantitative & scan/network queries ──"
+        },
+        {
+          "line": 145,
+          "text": "    # Plurals & \"cuántos\" - prevent LLM from fabricating counts"
+        },
+        {
+          "line": 146,
+          "text": "    r\"\\barchivos?\\b\", r\"\\bcarpetas?\\b\", r\"\\bdirectorios?\\b\","
+        },
+        {
+          "line": 147,
+          "text": "    r\"\\bprocesos?\\b\", r\"\\bpuertos?\\b\", r\"\\bhosts?\\b\","
+        },
+        {
+          "line": 148,
+          "text": "    r\"\\bcu[aá]nt[oa]s?\\b\", r\"\\bhow\\s+many\\b\","
+        },
+        {
+          "line": 149,
+          "text": "    # Network scan keywords"
+        },
+        {
+          "line": 150,
+          "text": "    r\"\\bescane[oa]r?\\b\", r\"\\bescanea\\b\", r\"\\bscan\\b\", r\"\\bsweep\\b\","
+        },
+        {
+          "line": 151,
+          "text": "    r\"\\bred\\s+local\\b\", r\"\\blocal\\s+network\\b\", r\"\\bnetwork\\b\","
+        },
+        {
+          "line": 152,
+          "text": "    # CIDR / IPv4 in message — strong signal of operational intent"
+        },
+        {
+          "line": 153,
+          "text": "    r\"\\b\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}(?:/\\d{1,2})?\\b\","
+        },
+        {
+          "line": 154,
+          "text": "    # Report / mini-report intent"
+        },
+        {
+          "line": 155,
+          "text": "    r\"\\breporte\\b\", r\"\\breport\\b\", r\"\\bmini[\\s-]?reporte\\b\","
+        },
+        {
+          "line": 156,
+          "text": "    # ── End R22 ──"
+        },
+        {
+          "line": 157,
+          "text": "    # ── Connection / access actions ──"
+        },
+        {
+          "line": 158,
+          "text": "    r\"\\bconecta\\b\", r\"\\bconectate\\b\", r\"\\bconnect\\b\","
+        },
+        {
+          "line": 159,
+          "text": "    r\"\\baccede\\b\", r\"\\bacceder\\b\", r\"\\baccess\\b\","
+        }
+      ]
+    }
+  ],
+  "def get_overfire_analytics": [
+    {
+      "target": "def get_overfire_analytics",
+      "line": 570,
+      "context": [
+        {
+          "line": 560,
+          "text": "                    \"entry\": entry,"
+        },
+        {
+          "line": 561,
+          "text": "                    \"risk\": \"UI edit triggered on analysis request\","
+        },
+        {
+          "line": 562,
+          "text": "                })"
+        },
+        {
+          "line": 563,
+          "text": "        "
+        },
+        {
+          "line": 564,
+          "text": "        return suspicious"
+        },
+        {
+          "line": 565,
+          "text": ""
+        },
+        {
+          "line": 566,
+          "text": "    # ═══════════════════════════════════════════════════════════════════════════"
+        },
+        {
+          "line": 567,
+          "text": "    # FASE 2: OVERFIRE ANALYTICS"
+        },
+        {
+          "line": 568,
+          "text": "    # ═══════════════════════════════════════════════════════════════════════════"
+        },
+        {
+          "line": 569,
+          "text": "    "
+        },
+        {
+          "line": 570,
+          "text": "    def get_overfire_analytics(self, window_size: int = 100) -> Dict:"
+        },
+        {
+          "line": 571,
+          "text": "        \"\"\"F2-OA: Comprehensive overfire analytics for routing quality monitoring."
+        },
+        {
+          "line": 572,
+          "text": "        "
+        },
+        {
+          "line": 573,
+          "text": "        Detects and analyzes problematic routing patterns including:"
+        },
+        {
+          "line": 574,
+          "text": "        - trading hijack: trading fastpath capturing non-trading queries"
+        },
+        {
+          "line": 575,
+          "text": "        - ui_edit_overfire: UI edit activating on analysis requests  "
+        },
+        {
+          "line": 576,
+          "text": "        - agent_overuse: agent routed to ghost-prone queries"
+        },
+        {
+          "line": 577,
+          "text": "        - high_score_blocked: better candidate was blocked"
+        },
+        {
+          "line": 578,
+          "text": "        - repeated_fastpath: same fastpath activating on semantically diverse queries"
+        },
+        {
+          "line": 579,
+          "text": "        "
+        },
+        {
+          "line": 580,
+          "text": "        Args:"
+        },
+        {
+          "line": 581,
+          "text": "            window_size: Number of recent decisions to analyze (default 100)"
+        },
+        {
+          "line": 582,
+          "text": "            "
+        },
+        {
+          "line": 583,
+          "text": "        Returns:"
+        },
+        {
+          "line": 584,
+          "text": "            Dict with patterns, severity scores, recommendations, and actionable insights"
+        },
+        {
+          "line": 585,
+          "text": "        \"\"\""
+        },
+        {
+          "line": 586,
+          "text": "        if not self.data.get(\"routing_log\"):"
+        },
+        {
+          "line": 587,
+          "text": "            return {"
+        },
+        {
+          "line": 588,
+          "text": "                \"status\": \"no_data\","
+        },
+        {
+          "line": 589,
+          "text": "                \"message\": \"No routing decisions recorded yet\","
+        },
+        {
+          "line": 590,
+          "text": "                \"patterns\": [],"
+        },
+        {
+          "line": 591,
+          "text": "                \"summary\": {},"
+        },
+        {
+          "line": 592,
+          "text": "            }"
+        },
+        {
+          "line": 593,
+          "text": "        "
+        },
+        {
+          "line": 594,
+          "text": "        from collections import Counter, defaultdict"
+        },
+        {
+          "line": 595,
+          "text": "        import time as _time"
+        },
+        {
+          "line": 596,
+          "text": "        "
+        },
+        {
+          "line": 597,
+          "text": "        recent_log = self.data[\"routing_log\"][-window_size:]"
+        },
+        {
+          "line": 598,
+          "text": "        total_analyzed = len(recent_log)"
+        },
+        {
+          "line": 599,
+          "text": "        "
+        },
+        {
+          "line": 600,
+          "text": "        # Pattern detection containers"
+        },
+        {
+          "line": 601,
+          "text": "        patterns = []"
+        },
+        {
+          "line": 602,
+          "text": "        pattern_counts = Counter()"
+        },
+        {
+          "line": 603,
+          "text": "        route_distribution = Counter()"
+        },
+        {
+          "line": 604,
+          "text": "        guard_frequency = Counter()"
+        },
+        {
+          "line": 605,
+          "text": "        "
+        },
+        {
+          "line": 606,
+          "text": "        # Specific pattern tracking"
+        },
+        {
+          "line": 607,
+          "text": "        trading_hijacks = []"
+        },
+        {
+          "line": 608,
+          "text": "        ui_edit_overfires = []"
+        },
+        {
+          "line": 609,
+          "text": "        agent_overuse = []"
+        },
+        {
+          "line": 610,
+          "text": "        high_score_blockeds = []"
+        },
+        {
+          "line": 611,
+          "text": "        repeated_fastpaths = defaultdict(list)"
+        },
+        {
+          "line": 612,
+          "text": "        "
+        },
+        {
+          "line": 613,
+          "text": "        # Analyze each entry"
+        },
+        {
+          "line": 614,
+          "text": "        for idx, entry in enumerate(recent_log):"
+        },
+        {
+          "line": 615,
+          "text": "            msg_preview = entry.get(\"message_preview\", \"\").lower()"
+        },
+        {
+          "line": 616,
+          "text": "            selected = entry.get(\"selected_route\", \"\")"
+        },
+        {
+          "line": 617,
+          "text": "            candidates = entry.get(\"candidates\", [])"
+        },
+        {
+          "line": 618,
+          "text": "            guards = entry.get(\"guards_triggered\", [])"
+        },
+        {
+          "line": 619,
+          "text": "            "
+        },
+        {
+          "line": 620,
+          "text": "            route_distribution[selected] += 1"
+        }
+      ]
+    }
+  ],
+  "def validate_semantic_coherence": [
+    {
+      "target": "def validate_semantic_coherence",
+      "line": 1056,
+      "context": [
+        {
+          "line": 1046,
+          "text": "            \"guards_triggered\": guards_triggered,"
+        },
+        {
+          "line": 1047,
+          "text": "            \"reason\": f\"Overfire pattern '{overfire_type}' detected with superior alternate route\","
+        },
+        {
+          "line": 1048,
+          "text": "        })"
+        },
+        {
+          "line": 1049,
+          "text": "        "
+        },
+        {
+          "line": 1050,
+          "text": "        return final_route, arbitration_log"
+        },
+        {
+          "line": 1051,
+          "text": ""
+        },
+        {
+          "line": 1052,
+          "text": "    # ═══════════════════════════════════════════════════════════════════════════"
+        },
+        {
+          "line": 1053,
+          "text": "    # SEMANTIC COHERENCE VALIDATION LAYER"
+        },
+        {
+          "line": 1054,
+          "text": "    # ═══════════════════════════════════════════════════════════════════════════"
+        },
+        {
+          "line": 1055,
+          "text": "    "
+        },
+        {
+          "line": 1056,
+          "text": "    def validate_semantic_coherence("
+        },
+        {
+          "line": 1057,
+          "text": "        self,"
+        },
+        {
+          "line": 1058,
+          "text": "        user_message: str,"
+        },
+        {
+          "line": 1059,
+          "text": "        selected_route: str,"
+        },
+        {
+          "line": 1060,
+          "text": "        response_content: Optional[str] = None,"
+        },
+        {
+          "line": 1061,
+          "text": "        tools_used: Optional[List[str]] = None,"
+        },
+        {
+          "line": 1062,
+          "text": "    ) -> Dict:"
+        },
+        {
+          "line": 1063,
+          "text": "        \"\"\"SCVL: Validate semantic coherence between user intent and system response."
+        },
+        {
+          "line": 1064,
+          "text": "        "
+        },
+        {
+          "line": 1065,
+          "text": "        Detects contradictions between:"
+        },
+        {
+          "line": 1066,
+          "text": "        - User constraints vs Route selected"
+        },
+        {
+          "line": 1067,
+          "text": "        - User constraints vs Tools used"
+        },
+        {
+          "line": 1068,
+          "text": "        - User constraints vs Response content"
+        },
+        {
+          "line": 1069,
+          "text": "        - Grounded claims vs Evidence"
+        },
+        {
+          "line": 1070,
+          "text": "        "
+        },
+        {
+          "line": 1071,
+          "text": "        Args:"
+        },
+        {
+          "line": 1072,
+          "text": "            user_message: Original user message"
+        },
+        {
+          "line": 1073,
+          "text": "            selected_route: Route selected by router"
+        },
+        {
+          "line": 1074,
+          "text": "            response_content: Final response text (if available)"
+        },
+        {
+          "line": 1075,
+          "text": "            tools_used: List of tools that were executed"
+        },
+        {
+          "line": 1076,
+          "text": "            "
+        },
+        {
+          "line": 1077,
+          "text": "        Returns:"
+        },
+        {
+          "line": 1078,
+          "text": "            Coherence validation report with score and contradictions"
+        },
+        {
+          "line": 1079,
+          "text": "        \"\"\""
+        },
+        {
+          "line": 1080,
+          "text": "        msg_lower = (user_message or \"\").lower()"
+        },
+        {
+          "line": 1081,
+          "text": "        contradictions = []"
+        },
+        {
+          "line": 1082,
+          "text": "        warnings = []"
+        },
+        {
+          "line": 1083,
+          "text": "        coherence_score = 1.0"
+        },
+        {
+          "line": 1084,
+          "text": "        "
+        },
+        {
+          "line": 1085,
+          "text": "        # ── Detection 1: Domain Contradiction ─────────────────────────────────"
+        },
+        {
+          "line": 1086,
+          "text": "        # User explicitly excludes a domain but route goes there"
+        },
+        {
+          "line": 1087,
+          "text": "        domain_exclusions = {"
+        },
+        {
+          "line": 1088,
+          "text": "            \"trading\": [\"trading_analysis\", \"trading\", \"trade\", \"pipeline\"],"
+        },
+        {
+          "line": 1089,
+          "text": "            \"memory\": [\"memory\", \"memoria\", \"recuerda\"],"
+        },
+        {
+          "line": 1090,
+          "text": "            \"tools\": [\"agent\", \"tool\", \"herramienta\"],"
+        },
+        {
+          "line": 1091,
+          "text": "            \"files\": [\"ui_edit\", \"edit\", \"modificar\", \"archivo\"],"
+        },
+        {
+          "line": 1092,
+          "text": "        }"
+        },
+        {
+          "line": 1093,
+          "text": "        "
+        },
+        {
+          "line": 1094,
+          "text": "        for domain, keywords in domain_exclusions.items():"
+        },
+        {
+          "line": 1095,
+          "text": "            # Check if user excluded this domain"
+        },
+        {
+          "line": 1096,
+          "text": "            exclusion_patterns = ["
+        },
+        {
+          "line": 1097,
+          "text": "                f\"no {domain}\", f\"no analices {domain}\","
+        },
+        {
+          "line": 1098,
+          "text": "                f\"sin {domain}\", f\"excluye {domain}\","
+        },
+        {
+          "line": 1099,
+          "text": "                f\"no uses {domain}\", f\"no hables de {domain}\","
+        },
+        {
+          "line": 1100,
+          "text": "            ]"
+        },
+        {
+          "line": 1101,
+          "text": "            if any(pattern in msg_lower for pattern in exclusion_patterns):"
+        },
+        {
+          "line": 1102,
+          "text": "                # Check if route matches excluded domain"
+        },
+        {
+          "line": 1103,
+          "text": "                if any(kw in selected_route.lower() for kw in keywords):"
+        },
+        {
+          "line": 1104,
+          "text": "                    contradictions.append({"
+        },
+        {
+          "line": 1105,
+          "text": "                        \"type\": \"domain_contradiction\","
+        },
+        {
+          "line": 1106,
+          "text": "                        \"severity\": \"high\","
+        }
+      ]
+    }
+  ],
+  "_ROUTING_DEBUG_TERMS": [
+    {
+      "target": "_ROUTING_DEBUG_TERMS",
+      "line": 721,
+      "context": [
+        {
+          "line": 711,
+          "text": "        "
+        },
+        {
+          "line": 712,
+          "text": "        # Build detailed pattern reports"
+        },
+        {
+          "line": 713,
+          "text": "        if trading_hijacks:"
+        },
+        {
+          "line": 714,
+          "text": "            patterns.append({"
+        },
+        {
+          "line": 715,
+          "text": "                \"pattern\": \"trading_hijack\","
+        },
+        {
+          "line": 716,
+          "text": "                \"count\": len(trading_hijacks),"
+        },
+        {
+          "line": 717,
+          "text": "                \"severity\": \"high\","
+        },
+        {
+          "line": 718,
+          "text": "                \"description\": \"Trading fastpath capturing routing/conversational queries\","
+        },
+        {
+          "line": 719,
+          "text": "                \"affected_route\": \"trading_analysis\","
+        },
+        {
+          "line": 720,
+          "text": "                \"recent_examples\": trading_hijacks[-3:],"
+        },
+        {
+          "line": 721,
+          "text": "                \"recommended_action\": \"Review _ROUTING_DEBUG_TERMS guard - add more exclusion keywords\","
+        },
+        {
+          "line": 722,
+          "text": "            })"
+        },
+        {
+          "line": 723,
+          "text": "        "
+        },
+        {
+          "line": 724,
+          "text": "        if ui_edit_overfires:"
+        },
+        {
+          "line": 725,
+          "text": "            patterns.append({"
+        },
+        {
+          "line": 726,
+          "text": "                \"pattern\": \"ui_edit_overfire\","
+        },
+        {
+          "line": 727,
+          "text": "                \"count\": len(ui_edit_overfires),"
+        },
+        {
+          "line": 728,
+          "text": "                \"severity\": \"high\","
+        },
+        {
+          "line": 729,
+          "text": "                \"description\": \"UI edit fastpath activating on analysis requests\","
+        },
+        {
+          "line": 730,
+          "text": "                \"affected_route\": \"grounded_ui_edit_fastpath\","
+        },
+        {
+          "line": 731,
+          "text": "                \"recent_examples\": ui_edit_overfires[-3:],"
+        },
+        {
+          "line": 732,
+          "text": "                \"recommended_action\": \"Strengthen _blocks_grounded_ui_edit_fastpath with more analysis markers\","
+        },
+        {
+          "line": 733,
+          "text": "            })"
+        },
+        {
+          "line": 734,
+          "text": "        "
+        },
+        {
+          "line": 735,
+          "text": "        if agent_overuse:"
+        },
+        {
+          "line": 736,
+          "text": "            patterns.append({"
+        },
+        {
+          "line": 737,
+          "text": "                \"pattern\": \"agent_overuse_ghost_prone\","
+        },
+        {
+          "line": 738,
+          "text": "                \"count\": len(agent_overuse),"
+        },
+        {
+          "line": 739,
+          "text": "                \"severity\": \"medium\","
+        },
+        {
+          "line": 740,
+          "text": "                \"description\": \"Agent routed to queries prone to ghost_completion\","
+        },
+        {
+          "line": 741,
+          "text": "                \"affected_route\": \"agent\","
+        },
+        {
+          "line": 742,
+          "text": "                \"recent_examples\": agent_overuse[-3:],"
+        },
+        {
+          "line": 743,
+          "text": "                \"recommended_action\": \"Ensure _prefers_no_tool_analysis is checked before agent routing\","
+        },
+        {
+          "line": 744,
+          "text": "            })"
+        },
+        {
+          "line": 745,
+          "text": "        "
+        },
+        {
+          "line": 746,
+          "text": "        if high_score_blockeds:"
+        },
+        {
+          "line": 747,
+          "text": "            patterns.append({"
+        },
+        {
+          "line": 748,
+          "text": "                \"pattern\": \"high_score_blocked\","
+        },
+        {
+          "line": 749,
+          "text": "                \"count\": len(high_score_blockeds),"
+        },
+        {
+          "line": 750,
+          "text": "                \"severity\": \"medium\","
+        },
+        {
+          "line": 751,
+          "text": "                \"description\": \"High-scoring candidates were blocked by negative guards\","
+        },
+        {
+          "line": 752,
+          "text": "                \"affected_route\": \"various\","
+        },
+        {
+          "line": 753,
+          "text": "                \"recent_examples\": high_score_blockeds[-3:],"
+        },
+        {
+          "line": 754,
+          "text": "                \"recommended_action\": \"Review guard logic - may be overly restrictive\","
+        },
+        {
+          "line": 755,
+          "text": "            })"
+        },
+        {
+          "line": 756,
+          "text": "        "
+        },
+        {
+          "line": 757,
+          "text": "        # Calculate summary statistics"
+        },
+        {
+          "line": 758,
+          "text": "        total_patterns = sum(pattern_counts.values())"
+        },
+        {
+          "line": 759,
+          "text": "        pattern_rate = (total_patterns / total_analyzed * 100) if total_analyzed > 0 else 0"
+        },
+        {
+          "line": 760,
+          "text": "        "
+        },
+        {
+          "line": 761,
+          "text": "        return {"
+        },
+        {
+          "line": 762,
+          "text": "            \"status\": \"ok\","
+        },
+        {
+          "line": 763,
+          "text": "            \"window_size\": total_analyzed,"
+        },
+        {
+          "line": 764,
+          "text": "            \"analysis_timestamp\": _time.strftime(\"%Y-%m-%dT%H:%M:%S\"),"
+        },
+        {
+          "line": 765,
+          "text": "            \"summary\": {"
+        },
+        {
+          "line": 766,
+          "text": "                \"total_decisions_analyzed\": total_analyzed,"
+        },
+        {
+          "line": 767,
+          "text": "                \"total_patterns_detected\": total_patterns,"
+        },
+        {
+          "line": 768,
+          "text": "                \"pattern_rate_percent\": round(pattern_rate, 2),"
+        },
+        {
+          "line": 769,
+          "text": "                \"route_distribution\": dict(route_distribution),"
+        },
+        {
+          "line": 770,
+          "text": "                \"guard_frequency\": dict(guard_frequency),"
+        },
+        {
+          "line": 771,
+          "text": "            },"
+        }
+      ]
+    }
+  ],
+  "class ChatMetrics": [
+    {
+      "target": "class ChatMetrics",
+      "line": 252,
+      "context": [
+        {
+          "line": 242,
+          "text": "_UI_DASHBOARD = _UI_PATH / \"dashboard.html\""
+        },
+        {
+          "line": 243,
+          "text": "_UI_EDIT_STATE_PATH = _STATE_PATH / \"ui_edit_state.json\""
+        },
+        {
+          "line": 244,
+          "text": "_CHAT_METRICS_PATH = _STATE_PATH / \"brain_metrics\" / \"chat_metrics_latest.json\""
+        },
+        {
+          "line": 245,
+          "text": "_CHAT_SESSION_DEFAULTS_PATH = _STATE_PATH / \"chat_session_defaults.json\""
+        },
+        {
+          "line": 246,
+          "text": "_EPISODIC_MEMORY_PATH = _STATE_PATH / \"episodic_memory.json\""
+        },
+        {
+          "line": 247,
+          "text": "_CAPABILITY_GOVERNOR_STATUS_PATH = _STATE_PATH / \"capability_governor\" / \"status_latest.json\""
+        },
+        {
+          "line": 248,
+          "text": ""
+        },
+        {
+          "line": 249,
+          "text": ""
+        },
+        {
+          "line": 250,
+          "text": "# ── Chat Metrics Collector ────────────────────────────────────────────────────"
+        },
+        {
+          "line": 251,
+          "text": ""
+        },
+        {
+          "line": 252,
+          "text": "class ChatMetrics:"
+        },
+        {
+          "line": 253,
+          "text": "    \"\"\"Lightweight conversation-level metrics for self-improvement impact measurement."
+        },
+        {
+          "line": 254,
+          "text": ""
+        },
+        {
+          "line": 255,
+          "text": "    Tracks per-route counts, success/failure, latency, and error types."
+        },
+        {
+          "line": 256,
+          "text": "    Persists to disk every _PERSIST_EVERY conversations so the self-improvement"
+        },
+        {
+          "line": 257,
+          "text": "    pipeline can measure before/after impact of chat-related code changes."
+        },
+        {
+          "line": 258,
+          "text": "    \"\"\""
+        },
+        {
+          "line": 259,
+          "text": ""
+        },
+        {
+          "line": 260,
+          "text": "    _PERSIST_EVERY = 1  # R7.4: persist every chat (~3KB write, cheap; gives observability immediacy)"
+        },
+        {
+          "line": 261,
+          "text": ""
+        },
+        {
+          "line": 262,
+          "text": "    def __init__(self):"
+        },
+        {
+          "line": 263,
+          "text": "        self.data = {"
+        },
+        {
+          "line": 264,
+          "text": "            \"total_conversations\": 0,"
+        },
+        {
+          "line": 265,
+          "text": "            \"success\": 0,"
+        },
+        {
+          "line": 266,
+          "text": "            \"failed\": 0,"
+        },
+        {
+          "line": 267,
+          "text": "            \"routes\": {\"command\": 0, \"fastpath\": 0, \"agent\": 0, \"llm\": 0},"
+        },
+        {
+          "line": 268,
+          "text": "            \"agent_tool_calls_ok\": 0,"
+        },
+        {
+          "line": 269,
+          "text": "            \"agent_tool_calls_fail\": 0,"
+        },
+        {
+          "line": 270,
+          "text": "            \"avg_latency_ms\": 0.0,"
+        },
+        {
+          "line": 271,
+          "text": "            \"ghost_completion_count\": 0,"
+        },
+        {
+          "line": 272,
+          "text": "            \"tool_markup_leak_count\": 0,"
+        },
+        {
+          "line": 273,
+          "text": "            \"canned_no_result_count\": 0,"
+        },
+        {
+          "line": 274,
+          "text": "            \"errors\": {},          # error_type -> count"
+        },
+        {
+          "line": 275,
+          "text": "            # R4.1: per-validator firings (R3/R3.1 quality guards). Lets us"
+        },
+        {
+          "line": 276,
+          "text": "            # see which guard catches the most LLM mistakes over time."
+        },
+        {
+          "line": 277,
+          "text": "            \"validators\": {},      # validator_name -> count"
+        },
+        {
+          "line": 278,
+          "text": "            \"last_updated\": None,"
+        },
+        {
+          "line": 279,
+          "text": "            # F1-OBS: Routing observability log (last 100 decisions)"
+        },
+        {
+          "line": 280,
+          "text": "            \"routing_log\": [],       # List of routing decisions with candidates"
+        },
+        {
+          "line": 281,
+          "text": "        }"
+        },
+        {
+          "line": 282,
+          "text": "        self._load()"
+        },
+        {
+          "line": 283,
+          "text": ""
+        },
+        {
+          "line": 284,
+          "text": "    def _load(self):"
+        },
+        {
+          "line": 285,
+          "text": "        try:"
+        },
+        {
+          "line": 286,
+          "text": "            if _CHAT_METRICS_PATH.exists():"
+        },
+        {
+          "line": 287,
+          "text": "                saved = json.loads(_CHAT_METRICS_PATH.read_text(encoding=\"utf-8\"))"
+        },
+        {
+          "line": 288,
+          "text": "                for key in (\"total_conversations\", \"success\", \"failed\","
+        },
+        {
+          "line": 289,
+          "text": "                            \"agent_tool_calls_ok\", \"agent_tool_calls_fail\","
+        },
+        {
+          "line": 290,
+          "text": "                            \"ghost_completion_count\", \"tool_markup_leak_count\","
+        },
+        {
+          "line": 291,
+          "text": "                            \"canned_no_result_count\"):"
+        },
+        {
+          "line": 292,
+          "text": "                    if key in saved:"
+        },
+        {
+          "line": 293,
+          "text": "                        self.data[key] = int(saved[key])"
+        },
+        {
+          "line": 294,
+          "text": "                if \"avg_latency_ms\" in saved:"
+        },
+        {
+          "line": 295,
+          "text": "                    self.data[\"avg_latency_ms\"] = float(saved[\"avg_latency_ms\"])"
+        },
+        {
+          "line": 296,
+          "text": "                if isinstance(saved.get(\"routes\"), dict):"
+        },
+        {
+          "line": 297,
+          "text": "                    for r in self.data[\"routes\"]:"
+        },
+        {
+          "line": 298,
+          "text": "                        self.data[\"routes\"][r] = int(saved[\"routes\"].get(r, 0))"
+        },
+        {
+          "line": 299,
+          "text": "                if isinstance(saved.get(\"errors\"), dict):"
+        },
+        {
+          "line": 300,
+          "text": "                    self.data[\"errors\"] = {k: int(v) for k, v in saved[\"errors\"].items()}"
+        },
+        {
+          "line": 301,
+          "text": "                if isinstance(saved.get(\"validators\"), dict):"
+        },
+        {
+          "line": 302,
+          "text": "                    self.data[\"validators\"] = {k: int(v) for k, v in saved[\"validators\"].items()}"
+        }
+      ]
+    }
+  ],
+  "class BrainSession": [
+    {
+      "target": "class BrainSession",
+      "line": 1828,
+      "context": [
+        {
+          "line": 1818,
+          "text": "    - content  (used internally by session and memory)"
+        },
+        {
+          "line": 1819,
+          "text": "    - response (used by main.py and the UI)"
+        },
+        {
+          "line": 1820,
+          "text": "    \"\"\""
+        },
+        {
+          "line": 1821,
+          "text": "    content  = result.get(\"content\")  or result.get(\"response\")  or fallback_content"
+        },
+        {
+          "line": 1822,
+          "text": "    response = result.get(\"response\") or result.get(\"content\")   or fallback_content"
+        },
+        {
+          "line": 1823,
+          "text": "    result[\"content\"]  = content"
+        },
+        {
+          "line": 1824,
+          "text": "    result[\"response\"] = response"
+        },
+        {
+          "line": 1825,
+          "text": "    return result"
+        },
+        {
+          "line": 1826,
+          "text": ""
+        },
+        {
+          "line": 1827,
+          "text": ""
+        },
+        {
+          "line": 1828,
+          "text": "class BrainSession:"
+        },
+        {
+          "line": 1829,
+          "text": "    \"\"\"Unified chat session with intelligent LLM <-> AgentLoop routing.\"\"\""
+        },
+        {
+          "line": 1830,
+          "text": ""
+        },
+        {
+          "line": 1831,
+          "text": "    _MODEL_PRIORITY_ALIASES = {"
+        },
+        {
+          "line": 1832,
+          "text": "        \"deepseek-r1:14b\": \"deepseek14b\","
+        },
+        {
+          "line": 1833,
+          "text": "        \"deepseek-r1:32b\": \"deepseek14b\","
+        },
+        {
+          "line": 1834,
+          "text": "        \"qwen2.5:14b\": \"coder14b\","
+        },
+        {
+          "line": 1835,
+          "text": "        \"qwen2.5-coder:14b\": \"coder14b\","
+        },
+        {
+          "line": 1836,
+          "text": "        \"llama3.1:8b\": \"llama8b\","
+        },
+        {
+          "line": 1837,
+          "text": "        \"gemini\": \"chat\","
+        },
+        {
+          "line": 1838,
+          "text": "        \"auto\": \"chat\","
+        },
+        {
+          "line": 1839,
+          "text": "        \"default\": \"chat\","
+        },
+        {
+          "line": 1840,
+          "text": "        \"sonnet\": \"claude\","
+        },
+        {
+          "line": 1841,
+          "text": "        \"sonnet4\": \"claude\","
+        },
+        {
+          "line": 1842,
+          "text": "        \"frontier\": \"agent_frontier\","
+        },
+        {
+          "line": 1843,
+          "text": "        \"analysis_frontier\": \"analysis_frontier\","
+        },
+        {
+          "line": 1844,
+          "text": "        \"analysis\": \"analysis_frontier\","
+        },
+        {
+          "line": 1845,
+          "text": "        \"analysis_frontier_legacy\": \"analysis_frontier_legacy\","
+        },
+        {
+          "line": 1846,
+          "text": "        \"analysis_legacy\": \"analysis_frontier_legacy\","
+        },
+        {
+          "line": 1847,
+          "text": "        \"codex\": \"codex\","
+        },
+        {
+          "line": 1848,
+          "text": "        \"openai\": \"codex\","
+        },
+        {
+          "line": 1849,
+          "text": "        \"agent_legacy\": \"agent_legacy\","
+        },
+        {
+          "line": 1850,
+          "text": "        \"frontier_legacy\": \"agent_frontier_legacy\","
+        },
+        {
+          "line": 1851,
+          "text": "        \"agent_frontier_legacy\": \"agent_frontier_legacy\","
+        },
+        {
+          "line": 1852,
+          "text": "        \"code_legacy\": \"code_legacy\","
+        },
+        {
+          "line": 1853,
+          "text": "        \"chat_legacy\": \"chat_legacy\","
+        },
+        {
+          "line": 1854,
+          "text": "    }"
+        },
+        {
+          "line": 1855,
+          "text": "    _TEMPORAL_QUERY_RE = re.compile("
+        },
+        {
+          "line": 1856,
+          "text": "        r\"\\b(hoy|ayer|mañana|latest|ultimo|último|ultimos|últimos|ultima|última|actual|actualmente|now|today|live|running|estado|status|reciente|recientes|recent|esta semana|this week|mejoras?|cambios?|modificaciones?|recientemente|nuevo|nueva|nuevos|nuevas)\\b\","
+        },
+        {
+          "line": 1857,
+          "text": "        re.IGNORECASE,"
+        },
+        {
+          "line": 1858,
+          "text": "    )"
+        },
+        {
+          "line": 1859,
+          "text": ""
+        },
+        {
+          "line": 1860,
+          "text": "    def __init__(self, session_id: str = \"default\"):"
+        },
+        {
+          "line": 1861,
+          "text": "        self.session_id  = session_id"
+        },
+        {
+          "line": 1862,
+          "text": "        self.logger      = logging.getLogger(f\"BrainSession.{session_id}\")"
+        },
+        {
+          "line": 1863,
+          "text": "        self.llm         = LLMManager()"
+        },
+        {
+          "line": 1864,
+          "text": "        self.memory      = MemoryManager(session_id)"
+        },
+        {
+          "line": 1865,
+          "text": "        self.memory.set_llm(self.llm)"
+        },
+        {
+          "line": 1866,
+          "text": "        self.intent      = IntentDetector()"
+        },
+        {
+          "line": 1867,
+          "text": "        self._executor   = None"
+        },
+        {
+          "line": 1868,
+          "text": "        self.is_running  = True"
+        },
+        {
+          "line": 1869,
+          "text": "        self.dev_mode    = self._load_chat_dev_mode_default()"
+        },
+        {
+          "line": 1870,
+          "text": "        self._model_priority = \"ollama\""
+        },
+        {
+          "line": 1871,
+          "text": "        self._pending_continuation: Optional[Dict] = None"
+        },
+        {
+          "line": 1872,
+          "text": "        self._pending_confirmed_action: Optional[Dict] = None"
+        },
+        {
+          "line": 1873,
+          "text": "        self._tool01_permission_grants: Dict[str, Dict] = {}"
+        },
+        {
+          "line": 1874,
+          "text": "        self._tool01_permission_counter: int = 0"
+        },
+        {
+          "line": 1875,
+          "text": "        self.chat_metrics = get_chat_metrics()"
+        },
+        {
+          "line": 1876,
+          "text": "        self.logger.info(\"BrainSession '%s' v4-unified lista\", session_id)"
+        },
+        {
+          "line": 1877,
+          "text": ""
+        },
+        {
+          "line": 1878,
+          "text": "    @staticmethod"
+        }
+      ]
+    }
+  ]
+}
