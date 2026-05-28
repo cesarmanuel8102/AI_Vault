@@ -1,0 +1,24 @@
+{
+  "B1_C_POST_COMMIT_RECONCILIATION": {
+    "status": "RECONCILED",
+    "head_base": "0a00f565",
+    "branch": "codex/own-capital-sustainable-return",
+    "commit_hash": "0a00f565",
+    "pushed": true,
+    "commit_files": [
+      "tmp_agent/brain_v9/core/session.py",
+      "tmp_agent/b1_routing_authority_audit/b1_c_patch_report.json"
+    ],
+    "backup_files_local_only": [
+      "tmp_agent/b1_routing_authority_audit/backups/session_py_pre_b1c_20260528_073011.bak",
+      "tmp_agent/b1_routing_authority_audit/backups/session_py_pre_b1c_20260528_073011.json"
+    ],
+    "backup_exclusion_reason": ".gitignore excludes *.bak and backups/; no git add -f was used",
+    "git_add_force_used": false,
+    "destructive_git_commands_used": false,
+    "code_changed_now": false,
+    "protected_touched": false,
+    "report_corrected": true,
+    "ready_for_commit": true
+  }
+}

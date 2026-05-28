@@ -1,12 +1,14 @@
 {
   "B1_C_PATCH_REPORT": {
     "status": "APPLIED",
-    "head_base": "9f42b4d5",
+    "head_base": "0a00f565",
     "branch": "codex/own-capital-sustainable-return",
     "scope": "surgical GAK preflight for TOOL-01 execution",
-    "files_modified_or_new": [
+    "files_committed": [
       "tmp_agent/brain_v9/core/session.py",
-      "tmp_agent/b1_routing_authority_audit/b1_c_patch_report.json",
+      "tmp_agent/b1_routing_authority_audit/b1_c_patch_report.json"
+    ],
+    "local_backup_files_not_committed": [
       "tmp_agent/b1_routing_authority_audit/backups/session_py_pre_b1c_20260528_073011.bak",
       "tmp_agent/b1_routing_authority_audit/backups/session_py_pre_b1c_20260528_073011.json"
     ],
@@ -14,6 +16,9 @@
     "backup_file": "tmp_agent/b1_routing_authority_audit/backups/session_py_pre_b1c_20260528_073011.bak",
     "backup_metadata_file": "tmp_agent/b1_routing_authority_audit/backups/session_py_pre_b1c_20260528_073011.json",
     "backup_integrity_verified": true,
+    "backup_commit_status": "not_committed_ignored_by_gitignore",
+    "gitignore_excluded_backup": true,
+    "git_add_force_used": false,
     "backup_matches_source": "backup metadata confirms sha256_source == sha256_backup at backup time",
     "code_changed": true,
     "protected_touched": false,
@@ -40,6 +45,8 @@
       "test_agent_visual_trace_console (28/28)"
     ],
     "tests_failed": [],
+    "commit_hash": "0a00f565",
+    "pushed": true,
     "ready_for_commit": true
   }
 }
