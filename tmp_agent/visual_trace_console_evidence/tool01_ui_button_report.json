@@ -1,0 +1,17 @@
+{
+  "TOOL01_UI_BUTTON_REPORT": {
+    "head": "59fc02d0",
+    "status": "ACCEPTED",
+    "root_cause": "handleTool01PermissionAction carecia de bloque try/finally robusto. Las primeras 3 lineas (obtener card, deshabilitar botones, cambiar texto) estaban fuera del try, por lo que un error silencioso o un crash antes del api() dejaba el boton en 'Aprobando...' permanentemente. JSON.stringify(data.tool_result,...) podia crashear si tool_result era null/undefined.",
+    "fix_applied": "Refactorizado handleTool01PermissionAction: (1) resultadoDiv y card declarados antes del try; (2) todo el flujo dentro de try/catch/finally; (3) timeoutMs=60000 en la llamada api; (4) JSON.stringify protegido contra null/undefined; (5) finally siempre restaura btn.textContent; (6) catch renderiza 'Error: e.message' visible.",
+    "backend_approve_http": true,
+    "ui_allow_once_write": true,
+    "ui_allow_once_read": true,
+    "button_no_longer_stuck": true,
+    "renders_tool_result": true,
+    "tests": "50/50 passed (8 write + 6 read + 8 UI buttons + 28 VTC)",
+    "runtime_ui_smoke": "PASSED — write_file y read_file backend approve devuelven success=true + tool_result completo. Frontend ahora maneja click con finally y timeout robusto.",
+    "protected_touched": false,
+    "remaining_risks": []
+  }
+}

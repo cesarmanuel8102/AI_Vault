@@ -1,0 +1,18 @@
+{
+  "TOOL01_READ_PERMISSION_REPORT": {
+    "head": "59fc02d0",
+    "status": "ACCEPTED",
+    "root_cause": "_tool01_execute no tenia elif branch para read_file. Cuando se aprobaba el permiso, el codigo caia directamente al finally sin ejecutar ninguna logica de lectura, dejando success=false (inicial) y error=null.",
+    "fix_applied": "Agregado elif tool_name == 'read_file' en _tool01_execute: extrae path, valida con _tool01_policy_check_path, ejecuta ex.execute('read_file'), y devuelve success=true con content/preview/evidence.",
+    "read_file_permission_required": true,
+    "permission_id_returned": true,
+    "approve_tested": true,
+    "read_success": true,
+    "content_verified": "VTC permission/tool execution test OK",
+    "tests": "6/6 passed (test_tool01_read_permission.py)",
+    "runtime_smoke": "PASSED — /chat devuelve permission_required=true, approve devuelve success=true + content real",
+    "protected_touched": false,
+    "remaining_risks": [],
+    "ready_for_commit": true
+  }
+}

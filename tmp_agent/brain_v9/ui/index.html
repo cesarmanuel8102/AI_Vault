@@ -1056,38 +1056,45 @@ function renderTool01PermissionCard(permissionId, toolName, riskLevel, options, 
 
 async function handleTool01PermissionAction(decision, permissionId, btn) {
   const card = document.getElementById('tool01-perm-' + permissionId);
-  const buttons = card.querySelectorAll('button');
-  buttons.forEach(b => b.disabled = true);
-  btn.textContent = decision === 'deny' ? 'Denegando...' : 'Aprobando...';
+  const resultDiv = document.getElementById('tool01-result-' + permissionId);
+  if (!card) { console.error('Missing card for', permissionId); return; }
 
+  let buttons = [];
   try {
+    buttons = Array.from(card.querySelectorAll('button'));
+    buttons.forEach(b => b.disabled = true);
+    btn.textContent = decision === 'deny' ? 'Denegando...' : 'Aprobando...';
+
     const data = await api('/tool01/permission/approve', {
       method: 'POST',
       body: JSON.stringify({ session_id: sessionId, permission_id: permissionId, decision: decision }),
+      timeoutMs: 60000,
     });
-    const resultDiv = document.getElementById('tool01-result-' + permissionId);
+
     if (data.success) {
       resultDiv.className = 'tool01-perm-result ok';
       if (decision === 'deny') {
         resultDiv.textContent = 'Permiso denegado.';
       } else if (data.tool_executed) {
-        resultDiv.innerHTML = 'Tool ejecutada: <pre style="white-space:pre-wrap;word-break:break-word;">' + escapeHtml(JSON.stringify(data.tool_result, null, 2).substring(0, 600)) + '</pre>';
+        const toolResult = data.tool_result != null ? JSON.stringify(data.tool_result, null, 2).substring(0, 600) : 'Sin detalle de tool.';
+        resultDiv.innerHTML = 'Tool ejecutada: <pre style="white-space:pre-wrap;word-break:break-word;">' + escapeHtml(toolResult) + '</pre>';
       } else {
         resultDiv.textContent = 'Permiso aprobado. Tool se ejecutará en la siguiente petición.';
       }
       card.querySelector('.tool01-perm-buttons').style.display = 'none';
     } else {
       resultDiv.className = 'tool01-perm-result err';
-      resultDiv.textContent = 'Error: ' + (data.error || 'unknown');
+      resultDiv.textContent = 'Error: ' + (data.error || data.detail || 'unknown');
       buttons.forEach(b => b.disabled = false);
-      btn.textContent = decision.replace('_', ' ');
     }
   } catch (e) {
-    const resultDiv = document.getElementById('tool01-result-' + permissionId);
-    resultDiv.className = 'tool01-perm-result err';
-    resultDiv.textContent = 'Error de conexión: ' + e.message;
+    if (resultDiv) {
+      resultDiv.className = 'tool01-perm-result err';
+      resultDiv.textContent = 'Error: ' + (e && e.message ? e.message : String(e));
+    }
     buttons.forEach(b => b.disabled = false);
-    btn.textContent = decision.replace('_', ' ');
+  } finally {
+    if (btn) btn.textContent = decision.replace(/_/g, ' ');
   }
 }
 
