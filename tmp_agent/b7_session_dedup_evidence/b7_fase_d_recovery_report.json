@@ -1,0 +1,23 @@
+{
+  "B7_FASE_D_RECOVERY_REPORT": {
+    "status": "RECOVERED",
+    "head_base": "d5d94010",
+    "branch": "codex/own-capital-sustainable-return",
+    "session_py_restored": true,
+    "session_fix_removed": true,
+    "main_py_clean": true,
+    "staged_files": [],
+    "tests": {
+      "py_compile_session": "PASS",
+      "py_compile_b7_c_test": "PASS",
+      "b7_characterization": "PASS",
+      "governed_action_kernel": "PASS",
+      "tool01_write_permission": "PASS",
+      "tool01_read_permission": "PASS",
+      "tool01_ui_permission_buttons": "PASS",
+      "agent_visual_trace_console": "PASS"
+    },
+    "protected_touched": false,
+    "ready_to_retry_B7_FASE_D": true
+  }
+}
