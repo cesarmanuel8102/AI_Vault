@@ -632,3 +632,41 @@
   - PRIMARY: N5 import/path/test hygiene
   - SECONDARY: MRC-01A post-GAK ledger maintenance (if drift detected)
 
+## 22. Checkpoint — N5 Closure / Import Path Test Hygiene
+- Date (UTC): 2026-05-28T10:00:00+00:00
+- Branch: codex/own-capital-sustainable-return
+- HEAD: 641cddff
+- Type: DOCUMENTATION AND EVIDENCE — N5 series formally closed as audit/validation/plan
+- Commits:
+  - 3ed30eb8 — N5 import/path/test hygiene audit
+  - 378b9134 — N5-B import finding validation evidence
+  - 641cddff — N5-C import path patch plan
+- Final status: N5 CLOSED (no patch executed)
+- Scope:
+  - Import/path/test hygiene audit (scanner + inventory + findings)
+  - False-positive recalibration (B)
+  - Patch plan generation (C)
+- Decision:
+  - NO immediate patch
+  - patch_recommended_now=false
+  - ready_for_patch=false
+  - PATCH_NOW_SAFE=0
+  - PATCH_LATER_REQUIRES_TEST=3
+  - DOC_ONLY=1
+  - NO_PATCH_FALSE_POSITIVE=1
+  - NEEDS_MANUAL_REVIEW=1
+- Tests:
+  - py_compile PASS for main.py, session.py, governed_action_kernel.py
+  - pytest subset 52/52 PASS
+- Governance:
+  - No code changed
+  - No memory/semantic touched
+  - No strategies touched
+  - No reports touched
+  - No destructive git commands used
+  - No git add -f used
+- Next front:
+  - PRIMARY: MRC final reconciliation / next user-selected priority
+  - SECONDARY: Future N5-execution front when import stability becomes priority
+
+

@@ -1,0 +1,27 @@
+{
+  "N5_D_ROADMAP_LEDGER_SYNC_REPORT": {
+    "status": "APPLIED",
+    "head_base": "641cddff",
+    "branch": "codex/own-capital-sustainable-return",
+    "scope": "close N5 in roadmap and migration ledger",
+    "n5_closed": true,
+    "n5_completion_percent": 100,
+    "commits": {
+      "audit": "3ed30eb8",
+      "validation": "378b9134",
+      "patch_plan": "641cddff"
+    },
+    "patch_recommended_now": false,
+    "ready_for_patch": false,
+    "risk_matrix_summary": {
+      "PATCH_NOW_SAFE": 0,
+      "PATCH_LATER_REQUIRES_TEST": 3,
+      "DOC_ONLY": 1,
+      "NO_PATCH_FALSE_POSITIVE": 1,
+      "NEEDS_MANUAL_REVIEW": 1
+    },
+    "code_changed_now": false,
+    "protected_touched": false,
+    "ready_for_commit": true
+  }
+}
