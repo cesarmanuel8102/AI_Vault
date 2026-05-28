@@ -1,0 +1,73 @@
+{
+  "VisualTraceEvent": {
+    "event_id": "required string, UUID",
+    "ts_utc": "required ISO-8601",
+    "room_id": "nullable string",
+    "session_id": "nullable string",
+    "run_id": "nullable string",
+    "step_id": "nullable string",
+    "event_type": "enum",
+    "actor": "agent|user|governance|tool|system",
+    "title": "string, human-readable summary, max 120 chars",
+    "summary": "string, one-sentence operational description, max 280 chars",
+    "status": "pending|running|blocked|approved|rejected|success|error|skipped",
+    "tool": {
+      "name": "nullable string",
+      "operation": "nullable string, e.g. read|write|execute|query",
+      "target": "nullable string, path or module name"
+    },
+    "governance": {
+      "decision": "allow|block|requires_approval|not_applicable",
+      "policy_id": "nullable string, e.g. GAK-TOOL01-PATH",
+      "reason_summary": "nullable string, max 200 chars, sanitized, no secrets",
+      "proposal_id": "nullable string"
+    },
+    "evidence": {
+      "paths": "list of strings, redacted if protected paths",
+      "commit_hashes": "list of strings",
+      "reports": "list of report IDs, not full content",
+      "citations": "list of safe reference strings"
+    },
+    "safe_details": {
+      "input_summary": "nullable string, sanitized input summary, no raw tokens",
+      "output_summary": "nullable string, sanitized output summary",
+      "error_summary": "nullable string, sanitized error description"
+    },
+    "redaction": {
+      "cot_removed": true,
+      "secrets_removed": true,
+      "sensitive_paths_redacted": true
+    }
+  },
+  "EventTypes": [
+    "user_request_received",
+    "plan_created",
+    "step_started",
+    "tool_requested",
+    "tool_executed",
+    "governance_checked",
+    "proposal_created",
+    "approval_required",
+    "approval_applied",
+    "approval_rejected",
+    "file_changed",
+    "validation_started",
+    "validation_passed",
+    "validation_failed",
+    "commit_created",
+    "push_completed",
+    "run_completed",
+    "run_failed"
+  ],
+  "RedactionRules": [
+    "Remove raw chain-of-thought before serialization.",
+    "Strip secrets, tokens, passwords, API keys.",
+    "Redact protected paths: memory/semantic, strategies/, reports/.",
+    "Truncate raw large file contents.",
+    "Sanitize error messages to remove internal stack traces."
+  ],
+  "Status": "DRAFT",
+  "Version": "1.0.0",
+  "Author": "Audit system",
+  "HeadBase": "83ec53a5"
+}

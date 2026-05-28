@@ -1,0 +1,114 @@
+{
+  "VISUAL_TRACE_CONSOLE_AUDIT": {
+    "status": "APPLIED_READ_ONLY",
+    "head_base": "83ec53a5",
+    "branch": "codex/own-capital-sustainable-return",
+    "existing_trace_sources": [
+      {
+        "path": "tmp_agent/brain_v9/ui/agent_trace_console.html",
+        "type": "ui_html",
+        "description": "Existing visual trace console v1. Fetches latest snapshot via /brain/agent-trace/latest and connects SSE to /brain/agent-trace/stream. Renders events with icon, title, text, timestamp. Supports filters: all, thinking, tool, evidence, governance.",
+        "event_types_supported": "thinking, tool, finding, file, evidence, governance, decision, status, health, warning, error",
+        "risk": "Low — no chain-of-thought displayed, no secrets in current static HTML. But backend event schema is not documented/audited."
+      },
+      {
+        "path": "tmp_agent/brain_v9/learning/proposal_governance.py",
+        "type": "python_module",
+        "description": "Proposal lifecycle: pending_review -> approved_for_sandbox -> sandbox_running -> evaluation_pending -> candidate_promote. Exposes score_proposal(), rank_proposals(), load_registry(). Uses PROPOSAL_REGISTRY_PATH.",
+        "event_types_produced": "proposal_created, proposal_approved_for_sandbox, sandbox_running, evaluation_pending, candidate_promote, rejected, rolled_back",
+        "risk": "Medium — proposal attribution includes evidence_refs and sources, which could contain sensitive paths if not redacted."
+      },
+      {
+        "path": "tmp_agent/brain_v9/governance/governance_health.py",
+        "type": "python_module",
+        "description": "Canonical governance health builder. Aggregates control_layer, meta_governance, risk_contract, change_validation, post_trade, edge_validation, session_memory. Writes to governance_health_latest.json.",
+        "event_types_produced": "governance_health_snapshot",
+        "risk": "Low-Medium — internal status fields could expose internal module errors or memory state if not filtered at UI layer."
+      },
+      {
+        "path": "tmp_agent/brain_v9/ui/dashboard.html",
+        "type": "ui_html",
+        "description": "Dashboard principal. Panels: runtime, health, recent runs, proposals, approvals, evidence, logs. JavaScript panels: dashboard_primary_panels.js, dashboard_secondary_panels.js, dashboard_runtime.js.",
+        "event_types_displayed": "runtime metrics, health status, proposal list, evidence list",
+        "risk": "Medium — displays runtime metrics and proposal lists; needs redaction layer before adding chain-of-thought."
+      },
+      {
+        "path": "tmp_agent/brain_v9/ops/tool01_write_test.py",
+        "type": "python_script",
+        "description": "Write test for TOOL-01. Logs to tmp_agent/brain_v9/ops/restart_brain_v9_result_YYYYMMDD_HHMMSS.json.",
+        "event_types_produced": "tool_execution_result",
+        "risk": "Low — ephemeral test artifacts, no long-term retention."
+      }
+    ],
+    "existing_ui_surfaces": [
+      "tmp_agent/brain_v9/ui/index.html",
+      "tmp_agent/brain_v9/ui/dashboard.html",
+      "tmp_agent/brain_v9/ui/agent_trace_console.html",
+      "tmp_agent/brain_v9/ui/dashboard_components.js",
+      "tmp_agent/brain_v9/ui/dashboard_runtime.js",
+      "tmp_agent/brain_v9/ui/dashboard_primary_panels.js",
+      "tmp_agent/brain_v9/ui/dashboard_secondary_panels.js",
+      "tmp_agent/brain_v9/ui/dashboard_view_models.js"
+    ],
+    "existing_governance_sources": [
+      "tmp_agent/brain_v9/governance/governance_health.py",
+      "tmp_agent/brain_v9/governance/execution_gate.py",
+      "tmp_agent/brain_v9/governance/ethics_kernel.py"
+    ],
+    "existing_proposal_sources": [
+      "tmp_agent/brain_v9/learning/proposal_governance.py",
+      "tmp_agent/brain_v9/learning/patch_advisor.py"
+    ],
+    "existing_log_formats": [
+      "tmp_agent/brain_v9/ops/restart_brain_v9_result_*.json",
+      "tmp_agent/brain_v9/ui/*.html + *.js (dashboard panels)"
+    ],
+    "gaps": [
+      "No documented event schema contract between backend and frontend.",
+      "No explicit redaction layer before sending events to browser.",
+      "No governance approval/apply/reject UI visible in current dashboard panels.",
+      "No evidence citation panel linking proposals to evidence_refs.",
+      "No event persistence beyond in-memory SSE stream.",
+      "No event replay capability.",
+      "No security review of /brain/agent-trace/latest endpoint.",
+      "No separation between operational trace and raw chain-of-thought in current endpoint."
+    ],
+    "risks": [
+      {
+        "id": "VTC-SEED-R01",
+        "severity": "HIGH",
+        "title": "Unaudited event source schema",
+        "detail": "The /brain/agent-trace/stream endpoint could be emitting raw events with sensitive data if backend event creation is not audited."
+      },
+      {
+        "id": "VTC-SEED-R02",
+        "severity": "HIGH",
+        "title": "No redaction layer on display",
+        "detail": "Current HTML receives events via direct JSON from endpoint. If any field contains secrets or raw reasoning, UI has no filters to strip them."
+      },
+      {
+        "id": "VTC-SEED-R03",
+        "severity": "MEDIUM",
+        "title": "No proposal approval UI in dashboard",
+        "detail": "proposal_governance.py manages transitions but current UI panels do not expose approve/reject controls to operator."
+      },
+      {
+        "id": "VTC-SEED-R04",
+        "severity": "LOW",
+        "title": "No event store or replay",
+        "detail": "Events are transient (SSE). Debugging or auditing past runs requires manual log inspection."
+      },
+      {
+        "id": "VTC-SEED-R05",
+        "severity": "MEDIUM",
+        "title": "Proposal scoring may reflect private evidence",
+        "detail": "evidence_refs in proposals link to internal reports. UI display must redact or summarize, not show raw report content."
+      }
+    ],
+    "recommended_architecture": "read-only event adapter first",
+    "code_changed": false,
+    "protected_touched": false,
+    "ready_for_commit": true,
+    "ready_for_patch": false
+  }
+}
