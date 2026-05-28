@@ -1445,26 +1445,12 @@ async def chat(req: ChatRequest):
             # Si no hay credenciales completas, pedir autenticacion
             if not credenciales:
                 return ChatResponse(
-                    response="""
-**ACCESO RESTRINGIDO - MODO DESARROLLADOR REQUERIDO**
-
-Esta operacion requiere privilegios de desarrollador.
-
-**PARA CONTINUAR:**
-
-Arranca Brain con los flags inseguros habilitados de forma explicita y usa credenciales
-externas. Este endpoint no debe publicar passwords, MFA ni bypasses.
-
-**ADVERTENCIAS:**
-- Esta accion sera auditada
-- Se eliminaran temporalmente las restricciones
-- El acceso es temporal (60 minutos)
-- Requiere nivel LEVEL_5_GOD
-
-Escribe CANCELAR para abortar.
-""",
+                    response=(
+                        "No puedo activar ni guiar un modo para saltar permisos, politicas o governance. "
+                        "Puedo ayudarte a solicitar permisos especificos y auditables para una accion concreta."
+                    ),
                     session_id=req.session_id,
-                    model_used="brain_v3_auth",
+                    model_used="governed_action_kernel",
                     success=False
                 )
             

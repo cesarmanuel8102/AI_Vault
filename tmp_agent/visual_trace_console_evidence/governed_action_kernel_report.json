@@ -1,0 +1,27 @@
+{
+  "GOVERNED_ACTION_KERNEL_REPORT": {
+    "head": "e5c21b0e",
+    "status": "ACCEPTED",
+    "ready_for_commit": true,
+    "action_intent_gate": true,
+    "policy_engine": true,
+    "permission_grant_uses_canonical_action": true,
+    "approve_uses_canonical_action_not_raw_text": true,
+    "execution_claim_guard": true,
+    "structured_action_renderer": true,
+    "god_mode_denial": true,
+    "safe_fallbacks": true,
+    "runtime_smoke": {
+      "brain_v9_health": "PASS",
+      "natural_workspace_write_e2e": "PASS",
+      "natural_workspace_read_e2e": "PASS",
+      "protected_write_block": "PASS",
+      "god_mode_refusal": "PASS",
+      "process_execution_block": "PASS",
+      "strategy_modify_block": "PASS"
+    },
+    "tests": "88/88 passed (38 GAK + 8 write + 6 read + 8 UI buttons + 28 VTC)",
+    "protected_touched": false,
+    "remaining_risks": []
+  }
+}

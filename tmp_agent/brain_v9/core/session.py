@@ -44,6 +44,15 @@ from brain_v9.core.session_memory_state import (
 )
 from brain_v9.core.intent import IntentDetector
 from brain_v9.core.state_io import read_json, write_json
+from brain_v9.core.governed_action_kernel import (
+    detect_action_intent,
+    evaluate_action_policy,
+    requires_governed_tool,
+    render_policy_block,
+    render_permission_request,
+    validate_no_false_execution_claim,
+    build_synthetic_message,
+)
 
 # Import Project State Provider para P2 status grounding
 try:
@@ -2051,6 +2060,92 @@ class BrainSession:
                         duration_ms=(_time.monotonic() - _t0) * 1000,
                     )
                     return self._maybe_dev_block(result)
+
+        # GOVERNED ACTION KERNEL (GAK): Semantic action-intent gate
+        # FASE 3 — Runs after explicit TOOL-01 regex, before fastpath/agent/LLM.
+        gak_action = detect_action_intent(msg_stripped)
+        if gak_action.is_action:
+            gak_policy = evaluate_action_policy(gak_action)
+            if gak_policy.blocked_by_policy:
+                result = render_policy_block(gak_policy)
+                result = validate_no_false_execution_claim(result, execution_context={"route": "governed_action_kernel", "tool_result": None})
+                await self._save_turn(message, result)
+                self.chat_metrics.record("governed_action_kernel", False, (_time.monotonic() - _t0) * 1000)
+                self._emit_chat_completed(
+                    route="governed_action_kernel",
+                    message=message,
+                    result=result,
+                    duration_ms=(_time.monotonic() - _t0) * 1000,
+                )
+                return self._maybe_dev_block(result)
+            if gak_policy.requires_permission:
+                # Map to TOOL-01 public name and request permission
+                tool_map = {
+                    "filesystem.write_file": "write_file",
+                    "filesystem.read_file": "read_file",
+                }
+                internal_tool = tool_map.get(gak_policy.tool_name, gak_policy.tool_name)
+                perm = self._tool01_request_permission(
+                    internal_tool,
+                    gak_policy.reason,
+                    original_message=build_synthetic_message(gak_action),
+                )
+                # F3: Store canonical governed_action metadata for approval
+                perm["governed_action"] = {
+                    "action_type": gak_action.action_type,
+                    "target_path": gak_action.target_path,
+                    "content": gak_action.content,
+                    "source": "governed_action_kernel",
+                    "raw_message": msg_stripped,
+                }
+                perm["risk_level"] = gak_policy.risk_level
+                perm["scope"] = gak_policy.scope
+                perm["options"] = gak_policy.options
+                options_text = " | ".join([f"[{o.replace('_', ' ').title()}]" for o in gak_policy.options])
+                dev_block = (
+                    f"[DEV]\n"
+                    f"route=governed_action_kernel\n"
+                    f"tool01_router_used=false\n"
+                    f"tool01_real=false\n"
+                    f"permission_required=true\n"
+                    f"permission_id={perm.get('permission_id')}\n"
+                    f"tool_name={gak_policy.tool_name}\n"
+                    f"risk_level={gak_policy.risk_level}\n"
+                    f"scope={gak_policy.scope}\n"
+                    f"options={gak_policy.options}\n"
+                    f"\n"
+                    f"Para ejecutar '{gak_policy.tool_name}' necesito tu permiso.\n"
+                    f"{options_text}"
+                )
+                result = {
+                    "success": True,
+                    "content": dev_block,
+                    "response": f"Necesito permiso para ejecutar {gak_policy.tool_name}. Opciones: {options_text}",
+                    "route": "governed_action_kernel",
+                    "intent": "COMMAND",
+                    "tool01_router_used": False,
+                    "tool01_real": False,
+                    "permission_required": True,
+                    "permission_id": perm.get("permission_id"),
+                    "tool_name": gak_policy.tool_name,
+                    "risk_level": gak_policy.risk_level,
+                    "options": gak_policy.options,
+                    "blocked_by_policy": False,
+                    "fallback": False,
+                    "agent_status": "permission_pending",
+                    "model": "governed_action_kernel",
+                    "model_used": "governed_action_kernel",
+                    "agent_steps": 1,
+                }
+                await self._save_turn(message, result)
+                self.chat_metrics.record("governed_action_kernel", True, (_time.monotonic() - _t0) * 1000)
+                self._emit_chat_completed(
+                    route="governed_action_kernel",
+                    message=message,
+                    result=result,
+                    duration_ms=(_time.monotonic() - _t0) * 1000,
+                )
+                return self._maybe_dev_block(result)
 
         # POLICY GATE: Interceptar queries conversacionales antes de otros procesamientos
         policy_decision = self._policy_route_decision(msg_stripped)
@@ -4254,8 +4349,9 @@ class BrainSession:
         if any(x in msg_lower for x in ["allow_once", "allow once", "una vez", "solo una vez", "permitir una vez"]):
             result = self._tool01_approve_permission(perm["permission_id"], "allow_once")
             if result.get("success"):
-                # Execute the tool now
-                return await self._tool01_execute(result["tool_name"], message)
+                # Execute the tool using the ORIGINAL message stored in the permission, not the confirmation text
+                original_message = perm.get("original_message", message)
+                return await self._tool01_execute(result["tool_name"], original_message)
             return result
         elif any(x in msg_lower for x in ["allow_session", "allow for session", "permite sesion", "sesion completa", "toda la sesion"]):
             # Only allow for low-risk
@@ -4268,7 +4364,9 @@ class BrainSession:
                 }
             result = self._tool01_approve_permission(perm["permission_id"], "allow_session")
             if result.get("success"):
-                return await self._tool01_execute(result["tool_name"], message)
+                # Execute the tool using the ORIGINAL message stored in the permission
+                original_message = perm.get("original_message", message)
+                return await self._tool01_execute(result["tool_name"], original_message)
             return result
         elif any(x in msg_lower for x in ["deny", "rechazar", "no", "denegar", "cancelar"]):
             result = self._tool01_approve_permission(perm["permission_id"], "deny")
