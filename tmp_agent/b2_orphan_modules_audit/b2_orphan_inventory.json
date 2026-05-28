@@ -1,0 +1,3340 @@
+{
+  "audit": "B2-A orphan_inventory",
+  "timestamp": "2026-05-28T08:31:18Z",
+  "total_py_files": 696,
+  "active_runtime_roots": 113,
+  "referenced_files": 148,
+  "orphan_files": 555,
+  "orphans": [
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\LAUNCH_COMPLETE.py",
+      "relative": "00_identity\\LAUNCH_COMPLETE.py",
+      "size_bytes": 3916,
+      "sha256_prefix": "1e1c54d952158665"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\SIMPLE_LAUNCH.py",
+      "relative": "00_identity\\SIMPLE_LAUNCH.py",
+      "size_bytes": 2939,
+      "sha256_prefix": "f9a96e657241610b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\_add_risk_meta_tables.py",
+      "relative": "00_identity\\_add_risk_meta_tables.py",
+      "size_bytes": 879,
+      "sha256_prefix": "8af8fc2ab8dea0a2"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\_db_probe.py",
+      "relative": "00_identity\\_db_probe.py",
+      "size_bytes": 576,
+      "sha256_prefix": "626a69e17ff42694"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\_rag_indexer.py",
+      "relative": "00_identity\\_rag_indexer.py",
+      "size_bytes": 2249,
+      "sha256_prefix": "ab338ee12d7ca974"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\_rag_init.py",
+      "relative": "00_identity\\_rag_init.py",
+      "size_bytes": 747,
+      "sha256_prefix": "ac43e87c88360dd2"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\_who_handles_mission.py",
+      "relative": "00_identity\\_who_handles_mission.py",
+      "size_bytes": 1346,
+      "sha256_prefix": "ecbb50ad25852546"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\_who_handles_plan.py",
+      "relative": "00_identity\\_who_handles_plan.py",
+      "size_bytes": 2764,
+      "sha256_prefix": "033b3efd5660be39"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\advisor_server.py",
+      "relative": "00_identity\\advisor_server.py",
+      "size_bytes": 54461,
+      "sha256_prefix": "7373d8dd66e02428"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\advisor_server_clean.py",
+      "relative": "00_identity\\advisor_server_clean.py",
+      "size_bytes": 14395,
+      "sha256_prefix": "eeb6f79aa4231105"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\advisor_server_fixed.py",
+      "relative": "00_identity\\advisor_server_fixed.py",
+      "size_bytes": 21958,
+      "sha256_prefix": "8ebe86fba36f359f"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\agent_state.SHADOW_BAK.py",
+      "relative": "00_identity\\agent_state.SHADOW_BAK.py",
+      "size_bytes": 2967,
+      "sha256_prefix": "56280634a06fb57e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\analyze_dna.py",
+      "relative": "00_identity\\analyze_dna.py",
+      "size_bytes": 3326,
+      "sha256_prefix": "8f769584805f539a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\archive\\20260221_145121\\brain_router.auto_fix_20260220_195153.py",
+      "relative": "00_identity\\archive\\20260221_145121\\brain_router.auto_fix_20260220_195153.py",
+      "size_bytes": 5221,
+      "sha256_prefix": "06e0294934c7cd61"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\archive\\20260221_145121\\brain_router.auto_fix_20260220_195333.py",
+      "relative": "00_identity\\archive\\20260221_145121\\brain_router.auto_fix_20260220_195333.py",
+      "size_bytes": 40,
+      "sha256_prefix": "6c79ccc1d26a13df"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\archive\\20260221_145121\\brain_router.bad_20260220_192452.py",
+      "relative": "00_identity\\archive\\20260221_145121\\brain_router.bad_20260220_192452.py",
+      "size_bytes": 7813,
+      "sha256_prefix": "5c961108b4e06062"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\archive\\20260221_145121\\brain_router.badfix_20260220_193110.py",
+      "relative": "00_identity\\archive\\20260221_145121\\brain_router.badfix_20260220_193110.py",
+      "size_bytes": 4480,
+      "sha256_prefix": "d2c519bc221fb2f7"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\archive\\20260221_145121\\brain_router.http_fix_20260220_203357.py",
+      "relative": "00_identity\\archive\\20260221_145121\\brain_router.http_fix_20260220_203357.py",
+      "size_bytes": 5659,
+      "sha256_prefix": "d369f7d476fd03dc"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\archive\\20260221_145121\\brain_router.http_fix_20260220_203420.py",
+      "relative": "00_identity\\archive\\20260221_145121\\brain_router.http_fix_20260220_203420.py",
+      "size_bytes": 35,
+      "sha256_prefix": "e21e8e2f48925eb8"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\archive\\20260221_145121\\brain_router.http_fix_20260220_203434.py",
+      "relative": "00_identity\\archive\\20260221_145121\\brain_router.http_fix_20260220_203434.py",
+      "size_bytes": 35,
+      "sha256_prefix": "e21e8e2f48925eb8"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\archive\\20260221_145121\\brain_router.http_fix_20260220_203523.py",
+      "relative": "00_identity\\archive\\20260221_145121\\brain_router.http_fix_20260220_203523.py",
+      "size_bytes": 35,
+      "sha256_prefix": "e21e8e2f48925eb8"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\archive\\20260221_145121\\brain_router.http_fix_20260220_203850.py",
+      "relative": "00_identity\\archive\\20260221_145121\\brain_router.http_fix_20260220_203850.py",
+      "size_bytes": 35,
+      "sha256_prefix": "e21e8e2f48925eb8"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\archive\\20260221_145121\\brain_server.bad_20260220_192220.py",
+      "relative": "00_identity\\archive\\20260221_145121\\brain_server.bad_20260220_192220.py",
+      "size_bytes": 5599,
+      "sha256_prefix": "5a2a8eee186913a5"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\archive\\20260221_145121\\brain_server.bad_20260220_192237.py",
+      "relative": "00_identity\\archive\\20260221_145121\\brain_server.bad_20260220_192237.py",
+      "size_bytes": 4278,
+      "sha256_prefix": "8e4a52b7356a826b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\archive\\20260221_145121\\brain_server.bak_20260220_194343.py",
+      "relative": "00_identity\\archive\\20260221_145121\\brain_server.bak_20260220_194343.py",
+      "size_bytes": 5434,
+      "sha256_prefix": "03ec2d1f4b893f9f"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\archive\\20260221_145121\\brain_server.mem_20260220_204957.py",
+      "relative": "00_identity\\archive\\20260221_145121\\brain_server.mem_20260220_204957.py",
+      "size_bytes": 6898,
+      "sha256_prefix": "dda7b40ce8ce825a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\archive\\20260221_145121\\brain_server.tools_20260220_210009.py",
+      "relative": "00_identity\\archive\\20260221_145121\\brain_server.tools_20260220_210009.py",
+      "size_bytes": 15241,
+      "sha256_prefix": "0d70539802c35591"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\archive\\20260221_145121\\brain_server.tools_fix_20260220_210657.py",
+      "relative": "00_identity\\archive\\20260221_145121\\brain_server.tools_fix_20260220_210657.py",
+      "size_bytes": 24890,
+      "sha256_prefix": "187058e6041d45c4"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\autonomy_system\\ACTIVATE_PHASE_6.py",
+      "relative": "00_identity\\autonomy_system\\ACTIVATE_PHASE_6.py",
+      "size_bytes": 1694,
+      "sha256_prefix": "c87bc59435d44e77"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\autonomy_system\\LIVE_MONITOR.py",
+      "relative": "00_identity\\autonomy_system\\LIVE_MONITOR.py",
+      "size_bytes": 3029,
+      "sha256_prefix": "7759a5e0fcf3fa88"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\autonomy_system\\__init__.py",
+      "relative": "00_identity\\autonomy_system\\__init__.py",
+      "size_bytes": 0,
+      "sha256_prefix": "e3b0c44298fc1c14"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\autonomy_system\\autonomy_phases.py",
+      "relative": "00_identity\\autonomy_system\\autonomy_phases.py",
+      "size_bytes": 14400,
+      "sha256_prefix": "d2b4e67778ca42cf"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\autonomy_system\\conscious_supervisor.py",
+      "relative": "00_identity\\autonomy_system\\conscious_supervisor.py",
+      "size_bytes": 10525,
+      "sha256_prefix": "526793fd0f82adaf"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\autonomy_system\\constitution_injector.py",
+      "relative": "00_identity\\autonomy_system\\constitution_injector.py",
+      "size_bytes": 5979,
+      "sha256_prefix": "56871826069f1840"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\autonomy_system\\construction_supervisor.py",
+      "relative": "00_identity\\autonomy_system\\construction_supervisor.py",
+      "size_bytes": 10186,
+      "sha256_prefix": "5c69d8dafb4a94b0"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\autonomy_system\\dashboard_platforms.py",
+      "relative": "00_identity\\autonomy_system\\dashboard_platforms.py",
+      "size_bytes": 6970,
+      "sha256_prefix": "214a3da2aa821f7a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\autonomy_system\\dashboard_server.py",
+      "relative": "00_identity\\autonomy_system\\dashboard_server.py",
+      "size_bytes": 61575,
+      "sha256_prefix": "9814ef253b89922d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\autonomy_system\\orchestrator.py",
+      "relative": "00_identity\\autonomy_system\\orchestrator.py",
+      "size_bytes": 12498,
+      "sha256_prefix": "15b980d8f44d10ad"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\autonomy_system\\supervisor.py",
+      "relative": "00_identity\\autonomy_system\\supervisor.py",
+      "size_bytes": 12445,
+      "sha256_prefix": "c3071921a6249352"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\backtest_engine.py",
+      "relative": "00_identity\\backtest_engine.py",
+      "size_bytes": 14162,
+      "sha256_prefix": "40c71118c61ae540"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\brain_chat_system.py",
+      "relative": "00_identity\\brain_chat_system.py",
+      "size_bytes": 26204,
+      "sha256_prefix": "d427026519f2c94a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\brain_chat_ui_server.py",
+      "relative": "00_identity\\brain_chat_ui_server.py",
+      "size_bytes": 73596,
+      "sha256_prefix": "a998f5ade633099d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\brain_knowledge_curator.py",
+      "relative": "00_identity\\brain_knowledge_curator.py",
+      "size_bytes": 20747,
+      "sha256_prefix": "c795f23e756ea82d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\brain_lab\\brain_ui_server.py",
+      "relative": "00_identity\\brain_lab\\brain_ui_server.py",
+      "size_bytes": 4775,
+      "sha256_prefix": "65d601a25e85ace3"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\brain_lab\\src\\_kpi_logger_tmp.py",
+      "relative": "00_identity\\brain_lab\\src\\_kpi_logger_tmp.py",
+      "size_bytes": 964,
+      "sha256_prefix": "6a2ea76a3f9813ae"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\brain_lab\\src\\_tmp_outreach_gen.py",
+      "relative": "00_identity\\brain_lab\\src\\_tmp_outreach_gen.py",
+      "size_bytes": 603,
+      "sha256_prefix": "7c38643b8ef32fef"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\brain_lab\\src\\autonomy_planner.py",
+      "relative": "00_identity\\brain_lab\\src\\autonomy_planner.py",
+      "size_bytes": 7857,
+      "sha256_prefix": "d1b5e3cd0d16f3b6"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\brain_lab\\src\\chat_router.py",
+      "relative": "00_identity\\brain_lab\\src\\chat_router.py",
+      "size_bytes": 8538,
+      "sha256_prefix": "81cfac3ce7568943"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\brain_lab\\src\\ethics_kernel.py",
+      "relative": "00_identity\\brain_lab\\src\\ethics_kernel.py",
+      "size_bytes": 5280,
+      "sha256_prefix": "c12a7255ee49a263"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\brain_lab\\src\\experiment_engine.py",
+      "relative": "00_identity\\brain_lab\\src\\experiment_engine.py",
+      "size_bytes": 1518,
+      "sha256_prefix": "dacf3eac2ef5b964"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\brain_lab\\src\\outreach_assets.py",
+      "relative": "00_identity\\brain_lab\\src\\outreach_assets.py",
+      "size_bytes": 6422,
+      "sha256_prefix": "9c421e38dab513b9"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\brain_monitor.py",
+      "relative": "00_identity\\brain_monitor.py",
+      "size_bytes": 12254,
+      "sha256_prefix": "d688e8d5dccecb4c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\brain_server.BASELINE_20260227_200246.py",
+      "relative": "00_identity\\brain_server.BASELINE_20260227_200246.py",
+      "size_bytes": 127395,
+      "sha256_prefix": "6259600fb73d44d0"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\brain_server_limpio.py",
+      "relative": "00_identity\\brain_server_limpio.py",
+      "size_bytes": 583841,
+      "sha256_prefix": "0fde342a6b3ffae5"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\brain_server_reparado.py",
+      "relative": "00_identity\\brain_server_reparado.py",
+      "size_bytes": 612300,
+      "sha256_prefix": "0a5ed5640c8403d9"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\capital_manager.py",
+      "relative": "00_identity\\capital_manager.py",
+      "size_bytes": 15815,
+      "sha256_prefix": "3ccee6c8afd3392f"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v3\\brain_chat_orchestrator.py",
+      "relative": "00_identity\\chat_brain_v3\\brain_chat_orchestrator.py",
+      "size_bytes": 37927,
+      "sha256_prefix": "a2633dcbaeb7a6d5"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v3\\brain_chat_v3_conversational.py",
+      "relative": "00_identity\\chat_brain_v3\\brain_chat_v3_conversational.py",
+      "size_bytes": 17014,
+      "sha256_prefix": "17757cef28cbc80b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v3\\brain_chat_v3_server.py",
+      "relative": "00_identity\\chat_brain_v3\\brain_chat_v3_server.py",
+      "size_bytes": 53508,
+      "sha256_prefix": "bbc1792a9568a996"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v3\\brain_chat_v3_simple.py",
+      "relative": "00_identity\\chat_brain_v3\\brain_chat_v3_simple.py",
+      "size_bytes": 14151,
+      "sha256_prefix": "a29aadfd3bca56e3"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v3\\brain_executor.py",
+      "relative": "00_identity\\chat_brain_v3\\brain_executor.py",
+      "size_bytes": 9120,
+      "sha256_prefix": "5c59a69d0809d9e8"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v3\\execution_authority.py",
+      "relative": "00_identity\\chat_brain_v3\\execution_authority.py",
+      "size_bytes": 8412,
+      "sha256_prefix": "acd5c51aa3916035"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v4\\brain_chat_v4.py",
+      "relative": "00_identity\\chat_brain_v4\\brain_chat_v4.py",
+      "size_bytes": 22498,
+      "sha256_prefix": "16937770cc7765f5"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v5\\brain_chat_v5.py",
+      "relative": "00_identity\\chat_brain_v5\\brain_chat_v5.py",
+      "size_bytes": 40789,
+      "sha256_prefix": "eeb920391778c4d5"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v6\\brain_chat_v6.py",
+      "relative": "00_identity\\chat_brain_v6\\brain_chat_v6.py",
+      "size_bytes": 35434,
+      "sha256_prefix": "da3985f8c7fb6bfc"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v6\\brain_chat_v6_1.py",
+      "relative": "00_identity\\chat_brain_v6\\brain_chat_v6_1.py",
+      "size_bytes": 23730,
+      "sha256_prefix": "4b9feb64f0b17f5a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v6\\brain_chat_v6_2.py",
+      "relative": "00_identity\\chat_brain_v6\\brain_chat_v6_2.py",
+      "size_bytes": 39674,
+      "sha256_prefix": "38ca6474f4a8acea"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\Patch brain_chat_v8\\apply_patches_v8.py",
+      "relative": "00_identity\\chat_brain_v7\\Patch brain_chat_v8\\apply_patches_v8.py",
+      "size_bytes": 9608,
+      "sha256_prefix": "0ca27d802a708e10"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\Patch brain_chat_v8\\brain_chat_v8_patched.py",
+      "relative": "00_identity\\chat_brain_v7\\Patch brain_chat_v8\\brain_chat_v8_patched.py",
+      "size_bytes": 447456,
+      "sha256_prefix": "4db127f50c66a6f8"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\agent_core.py",
+      "relative": "00_identity\\chat_brain_v7\\agent_core.py",
+      "size_bytes": 19216,
+      "sha256_prefix": "0b7682165dc9ad7d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\agent_dashboard.py",
+      "relative": "00_identity\\chat_brain_v7\\agent_dashboard.py",
+      "size_bytes": 2580,
+      "sha256_prefix": "0837c48eb744d92e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\benchmark_opencode.py",
+      "relative": "00_identity\\chat_brain_v7\\benchmark_opencode.py",
+      "size_bytes": 10355,
+      "sha256_prefix": "17718ec38f89e135"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_agent_v8_final.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_agent_v8_final.py",
+      "size_bytes": 16922,
+      "sha256_prefix": "35ef177206c8916a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_chat_v7.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_chat_v7.py",
+      "size_bytes": 135990,
+      "sha256_prefix": "4478946b1c1d76d7"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_chat_v7_1_rsi.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_chat_v7_1_rsi.py",
+      "size_bytes": 31246,
+      "sha256_prefix": "d897b8137a3686bb"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_chat_v7_2_integrated.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_chat_v7_2_integrated.py",
+      "size_bytes": 1362,
+      "sha256_prefix": "4920f569293985de"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_chat_v7_2_strategic_rsi.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_chat_v7_2_strategic_rsi.py",
+      "size_bytes": 18855,
+      "sha256_prefix": "61830b4a6d82fdbe"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_chat_v7_2_strategic_rsi_aligned.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_chat_v7_2_strategic_rsi_aligned.py",
+      "size_bytes": 29097,
+      "sha256_prefix": "993477e1ff1ac40d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_chat_v7_3_unified.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_chat_v7_3_unified.py",
+      "size_bytes": 14367,
+      "sha256_prefix": "33320e5f4e1e001a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_chat_v7_backup_pre_rsi.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_chat_v7_backup_pre_rsi.py",
+      "size_bytes": 41099,
+      "sha256_prefix": "28895df358b061c1"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_chat_v7_backup_v8.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_chat_v7_backup_v8.py",
+      "size_bytes": 135990,
+      "sha256_prefix": "4478946b1c1d76d7"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_chat_v7_pre_unified.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_chat_v7_pre_unified.py",
+      "size_bytes": 47358,
+      "sha256_prefix": "2ed9218ee5c3ebf9"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_chat_v7_rsi_extension.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_chat_v7_rsi_extension.py",
+      "size_bytes": 5111,
+      "sha256_prefix": "281d3cd70324afb5"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_chat_v8.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_chat_v8.py",
+      "size_bytes": 455756,
+      "sha256_prefix": "b2d6654a60b794ae"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_chat_v81_integrated.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_chat_v81_integrated.py",
+      "size_bytes": 21357,
+      "sha256_prefix": "a3f011b249d84aa2"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_chat_v8_backup_fase0_20260320.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_chat_v8_backup_fase0_20260320.py",
+      "size_bytes": 455756,
+      "sha256_prefix": "b2d6654a60b794ae"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_chat_v8_complete.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_chat_v8_complete.py",
+      "size_bytes": 27956,
+      "sha256_prefix": "9c9a6d0363d57cb0"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_chat_v8_fixed.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_chat_v8_fixed.py",
+      "size_bytes": 18660,
+      "sha256_prefix": "9202bddeffa1fff5"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_chat_v8_minimal.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_chat_v8_minimal.py",
+      "size_bytes": 2420,
+      "sha256_prefix": "326a0cfd3669c22d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_chat_v8_refactored.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_chat_v8_refactored.py",
+      "size_bytes": 12919,
+      "sha256_prefix": "edca59d94ddce94c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_chat_v8_ui.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_chat_v8_ui.py",
+      "size_bytes": 22316,
+      "sha256_prefix": "f3e61a561c099ea3"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\brain_lab_integration.py",
+      "relative": "00_identity\\chat_brain_v7\\brain_lab_integration.py",
+      "size_bytes": 12726,
+      "sha256_prefix": "912da6c1f868a35b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\cache_system.py",
+      "relative": "00_identity\\chat_brain_v7\\cache_system.py",
+      "size_bytes": 6711,
+      "sha256_prefix": "099675a521533003"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\chat_simple.py",
+      "relative": "00_identity\\chat_brain_v7\\chat_simple.py",
+      "size_bytes": 7907,
+      "sha256_prefix": "44ed2baa8de44a5e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\demo_agent.py",
+      "relative": "00_identity\\chat_brain_v7\\demo_agent.py",
+      "size_bytes": 9068,
+      "sha256_prefix": "99554ac2c632640b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\git_integration.py",
+      "relative": "00_identity\\chat_brain_v7\\git_integration.py",
+      "size_bytes": 2230,
+      "sha256_prefix": "2b75c630b79af188"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\launcher_v8.py",
+      "relative": "00_identity\\chat_brain_v7\\launcher_v8.py",
+      "size_bytes": 503,
+      "sha256_prefix": "caf54b4046edde27"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\metrics_exporter.py",
+      "relative": "00_identity\\chat_brain_v7\\metrics_exporter.py",
+      "size_bytes": 2685,
+      "sha256_prefix": "bacb9cf2a95b739c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\parallel_processing.py",
+      "relative": "00_identity\\chat_brain_v7\\parallel_processing.py",
+      "size_bytes": 2450,
+      "sha256_prefix": "37cacd01e228afc4"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\plugin_system.py",
+      "relative": "00_identity\\chat_brain_v7\\plugin_system.py",
+      "size_bytes": 4437,
+      "sha256_prefix": "b59bf56ad25dc6cc"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\reasoning.py",
+      "relative": "00_identity\\chat_brain_v7\\reasoning.py",
+      "size_bytes": 22695,
+      "sha256_prefix": "8f02b505cb749ae5"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\semantic_search.py",
+      "relative": "00_identity\\chat_brain_v7\\semantic_search.py",
+      "size_bytes": 3072,
+      "sha256_prefix": "e04a6b9db8d8e59b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\server_agente_completo.py",
+      "relative": "00_identity\\chat_brain_v7\\server_agente_completo.py",
+      "size_bytes": 9886,
+      "sha256_prefix": "a8bc55eecd9dfb5c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\server_funcional.py",
+      "relative": "00_identity\\chat_brain_v7\\server_funcional.py",
+      "size_bytes": 11650,
+      "sha256_prefix": "9016cf7d6b6ba6ac"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\server_minimal.py",
+      "relative": "00_identity\\chat_brain_v7\\server_minimal.py",
+      "size_bytes": 7988,
+      "sha256_prefix": "0ca98df9d409dbfa"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\server_v81_main.py",
+      "relative": "00_identity\\chat_brain_v7\\server_v81_main.py",
+      "size_bytes": 732,
+      "sha256_prefix": "b69aafb9078813b5"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\start_server_bg.py",
+      "relative": "00_identity\\chat_brain_v7\\start_server_bg.py",
+      "size_bytes": 1212,
+      "sha256_prefix": "5a96d91ad6e3d92b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\start_v7_2.py",
+      "relative": "00_identity\\chat_brain_v7\\start_v7_2.py",
+      "size_bytes": 544,
+      "sha256_prefix": "eb45ef9045c2785d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\tests\\test_fase_0_preparacion.py",
+      "relative": "00_identity\\chat_brain_v7\\tests\\test_fase_0_preparacion.py",
+      "size_bytes": 5486,
+      "sha256_prefix": "64435506465a0ed3"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\tests\\test_fase_1_agent_core.py",
+      "relative": "00_identity\\chat_brain_v7\\tests\\test_fase_1_agent_core.py",
+      "size_bytes": 8927,
+      "sha256_prefix": "67a4da520eaf287e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\tests\\test_integration_full.py",
+      "relative": "00_identity\\chat_brain_v7\\tests\\test_integration_full.py",
+      "size_bytes": 8749,
+      "sha256_prefix": "a3594c104c3eabe0"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\tests\\test_unit_ast_analyzer.py",
+      "relative": "00_identity\\chat_brain_v7\\tests\\test_unit_ast_analyzer.py",
+      "size_bytes": 4911,
+      "sha256_prefix": "05d7afc3e67d857e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\tools_advanced.py",
+      "relative": "00_identity\\chat_brain_v7\\tools_advanced.py",
+      "size_bytes": 23487,
+      "sha256_prefix": "bfcd4c55d9c23c7b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\verification.py",
+      "relative": "00_identity\\chat_brain_v7\\verification.py",
+      "size_bytes": 10707,
+      "sha256_prefix": "1f32d41f945a273c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\webhook_notifier.py",
+      "relative": "00_identity\\chat_brain_v7\\webhook_notifier.py",
+      "size_bytes": 1823,
+      "sha256_prefix": "7b28d143aecfbbab"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\chat_brain_v7\\websocket_server.py",
+      "relative": "00_identity\\chat_brain_v7\\websocket_server.py",
+      "size_bytes": 4296,
+      "sha256_prefix": "89b2b26a8b62b581"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\dashboard_router.py",
+      "relative": "00_identity\\dashboard_router.py",
+      "size_bytes": 24059,
+      "sha256_prefix": "7df383197a0c0c51"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\data_integrator.py",
+      "relative": "00_identity\\data_integrator.py",
+      "size_bytes": 25853,
+      "sha256_prefix": "0be83758029a9ac1"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\financial_motor.py",
+      "relative": "00_identity\\financial_motor.py",
+      "size_bytes": 10453,
+      "sha256_prefix": "92966390c838526f"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\init_brain_db.py",
+      "relative": "00_identity\\init_brain_db.py",
+      "size_bytes": 1118,
+      "sha256_prefix": "406c36f05144d06c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\ollama_client.py",
+      "relative": "00_identity\\ollama_client.py",
+      "size_bytes": 1744,
+      "sha256_prefix": "26ce7685a8943fee"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\patch_brain_server.py",
+      "relative": "00_identity\\patch_brain_server.py",
+      "size_bytes": 5542,
+      "sha256_prefix": "c35cb5cb279cdf69"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\patch_disable_plan_post_in_server.py",
+      "relative": "00_identity\\patch_disable_plan_post_in_server.py",
+      "size_bytes": 782,
+      "sha256_prefix": "8ae9cd6b9de4fb50"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\patch_fix_agent_loop_sync_block.py",
+      "relative": "00_identity\\patch_fix_agent_loop_sync_block.py",
+      "size_bytes": 1094,
+      "sha256_prefix": "43eb6409b6504953"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\patch_fix_mission_endpoint.py",
+      "relative": "00_identity\\patch_fix_mission_endpoint.py",
+      "size_bytes": 2397,
+      "sha256_prefix": "877657b7ac5c9b70"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\patch_fix_plan_endpoint.py",
+      "relative": "00_identity\\patch_fix_plan_endpoint.py",
+      "size_bytes": 2522,
+      "sha256_prefix": "566f0d79bc4cb7b9"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\patch_fix_plan_reset_hard_v3.py",
+      "relative": "00_identity\\patch_fix_plan_reset_hard_v3.py",
+      "size_bytes": 4390,
+      "sha256_prefix": "dd141916df1906bb"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\patch_fix_plan_reset_on_stale.py",
+      "relative": "00_identity\\patch_fix_plan_reset_on_stale.py",
+      "size_bytes": 3969,
+      "sha256_prefix": "d37e76da1305fb43"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\patch_fix_step_with_snapshot.py",
+      "relative": "00_identity\\patch_fix_step_with_snapshot.py",
+      "size_bytes": 3181,
+      "sha256_prefix": "a9d91d2d0b8f2142"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\patch_mission_sync_agentloop.py",
+      "relative": "00_identity\\patch_mission_sync_agentloop.py",
+      "size_bytes": 2626,
+      "sha256_prefix": "f1ed6c8f0412dffa"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\patch_reset_plan_on_new_mission.py",
+      "relative": "00_identity\\patch_reset_plan_on_new_mission.py",
+      "size_bytes": 2439,
+      "sha256_prefix": "809a57047b788e0e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\patch_reset_plan_on_new_mission_regex.py",
+      "relative": "00_identity\\patch_reset_plan_on_new_mission_regex.py",
+      "size_bytes": 4282,
+      "sha256_prefix": "83fd9fcdae72f735"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\patch_reset_plan_on_read_mismatch.py",
+      "relative": "00_identity\\patch_reset_plan_on_read_mismatch.py",
+      "size_bytes": 3646,
+      "sha256_prefix": "ddfda344aa46296e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\patch_router_mission_sync.py",
+      "relative": "00_identity\\patch_router_mission_sync.py",
+      "size_bytes": 2190,
+      "sha256_prefix": "4f4625ce2fe7e870"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\patch_step_with_snapshot.py",
+      "relative": "00_identity\\patch_step_with_snapshot.py",
+      "size_bytes": 4066,
+      "sha256_prefix": "c366445255c07c25"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\patch_sync_plan_with_mission_v2.py",
+      "relative": "00_identity\\patch_sync_plan_with_mission_v2.py",
+      "size_bytes": 6027,
+      "sha256_prefix": "d36e73c4dbd4bea4"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\patch_unify_mission_v2.py",
+      "relative": "00_identity\\patch_unify_mission_v2.py",
+      "size_bytes": 5345,
+      "sha256_prefix": "8fee809c40af57c7"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\patch_unify_mission_v2_server.py",
+      "relative": "00_identity\\patch_unify_mission_v2_server.py",
+      "size_bytes": 4757,
+      "sha256_prefix": "1f724716609dd645"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\phase_promotion_system.py",
+      "relative": "00_identity\\phase_promotion_system.py",
+      "size_bytes": 10239,
+      "sha256_prefix": "3b02966a656d07d0"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\pocketoption_integrator.py",
+      "relative": "00_identity\\pocketoption_integrator.py",
+      "size_bytes": 4627,
+      "sha256_prefix": "a9c6662f2958a505"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\risk_manager.py",
+      "relative": "00_identity\\risk_manager.py",
+      "size_bytes": 15403,
+      "sha256_prefix": "61d2c3d7894af902"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\seed_memory.py",
+      "relative": "00_identity\\seed_memory.py",
+      "size_bytes": 502,
+      "sha256_prefix": "ac4cc6609bef9519"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\start_autonomy_python.py",
+      "relative": "00_identity\\start_autonomy_python.py",
+      "size_bytes": 3302,
+      "sha256_prefix": "b4dd8545321c02ee"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\start_autonomy_quick.py",
+      "relative": "00_identity\\start_autonomy_quick.py",
+      "size_bytes": 2467,
+      "sha256_prefix": "713a05560c06238a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\start_autonomy_robust.py",
+      "relative": "00_identity\\start_autonomy_robust.py",
+      "size_bytes": 3527,
+      "sha256_prefix": "8122cbb1660a35fd"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\start_autonomy_windows.py",
+      "relative": "00_identity\\start_autonomy_windows.py",
+      "size_bytes": 2322,
+      "sha256_prefix": "98e272b94925f476"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\strategy_generator.py",
+      "relative": "00_identity\\strategy_generator.py",
+      "size_bytes": 18792,
+      "sha256_prefix": "541dea5ad50dd859"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\trading_engine.py",
+      "relative": "00_identity\\trading_engine.py",
+      "size_bytes": 13083,
+      "sha256_prefix": "98e39c08ba06318f"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\ui_console_runtime_v1.py",
+      "relative": "00_identity\\ui_console_runtime_v1.py",
+      "size_bytes": 972,
+      "sha256_prefix": "8860f575cdf110b5"
+    },
+    {
+      "path": "C:\\AI_VAULT\\00_identity\\ui_proxy_server.py",
+      "relative": "00_identity\\ui_proxy_server.py",
+      "size_bytes": 31166,
+      "sha256_prefix": "bff784660d164fa9"
+    },
+    {
+      "path": "C:\\AI_VAULT\\20_INFRASTRUCTURE\\caching\\cache_manager.py",
+      "relative": "20_INFRASTRUCTURE\\caching\\cache_manager.py",
+      "size_bytes": 11977,
+      "sha256_prefix": "b7e89ac9a8bfe68f"
+    },
+    {
+      "path": "C:\\AI_VAULT\\20_INFRASTRUCTURE\\monitoring\\dashboard.py",
+      "relative": "20_INFRASTRUCTURE\\monitoring\\dashboard.py",
+      "size_bytes": 15529,
+      "sha256_prefix": "e3b2ba8bfbf5a8f0"
+    },
+    {
+      "path": "C:\\AI_VAULT\\20_INFRASTRUCTURE\\monitoring\\metrics.py",
+      "relative": "20_INFRASTRUCTURE\\monitoring\\metrics.py",
+      "size_bytes": 13729,
+      "sha256_prefix": "efcaaf5f83e68679"
+    },
+    {
+      "path": "C:\\AI_VAULT\\20_INFRASTRUCTURE\\security\\rate_limiter.py",
+      "relative": "20_INFRASTRUCTURE\\security\\rate_limiter.py",
+      "size_bytes": 11626,
+      "sha256_prefix": "3023e4d2a7ea51fe"
+    },
+    {
+      "path": "C:\\AI_VAULT\\20_INFRASTRUCTURE\\security\\secrets_manager.py",
+      "relative": "20_INFRASTRUCTURE\\security\\secrets_manager.py",
+      "size_bytes": 9548,
+      "sha256_prefix": "76fa2ab3c6692d14"
+    },
+    {
+      "path": "C:\\AI_VAULT\\20_INFRASTRUCTURE\\security\\validation.py",
+      "relative": "20_INFRASTRUCTURE\\security\\validation.py",
+      "size_bytes": 10703,
+      "sha256_prefix": "5d9a4df6bb94b0d8"
+    },
+    {
+      "path": "C:\\AI_VAULT\\20_INFRASTRUCTURE\\storage\\optimized_json.py",
+      "relative": "20_INFRASTRUCTURE\\storage\\optimized_json.py",
+      "size_bytes": 12771,
+      "sha256_prefix": "38dbc258855e9af8"
+    },
+    {
+      "path": "C:\\AI_VAULT\\70_SCORING_ENGINE\\brain_evaluator.py",
+      "relative": "70_SCORING_ENGINE\\brain_evaluator.py",
+      "size_bytes": 5290,
+      "sha256_prefix": "3d7af35950309103"
+    },
+    {
+      "path": "C:\\AI_VAULT\\70_SCORING_ENGINE\\daily_brief.py",
+      "relative": "70_SCORING_ENGINE\\daily_brief.py",
+      "size_bytes": 2389,
+      "sha256_prefix": "7602ad02230946d3"
+    },
+    {
+      "path": "C:\\AI_VAULT\\70_SCORING_ENGINE\\daily_targets.py",
+      "relative": "70_SCORING_ENGINE\\daily_targets.py",
+      "size_bytes": 5480,
+      "sha256_prefix": "a1e2cc450aa740e0"
+    },
+    {
+      "path": "C:\\AI_VAULT\\70_SCORING_ENGINE\\lead_harvester_osm.py",
+      "relative": "70_SCORING_ENGINE\\lead_harvester_osm.py",
+      "size_bytes": 8168,
+      "sha256_prefix": "09b9c4e0424d1567"
+    },
+    {
+      "path": "C:\\AI_VAULT\\70_SCORING_ENGINE\\mark_lead.py",
+      "relative": "70_SCORING_ENGINE\\mark_lead.py",
+      "size_bytes": 2331,
+      "sha256_prefix": "ba3504ef30c3a5f2"
+    },
+    {
+      "path": "C:\\AI_VAULT\\70_SCORING_ENGINE\\opportunity_scoring.py",
+      "relative": "70_SCORING_ENGINE\\opportunity_scoring.py",
+      "size_bytes": 3622,
+      "sha256_prefix": "772d4bcfe9011e32"
+    },
+    {
+      "path": "C:\\AI_VAULT\\70_SCORING_ENGINE\\outbound_pack.py",
+      "relative": "70_SCORING_ENGINE\\outbound_pack.py",
+      "size_bytes": 5392,
+      "sha256_prefix": "bae4ffad7fd1e32a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\70_SCORING_ENGINE\\send_queue.py",
+      "relative": "70_SCORING_ENGINE\\send_queue.py",
+      "size_bytes": 4377,
+      "sha256_prefix": "19b665642fb57e3d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\70_SCORING_ENGINE\\smtp_selftest.py",
+      "relative": "70_SCORING_ENGINE\\smtp_selftest.py",
+      "size_bytes": 42,
+      "sha256_prefix": "84fcd3dc7feafbbd"
+    },
+    {
+      "path": "C:\\AI_VAULT\\80_CAPITAL_ENGINE\\capital_allocator.py",
+      "relative": "80_CAPITAL_ENGINE\\capital_allocator.py",
+      "size_bytes": 4718,
+      "sha256_prefix": "e5a9f556ce20f4f7"
+    },
+    {
+      "path": "C:\\AI_VAULT\\__init__.py",
+      "relative": "__init__.py",
+      "size_bytes": 16,
+      "sha256_prefix": "980df5c62837d98e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\_archived_orphans\\brain_dev_mode.py",
+      "relative": "_archived_orphans\\brain_dev_mode.py",
+      "size_bytes": 6712,
+      "sha256_prefix": "2a3704bd03e218ad"
+    },
+    {
+      "path": "C:\\AI_VAULT\\_archived_orphans\\brain_v3_chat_autenticado.py",
+      "relative": "_archived_orphans\\brain_v3_chat_autenticado.py",
+      "size_bytes": 787,
+      "sha256_prefix": "072ce1e0447395a6"
+    },
+    {
+      "path": "C:\\AI_VAULT\\_archived_orphans\\godmode_helper.py",
+      "relative": "_archived_orphans\\godmode_helper.py",
+      "size_bytes": 4060,
+      "sha256_prefix": "56470427249e06e9"
+    },
+    {
+      "path": "C:\\AI_VAULT\\_archived_orphans\\pad_console.py",
+      "relative": "_archived_orphans\\pad_console.py",
+      "size_bytes": 4450,
+      "sha256_prefix": "95a8e9e9564d46d6"
+    },
+    {
+      "path": "C:\\AI_VAULT\\_archived_orphans\\pad_simple.py",
+      "relative": "_archived_orphans\\pad_simple.py",
+      "size_bytes": 2960,
+      "sha256_prefix": "8cfb923525e1ef0b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\_archived_orphans\\pad_standalone.py",
+      "relative": "_archived_orphans\\pad_standalone.py",
+      "size_bytes": 4888,
+      "sha256_prefix": "a7adc17a1baf3992"
+    },
+    {
+      "path": "C:\\AI_VAULT\\_archived_orphans\\protocolo_autenticacion_desarrollador_min.py",
+      "relative": "_archived_orphans\\protocolo_autenticacion_desarrollador_min.py",
+      "size_bytes": 7219,
+      "sha256_prefix": "71f198c2b0dd7ff4"
+    },
+    {
+      "path": "C:\\AI_VAULT\\_archived_orphans\\protocolo_autenticacion_desarrollador_v2.py",
+      "relative": "_archived_orphans\\protocolo_autenticacion_desarrollador_v2.py",
+      "size_bytes": 9626,
+      "sha256_prefix": "23c074a03d79c557"
+    },
+    {
+      "path": "C:\\AI_VAULT\\agent\\__init__.py",
+      "relative": "agent\\__init__.py",
+      "size_bytes": 17,
+      "sha256_prefix": "a951f6b5b23328a0"
+    },
+    {
+      "path": "C:\\AI_VAULT\\agent\\tools_new.py",
+      "relative": "agent\\tools_new.py",
+      "size_bytes": 26281,
+      "sha256_prefix": "8e647d21c919aa41"
+    },
+    {
+      "path": "C:\\AI_VAULT\\autogen_test\\test_autogen_ollama.py",
+      "relative": "autogen_test\\test_autogen_ollama.py",
+      "size_bytes": 704,
+      "sha256_prefix": "675a5de3d24cf040"
+    },
+    {
+      "path": "C:\\AI_VAULT\\autogen_test\\test_autogen_ollama_v2.py",
+      "relative": "autogen_test\\test_autogen_ollama_v2.py",
+      "size_bytes": 1324,
+      "sha256_prefix": "8f3a039b0a78605a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\autogen_test\\test_ollama_v1.py",
+      "relative": "autogen_test\\test_ollama_v1.py",
+      "size_bytes": 712,
+      "sha256_prefix": "d31be04e62e8dee1"
+    },
+    {
+      "path": "C:\\AI_VAULT\\autonomy\\__init__.py",
+      "relative": "autonomy\\__init__.py",
+      "size_bytes": 20,
+      "sha256_prefix": "e3dc2090458f9473"
+    },
+    {
+      "path": "C:\\AI_VAULT\\autonomy\\goal_system.py",
+      "relative": "autonomy\\goal_system.py",
+      "size_bytes": 9913,
+      "sha256_prefix": "fcf78395a1387f1d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\autonomy\\manager.py",
+      "relative": "autonomy\\manager.py",
+      "size_bytes": 9855,
+      "sha256_prefix": "9aa551fb5aeb6fa6"
+    },
+    {
+      "path": "C:\\AI_VAULT\\autonomy\\router.py",
+      "relative": "autonomy\\router.py",
+      "size_bytes": 1044,
+      "sha256_prefix": "1e084be4766bad30"
+    },
+    {
+      "path": "C:\\AI_VAULT\\backups\\brain_v9_repair_20260428_100011\\config.py",
+      "relative": "backups\\brain_v9_repair_20260428_100011\\config.py",
+      "size_bytes": 27013,
+      "sha256_prefix": "6efba0d4d5ff3ed8"
+    },
+    {
+      "path": "C:\\AI_VAULT\\backups\\brain_v9_repair_20260428_100011\\financial\\improvement_cycle.py",
+      "relative": "backups\\brain_v9_repair_20260428_100011\\financial\\improvement_cycle.py",
+      "size_bytes": 7937,
+      "sha256_prefix": "1f1357f8ae509a62"
+    },
+    {
+      "path": "C:\\AI_VAULT\\backups\\brain_v9_repair_20260428_100011\\financial\\strategy_adapter.py",
+      "relative": "backups\\brain_v9_repair_20260428_100011\\financial\\strategy_adapter.py",
+      "size_bytes": 10152,
+      "sha256_prefix": "651bebc9699a68d7"
+    },
+    {
+      "path": "C:\\AI_VAULT\\backups\\brain_v9_repair_20260428_100011\\main.py",
+      "relative": "backups\\brain_v9_repair_20260428_100011\\main.py",
+      "size_bytes": 97679,
+      "sha256_prefix": "2d8589c0e29e81cc"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\auto_tick_loop.py",
+      "relative": "brain\\auto_tick_loop.py",
+      "size_bytes": 8632,
+      "sha256_prefix": "ac74d7d301932636"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\brain_orchestrator.py",
+      "relative": "brain\\brain_orchestrator.py",
+      "size_bytes": 11811,
+      "sha256_prefix": "fa4e639fcf02c4c9"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\brain_v2_wrapper.py",
+      "relative": "brain\\brain_v2_wrapper.py",
+      "size_bytes": 10256,
+      "sha256_prefix": "43e17cb22d6456ce"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\brain_v3_chat_autenticado.py",
+      "relative": "brain\\brain_v3_chat_autenticado.py",
+      "size_bytes": 18729,
+      "sha256_prefix": "3408d695bf09d4b1"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\capability_governor.py",
+      "relative": "brain\\capability_governor.py",
+      "size_bytes": 26940,
+      "sha256_prefix": "85652a2b099e3ee1"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\chat_excelente_integration.py",
+      "relative": "brain\\chat_excelente_integration.py",
+      "size_bytes": 21199,
+      "sha256_prefix": "e884d0e60e6f2b2c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\curated_memory_dry_run_flow.py",
+      "relative": "brain\\curated_memory_dry_run_flow.py",
+      "size_bytes": 22471,
+      "sha256_prefix": "bda29997cd3c3990"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\curated_memory_governance.py",
+      "relative": "brain\\curated_memory_governance.py",
+      "size_bytes": 10626,
+      "sha256_prefix": "35ff5dd5c02a2066"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\curated_memory_governance_audit.py",
+      "relative": "brain\\curated_memory_governance_audit.py",
+      "size_bytes": 14071,
+      "sha256_prefix": "0a5f0641c5388167"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\curated_memory_observability.py",
+      "relative": "brain\\curated_memory_observability.py",
+      "size_bytes": 9580,
+      "sha256_prefix": "599293aad895d0d8"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\curated_memory_promotion.py",
+      "relative": "brain\\curated_memory_promotion.py",
+      "size_bytes": 10027,
+      "sha256_prefix": "0377b28a9d9506c2"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\curated_memory_rollback.py",
+      "relative": "brain\\curated_memory_rollback.py",
+      "size_bytes": 10995,
+      "sha256_prefix": "34853bbcc7e1e181"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\curation_validation_adapter.py",
+      "relative": "brain\\curation_validation_adapter.py",
+      "size_bytes": 16599,
+      "sha256_prefix": "a47cfae4ec1f41ef"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\dashboard_reader.py",
+      "relative": "brain\\dashboard_reader.py",
+      "size_bytes": 11110,
+      "sha256_prefix": "49ca6a46718a96ff"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\github_source_connector.py",
+      "relative": "brain\\github_source_connector.py",
+      "size_bytes": 14442,
+      "sha256_prefix": "1ce3ba38e6cf27e2"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\health.py",
+      "relative": "brain\\health.py",
+      "size_bytes": 2110,
+      "sha256_prefix": "e41352d4a26ef9ed"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\integracion_modo_chat.py",
+      "relative": "brain\\integracion_modo_chat.py",
+      "size_bytes": 12469,
+      "sha256_prefix": "e9bbb63d74d53950"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\memory_semantic_backup.py",
+      "relative": "brain\\memory_semantic_backup.py",
+      "size_bytes": 15890,
+      "sha256_prefix": "47c5906f2418d1ce"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\meta_cognition_l2.py",
+      "relative": "brain\\meta_cognition_l2.py",
+      "size_bytes": 9032,
+      "sha256_prefix": "5aa7eb7411f18bc2"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\metrics.py",
+      "relative": "brain\\metrics.py",
+      "size_bytes": 8572,
+      "sha256_prefix": "3367b7eb08ffe619"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\phase_evaluator.py",
+      "relative": "brain\\phase_evaluator.py",
+      "size_bytes": 12919,
+      "sha256_prefix": "d0cdd4b9551bb326"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\project_state_provider.py",
+      "relative": "brain\\project_state_provider.py",
+      "size_bytes": 16638,
+      "sha256_prefix": "6ffd55770a500946"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\rsi.py",
+      "relative": "brain\\rsi.py",
+      "size_bytes": 4436,
+      "sha256_prefix": "644ae612f46b5743"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\self_awareness_injector.py",
+      "relative": "brain\\self_awareness_injector.py",
+      "size_bytes": 8726,
+      "sha256_prefix": "74beb2dc08b39a11"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\self_dev_sandbox.py",
+      "relative": "brain\\self_dev_sandbox.py",
+      "size_bytes": 11095,
+      "sha256_prefix": "7906e1e851c95972"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_adapter_dry_run.py",
+      "relative": "brain\\semantic_memory_adapter_dry_run.py",
+      "size_bytes": 15324,
+      "sha256_prefix": "49775df3bfe3f1b5"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_adapter_real.py",
+      "relative": "brain\\semantic_memory_adapter_real.py",
+      "size_bytes": 14325,
+      "sha256_prefix": "2b8602640ee7a3f0"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_bridge.py",
+      "relative": "brain\\semantic_memory_bridge.py",
+      "size_bytes": 8840,
+      "sha256_prefix": "64d217cb48bcd9eb"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_controlled_real_write_candidate_design.py",
+      "relative": "brain\\semantic_memory_controlled_real_write_candidate_design.py",
+      "size_bytes": 24641,
+      "sha256_prefix": "37d3839406f6f49f"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_controlled_real_write_execution_package.py",
+      "relative": "brain\\semantic_memory_controlled_real_write_execution_package.py",
+      "size_bytes": 29715,
+      "sha256_prefix": "115a8286bb670602"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_controlled_real_write_preflight_snapshot.py",
+      "relative": "brain\\semantic_memory_controlled_real_write_preflight_snapshot.py",
+      "size_bytes": 29158,
+      "sha256_prefix": "23e754e48e358c50"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_decision_gate_evidence_adapter.py",
+      "relative": "brain\\semantic_memory_decision_gate_evidence_adapter.py",
+      "size_bytes": 14189,
+      "sha256_prefix": "f54b19b77939bc75"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_external_evidence_contract.py",
+      "relative": "brain\\semantic_memory_external_evidence_contract.py",
+      "size_bytes": 28964,
+      "sha256_prefix": "5f6b71a086fc5a30"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_extra_file_classifier.py",
+      "relative": "brain\\semantic_memory_extra_file_classifier.py",
+      "size_bytes": 16388,
+      "sha256_prefix": "2a181042678ee238"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_extra_file_dependency_mapper.py",
+      "relative": "brain\\semantic_memory_extra_file_dependency_mapper.py",
+      "size_bytes": 23221,
+      "sha256_prefix": "24c7e3c861383b32"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_final_pre_execution_gate.py",
+      "relative": "brain\\semantic_memory_final_pre_execution_gate.py",
+      "size_bytes": 25112,
+      "sha256_prefix": "27ed1c85b5865fd0"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_final_readiness_review.py",
+      "relative": "brain\\semantic_memory_final_readiness_review.py",
+      "size_bytes": 30314,
+      "sha256_prefix": "8f90f62cf86fd790"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_go_no_go_readiness_checklist.py",
+      "relative": "brain\\semantic_memory_go_no_go_readiness_checklist.py",
+      "size_bytes": 20399,
+      "sha256_prefix": "37adb040f0dc99ff"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_probe.py",
+      "relative": "brain\\semantic_memory_probe.py",
+      "size_bytes": 14380,
+      "sha256_prefix": "03d35243dbabee9b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_real_state_audit.py",
+      "relative": "brain\\semantic_memory_real_state_audit.py",
+      "size_bytes": 14335,
+      "sha256_prefix": "504b27a9e4148751"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_real_write_authorization_packet.py",
+      "relative": "brain\\semantic_memory_real_write_authorization_packet.py",
+      "size_bytes": 22703,
+      "sha256_prefix": "62742014e5a7a2a0"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_real_write_canary_plan.py",
+      "relative": "brain\\semantic_memory_real_write_canary_plan.py",
+      "size_bytes": 22856,
+      "sha256_prefix": "357e0523133cdffd"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_real_write_decision_gate.py",
+      "relative": "brain\\semantic_memory_real_write_decision_gate.py",
+      "size_bytes": 23235,
+      "sha256_prefix": "84911a4accfa1a2a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_real_write_readiness_gate.py",
+      "relative": "brain\\semantic_memory_real_write_readiness_gate.py",
+      "size_bytes": 12492,
+      "sha256_prefix": "0cdbed273804fd67"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\semantic_memory_rollback_simulation.py",
+      "relative": "brain\\semantic_memory_rollback_simulation.py",
+      "size_bytes": 15752,
+      "sha256_prefix": "74216a5e5d32d56c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\tests\\__init__.py",
+      "relative": "brain\\tests\\__init__.py",
+      "size_bytes": 23,
+      "sha256_prefix": "d8e92fe65e01899c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\tests\\test_auto_tick_loop.py",
+      "relative": "brain\\tests\\test_auto_tick_loop.py",
+      "size_bytes": 15893,
+      "sha256_prefix": "dd6ab7619b79e03e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\tests\\test_dashboard_reader.py",
+      "relative": "brain\\tests\\test_dashboard_reader.py",
+      "size_bytes": 17267,
+      "sha256_prefix": "3e7dc16f22dfe3fc"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\tests\\test_information_curator.py",
+      "relative": "brain\\tests\\test_information_curator.py",
+      "size_bytes": 14785,
+      "sha256_prefix": "943237b12208aaaa"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\tests\\test_integration.py",
+      "relative": "brain\\tests\\test_integration.py",
+      "size_bytes": 3247,
+      "sha256_prefix": "926a98399983e2d2"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\tests\\test_learning_validator.py",
+      "relative": "brain\\tests\\test_learning_validator.py",
+      "size_bytes": 26632,
+      "sha256_prefix": "189b02e711830a72"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\tests\\test_phase_evaluator.py",
+      "relative": "brain\\tests\\test_phase_evaluator.py",
+      "size_bytes": 12847,
+      "sha256_prefix": "ccbdeb94809f5ed1"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\tests\\test_self_awareness_injector.py",
+      "relative": "brain\\tests\\test_self_awareness_injector.py",
+      "size_bytes": 12823,
+      "sha256_prefix": "6218cd5a3ce9a389"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\tests\\test_semantic_memory_bridge.py",
+      "relative": "brain\\tests\\test_semantic_memory_bridge.py",
+      "size_bytes": 6533,
+      "sha256_prefix": "253733749ab825ab"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\tests\\test_unified_chat_router.py",
+      "relative": "brain\\tests\\test_unified_chat_router.py",
+      "size_bytes": 22864,
+      "sha256_prefix": "167dcc7abcd1d4e9"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\unified_chat_router.py",
+      "relative": "brain\\unified_chat_router.py",
+      "size_bytes": 10886,
+      "sha256_prefix": "1307419b55b7d537"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain\\upgrade_router.py",
+      "relative": "brain\\upgrade_router.py",
+      "size_bytes": 8455,
+      "sha256_prefix": "f1307ea046f55e7f"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain_server_emergency.py",
+      "relative": "brain_server_emergency.py",
+      "size_bytes": 899,
+      "sha256_prefix": "00c051f3e0489082"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain_v2_pocketoption_test.py",
+      "relative": "brain_v2_pocketoption_test.py",
+      "size_bytes": 5208,
+      "sha256_prefix": "78d14a16cff3c333"
+    },
+    {
+      "path": "C:\\AI_VAULT\\brain_v3_ejecuta_eliminacion.py",
+      "relative": "brain_v3_ejecuta_eliminacion.py",
+      "size_bytes": 6911,
+      "sha256_prefix": "d88085a1ce4322e3"
+    },
+    {
+      "path": "C:\\AI_VAULT\\bridge_fix.py",
+      "relative": "bridge_fix.py",
+      "size_bytes": 1681,
+      "sha256_prefix": "bdab856080521cf1"
+    },
+    {
+      "path": "C:\\AI_VAULT\\check_dashboard.py",
+      "relative": "check_dashboard.py",
+      "size_bytes": 2843,
+      "sha256_prefix": "c22685d752b5818e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\check_dashboard_html.py",
+      "relative": "check_dashboard_html.py",
+      "size_bytes": 3817,
+      "sha256_prefix": "68ec74784b44b6b8"
+    },
+    {
+      "path": "C:\\AI_VAULT\\config.py",
+      "relative": "config.py",
+      "size_bytes": 6660,
+      "sha256_prefix": "ab7f58767cf7da96"
+    },
+    {
+      "path": "C:\\AI_VAULT\\core\\event_bus.py",
+      "relative": "core\\event_bus.py",
+      "size_bytes": 4889,
+      "sha256_prefix": "de4adb315a10a105"
+    },
+    {
+      "path": "C:\\AI_VAULT\\core\\intent.py",
+      "relative": "core\\intent.py",
+      "size_bytes": 7648,
+      "sha256_prefix": "533dd6b7835db149"
+    },
+    {
+      "path": "C:\\AI_VAULT\\core\\llm.py",
+      "relative": "core\\llm.py",
+      "size_bytes": 12357,
+      "sha256_prefix": "a905950c3c584be9"
+    },
+    {
+      "path": "C:\\AI_VAULT\\core\\memory.py",
+      "relative": "core\\memory.py",
+      "size_bytes": 4038,
+      "sha256_prefix": "90bb211de16759d2"
+    },
+    {
+      "path": "C:\\AI_VAULT\\core\\nlp.py",
+      "relative": "core\\nlp.py",
+      "size_bytes": 11318,
+      "sha256_prefix": "c14656e195f54981"
+    },
+    {
+      "path": "C:\\AI_VAULT\\core\\session.py",
+      "relative": "core\\session.py",
+      "size_bytes": 9354,
+      "sha256_prefix": "91248ec32cc558f9"
+    },
+    {
+      "path": "C:\\AI_VAULT\\core\\settings.py",
+      "relative": "core\\settings.py",
+      "size_bytes": 4312,
+      "sha256_prefix": "a3093f43d1f41f02"
+    },
+    {
+      "path": "C:\\AI_VAULT\\dashboard_check.py",
+      "relative": "dashboard_check.py",
+      "size_bytes": 680,
+      "sha256_prefix": "f5bdec557ad9c830"
+    },
+    {
+      "path": "C:\\AI_VAULT\\demo_integracion_completa.py",
+      "relative": "demo_integracion_completa.py",
+      "size_bytes": 7669,
+      "sha256_prefix": "501032ec04be30e4"
+    },
+    {
+      "path": "C:\\AI_VAULT\\depuracion_automatizada.py",
+      "relative": "depuracion_automatizada.py",
+      "size_bytes": 14136,
+      "sha256_prefix": "a43a517a22f8440a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\diag_emergency.py",
+      "relative": "diag_emergency.py",
+      "size_bytes": 738,
+      "sha256_prefix": "66388496af1f6d90"
+    },
+    {
+      "path": "C:\\AI_VAULT\\emergency_restart.py",
+      "relative": "emergency_restart.py",
+      "size_bytes": 2926,
+      "sha256_prefix": "ea751f1a7e66e76f"
+    },
+    {
+      "path": "C:\\AI_VAULT\\execute_autonomy_action.py",
+      "relative": "execute_autonomy_action.py",
+      "size_bytes": 5055,
+      "sha256_prefix": "658a1139c6d669c0"
+    },
+    {
+      "path": "C:\\AI_VAULT\\execute_autonomy_cycle_2.py",
+      "relative": "execute_autonomy_cycle_2.py",
+      "size_bytes": 6079,
+      "sha256_prefix": "c2f97d9d3ea8a74d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\final_boot.py",
+      "relative": "final_boot.py",
+      "size_bytes": 1295,
+      "sha256_prefix": "f88a070415c1d654"
+    },
+    {
+      "path": "C:\\AI_VAULT\\final_status_report.py",
+      "relative": "final_status_report.py",
+      "size_bytes": 4976,
+      "sha256_prefix": "71318a8821aafef1"
+    },
+    {
+      "path": "C:\\AI_VAULT\\finance_test.py",
+      "relative": "finance_test.py",
+      "size_bytes": 875,
+      "sha256_prefix": "5b4bef148d69332a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\financial_autonomy\\__init__.py",
+      "relative": "financial_autonomy\\__init__.py",
+      "size_bytes": 302,
+      "sha256_prefix": "7b2e91ae495f2787"
+    },
+    {
+      "path": "C:\\AI_VAULT\\financial_autonomy\\api\\financial_endpoints.py",
+      "relative": "financial_autonomy\\api\\financial_endpoints.py",
+      "size_bytes": 2562,
+      "sha256_prefix": "29d7a2027b33c257"
+    },
+    {
+      "path": "C:\\AI_VAULT\\financial_autonomy\\bridge\\financial_autonomy_bridge.py",
+      "relative": "financial_autonomy\\bridge\\financial_autonomy_bridge.py",
+      "size_bytes": 3324,
+      "sha256_prefix": "8f70b187d6651cbf"
+    },
+    {
+      "path": "C:\\AI_VAULT\\financial_autonomy\\bridge\\trust_score_integration.py",
+      "relative": "financial_autonomy\\bridge\\trust_score_integration.py",
+      "size_bytes": 2444,
+      "sha256_prefix": "c5afccc01389803a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\financial_autonomy\\financial_autonomy_autobuild.py",
+      "relative": "financial_autonomy\\financial_autonomy_autobuild.py",
+      "size_bytes": 4012,
+      "sha256_prefix": "e01be3b5165e1969"
+    },
+    {
+      "path": "C:\\AI_VAULT\\financial_autonomy\\integration_setup.py",
+      "relative": "financial_autonomy\\integration_setup.py",
+      "size_bytes": 2115,
+      "sha256_prefix": "0a5cd3d100bd6206"
+    },
+    {
+      "path": "C:\\AI_VAULT\\fix_cors.py",
+      "relative": "fix_cors.py",
+      "size_bytes": 1220,
+      "sha256_prefix": "6c60265d24b87ce7"
+    },
+    {
+      "path": "C:\\AI_VAULT\\fix_health.py",
+      "relative": "fix_health.py",
+      "size_bytes": 590,
+      "sha256_prefix": "e9595c710ae0d5bd"
+    },
+    {
+      "path": "C:\\AI_VAULT\\fix_imports.py",
+      "relative": "fix_imports.py",
+      "size_bytes": 1872,
+      "sha256_prefix": "943bb613ebefc9f3"
+    },
+    {
+      "path": "C:\\AI_VAULT\\fix_syntax_order.py",
+      "relative": "fix_syntax_order.py",
+      "size_bytes": 672,
+      "sha256_prefix": "829147378e1c0a61"
+    },
+    {
+      "path": "C:\\AI_VAULT\\force_autonomy_cycle.py",
+      "relative": "force_autonomy_cycle.py",
+      "size_bytes": 5093,
+      "sha256_prefix": "377f41ad33a255fa"
+    },
+    {
+      "path": "C:\\AI_VAULT\\increase_sample_action.py",
+      "relative": "increase_sample_action.py",
+      "size_bytes": 8300,
+      "sha256_prefix": "5be7a5a17dde8c0d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\integrate_custom.py",
+      "relative": "integrate_custom.py",
+      "size_bytes": 2717,
+      "sha256_prefix": "d166ec5fcfdd3609"
+    },
+    {
+      "path": "C:\\AI_VAULT\\integrate_financial.py",
+      "relative": "integrate_financial.py",
+      "size_bytes": 2696,
+      "sha256_prefix": "9f9b900a00d8e55a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\integrated_status_final.py",
+      "relative": "integrated_status_final.py",
+      "size_bytes": 12465,
+      "sha256_prefix": "3fac946c2709ca0a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\integration_direct.py",
+      "relative": "integration_direct.py",
+      "size_bytes": 3353,
+      "sha256_prefix": "eec9ae2e9530999c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\limpiar_emojis.py",
+      "relative": "limpiar_emojis.py",
+      "size_bytes": 1192,
+      "sha256_prefix": "74dc147f34c6b906"
+    },
+    {
+      "path": "C:\\AI_VAULT\\orquestador_100_capacidades.py",
+      "relative": "orquestador_100_capacidades.py",
+      "size_bytes": 5542,
+      "sha256_prefix": "8b64ba5328dcf9b0"
+    },
+    {
+      "path": "C:\\AI_VAULT\\orquestador_evolucion_completa.py",
+      "relative": "orquestador_evolucion_completa.py",
+      "size_bytes": 8938,
+      "sha256_prefix": "34b5265f2dfaad43"
+    },
+    {
+      "path": "C:\\AI_VAULT\\port_kill.py",
+      "relative": "port_kill.py",
+      "size_bytes": 2526,
+      "sha256_prefix": "59da215fb9f94fe9"
+    },
+    {
+      "path": "C:\\AI_VAULT\\prueba_limite_capacidades.py",
+      "relative": "prueba_limite_capacidades.py",
+      "size_bytes": 16166,
+      "sha256_prefix": "909f6edff22691de"
+    },
+    {
+      "path": "C:\\AI_VAULT\\quick_check.py",
+      "relative": "quick_check.py",
+      "size_bytes": 1193,
+      "sha256_prefix": "9b6a3db17157e57b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\reparador_arquitecto.py",
+      "relative": "reparador_arquitecto.py",
+      "size_bytes": 780,
+      "sha256_prefix": "9b68982b91014843"
+    },
+    {
+      "path": "C:\\AI_VAULT\\repos\\openclaw\\scripts\\check-composite-action-input-interpolation.py",
+      "relative": "repos\\openclaw\\scripts\\check-composite-action-input-interpolation.py",
+      "size_bytes": 2328,
+      "sha256_prefix": "00c9566941995c90"
+    },
+    {
+      "path": "C:\\AI_VAULT\\repos\\openclaw\\skills\\model-usage\\scripts\\model_usage.py",
+      "relative": "repos\\openclaw\\skills\\model-usage\\scripts\\model_usage.py",
+      "size_bytes": 10764,
+      "sha256_prefix": "5e833080809c70bb"
+    },
+    {
+      "path": "C:\\AI_VAULT\\repos\\openclaw\\skills\\model-usage\\scripts\\test_model_usage.py",
+      "relative": "repos\\openclaw\\skills\\model-usage\\scripts\\test_model_usage.py",
+      "size_bytes": 1310,
+      "sha256_prefix": "95f62a3e3f38308d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\repos\\openclaw\\skills\\skill-creator\\scripts\\init_skill.py",
+      "relative": "repos\\openclaw\\skills\\skill-creator\\scripts\\init_skill.py",
+      "size_bytes": 13753,
+      "sha256_prefix": "bcd6b802c400a9e8"
+    },
+    {
+      "path": "C:\\AI_VAULT\\repos\\openclaw\\skills\\skill-creator\\scripts\\package_skill.py",
+      "relative": "repos\\openclaw\\skills\\skill-creator\\scripts\\package_skill.py",
+      "size_bytes": 4398,
+      "sha256_prefix": "f290101073ee6a16"
+    },
+    {
+      "path": "C:\\AI_VAULT\\repos\\openclaw\\skills\\skill-creator\\scripts\\quick_validate.py",
+      "relative": "repos\\openclaw\\skills\\skill-creator\\scripts\\quick_validate.py",
+      "size_bytes": 5189,
+      "sha256_prefix": "3e3cdceba2daa893"
+    },
+    {
+      "path": "C:\\AI_VAULT\\repos\\openclaw\\skills\\skill-creator\\scripts\\test_package_skill.py",
+      "relative": "repos\\openclaw\\skills\\skill-creator\\scripts\\test_package_skill.py",
+      "size_bytes": 5866,
+      "sha256_prefix": "6b261a50fe632846"
+    },
+    {
+      "path": "C:\\AI_VAULT\\repos\\openclaw\\skills\\skill-creator\\scripts\\test_quick_validate.py",
+      "relative": "repos\\openclaw\\skills\\skill-creator\\scripts\\test_quick_validate.py",
+      "size_bytes": 2077,
+      "sha256_prefix": "2be00c164cb61020"
+    },
+    {
+      "path": "C:\\AI_VAULT\\repos\\openfang\\agents\\langchain-code-reviewer\\agent.py",
+      "relative": "repos\\openfang\\agents\\langchain-code-reviewer\\agent.py",
+      "size_bytes": 7010,
+      "sha256_prefix": "9b66d7b5a009060b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\repos\\openfang\\agents\\langchain-code-reviewer\\server.py",
+      "relative": "repos\\openfang\\agents\\langchain-code-reviewer\\server.py",
+      "size_bytes": 7044,
+      "sha256_prefix": "a242d438d5da5639"
+    },
+    {
+      "path": "C:\\AI_VAULT\\repos\\openfang\\sdk\\python\\examples\\client_basic.py",
+      "relative": "repos\\openfang\\sdk\\python\\examples\\client_basic.py",
+      "size_bytes": 853,
+      "sha256_prefix": "46b614d3e33e1557"
+    },
+    {
+      "path": "C:\\AI_VAULT\\repos\\openfang\\sdk\\python\\examples\\client_streaming.py",
+      "relative": "repos\\openfang\\sdk\\python\\examples\\client_streaming.py",
+      "size_bytes": 929,
+      "sha256_prefix": "7b4c9f88e1be4ab8"
+    },
+    {
+      "path": "C:\\AI_VAULT\\repos\\openfang\\sdk\\python\\examples\\echo_agent.py",
+      "relative": "repos\\openfang\\sdk\\python\\examples\\echo_agent.py",
+      "size_bytes": 551,
+      "sha256_prefix": "a5b54110604a711c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\repos\\openfang\\sdk\\python\\openfang_client.py",
+      "relative": "repos\\openfang\\sdk\\python\\openfang_client.py",
+      "size_bytes": 13966,
+      "sha256_prefix": "f6a2f83895a75b98"
+    },
+    {
+      "path": "C:\\AI_VAULT\\repos\\openfang\\sdk\\python\\openfang_sdk.py",
+      "relative": "repos\\openfang\\sdk\\python\\openfang_sdk.py",
+      "size_bytes": 4276,
+      "sha256_prefix": "25f31cda81d7113a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\repos\\openfang\\sdk\\python\\setup.py",
+      "relative": "repos\\openfang\\sdk\\python\\setup.py",
+      "size_bytes": 421,
+      "sha256_prefix": "e9c970eea2e6e73e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\repos\\openfang\\test_vertex_e2e.py",
+      "relative": "repos\\openfang\\test_vertex_e2e.py",
+      "size_bytes": 5874,
+      "sha256_prefix": "17f7422b9daf51ab"
+    },
+    {
+      "path": "C:\\AI_VAULT\\scan_orphans.py",
+      "relative": "scan_orphans.py",
+      "size_bytes": 4458,
+      "sha256_prefix": "8a0a26e61262eb0b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\scripts\\migrate_memory_faiss.py",
+      "relative": "scripts\\migrate_memory_faiss.py",
+      "size_bytes": 3983,
+      "sha256_prefix": "3c88691c5752e5b5"
+    },
+    {
+      "path": "C:\\AI_VAULT\\scripts\\migrate_memory_smart.py",
+      "relative": "scripts\\migrate_memory_smart.py",
+      "size_bytes": 4843,
+      "sha256_prefix": "49e1cadd507d5182"
+    },
+    {
+      "path": "C:\\AI_VAULT\\scripts\\stress_suite_faiss_capabilities.py",
+      "relative": "scripts\\stress_suite_faiss_capabilities.py",
+      "size_bytes": 10118,
+      "sha256_prefix": "a397e71e6c6fc906"
+    },
+    {
+      "path": "C:\\AI_VAULT\\server_agente_real.py",
+      "relative": "server_agente_real.py",
+      "size_bytes": 11361,
+      "sha256_prefix": "88edb16ad4a3dea6"
+    },
+    {
+      "path": "C:\\AI_VAULT\\sesion_teaching_demo.py",
+      "relative": "sesion_teaching_demo.py",
+      "size_bytes": 9862,
+      "sha256_prefix": "d9e874ca6fa99b02"
+    },
+    {
+      "path": "C:\\AI_VAULT\\sesion_teaching_simple.py",
+      "relative": "sesion_teaching_simple.py",
+      "size_bytes": 9093,
+      "sha256_prefix": "0036a5dfa465e664"
+    },
+    {
+      "path": "C:\\AI_VAULT\\simple_restart.py",
+      "relative": "simple_restart.py",
+      "size_bytes": 3059,
+      "sha256_prefix": "578a628ab7511ba9"
+    },
+    {
+      "path": "C:\\AI_VAULT\\simple_start.py",
+      "relative": "simple_start.py",
+      "size_bytes": 262,
+      "sha256_prefix": "5d5f71752e90c153"
+    },
+    {
+      "path": "C:\\AI_VAULT\\sistema_ensenanza_transfer.py",
+      "relative": "sistema_ensenanza_transfer.py",
+      "size_bytes": 21097,
+      "sha256_prefix": "04b54e1905e1d5f2"
+    },
+    {
+      "path": "C:\\AI_VAULT\\soft_stop.py",
+      "relative": "soft_stop.py",
+      "size_bytes": 1747,
+      "sha256_prefix": "993be38ebea69d6e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\start_brain_reliable.py",
+      "relative": "start_brain_reliable.py",
+      "size_bytes": 1721,
+      "sha256_prefix": "7627e075e6bed83a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\start_corrected.py",
+      "relative": "start_corrected.py",
+      "size_bytes": 2460,
+      "sha256_prefix": "635e09e90b633f36"
+    },
+    {
+      "path": "C:\\AI_VAULT\\start_emergency_corrected.py",
+      "relative": "start_emergency_corrected.py",
+      "size_bytes": 1789,
+      "sha256_prefix": "a03d73e790f995c4"
+    },
+    {
+      "path": "C:\\AI_VAULT\\start_server_and_test.py",
+      "relative": "start_server_and_test.py",
+      "size_bytes": 1536,
+      "sha256_prefix": "fbc6d78d5b36faa8"
+    },
+    {
+      "path": "C:\\AI_VAULT\\status_concise.py",
+      "relative": "status_concise.py",
+      "size_bytes": 6654,
+      "sha256_prefix": "3173b7a0484dc64b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\surgical_repair.py",
+      "relative": "surgical_repair.py",
+      "size_bytes": 1577,
+      "sha256_prefix": "d0c3990fb5ad62a6"
+    },
+    {
+      "path": "C:\\AI_VAULT\\temp_patcher.py",
+      "relative": "temp_patcher.py",
+      "size_bytes": 1229,
+      "sha256_prefix": "eeded56b98d2329a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\test_brain_mentor_v1.py",
+      "relative": "test_brain_mentor_v1.py",
+      "size_bytes": 4147,
+      "sha256_prefix": "b02d3cae3d950a08"
+    },
+    {
+      "path": "C:\\AI_VAULT\\test_brain_server_ssot_flow.py",
+      "relative": "test_brain_server_ssot_flow.py",
+      "size_bytes": 5888,
+      "sha256_prefix": "9cafdf3d29e7c8ef"
+    },
+    {
+      "path": "C:\\AI_VAULT\\test_imports.py",
+      "relative": "test_imports.py",
+      "size_bytes": 616,
+      "sha256_prefix": "51e4634f67c0c4c4"
+    },
+    {
+      "path": "C:\\AI_VAULT\\test_start.py",
+      "relative": "test_start.py",
+      "size_bytes": 915,
+      "sha256_prefix": "ea9966161537fea4"
+    },
+    {
+      "path": "C:\\AI_VAULT\\test_trading_system.py",
+      "relative": "test_trading_system.py",
+      "size_bytes": 2367,
+      "sha256_prefix": "3b7f5615a56076b0"
+    },
+    {
+      "path": "C:\\AI_VAULT\\tester.py",
+      "relative": "tester.py",
+      "size_bytes": 279,
+      "sha256_prefix": "51a61e054a41a809"
+    },
+    {
+      "path": "C:\\AI_VAULT\\tmp_test_eliminar.py",
+      "relative": "tmp_test_eliminar.py",
+      "size_bytes": 2795,
+      "sha256_prefix": "b2893e604bea0d2c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\tools\\generate_secrets_report.py",
+      "relative": "tools\\generate_secrets_report.py",
+      "size_bytes": 3653,
+      "sha256_prefix": "f0ff3b51b8761736"
+    },
+    {
+      "path": "C:\\AI_VAULT\\trading\\__init__.py",
+      "relative": "trading\\__init__.py",
+      "size_bytes": 19,
+      "sha256_prefix": "a78f5ea343cdc0d3"
+    },
+    {
+      "path": "C:\\AI_VAULT\\trading\\connectors.py",
+      "relative": "trading\\connectors.py",
+      "size_bytes": 10326,
+      "sha256_prefix": "08a649061115ef40"
+    },
+    {
+      "path": "C:\\AI_VAULT\\trading\\router.py",
+      "relative": "trading\\router.py",
+      "size_bytes": 2145,
+      "sha256_prefix": "2c392e94ffe3aa80"
+    },
+    {
+      "path": "C:\\AI_VAULT\\ui\\__init__.py",
+      "relative": "ui\\__init__.py",
+      "size_bytes": 14,
+      "sha256_prefix": "78e1f5860ef1d401"
+    },
+    {
+      "path": "C:\\AI_VAULT\\update_utility_complex.py",
+      "relative": "update_utility_complex.py",
+      "size_bytes": 3957,
+      "sha256_prefix": "63452a616f86c95d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\update_utility_u.py",
+      "relative": "update_utility_u.py",
+      "size_bytes": 2349,
+      "sha256_prefix": "9302a18d22336ba1"
+    },
+    {
+      "path": "C:\\AI_VAULT\\validate_ibkr_lane.py",
+      "relative": "validate_ibkr_lane.py",
+      "size_bytes": 2186,
+      "sha256_prefix": "3756789d5f220d6c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\verification.py",
+      "relative": "verification.py",
+      "size_bytes": 1606,
+      "sha256_prefix": "6a305c7cc4496ccb"
+    },
+    {
+      "path": "C:\\AI_VAULT\\verify_fix.py",
+      "relative": "verify_fix.py",
+      "size_bytes": 1483,
+      "sha256_prefix": "4d21eddd806af36a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brain_openai_fastapi\\src\\__init__.py",
+      "relative": "workspace\\brain_openai_fastapi\\src\\__init__.py",
+      "size_bytes": 10,
+      "sha256_prefix": "527c668d5ae4f9e3"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brain_openai_fastapi\\src\\app\\__init__.py",
+      "relative": "workspace\\brain_openai_fastapi\\src\\app\\__init__.py",
+      "size_bytes": 10,
+      "sha256_prefix": "527c668d5ae4f9e3"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brain_openai_fastapi\\src\\app\\config.py",
+      "relative": "workspace\\brain_openai_fastapi\\src\\app\\config.py",
+      "size_bytes": 311,
+      "sha256_prefix": "7e388210cf729baf"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brain_openai_fastapi\\src\\app\\logging_setup.py",
+      "relative": "workspace\\brain_openai_fastapi\\src\\app\\logging_setup.py",
+      "size_bytes": 217,
+      "sha256_prefix": "d0f48ea72c0a0c02"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brain_openai_fastapi\\src\\app\\main.py",
+      "relative": "workspace\\brain_openai_fastapi\\src\\app\\main.py",
+      "size_bytes": 393,
+      "sha256_prefix": "3653824122eb5685"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brain_openai_fastapi\\src\\app\\routers\\__init__.py",
+      "relative": "workspace\\brain_openai_fastapi\\src\\app\\routers\\__init__.py",
+      "size_bytes": 10,
+      "sha256_prefix": "527c668d5ae4f9e3"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brain_openai_fastapi\\src\\app\\routers\\agent_proxy.py",
+      "relative": "workspace\\brain_openai_fastapi\\src\\app\\routers\\agent_proxy.py",
+      "size_bytes": 163,
+      "sha256_prefix": "2694097a6ceb2054"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\contracts\\contract_loader.py",
+      "relative": "workspace\\brainlab\\brainlab\\contracts\\contract_loader.py",
+      "size_bytes": 2383,
+      "sha256_prefix": "0537caddd1a946a0"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\brainlab\\risk\\risk_engine.py",
+      "relative": "workspace\\brainlab\\brainlab\\risk\\risk_engine.py",
+      "size_bytes": 2530,
+      "sha256_prefix": "690ac14e40ad51af"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_091516\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_091516\\brain_router.py",
+      "size_bytes": 23777,
+      "sha256_prefix": "7d5d726bd34eef6a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_091516\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_091516\\brain_server.py",
+      "size_bytes": 948,
+      "sha256_prefix": "eda9b64d5e184303"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_091921\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_091921\\brain_router.py",
+      "size_bytes": 23777,
+      "sha256_prefix": "7d5d726bd34eef6a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_091921\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_091921\\brain_server.py",
+      "size_bytes": 948,
+      "sha256_prefix": "eda9b64d5e184303"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_092405\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_092405\\brain_router.py",
+      "size_bytes": 23777,
+      "sha256_prefix": "7d5d726bd34eef6a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_092405\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_092405\\brain_server.py",
+      "size_bytes": 948,
+      "sha256_prefix": "eda9b64d5e184303"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_093402\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_093402\\brain_router.py",
+      "size_bytes": 23777,
+      "sha256_prefix": "7d5d726bd34eef6a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_093402\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_093402\\brain_server.py",
+      "size_bytes": 1146,
+      "sha256_prefix": "1cd1594180925b0a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_094013\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_094013\\brain_router.py",
+      "size_bytes": 29625,
+      "sha256_prefix": "39ddbe430dc80b69"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_094336\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_094336\\brain_router.py",
+      "size_bytes": 29625,
+      "sha256_prefix": "39ddbe430dc80b69"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_123830\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_123830\\brain_router.py",
+      "size_bytes": 24174,
+      "sha256_prefix": "7dc2180c250343ca"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_124040\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_124040\\brain_router.py",
+      "size_bytes": 24174,
+      "sha256_prefix": "7dc2180c250343ca"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_124646\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_124646\\brain_router.py",
+      "size_bytes": 24174,
+      "sha256_prefix": "7dc2180c250343ca"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_124646\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_124646\\brain_server.py",
+      "size_bytes": 957,
+      "sha256_prefix": "f12cac55b7d22eea"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_131035\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_131035\\brain_router.py",
+      "size_bytes": 29544,
+      "sha256_prefix": "0f672dbe227cd8da"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_131401\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_131401\\brain_router.py",
+      "size_bytes": 29544,
+      "sha256_prefix": "0f672dbe227cd8da"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_131553\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_131553\\brain_router.py",
+      "size_bytes": 29544,
+      "sha256_prefix": "0f672dbe227cd8da"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_132102\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_132102\\brain_router.py",
+      "size_bytes": 32297,
+      "sha256_prefix": "85852b261023dc43"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_132222\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_132222\\brain_router.py",
+      "size_bytes": 34667,
+      "sha256_prefix": "cfe46a40f1f7a2cb"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_144252\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_144252\\brain_router.py",
+      "size_bytes": 37037,
+      "sha256_prefix": "313ea045be9a136e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_144318\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_144318\\brain_router.py",
+      "size_bytes": 37037,
+      "sha256_prefix": "313ea045be9a136e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_144847\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_144847\\brain_router.py",
+      "size_bytes": 37037,
+      "sha256_prefix": "313ea045be9a136e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_145506\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_145506\\brain_router.py",
+      "size_bytes": 37037,
+      "sha256_prefix": "313ea045be9a136e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_145921\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_145921\\brain_router.py",
+      "size_bytes": 37037,
+      "sha256_prefix": "313ea045be9a136e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_150151\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_150151\\brain_router.py",
+      "size_bytes": 37037,
+      "sha256_prefix": "313ea045be9a136e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_150435\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_150435\\brain_router.py",
+      "size_bytes": 37037,
+      "sha256_prefix": "313ea045be9a136e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_150709\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_150709\\brain_router.py",
+      "size_bytes": 37037,
+      "sha256_prefix": "313ea045be9a136e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_150936\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_150936\\brain_router.py",
+      "size_bytes": 39234,
+      "sha256_prefix": "f33ed67186cb9d94"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_151307\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_151307\\brain_router.py",
+      "size_bytes": 39343,
+      "sha256_prefix": "54affb8e09699b03"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_151720\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_151720\\brain_router.py",
+      "size_bytes": 39448,
+      "sha256_prefix": "7df1b3fad2754d83"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\20260224_152011\\brain_router.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\20260224_152011\\brain_router.py",
+      "size_bytes": 39448,
+      "sha256_prefix": "7df1b3fad2754d83"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_20260222_093526.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_20260222_093526.py",
+      "size_bytes": 1737,
+      "sha256_prefix": "aecbc9361044de01"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_20260222_094301.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_20260222_094301.py",
+      "size_bytes": 1737,
+      "sha256_prefix": "aecbc9361044de01"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_20260222_105252.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_20260222_105252.py",
+      "size_bytes": 5405,
+      "sha256_prefix": "965d29f1ac3fb54c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_BEFORE_FIXV2_20260222_162956.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_BEFORE_FIXV2_20260222_162956.py",
+      "size_bytes": 94710,
+      "sha256_prefix": "09c760ab1d5a6adb"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_BEFORE_RESCUE_20260222_163253.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_BEFORE_RESCUE_20260222_163253.py",
+      "size_bytes": 94477,
+      "sha256_prefix": "3c005ae7884b1638"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_TRUNCATED_current_20260223_173600.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_TRUNCATED_current_20260223_173600.py",
+      "size_bytes": 0,
+      "sha256_prefix": "e3b0c44298fc1c14"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_TRUNCATED_current_20260223_173627.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_TRUNCATED_current_20260223_173627.py",
+      "size_bytes": 148931,
+      "sha256_prefix": "1f91bfc0e78a3480"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_TRUNCATED_current_20260223_174117.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_TRUNCATED_current_20260223_174117.py",
+      "size_bytes": 148931,
+      "sha256_prefix": "1f91bfc0e78a3480"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_add_agent_evaluate_20260223_164119.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_add_agent_evaluate_20260223_164119.py",
+      "size_bytes": 144087,
+      "sha256_prefix": "c0da1eaad9cc6c63"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_add_agent_evaluate_20260223_164139.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_add_agent_evaluate_20260223_164139.py",
+      "size_bytes": 144087,
+      "sha256_prefix": "c0da1eaad9cc6c63"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_add_agent_evaluate_20260223_164650.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_add_agent_evaluate_20260223_164650.py",
+      "size_bytes": 144087,
+      "sha256_prefix": "c0da1eaad9cc6c63"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_add_evaluate_20260222_174142.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_add_evaluate_20260222_174142.py",
+      "size_bytes": 94722,
+      "sha256_prefix": "6f46c384dd092086"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_20260222_213535.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_20260222_213535.py",
+      "size_bytes": 130699,
+      "sha256_prefix": "a2cac28c631de09d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_FINAL_20260222_220323.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_FINAL_20260222_220323.py",
+      "size_bytes": 135185,
+      "sha256_prefix": "d3e972adb8401ba5"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_debug_20260222_214328.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_debug_20260222_214328.py",
+      "size_bytes": 131672,
+      "sha256_prefix": "9eb960a30541a1bc"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_return_20260222_213757.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_return_20260222_213757.py",
+      "size_bytes": 131505,
+      "sha256_prefix": "87579d4fc20aa56e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_safe_20260222_220019.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_safe_20260222_220019.py",
+      "size_bytes": 133867,
+      "sha256_prefix": "ec60ecf8b17207df"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_v1swap_20260222_214018.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_v1swap_20260222_214018.py",
+      "size_bytes": 131507,
+      "sha256_prefix": "a4922911de9934e7"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_v1swap_SAFE_20260222_214139.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_v1swap_SAFE_20260222_214139.py",
+      "size_bytes": 131507,
+      "sha256_prefix": "a4922911de9934e7"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_v3_relocate_20260222_215250.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_v3_relocate_20260222_215250.py",
+      "size_bytes": 132573,
+      "sha256_prefix": "65851ed4d6001abd"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_v3debug_20260222_215051.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_v3debug_20260222_215051.py",
+      "size_bytes": 132562,
+      "sha256_prefix": "1c57f26da074a871"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_v4_both_20260222_215637.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_ckptfix_v4_both_20260222_215637.py",
+      "size_bytes": 133867,
+      "sha256_prefix": "ec60ecf8b17207df"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_define_now_ts_20260222_182106.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_define_now_ts_20260222_182106.py",
+      "size_bytes": 116034,
+      "sha256_prefix": "651a1d08ef085889"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_define_now_ts_anchor_20260222_182552.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_define_now_ts_anchor_20260222_182552.py",
+      "size_bytes": 116034,
+      "sha256_prefix": "651a1d08ef085889"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_define_now_ts_fix2_20260222_182411.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_define_now_ts_fix2_20260222_182411.py",
+      "size_bytes": 116034,
+      "sha256_prefix": "651a1d08ef085889"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_define_now_ts_fix2_20260222_182435.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_define_now_ts_fix2_20260222_182435.py",
+      "size_bytes": 116034,
+      "sha256_prefix": "651a1d08ef085889"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_define_now_ts_fix_20260222_182242.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_define_now_ts_fix_20260222_182242.py",
+      "size_bytes": 116034,
+      "sha256_prefix": "651a1d08ef085889"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_define_now_ts_fix_20260222_182317.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_define_now_ts_fix_20260222_182317.py",
+      "size_bytes": 116034,
+      "sha256_prefix": "651a1d08ef085889"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_eval_fix_20260222_174537.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_eval_fix_20260222_174537.py",
+      "size_bytes": 98765,
+      "sha256_prefix": "690d91dc37a96b58"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_eval_headerfix_20260222_174252.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_eval_headerfix_20260222_174252.py",
+      "size_bytes": 98765,
+      "sha256_prefix": "690d91dc37a96b58"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_eval_v21_20260222_175813.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_eval_v21_20260222_175813.py",
+      "size_bytes": 102085,
+      "sha256_prefix": "75c71e648a152b8c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_eval_v2_20260222_175612.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_eval_v2_20260222_175612.py",
+      "size_bytes": 98775,
+      "sha256_prefix": "de0f97561311d7a5"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_eval_windowfix_20260222_183025.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_eval_windowfix_20260222_183025.py",
+      "size_bytes": 116264,
+      "sha256_prefix": "ca32aff4ab304cfd"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_fix_all_escaped_triplequotes_20260223_172650.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_fix_all_escaped_triplequotes_20260223_172650.py",
+      "size_bytes": 148931,
+      "sha256_prefix": "1f91bfc0e78a3480"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_fix_all_escaped_triplequotes_20260223_172858.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_fix_all_escaped_triplequotes_20260223_172858.py",
+      "size_bytes": 0,
+      "sha256_prefix": "e3b0c44298fc1c14"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_fix_all_escaped_triplequotes_20260223_173058.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_fix_all_escaped_triplequotes_20260223_173058.py",
+      "size_bytes": 0,
+      "sha256_prefix": "e3b0c44298fc1c14"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_fix_all_escaped_triplequotes_20260223_173335.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_fix_all_escaped_triplequotes_20260223_173335.py",
+      "size_bytes": 0,
+      "sha256_prefix": "e3b0c44298fc1c14"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_fix_eval_line_20260223_171553.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_fix_eval_line_20260223_171553.py",
+      "size_bytes": 148931,
+      "sha256_prefix": "1f91bfc0e78a3480"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_fix_eval_triplequotes_20260223_170515.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_fix_eval_triplequotes_20260223_170515.py",
+      "size_bytes": 148931,
+      "sha256_prefix": "1f91bfc0e78a3480"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_fix_eval_triplequotes_20260223_171134.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_fix_eval_triplequotes_20260223_171134.py",
+      "size_bytes": 148931,
+      "sha256_prefix": "1f91bfc0e78a3480"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_fix_evaluate_docstring_20260223_164930.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_fix_evaluate_docstring_20260223_164930.py",
+      "size_bytes": 148935,
+      "sha256_prefix": "59adab9f4c69c4f9"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_fix_indent_6646_20260223_165923.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_fix_indent_6646_20260223_165923.py",
+      "size_bytes": 148931,
+      "sha256_prefix": "1f91bfc0e78a3480"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_fix_try_orphan_20260223_155910.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_fix_try_orphan_20260223_155910.py",
+      "size_bytes": 140147,
+      "sha256_prefix": "ec0fb06278e263e3"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_indentfix_20260222_214508.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_indentfix_20260222_214508.py",
+      "size_bytes": 131706,
+      "sha256_prefix": "5d80f1083e68c80d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_patch_phase2_run_mode_detection_20260223_174523.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_patch_phase2_run_mode_detection_20260223_174523.py",
+      "size_bytes": 148931,
+      "sha256_prefix": "1f91bfc0e78a3480"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_peefix_v21_20260222_181511.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_peefix_v21_20260222_181511.py",
+      "size_bytes": 102085,
+      "sha256_prefix": "75c71e648a152b8c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_peefix_v21_SAFE_20260222_181835.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_peefix_v21_SAFE_20260222_181835.py",
+      "size_bytes": 102085,
+      "sha256_prefix": "75c71e648a152b8c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_peefix_v2_20260222_181336.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_peefix_v2_20260222_181336.py",
+      "size_bytes": 102085,
+      "sha256_prefix": "75c71e648a152b8c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_add_mode_20260223_155125.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_add_mode_20260223_155125.py",
+      "size_bytes": 135760,
+      "sha256_prefix": "981e4258385bb360"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_create_artifacts_20260223_162139.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_create_artifacts_20260223_162139.py",
+      "size_bytes": 135676,
+      "sha256_prefix": "d58246ba59eb2144"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_evaluate_patch_20260223_162812.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_evaluate_patch_20260223_162812.py",
+      "size_bytes": 139670,
+      "sha256_prefix": "534bafbb7cb9f4e8"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_hook_fix_20260223_161149.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_hook_fix_20260223_161149.py",
+      "size_bytes": 135676,
+      "sha256_prefix": "d58246ba59eb2144"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_insert_early_20260223_161438.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_insert_early_20260223_161438.py",
+      "size_bytes": 135676,
+      "sha256_prefix": "d58246ba59eb2144"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_run_artifacts_20260223_153628.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_run_artifacts_20260223_153628.py",
+      "size_bytes": 130675,
+      "sha256_prefix": "f10e226d58cd911f"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_run_artifacts_20260223_153639.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_run_artifacts_20260223_153639.py",
+      "size_bytes": 130710,
+      "sha256_prefix": "322eec6c5012d404"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_run_artifacts_FIX_20260223_153911.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_run_artifacts_FIX_20260223_153911.py",
+      "size_bytes": 130714,
+      "sha256_prefix": "86b57fe1f7d85b8d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_run_artifacts_logged_20260223_163518.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_run_artifacts_logged_20260223_163518.py",
+      "size_bytes": 139670,
+      "sha256_prefix": "534bafbb7cb9f4e8"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_run_early_20260223_155432.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_run_early_20260223_155432.py",
+      "size_bytes": 135796,
+      "sha256_prefix": "7881949b0f26d18c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_run_early_20260223_155505.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_run_early_20260223_155505.py",
+      "size_bytes": 140147,
+      "sha256_prefix": "ec0fb06278e263e3"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_run_patch_20260223_154717.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_phase2_run_patch_20260223_154717.py",
+      "size_bytes": 135760,
+      "sha256_prefix": "981e4258385bb360"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_plan_peefix_20260222_180817.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_plan_peefix_20260222_180817.py",
+      "size_bytes": 103093,
+      "sha256_prefix": "ec33eb12f520deec"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_plan_recalc_fix_20260222_185443.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_plan_recalc_fix_20260222_185443.py",
+      "size_bytes": 121533,
+      "sha256_prefix": "d420eae7fc67ce3a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_preview_fix_20260222_175222.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_preview_fix_20260222_175222.py",
+      "size_bytes": 98775,
+      "sha256_prefix": "de0f97561311d7a5"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_restore_20260222_111834.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_restore_20260222_111834.py",
+      "size_bytes": 5405,
+      "sha256_prefix": "965d29f1ac3fb54c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_restore_20260222_211645.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_restore_20260222_211645.py",
+      "size_bytes": 125955,
+      "sha256_prefix": "c3ff94f029a5a331"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_revert_phase2_run_early_v1_20260223_160159.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_revert_phase2_run_early_v1_20260223_160159.py",
+      "size_bytes": 140147,
+      "sha256_prefix": "ec0fb06278e263e3"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_step_fix_selector_FINAL_20260222_191225.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_step_fix_selector_FINAL_20260222_191225.py",
+      "size_bytes": 125955,
+      "sha256_prefix": "c3ff94f029a5a331"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_step_force_selector_20260222_190343.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_step_force_selector_20260222_190343.py",
+      "size_bytes": 125057,
+      "sha256_prefix": "b2db917ffda110ac"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_step_force_selector_SAFE_20260222_190650.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_step_force_selector_SAFE_20260222_190650.py",
+      "size_bytes": 125057,
+      "sha256_prefix": "b2db917ffda110ac"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_step_recalc_20260222_184105.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_step_recalc_20260222_184105.py",
+      "size_bytes": 117261,
+      "sha256_prefix": "292b13c3488d4941"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_step_recalc_20260222_184748.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_step_recalc_20260222_184748.py",
+      "size_bytes": 121533,
+      "sha256_prefix": "d420eae7fc67ce3a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_step_recalc_20260222_185014.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_step_recalc_20260222_185014.py",
+      "size_bytes": 121533,
+      "sha256_prefix": "d420eae7fc67ce3a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_step_return_ckpt_20260222_214929.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_step_return_ckpt_20260222_214929.py",
+      "size_bytes": 131728,
+      "sha256_prefix": "deb966e54243d725"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_step_selector_peefix_20260222_190106.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_step_selector_peefix_20260222_190106.py",
+      "size_bytes": 121535,
+      "sha256_prefix": "31de4d0029006c56"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_step_wrapper_20260222_220640.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_step_wrapper_20260222_220640.py",
+      "size_bytes": 135185,
+      "sha256_prefix": "d3e972adb8401ba5"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_stepfix_20260222_212856.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_stepfix_20260222_212856.py",
+      "size_bytes": 125955,
+      "sha256_prefix": "c3ff94f029a5a331"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_stepfix_line6062_20260222_213156.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_stepfix_line6062_20260222_213156.py",
+      "size_bytes": 125955,
+      "sha256_prefix": "c3ff94f029a5a331"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_unescape_fallback_20260222_181115.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_unescape_fallback_20260222_181115.py",
+      "size_bytes": 121715,
+      "sha256_prefix": "308a4bec3cd62b6d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_before_utf8_placeholder_fix_20260222_175210.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_before_utf8_placeholder_fix_20260222_175210.py",
+      "size_bytes": 98779,
+      "sha256_prefix": "c1ee4dbc852a46e2"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_current_before_restore_20260223_181438.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_current_before_restore_20260223_181438.py",
+      "size_bytes": 150054,
+      "sha256_prefix": "806cdc0a6f349924"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_fix_dynamic_req_20260222_155706.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_fix_dynamic_req_20260222_155706.py",
+      "size_bytes": 94477,
+      "sha256_prefix": "3c005ae7884b1638"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_fix_finalize_plan_and_report_20260222_135327.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_fix_finalize_plan_and_report_20260222_135327.py",
+      "size_bytes": 94223,
+      "sha256_prefix": "34087dac4a5ed430"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_fix_finalize_plan_and_report_SAFE2_20260222_140116.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_fix_finalize_plan_and_report_SAFE2_20260222_140116.py",
+      "size_bytes": 94223,
+      "sha256_prefix": "34087dac4a5ed430"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_fix_finalize_plan_and_report_SAFE_20260222_135825.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_fix_finalize_plan_and_report_SAFE_20260222_135825.py",
+      "size_bytes": 94223,
+      "sha256_prefix": "34087dac4a5ed430"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_fix_finalize_plan_and_report_SAFE_20260222_140037.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_fix_finalize_plan_and_report_SAFE_20260222_140037.py",
+      "size_bytes": 94223,
+      "sha256_prefix": "34087dac4a5ed430"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_fix_internal_io_20260222_160858.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_fix_internal_io_20260222_160858.py",
+      "size_bytes": 94477,
+      "sha256_prefix": "3c005ae7884b1638"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_patch_dir_report_v4_20260222_131236.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_patch_dir_report_v4_20260222_131236.py",
+      "size_bytes": 93530,
+      "sha256_prefix": "bce5c9395299a007"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_patch_fix_peereport_internalwrites_20260222_152649.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_patch_fix_peereport_internalwrites_20260222_152649.py",
+      "size_bytes": 94440,
+      "sha256_prefix": "15de16332d8986ae"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_patch_peereport_dynamic_20260222_144504.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_patch_peereport_dynamic_20260222_144504.py",
+      "size_bytes": 94440,
+      "sha256_prefix": "15de16332d8986ae"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_patch_peereport_dynamic_20260222_151226.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_patch_peereport_dynamic_20260222_151226.py",
+      "size_bytes": 94440,
+      "sha256_prefix": "15de16332d8986ae"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_patch_report_initial_20260222_124733.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_patch_report_initial_20260222_124733.py",
+      "size_bytes": 92738,
+      "sha256_prefix": "aa36e5ca7a6193a2"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_patch_report_initial_fix_20260222_132729.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_patch_report_initial_fix_20260222_132729.py",
+      "size_bytes": 94144,
+      "sha256_prefix": "048cb24b61925112"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_patch_report_initial_ts_20260222_130056.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_patch_report_initial_ts_20260222_130056.py",
+      "size_bytes": 93530,
+      "sha256_prefix": "bce5c9395299a007"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_patch_report_initial_v2_20260222_130636.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_patch_report_initial_v2_20260222_130636.py",
+      "size_bytes": 93530,
+      "sha256_prefix": "bce5c9395299a007"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_patch_report_initial_v5_20260222_131843.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_patch_report_initial_v5_20260222_131843.py",
+      "size_bytes": 93530,
+      "sha256_prefix": "bce5c9395299a007"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_pre_apply_guardV4_20260222_115200.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_pre_apply_guardV4_20260222_115200.py",
+      "size_bytes": 90367,
+      "sha256_prefix": "312fce8023603d81"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_pre_docs_guardV3_20260222_114637.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_pre_docs_guardV3_20260222_114637.py",
+      "size_bytes": 85207,
+      "sha256_prefix": "e6a09caa6cfb8c3b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_pre_docs_guardV5_20260222_120141.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_pre_docs_guardV5_20260222_120141.py",
+      "size_bytes": 90367,
+      "sha256_prefix": "312fce8023603d81"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\brain_server_pre_docs_guard_20260222_114103.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\brain_server_pre_docs_guard_20260222_114103.py",
+      "size_bytes": 85207,
+      "sha256_prefix": "e6a09caa6cfb8c3b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\handoff_snapshot_20260221_180226\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\handoff_snapshot_20260221_180226\\brain_server.py",
+      "size_bytes": 76530,
+      "sha256_prefix": "3ed35140ce72f5d7"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_det_dispatch_v6_20260221_165055\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_det_dispatch_v6_20260221_165055\\brain_server.py",
+      "size_bytes": 65814,
+      "sha256_prefix": "730b58b69d3bdfb4"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_deterministic_steps_v5_20260221_164126\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_deterministic_steps_v5_20260221_164126\\brain_server.py",
+      "size_bytes": 59054,
+      "sha256_prefix": "6a000607d7dbd99e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_docs_only_guard_SAFE_20260221_183646\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_docs_only_guard_SAFE_20260221_183646\\brain_server.py",
+      "size_bytes": 77408,
+      "sha256_prefix": "3bdbb4d8167f3b12"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_docs_only_guard_v9_1_20260221_183002\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_docs_only_guard_v9_1_20260221_183002\\brain_server.py",
+      "size_bytes": 76152,
+      "sha256_prefix": "2a371f857919a821"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_done_guard_v11_20260221_185104\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_done_guard_v11_20260221_185104\\brain_server.py",
+      "size_bytes": 79697,
+      "sha256_prefix": "ed76c6f3f11b6c7d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_done_persist_v12b_20260221_201044\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_done_persist_v12b_20260221_201044\\brain_server.py",
+      "size_bytes": 80437,
+      "sha256_prefix": "ccbd3cdb16be2bae"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_donefix_v10_20260221_184640\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_donefix_v10_20260221_184640\\brain_server.py",
+      "size_bytes": 78724,
+      "sha256_prefix": "b31747b846611439"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_force_plan_and_det_step_v7_20260221_171427\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_force_plan_and_det_step_v7_20260221_171427\\brain_server.py",
+      "size_bytes": 65814,
+      "sha256_prefix": "730b58b69d3bdfb4"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_pee_det_v8_1_donefix_20260221_173950\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_pee_det_v8_1_donefix_20260221_173950\\brain_server.py",
+      "size_bytes": 76152,
+      "sha256_prefix": "2a371f857919a821"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_pee_det_v8_20260221_173236\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_pee_det_v8_20260221_173236\\brain_server.py",
+      "size_bytes": 67288,
+      "sha256_prefix": "bba396dde3cf0206"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_plan_done_guard_v12_20260221_200616\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_plan_done_guard_v12_20260221_200616\\brain_server.py",
+      "size_bytes": 79697,
+      "sha256_prefix": "ed76c6f3f11b6c7d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_plan_quality_v4_20260221_162834\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_plan_quality_v4_20260221_162834\\brain_server.py",
+      "size_bytes": 58461,
+      "sha256_prefix": "d5c4d6b128bd4f88"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_plan_status_guard_v13_20260221_201529\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_plan_status_guard_v13_20260221_201529\\brain_server.py",
+      "size_bytes": 80920,
+      "sha256_prefix": "976ccd804a28e03c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_policy_override_v3_20260221_162330\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_policy_override_v3_20260221_162330\\brain_server.py",
+      "size_bytes": 55635,
+      "sha256_prefix": "b1d5c4300ff44d6f"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_repo_root_20260221_153935\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_repo_root_20260221_153935\\brain_server.py",
+      "size_bytes": 53429,
+      "sha256_prefix": "5908b1af17af891b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_run_det_v15_20260221_210551\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_run_det_v15_20260221_210551\\brain_server.py",
+      "size_bytes": 85207,
+      "sha256_prefix": "e6a09caa6cfb8c3b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_run_endpoint_v15_20260221_205829\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_run_endpoint_v15_20260221_205829\\brain_server.py",
+      "size_bytes": 82138,
+      "sha256_prefix": "0e9280651a3475f5"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_run_fallback_v14_20260221_204336\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_run_fallback_v14_20260221_204336\\brain_server.py",
+      "size_bytes": 82138,
+      "sha256_prefix": "0e9280651a3475f5"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_v7_2_fix_plan_var_20260221_172005\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_v7_2_fix_plan_var_20260221_172005\\brain_server.py",
+      "size_bytes": 67233,
+      "sha256_prefix": "c42dddda813a1879"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\backups\\patch_write_guard_eval_v9_20260221_180840\\brain_server.py",
+      "relative": "workspace\\brainlab\\docs\\backups\\patch_write_guard_eval_v9_20260221_180840\\brain_server.py",
+      "size_bytes": 76530,
+      "sha256_prefix": "3ed35140ce72f5d7"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\brainlab_deep_audit.py",
+      "relative": "workspace\\brainlab\\docs\\brainlab_deep_audit.py",
+      "size_bytes": 13899,
+      "sha256_prefix": "c18140a1ba18f64c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\debug_run_trace.py",
+      "relative": "workspace\\brainlab\\docs\\debug_run_trace.py",
+      "size_bytes": 595,
+      "sha256_prefix": "67dade514d0fc2b8"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\evaluator_v1.py",
+      "relative": "workspace\\brainlab\\docs\\evaluator_v1.py",
+      "size_bytes": 3965,
+      "sha256_prefix": "887f9b5bc5ac2a3f"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patch_brain_server_policy_override_v3_20260221_162330.py",
+      "relative": "workspace\\brainlab\\docs\\patch_brain_server_policy_override_v3_20260221_162330.py",
+      "size_bytes": 6695,
+      "sha256_prefix": "ab5d063e31cd6c36"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patch_brain_server_repo_root_20260221_153935.py",
+      "relative": "workspace\\brainlab\\docs\\patch_brain_server_repo_root_20260221_153935.py",
+      "size_bytes": 5992,
+      "sha256_prefix": "0c4abc2087962c1d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patch_brain_server_repo_root_v2_20260221_160421.py",
+      "relative": "workspace\\brainlab\\docs\\patch_brain_server_repo_root_v2_20260221_160421.py",
+      "size_bytes": 4649,
+      "sha256_prefix": "f46483b5f4f18b41"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patch_brain_server_repo_root_v2_20260221_160502.py",
+      "relative": "workspace\\brainlab\\docs\\patch_brain_server_repo_root_v2_20260221_160502.py",
+      "size_bytes": 4649,
+      "sha256_prefix": "f46483b5f4f18b41"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patch_det_dispatch_v6_20260221_165055.py",
+      "relative": "workspace\\brainlab\\docs\\patch_det_dispatch_v6_20260221_165055.py",
+      "size_bytes": 3103,
+      "sha256_prefix": "0865b9619b8f7558"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patch_deterministic_steps_v5_20260221_164126.py",
+      "relative": "workspace\\brainlab\\docs\\patch_deterministic_steps_v5_20260221_164126.py",
+      "size_bytes": 10191,
+      "sha256_prefix": "885fc09d36e794d1"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patch_force_plan_and_det_step_v7_20260221_171427.py",
+      "relative": "workspace\\brainlab\\docs\\patch_force_plan_and_det_step_v7_20260221_171427.py",
+      "size_bytes": 4759,
+      "sha256_prefix": "b1da43bca2df04e3"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patch_pee_det_v8_1_donefix_20260221_173950.py",
+      "relative": "workspace\\brainlab\\docs\\patch_pee_det_v8_1_donefix_20260221_173950.py",
+      "size_bytes": 1297,
+      "sha256_prefix": "f02632d8f376a1e7"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patch_plan_quality_v4_20260221_162834.py",
+      "relative": "workspace\\brainlab\\docs\\patch_plan_quality_v4_20260221_162834.py",
+      "size_bytes": 2739,
+      "sha256_prefix": "8ff907631b6c5227"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patch_v7_2_fix_plan_var_20260221_172005.py",
+      "relative": "workspace\\brainlab\\docs\\patch_v7_2_fix_plan_var_20260221_172005.py",
+      "size_bytes": 1399,
+      "sha256_prefix": "5b256d10470151db"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_docs_only_guard_SAFE_20260221_183646.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_docs_only_guard_SAFE_20260221_183646.py",
+      "size_bytes": 1330,
+      "sha256_prefix": "d43609a64700fa96"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_docs_only_guard_v9_1_20260221_183002.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_docs_only_guard_v9_1_20260221_183002.py",
+      "size_bytes": 1517,
+      "sha256_prefix": "63aac79e38c6d192"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_done_guard_v11_20260221_185104.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_done_guard_v11_20260221_185104.py",
+      "size_bytes": 2572,
+      "sha256_prefix": "d63b3b8cc5ba34f3"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_done_persist_v12b_20260221_201044.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_done_persist_v12b_20260221_201044.py",
+      "size_bytes": 2276,
+      "sha256_prefix": "bf2eb429e315cd2f"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_donefix_v10_20260221_184640.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_donefix_v10_20260221_184640.py",
+      "size_bytes": 3235,
+      "sha256_prefix": "63e87212ae2193e9"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_pee_det_v8_20260221_173236.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_pee_det_v8_20260221_173236.py",
+      "size_bytes": 11707,
+      "sha256_prefix": "ca35d48deaf1a247"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_phase2_anchorless_v1.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_phase2_anchorless_v1.py",
+      "size_bytes": 8882,
+      "sha256_prefix": "5d6f849c774dd4fb"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_phase2_block_and_evaluate_v2.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_phase2_block_and_evaluate_v2.py",
+      "size_bytes": 9942,
+      "sha256_prefix": "8bc22d31408fcdb8"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_phase2_final.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_phase2_final.py",
+      "size_bytes": 9001,
+      "sha256_prefix": "3e862870a5ebcbe7"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_phase2_final_v2.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_phase2_final_v2.py",
+      "size_bytes": 8643,
+      "sha256_prefix": "e2c4825badaf32dc"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_phase2_final_v3.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_phase2_final_v3.py",
+      "size_bytes": 8565,
+      "sha256_prefix": "3155b61114212d08"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_phase2_fix_review_and_evaluate_v1.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_phase2_fix_review_and_evaluate_v1.py",
+      "size_bytes": 10465,
+      "sha256_prefix": "dc61e7fae4f9fca9"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_phase2_force_v1.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_phase2_force_v1.py",
+      "size_bytes": 8865,
+      "sha256_prefix": "1093c7b587c064e5"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_phase2_review_metrics_u_score_v1.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_phase2_review_metrics_u_score_v1.py",
+      "size_bytes": 2430,
+      "sha256_prefix": "507c10416ff737a4"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_phase2_review_schema_v1.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_phase2_review_schema_v1.py",
+      "size_bytes": 2659,
+      "sha256_prefix": "84e05a5cf99c797b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_phase2_runs_artifacts.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_phase2_runs_artifacts.py",
+      "size_bytes": 3318,
+      "sha256_prefix": "4cd2666375d2c79f"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_phase2_schema_and_evaluate.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_phase2_schema_and_evaluate.py",
+      "size_bytes": 8362,
+      "sha256_prefix": "2551a2ddb1135474"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_phase2_v4.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_phase2_v4.py",
+      "size_bytes": 9228,
+      "sha256_prefix": "91b3e6ca47682e9d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_plan_cache.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_plan_cache.py",
+      "size_bytes": 1547,
+      "sha256_prefix": "7fbfa7660ec4391e"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_plan_cache_indent.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_plan_cache_indent.py",
+      "size_bytes": 1920,
+      "sha256_prefix": "eb2afa4512fc5417"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_plan_cache_indent_v2.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_plan_cache_indent_v2.py",
+      "size_bytes": 1649,
+      "sha256_prefix": "92b526d1695595d2"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_plan_done_guard_v12_20260221_200616.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_plan_done_guard_v12_20260221_200616.py",
+      "size_bytes": 3224,
+      "sha256_prefix": "ada70dc1929b9aee"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_plan_status_guard_v13_20260221_201529.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_plan_status_guard_v13_20260221_201529.py",
+      "size_bytes": 3340,
+      "sha256_prefix": "88082fbf2452083f"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_run_autoplan.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_run_autoplan.py",
+      "size_bytes": 5149,
+      "sha256_prefix": "2c1d9871a220ed3d"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_run_autoplan_v2.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_run_autoplan_v2.py",
+      "size_bytes": 4650,
+      "sha256_prefix": "fb8ea9df7d7a1426"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_run_autoplan_v3.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_run_autoplan_v3.py",
+      "size_bytes": 5298,
+      "sha256_prefix": "37ee131acf5eaaea"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_run_det_v15_20260221_210551.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_run_det_v15_20260221_210551.py",
+      "size_bytes": 16215,
+      "sha256_prefix": "338359fee3b80a9c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_run_endpoint_v15_20260221_205829.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_run_endpoint_v15_20260221_205829.py",
+      "size_bytes": 6025,
+      "sha256_prefix": "18a6580dfaae800b"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_run_fallback_v14_20260221_204336.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_run_fallback_v14_20260221_204336.py",
+      "size_bytes": 5289,
+      "sha256_prefix": "a614186798be33a9"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\docs\\patches\\patch_write_guard_eval_v9_20260221_180840.py",
+      "relative": "workspace\\brainlab\\docs\\patches\\patch_write_guard_eval_v9_20260221_180840.py",
+      "size_bytes": 4336,
+      "sha256_prefix": "3063ad73a09bfe9a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\tests\\quick_pycheck.py",
+      "relative": "workspace\\brainlab\\tests\\quick_pycheck.py",
+      "size_bytes": 194,
+      "sha256_prefix": "5a7f543b0f3ea6cf"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\tests\\test_infer_kind.py",
+      "relative": "workspace\\brainlab\\tests\\test_infer_kind.py",
+      "size_bytes": 398,
+      "sha256_prefix": "28b40ea4cf426a2a"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\tests\\test_phase1_smoke.py",
+      "relative": "workspace\\brainlab\\tests\\test_phase1_smoke.py",
+      "size_bytes": 1047,
+      "sha256_prefix": "2914d954a16a9a6c"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\tests\\test_phase2_evaluate.py",
+      "relative": "workspace\\brainlab\\tests\\test_phase2_evaluate.py",
+      "size_bytes": 3519,
+      "sha256_prefix": "8f96edf6256888ab"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\tests\\test_phase2_schema.py",
+      "relative": "workspace\\brainlab\\tests\\test_phase2_schema.py",
+      "size_bytes": 5219,
+      "sha256_prefix": "03f6a613c5225119"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\brainlab\\tests\\test_phase3_min.py",
+      "relative": "workspace\\brainlab\\tests\\test_phase3_min.py",
+      "size_bytes": 904,
+      "sha256_prefix": "a03c74dbaafc19d3"
+    },
+    {
+      "path": "C:\\AI_VAULT\\workspace\\excel_rebuild\\build_measurement_book.py",
+      "relative": "workspace\\excel_rebuild\\build_measurement_book.py",
+      "size_bytes": 25927,
+      "sha256_prefix": "9b8e82aff631d2be"
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "audit": "B2-B orphan_findings_report",
+  "timestamp": "2026-05-28T08:35:00Z",
+  "front": "B2",
+  "fase": "B",
+  "summary": {
+    "total_project_py_files": 696,
+    "active_runtime_roots": 113,
+    "referenced_by_runtime": 148,
+    "orphan_files": 555,
+    "risk_assessment": "LOW",
+    "critical_finding": false,
+    "actionable_items": 0
+  },
+  "classification": {
+    "already_archived": {
+      "count": 8,
+      "paths": [
+        "_archived_orphans/brain_dev_mode.py",
+        "_archived_orphans/brain_v3_chat_autenticado.py",
+        "_archived_orphans/godmode_helper.py",
+        "_archived_orphans/pad_console.py",
+        "_archived_orphans/pad_simple.py",
+        "_archived_orphans/pad_standalone.py",
+        "_archived_orphans/protocolo_autenticacion_desarrollador_min.py",
+        "_archived_orphans/protocolo_autenticacion_desarrollador_v2.py"
+      ],
+      "recommendation": "NO_ACTION — already in archive directory"
+    },
+    "historical_backup": {
+      "count": 15,
+      "description": "Archived snapshots under 00_identity/archive and workspace/brainlab/docs/backups",
+      "recommendation": "NO_ACTION — historical backups, preserve for rollback audit trail"
+    },
+    "legacy_runtime_snapshots": {
+      "count": 150,
+      "description": "chat_brain_v3 through v7, brain_server variants, advisor_server variants, autonomy_system, old brain/ modules",
+      "examples": [
+        "00_identity/chat_brain_v3/brain_chat_orchestrator.py",
+        "00_identity/chat_brain_v7/brain_chat_v8.py",
+        "00_identity/advisor_server.py",
+        "00_identity/autonomy_system/autonomy_phases.py",
+        "brain/brain_orchestrator.py",
+        "brain/upgrade_router.py"
+      ],
+      "recommendation": "NO_ACTION for now — potential archival candidate in future housekeeping sprint. Do NOT delete without developer confirmation."
+    },
+    "ephemeral_diagnostics": {
+      "count": 50,
+      "description": "Smoke tests, debug scripts, repro scripts, patch verification files in tmp_agent/",
+      "examples": [
+        "tmp_agent/_r25_smoke.py",
+        "tmp_agent/_debug_real_chats.py",
+        "tmp_agent/_repro_bug7.py",
+        "tmp_agent/_test_apply_rollback.py"
+      ],
+      "recommendation": "NO_ACTION — ephemeral tooling, may be referenced during active debugging. Review for deletion after 30 days of inactivity."
+    },
+    "protected_scope_excluded": {
+      "count": 5,
+      "description": "Files under CEI, FDOT, trading, strategies directories",
+      "recommendation": "OUT_OF_SCOPE — protected by governance rules, not audited"
+    },
+    "external_repos": {
+      "count": 12,
+      "description": "Third-party code under repos/openclaw and repos/openfang",
+      "recommendation": "NO_ACTION — external dependencies, managed separately"
+    },
+    "unclassified": {
+      "count": 315,
+      "description": "Remaining orphans not matching above categories",
+      "note": "Most are legacy one-off scripts, old patches, or utility files not integrated into current runtime. No active-runtime imports detected.",
+      "recommendation": "NO_ACTION for this audit cycle. Flag for future housekeeping sprint."
+    }
+  },
+  "active_runtime_integrity": {
+    "main_py_imports_clean": true,
+    "session_py_imports_clean": true,
+    "agent_loop_imports_clean": true,
+    "tests_imports_clean": true,
+    "no_orphan_imported_by_active_runtime": true
+  },
+  "findings": [
+    {
+      "id": "B2-F01",
+      "severity": "INFO",
+      "title": "Large orphan accumulation (555 files)",
+      "description": "Project contains 555 Python files not referenced by the active Brain V9 runtime. This is expected given the iterative development history (v3→v9), but indicates a need for periodic housekeeping.",
+      "recommendation": "Schedule a future housekeeping sprint (post-MRC-01A) to move legacy snapshots into dated subdirectories under _archived_orphans/",
+      "blocked": false
+    },
+    {
+      "id": "B2-F02",
+      "severity": "INFO",
+      "title": "Ephemeral diagnostic files in tmp_agent/",
+      "description": "50 ephemeral files (_smoke, _debug, _test) exist in tmp_agent/. These are not committed and serve as local debugging aids.",
+      "recommendation": "No action required. These are .gitignored or untracked and pose no runtime risk.",
+      "blocked": false
+    }
+  ],
+  "next_fase": "B2-C",
+  "decision_gate": {
+    "status": "PASS",
+    "reason": "No orphans are imported by active runtime. No critical bypasses. No protected paths touched. Safe to proceed to B2-C classification refinement or close B2 entirely.",
+    "approved_by": "audit_system"
+  }
+}
