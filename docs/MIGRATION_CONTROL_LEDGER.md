@@ -549,9 +549,44 @@
 - Inconsistencies resolved:
   - IC-03 (auditoria FASE A no ejecutada): RESOLVED — B7-A executed, B7-B/C/D completed
 - Next recommended front:
-  - PRIMARY: B1 routing authority audit
-  - SECONDARY: B2 orphan modules audit
-  - TERTIARY: N5 import/path/test hygiene
+  - PRIMARY: B2 orphan modules audit
+  - SECONDARY: N5 import/path/test hygiene
+  - Historical note: B1 routing authority audit is closed in Checkpoint 20.
 - Rollback policy: N/A (documentation only)
 
 
+
+## 20. Checkpoint — B1 Closure / Routing Authority Mitigation
+- Date (UTC): 2026-05-28T07:40:00+00:00
+- Branch: codex/own-capital-sustainable-return
+- HEAD: 7df3d37d
+- Type: DOCUMENTATION AND CODE — B1 series formally closed with mitigating patch
+- Commits:
+  - fc208107 — B1 routing authority audit evidence
+  - 9f42b4d5 — B1-B TOOL01/GAK patch plan
+  - 0a00f565 — B1-C GAK preflight patch
+  - 7df3d37d — B1-C reconciliation
+- Final status: B1 CLOSED
+- Problem:
+  - TOOL-01 and GAK operated as parallel authorities in BrainSession.chat()
+  - TOOL-01 pattern-matching executed before GAK natural-language policy evaluation
+- Decision:
+  - No critical bypass confirmed; both paths independently blocked protected paths
+  - High-severity policy inconsistency risk mitigated via surgical GAK preflight
+- Patch:
+  - Added evaluate_action_policy() preflight inside _tool01_router() before permission request or execution
+  - If GAK returns blocked_by_policy=True, TOOL-01 returns early without executing or requesting permission
+  - Preserves existing allow_once / allow_session / deny flow
+- Tests:
+  - 97/97 PASS (no regressions)
+- Governance:
+  - No memory/semantic touched
+  - No strategies touched
+  - No reports touched
+  - No destructive git commands used
+  - No git add -f used
+  - Backups local-only, excluded by .gitignore (*.bak, backups/)
+  - Explicit timestamped backup created and verified before code change
+- Next front:
+  - PRIMARY: B2 orphan modules audit
+  - SECONDARY: N5 import/path/test hygiene

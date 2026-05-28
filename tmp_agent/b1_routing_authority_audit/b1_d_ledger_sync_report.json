@@ -1,0 +1,24 @@
+{
+  "B1_D_LEDGER_SYNC_REPORT": {
+    "status": "APPLIED",
+    "head_base": "7df3d37d",
+    "branch": "codex/own-capital-sustainable-return",
+    "scope": "post-B1 ledger and roadmap synchronization",
+    "b1_closed": true,
+    "b1_completion_percent": 100,
+    "commits": {
+      "audit_evidence": "fc208107",
+      "patch_plan": "9f42b4d5",
+      "patch": "0a00f565",
+      "reconciliation": "7df3d37d"
+    },
+    "critical_bypass_confirmed": false,
+    "mitigation_applied": "GAK preflight before TOOL-01 permission/execution",
+    "tests_passed": 97,
+    "tests_failed": 0,
+    "code_changed_now": false,
+    "protected_touched": false,
+    "next_recommended_front": "B2 orphan modules audit",
+    "ready_for_commit": true
+  }
+}
