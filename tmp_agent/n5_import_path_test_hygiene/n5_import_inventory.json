@@ -1,0 +1,2249 @@
+{
+  "N5_IMPORT_PATH_TEST_INVENTORY": {
+    "status": "INVENTORY_COMPLETE",
+    "head_base": "95c58d84",
+    "branch": "codex/own-capital-sustainable-return",
+    "files_scanned_count": 238,
+    "files_scanned_preview": [
+      "tmp_agent\\brain_v9\\api_security.py",
+      "tmp_agent\\brain_v9\\config.py",
+      "tmp_agent\\brain_v9\\init_platforms.py",
+      "tmp_agent\\brain_v9\\main.py",
+      "tmp_agent\\brain_v9\\start_full_server.py",
+      "tmp_agent\\brain_v9\\start_safe_server.py",
+      "tmp_agent\\brain_v9\\util.py",
+      "tmp_agent\\brain_v9\\__init__.py",
+      "tmp_agent\\brain_v9\\agent\\code_mutator.py",
+      "tmp_agent\\brain_v9\\agent\\failure_learner.py",
+      "tmp_agent\\brain_v9\\agent\\health_gate.py",
+      "tmp_agent\\brain_v9\\agent\\http_tools.py",
+      "tmp_agent\\brain_v9\\agent\\loop.py",
+      "tmp_agent\\brain_v9\\agent\\reasoning_corrector.py",
+      "tmp_agent\\brain_v9\\agent\\self_tester.py",
+      "tmp_agent\\brain_v9\\agent\\tools.py",
+      "tmp_agent\\brain_v9\\agent\\_c_test_target.py",
+      "tmp_agent\\brain_v9\\agent\\__init__.py",
+      "tmp_agent\\brain_v9\\autonomy\\action_executor.py",
+      "tmp_agent\\brain_v9\\autonomy\\chat_excellence_executor.py"
+    ],
+    "imports_found_count": 2393,
+    "imports_found_preview": [
+      {
+        "file": "tmp_agent\\brain_v9\\api_security.py",
+        "line": 9,
+        "module": "__future__",
+        "text": "from __future__ import annotations"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\api_security.py",
+        "line": 11,
+        "module": "os",
+        "text": "import os"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\api_security.py",
+        "line": 12,
+        "module": "hmac",
+        "text": "from hmac import compare_digest"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\api_security.py",
+        "line": 13,
+        "module": "typing",
+        "text": "from typing import Annotated, Optional"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\api_security.py",
+        "line": 15,
+        "module": "fastapi",
+        "text": "from fastapi import Depends, Header, HTTPException, Request, status"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\config.py",
+        "line": 6,
+        "module": "json",
+        "text": "import json"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\config.py",
+        "line": 7,
+        "module": "logging",
+        "text": "import logging"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\config.py",
+        "line": 8,
+        "module": "os",
+        "text": "import os"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\config.py",
+        "line": 9,
+        "module": "platform",
+        "text": "import platform"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\config.py",
+        "line": 10,
+        "module": "pathlib",
+        "text": "from pathlib import Path"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\config.py",
+        "line": 11,
+        "module": "typing",
+        "text": "from typing import Dict"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\config.py",
+        "line": 290,
+        "module": "datetime",
+        "text": "from datetime import datetime as _dt, timezone as _tz"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\init_platforms.py",
+        "line": 6,
+        "module": "asyncio",
+        "text": "import asyncio"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\init_platforms.py",
+        "line": 7,
+        "module": "sys",
+        "text": "import sys"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\init_platforms.py",
+        "line": 8,
+        "module": "pathlib",
+        "text": "from pathlib import Path"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\init_platforms.py",
+        "line": 13,
+        "module": "brain_v9.autonomy.platform_accumulators",
+        "text": "from brain_v9.autonomy.platform_accumulators import get_multi_platform_accumulator"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\init_platforms.py",
+        "line": 14,
+        "module": "brain_v9.trading.platform_manager",
+        "text": "from brain_v9.trading.platform_manager import get_platform_manager"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 5,
+        "module": "asyncio",
+        "text": "import asyncio"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 6,
+        "module": "json",
+        "text": "import json"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 7,
+        "module": "logging",
+        "text": "import logging"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 8,
+        "module": "os",
+        "text": "import os"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 9,
+        "module": "re",
+        "text": "import re"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 10,
+        "module": "socket",
+        "text": "import socket"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 11,
+        "module": "subprocess",
+        "text": "import subprocess"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 12,
+        "module": "sys",
+        "text": "import sys"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 13,
+        "module": "time",
+        "text": "import time"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 14,
+        "module": "contextlib",
+        "text": "from contextlib import asynccontextmanager"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 15,
+        "module": "datetime",
+        "text": "from datetime import datetime, timedelta, timezone"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 16,
+        "module": "pathlib",
+        "text": "from pathlib import Path"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 17,
+        "module": "typing",
+        "text": "from typing import Annotated, Any, Dict, Optional"
+      }
+    ],
+    "sys_path_mutations": [
+      {
+        "file": "tmp_agent\\brain_v9\\init_platforms.py",
+        "line": 11,
+        "text": "sys.path.insert(0, str(Path(__file__).parent))"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 22,
+        "text": "sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 166,
+        "text": "sys.path.insert(0, \"C:/AI_VAULT\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1108,
+        "text": "sys.path.insert(0, \"C:/AI_VAULT\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1109,
+        "text": "sys.path.insert(0, \"C:/AI_VAULT/brain\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1419,
+        "text": "sys.path.insert(0, 'C:/AI_VAULT')"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1420,
+        "text": "sys.path.insert(0, 'C:/AI_VAULT/brain')"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\start_full_server.py",
+        "line": 18,
+        "text": "sys.path.insert(0, str(Path(__file__).resolve().parent.parent))"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\start_safe_server.py",
+        "line": 14,
+        "text": "sys.path.insert(0, str(Path(__file__).resolve().parent.parent))"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\util.py",
+        "line": 18,
+        "text": "sys.path.insert(0, str(Path(__file__).parent))"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\loop.py",
+        "line": 38,
+        "text": "sys.path.insert(0, \"C:/AI_VAULT\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 199,
+        "text": "_sys.path.insert(0, \"C:/AI_VAULT\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\autonomy\\sample_accumulator_agent.py",
+        "line": 17,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4116,
+        "text": "_sys.path.insert(0, \"C:/AI_VAULT\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4143,
+        "text": "_sys.path.insert(0, \"C:/AI_VAULT\")"
+      },
+      {
+        "file": "tests\\conftest.py",
+        "line": 15,
+        "text": "sys.path.insert(0, str(AI_VAULT_ROOT))"
+      },
+      {
+        "file": "tests\\integration\\test_chat_routing.py",
+        "line": 12,
+        "text": "sys.path.insert(0, str(REPO_ROOT))"
+      },
+      {
+        "file": "tests\\integration\\test_chat_routing.py",
+        "line": 13,
+        "text": "sys.path.insert(0, str(REPO_ROOT / \"tmp_agent\"))"
+      },
+      {
+        "file": "tests\\integration\\test_real_tools_execution.py",
+        "line": 13,
+        "text": "sys.path.insert(0, str(REPO_ROOT))"
+      },
+      {
+        "file": "tests\\integration\\test_real_tools_execution.py",
+        "line": 14,
+        "text": "sys.path.insert(0, str(REPO_ROOT / \"tmp_agent\"))"
+      },
+      {
+        "file": "tests\\integration\\test_tool_permission_gate.py",
+        "line": 11,
+        "text": "sys.path.insert(0, str(REPO_ROOT))"
+      },
+      {
+        "file": "tests\\integration\\test_tool_permission_gate.py",
+        "line": 12,
+        "text": "sys.path.insert(0, str(REPO_ROOT / \"tmp_agent\"))"
+      },
+      {
+        "file": "tests\\security\\validate_p2e_4d_canary.py",
+        "line": 13,
+        "text": "sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_curated_memory_promotion_dry_run.py",
+        "line": 20,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_curation_validation_adapter.py",
+        "line": 13,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_github_source_connector_dry_run.py",
+        "line": 15,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_memory_semantic_backup_contract.py",
+        "line": 20,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_p2e_curated_memory_pipeline_dry_run.py",
+        "line": 23,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_p2e_no_real_write_gate.py",
+        "line": 20,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_semantic_memory_adapter_real_skeleton.py",
+        "line": 16,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_semantic_memory_controlled_real_write_candidate_design.py",
+        "line": 12,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_semantic_memory_controlled_real_write_execution_package.py",
+        "line": 14,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_semantic_memory_controlled_real_write_preflight_snapshot.py",
+        "line": 14,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_semantic_memory_decision_gate_evidence_adapter.py",
+        "line": 10,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_semantic_memory_external_evidence_contract.py",
+        "line": 14,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_semantic_memory_extra_file_classifier.py",
+        "line": 14,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_semantic_memory_extra_file_dependency_mapper.py",
+        "line": 11,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_semantic_memory_final_pre_execution_gate.py",
+        "line": 14,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_semantic_memory_final_readiness_review.py",
+        "line": 14,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_semantic_memory_go_no_go_readiness_checklist.py",
+        "line": 12,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_semantic_memory_real_state_audit.py",
+        "line": 14,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_semantic_memory_real_write_authorization_packet.py",
+        "line": 12,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_semantic_memory_real_write_canary_plan.py",
+        "line": 13,
+        "text": "sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_semantic_memory_real_write_decision_gate.py",
+        "line": 12,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_semantic_memory_real_write_readiness_gate.py",
+        "line": 13,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\smoke\\smoke_semantic_memory_rollback_simulation.py",
+        "line": 19,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_authority_resolution_enforcement.py",
+        "line": 18,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent / \"tmp_agent\"))"
+      },
+      {
+        "file": "tests\\unit\\test_b3_fake_grounded_dashboard_runtime.py",
+        "line": 9,
+        "text": "sys.path.insert(0, os.path.join(os.path.dirname(__file__), \"..\", \"..\", \"tmp_agent\"))"
+      },
+      {
+        "file": "tests\\unit\\test_b7_routing_heuristics_characterization.py",
+        "line": 10,
+        "text": "sys.path.insert(0, str(Path(\"C:/AI_VAULT/tmp_agent\")))"
+      },
+      {
+        "file": "tests\\unit\\test_benchmark_suite_fase7.py",
+        "line": 15,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent / \"tmp_agent\"))"
+      },
+      {
+        "file": "tests\\unit\\test_brain_capability_governor.py",
+        "line": 77,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\tmp_agent\")"
+      },
+      {
+        "file": "tests\\unit\\test_chat_metrics_extended.py",
+        "line": 18,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\tmp_agent\")"
+      },
+      {
+        "file": "tests\\unit\\test_confirmation_bug_fix.py",
+        "line": 15,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\tmp_agent\")"
+      },
+      {
+        "file": "tests\\unit\\test_contradiction_learning_layer.py",
+        "line": 15,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\tmp_agent\")"
+      },
+      {
+        "file": "tests\\unit\\test_curated_memory_dry_run_flow.py",
+        "line": 16,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_curated_memory_governance.py",
+        "line": 16,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_curated_memory_governance_audit.py",
+        "line": 19,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_curated_memory_observability.py",
+        "line": 16,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_curated_memory_promotion.py",
+        "line": 11,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_curated_memory_rollback.py",
+        "line": 18,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_curation_validation_adapter.py",
+        "line": 10,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_dashboard_real_verification_routing.py",
+        "line": 13,
+        "text": "sys.path.insert(0, str(TMP_AGENT))"
+      },
+      {
+        "file": "tests\\unit\\test_fallback_visibility_fase5.py",
+        "line": 11,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent / \"tmp_agent\"))"
+      },
+      {
+        "file": "tests\\unit\\test_fases_2_3_4_routing_analytics.py",
+        "line": 12,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\tmp_agent\")"
+      },
+      {
+        "file": "tests\\unit\\test_governed_action_kernel.py",
+        "line": 9,
+        "text": "sys.path.insert(0, str(Path(\"C:/AI_VAULT/tmp_agent\")))"
+      },
+      {
+        "file": "tests\\unit\\test_grounded_verification_guards.py",
+        "line": 11,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\tmp_agent\")"
+      },
+      {
+        "file": "tests\\unit\\test_information_curator_contract.py",
+        "line": 18,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\brain\")"
+      },
+      {
+        "file": "tests\\unit\\test_information_curator_learning_validator_contract.py",
+        "line": 19,
+        "text": "sys.path.insert(0, '/c/AI_VAULT')"
+      },
+      {
+        "file": "tests\\unit\\test_memory_semantic_backup.py",
+        "line": 15,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_metrics_no_fabricated_performance.py",
+        "line": 17,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\tmp_agent\")"
+      },
+      {
+        "file": "tests\\unit\\test_module_connector_fase4.py",
+        "line": 10,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent / \"tmp_agent\"))"
+      },
+      {
+        "file": "tests\\unit\\test_project_state_provider.py",
+        "line": 15,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_real_verification_tool_trace_required.py",
+        "line": 10,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\tmp_agent\")"
+      },
+      {
+        "file": "tests\\unit\\test_real_verification_tool_trace_required.py",
+        "line": 11,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\brain\")"
+      },
+      {
+        "file": "tests\\unit\\test_routing_authority_boundary.py",
+        "line": 14,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent / \"tmp_agent\" / \"brain_v9\" / \"core\" / \"routing\"))"
+      },
+      {
+        "file": "tests\\unit\\test_semantic_coherence_validation.py",
+        "line": 16,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\tmp_agent\")"
+      },
+      {
+        "file": "tests\\unit\\test_semantic_memory_adapter_dry_run.py",
+        "line": 41,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_semantic_memory_adapter_real.py",
+        "line": 15,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_semantic_memory_decision_gate_evidence_adapter.py",
+        "line": 8,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_semantic_memory_external_evidence_contract.py",
+        "line": 9,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_semantic_memory_extra_file_classifier.py",
+        "line": 12,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_semantic_memory_extra_file_dependency_mapper.py",
+        "line": 13,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_semantic_memory_faiss_real.py",
+        "line": 14,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent / \"tmp_agent\"))"
+      },
+      {
+        "file": "tests\\unit\\test_semantic_memory_probe.py",
+        "line": 16,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_semantic_memory_real_state_audit.py",
+        "line": 14,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_semantic_memory_real_write_decision_gate.py",
+        "line": 9,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_semantic_memory_real_write_readiness_gate.py",
+        "line": 15,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_semantic_memory_rollback_simulation.py",
+        "line": 15,
+        "text": "sys.path.insert(0, str(Path(__file__).parent.parent.parent))"
+      },
+      {
+        "file": "tests\\unit\\test_tool01_read_permission.py",
+        "line": 7,
+        "text": "sys.path.insert(0, str(Path(\"C:/AI_VAULT/tmp_agent\")))"
+      }
+    ],
+    "try_except_imports": [],
+    "missing_import_candidates": [
+      {
+        "file": "tmp_agent\\brain_v9\\config.py",
+        "line": 9,
+        "module": "platform",
+        "text": "import platform"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\init_platforms.py",
+        "line": 13,
+        "module": "brain_v9.autonomy.platform_accumulators",
+        "text": "from brain_v9.autonomy.platform_accumulators import get_multi_platform_accumulator"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\init_platforms.py",
+        "line": 14,
+        "module": "brain_v9.trading.platform_manager",
+        "text": "from brain_v9.trading.platform_manager import get_platform_manager"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 30,
+        "module": "brain_v9.api_security",
+        "text": "from brain_v9.api_security import require_operator_access, StrictOperatorAccess"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 31,
+        "module": "brain_v9.config",
+        "text": "from brain_v9.config import ("
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 42,
+        "module": "brain_v9.brain.utility",
+        "text": "from brain_v9.brain.utility import read_utility_state, is_promotion_safe, write_utility_snapshots"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 43,
+        "module": "brain_v9.brain.roadmap_governance",
+        "text": "from brain_v9.brain.roadmap_governance import promote_roadmap_if_ready, read_roadmap_governance_status"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 44,
+        "module": "brain_v9.brain.meta_improvement",
+        "text": "from brain_v9.brain.meta_improvement import read_meta_improvement_status, refresh_meta_improvement_status"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 45,
+        "module": "brain_v9.brain.chat_product_governance",
+        "text": "from brain_v9.brain.chat_product_governance import read_chat_product_status, refresh_chat_product_status"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 46,
+        "module": "brain_v9.brain.autonomous_governance_eval",
+        "text": "from brain_v9.brain.autonomous_governance_eval import ("
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 50,
+        "module": "brain_v9.brain.utility_governance",
+        "text": "from brain_v9.brain.utility_governance import read_utility_governance_status, refresh_utility_governance_status"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 51,
+        "module": "brain_v9.brain.post_bl_roadmap",
+        "text": "from brain_v9.brain.post_bl_roadmap import read_post_bl_roadmap_status, refresh_post_bl_roadmap_status"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 52,
+        "module": "brain_v9.research.knowledge_base",
+        "text": "from brain_v9.research.knowledge_base import ("
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 61,
+        "module": "brain_v9.learning",
+        "text": "from brain_v9.learning import build_learning_status, evaluate_proposal, execute_sandbox_run, read_learning_status, run_learning_refresh, transition_proposal_state"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 62,
+        "module": "brain_v9.trading.strategy_engine",
+        "text": "from brain_v9.trading.strategy_engine import ("
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 80,
+        "module": "brain_v9.trading.post_trade_analysis",
+        "text": "from brain_v9.trading.post_trade_analysis import ("
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 84,
+        "module": "brain_v9.trading.post_trade_hypotheses",
+        "text": "from brain_v9.trading.post_trade_hypotheses import ("
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 88,
+        "module": "brain_v9.trading.expectancy_engine",
+        "text": "from brain_v9.trading.expectancy_engine import ("
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 96,
+        "module": "brain_v9.brain.self_improvement",
+        "text": "from brain_v9.brain.self_improvement import ("
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 104,
+        "module": "brain_v9.brain.change_control",
+        "text": "from brain_v9.brain.change_control import ("
+      }
+    ],
+    "duplicate_module_names": {
+      "__future__": [
+        "tmp_agent\\brain_v9\\api_security.py",
+        "tmp_agent\\brain_v9\\agent\\code_mutator.py",
+        "tmp_agent\\brain_v9\\agent\\failure_learner.py",
+        "tmp_agent\\brain_v9\\agent\\health_gate.py",
+        "tmp_agent\\brain_v9\\agent\\reasoning_corrector.py",
+        "tmp_agent\\brain_v9\\agent\\self_tester.py",
+        "tmp_agent\\brain_v9\\autonomy\\chat_excellence_executor.py",
+        "tmp_agent\\brain_v9\\autonomy\\chat_excellence_patcher.py",
+        "tmp_agent\\brain_v9\\brain\\autonomous_governance_eval.py",
+        "tmp_agent\\brain_v9\\brain\\auto_surgeon.py",
+        "tmp_agent\\brain_v9\\brain\\change_control.py",
+        "tmp_agent\\brain_v9\\brain\\chat_product_governance.py",
+        "tmp_agent\\brain_v9\\brain\\codegen.py",
+        "tmp_agent\\brain_v9\\brain\\control_layer.py",
+        "tmp_agent\\brain_v9\\brain\\health.py",
+        "tmp_agent\\brain_v9\\brain\\metacognition.py",
+        "tmp_agent\\brain_v9\\brain\\meta_governance.py",
+        "tmp_agent\\brain_v9\\brain\\meta_improvement.py",
+        "tmp_agent\\brain_v9\\brain\\post_bl_roadmap.py",
+        "tmp_agent\\brain_v9\\brain\\purpose.py",
+        "tmp_agent\\brain_v9\\brain\\risk_contract.py",
+        "tmp_agent\\brain_v9\\brain\\security_posture.py",
+        "tmp_agent\\brain_v9\\brain\\self_improvement.py",
+        "tmp_agent\\brain_v9\\brain\\technical_introspection.py",
+        "tmp_agent\\brain_v9\\brain\\trade_diagnostics.py",
+        "tmp_agent\\brain_v9\\brain\\utility_governance.py",
+        "tmp_agent\\brain_v9\\core\\semantic_memory.py",
+        "tmp_agent\\brain_v9\\core\\semantic_memory_faiss.py",
+        "tmp_agent\\brain_v9\\core\\session_memory_state.py",
+        "tmp_agent\\brain_v9\\core\\tool_metrics.py",
+        "tmp_agent\\brain_v9\\core\\validator_metrics.py",
+        "tmp_agent\\brain_v9\\governance\\change_validation.py",
+        "tmp_agent\\brain_v9\\governance\\governance_health.py",
+        "tmp_agent\\brain_v9\\learning\\capability_evaluator.py",
+        "tmp_agent\\brain_v9\\learning\\capability_hypothesis_generator.py",
+        "tmp_agent\\brain_v9\\learning\\patch_advisor.py",
+        "tmp_agent\\brain_v9\\learning\\pattern_extractor.py",
+        "tmp_agent\\brain_v9\\learning\\proposal_governance.py",
+        "tmp_agent\\brain_v9\\learning\\repo_curator.py",
+        "tmp_agent\\brain_v9\\learning\\sandbox_executor.py",
+        "tmp_agent\\brain_v9\\learning\\source_registry.py",
+        "tmp_agent\\brain_v9\\learning\\status.py",
+        "tmp_agent\\brain_v9\\trading\\active_strategy_catalog.py",
+        "tmp_agent\\brain_v9\\trading\\adaptive_duration_policy.py",
+        "tmp_agent\\brain_v9\\trading\\asset_class_layer.py",
+        "tmp_agent\\brain_v9\\trading\\backtest_gate.py",
+        "tmp_agent\\brain_v9\\trading\\context_edge_validation.py",
+        "tmp_agent\\brain_v9\\trading\\edge_validation.py",
+        "tmp_agent\\brain_v9\\trading\\expectancy_engine.py",
+        "tmp_agent\\brain_v9\\trading\\feature_engine.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_data_ingester.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_order_executor.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_performance_tracker.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_signal_engine.py",
+        "tmp_agent\\brain_v9\\trading\\learning_loop.py",
+        "tmp_agent\\brain_v9\\trading\\market_history_engine.py",
+        "tmp_agent\\brain_v9\\trading\\paper_execution.py",
+        "tmp_agent\\brain_v9\\trading\\pipeline_integrity.py",
+        "tmp_agent\\brain_v9\\trading\\platform_dashboard_api.py",
+        "tmp_agent\\brain_v9\\trading\\pocketoption_bridge_server.py",
+        "tmp_agent\\brain_v9\\trading\\post_trade_analysis.py",
+        "tmp_agent\\brain_v9\\trading\\post_trade_hypotheses.py",
+        "tmp_agent\\brain_v9\\trading\\qc_iteration_engine.py",
+        "tmp_agent\\brain_v9\\trading\\qc_orchestrator.py",
+        "tmp_agent\\brain_v9\\trading\\qc_pattern_ingester.py",
+        "tmp_agent\\brain_v9\\trading\\qc_results_ingester.py",
+        "tmp_agent\\brain_v9\\trading\\qc_strategy_bridge.py",
+        "tmp_agent\\brain_v9\\trading\\signal_engine.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_archive.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_selector.py"
+      ],
+      "os": [
+        "tmp_agent\\brain_v9\\api_security.py",
+        "tmp_agent\\brain_v9\\config.py",
+        "tmp_agent\\brain_v9\\main.py",
+        "tmp_agent\\brain_v9\\start_full_server.py",
+        "tmp_agent\\brain_v9\\start_safe_server.py",
+        "tmp_agent\\brain_v9\\agent\\code_mutator.py",
+        "tmp_agent\\brain_v9\\agent\\loop.py",
+        "tmp_agent\\brain_v9\\agent\\tools.py",
+        "tmp_agent\\brain_v9\\agent\\tools.py",
+        "tmp_agent\\brain_v9\\agent\\tools.py",
+        "tmp_agent\\brain_v9\\agent\\tools.py",
+        "tmp_agent\\brain_v9\\agent\\tools.py",
+        "tmp_agent\\brain_v9\\autonomy\\chat_excellence_executor.py",
+        "tmp_agent\\brain_v9\\autonomy\\chat_excellence_patcher.py",
+        "tmp_agent\\brain_v9\\autonomy\\manager.py",
+        "tmp_agent\\brain_v9\\autonomy\\sample_accumulator_agent.py",
+        "tmp_agent\\brain_v9\\brain\\self_improvement.py",
+        "tmp_agent\\brain_v9\\brain\\technical_introspection.py",
+        "tmp_agent\\brain_v9\\core\\knowledge.py",
+        "tmp_agent\\brain_v9\\core\\llm.py",
+        "tmp_agent\\brain_v9\\core\\session.py",
+        "tmp_agent\\brain_v9\\core\\state_io.py",
+        "tmp_agent\\brain_v9\\financial\\improvement_cycle.py",
+        "tmp_agent\\brain_v9\\financial\\strategy_adapter.py",
+        "tmp_agent\\brain_v9\\learning\\capability_evaluator.py",
+        "tmp_agent\\brain_v9\\learning\\external_intel_ingestor.py",
+        "tests\\conftest.py",
+        "tests\\security\\validate_p2e_4d_canary.py",
+        "tests\\smoke\\smoke_curated_memory_promotion_dry_run.py",
+        "tests\\smoke\\smoke_memory_semantic_backup_contract.py",
+        "tests\\smoke\\smoke_semantic_memory_real_write_canary_plan.py",
+        "tests\\smoke\\smoke_semantic_memory_rollback_simulation.py",
+        "tests\\unit\\test_agent_visual_trace_console.py",
+        "tests\\unit\\test_fases_2_3_4_routing_analytics.py",
+        "tests\\unit\\test_learning_validator_evolucion_integration.py",
+        "tests\\unit\\test_n2_auto_approval_bypass.py",
+        "tests\\unit\\test_project_state_provider.py",
+        "tests\\unit\\test_tool01_write_permission.py"
+      ],
+      "typing": [
+        "tmp_agent\\brain_v9\\api_security.py",
+        "tmp_agent\\brain_v9\\config.py",
+        "tmp_agent\\brain_v9\\main.py",
+        "tmp_agent\\brain_v9\\main.py",
+        "tmp_agent\\brain_v9\\util.py",
+        "tmp_agent\\brain_v9\\agent\\code_mutator.py",
+        "tmp_agent\\brain_v9\\agent\\failure_learner.py",
+        "tmp_agent\\brain_v9\\agent\\health_gate.py",
+        "tmp_agent\\brain_v9\\agent\\http_tools.py",
+        "tmp_agent\\brain_v9\\agent\\loop.py",
+        "tmp_agent\\brain_v9\\agent\\reasoning_corrector.py",
+        "tmp_agent\\brain_v9\\agent\\self_tester.py",
+        "tmp_agent\\brain_v9\\agent\\tools.py",
+        "tmp_agent\\brain_v9\\autonomy\\action_executor.py",
+        "tmp_agent\\brain_v9\\autonomy\\chat_excellence_executor.py",
+        "tmp_agent\\brain_v9\\autonomy\\chat_excellence_patcher.py",
+        "tmp_agent\\brain_v9\\autonomy\\manager.py",
+        "tmp_agent\\brain_v9\\autonomy\\platform_accumulators.py",
+        "tmp_agent\\brain_v9\\autonomy\\proactive_scheduler.py",
+        "tmp_agent\\brain_v9\\autonomy\\router.py",
+        "tmp_agent\\brain_v9\\autonomy\\sample_accumulator_agent.py",
+        "tmp_agent\\brain_v9\\brain\\autonomous_governance_eval.py",
+        "tmp_agent\\brain_v9\\brain\\auto_surgeon.py",
+        "tmp_agent\\brain_v9\\brain\\change_control.py",
+        "tmp_agent\\brain_v9\\brain\\chat_product_governance.py",
+        "tmp_agent\\brain_v9\\brain\\codegen.py",
+        "tmp_agent\\brain_v9\\brain\\control_layer.py",
+        "tmp_agent\\brain_v9\\brain\\health.py",
+        "tmp_agent\\brain_v9\\brain\\metacognition.py",
+        "tmp_agent\\brain_v9\\brain\\meta_governance.py",
+        "tmp_agent\\brain_v9\\brain\\meta_improvement.py",
+        "tmp_agent\\brain_v9\\brain\\metrics.py",
+        "tmp_agent\\brain_v9\\brain\\phase_acceptance_engine.py",
+        "tmp_agent\\brain_v9\\brain\\post_bl_roadmap.py",
+        "tmp_agent\\brain_v9\\brain\\purpose.py",
+        "tmp_agent\\brain_v9\\brain\\risk_contract.py",
+        "tmp_agent\\brain_v9\\brain\\roadmap_governance.py",
+        "tmp_agent\\brain_v9\\brain\\rsi.py",
+        "tmp_agent\\brain_v9\\brain\\security_posture.py",
+        "tmp_agent\\brain_v9\\brain\\self_improvement.py",
+        "tmp_agent\\brain_v9\\brain\\self_test.py",
+        "tmp_agent\\brain_v9\\brain\\technical_introspection.py",
+        "tmp_agent\\brain_v9\\brain\\trade_diagnostics.py",
+        "tmp_agent\\brain_v9\\brain\\utility.py",
+        "tmp_agent\\brain_v9\\brain\\utility_governance.py",
+        "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "tmp_agent\\brain_v9\\core\\intent.py",
+        "tmp_agent\\brain_v9\\core\\knowledge.py",
+        "tmp_agent\\brain_v9\\core\\llm.py",
+        "tmp_agent\\brain_v9\\core\\memory.py",
+        "tmp_agent\\brain_v9\\core\\self_diagnostic.py",
+        "tmp_agent\\brain_v9\\core\\semantic_memory.py",
+        "tmp_agent\\brain_v9\\core\\semantic_memory_faiss.py",
+        "tmp_agent\\brain_v9\\core\\session.py",
+        "tmp_agent\\brain_v9\\core\\session_memory_state.py",
+        "tmp_agent\\brain_v9\\core\\state_io.py",
+        "tmp_agent\\brain_v9\\core\\tool_metrics.py",
+        "tmp_agent\\brain_v9\\core\\validator_metrics.py",
+        "tmp_agent\\brain_v9\\core\\routing\\authority_resolution.py",
+        "tmp_agent\\brain_v9\\core\\routing\\fallback_visibility.py",
+        "tmp_agent\\brain_v9\\core\\routing\\guards.py",
+        "tmp_agent\\brain_v9\\core\\routing\\module_connector.py",
+        "tmp_agent\\brain_v9\\financial\\improvement_cycle.py",
+        "tmp_agent\\brain_v9\\financial\\strategy_adapter.py",
+        "tmp_agent\\brain_v9\\governance\\adn_quality.py",
+        "tmp_agent\\brain_v9\\governance\\change_validation.py",
+        "tmp_agent\\brain_v9\\governance\\ethics_kernel.py",
+        "tmp_agent\\brain_v9\\governance\\execution_gate.py",
+        "tmp_agent\\brain_v9\\governance\\governance_health.py",
+        "tmp_agent\\brain_v9\\learning\\capability_evaluator.py",
+        "tmp_agent\\brain_v9\\learning\\capability_hypothesis_generator.py",
+        "tmp_agent\\brain_v9\\learning\\external_intel_ingestor.py",
+        "tmp_agent\\brain_v9\\learning\\patch_advisor.py",
+        "tmp_agent\\brain_v9\\learning\\pattern_extractor.py",
+        "tmp_agent\\brain_v9\\learning\\proposal_governance.py",
+        "tmp_agent\\brain_v9\\learning\\repo_curator.py",
+        "tmp_agent\\brain_v9\\learning\\sandbox_executor.py",
+        "tmp_agent\\brain_v9\\learning\\source_registry.py",
+        "tmp_agent\\brain_v9\\learning\\status.py",
+        "tmp_agent\\brain_v9\\ops\\upgrade_protocol.py",
+        "tmp_agent\\brain_v9\\research\\knowledge_base.py",
+        "tmp_agent\\brain_v9\\trading\\active_strategy_catalog.py",
+        "tmp_agent\\brain_v9\\trading\\adaptive_duration_policy.py",
+        "tmp_agent\\brain_v9\\trading\\asset_class_layer.py",
+        "tmp_agent\\brain_v9\\trading\\backtest_gate.py",
+        "tmp_agent\\brain_v9\\trading\\connectors.py",
+        "tmp_agent\\brain_v9\\trading\\context_edge_validation.py",
+        "tmp_agent\\brain_v9\\trading\\edge_validation.py",
+        "tmp_agent\\brain_v9\\trading\\expectancy_engine.py",
+        "tmp_agent\\brain_v9\\trading\\feature_engine.py",
+        "tmp_agent\\brain_v9\\trading\\hypothesis_engine.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_data_ingester.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_order_executor.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_performance_tracker.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_signal_engine.py",
+        "tmp_agent\\brain_v9\\trading\\learning_loop.py",
+        "tmp_agent\\brain_v9\\trading\\market_history_engine.py",
+        "tmp_agent\\brain_v9\\trading\\paper_execution.py",
+        "tmp_agent\\brain_v9\\trading\\pipeline_integrity.py",
+        "tmp_agent\\brain_v9\\trading\\platform_dashboard_api.py",
+        "tmp_agent\\brain_v9\\trading\\platform_manager.py",
+        "tmp_agent\\brain_v9\\trading\\pocketoption_bridge_server.py",
+        "tmp_agent\\brain_v9\\trading\\post_trade_analysis.py",
+        "tmp_agent\\brain_v9\\trading\\post_trade_hypotheses.py",
+        "tmp_agent\\brain_v9\\trading\\qc_iteration_engine.py",
+        "tmp_agent\\brain_v9\\trading\\qc_live_analyzer.py",
+        "tmp_agent\\brain_v9\\trading\\qc_live_monitor.py",
+        "tmp_agent\\brain_v9\\trading\\qc_orchestrator.py",
+        "tmp_agent\\brain_v9\\trading\\qc_pattern_ingester.py",
+        "tmp_agent\\brain_v9\\trading\\qc_results_ingester.py",
+        "tmp_agent\\brain_v9\\trading\\qc_strategy_bridge.py",
+        "tmp_agent\\brain_v9\\trading\\router.py",
+        "tmp_agent\\brain_v9\\trading\\signal_engine.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_archive.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_engine.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_scorecard.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_selector.py",
+        "tmp_agent\\brain_v9\\trading\\utility_util.py",
+        "tests\\smoke\\smoke_curation_validation_adapter.py",
+        "tests\\unit\\test_authority_resolution_enforcement.py",
+        "tests\\unit\\test_benchmark_suite_fase7.py",
+        "tests\\unit\\test_routing_authority_boundary.py",
+        "tests\\unit\\test_semantic_memory_adapter_dry_run.py",
+        "tests\\unit\\test_semantic_memory_real_write_canary_plan.py"
+      ],
+      "fastapi": [
+        "tmp_agent\\brain_v9\\api_security.py",
+        "tmp_agent\\brain_v9\\main.py",
+        "tmp_agent\\brain_v9\\main.py",
+        "tmp_agent\\brain_v9\\main.py",
+        "tmp_agent\\brain_v9\\main.py",
+        "tmp_agent\\brain_v9\\autonomy\\router.py",
+        "tmp_agent\\brain_v9\\trading\\pocketoption_bridge_server.py",
+        "tmp_agent\\brain_v9\\trading\\pocketoption_bridge_server.py",
+        "tmp_agent\\brain_v9\\trading\\pocketoption_bridge_server.py",
+        "tmp_agent\\brain_v9\\trading\\router.py",
+        "tests\\conftest.py"
+      ],
+      "json": [
+        "tmp_agent\\brain_v9\\config.py",
+        "tmp_agent\\brain_v9\\main.py",
+        "tmp_agent\\brain_v9\\main.py",
+        "tmp_agent\\brain_v9\\main.py",
+        "tmp_agent\\brain_v9\\main.py",
+        "tmp_agent\\brain_v9\\util.py",
+        "tmp_agent\\brain_v9\\agent\\code_mutator.py",
+        "tmp_agent\\brain_v9\\agent\\failure_learner.py",
+        "tmp_agent\\brain_v9\\agent\\loop.py",
+        "tmp_agent\\brain_v9\\agent\\reasoning_corrector.py",
+        "tmp_agent\\brain_v9\\agent\\tools.py",
+        "tmp_agent\\brain_v9\\autonomy\\action_executor.py",
+        "tmp_agent\\brain_v9\\autonomy\\chat_excellence_executor.py",
+        "tmp_agent\\brain_v9\\autonomy\\chat_excellence_patcher.py",
+        "tmp_agent\\brain_v9\\autonomy\\platform_accumulators.py",
+        "tmp_agent\\brain_v9\\autonomy\\proactive_scheduler.py",
+        "tmp_agent\\brain_v9\\autonomy\\sample_accumulator_agent.py",
+        "tmp_agent\\brain_v9\\brain\\autonomous_governance_eval.py",
+        "tmp_agent\\brain_v9\\brain\\auto_surgeon.py",
+        "tmp_agent\\brain_v9\\brain\\chat_product_governance.py",
+        "tmp_agent\\brain_v9\\brain\\codegen.py",
+        "tmp_agent\\brain_v9\\brain\\metacognition.py",
+        "tmp_agent\\brain_v9\\brain\\meta_improvement.py",
+        "tmp_agent\\brain_v9\\brain\\metrics.py",
+        "tmp_agent\\brain_v9\\brain\\phase_acceptance_engine.py",
+        "tmp_agent\\brain_v9\\brain\\post_bl_roadmap.py",
+        "tmp_agent\\brain_v9\\brain\\roadmap_governance.py",
+        "tmp_agent\\brain_v9\\brain\\rsi.py",
+        "tmp_agent\\brain_v9\\brain\\security_posture.py",
+        "tmp_agent\\brain_v9\\brain\\self_improvement.py",
+        "tmp_agent\\brain_v9\\brain\\self_test.py",
+        "tmp_agent\\brain_v9\\brain\\technical_introspection.py",
+        "tmp_agent\\brain_v9\\brain\\trade_diagnostics.py",
+        "tmp_agent\\brain_v9\\brain\\utility.py",
+        "tmp_agent\\brain_v9\\brain\\utility_governance.py",
+        "tmp_agent\\brain_v9\\core\\knowledge.py",
+        "tmp_agent\\brain_v9\\core\\llm.py",
+        "tmp_agent\\brain_v9\\core\\self_diagnostic.py",
+        "tmp_agent\\brain_v9\\core\\semantic_memory.py",
+        "tmp_agent\\brain_v9\\core\\semantic_memory_faiss.py",
+        "tmp_agent\\brain_v9\\core\\session.py",
+        "tmp_agent\\brain_v9\\core\\session.py",
+        "tmp_agent\\brain_v9\\core\\session_memory_state.py",
+        "tmp_agent\\brain_v9\\core\\state_io.py",
+        "tmp_agent\\brain_v9\\financial\\improvement_cycle.py",
+        "tmp_agent\\brain_v9\\financial\\strategy_adapter.py",
+        "tmp_agent\\brain_v9\\governance\\execution_gate.py",
+        "tmp_agent\\brain_v9\\governance\\governance_health.py",
+        "tmp_agent\\brain_v9\\learning\\external_intel_ingestor.py",
+        "tmp_agent\\brain_v9\\learning\\status.py",
+        "tmp_agent\\brain_v9\\ops\\benchmark_analysis_frontier.py",
+        "tmp_agent\\brain_v9\\ops\\benchmark_codex_vs_legacy.py",
+        "tmp_agent\\brain_v9\\research\\knowledge_base.py",
+        "tmp_agent\\brain_v9\\trading\\connectors.py",
+        "tmp_agent\\brain_v9\\trading\\expectancy_engine.py",
+        "tmp_agent\\brain_v9\\trading\\feature_engine.py",
+        "tmp_agent\\brain_v9\\trading\\hypothesis_engine.py",
+        "tmp_agent\\brain_v9\\trading\\market_history_engine.py",
+        "tmp_agent\\brain_v9\\trading\\paper_execution.py",
+        "tmp_agent\\brain_v9\\trading\\platform_dashboard_api.py",
+        "tmp_agent\\brain_v9\\trading\\platform_dashboard_api.py",
+        "tmp_agent\\brain_v9\\trading\\pocketoption_bridge_server.py",
+        "tmp_agent\\brain_v9\\trading\\qc_iteration_engine.py",
+        "tmp_agent\\brain_v9\\trading\\qc_live_monitor.py",
+        "tmp_agent\\brain_v9\\trading\\router.py",
+        "tmp_agent\\brain_v9\\trading\\signal_engine.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_archive.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_engine.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_scorecard.py",
+        "tmp_agent\\brain_v9\\trading\\utility_util.py",
+        "tests\\integration\\test_financial.py",
+        "tests\\smoke\\smoke_github_source_connector_dry_run.py",
+        "tests\\smoke\\smoke_semantic_memory_controlled_real_write_candidate_design.py",
+        "tests\\smoke\\smoke_semantic_memory_controlled_real_write_execution_package.py",
+        "tests\\smoke\\smoke_semantic_memory_controlled_real_write_preflight_snapshot.py",
+        "tests\\smoke\\smoke_semantic_memory_final_pre_execution_gate.py",
+        "tests\\smoke\\smoke_semantic_memory_go_no_go_readiness_checklist.py",
+        "tests\\smoke\\smoke_semantic_memory_real_write_authorization_packet.py",
+        "tests\\unit\\test_agent_visual_trace_console.py",
+        "tests\\unit\\test_b3_fake_grounded_dashboard_runtime.py",
+        "tests\\unit\\test_benchmark_suite_fase7.py",
+        "tests\\unit\\test_brain_chat_hygiene.py",
+        "tests\\unit\\test_brain_chat_hygiene.py",
+        "tests\\unit\\test_brain_chat_hygiene.py",
+        "tests\\unit\\test_brain_chat_hygiene.py",
+        "tests\\unit\\test_brain_chat_hygiene.py",
+        "tests\\unit\\test_brain_server.py",
+        "tests\\unit\\test_chat_metrics_extended.py",
+        "tests\\unit\\test_curated_memory_governance_audit.py",
+        "tests\\unit\\test_evolucion_continua_autoapproval.py",
+        "tests\\unit\\test_github_source_connector.py",
+        "tests\\unit\\test_information_curator_contract.py",
+        "tests\\unit\\test_learning_pipeline.py",
+        "tests\\unit\\test_learning_validator_evolucion_integration.py",
+        "tests\\unit\\test_semantic_memory_controlled_real_write_candidate_design.py",
+        "tests\\unit\\test_semantic_memory_controlled_real_write_execution_package.py",
+        "tests\\unit\\test_semantic_memory_controlled_real_write_preflight_snapshot.py",
+        "tests\\unit\\test_semantic_memory_faiss_real.py",
+        "tests\\unit\\test_semantic_memory_final_pre_execution_gate.py",
+        "tests\\unit\\test_semantic_memory_go_no_go_readiness_checklist.py",
+        "tests\\unit\\test_semantic_memory_real_write_authorization_packet.py"
+      ],
+      "logging": [
+        "tmp_agent\\brain_v9\\config.py",
+        "tmp_agent\\brain_v9\\main.py",
+        "tmp_agent\\brain_v9\\util.py",
+        "tmp_agent\\brain_v9\\agent\\code_mutator.py",
+        "tmp_agent\\brain_v9\\agent\\failure_learner.py",
+        "tmp_agent\\brain_v9\\agent\\health_gate.py",
+        "tmp_agent\\brain_v9\\agent\\http_tools.py",
+        "tmp_agent\\brain_v9\\agent\\loop.py",
+        "tmp_agent\\brain_v9\\agent\\reasoning_corrector.py",
+        "tmp_agent\\brain_v9\\agent\\self_tester.py",
+        "tmp_agent\\brain_v9\\agent\\tools.py",
+        "tmp_agent\\brain_v9\\autonomy\\action_executor.py",
+        "tmp_agent\\brain_v9\\autonomy\\action_executor.py",
+        "tmp_agent\\brain_v9\\autonomy\\chat_excellence_executor.py",
+        "tmp_agent\\brain_v9\\autonomy\\chat_excellence_patcher.py",
+        "tmp_agent\\brain_v9\\autonomy\\manager.py",
+        "tmp_agent\\brain_v9\\autonomy\\platform_accumulators.py",
+        "tmp_agent\\brain_v9\\autonomy\\proactive_scheduler.py",
+        "tmp_agent\\brain_v9\\autonomy\\sample_accumulator_agent.py",
+        "tmp_agent\\brain_v9\\brain\\auto_surgeon.py",
+        "tmp_agent\\brain_v9\\brain\\chat_product_governance.py",
+        "tmp_agent\\brain_v9\\brain\\codegen.py",
+        "tmp_agent\\brain_v9\\brain\\health.py",
+        "tmp_agent\\brain_v9\\brain\\meta_improvement.py",
+        "tmp_agent\\brain_v9\\brain\\metrics.py",
+        "tmp_agent\\brain_v9\\brain\\phase_acceptance_engine.py",
+        "tmp_agent\\brain_v9\\brain\\rsi.py",
+        "tmp_agent\\brain_v9\\brain\\security_posture.py",
+        "tmp_agent\\brain_v9\\brain\\self_improvement.py",
+        "tmp_agent\\brain_v9\\brain\\self_test.py",
+        "tmp_agent\\brain_v9\\brain\\trade_diagnostics.py",
+        "tmp_agent\\brain_v9\\brain\\utility.py",
+        "tmp_agent\\brain_v9\\brain\\utility_governance.py",
+        "tmp_agent\\brain_v9\\core\\intent.py",
+        "tmp_agent\\brain_v9\\core\\knowledge.py",
+        "tmp_agent\\brain_v9\\core\\llm.py",
+        "tmp_agent\\brain_v9\\core\\memory.py",
+        "tmp_agent\\brain_v9\\core\\self_diagnostic.py",
+        "tmp_agent\\brain_v9\\core\\semantic_memory_faiss.py",
+        "tmp_agent\\brain_v9\\core\\session.py",
+        "tmp_agent\\brain_v9\\core\\session.py",
+        "tmp_agent\\brain_v9\\core\\session_memory_state.py",
+        "tmp_agent\\brain_v9\\core\\state_io.py",
+        "tmp_agent\\brain_v9\\core\\routing\\fallback_visibility.py",
+        "tmp_agent\\brain_v9\\core\\routing\\module_connector.py",
+        "tmp_agent\\brain_v9\\governance\\adn_quality.py",
+        "tmp_agent\\brain_v9\\governance\\ethics_kernel.py",
+        "tmp_agent\\brain_v9\\governance\\execution_gate.py",
+        "tmp_agent\\brain_v9\\learning\\external_intel_ingestor.py",
+        "tmp_agent\\brain_v9\\ops\\upgrade_protocol.py",
+        "tmp_agent\\brain_v9\\research\\knowledge_base.py",
+        "tmp_agent\\brain_v9\\trading\\active_strategy_catalog.py",
+        "tmp_agent\\brain_v9\\trading\\backtest_gate.py",
+        "tmp_agent\\brain_v9\\trading\\connectors.py",
+        "tmp_agent\\brain_v9\\trading\\context_edge_validation.py",
+        "tmp_agent\\brain_v9\\trading\\edge_validation.py",
+        "tmp_agent\\brain_v9\\trading\\expectancy_engine.py",
+        "tmp_agent\\brain_v9\\trading\\feature_engine.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_data_ingester.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_order_executor.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_performance_tracker.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_signal_engine.py",
+        "tmp_agent\\brain_v9\\trading\\market_history_engine.py",
+        "tmp_agent\\brain_v9\\trading\\paper_execution.py",
+        "tmp_agent\\brain_v9\\trading\\platform_dashboard_api.py",
+        "tmp_agent\\brain_v9\\trading\\platform_manager.py",
+        "tmp_agent\\brain_v9\\trading\\pocketoption_bridge_server.py",
+        "tmp_agent\\brain_v9\\trading\\qc_iteration_engine.py",
+        "tmp_agent\\brain_v9\\trading\\qc_live_analyzer.py",
+        "tmp_agent\\brain_v9\\trading\\qc_live_monitor.py",
+        "tmp_agent\\brain_v9\\trading\\qc_orchestrator.py",
+        "tmp_agent\\brain_v9\\trading\\qc_pattern_ingester.py",
+        "tmp_agent\\brain_v9\\trading\\qc_results_ingester.py",
+        "tmp_agent\\brain_v9\\trading\\qc_strategy_bridge.py",
+        "tmp_agent\\brain_v9\\trading\\router.py",
+        "tmp_agent\\brain_v9\\trading\\signal_engine.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_archive.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_engine.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_engine.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_scorecard.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_selector.py",
+        "tmp_agent\\brain_v9\\trading\\utility_util.py"
+      ],
+      "platform": [
+        "tmp_agent\\brain_v9\\config.py",
+        "tmp_agent\\brain_v9\\core\\session.py"
+      ],
+      "pathlib": [
+        "tmp_agent\\brain_v9\\config.py",
+        "tmp_agent\\brain_v9\\init_platforms.py",
+        "tmp_agent\\brain_v9\\main.py",
+        "tmp_agent\\brain_v9\\main.py",
+        "tmp_agent\\brain_v9\\main.py",
+        "tmp_agent\\brain_v9\\start_full_server.py",
+        "tmp_agent\\brain_v9\\start_safe_server.py",
+        "tmp_agent\\brain_v9\\util.py",
+        "tmp_agent\\brain_v9\\agent\\code_mutator.py",
+        "tmp_agent\\brain_v9\\agent\\failure_learner.py",
+        "tmp_agent\\brain_v9\\agent\\reasoning_corrector.py",
+        "tmp_agent\\brain_v9\\agent\\tools.py",
+        "tmp_agent\\brain_v9\\autonomy\\action_executor.py",
+        "tmp_agent\\brain_v9\\autonomy\\chat_excellence_executor.py",
+        "tmp_agent\\brain_v9\\autonomy\\chat_excellence_patcher.py",
+        "tmp_agent\\brain_v9\\autonomy\\platform_accumulators.py",
+        "tmp_agent\\brain_v9\\autonomy\\proactive_scheduler.py",
+        "tmp_agent\\brain_v9\\autonomy\\sample_accumulator_agent.py",
+        "tmp_agent\\brain_v9\\brain\\autonomous_governance_eval.py",
+        "tmp_agent\\brain_v9\\brain\\auto_surgeon.py",
+        "tmp_agent\\brain_v9\\brain\\change_control.py",
+        "tmp_agent\\brain_v9\\brain\\chat_product_governance.py",
+        "tmp_agent\\brain_v9\\brain\\metacognition.py",
+        "tmp_agent\\brain_v9\\brain\\meta_improvement.py",
+        "tmp_agent\\brain_v9\\brain\\metrics.py",
+        "tmp_agent\\brain_v9\\brain\\phase_acceptance_engine.py",
+        "tmp_agent\\brain_v9\\brain\\post_bl_roadmap.py",
+        "tmp_agent\\brain_v9\\brain\\purpose.py",
+        "tmp_agent\\brain_v9\\brain\\risk_contract.py",
+        "tmp_agent\\brain_v9\\brain\\roadmap_governance.py",
+        "tmp_agent\\brain_v9\\brain\\rsi.py",
+        "tmp_agent\\brain_v9\\brain\\security_posture.py",
+        "tmp_agent\\brain_v9\\brain\\self_improvement.py",
+        "tmp_agent\\brain_v9\\brain\\self_test.py",
+        "tmp_agent\\brain_v9\\brain\\technical_introspection.py",
+        "tmp_agent\\brain_v9\\brain\\trade_diagnostics.py",
+        "tmp_agent\\brain_v9\\brain\\utility.py",
+        "tmp_agent\\brain_v9\\brain\\utility_governance.py",
+        "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "tmp_agent\\brain_v9\\core\\knowledge.py",
+        "tmp_agent\\brain_v9\\core\\llm.py",
+        "tmp_agent\\brain_v9\\core\\memory.py",
+        "tmp_agent\\brain_v9\\core\\self_diagnostic.py",
+        "tmp_agent\\brain_v9\\core\\semantic_memory.py",
+        "tmp_agent\\brain_v9\\core\\semantic_memory.py",
+        "tmp_agent\\brain_v9\\core\\semantic_memory_faiss.py",
+        "tmp_agent\\brain_v9\\core\\session.py",
+        "tmp_agent\\brain_v9\\core\\session.py",
+        "tmp_agent\\brain_v9\\core\\session_memory_state.py",
+        "tmp_agent\\brain_v9\\core\\state_io.py",
+        "tmp_agent\\brain_v9\\core\\routing\\module_connector.py",
+        "tmp_agent\\brain_v9\\financial\\improvement_cycle.py",
+        "tmp_agent\\brain_v9\\governance\\adn_quality.py",
+        "tmp_agent\\brain_v9\\governance\\execution_gate.py",
+        "tmp_agent\\brain_v9\\governance\\governance_health.py",
+        "tmp_agent\\brain_v9\\learning\\capability_evaluator.py",
+        "tmp_agent\\brain_v9\\learning\\external_intel_ingestor.py",
+        "tmp_agent\\brain_v9\\learning\\patch_advisor.py",
+        "tmp_agent\\brain_v9\\learning\\pattern_extractor.py",
+        "tmp_agent\\brain_v9\\learning\\repo_curator.py",
+        "tmp_agent\\brain_v9\\learning\\sandbox_executor.py",
+        "tmp_agent\\brain_v9\\learning\\status.py",
+        "tmp_agent\\brain_v9\\ops\\benchmark_analysis_frontier.py",
+        "tmp_agent\\brain_v9\\ops\\benchmark_codex_vs_legacy.py",
+        "tmp_agent\\brain_v9\\ops\\tool01_write_test.py",
+        "tmp_agent\\brain_v9\\ops\\upgrade_protocol.py",
+        "tmp_agent\\brain_v9\\research\\knowledge_base.py",
+        "tmp_agent\\brain_v9\\trading\\active_strategy_catalog.py",
+        "tmp_agent\\brain_v9\\trading\\backtest_gate.py",
+        "tmp_agent\\brain_v9\\trading\\connectors.py",
+        "tmp_agent\\brain_v9\\trading\\expectancy_engine.py",
+        "tmp_agent\\brain_v9\\trading\\feature_engine.py",
+        "tmp_agent\\brain_v9\\trading\\hypothesis_engine.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_order_executor.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_performance_tracker.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_signal_engine.py",
+        "tmp_agent\\brain_v9\\trading\\market_history_engine.py",
+        "tmp_agent\\brain_v9\\trading\\platform_dashboard_api.py",
+        "tmp_agent\\brain_v9\\trading\\platform_manager.py",
+        "tmp_agent\\brain_v9\\trading\\pocketoption_bridge_server.py",
+        "tmp_agent\\brain_v9\\trading\\qc_iteration_engine.py",
+        "tmp_agent\\brain_v9\\trading\\qc_live_monitor.py",
+        "tmp_agent\\brain_v9\\trading\\qc_orchestrator.py",
+        "tmp_agent\\brain_v9\\trading\\qc_pattern_ingester.py",
+        "tmp_agent\\brain_v9\\trading\\qc_results_ingester.py",
+        "tmp_agent\\brain_v9\\trading\\qc_strategy_bridge.py",
+        "tmp_agent\\brain_v9\\trading\\router.py",
+        "tmp_agent\\brain_v9\\trading\\router.py",
+        "tmp_agent\\brain_v9\\trading\\signal_engine.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_archive.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_engine.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_scorecard.py",
+        "tmp_agent\\brain_v9\\trading\\utility_util.py",
+        "tests\\conftest.py",
+        "tests\\integration\\test_agent_fallback.py",
+        "tests\\integration\\test_agent_non_blocking_timeout.py",
+        "tests\\integration\\test_chat_routing.py",
+        "tests\\integration\\test_cloud_first_model_policy.py",
+        "tests\\integration\\test_endpoints_auth.py",
+        "tests\\integration\\test_real_tools_execution.py",
+        "tests\\integration\\test_tool_permission_gate.py",
+        "tests\\security\\validate_p2e_4d_evidence.py",
+        "tests\\smoke\\smoke_curated_memory_promotion_dry_run.py",
+        "tests\\smoke\\smoke_curation_validation_adapter.py",
+        "tests\\smoke\\smoke_github_source_connector_dry_run.py",
+        "tests\\smoke\\smoke_memory_semantic_backup_contract.py",
+        "tests\\smoke\\smoke_p2e_curated_memory_pipeline_dry_run.py",
+        "tests\\smoke\\smoke_p2e_no_real_write_gate.py",
+        "tests\\smoke\\smoke_semantic_memory_adapter_real_skeleton.py",
+        "tests\\smoke\\smoke_semantic_memory_controlled_real_write_candidate_design.py",
+        "tests\\smoke\\smoke_semantic_memory_controlled_real_write_execution_package.py",
+        "tests\\smoke\\smoke_semantic_memory_controlled_real_write_preflight_snapshot.py",
+        "tests\\smoke\\smoke_semantic_memory_decision_gate_evidence_adapter.py",
+        "tests\\smoke\\smoke_semantic_memory_external_evidence_contract.py",
+        "tests\\smoke\\smoke_semantic_memory_extra_file_classifier.py",
+        "tests\\smoke\\smoke_semantic_memory_extra_file_dependency_mapper.py",
+        "tests\\smoke\\smoke_semantic_memory_final_pre_execution_gate.py",
+        "tests\\smoke\\smoke_semantic_memory_final_readiness_review.py",
+        "tests\\smoke\\smoke_semantic_memory_go_no_go_readiness_checklist.py",
+        "tests\\smoke\\smoke_semantic_memory_real_state_audit.py",
+        "tests\\smoke\\smoke_semantic_memory_real_write_authorization_packet.py",
+        "tests\\smoke\\smoke_semantic_memory_real_write_decision_gate.py",
+        "tests\\smoke\\smoke_semantic_memory_real_write_readiness_gate.py",
+        "tests\\smoke\\smoke_semantic_memory_rollback_simulation.py",
+        "tests\\unit\\test_authority_resolution_enforcement.py",
+        "tests\\unit\\test_b7_routing_heuristics_characterization.py",
+        "tests\\unit\\test_benchmark_suite_fase7.py",
+        "tests\\unit\\test_chat_metrics_extended.py",
+        "tests\\unit\\test_curated_memory_dry_run_flow.py",
+        "tests\\unit\\test_curated_memory_governance.py",
+        "tests\\unit\\test_curated_memory_governance_audit.py",
+        "tests\\unit\\test_curated_memory_observability.py",
+        "tests\\unit\\test_curated_memory_promotion.py",
+        "tests\\unit\\test_curated_memory_rollback.py",
+        "tests\\unit\\test_curation_validation_adapter.py",
+        "tests\\unit\\test_dashboard_real_verification_routing.py",
+        "tests\\unit\\test_evolucion_continua_autoapproval.py",
+        "tests\\unit\\test_fallback_visibility_fase5.py",
+        "tests\\unit\\test_governed_action_kernel.py",
+        "tests\\unit\\test_information_curator_contract.py",
+        "tests\\unit\\test_learning_pipeline.py",
+        "tests\\unit\\test_learning_validator_evolucion_integration.py",
+        "tests\\unit\\test_memory_semantic_backup.py",
+        "tests\\unit\\test_metrics_no_fabricated_performance.py",
+        "tests\\unit\\test_module_connector_fase4.py",
+        "tests\\unit\\test_project_state_provider.py",
+        "tests\\unit\\test_real_verification_tool_trace_required.py",
+        "tests\\unit\\test_routing_authority_boundary.py",
+        "tests\\unit\\test_semantic_memory_adapter_dry_run.py",
+        "tests\\unit\\test_semantic_memory_adapter_real.py",
+        "tests\\unit\\test_semantic_memory_controlled_real_write_candidate_design.py",
+        "tests\\unit\\test_semantic_memory_decision_gate_evidence_adapter.py",
+        "tests\\unit\\test_semantic_memory_external_evidence_contract.py",
+        "tests\\unit\\test_semantic_memory_extra_file_classifier.py",
+        "tests\\unit\\test_semantic_memory_extra_file_dependency_mapper.py",
+        "tests\\unit\\test_semantic_memory_faiss_real.py",
+        "tests\\unit\\test_semantic_memory_final_readiness_review.py",
+        "tests\\unit\\test_semantic_memory_go_no_go_readiness_checklist.py",
+        "tests\\unit\\test_semantic_memory_probe.py",
+        "tests\\unit\\test_semantic_memory_real_state_audit.py",
+        "tests\\unit\\test_semantic_memory_real_write_authorization_packet.py",
+        "tests\\unit\\test_semantic_memory_real_write_canary_plan.py",
+        "tests\\unit\\test_semantic_memory_real_write_decision_gate.py",
+        "tests\\unit\\test_semantic_memory_real_write_readiness_gate.py",
+        "tests\\unit\\test_semantic_memory_rollback_simulation.py",
+        "tests\\unit\\test_tool01_read_permission.py",
+        "tests\\unit\\test_tool01_ui_permission_buttons.py"
+      ],
+      "datetime": [
+        "tmp_agent\\brain_v9\\config.py",
+        "tmp_agent\\brain_v9\\main.py",
+        "tmp_agent\\brain_v9\\util.py",
+        "tmp_agent\\brain_v9\\agent\\code_mutator.py",
+        "tmp_agent\\brain_v9\\agent\\failure_learner.py",
+        "tmp_agent\\brain_v9\\agent\\health_gate.py",
+        "tmp_agent\\brain_v9\\agent\\loop.py",
+        "tmp_agent\\brain_v9\\agent\\reasoning_corrector.py",
+        "tmp_agent\\brain_v9\\agent\\tools.py",
+        "tmp_agent\\brain_v9\\agent\\tools.py",
+        "tmp_agent\\brain_v9\\agent\\tools.py",
+        "tmp_agent\\brain_v9\\agent\\tools.py",
+        "tmp_agent\\brain_v9\\autonomy\\action_executor.py",
+        "tmp_agent\\brain_v9\\autonomy\\action_executor.py",
+        "tmp_agent\\brain_v9\\autonomy\\chat_excellence_executor.py",
+        "tmp_agent\\brain_v9\\autonomy\\chat_excellence_patcher.py",
+        "tmp_agent\\brain_v9\\autonomy\\chat_excellence_patcher.py",
+        "tmp_agent\\brain_v9\\autonomy\\manager.py",
+        "tmp_agent\\brain_v9\\autonomy\\platform_accumulators.py",
+        "tmp_agent\\brain_v9\\autonomy\\proactive_scheduler.py",
+        "tmp_agent\\brain_v9\\autonomy\\sample_accumulator_agent.py",
+        "tmp_agent\\brain_v9\\brain\\autonomous_governance_eval.py",
+        "tmp_agent\\brain_v9\\brain\\auto_surgeon.py",
+        "tmp_agent\\brain_v9\\brain\\auto_surgeon.py",
+        "tmp_agent\\brain_v9\\brain\\auto_surgeon.py",
+        "tmp_agent\\brain_v9\\brain\\auto_surgeon.py",
+        "tmp_agent\\brain_v9\\brain\\change_control.py",
+        "tmp_agent\\brain_v9\\brain\\chat_product_governance.py",
+        "tmp_agent\\brain_v9\\brain\\control_layer.py",
+        "tmp_agent\\brain_v9\\brain\\health.py",
+        "tmp_agent\\brain_v9\\brain\\metacognition.py",
+        "tmp_agent\\brain_v9\\brain\\meta_governance.py",
+        "tmp_agent\\brain_v9\\brain\\meta_improvement.py",
+        "tmp_agent\\brain_v9\\brain\\metrics.py",
+        "tmp_agent\\brain_v9\\brain\\phase_acceptance_engine.py",
+        "tmp_agent\\brain_v9\\brain\\post_bl_roadmap.py",
+        "tmp_agent\\brain_v9\\brain\\purpose.py",
+        "tmp_agent\\brain_v9\\brain\\risk_contract.py",
+        "tmp_agent\\brain_v9\\brain\\roadmap_governance.py",
+        "tmp_agent\\brain_v9\\brain\\rsi.py",
+        "tmp_agent\\brain_v9\\brain\\security_posture.py",
+        "tmp_agent\\brain_v9\\brain\\self_improvement.py",
+        "tmp_agent\\brain_v9\\brain\\technical_introspection.py",
+        "tmp_agent\\brain_v9\\brain\\trade_diagnostics.py",
+        "tmp_agent\\brain_v9\\brain\\utility.py",
+        "tmp_agent\\brain_v9\\brain\\utility_governance.py",
+        "tmp_agent\\brain_v9\\core\\knowledge.py",
+        "tmp_agent\\brain_v9\\core\\memory.py",
+        "tmp_agent\\brain_v9\\core\\self_diagnostic.py",
+        "tmp_agent\\brain_v9\\core\\semantic_memory.py",
+        "tmp_agent\\brain_v9\\core\\semantic_memory_faiss.py",
+        "tmp_agent\\brain_v9\\core\\session.py",
+        "tmp_agent\\brain_v9\\core\\session.py",
+        "tmp_agent\\brain_v9\\core\\session.py",
+        "tmp_agent\\brain_v9\\core\\session_memory_state.py",
+        "tmp_agent\\brain_v9\\financial\\improvement_cycle.py",
+        "tmp_agent\\brain_v9\\financial\\strategy_adapter.py",
+        "tmp_agent\\brain_v9\\governance\\change_validation.py",
+        "tmp_agent\\brain_v9\\governance\\execution_gate.py",
+        "tmp_agent\\brain_v9\\governance\\governance_health.py",
+        "tmp_agent\\brain_v9\\learning\\capability_evaluator.py",
+        "tmp_agent\\brain_v9\\learning\\capability_hypothesis_generator.py",
+        "tmp_agent\\brain_v9\\learning\\external_intel_ingestor.py",
+        "tmp_agent\\brain_v9\\learning\\patch_advisor.py",
+        "tmp_agent\\brain_v9\\learning\\pattern_extractor.py",
+        "tmp_agent\\brain_v9\\learning\\proposal_governance.py",
+        "tmp_agent\\brain_v9\\learning\\repo_curator.py",
+        "tmp_agent\\brain_v9\\learning\\sandbox_executor.py",
+        "tmp_agent\\brain_v9\\learning\\source_registry.py",
+        "tmp_agent\\brain_v9\\learning\\status.py",
+        "tmp_agent\\brain_v9\\research\\knowledge_base.py",
+        "tmp_agent\\brain_v9\\trading\\active_strategy_catalog.py",
+        "tmp_agent\\brain_v9\\trading\\backtest_gate.py",
+        "tmp_agent\\brain_v9\\trading\\connectors.py",
+        "tmp_agent\\brain_v9\\trading\\connectors.py",
+        "tmp_agent\\brain_v9\\trading\\connectors.py",
+        "tmp_agent\\brain_v9\\trading\\connectors.py",
+        "tmp_agent\\brain_v9\\trading\\context_edge_validation.py",
+        "tmp_agent\\brain_v9\\trading\\context_edge_validation.py",
+        "tmp_agent\\brain_v9\\trading\\edge_validation.py",
+        "tmp_agent\\brain_v9\\trading\\edge_validation.py",
+        "tmp_agent\\brain_v9\\trading\\expectancy_engine.py",
+        "tmp_agent\\brain_v9\\trading\\feature_engine.py",
+        "tmp_agent\\brain_v9\\trading\\hypothesis_engine.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_data_ingester.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_order_executor.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_performance_tracker.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_signal_engine.py",
+        "tmp_agent\\brain_v9\\trading\\learning_loop.py",
+        "tmp_agent\\brain_v9\\trading\\market_history_engine.py",
+        "tmp_agent\\brain_v9\\trading\\paper_execution.py",
+        "tmp_agent\\brain_v9\\trading\\pipeline_integrity.py",
+        "tmp_agent\\brain_v9\\trading\\platform_dashboard_api.py",
+        "tmp_agent\\brain_v9\\trading\\platform_manager.py",
+        "tmp_agent\\brain_v9\\trading\\pocketoption_bridge_server.py",
+        "tmp_agent\\brain_v9\\trading\\post_trade_analysis.py",
+        "tmp_agent\\brain_v9\\trading\\post_trade_hypotheses.py",
+        "tmp_agent\\brain_v9\\trading\\qc_iteration_engine.py",
+        "tmp_agent\\brain_v9\\trading\\qc_live_analyzer.py",
+        "tmp_agent\\brain_v9\\trading\\qc_live_monitor.py",
+        "tmp_agent\\brain_v9\\trading\\qc_live_monitor.py",
+        "tmp_agent\\brain_v9\\trading\\qc_orchestrator.py",
+        "tmp_agent\\brain_v9\\trading\\qc_results_ingester.py",
+        "tmp_agent\\brain_v9\\trading\\qc_strategy_bridge.py",
+        "tmp_agent\\brain_v9\\trading\\signal_engine.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_archive.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_engine.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_scorecard.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_scorecard.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_scorecard.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_scorecard.py",
+        "tmp_agent\\brain_v9\\trading\\utility_util.py",
+        "tests\\conftest.py",
+        "tests\\integration\\test_financial.py",
+        "tests\\smoke\\smoke_curated_memory_promotion_dry_run.py",
+        "tests\\smoke\\smoke_semantic_memory_final_readiness_review.py",
+        "tests\\smoke\\smoke_semantic_memory_real_write_canary_plan.py",
+        "tests\\unit\\test_brain_chat_hygiene.py",
+        "tests\\unit\\test_brain_chat_hygiene.py",
+        "tests\\unit\\test_brain_chat_hygiene.py",
+        "tests\\unit\\test_brain_chat_hygiene.py",
+        "tests\\unit\\test_brain_chat_hygiene.py",
+        "tests\\unit\\test_brain_server.py",
+        "tests\\unit\\test_chat_metrics_extended.py",
+        "tests\\unit\\test_curated_memory_dry_run_flow.py",
+        "tests\\unit\\test_curated_memory_governance.py",
+        "tests\\unit\\test_curated_memory_governance_audit.py",
+        "tests\\unit\\test_curated_memory_observability.py",
+        "tests\\unit\\test_curated_memory_rollback.py",
+        "tests\\unit\\test_fases_2_3_4_routing_analytics.py",
+        "tests\\unit\\test_learning_validator_evolucion_integration.py",
+        "tests\\unit\\test_memory_semantic_backup.py",
+        "tests\\unit\\test_semantic_memory_adapter_dry_run.py",
+        "tests\\unit\\test_semantic_memory_final_readiness_review.py",
+        "tests\\unit\\test_semantic_memory_probe.py",
+        "tests\\unit\\test_semantic_memory_real_state_audit.py",
+        "tests\\unit\\test_semantic_memory_real_write_canary_plan.py",
+        "tests\\unit\\test_semantic_memory_real_write_readiness_gate.py",
+        "tests\\unit\\test_semantic_memory_rollback_simulation.py"
+      ],
+      "asyncio": [
+        "tmp_agent\\brain_v9\\init_platforms.py",
+        "tmp_agent\\brain_v9\\main.py",
+        "tmp_agent\\brain_v9\\main.py",
+        "tmp_agent\\brain_v9\\main.py",
+        "tmp_agent\\brain_v9\\start_full_server.py",
+        "tmp_agent\\brain_v9\\start_safe_server.py",
+        "tmp_agent\\brain_v9\\agent\\code_mutator.py",
+        "tmp_agent\\brain_v9\\agent\\failure_learner.py",
+        "tmp_agent\\brain_v9\\agent\\health_gate.py",
+        "tmp_agent\\brain_v9\\agent\\loop.py",
+        "tmp_agent\\brain_v9\\agent\\reasoning_corrector.py",
+        "tmp_agent\\brain_v9\\agent\\self_tester.py",
+        "tmp_agent\\brain_v9\\agent\\tools.py",
+        "tmp_agent\\brain_v9\\agent\\tools.py",
+        "tmp_agent\\brain_v9\\agent\\tools.py",
+        "tmp_agent\\brain_v9\\autonomy\\manager.py",
+        "tmp_agent\\brain_v9\\autonomy\\platform_accumulators.py",
+        "tmp_agent\\brain_v9\\autonomy\\platform_accumulators.py",
+        "tmp_agent\\brain_v9\\autonomy\\proactive_scheduler.py",
+        "tmp_agent\\brain_v9\\autonomy\\sample_accumulator_agent.py",
+        "tmp_agent\\brain_v9\\brain\\auto_surgeon.py",
+        "tmp_agent\\brain_v9\\brain\\codegen.py",
+        "tmp_agent\\brain_v9\\brain\\metrics.py",
+        "tmp_agent\\brain_v9\\brain\\self_test.py",
+        "tmp_agent\\brain_v9\\core\\llm.py",
+        "tmp_agent\\brain_v9\\core\\self_diagnostic.py",
+        "tmp_agent\\brain_v9\\core\\session.py",
+        "tmp_agent\\brain_v9\\core\\session.py",
+        "tmp_agent\\brain_v9\\core\\session.py",
+        "tmp_agent\\brain_v9\\core\\session.py",
+        "tmp_agent\\brain_v9\\ops\\benchmark_analysis_frontier.py",
+        "tmp_agent\\brain_v9\\ops\\benchmark_codex_vs_legacy.py",
+        "tmp_agent\\brain_v9\\ops\\upgrade_protocol.py",
+        "tmp_agent\\brain_v9\\trading\\connectors.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_data_ingester.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_order_executor.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_performance_tracker.py",
+        "tmp_agent\\brain_v9\\trading\\ibkr_signal_engine.py",
+        "tmp_agent\\brain_v9\\trading\\post_trade_hypotheses.py",
+        "tmp_agent\\brain_v9\\trading\\qc_iteration_engine.py",
+        "tmp_agent\\brain_v9\\trading\\qc_live_monitor.py",
+        "tmp_agent\\brain_v9\\trading\\qc_orchestrator.py",
+        "tmp_agent\\brain_v9\\trading\\qc_results_ingester.py",
+        "tmp_agent\\brain_v9\\trading\\router.py",
+        "tmp_agent\\brain_v9\\trading\\strategy_engine.py",
+        "tests\\integration\\test_tool_permission_gate.py",
+        "tests\\unit\\test_authority_resolution_enforcement.py",
+        "tests\\unit\\test_brain_capability_governor.py",
+        "tests\\unit\\test_brain_upgrade_runtime.py",
+        "tests\\unit\\test_confirmation_bug_fix.py",
+        "tests\\unit\\test_metrics_no_fabricated_performance.py",
+        "tests\\unit\\test_tool01_read_permission.py",
+        "tests\\unit\\test_tool01_read_permission.py",
+        "tests\\unit\\test_tool01_read_permission.py"
+      ]
+    },
+    "hardcoded_paths": [
+      {
+        "file": "tmp_agent\\brain_v9\\config.py",
+        "line": 45,
+        "text": "\"C:/AI_VAULT\" if platform.system() == \"Windows\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\config.py",
+        "line": 422,
+        "text": "- Operas sobre C:\\AI_VAULT en Windows"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 166,
+        "text": "sys.path.insert(0, \"C:/AI_VAULT\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 949,
+        "text": "audit_dir = Path(\"C:/AI_VAULT/.dev_auth\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1000,
+        "text": "cwd=\"C:/AI_VAULT\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1108,
+        "text": "sys.path.insert(0, \"C:/AI_VAULT\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1109,
+        "text": "sys.path.insert(0, \"C:/AI_VAULT/brain\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1419,
+        "text": "sys.path.insert(0, 'C:/AI_VAULT')"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1420,
+        "text": "sys.path.insert(0, 'C:/AI_VAULT/brain')"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3964,
+        "text": "return _Path(\"C:/AI_VAULT\") / \"tmp_agent\" / \"state\" / \"rooms\" / room_id / \"agent_runs\" / run_id"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\start_full_server.py",
+        "line": 5,
+        "text": "Uso: python C:/AI_VAULT/tmp_agent/brain_v9/start_full_server.py"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\code_mutator.py",
+        "line": 35,
+        "text": "_BRAIN_ROOT = Path(\"C:/AI_VAULT/tmp_agent/brain_v9\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\code_mutator.py",
+        "line": 36,
+        "text": "_MUTATION_LOG_DIR = Path(\"C:/AI_VAULT/tmp_agent/state/mutations\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\failure_learner.py",
+        "line": 31,
+        "text": "_STATE_DIR = Path(\"C:/AI_VAULT/tmp_agent/state/learned_patterns\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\loop.py",
+        "line": 38,
+        "text": "sys.path.insert(0, \"C:/AI_VAULT\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\loop.py",
+        "line": 510,
+        "text": "\"run_powershell(file_path=\\\"C:/AI_VAULT/tmp_agent/scripts/foo.ps1\\\"). \""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\loop.py",
+        "line": 2473,
+        "text": "f\"(e.g. directory='C:/AI_VAULT', pattern='*.py').\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 199,
+        "text": "_sys.path.insert(0, \"C:/AI_VAULT\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 723,
+        "text": "(r\"C:\\AI_VAULT\\brain\", \"brain_core\"),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 724,
+        "text": "(r\"C:\\AI_VAULT\\tmp_agent\\brain_v9\\agent\", \"brain_v9_agent\"),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 725,
+        "text": "(r\"C:\\AI_VAULT\\tmp_agent\\brain_v9\\brain\", \"brain_v9_brain\"),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 726,
+        "text": "(r\"C:\\AI_VAULT\\tmp_agent\\brain_v9\\governance\", \"brain_v9_governance\"),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 727,
+        "text": "(r\"C:\\AI_VAULT\\tmp_agent\\brain_v9\\core\", \"brain_v9_core\"),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 728,
+        "text": "(r\"C:\\AI_VAULT\\scripts\", \"scripts\"),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 1379,
+        "text": "brain_dir = r\"C:\\AI_VAULT\\tmp_agent\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 1651,
+        "text": "scope=[r\"C:\\AI_VAULT\\00_identity\\chat_brain_v7\"],"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 1680,
+        "text": "scope=[r\"C:\\AI_VAULT\\00_identity\\brain_server.py\"],"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 1690,
+        "text": "scope=[r\"C:\\AI_VAULT\\00_identity\\advisor_server.py\"],"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 1741,
+        "text": "motor_file = Path(r\"C:\\AI_VAULT\\00_identity\\financial_motor.py\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 1742,
+        "text": "trading_engine = Path(r\"C:\\AI_VAULT\\00_identity\\trading_engine.py\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 1746,
+        "text": "capital_file = Path(r\"C:\\AI_VAULT\\60_METRICS\\capital_state.json\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 1762,
+        "text": "capital_file = Path(r\"C:\\AI_VAULT\\60_METRICS\\capital_state.json\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 1775,
+        "text": "brain_file = Path(r\"C:\\AI_VAULT\\60_METRICS\\brain_state.json\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 1789,
+        "text": "r\"C:\\AI_VAULT\\tmp_agent\\state\\rooms\\brain_binary_paper_pb04_demo_execution\\browser_bridge_normalized_feed.json\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 1810,
+        "text": "capital_file = Path(r\"C:\\AI_VAULT\\60_METRICS\\capital_state.json\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 1854,
+        "text": "r\"C:\\AI_VAULT\\tmp_agent\\state\\autonomy_next_actions.json\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 1855,
+        "text": "r\"C:\\AI_VAULT\\tmp_agent\\state\\meta_improvement_status_latest.json\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 1856,
+        "text": "r\"C:\\AI_VAULT\\00_identity\\autonomy_system\\state\\autonomy_state.json\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 1877,
+        "text": "rooms_dir = Path(r\"C:\\AI_VAULT\\tmp_agent\\state\\rooms\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 1906,
+        "text": "ai_vault_root = Path(r\"C:\\AI_VAULT\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 2130,
+        "text": "metrics_path = Path(\"C:/AI_VAULT/tmp_agent/state/brain_metrics/chat_metrics_latest.json\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\agent\\tools.py",
+        "line": 2153,
+        "text": "history_path = Path(\"C:/AI_VAULT/tmp_agent/state/brain_metrics/self_test_history.json\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\autonomy\\chat_excellence_patcher.py",
+        "line": 302,
+        "text": "\"restart_hint\": \"Run powershell C:/AI_VAULT/tmp_agent/_kill_cim.ps1\"}"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\autonomy\\chat_excellence_patcher.py",
+        "line": 755,
+        "text": "\"Run powershell C:/AI_VAULT/tmp_agent/_kill_cim.ps1 to restart brain\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\autonomy\\chat_excellence_patcher.py",
+        "line": 910,
+        "text": "\"restart_hint\": \"Run powershell C:/AI_VAULT/tmp_agent/_kill_cim.ps1 to restart brain\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\autonomy\\chat_excellence_patcher.py",
+        "line": 1038,
+        "text": "\"Run powershell C:/AI_VAULT/tmp_agent/_kill_cim.ps1 to restart brain\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\autonomy\\manager.py",
+        "line": 84,
+        "text": "_BRIDGE_CWD = str(STATE_PATH.parent)  # C:\\AI_VAULT\\tmp_agent"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\autonomy\\proactive_scheduler.py",
+        "line": 85,
+        "text": "\"  - C:/AI_VAULT/tmp_agent/state/brain_metrics/chat_metrics_latest.json\\n\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\autonomy\\proactive_scheduler.py",
+        "line": 86,
+        "text": "\"  - C:/AI_VAULT/tmp_agent/state/brain_metrics/llm_metrics_latest.json\\n\\n\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\autonomy\\proactive_scheduler.py",
+        "line": 104,
+        "text": "\"realmente en C:/AI_VAULT/tmp_agent/brain_v9/ (verifica con list_directory \""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\autonomy\\proactive_scheduler.py",
+        "line": 532,
+        "text": "_AI_VAULT = _BRAIN_ROOT.parent.parent  # C:/AI_VAULT"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\autonomy\\sample_accumulator_agent.py",
+        "line": 26,
+        "text": "BASE_PATH = Path(os.getenv(\"BRAIN_BASE_PATH\", \"C:/AI_VAULT\"))"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\brain\\autonomous_governance_eval.py",
+        "line": 190,
+        "text": "\"prompt\": \"lista el directorio C:/AI_VAULT/tmp_agent/brain_v9\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\brain\\codegen.py",
+        "line": 269,
+        "text": "\"C:/AI_VAULT/tmp_agent/brain_v9/trading/signal_engine.py\": {"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\brain\\codegen.py",
+        "line": 277,
+        "text": "- The JSON keys MUST be the ACTUAL FULL FILE PATHS from the \"FILE CONTENTS\" section below (e.g. \"C:/AI_VAULT/tmp_agent/brain_v9/trading/signal_engine.py\"). NEVER use a placeholder like \"file_path\"."
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\brain\\self_test.py",
+        "line": 30,
+        "text": "_STATE_PATH = Path(\"C:/AI_VAULT/tmp_agent/state/brain_metrics\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\brain\\trade_diagnostics.py",
+        "line": 126,
+        "text": "\"affected_file\": \"C:/AI_VAULT/tmp_agent/ops/pocketoption_bridge_extension/page_hook.js\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\brain\\trade_diagnostics.py",
+        "line": 180,
+        "text": "\"affected_file\": \"C:/AI_VAULT/tmp_agent/brain_v9/trading/signal_engine.py\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\brain\\trade_diagnostics.py",
+        "line": 225,
+        "text": "\"affected_file\": \"C:/AI_VAULT/tmp_agent/brain_v9/trading/paper_execution.py\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\brain\\trade_diagnostics.py",
+        "line": 280,
+        "text": "\"affected_file\": \"C:/AI_VAULT/tmp_agent/brain_v9/trading/signal_engine.py\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\brain\\trade_diagnostics.py",
+        "line": 322,
+        "text": "\"affected_file\": \"C:/AI_VAULT/tmp_agent/brain_v9/trading/signal_engine.py\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\brain\\trade_diagnostics.py",
+        "line": 369,
+        "text": "\"affected_file\": \"C:/AI_VAULT/tmp_agent/ops/pocketoption_bridge_extension/page_hook.js\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 269,
+        "text": "_WORKSPACE_ROOT = Path(\"C:/AI_VAULT/tmp_agent/workspace\").resolve()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 283,
+        "text": "p = Path(\"C:/AI_VAULT\") / path_str"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 294,
+        "text": "p = Path(path_str) if Path(path_str).is_absolute() else Path(\"C:/AI_VAULT\") / path_str"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 296,
+        "text": "rel = p.relative_to(Path(\"C:/AI_VAULT\")).as_posix().lower()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 402,
+        "text": "dec.scope = \"C:/AI_VAULT\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\llm.py",
+        "line": 127,
+        "text": "_METRICS_PATH = Path(\"C:/AI_VAULT/tmp_agent/state/brain_metrics/llm_metrics_latest.json\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\semantic_memory.py",
+        "line": 449,
+        "text": "faiss_index = Path(\"C:/AI_VAULT/memory/semantic/semantic_memory_faiss.index\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4116,
+        "text": "_sys.path.insert(0, \"C:/AI_VAULT\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4143,
+        "text": "_sys.path.insert(0, \"C:/AI_VAULT\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5518,
+        "text": "log_path = _Path(\"C:/AI_VAULT/tmp_agent/state/events/event_log.jsonl\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 6408,
+        "text": "short_path = path.replace(\"C:\\\\AI_VAULT\\\\\", \"\").replace(\"C:/AI_VAULT/\", \"\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7315,
+        "text": "search_dir = Path(dir_match.group(1)) if dir_match else Path(\"C:/AI_VAULT/tmp_agent\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7317,
+        "text": "search_dir = Path(\"C:/AI_VAULT/tmp_agent\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7368,
+        "text": "target = Path(dir_match.group(1)) if dir_match else Path(\"C:/AI_VAULT/tmp_agent\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\financial\\improvement_cycle.py",
+        "line": 25,
+        "text": "SECRETS_PATH = Path(\"C:/AI_VAULT/tmp_agent/Secrets/quantconnect_access.json\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\financial\\improvement_cycle.py",
+        "line": 26,
+        "text": "STRATEGY_DIR = Path(\"C:/AI_VAULT/tmp_agent/strategies/ibkr_10k_growth\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\financial\\strategy_adapter.py",
+        "line": 255,
+        "text": "strategy_path = \"C:/AI_VAULT/tmp_agent/strategies/mean_reversion_eq/run_phase49_normalized_gate_r015_2026-04-27.py\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\learning\\capability_evaluator.py",
+        "line": 24,
+        "text": "r\"C:\\AI_VAULT\\tests\\unit\\test_learning_pipeline.py\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\learning\\capability_evaluator.py",
+        "line": 25,
+        "text": "r\"C:\\AI_VAULT\\tests\\unit\\test_autonomous_governance_eval.py\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\learning\\capability_evaluator.py",
+        "line": 28,
+        "text": "r\"C:\\AI_VAULT\\tests\\unit\\test_brain_chat_hygiene.py\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\learning\\capability_evaluator.py",
+        "line": 29,
+        "text": "r\"C:\\AI_VAULT\\tests\\unit\\test_network_scan_regressions.py\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\learning\\capability_evaluator.py",
+        "line": 30,
+        "text": "r\"C:\\AI_VAULT\\tests\\unit\\test_grounded_code_fastpath.py\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\learning\\capability_evaluator.py",
+        "line": 33,
+        "text": "r\"C:\\AI_VAULT\\tests\\unit\\test_brain_chat_hygiene.py\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\learning\\capability_evaluator.py",
+        "line": 34,
+        "text": "r\"C:\\AI_VAULT\\tests\\unit\\test_llm_codex_integration.py\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\learning\\capability_evaluator.py",
+        "line": 37,
+        "text": "r\"C:\\AI_VAULT\\tests\\unit\\test_learning_pipeline.py\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\learning\\capability_evaluator.py",
+        "line": 38,
+        "text": "r\"C:\\AI_VAULT\\tests\\unit\\test_llm_codex_integration.py\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\learning\\capability_evaluator.py",
+        "line": 80,
+        "text": "tests = TARGETED_TESTS.get(target_capability, [r\"C:\\AI_VAULT\\tests\\unit\\test_learning_pipeline.py\"])"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\learning\\capability_evaluator.py",
+        "line": 89,
+        "text": "env[\"PYTHONPATH\"] = r\"C:\\AI_VAULT\\tmp_agent;C:\\AI_VAULT\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\learning\\capability_evaluator.py",
+        "line": 92,
+        "text": "cwd=r\"C:\\AI_VAULT\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\ops\\benchmark_analysis_frontier.py",
+        "line": 11,
+        "text": "OUTPUT_PATH = Path(r\"C:\\AI_VAULT\\tmp_agent\\state\\benchmarks\\analysis_frontier_vs_chat_latest.json\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\ops\\benchmark_codex_vs_legacy.py",
+        "line": 11,
+        "text": "OUTPUT_PATH = Path(r\"C:\\AI_VAULT\\tmp_agent\\state\\benchmarks\\codex_vs_legacy_latest.json\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\ops\\benchmark_codex_vs_legacy.py",
+        "line": 18,
+        "text": "\"prompt\": r\"lee C:\\AI_VAULT\\tmp_agent\\brain_v9\\core\\llm.py y resume en 6 lineas como funciona la cadena de fallback y donde se definen los timeouts\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\ops\\benchmark_codex_vs_legacy.py",
+        "line": 22,
+        "text": "\"prompt\": r\"inspecciona C:\\AI_VAULT\\tmp_agent\\brain_v9\\agent\\tools.py y dime como se corrigio scan_local_network para cidr='auto' y que prueba lo cubre\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\ops\\benchmark_codex_vs_legacy.py",
+        "line": 26,
+        "text": "\"prompt\": r\"revisa C:\\AI_VAULT\\tmp_agent\\brain_v9\\core\\session.py y explica la condicion exacta que evita marcar como exito el 'Resumen extractivo'\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\ops\\tool01_write_test.py",
+        "line": 8,
+        "text": "\"message\": r\"TOOL01 WRITE TEST: create file C:\\AI_VAULT\\tmp_agent\\workspace\\vtc_permission_test.txt with exact content: VTC permission/tool execution test OK. Use real tool. Do not invent. If permission is required, return permission_required and permission_id.\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\ops\\tool01_write_test.py",
+        "line": 44,
+        "text": "file_path = pathlib.Path(r\"C:\\AI_VAULT\\tmp_agent\\workspace\\vtc_permission_test.txt\")"
+      },
+      {
+        "file": "tests\\integration\\test_real_tools_execution.py",
+        "line": 37,
+        "text": "\"granted\": True, \"grant_type\": \"allow_session\", \"scope\": \"C:/AI_VAULT\""
+      },
+      {
+        "file": "tests\\smoke\\smoke_semantic_memory_decision_gate_evidence_adapter.py",
+        "line": 41,
+        "text": "\"repo_root\": \"C:/AI_VAULT\","
+      },
+      {
+        "file": "tests\\unit\\test_b7_routing_heuristics_characterization.py",
+        "line": 10,
+        "text": "sys.path.insert(0, str(Path(\"C:/AI_VAULT/tmp_agent\")))"
+      },
+      {
+        "file": "tests\\unit\\test_brain_capability_governor.py",
+        "line": 77,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\tmp_agent\")"
+      },
+      {
+        "file": "tests\\unit\\test_brain_chat_hygiene.py",
+        "line": 28,
+        "text": "raw = \"<function_calls><invoke name=\\\"list_dir\\\"><parameter name=\\\"path\\\">C:/AI_VAULT</parameter></invoke></function_calls>\""
+      },
+      {
+        "file": "tests\\unit\\test_chat_metrics_extended.py",
+        "line": 18,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\tmp_agent\")"
+      },
+      {
+        "file": "tests\\unit\\test_confirmation_bug_fix.py",
+        "line": 15,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\tmp_agent\")"
+      },
+      {
+        "file": "tests\\unit\\test_contradiction_learning_layer.py",
+        "line": 15,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\tmp_agent\")"
+      },
+      {
+        "file": "tests\\unit\\test_fases_2_3_4_routing_analytics.py",
+        "line": 12,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\tmp_agent\")"
+      },
+      {
+        "file": "tests\\unit\\test_governed_action_kernel.py",
+        "line": 9,
+        "text": "sys.path.insert(0, str(Path(\"C:/AI_VAULT/tmp_agent\")))"
+      },
+      {
+        "file": "tests\\unit\\test_grounded_code_fastpath.py",
+        "line": 8,
+        "text": "msg = r\"revisa C:\\AI_VAULT\\tmp_agent\\brain_v9\\core\\session.py y explica la condicion exacta\""
+      },
+      {
+        "file": "tests\\unit\\test_grounded_code_fastpath.py",
+        "line": 16,
+        "text": "msg = r\"lee C:\\AI_VAULT\\tmp_agent\\brain_v9\\core\\llm.py y resume\""
+      },
+      {
+        "file": "tests\\unit\\test_grounded_code_fastpath.py",
+        "line": 45,
+        "text": "r\"lee C:\\AI_VAULT\\tmp_agent\\brain_v9\\core\\llm.py y resume el fallback\""
+      },
+      {
+        "file": "tests\\unit\\test_grounded_verification_guards.py",
+        "line": 11,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\tmp_agent\")"
+      },
+      {
+        "file": "tests\\unit\\test_information_curator_contract.py",
+        "line": 18,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\brain\")"
+      },
+      {
+        "file": "tests\\unit\\test_metrics_no_fabricated_performance.py",
+        "line": 17,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\tmp_agent\")"
+      },
+      {
+        "file": "tests\\unit\\test_real_verification_tool_trace_required.py",
+        "line": 10,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\tmp_agent\")"
+      },
+      {
+        "file": "tests\\unit\\test_real_verification_tool_trace_required.py",
+        "line": 11,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\brain\")"
+      },
+      {
+        "file": "tests\\unit\\test_semantic_coherence_validation.py",
+        "line": 16,
+        "text": "sys.path.insert(0, r\"C:\\AI_VAULT\\tmp_agent\")"
+      },
+      {
+        "file": "tests\\unit\\test_semantic_memory_decision_gate_evidence_adapter.py",
+        "line": 29,
+        "text": "\"repo_root\": \"C:/AI_VAULT\","
+      },
+      {
+        "file": "tests\\unit\\test_tool01_read_permission.py",
+        "line": 7,
+        "text": "sys.path.insert(0, str(Path(\"C:/AI_VAULT/tmp_agent\")))"
+      },
+      {
+        "file": "tests\\unit\\test_tool01_read_permission.py",
+        "line": 11,
+        "text": "BASE_PATH = Path(\"C:/AI_VAULT\")"
+      },
+      {
+        "file": "tests\\unit\\test_tool01_ui_permission_buttons.py",
+        "line": 6,
+        "text": "HTML = pathlib.Path(\"C:/AI_VAULT/tmp_agent/brain_v9/ui/index.html\").read_text(encoding=\"utf-8\")"
+      }
+    ],
+    "test_files_reviewed_count": 81,
+    "test_files_reviewed_preview": [
+      "tmp_agent\\brain_v9\\agent\\self_tester.py",
+      "tmp_agent\\brain_v9\\agent\\_c_test_target.py",
+      "tmp_agent\\brain_v9\\brain\\self_test.py",
+      "tmp_agent\\brain_v9\\ops\\tool01_write_test.py",
+      "tmp_agent\\brain_v9\\trading\\backtest_gate.py",
+      "tests\\conftest.py",
+      "tests\\integration\\test_agent_fallback.py",
+      "tests\\integration\\test_agent_non_blocking_timeout.py",
+      "tests\\integration\\test_chat_routing.py",
+      "tests\\integration\\test_cloud_first_model_policy.py",
+      "tests\\integration\\test_dashboard_stale_routes.py",
+      "tests\\integration\\test_endpoints_auth.py",
+      "tests\\integration\\test_financial.py",
+      "tests\\integration\\test_real_tools_execution.py",
+      "tests\\integration\\test_tool_permission_gate.py",
+      "tests\\unit\\test_agent_ghost_completion_hardening.py",
+      "tests\\unit\\test_agent_visual_trace_console.py",
+      "tests\\unit\\test_authority_resolution_enforcement.py",
+      "tests\\unit\\test_autonomous_governance_eval.py",
+      "tests\\unit\\test_b3_fake_grounded_dashboard_runtime.py"
+    ],
+    "py_compile_results": [
+      {
+        "file": "tmp_agent/brain_v9/main.py",
+        "status": "PASS"
+      },
+      {
+        "file": "tmp_agent/brain_v9/core/session.py",
+        "status": "PASS"
+      },
+      {
+        "file": "tmp_agent/brain_v9/core/governed_action_kernel.py",
+        "status": "PASS"
+      }
+    ],
+    "pytest_results": {
+      "tests_run": 52,
+      "tests_passed": 52,
+      "tests_failed": 0,
+      "files": [
+        "tests/unit/test_tool01_write_permission.py",
+        "tests/unit/test_tool01_read_permission.py",
+        "tests/unit/test_governed_action_kernel.py"
+      ]
+    },
+    "code_changed": false,
+    "protected_touched": false
+  }
+}
