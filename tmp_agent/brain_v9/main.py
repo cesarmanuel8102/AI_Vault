@@ -3959,12 +3959,19 @@ async def godmode_endpoint(req: GodModeRequest):
 import asyncio as _trace_async
 from pathlib import Path as _Path
 from typing import Iterator
+try:
+    from brain_v9.tracing.trace_redactor import sanitize_event as _sanitize_event
+except Exception:
+    def _sanitize_event(event): return event  # type: ignore
+
 
 def _trace_root(room_id: str, run_id: str) -> _Path:
     return _Path("C:/AI_VAULT") / "tmp_agent" / "state" / "rooms" / room_id / "agent_runs" / run_id
 
+
 def _append_trace_event(event: dict) -> None:
-    """Append event to trace.ndjson; reject raw_chain_of_thought or private_reasoning."""
+    """Append event to trace.ndjson; sanitize then reject raw_chain_of_thought or private_reasoning."""
+    event = _sanitize_event(event)
     body_json = json.dumps(event, default=str)
     if "raw_chain_of_thought" in body_json or "private_reasoning" in body_json:
         raise HTTPException(status_code=400, detail="Trace event rejected: contains raw_chain_of_thought or private_reasoning")
@@ -3975,6 +3982,7 @@ def _append_trace_event(event: dict) -> None:
     trace_file = root / "trace.ndjson"
     with trace_file.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(event, ensure_ascii=False, default=str) + "\n")
+
 
 def _read_trace_events(room_id: str, run_id: str, limit: int = 200) -> list[dict]:
     root = _trace_root(room_id, run_id)
@@ -3991,6 +3999,7 @@ def _read_trace_events(room_id: str, run_id: str, limit: int = 200) -> list[dict
         events = events[-limit:]
     return events
 
+
 async def _sse_event_publisher(queue) -> Iterator[str]:
     """Async generator yielding SSE lines with heartbeat."""
     while True:
@@ -4002,23 +4011,29 @@ async def _sse_event_publisher(queue) -> Iterator[str]:
         except _trace_async.TimeoutError:
             yield "event: heartbeat\ndata: {}\n\n"
 
+
 def _sse_format(event: dict) -> str:
     ts = event.get("ts", datetime.now(timezone.utc).isoformat())
     return f"id: {ts}\nevent: {event.get('type', 'message')}\ndata: {json.dumps(event, ensure_ascii=False, default=str)}\n\n"
 
+
 _agent_trace_queues: dict[tuple[str, str], list] = {}
+
 
 def _broadcast_trace_event(room_id: str, run_id: str, event: dict) -> None:
     key = (room_id, run_id)
-    msg = _sse_format(event)
+    safe_event = _sanitize_event(dict(event))
+    msg = _sse_format(safe_event)
     for q in _agent_trace_queues.get(key, []):
         try:
             q.put_nowait(msg)
         except Exception:
             pass
 
+
 # ── Internal trace emitter for live chat binding (no HTTP, no auth required internally) ──
 live_event_counter = 0
+
 def _emit_agent_trace_internal(room_id: str, run_id: str, type_: str, title: str, text: str, severity: str = "info", data: dict | None = None):
     """Emit trace event server-side without HTTP token. Bypasses StrictOperatorAccess."""
     global live_event_counter
@@ -4038,6 +4053,7 @@ def _emit_agent_trace_internal(room_id: str, run_id: str, type_: str, title: str
         _broadcast_trace_event(room_id, run_id, event)
     except Exception:
         pass
+
 
 @app.post("/brain/agent-trace/event")
 async def brain_agent_trace_event(
@@ -4067,6 +4083,7 @@ async def brain_agent_trace_event(
     _broadcast_trace_event(event["room_id"], event["run_id"], event)
     return {"success": True, "stored": True}
 
+
 @app.get("/brain/agent-trace/latest")
 async def brain_agent_trace_latest(
     _operator: OperatorAccess,
@@ -4075,7 +4092,9 @@ async def brain_agent_trace_latest(
     limit: int = 200,
 ):
     events = _read_trace_events(room_id, run_id, limit=limit)
-    return {"success": True, "count": len(events), "events": events}
+    safe_events = [_sanitize_event(dict(e)) for e in events]
+    return {"success": True, "count": len(safe_events), "events": safe_events}
+
 
 @app.get("/brain/agent-trace/stream")
 async def brain_agent_trace_stream(
@@ -4105,6 +4124,7 @@ async def brain_agent_trace_stream(
             "Connection": "keep-alive",
         },
     )
+
 
 # ---- END Agent Visual Trace Console v1 ----
 

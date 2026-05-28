@@ -1,0 +1,58 @@
+{
+  "VTC_B_PATCH_REPORT": {
+    "status": "APPLIED",
+    "head_base": "9bd71909",
+    "branch": "codex/own-capital-sustainable-return",
+    "phase": "VTC-B trace redactor endpoint integration",
+    "files_modified": [
+      "tmp_agent/brain_v9/main.py"
+    ],
+    "files_created": [
+      "tests/unit/test_agent_trace_redaction_integration.py"
+    ],
+    "files_not_touched": [
+      "tmp_agent/brain_v9/core/session.py",
+      "tmp_agent/brain_v9/core/governed_action_kernel.py",
+      "tmp_agent/brain_v9/ui/agent_trace_console.html",
+      "tmp_agent/brain_v9/ui/dashboard.html",
+      "tmp_agent/brain_v9/learning/proposal_governance.py",
+      "tmp_agent/brain_v9/governance/governance_health.py"
+    ],
+    "backup_created": true,
+    "backup_integrity_verified": true,
+    "integration_points": {
+      "_append_trace_event": "sanitize_event before write",
+      "_broadcast_trace_event": "sanitize_event before SSE queue",
+      "brain_agent_trace_latest": "sanitize_event before return",
+      "brain_agent_trace_event": "covered by append / broadcast boundaries"
+    },
+    "py_compile_results": {
+      "tmp_agent/brain_v9/main.py": "PASS",
+      "tmp_agent/brain_v9/tracing/trace_redactor.py": "PASS"
+    },
+    "test_results": {
+      "tests_run": 31,
+      "tests_passed": 31,
+      "tests_failed": 0,
+      "files": [
+        "tests/unit/test_trace_redactor.py",
+        "tests/unit/test_agent_trace_redaction_integration.py"
+      ]
+    },
+    "regression_test_results": {
+      "tests_run": 52,
+      "tests_passed": 52,
+      "tests_failed": 0,
+      "files": [
+        "tests/unit/test_tool01_write_permission.py",
+        "tests/unit/test_tool01_read_permission.py",
+        "tests/unit/test_governed_action_kernel.py"
+      ]
+    },
+    "code_changed": true,
+    "protected_touched": false,
+    "ready_for_commit": true,
+    "ready_for_patch": true,
+    "recommended_next_action": "commit VTC-B endpoint integration, then run runtime smoke in VTC-C"
+  }
+}
