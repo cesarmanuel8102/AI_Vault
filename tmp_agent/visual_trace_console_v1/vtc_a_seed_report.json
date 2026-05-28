@@ -1,0 +1,25 @@
+{
+  "VTC_A_SEED_REPORT": {
+    "status": "PLANNED_READ_ONLY",
+    "head_base": "4ff14fed",
+    "branch": "codex/own-capital-sustainable-return",
+    "phase": "VTC-A read-only adapter plan",
+    "artifacts_created": [
+      "tmp_agent/visual_trace_console_v1/vtc_a_endpoint_inventory.json",
+      "tmp_agent/visual_trace_console_v1/vtc_a_adapter_audit.json",
+      "tmp_agent/visual_trace_console_v1/vtc_a_redaction_contract.json",
+      "tmp_agent/visual_trace_console_v1/vtc_a_patch_plan.md",
+      "tmp_agent/visual_trace_console_v1/vtc_a_test_plan.md",
+      "tmp_agent/visual_trace_console_v1/vtc_a_seed_report.json"
+    ],
+    "endpoint_inventory_created": true,
+    "redaction_contract_created": true,
+    "patch_plan_created": true,
+    "test_plan_created": true,
+    "code_changed": false,
+    "protected_touched": false,
+    "ready_for_commit": true,
+    "ready_for_patch": false,
+    "recommended_next_action": "Commit VTC-A plan evidence. Next: VTC-A1 implement trace_redactor module (code patch authorized separately)."
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "VTC_A_ADAPTER_AUDIT": {
+    "status": "APPLIED_READ_ONLY",
+    "head_base": "4ff14fed",
+    "current_ui_event_fields": {
+      "detected_in_html": ["ts", "type", "title", "text", "severity"],
+      "detected_in_backend": ["ts", "room_id", "run_id", "type", "title", "text", "severity", "data"],
+      "extra_fields_not_used_by_ui": ["room_id", "run_id", "data"]
+    },
+    "current_ui_filters": ["all", "thinking", "tool", "evidence", "governance"],
+    "current_event_types": {
+      "allowed_in_post": ["thinking", "tool", "finding", "file", "evidence", "governance", "decision", "status", "health", "warning", "error"],
+      "used_in_html_icons": ["thinking", "tool", "finding", "file", "evidence", "governance", "decision", "status", "health", "warning", "error"]
+    },
+    "current_sse_contract_detected": {
+      "format": "id: {ts}\\nevent: {type}\\ndata: {json.dumps(event)}\\n\\n",
+      "heartbeat": "event: heartbeat\\ndata: {}\\n\\n",
+      "content_type": "text/event-stream"
+    },
+    "missing_backend_contract": {
+      "schema_validation": "None — only crude string search for 'raw_chain_of_thought' and 'private_reasoning'.",
+      "redaction_layer": "None — events are stored and transmitted as-is.",
+      "secret_scrubbing": "None — API keys, tokens, passwords could be in data field.",
+      "protected_path_scrubbing": "None — paths like memory/semantic could leak via data field.",
+      "size_limits": "None — large file contents or large strings could bloat trace.ndjson and SSE payload."
+    },
+    "risks": [
+      {
+        "id": "VTC-A-001",
+        "severity": "HIGH",
+        "title": "No redaction layer on backend events",
+        "detail": "Events are written to trace.ndjson and broadcasted via SSE without any redaction. If a caller includes secrets, protected paths, or raw reasoning in the data field, it will be stored and transmitted."
+      },
+      {
+        "id": "VTC-A-002",
+        "severity": "HIGH",
+        "title": "Crude anti-COT check is insufficient",
+        "detail": "The string search for 'raw_chain_of_thought' in the JSON body can be bypassed by renaming the key or nesting it. It does not prevent chain-of-thought from being included under a different field name or obfuscated encoding."
+      },
+      {
+        "id": "VTC-A-003",
+        "severity": "MEDIUM",
+        "title": "data field is free-form dict",
+        "detail": "The data field in events accepts any JSON serializable dict. There is no schema, no allowlist, and no redaction for nested fields. This is the primary vector for information leakage."
+      },
+      {
+        "id": "VTC-A-004",
+        "severity": "MEDIUM",
+        "title": "Frontend has no defense-in-depth",
+        "detail": "agent_trace_console.html renders event data directly into the DOM via innerHTML. If backend is compromised or misconfigured, frontend will display whatever it receives without filtering."
+      },
+      {
+        "id": "VTC-A-005",
+        "severity": "LOW",
+        "title": "No event size limits",
+        "detail": "Large strings or file contents in the data field could cause memory pressure in SSE queues and frontend rendering slowdown."
+      }
+    ],
+    "patch_recommended": true,
+    "adapter_first_decision": "Before patching endpoints or UI, create a dedicated trace_redactor module with explicit rules, then integrate it at the _append_trace_event and _broadcast_trace_event boundaries. This isolates redaction logic from endpoint code and UI code."
+  }
+}

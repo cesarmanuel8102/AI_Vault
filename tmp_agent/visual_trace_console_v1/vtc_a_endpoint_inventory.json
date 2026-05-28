@@ -1,0 +1,99 @@
+{
+  "VTC_A_ENDPOINT_INVENTORY": {
+    "status": "INVENTORY_COMPLETE",
+    "head_base": "4ff14fed",
+    "endpoints": [
+      {
+        "endpoint_path": "/brain/agent-trace/event",
+        "method": "POST",
+        "file": "tmp_agent/brain_v9/main.py",
+        "function_name": "brain_agent_trace_event",
+        "source_type": "backend",
+        "emits_raw_events": true,
+        "uses_redaction": false,
+        "reads_from_store": false,
+        "security_notes": "Requires StrictOperatorAccess. Accepts JSON payload. Validates allowed_types set. Crudely checks for 'raw_chain_of_thought' or 'private_reasoning' strings in JSON body via string search. Does NOT redact secrets, protected paths, or large contents. data field is free-form dict.",
+        "patch_candidate": true
+      },
+      {
+        "endpoint_path": "/brain/agent-trace/latest",
+        "method": "GET",
+        "file": "tmp_agent/brain_v9/main.py",
+        "function_name": "brain_agent_trace_latest",
+        "source_type": "backend",
+        "emits_raw_events": true,
+        "uses_redaction": false,
+        "reads_from_store": true,
+        "security_notes": "Requires OperatorAccess. Reads from trace.ndjson file on disk. Returns raw events as-is. No redaction on retrieval.",
+        "patch_candidate": true
+      },
+      {
+        "endpoint_path": "/brain/agent-trace/stream",
+        "method": "GET",
+        "file": "tmp_agent/brain_v9/main.py",
+        "function_name": "brain_agent_trace_stream",
+        "source_type": "backend",
+        "emits_raw_events": true,
+        "uses_redaction": false,
+        "reads_from_store": false,
+        "security_notes": "Requires OperatorAccess. Returns SSE stream from in-memory queue. Events broadcasted by _broadcast_trace_event. No redaction on stream.",
+        "patch_candidate": true
+      },
+      {
+        "endpoint_path": "/brain/agent-trace/latest",
+        "method": "GET",
+        "file": "tmp_agent/brain_v9/ui/agent_trace_console.html",
+        "function_name": "loadLatest",
+        "source_type": "frontend",
+        "emits_raw_events": false,
+        "uses_redaction": false,
+        "reads_from_store": false,
+        "security_notes": "Frontend fetches from /brain/agent-trace/latest. Trusts backend to provide safe events. No frontend redaction layer.",
+        "patch_candidate": false
+      },
+      {
+        "endpoint_path": "/brain/agent-trace/stream",
+        "method": "GET",
+        "file": "tmp_agent/brain_v9/ui/agent_trace_console.html",
+        "function_name": "connectSSE",
+        "source_type": "frontend",
+        "emits_raw_events": false,
+        "uses_redaction": false,
+        "reads_from_store": false,
+        "security_notes": "Frontend connects SSE to /brain/agent-trace/stream. Trusts backend. No frontend redaction.",
+        "patch_candidate": false
+      }
+    ],
+    "internal_functions": [
+      {
+        "function_name": "_emit_agent_trace_internal",
+        "file": "tmp_agent/brain_v9/main.py",
+        "security_notes": "Called by live chat binding. No HTTP auth. Bypasses StrictOperatorAccess. Emits directly to queue and file. Risk: if caller passes sensitive data, it is stored unredacted.",
+        "patch_candidate": true
+      },
+      {
+        "function_name": "_append_trace_event",
+        "file": "tmp_agent/brain_v9/main.py",
+        "security_notes": "Crude string check for 'raw_chain_of_thought' / 'private_reasoning' in JSON body. Does NOT sanitize secrets, tokens, protected paths, or large contents. Writes to trace.ndjson.",
+        "patch_candidate": true
+      },
+      {
+        "function_name": "_broadcast_trace_event",
+        "file": "tmp_agent/brain_v9/main.py",
+        "security_notes": "Broadcasts raw event to all SSE queues. No redaction. All connected clients receive identical payload.",
+        "patch_candidate": true
+      }
+    ],
+    "gaps": [
+      "No redaction module exists.",
+      "No schema validation beyond crude string search.",
+      "No protection for secrets, tokens, passwords in data field.",
+      "No redaction for protected paths in data field.",
+      "No truncation for large file contents or large strings.",
+      "Frontend trusts backend completely; no defense-in-depth.",
+      "_emit_agent_trace_internal bypasses auth and has no redaction gate."
+    ],
+    "code_changed": false,
+    "protected_touched": false
+  }
+}
