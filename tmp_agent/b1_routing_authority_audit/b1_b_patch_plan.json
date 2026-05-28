@@ -1,0 +1,94 @@
+{
+  "B1_B_PATCH_PLAN": {
+    "status": "PLANNED_READ_ONLY",
+    "head_base": "fc208107",
+    "branch": "codex/own-capital-sustainable-return",
+    "problem_statement": "TOOL-01 and GAK operate as parallel authorities in BrainSession.chat(). TOOL-01 pattern router executes before GAK natural-language policy evaluation, creating potential for policy inconsistency when intent classification differs between pattern matching and semantic analysis.",
+    "confirmed_bypass": false,
+    "target_findings": [
+      "B1-001",
+      "B1-003"
+    ],
+    "recommended_strategy": "OPTION_A",
+    "patch_options": [
+      {
+        "id": "OPTION_A",
+        "name": "GAK preflight before TOOL-01 execution",
+        "description": "Insert evaluate_action_policy check inside _tool01_router before executing or requesting permission. This makes TOOL-01 a consumer of GAK policy rather than a parallel authority.",
+        "risk": "Low-Medium. Could break TOOL-01 if policy evaluation has side effects or changes return format. Needs careful integration to preserve existing permission_required and allow_once/allow_session flow.",
+        "benefit": "Ensures all TOOL-01 actions are subject to GAK policy evaluation. Reduces parallel authority risk without major refactor.",
+        "files_to_change": [
+          "tmp_agent/brain_v9/core/session.py"
+        ],
+        "estimated_lines_changed": "15-25",
+        "tests_to_add_or_update": [
+          "tests/unit/test_tool01_write_permission.py",
+          "tests/unit/test_tool01_read_permission.py"
+        ],
+        "recommended": true
+      },
+      {
+        "id": "OPTION_B",
+        "name": "Document TOOL-01 as separate governed authority",
+        "description": "Add inline comments and documentation clarifying that TOOL-01 has its own permission system and that GAK is a secondary policy layer.",
+        "risk": "Very low. No behavior change.",
+        "benefit": "Reduces confusion for future maintainers. No architectural risk.",
+        "files_to_change": [
+          "tmp_agent/brain_v9/core/session.py"
+        ],
+        "estimated_lines_changed": "5-10",
+        "tests_to_add_or_update": [],
+        "recommended": false
+      },
+      {
+        "id": "OPTION_C",
+        "name": "Full TOOL-01 migration into GAK policy engine",
+        "description": "Move all TOOL-01 pattern matching, permission logic, and execution into governed_action_kernel.py, making GAK the single authority.",
+        "risk": "High. Major refactor touching 145+ code points. High probability of breaking existing TOOL-01 behavior, permission flows, and UI integration.",
+        "benefit": "True unified authority. Clean architecture.",
+        "files_to_change": [
+          "tmp_agent/brain_v9/core/governed_action_kernel.py",
+          "tmp_agent/brain_v9/core/session.py",
+          "tmp_agent/brain_v9/ui/index.html"
+        ],
+        "estimated_lines_changed": "200+",
+        "tests_to_add_or_update": [
+          "tests/unit/test_governed_action_kernel.py",
+          "tests/unit/test_tool01_write_permission.py",
+          "tests/unit/test_tool01_read_permission.py",
+          "tests/unit/test_tool01_ui_permission_buttons.py"
+        ],
+        "recommended": false
+      }
+    ],
+    "preferred_patch_scope": {
+      "files_to_change": [
+        "tmp_agent/brain_v9/core/session.py"
+      ],
+      "max_lines_expected": 25,
+      "behavior_change": "TOOL-01 actions will now be blocked by GAK policy before execution. Existing permission_required flow preserved. No UI changes.",
+      "rollback_plan": "Before applying B1-C, create an explicit timestamped backup of tmp_agent/brain_v9/core/session.py under tmp_agent/b1_routing_authority_audit/backups/. If rollback is needed, restore that exact backup by copying it back over session.py after verifying checksum and line count. Do not use git checkout/reset/clean.",
+      "prohibited_rollback_commands": [
+        "git checkout",
+        "git reset",
+        "git clean"
+      ]
+    },
+    "required_tests": [
+      "test_tool01_write_permission: verify GAK blocks write to protected paths even when TOOL-01 pattern matches",
+      "test_tool01_read_permission: verify GAK blocks read from protected paths even when TOOL-01 pattern matches",
+      "test_governed_action_kernel: verify no regression in GAK behavior"
+    ],
+    "acceptance_criteria": [
+      "All existing 97 tests pass",
+      "New test: TOOL-01 pattern match on protected path is blocked by GAK before permission request",
+      "New test: TOOL-01 pattern match on safe workspace still works with permission_required",
+      "No changes to TOOL-01 UI button behavior",
+      "No changes to allow_once / allow_session / deny flow"
+    ],
+    "code_changed": false,
+    "protected_touched": false,
+    "ready_for_patch": true,
+    "ready_for_commit": true
+  }
+}
