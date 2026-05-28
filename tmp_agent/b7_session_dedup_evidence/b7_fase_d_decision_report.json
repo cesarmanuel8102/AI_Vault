@@ -1,0 +1,23 @@
+{
+  "B7_FASE_D_DECISION_REPORT": {
+    "status": "NO_SAFE_CHANGE",
+    "head_base": "c9100bbf",
+    "branch": "codex/own-capital-sustainable-return",
+    "session_py_changed": false,
+    "files_modified": [
+      "tmp_agent/b7_session_dedup_evidence/b7_fase_d_decision_report.json"
+    ],
+    "candidate": "_ROUTING_DEBUG_TERMS",
+    "observed_locations": {
+      "_ROUTING_DEBUG_TERMS": [721, 5175, 5185],
+      "routing_terms": [626, 629],
+      "analysis_terms": [640, 643],
+      "domain_exclusions": [1087, 1094]
+    },
+    "decision": "NO_SAFE_CHANGE",
+    "reason": "_ROUTING_DEBUG_TERMS extraction has low structural value and would require changing the B7-C characterization that currently documents it as non-module-level/local behavior. Keeping it local avoids unnecessary fastpath/routing risk.",
+    "next_recommended_action": "Close B7-FASE-D as no-safe-change and move to a different front with higher value.",
+    "ready_for_refactor_prompt": false,
+    "ready_for_commit": true
+  }
+}
