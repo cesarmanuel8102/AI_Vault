@@ -1,0 +1,52 @@
+{
+  "N5_C_PATCH_PLAN": {
+    "status": "PLANNED",
+    "head_base": "378b9134",
+    "branch": "codex/own-capital-sustainable-return",
+    "patch_recommended_now": false,
+    "reason": "All actionable import/path items require test reproduction or manual review. No PATCH_NOW_SAFE candidates identified. Runtime currently stable (py_compile PASS, pytest PASS).",
+    "proposed_patch_scope": [
+      "N5C-001: Remove/replace runtime sys.path mutations in main.py",
+      "N5C-002: Disambiguate duplicate module names after runtime trace",
+      "N5C-003: Replace hardcoded C:/AI_VAULT paths in main.py with dynamic resolution",
+      "N5C-005: Remove/replace runtime sys.path mutations in init_platforms.py"
+    ],
+    "allowlist_if_approved": [
+      "tmp_agent/brain_v9/main.py — replace sys.path inserts with dynamic path",
+      "tmp_agent/brain_v9/config.py — replace hardcoded paths with dynamic resolution",
+      "tmp_agent/brain_v9/init_platforms.py — remove sys.path mutation"
+    ],
+    "backup_plan": {
+      "required": true,
+      "method": "explicit timestamped file copy with sha256 metadata under tmp_agent/n5_patch_backups/<timestamp>/",
+      "no_git_checkout_reset_clean": true,
+      "note": "Using .gitignore-excluded local backups only. No reliance on git for rollback."
+    },
+    "test_plan": [
+      "python -m py_compile tmp_agent/brain_v9/main.py",
+      "python -m py_compile tmp_agent/brain_v9/core/session.py",
+      "python -m py_compile tmp_agent/brain_v9/core/governed_action_kernel.py",
+      "python -m pytest tests/unit/test_tool01_write_permission.py tests/unit/test_tool01_read_permission.py tests/unit/test_governed_action_kernel.py -q",
+      "python -m pytest tests/unit/ -q — regression suite",
+      "Manual smoke: start safe_server.py and verify startup logs show no import errors"
+    ],
+    "rollback_plan": "Restore explicit backups from tmp_agent/n5_patch_backups/<timestamp>/. Do not use git reset/checkout/clean. Validate restoration with py_compile before declaring success.",
+    "stop_conditions": [
+      "Any code file outside allowlist would be touched",
+      "Any protected path would be touched (memory/semantic, tmp_agent/strategies, tmp_agent/reports)",
+      "Any test fails without clear non-regression explanation",
+      "Any runtime startup behavior changes unexpectedly (import errors, module shadowing)",
+      "Any py_compile failure after change"
+    ],
+    "patch_later_prerequisites": [
+      "Reproduce current import resolution order with python -c 'import sys; print(sys.path)' in startup context",
+      "Identify exact duplicate module names via runtime trace (inspect.getmodule)",
+      "Create explicit smoke test that fails if sys.path mutation is removed too early",
+      "Review unclassified imports (N5C-006) to confirm third-party dependencies before declaring false positive"
+    ],
+    "code_changed": false,
+    "protected_touched": false,
+    "ready_for_commit": true,
+    "ready_for_patch": false
+  }
+}

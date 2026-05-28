@@ -1,0 +1,96 @@
+{
+  "N5_C_RISK_MATRIX": {
+    "status": "PLANNED",
+    "head_base": "378b9134",
+    "branch": "codex/own-capital-sustainable-return",
+    "inputs": [
+      "tmp_agent/n5_import_path_test_hygiene/n5_import_inventory.json",
+      "tmp_agent/n5_import_path_test_hygiene/n5_findings_report.json",
+      "tmp_agent/n5_import_path_test_hygiene/n5_b_validation_plan.json",
+      "tmp_agent/n5_import_path_test_hygiene/n5_b_validation_report.json"
+    ],
+    "candidates": [
+      {
+        "id": "N5C-001",
+        "category": "sys_path_mutation",
+        "source_finding": "N5B-M03",
+        "file": "tmp_agent/brain_v9/main.py",
+        "risk": "Import path order dependency at runtime; can shadow modules if PYTHONPATH changes.",
+        "classification": "PATCH_LATER_REQUIRES_TEST",
+        "patch_recommendation": "Replace sys.path.insert(0, 'C:/AI_VAULT') with PYTHONPATH in launcher or proper package installation.",
+        "requires_test": true,
+        "requires_backup": true,
+        "notes": "Currently works (py_compile PASS, pytest PASS). Risk is subtle behavior change if module ordering shifts."
+      },
+      {
+        "id": "N5C-002",
+        "category": "duplicate_module_name",
+        "source_finding": "N5B-M02",
+        "file": "tmp_agent/brain_v9/ (multiple)",
+        "risk": "Same module name in different subdirs may import wrong version depending on path order.",
+        "classification": "NEEDS_MANUAL_REVIEW",
+        "patch_recommendation": "Rename ambiguous modules or consolidate into canonical package paths.",
+        "requires_test": true,
+        "requires_backup": true,
+        "notes": "3 ambiguous module names. Requires explicit import tracing to confirm which file is actually loaded."
+      },
+      {
+        "id": "N5C-003",
+        "category": "hardcoded_path",
+        "source_finding": "N5B-L01",
+        "file": "tmp_agent/brain_v9/main.py",
+        "risk": "Breaks portability if repo is moved to a different drive or path.",
+        "classification": "PATCH_LATER_REQUIRES_TEST",
+        "patch_recommendation": "Replace C:/AI_VAULT with pathlib.Path(__file__).resolve().parent resolution.",
+        "requires_test": true,
+        "requires_backup": true,
+        "notes": "Runtime active paths found. Requires smoke test on startup after change."
+      },
+      {
+        "id": "N5C-004",
+        "category": "hardcoded_path",
+        "source_finding": "N5B-L02",
+        "file": "tmp_agent/brain_v9/config.py, evidence files, docs",
+        "risk": "Portability debt; no runtime breakage.",
+        "classification": "DOC_ONLY",
+        "patch_recommendation": "Document known portability debt. Clean up evidence files during future housekeeping.",
+        "requires_test": false,
+        "requires_backup": false,
+        "notes": "90 hardcoded paths in non-runtime files. Not a functional risk."
+      },
+      {
+        "id": "N5C-005",
+        "category": "sys_path_mutation",
+        "source_finding": "N5B-M03",
+        "file": "tmp_agent/brain_v9/init_platforms.py",
+        "risk": "Injects local path into sys.path on module import; can alter resolution for unrelated imports.",
+        "classification": "PATCH_LATER_REQUIRES_TEST",
+        "patch_recommendation": "Remove sys.path mutation and document that package must be installed or PYTHONPATH set externally.",
+        "requires_test": true,
+        "requires_backup": true,
+        "notes": "If removed, verify that runtime still resolves brain_v9 modules correctly."
+      },
+      {
+        "id": "N5C-006",
+        "category": "missing_import_candidate",
+        "source_finding": "N5B-M01",
+        "file": "(multiple — unclassified)",
+        "risk": "Unknown whether these are dead imports or legitimate third-party dependencies.",
+        "classification": "NO_PATCH_FALSE_POSITIVE",
+        "patch_recommendation": "No patch. Flag for manual review in future dependency audit.",
+        "requires_test": false,
+        "requires_backup": false,
+        "notes": "After stdlib and package-alias filtering, remaining candidates are likely third-party installs (openai, anthropic, etc.) or optional deps."
+      }
+    ],
+    "summary_counts": {
+      "PATCH_NOW_SAFE": 0,
+      "PATCH_LATER_REQUIRES_TEST": 3,
+      "DOC_ONLY": 1,
+      "NO_PATCH_FALSE_POSITIVE": 1,
+      "NEEDS_MANUAL_REVIEW": 1
+    },
+    "code_changed": false,
+    "protected_touched": false
+  }
+}
