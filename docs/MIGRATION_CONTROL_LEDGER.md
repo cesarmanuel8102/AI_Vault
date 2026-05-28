@@ -357,6 +357,173 @@
 - Protected files status: NOT staged during any commit
 - Ledger updated: evidence files committed, ledger checkpoint added
 - Next recommended item:
-  - Clean up legacy `validate_security_*.py` from repo root (superseded by tests/security/ versions)
-  - Scope next roadmap item: B7 session.py cognitive monolith or N2 auto-approval API bypass priority
+   - Clean up legacy `validate_security_*.py` from repo root (superseded by tests/security/ versions)
+   - Scope next roadmap item: B7 session.py cognitive monolith or N2 auto-approval API bypass priority
+
+## 14. Checkpoint — N2 Auto-Approval API Bypass fixed
+- Date (UTC): 2026-05-27T08:30:00+00:00
+- Branch: codex/own-capital-sustainable-return
+- HEAD: 80c919f3
+- Commit:
+  - 80c919f3 — Fix N2 auto-approval API bypass with StrictOperatorAccess gates
+- Scope:
+  - tmp_agent/brain_v9/main.py
+  - tests/unit/test_n2_auto_approval_bypass.py
+  - tmp_agent/n2_auto_approval_evidence/
+- Finding:
+  - N2: auto-approval risk in API endpoints
+- Fix:
+  - StrictOperatorAccess gates added to sensitive endpoints
+  - Requires explicit operator approval for autonomous actions
+- Tests:
+  - test_n2_auto_approval_bypass: PASS (72 passed)
+- Protected files status: NOT staged during any commit
+- Ledger updated: evidence files committed, ledger checkpoint added
+- Next recommended item:
+  - F1 Security Validation Suite
+
+## 15. Checkpoint — VTC Agent Visual Trace Console closed
+- Date (UTC): 2026-05-27T14:00:00+00:00
+- Branch: codex/own-capital-sustainable-return
+- HEAD: cf0ed882 (includes all VTC commits)
+- VTC Commits:
+  - 383bb332 — Add Agent Visual Trace Console v1
+  - 59fc02d0 — Bind chat turns to visual trace workspace
+  - f771bac6 — Add Codex-like Agent Workspace for visual trace console
+  - 736a3308 — Harden VTC trace endpoints with OperatorAccess auth
+- Scope:
+  - tmp_agent/brain_v9/ui/agent_trace_console.html
+  - tmp_agent/brain_v9/main.py (VTC endpoints)
+  - tests/unit/test_agent_visual_trace_console.py
+  - tmp_agent/visual_trace_console_evidence/
+- Acceptance:
+  - VTC v1: ACCEPTED
+  - Chat UI loaded: YES
+  - Agent Workspace visible: YES
+  - Governance buttons safe: YES
+  - Raw CoT rejected: YES
+  - Chat not broken: YES
+  - Dash V2 mount: CLEAN (no dangerous actions wired)
+- Tests:
+  - VTC unit tests: PASS
+  - VTC runtime smoke: PASS
+  - VTC trace auth runtime smoke: PASS
+- Protected files status: NOT staged during any commit
+- Ledger updated: YES
+- Next recommended item:
+  - TOOL-01 governed filesystem read/write
+
+## 16. Checkpoint — TOOL-01 Governed Filesystem Read/Write closed
+- Date (UTC): 2026-05-28T00:00:00+00:00
+- Branch: codex/own-capital-sustainable-return
+- HEAD: e5c21b0e
+- Commit:
+  - e5c21b0e — Add governed TOOL-01 filesystem write and UI permission fixes
+- Scope:
+  - tmp_agent/brain_v9/core/session.py (write_file, read_file branches)
+  - tmp_agent/brain_v9/ui/index.html (permission button fixes)
+  - tests/unit/test_tool01_*.py (write, read, ui)
+  - tmp_agent/visual_trace_console_evidence/
+- Acceptance:
+  - write_file tool: ACCEPTED
+  - read_file tool: ACCEPTED
+  - safe_workspace_path enforced: YES
+  - permission_required: YES
+  - permission_id returned: YES
+- Tests:
+  - test_tool01_write_permission: 8 passed
+  - test_tool01_read_permission: 6 passed
+  - test_tool01_ui_permission_buttons: 8 passed
+- Evidence Files:
+  - tmp_agent/visual_trace_console_evidence/tool01_write_permission_report.json: ACCEPTED
+  - tmp_agent/visual_trace_console_evidence/tool01_read_permission_report.json: ACCEPTED
+  - tmp_agent/visual_trace_console_evidence/tool01_ui_button_report.json: ACCEPTED
+- Protected files status: NOT staged during any commit
+- Ledger updated: YES
+- Next recommended item:
+  - GAK natural-language governed action control
+
+## 17. Checkpoint — GAK Governed Action Kernel closed
+- Date (UTC): 2026-05-28T03:00:00+00:00
+- Branch: codex/own-capital-sustainable-return
+- HEAD: cf0ed882
+- Commit:
+  - cf0ed882 — Add governed action kernel for natural-language tool control
+- Scope:
+  - tmp_agent/brain_v9/core/governed_action_kernel.py (NEW)
+  - tmp_agent/brain_v9/core/session.py (GAK gate integration)
+  - tmp_agent/brain_v9/main.py (god mode neutralization)
+  - tests/unit/test_governed_action_kernel.py (NEW)
+  - tmp_agent/visual_trace_console_evidence/governed_action_kernel_report.json (NEW)
+- Acceptance:
+  - Action intent gate (natural language): ACCEPTED
+  - Policy engine: ACCEPTED
+  - Permission grant uses canonical action: ACCEPTED
+  - Approve uses canonical action (not raw text): ACCEPTED
+  - Execution claim guard: ACCEPTED
+  - Structured action renderer: ACCEPTED
+  - God mode denial: ACCEPTED
+  - Safe fallbacks: ACCEPTED
+- Runtime Smoke (A-F):
+  - A: natural workspace write e2e: PASS
+  - B: natural workspace read e2e: PASS
+  - C: protected path memory/semantic block: PASS
+  - D: god mode refusal: PASS
+  - E: process execution block: PASS
+  - F: strategy modification block: PASS
+- Tests:
+  - test_governed_action_kernel: 38 passed
+  - test_tool01_write_permission: 8 passed
+  - test_tool01_read_permission: 6 passed
+  - test_tool01_ui_permission_buttons: 8 passed
+  - test_agent_visual_trace_console: 28 passed
+  - Total: 88/88 passed
+- Evidence Files:
+  - tmp_agent/visual_trace_console_evidence/governed_action_kernel_report.json: ACCEPTED
+- Protected files status: NOT staged during any commit
+- Ledger updated: YES
+- Key Fixes During GAK:
+  1. **JSON backslash-escape corruption**: build_synthetic_message() uses forward slashes; _extract_path() normalizes tabs
+  2. **Approve endpoint executing wrong message**: _tool01_handle_permission_response() passes original_message to _tool01_execute()
+  3. **God mode unsafe response**: Replaced LEVEL_5_GOD reference with canonical denial
+  4. **Protected path check ordering**: _is_protected_path() checked FIRST for filesystem.write
+- Next recommended item:
+  - B7-FASE-A: Dedup and heuristic consolidation in session.py
+
+## 18. Checkpoint — MRC-01A Post-GAK Ledger Reconciliation Applied
+- Date (UTC): 2026-05-28T04:00:00+00:00
+- Branch: codex/own-capital-sustainable-return
+- HEAD: cf0ed882
+- Type: DOCUMENTATION ONLY — No code changes, no runtime changes
+- Scope:
+  - docs/MIGRATION_CONTROL_LEDGER.md (this file, sections 14-18 added)
+  - ROADMAP_STATUS.json (updated to post_gak state)
+  - tmp_agent/migration_reconciliation_preview.json (updated applied status)
+  - tmp_agent/migration_reconciliation_apply_report.json (NEW evidence)
+- Closed fronts formalized in this checkpoint:
+  - N2: keep_done (already closed, now formalized)
+  - VTC: mark_done (formalized from 4 commits + evidence reports)
+  - TOOL-01: mark_done (formalized from commit + evidence reports)
+  - GAK: mark_done (formalized from commit + evidence reports)
+- Open fronts preserved:
+  - B7: session.py cognitive monolith — next recommended
+  - B1: double routing / authority — deferred
+  - B2: orphan modules — deferred
+  - N5: failing/import/path tests — in progress
+- Protected out of scope:
+  - memory/semantic/* (dirty tree preserved, not committed, not touched)
+  - tmp_agent/strategies/* (not touched)
+  - tmp_agent/reports/* (not touched)
+- Inconsistencies resolved:
+  - IC-01 (ledger desactualizado): PARTIALLY RESOLVED — VTC, TOOL-01, GAK, N2 formalized
+  - IC-02 (ROADMAP_STATUS.json obsoleto): RESOLVED — updated to post_gak state
+  - IC-03 (auditoria FASE A no ejecutada): PENDING — preserved as next recommended front
+  - IC-04 (GAK report head desactualizado): RESOLVED — noted in Checkpoint 15
+- Next recommended front:
+  - B7-FASE-A: Dedup and heuristic consolidation in session.py
+  - Criterion: no microservices yet, no memory/semantic touch, no strategies touch
+  - Estimated scope: ~150 lines removed (soft arbitration duplication + heuristic consolidation)
+  - Risk: LOW (duplicate removal + constant extraction)
+  - Acceptance: 88/88 tests still pass, runtime smoke A+D still pass
+- Rollback policy applied: Yes (documentation only, no code changes to roll back)
 
