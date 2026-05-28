@@ -1,0 +1,248 @@
+{
+  "N5_B_VALIDATION_REPORT": {
+    "status": "ACCEPTED_READ_ONLY",
+    "head_base": "3ed30eb8",
+    "branch": "codex/own-capital-sustainable-return",
+    "code_changed": false,
+    "runtime_changed": false,
+    "protected_touched": false,
+    "initial_findings": {
+      "missing_import_candidates": 20,
+      "duplicate_module_names": 10,
+      "sys_path_mutations": 89,
+      "hardcoded_paths": 121
+    },
+    "likely_false_positives": {
+      "total": 27,
+      "missing_import_stdlib_fp": 1,
+      "missing_import_pkg_alias_fp": 19,
+      "duplicate_stdlib_common": 7,
+      "duplicate_test_only": 0,
+      "duplicate_package_scoped": 0
+    },
+    "recalibrated_counts": {
+      "critical": 0,
+      "high": 0,
+      "medium": 2,
+      "low": 1
+    },
+    "severity_counts_recalibrated": {
+      "critical": 0,
+      "high": 0,
+      "medium": 2,
+      "low": 1
+    },
+    "recalibrated_findings": {
+      "likely_false_positives": 27,
+      "real_patch_candidates": [
+        "Resolve remaining unclassified imports (N5B-M01)",
+        "Audit ambiguous duplicate module names (N5B-M02)",
+        "Remove or isolate runtime sys.path mutations (N5B-M03)",
+        "Replace hardcoded paths with pathlib relative to __file__ (N5B-L01, N5B-L02)"
+      ],
+      "needs_manual_review": [],
+      "no_patch_recommended": [
+        "All stdlib imports are correctly identified as false positives.",
+        "Package-alias imports (brain_v9.*, core.*) are expected with current package structure.",
+        "Common duplicate names (__future__, os, sys) are harmless in Python import resolution."
+      ]
+    },
+    "critical_findings": [],
+    "high_findings": [],
+    "medium_findings": [
+      {
+        "id": "N5B-M02",
+        "title": "Ambiguous duplicate module names beyond stdlib/common",
+        "detail": "3 module names appear in multiple locations and could resolve to different files depending on import order.",
+        "examples": [
+          {
+            "module": "fastapi",
+            "files": [
+              "tmp_agent\\brain_v9\\api_security.py",
+              "tmp_agent\\brain_v9\\main.py",
+              "tmp_agent\\brain_v9\\main.py",
+              "tmp_agent\\brain_v9\\main.py",
+              "tmp_agent\\brain_v9\\main.py",
+              "tmp_agent\\brain_v9\\autonomy\\router.py",
+              "tmp_agent\\brain_v9\\trading\\pocketoption_bridge_server.py",
+              "tmp_agent\\brain_v9\\trading\\pocketoption_bridge_server.py",
+              "tmp_agent\\brain_v9\\trading\\pocketoption_bridge_server.py",
+              "tmp_agent\\brain_v9\\trading\\router.py",
+              "tests\\conftest.py"
+            ]
+          },
+          {
+            "module": "logging",
+            "files": [
+              "tmp_agent\\brain_v9\\config.py",
+              "tmp_agent\\brain_v9\\main.py",
+              "tmp_agent\\brain_v9\\util.py",
+              "tmp_agent\\brain_v9\\agent\\code_mutator.py",
+              "tmp_agent\\brain_v9\\agent\\failure_learner.py",
+              "tmp_agent\\brain_v9\\agent\\health_gate.py",
+              "tmp_agent\\brain_v9\\agent\\http_tools.py",
+              "tmp_agent\\brain_v9\\agent\\loop.py",
+              "tmp_agent\\brain_v9\\agent\\reasoning_corrector.py",
+              "tmp_agent\\brain_v9\\agent\\self_tester.py",
+              "tmp_agent\\brain_v9\\agent\\tools.py",
+              "tmp_agent\\brain_v9\\autonomy\\action_executor.py",
+              "tmp_agent\\brain_v9\\autonomy\\action_executor.py",
+              "tmp_agent\\brain_v9\\autonomy\\chat_excellence_executor.py",
+              "tmp_agent\\brain_v9\\autonomy\\chat_excellence_patcher.py",
+              "tmp_agent\\brain_v9\\autonomy\\manager.py",
+              "tmp_agent\\brain_v9\\autonomy\\platform_accumulators.py",
+              "tmp_agent\\brain_v9\\autonomy\\proactive_scheduler.py",
+              "tmp_agent\\brain_v9\\autonomy\\sample_accumulator_agent.py",
+              "tmp_agent\\brain_v9\\brain\\auto_surgeon.py",
+              "tmp_agent\\brain_v9\\brain\\chat_product_governance.py",
+              "tmp_agent\\brain_v9\\brain\\codegen.py",
+              "tmp_agent\\brain_v9\\brain\\health.py",
+              "tmp_agent\\brain_v9\\brain\\meta_improvement.py",
+              "tmp_agent\\brain_v9\\brain\\metrics.py",
+              "tmp_agent\\brain_v9\\brain\\phase_acceptance_engine.py",
+              "tmp_agent\\brain_v9\\brain\\rsi.py",
+              "tmp_agent\\brain_v9\\brain\\security_posture.py",
+              "tmp_agent\\brain_v9\\brain\\self_improvement.py",
+              "tmp_agent\\brain_v9\\brain\\self_test.py",
+              "tmp_agent\\brain_v9\\brain\\trade_diagnostics.py",
+              "tmp_agent\\brain_v9\\brain\\utility.py",
+              "tmp_agent\\brain_v9\\brain\\utility_governance.py",
+              "tmp_agent\\brain_v9\\core\\intent.py",
+              "tmp_agent\\brain_v9\\core\\knowledge.py",
+              "tmp_agent\\brain_v9\\core\\llm.py",
+              "tmp_agent\\brain_v9\\core\\memory.py",
+              "tmp_agent\\brain_v9\\core\\self_diagnostic.py",
+              "tmp_agent\\brain_v9\\core\\semantic_memory_faiss.py",
+              "tmp_agent\\brain_v9\\core\\session.py",
+              "tmp_agent\\brain_v9\\core\\session.py",
+              "tmp_agent\\brain_v9\\core\\session_memory_state.py",
+              "tmp_agent\\brain_v9\\core\\state_io.py",
+              "tmp_agent\\brain_v9\\core\\routing\\fallback_visibility.py",
+              "tmp_agent\\brain_v9\\core\\routing\\module_connector.py",
+              "tmp_agent\\brain_v9\\governance\\adn_quality.py",
+              "tmp_agent\\brain_v9\\governance\\ethics_kernel.py",
+              "tmp_agent\\brain_v9\\governance\\execution_gate.py",
+              "tmp_agent\\brain_v9\\learning\\external_intel_ingestor.py",
+              "tmp_agent\\brain_v9\\ops\\upgrade_protocol.py",
+              "tmp_agent\\brain_v9\\research\\knowledge_base.py",
+              "tmp_agent\\brain_v9\\trading\\active_strategy_catalog.py",
+              "tmp_agent\\brain_v9\\trading\\backtest_gate.py",
+              "tmp_agent\\brain_v9\\trading\\connectors.py",
+              "tmp_agent\\brain_v9\\trading\\context_edge_validation.py",
+              "tmp_agent\\brain_v9\\trading\\edge_validation.py",
+              "tmp_agent\\brain_v9\\trading\\expectancy_engine.py",
+              "tmp_agent\\brain_v9\\trading\\feature_engine.py",
+              "tmp_agent\\brain_v9\\trading\\ibkr_data_ingester.py",
+              "tmp_agent\\brain_v9\\trading\\ibkr_order_executor.py",
+              "tmp_agent\\brain_v9\\trading\\ibkr_performance_tracker.py",
+              "tmp_agent\\brain_v9\\trading\\ibkr_signal_engine.py",
+              "tmp_agent\\brain_v9\\trading\\market_history_engine.py",
+              "tmp_agent\\brain_v9\\trading\\paper_execution.py",
+              "tmp_agent\\brain_v9\\trading\\platform_dashboard_api.py",
+              "tmp_agent\\brain_v9\\trading\\platform_manager.py",
+              "tmp_agent\\brain_v9\\trading\\pocketoption_bridge_server.py",
+              "tmp_agent\\brain_v9\\trading\\qc_iteration_engine.py",
+              "tmp_agent\\brain_v9\\trading\\qc_live_analyzer.py",
+              "tmp_agent\\brain_v9\\trading\\qc_live_monitor.py",
+              "tmp_agent\\brain_v9\\trading\\qc_orchestrator.py",
+              "tmp_agent\\brain_v9\\trading\\qc_pattern_ingester.py",
+              "tmp_agent\\brain_v9\\trading\\qc_results_ingester.py",
+              "tmp_agent\\brain_v9\\trading\\qc_strategy_bridge.py",
+              "tmp_agent\\brain_v9\\trading\\router.py",
+              "tmp_agent\\brain_v9\\trading\\signal_engine.py",
+              "tmp_agent\\brain_v9\\trading\\strategy_archive.py",
+              "tmp_agent\\brain_v9\\trading\\strategy_engine.py",
+              "tmp_agent\\brain_v9\\trading\\strategy_engine.py",
+              "tmp_agent\\brain_v9\\trading\\strategy_scorecard.py",
+              "tmp_agent\\brain_v9\\trading\\strategy_selector.py",
+              "tmp_agent\\brain_v9\\trading\\utility_util.py"
+            ]
+          },
+          {
+            "module": "platform",
+            "files": [
+              "tmp_agent\\brain_v9\\config.py",
+              "tmp_agent\\brain_v9\\core\\session.py"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "N5B-M03",
+        "title": "Runtime sys.path mutations in main.py and core files",
+        "detail": "6 sys.path mutations execute at runtime in main.py or core modules. These affect global import resolution and can cause subtle bugs.",
+        "examples": [
+          {
+            "file": "tmp_agent\\brain_v9\\main.py",
+            "line": 22,
+            "text": "sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))"
+          },
+          {
+            "file": "tmp_agent\\brain_v9\\main.py",
+            "line": 166,
+            "text": "sys.path.insert(0, \"C:/AI_VAULT\")"
+          },
+          {
+            "file": "tmp_agent\\brain_v9\\main.py",
+            "line": 1108,
+            "text": "sys.path.insert(0, \"C:/AI_VAULT\")"
+          },
+          {
+            "file": "tmp_agent\\brain_v9\\main.py",
+            "line": 1109,
+            "text": "sys.path.insert(0, \"C:/AI_VAULT/brain\")"
+          },
+          {
+            "file": "tmp_agent\\brain_v9\\main.py",
+            "line": 1419,
+            "text": "sys.path.insert(0, 'C:/AI_VAULT')"
+          }
+        ]
+      }
+    ],
+    "low_findings": [
+      {
+        "id": "N5B-L02",
+        "title": "Portability debt in non-runtime files",
+        "detail": "90 hardcoded paths in non-runtime files (evidence, config, docs).",
+        "examples": [
+          {
+            "file": "tmp_agent\\brain_v9\\config.py",
+            "line": 45,
+            "text": "\"C:/AI_VAULT\" if platform.system() == \"Windows\""
+          },
+          {
+            "file": "tmp_agent\\brain_v9\\config.py",
+            "line": 422,
+            "text": "- Operas sobre C:\\AI_VAULT en Windows"
+          },
+          {
+            "file": "tmp_agent\\brain_v9\\main.py",
+            "line": 166,
+            "text": "sys.path.insert(0, \"C:/AI_VAULT\")"
+          },
+          {
+            "file": "tmp_agent\\brain_v9\\main.py",
+            "line": 949,
+            "text": "audit_dir = Path(\"C:/AI_VAULT/.dev_auth\")"
+          },
+          {
+            "file": "tmp_agent\\brain_v9\\main.py",
+            "line": 1000,
+            "text": "cwd=\"C:/AI_VAULT\","
+          }
+        ]
+      }
+    ],
+    "recommended_actions": [
+      "N5B-M01: Review remaining unclassified imports to confirm if they are third-party or dead.",
+      "N5B-M02: Audit ambiguous duplicate module names for runtime resolution risk.",
+      "N5B-M03: Replace runtime sys.path mutations in main.py with PYTHONPATH or proper package installation.",
+      "N5B-L01: Replace hardcoded C:\\AI_VAULT paths in runtime files with dynamic Path resolution.",
+      "N5B-L02: Replace hardcoded C:\\AI_VAULT paths in evidence/config with relative paths."
+    ],
+    "recommended_next_action": "commit validation evidence only; patch only after explicit N5-C plan with allowlist",
+    "ready_for_commit": true,
+    "ready_for_patch": false
+  }
+}
