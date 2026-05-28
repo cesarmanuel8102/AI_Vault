@@ -590,3 +590,45 @@
 - Next front:
   - PRIMARY: B2 orphan modules audit
   - SECONDARY: N5 import/path/test hygiene
+
+## 21. Checkpoint — B2 Closure / Orphan Modules Audit
+- Date (UTC): 2026-05-28T08:45:00+00:00
+- Branch: codex/own-capital-sustainable-return
+- HEAD: a17e10f4
+- Type: DOCUMENTATION AND EVIDENCE — B2 series formally closed
+- Commits:
+  - a17e10f4 — B2-D orphan modules audit artifacts (inventory + findings + decision)
+- Final status: B2 CLOSED
+- Scope:
+  - Scanned 696 project .py files (excluding venv, site-packages, node_modules)
+  - Active runtime roots: 113 (main.py, session.py, tests, ops)
+  - Referenced by runtime: 148
+  - Orphan files: 555
+- Classification:
+  - already_archived: 8 (in _archived_orphans/)
+  - historical_backup: 15 (snapshot backups under archive/ and docs/backups/)
+  - legacy_runtime_snapshots: 150 (chat_brain_v3-v7, advisor_server variants, old brain/ modules)
+  - ephemeral_diagnostics: 50 (_smoke, _debug, _test, _repro in tmp_agent/)
+  - protected_scope_excluded: 5 (CEI, FDOT, trading, strategies)
+  - external_repos: 12 (repos/openclaw, repos/openfang)
+  - unclassified: 315 (legacy one-off scripts, old patches, utilities)
+- Risk assessment: LOW
+  - No orphans are imported by active Brain V9 runtime
+  - No critical bypasses or security risks identified
+- Decision:
+  - NO_ACTION on all orphans for this cycle
+  - No deletions, no code changes
+  - Future housekeeping sprint recommended (post-MRC-01A) to consolidate legacy snapshots into dated archive
+- Tests:
+  - N/A — audit is read-only; no runtime code changed
+- Governance:
+  - No memory/semantic touched
+  - No strategies touched
+  - No reports touched
+  - No destructive git commands used
+  - No git add -f used
+  - Protected paths preserved
+- Next front:
+  - PRIMARY: N5 import/path/test hygiene
+  - SECONDARY: MRC-01A post-GAK ledger maintenance (if drift detected)
+
