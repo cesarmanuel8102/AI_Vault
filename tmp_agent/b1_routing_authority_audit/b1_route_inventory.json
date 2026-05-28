@@ -1,0 +1,3516 @@
+{
+  "B1_ROUTE_INVENTORY": {
+    "head_base": "3fd481ed",
+    "branch": "codex/own-capital-sustainable-return",
+    "files_scanned": [
+      "tmp_agent\\brain_v9\\main.py",
+      "tmp_agent\\brain_v9\\core\\session.py",
+      "tmp_agent\\brain_v9\\core\\governed_action_kernel.py"
+    ],
+    "route_entrypoints": [
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 218,
+        "text": "@app.get(\"/dashboard\", include_in_schema=False)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 228,
+        "text": "@app.get(\"/dashboard-v2\", include_in_schema=False)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1054,
+        "text": "@app.get(\"/health\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1067,
+        "text": "@app.get(\"/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1077,
+        "text": "@app.get(\"/brain/operating-context\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1085,
+        "text": "@app.get(\"/brain/maintenance/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1090,
+        "text": "@app.post(\"/brain/maintenance/action\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1117,
+        "text": "@app.get(\"/chat/introspectivo/debug\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1143,
+        "text": "@app.post(\"/chat/introspectivo\", response_model=ChatResponse)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1285,
+        "text": "@app.post(\"/chat\", response_model=ChatResponse)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1738,
+        "text": "@app.delete(\"/sessions/{session_id}\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1748,
+        "text": "@app.post(\"/gate/approve/{pending_id}\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1775,
+        "text": "@app.post(\"/gate/reject/{pending_id}\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1786,
+        "text": "@app.post(\"/tool01/permission/approve\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1829,
+        "text": "@app.get(\"/tool01/permission/pending/{session_id}\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1841,
+        "text": "@app.get(\"/tool01/permission/grants/{session_id}\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1860,
+        "text": "@app.delete(\"/sessions/{session_id}/memory\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1867,
+        "text": "@app.get(\"/brain/rsi\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1872,
+        "text": "@app.get(\"/brain/health\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1877,
+        "text": "@app.get(\"/brain/security/posture\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1888,
+        "text": "@app.get(\"/brain/risk/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1893,
+        "text": "@app.get(\"/brain/governance/health\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1897,
+        "text": "@app.get(\"/brain/metrics\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1905,
+        "text": "@app.get(\"/brain/validators\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1955,
+        "text": "@app.get(\"/brain/learned/patterns\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1970,
+        "text": "@app.get(\"/brain/learned/patterns/{pattern_id}\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1985,
+        "text": "@app.post(\"/brain/learned/patterns/{pattern_id}/disable\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2000,
+        "text": "@app.delete(\"/brain/learned/patterns/{pattern_id}\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2015,
+        "text": "@app.post(\"/brain/learned/test_simulate\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2106,
+        "text": "@app.get(\"/tools/coverage\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2126,
+        "text": "@app.get(\"/brain/mutations\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2138,
+        "text": "@app.get(\"/brain/mutations/{mutation_id}\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2154,
+        "text": "@app.post(\"/brain/mutations/{mutation_id}/rollback\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2170,
+        "text": "@app.get(\"/brain/health_gate/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2181,
+        "text": "@app.get(\"/brain/reasoning/history\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2193,
+        "text": "@app.post(\"/brain/mutations/test_apply\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2246,
+        "text": "@app.get(\"/brain/proactive/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2298,
+        "text": "@app.get(\"/brain/chat_excellence/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2342,
+        "text": "@app.post(\"/brain/scheduler/alerts/ack\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2371,
+        "text": "@app.post(\"/brain/proactive/run/{task_id}\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2397,
+        "text": "@app.get(\"/brain/llm/circuit_breaker\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2435,
+        "text": "@app.post(\"/brain/llm/circuit_breaker/reset\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2454,
+        "text": "@app.get(\"/brain/chat_excellence/proposals\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2465,
+        "text": "@app.get(\"/brain/learning/proposals\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2472,
+        "text": "@app.get(\"/brain/chat_excellence/proposals/{proposal_id}\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2486,
+        "text": "@app.post(\"/brain/chat_excellence/proposals/{proposal_id}/reject\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2505,
+        "text": "@app.post(\"/brain/chat_excellence/proposals/{proposal_id}/dry_run\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2521,
+        "text": "@app.post(\"/brain/chat_excellence/proposals/{proposal_id}/apply\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2574,
+        "text": "@app.post(\"/brain/chat_excellence/proposals/{proposal_id}/rollback\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2591,
+        "text": "@app.get(\"/brain/chat_excellence/proposals/{proposal_id}/health_gate_log\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2603,
+        "text": "@app.post(\"/brain/chat_excellence/proposals/apply_batch\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2656,
+        "text": "@app.post(\"/brain/chat_excellence/proposals/evaluate\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2688,
+        "text": "@app.get(\"/brain/chat_excellence/proposals/{proposal_id}/evaluation_status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2715,
+        "text": "@app.get(\"/brain/utility\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2738,
+        "text": "@app.get(\"/brain/utility/v2\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2743,
+        "text": "@app.get(\"/brain/utility/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2750,
+        "text": "@app.post(\"/brain/utility/refresh\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2770,
+        "text": "@app.post(\"/brain/utility/v2/refresh\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2774,
+        "text": "@app.get(\"/brain/autonomy/next-actions\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2779,
+        "text": "@app.get(\"/brain/autonomy/sample-accumulator\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2851,
+        "text": "@app.post(\"/brain/autonomy/execute-top-action\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2860,
+        "text": "@app.get(\"/brain/autonomy/ibkr-ingester\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2880,
+        "text": "@app.post(\"/brain/autonomy/ibkr-snapshot\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2899,
+        "text": "@app.get(\"/brain/operations\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2932,
+        "text": "@app.get(\"/brain/pipeline-health\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2981,
+        "text": "@app.get(\"/brain/roadmap/governance\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2985,
+        "text": "@app.get(\"/brain/roadmap/development-status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2991,
+        "text": "@app.get(\"/brain/post-bl-roadmap/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2996,
+        "text": "@app.post(\"/brain/post-bl-roadmap/refresh\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3001,
+        "text": "@app.get(\"/brain/meta-improvement/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3006,
+        "text": "@app.post(\"/brain/meta-improvement/refresh\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3011,
+        "text": "@app.get(\"/brain/chat-product/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3016,
+        "text": "@app.post(\"/brain/chat-product/refresh\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3021,
+        "text": "@app.get(\"/brain/autonomous-governance-eval/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3026,
+        "text": "@app.post(\"/brain/autonomous-governance-eval/refresh\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3031,
+        "text": "@app.get(\"/brain/utility-governance/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3036,
+        "text": "@app.post(\"/brain/utility-governance/refresh\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3041,
+        "text": "@app.get(\"/brain/meta-governance/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3053,
+        "text": "@app.get(\"/brain/session-memory\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3062,
+        "text": "@app.post(\"/brain/roadmap/governance/refresh\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3066,
+        "text": "@app.get(\"/brain/research/summary\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3070,
+        "text": "@app.get(\"/brain/research/knowledge\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3074,
+        "text": "@app.get(\"/brain/research/indicators\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3078,
+        "text": "@app.get(\"/brain/research/strategies\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3082,
+        "text": "@app.get(\"/brain/research/hypotheses\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3086,
+        "text": "@app.get(\"/brain/research/candidates\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3093,
+        "text": "@app.get(\"/brain/learning/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3098,
+        "text": "@app.post(\"/brain/learning/refresh\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3111,
+        "text": "@app.post(\"/brain/learning/proposals/{proposal_id}/transition\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3125,
+        "text": "@app.post(\"/brain/learning/proposals/{proposal_id}/sandbox-run\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3138,
+        "text": "@app.post(\"/brain/learning/proposals/{proposal_id}/evaluate\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3151,
+        "text": "@app.get(\"/brain/strategy-engine/summary\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3155,
+        "text": "@app.get(\"/brain/strategy-engine/candidates\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3160,
+        "text": "@app.get(\"/brain/strategy-engine/scorecards\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3164,
+        "text": "@app.get(\"/brain/strategy-engine/ranking\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3169,
+        "text": "@app.get(\"/brain/strategy-engine/ranking-v2\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3174,
+        "text": "@app.get(\"/brain/strategy-engine/features\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3179,
+        "text": "@app.get(\"/brain/strategy-engine/history\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3184,
+        "text": "@app.get(\"/brain/strategy-engine/signals\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3189,
+        "text": "@app.get(\"/brain/strategy-engine/archive\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3194,
+        "text": "@app.get(\"/brain/strategy-engine/expectancy\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3199,
+        "text": "@app.get(\"/brain/strategy-engine/expectancy/by-strategy\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3204,
+        "text": "@app.get(\"/brain/strategy-engine/expectancy/by-venue\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3209,
+        "text": "@app.get(\"/brain/strategy-engine/expectancy/by-symbol\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3214,
+        "text": "@app.get(\"/brain/strategy-engine/expectancy/by-context\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3219,
+        "text": "@app.get(\"/brain/strategy-engine/edge-validation\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3224,
+        "text": "@app.get(\"/brain/strategy-engine/context-edge-validation\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3229,
+        "text": "@app.get(\"/brain/strategy-engine/active-catalog\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3234,
+        "text": "@app.get(\"/brain/strategy-engine/pipeline-integrity\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3239,
+        "text": "@app.get(\"/brain/strategy-engine/post-trade-analysis\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3243,
+        "text": "@app.get(\"/brain/strategy-engine/post-trade-hypotheses\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3247,
+        "text": "@app.get(\"/brain/strategy-engine/learning-loop\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3252,
+        "text": "@app.get(\"/brain/strategy-engine/hypotheses\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3256,
+        "text": "@app.get(\"/brain/strategy-engine/execution-audit\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3297,
+        "text": "@app.post(\"/brain/strategy-engine/simulation-gate/{strategy_id}\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3308,
+        "text": "@app.get(\"/brain/strategy-engine/adaptation-state\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3321,
+        "text": "@app.get(\"/brain/strategy-engine/session-performance\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3340,
+        "text": "@app.post(\"/brain/ops/log-cleanup\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3347,
+        "text": "@app.get(\"/brain/ops/log-status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3354,
+        "text": "@app.get(\"/brain/ops/adn-quality\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3360,
+        "text": "@app.get(\"/brain/ops/upgrade-check\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3366,
+        "text": "@app.get(\"/brain/ops/pre-upgrade\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3372,
+        "text": "@app.get(\"/brain/ops/post-upgrade\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3378,
+        "text": "@app.get(\"/brain/ops/ethics\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3384,
+        "text": "@app.post(\"/brain/strategy-engine/refresh\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3388,
+        "text": "@app.post(\"/brain/strategy-engine/execute-top-candidate\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3393,
+        "text": "@app.post(\"/brain/strategy-engine/execute-candidate/{strategy_id}\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3398,
+        "text": "@app.post(\"/brain/strategy-engine/execute-batch/{strategy_id}\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3403,
+        "text": "@app.post(\"/brain/strategy-engine/execute-comparison-cycle\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3407,
+        "text": "@app.get(\"/brain/self-improvement/ledger\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3411,
+        "text": "@app.get(\"/brain/change-control/scorecard\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3416,
+        "text": "@app.get(\"/brain/control-layer/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3421,
+        "text": "@app.get(\"/brain/purpose/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3426,
+        "text": "@app.get(\"/brain/consciousness/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3439,
+        "text": "@app.post(\"/brain/purpose/refresh\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3444,
+        "text": "@app.post(\"/brain/control-layer/freeze\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3449,
+        "text": "@app.post(\"/brain/control-layer/unfreeze\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3453,
+        "text": "@app.get(\"/brain/self-improvement/change/{change_id}/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3457,
+        "text": "@app.post(\"/brain/self-improvement/change\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3461,
+        "text": "@app.post(\"/brain/self-improvement/change/{change_id}/validate\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3465,
+        "text": "@app.post(\"/brain/self-improvement/change/{change_id}/promote\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3469,
+        "text": "@app.post(\"/brain/self-improvement/change/{change_id}/rollback\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3473,
+        "text": "@app.post(\"/brain/validate\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3479,
+        "text": "@app.get(\"/brain/auto-surgeon/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3484,
+        "text": "@app.get(\"/brain/auto-surgeon/diagnostics\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3489,
+        "text": "@app.get(\"/self-diagnostic\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3496,
+        "text": "@app.post(\"/self-diagnostic/run\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3528,
+        "text": "@app.get(\"/brain/semantic-memory/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3534,
+        "text": "@app.get(\"/brain/semantic-memory/search\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3556,
+        "text": "@app.post(\"/brain/semantic-memory/ingest\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3567,
+        "text": "@app.post(\"/brain/semantic-memory/ingest-session\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3573,
+        "text": "@app.get(\"/brain/metacognition/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3579,
+        "text": "@app.post(\"/brain/metacognition/audit\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3585,
+        "text": "@app.get(\"/brain/introspection/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3591,
+        "text": "@app.get(\"/brain/introspection/gpu\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3596,
+        "text": "@app.post(\"/agent\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3825,
+        "text": "@app.post(\"/dev\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3885,
+        "text": "@app.get(\"/godmode/status\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3907,
+        "text": "@app.post(\"/godmode\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 4042,
+        "text": "@app.post(\"/brain/agent-trace/event\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 4070,
+        "text": "@app.get(\"/brain/agent-trace/latest\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 4080,
+        "text": "@app.get(\"/brain/agent-trace/stream\")"
+      }
+    ],
+    "routing_decision_points": [
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 874,
+        "text": "tool01_router_used: Optional[bool] = None"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1736,
+        "text": "return ChatResponse(response=content_str, session_id=req.session_id, model_used=result.get(\"model\"), success=result.get(\"success\", False), pending_action=pending_action, permission_required=result.get(\"permission_required\"), permission_id=result.get(\"permission_id\"), tool_name=result.get(\"tool_name\"), risk_level=result.get(\"risk_level\"), options=result.get(\"options\"), tool01_real=result.get(\"tool01_real\"), tool01_router_used=result.get(\"tool01_router_used\"), blocked_by_policy=result.get(\"blocked_by_policy\"), blocked_by_user=result.get(\"blocked_by_user\"), tool_result=result.get(\"tool_result\"))"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 296,
+        "text": "if isinstance(saved.get(\"routes\"), dict):"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 298,
+        "text": "self.data[\"routes\"][r] = int(saved[\"routes\"].get(r, 0))"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 319,
+        "text": "self.data[\"routes\"][route] = self.data[\"routes\"].get(route, 0) + 1"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 496,
+        "text": "routes = Counter(e[\"selected_route\"] for e in self.data[\"routing_log\"])"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 530,
+        "text": "\"brainsession\", \"/chat\", \"route=\", \"router\", \"routing\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 603,
+        "text": "route_distribution = Counter()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 620,
+        "text": "route_distribution[selected] += 1"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 626,
+        "text": "routing_terms = [\"brainsession\", \"/chat\", \"route=\", \"router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 808,
+        "text": "[\"brainsession\", \"/chat\", \"route=\"]):"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 863,
+        "text": "(c.get(\"score\", 0) for c in candidates if c.get(\"name\") == selected_route),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 884,
+        "text": "if selected_route == \"trading_analysis\":"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 885,
+        "text": "if any(term in msg_lower for term in [\"brainsession\", \"/chat\", \"router\"]):"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 899,
+        "text": "if selected_route == \"agent\":"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 994,
+        "text": "if selected_route == \"trading_analysis\" and any(t in msg_lower for t in"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 998,
+        "text": "elif selected_route == \"grounded_ui_edit_fastpath\" and any(t in msg_lower for t in"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1015,
+        "text": "(c.get(\"score\", 0) for c in candidates if c.get(\"name\") == selected_route),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1026,
+        "text": "alternate_route = best_blocked[\"name\"]"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1027,
+        "text": "destructive_routes = [\"grounded_ui_edit_fastpath\"]  # Routes that modify files"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1029,
+        "text": "if alternate_route in destructive_routes:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1039,
+        "text": "final_route = alternate_route"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1102,
+        "text": "# Check if route matches excluded domain"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1103,
+        "text": "if any(kw in selected_route.lower() for kw in keywords):"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1125,
+        "text": "elif selected_route in [\"agent\", \"grounded_code_fastpath\", \"grounded_ui_edit_fastpath\"]:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1167,
+        "text": "if selected_route == \"MEMORY\" or \"memory\" in selected_route.lower():"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1376,
+        "text": "if \"route_reliability\" not in self.data:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1377,
+        "text": "self.data[\"route_reliability\"] = {}"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1399,
+        "text": "if route not in self.data[\"route_reliability\"]:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1400,
+        "text": "self.data[\"route_reliability\"][route] = {"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1407,
+        "text": "self.data[\"route_reliability\"][route][\"total_uses\"] += 1"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1409,
+        "text": "self.data[\"route_reliability\"][route][\"successes\"] += 1"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1411,
+        "text": "self.data[\"route_reliability\"][route][\"contradictions\"] += 1"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1415,
+        "text": "if len(self.data[\"route_reliability\"][route][\"coherence_scores\"]) > 100:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1416,
+        "text": "self.data[\"route_reliability\"][route][\"coherence_scores\"] = \\"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1442,
+        "text": "if not self.data.get(\"route_reliability\"):"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1462,
+        "text": "scores[route] = {"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1567,
+        "text": "route_fp = {}"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1569,
+        "text": "route = r.get(\"route\", \"unknown\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1570,
+        "text": "if route not in route_fp:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1571,
+        "text": "route_fp[route] = {\"total\": 0, \"fp\": 0}"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1572,
+        "text": "route_fp[route][\"total\"] += 1"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1574,
+        "text": "route_fp[route][\"fp\"] += 1"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1576,
+        "text": "route_fp_rates = {"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1579,
+        "text": "if data[\"total\"] >= 5  # Only routes with sufficient data"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1583,
+        "text": "problematic_routes = sorted("
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1604,
+        "text": "Semantic drift occurs when routes are applied to increasingly diverse"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1608,
+        "text": "Indicators of semantic drift per route"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1617,
+        "text": "route_messages = {}"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1619,
+        "text": "route = entry.get(\"selected_route\", \"unknown\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1621,
+        "text": "if route not in route_messages:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1622,
+        "text": "route_messages[route] = []"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1655,
+        "text": "drift_indicators[route] = {"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1690,
+        "text": "route_reliability = self.get_route_reliability_scores()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1720,
+        "text": "high_risk_routes = [r for r in route_reliability.values() if r.get(\"risk_score\", 0) > 0.5]"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1724,
+        "text": "\"level\": \"high\" if len(high_risk_routes) > 2 else (\"medium\" if len(high_risk_routes) > 0 else \"low\"),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1730,
+        "text": "if high_risk_routes:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1921,
+        "text": "route=\"command\", message=message, result=result,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1936,
+        "text": "f\"route=tool01_router\\n\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1937,
+        "text": "f\"tool01_router_used=true\\n\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1972,
+        "text": "route=\"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2005,
+        "text": "route=\"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2049,
+        "text": "route=\"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2067,
+        "text": "route=\"governed_action_kernel\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2099,
+        "text": "f\"route=governed_action_kernel\\n\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2100,
+        "text": "f\"tool01_router_used=false\\n\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2135,
+        "text": "route=\"governed_action_kernel\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2148,
+        "text": "result[\"route\"] = \"policy_gate\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2156,
+        "text": "route=\"policy_gate\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2170,
+        "text": "result[\"route\"] = \"auto_approve\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2177,
+        "text": "resumed[\"route\"] = resumed.get(\"route\") or \"context_resume\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2185,
+        "text": "route=resumed.get(\"route\", \"context_resume\"),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2195,
+        "text": "result[\"route\"] = \"confirmation_noop\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2200,
+        "text": "route=\"confirmation_noop\", message=message, result=result,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2245,
+        "text": "proposed_route=\"fastpath\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2283,
+        "text": "result[\"route\"] = \"fastpath\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2287,
+        "text": "route=\"fastpath\", message=message, result=result,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2298,
+        "text": "result[\"route\"] = \"fastpath\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2302,
+        "text": "route=\"fastpath\", message=message, result=result,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2312,
+        "text": "result[\"route\"] = \"grounded_code_fastpath\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2316,
+        "text": "route=\"grounded_code_fastpath\", message=message, result=result,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2326,
+        "text": "result[\"route\"] = \"grounded_ui_edit_fastpath\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2330,
+        "text": "route=\"grounded_ui_edit_fastpath\", message=message, result=result,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2341,
+        "text": "result[\"route\"] = \"qc_live_fastpath\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2345,
+        "text": "route=\"qc_live_fastpath\", message=message, result=result,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2366,
+        "text": "result[\"route\"] = \"cold_start_guard\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2397,
+        "text": "result[\"route\"] = \"user_correction_ack\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2466,
+        "text": "route = \"agent\" if use_agent else \"llm\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2468,
+        "text": "result[\"route\"]  = route"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2534,
+        "text": "route=route, message=message, result=result,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4588,
+        "text": "router_result = await self._tool01_router(message)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4589,
+        "text": "if router_result is not None:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4595,
+        "text": "\"content\": f\"{notice}\\n\\n{json.dumps(router_result, indent=2, ensure_ascii=False)}\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5130,
+        "text": "result[\"route\"] = \"agent\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5176,
+        "text": "\"brainsession\", \"/chat\", \"route=\", \"route=llm\", \"route=agent\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5521,
+        "text": "chats_route = Counter()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5552,
+        "text": "route = payload.get(\"route\", \"?\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5553,
+        "text": "chats_route[route] += 1"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5555,
+        "text": "chats_success[route] += 1"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5557,
+        "text": "chats_failed[route] += 1"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5594,
+        "text": "lines_out.append(f\"  - route={route}: {n} (ok={ok}, fail={ko})\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 6513,
+        "text": "routes = out.get(\"routes\") or {}"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 6514,
+        "text": "if isinstance(routes, dict) and routes:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 6515,
+        "text": "top = sorted(routes.items(), key=lambda kv: -(kv[1] if isinstance(kv[1], int) else 0))[:4]"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7470,
+        "text": "f\"\\n\\n---\\n[DEV] route={result.get('route', '?')} | \""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 443,
+        "text": "f\"route=governed_action_kernel\\n\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 444,
+        "text": "f\"tool01_router_used=false\\n\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 504,
+        "text": "Guard final: if a non-tool route claims execution, sanitize the response."
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 507,
+        "text": "route = response.get(\"route\", \"\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 509,
+        "text": "is_tool_route = route in (\"tool01_router\", \"governed_action_kernel\") or response.get(\"tool01_real\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 518,
+        "text": "if not is_tool_route and not tool_result:"
+      }
+    ],
+    "fastpaths": [
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 916,
+        "text": "def _canonical_agent_fastpath(task: str, session) -> Dict | None:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 919,
+        "text": "(\"_is_self_build_resolution_query\", \"_self_build_resolution_fastpath\"),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 920,
+        "text": "(\"_is_deep_risk_analysis_query\", \"_deep_risk_analysis_fastpath\"),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 921,
+        "text": "(\"_is_deep_edge_analysis_query\", \"_deep_edge_analysis_fastpath\"),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 922,
+        "text": "(\"_is_deep_strategy_analysis_query\", \"_deep_strategy_analysis_fastpath\"),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 923,
+        "text": "(\"_is_deep_pipeline_analysis_query\", \"_deep_pipeline_analysis_fastpath\"),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 924,
+        "text": "(\"_is_deep_brain_analysis_query\", \"_deep_brain_analysis_fastpath\"),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 925,
+        "text": "(\"_is_self_build_query\", \"_self_build_fastpath\"),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 926,
+        "text": "(\"_is_consciousness_query\", \"_consciousness_fastpath\"),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 927,
+        "text": "(\"_is_brain_status_query\", \"_brain_status_fastpath\"),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1641,
+        "text": "log.debug(\"network grounded fastpath skip: %s\", _net_err)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3609,
+        "text": "canonical_result = _canonical_agent_fastpath(req.task, session)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 21,
+        "text": "- Word-boundary agent routing, state_io fastpath, dev mode"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 75,
+        "text": "should_degrade_fastpath as _should_degrade_fastpath_guard,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 88,
+        "text": "_should_degrade_fastpath_guard = None"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 267,
+        "text": "\"routes\": {\"command\": 0, \"fastpath\": 0, \"agent\": 0, \"llm\": 0},"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 386,
+        "text": "\"fastpath_rate\": ("
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 387,
+        "text": "self.data[\"routes\"].get(\"fastpath\", 0) /"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 527,
+        "text": "# Pattern 1: Trading fastpath with routing terms in message"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 537,
+        "text": "\"risk\": \"Trading fastpath captured non-trading query\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 553,
+        "text": "if selected == \"grounded_ui_edit_fastpath\" and any("
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 574,
+        "text": "- trading hijack: trading fastpath capturing non-trading queries"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 578,
+        "text": "- repeated_fastpath: same fastpath activating on semantically diverse queries"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 611,
+        "text": "repeated_fastpaths = defaultdict(list)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 639,
+        "text": "if selected == \"grounded_ui_edit_fastpath\":"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 653,
+        "text": "if selected in [\"agent\", \"grounded_code_fastpath\"]:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 683,
+        "text": "# Pattern 5: Repeated fastpath activation (potential overfire)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 684,
+        "text": "if \"fastpath\" in selected:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 685,
+        "text": "repeated_fastpaths[selected].append({"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 691,
+        "text": "# Detect repeated fastpath patterns"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 692,
+        "text": "for route, activations in repeated_fastpaths.items():"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 693,
+        "text": "if len(activations) >= 5:  # Same fastpath 5+ times in window"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 702,
+        "text": "pattern_counts[\"repeated_fastpath_semantic_drift\"] += 1"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 704,
+        "text": "\"pattern\": \"repeated_fastpath_semantic_drift\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 718,
+        "text": "\"description\": \"Trading fastpath capturing routing/conversational queries\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 729,
+        "text": "\"description\": \"UI edit fastpath activating on analysis requests\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 730,
+        "text": "\"affected_route\": \"grounded_ui_edit_fastpath\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 732,
+        "text": "\"recommended_action\": \"Strengthen _blocks_grounded_ui_edit_fastpath with more analysis markers\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 810,
+        "text": "elif selected == \"grounded_ui_edit_fastpath\" and any(t in msg for t in"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 882,
+        "text": "# Check for semantic mismatch (fastpath on excluded domain)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 891,
+        "text": "\"reason\": \"Trading fastpath selected for conversational/routing query\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 998,
+        "text": "elif selected_route == \"grounded_ui_edit_fastpath\" and any(t in msg_lower for t in"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1027,
+        "text": "destructive_routes = [\"grounded_ui_edit_fastpath\"]  # Routes that modify files"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1125,
+        "text": "elif selected_route in [\"agent\", \"grounded_code_fastpath\", \"grounded_ui_edit_fastpath\"]:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1262,
+        "text": "return \"HIGH: Response indicates action user explicitly forbade. Review fastpath guards.\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1912,
+        "text": "self.chat_metrics.record(\"fastpath\", True, (_time.monotonic() - _t0) * 1000)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1927,
+        "text": "# policy/fastpath/LLM routing so explicit simple tool requests never"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1928,
+        "text": "# fall through to templates, grounded_code_fastpath, or AgentLoop timeout."
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2057,
+        "text": "# FASE 3 — Runs after explicit TOOL-01 regex, before fastpath/agent/LLM."
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2205,
+        "text": "# 2. Fastpath checks (real data, no LLM needed)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2206,
+        "text": "# PHASE E: Authority check before ANY fastpath emission (governs both guards and fallback)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2207,
+        "text": "fastpath = None  # Initialize FIRST to prevent UnboundLocalError"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2208,
+        "text": "authority_allows_fastpath = True"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2222,
+        "text": "# B3 FIX: Detectar solicitudes de verificación real que deben bloquear fastpath"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2245,
+        "text": "proposed_route=\"fastpath\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2249,
+        "text": "authority_allows_fastpath = False"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2251,
+        "text": "\"Authority check: fastpath blocked for '%s...' - reason: %s\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2255,
+        "text": "# PHASE D: Grounded verification check - degrade fastpath when user asks for real status"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2258,
+        "text": "if authority_allows_fastpath and _ROUTING_GUARDS_AVAILABLE and _requires_grounded_verification_guard:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2262,
+        "text": "# If high-priority verification needed, skip fastpath templates"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2265,
+        "text": "\"Grounded verification required (priority=%d), bypassing fastpath templates for: %s...\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2269,
+        "text": "# Continue to normal routing (not fastpath)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2271,
+        "text": "# Normal fastpath processing"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2272,
+        "text": "fastpath = self._maybe_fastpath(msg_stripped, model_priority=model_priority)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2273,
+        "text": "if fastpath is not None:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2275,
+        "text": "fastpath[\"verification_needed\"] = verification_required"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2276,
+        "text": "fastpath[\"verification_priority\"] = verification_priority"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2277,
+        "text": "fastpath[\"advisory_source\"] = \"BrainSession\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2278,
+        "text": "fastpath[\"semantic_origin\"] = \"fastpath_with_verification_check\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2280,
+        "text": "result = _normalize(fastpath, fallback_content=\"(sin respuesta)\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2283,
+        "text": "result[\"route\"] = \"fastpath\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2284,
+        "text": "self.chat_metrics.record(\"fastpath\", result.get(\"success\", True),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2287,
+        "text": "route=\"fastpath\", message=message, result=result,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2291,
+        "text": "elif authority_allows_fastpath:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2292,
+        "text": "# Fallback fastpath when routing guards not available but authority allows"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2293,
+        "text": "fastpath = self._maybe_fastpath(msg_stripped, model_priority=model_priority)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2294,
+        "text": "if fastpath is not None:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2295,
+        "text": "result = _normalize(fastpath, fallback_content=\"(sin respuesta)\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2298,
+        "text": "result[\"route\"] = \"fastpath\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2299,
+        "text": "self.chat_metrics.record(\"fastpath\", result.get(\"success\", True),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2302,
+        "text": "route=\"fastpath\", message=message, result=result,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2307,
+        "text": "code_fastpath = await self._maybe_grounded_code_analysis_fastpath(msg_stripped)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2308,
+        "text": "if code_fastpath is not None:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2309,
+        "text": "result = _normalize(code_fastpath, fallback_content=\"(sin respuesta)\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2312,
+        "text": "result[\"route\"] = \"grounded_code_fastpath\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2313,
+        "text": "self.chat_metrics.record(\"grounded_code_fastpath\", result.get(\"success\", True),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2316,
+        "text": "route=\"grounded_code_fastpath\", message=message, result=result,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2321,
+        "text": "ui_edit_fastpath = await self._maybe_grounded_ui_edit_fastpath(msg_stripped)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2322,
+        "text": "if ui_edit_fastpath is not None:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2323,
+        "text": "result = _normalize(ui_edit_fastpath, fallback_content=\"(sin respuesta)\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2326,
+        "text": "result[\"route\"] = \"grounded_ui_edit_fastpath\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2327,
+        "text": "self.chat_metrics.record(\"grounded_ui_edit_fastpath\", result.get(\"success\", True),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2330,
+        "text": "route=\"grounded_ui_edit_fastpath\", message=message, result=result,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2336,
+        "text": "qc_live_fastpath = await self._maybe_qc_live_fastpath(msg_stripped)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2337,
+        "text": "if qc_live_fastpath is not None:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2338,
+        "text": "result = _normalize(qc_live_fastpath, fallback_content=\"(sin respuesta)\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2341,
+        "text": "result[\"route\"] = \"qc_live_fastpath\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2342,
+        "text": "self.chat_metrics.record(\"qc_live_fastpath\", result.get(\"success\", True),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2345,
+        "text": "route=\"qc_live_fastpath\", message=message, result=result,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 3108,
+        "text": "# P-OP56: Trading analysis composite fastpath"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 3921,
+        "text": "\"sintesis\", \"síntesis\", \"fallback\", \"fastpath\", \"governance\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4138,
+        "text": "\"\"\"R18: emit chat.completed event so all routes (command/fastpath/llm/agent)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4615,
+        "text": "# Dashboard fastpath inside agent route"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4617,
+        "text": "# PHASE E.2: Epistemic check - block dashboard fastpath when user asks"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4697,
+        "text": "direct = self._dashboard_status_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4703,
+        "text": "\"agent_steps\": 1, \"agent_status\": \"tool_backed_fastpath\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4712,
+        "text": "\"agent_steps\": 1, \"agent_status\": \"tool_backed_fastpath\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4721,
+        "text": "\"agent_steps\": 1, \"agent_status\": \"tool_backed_fastpath\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4730,
+        "text": "\"agent_steps\": 1, \"agent_status\": \"tool_backed_fastpath\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4739,
+        "text": "\"agent_steps\": 1, \"agent_status\": \"tool_backed_fastpath\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4748,
+        "text": "\"agent_steps\": 1, \"agent_status\": \"tool_backed_fastpath\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4757,
+        "text": "\"agent_steps\": 1, \"agent_status\": \"tool_backed_fastpath\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4766,
+        "text": "\"agent_steps\": 1, \"agent_status\": \"tool_backed_fastpath\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4775,
+        "text": "\"agent_steps\": 1, \"agent_status\": \"tool_backed_fastpath\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4784,
+        "text": "\"agent_steps\": 1, \"agent_status\": \"tool_backed_fastpath\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4793,
+        "text": "\"agent_steps\": 1, \"agent_status\": \"tool_backed_fastpath\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4802,
+        "text": "\"agent_steps\": 1, \"agent_status\": \"tool_backed_fastpath\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4811,
+        "text": "\"agent_steps\": 1, \"agent_status\": \"tool_backed_fastpath\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4813,
+        "text": "# P-OP56: Trading analysis fastpath — combines trade + strategy + signals + pipeline"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4826,
+        "text": "\"agent_steps\": 1, \"agent_status\": \"tool_backed_fastpath\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5035,
+        "text": "# ── Fastpath (real data, no LLM) ─────────────────────────────────────────"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5151,
+        "text": "def _maybe_fastpath(self, message: str, model_priority: str = \"chat\") -> Optional[Dict]:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5154,
+        "text": "# ── Operational fastpaths (no LLM needed) ────────────────────────"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5156,
+        "text": "return self._llm_status_fastpath(model_priority)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5158,
+        "text": "return self._codex_comparison_fastpath(model_priority)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5160,
+        "text": "return self._codex_role_fastpath(model_priority)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5162,
+        "text": "return self._python_version_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5164,
+        "text": "return self._disk_space_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5166,
+        "text": "return self._running_services_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5168,
+        "text": "return self._search_files_fastpath(message)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5170,
+        "text": "return self._list_directory_fastpath(message)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5172,
+        "text": "return self._current_time_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5173,
+        "text": "# P-OP56: Trading analysis composite fastpath"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5177,
+        "text": "\"grounded_code_fastpath\", \"grounded_ui_edit_fastpath\", \"router\", \"routing\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5187,
+        "text": "# ── End operational fastpaths ─────────────────────────────────────"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5191,
+        "text": "return self._recent_activity_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5193,
+        "text": "return self._chat_interaction_review_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5195,
+        "text": "return self._greeting_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5197,
+        "text": "return self._capabilities_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5199,
+        "text": "return self._self_build_resolution_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5201,
+        "text": "return self._deep_risk_analysis_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5203,
+        "text": "return self._deep_edge_analysis_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5205,
+        "text": "return self._deep_strategy_analysis_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5207,
+        "text": "return self._deep_pipeline_analysis_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5209,
+        "text": "return self._deep_brain_analysis_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5211,
+        "text": "return self._self_build_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5213,
+        "text": "return self._consciousness_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5215,
+        "text": "return self._brain_status_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5217,
+        "text": "return self._utility_status_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5257,
+        "text": "# B3 FIX: Bloquear fastpath cuando se pide verificación real del estado"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5262,
+        "text": "# No usar fastpath - requiere verificación real"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5273,
+        "text": "# No usar fastpath - el usuario quiere ver/analizar contenido real"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5276,
+        "text": "return self._dashboard_status_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5278,
+        "text": "return self._health_fastpath()"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5286,
+        "text": "# PHASE R3.1: do NOT take fastpath if the user is asking about CONTENT"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5329,
+        "text": "def _llm_status_fastpath(self, model_priority: str) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5403,
+        "text": "def _codex_role_fastpath(self, model_priority: str) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5423,
+        "text": "def _codex_comparison_fastpath(self, model_priority: str) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5443,
+        "text": "# R21: introspection fastpath ----------------------------------------------"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5492,
+        "text": "def _recent_activity_fastpath(self, window_hours: int = 6) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5621,
+        "text": "def _chat_interaction_review_fastpath(self) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5828,
+        "text": "async def _maybe_grounded_code_analysis_fastpath(self, message: str) -> Optional[Dict]:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5909,
+        "text": "def _blocks_grounded_ui_edit_fastpath(message: str) -> bool:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5925,
+        "text": "async def _maybe_grounded_ui_edit_fastpath(self, message: str) -> Optional[Dict]:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5926,
+        "text": "if self._blocks_grounded_ui_edit_fastpath(message):"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 6032,
+        "text": "async def _maybe_qc_live_fastpath(self, message: str) -> Optional[Dict]:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 6746,
+        "text": "def _health_fastpath(self) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 6755,
+        "text": "def _greeting_fastpath(self) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 6760,
+        "text": "def _capabilities_fastpath(self) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 6910,
+        "text": "# 8. DASHBOARD_SNAPSHOT - bloquear qc_live_fastpath"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 6953,
+        "text": "def _brain_status_fastpath(self) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 6982,
+        "text": "def _deep_brain_analysis_fastpath(self) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7013,
+        "text": "def _deep_risk_analysis_fastpath(self) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7030,
+        "text": "def _deep_edge_analysis_fastpath(self) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7044,
+        "text": "def _deep_strategy_analysis_fastpath(self) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7059,
+        "text": "def _deep_pipeline_analysis_fastpath(self) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7074,
+        "text": "def _self_build_fastpath(self) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7092,
+        "text": "def _self_build_resolution_fastpath(self) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7115,
+        "text": "def _consciousness_fastpath(self) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7130,
+        "text": "def _dashboard_status_fastpath(self) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7170,
+        "text": "def _utility_status_fastpath(self) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7194,
+        "text": "# ── Operational Fastpath Handlers ───────────────────────────────────────"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7196,
+        "text": "def _python_version_fastpath(self) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7209,
+        "text": "def _disk_space_fastpath(self) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7242,
+        "text": "def _running_services_fastpath(self) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7287,
+        "text": "def _search_files_fastpath(self, original_message: str) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7349,
+        "text": "def _list_directory_fastpath(self, original_message: str) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7371,
+        "text": "def _current_time_fastpath(self) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 7382,
+        "text": "return {\"response\": text, \"content\": text, \"text\": text, \"success\": success, \"source\": \"fastpath\"}"
+      }
+    ],
+    "fallbacks": [
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 892,
+        "text": "def _summarize_agent_payload(payload, fallback: str = \"\") -> str:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 902,
+        "text": "if fallback:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 903,
+        "text": "return fallback"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 913,
+        "text": "return fallback or str(payload)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1046,
+        "text": "\"result\": _summarize_agent_payload(result.get(\"result\"), fallback=result.get(\"summary\", \"\")),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 2784,
+        "text": "el snapshot legacy solo como compatibilidad/fallback."
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 3631,
+        "text": "result_text = _summarize_agent_payload(raw_result, fallback=result.get(\"summary\", \"\"))"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 80,
+        "text": "# Fallback to local definitions if module not available"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 889,
+        "text": "\"advisory_route\": \"llm\",  # Fallback to LLM"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1815,
+        "text": "def _normalize(result: Dict, fallback_content: str = \"\") -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1821,
+        "text": "content  = result.get(\"content\")  or result.get(\"response\")  or fallback_content"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1822,
+        "text": "response = result.get(\"response\") or result.get(\"content\")   or fallback_content"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1963,
+        "text": "\"fallback\": False,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1992,
+        "text": "\"fallback\": False,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2036,
+        "text": "\"fallback\": False,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2126,
+        "text": "\"fallback\": False,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2145,
+        "text": "result = _normalize(policy_decision[\"local_response\"], fallback_content=\"(sin respuesta)\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2176,
+        "text": "resumed = _normalize(resumed, fallback_content=\"(sin respuesta)\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2206,
+        "text": "# PHASE E: Authority check before ANY fastpath emission (governs both guards and fallback)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2280,
+        "text": "result = _normalize(fastpath, fallback_content=\"(sin respuesta)\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2292,
+        "text": "# Fallback fastpath when routing guards not available but authority allows"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2295,
+        "text": "result = _normalize(fastpath, fallback_content=\"(sin respuesta)\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2309,
+        "text": "result = _normalize(code_fastpath, fallback_content=\"(sin respuesta)\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2323,
+        "text": "result = _normalize(ui_edit_fastpath, fallback_content=\"(sin respuesta)\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2338,
+        "text": "result = _normalize(qc_live_fastpath, fallback_content=\"(sin respuesta)\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2420,
+        "text": "# R7.1: Build a context-aware fallback if all chain models failed."
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2442,
+        "text": "result = _normalize(result, fallback_content=_fb)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 3025,
+        "text": "f\"  Fallbacks JSON mapeados: {legacy_secret_files.get('mapped_json_fallback_count', 0)} | Archivos sueltos: {legacy_secret_files.get('loose_secret_file_count', 0)}\\n\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 3921,
+        "text": "\"sintesis\", \"síntesis\", \"fallback\", \"fastpath\", \"governance\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 3956,
+        "text": "async def _llm_direct_fallback(self, message: str) -> str:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4486,
+        "text": "\"fallback\": False,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4543,
+        "text": "# Fallback: direct pathlib write (same effect, different audit trail)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4545,
+        "text": "raw_write = {\"written\": str(resolved), \"bytes\": len(content.encode(\"utf-8\")), \"fallback_pathlib\": True}"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4603,
+        "text": "\"fallback\": False,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4916,
+        "text": "# BOR-2: Clean Agent Failure Fallback — LLM fallback for ghost/max_steps/timeout"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4917,
+        "text": "# BOR-3B: stable fallback chain; avoid \"auto\" because it can resolve to weak local llm."
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4918,
+        "text": "# BOR-3C: direct stable fallback via llm.query() to bypass _select_llm_chain re-mapping."
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4920,
+        "text": "fallback_priority = \"chat\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4921,
+        "text": "fallback_messages = ["
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4932,
+        "text": "llm_raw = await self.llm.query(fallback_messages, model_priority=fallback_priority)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4952,
+        "text": "\"route\": \"agent_fallback_llm\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4957,
+        "text": "\"fallback_success\": bool(llm_result.get(\"success\")),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4983,
+        "text": "fallback_text = await self._llm_direct_fallback(message)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4984,
+        "text": "full = self._sanitize_user_visible_response(fallback_text) if fallback_text else ("
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5013,
+        "text": "extractive_fallback = full.strip().lower().startswith(\"*[resumen extractivo\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5015,
+        "text": "if extractive_fallback or self._looks_like_canned_failure(full):"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5025,
+        "text": "extractive_fallback = False"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5029,
+        "text": ") and not extractive_fallback,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5129,
+        "text": "result = _normalize(result, fallback_content=\"(sin respuesta)\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5366,
+        "text": "f\"  Fallbacks para esta consulta: {', '.join(active_chain[1:]) if len(active_chain) > 1 else 'ninguno'}\\n\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5433,
+        "text": "f\"  `chat` general: usa {chat_chain}. Aqui Codex no es el motor principal; entra como fallback alto \""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5479,
+        "text": "\"codex\", \"ruta\", \"routing\", \"fallback\", \"timeout\", \"latencia\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5695,
+        "text": "\"fallback\", \"timeout\", \"analiza\", \"analisis\", \"análisis\", \"revisa\", \"inspecciona\", \"lee\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5741,
+        "text": "\"exacta\", \"inspecciona\", \"corrigio\", \"prueba\", \"cubre\", \"fallback\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5764,
+        "text": "targets.extend([\"Resumen extractivo\", \"extractive_fallback\", \"_looks_like_canned_failure\", \"extractive\"])"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5765,
+        "text": "if \"fallback\" in msg_l:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 5766,
+        "text": "targets.extend([\"CHAINS =\", \"timeout\", \"fallback\"])"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 6624,
+        "text": "# Fallback: extract meaningful fields"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 6677,
+        "text": "R7.1: Structured extractive fallback. Groups actions by tool,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 6844,
+        "text": "# 5. CURATED_INGESTION (P1) - fallback si provider no está disponible"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 6939,
+        "text": "\"algunas rutas pueden depender de Policy Gate/local fallback, \""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 51,
+        "text": "# Tool-explicit fallback (already handled by TOOL-01 regex, but included for completeness)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 65,
+        "text": "# Tool-explicit fallback"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 159,
+        "text": "# Fallback: quoted strings of reasonable length"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 470,
+        "text": "\"fallback\": False,"
+      }
+    ],
+    "governed_action_paths": [
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1453,
+        "text": "model_used=\"governed_action_kernel\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 47,
+        "text": "from brain_v9.core.governed_action_kernel import ("
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2063,
+        "text": "result = validate_no_false_execution_claim(result, execution_context={\"route\": \"governed_action_kernel\", \"tool_result\": None})"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2065,
+        "text": "self.chat_metrics.record(\"governed_action_kernel\", False, (_time.monotonic() - _t0) * 1000)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2067,
+        "text": "route=\"governed_action_kernel\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2085,
+        "text": "# F3: Store canonical governed_action metadata for approval"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2086,
+        "text": "perm[\"governed_action\"] = {"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2090,
+        "text": "\"source\": \"governed_action_kernel\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2099,
+        "text": "f\"route=governed_action_kernel\\n\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2116,
+        "text": "\"route\": \"governed_action_kernel\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2128,
+        "text": "\"model\": \"governed_action_kernel\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2129,
+        "text": "\"model_used\": \"governed_action_kernel\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2133,
+        "text": "self.chat_metrics.record(\"governed_action_kernel\", True, (_time.monotonic() - _t0) * 1000)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2135,
+        "text": "route=\"governed_action_kernel\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 427,
+        "text": "\"route\": \"governed_action_kernel\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 431,
+        "text": "\"model\": \"governed_action_kernel\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 432,
+        "text": "\"model_used\": \"governed_action_kernel\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 443,
+        "text": "f\"route=governed_action_kernel\\n\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 460,
+        "text": "\"route\": \"governed_action_kernel\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 472,
+        "text": "\"model\": \"governed_action_kernel\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 473,
+        "text": "\"model_used\": \"governed_action_kernel\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 509,
+        "text": "is_tool_route = route in (\"tool01_router\", \"governed_action_kernel\") or response.get(\"tool01_real\")"
+      }
+    ],
+    "tool01_paths": [
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 873,
+        "text": "tool01_real: Optional[bool] = None"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 874,
+        "text": "tool01_router_used: Optional[bool] = None"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 880,
+        "text": "class Tool01PermissionRequest(BaseModel):"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1711,
+        "text": "if result.get(\"tool01_real\") or result.get(\"tool_name\"):"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1717,
+        "text": "data={\"tool_name\": result.get(\"tool_name\"), \"tool01_real\": result.get(\"tool01_real\"),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1718,
+        "text": "\"tool01_router_used\": result.get(\"tool01_router_used\")}"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1736,
+        "text": "return ChatResponse(response=content_str, session_id=req.session_id, model_used=result.get(\"model\"), success=result.get(\"success\", False), pending_action=pending_action, permission_required=result.get(\"permission_required\"), permission_id=result.get(\"permission_id\"), tool_name=result.get(\"tool_name\"), risk_level=result.get(\"risk_level\"), options=result.get(\"options\"), tool01_real=result.get(\"tool01_real\"), tool01_router_used=result.get(\"tool01_router_used\"), blocked_by_policy=result.get(\"blocked_by_policy\"), blocked_by_user=result.get(\"blocked_by_user\"), tool_result=result.get(\"tool_result\"))"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1786,
+        "text": "@app.post(\"/tool01/permission/approve\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1787,
+        "text": "async def tool01_permission_approve(req: Tool01PermissionRequest):"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1792,
+        "text": "result = session._tool01_approve_permission(req.permission_id, req.decision)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1797,
+        "text": "for internal_name, public_name in session._TOOL01_PUBLIC_NAMES.items():"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1802,
+        "text": "for grant_info in session._tool01_permission_grants.values():"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1808,
+        "text": "if req.decision in (\"allow_once\", \"allow_session\") and tool_name in session._TOOL01_ROUTER_PATTERNS:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1809,
+        "text": "tool_result = await session._tool01_execute(tool_name, original_message)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1829,
+        "text": "@app.get(\"/tool01/permission/pending/{session_id}\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1830,
+        "text": "async def tool01_permission_pending(session_id: str):"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1835,
+        "text": "perm = getattr(session, '_pending_tool01_permission', None)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1841,
+        "text": "@app.get(\"/tool01/permission/grants/{session_id}\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1842,
+        "text": "async def tool01_permission_grants(session_id: str):"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\main.py",
+        "line": 1847,
+        "text": "grants = session._tool01_permission_grants"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1873,
+        "text": "self._tool01_permission_grants: Dict[str, Dict] = {}"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1874,
+        "text": "self._tool01_permission_counter: int = 0"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1929,
+        "text": "tool01_result = await self._tool01_router(msg_stripped)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1930,
+        "text": "if tool01_result is not None:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1931,
+        "text": "if tool01_result.get(\"permission_required\"):"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1932,
+        "text": "perm = tool01_result"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1936,
+        "text": "f\"route=tool01_router\\n\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1937,
+        "text": "f\"tool01_router_used=true\\n\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1938,
+        "text": "f\"tool01_real=false\\n\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1953,
+        "text": "\"route\": \"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1955,
+        "text": "\"tool01_router_used\": True,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1956,
+        "text": "\"tool01_real\": False,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1965,
+        "text": "\"model\": \"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1966,
+        "text": "\"model_used\": \"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1970,
+        "text": "self.chat_metrics.record(\"tool01_router\", True, (_time.monotonic() - _t0) * 1000)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1972,
+        "text": "route=\"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1978,
+        "text": "ok = tool01_result.get(\"success\", False)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1979,
+        "text": "blocked = tool01_result.get(\"blocked_by_policy\", False)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1983,
+        "text": "\"content\": f\"{notice}\\n{json.dumps(tool01_result, indent=2, ensure_ascii=False)}\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1984,
+        "text": "\"response\": f\"{notice}\\n{json.dumps(tool01_result, indent=2, ensure_ascii=False)}\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1985,
+        "text": "\"route\": \"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1987,
+        "text": "\"tool01_router_used\": True,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1988,
+        "text": "\"tool01_real\": True,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1990,
+        "text": "\"tool_name\": tool01_result.get(\"tool_name\"),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1993,
+        "text": "\"agent_status\": \"tool01_real\" if ok else \"tool01_blocked\" if blocked else \"tool01_failed\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1995,
+        "text": "\"model\": \"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1996,
+        "text": "\"model_used\": \"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 1999,
+        "text": "\"tool_names\": [tool01_result.get(\"tool_name\")],"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2000,
+        "text": "\"tool_result\": tool01_result,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2003,
+        "text": "self.chat_metrics.record(\"tool01_router\", ok, (_time.monotonic() - _t0) * 1000)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2005,
+        "text": "route=\"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2013,
+        "text": "if hasattr(self, '_pending_tool01_permission') and self._pending_tool01_permission:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2014,
+        "text": "perm_result = await self._tool01_handle_permission_response(msg_stripped)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2016,
+        "text": "self._pending_tool01_permission = None  # Clear pending after handling"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2028,
+        "text": "\"route\": \"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2030,
+        "text": "\"tool01_router_used\": True,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2031,
+        "text": "\"tool01_real\": ok,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2037,
+        "text": "\"agent_status\": \"tool01_real\" if ok else \"tool01_blocked\" if blocked else \"tool01_failed\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2039,
+        "text": "\"model\": \"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2040,
+        "text": "\"model_used\": \"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2047,
+        "text": "self.chat_metrics.record(\"tool01_router\", ok, (_time.monotonic() - _t0) * 1000)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2049,
+        "text": "route=\"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2080,
+        "text": "perm = self._tool01_request_permission("
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2100,
+        "text": "f\"tool01_router_used=false\\n\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2101,
+        "text": "f\"tool01_real=false\\n\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2118,
+        "text": "\"tool01_router_used\": False,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2119,
+        "text": "\"tool01_real\": False,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4195,
+        "text": "_TOOL01_ROUTER_PATTERNS = {"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4217,
+        "text": "_TOOL01_PUBLIC_NAMES = {"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4225,
+        "text": "_TOOL01_BLOCKED_PREFIXES = ("
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4231,
+        "text": "_TOOL01_LOW_RISK_TOOLS = frozenset({"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4235,
+        "text": "_TOOL01_HIGH_RISK_TOOLS = frozenset({"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4240,
+        "text": "def _tool01_get_risk_level(self, tool_name: str) -> str:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4241,
+        "text": "if tool_name in self._TOOL01_LOW_RISK_TOOLS:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4243,
+        "text": "if tool_name in self._TOOL01_HIGH_RISK_TOOLS:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4247,
+        "text": "def _tool01_has_permission(self, tool_name: str, scope: str = \"\") -> bool:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4248,
+        "text": "grant = self._tool01_permission_grants.get(tool_name)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4255,
+        "text": "def _tool01_request_permission(self, tool_name: str, reason: str, scope: str = \"\", original_message: str = \"\") -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4256,
+        "text": "self._tool01_permission_counter += 1"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4257,
+        "text": "permission_id = f\"tool01_perm_{self.session_id}_{self._tool01_permission_counter}\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4258,
+        "text": "risk = self._tool01_get_risk_level(tool_name)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4265,
+        "text": "\"tool_name\": self._TOOL01_PUBLIC_NAMES.get(tool_name, tool_name),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4273,
+        "text": "self._tool01_permission_grants[tool_name] = {**perm, \"granted\": None}"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4276,
+        "text": "def _tool01_approve_permission(self, permission_id: str, decision: str) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4277,
+        "text": "for tool_name, req in list(self._tool01_permission_grants.items()):"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4285,
+        "text": "self._tool01_permission_grants[tool_name] = {"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4290,
+        "text": "\"blocked_prefixes\": list(self._TOOL01_BLOCKED_PREFIXES),"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4299,
+        "text": "async def _tool01_router(self, message: str) -> Optional[Dict]:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4303,
+        "text": "for tool_name, patterns in self._TOOL01_ROUTER_PATTERNS.items():"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4307,
+        "text": "if not self._tool01_has_permission_grant(tool_name):"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4308,
+        "text": "public_name = self._TOOL01_PUBLIC_NAMES.get(tool_name, tool_name)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4310,
+        "text": "perm = self._tool01_request_permission(tool_name, reason, original_message=message)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4311,
+        "text": "self._pending_tool01_permission = perm"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4313,
+        "text": "\"route\": \"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4314,
+        "text": "\"tool01_router_used\": True,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4315,
+        "text": "\"tool01_real\": False,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4320,
+        "text": "return await self._tool01_execute(tool_name, message)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4323,
+        "text": "def _tool01_has_permission_grant(self, tool_name: str) -> bool:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4324,
+        "text": "grant = self._tool01_permission_grants.get(tool_name)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4333,
+        "text": "async def _tool01_handle_permission_response(self, message: str) -> Optional[Dict]:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4336,
+        "text": "perm = getattr(self, '_pending_tool01_permission', None)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4342,
+        "text": "result = self._tool01_approve_permission(perm[\"permission_id\"], \"allow_once\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4346,
+        "text": "return await self._tool01_execute(result[\"tool_name\"], original_message)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4357,
+        "text": "result = self._tool01_approve_permission(perm[\"permission_id\"], \"allow_session\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4361,
+        "text": "return await self._tool01_execute(result[\"tool_name\"], original_message)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4364,
+        "text": "result = self._tool01_approve_permission(perm[\"permission_id\"], \"deny\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4374,
+        "text": "def _tool01_extract_path(self, message: str, default: str, require_file: bool = False) -> str:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4383,
+        "text": "def _tool01_policy_check_path(self, raw_path: str, read_file: bool = False) -> Tuple[bool, str, Optional[Path]]:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4394,
+        "text": "if rel == \"nul\" or \"nul\" in parts or any(rel == prefix or rel.startswith(prefix + \"/\") for prefix in self._TOOL01_BLOCKED_PREFIXES):"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4429,
+        "text": "if any(rel == prefix or rel.startswith(prefix + \"/\") for prefix in self._TOOL01_BLOCKED_PREFIXES):"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4437,
+        "text": "def _tool01_extract_write_content(self, message: str) -> str:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4457,
+        "text": "def _tool01_write_evidence(self, result: Dict) -> Optional[str]:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4462,
+        "text": "path = evidence_dir / f\"tool01_router_{stamp}.json\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4468,
+        "text": "async def _tool01_execute(self, tool_name: str, message: str) -> Dict:"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4476,
+        "text": "public_name = self._TOOL01_PUBLIC_NAMES.get(tool_name, tool_name)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4478,
+        "text": "\"route\": \"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4479,
+        "text": "\"tool01_router_used\": True,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4480,
+        "text": "\"tool01_real\": True,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4498,
+        "text": "path = self._tool01_extract_path(message, \"tmp_agent/brain_v9\")"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4499,
+        "text": "allowed, reason, resolved = self._tool01_policy_check_path(path)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4503,
+        "text": "result[\"evidence_path\"] = self._tool01_write_evidence(result)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4509,
+        "text": "path = self._tool01_extract_path(message, \"tmp_agent/brain_v9/core/llm.py\", require_file=True)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4510,
+        "text": "allowed, reason, resolved = self._tool01_policy_check_path(path, read_file=True)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4514,
+        "text": "result[\"evidence_path\"] = self._tool01_write_evidence(result)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4525,
+        "text": "path = self._tool01_extract_path(message, \"tmp_agent/workspace/vtc_permission_test.txt\", require_file=True)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4530,
+        "text": "result[\"evidence_path\"] = self._tool01_write_evidence(result)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4532,
+        "text": "content = self._tool01_extract_write_content(message)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4536,
+        "text": "result[\"evidence_path\"] = self._tool01_write_evidence(result)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4555,
+        "text": "result[\"evidence_path\"] = self._tool01_write_evidence(result)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4579,
+        "text": "result[\"evidence_path\"] = self._tool01_write_evidence(result)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4581,
+        "text": "grant = self._tool01_permission_grants.get(tool_name)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4588,
+        "text": "router_result = await self._tool01_router(message)"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4597,
+        "text": "\"route\": \"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4598,
+        "text": "\"tool01_router_used\": True,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4599,
+        "text": "\"tool01_real\": True,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4604,
+        "text": "\"model\": \"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4605,
+        "text": "\"model_used\": \"tool01_router\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 4607,
+        "text": "\"agent_status\": \"tool01_real\" if ok else \"tool01_blocked\" if blocked else \"tool01_failed\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 428,
+        "text": "\"tool01_router_used\": False,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 429,
+        "text": "\"tool01_real\": False,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 444,
+        "text": "f\"tool01_router_used=false\\n\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 445,
+        "text": "f\"tool01_real=false\\n\""
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 462,
+        "text": "\"tool01_router_used\": False,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 463,
+        "text": "\"tool01_real\": False,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\governed_action_kernel.py",
+        "line": 509,
+        "text": "is_tool_route = route in (\"tool01_router\", \"governed_action_kernel\") or response.get(\"tool01_real\")"
+      }
+    ],
+    "visual_trace_paths": [],
+    "potential_duplicate_authority": [
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2245,
+        "text": "proposed_route=\"fastpath\","
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2287,
+        "text": "route=\"fastpath\", message=message, result=result,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2302,
+        "text": "route=\"fastpath\", message=message, result=result,"
+      },
+      {
+        "file": "tmp_agent\\brain_v9\\core\\session.py",
+        "line": 2466,
+        "text": "route = \"agent\" if use_agent else \"llm\""
+      }
+    ]
+  }
+}

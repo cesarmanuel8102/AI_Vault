@@ -1,0 +1,71 @@
+{
+  "B1_TOOL01_GAK_PATH_VERIFICATION": {
+    "status": "VERIFIED_NO_CRITICAL_BYPASS",
+    "head_base": "3fd481ed",
+    "code_changed": false,
+    "files_scanned": [
+      "tmp_agent/brain_v9/core/session.py",
+      "tmp_agent/brain_v9/core/governed_action_kernel.py"
+    ],
+    "tool01_entrypoints": [
+      {
+        "name": "_tool01_router",
+        "line": 4299,
+        "type": "pattern_matcher",
+        "description": "Matches _TOOL01_ROUTER_PATTERNS, checks _tool01_has_permission_grant before execution"
+      },
+      {
+        "name": "_tool01_execute",
+        "line": 4468,
+        "type": "executor",
+        "description": "Executes tool after permission grant, validates _is_safe_workspace_path for filesystem ops"
+      }
+    ],
+    "gak_policy_gates": [
+      {
+        "name": "detect_action_intent",
+        "line": 2058,
+        "type": "intent_detector",
+        "description": "Natural language action intent detection"
+      },
+      {
+        "name": "evaluate_action_policy",
+        "line": 2060,
+        "type": "policy_engine",
+        "description": "Policy evaluation with blocked_by_policy for protected paths"
+      },
+      {
+        "name": "validate_no_false_execution_claim",
+        "line": 2063,
+        "type": "execution_guard",
+        "description": "Prevents false execution claims in non-tool routes"
+      }
+    ],
+    "permission_gate_evidence": [
+      {
+        "gate": "TOOL-01 permission_required",
+        "line": 4307,
+        "description": "If no permission grant exists, _tool01_request_permission returns permission_required=true"
+      },
+      {
+        "gate": "TOOL-01 permission options",
+        "line": 4310,
+        "description": "Returns allow_once/allow_session/deny options to user"
+      },
+      {
+        "gate": "GAK permission_required",
+        "line": 2102,
+        "description": "GAK route also returns permission_required=true for unapproved actions"
+      },
+      {
+        "gate": "GAK blocked_by_policy",
+        "line": 360,
+        "description": "GAK evaluates_policy blocks protected paths before permission request"
+      }
+    ],
+    "bypass_evidence": [],
+    "conclusion": "TOOL-01 and GAK are separate but parallel authority paths. Both enforce permission gates and workspace path safety. No confirmed bypass of all governance layers. However, the split between TOOL-01 pattern routing and GAK natural-language routing creates duplicate authority and potential policy inconsistency.",
+    "recommended_severity_for_B1_003": "high",
+    "recommended_next_action": "Consolidate TOOL-01 permission logic into GAK evaluate_action_policy to ensure single policy engine governs all tool executions, or add explicit GAK gate before _tool01_router execution."
+  }
+}

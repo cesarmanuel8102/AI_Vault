@@ -1,0 +1,140 @@
+{
+  "B1_ROUTING_AUTHORITY_AUDIT_REPORT": {
+    "status": "READ_ONLY_AUDIT_COMPLETE",
+    "head_base": "3fd481ed",
+    "branch": "codex/own-capital-sustainable-return",
+    "scope": "read-only routing authority audit across main.py, session.py, and governed_action_kernel",
+    "code_changed": false,
+    "runtime_changed": false,
+    "protected_touched": false,
+    "files_modified": [
+      "tmp_agent/b1_routing_authority_audit/b1_route_inventory.json",
+      "tmp_agent/b1_routing_authority_audit/b1_findings_report.json"
+    ],
+    "routing_authority_map": [
+      {
+        "authority": "BrainSession.chat()",
+        "type": "PRIMARY_AUTHORITY",
+        "description": "Main routing entrypoint for user messages",
+        "files": [
+          "tmp_agent/brain_v9/core/session.py"
+        ],
+        "lines": [
+          1
+        ]
+      },
+      {
+        "authority": "GAK.detect_action_intent()",
+        "type": "POLICY_GATE",
+        "description": "Natural language action intent detection before tool execution",
+        "files": [
+          "tmp_agent/brain_v9/core/governed_action_kernel.py"
+        ],
+        "lines": [
+          1
+        ]
+      },
+      {
+        "authority": "TOOL-01 _tool01_router",
+        "type": "TOOL_GATE",
+        "description": "Filesystem write/read tool execution with permission gates",
+        "files": [
+          "tmp_agent/brain_v9/core/session.py"
+        ],
+        "lines": [
+          1
+        ]
+      },
+      {
+        "authority": "VTC trace endpoints",
+        "type": "UI_TRACE_ONLY",
+        "description": "Visual trace console endpoints for UI reporting",
+        "files": [
+          "tmp_agent/brain_v9/main.py"
+        ],
+        "lines": [
+          1
+        ]
+      },
+      {
+        "authority": "fastpaths",
+        "type": "FALLBACK",
+        "description": "Multiple fastpath routes that bypass main session routing",
+        "files": [
+          "tmp_agent/brain_v9/core/session.py"
+        ],
+        "lines": [
+          1
+        ]
+      }
+    ],
+    "findings": [
+      {
+        "id": "B1-001",
+        "severity": "high",
+        "title": "Excessive fastpaths (189) vs governed paths (22)",
+        "description": "There are 189 fastpath references but only 22 governed action paths. This suggests many routing decisions bypass the GAK/TOOL-01 governance layer.",
+        "impact": "Governed actions may be silently avoided if fastpaths activate before GAK gates. User could request risky actions that trigger a legacy fastpath instead of the governed pipeline.",
+        "files": [
+          "tmp_agent/brain_v9/core/session.py"
+        ],
+        "recommendation": "Audit all 189 fastpaths individually. Each fastpath should gate through GAK if it involves file write, system command, or strategy modification."
+      },
+      {
+        "id": "B1-002",
+        "severity": "medium",
+        "title": "Duplicate routing authority: BrainSession.chat vs fastpath layer",
+        "description": "Main routing authority lives in BrainSession.chat() but multiple fastpaths make autonomous routing decisions. Could lead to BrainSession routing a message one way while a fastpath overrides it.",
+        "impact": "UI responses may show routing decisions that don't match actual tool/LLM paths executed.",
+        "files": [
+          "tmp_agent/brain_v9/core/session.py"
+        ],
+        "recommendation": "Consolidate all routing decisions into a single authority or clearly demarcate fastpath scope."
+      },
+      {
+        "id": "B1-003",
+        "severity": "high",
+        "title": "TOOL-01 and GAK compete as overlapping authorities without unified policy engine",
+        "description": "TOOL-01 routing (145 code points) and GAK are parallel paths in session.py. TOOL-01 enforces permissions and workspace safety independently; GAK separately detects action intent and policy. Neither GAK nor TOOL-01 acts as a strict sequential gate for the other, creating potential for inconsistent policy application when intent classification differs.",
+        "impact": "Policy inconsistency: user message may be classified differently by TOOL-01 pattern matching vs GAK intent detection, leading to divergent permission or blocking behavior. Protected paths are blocked by both paths, so no critical bypass, but future changes risk desynchronization.",
+        "files": [
+          "tmp_agent/brain_v9/core/session.py",
+          "tmp_agent/brain_v9/core/governed_action_kernel.py"
+        ],
+        "recommendation": "Consolidate TOOL-01 permission logic into GAK evaluate_action_policy, or add explicit GAK gate before _tool01_router execution to ensure single policy engine governs all tool actions."
+      },
+      {
+        "id": "B1-004",
+        "severity": "medium",
+        "title": "VTC trace may not capture routed action if fastpath bypasses BrainSession",
+        "description": "Visual Trace Console endpoints exist in main.py, but if fastpaths execute without going through BrainSession.chat, the VTC may not record the actual tool or model invocation.",
+        "impact": "Trace-execution mismatch could lead to incorrect governance audits.",
+        "files": [
+          "tmp_agent/brain_v9/main.py",
+          "tmp_agent/brain_v9/core/session.py"
+        ],
+        "recommendation": "Attach trace logging at the lowest execution layer (tool wrappers) rather than at the BrainSession.chat entrypoint."
+      },
+      {
+        "id": "B1-005",
+        "severity": "low",
+        "title": "4 potential duplicate authority patterns found",
+        "description": "Regex matches suggest route assignments to 'agent', 'llm', 'fastpath', 'grounded' that may compete.",
+        "impact": "Minor risk of conflicting route labels in logs or UI.",
+        "files": [
+          "tmp_agent/brain_v9/core/session.py"
+        ],
+        "recommendation": "Standardize route constants and avoid string-level route assignment in multiple places."
+      }
+    ],
+    "severity_counts": {
+      "critical": 0,
+      "high": 2,
+      "medium": 2,
+      "low": 1
+    },
+    "recommended_next_action": "Investigate B1-003 via targeted code review of _tool01_router and all tool01 entrypoints to confirm no intent bypass exists. If confirmed safe, downgrade severity. If gap found, patch to critical immediately.",
+    "ready_for_commit": true,
+    "ready_for_patch": false
+  }
+}
