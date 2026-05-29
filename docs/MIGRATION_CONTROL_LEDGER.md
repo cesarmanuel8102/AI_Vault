@@ -708,4 +708,32 @@
   - OPTIONAL: VTC-E UI operator polish (banner, badges, redaction indicator)
   - PRIMARY: User-selected next priority
 
+## 24. Checkpoint — VTC-F Operational Readiness Closed
+- Date (UTC): 2026-05-29T02:15:00+00:00
+- Branch: codex/own-capital-sustainable-return
+- HEAD: 5846fd71 (VTC-F2 SSE e2e test committed)
+- Type: POST-VTC OPERATIONAL READINESS CLOSEOUT
+- Commits:
+  - 1ad53f61 — VTC-F Operational Readiness Plan (plan + audit + recommendations)
+  - 845a17f0 — VTC-F1 Operator Access Runbook (docs/OPERATOR_ACCESS_RUNBOOK.md)
+  - 5846fd71 — VTC-F2 SSE E2E Automated Test (tests/unit/test_agent_trace_sse_e2e.py)
+- Scope:
+  - docs/OPERATOR_ACCESS_RUNBOOK.md — operator token deployment guide
+  - tests/unit/test_agent_trace_sse_e2e.py — 3 tests (emit+read, SSE queue, safe event)
+  - tmp_agent/visual_trace_console_v1/vtc_f*.json / .md — evidence artifacts
+- Acceptance:
+  - VTC-F1: FORMALLY CLOSED
+  - VTC-F2: FORMALLY CLOSED
+  - operator_access documented: YES
+  - sse_redaction_test_added: YES
+  - Tests: 92/92 PASS (28 trace + 9 integration + 52 regression + 3 SSE e2e)
+- Protected files status: NOT staged during any VTC-F commit
+- Ledger updated: YES
+- Inconsistencies resolved:
+  - ROADMAP_STATUS.json updated from a3fb6ba1 to 5846fd71
+  - migration_status updated from vtc_v1_closed to vtc_f_operational_readiness_closed
+  - completed_fronts appended: VTC_F1_operator_access_runbook, VTC_F2_sse_e2e_automated_test
+- Next front:
+  - OPTIONAL: VTC-E UI operator polish (banner, badges, redaction indicator)
+  - PRIMARY: User-selected next priority
 

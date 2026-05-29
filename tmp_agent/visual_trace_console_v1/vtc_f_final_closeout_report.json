@@ -1,0 +1,46 @@
+{
+  "VTC_F_FINAL_CLOSEOUT_REPORT": {
+    "status": "CLOSED",
+    "head_base": "5846fd71",
+    "branch": "codex/own-capital-sustainable-return",
+    "closeout_date": "2026-05-29T02:15:00Z",
+    "vtc_sequence": [
+      {"phase": "VTC-Seed", "commit": "4ff14fed"},
+      {"phase": "VTC-A", "commit": "2a161c4b"},
+      {"phase": "VTC-A1", "commit": "9bd71909"},
+      {"phase": "VTC-B", "commit": "c47f73fa"},
+      {"phase": "VTC-C1/C2", "commit": "09ea1711"},
+      {"phase": "VTC-D", "commit": "a3fb6ba1"},
+      {"phase": "Post-VTC-Ledger", "commit": "05dd7fe6"},
+      {"phase": "VTC-F-Plan", "commit": "1ad53f61"},
+      {"phase": "VTC-F1-Docs", "commit": "845a17f0"},
+      {"phase": "VTC-F2-Test", "commit": "5846fd71"}
+    ],
+    "vtc_f1_closed": {
+      "commit": "845a17f0",
+      "description": "Operator Access Runbook created with BRAIN_ADMIN_TOKEN setup, X-Brain-Token usage, endpoint matrix, PowerShell examples, security rules."
+    },
+    "vtc_f2_closed": {
+      "commit": "5846fd71",
+      "description": "SSE E2E automated test added (3 tests) verifying trace redaction end-to-end without server, without token, via internal emitter + file/queue inspection."
+    },
+    "operational_readiness_closed": true,
+    "tests_grand_total": "92/92 PASS",
+    "files_created": [
+      "tmp_agent/visual_trace_console_v1/vtc_f_final_closeout_report.json"
+    ],
+    "files_modified": [
+      "ROADMAP_STATUS.json",
+      "docs/MIGRATION_CONTROL_LEDGER.md"
+    ],
+    "code_changed": false,
+    "tests_changed": false,
+    "ui_changed": false,
+    "docs_changed": true,
+    "ledger_changed": true,
+    "protected_touched": false,
+    "ready_for_commit": true,
+    "ready_for_patch": false,
+    "recommended_next_front": "USER_SELECTED_PRIORITY_OR_VTC_E_OPTIONAL"
+  }
+}

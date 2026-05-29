@@ -1,8 +1,8 @@
 {
-  "current_head": "a3fb6ba1",
+  "current_head": "5846fd71",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "vtc_v1_closed",
-  "last_applied_checkpoint": "VTC-D_closeout",
+  "migration_status": "vtc_f_operational_readiness_closed",
+  "last_applied_checkpoint": "VTC-F_closeout",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -18,7 +18,9 @@
     "B2_orphan_modules_audit",
     "N5_import_path_test_hygiene",
     "MRC-01A_post_GAK_ledger_reconciliation",
-    "VTC_v1_trace_redaction_hardening_and_closeout"
+    "VTC_v1_trace_redaction_hardening_and_closeout",
+    "VTC_F1_operator_access_runbook",
+    "VTC_F2_sse_e2e_automated_test"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -27,7 +29,7 @@
     "tmp_agent/strategies",
     "tmp_agent/reports"
   ],
-  "recommended_next_front": "USER_SELECTED_PRIORITY_VTC_E_OR_NEXT_FRONT",
+  "recommended_next_front": "USER_SELECTED_PRIORITY_OR_VTC_E_OPTIONAL",
   "ready_for_next_front": true,
-  "last_updated": "2026-05-29T01:05:00Z"
+  "last_updated": "2026-05-29T02:15:00Z"
 }
