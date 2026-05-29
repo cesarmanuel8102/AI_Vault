@@ -1,0 +1,48 @@
+{
+  "VTC_D_FINAL_STATUS_REPORT": {
+    "status": "CLOSEOUT_READY",
+    "head_base": "09ea1711",
+    "branch": "codex/own-capital-sustainable-return",
+    "phase": "VTC-D closeout + UI operator polish plan",
+    "closeout_date": "2026-05-29T01:02:00Z",
+    "files_created": [
+      "tmp_agent/visual_trace_console_v1/vtc_d_closeout_audit.json",
+      "tmp_agent/visual_trace_console_v1/vtc_d_ui_operator_polish_plan.md",
+      "tmp_agent/visual_trace_console_v1/vtc_d_acceptance_matrix.json",
+      "tmp_agent/visual_trace_console_v1/vtc_d_final_status_report.json"
+    ],
+    "files_modified": [],
+    "code_changed": false,
+    "ui_changed": false,
+    "protected_touched": false,
+    "ready_for_commit": true,
+    "ready_for_patch": false,
+    "recommended_next_action": "commit VTC-D closeout evidence, then decide whether to implement optional UI operator polish in VTC-E",
+    "vtc_summary": {
+      "seed": {
+        "commit": "4ff14fed",
+        "status": "CLOSED"
+      },
+      "vtc_a": {
+        "commit": "2a161c4b",
+        "status": "CLOSED"
+      },
+      "vtc_a1": {
+        "commit": "9bd71909",
+        "status": "CLOSED"
+      },
+      "vtc_b": {
+        "commit": "c47f73fa",
+        "status": "CLOSED"
+      },
+      "vtc_c1_c2": {
+        "commit": "09ea1711",
+        "status": "CLOSED"
+      },
+      "vtc_d": {
+        "commit": null,
+        "status": "IN_PROGRESS_CLOSEOUT"
+      }
+    }
+  }
+}

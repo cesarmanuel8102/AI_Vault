@@ -1,0 +1,49 @@
+{
+  "VTC_D_ACCEPTANCE_MATRIX": {
+    "head_base": "09ea1711",
+    "branch": "codex/own-capital-sustainable-return",
+    "audit_date": "2026-05-29T01:02:00Z",
+    "checks": {
+      "seed_artifacts_committed": true,
+      "adapter_plan_committed": true,
+      "trace_redactor_committed": true,
+      "endpoint_integration_committed": true,
+      "redaction_hardening_committed": true,
+      "runtime_reconciliation_committed": true,
+      "backend_integrity_verified": true,
+      "tests_grand_total_pass": "89/89",
+      "raw_cot_policy": "blocked_at_field_level_and_redacted_in_strings",
+      "secret_assignment_policy": "redacted_completely_including_value",
+      "bearer_policy": "redacted_completely",
+      "protected_path_policy": "redacted_to_placeholder",
+      "large_payload_policy": "fallback_to_placeholder",
+      "ui_patch_required_for_closeout": false,
+      "runtime_patch_required_for_closeout": false,
+      "tests_required_before_closeout": true,
+      "ready_for_closeout_commit": true,
+      "ready_for_ui_patch": false
+    },
+    "evidence": {
+      "commits": [
+        "4ff14fed",
+        "2a161c4b",
+        "9bd71909",
+        "c47f73fa",
+        "09ea1711"
+      ],
+      "key_files": [
+        "tmp_agent/brain_v9/tracing/trace_redactor.py",
+        "tmp_agent/brain_v9/main.py",
+        "tests/unit/test_trace_redactor.py",
+        "tests/unit/test_agent_trace_redaction_integration.py"
+      ],
+      "reports": [
+        "tmp_agent/visual_trace_console_v1/vtc_a1_patch_report.json",
+        "tmp_agent/visual_trace_console_v1/vtc_b_patch_report.json",
+        "tmp_agent/visual_trace_console_v1/vtc_c1_redaction_hardening_report.json",
+        "tmp_agent/visual_trace_console_v1/vtc_c2_runtime_reconciliation_report.md"
+      ]
+    },
+    "acceptance_status": "ACCEPTED_FOR_CLOSEOUT"
+  }
+}

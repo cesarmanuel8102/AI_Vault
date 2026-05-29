@@ -1,0 +1,185 @@
+{
+  "VTC_D_CLOSEOUT_AUDIT": {
+    "audit_date": "2026-05-29T01:02:00Z",
+    "repo": "C:/AI_VAULT",
+    "branch": "codex/own-capital-sustainable-return",
+    "head_base": "09ea1711",
+    "phase": "VTC-D closeout",
+    "commits_detected": [
+      {
+        "hash": "4ff14fed",
+        "phase": "VTC-Seed",
+        "description": "Add Visual Trace Console v1 seed artifacts"
+      },
+      {
+        "hash": "2a161c4b",
+        "phase": "VTC-A",
+        "description": "Add VTC-A read-only adapter plan"
+      },
+      {
+        "hash": "9bd71909",
+        "phase": "VTC-A1",
+        "description": "Add trace_redactor module with tests"
+      },
+      {
+        "hash": "c47f73fa",
+        "phase": "VTC-B",
+        "description": "Integrate trace redactor into VTC endpoints"
+      },
+      {
+        "hash": "09ea1711",
+        "phase": "VTC-C1+C2",
+        "description": "Harden VTC trace redaction for assignment secrets"
+      }
+    ],
+    "endpoint_status": {
+      "/brain/agent-trace/latest": {
+        "method": "GET",
+        "redaction_boundaries": [
+          "_sanitize_event(dict(e)) on returned events"
+        ],
+        "auth_required": "require_operator_access",
+        "ui_reference": "agent_trace_console.html latest fetch"
+      },
+      "/brain/agent-trace/stream": {
+        "method": "GET",
+        "type": "SSE",
+        "redaction_boundaries": [
+          "_sanitize_event(dict(event)) before queue push"
+        ],
+        "auth_required": "require_operator_access",
+        "ui_reference": "agent_trace_console.html event stream"
+      },
+      "/brain/agent-trace/event": {
+        "method": "POST",
+        "redaction_boundaries": [
+          "_sanitize_event(event) before append",
+          "_sanitize_event(dict(event)) before broadcast"
+        ],
+        "auth_required": "require_operator_access",
+        "ui_reference": null
+      }
+    },
+    "redaction_status": {
+      "blocked_fields_count": 18,
+      "blocked_fields_list": [
+        "chain_of_thought",
+        "reasoning",
+        "scratchpad",
+        "raw_prompt",
+        "raw_completion",
+        "api_key",
+        "token",
+        "password",
+        "secret",
+        "credential",
+        "full_file_content",
+        "memory_dump",
+        "provider_internal_trace",
+        "model_internals",
+        "hidden_state",
+        "embedding",
+        "vector_dump",
+        "private_notes",
+        "internal_debug"
+      ],
+      "assignment_secrets": {
+        "status": "HARDENED_VTC_C1",
+        "patterns": [
+          "password=VALUE",
+          "password: VALUE",
+          "token=VALUE",
+          "api_key=VALUE",
+          "secret=VALUE",
+          "credential=VALUE",
+          "Authorization: Bearer VALUE",
+          "bearer VALUE"
+        ]
+      },
+      "bearer_tokens": {
+        "status": "HARDENED_VTC_C1",
+        "patterns": [
+          "Authorization: Bearer ...",
+          "inline bearer ..."
+        ]
+      },
+      "known_token_prefixes": {
+        "status": "PRESENT",
+        "patterns": [
+          "sk-...",
+          "ghp_...",
+          "AKIA..."
+        ]
+      },
+      "protected_paths": {
+        "status": "ACTIVE",
+        "paths": [
+          "memory/semantic",
+          "tmp_agent/strategies",
+          "tmp_agent/reports",
+          ".env",
+          "credentials",
+          "secrets",
+          "keys",
+          "config.json",
+          "api_keys.json",
+          "private_keys",
+          "ssh_keys"
+        ]
+      },
+      "large_payloads": {
+        "status": "ACTIVE",
+        "limit_bytes": 10000,
+        "fallback": {"_redacted": "large payload"}
+      }
+    },
+    "ui_status": {
+      "existing_console_found": true,
+      "file": "tmp_agent/brain_v9/ui/agent_trace_console.html",
+      "filters_found": false,
+      "SSE_found": true,
+      "latest_fetch_found": true,
+      "auth_tokens_in_html": false,
+      "security_headers_in_html": false
+    },
+    "test_status": {
+      "trace_redactor_tests": {
+        "total": 28,
+        "passed": 28,
+        "status": "PASS"
+      },
+      "integration_tests": {
+        "total": 9,
+        "passed": 9,
+        "status": "PASS"
+      },
+      "regression_subset": {
+        "total": 52,
+        "passed": 52,
+        "status": "PASS"
+      },
+      "grand_total": "89/89 PASS"
+    },
+    "open_risks": [
+      {
+        "risk_id": "VTC-D-R001",
+        "description": "UI agent_trace_console.html no tiene redaction indicator (operador no sabe que datos fueron redactados)",
+        "severity": "low",
+        "mitigation": "Planned for VTC-E UI operator polish"
+      },
+      {
+        "risk_id": "VTC-D-R002",
+        "description": "No hay tests e2e de SSE stream con eventos sensitivos",
+        "severity": "medium",
+        "mitigation": "Runtime smoke manual ejecutado OK, pero falta automatizar"
+      },
+      {
+        "risk_id": "VTC-D-R003",
+        "description": "operator_access dependency en /brain/agent-trace/event requiere token local que puede no estar configurado en deploys productivos",
+        "severity": "medium",
+        "mitigation": "Documentar en VTC-E o en runbook de deployment"
+      }
+    ],
+    "closeout_readiness": "READY"
+  }
+}
