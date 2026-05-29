@@ -669,4 +669,43 @@
   - PRIMARY: MRC final reconciliation / next user-selected priority
   - SECONDARY: Future N5-execution front when import stability becomes priority
 
+## 23. Checkpoint — VTC v1 Formal Closeout / Trace Redaction Hardening
+- Date (UTC): 2026-05-29T01:05:00+00:00
+- Branch: codex/own-capital-sustainable-return
+- HEAD: a3fb6ba1 (VTC-D closeout evidence committed)
+- Type: POST-VTC CLOSEOUT LEDGER SYNC
+- Supersedes: Section 15 (VTC Agent Visual Trace Console closed) — esta sección refleja los commits refinados VTC-A a VTC-D
+- VTC Commits (refined sequence):
+  - 4ff14fed — VTC Seed (seed artifacts, architecture, wireframe)
+  - 2a161c4b — VTC-A (endpoint inventory, redaction contract, adapter audit)
+  - 9bd71909 — VTC-A1 (trace_redactor.py module + 22 unit tests)
+  - c47f73fa — VTC-B (3-boundary integration en main.py + 9 integration tests)
+  - 09ea1711 — VTC-C1/C2 (redaction hardening assignment-style + runtime reconciliation)
+  - a3fb6ba1 — VTC-D (closeout audit + UI operator polish plan + acceptance matrix)
+- Scope:
+  - tmp_agent/brain_v9/tracing/trace_redactor.py (hardened)
+  - tmp_agent/brain_v9/main.py (integration unchanged desde VTC-B)
+  - tmp_agent/brain_v9/ui/agent_trace_console.html (unchanged, polish planed for VTC-E)
+  - tests/unit/test_trace_redactor.py — 28 tests PASS
+  - tests/unit/test_agent_trace_redaction_integration.py — 9 tests PASS
+  - tmp_agent/visual_trace_console_v1/ (evidence artifacts)
+- Acceptance:
+  - VTC v1: FORMALLY CLOSED
+  - Raw CoT: BLOCKED (18 blocked fields removed, never stored)
+  - Assignment secrets: REDACTED (password=..., token=..., api_key=...)
+  - Bearer tokens: REDACTED (Authorization: Bearer ..., bearer ...)
+  - Protected paths: REDACTED (13 paths)
+  - Large payloads: LIMITED (10KB cap with fallback)
+  - Runtime reconciliation: PASS (no leaks in trace.ndjson or /latest)
+  - Tests: 89/89 PASS (28 + 9 + 52 regression)
+- Protected files status: NOT staged during any VTC commit
+- Ledger updated: YES (previous Section 15 superseded by this formal closeout)
+- Inconsistencies resolved:
+  - ROADMAP_STATUS.json updated from 089fe933 to a3fb6ba1
+  - migration_status updated from post_n5_closed to vtc_v1_closed
+  - completed_fronts appended: VTC_v1_trace_redaction_hardening_and_closeout
+- Next front:
+  - OPTIONAL: VTC-E UI operator polish (banner, badges, redaction indicator)
+  - PRIMARY: User-selected next priority
+
 
