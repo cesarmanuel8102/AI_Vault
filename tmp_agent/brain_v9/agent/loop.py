@@ -187,6 +187,38 @@ class AgentLoop:
         _deadline = asyncio.get_event_loop().time() + effective_timeout
         context["_deadline"] = _deadline
 
+        # E3: LLM pool preflight — if all models in the chosen chain are circuit-open,
+        # return immediately instead of consuming all steps with guaranteed timeouts.
+        # This is a best-effort check; if structure is unexpected we proceed normally.
+        try:
+            _chain_key = context.get("model_priority", "agent_frontier")
+            from brain_v9.core.llm import CHAINS
+            _chain_models = CHAINS.get(_chain_key, []) or CHAINS.get("agent_frontier", [])
+            _cb_state = getattr(self.llm, "_cb_state", None)
+            if _cb_state is not None and _chain_models:
+                import time as _time_mod
+                _now = _time_mod.time()
+                _all_open = all(
+                    (_cb_state.get(m) or {}).get("open_until", 0) > _now
+                    for m in _chain_models
+                )
+                if _all_open:
+                    _tried = ", ".join(_chain_models)
+                    self.logger.warning(
+                        "E3 LLM preflight: all models circuit-open (%s). Skipping loop.", _tried
+                    )
+                    return {
+                        "success": False,
+                        "result": None,
+                        "steps": 0,
+                        "summary": "LLM pool unavailable (all circuit-open before loop start)",
+                        "status": "llm_pool_unavailable",
+                        "models_tried": _chain_models,
+                        "complexity": complexity,
+                    }
+        except Exception as _pf_err:
+            self.logger.debug("E3 LLM preflight check failed (non-blocking): %s", _pf_err)
+
         for step_id in range(effective_steps):
             # Wall-clock guard
             if asyncio.get_event_loop().time() > _deadline:

@@ -1,0 +1,73 @@
+{
+  "matrix_id": "CHAT-E2-RCA",
+  "base_commit": "810a052d",
+  "observed_symptoms": [
+    "route=agent | intent=COMMAND | success=False | steps=12 | status=max_steps_reached",
+    "[Sin respuesta sintetizada] when all LLM models fail"
+  ],
+
+  "1_intent_detection": {
+    "mechanism": "AGENT_KEYWORDS list -> _AGENT_PATTERNS compiled regex, used in _should_use_agent()",
+    "before_any_regression": "Same logic present since at least db21ae89",
+    "current_HEAD": "Same logic, unchanged in all commits inspected",
+    "finding": "Intent detection is NOT regressed. AGENT_KEYWORDS includes \\bdiagnostica\\b, \\bmuestra\\b, \\bcambios\\b, \\bultimos\\b, \\bui\\b, \\bherramienta\\b — all present in the observed prompts. This means _should_use_agent() correctly returns True for both prompts via _AGENT_PATTERNS keyword match.",
+    "root_cause_here": false
+  },
+
+  "2_routing": {
+    "mechanism": "_should_use_agent() returns True -> _route_to_agent() is called",
+    "before_regression": "_route_to_agent() tried tool01_router first (deterministic), then many fastpaths (estado del sistema, trading, dashboard, etc.), then AgentLoop",
+    "current_HEAD": "Same structure. tool01_router tries 5 tools (health_check, git_status, list_directory, read_file, write_file). Neither 'diagnostica con herramientas' nor 'muestra cuales fueron los ultimos cambios' match any of the 5 tool patterns.",
+    "finding": "Both observed prompts fall THROUGH tool01_router (no match) AND fall through all named fastpaths (no match for these exact strings). They then fall into AgentLoop. This was always the case — _TOOL01_ROUTER_PATTERNS never included a 'diagnostic_general' or 'cambios_ui' tool.",
+    "root_cause_here": "PARTIAL — _TOOL01_ROUTER_PATTERNS is too narrow for diagnostic requests",
+    "note": "TOOL01 only covers: health_check, git_status, list_directory, read_file, write_file. There is no 'diagnostic' tool in TOOL01."
+  },
+
+  "3_tool_selection": {
+    "mechanism": "AgentLoop uses LLM (kimi_cloud->codex->deepseek14b->llama8b) to decide which tool to call each step",
+    "before_regression": "Same — AgentLoop has always been LLM-driven for tool selection",
+    "current_HEAD": "Same — if LLM is unavailable, each step fails to produce an action -> result stays None -> loop exhausts steps",
+    "finding": "When Ollama is down AND external APIs (codex/gpt4/claude) are not configured, every LLM step fails. The loop runs 12 steps each timing out. This was always a latent risk but only surfaces when the full LLM pool is unavailable.",
+    "root_cause_here": "YES — No LLM preflight before entering the loop"
+  },
+
+  "4_agent_loop": {
+    "mechanism": "_classify_complexity() -> 'complex' for 'diagnostica' (in _COMPLEX_SIGNALS) -> 12 steps, 45s timeout for MetaPlanner",
+    "before_regression": "Same _COMPLEX_SIGNALS regex exists in all commits including db21ae89",
+    "current_HEAD": "Same",
+    "finding": "'diagnostica' triggers complexity=complex in ALL commits since at least db21ae89 (the first commit that added MetaPlanner). This is not a regression — it was always 12 steps for diagnostic requests. But since those 12 steps each depended on LLM, when LLM is down it always consumed all 12 steps.",
+    "root_cause_here": "CONTRIBUTING — complexity=complex is appropriate for the task but no LLM preflight means 12 timeouts occur"
+  },
+
+  "5_llm_fallback": {
+    "before_regression": "Message: '*[Sin respuesta sintetizada — todos los modelos LLM fallaron]*'",
+    "current_HEAD_with_E2_patch": "Message: 'LLM pool no disponible. Ollama: posiblemente caido.'",
+    "finding": "The original fallback message was cryptic but technically correct. The E2 patch improved the message text only — this part of the E2 patch is acceptable cosmetic improvement.",
+    "root_cause_here": false
+  },
+
+  "6_governance": {
+    "before_regression": "_TOOL01_ROUTER_PATTERNS had 4 tools (no write_file). HEAD added write_file.",
+    "e2_patch_problem": "Added subprocess.create_subprocess_shell() call directly in session.py — bypasses tool governance, audit trail, and permission gate. Also adds 17-keyword list hardcoded in business logic.",
+    "finding": "The fastpath added by E2 violates the existing tool governance model. git diff --stat should be executed via the existing run_command tool registered in the executor, not via raw subprocess in session.py.",
+    "root_cause_here": false
+  },
+
+  "7_ui_compatibility": {
+    "chat_d_impact": "CHAT-D modified only index.html (frontend). No backend routing changed.",
+    "finding": "CHAT-D did NOT cause or contribute to the max_steps_reached regression. The backend routing was identical before and after CHAT-D.",
+    "root_cause_here": false
+  },
+
+  "summary": {
+    "true_root_cause": "Two compounding issues: (A) _TOOL01_ROUTER_PATTERNS does not include a 'diagnostic' entry for general diagnostic requests — they fall through to AgentLoop. (B) AgentLoop has no LLM pool preflight check — when all models in the chain fail, the loop wastes all 12 steps timing out instead of exiting early.",
+    "not_regressed_vs_previous_commits": "The logic in _should_use_agent, _classify_complexity, _TOOL01_ROUTER_PATTERNS, and _route_to_agent is functionally identical across all inspected commits (810a052d, 0a00f565, db21ae89, 6ee95ff2). This is a latent design gap exposed only when the full LLM pool is down.",
+    "e2_fastpath_problems": [
+      "Hardcoded 17-keyword list in business logic instead of formal tool registration",
+      "subprocess.create_subprocess_shell() bypasses tool governance, audit trail, permission gate",
+      "glob() and os.path in session.py instead of using registered list_directory/read_file tools",
+      "route='agent_tool_fastpath' is not a recognized route type in the system",
+      "Masks the real gap rather than fixing it"
+    ]
+  }
+}

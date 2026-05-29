@@ -1,0 +1,8 @@
+{
+  "status": "FASTPATH_REJECTED_PENDING_ROOT_CAUSE",
+  "reason": "Patch added keyword short-circuit instead of restoring root-cause routing/tool behavior. Keywords bypass the formal tool router and intent system. subprocess.shell use violates tool governance. Fix must come from restoring/strengthening the existing TOOL01 router and AgentLoop preflight, not from symptom patches.",
+  "session_diff_saved": "tmp_agent/brain_v9/chat_area_upgrade/chat_e2_rejected_fastpath_session_diff.patch",
+  "session_diff_lines": 112,
+  "no_commit": true,
+  "explicit_no_commit_push": true
+}

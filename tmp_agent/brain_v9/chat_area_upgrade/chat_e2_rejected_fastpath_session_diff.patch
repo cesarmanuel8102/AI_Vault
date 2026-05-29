@@ -1,0 +1,112 @@
+diff --git a/tmp_agent/brain_v9/core/session.py b/tmp_agent/brain_v9/core/session.py
+index 73928d05..4763532b 100644
+--- a/tmp_agent/brain_v9/core/session.py
++++ b/tmp_agent/brain_v9/core/session.py
+@@ -2424,12 +2424,14 @@ class BrainSession:
+         _models_tried = result.get("models_tried") if isinstance(result, dict) else None
+         if _llm_err or _models_tried:
+             _tried = ", ".join(_models_tried) if _models_tried else "cadena LLM"
++            _ollamastatus = "posiblemente caído — verificar con: ollama serve"
+             _fb = (
+-                f"*[Sin respuesta sintetizada — todos los modelos LLM fallaron]*\n"
++                f"LLM pool no disponible.\n"
+                 f"Modelos consultados: {_tried}.\n"
+-                f"Motivo: {str(_llm_err)[:160] if _llm_err else 'sin detalle'}.\n"
+-                f"_Sugerencia: reintenta en unos segundos, reformula mas corto, "
+-                f"o usa un prompt mas especifico._"
++                f"Motivo: {str(_llm_err)[:200] if _llm_err else 'sin detalle'}.\n"
++                f"Ollama: {_ollamastatus}.\n"
++                f"Proxima accion: verificar que Ollama este corriendo en 127.0.0.1:11434, "
++                f"o reformular la consulta usando rutas deterministas (ej: 'git status', 'health', 'estado del sistema')."
+             )
+             try:
+                 from brain_v9.core import validator_metrics as _vm
+@@ -3706,8 +3708,9 @@ class BrainSession:
+                 "El agente no llego a ejecutar ninguna herramienta."
+             ),
+             "max_steps_reached": (
+-                "No pude completar esta peticion con herramientas en este turno. "
+-                "El agente agoto sus pasos antes de cerrarla."
++                "Agente agoto pasos permitidos sin cerrar la tarea. "
++                "Esto suele ocurrir cuando el modelo LLM no responde o la tarea es muy compleja para el budget de pasos. "
++                "Recomendacion: reformula la peticion dividiendola en partes concretas, o verifica que Ollama/LLM pool este activo."
+             ),
+             "retry_exhausted": (
+                 "No pude completar esta peticion con herramientas en este turno. "
+@@ -4841,6 +4844,76 @@ class BrainSession:
+                 "agent_steps": 1, "agent_status": "tool_backed_fastpath",
+             }
+ 
++        # CHAT-E2: Deterministic diagnostic fastpath
++        # If user explicitly asks for tools/diagnostics with diagnostic keywords,
++        # run a deterministic tool sequence BEFORE entering the LLM-driven agent loop.
++        # This avoids max_steps_reached when LLM pool is down.
++        msg_lower = message.lower()
++        diagnostic_fastpath_keywords = [
++            "usa herramientas", "herramientas reales", "diagnostica con herramientas",
++            "diagnosticar con herramientas", "estado del sistema", "health check",
++            "git status", "ultimos cambios", "últimos cambios", "cambios en el ui",
++            "chat ui", "diff", "status", "revisa sistema", "verifica logs",
++            "muestra cuales fueron", "muestra cuáles fueron",
++        ]
++        if any(kw in msg_lower for kw in diagnostic_fastpath_keywords):
++            from brain_v9.agent.tools import build_standard_executor
++            ex = build_standard_executor()
++            pieces = []
++            # 1. health_check
++            try:
++                hc = await ex.execute("health_check")
++                pieces.append(f"Health: {hc.get('data',{}).get('status','?')} | version={hc.get('data',{}).get('version','?')} | sessions={hc.get('data',{}).get('sessions','?')}")
++            except Exception as e:
++                pieces.append(f"Health check error: {e}")
++            # 2. git_status
++            try:
++                gs = await ex.execute("git_status")
++                stdout = gs.get("stdout", "")
++                if stdout and stdout.strip():
++                    pieces.append(f"Git status:\n{stdout[:800]}")
++                else:
++                    pieces.append("Git status: working tree clean")
++            except Exception as e:
++                pieces.append(f"Git status error: {e}")
++            # 3. diff stat for index.html
++            try:
++                import subprocess
++                proc = await asyncio.create_subprocess_shell(
++                    'git diff --stat HEAD -- tmp_agent/brain_v9/ui/index.html',
++                    stdout=asyncio.subprocess.PIPE,
++                    stderr=asyncio.subprocess.PIPE,
++                )
++                out, err = await asyncio.wait_for(proc.communicate(), timeout=15)
++                diff_stat = out.decode('utf-8', errors='replace').strip() or "No changes"
++                pieces.append(f"Diff stat index.html:\n{diff_stat}")
++            except Exception as e:
++                pieces.append(f"Diff stat error: {e}")
++            # 4. list chat_area_upgrade reports
++            try:
++                import os, glob
++                reports = glob.glob("tmp_agent/brain_v9/chat_area_upgrade/*.json")
++                if reports:
++                    names = [os.path.basename(r) for r in sorted(reports)]
++                    pieces.append(f"Chat area upgrade reports: {', '.join(names)}")
++                else:
++                    pieces.append("No chat_area_upgrade reports found")
++            except Exception as e:
++                pieces.append(f"Report listing error: {e}")
++            full = "\n\n".join(pieces)
++            return {
++                "success": True,
++                "content": full,
++                "response": full,
++                "route": "agent_tool_fastpath",
++                "model": "agent_orav",
++                "model_used": "agent_orav",
++                "agent_steps": 1,
++                "agent_status": "tool_fastpath_ok",
++                "tools_executed": 4,
++                "tool_names": ["health_check", "git_status", "git_diff_stat", "list_reports"],
++            }
++
+         from brain_v9.agent.loop import AgentLoop, MetaPlanner
+         from brain_v9.agent.tools import build_standard_executor
+ 

@@ -1,0 +1,67 @@
+{
+  "status": "READY_FOR_REVIEW_NO_COMMIT",
+  "observed_issue": "route=agent reaches max_steps_reached without real tool result; fallback LLM pool also fails",
+  "root_cause": "Message 'diagnostica con herramientas' matched AGENT_PATTERNS (operational verb) so use_agent=True. _route_to_agent tried _tool01_router (no pattern match) then LLM-driven MetaPlanner with complexity=complex (12 steps). With Ollama down, each LLM step timed out → loop exhausted all 12 steps → max_steps_reached. No deterministic fastpath existed for tool+diagnostic keywords prior to CHAT-E2 patch.",
+  "max_steps_origin": {
+    "file": "tmp_agent/brain_v9/agent/loop.py",
+    "line": 395,
+    "limit": 12,
+    "budget_name": "complex",
+    "assigned_by": "_classify_complexity() matches 'diagnostica' as COMPLEX signal"
+  },
+  "entrypoint_to_agent_loop": {
+    "file": "tmp_agent/brain_v9/core/session.py",
+    "line": 4844,
+    "call": "from brain_v9.agent.loop import AgentLoop, MetaPlanner",
+    "fastpath_added_before_line": 4847,
+    "fastpath_added_note": "CHAT-E2 short-circuit added at line 4847 before loop entry"
+  },
+  "tools_available": [
+    "health_check", "git_status", "list_directory", "read_file", "write_file",
+    "run_command", "grep_codebase", "check_http_service", "diagnose_dashboard",
+    "get_system_info", "semantic_memory_search", "audit_claims"
+  ],
+  "tools_requiring_permission": ["write_file"],
+  "tools_deterministic_no_llm": ["health_check", "git_status", "list_directory", "read_file"],
+  "deterministic_tool_fallback_added": true,
+  "deterministic_fastpath_keywords": [
+    "usa herramientas", "herramientas reales", "diagnostica con herramientas",
+    "diagnosticar con herramientas", "estado del sistema", "health check",
+    "git status", "ultimos cambios", "últimos cambios", "cambios en el ui",
+    "chat ui", "diff", "status", "revisa sistema", "verifica logs",
+    "muestra cuales fueron", "muestra cuáles fueron"
+  ],
+  "deterministic_fastpath_executes": [
+    "health_check (GET /health)",
+    "git_status (git status --short)",
+    "git diff --stat HEAD -- tmp_agent/brain_v9/ui/index.html",
+    "glob chat_area_upgrade/*.json"
+  ],
+  "max_steps_fallback_improved": true,
+  "max_steps_fallback_change": "session.py line 3708: max_steps_reached message now explains cause (steps exhausted, LLM pool likely down) and suggests concrete action (restart Ollama or use deterministic tools)",
+  "llm_pool_unavailable_handled": true,
+  "llm_pool_fallback_change": "session.py line 2425: fallback message now says 'LLM pool no disponible', lists models tried, explains Ollama status, suggests deterministic commands",
+  "runtime_tests": {
+    "ui_changes_tool_prompt": "PASS (logic): keywords ['usa herramientas','herramientas reales','ultimos cambios','cambios en el ui','muestra cuales fueron'] match → short-circuit to fastpath. Tools executed: health_check(healthy), git_status(modified files listed), diff stat index.html(+153/-17), reports listed. Server not restarted so live test timed out (expected — server runs old in-memory module).",
+    "diagnostica_con_herramientas": "PASS (logic): keyword 'diagnostica con herramientas' matches → short-circuit. Would NOT enter 12-step LLM loop.",
+    "no_inventes": "PASS (logic): no keyword match → goes to LLM route as before. If LLM fails, new fallback message replaces 'Sin respuesta sintetizada' with 'LLM pool no disponible + acción sugerida'."
+  },
+  "runtime_note": "Server must be restarted to load session.py changes. Until then, live tests time out because server uses cached module. Logic validated offline via direct Python import.",
+  "files_modified": [
+    "tmp_agent/brain_v9/core/session.py"
+  ],
+  "rollback_assets": {
+    "index_CHAT_D_current_backup.html": "tmp_agent/brain_v9/chat_area_upgrade/rollback/index_CHAT_D_current_backup.html",
+    "chat_d_worktree.diff": "tmp_agent/brain_v9/chat_area_upgrade/rollback/chat_d_worktree.diff",
+    "index_CHAT_B_HEAD_810a052d.html": "tmp_agent/brain_v9/chat_area_upgrade/rollback/index_CHAT_B_HEAD_810a052d.html",
+    "rollback_script": "tmp_agent/brain_v9/chat_area_upgrade/rollback/rollback_to_CHAT_B_index.ps1"
+  },
+  "ui_changed": false,
+  "backend_changed": true,
+  "tests_changed": false,
+  "ledger_changed": false,
+  "staged_files": [],
+  "ready_for_allowlist_commit": true,
+  "explicit_no_commit_push": true,
+  "recommended_next_action": "1) Restart Brain V9 server to activate session.py changes. 2) Authorize commit allowlist: session.py + chat_e2 report. 3) If Ollama is needed, run: ollama serve"
+}

@@ -1,0 +1,72 @@
+{
+  "status": "READY_FOR_REVIEW_NO_COMMIT",
+  "patch_id": "CHAT-E3",
+  "base_commit": "810a052d",
+  "fastpath_removed": true,
+  "subprocess_shell_removed": true,
+  "diagnostic_general_tool01_added": true,
+  "diagnostic_general_low_risk": true,
+  "diagnostic_general_location": "session.py:4223 (_TOOL01_ROUTER_PATTERNS), session.py:4245 (_TOOL01_PUBLIC_NAMES), session.py:4255 (_TOOL01_LOW_RISK_TOOLS), session.py:4611 (_tool01_execute)",
+  "agentloop_llm_preflight_added": true,
+  "agentloop_llm_preflight_location": "loop.py:185 (before for step_id in range(effective_steps))",
+  "fallback_messages_cleaned": true,
+  "fallback_changes": {
+    "max_steps_reached": "Shortened, explains LLM likely cause",
+    "llm_pool_unavailable": "New status recognized in _render_agent_failure_reply and _is_agent_execution_failure",
+    "llm_full_failure": "Improved message from E2 kept"
+  },
+  "py_compile_session_ok": true,
+  "py_compile_loop_ok": true,
+  "runtime_tests": {
+    "diagnostic_general_pattern_matching": {
+      "diagnostica_con_herramientas": "PASS - match=True",
+      "ultimos_cambios_en_el_ui": "PASS - match=True",
+      "usa_herramientas_reales": "PASS - match=True",
+      "responde_no_inventes": "PASS - match=False (correct, goes to LLM)",
+      "git_status": "PASS - match=False (goes to git_status tool directly)",
+      "health": "PASS - match=False (goes to health_check tool directly)"
+    },
+    "diagnostic_general_execution": {
+      "health_check": "healthy | version=9.0.0",
+      "git_status": "returns modified files list",
+      "list_directory_reports": "9 JSON reports listed in chat_area_upgrade/"
+    },
+    "llm_preflight_simulation": {
+      "chain": "agent_frontier [kimi_cloud, codex, deepseek14b, llama8b, sonnet4]",
+      "all_circuit_open_simulated": true,
+      "preflight_returns_llm_pool_unavailable": true
+    },
+    "runtime_note": "Server must be restarted to load session.py and loop.py changes. Logic validated offline. No live HTTP tests possible without restart."
+  },
+  "changes_summary": {
+    "session_py": {
+      "fastpath_removed": "70-line CHAT-E2 block removed (no subprocess, no keyword list, no agent_tool_fastpath route)",
+      "diagnostic_general_patterns": "10 patterns added to _TOOL01_ROUTER_PATTERNS",
+      "diagnostic_general_execute": "50-line handler in _tool01_execute using health_check + git_status + list_directory via ToolExecutor only",
+      "diagnostic_general_low_risk": "Added to _TOOL01_LOW_RISK_TOOLS frozenset",
+      "diagnostic_general_public_name": "diagnostic.general in _TOOL01_PUBLIC_NAMES",
+      "status_map_llm_pool_unavailable": "New entry added to _render_agent_failure_reply",
+      "is_agent_execution_failure": "llm_pool_unavailable added to failure status set",
+      "llm_fallback_message_improved": "Kept from E2"
+    },
+    "loop_py": {
+      "llm_preflight": "32 lines added before for step_id loop. Imports CHAINS, reads _cb_state, if all models circuit-open returns llm_pool_unavailable immediately. Fully defensive — non-blocking if structure missing."
+    }
+  },
+  "files_modified": [
+    "tmp_agent/brain_v9/core/session.py",
+    "tmp_agent/brain_v9/agent/loop.py"
+  ],
+  "files_created": [
+    "tmp_agent/brain_v9/chat_area_upgrade/chat_e3_root_fix_report.json"
+  ],
+  "ui_changed_this_phase": false,
+  "backend_changed": true,
+  "tests_changed": false,
+  "ledger_changed": false,
+  "staged_files": [],
+  "server_restart_required": true,
+  "server_restart_command": "cd C:\\AI_VAULT\\tmp_agent\\brain_v9 && python main.py",
+  "ready_for_allowlist_commit": true,
+  "explicit_no_commit_push": true
+}

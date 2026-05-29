@@ -1,0 +1,91 @@
+{
+  "status": "ROOT_CAUSE_AUDIT_COMPLETE_NO_PATCH",
+  "fastpath_patch_rejected": true,
+  "current_fastpath_diff_saved": "tmp_agent/brain_v9/chat_area_upgrade/chat_e2_rejected_fastpath_session_diff.patch",
+  "current_head": "810a052d",
+
+  "functions_modified_by_e2_fastpath": {
+    "_route_to_agent": "Added 70-line fastpath block with 17 hardcoded keywords + subprocess + glob before AgentLoop entry",
+    "_render_agent_failure_reply": "Improved max_steps_reached message text (acceptable cosmetic change)",
+    "LLM_fallback_block": "Improved LLM pool failure message text (acceptable cosmetic change)"
+  },
+  "subprocess_shell_added": true,
+  "subprocess_location": "session.py:~4875 asyncio.create_subprocess_shell('git diff --stat HEAD ...')",
+  "subprocess_problem": "Bypasses tool governance, audit trail, permission gate, and ToolExecutor registry. run_command tool already exists for this purpose.",
+
+  "root_cause_candidates": [
+    {
+      "id": "RC-A",
+      "description": "_TOOL01_ROUTER_PATTERNS does not include a 'diagnostic_general' tool",
+      "evidence": "Only 5 tools registered: health_check, git_status, list_directory, read_file, write_file. No 'diagnostic' entry matching 'diagnostica con herramientas' or 'muestra cuales fueron los ultimos cambios'",
+      "severity": "HIGH"
+    },
+    {
+      "id": "RC-B",
+      "description": "AgentLoop has no LLM pool preflight — enters 12-step loop even when all models are circuit-broken",
+      "evidence": "loop.py:190 for step_id in range(effective_steps) — no check for model availability before starting. When Ollama is down all steps produce LLM errors and loop exhausts without result.",
+      "severity": "HIGH"
+    },
+    {
+      "id": "RC-C",
+      "description": "'diagnostica' is in _COMPLEX_SIGNALS -> complexity=complex -> 12 steps (not a regression, just amplifies RC-B)",
+      "evidence": "loop.py:404 _COMPLEX_SIGNALS includes 'diagnostica'. This assigns 12 steps. Identical in db21ae89 and HEAD.",
+      "severity": "MEDIUM"
+    }
+  ],
+
+  "most_likely_root_cause": "RC-B is the primary root cause: AgentLoop has no LLM pool availability check before entering the step loop. When all models (kimi_cloud, codex, deepseek14b, llama8b) are unavailable (Ollama down + no API keys), every step fails silently and the loop runs 12 iterations of timeout/error before returning max_steps_reached. RC-A is a contributing design gap: the formal TOOL01 deterministic router should handle 'diagnostic' requests, but currently doesn't have an entry for them.",
+
+  "is_regression_vs_previous_commits": false,
+  "not_a_regression_reason": "All commits from db21ae89 through 810a052d have identical _should_use_agent, _TOOL01_ROUTER_PATTERNS, _classify_complexity, and AgentLoop behavior. The gap was always latent. It only manifests now because the full LLM pool (Ollama) is unavailable.",
+
+  "previous_good_behavior_found": false,
+  "previous_good_commit_or_artifact": "None — there is no previous commit where this worked correctly when Ollama was down. The system always required at least one LLM model to function for agent-routed requests.",
+
+  "regression_summary": "Not a regression. A latent design gap: no LLM preflight before AgentLoop + no formal TOOL01 entry for diagnostic requests. Exposed when Ollama service is offline.",
+
+  "recommended_action": "revert_fastpath_then_apply_root_fix",
+
+  "recommended_patch_design": {
+    "files_to_modify": [
+      "tmp_agent/brain_v9/core/session.py",
+      "tmp_agent/brain_v9/agent/loop.py"
+    ],
+    "approach": "TWO minimal targeted changes: (1) In session.py _TOOL01_ROUTER_PATTERNS: add 'diagnostic_general' tool entry with patterns like r'\\bdiagnostica\\b.*\\bherramienta', r'herramientas reales', r'ultimos cambios.*ui'. Map it to sequential execution of health_check + git_status using existing _tool01_execute path. (2) In agent/loop.py: add LLM preflight at top of run() — call a lightweight availability check (e.g. query LLMManager for circuit status) before entering the step loop. If all models are circuit-open, return early with status='llm_pool_unavailable' instead of running 12 steps.",
+    "approach_detail": {
+      "change_1_session_py": {
+        "location": "_TOOL01_ROUTER_PATTERNS dict, session.py:~4195",
+        "action": "Add 'diagnostic_general' key with patterns matching 'herramientas reales', 'diagnostica con herramientas', 'ultimos cambios', 'cambios en el ui'",
+        "execution": "Implement _tool01_execute('diagnostic_general') to sequentially call health_check + git_status via existing ex.execute() calls — same pattern already used for health_check and git_status",
+        "permission_model": "diagnostic_general is low-risk (read-only), add to _TOOL01_LOW_RISK_TOOLS",
+        "governance_preserved": true
+      },
+      "change_2_loop_py": {
+        "location": "AgentLoop.run(), loop.py:~185, before for step_id in range(effective_steps)",
+        "action": "Check LLMManager circuit breaker status. If all models in chosen chain are circuit-open (failed recently), return immediately with status='llm_pool_unavailable', success=False, useful message.",
+        "method": "self.llm._circuit_breakers or self.llm.get_available_models(chain) — both already exist in LLMManager",
+        "governance_preserved": true
+      }
+    },
+    "what_to_revert": "Remove the 70-line CHAT-E2 fastpath block from _route_to_agent in session.py. Keep the improved error messages for max_steps_reached and LLM pool failure (those are acceptable).",
+    "risk": "LOW — changes are small and targeted. Change 1 adds a new TOOL01 entry using existing infrastructure. Change 2 adds a guard before an existing loop."
+  },
+
+  "acceptable_parts_of_e2_patch": [
+    "Improved max_steps_reached message in _render_agent_failure_reply (keep)",
+    "Improved LLM pool failure message in fallback block (keep)"
+  ],
+
+  "must_not_commit_current_session_py": true,
+  "staged_files": [],
+  "explicit_no_commit_push": true,
+
+  "files_created": [
+    "tmp_agent/brain_v9/chat_area_upgrade/chat_e2_rejected_fastpath_session_diff.patch",
+    "tmp_agent/brain_v9/chat_area_upgrade/chat_e2_fastpath_rejection_note.json",
+    "tmp_agent/brain_v9/chat_area_upgrade/chat_e2_root_cause_regression_matrix.json",
+    "tmp_agent/brain_v9/chat_area_upgrade/chat_e2_root_cause_audit_report.json"
+  ],
+  "files_modified": [],
+  "next_step_requires_authorization": "Revert CHAT-E2 fastpath, then apply the two targeted root-fix changes described above"
+}

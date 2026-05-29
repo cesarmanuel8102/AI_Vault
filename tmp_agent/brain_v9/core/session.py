@@ -2424,12 +2424,14 @@ class BrainSession:
         _models_tried = result.get("models_tried") if isinstance(result, dict) else None
         if _llm_err or _models_tried:
             _tried = ", ".join(_models_tried) if _models_tried else "cadena LLM"
+            _ollamastatus = "posiblemente caído — verificar con: ollama serve"
             _fb = (
-                f"*[Sin respuesta sintetizada — todos los modelos LLM fallaron]*\n"
+                f"LLM pool no disponible.\n"
                 f"Modelos consultados: {_tried}.\n"
-                f"Motivo: {str(_llm_err)[:160] if _llm_err else 'sin detalle'}.\n"
-                f"_Sugerencia: reintenta en unos segundos, reformula mas corto, "
-                f"o usa un prompt mas especifico._"
+                f"Motivo: {str(_llm_err)[:200] if _llm_err else 'sin detalle'}.\n"
+                f"Ollama: {_ollamastatus}.\n"
+                f"Proxima accion: verificar que Ollama este corriendo en 127.0.0.1:11434, "
+                f"o reformular la consulta usando rutas deterministas (ej: 'git status', 'health', 'estado del sistema')."
             )
             try:
                 from brain_v9.core import validator_metrics as _vm
@@ -3706,8 +3708,13 @@ class BrainSession:
                 "El agente no llego a ejecutar ninguna herramienta."
             ),
             "max_steps_reached": (
-                "No pude completar esta peticion con herramientas en este turno. "
-                "El agente agoto sus pasos antes de cerrarla."
+                "Agente agoto pasos sin cerrar la tarea. "
+                "Suele ocurrir cuando el modelo LLM no responde. "
+                "Verifica que Ollama este activo (ollama serve) o reformula en partes concretas."
+            ),
+            "llm_pool_unavailable": (
+                "LLM pool no disponible: todos los modelos del chain estan con circuit breaker abierto. "
+                "Inicia Ollama (ollama serve) para restaurar modelos locales."
             ),
             "retry_exhausted": (
                 "No pude completar esta peticion con herramientas en este turno. "
@@ -4181,6 +4188,7 @@ class BrainSession:
         return (not success) and status in {
             "ghost_completion",
             "max_steps_reached",
+            "llm_pool_unavailable",
             "retry_exhausted",
             "timeout",
         }
@@ -4212,6 +4220,20 @@ class BrainSession:
             r"\bwrite\s*file\b", r"\bescribir\s*archivo\b", r"\bcrear\s*archivo\b",
             r"\bcreate\s*file\b", r"\bescribir\b.*\barchivo\b", r"\bvtc_permission_test\.txt\b",
         ],
+        # E3: diagnostic_general — combines health_check + git_status + report listing
+        # Matches explicit requests for tool-backed system diagnostics.
+        "diagnostic_general": [
+            r"\bdiagnostica\b.*\bherramienta",
+            r"\bdiagnostico\b.*\bherramienta",
+            r"\bherramientas\s+reales\b",
+            r"\busa\s+herramientas\b",
+            r"\bultimos\s+cambios\b",
+            r"\b[u\u00fa]ltimos\s+cambios\b",
+            r"\bcambios\s+en\s+el\s+ui\b",
+            r"\bcambios\s+en\s+el\s+chat\b",
+            r"\brevisa\s+sistema\b",
+            r"\bverifica\s+sistema\b",
+        ],
     }
 
     _TOOL01_PUBLIC_NAMES = {
@@ -4220,6 +4242,7 @@ class BrainSession:
         "list_directory": "filesystem.list_dir",
         "read_file": "filesystem.read_file",
         "write_file": "filesystem.write_file",
+        "diagnostic_general": "diagnostic.general",
     }
 
     _TOOL01_BLOCKED_PREFIXES = (
@@ -4229,7 +4252,7 @@ class BrainSession:
     )
 
     _TOOL01_LOW_RISK_TOOLS = frozenset({
-        "health_check", "git_status", "list_directory", "read_file"
+        "health_check", "git_status", "list_directory", "read_file", "diagnostic_general"
     })
 
     _TOOL01_HIGH_RISK_TOOLS = frozenset({
@@ -4584,6 +4607,57 @@ class BrainSession:
                         "bytes_written": len(content.encode("utf-8")),
                         "verified": verified,
                     }
+                })
+            elif tool_name == "diagnostic_general":
+                # E3: Formal diagnostic tool — runs health_check + git_status + list reports.
+                # Read-only. Uses ToolExecutor only. No subprocess.
+                diag_parts = []
+                diag_ok = True
+                try:
+                    hc_raw = await ex.execute("health_check")
+                    hc_data = hc_raw.get("data") or {}
+                    diag_parts.append(
+                        f"Health: {hc_data.get('status','?')} | "
+                        f"version={hc_data.get('version','?')} | "
+                        f"sessions={hc_data.get('sessions','?')}"
+                    )
+                except Exception as _e:
+                    diag_parts.append(f"Health check unavailable: {_e}")
+                    diag_ok = False
+                try:
+                    gs_raw = await ex.execute("git_status", path=".")
+                    stdout = (gs_raw.get("stdout") or "").strip()
+                    if stdout:
+                        # Summarize: first 10 modified lines
+                        lines = [l for l in stdout.splitlines() if l.strip()][:10]
+                        diag_parts.append("Git status (modified files):\n" + "\n".join(lines))
+                    else:
+                        diag_parts.append("Git status: working tree clean")
+                except Exception as _e:
+                    diag_parts.append(f"Git status unavailable: {_e}")
+                    diag_ok = False
+                try:
+                    report_dir = "tmp_agent/brain_v9/chat_area_upgrade"
+                    dir_raw = await ex.execute("list_directory", path=report_dir)
+                    entries = dir_raw if isinstance(dir_raw, list) else []
+                    json_files = [e for e in entries if isinstance(e, str) and e.endswith(".json")]
+                    if json_files:
+                        diag_parts.append(f"Chat area upgrade reports: {', '.join(sorted(json_files))}")
+                    else:
+                        diag_parts.append("No JSON reports found in chat_area_upgrade/")
+                except Exception as _e:
+                    diag_parts.append(f"Report listing unavailable: {_e}")
+                diag_parts.append(
+                    "Nota: La evaluacion de mejora/empeora requiere diff completo "
+                    "y LLM disponible. Este diagnostico muestra solo evidencia de herramientas."
+                )
+                full_diag = "\n\n".join(diag_parts)
+                result.update({
+                    "success": diag_ok,
+                    "content": full_diag,
+                    "response": full_diag,
+                    "tools_run": ["health_check", "git_status", "list_directory"],
+                    "evidence": {"diag_parts": len(diag_parts)},
                 })
         except PermissionError as pe:
             result.update({"success": False, "blocked_by_policy": True, "error": str(pe)})
