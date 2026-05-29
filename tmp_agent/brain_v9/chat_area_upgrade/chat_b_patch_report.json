@@ -1,0 +1,124 @@
+{
+  "status": "VALIDATED_READY_FOR_COMMIT",
+  "explicit_no_commit_push": true,
+  "patch_id": "CHAT-B",
+  "base_commit": "38582f02",
+  "branch": "codex/own-capital-sustainable-return",
+  "target_file": "tmp_agent/brain_v9/ui/index.html",
+  "goal": "Apply a controlled single-file UI patch to improve Chat tab UX without touching backend",
+  "governance": {
+    "no_commit_push_without_authorization": true,
+    "no_session_v7": true,
+    "no_dash_v2_mount": true,
+    "no_backend_touched": true,
+    "json_valid": true,
+    "js_helpers_present": true,
+    "duplicate_functions_found": false,
+    "external_dependencies_added": false,
+    "html_basic_validation": true,
+    "smart_scroll_validation": true,
+    "renderMarkdown_final_validated": true,
+    "backend_changed": false,
+    "tests_changed": false,
+    "ledger_changed": false,
+    "dashboard_changed": false,
+    "agent_trace_console_changed": false,
+    "staged_files": [],
+    "ready_for_commit": true,
+    "recommended_next_action": "Request user authorization for explicit allowlisted git add and commit only.",
+    "files_recommended_for_commit": [
+      "tmp_agent/brain_v9/ui/index.html",
+      "tmp_agent/brain_v9/chat_area_upgrade/chat_area_upgrade_audit.json",
+      "tmp_agent/brain_v9/chat_area_upgrade/chat_area_upgrade_patch_plan.md",
+      "tmp_agent/brain_v9/chat_area_upgrade/chat_b_patch_report.json"
+    ],
+    "protected_paths_status": {
+      "tmp_agent/brain_v9/main.py": "no_diff",
+      "tmp_agent/brain_v9/api_security.py": "no_diff",
+      "tmp_agent/brain_v9/tracing/trace_redactor.py": "no_diff",
+      "tmp_agent/brain_v9/ui/dashboard.html": "no_diff",
+      "tmp_agent/brain_v9/ui/agent_trace_console.html": "no_diff",
+      "tests/unit": "no_diff",
+      "ROADMAP_STATUS.json": "no_diff",
+      "docs/MIGRATION_CONTROL_LEDGER.md": "no_diff",
+      "memory/semantic": "pre_existing_dirty_not_touched",
+      "tmp_agent/strategies": "pre_existing_dirty_not_touched",
+      "tmp_agent/reports": "no_diff"
+    }
+  },
+  "validation_results": {
+    "HEAD_local": "38582f02",
+    "origin_HEAD": "38582f02",
+    "branch": "codex/own-capital-sustainable-return",
+    "staged_files_count": 0,
+    "index_html_changed": true,
+    "audit_artifacts_present": true,
+    "json_valid": true,
+    "renderMarkdown_final_validated": true,
+    "js_helpers_present": true,
+    "duplicate_functions_found": false,
+    "external_dependencies_added": false,
+    "html_basic_validation": {
+      "div_open_close": "213/213 balanced",
+      "script_open_close": "2/2 balanced",
+      "lines": 2324,
+      "has_empty_state": true,
+      "has_scroll_btn": true,
+      "has_placeholder_brain": true,
+      "has_scroll_onclick": true,
+      "has_autoresize": true
+    },
+    "smart_scroll_validation": {
+      "addMsg_nearBottom_before_appendChild": true,
+      "addMsg_conditional_scroll": true,
+      "addMsg_avatar_present": true,
+      "addTyping_nearBottom_before_appendChild": true,
+      "addTyping_conditional_scroll": true,
+      "addTyping_avatar_present": true
+    },
+    "renderMarkdown_pipeline_validated": {
+      "codeBlocks_extracted_before_escapeHtml": true,
+      "final_return_after_codeBlocks_restore": true,
+      "return_count_total": 6,
+      "only_one_final_return": true
+    },
+    "function_uniqueness": {
+      "renderMarkdown": 1,
+      "copyCode": 1,
+      "hideEmptyState": 1,
+      "scrollToBottom": 1,
+      "showScrollDownBtn": 1,
+      "hideScrollDownBtn": 1,
+      "sendSuggestion": 1,
+      "addMsg": 1,
+      "addTyping": 1
+    }
+  },
+  "completed_tasks": [
+    { "task": "CSS chat styles updated", "details": "Agent flat transparent bg, user #1e3a5f bubble, system centered grey no avatar, code blocks with copy button, empty state and scroll-down button styles, avatar colors #7c6af7(agent)" },
+    { "task": "Placeholder changed", "details": "Textarea placeholder set to 'Escribe a Brain...'" },
+    { "task": "renderMarkdown() rewritten (non-destructive pipeline)", "details": "Code blocks extracted first, then headers (# ## ###), bold, inline code, lists, ordered lists, simple tables, then newlines. Blocks restored at end with escaped code and copy button." },
+    { "task": "Empty state HTML added", "details": "Logo 'B', title, 3 suggestion buttons inside #messages" },
+    { "task": "JS helpers added", "details": "hideEmptyState(), showEmptyState(), scrollToBottom(), showScrollDownBtn(), hideScrollDownBtn(), sendSuggestion()" },
+    { "task": "addMsg() corrected", "details": "Avatar and structure preserved; nearBottom computed before appendChild; smart scroll + hide/show button + hide empty-state" },
+    { "task": "addTyping() corrected", "details": "Same smart scroll policy as addMsg; hides empty-state" },
+    { "task": "renderApprovalCard() corrected", "details": "Same smart scroll policy applied (nearBottom before append)" },
+    { "task": "renderTool01PermissionCard() corrected", "details": "Same smart scroll policy applied (nearBottom before append)" },
+    { "task": "Scroll event listener added", "details": "Attached to #messages; toggles scroll-down button based on 120px threshold" },
+    { "task": "autoResize verified", "details": "Function exists at line 913; sendSuggestion uses it safely before calling sendMessage()" },
+    { "task": "No external dependencies added", "details": "No marked, DOMPurify, highlight.js, cdn.jsdelivr, unpkg, cdnjs found" }
+  ],
+  "issues_corrected": [
+    "ISSUE-1: renderMarkdown() applied escapeHtml() too early, destroying markdown syntax. CORRECTED by extracting code blocks first, then processing markdown on escaped text, then restoring blocks.",
+    "ISSUE-2: renderApprovalCard() and renderTool01PermissionCard() used unconditional wrap.scrollTop = wrap.scrollHeight. CORRECTED to compute nearBottom before append and condition scroll/button.",
+    "ISSUE-3: renderMarkdown had 6 'return ' occurrences inside callbacks but single final return 'return html;' after codeBlocks.forEach. VALIDATED safe."
+  ],
+  "safety_diff_summary": {
+    "modified_by_me": ["tmp_agent/brain_v9/ui/index.html"],
+    "other_changed_files_preexisting_not_touched": [
+      "memory/semantic/*",
+      "tmp_agent/strategies/*"
+    ],
+    "note": "All other changes are pre-existing runtime artifacts and were NOT touched by CHAT-B patch. No protected path was modified by this patch."
+  }
+}

@@ -78,10 +78,11 @@
   /* ── Chat ── */
   #messages {
     flex: 1; overflow-y: auto; padding: 20px;
-    display: flex; flex-direction: column; gap: 16px;
+    display: flex; flex-direction: column; gap: 24px;
   }
   .msg { display: flex; gap: 12px; max-width: 820px; animation: fadeIn .2s; }
   .msg.user { flex-direction: row-reverse; align-self: flex-end; }
+  .msg.system { align-self: center; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } }
 
   .avatar {
@@ -89,24 +90,52 @@
     display: flex; align-items: center; justify-content: center;
     font-size: 14px; font-weight: 600;
   }
-  .msg.user   .avatar { background: var(--accent);  color: #fff; }
-  .msg.agent  .avatar { background: var(--surface2); color: var(--accent2); }
-  .msg.system .avatar { background: var(--surface2); color: var(--amber); }
+  .msg.user   .avatar { background: #1e3a5f;  color: #fff; }
+  .msg.agent  .avatar { background: #7c6af7; color: #fff; }
+  .msg.system .avatar { display: none; }
 
   .bubble {
     padding: 12px 16px; border-radius: var(--radius);
     line-height: 1.6; max-width: 680px; word-break: break-word;
   }
-  .msg.user   .bubble { background: var(--accent); color: #fff; border-radius: var(--radius) 4px var(--radius) var(--radius); }
-  .msg.agent  .bubble { background: var(--surface); border: 1px solid var(--border); border-radius: 4px var(--radius) var(--radius) var(--radius); }
-  .msg.system .bubble { background: var(--surface2); border: 1px solid var(--border); color: var(--text2); font-size: 13px; }
+  .msg.user   .bubble { background: #1e3a5f; color: #fff; border-radius: var(--radius) 4px var(--radius) var(--radius); }
+  .msg.agent  .bubble { background: transparent; border: none; border-radius: 0; color: var(--text); padding: 0 16px; max-width: 720px; }
+  .msg.system .bubble { background: transparent; border: none; color: #666; font-size: 12px; text-align: center; padding: 4px 16px; }
 
-  .bubble pre  { background: #0d1117; border-radius: 6px; padding: 12px; overflow-x: auto; font-size: 13px; margin-top: 8px; }
-  .bubble code { font-family: "Fira Code", "Cascadia Code", monospace; font-size: 13px; }
+  .bubble h1, .bubble h2, .bubble h3 { margin: 4px 0 8px; font-weight: 600; }
+  .bubble h1 { font-size: 18px; color: var(--text); }
+  .bubble h2 { font-size: 16px; color: var(--text); }
+  .bubble h3 { font-size: 14px; color: var(--text2); }
+  .bubble ul, .bubble ol { margin: 4px 0 8px; padding-left: 20px; }
+  .bubble li { margin-bottom: 2px; }
+  .bubble table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px; }
+  .bubble th, .bubble td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
+  .bubble th { background: var(--surface2); color: var(--text2); font-weight: 600; }
+
+  .code-block { position: relative; background: #0d1117; border-radius: 8px; margin: 8px 0; overflow: hidden; }
+  .code-block .code-header { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; background: #161b22; border-bottom: 1px solid #30363d; font-size: 11px; color: #8b949e; }
+  .code-block .code-lang { font-family: monospace; text-transform: uppercase; }
+  .code-block .code-copy { background: #21262d; border: 1px solid #30363d; color: #c9d1d9; border-radius: 4px; padding: 2px 8px; cursor: pointer; font-size: 11px; transition: background .2s; }
+  .code-block .code-copy:hover { background: #30363d; }
+  .code-block pre { background: #0d1117; border-radius: 0; padding: 12px; overflow-x: auto; font-size: 13px; margin: 0; }
+  .bubble code { font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", Consolas, monospace; font-size: 13px; background: #24283b; padding: 1px 4px; border-radius: 3px; }
   .bubble p    { margin-bottom: 8px; }
   .bubble p:last-child { margin-bottom: 0; }
 
-  .meta { font-size: 11px; color: var(--text2); margin-top: 4px; padding: 0 4px; }
+  /* Empty state */
+  .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 60px 20px; color: var(--text2); text-align: center; }
+  .empty-state .big-logo { width: 64px; height: 64px; border-radius: 16px; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; color: #fff; }
+  .empty-state h2 { font-size: 20px; color: var(--text); margin: 0; }
+  .empty-state .suggestions { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .empty-state .suggestion-btn { background: var(--surface); border: 1px solid var(--border); color: var(--text2); border-radius: 8px; padding: 10px 16px; cursor: pointer; font-size: 13px; transition: all .2s; text-align: left; }
+  .empty-state .suggestion-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--accent); }
+
+  /* Scroll down button */
+  .scroll-down-btn { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border); color: var(--text2); border-radius: 20px; padding: 6px 14px; font-size: 12px; cursor: pointer; display: none; z-index: 100; transition: all .2s; }
+  .scroll-down-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* Clip placeholder */
+  .clip-placeholder { display: flex; align-items: center; justify-content: center; width: 36px; height: 44px; color: var(--text2); cursor: not-allowed; opacity: 0.5; }
 
   /* Governance approval card */
   .approval-card {
@@ -599,7 +628,18 @@
 
 <!-- CHAT -->
 <div class="panel active" id="panel-chat">
-  <div id="messages"></div>
+  <div id="messages">
+  <div class="empty-state" id="empty-state">
+    <div class="big-logo">B</div>
+    <h2>Brain Chat V9</h2>
+    <div class="suggestions">
+      <button class="suggestion-btn" onclick="sendSuggestion('What is the system status?')">What is the system status?</button>
+      <button class="suggestion-btn" onclick="sendSuggestion('Show latest research results')">Show latest research results</button>
+      <button class="suggestion-btn" onclick="sendSuggestion('Run git status')">Run git status</button>
+    </div>
+  </div>
+</div>
+<button class="scroll-down-btn" id="scroll-down-btn" onclick="scrollToBottom()">↓ Bajar</button>
   <div class="input-bar">
     <select id="model-select" title="Modelo LLM">
       <option value="chat">💬 Chat rápido</option>
@@ -613,7 +653,7 @@
       style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:0 12px;height:44px;cursor:pointer;font-size:13px;transition:all .2s;white-space:nowrap;">
       ⚙ Auto
     </button>
-    <textarea id="input" placeholder="Escribe tu mensaje… (Enter para enviar, Shift+Enter para nueva línea)"
+    <textarea id="input" placeholder="Escribe a Brain..."
               rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
     <button id="send-btn" onclick="sendMessage()" title="Enviar">
       <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
@@ -830,12 +870,74 @@ function escapeHtml(s) {
 }
 
 function renderMarkdown(text) {
-  return text
-    .replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) =>
-      `<pre><code class="lang-${lang}">${escapeHtml(code.trim())}</code></pre>`)
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n/g, '<br>');
+  // 1. Extract code blocks before any escaping
+  const codeBlocks = [];
+  text = text.replace(/```(\w*)\n([\s\S]*?)```/g, (___match__, lang, code) => {
+    codeBlocks.push({ lang, code: code.trim() });
+    return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
+  });
+
+  let html = escapeHtml(text);
+
+  // 2. Headers
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+
+  // 3. Bold & inline code
+  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // 4. Lists
+  html = html.replace(/^(\s*)[-*] (.+)$/gm, '<li>$2</li>');
+  html = html.replace(/(<li>.+<\/li>\n?)+/g, '<ul>$&</ul>');
+  html = html.replace(/^(\s*)(\d+)\. (.+)$/gm, '<li>$3</li>');
+  html = html.replace(/(<li>.+<\/li>\n?)+/g, (match) => {
+    if (match.includes('<ul>')) return match;
+    return '<ol>' + match + '</ol>';
+  });
+
+  // 5. Tables (simple markdown | col1 | col2 |)
+  html = html.replace(/((?:^\|[^\n]+\|\n)+)/gm, (tableBlock) => {
+    const rows = tableBlock.trim().split('\n').filter(Boolean);
+    if (rows.length < 2) return tableBlock;
+    let tbl = '<table>';
+    rows.forEach((row, i) => {
+      const cells = row.split('|').map(c => c.trim()).filter(Boolean);
+      if (!cells.length) return;
+      if (i === 0) {
+        tbl += '<tr>' + cells.map(c => '<th>' + c + '</th>').join('') + '</tr>';
+      } else if (cells.every(c => /^-+$/.test(c))) {
+        // separator row, skip
+      } else {
+        tbl += '<tr>' + cells.map(c => '<td>' + c + '</td>').join('') + '</tr>';
+      }
+    });
+    tbl += '</table>';
+    return tbl;
+  });
+
+  // 6. Line breaks
+  html = html.replace(/\n/g, '<br>');
+
+  // 7. Restore code blocks
+  codeBlocks.forEach((cb, i) => {
+    const escaped = escapeHtml(cb.code);
+    const label = cb.lang ? `<span class="code-lang">${cb.lang}</span>` : '';
+    const copyBtn = `<button class="code-copy" onclick="copyCode(this)">Copy</button>`;
+    const blockHtml = `<div class="code-block"><div class="code-header">${label}${copyBtn}</div><pre><code>${escaped}</code></pre></div>`;
+    html = html.replace(`__CODE_BLOCK_${i}__`, blockHtml);
+  });
+
+  return html;
+}
+
+function copyCode(btn) {
+  const code = btn.closest('.code-block').querySelector('pre code').textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
 }
 
 // ── Panel navigation ───────────────────────────────────────────────────────
@@ -864,6 +966,7 @@ function handleKey(e) {
 
 function addMsg(role, content, meta = '') {
   const wrap  = document.getElementById('messages');
+  const nearBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 120;
   const avatars = { user: 'U', agent: 'B', system: '⚙' };
   const div = document.createElement('div');
   div.className = 'msg ' + role;
@@ -874,22 +977,70 @@ function addMsg(role, content, meta = '') {
       ${meta ? `<div class="meta">${meta}</div>` : ''}
     </div>`;
   wrap.appendChild(div);
-  wrap.scrollTop = wrap.scrollHeight;
+  if (nearBottom) {
+    wrap.scrollTop = wrap.scrollHeight;
+    hideScrollDownBtn();
+  } else {
+    showScrollDownBtn();
+  }
+  hideEmptyState();
   return div;
 }
 
 function addTyping() {
   const wrap = document.getElementById('messages');
+  const nearBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 120;
   const div = document.createElement('div');
   div.className = 'msg agent';
   div.id = 'typing';
   div.innerHTML = `<div class="avatar">B</div><div class="bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
   wrap.appendChild(div);
-  wrap.scrollTop = wrap.scrollHeight;
+  if (nearBottom) {
+    wrap.scrollTop = wrap.scrollHeight;
+    hideScrollDownBtn();
+  } else {
+    showScrollDownBtn();
+  }
+  hideEmptyState();
 }
 
 function removeTyping() {
   document.getElementById('typing')?.remove();
+}
+
+function hideEmptyState() {
+  const el = document.getElementById('empty-state');
+  if (el) el.style.display = 'none';
+}
+
+function showEmptyState() {
+  const el = document.getElementById('empty-state');
+  if (el) el.style.display = '';
+}
+
+function scrollToBottom() {
+  const wrap = document.getElementById('messages');
+  wrap.scrollTop = wrap.scrollHeight;
+  document.getElementById('scroll-down-btn').style.display = 'none';
+}
+
+function showScrollDownBtn() {
+  const wrap = document.getElementById('messages');
+  const btn = document.getElementById('scroll-down-btn');
+  const nearBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 120;
+  btn.style.display = nearBottom ? 'none' : 'inline-block';
+}
+
+function hideScrollDownBtn() {
+  document.getElementById('scroll-down-btn').style.display = 'none';
+}
+
+function sendSuggestion(text) {
+  const input = document.getElementById('input');
+  input.value = text;
+  input.focus();
+  autoResize(input);
+  sendMessage();
 }
 
 let agentMode = false;
@@ -994,8 +1145,11 @@ function renderApprovalCard(pendingId, toolName, risk, description) {
     </div>
     <div class="approval-result" id="result-${pendingId}"></div>
   `;
+  const nearBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 120;
   wrap.appendChild(card);
-  wrap.scrollTop = wrap.scrollHeight;
+  if (nearBottom) { wrap.scrollTop = wrap.scrollHeight; hideScrollDownBtn(); }
+  else { showScrollDownBtn(); }
+  hideEmptyState();
 }
 
 async function handleGateAction(action, pendingId, btn) {
@@ -1050,8 +1204,11 @@ function renderTool01PermissionCard(permissionId, toolName, riskLevel, options, 
     </div>
     <div class="tool01-perm-result" id="tool01-result-${permissionId}"></div>
   `;
+  const nearBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 120;
   wrap.appendChild(card);
-  wrap.scrollTop = wrap.scrollHeight;
+  if (nearBottom) { wrap.scrollTop = wrap.scrollHeight; hideScrollDownBtn(); }
+  else { showScrollDownBtn(); }
+  hideEmptyState();
 }
 
 async function handleTool01PermissionAction(decision, permissionId, btn) {
@@ -2134,6 +2291,16 @@ function initAw() {
   }
   connectAw();
 }
+
+// ── Scroll listener on messages ───────────────────────────────────────────
+(function() {
+  const wrap = document.getElementById('messages');
+  wrap.addEventListener('scroll', () => {
+    const nearBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 120;
+    if (nearBottom) hideScrollDownBtn();
+    else showScrollDownBtn();
+  });
+})();
 
 // ── Init ───────────────────────────────────────────────────────────────────
 async function init() {

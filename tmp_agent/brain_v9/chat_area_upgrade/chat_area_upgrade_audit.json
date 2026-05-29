@@ -1,0 +1,57 @@
+{
+  "CHAT_AREA_UPGRADE_AUDIT": {
+    "status": "PLAN_READY",
+    "head_base": "38582f02",
+    "chat_file_identified": "tmp_agent/brain_v9/ui/index.html",
+    "ui_type": "single-file static HTML with embedded CSS and JS (no framework)",
+    "current_message_renderer": "inline renderMarkdown() — regex-based replacement of code blocks, inline code, bold, newlines (line 832)",
+    "markdown_available": false,
+    "highlight_available": false,
+    "dompurify_available": false,
+    "streaming_real_or_simulated": "NEITHER — backend returns complete JSON response; frontend renders full block after fetch completes. `addTyping()` only provides placeholder dots while waiting.",
+    "tool_output_structure_found": false,
+    "tool_cards": {
+      "approval_card": "exists for governance gated tools",
+      "tool01_permission_card": "exists for governed filesystem tools",
+      "tool_result_block_collapsible": false,
+      "tool_result_block": "only inline <pre> inside permission card result"
+    },
+    "safe_now_items": [
+      "Improve renderMarkdown() to support headers, lists, tables",
+      "Add Copy button to code blocks",
+      "Style agent/brain messages without bubble background",
+      "Style system messages centered, grey, no avatar",
+      "Add empty state with logo + suggestions",
+      "Add scroll-down button when user scrolls up",
+      "Add clip icon placeholder to input bar",
+      "Improve spacing between messages (24px gap)",
+      "Auto-grow textarea up to 5 lines (currently limited to 160px ~ 5 lines)",
+      "Remove typing placeholder on error"
+    ],
+    "deferred_items": [
+      "Streaming with real cursor — backend lacks SSE text streaming endpoint",
+      "Tool result collapsible blocks — backend returns tool results inside response string, no structured tool_result_id",
+      "Real-time markdown parse during generation — requires backend streaming",
+      "Syntax highlighting for code blocks — requires highlight.js CDN or local lib"
+    ],
+    "files_to_modify_in_patch": [
+      "tmp_agent/brain_v9/ui/index.html"
+    ],
+    "files_not_to_touch": [
+      "tmp_agent/brain_v9/main.py",
+      "tmp_agent/brain_v9/api_security.py",
+      "tmp_agent/brain_v9/tracing/trace_redactor.py",
+      "tests/unit/*",
+      "ROADMAP_STATUS.json",
+      "docs/MIGRATION_CONTROL_LEDGER.md",
+      "memory/semantic/*",
+      "tmp_agent/strategies/*",
+      "tmp_agent/reports/*",
+      "tmp_agent/brain_v9/ui/dashboard.html",
+      "tmp_agent/brain_v9/ui/agent_trace_console.html"
+    ],
+    "risk_level": "LOW",
+    "risk_details": "All changes confined to single HTML/CSS/JS block in index.html. No backend changes. No API changes. No new dependencies if using CDN for optional markdown. Minimal risk of breaking other tabs if CSS selectors remain scoped to #panel-chat or .msg.* classes.",
+    "ready_for_patch": true
+  }
+}
