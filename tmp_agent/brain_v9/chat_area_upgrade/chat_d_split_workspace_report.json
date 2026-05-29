@@ -1,0 +1,57 @@
+{
+  "status": "READY_FOR_REVIEW_NO_COMMIT",
+  "patch_id": "CHAT-D",
+  "goal": "Conversational workspace split-view inspired by Z.ai/Codex",
+  "base_commit": "810a052d",
+  "target_file": "tmp_agent/brain_v9/ui/index.html",
+  "implemented": {
+    "chat_split_layout": true,
+    "artifact_side_panel": true,
+    "tool_inline_cards": true,
+    "open_artifact_helper": true,
+    "show_hide_toggle_artifact_panel": true,
+    "system_msg_style": true,
+    "spanish_empty_state": true,
+    "markdown_internal_parser_preserved": true,
+    "smart_scroll_preserved": true,
+    "no_backend_changes": true
+  },
+  "validation": {
+    "function_uniqueness": true,
+    "functions_checked": [
+      "renderMarkdown", "copyCode", "hideEmptyState", "scrollToBottom",
+      "showScrollDownBtn", "hideScrollDownBtn", "sendSuggestion",
+      "addMsg", "addTyping", "renderToolCallInline", "openArtifact",
+      "showArtifactPanel", "hideArtifactPanel", "toggleArtifactPanel"
+    ],
+    "html_basic_balance": {
+      "div_open": 229,
+      "div_close": 229,
+      "script_open": 2,
+      "script_close": 2,
+      "lines": 2460
+    },
+    "required_ids_present": [
+      "messages", "empty-state", "scroll-down-btn",
+      "chat-artifact-panel", "artifact-content"
+    ],
+    "no_external_dependencies": true,
+    "no_backend_diff": true,
+    "no_tests_diff": true,
+    "no_ledger_diff": true,
+    "no_dashboard_diff": true,
+    "no_agent_trace_console_diff": true,
+    "no_staged_files": true
+  },
+  "limitations": [
+    "Frontend-only. Real live tool streaming still depends on backend emitting tool events into chat stream.",
+    "Artifact panel heuristic for tool outputs is basic (length > 400 chars or explicit data.tool_result).",
+    "Mobile panel uses fixed overlay transform, may need refinement for touch gestures."
+  ],
+  "ready_for_allowlist_commit": true,
+  "explicit_no_commit_push": true,
+  "files_modified": [
+    "tmp_agent/brain_v9/ui/index.html"
+  ],
+  "recommended_next_action": "Request user authorization for explicit allowlisted git add (only index.html) and commit."
+}

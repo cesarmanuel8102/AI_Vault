@@ -1,0 +1,45 @@
+{
+  "status": "VISUAL_SMOKE_READY_FOR_COMMIT",
+  "patch_id": "CHAT-D",
+  "base_commit": "810a052d",
+  "files_modified_by_chat_d": [
+    "tmp_agent/brain_v9/ui/index.html"
+  ],
+  "visual_checks": {
+    "chat_loads": true,
+    "split_layout_visible": true,
+    "artifact_panel_visible": true,
+    "input_position_ok": true,
+    "scroll_button_scoped": true,
+    "empty_state_spanish": true,
+    "system_messages_ok": true,
+    "markdown_ok": true,
+    "workspace_toggle_ok": true
+  },
+  "browser_console_errors": [],
+  "server_health": {
+    "url_tested": "http://127.0.0.1:8090/ui/",
+    "health_endpoint": "http://127.0.0.1:8090/health",
+    "status": "healthy",
+    "version": "9.0.0",
+    "sessions": 8
+  },
+  "protected_paths_clean": true,
+  "no_staged_files": true,
+  "ready_for_allowlist_commit": true,
+  "explicit_no_commit_push": true,
+  "validation_summary": {
+    "function_uniqueness": true,
+    "html_balance": "229/229 div, 2/2 script",
+    "no_external_dependencies": true,
+    "no_backend_diff": true,
+    "no_tests_diff": true,
+    "no_ledger_diff": true,
+    "no_dashboard_diff": true,
+    "no_agent_trace_console_diff": true,
+    "scroll_btn_position": "absolute (not fixed)",
+    "system_msg_no_avatar": true,
+    "hideEmptyState_only_user": true,
+    "spanish_suggestions": true
+  }
+}

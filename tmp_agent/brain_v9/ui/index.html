@@ -131,8 +131,51 @@
   .empty-state .suggestion-btn:hover { background: var(--surface2); color: var(--text); border-color: var(--accent); }
 
   /* Scroll down button */
-  .scroll-down-btn { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border); color: var(--text2); border-radius: 20px; padding: 6px 14px; font-size: 12px; cursor: pointer; display: none; z-index: 100; transition: all .2s; }
+  .scroll-down-btn { position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border); color: var(--text2); border-radius: 20px; padding: 6px 14px; font-size: 12px; cursor: pointer; display: none; z-index: 100; transition: all .2s; }
   .scroll-down-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* Chat split layout */
+  .chat-split-layout { display: flex; width: 100%; height: 100%; overflow: hidden; }
+  .chat-main-column { flex: 1; min-width: 0; display: flex; flex-direction: column; position: relative; }
+  .chat-artifact-panel {
+    width: 380px; min-width: 320px; max-width: 42vw;
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    display: flex; flex-direction: column;
+    overflow: hidden; transition: width .25s ease, margin .25s ease;
+  }
+  .chat-artifact-panel.collapsed { width: 0; min-width: 0; margin-left: 0; border-left: none; overflow: hidden; }
+  .artifact-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .artifact-title { font-size: 14px; font-weight: 600; color: var(--text); }
+  .artifact-subtitle { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .artifact-content { flex: 1; overflow-y: auto; padding: 12px 16px; }
+  .artifact-empty { color: var(--text2); font-size: 13px; text-align: center; padding: 40px 20px; }
+  #artifact-collapse-btn { background: none; border: none; color: var(--text2); font-size: 18px; cursor: pointer; }
+
+  /* Tool inline card */
+  .tool-inline-card { margin: 8px 0; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); overflow: hidden; }
+  .tool-inline-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 12px; color: var(--text2); cursor: pointer; background: rgba(255,255,255,.03); }
+  .tool-inline-header:hover { background: rgba(255,255,255,.06); }
+  .tool-inline-status { margin-left: auto; font-size: 11px; }
+  .tool-inline-status.ok { color: var(--green); }
+  .tool-inline-status.err { color: var(--red); }
+  .tool-inline-body { display: none; padding: 10px 12px; font-size: 12px; color: var(--text); max-height: 240px; overflow-y: auto; }
+  .tool-inline-body.open { display: block; }
+  .tool-inline-open-btn { background: none; border: none; color: var(--accent2); cursor: pointer; font-size: 11px; margin-left: 8px; }
+  .tool-inline-open-btn:hover { text-decoration: underline; }
+
+  /* System message */
+  .system-msg { color: #555; font-size: 12px; text-align: center; padding: 4px 0; width: 100%; }
+
+  @media (max-width: 960px) {
+    .chat-artifact-panel { position: fixed; right: 0; top: 0; height: 100vh; z-index: 9998; width: 320px; transform: translateX(100%); }
+    .chat-artifact-panel.open { transform: translateX(0); }
+    .chat-main-column { width: 100%; }
+  }
+
 
   /* Clip placeholder */
   .clip-placeholder { display: flex; align-items: center; justify-content: center; width: 36px; height: 44px; color: var(--text2); cursor: not-allowed; opacity: 0.5; }
@@ -628,19 +671,21 @@
 
 <!-- CHAT -->
 <div class="panel active" id="panel-chat">
-  <div id="messages">
-  <div class="empty-state" id="empty-state">
-    <div class="big-logo">B</div>
-    <h2>Brain Chat V9</h2>
-    <div class="suggestions">
-      <button class="suggestion-btn" onclick="sendSuggestion('What is the system status?')">What is the system status?</button>
-      <button class="suggestion-btn" onclick="sendSuggestion('Show latest research results')">Show latest research results</button>
-      <button class="suggestion-btn" onclick="sendSuggestion('Run git status')">Run git status</button>
+<div class="chat-split-layout">
+  <section class="chat-main-column">
+    <div id="messages">
+    <div class="empty-state" id="empty-state">
+      <div class="big-logo">B</div>
+      <h2>Brain Chat V9</h2>
+      <div class="suggestions">
+        <button class="suggestion-btn" onclick="sendSuggestion('Cuál es el estado del sistema?')">¿Cuál es el estado del sistema?</button>
+        <button class="suggestion-btn" onclick="sendSuggestion('Muestra los últimos resultados')">Muestra los últimos resultados</button>
+        <button class="suggestion-btn" onclick="sendSuggestion('Ejecuta git status')">Ejecuta git status</button>
+      </div>
     </div>
   </div>
-</div>
-<button class="scroll-down-btn" id="scroll-down-btn" onclick="scrollToBottom()">↓ Bajar</button>
-  <div class="input-bar">
+  <button class="scroll-down-btn" id="scroll-down-btn" onclick="scrollToBottom()">↓ Bajar</button>
+    <div class="input-bar">
     <select id="model-select" title="Modelo LLM">
       <option value="chat">💬 Chat rápido</option>
       <option value="llama8b">🦙 Llama3.1 8B</option>
@@ -658,7 +703,24 @@
     <button id="send-btn" onclick="sendMessage()" title="Enviar">
       <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
     </button>
-  </div>
+    </div>
+  </section>
+
+  <aside id="chat-artifact-panel" class="chat-artifact-panel">
+    <div class="artifact-header">
+      <div>
+        <div class="artifact-title">Workspace</div>
+        <div class="artifact-subtitle">Tools, outputs y evidencias</div>
+      </div>
+      <button id="artifact-collapse-btn" onclick="toggleArtifactPanel()">×</button>
+    </div>
+    <div id="artifact-content" class="artifact-content">
+      <div class="artifact-empty">
+        Selecciona una tool, output o evidencia para verla aquí.
+      </div>
+    </div>
+  </aside>
+</div>
 </div>
 
 <!-- PLATFORMS -->
@@ -967,8 +1029,18 @@ function handleKey(e) {
 function addMsg(role, content, meta = '') {
   const wrap  = document.getElementById('messages');
   const nearBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 120;
-  const avatars = { user: 'U', agent: 'B', system: '⚙' };
   const div = document.createElement('div');
+
+  if (role === 'system') {
+    div.className = 'msg system';
+    div.innerHTML = `<div class="system-msg">${escapeHtml(content)}</div>`;
+    wrap.appendChild(div);
+    if (nearBottom) { wrap.scrollTop = wrap.scrollHeight; hideScrollDownBtn(); }
+    else { showScrollDownBtn(); }
+    return div;
+  }
+
+  const avatars = { user: 'U', agent: 'B', system: '⚙' };
   div.className = 'msg ' + role;
   div.innerHTML = `
     <div class="avatar">${avatars[role] || '?'}</div>
@@ -983,7 +1055,7 @@ function addMsg(role, content, meta = '') {
   } else {
     showScrollDownBtn();
   }
-  hideEmptyState();
+  if (role === 'user') hideEmptyState();
   return div;
 }
 
@@ -1001,7 +1073,6 @@ function addTyping() {
   } else {
     showScrollDownBtn();
   }
-  hideEmptyState();
 }
 
 function removeTyping() {
@@ -1033,6 +1104,62 @@ function showScrollDownBtn() {
 
 function hideScrollDownBtn() {
   document.getElementById('scroll-down-btn').style.display = 'none';
+}
+
+// ── Artifact Panel ─────────────────────────────────────────────────────────
+function showArtifactPanel() {
+  const panel = document.getElementById('chat-artifact-panel');
+  panel.classList.remove('collapsed');
+  panel.classList.add('open');
+}
+function hideArtifactPanel() {
+  const panel = document.getElementById('chat-artifact-panel');
+  panel.classList.add('collapsed');
+  panel.classList.remove('open');
+}
+function toggleArtifactPanel() {
+  const panel = document.getElementById('chat-artifact-panel');
+  if (panel.classList.contains('collapsed')) {
+    showArtifactPanel();
+  } else {
+    hideArtifactPanel();
+  }
+}
+function openArtifact(title, subtitle, content, mode) {
+  const container = document.getElementById('artifact-content');
+  let html = '';
+  if (mode === 'code') {
+    html = `<div class="code-block"><div class="code-header"><span class="code-lang">${escapeHtml(title)}</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div><pre><code>${escapeHtml(content)}</code></pre></div>`;
+  } else if (mode === 'markdown') {
+    html = renderMarkdown(content);
+  } else {
+    html = `<div style="white-space:pre-wrap;word-break:break-word;font-size:13px;line-height:1.6;">${escapeHtml(content)}</div>`;
+  }
+  container.innerHTML = `<div style="margin-bottom:8px;"><div style="font-weight:600;font-size:14px;">${escapeHtml(title)}</div><div style="font-size:11px;color:var(--text2);margin-top:2px;">${escapeHtml(subtitle)}</div></div>${html}`;
+  showArtifactPanel();
+}
+
+// ── Tool Inline Card ───────────────────────────────────────────────────────
+function renderToolCallInline(tool, output, status, duration) {
+  const wrap = document.getElementById('messages');
+  const nearBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 120;
+  const card = document.createElement('div');
+  card.className = 'tool-inline-card';
+  const statusClass = status === 'ok' ? 'ok' : 'err';
+  const statusText = status === 'ok' ? '✓' : '✗';
+  const safeTool = escapeHtml(tool);
+  const safeOutput = escapeHtml(output);
+  const id = 'tool-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+  card.innerHTML = `
+    <div class="tool-inline-header" onclick="document.getElementById('${id}').classList.toggle('open')">
+      <span>⚙</span> <strong>${safeTool}</strong>
+      <span class="tool-inline-status ${statusClass}">${statusText} ${duration ? duration + 's' : ''}</span>
+      <button class="tool-inline-open-btn" onclick="event.stopPropagation(); openArtifact('${safeTool}', 'Tool output', \`${safeOutput}\`, 'text');">Abrir en Workspace</button>
+    </div>
+    <div id="${id}" class="tool-inline-body"><pre style="margin:0;font-size:12px;"><code>${safeOutput}</code></pre></div>`;
+  wrap.appendChild(card);
+  if (nearBottom) { wrap.scrollTop = wrap.scrollHeight; hideScrollDownBtn(); }
+  else { showScrollDownBtn(); }
 }
 
 function sendSuggestion(text) {
@@ -1098,7 +1225,16 @@ async function sendMessage() {
     const modelUsed = data.model_used || data.model || (agentMode ? 'agent_orav' : '?');
     const meta      = `${routeIcon} ${modelUsed} · ${ts()}`;
 
-    addMsg('agent', data.response || data.result || data.content || data.error || '(sin respuesta)', meta);
+    const responseText = data.response || data.result || data.content || data.error || '(sin respuesta)';
+    addMsg('agent', responseText, meta);
+
+    // Detect tool outputs and create inline cards + artifacts
+    if (data.tool_result) {
+      renderToolCallInline(data.tool_name || 'tool', JSON.stringify(data.tool_result, null, 2), 'ok', '');
+    }
+    if (data.tool_name && responseText.length > 400) {
+      renderToolCallInline(data.tool_name || 'output', responseText, 'ok', '');
+    }
 
     // Render TOOL-01B permission gate card if permission_required
     if (data.permission_required === true || data.permission_required === 'true') {
