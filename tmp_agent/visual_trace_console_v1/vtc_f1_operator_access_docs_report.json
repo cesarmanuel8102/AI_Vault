@@ -1,0 +1,27 @@
+{
+  "VTC_F1_OPERATOR_ACCESS_DOCS_REPORT": {
+    "status": "APPLIED",
+    "head_base": "1ad53f61",
+    "branch": "codex/own-capital-sustainable-return",
+    "files_created": [
+      "docs/OPERATOR_ACCESS_RUNBOOK.md",
+      "tmp_agent/visual_trace_console_v1/vtc_f1_operator_access_docs_report.json"
+    ],
+    "code_changed": false,
+    "ui_changed": false,
+    "tests_changed": false,
+    "ledger_changed": false,
+    "protected_touched": false,
+    "operator_access_documented": true,
+    "brain_admin_token_documented": true,
+    "x_brain_token_documented": true,
+    "strict_operator_access_documented": true,
+    "endpoint_matrix_documented": true,
+    "powershell_examples_included": true,
+    "expected_errors_documented": true,
+    "no_secrets_in_docs": true,
+    "ready_for_commit": true,
+    "ready_for_patch": false,
+    "recommended_next_action": "commit VTC-F1 docs, then implement VTC-F2 SSE e2e automated test"
+  }
+}
