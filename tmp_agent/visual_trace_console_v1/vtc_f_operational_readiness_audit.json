@@ -1,0 +1,102 @@
+{
+  "VTC_F_OPERATIONAL_READINESS_AUDIT": {
+    "status": "PLAN_READY",
+    "head_base": "05dd7fe6",
+    "branch": "codex/own-capital-sustainable-return",
+    "scope": "operator_access deployment docs + SSE e2e test plan",
+    "code_changed": false,
+    "ui_changed": false,
+    "protected_touched": false,
+    "audit_date": "2026-05-29T01:10:00Z",
+    "operator_access_findings": {
+      "require_operator_access": {
+        "description": "Localhost bypass for GET /latest and GET /stream. Non-local requires X-Brain-Token if BRAIN_ADMIN_TOKEN is set.",
+        "endpoints_affected": [
+          "/brain/agent-trace/latest (GET)",
+          "/brain/agent-trace/stream (GET - via EventSource from UI)"
+        ],
+        "localhost_bypass": true,
+        "token_required": "only for non-local requests"
+      },
+      "require_strict_operator_access": {
+        "description": "NO localhost bypass. Requires BRAIN_ADMIN_TOKEN env var AND matching X-Brain-Token header.",
+        "endpoints_affected": [
+          "/brain/agent-trace/event (POST)"
+        ],
+        "localhost_bypass": false,
+        "token_required": "always (strict)"
+      },
+      "restart_brain_v9_safe.ps1": {
+        "description": "Does NOT set BRAIN_ADMIN_TOKEN in launch environment.",
+        "risk": "POST /brain/agent-trace/event fails with 403 'strict operator token not configured' unless operator configures token manually.",
+        "mitigation": "Document configuration in operator runbook."
+      },
+      "BRAIN_ADMIN_TOKEN": {
+        "description": "Env var read at runtime via os.getenv('BRAIN_ADMIN_TOKEN'). Not hardcoded. Not logged. Supports hmac compare_digest.",
+        "exposure_risk": "LOW (never logged, never hardcoded, only compared via compare_digest)",
+        "deployment_gap": "No docs exist explaining how operator should configure this token."
+      },
+      "X-Brain-Token": {
+        "description": "HTTP header required for StrictOperatorAccess. Expected to match BRAIN_ADMIN_TOKEN env var.",
+        "header_format": "X-Brain-Token: <token_value>",
+        "security": "Compared via hmac.compare_digest to prevent timing attacks."
+      },
+      "deployment_docs_exist": false,
+      "risks_identified": [
+        {
+          "risk_id": "VTC-F-R001",
+          "description": "POST /brain/agent-trace/event unusable in production without manual BRAIN_ADMIN_TOKEN configuration.",
+          "severity": "medium",
+          "mitigation": "Create operator runbook documenting token setup."
+        },
+        {
+          "risk_id": "VTC-F-R002",
+          "description": "GET /latest and GET /stream allow localhost bypass — acceptable for local operator UI but risky if exposed to network.",
+          "severity": "medium",
+          "mitigation": "Runbook should mention firewall/reverse-proxy restrictions."
+        },
+        {
+          "risk_id": "VTC-F-R003",
+          "description": "No deployment documentation for operator_access token exists.",
+          "severity": "medium",
+          "mitigation": "VTC-F1 runbook plan."
+        }
+      ]
+    },
+    "sse_test_findings": {
+      "test_infrastructure": {
+        "test_client_pattern_exists": true,
+        "files_using_testclient": [
+          "tests/unit/test_brain_chat_hygiene.py",
+          "tests/unit/test_brain_capability_governor.py",
+          "tests/unit/test_brain_upgrade_runtime.py"
+        ],
+        "httpx_policy": "Forbidden in many modules for security. TestClient from fastapi.testclient is acceptable.",
+        "recommended_test_file": "tests/unit/test_agent_trace_sse_e2e.py",
+        "recommended_approach": "FastAPI TestClient streaming response for SSE endpoint. Inject event via _emit_agent_trace_internal to avoid token requirement. Assert redaction markers present and raw secrets absent."
+      },
+      "sse_endpoint": {
+        "route": "/brain/agent-trace/stream",
+        "type": "async generator (SSE)",
+        "heartbeat": "event: heartbeat\\ndata: {}\\n\\n",
+        "redaction_boundary": "_sanitize_event(dict(event)) before queue push"
+      },
+      "risks_identified": [
+        {
+          "risk_id": "VTC-F-R004",
+          "description": "No automated SSE test verifies redaction in streamed events.",
+          "severity": "medium",
+          "mitigation": "VTC-F2 SSE e2e test plan."
+        }
+      ]
+    },
+    "recommended_patch_sequence": [
+      "VTC-F1: Create operator_access runbook docs (docs/ or tmp_agent/visual_trace_console_v1/)",
+      "VTC-F2: Create SSE e2e automated test (tests/unit/test_agent_trace_sse_e2e.py)",
+      "VTC-E (optional): UI operator polish after operational readiness secured"
+    ],
+    "ready_for_docs_patch": true,
+    "ready_for_test_patch": true,
+    "ready_for_ui_patch": false
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "VTC_F_FINAL_RECOMMENDATION": {
+    "status": "READY_FOR_CONTROLLED_PATCH",
+    "head_base": "05dd7fe6",
+    "recommended_next_front": "VTC-F1 operator_access runbook docs",
+    "recommended_second_front": "VTC-F2 SSE e2e automated test",
+    "not_recommended_now": [
+      "VTC-E UI Operator Polish",
+      "Autonomy phase 6.3 execution",
+      "tmp_agent/strategies changes"
+    ],
+    "reason": "Close documented medium operational risks before cosmetic UI polish. VTC-F1 and VTC-F2 are operational safety gaps discovered during VTC-C runtime smoke (403 on POST /brain/agent-trace/event, lack of SSE automated redaction test). Both are docs/test-only and touch no protected paths.",
+    "code_changed": false,
+    "ui_changed": false,
+    "protected_touched": false,
+    "ready_for_commit": true,
+    "ready_for_patch": false
+  }
+}
