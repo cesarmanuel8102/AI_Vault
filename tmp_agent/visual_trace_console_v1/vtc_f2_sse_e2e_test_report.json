@@ -1,0 +1,30 @@
+{
+  "VTC_F2_SSE_E2E_TEST_REPORT": {
+    "status": "APPLIED",
+    "head_base": "845a17f0",
+    "branch": "codex/own-capital-sustainable-return",
+    "files_created": [
+      "tests/unit/test_agent_trace_sse_e2e.py",
+      "tmp_agent/visual_trace_console_v1/vtc_f2_sse_e2e_test_report.json"
+    ],
+    "code_changed": false,
+    "backend_changed": false,
+    "ui_changed": false,
+    "docs_changed": false,
+    "ledger_changed": false,
+    "tests_changed": true,
+    "protected_touched": false,
+    "sse_redaction_test_added": true,
+    "token_required": false,
+    "server_restart_required": false,
+    "raw_cot_leak_check": "PASS",
+    "secret_leak_check": "PASS",
+    "protected_path_leak_check": "PASS",
+    "py_compile": "PASS",
+    "new_test_result": "3/3 PASS",
+    "regression_subset": "92/92 PASS (incluye nuevo test)",
+    "ready_for_commit": true,
+    "ready_for_patch": false,
+    "recommended_next_action": "commit VTC-F2 SSE e2e test, then decide whether VTC-E UI polish is still worth doing"
+  }
+}
