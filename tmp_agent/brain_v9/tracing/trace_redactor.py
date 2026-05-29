@@ -47,15 +47,31 @@ PROTECTED_PATHS = {
 }
 
 SECRET_PATTERNS = [
-    re.compile(r"(?i)api[_-]?key"),
-    re.compile(r"(?i)secret[_-]?key"),
-    re.compile(r"(?i)auth[_-]?token"),
-    re.compile(r"(?i)bearer\s+[a-zA-Z0-9_\-]{20,}"),
-    re.compile(r"(?i)password"),
-    re.compile(r"(?i)private[_-]?key"),
-    re.compile(r"sk-[a-zA-Z0-9]{48,}"),
-    re.compile(r"ghp_[a-zA-Z0-9]{36,}"),
-    re.compile(r"AKIA[0-9A-Z]{16}"),
+    # Assignment-style: field=value or field: value (whole assignment redacted)
+    (
+        re.compile(r"(?i)\b(password|token|api[_-]?key|secret|credential|auth[_-]?token|private[_-]?key)\b\s*[:=]\s*[^\s,;}\"'\]]+"),
+        "[REDACTED_SECRET]",
+    ),
+    # HTTP header style: Authorization: Bearer <token>
+    (
+        re.compile(r"(?i)(Authorization\s*:\s*Bearer\s+)[a-zA-Z0-9_\-\.]{8,}"),
+        r"\g<1>[REDACTED_SECRET]",
+    ),
+    # Bearer token inline
+    (
+        re.compile(r"(?i)\b(bearer)\s+[a-zA-Z0-9_\-\.]{8,}"),
+        r"\g<1> [REDACTED_SECRET]",
+    ),
+    # Generic field-name patterns (replace whole match)
+    (re.compile(r"(?i)\bapi[_-]?key\b"), "[REDACTED_SECRET]"),
+    (re.compile(r"(?i)\bsecret[_-]?key\b"), "[REDACTED_SECRET]"),
+    (re.compile(r"(?i)\bauth[_-]?token\b"), "[REDACTED_SECRET]"),
+    (re.compile(r"(?i)\bpassword\b"), "[REDACTED_SECRET]"),
+    (re.compile(r"(?i)\bprivate[_-]?key\b"), "[REDACTED_SECRET]"),
+    # Known token prefixes (replace whole match)
+    (re.compile(r"sk-[a-zA-Z0-9]{48,}"), "[REDACTED_SECRET]"),
+    (re.compile(r"ghp_[a-zA-Z0-9]{36,}"), "[REDACTED_SECRET]"),
+    (re.compile(r"AKIA[0-9A-Z]{16}"), "[REDACTED_SECRET]"),
 ]
 
 MAX_LENGTHS = {
@@ -88,7 +104,11 @@ def _remove_blocked_fields(obj: Any) -> Any:
 def _scrub_secrets(text: str) -> str:
     """Replace secret patterns with [REDACTED_SECRET]."""
     for pattern in SECRET_PATTERNS:
-        text = pattern.sub("[REDACTED_SECRET]", text)
+        if isinstance(pattern, tuple):
+            regex, repl = pattern
+            text = regex.sub(repl, text)
+        else:
+            text = pattern.sub("[REDACTED_SECRET]", text)
     return text
 
 
@@ -110,7 +130,10 @@ def _scrub_and_truncate_string(text: str, field_name: Optional[str] = None) -> s
     """Apply secret scrubbing, path redaction, and length limits to a string."""
     text = _scrub_secrets(text)
     text = _scrub_protected_paths(text)
-    max_len = MAX_LENGTHS.get(field_name, 2000)
+    if field_name is not None:
+        max_len = MAX_LENGTHS.get(field_name, 2000)
+    else:
+        max_len = 2000
     return _truncate_string(text, max_len)
 
 

@@ -1,0 +1,35 @@
+{
+  "VTC_C1_REDACTION_HARDENING_REPORT": {
+    "status": "APPLIED",
+    "head_base": "c47f73fa",
+    "branch": "codex/own-capital-sustainable-return",
+    "reason": "VTC-C runtime smoke detected secret value leak: supersecret123",
+    "files_modified": [
+      "tmp_agent/brain_v9/tracing/trace_redactor.py",
+      "tests/unit/test_trace_redactor.py"
+    ],
+    "files_created": [
+      "tmp_agent/visual_trace_console_v1/vtc_c1_redaction_hardening_report.json",
+      "tmp_agent/visual_trace_console_v1/vtc_c1_runtime_smoke_transcript.md"
+    ],
+    "leak_fixed": true,
+    "exact_leak_value": "supersecret123",
+    "assignment_secret_redaction": true,
+    "bearer_redaction": true,
+    "nested_data_redaction": true,
+    "py_compile": "PASS",
+    "test_results": {
+      "trace_redactor_tests": 28,
+      "trace_redactor_passed": 28
+    },
+    "regression_test_results": {
+      "tests": 61,
+      "passed": 61
+    },
+    "code_changed": true,
+    "protected_touched": false,
+    "ready_for_commit": true,
+    "ready_for_patch": true,
+    "recommended_next_action": "commit VTC-C1 hardening, then rerun VTC-C runtime smoke from a clean room/run_id"
+  }
+}

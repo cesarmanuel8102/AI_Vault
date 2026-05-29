@@ -88,17 +88,60 @@ class TestSecretScrubbing:
     def test_password_scrubbed(self):
         event = {"text": "password=supersecret123"}
         safe = sanitize_event(event)
-        # pattern replaces the word "password" with redaction marker
         assert "[REDACTED_SECRET]" in safe["text"]
-        assert "password" not in safe["text"]
-        # the value after = is not a secret pattern itself, so it remains
-        assert "supersecret123" in safe["text"]
+        assert "supersecret123" not in safe["text"]
 
-    def test_token_scrubbed(self):
+    def test_password_assignment_value_redacted(self):
+        event = {"text": "password=supersecret123"}
+        safe = sanitize_event(event)
+        assert "supersecret123" not in safe["text"]
+        assert "[REDACTED_SECRET]" in safe["text"]
+
+    def test_password_colon_value_redacted(self):
+        event = {"text": "password: supersecret123"}
+        safe = sanitize_event(event)
+        assert "supersecret123" not in safe["text"]
+        assert "[REDACTED_SECRET]" in safe["text"]
+
+    def test_token_assignment_value_redacted(self):
         event = {"text": "token=ghp_1234567890abcdef1234567890abcdef1234"}
         safe = sanitize_event(event)
+        assert "ghp_" not in safe["text"]
         assert "[REDACTED_SECRET]" in safe["text"]
-        assert "ghp_1234567890abcdef1234567890abcdef1234" not in safe["text"]
+
+    def test_api_key_assignment_value_redacted(self):
+        event = {"text": "api_key=sk-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}
+        safe = sanitize_event(event)
+        assert "sk-" not in safe["text"]
+        assert "[REDACTED_SECRET]" in safe["text"]
+
+    def test_bearer_value_redacted(self):
+        event = {"text": "Authorization: Bearer abcdefghijklmnopqrstuvwxyz123456"}
+        safe = sanitize_event(event)
+        assert "abcdefghijklmnopqrstuvwxyz123456" not in safe["text"]
+        assert "[REDACTED_SECRET]" in safe["text"]
+
+    def test_nested_data_password_assignment_redacted(self):
+        event = {"data": {"detail": "password=supersecret123"}}
+        safe = sanitize_event(event)
+        assert "supersecret123" not in safe["data"]["detail"]
+        assert "[REDACTED_SECRET]" in safe["data"]["detail"]
+
+    def test_vtc_c_exact_payload_does_not_leak_supersecret(self):
+        event = {
+            "text": "Testing password=supersecret123 token=ghp_1234567890abcdef1234567890abcdef1234 path memory/semantic/state.json",
+            "data": {
+                "detail": "Operational detail with bearer abcdefghijklmnopqrstuvwxyz123456"
+            }
+        }
+        safe = sanitize_event(event)
+        assert "supersecret123" not in safe["text"]
+        assert "ghp_" not in safe["text"]
+        assert "memory/semantic" not in safe["text"]
+        assert "[REDACTED_SECRET]" in safe["text"]
+        assert "[REDACTED_PATH]" in safe["text"]
+        assert "abcdefghijklmnopqrstuvwxyz123456" not in safe["data"]["detail"]
+        assert "[REDACTED_SECRET]" in safe["data"]["detail"]
 
 
 class TestProtectedPathScrubbing:
