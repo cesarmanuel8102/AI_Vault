@@ -79,3 +79,41 @@ tmp_agent/**/campaign_gate_status_latest.json
 tmp_agent/**/campaign_gate_email_last_send.json
 tmp_agent/**/tool01_router_*.json
 tmp_agent/**/codex_post_patch/
+
+# >>> WT-HYGIENE-02 runtime artifacts >>>
+# Python bytecode / cache
+__pycache__/
+*.pyc
+
+# Secrets / local env
+.env
+!.env.example
+.dev_auth/master.key
+audit_reports/secrets_report.json
+
+# Temporary / backups / binary archives
+*.tmp
+*.bak
+*.bak_*
+*.BAK_*
+*.zip
+
+# Runtime/evidence artifacts
+tmp_agent/**/evidence/
+tmp_agent/**/*_evidence/
+tmp_agent/**/runtime_evidence/
+tmp_agent/brain_v9/ops/restart_brain_v9_result_*.json
+
+# Strategy/runtime outputs
+tmp_agent/strategies/**/phase*.json
+tmp_agent/strategies/**/phase*_progress*.json
+tmp_agent/strategies/**/campaign_gate_market_cache/*.csv
+tmp_agent/strategies/**/campaign_gate_status_latest.json
+tmp_agent/strategies/**/campaign_gate_email_last_send.json
+
+# Semantic memory runtime indexes
+memory/semantic/*.index
+memory/semantic/*.npz
+memory/semantic/*_ids.json
+# <<< WT-HYGIENE-02 runtime artifacts <<<
+
