@@ -1,0 +1,35 @@
+{
+  "task": "B7-STRANGLER-03-IMPLEMENT",
+  "phase": "A_confirm_inventory",
+  "session_py_lines": 6140,
+  "brain_session_class_present": true,
+  "predicate_methods_found": 31,
+  "predicate_methods_missing": [],
+  "self_dot_users": [],
+  "cls_dot_users": [
+    {"name": "_is_confirmation", "refs": ["cls._CONFIRM_PATTERNS"]},
+    {"name": "_is_recent_activity_query", "refs": ["cls._RECENT_ACTIVITY_PATTERNS"]},
+    {"name": "_is_deep_risk_analysis_query", "refs": ["cls._looks_like_deep_analysis"]},
+    {"name": "_is_deep_edge_analysis_query", "refs": ["cls._looks_like_deep_analysis"]},
+    {"name": "_is_deep_strategy_analysis_query", "refs": ["cls._looks_like_deep_analysis"]},
+    {"name": "_is_deep_pipeline_analysis_query", "refs": ["cls._looks_like_deep_analysis"]},
+    {"name": "_is_self_build_resolution_query", "refs": ["cls._is_self_build_query"]},
+    {"name": "_is_temporal_query", "refs": ["cls._TEMPORAL_QUERY_RE"]}
+  ],
+  "class_attributes_to_mirror_at_module_level": [
+    {"name": "_CONFIRM_PATTERNS", "session_py_line": 3630, "type": "compiled regex"},
+    {"name": "_RECENT_ACTIVITY_PATTERNS", "session_py_line": 4036, "type": "tuple of str"},
+    {"name": "_TEMPORAL_QUERY_RE", "session_py_line": 358, "type": "compiled regex"},
+    {"name": "_CODE_ANALYSIS_PATH_RE", "session_py_line": 195, "type": "compiled regex (already module-level in session.py)"}
+  ],
+  "external_consumers_of_class_attributes": "none (verified via grep across repo)",
+  "decorators_per_method": {
+    "@classmethod": ["_looks_like_canned_failure","_is_confirmation","_is_recent_activity_query","_is_grounded_code_analysis_query","_is_deep_risk_analysis_query","_is_deep_edge_analysis_query","_is_deep_strategy_analysis_query","_is_deep_pipeline_analysis_query","_is_self_build_resolution_query","_is_temporal_query"],
+    "@staticmethod": ["_is_benign_security_audit_query","_is_code_change_request","_is_tool_confirmation_request_response","_is_dashboard_query","_is_greeting_query","_is_capabilities_query","_is_llm_status_query","_is_codex_role_query","_is_codex_comparison_query","_is_chat_interaction_review_query","_is_brain_diagnostic_analysis_query","_is_chat_ui_background_change_query","_is_chat_ui_background_restore_query","_is_chat_send_button_move_query","_is_brain_status_query","_is_deep_brain_analysis_query","_looks_like_deep_analysis","_is_self_build_query","_is_consciousness_query","_is_abstract_reasoning_query","_is_operational_agent_query"]
+  },
+  "total_lines_to_extract": 283,
+  "estimated_shim_lines": 31,
+  "estimated_net_reduction": 252,
+  "dependencies_required_in_new_module": ["re", "_CODE_ANALYSIS_PATH_RE (recompile)", "_CONFIRM_PATTERNS (recompile)", "_RECENT_ACTIVITY_PATTERNS (re-declare)", "_TEMPORAL_QUERY_RE (recompile)"],
+  "ready_to_proceed": true
+}

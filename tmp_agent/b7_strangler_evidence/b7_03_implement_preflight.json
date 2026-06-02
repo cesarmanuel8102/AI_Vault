@@ -1,0 +1,23 @@
+{
+  "task": "B7-STRANGLER-03-IMPLEMENT",
+  "phase": "preflight",
+  "repo_root": "C:/AI_VAULT",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "de3b61f0",
+  "origin_head": "de3b61f0",
+  "head_subject": "docs(b7): inventory next session.py extraction candidate",
+  "branch_match": true,
+  "head_match": true,
+  "no_staged": true,
+  "unrelated_dirty_ignored": [
+    "memory/semantic/semantic_memory.jsonl",
+    "tmp_agent/strategies/mean_reversion_eq/* (untracked phase scripts)",
+    "apply_chat_patch.py",
+    "tmp_agent/bor3_llm_audit*.py/json",
+    "tmp_agent/brain_v9/chat_area_upgrade/*",
+    "tmp_agent/brain_v9/ops/smoke_*.ps1",
+    "tmp_agent/brain_v9/ops/tool01_write_test.py",
+    "tmp_agent/visual_trace_console_v1/*"
+  ],
+  "ready_to_proceed": true
+}

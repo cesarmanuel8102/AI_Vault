@@ -1,0 +1,55 @@
+{
+  "ticket": "B7-STRANGLER-03-IMPLEMENT",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_at_start": "de3b61f013c9d58c953c7828cf7bd5e9bbfe8fbc",
+  "head_at_end": "de3b61f013c9d58c953c7828cf7bd5e9bbfe8fbc",
+  "files": [
+    {
+      "path": "tmp_agent/brain_v9/core/session.py",
+      "kind": "modified",
+      "lines": 5925,
+      "md5": "951f97909c5a1b4533e49eb77826d9ae",
+      "notes": "31 predicate method bodies replaced with thin shims delegating to brain_v9.core.session_query_predicates. Decorators (@staticmethod/@classmethod) and signatures preserved. Class-level patterns (_CONFIRM_PATTERNS, _RECENT_ACTIVITY_PATTERNS, _TEMPORAL_QUERY_RE, _CODE_ANALYSIS_PATH_RE) untouched. Net delta: 6140 -> 5925 lines (-215)."
+    },
+    {
+      "path": "tmp_agent/brain_v9/core/session_query_predicates.py",
+      "kind": "added",
+      "lines": 414,
+      "md5": "2163ebc3969e9d1871e0824c4349a81c",
+      "notes": "Pure module: from __future__ + import re + 4 mirrored regex/tuple constants + __all__ (31 names) + 31 functions. No self/cls/BrainSession refs. No import of brain_v9.core.session."
+    },
+    {
+      "path": "tests/unit/test_b7_query_predicates_import_compat.py",
+      "kind": "added",
+      "lines": 135,
+      "md5": "b0108013c80761f126760603c454e144",
+      "notes": "Verifies __all__ has 31 names, BrainSession exposes 31 shim methods, parity over sample inputs."
+    },
+    {
+      "path": "tests/unit/test_b7_query_predicates_behavior_smoke.py",
+      "kind": "added",
+      "lines": 232,
+      "md5": "979506446d3d53887aedf3b97f0533e5",
+      "notes": "Positive+negative behavior cases per predicate."
+    },
+    {
+      "path": "tests/unit/test_b7_query_predicates_no_session_dependency.py",
+      "kind": "added",
+      "lines": 111,
+      "md5": "62dc8c9acacb1efba399080d6df11ca5",
+      "notes": "Verifies module purity: no session import, no BrainSession class refs, no self./cls. tokens, minimal imports."
+    }
+  ],
+  "untouched_protected_paths": [
+    "tmp_agent/brain_v9/ui/*",
+    "memory/semantic/*",
+    "tmp_agent/strategies/*",
+    "docs/MIGRATION_CONTROL_LEDGER.md",
+    "ROADMAP_STATUS.json",
+    "tmp_agent/brain_v9/main.py",
+    "tmp_agent/brain_v9/config.py",
+    "tmp_agent/brain_v9/governance/execution_gate.py",
+    "tmp_agent/brain_v9/api_security.py",
+    "tmp_agent/brain_v9/core/session_chat_metrics.py"
+  ]
+}
