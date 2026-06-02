@@ -1,0 +1,127 @@
+diff --git a/tmp_agent/brain_v9/governance/execution_gate.py b/tmp_agent/brain_v9/governance/execution_gate.py
+index db97ed92..05d2d5a9 100644
+--- a/tmp_agent/brain_v9/governance/execution_gate.py
++++ b/tmp_agent/brain_v9/governance/execution_gate.py
+@@ -42,6 +42,92 @@ _AUDIT_PATH = BASE_PATH / "tmp_agent" / "state" / "execution_audit_log.json"
+ _MAX_AUDIT_ENTRIES = 200
+ _PENDING_TTL_HOURS = 24
+ 
++# FASE-0-SEGURIDAD / Patch 0D: denylist de paths gobernanza/seguridad.
++# Cualquier intento de escritura/edicion sobre estos paths se BLOQUEA siempre,
++# incluso con GOD mode activo o selfdev_bypass=True. Solo aprobacion humana
++# explicita via /approve <pending_id> puede levantarlo (futura iteracion).
++_PROTECTED_SELFDEV_PATH_PREFIXES: Tuple[str, ...] = (
++    "tmp_agent/brain_v9/governance/",
++    "brain_v9/governance/",
++    "governance/",
++)
++_PROTECTED_SELFDEV_FILE_TOKENS: Tuple[str, ...] = (
++    "execution_gate",
++    "ethics_kernel",
++    "api_security",
++    "trace_redactor",
++    "approval",
++    "auth",
++    "policy",
++    "governance",
++)
++# Archivos especificos siempre protegidos aunque vivan fuera de governance/
++_PROTECTED_SELFDEV_EXACT_BASENAMES: Tuple[str, ...] = (
++    "api_security.py",
++    "trace_redactor.py",
++    "execution_gate.py",
++    "ethics_kernel.py",
++)
++# Tools que escriben/modifican filesystem o ejecutan binarios en path
++_FS_WRITE_TOOLS: Tuple[str, ...] = (
++    "edit_file",
++    "write_file",
++    "patch_file",
++    "create_file",
++    "move_file",
++    "delete_file",
++    "rm_file",
++    "promote_staged_change",
++    "rollback_staged_change",
++)
++
++
++def _normalize_path_for_protection(raw: str) -> str:
++    if not raw:
++        return ""
++    s = str(raw).replace("\\", "/").strip().lower()
++    # quitar prefijos absolutos comunes
++    for marker in ("c:/ai_vault/", "/ai_vault/"):
++        idx = s.find(marker)
++        if idx >= 0:
++            s = s[idx + len(marker):]
++            break
++    return s
++
++
++def _is_protected_selfdev_path(path_value: str) -> bool:
++    """True si el path coincide con la denylist de gobernanza/seguridad."""
++    s = _normalize_path_for_protection(path_value)
++    if not s:
++        return False
++    base = s.rsplit("/", 1)[-1]
++    if base in _PROTECTED_SELFDEV_EXACT_BASENAMES:
++        return True
++    for prefix in _PROTECTED_SELFDEV_PATH_PREFIXES:
++        if s.startswith(prefix) or ("/" + prefix) in ("/" + s):
++            return True
++    for token in _PROTECTED_SELFDEV_FILE_TOKENS:
++        if token in base:
++            return True
++    return False
++
++
++def _extract_candidate_paths(tool_name: str, args: Dict) -> List[str]:
++    """Extrae paths candidatos de los argumentos de un tool."""
++    if not isinstance(args, dict):
++        return []
++    keys = ("path", "file", "filepath", "file_path", "target", "dest", "destination", "src", "source")
++    out: List[str] = []
++    for k in keys:
++        v = args.get(k)
++        if isinstance(v, str) and v:
++            out.append(v)
++    # algunos tools pasan 'command' con paths embebidos
++    cmd = args.get("command")
++    if isinstance(cmd, str) and cmd:
++        out.append(cmd)
++    return out
++
+ # Context-local: marca la sesion PAD activa cuando un endpoint la setea.
+ # Permite que gate.check() detecte god mode sin propagar session_id por 13 call sites.
+ _active_god_session: ContextVar[Optional[str]] = ContextVar("_active_god_session", default=None)
+@@ -423,6 +509,29 @@ class ExecutionGate:
+         """
+         risk, reason = classify_tool_risk(tool_name, args)
+ 
++        # FASE-0-SEGURIDAD / Patch 0D: denylist self-dev sobre paths
++        # gobernanza/seguridad. Aplica ANTES de GOD mode y ANTES de selfdev_bypass.
++        # No se puede levantar con GOD ni con settings.self_dev_*.
++        try:
++            if tool_name in _FS_WRITE_TOOLS or "command" in (args or {}):
++                for _candidate in _extract_candidate_paths(tool_name, args or {}):
++                    if _is_protected_selfdev_path(_candidate):
++                        self._audit_log(
++                            tool_name, RiskLevel.P3, "selfdev_protected_blocked",
++                            f"path={_candidate} blocked by SELFDEV protected denylist (governance/security)",
++                        )
++                        return {
++                            "allowed": False,
++                            "risk": "P3",
++                            "reason": "SELFDEV_PROTECTED_GOVERNANCE_SECURITY_PATH: edicion bloqueada sobre rutas de gobernanza/seguridad. Requiere aprobacion humana fuera de banda.",
++                            "action": "blocked",
++                            "pending_id": None,
++                            "protected_path": _candidate,
++                            "requires_human_approval": True,
++                        }
++        except Exception as _ex:
++            log.warning("selfdev protected path check failed: %s", _ex)
++
+         # GOD MODE: explicit session_id O contexto async (PAD session)
+         active_session = session_id or _active_chat_session.get()
+         active_god = session_id or _active_god_session.get()

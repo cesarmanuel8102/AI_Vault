@@ -1,0 +1,40 @@
+diff --git a/tmp_agent/brain_v9/governance/execution_gate.py b/tmp_agent/brain_v9/governance/execution_gate.py
+index db97ed92..a44ebefd 100644
+--- a/tmp_agent/brain_v9/governance/execution_gate.py
++++ b/tmp_agent/brain_v9/governance/execution_gate.py
+@@ -427,6 +427,35 @@ class ExecutionGate:
+         active_session = session_id or _active_chat_session.get()
+         active_god = session_id or _active_god_session.get()
+         if active_god and active_god in self._god_sessions:
++            # FASE-0-SEGURIDAD / Patch 0B: GOD mode NO puede auto-aprobar P3 (destructivo).
++            # P3 SIEMPRE requiere aprobacion humana explicita, incluso con GOD activo.
++            if risk == RiskLevel.P3:
++                pending_id = f"confirm_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{tool_name}"
++                self._pending.append({
++                    "id": pending_id,
++                    "tool": tool_name,
++                    "args": args,
++                    "session_id": active_session,
++                    "risk": f"P{risk}",
++                    "reason": reason,
++                    "created_at": datetime.now().isoformat(),
++                    "status": "pending_approval",
++                    "god_mode_p3_blocked": True,
++                })
++                self._save_state()
++                self._audit_log(
++                    tool_name, risk, "god_p3_blocked",
++                    f"session={active_god} GOD mode cannot auto-approve P3 destructive action: {reason}",
++                )
++                return {
++                    "allowed": False,
++                    "risk": f"P{risk}",
++                    "reason": "P3_REQUIRES_EXPLICIT_HUMAN_APPROVAL: GOD mode cannot auto-approve destructive (P3) actions. Use /approve <pending_id>.",
++                    "action": "confirm",
++                    "pending_id": pending_id,
++                    "god_mode": True,
++                    "requires_human_approval": True,
++                }
+             self._audit_log(tool_name, risk, "god_auto_approved", f"session={active_god} {reason}")
+             return {
+                 "allowed": True,
