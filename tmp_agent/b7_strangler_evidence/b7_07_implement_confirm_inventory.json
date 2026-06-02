@@ -1,0 +1,28 @@
+{
+  "ticket": "B7-STRANGLER-07-IMPLEMENT",
+  "phase": "confirm_inventory",
+  "head_base": "f1ed722d",
+  "selected_candidate": "C1_grounded_code_excerpt_cluster",
+  "source_lines_in_session_py_at_HEAD": "L3990-L4117",
+  "extraction_confirmed": true,
+  "helpers_target": [
+    "extract_candidate_paths",
+    "extract_symbol_hint",
+    "slice_lines",
+    "build_grounded_file_excerpt",
+    "find_test_references",
+    "build_test_reference_excerpt"
+  ],
+  "shim_descriptor_map": {
+    "_extract_candidate_paths": "staticmethod",
+    "_extract_symbol_hint": "staticmethod",
+    "_slice_lines": "staticmethod",
+    "_build_grounded_file_excerpt": "classmethod",
+    "_find_test_references": "classmethod",
+    "_build_test_reference_excerpt": "classmethod"
+  },
+  "external_consumer_contract": {
+    "tests/unit/test_grounded_code_fastpath.py": "binds BrainSession._extract_candidate_paths as staticmethod (preserved)"
+  },
+  "internal_consumer": "_maybe_grounded_code_analysis_fastpath (NOT modified; resolves shims via self.* / cls.*)"
+}

@@ -1,0 +1,20 @@
+{
+  "ticket": "B7-STRANGLER-07-IMPLEMENT",
+  "phase": "preflight_resume",
+  "head_local": "f1ed722d",
+  "head_origin": "f1ed722d",
+  "branch": "codex/own-capital-sustainable-return",
+  "staged_files": [],
+  "modified_allowed": ["tmp_agent/brain_v9/core/session.py"],
+  "untracked_allowed": [
+    "tmp_agent/brain_v9/core/session_grounded_excerpt.py",
+    "tests/unit/test_b7_grounded_excerpt_import_compat.py",
+    "tests/unit/test_b7_grounded_excerpt_behavior_smoke.py",
+    "tests/unit/test_b7_grounded_excerpt_no_session_dependency.py"
+  ],
+  "protected_paths_touched": false,
+  "py_compile_session_py": "OK",
+  "py_compile_new_module": "OK",
+  "resume_state": "audit_clean_no_truncation_detected",
+  "post_resume_change": "Added __all__ to session_grounded_excerpt.py per ticket spec; no semantic changes."
+}

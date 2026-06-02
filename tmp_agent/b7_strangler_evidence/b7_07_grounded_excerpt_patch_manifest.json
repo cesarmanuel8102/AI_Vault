@@ -1,0 +1,41 @@
+{
+  "ticket": "B7-STRANGLER-07-IMPLEMENT",
+  "head_at_start": "f1ed722dd59607eb6669a9155a7e3381b34169a4",
+  "files_modified": [
+    {
+      "path": "tmp_agent/brain_v9/core/session.py",
+      "kind": "modified",
+      "lines_before": 5491,
+      "lines_after": 5396,
+      "delta": -95,
+      "regions": [
+        "L170-L180 (added _gex import block)",
+        "L3990-L4117 -> L4001-L4023 (replaced 6 method bodies with shims)"
+      ]
+    }
+  ],
+  "files_added": [
+    {"path": "tmp_agent/brain_v9/core/session_grounded_excerpt.py", "lines": 178},
+    {"path": "tests/unit/test_b7_grounded_excerpt_import_compat.py", "lines": 110},
+    {"path": "tests/unit/test_b7_grounded_excerpt_behavior_smoke.py", "lines": 113},
+    {"path": "tests/unit/test_b7_grounded_excerpt_no_session_dependency.py", "lines": 95},
+    {"path": "tmp_agent/b7_strangler_evidence/b7_07_grounded_excerpt_extraction_report.json", "lines": null},
+    {"path": "tmp_agent/b7_strangler_evidence/b7_07_grounded_excerpt_extraction_report.md", "lines": null},
+    {"path": "tmp_agent/b7_strangler_evidence/b7_07_grounded_excerpt_validation_report.json", "lines": null},
+    {"path": "tmp_agent/b7_strangler_evidence/b7_07_grounded_excerpt_extraction.patch", "lines": 160},
+    {"path": "tmp_agent/b7_strangler_evidence/b7_07_grounded_excerpt_patch_manifest.json", "lines": null}
+  ],
+  "files_deleted": [],
+  "tests_modified": [],
+  "policy_compliance": {
+    "no_existing_tests_modified": true,
+    "no_main_py_modified": true,
+    "no_config_py_modified": true,
+    "no_governance_modified": true,
+    "no_routing_core_modified": true,
+    "no_already_extracted_modules_modified": true,
+    "no_commit": true,
+    "no_push": true,
+    "working_tree_dirty": true
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "ticket": "B7-STRANGLER-07-IMPLEMENT",
+  "head_at_validation": "f1ed722dd59607eb6669a9155a7e3381b34169a4",
+  "phase1_import_smoke": {
+    "status": "PASS",
+    "session_py_lines": 5396,
+    "new_module_lines": 178,
+    "BrainSession_importable": true
+  },
+  "phase1_baseline_tests": {
+    "files": ["tests/unit/test_phase1_import_baseline.py", "tests/unit/test_phase1_security_defaults.py"],
+    "passed": 5,
+    "failed": 0
+  },
+  "new_b7_07_tests": {
+    "files": [
+      "tests/unit/test_b7_grounded_excerpt_import_compat.py",
+      "tests/unit/test_b7_grounded_excerpt_behavior_smoke.py",
+      "tests/unit/test_b7_grounded_excerpt_no_session_dependency.py"
+    ],
+    "passed": 23,
+    "failed": 0,
+    "duration_s": 0.86
+  },
+  "b7_carryover_full_suite": {
+    "files": [
+      "test_b7_chatmetrics_behavior_smoke",
+      "test_b7_chatmetrics_import_compat",
+      "test_b7_query_predicates_import_compat",
+      "test_b7_query_predicates_behavior_smoke",
+      "test_b7_query_predicates_no_session_dependency",
+      "test_b7_routing_constants_import_compat",
+      "test_b7_routing_constants_no_session_dependency",
+      "test_b7_routing_constants_behavior_smoke",
+      "test_b7_response_hygiene_import_compat",
+      "test_b7_response_hygiene_no_session_dependency",
+      "test_b7_response_hygiene_behavior_smoke",
+      "test_b7_fmt_helpers_import_compat",
+      "test_b7_fmt_helpers_behavior_smoke",
+      "test_b7_fmt_helpers_no_session_dependency",
+      "test_b7_grounded_excerpt_import_compat",
+      "test_b7_grounded_excerpt_behavior_smoke",
+      "test_b7_grounded_excerpt_no_session_dependency",
+      "test_grounded_code_fastpath"
+    ],
+    "passed": 155,
+    "failed": 0,
+    "duration_s": 1.90
+  },
+  "consumer_baseline": {
+    "files": [
+      "tmp_agent/tests/core/test_session.py",
+      "tests/unit/test_b7_routing_heuristics_characterization.py",
+      "tests/unit/test_brain_chat_hygiene.py"
+    ],
+    "passed": 112,
+    "failed": 48,
+    "duration_s": 13.08,
+    "delta_vs_baseline_at_f1ed722d": "0 (identical)",
+    "regression_introduced": false,
+    "failure_categories_pre_existing": [
+      "fastpath wording (test_route_to_agent_operational_summary_is_deterministic)",
+      "execution_gate session filtering (test_execution_gate_filters_pending_by_session)",
+      "no_tool_analysis routing preference"
+    ]
+  },
+  "verdict": "PASS — extraction complete, contract preserved, zero regressions vs baseline."
+}

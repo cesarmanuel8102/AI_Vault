@@ -1,0 +1,60 @@
+{
+  "ticket": "B7-STRANGLER-07-IMPLEMENT",
+  "selected_candidate": "C1_grounded_code_excerpt_cluster",
+  "head_at_start": "f1ed722dd59607eb6669a9155a7e3381b34169a4",
+  "branch": "codex/own-capital-sustainable-return",
+  "new_module": {
+    "path": "tmp_agent/brain_v9/core/session_grounded_excerpt.py",
+    "lines": 178,
+    "public_functions": [
+      "extract_candidate_paths",
+      "extract_symbol_hint",
+      "slice_lines",
+      "build_grounded_file_excerpt",
+      "find_test_references",
+      "build_test_reference_excerpt"
+    ],
+    "all_export": ["extract_candidate_paths", "extract_symbol_hint", "slice_lines", "build_grounded_file_excerpt", "find_test_references", "build_test_reference_excerpt"],
+    "imports": ["os", "re", "pathlib.Path", "typing.List", "brain_v9.config.BASE_PATH", "brain_v9.core.session_routing_constants._CODE_ANALYSIS_PATH_RE"]
+  },
+  "session_py_changes": {
+    "lines_before": 5491,
+    "lines_after": 5396,
+    "delta": -95,
+    "lines_changed_block": "L3990-L4117 (replaced) + L170-L180 (new import block)",
+    "shims_inserted": [
+      {"name": "_extract_candidate_paths", "descriptor": "staticmethod", "delegates_to": "_gex.extract_candidate_paths"},
+      {"name": "_extract_symbol_hint", "descriptor": "staticmethod", "delegates_to": "_gex.extract_symbol_hint"},
+      {"name": "_slice_lines", "descriptor": "staticmethod", "delegates_to": "_gex.slice_lines"},
+      {"name": "_build_grounded_file_excerpt", "descriptor": "classmethod", "delegates_to": "_gex.build_grounded_file_excerpt"},
+      {"name": "_find_test_references", "descriptor": "classmethod", "delegates_to": "_gex.find_test_references"},
+      {"name": "_build_test_reference_excerpt", "descriptor": "classmethod", "delegates_to": "_gex.build_test_reference_excerpt"}
+    ]
+  },
+  "new_tests": [
+    {"path": "tests/unit/test_b7_grounded_excerpt_import_compat.py", "tests": 7},
+    {"path": "tests/unit/test_b7_grounded_excerpt_behavior_smoke.py", "tests": 12},
+    {"path": "tests/unit/test_b7_grounded_excerpt_no_session_dependency.py", "tests": 4}
+  ],
+  "tests_added_total": 23,
+  "validation": {
+    "new_b7_07_tests": {"passed": 23, "failed": 0},
+    "b7_carryover_total": {"passed": 155, "failed": 0, "includes": "B7-01..06 + B7-07 + test_grounded_code_fastpath consumer"},
+    "consumer_baseline": {
+      "files": ["tmp_agent/tests/core/test_session.py", "tests/unit/test_b7_routing_heuristics_characterization.py", "tests/unit/test_brain_chat_hygiene.py"],
+      "passed": 112,
+      "failed": 48,
+      "delta_vs_pre_refactor": "0 (identical failing test set verified via worktree at f1ed722d: 48F/112P; failures pre-existing and unrelated to B7-07)"
+    },
+    "phase1_import_smoke": "OK"
+  },
+  "contract_preservation": {
+    "BrainSession._extract_candidate_paths_descriptor": "staticmethod (preserved; required by tests/unit/test_grounded_code_fastpath.py:17)",
+    "no_test_modified": true,
+    "no_main_py_modified": true,
+    "no_config_py_modified": true,
+    "no_governance_modified": true,
+    "no_routing_core_modified": true
+  },
+  "lsp_status": "All errors are pre-existing (approved-ignore). New module/test files introduced no new code-level errors."
+}

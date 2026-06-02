@@ -1,0 +1,160 @@
+diff --git a/tmp_agent/brain_v9/core/session.py b/tmp_agent/brain_v9/core/session.py
+index c87df549..6c650c35 100644
+--- a/tmp_agent/brain_v9/core/session.py
++++ b/tmp_agent/brain_v9/core/session.py
+@@ -168,6 +168,16 @@ from brain_v9.core.session_response_hygiene import (  # noqa: E402,F401
+ # including the ``check_url`` alias) keeps resolving.
+ from brain_v9.core import session_fmt_helpers as _fmt_helpers  # noqa: E402,F401
+ 
++# B7-STRANGLER-07: pure grounded-code-excerpt helpers extracted to their own
++# module. BrainSession keeps the original ``_extract_candidate_paths``,
++# ``_extract_symbol_hint``, ``_slice_lines``, ``_build_grounded_file_excerpt``,
++# ``_find_test_references`` and ``_build_test_reference_excerpt`` methods as
++# one-line shims that delegate here, preserving the descriptor type
++# (``@staticmethod`` vs ``@classmethod``) so external bindings such as
++# ``BrainSession._extract_candidate_paths`` (used by
++# ``tests/unit/test_grounded_code_fastpath.py``) keep resolving.
++from brain_v9.core import session_grounded_excerpt as _gex  # noqa: E402,F401
++
+ 
+ def __getattr__(name):  # PEP 562: proxy live _GLOBAL_CHAT_METRICS
+     if name == "_GLOBAL_CHAT_METRICS":
+@@ -3989,132 +3999,27 @@ class BrainSession:
+ 
+     @staticmethod
+     def _extract_candidate_paths(message: str) -> List[Path]:
+-        paths: List[Path] = []
+-        seen = set()
+-        for match in _CODE_ANALYSIS_PATH_RE.finditer(message or ""):
+-            raw = match.group("path").strip().strip("\"'")
+-            ext_match = re.search(r"^.+?\.(?:py|json|md|txt|ps1|yaml|yml)", raw, re.IGNORECASE)
+-            if ext_match:
+-                raw = ext_match.group(0)
+-            raw = raw.replace("/", os.sep).replace("\\", os.sep)
+-            p = Path(raw)
+-            if not p.is_absolute():
+-                p = BASE_PATH / raw
+-            try:
+-                resolved = p.resolve()
+-            except Exception:
+-                resolved = p
+-            try:
+-                resolved.relative_to(BASE_PATH)
+-            except Exception:
+-                continue
+-            if resolved.exists() and resolved.is_file():
+-                key = str(resolved).lower()
+-                if key not in seen:
+-                    seen.add(key)
+-                    paths.append(resolved)
+-        return paths[:3]
++        return _gex.extract_candidate_paths(message)
+ 
+     @staticmethod
+     def _extract_symbol_hint(message: str) -> str:
+-        msg = message or ""
+-        m = re.search(r"[`'\"]([A-Za-z_][A-Za-z0-9_]*)[`'\"]", msg)
+-        if m:
+-            return m.group(1)
+-        underscored = re.findall(r"\b([A-Za-z_][A-Za-z0-9_]*_[A-Za-z0-9_]+)\b", msg)
+-        if underscored:
+-            return max(underscored, key=len)
+-        m = re.search(r"\b([A-Za-z_][A-Za-z0-9_]*)\s*\(", msg)
+-        if m:
+-            return m.group(1)
+-        stop = {
+-            "revisa", "lee", "resume", "dime", "como", "explica", "condicion",
+-            "exacta", "inspecciona", "corrigio", "prueba", "cubre", "fallback",
+-        }
+-        words = [w for w in re.findall(r"\b([A-Za-z_][A-Za-z0-9_]{3,})\b", msg) if w.lower() not in stop]
+-        return max(words, key=len) if words else ""
++        return _gex.extract_symbol_hint(message)
+ 
+     @staticmethod
+     def _slice_lines(lines: List[str], start_idx: int, radius: int = 18) -> str:
+-        lo = max(0, start_idx - radius)
+-        hi = min(len(lines), start_idx + radius + 1)
+-        out = []
+-        for i in range(lo, hi):
+-            out.append(f"{i+1:04d}: {lines[i]}")
+-        return "\n".join(out)
++        return _gex.slice_lines(lines, start_idx, radius)
+ 
+     @classmethod
+     def _build_grounded_file_excerpt(cls, path: Path, message: str, symbol_hint: str) -> str:
+-        text = path.read_text(encoding="utf-8", errors="replace")
+-        lines = text.splitlines()
+-        msg_l = (message or "").lower()
+-        targets = []
+-        if symbol_hint:
+-            targets.append(symbol_hint)
+-        if "resumen extractivo" in msg_l:
+-            targets.extend(["Resumen extractivo", "extractive_fallback", "_looks_like_canned_failure", "extractive"])
+-        if "fallback" in msg_l:
+-            targets.extend(["CHAINS =", "timeout", "fallback"])
+-        if any(token in msg_l for token in ("confirmado", "confirmacion", "confirmación", "si,", "sí,")):
+-            targets.extend([
+-                "_is_confirmation",
+-                "_maybe_resume_pending_continuation",
+-                "_pending_continuation",
+-                "confirmation_noop",
+-                "_cmd_approve",
+-            ])
+-        if "scan_local_network" in msg_l:
+-            targets.extend(["def scan_local_network", "scan_local_network", "cidr='auto'", 'cidr="auto"', "detect_local_network"])
+-        seen = set()
+-        snippets: List[str] = []
+-        max_snippets = 5 if any(
+-            token in msg_l for token in ("confirmado", "confirmacion", "confirmación", "confirmation_noop")
+-        ) else 3
+-        for target in targets:
+-            if not target:
+-                continue
+-            for idx, line in enumerate(lines):
+-                if target.lower() in line.lower():
+-                    block = cls._slice_lines(lines, idx)
+-                    if block not in seen:
+-                        seen.add(block)
+-                        snippets.append(block)
+-                    if len(snippets) >= max_snippets:
+-                        break
+-            if len(snippets) >= max_snippets:
+-                break
+-        if not snippets:
+-            head = "\n".join(f"{i+1:04d}: {line}" for i, line in enumerate(lines[:140]))
+-            snippets.append(head)
+-        return "\n\n".join(snippets[:max_snippets])
++        return _gex.build_grounded_file_excerpt(path, message, symbol_hint)
+ 
+     @classmethod
+     def _find_test_references(cls, symbol_hint: str) -> List[Path]:
+-        if not symbol_hint:
+-            return []
+-        hits: List[Path] = []
+-        tests_root = BASE_PATH / "tests"
+-        if not tests_root.exists():
+-            return hits
+-        for path in tests_root.rglob("test_*.py"):
+-            try:
+-                content = path.read_text(encoding="utf-8", errors="replace")
+-            except Exception:
+-                continue
+-            if symbol_hint.lower() in content.lower():
+-                hits.append(path)
+-            if len(hits) >= 4:
+-                break
+-        return hits
++        return _gex.find_test_references(symbol_hint)
+ 
+     @classmethod
+     def _build_test_reference_excerpt(cls, path: Path, symbol_hint: str) -> str:
+-        text = path.read_text(encoding="utf-8", errors="replace")
+-        lines = text.splitlines()
+-        for idx, line in enumerate(lines):
+-            if symbol_hint.lower() in line.lower():
+-                return f"TEST: {path}\n{cls._slice_lines(lines, idx, radius=12)}"
+-        return f"TEST: {path}"
++        return _gex.build_test_reference_excerpt(path, symbol_hint)
+ 
+     async def _maybe_grounded_code_analysis_fastpath(self, message: str) -> Optional[Dict]:
+         if not self._is_grounded_code_analysis_query(message):
