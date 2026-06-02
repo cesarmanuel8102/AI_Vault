@@ -1,0 +1,49 @@
+{
+  "ticket": "B7-STRANGLER-10-IMPLEMENT",
+  "phase": "FASE A — CONFIRMAR INVENTARIO BASE",
+  "head": "ec8766bf",
+  "session_py_lines": 5366,
+  "session_py_exists": true,
+  "confirmed_symbols": [
+    {"name": "_MODEL_PRIORITY_ALIASES", "line_start": 276, "line_end": 299, "size": 24, "kind": "class_attribute"},
+    {"name": "_should_use_compact_chat_prompt", "line_start": 2161, "line_end": 2186, "size": 26, "kind": "classmethod", "self_uses": 0, "cls_uses": 0},
+    {"name": "_should_use_analysis_frontier", "line_start": 2188, "line_end": 2239, "size": 52, "kind": "classmethod", "self_uses": 0, "cls_uses": 0},
+    {"name": "_select_llm_chain", "line_start": 2241, "line_end": 2254, "size": 14, "kind": "classmethod", "self_uses": 0, "cls_uses": 0},
+    {"name": "_normalize_model_priority", "line_start": 4293, "line_end": 4296, "size": 4, "kind": "classmethod", "self_uses": 0, "cls_uses": 0}
+  ],
+  "dependencies_confirmed": {
+    "_qp imports": [
+      "is_benign_security_audit_query",
+      "is_brain_diagnostic_analysis_query",
+      "is_grounded_code_analysis_query",
+      "is_llm_status_query",
+      "is_recent_activity_query",
+      "is_chat_interaction_review_query",
+      "is_operational_agent_query"
+    ],
+    "LLMManager": "imported at session.py line 38 from brain_v9.core.llm",
+    "re": "stdlib, used in _should_use_compact_chat_prompt"
+  },
+  "external_consumers_confirmed": [
+    {"file": "tests/unit/test_brain_chat_hygiene.py", "lines": [129, 136, 148, 155, 162, 456], "symbols": ["_should_use_compact_chat_prompt", "_should_use_analysis_frontier", "_select_llm_chain"]},
+    {"file": "tests/unit/test_llm_codex_integration.py", "lines": [35, 36, 37], "symbols": ["_normalize_model_priority"]}
+  ],
+  "internal_consumers_confirmed": [
+    {"method": "chat", "lines": [347, 824, 2056, 2133]},
+    {"method": "_select_llm_chain", "line": 2251},
+    {"method": "_select_agent_model_priority", "line": 3436},
+    {"method": "_llm_status_fastpath", "line": 3649},
+    {"method": "_codex_role_fastpath", "line": 3707}
+  ],
+  "already_extracted_modules_not_touched": [
+    "session_chat_metrics.py",
+    "session_query_predicates.py",
+    "session_routing_constants.py",
+    "session_response_hygiene.py",
+    "session_fmt_helpers.py",
+    "session_grounded_excerpt.py",
+    "session_context_budget.py",
+    "session_tool_analysis_prefs.py"
+  ],
+  "verdict": "INVENTORY CONFIRMED — all symbols present with expected signatures and dependencies. Ready to proceed."
+}

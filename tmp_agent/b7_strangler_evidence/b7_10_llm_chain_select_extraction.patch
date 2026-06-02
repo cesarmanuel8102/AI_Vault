@@ -1,0 +1,799 @@
+diff --git a/tmp_agent/brain_v9/core/session.py b/tmp_agent/brain_v9/core/session.py
+index 82c61a5e..2fd9a366 100644
+--- a/tmp_agent/brain_v9/core/session.py
++++ b/tmp_agent/brain_v9/core/session.py
+@@ -203,6 +203,16 @@ from brain_v9.core import session_context_budget as _cb  # noqa: E402,F401
+ # unchanged.
+ from brain_v9.core import session_tool_analysis_prefs as _tap  # noqa: E402,F401
+ 
++# B7-STRANGLER-10: LLM chain selection heuristics + model priority normalization
++# extracted to ``brain_v9.core.session_llm_chain_select``.  ``BrainSession``
++# keeps four ``@classmethod`` one-line shims that delegate here, preserving
++# the descriptor type so external bindings such as
++# ``BrainSession._should_use_compact_chat_prompt`` /
++# ``BrainSession._should_use_analysis_frontier`` /
++# ``BrainSession._select_llm_chain`` /
++# ``BrainSession._normalize_model_priority`` keep resolving exactly as before.
++from brain_v9.core import session_llm_chain_select as _llm_chain_select  # noqa: E402,F401
++
+ 
+ def __getattr__(name):  # PEP 562: proxy live _GLOBAL_CHAT_METRICS
+     if name == "_GLOBAL_CHAT_METRICS":
+@@ -273,30 +283,7 @@ def _normalize(result: Dict, fallback_content: str = "") -> Dict:
+ class BrainSession:
+     """Unified chat session with intelligent LLM <-> AgentLoop routing."""
+ 
+-    _MODEL_PRIORITY_ALIASES = {
+-        "deepseek-r1:14b": "deepseek14b",
+-        "deepseek-r1:32b": "deepseek14b",
+-        "qwen2.5:14b": "coder14b",
+-        "qwen2.5-coder:14b": "coder14b",
+-        "llama3.1:8b": "llama8b",
+-        "gemini": "chat",
+-        "auto": "chat",
+-        "default": "chat",
+-        "sonnet": "claude",
+-        "sonnet4": "claude",
+-        "frontier": "agent_frontier",
+-        "analysis_frontier": "analysis_frontier",
+-        "analysis": "analysis_frontier",
+-        "analysis_frontier_legacy": "analysis_frontier_legacy",
+-        "analysis_legacy": "analysis_frontier_legacy",
+-        "codex": "codex",
+-        "openai": "codex",
+-        "agent_legacy": "agent_legacy",
+-        "frontier_legacy": "agent_frontier_legacy",
+-        "agent_frontier_legacy": "agent_frontier_legacy",
+-        "code_legacy": "code_legacy",
+-        "chat_legacy": "chat_legacy",
+-    }
++    _MODEL_PRIORITY_ALIASES = _llm_chain_select.MODEL_PRIORITY_ALIASES
+     _TEMPORAL_QUERY_RE = re.compile(
+         r"\b(hoy|ayer|mañana|latest|ultimo|último|ultimos|últimos|ultima|última|actual|actualmente|now|today|live|running|estado|status|reciente|recientes|recent|esta semana|this week|mejoras?|cambios?|modificaciones?|recientemente|nuevo|nueva|nuevos|nuevas)\b",
+         re.IGNORECASE,
+@@ -2165,24 +2152,16 @@ class BrainSession:
+         history: List[Dict],
+         model_priority: str,
+     ) -> bool:
+-        if intent not in {"QUERY", "CONVERSATION"}:
+-            return False
+-        msg_l = (message or "").lower()
+-        if cls._is_operational_agent_query(msg_l):
+-            return False
+-        if cls._is_grounded_code_analysis_query(message):
+-            return False
+-        if cls._is_llm_status_query(msg_l):
+-            return False
+-        if re.search(r"\b[a-z]:\\|\.py\b|\.json\b|/chat\b|/agent\b", message, re.IGNORECASE):
+-            return False
+-        compact_history = [m for m in history if m.get("role") in ("user", "assistant")]
+-        if len(compact_history) > 2:
+-            return False
+-        if LLMManager.estimate_tokens(message) > 48:
+-            return False
+-        requested = cls._normalize_model_priority(model_priority or "chat")
+-        return requested in {"chat", "llama8b", "deepseek14b", "coder14b", "ollama"}
++        """B7-STRANGLER-10 shim — delegates to
++        :func:`brain_v9.core.session_llm_chain_select.should_use_compact_chat_prompt`.
++        """
++        return _llm_chain_select.should_use_compact_chat_prompt(
++            message,
++            intent,
++            history,
++            model_priority,
++            normalize_model_priority_func=cls._normalize_model_priority,
++        )
+ 
+     @classmethod
+     def _should_use_analysis_frontier(
+@@ -2192,46 +2171,16 @@ class BrainSession:
+         history: List[Dict],
+         model_priority: str,
+     ) -> bool:
+-        requested = cls._normalize_model_priority(model_priority or "chat")
+-        if requested in {"analysis_frontier", "analysis_frontier_legacy"}:
+-            return True
+-        if requested not in {"chat", "ollama", "agent_frontier", "agent_frontier_legacy"}:
+-            return False
+-        msg_l = (message or "").lower()
+-        if cls._is_benign_security_audit_query(message):
+-            return True
+-        if intent not in {"ANALYSIS", "MEMORY", "QUERY", "CREATIVE"}:
+-            return False
+-        if cls._is_brain_diagnostic_analysis_query(message):
+-            return True
+-        if cls._is_grounded_code_analysis_query(message):
+-            return False
+-        if cls._is_llm_status_query(msg_l):
+-            return False
+-        if cls._is_recent_activity_query(msg_l) or cls._is_chat_interaction_review_query(msg_l):
+-            return False
+-        hard_operational_markers = (
+-            "ejecuta", "corre", "run ", "scan ", "escanea", "escanear",
+-            "revisa ", "verifica", "diagnostica", "lista ", "lee ",
+-            "abre ", "busca ", "check ", "servicio", "servicios",
+-            "proceso", "procesos", "puerto", "puertos", "red local",
+-            "network", "log ", "logs", "archivo", "archivos",
+-        )
+-        if any(marker in msg_l for marker in hard_operational_markers):
+-            return False
+-        analysis_markers = (
+-            "explica", "explain", "que significa", "qué significa",
+-            "por que", "por qué", "why", "cause", "causa", "implica",
+-            "implicacion", "implicación", "evalua", "evalúa", "interpreta",
+-            "significa", "analiza", "analysis", "audita", "auditor",
+-        )
+-        technical_scope = (
+-            "codex", "llm", "modelo", "model", "brain", "agente", "agent",
+-            "chat", "prompt", "route", "routing", "latencia", "timeout",
+-            "sintesis", "síntesis", "fallback", "fastpath", "governance",
+-            "dashboard",
++        """B7-STRANGLER-10 shim — delegates to
++        :func:`brain_v9.core.session_llm_chain_select.should_use_analysis_frontier`.
++        """
++        return _llm_chain_select.should_use_analysis_frontier(
++            message,
++            intent,
++            history,
++            model_priority,
++            normalize_model_priority_func=cls._normalize_model_priority,
+         )
+-        return any(marker in msg_l for marker in analysis_markers) and any(scope in msg_l for scope in technical_scope)
+ 
+     @staticmethod
+     def _is_benign_security_audit_query(message: str) -> bool:
+@@ -2245,12 +2194,17 @@ class BrainSession:
+         history: List[Dict],
+         model_priority: str,
+     ) -> str:
+-        requested = cls._normalize_model_priority(model_priority or "chat")
+-        if intent == "CODE":
+-            return "code"
+-        if cls._should_use_analysis_frontier(message, intent, history, requested):
+-            return "analysis_frontier" if requested != "analysis_frontier_legacy" else "analysis_frontier_legacy"
+-        return requested
++        """B7-STRANGLER-10 shim — delegates to
++        :func:`brain_v9.core.session_llm_chain_select.select_llm_chain`.
++        """
++        return _llm_chain_select.select_llm_chain(
++            message,
++            intent,
++            history,
++            model_priority,
++            normalize_model_priority_func=cls._normalize_model_priority,
++            should_use_analysis_frontier_func=cls._should_use_analysis_frontier,
++        )
+ 
+     # R26b: ultimo recurso cuando agent loop no produce ni tools ni synthesized
+     async def _llm_direct_fallback(self, message: str) -> str:
+@@ -4291,8 +4245,13 @@ class BrainSession:
+ 
+     @classmethod
+     def _normalize_model_priority(cls, model_priority: str) -> str:
+-        normalized = (model_priority or "chat").strip().lower()
+-        return cls._MODEL_PRIORITY_ALIASES.get(normalized, normalized)
++        """B7-STRANGLER-10 shim — delegates to
++        :func:`brain_v9.core.session_llm_chain_select.normalize_model_priority`.
++        """
++        return _llm_chain_select.normalize_model_priority(
++            model_priority,
++            aliases=cls._MODEL_PRIORITY_ALIASES,
++        )
+ 
+     @staticmethod
+     def _is_operational_agent_query(message: str) -> bool:
+
+diff --git a/tmp_agent/brain_v9/core/session_llm_chain_select.py b/tmp_agent/brain_v9/core/session_llm_chain_select.py
+new file mode 100644
+--- /dev/null
++++ b/tmp_agent/brain_v9/core/session_llm_chain_select.py
+@@ -0,0 +1,154 @@
++"""LLM chain selection heuristics + model priority normalization.
++
++Extracted from BrainSession (B7-STRANGLER-10).
++
++Design rules (do not break):
++- No I/O, no network, no globals/state.
++- Does NOT import brain_v9.core.session (avoids circular import).
++"""
++from __future__ import annotations
++
++import re
++from typing import Dict, List
++
++from brain_v9.core import session_query_predicates as _qp
++from brain_v9.core.llm import LLMManager
++
++__all__ = [
++    "MODEL_PRIORITY_ALIASES",
++    "normalize_model_priority",
++    "should_use_compact_chat_prompt",
++    "should_use_analysis_frontier",
++    "select_llm_chain",
++]
++
++MODEL_PRIORITY_ALIASES = {
++    "deepseek-r1:14b": "deepseek14b",
++    "deepseek-r1:32b": "deepseek14b",
++    "qwen2.5:14b": "coder14b",
++    "qwen2.5-coder:14b": "coder14b",
++    "llama3.1:8b": "llama8b",
++    "gemini": "chat",
++    "auto": "chat",
++    "default": "chat",
++    "sonnet": "claude",
++    "sonnet4": "claude",
++    "frontier": "agent_frontier",
++    "analysis_frontier": "analysis_frontier",
++    "analysis": "analysis_frontier",
++    "analysis_frontier_legacy": "analysis_frontier_legacy",
++    "analysis_legacy": "analysis_frontier_legacy",
++    "codex": "codex",
++    "openai": "codex",
++    "agent_legacy": "agent_legacy",
++    "frontier_legacy": "agent_frontier_legacy",
++    "agent_frontier_legacy": "agent_frontier_legacy",
++    "code_legacy": "code_legacy",
++    "chat_legacy": "chat_legacy",
++}
++
++
++def normalize_model_priority(model_priority: str, aliases=None) -> str:
++    """Normalize a raw model-priority string via alias map."""
++    if aliases is None:
++        aliases = MODEL_PRIORITY_ALIASES
++    normalized = (model_priority or "chat").strip().lower()
++    return aliases.get(normalized, normalized)
++
++
++def should_use_compact_chat_prompt(
++    message: str,
++    intent: str,
++    history: List[Dict],
++    model_priority: str,
++    *,
++    normalize_model_priority_func=normalize_model_priority,
++) -> bool:
++    """Return True if the message qualifies for the compact chat prompt."""
++    if intent not in {"QUERY", "CONVERSATION"}:
++        return False
++    msg_l = (message or "").lower()
++    if _qp.is_operational_agent_query(msg_l):
++        return False
++    if _qp.is_grounded_code_analysis_query(message):
++        return False
++    if _qp.is_llm_status_query(msg_l):
++        return False
++    if re.search(r"\b[a-z]:\\|\.py\b|\.json\b|/chat\b|/agent\b", message, re.IGNORECASE):
++        return False
++    compact_history = [m for m in history if m.get("role") in ("user", "assistant")]
++    if len(compact_history) > 2:
++        return False
++    if LLMManager.estimate_tokens(message) > 48:
++        return False
++    requested = normalize_model_priority_func(model_priority or "chat")
++    return requested in {"chat", "llama8b", "deepseek14b", "coder14b", "ollama"}
++
++
++def should_use_analysis_frontier(
++    message: str,
++    intent: str,
++    history: List[Dict],
++    model_priority: str,
++    *,
++    normalize_model_priority_func=normalize_model_priority,
++) -> bool:
++    """Return True if the message should route through the analysis frontier chain."""
++    requested = normalize_model_priority_func(model_priority or "chat")
++    if requested in {"analysis_frontier", "analysis_frontier_legacy"}:
++        return True
++    if requested not in {"chat", "ollama", "agent_frontier", "agent_frontier_legacy"}:
++        return False
++    msg_l = (message or "").lower()
++    if _qp.is_benign_security_audit_query(message):
++        return True
++    if intent not in {"ANALYSIS", "MEMORY", "QUERY", "CREATIVE"}:
++        return False
++    if _qp.is_brain_diagnostic_analysis_query(message):
++        return True
++    if _qp.is_grounded_code_analysis_query(message):
++        return False
++    if _qp.is_llm_status_query(msg_l):
++        return False
++    if _qp.is_recent_activity_query(msg_l) or _qp.is_chat_interaction_review_query(msg_l):
++        return False
++    hard_operational_markers = (
++        "ejecuta", "corre", "run ", "scan ", "escanea", "escanear",
++        "revisa ", "verifica", "diagnostica", "lista ", "lee ",
++        "abre ", "busca ", "check ", "servicio", "servicios",
++        "proceso", "procesos", "puerto", "puertos", "red local",
++        "network", "log ", "logs", "archivo", "archivos",
++    )
++    if any(marker in msg_l for marker in hard_operational_markers):
++        return False
++    analysis_markers = (
++        "explica", "explain", "que significa", "qué significa",
++        "por que", "por qué", "why", "cause", "causa", "implica",
++        "implicacion", "implicación", "evalua", "evalúa", "interpreta",
++        "significa", "analiza", "analysis", "audita", "auditor",
++    )
++    technical_scope = (
++        "codex", "llm", "modelo", "model", "brain", "agente", "agent",
++        "chat", "prompt", "route", "routing", "latencia", "timeout",
++        "sintesis", "síntesis", "fallback", "fastpath", "governance",
++        "dashboard",
++    )
++    return any(marker in msg_l for marker in analysis_markers) and any(scope in msg_l for scope in technical_scope)
++
++
++def select_llm_chain(
++    message: str,
++    intent: str,
++    history: List[Dict],
++    model_priority: str,
++    *,
++    normalize_model_priority_func=normalize_model_priority,
++    should_use_analysis_frontier_func=should_use_analysis_frontier,
++) -> str:
++    """Select the LLM chain key for this message/intent/history."""
++    requested = normalize_model_priority_func(model_priority or "chat")
++    if intent == "CODE":
++        return "code"
++    if should_use_analysis_frontier_func(message, intent, history, requested):
++        return "analysis_frontier" if requested != "analysis_frontier_legacy" else "analysis_frontier_legacy"
++    return requested
+
+diff --git a/tests/unit/test_b7_llm_chain_select_import_compat.py b/tests/unit/test_b7_llm_chain_select_import_compat.py
+new file mode 100644
+--- /dev/null
++++ b/tests/unit/test_b7_llm_chain_select_import_compat.py
+@@ -0,0 +1,149 @@
++"""B7-STRANGLER-10 import compatibility tests.
++
++Verifies that:
++- The new module is importable and exports the expected API.
++- BrainSession retains all five symbols with correct descriptor types.
++- Shim output matches standalone output for representative inputs.
++"""
++import inspect
++import sys
++from pathlib import Path
++
++sys.path.insert(0, str(Path("C:/AI_VAULT/tmp_agent")))
++
++import pytest
++
++from brain_v9.core import session_llm_chain_select as lcs
++from brain_v9.core.session import BrainSession
++
++
++@pytest.mark.unit
++class TestLlmChainSelectImportCompat:
++    """Import-compatibility assertions for B7-STRANGLER-10."""
++
++    # ------------------------------------------------------------------
++    # 1. Module surface
++    # ------------------------------------------------------------------
++    def test_module_exports_all_symbols(self):
++        assert hasattr(lcs, "MODEL_PRIORITY_ALIASES")
++        assert hasattr(lcs, "normalize_model_priority")
++        assert hasattr(lcs, "should_use_compact_chat_prompt")
++        assert hasattr(lcs, "should_use_analysis_frontier")
++        assert hasattr(lcs, "select_llm_chain")
++
++    def test_module_all_is_exact(self):
++        assert set(lcs.__all__) == {
++            "MODEL_PRIORITY_ALIASES",
++            "normalize_model_priority",
++            "should_use_compact_chat_prompt",
++            "should_use_analysis_frontier",
++            "select_llm_chain",
++        }
++
++    # ------------------------------------------------------------------
++    # 2. BrainSession surface preserved
++    # ------------------------------------------------------------------
++    def test_brain_session_has_model_priority_aliases(self):
++        assert hasattr(BrainSession, "_MODEL_PRIORITY_ALIASES")
++        assert isinstance(BrainSession._MODEL_PRIORITY_ALIASES, dict)
++
++    def test_brain_session_has_normalize_model_priority(self):
++        assert hasattr(BrainSession, "_normalize_model_priority")
++
++    def test_brain_session_has_should_use_compact_chat_prompt(self):
++        assert hasattr(BrainSession, "_should_use_compact_chat_prompt")
++
++    def test_brain_session_has_should_use_analysis_frontier(self):
++        assert hasattr(BrainSession, "_should_use_analysis_frontier")
++
++    def test_brain_session_has_select_llm_chain(self):
++        assert hasattr(BrainSession, "_select_llm_chain")
++
++    # ------------------------------------------------------------------
++    # 3. Descriptor types
++    # ------------------------------------------------------------------
++    def test_normalize_model_priority_is_classmethod(self):
++        assert isinstance(
++            BrainSession.__dict__["_normalize_model_priority"], classmethod
++        )
++
++    def test_should_use_compact_chat_prompt_is_classmethod(self):
++        assert isinstance(
++            BrainSession.__dict__["_should_use_compact_chat_prompt"], classmethod
++        )
++
++    def test_should_use_analysis_frontier_is_classmethod(self):
++        assert isinstance(
++            BrainSession.__dict__["_should_use_analysis_frontier"], classmethod
++        )
++
++    def test_select_llm_chain_is_classmethod(self):
++        assert isinstance(
++            BrainSession.__dict__["_select_llm_chain"], classmethod
++        )
++
++    # ------------------------------------------------------------------
++    # 4. Shim == standalone for representative payloads
++    # ------------------------------------------------------------------
++    def test_normalize_model_priority_shim_parity(self):
++        for raw, expected in [
++            ("codex", "codex"),
++            ("openai", "codex"),
++            ("frontier_legacy", "agent_frontier_legacy"),
++            ("chat", "chat"),
++            ("unknown-model", "unknown-model"),
++        ]:
++            assert BrainSession._normalize_model_priority(raw) == expected
++            assert lcs.normalize_model_priority(raw, aliases=BrainSession._MODEL_PRIORITY_ALIASES) == expected
++
++    def test_should_use_compact_chat_prompt_shim_parity(self):
++        payload = ("responde solo hola en una frase", "QUERY", [], "llama8b")
++        assert (
++            BrainSession._should_use_compact_chat_prompt(*payload)
++            == lcs.should_use_compact_chat_prompt(*payload)
++        )
++
++    def test_should_use_analysis_frontier_shim_parity(self):
++        payload = (
++            "que significa esa respuesta y por que codex no esta activo?",
++            "CREATIVE",
++            [],
++            "chat",
++        )
++        assert (
++            BrainSession._should_use_analysis_frontier(*payload)
++            == lcs.should_use_analysis_frontier(*payload)
++        )
++
++    def test_select_llm_chain_shim_parity(self):
++        payload = (
++            "que significa esa respuesta y por que codex no esta activo?",
++            "CREATIVE",
++            [],
++            "chat",
++        )
++        assert (
++            BrainSession._select_llm_chain(*payload)
++            == lcs.select_llm_chain(*payload)
++        )
++
++    # ------------------------------------------------------------------
++    # 5. Class-level access works
++    # ------------------------------------------------------------------
++    def test_class_level_access_for_compact_chat(self):
++        assert BrainSession._should_use_compact_chat_prompt(
++            "hola", "CONVERSATION", [], "chat"
++        ) is True
++
++    def test_class_level_access_for_analysis_frontier(self):
++        assert BrainSession._should_use_analysis_frontier(
++            "explica por que codex no esta activo", "ANALYSIS", [], "chat"
++        ) is True
++
++    def test_class_level_access_for_select_llm_chain(self):
++        assert BrainSession._select_llm_chain(
++            "hola", "CONVERSATION", [], "chat"
++        ) == "chat"
++
++    def test_class_level_access_for_normalize_model_priority(self):
++        assert BrainSession._normalize_model_priority("codex") == "codex"
+
+diff --git a/tests/unit/test_b7_llm_chain_select_behavior_smoke.py b/tests/unit/test_b7_llm_chain_select_behavior_smoke.py
+new file mode 100644
+--- /dev/null
++++ b/tests/unit/test_b7_llm_chain_select_behavior_smoke.py
+@@ -0,0 +1,172 @@
++"""B7-STRANGLER-10 behavior smoke tests.
++
++Verifies functional parity for extracted LLM chain selection helpers.
++"""
++import sys
++from pathlib import Path
++
++sys.path.insert(0, str(Path("C:/AI_VAULT/tmp_agent")))
++
++import pytest
++
++from brain_v9.core import session_llm_chain_select as lcs
++from brain_v9.core.session import BrainSession
++
++
++@pytest.mark.unit
++class TestNormalizeModelPriority:
++    def test_known_aliases(self):
++        for raw, expected in BrainSession._MODEL_PRIORITY_ALIASES.items():
++            assert lcs.normalize_model_priority(raw) == expected
++            assert BrainSession._normalize_model_priority(raw) == expected
++
++    def test_unknown_passthrough(self):
++        assert lcs.normalize_model_priority("custom-model") == "custom-model"
++        assert BrainSession._normalize_model_priority("custom-model") == "custom-model"
++
++    def test_none_defaults_to_chat(self):
++        assert lcs.normalize_model_priority(None) == "chat"
++        assert BrainSession._normalize_model_priority(None) == "chat"
++
++    def test_empty_defaults_to_chat(self):
++        assert lcs.normalize_model_priority("") == "chat"
++        assert BrainSession._normalize_model_priority("") == "chat"
++
++    def test_whitespace_stripped(self):
++        assert lcs.normalize_model_priority("  codex  ") == "codex"
++        assert BrainSession._normalize_model_priority("  codex  ") == "codex"
++
++
++@pytest.mark.unit
++class TestShouldUseCompactChatPrompt:
++    def test_short_general_query_true(self):
++        payload = ("responde solo hola en una frase", "QUERY", [], "llama8b")
++        assert lcs.should_use_compact_chat_prompt(*payload) is True
++        assert BrainSession._should_use_compact_chat_prompt(*payload) is True
++
++    def test_path_mention_false(self):
++        payload = ("revisa C:\\AI_VAULT\\tmp_agent\\brain_v9\\core\\llm.py", "QUERY", [], "llama8b")
++        assert lcs.should_use_compact_chat_prompt(*payload) is False
++        assert BrainSession._should_use_compact_chat_prompt(*payload) is False
++
++    def test_operational_agent_query_false(self):
++        payload = ("ejecuta script de diagnostico", "QUERY", [], "chat")
++        assert lcs.should_use_compact_chat_prompt(*payload) is False
++        assert BrainSession._should_use_compact_chat_prompt(*payload) is False
++
++    def test_llm_status_query_false(self):
++        payload = ("estado de los modelos llm", "QUERY", [], "chat")
++        assert lcs.should_use_compact_chat_prompt(*payload) is False
++        assert BrainSession._should_use_compact_chat_prompt(*payload) is False
++
++    def test_intent_code_false(self):
++        payload = ("como funciona esto", "CODE", [], "chat")
++        assert lcs.should_use_compact_chat_prompt(*payload) is False
++        assert BrainSession._should_use_compact_chat_prompt(*payload) is False
++
++    def test_large_history_false(self):
++        history = [{"role": "user"}, {"role": "assistant"}, {"role": "user"}, {"role": "assistant"}]
++        payload = ("hola", "QUERY", history, "chat")
++        assert lcs.should_use_compact_chat_prompt(*payload) is False
++        assert BrainSession._should_use_compact_chat_prompt(*payload) is False
++
++    def test_non_chat_priority_false(self):
++        payload = ("hola", "QUERY", [], "code")
++        assert lcs.should_use_compact_chat_prompt(*payload) is False
++        assert BrainSession._should_use_compact_chat_prompt(*payload) is False
++
++
++@pytest.mark.unit
++class TestShouldUseAnalysisFrontier:
++    def test_non_operational_analysis_true(self):
++        payload = (
++            "que significa esa respuesta y por que codex no esta activo?",
++            "CREATIVE",
++            [],
++            "chat",
++        )
++        assert lcs.should_use_analysis_frontier(*payload) is True
++        assert BrainSession._should_use_analysis_frontier(*payload) is True
++
++    def test_operational_analysis_false(self):
++        payload = (
++            "revisa el estado de todos los servicios y ejecuta diagnostico",
++            "ANALYSIS",
++            [],
++            "chat",
++        )
++        assert lcs.should_use_analysis_frontier(*payload) is False
++        assert BrainSession._should_use_analysis_frontier(*payload) is False
++
++    def test_benign_security_audit_true(self):
++        payload = ("auditoria benigna del brain", "ANALYSIS", [], "chat")
++        assert lcs.should_use_analysis_frontier(*payload) is True
++        assert BrainSession._should_use_analysis_frontier(*payload) is True
++
++    def test_brain_diagnostic_true(self):
++        payload = ("diagnostica el estado del brain", "ANALYSIS", [], "chat")
++        assert lcs.should_use_analysis_frontier(*payload) is True
++        assert BrainSession._should_use_analysis_frontier(*payload) is True
++
++    def test_grounded_code_analysis_false(self):
++        payload = ("analiza el archivo main.py", "ANALYSIS", [], "chat")
++        assert lcs.should_use_analysis_frontier(*payload) is False
++        assert BrainSession._should_use_analysis_frontier(*payload) is False
++
++    def test_llm_status_false(self):
++        payload = ("como esta el llm", "QUERY", [], "chat")
++        assert lcs.should_use_analysis_frontier(*payload) is False
++        assert BrainSession._should_use_analysis_frontier(*payload) is False
++
++    def test_recent_activity_false(self):
++        payload = ("que hiciste recientemente", "QUERY", [], "chat")
++        assert lcs.should_use_analysis_frontier(*payload) is False
++        assert BrainSession._should_use_analysis_frontier(*payload) is False
++
++    def test_explicit_analysis_frontier_priority_true(self):
++        payload = ("hola", "QUERY", [], "analysis_frontier")
++        assert lcs.should_use_analysis_frontier(*payload) is True
++        assert BrainSession._should_use_analysis_frontier(*payload) is True
++
++    def test_codex_priority_false(self):
++        payload = ("explica codex", "ANALYSIS", [], "codex")
++        assert lcs.should_use_analysis_frontier(*payload) is False
++        assert BrainSession._should_use_analysis_frontier(*payload) is False
++
++
++@pytest.mark.unit
++class TestSelectLlmChain:
++    def test_code_intent_returns_code(self):
++        payload = ("hola", "CODE", [], "chat")
++        assert lcs.select_llm_chain(*payload) == "code"
++        assert BrainSession._select_llm_chain(*payload) == "code"
++
++    def test_analysis_frontier_returns_analysis_frontier(self):
++        payload = (
++            "que significa esa respuesta y por que codex no esta activo?",
++            "CREATIVE",
++            [],
++            "chat",
++        )
++        assert lcs.select_llm_chain(*payload) == "analysis_frontier"
++        assert BrainSession._select_llm_chain(*payload) == "analysis_frontier"
++
++    def test_normal_chat_returns_chat(self):
++        payload = ("hola", "CONVERSATION", [], "chat")
++        assert lcs.select_llm_chain(*payload) == "chat"
++        assert BrainSession._select_llm_chain(*payload) == "chat"
++
++    def test_legacy_frontier_returns_legacy(self):
++        payload = ("hola", "QUERY", [], "analysis_frontier_legacy")
++        assert lcs.select_llm_chain(*payload) == "analysis_frontier_legacy"
++        assert BrainSession._select_llm_chain(*payload) == "analysis_frontier_legacy"
++
++    def test_codex_priority_returns_codex(self):
++        payload = ("hola", "QUERY", [], "codex")
++        assert lcs.select_llm_chain(*payload) == "codex"
++        assert BrainSession._select_llm_chain(*payload) == "codex"
++
++    def test_passthrough_unknown(self):
++        payload = ("hola", "QUERY", [], "custom-model")
++        assert lcs.select_llm_chain(*payload) == "custom-model"
++        assert BrainSession._select_llm_chain(*payload) == "custom-model"
+
+diff --git a/tests/unit/test_b7_llm_chain_select_no_session_dependency.py b/tests/unit/test_b7_llm_chain_select_no_session_dependency.py
+new file mode 100644
+--- /dev/null
++++ b/tests/unit/test_b7_llm_chain_select_no_session_dependency.py
+@@ -0,0 +1,116 @@
++"""B7-STRANGLER-10 no-session-dependency audit.
++
++Verifies that the new module does NOT depend on brain_v9.core.session.
++"""
++import ast
++import os
++import subprocess
++import sys
++
++import pytest
++
++
++@pytest.mark.unit
++class TestLlmChainSelectNoSessionDependency:
++    """AST + subprocess isolation checks."""
++
++    MODULE_PATH = "tmp_agent/brain_v9/core/session_llm_chain_select.py"
++
++    # ------------------------------------------------------------------
++    # 1. AST: no import of session
++    # ------------------------------------------------------------------
++    def _ast(self):
++        import pathlib
++
++        src = pathlib.Path(self.MODULE_PATH).read_text(encoding="utf-8")
++        return ast.parse(src)
++
++    def test_no_import_session(self):
++        tree = self._ast()
++        for node in ast.walk(tree):
++            if isinstance(node, ast.Import):
++                for alias in node.names:
++                    assert "session" not in alias.name, f"forbidden import: {alias.name}"
++            if isinstance(node, ast.ImportFrom):
++                module = node.module or ""
++                assert "session" not in module, f"forbidden from-import: {module}"
++
++    def test_no_brain_session_reference(self):
++        tree = self._ast()
++        for node in ast.walk(tree):
++            if isinstance(node, ast.Name):
++                assert node.id != "BrainSession"
++            if isinstance(node, ast.Attribute):
++                if isinstance(node.value, ast.Name):
++                    assert node.value.id != "BrainSession"
++
++    def test_no_self_or_cls_in_public_functions(self):
++        tree = self._ast()
++        for node in ast.walk(tree):
++            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
++                if node.name.startswith("_"):
++                    continue
++                args = node.args.args
++                if args:
++                    first = args[0].arg
++                    assert first not in ("self", "cls"), (
++                        f"public function {node.name} has forbidden first arg {first!r}"
++                    )
++
++    def test_no_self_or_cls_names_in_bodies(self):
++        tree = self._ast()
++        for node in ast.walk(tree):
++            if isinstance(node, ast.Name):
++                assert node.id not in ("self", "cls"), (
++                    f"found forbidden name {node.id!r} in AST"
++                )
++
++    # ------------------------------------------------------------------
++    # 2. Subprocess: importing module does not load session
++    # ------------------------------------------------------------------
++    def test_subprocess_import_does_not_load_session(self):
++        code = """
++import sys
++# Ensure session is not already loaded
++if 'brain_v9.core.session' in sys.modules:
++    sys.modules.pop('brain_v9.core.session')
++
++# Now import only the new module
++from brain_v9.core import session_llm_chain_select as lcs
++
++# Check
++loaded = 'brain_v9.core.session' in sys.modules
++print("SESSION_LOADED=" + str(loaded))
++"""
++        env = dict(os.environ)
++        env["PYTHONPATH"] = r"C:\AI_VAULT\tmp_agent"
++        result = subprocess.run(
++            [sys.executable, "-c", code],
++            capture_output=True,
++            text=True,
++            cwd=r"C:\AI_VAULT",
++            env=env,
++        )
++        output = result.stdout.strip()
++        assert "SESSION_LOADED=False" in output, (
++            f"session loaded unexpectedly; stdout={output!r} stderr={result.stderr!r}"
++        )
++
++    # ------------------------------------------------------------------
++    # 3. Allowed imports only
++    # ------------------------------------------------------------------
++    def test_imports_are_allowed(self):
++        tree = self._ast()
++        allowed = {
++            "__future__",
++            "re",
++            "typing",
++            "brain_v9.core.session_query_predicates",
++            "brain_v9.core.llm",
++            "brain_v9.core",
++        }
++        for node in ast.walk(tree):
++            if isinstance(node, ast.ImportFrom):
++                module = node.module or ""
++                if module.startswith("brain_v9"):
++                    assert module in allowed, f"unexpected import from {module!r}"

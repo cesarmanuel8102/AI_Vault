@@ -203,6 +203,16 @@ from brain_v9.core import session_context_budget as _cb  # noqa: E402,F401
 # unchanged.
 from brain_v9.core import session_tool_analysis_prefs as _tap  # noqa: E402,F401
 
+# B7-STRANGLER-10: LLM chain selection heuristics + model priority normalization
+# extracted to ``brain_v9.core.session_llm_chain_select``.  ``BrainSession``
+# keeps four ``@classmethod`` one-line shims that delegate here, preserving
+# the descriptor type so external bindings such as
+# ``BrainSession._should_use_compact_chat_prompt`` /
+# ``BrainSession._should_use_analysis_frontier`` /
+# ``BrainSession._select_llm_chain`` /
+# ``BrainSession._normalize_model_priority`` keep resolving exactly as before.
+from brain_v9.core import session_llm_chain_select as _llm_chain_select  # noqa: E402,F401
+
 
 def __getattr__(name):  # PEP 562: proxy live _GLOBAL_CHAT_METRICS
     if name == "_GLOBAL_CHAT_METRICS":
@@ -273,30 +283,7 @@ def _normalize(result: Dict, fallback_content: str = "") -> Dict:
 class BrainSession:
     """Unified chat session with intelligent LLM <-> AgentLoop routing."""
 
-    _MODEL_PRIORITY_ALIASES = {
-        "deepseek-r1:14b": "deepseek14b",
-        "deepseek-r1:32b": "deepseek14b",
-        "qwen2.5:14b": "coder14b",
-        "qwen2.5-coder:14b": "coder14b",
-        "llama3.1:8b": "llama8b",
-        "gemini": "chat",
-        "auto": "chat",
-        "default": "chat",
-        "sonnet": "claude",
-        "sonnet4": "claude",
-        "frontier": "agent_frontier",
-        "analysis_frontier": "analysis_frontier",
-        "analysis": "analysis_frontier",
-        "analysis_frontier_legacy": "analysis_frontier_legacy",
-        "analysis_legacy": "analysis_frontier_legacy",
-        "codex": "codex",
-        "openai": "codex",
-        "agent_legacy": "agent_legacy",
-        "frontier_legacy": "agent_frontier_legacy",
-        "agent_frontier_legacy": "agent_frontier_legacy",
-        "code_legacy": "code_legacy",
-        "chat_legacy": "chat_legacy",
-    }
+    _MODEL_PRIORITY_ALIASES = _llm_chain_select.MODEL_PRIORITY_ALIASES
     _TEMPORAL_QUERY_RE = re.compile(
         r"\b(hoy|ayer|mañana|latest|ultimo|último|ultimos|últimos|ultima|última|actual|actualmente|now|today|live|running|estado|status|reciente|recientes|recent|esta semana|this week|mejoras?|cambios?|modificaciones?|recientemente|nuevo|nueva|nuevos|nuevas)\b",
         re.IGNORECASE,
@@ -2165,24 +2152,16 @@ class BrainSession:
         history: List[Dict],
         model_priority: str,
     ) -> bool:
-        if intent not in {"QUERY", "CONVERSATION"}:
-            return False
-        msg_l = (message or "").lower()
-        if cls._is_operational_agent_query(msg_l):
-            return False
-        if cls._is_grounded_code_analysis_query(message):
-            return False
-        if cls._is_llm_status_query(msg_l):
-            return False
-        if re.search(r"\b[a-z]:\\|\.py\b|\.json\b|/chat\b|/agent\b", message, re.IGNORECASE):
-            return False
-        compact_history = [m for m in history if m.get("role") in ("user", "assistant")]
-        if len(compact_history) > 2:
-            return False
-        if LLMManager.estimate_tokens(message) > 48:
-            return False
-        requested = cls._normalize_model_priority(model_priority or "chat")
-        return requested in {"chat", "llama8b", "deepseek14b", "coder14b", "ollama"}
+        """B7-STRANGLER-10 shim — delegates to
+        :func:`brain_v9.core.session_llm_chain_select.should_use_compact_chat_prompt`.
+        """
+        return _llm_chain_select.should_use_compact_chat_prompt(
+            message,
+            intent,
+            history,
+            model_priority,
+            normalize_model_priority_func=cls._normalize_model_priority,
+        )
 
     @classmethod
     def _should_use_analysis_frontier(
@@ -2192,46 +2171,16 @@ class BrainSession:
         history: List[Dict],
         model_priority: str,
     ) -> bool:
-        requested = cls._normalize_model_priority(model_priority or "chat")
-        if requested in {"analysis_frontier", "analysis_frontier_legacy"}:
-            return True
-        if requested not in {"chat", "ollama", "agent_frontier", "agent_frontier_legacy"}:
-            return False
-        msg_l = (message or "").lower()
-        if cls._is_benign_security_audit_query(message):
-            return True
-        if intent not in {"ANALYSIS", "MEMORY", "QUERY", "CREATIVE"}:
-            return False
-        if cls._is_brain_diagnostic_analysis_query(message):
-            return True
-        if cls._is_grounded_code_analysis_query(message):
-            return False
-        if cls._is_llm_status_query(msg_l):
-            return False
-        if cls._is_recent_activity_query(msg_l) or cls._is_chat_interaction_review_query(msg_l):
-            return False
-        hard_operational_markers = (
-            "ejecuta", "corre", "run ", "scan ", "escanea", "escanear",
-            "revisa ", "verifica", "diagnostica", "lista ", "lee ",
-            "abre ", "busca ", "check ", "servicio", "servicios",
-            "proceso", "procesos", "puerto", "puertos", "red local",
-            "network", "log ", "logs", "archivo", "archivos",
+        """B7-STRANGLER-10 shim — delegates to
+        :func:`brain_v9.core.session_llm_chain_select.should_use_analysis_frontier`.
+        """
+        return _llm_chain_select.should_use_analysis_frontier(
+            message,
+            intent,
+            history,
+            model_priority,
+            normalize_model_priority_func=cls._normalize_model_priority,
         )
-        if any(marker in msg_l for marker in hard_operational_markers):
-            return False
-        analysis_markers = (
-            "explica", "explain", "que significa", "qué significa",
-            "por que", "por qué", "why", "cause", "causa", "implica",
-            "implicacion", "implicación", "evalua", "evalúa", "interpreta",
-            "significa", "analiza", "analysis", "audita", "auditor",
-        )
-        technical_scope = (
-            "codex", "llm", "modelo", "model", "brain", "agente", "agent",
-            "chat", "prompt", "route", "routing", "latencia", "timeout",
-            "sintesis", "síntesis", "fallback", "fastpath", "governance",
-            "dashboard",
-        )
-        return any(marker in msg_l for marker in analysis_markers) and any(scope in msg_l for scope in technical_scope)
 
     @staticmethod
     def _is_benign_security_audit_query(message: str) -> bool:
@@ -2245,12 +2194,17 @@ class BrainSession:
         history: List[Dict],
         model_priority: str,
     ) -> str:
-        requested = cls._normalize_model_priority(model_priority or "chat")
-        if intent == "CODE":
-            return "code"
-        if cls._should_use_analysis_frontier(message, intent, history, requested):
-            return "analysis_frontier" if requested != "analysis_frontier_legacy" else "analysis_frontier_legacy"
-        return requested
+        """B7-STRANGLER-10 shim — delegates to
+        :func:`brain_v9.core.session_llm_chain_select.select_llm_chain`.
+        """
+        return _llm_chain_select.select_llm_chain(
+            message,
+            intent,
+            history,
+            model_priority,
+            normalize_model_priority_func=cls._normalize_model_priority,
+            should_use_analysis_frontier_func=cls._should_use_analysis_frontier,
+        )
 
     # R26b: ultimo recurso cuando agent loop no produce ni tools ni synthesized
     async def _llm_direct_fallback(self, message: str) -> str:
@@ -4291,8 +4245,13 @@ class BrainSession:
 
     @classmethod
     def _normalize_model_priority(cls, model_priority: str) -> str:
-        normalized = (model_priority or "chat").strip().lower()
-        return cls._MODEL_PRIORITY_ALIASES.get(normalized, normalized)
+        """B7-STRANGLER-10 shim — delegates to
+        :func:`brain_v9.core.session_llm_chain_select.normalize_model_priority`.
+        """
+        return _llm_chain_select.normalize_model_priority(
+            model_priority,
+            aliases=cls._MODEL_PRIORITY_ALIASES,
+        )
 
     @staticmethod
     def _is_operational_agent_query(message: str) -> bool:

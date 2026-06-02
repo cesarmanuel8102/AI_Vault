@@ -1,0 +1,17 @@
+{
+  "ticket": "B7-STRANGLER-10-IMPLEMENT",
+  "phase": "FASE 0 — PREFLIGHT",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "ec8766bf",
+  "origin_head": "ec8766bf",
+  "local_equals_origin": true,
+  "expected_head": "ec8766bf",
+  "head_matches_expected": true,
+  "no_staged_files": true,
+  "dirty_files_all_in_approved_ignore": true,
+  "last_commit_subject": "refactor(b7): extract tool analysis preference helpers from session module",
+  "session_py_path": "tmp_agent/brain_v9/core/session.py",
+  "session_py_lines_expected": 5366,
+  "new_module_path": "tmp_agent/brain_v9/core/session_llm_chain_select.py",
+  "selected_candidate": "C1 — LLM chain selection heuristics (co-extracting C5: model priority normalization)"
+}

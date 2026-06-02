@@ -1,0 +1,54 @@
+{
+  "ticket": "B7-STRANGLER-10-IMPLEMENT-FIX",
+  "head_base": "ec8766bf",
+  "session_py_lines_before": 5366,
+  "session_py_lines_after": 5325,
+  "session_py_net_reduction": 41,
+  "new_module": "tmp_agent/brain_v9/core/session_llm_chain_select.py",
+  "new_module_lines": 154,
+  "helpers_extracted_count": 5,
+  "symbols": [
+    "MODEL_PRIORITY_ALIASES",
+    "normalize_model_priority",
+    "should_use_compact_chat_prompt",
+    "should_use_analysis_frontier",
+    "select_llm_chain"
+  ],
+  "internal_consumers_preserved": [
+    "chat()",
+    "_route_to_llm()",
+    "_select_llm_chain()",
+    "_select_agent_model_priority()",
+    "_llm_status_fastpath()",
+    "_codex_role_fastpath()"
+  ],
+  "external_consumers_preserved": [
+    "tests/unit/test_brain_chat_hygiene.py",
+    "tests/unit/test_llm_codex_integration.py"
+  ],
+  "shim_form": "4 @classmethod 1-line delegators + 1 class attr rebind to _llm_chain_select.MODEL_PRIORITY_ALIASES",
+  "model_priority_aliases_rebound": true,
+  "protected_paths_touched": false,
+  "routing_core_touched": false,
+  "fastpaths_touched": false,
+  "tool01_touched": false,
+  "routing_guards_touched": false,
+  "already_extracted_modules_touched": false,
+  "tests_created": [
+    "tests/unit/test_b7_llm_chain_select_import_compat.py",
+    "tests/unit/test_b7_llm_chain_select_behavior_smoke.py",
+    "tests/unit/test_b7_llm_chain_select_no_session_dependency.py"
+  ],
+  "validations_summary": {
+    "phase1_local_validation": "PASS",
+    "b7_carryover_tests": "PASS (283 passed, 0 failed)",
+    "llm_chain_select_tests": "PASS (52 passed, 0 failed)",
+    "consumer_tests_brain_chat_hygiene": "BASELINE_EQUIVALENT (40 pre-existing failures)",
+    "consumer_tests_llm_codex_integration": "BASELINE_EQUIVALENT (8 pre-existing failures)",
+    "import_smoke": "PASS",
+    "shim_cleanliness_ast_audit": "PASS",
+    "py_compile_session_py": "PASS",
+    "py_compile_new_module": "PASS",
+    "patch_reverse_apply_check": "PASS (PATCH_REVERSES_CLEAN)"
+  }
+}
