@@ -1,0 +1,38 @@
+{
+  "phase": "FASE-0-SEGURIDAD",
+  "timestamp_utc": "2026-06-01T00:00:00Z",
+  "repo_root": "C:/AI_VAULT",
+  "branch": "codex/own-capital-sustainable-return",
+  "expected_branch": "codex/own-capital-sustainable-return",
+  "branch_match": true,
+  "local_head": "248e41c5bf35f296a26023a50df84b17725227e6",
+  "local_head_short": "248e41c5",
+  "origin_head_short": "248e41c5",
+  "head_sync_status": "local_equals_origin",
+  "expected_head_minimum": "248e41c5",
+  "head_meets_expectation": true,
+  "staged_files": [],
+  "unstaged_files_in_scope_for_phase0": [],
+  "unstaged_files_unrelated_pre_existing": [
+    "memory/semantic/semantic_memory.jsonl"
+  ],
+  "untracked_files_unrelated_pre_existing_count_sample": [
+    "tmp_agent/strategies/mean_reversion_eq/run_phase*.py (~125 phase scripts)",
+    "tmp_agent/brain_v9/chat_area_upgrade/rollback/",
+    "tmp_agent/brain_v9/ops/smoke_*.ps1",
+    "tmp_agent/visual_trace_console_v1/vtc_c1_runtime_smoke_transcript.md"
+  ],
+  "preflight_checks": {
+    "repo_correct": true,
+    "branch_correct": true,
+    "head_equals_origin": true,
+    "no_staged_files": true,
+    "no_unexpected_productive_changes": true
+  },
+  "abort_required": false,
+  "notes": [
+    "Only memory/semantic/semantic_memory.jsonl is dirty in working tree, expected runtime artifact, untouched by Phase 0.",
+    "All untracked files are out of Phase 0 scope (strategies, rollback backups, smoke scripts).",
+    "WT-HYGIENE-02 (248e41c5) confirmed present and not reverted."
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "phase": "FASE-0-SEGURIDAD",
+  "generated_at_branch": "codex/own-capital-sustainable-return",
+  "head_commit": "248e41c5bf35f296a26023a50df84b17725227e6",
+  "head_equals_origin": true,
+  "commit_created": false,
+  "push_done": false,
+  "patches": [
+    {
+      "patch_id": "0A",
+      "title": "Untrack .dev_auth credentials and harden .gitignore",
+      "patch_path": "tmp_agent/security_phase0_evidence/phase0A_gitignore_dev_auth.patch",
+      "complementary_script": "tmp_agent/security_phase0_evidence/phase0A_untrack_sensitive_files_plan.ps1",
+      "files_changed": [".gitignore"],
+      "risk_reduced": "Credenciales .dev_auth/credentials.enc y god_audit.jsonl tracked en index pese a WT-HYGIENE-02. Ahora .gitignore cubre .dev_auth/** y el script untrack-only (sin commit, sin delete fisico) lo materializa.",
+      "validation_commands": [
+        "git check-ignore -v .dev_auth/credentials.enc",
+        "git check-ignore -v .dev_auth/god_audit.jsonl"
+      ],
+      "validation_status": "applied_diff_captured",
+      "rollback_plan": "git apply -R tmp_agent/security_phase0_evidence/phase0A_gitignore_dev_auth.patch",
+      "commit_created": false,
+      "push_done": false
+    },
+    {
+      "patch_id": "0B",
+      "title": "GOD mode P3 guardrail in execution_gate.check()",
+      "patch_path": "tmp_agent/security_phase0_evidence/phase0B_god_p3_guardrail.patch",
+      "files_changed": ["tmp_agent/brain_v9/governance/execution_gate.py"],
+      "risk_reduced": "GOD mode auto-aprobaba P3 destructivos (rm -rf, restart_service, etc). Ahora P3 bajo GOD devuelve allowed=false con pending_id y requires_human_approval=true.",
+      "test_files": ["tests/unit/test_execution_gate_god_p3.py"],
+      "validation_commands": [
+        "python -m py_compile tmp_agent/brain_v9/governance/execution_gate.py",
+        "python tests/unit/test_execution_gate_god_p3.py"
+      ],
+      "validation_status": "passed",
+      "rollback_plan": "git apply -R tmp_agent/security_phase0_evidence/phase0B_god_p3_guardrail.patch",
+      "commit_created": false,
+      "push_done": false
+    },
+    {
+      "patch_id": "0C",
+      "title": "Dev/godmode endpoints OFF by default + HTTP 403",
+      "patch_path": "tmp_agent/security_phase0_evidence/phase0C_dev_endpoints_default_off.patch",
+      "files_changed": ["tmp_agent/brain_v9/config.py", "tmp_agent/brain_v9/main.py"],
+      "risk_reduced": "BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS default cambiado de 'true' a 'false', truthy strict {1,true,yes,on}, log.warning si activo, /dev y /godmode devuelven HTTP 403 (no JSON success=false que disimula la exposicion).",
+      "test_files": ["tests/unit/test_dev_endpoints_default_off.py"],
+      "validation_commands": [
+        "python -m py_compile tmp_agent/brain_v9/config.py tmp_agent/brain_v9/main.py",
+        "python tests/unit/test_dev_endpoints_default_off.py"
+      ],
+      "validation_status": "passed",
+      "hardening_added": "AST guard test (test_no_dead_code_return_before_raise_in_unsafe_gate) detecta regresion `return JSON` antes de `raise HTTPException` dentro del gate `if not BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS:`. Tambien se exige >=2 raise HTTPException(403) en main.py.",
+      "verified_clean": "Inspeccion AST y grep confirman: ningun `return` precede al `raise HTTPException(403)` en /dev ni /godmode. El bloque viejo `return {success:false, ...}` fue reemplazado integramente.",
+      "rollback_plan": "git apply -R tmp_agent/security_phase0_evidence/phase0C_dev_endpoints_default_off.patch",
+      "commit_created": false,
+      "push_done": false
+    },
+    {
+      "patch_id": "0D",
+      "title": "Self-dev protected paths denylist (governance/security)",
+      "patch_path": "tmp_agent/security_phase0_evidence/phase0D_selfdev_protected_paths.patch",
+      "files_changed": ["tmp_agent/brain_v9/governance/execution_gate.py"],
+      "risk_reduced": "Cualquier edicion sobre execution_gate, ethics_kernel, api_security, trace_redactor, approval, auth, policy o cualquier governance/** se BLOQUEA en gate.check() ANTES de GOD bypass y ANTES de selfdev_bypass. Ni GOD ni settings.self_dev_* pueden levantarlo.",
+      "test_files": ["tests/unit/test_selfdev_protected_paths.py"],
+      "validation_commands": [
+        "python -m py_compile tmp_agent/brain_v9/governance/execution_gate.py",
+        "python tests/unit/test_selfdev_protected_paths.py"
+      ],
+      "validation_status": "passed",
+      "rollback_plan": "git apply -R tmp_agent/security_phase0_evidence/phase0D_selfdev_protected_paths.patch",
+      "commit_created": false,
+      "push_done": false,
+      "note_dependency": "0D y 0B ambos modifican execution_gate.py. Aplicar 0B primero, luego 0D (orden recomendado). Patches isolados via git apply -R round-trip."
+    }
+  ],
+  "recommended_apply_order": ["0A", "0B", "0C", "0D"]
+}

@@ -1,0 +1,82 @@
+{
+  "phase": "FASE-0-SEGURIDAD",
+  "validated_at_head": "248e41c5bf35f296a26023a50df84b17725227e6",
+  "py_compile": {
+    "tmp_agent/brain_v9/governance/execution_gate.py": "OK",
+    "tmp_agent/brain_v9/config.py": "OK",
+    "tmp_agent/brain_v9/main.py": "OK",
+    "tests/unit/test_execution_gate_god_p3.py": "OK",
+    "tests/unit/test_dev_endpoints_default_off.py": "OK",
+    "tests/unit/test_selfdev_protected_paths.py": "OK"
+  },
+  "tests": {
+    "test_execution_gate_god_p3": {
+      "status": "PASS",
+      "cases": [
+        "test_god_mode_blocks_p3_destructive",
+        "test_god_mode_blocks_p3_run_command",
+        "test_god_mode_still_approves_p2"
+      ]
+    },
+    "test_dev_endpoints_default_off": {
+      "status": "PASS",
+      "cases": [
+        "test_default_off_when_unset",
+        "test_off_for_arbitrary_values",
+        "test_on_for_strict_truthy",
+        "test_dev_endpoint_returns_403_when_disabled",
+        "test_no_dead_code_return_before_raise_in_unsafe_gate",
+        "test_at_least_two_raise_403_in_main"
+      ],
+      "hardening_note": "AST-based guard added: si alguien introduce `return ...` antes de `raise HTTPException(...)` dentro de `if not BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS:` el test falla. Tambien valida >=2 raise HTTPException(403) en main.py."
+    },
+    "test_selfdev_protected_paths": {
+      "status": "PASS",
+      "cases": [
+        "test_helper_detects_protected_paths",
+        "test_helper_allows_normal_paths",
+        "test_god_mode_cannot_edit_governance",
+        "test_god_mode_can_still_edit_normal_files",
+        "test_run_command_with_protected_path_blocked"
+      ]
+    }
+  },
+  "import_smoke": {
+    "command": "python -c \"from brain_v9.governance.execution_gate import ExecutionGate, _is_protected_selfdev_path, _PROTECTED_SELFDEV_PATH_PREFIXES\"",
+    "result": "EXECUTION_GATE_IMPORT_OK"
+  },
+  "scope_check": {
+    "files_modified": [
+      ".gitignore",
+      "tmp_agent/brain_v9/config.py",
+      "tmp_agent/brain_v9/governance/execution_gate.py",
+      "tmp_agent/brain_v9/main.py"
+    ],
+    "files_created": [
+      "tests/unit/test_execution_gate_god_p3.py",
+      "tests/unit/test_dev_endpoints_default_off.py",
+      "tests/unit/test_selfdev_protected_paths.py"
+    ],
+    "protected_unrelated_paths_touched": "NONE",
+    "verified_protected_paths_clean": [
+      "tmp_agent/strategies/",
+      "memory/semantic/",
+      "tmp_agent/brain_v9/ui/",
+      "tmp_agent/brain_v9/core/session.py",
+      "tmp_agent/brain_v9/core/session_chat_metrics.py",
+      "docs/MIGRATION_CONTROL_LEDGER.md",
+      "ROADMAP_STATUS.json"
+    ],
+    "note_pre_existing_dirty": "memory/semantic/semantic_memory.jsonl tenia 4 lineas de drift de runtime ANTES del preflight; no fue tocado por estas patches."
+  },
+  "secrets_printed": false,
+  "commit_created": false,
+  "push_done": false,
+  "validations_passed": 14,
+  "validations_failed": 0,
+  "dead_code_check": {
+    "method": "AST walk over /dev y /godmode buscando `return` previo a `raise` dentro del gate de BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS",
+    "result": "CLEAN",
+    "raise_403_count_in_main": 2
+  }
+}
