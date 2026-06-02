@@ -1,0 +1,101 @@
+{
+  "task_id": "B7-STRANGLER-03-INVENTORY",
+  "phase": "C_selection",
+  "selected_candidate": {
+    "id": "C1_query_predicates_pure",
+    "block": "Pure query-predicate methods",
+    "new_module": "tmp_agent/brain_v9/core/session_query_predicates.py",
+    "new_module_purpose": "Standalone module-level functions for boolean query/intent predicates over user message strings. Pure, side-effect free, deterministic. No coupling to BrainSession runtime state.",
+    "estimated_extracted_lines_from_session_py": 339,
+    "estimated_shim_lines_added_to_session_py": 31,
+    "estimated_net_loc_reduction_in_session_py": 308,
+    "session_py_lines_after_estimate": 5832,
+    "symbols_to_move": {
+      "function_renames": "All 31 methods become module-level functions; the leading underscore is preserved to mark them as internal API. The `self` parameter is dropped. Bodies are unchanged.",
+      "list": [
+        {"old_method": "_looks_like_canned_failure", "new_function": "looks_like_canned_failure"},
+        {"old_method": "_is_benign_security_audit_query", "new_function": "is_benign_security_audit_query"},
+        {"old_method": "_is_confirmation", "new_function": "is_confirmation"},
+        {"old_method": "_is_code_change_request", "new_function": "is_code_change_request"},
+        {"old_method": "_is_tool_confirmation_request_response", "new_function": "is_tool_confirmation_request_response"},
+        {"old_method": "_is_dashboard_query", "new_function": "is_dashboard_query"},
+        {"old_method": "_is_greeting_query", "new_function": "is_greeting_query"},
+        {"old_method": "_is_capabilities_query", "new_function": "is_capabilities_query"},
+        {"old_method": "_is_llm_status_query", "new_function": "is_llm_status_query"},
+        {"old_method": "_is_codex_role_query", "new_function": "is_codex_role_query"},
+        {"old_method": "_is_codex_comparison_query", "new_function": "is_codex_comparison_query"},
+        {"old_method": "_is_recent_activity_query", "new_function": "is_recent_activity_query"},
+        {"old_method": "_is_chat_interaction_review_query", "new_function": "is_chat_interaction_review_query"},
+        {"old_method": "_is_brain_diagnostic_analysis_query", "new_function": "is_brain_diagnostic_analysis_query"},
+        {"old_method": "_is_grounded_code_analysis_query", "new_function": "is_grounded_code_analysis_query"},
+        {"old_method": "_is_chat_ui_background_change_query", "new_function": "is_chat_ui_background_change_query"},
+        {"old_method": "_is_chat_ui_background_restore_query", "new_function": "is_chat_ui_background_restore_query"},
+        {"old_method": "_is_chat_send_button_move_query", "new_function": "is_chat_send_button_move_query"},
+        {"old_method": "_is_brain_status_query", "new_function": "is_brain_status_query"},
+        {"old_method": "_is_deep_brain_analysis_query", "new_function": "is_deep_brain_analysis_query"},
+        {"old_method": "_looks_like_deep_analysis", "new_function": "looks_like_deep_analysis"},
+        {"old_method": "_is_deep_risk_analysis_query", "new_function": "is_deep_risk_analysis_query"},
+        {"old_method": "_is_deep_edge_analysis_query", "new_function": "is_deep_edge_analysis_query"},
+        {"old_method": "_is_deep_strategy_analysis_query", "new_function": "is_deep_strategy_analysis_query"},
+        {"old_method": "_is_deep_pipeline_analysis_query", "new_function": "is_deep_pipeline_analysis_query"},
+        {"old_method": "_is_self_build_query", "new_function": "is_self_build_query"},
+        {"old_method": "_is_self_build_resolution_query", "new_function": "is_self_build_resolution_query"},
+        {"old_method": "_is_consciousness_query", "new_function": "is_consciousness_query"},
+        {"old_method": "_is_abstract_reasoning_query", "new_function": "is_abstract_reasoning_query"},
+        {"old_method": "_is_operational_agent_query", "new_function": "is_operational_agent_query"},
+        {"old_method": "_is_temporal_query", "new_function": "is_temporal_query"}
+      ]
+    },
+    "symbols_to_reexport_from_session_py": "All 31 names remain available as bound instance methods on `BrainSession` via thin shims. No public-API change.",
+    "shim_pattern_recommendation": "Define each shim as a one-line method on BrainSession that delegates to the standalone function, e.g.:\n  def _is_dashboard_query(self, message: str) -> bool:\n      return _qp.is_dashboard_query(message)\nwhere `_qp` is the module alias `from brain_v9.core import session_query_predicates as _qp`.\n\nAlternative considered: assign as classmethod/staticmethod via class-attr assignment after class body. Less idiomatic, more error-prone in inheritance, REJECTED.",
+    "imports_in_new_module": [
+      "from __future__ import annotations",
+      "import json",
+      "import re",
+      "from typing import Optional"
+    ],
+    "module_level_constants_to_redeclare_in_new_module": [
+      "_CODE_ANALYSIS_PATH_RE — recompiled locally OR imported from session.py (must avoid circular import; recompile preferred)"
+    ],
+    "session_py_changes_required": [
+      "Insert near top of class body: `from brain_v9.core import session_query_predicates as _qp` (or import at module level above class)",
+      "Replace 31 `def _is_*` / `def _looks_like_*` method bodies with one-line delegations",
+      "Keep `_CODE_ANALYSIS_PATH_RE` definition in session.py unchanged (used elsewhere)"
+    ],
+    "main_py_changes_required": "NONE — main.py calls predicates as bound methods on BrainSession instance; shims preserve this exactly.",
+    "tests_recommended": [
+      {
+        "file": "tests/unit/test_b7_query_predicates_import_compat.py",
+        "purpose": "Verify backward-compat shim: BrainSession instance still has each predicate as bound method, returning identical results vs new standalone functions for a battery of representative inputs.",
+        "size_estimate_lines": 90
+      },
+      {
+        "file": "tests/unit/test_b7_query_predicates_behavior_smoke.py",
+        "purpose": "Exercise the new standalone functions over a small input matrix per predicate (positive + negative + edge case) to lock behavior.",
+        "size_estimate_lines": 130
+      }
+    ],
+    "validations_recommended": [
+      "py_compile session.py + session_query_predicates.py",
+      "Phase 1 baseline: powershell phase1_local_validation.ps1, test_phase1_import_baseline, test_phase1_security_defaults",
+      "B7-02 carryover: test_b7_chatmetrics_import_compat, test_b7_chatmetrics_behavior_smoke",
+      "Pre-existing predicate consumers: tests/unit/test_brain_chat_hygiene.py, test_confirmation_bug_fix.py, test_grounded_code_fastpath.py, test_b7_routing_heuristics_characterization.py",
+      "Routing-related regression: test_chat_metrics_extended.py, test_contradiction_learning_layer.py, test_semantic_coherence_validation.py, test_fases_2_3_4_routing_analytics.py",
+      "Import smoke: from brain_v9.core.session import BrainSession; assert all 31 predicate methods present and callable"
+    ],
+    "rollback_plan": "Single-commit revert: `git revert <b7-03 commit>` is sufficient (one new module + edits to session.py + 2 new test files). All changes are mechanical — bodies copied verbatim into module-level functions, shims replace original methods. No state-machine, persistence-layout, or import-graph changes.",
+    "risk_assessment": {
+      "circular_import_risk": "very_low (new module imports only stdlib re/json; session.py imports new module)",
+      "behavior_change_risk": "very_low (verbatim body copy; only `self` parameter dropped from signatures)",
+      "external_consumer_risk": "very_low (instance-method API preserved on BrainSession)",
+      "test_regression_risk": "very_low (tests call predicates on instance — shims cover this 1:1)",
+      "performance_risk": "negligible (one extra function-call frame per shim invocation; predicates are not hot-path-sensitive)"
+    }
+  },
+  "rejected_alternatives_summary": {
+    "C2_routing_constants": "Lower payoff (~145L); preferable to land second to consolidate `from session import AGENT_KEYWORDS` consumers without breaking shim test pattern.",
+    "C6_slash_command_handlers": "Higher payoff (~740L) but heavy `self.*` coupling. Should follow C1 to validate shim methodology at scale before tackling.",
+    "C7_tool01_subsystem": "Mixed I/O + governance + permission state; needs deeper audit.",
+    "C8_format_helpers": "Mixed coupling per method; needs split into pure-formatter vs session-aware sub-groups."
+  }
+}

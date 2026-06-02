@@ -1,0 +1,173 @@
+{
+  "task_id": "B7-STRANGLER-03-INVENTORY",
+  "phase": "A_inventory",
+  "target_file": "tmp_agent/brain_v9/core/session.py",
+  "head": "22c2b6af",
+  "metrics": {
+    "total_lines": 6140,
+    "top_level_classes": [
+      {"name": "BrainSession", "line": 331, "methods_count": 158}
+    ],
+    "top_level_functions": [
+      {"name": "__getattr__", "line": 265, "purpose": "PEP 562 proxy for _GLOBAL_CHAT_METRICS (B7-02)"},
+      {"name": "_normalize", "line": 318, "size_lines": 11, "purpose": "Ensure result has both content+response keys"},
+      {"name": "get_or_create_session", "line": 6137, "purpose": "Module-level session registry accessor"}
+    ],
+    "top_level_constants_count": 18,
+    "top_level_constants": [
+      {"line": 105, "name": "AGENT_INTENTS"},
+      {"line": 109, "name": "AGENT_KEYWORDS"},
+      {"line": 193, "name": "_AGENT_PATTERNS"},
+      {"line": 195, "name": "_CODE_ANALYSIS_PATH_RE"},
+      {"line": 202, "name": "_LEAK_TAIL_RE"},
+      {"line": 211, "name": "_PROCESS_START_TIME"},
+      {"line": 212, "name": "_CONTINUE_WORDS_RE"},
+      {"line": 221, "name": "_CORRECTION_RE"},
+      {"line": 239, "name": "_STATE_PATH"},
+      {"line": 240, "name": "_UI_PATH"},
+      {"line": 241, "name": "_UI_INDEX"},
+      {"line": 242, "name": "_UI_DASHBOARD"},
+      {"line": 243, "name": "_UI_EDIT_STATE_PATH"},
+      {"line": 244, "name": "_CHAT_METRICS_PATH"},
+      {"line": 245, "name": "_CHAT_SESSION_DEFAULTS_PATH"},
+      {"line": 246, "name": "_EPISODIC_MEMORY_PATH"},
+      {"line": 247, "name": "_CAPABILITY_GOVERNOR_STATUS_PATH"},
+      {"line": 274, "name": "SLASH_COMMANDS"}
+    ],
+    "section_separators": [
+      {"line": 103, "title": "Routing Constants"},
+      {"line": 250, "title": "Chat Metrics Collector (B7-02 re-export shim)"},
+      {"line": 272, "title": "Slash Commands"},
+      {"line": 308, "title": "CONSOLIDATED HEURISTIC CONSTANTS (FASE B - Deduplication)"}
+    ]
+  },
+  "structural_blocks": [
+    {
+      "block": "preamble_imports_and_routing_guards_bootstrap",
+      "lines": "1-101",
+      "size": 101,
+      "extractable": "no",
+      "reason": "Module-level imports and conditional routing-guards/authority bootstrap; foundational"
+    },
+    {
+      "block": "routing_constants_block",
+      "lines": "103-247",
+      "size": 145,
+      "extractable": "yes",
+      "candidate_id": "C2_routing_constants",
+      "deps": ["re", "time", "BASE_PATH"],
+      "external_consumers": [
+        "tests/unit/test_b7_routing_heuristics_characterization.py imports AGENT_KEYWORDS",
+        "tests/integration/test_chat_routing.py reads _AGENT_PATTERNS",
+        "tests/unit/test_brain_chat_hygiene.py reads _AGENT_PATTERNS",
+        "tmp_agent/debug_routing.py reads _AGENT_PATTERNS",
+        "tmp_agent/brain_v9/agent/loop.py reads _LEAK_TAIL_RE",
+        "tmp_agent/brain_v9/core/session_chat_metrics.py: false positive (variable name reuse, not import)"
+      ]
+    },
+    {
+      "block": "chat_metrics_reexport_shim_b7_02",
+      "lines": "250-269",
+      "size": 20,
+      "extractable": "no",
+      "reason": "Already shimmed by B7-02; do not touch"
+    },
+    {
+      "block": "slash_commands_dict",
+      "lines": "272-305",
+      "size": 34,
+      "extractable": "yes_low_value",
+      "candidate_id": "C3_slash_commands_dict",
+      "deps": [],
+      "external_consumers": []
+    },
+    {
+      "block": "normalize_helper",
+      "lines": "318-328",
+      "size": 11,
+      "extractable": "yes_low_value",
+      "candidate_id": "C4_normalize",
+      "deps": ["typing.Dict"],
+      "external_consumers": []
+    },
+    {
+      "block": "BrainSession_class_body",
+      "lines": "331-6135",
+      "size": 5805,
+      "method_count": 158
+    },
+    {
+      "block": "get_or_create_session",
+      "lines": "6137-6140",
+      "size": 4,
+      "extractable": "no",
+      "reason": "Tiny module-level accessor; no value to extract"
+    }
+  ],
+  "BrainSession_method_groups": [
+    {
+      "group": "lifecycle_and_chat_dev_mode",
+      "methods": ["__init__", "_load_chat_dev_mode_default", "_persist_chat_dev_mode_default", "close"],
+      "lines_range": "363-392, 6128-6136",
+      "approx_size": 50,
+      "candidate": "C5_chat_dev_mode_helpers (low-value, defer)"
+    },
+    {
+      "group": "main_chat_orchestrator",
+      "methods": ["chat", "_handle_command", "_utility_score", "_utility_blockers"],
+      "lines_range": "400-1126",
+      "approx_size": 727,
+      "candidate": "no_extract_core_runtime"
+    },
+    {
+      "group": "slash_command_handlers",
+      "methods": ["_cmd_help","_cmd_status","_cmd_control","_cmd_freeze","_cmd_unfreeze","_cmd_dev","_cmd_clear","_cmd_model","_cmd_autonomy","_cmd_priority","_cmd_strategy","_cmd_edge","_cmd_ranking","_cmd_trade","_cmd_pipeline","_cmd_risk","_cmd_governance","_cmd_posttrade","_cmd_hypothesis","_cmd_security","_cmd_diagnostic","_cmd_memory","_cmd_learning","_cmd_catalog","_cmd_trading_analysis","_cmd_context_edge","_cmd_mode","_cmd_approve","_cmd_reject","_cmd_pending","_cmd_schedule"],
+      "lines_range": "1127-1866",
+      "approx_size": 740,
+      "method_count": 31,
+      "candidate": "C6_slash_command_handlers"
+    },
+    {
+      "group": "routing_decision_methods",
+      "methods": ["_should_use_agent","_should_use_compact_chat_prompt","_should_use_analysis_frontier","_select_llm_chain","_select_agent_model_priority","_normalize_model_priority","_route_to_llm","_route_to_agent","_policy_route_decision","_maybe_fastpath","_prefers_no_tool_analysis","_has_explicit_tool_target"],
+      "lines_range": "1867-1916, 2243-2436, 2451-2466, 3178-3637, 3743-3873, 4794-4798, 5357-5544",
+      "approx_size": 1450,
+      "candidate": "no_extract_core_runtime_too_coupled"
+    },
+    {
+      "group": "tool01_subsystem",
+      "methods": ["_tool01_get_risk_level","_tool01_has_permission","_tool01_request_permission","_tool01_approve_permission","_tool01_router","_tool01_has_permission_grant","_tool01_handle_permission_response","_tool01_extract_path","_tool01_policy_check_path","_is_safe_workspace_path","_tool01_extract_write_content","_tool01_write_evidence","_tool01_execute"],
+      "lines_range": "2766-3177",
+      "approx_size": 412,
+      "candidate": "C7_tool01_subsystem (medium-risk, defer until predicates extracted)"
+    },
+    {
+      "group": "query_predicates_pure",
+      "methods": ["_looks_like_canned_failure","_is_benign_security_audit_query","_is_confirmation","_is_code_change_request","_is_tool_confirmation_request_response","_is_dashboard_query","_is_greeting_query","_is_capabilities_query","_is_llm_status_query","_is_codex_role_query","_is_codex_comparison_query","_is_recent_activity_query","_is_chat_interaction_review_query","_is_brain_diagnostic_analysis_query","_is_grounded_code_analysis_query","_is_chat_ui_background_change_query","_is_chat_ui_background_restore_query","_is_chat_send_button_move_query","_is_brain_status_query","_is_deep_brain_analysis_query","_looks_like_deep_analysis","_is_deep_risk_analysis_query","_is_deep_edge_analysis_query","_is_deep_strategy_analysis_query","_is_deep_pipeline_analysis_query","_is_self_build_query","_is_self_build_resolution_query","_is_consciousness_query","_is_abstract_reasoning_query","_is_operational_agent_query","_is_temporal_query"],
+      "method_count": 31,
+      "approx_size": 339,
+      "self_dot_references_in_bodies": 0,
+      "module_level_deps": ["re", "json", "_CODE_ANALYSIS_PATH_RE"],
+      "candidate": "C1_query_predicates_pure (RECOMMENDED)"
+    },
+    {
+      "group": "fastpath_renderers",
+      "methods": ["_llm_status_fastpath","_codex_role_fastpath","_codex_comparison_fastpath","_recent_activity_fastpath","_chat_interaction_review_fastpath","_maybe_grounded_code_analysis_fastpath","_maybe_grounded_ui_edit_fastpath","_maybe_qc_live_fastpath","_health_fastpath","_greeting_fastpath","_capabilities_fastpath","_brain_status_fastpath","_deep_brain_analysis_fastpath","_deep_risk_analysis_fastpath","_deep_edge_analysis_fastpath","_deep_strategy_analysis_fastpath","_deep_pipeline_analysis_fastpath","_self_build_fastpath","_self_build_resolution_fastpath","_consciousness_fastpath","_dashboard_status_fastpath","_utility_status_fastpath","_python_version_fastpath","_disk_space_fastpath","_running_services_fastpath","_search_files_fastpath","_list_directory_fastpath","_current_time_fastpath"],
+      "approx_size": 800,
+      "candidate": "C8_fastpath_renderers (high coupling to self.*, defer)"
+    },
+    {
+      "group": "format_helpers_fmt",
+      "methods": ["_fmt_check_port","_fmt_check_http_service","_fmt_check_all_services","_fmt_check_service_status","_fmt_get_live_autonomy_status","_fmt_run_diagnostic","_fmt_get_system_info","_fmt_run_command","_fmt_read_file","_fmt_list_directory","_fmt_search_files","_fmt_list_processes","_fmt_grep_codebase","_fmt_list_recent_brain_changes","_fmt_get_chat_metrics","_fmt_semantic_memory_search","_fmt_get_technical_introspection","_format_tool_result","_format_action_value","_summarize_action_output","_render_operational_agent_summary","_render_agent_failure_reply","_agent_failure_notice"],
+      "lines_range": "4817-5337, etc.",
+      "approx_size": 700,
+      "candidate": "C9_format_helpers (medium coupling, defer)"
+    },
+    {
+      "group": "memory_and_persistence_helpers",
+      "methods": ["_save_turn","_sanitize_memory_content","_maybe_persist_correction","_get_curated_ingestion_response","_truncate_message","_truncate_to_budget","_context_budget","_sanitize_llm_chat_response","_contains_raw_tool_markup","_sanitize_user_visible_response","_emit_chat_completed","_is_agent_execution_failure","_maybe_emit_capability_decline","_llm_direct_fallback","_llm_agent_salvage","_set_pending_continuation","_clear_pending_continuation","_maybe_resume_pending_continuation","_maybe_dev_block","_system_reply"],
+      "approx_size": 700,
+      "candidate": "C10_memory_helpers (high coupling, defer)"
+    }
+  ]
+}

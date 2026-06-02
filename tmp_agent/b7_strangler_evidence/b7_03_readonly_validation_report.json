@@ -1,0 +1,42 @@
+{
+  "task": "B7-STRANGLER-03-INVENTORY",
+  "phase": "D_readonly_validation",
+  "head": "22c2b6affd2efabcb40cbf6eccbea67a1d3439d7",
+  "branch": "codex/own-capital-sustainable-return",
+  "validations": [
+    {
+      "name": "phase1_local_validation_ps1",
+      "command": "powershell -ExecutionPolicy Bypass -File tmp_agent/brain_v9/ops/phase1_local_validation.ps1",
+      "result": "PASS",
+      "summary": "PHASE1_LOCAL_VALIDATION: ALL PASS (py_compile x5, test_execution_gate_god_p3, test_dev_endpoints_default_off, test_selfdev_protected_paths, import smoke)"
+    },
+    {
+      "name": "test_phase1_import_baseline",
+      "command": "python tests/unit/test_phase1_import_baseline.py",
+      "result": "PASS",
+      "summary": "OK: test_phase1_import_baseline"
+    },
+    {
+      "name": "test_phase1_security_defaults",
+      "command": "python tests/unit/test_phase1_security_defaults.py",
+      "result": "PASS",
+      "summary": "OK: test_phase1_security_defaults"
+    },
+    {
+      "name": "b7_chatmetrics_pytest",
+      "command": "python -m pytest tests/unit/test_b7_chatmetrics_import_compat.py tests/unit/test_b7_chatmetrics_behavior_smoke.py -v",
+      "result": "PASS",
+      "summary": "15 passed in 0.51s (7 import_compat + 8 behavior_smoke)"
+    },
+    {
+      "name": "baseline_import_smoke",
+      "command": "python -c \"from brain_v9.core.session import BrainSession, ChatMetrics, get_chat_metrics; ...\"",
+      "result": "PASS",
+      "summary": "B7_03_BASELINE_IMPORT_OK True True True"
+    }
+  ],
+  "validations_passed": 5,
+  "validations_failed": 0,
+  "session_py_modified": false,
+  "protected_paths_touched": false
+}

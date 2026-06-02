@@ -1,0 +1,42 @@
+{
+  "task_id": "B7-STRANGLER-03-INVENTORY",
+  "phase": "preflight",
+  "repo_root": "C:/AI_VAULT",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head_short": "22c2b6af",
+  "origin_head_short": "22c2b6af",
+  "head_synced_with_origin": true,
+  "expected_head": "22c2b6af",
+  "head_matches_expected": true,
+  "staged_files_count": 0,
+  "staged_files": [],
+  "tracked_dirty_files": [
+    "memory/semantic/semantic_memory.jsonl"
+  ],
+  "untracked_unrelated_artifacts": [
+    "apply_chat_patch.py",
+    "tmp_agent/bor3_llm_audit.py",
+    "tmp_agent/bor3_llm_audit_results.json",
+    "tmp_agent/brain_v9/chat_area_upgrade/chat_e_router_llm_tools_diagnostic_report.json",
+    "tmp_agent/brain_v9/chat_area_upgrade/rollback/",
+    "tmp_agent/brain_v9/ops/smoke_read_file.ps1",
+    "tmp_agent/brain_v9/ops/smoke_write_file.ps1",
+    "tmp_agent/brain_v9/ops/tool01_write_test.py",
+    "tmp_agent/strategies/mean_reversion_eq/* (~120 untracked run_phase*.py and snapshots)",
+    "tmp_agent/visual_trace_console_v1/vtc_c1_runtime_smoke_transcript.md"
+  ],
+  "protected_paths_check": "all dirty files are within already-known protected/untouched zones (memory/semantic, tmp_agent/strategies, ops smoke artifacts). NOT touched by this task.",
+  "session_py_modification_in_this_task": false,
+  "rules_compliance": {
+    "no_commit": true,
+    "no_push": true,
+    "no_add": true,
+    "no_reset": true,
+    "no_checkout": true,
+    "no_clean": true,
+    "no_stash": true,
+    "no_protected_paths_modified": true,
+    "no_existing_tests_modified": true
+  },
+  "ready_to_proceed": true
+}
