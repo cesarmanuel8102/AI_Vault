@@ -1,0 +1,616 @@
+diff --git a/tests/unit/test_b7_routing_constants_behavior_smoke.py b/tests/unit/test_b7_routing_constants_behavior_smoke.py
+new file mode 100644
+index 00000000..fc31d9b0
+--- /dev/null
++++ b/tests/unit/test_b7_routing_constants_behavior_smoke.py
+@@ -0,0 +1,94 @@
++"""B7-STRANGLER-04 behavior smoke: pin regex semantics for the 7 extracted
++constants so any future edit that breaks behavior is caught here."""
++from __future__ import annotations
++
++import os
++import re
++import sys
++import unittest
++
++_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
++_TMP_AGENT = os.path.join(_REPO_ROOT, "tmp_agent")
++if _TMP_AGENT not in sys.path:
++    sys.path.insert(0, _TMP_AGENT)
++
++
++class TestB7RoutingConstantsBehaviorSmoke(unittest.TestCase):
++    @classmethod
++    def setUpClass(cls):
++        from brain_v9.core import session_routing_constants as rc
++        cls.rc = rc
++
++    def test_agent_intents_canonical_set(self):
++        self.assertEqual(self.rc.AGENT_INTENTS, {"SYSTEM", "CODE", "COMMAND", "TRADING"})
++
++    def test_agent_patterns_length_matches_keywords(self):
++        self.assertEqual(len(self.rc._AGENT_PATTERNS), len(self.rc.AGENT_KEYWORDS))
++        for p in self.rc._AGENT_PATTERNS:
++            self.assertIsInstance(p, re.Pattern)
++            self.assertTrue(p.flags & re.IGNORECASE)
++
++    def test_agent_keywords_match_representative_phrases(self):
++        # If ANY pattern matches, classification considers it tool-worthy.
++        positives = [
++            "revisa el archivo brain.log",
++            "verify the dashboard tab",
++            "list files in tmp_agent",
++            "scan red local 192.168.1.0/24",
++            "ejecutar backtest en quantconnect",
++            "muestra el estado del proceso",
++            "freeze strategy mean_reversion",
++            "show me the orders for paper account",
++        ]
++        for text in positives:
++            self.assertTrue(
++                any(p.search(text) for p in self.rc._AGENT_PATTERNS),
++                f"Expected at least one AGENT_KEYWORDS match for: {text!r}",
++            )
++
++    def test_agent_keywords_do_not_match_pure_chitchat(self):
++        # Pure greetings/chit-chat must NOT match any agent keyword.
++        negatives = ["hola", "gracias", "ok"]
++        for text in negatives:
++            self.assertFalse(
++                any(p.search(text) for p in self.rc._AGENT_PATTERNS),
++                f"Did NOT expect any AGENT_KEYWORDS match for chitchat: {text!r}",
++            )
++
++    def test_code_analysis_path_re_matches_windows_and_unix_paths(self):
++        rgx = self.rc._CODE_ANALYSIS_PATH_RE
++        self.assertIsNotNone(rgx.search(r"please look at C:\AI_VAULT\tmp_agent\brain_v9\core\session.py"))
++        self.assertIsNotNone(rgx.search("see tmp_agent/brain_v9/core/session.py for details"))
++        self.assertIsNone(rgx.search("just a casual sentence with no path"))
++
++    def test_leak_tail_re_detects_cot_leak(self):
++        rgx = self.rc._LEAK_TAIL_RE
++        self.assertIsNotNone(rgx.search("revisando el archivo de configuración..."))
++        self.assertIsNotNone(rgx.search("analizando los datos del usuario...."))
++        self.assertIsNone(rgx.search("Aquí está el resultado final."))
++
++    def test_continue_words_re_detects_short_continue(self):
++        rgx = self.rc._CONTINUE_WORDS_RE
++        for text in ["continua", "continúa", "sigue", "go on", "keep going", "expand"]:
++            self.assertIsNotNone(rgx.match(text), f"expected continue-match for {text!r}")
++        for text in ["dame un reporte completo", "ejecuta esto"]:
++            self.assertIsNone(rgx.match(text), f"did NOT expect continue-match for {text!r}")
++
++    def test_correction_re_detects_user_corrections(self):
++        rgx = self.rc._CORRECTION_RE
++        positives = [
++            "no, te equivocaste con el nombre",
++            "estas mal, el correcto es otro",
++            "eso es incorrecto",
++            "esa tool no existe",
++            "lo correcto es usar tool01",
++        ]
++        for text in positives:
++            self.assertIsNotNone(rgx.search(text), f"expected correction-match for {text!r}")
++        negatives = ["gracias por la respuesta", "perfecto, sigamos"]
++        for text in negatives:
++            self.assertIsNone(rgx.search(text), f"did NOT expect correction-match for {text!r}")
++
++
++if __name__ == "__main__":
++    unittest.main(verbosity=2)
+diff --git a/tests/unit/test_b7_routing_constants_import_compat.py b/tests/unit/test_b7_routing_constants_import_compat.py
+new file mode 100644
+index 00000000..64aa6d14
+--- /dev/null
++++ b/tests/unit/test_b7_routing_constants_import_compat.py
+@@ -0,0 +1,76 @@
++"""B7-STRANGLER-04 import-compat: routing constants re-exported from
++brain_v9.core.session must be the *same objects* as those defined in
++brain_v9.core.session_routing_constants.
++"""
++from __future__ import annotations
++
++import os
++import sys
++import unittest
++
++_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
++_TMP_AGENT = os.path.join(_REPO_ROOT, "tmp_agent")
++if _TMP_AGENT not in sys.path:
++    sys.path.insert(0, _TMP_AGENT)
++
++
++class TestB7RoutingConstantsImportCompat(unittest.TestCase):
++    def test_identity_across_session_and_routing_constants(self):
++        from brain_v9.core import session as session_mod
++        from brain_v9.core import session_routing_constants as rc
++
++        names = [
++            "AGENT_INTENTS",
++            "AGENT_KEYWORDS",
++            "_AGENT_PATTERNS",
++            "_CODE_ANALYSIS_PATH_RE",
++            "_LEAK_TAIL_RE",
++            "_CONTINUE_WORDS_RE",
++            "_CORRECTION_RE",
++        ]
++        for name in names:
++            self.assertTrue(
++                hasattr(session_mod, name),
++                f"session module missing re-exported name: {name}",
++            )
++            self.assertTrue(
++                hasattr(rc, name),
++                f"session_routing_constants missing name: {name}",
++            )
++            self.assertIs(
++                getattr(session_mod, name),
++                getattr(rc, name),
++                f"{name} is not the same object across modules",
++            )
++
++    def test_direct_import_from_session_works(self):
++        # Existing external callers do this; must keep working.
++        from brain_v9.core.session import (  # noqa: F401
++            AGENT_INTENTS,
++            AGENT_KEYWORDS,
++            _AGENT_PATTERNS,
++            _CODE_ANALYSIS_PATH_RE,
++            _LEAK_TAIL_RE,
++            _CONTINUE_WORDS_RE,
++            _CORRECTION_RE,
++        )
++        self.assertIsInstance(AGENT_INTENTS, set)
++        self.assertIsInstance(AGENT_KEYWORDS, list)
++        self.assertGreater(len(AGENT_KEYWORDS), 50)
++        self.assertEqual(len(_AGENT_PATTERNS), len(AGENT_KEYWORDS))
++
++    def test_direct_import_from_routing_constants_works(self):
++        from brain_v9.core.session_routing_constants import (  # noqa: F401
++            AGENT_INTENTS,
++            AGENT_KEYWORDS,
++            _AGENT_PATTERNS,
++            _CODE_ANALYSIS_PATH_RE,
++            _LEAK_TAIL_RE,
++            _CONTINUE_WORDS_RE,
++            _CORRECTION_RE,
++        )
++        self.assertEqual(AGENT_INTENTS, {"SYSTEM", "CODE", "COMMAND", "TRADING"})
++
++
++if __name__ == "__main__":
++    unittest.main(verbosity=2)
+diff --git a/tests/unit/test_b7_routing_constants_no_session_dependency.py b/tests/unit/test_b7_routing_constants_no_session_dependency.py
+new file mode 100644
+index 00000000..e6bbf03c
+--- /dev/null
++++ b/tests/unit/test_b7_routing_constants_no_session_dependency.py
+@@ -0,0 +1,92 @@
++"""B7-STRANGLER-04 isolation test: session_routing_constants must NOT depend on
++brain_v9.core.session, BrainSession, or any ``self``/``cls`` reference.
++"""
++from __future__ import annotations
++
++import importlib
++import os
++import re
++import sys
++import unittest
++
++_REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
++_TMP_AGENT = os.path.join(_REPO_ROOT, "tmp_agent")
++if _TMP_AGENT not in sys.path:
++    sys.path.insert(0, _TMP_AGENT)
++
++
++class TestB7RoutingConstantsNoSessionDependency(unittest.TestCase):
++    MODULE_PATH = os.path.join(
++        _TMP_AGENT, "brain_v9", "core", "session_routing_constants.py"
++    )
++
++    def setUp(self):
++        with open(self.MODULE_PATH, "r", encoding="utf-8") as fh:
++            self.source = fh.read()
++
++    def test_module_does_not_import_brain_v9_core_session(self):
++        for line in self.source.splitlines():
++            stripped = line.strip()
++            if stripped.startswith("import ") or stripped.startswith("from "):
++                self.assertNotIn(
++                    "brain_v9.core.session",
++                    stripped,
++                    f"Forbidden import of session module: {stripped!r}",
++                )
++
++    def test_module_does_not_reference_brain_session_class(self):
++        import ast
++
++        tree = ast.parse(self.source)
++        body = list(tree.body)
++        if (
++            body
++            and isinstance(body[0], ast.Expr)
++            and isinstance(body[0].value, ast.Constant)
++            and isinstance(body[0].value.value, str)
++        ):
++            body = body[1:]
++        cleaned = "\n".join(ast.unparse(node) for node in body)
++        for node in ast.walk(ast.parse(cleaned)):
++            if isinstance(node, ast.Constant) and isinstance(node.value, str):
++                node.value = ""
++        wiped = ast.unparse(ast.parse(cleaned))
++        self.assertNotIn("BrainSession", wiped)
++
++    def test_module_has_no_self_or_cls_references(self):
++        self.assertNotRegex(self.source, r"\bself\.")
++        self.assertNotRegex(self.source, r"\bcls\.")
++
++    def test_module_imports_are_minimal(self):
++        allowed_top = {"__future__", "re"}
++        observed_top = set()
++        for line in self.source.splitlines():
++            m = re.match(r"^\s*from\s+(\S+)\s+import\b", line)
++            if m:
++                observed_top.add(m.group(1).split(".")[0])
++                continue
++            m = re.match(r"^\s*import\s+(\S+)", line)
++            if m:
++                observed_top.add(m.group(1).split(".")[0])
++        unexpected = observed_top - allowed_top
++        self.assertFalse(
++            unexpected,
++            f"Unexpected imports in session_routing_constants: {unexpected}",
++        )
++
++    def test_module_imports_in_isolation_without_session(self):
++        for mod in [
++            "brain_v9.core.session_routing_constants",
++            "brain_v9.core.session",
++        ]:
++            sys.modules.pop(mod, None)
++        importlib.import_module("brain_v9.core.session_routing_constants")
++        self.assertNotIn(
++            "brain_v9.core.session",
++            sys.modules,
++            "Importing session_routing_constants pulled in session.py (circular risk)",
++        )
++
++
++if __name__ == "__main__":
++    unittest.main(verbosity=2)
+diff --git a/tmp_agent/brain_v9/core/session.py b/tmp_agent/brain_v9/core/session.py
+index a4716ecd..aa2e873e 100644
+--- a/tmp_agent/brain_v9/core/session.py
++++ b/tmp_agent/brain_v9/core/session.py
+@@ -101,139 +101,25 @@ except Exception:
+ 
+ 
+ # ── Routing Constants ─────────────────────────────────────────────────────────
+-
+-AGENT_INTENTS = {"SYSTEM", "CODE", "COMMAND", "TRADING"}
+-
+-# Words that REQUIRE tool execution (not just informational questions).
+-# Matched with word boundaries to avoid false positives like "log" in "lograr".
+-AGENT_KEYWORDS = [
+-    # ── Spanish imperative actions ──
+-    r"\brevisa\b", r"\bverifica\b", r"\bdiagnostica\b", r"\bchequea\b",
+-    r"\bejecutar?\b", r"\bcorre\b", r"\binspecciona\b",
+-    r"\barregla\b", r"\binicia\b", r"\barranca\b",
+-    r"\bdetén\b", r"\breinicia\b",
+-    r"\blee\b", r"\bleer\b", r"\bmuestra\b", r"\babre\b",
+-    r"\blista\b", r"\blistar\b", r"\blistame\b", r"\blistá\b",
+-    r"\bdescribe\b", r"\bdescribir\b", r"\benumera\b",
+-    r"\bcambios?\b", r"\bmodificaci[oó]n(?:es)?\b", r"\bmejoras?\b",
+-    r"\brecientes?\b", r"\bultimos?\b", r"\bú?ltimos?\b",
+-    r"\bbrain\b", r"\bcerebro\b", r"\bsistema\b",
+-    # PHASE R3.1: UI / dashboard queries — must fetch HTML, not search backend code
+-    r"\bpesta[ñn]a\b", r"\btab\b", r"\bdashboard\b", r"\bui\b", r"\bgui\b",
+-    r"\binterfaz\b", r"\bventana\b", r"\bpantalla\b", r"\bvista\b",
+-    # ── English imperative actions ──
+-    r"\bcheck\b", r"\bverify\b", r"\bdiagnose\b", r"\binspect\b",
+-    r"\bexecute\b", r"\brun\b", r"\bfix\b", r"\bstart\b", r"\bstop\b",
+-    r"\brestart\b", r"\blaunch\b",
+-    r"\bread\b", r"\bopen\b", r"\bcat\b",
+-    # ── Spanish system queries (need live data) ──
+-    r"\bestado de\b", r"\bestado del\b",
+-    r"\bpuerto\b", r"\bproceso\b", r"\blogs?\b",
+-    r"\barchivo\b", r"\bcarpeta\b", r"\bdirectorio\b",
+-    r"\bque hay en\b", r"\bqué hay en\b",
+-    r"\bque esta corriendo\b", r"\bqué está corriendo\b",
+-    r"\bcorriendo en\b",
+-    # ── Path-like patterns (user referencing a file path) ──
+-    r"\b\w+\.py\b", r"\b\w+\.json\b", r"\b\w+\.log\b", r"\b\w+\.yaml\b",
+-    # ── English system queries (need live data) ──
+-    r"\bstatus of\b", r"\bstatus\b",
+-    r"\bport\b", r"\bprocess\b", r"\blogs?\b",
+-    r"\bfile\b", r"\bfolder\b", r"\bdirectory\b",
+-    r"\bwhat.?s running\b", r"\bshow me\b",
+-    r"\blist\b",
+-    # ── R22: anti-hallucination — quantitative & scan/network queries ──
+-    # Plurals & "cuántos" - prevent LLM from fabricating counts
+-    r"\barchivos?\b", r"\bcarpetas?\b", r"\bdirectorios?\b",
+-    r"\bprocesos?\b", r"\bpuertos?\b", r"\bhosts?\b",
+-    r"\bcu[aá]nt[oa]s?\b", r"\bhow\s+many\b",
+-    # Network scan keywords
+-    r"\bescane[oa]r?\b", r"\bescanea\b", r"\bscan\b", r"\bsweep\b",
+-    r"\bred\s+local\b", r"\blocal\s+network\b", r"\bnetwork\b",
+-    # CIDR / IPv4 in message — strong signal of operational intent
+-    r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(?:/\d{1,2})?\b",
+-    # Report / mini-report intent
+-    r"\breporte\b", r"\breport\b", r"\bmini[\s-]?reporte\b",
+-    # ── End R22 ──
+-    # ── Connection / access actions ──
+-    r"\bconecta\b", r"\bconectate\b", r"\bconnect\b",
+-    r"\baccede\b", r"\bacceder\b", r"\baccess\b",
+-    # ── Tool / capability queries ──
+-    r"\bherramienta\b", r"\btool\b", r"\bnecesita\b", r"\bfalta\b",
+-    # ── Install / package ──
+-    r"\binstala\b", r"\binstall\b",
+-    # ── Trading platforms ──
+-    r"\bquantconnect\b", r"\bqc\b", r"\bbacktest\b",
+-    r"\bibkr\b", r"\binteractive.?brokers?\b",
+-    # ── Download / fetch actions ──
+-    r"\bobtener\b", r"\bdescargar\b", r"\bdownload\b", r"\bextraer\b",
+-    # ── API / credentials ──
+-    r"\bapi\b", r"\bcredencial\b", r"\bcredentials?\b",
+-    # ── Trading pipeline bridge (Phase III) ──
+-    r"\bestrategia\b", r"\bestrategias\b", r"\bstrategy\b", r"\bstrategies\b",
+-    r"\bcongela\b", r"\bfreeze\b", r"\bdescongela\b", r"\bunfreeze\b",
+-    r"\bscorecard\b", r"\bscorecards\b",
+-    r"\bledger\b", r"\btrades\b", r"\bhistorial\b",
+-    r"\bacción\b", r"\bacciones\b",
+-    r"\bexpectancy\b", r"\bwin.?rate\b", r"\bpnl\b",
+-    # ── Closed-loop trading (Phase 9) ──
+-    r"\borden\b", r"\border\b", r"\borders\b", r"\bordenes\b",
+-    r"\bposicion\b", r"\bposiciones\b", r"\bpositions?\b",
+-    r"\bpaper\b", r"\bpaper.?trad\b",
+-    r"\bingesta\b", r"\bingest\b",
+-    r"\bpromoci[oó]n\b", r"\bpromot\b", r"\bpromover\b",
+-    r"\bcuenta\b", r"\baccount\b",
+-    r"\blive.?paper\b",
+-    # ── Subsystem-specific (language-neutral) ──
+-    r"\bdashboard\b", r"\bpocketoption\b", r"\brooms\b",
+-    r"\bautonomía\b", r"\bautonomia\b", r"\bdiagnóstico\b",
+-    r"\bautonomy\b", r"\bdiagnostic\b",
+-]
+-
+-# Pre-compile for performance
+-_AGENT_PATTERNS = [re.compile(p, re.IGNORECASE) for p in AGENT_KEYWORDS]
+-
+-_CODE_ANALYSIS_PATH_RE = re.compile(
+-    r"(?P<path>(?:[A-Za-z]:[\\/][^\\/:*?\"<>|\r\n]+(?:[\\/][^\\/:*?\"<>|\r\n]+)*|"
+-    r"(?:tmp_agent|brain|core|tests)[\\/][^\s\"']+\.(?:py|json|md|txt|ps1|yaml|yml)))",
+-    re.IGNORECASE,
+-)
+-
+-# PHASE R3: detect chain-of-thought leak in final responses (used by chat() guard)
+-_LEAK_TAIL_RE = re.compile(
+-    r"(?:revisando|verificando|analizando|consultando|comprobando|chequeando|buscando|procesando|pensando|esperando|explorando)"
+-    r"[^.\n]{0,120}\.{3,}\s*$",
+-    re.IGNORECASE,
++# B7-STRANGLER-04: Routing/regex constants extracted to
++# brain_v9.core.session_routing_constants. Re-exported below for full backward
++# compatibility (existing callers import these names directly from
++# brain_v9.core.session, and tests monkeypatch session_mod._AGENT_PATTERNS).
++from brain_v9.core.session_routing_constants import (  # noqa: F401  (re-export)
++    AGENT_INTENTS,
++    AGENT_KEYWORDS,
++    _AGENT_PATTERNS,
++    _CODE_ANALYSIS_PATH_RE,
++    _LEAK_TAIL_RE,
++    _CONTINUE_WORDS_RE,
++    _CORRECTION_RE,
+ )
+ 
+-# PHASE R3.1: track process start time and detect short "continue" messages
++# PHASE R3.1: track process start time (must anchor to session.py module-load
++# time, so this stays in session.py and is NOT moved to session_routing_constants).
+ import time as _r3_time
+ import threading as _threading
+ _PROCESS_START_TIME = _r3_time.monotonic()
+-_CONTINUE_WORDS_RE = re.compile(
+-    r"^\s*(?:continua|continúa|continue|sigue|seguir|prosigue|adelante|y\s*\?|y\s+que\s+mas\??|mas\??|mas detalle|más|"
+-    r"mas info|sigue\s+por\s+favor|mas|next|go on|keep going|expand|expande)\s*[\.\!\?]*\s*$",
+-    re.IGNORECASE,
+-)
+-
+-# PHASE R4.4: detect user corrections to persist them in semantic memory
+-# Matches: "no, eso es...", "te equivocas/equivocaste", "estas mal", "el correcto es",
+-# "el nombre real es", "es X no Y", "incorrecto", "falso", "mentira", "no es asi"
+-_CORRECTION_RE = re.compile(
+-    r"\b("
+-    r"no\s+es\s+(?:asi|así|cierto|correcto|verdad)|"
+-    r"te\s+equivoca(?:s|ste)|"
+-    r"est[áa]s?\s+(?:mal|equivocad[oa])|"
+-    r"(?:eso|esto|lo\s+que\s+dijiste)\s+(?:es|esta|está)\s+(?:mal|incorrecto|falso|equivocad[oa])|"
+-    r"el\s+(?:nombre\s+)?(?:real|correcto|verdadero)\s+es|"
+-    r"en\s+realidad\s+es|"
+-    r"corrige|corrigete|corríjete|"
+-    r"incorrecto|"
+-    r"esa\s+tool\s+no\s+(?:existe|es)|"
+-    r"esa\s+(?:funci[óo]n|herramienta|api)\s+no\s+(?:existe|es)|"
+-    r"lo\s+correcto\s+es"
+-    r")\b",
+-    re.IGNORECASE,
+-)
+ 
+ # State paths (derived from config, not hardcoded)
+ _STATE_PATH = BASE_PATH / "tmp_agent" / "state"
+diff --git a/tmp_agent/brain_v9/core/session_routing_constants.py b/tmp_agent/brain_v9/core/session_routing_constants.py
+new file mode 100644
+index 00000000..2f10e7da
+--- /dev/null
++++ b/tmp_agent/brain_v9/core/session_routing_constants.py
+@@ -0,0 +1,172 @@
++"""Routing constants extracted from BrainSession (B7-STRANGLER-04).
++
++This module hosts the agent-routing keyword lists, pre-compiled keyword
++patterns, and the ancillary regex patterns used by BrainSession's chat
++pipeline (path detection, chain-of-thought leak detection, "continue"
++short-message detection, user-correction detection).
++
++These symbols are re-exported from ``brain_v9.core.session`` for full
++backward compatibility (existing tests, debug scripts and external callers
++that monkeypatch ``session_mod._AGENT_PATTERNS`` continue to work
++unchanged).
++
++Design rules (do not break):
++- No I/O, no network, no globals/state.
++- Does NOT import brain_v9.core.session (avoids circular import).
++- Does NOT reference BrainSession.
++- Does NOT use ``self`` or ``cls``.
++- Only depends on the standard library ``re`` module.
++
++Symbols extracted:
++- ``AGENT_INTENTS``           : set[str] of canonical intent labels.
++- ``AGENT_KEYWORDS``          : list[str] of raw regex sources.
++- ``_AGENT_PATTERNS``         : list[re.Pattern] pre-compiled with IGNORECASE.
++- ``_CODE_ANALYSIS_PATH_RE``  : re.Pattern detecting Windows / unix-style paths.
++- ``_LEAK_TAIL_RE``           : re.Pattern detecting CoT leak tails.
++- ``_CONTINUE_WORDS_RE``      : re.Pattern detecting short "continue" messages.
++- ``_CORRECTION_RE``          : re.Pattern detecting user corrections.
++"""
++
++from __future__ import annotations
++
++import re
++
++AGENT_INTENTS = {"SYSTEM", "CODE", "COMMAND", "TRADING"}
++
++# Words that REQUIRE tool execution (not just informational questions).
++# Matched with word boundaries to avoid false positives like "log" in "lograr".
++AGENT_KEYWORDS = [
++    # ── Spanish imperative actions ──
++    r"\brevisa\b", r"\bverifica\b", r"\bdiagnostica\b", r"\bchequea\b",
++    r"\bejecutar?\b", r"\bcorre\b", r"\binspecciona\b",
++    r"\barregla\b", r"\binicia\b", r"\barranca\b",
++    r"\bdetén\b", r"\breinicia\b",
++    r"\blee\b", r"\bleer\b", r"\bmuestra\b", r"\babre\b",
++    r"\blista\b", r"\blistar\b", r"\blistame\b", r"\blistá\b",
++    r"\bdescribe\b", r"\bdescribir\b", r"\benumera\b",
++    r"\bcambios?\b", r"\bmodificaci[oó]n(?:es)?\b", r"\bmejoras?\b",
++    r"\brecientes?\b", r"\bultimos?\b", r"\bú?ltimos?\b",
++    r"\bbrain\b", r"\bcerebro\b", r"\bsistema\b",
++    # PHASE R3.1: UI / dashboard queries — must fetch HTML, not search backend code
++    r"\bpesta[ñn]a\b", r"\btab\b", r"\bdashboard\b", r"\bui\b", r"\bgui\b",
++    r"\binterfaz\b", r"\bventana\b", r"\bpantalla\b", r"\bvista\b",
++    # ── English imperative actions ──
++    r"\bcheck\b", r"\bverify\b", r"\bdiagnose\b", r"\binspect\b",
++    r"\bexecute\b", r"\brun\b", r"\bfix\b", r"\bstart\b", r"\bstop\b",
++    r"\brestart\b", r"\blaunch\b",
++    r"\bread\b", r"\bopen\b", r"\bcat\b",
++    # ── Spanish system queries (need live data) ──
++    r"\bestado de\b", r"\bestado del\b",
++    r"\bpuerto\b", r"\bproceso\b", r"\blogs?\b",
++    r"\barchivo\b", r"\bcarpeta\b", r"\bdirectorio\b",
++    r"\bque hay en\b", r"\bqué hay en\b",
++    r"\bque esta corriendo\b", r"\bqué está corriendo\b",
++    r"\bcorriendo en\b",
++    # ── Path-like patterns (user referencing a file path) ──
++    r"\b\w+\.py\b", r"\b\w+\.json\b", r"\b\w+\.log\b", r"\b\w+\.yaml\b",
++    # ── English system queries (need live data) ──
++    r"\bstatus of\b", r"\bstatus\b",
++    r"\bport\b", r"\bprocess\b", r"\blogs?\b",
++    r"\bfile\b", r"\bfolder\b", r"\bdirectory\b",
++    r"\bwhat.?s running\b", r"\bshow me\b",
++    r"\blist\b",
++    # ── R22: anti-hallucination — quantitative & scan/network queries ──
++    # Plurals & "cuántos" - prevent LLM from fabricating counts
++    r"\barchivos?\b", r"\bcarpetas?\b", r"\bdirectorios?\b",
++    r"\bprocesos?\b", r"\bpuertos?\b", r"\bhosts?\b",
++    r"\bcu[aá]nt[oa]s?\b", r"\bhow\s+many\b",
++    # Network scan keywords
++    r"\bescane[oa]r?\b", r"\bescanea\b", r"\bscan\b", r"\bsweep\b",
++    r"\bred\s+local\b", r"\blocal\s+network\b", r"\bnetwork\b",
++    # CIDR / IPv4 in message — strong signal of operational intent
++    r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(?:/\d{1,2})?\b",
++    # Report / mini-report intent
++    r"\breporte\b", r"\breport\b", r"\bmini[\s-]?reporte\b",
++    # ── End R22 ──
++    # ── Connection / access actions ──
++    r"\bconecta\b", r"\bconectate\b", r"\bconnect\b",
++    r"\baccede\b", r"\bacceder\b", r"\baccess\b",
++    # ── Tool / capability queries ──
++    r"\bherramienta\b", r"\btool\b", r"\bnecesita\b", r"\bfalta\b",
++    # ── Install / package ──
++    r"\binstala\b", r"\binstall\b",
++    # ── Trading platforms ──
++    r"\bquantconnect\b", r"\bqc\b", r"\bbacktest\b",
++    r"\bibkr\b", r"\binteractive.?brokers?\b",
++    # ── Download / fetch actions ──
++    r"\bobtener\b", r"\bdescargar\b", r"\bdownload\b", r"\bextraer\b",
++    # ── API / credentials ──
++    r"\bapi\b", r"\bcredencial\b", r"\bcredentials?\b",
++    # ── Trading pipeline bridge (Phase III) ──
++    r"\bestrategia\b", r"\bestrategias\b", r"\bstrategy\b", r"\bstrategies\b",
++    r"\bcongela\b", r"\bfreeze\b", r"\bdescongela\b", r"\bunfreeze\b",
++    r"\bscorecard\b", r"\bscorecards\b",
++    r"\bledger\b", r"\btrades\b", r"\bhistorial\b",
++    r"\bacción\b", r"\bacciones\b",
++    r"\bexpectancy\b", r"\bwin.?rate\b", r"\bpnl\b",
++    # ── Closed-loop trading (Phase 9) ──
++    r"\borden\b", r"\border\b", r"\borders\b", r"\bordenes\b",
++    r"\bposicion\b", r"\bposiciones\b", r"\bpositions?\b",
++    r"\bpaper\b", r"\bpaper.?trad\b",
++    r"\bingesta\b", r"\bingest\b",
++    r"\bpromoci[oó]n\b", r"\bpromot\b", r"\bpromover\b",
++    r"\bcuenta\b", r"\baccount\b",
++    r"\blive.?paper\b",
++    # ── Subsystem-specific (language-neutral) ──
++    r"\bdashboard\b", r"\bpocketoption\b", r"\brooms\b",
++    r"\bautonomía\b", r"\bautonomia\b", r"\bdiagnóstico\b",
++    r"\bautonomy\b", r"\bdiagnostic\b",
++]
++
++# Pre-compile for performance
++_AGENT_PATTERNS = [re.compile(p, re.IGNORECASE) for p in AGENT_KEYWORDS]
++
++_CODE_ANALYSIS_PATH_RE = re.compile(
++    r"(?P<path>(?:[A-Za-z]:[\\/][^\\/:*?\"<>|\r\n]+(?:[\\/][^\\/:*?\"<>|\r\n]+)*|"
++    r"(?:tmp_agent|brain|core|tests)[\\/][^\s\"']+\.(?:py|json|md|txt|ps1|yaml|yml)))",
++    re.IGNORECASE,
++)
++
++# PHASE R3: detect chain-of-thought leak in final responses (used by chat() guard)
++_LEAK_TAIL_RE = re.compile(
++    r"(?:revisando|verificando|analizando|consultando|comprobando|chequeando|buscando|procesando|pensando|esperando|explorando)"
++    r"[^.\n]{0,120}\.{3,}\s*$",
++    re.IGNORECASE,
++)
++
++_CONTINUE_WORDS_RE = re.compile(
++    r"^\s*(?:continua|continúa|continue|sigue|seguir|prosigue|adelante|y\s*\?|y\s+que\s+mas\??|mas\??|mas detalle|más|"
++    r"mas info|sigue\s+por\s+favor|mas|next|go on|keep going|expand|expande)\s*[\.\!\?]*\s*$",
++    re.IGNORECASE,
++)
++
++# PHASE R4.4: detect user corrections to persist them in semantic memory
++# Matches: "no, eso es...", "te equivocas/equivocaste", "estas mal", "el correcto es",
++# "el nombre real es", "es X no Y", "incorrecto", "falso", "mentira", "no es asi"
++_CORRECTION_RE = re.compile(
++    r"\b("
++    r"no\s+es\s+(?:asi|así|cierto|correcto|verdad)|"
++    r"te\s+equivoca(?:s|ste)|"
++    r"est[áa]s?\s+(?:mal|equivocad[oa])|"
++    r"(?:eso|esto|lo\s+que\s+dijiste)\s+(?:es|esta|está)\s+(?:mal|incorrecto|falso|equivocad[oa])|"
++    r"el\s+(?:nombre\s+)?(?:real|correcto|verdadero)\s+es|"
++    r"en\s+realidad\s+es|"
++    r"corrige|corrigete|corríjete|"
++    r"incorrecto|"
++    r"esa\s+tool\s+no\s+(?:existe|es)|"
++    r"esa\s+(?:funci[óo]n|herramienta|api)\s+no\s+(?:existe|es)|"
++    r"lo\s+correcto\s+es"
++    r")\b",
++    re.IGNORECASE,
++)
++
++
++__all__ = [
++    "AGENT_INTENTS",
++    "AGENT_KEYWORDS",
++    "_AGENT_PATTERNS",
++    "_CODE_ANALYSIS_PATH_RE",
++    "_LEAK_TAIL_RE",
++    "_CONTINUE_WORDS_RE",
++    "_CORRECTION_RE",
++]

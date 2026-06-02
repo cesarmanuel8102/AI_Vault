@@ -1,0 +1,16 @@
+{
+  "ticket": "B7-STRANGLER-04-IMPLEMENT",
+  "patch_path": "tmp_agent/b7_strangler_evidence/b7_04_routing_constants_extraction.patch",
+  "patch_lines": 616,
+  "files_in_patch": [
+    {"path": "tmp_agent/brain_v9/core/session.py", "type": "modified", "delta": "-128 / +14"},
+    {"path": "tmp_agent/brain_v9/core/session_routing_constants.py", "type": "added", "lines": 172},
+    {"path": "tests/unit/test_b7_routing_constants_import_compat.py", "type": "added"},
+    {"path": "tests/unit/test_b7_routing_constants_behavior_smoke.py", "type": "added"},
+    {"path": "tests/unit/test_b7_routing_constants_no_session_dependency.py", "type": "added"}
+  ],
+  "patch_generation_method": "git add -N <new-files>; git diff -- <pathspec>; git reset HEAD -- <new-files>",
+  "intent_to_add_undone": true,
+  "staged_after_patch_generation": [],
+  "untracked_files_remain_untracked": true
+}

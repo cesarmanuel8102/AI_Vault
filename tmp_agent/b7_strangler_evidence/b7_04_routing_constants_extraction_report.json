@@ -1,0 +1,61 @@
+{
+  "ticket": "B7-STRANGLER-04-IMPLEMENT",
+  "phase": "F_extraction_report",
+  "constants_extracted_count": 7,
+  "symbols_extracted": [
+    "AGENT_INTENTS",
+    "AGENT_KEYWORDS",
+    "_AGENT_PATTERNS",
+    "_CODE_ANALYSIS_PATH_RE",
+    "_LEAK_TAIL_RE",
+    "_CONTINUE_WORDS_RE",
+    "_CORRECTION_RE"
+  ],
+  "symbols_reexported_from_session": [
+    "AGENT_INTENTS",
+    "AGENT_KEYWORDS",
+    "_AGENT_PATTERNS",
+    "_CODE_ANALYSIS_PATH_RE",
+    "_LEAK_TAIL_RE",
+    "_CONTINUE_WORDS_RE",
+    "_CORRECTION_RE"
+  ],
+  "symbols_explicitly_not_moved": [
+    "_PROCESS_START_TIME (must anchor to session.py module-load time)",
+    "_r3_time / _threading imports (still needed by _PROCESS_START_TIME)",
+    "_STATE_PATH",
+    "_UI_PATH",
+    "_UI_INDEX",
+    "_UI_DASHBOARD",
+    "_UI_EDIT_STATE_PATH",
+    "_CHAT_METRICS_PATH",
+    "_CHAT_SESSION_DEFAULTS_PATH",
+    "_EPISODIC_MEMORY_PATH",
+    "_CAPABILITY_GOVERNOR_STATUS_PATH",
+    "SLASH_COMMANDS (deferred - separate concern)"
+  ],
+  "files_created": [
+    "tmp_agent/brain_v9/core/session_routing_constants.py",
+    "tests/unit/test_b7_routing_constants_import_compat.py",
+    "tests/unit/test_b7_routing_constants_behavior_smoke.py",
+    "tests/unit/test_b7_routing_constants_no_session_dependency.py"
+  ],
+  "files_modified": [
+    "tmp_agent/brain_v9/core/session.py"
+  ],
+  "tests_created": [
+    "tests/unit/test_b7_routing_constants_import_compat.py (3 tests)",
+    "tests/unit/test_b7_routing_constants_behavior_smoke.py (8 tests)",
+    "tests/unit/test_b7_routing_constants_no_session_dependency.py (5 tests)"
+  ],
+  "session_py_lines_before": 5925,
+  "session_py_lines_after": 5811,
+  "session_py_delta": -114,
+  "new_module_lines": 172,
+  "patch_path": "tmp_agent/b7_strangler_evidence/b7_04_routing_constants_extraction.patch",
+  "patch_lines": 616,
+  "protected_paths_touched": [],
+  "commit_created": false,
+  "push_done": false,
+  "main_py_changed": false
+}

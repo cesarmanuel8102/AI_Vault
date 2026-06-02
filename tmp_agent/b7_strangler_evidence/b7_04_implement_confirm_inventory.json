@@ -1,0 +1,36 @@
+{
+  "ticket": "B7-STRANGLER-04-IMPLEMENT",
+  "phase": "A_confirm_inventory",
+  "session_py_lines_before": 5925,
+  "symbols_to_extract": [
+    {"name": "AGENT_INTENTS", "session_py_line": 105, "type": "set[str]"},
+    {"name": "AGENT_KEYWORDS", "session_py_lines": "109-190", "type": "list[str] (regex sources)"},
+    {"name": "_AGENT_PATTERNS", "session_py_line": 193, "type": "list[re.Pattern]"},
+    {"name": "_CODE_ANALYSIS_PATH_RE", "session_py_lines": "195-199", "type": "re.Pattern"},
+    {"name": "_LEAK_TAIL_RE", "session_py_lines": "202-206", "type": "re.Pattern"},
+    {"name": "_CONTINUE_WORDS_RE", "session_py_lines": "212-216", "type": "re.Pattern"},
+    {"name": "_CORRECTION_RE", "session_py_lines": "221-236", "type": "re.Pattern"}
+  ],
+  "symbols_explicitly_not_moved_kept_in_session_py": [
+    "_PROCESS_START_TIME (line 211)",
+    "_r3_time / _threading imports (lines 209-210)",
+    "_STATE_PATH",
+    "_UI_PATH",
+    "_UI_INDEX",
+    "_UI_DASHBOARD",
+    "_UI_EDIT_STATE_PATH",
+    "_CHAT_METRICS_PATH",
+    "_CHAT_SESSION_DEFAULTS_PATH",
+    "_EPISODIC_MEMORY_PATH",
+    "_CAPABILITY_GOVERNOR_STATUS_PATH",
+    "SLASH_COMMANDS"
+  ],
+  "external_consumers_relying_on_reexport": [
+    "tmp_agent/tests/core/test_session.py (imports SLASH_COMMANDS, AGENT_KEYWORDS, _AGENT_PATTERNS)",
+    "tmp_agent/debug_routing.py (imports _AGENT_PATTERNS)",
+    "tests/unit/test_brain_chat_hygiene.py (reads session_mod._AGENT_PATTERNS)",
+    "tests/unit/test_b7_routing_heuristics_characterization.py (reads session_mod.AGENT_KEYWORDS)"
+  ],
+  "main_py_change_required": false,
+  "deferred": ["SLASH_COMMANDS"]
+}

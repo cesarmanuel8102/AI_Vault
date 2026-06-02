@@ -1,0 +1,35 @@
+{
+  "ticket": "B7-STRANGLER-04-IMPLEMENT",
+  "phase": "preflight",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "008248a3c1aebf7f8cb6267ef0bc82ca0a4ed234",
+  "origin_head": "008248a3c1aebf7f8cb6267ef0bc82ca0a4ed234",
+  "head_matches_origin": true,
+  "staged": [],
+  "session_py_lines_before": 5925,
+  "dirty_files_match_expected_ignore_list": true,
+  "dirty_categories": {
+    "memory_semantic": ["memory/semantic/semantic_memory.jsonl"],
+    "tmp_agent_strategies": "many run_phase*.py and main_phase*.py snapshots (ignored)",
+    "smoke_audit_artifacts": [
+      "apply_chat_patch.py",
+      "tmp_agent/bor3_llm_audit.py",
+      "tmp_agent/bor3_llm_audit_results.json",
+      "tmp_agent/brain_v9/chat_area_upgrade/chat_e_router_llm_tools_diagnostic_report.json",
+      "tmp_agent/brain_v9/chat_area_upgrade/rollback/",
+      "tmp_agent/brain_v9/ops/smoke_read_file.ps1",
+      "tmp_agent/brain_v9/ops/smoke_write_file.ps1",
+      "tmp_agent/brain_v9/ops/tool01_write_test.py"
+    ],
+    "visual_trace_console_v1": ["tmp_agent/visual_trace_console_v1/vtc_c1_runtime_smoke_transcript.md"],
+    "mojibake_backup": ["C\uff1aAI_VAULTtmp_agentvisual_trace_console_v1ledger_head_backup.md"]
+  },
+  "rules_acknowledged": {
+    "no_commit": true,
+    "no_push": true,
+    "no_git_add_dot": true,
+    "no_reset_checkout_clean_stash": true,
+    "no_test_modification": true,
+    "protected_paths_untouched": true
+  }
+}

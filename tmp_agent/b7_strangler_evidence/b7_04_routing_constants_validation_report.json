@@ -1,0 +1,45 @@
+{
+  "ticket": "B7-STRANGLER-04-IMPLEMENT",
+  "phase": "F_validation_report",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "008248a3c1aebf7f8cb6267ef0bc82ca0a4ed234",
+  "origin_head": "008248a3c1aebf7f8cb6267ef0bc82ca0a4ed234",
+  "session_py_lines_before": 5925,
+  "session_py_lines_after": 5811,
+  "session_py_delta_lines": -114,
+  "new_module_lines": 172,
+  "validations": {
+    "py_compile_session_py": "PASS",
+    "py_compile_session_routing_constants_py": "PASS",
+    "phase1_local_validation_ps1": "PASS (PHASE1_LOCAL_VALIDATION: ALL PASS)",
+    "phase1_import_baseline": "PASS (OK: test_phase1_import_baseline)",
+    "phase1_security_defaults": "PASS (OK: test_phase1_security_defaults)",
+    "b7_chatmetrics_tests": {"passed": 15, "failed": 0},
+    "b7_query_predicates_tests": {"passed": 36, "failed": 0},
+    "b7_routing_constants_tests_new": {"passed": 16, "failed": 0},
+    "tmp_agent_tests_core_test_session_py": {
+      "after_change": {"passed": 56, "failed": 42},
+      "head_baseline": {"passed": 56, "failed": 42},
+      "delta_failures": 0,
+      "preexisting": true,
+      "evidence": "Worktree at HEAD (../baseline_b7_04) reproduced same 42 failures (coroutine/await mismatches in _handle_command, fastpath setup, etc.); unrelated to routing constants extraction."
+    },
+    "tests_unit_test_b7_routing_heuristics_characterization": "PASS",
+    "tests_unit_test_brain_chat_hygiene": {
+      "after_change": {"passed": 58, "failed": 4},
+      "head_baseline": {"passed": 58, "failed": 4},
+      "delta_failures": 0,
+      "preexisting": true,
+      "evidence": "Worktree at HEAD (../baseline_b7_04) reproduced same 4 failures: test_execution_gate_filters_pending_by_session and 3 test_routing_respects_no_tool_analysis_preference parametrizations. AGENT_KEYWORDS block is byte-equivalent (sha256 30abf8572605c32ec6bac1d41f21e4174b1eaf2dbd4e482d7e2fac25245c1eec across HEAD and new module). Failures are in _prefers_no_tool_analysis / _has_explicit_tool_target / execution_gate logic, not in extracted routing constants."
+    },
+    "import_smoke": "PASS (B7_04_ROUTING_CONSTANTS_IMPORT_OK True True True True)",
+    "agent_keywords_block_byte_equivalent_with_head": true,
+    "identity_check_session_vs_routing_constants": {
+      "AGENT_KEYWORDS_is_same_object": true,
+      "_AGENT_PATTERNS_is_same_object": true
+    }
+  },
+  "baseline_total_failures_at_head": 46,
+  "post_change_total_failures": 46,
+  "new_failures_introduced": 0
+}
