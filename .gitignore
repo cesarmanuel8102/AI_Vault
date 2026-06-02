@@ -88,7 +88,11 @@ __pycache__/
 # Secrets / local env
 .env
 !.env.example
+.dev_auth/
+.dev_auth/*
 .dev_auth/master.key
+.dev_auth/credentials.enc
+.dev_auth/god_audit.jsonl
 audit_reports/secrets_report.json
 
 # Temporary / backups / binary archives
