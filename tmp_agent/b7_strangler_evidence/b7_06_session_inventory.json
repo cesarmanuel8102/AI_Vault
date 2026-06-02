@@ -1,0 +1,74 @@
+{
+  "task": "B7-STRANGLER-06-INVENTORY",
+  "phase": "A_structural_inventory",
+  "source_file": "tmp_agent/brain_v9/core/session.py",
+  "session_py_total_lines": 5743,
+  "top_level": {
+    "classes": [
+      {"name": "BrainSession", "line_start": 231, "line_end": 5737, "size": 5507}
+    ],
+    "functions_count": 3,
+    "constants_count": 12,
+    "imports_count": 28
+  },
+  "brain_session_class": {
+    "line_start": 231,
+    "line_end": 5737,
+    "method_count": 173,
+    "method_kind_breakdown": {"instance": 97, "classmethod": 42, "staticmethod": 34}
+  },
+  "method_prefix_groups_top25": [
+    {"prefix": "_cmd",     "method_count": 31, "total_lines": 703, "pure_count": 0,  "pure_total_lines": 0,   "first_line": null, "names_sample": ["_cmd_help", "_cmd_status", "_cmd_control", "_cmd_freeze", "_cmd_unfreeze", "_cmd_dev"]},
+    {"prefix": "chat",     "method_count": 1,  "total_lines": 644, "pure_count": 0,  "pure_total_lines": 0,   "first_line": 300,  "names_sample": ["chat"]},
+    {"prefix": "_route",   "method_count": 2,  "total_lines": 564, "pure_count": 0,  "pure_total_lines": 0,   "first_line": 2981, "names_sample": ["_route_to_llm", "_route_to_agent"]},
+    {"prefix": "_maybe",   "method_count": 8,  "total_lines": 461, "pure_count": 0,  "pure_total_lines": 0,   "names_sample": ["_maybe_emit_capability_decline", "_maybe_resume_pending_continuation", "_maybe_fastpath", "_maybe_grounded_code_analysis_fastpath"]},
+    {"prefix": "_tool01",  "method_count": 12, "total_lines": 363, "pure_count": 0,  "pure_total_lines": 0,   "names_sample": ["_tool01_get_risk_level", "_tool01_has_permission", "_tool01_router"]},
+    {"prefix": "_fmt",     "method_count": 17, "total_lines": 295, "pure_count": 17, "pure_total_lines": 295, "first_line": 4447, "last_line": 4774, "names_sample": ["_fmt_check_port", "_fmt_check_http_service", "_fmt_check_all_services", "_fmt_check_service_status", "_fmt_get_live_autonomy_status", "_fmt_run_diagnostic"]},
+    {"prefix": "_policy",  "method_count": 1,  "total_lines": 187, "pure_count": 0,  "pure_total_lines": 0,   "names_sample": ["_policy_route_decision"]},
+    {"prefix": "_should",  "method_count": 3,  "total_lines": 150, "pure_count": 2,  "pure_total_lines": 72,  "names_sample": ["_should_use_agent", "_should_use_compact_chat_prompt", "_should_use_analysis_frontier"]},
+    {"prefix": "_recent",  "method_count": 1,  "total_lines": 128, "pure_count": 0,  "pure_total_lines": 0,   "names_sample": ["_recent_activity_fastpath"]},
+    {"prefix": "_llm",     "method_count": 3,  "total_lines": 121, "pure_count": 0,  "pure_total_lines": 0,   "names_sample": ["_llm_direct_fallback", "_llm_agent_salvage", "_llm_status_fastpath"]},
+    {"prefix": "_render",  "method_count": 2,  "total_lines": 116, "pure_count": 2,  "pure_total_lines": 116, "names_sample": ["_render_agent_failure_reply", "_render_operational_agent_summary"]},
+    {"prefix": "_is",      "method_count": 32, "total_lines": 111, "pure_count": 30, "pure_total_lines": 65,  "names_sample": ["_is_benign_security_audit_query", "_is_confirmation", "_is_code_change_request"]},
+    {"prefix": "_deep",    "method_count": 5,  "total_lines": 87,  "pure_count": 0,  "pure_total_lines": 0,   "names_sample": ["_deep_brain_analysis_fastpath", "_deep_risk_analysis_fastpath"]},
+    {"prefix": "_handle",  "method_count": 1,  "total_lines": 69,  "pure_count": 0,  "pure_total_lines": 0,   "names_sample": ["_handle_command"]},
+    {"prefix": "_format",  "method_count": 2,  "total_lines": 66,  "pure_count": 2,  "pure_total_lines": 66,  "names_sample": ["_format_action_value", "_format_tool_result"]},
+    {"prefix": "_chat",    "method_count": 1,  "total_lines": 64,  "pure_count": 0,  "pure_total_lines": 0,   "names_sample": ["_chat_interaction_review_fastpath"]},
+    {"prefix": "_search",  "method_count": 1,  "total_lines": 61,  "pure_count": 0,  "pure_total_lines": 0,   "names_sample": ["_search_files_fastpath"]},
+    {"prefix": "_truncate","method_count": 2,  "total_lines": 54,  "pure_count": 2,  "pure_total_lines": 54,  "names_sample": ["_truncate_message", "_truncate_to_budget"]},
+    {"prefix": "_get",     "method_count": 1,  "total_lines": 54,  "pure_count": 0,  "pure_total_lines": 0,   "names_sample": ["_get_curated_ingestion_response"]},
+    {"prefix": "_build",   "method_count": 2,  "total_lines": 50,  "pure_count": 2,  "pure_total_lines": 50,  "names_sample": ["_build_grounded_file_excerpt", "_build_test_reference_excerpt"]},
+    {"prefix": "_running", "method_count": 1,  "total_lines": 44,  "pure_count": 0,  "pure_total_lines": 0,   "names_sample": ["_running_services_fastpath"]},
+    {"prefix": "_extract", "method_count": 2,  "total_lines": 43,  "pure_count": 2,  "pure_total_lines": 43,  "names_sample": ["_extract_candidate_paths", "_extract_symbol_hint"]},
+    {"prefix": "_emit",    "method_count": 1,  "total_lines": 41,  "pure_count": 0,  "pure_total_lines": 0,   "names_sample": ["_emit_chat_completed"]},
+    {"prefix": "_context", "method_count": 1,  "total_lines": 40,  "pure_count": 0,  "pure_total_lines": 0,   "names_sample": ["_context_budget"]},
+    {"prefix": "_self",    "method_count": 2,  "total_lines": 39,  "pure_count": 0,  "pure_total_lines": 0,   "names_sample": ["_self_build_fastpath", "_self_build_resolution_fastpath"]}
+  ],
+  "pure_modular_candidates_summary": {
+    "definition": "@staticmethod or @classmethod with self_uses_total==0 and cls_uses_total==0 (no coupling to instance/class state)",
+    "total_count": 64,
+    "total_lines": 563,
+    "by_prefix": [
+      {"prefix": "_fmt",     "count": 17, "lines": 295},
+      {"prefix": "_is",      "count": 30, "lines": 65},
+      {"prefix": "_extract", "count": 2,  "lines": 43},
+      {"prefix": "_prefers", "count": 1,  "lines": 29},
+      {"prefix": "_format",  "count": 1,  "lines": 21},
+      {"prefix": "_sanitize","count": 1,  "lines": 20},
+      {"prefix": "_has",     "count": 1,  "lines": 18},
+      {"prefix": "_find",    "count": 1,  "lines": 17},
+      {"prefix": "_blocks",  "count": 1,  "lines": 15},
+      {"prefix": "_persist", "count": 1,  "lines": 8},
+      {"prefix": "_truncate","count": 1,  "lines": 7},
+      {"prefix": "_slice",   "count": 1,  "lines": 7},
+      {"prefix": "_utility", "count": 2,  "lines": 6},
+      {"prefix": "_load",    "count": 1,  "lines": 5},
+      {"prefix": "_looks",   "count": 2,  "lines": 4},
+      {"prefix": "_contains","count": 1,  "lines": 3}
+    ]
+  },
+  "raw_inventory_files": [
+    "_b7_06_inventory_raw.json",
+    "_b7_06_inventory_extra.json"
+  ]
+}

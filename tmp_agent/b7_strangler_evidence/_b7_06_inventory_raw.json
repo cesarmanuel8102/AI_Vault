@@ -1,0 +1,2136 @@
+{
+  "session_py_total_lines": 5743,
+  "top_level": {
+    "classes": [
+      {
+        "name": "BrainSession",
+        "line_start": 231,
+        "line_end": 5737,
+        "size": 5507
+      }
+    ],
+    "functions_count": 3,
+    "functions": [
+      {
+        "name": "__getattr__",
+        "line_start": 165,
+        "line_end": 168,
+        "size": 4
+      },
+      {
+        "name": "_normalize",
+        "line_start": 218,
+        "line_end": 228,
+        "size": 11
+      },
+      {
+        "name": "get_or_create_session",
+        "line_start": 5740,
+        "line_end": 5743,
+        "size": 4
+      }
+    ],
+    "constants_count": 12,
+    "constants": [
+      {
+        "name": "log",
+        "line": 90
+      },
+      {
+        "name": "_PROCESS_START_TIME",
+        "line": 122
+      },
+      {
+        "name": "_STATE_PATH",
+        "line": 125
+      },
+      {
+        "name": "_UI_PATH",
+        "line": 126
+      },
+      {
+        "name": "_UI_INDEX",
+        "line": 127
+      },
+      {
+        "name": "_UI_DASHBOARD",
+        "line": 128
+      },
+      {
+        "name": "_UI_EDIT_STATE_PATH",
+        "line": 129
+      },
+      {
+        "name": "_CHAT_METRICS_PATH",
+        "line": 130
+      },
+      {
+        "name": "_CHAT_SESSION_DEFAULTS_PATH",
+        "line": 131
+      },
+      {
+        "name": "_EPISODIC_MEMORY_PATH",
+        "line": 132
+      },
+      {
+        "name": "_CAPABILITY_GOVERNOR_STATUS_PATH",
+        "line": 133
+      },
+      {
+        "name": "SLASH_COMMANDS",
+        "line": 174
+      }
+    ],
+    "imports_count": 28,
+    "imports": [
+      {
+        "kind": "import",
+        "names": [
+          "asyncio"
+        ],
+        "line": 23
+      },
+      {
+        "kind": "import",
+        "names": [
+          "json"
+        ],
+        "line": 24
+      },
+      {
+        "kind": "import",
+        "names": [
+          "logging"
+        ],
+        "line": 25
+      },
+      {
+        "kind": "import",
+        "names": [
+          "os"
+        ],
+        "line": 26
+      },
+      {
+        "kind": "import",
+        "names": [
+          "platform"
+        ],
+        "line": 27
+      },
+      {
+        "kind": "import",
+        "names": [
+          "re"
+        ],
+        "line": 28
+      },
+      {
+        "kind": "import",
+        "names": [
+          "shutil"
+        ],
+        "line": 29
+      },
+      {
+        "kind": "import",
+        "names": [
+          "subprocess"
+        ],
+        "line": 30
+      },
+      {
+        "kind": "import",
+        "names": [
+          "textwrap"
+        ],
+        "line": 31
+      },
+      {
+        "kind": "import",
+        "names": [
+          "urllib.request"
+        ],
+        "line": 32
+      },
+      {
+        "kind": "from",
+        "module": "datetime",
+        "names": [
+          "datetime"
+        ],
+        "line": 33
+      },
+      {
+        "kind": "from",
+        "module": "pathlib",
+        "names": [
+          "Path"
+        ],
+        "line": 34
+      },
+      {
+        "kind": "from",
+        "module": "typing",
+        "names": [
+          "Dict",
+          "List",
+          "Optional",
+          "Tuple"
+        ],
+        "line": 35
+      },
+      {
+        "kind": "from",
+        "module": "brain_v9.config",
+        "names": [
+          "SYSTEM_IDENTITY",
+          "BASE_PATH",
+          "SERVER_HOST",
+          "SERVER_PORT",
+          "BRAIN_CHAT_DEV_MODE"
+        ],
+        "line": 37
+      },
+      {
+        "kind": "from",
+        "module": "brain_v9.core.llm",
+        "names": [
+          "LLMManager"
+        ],
+        "line": 38
+      },
+      {
+        "kind": "from",
+        "module": "brain_v9.core",
+        "names": [
+          "validator_metrics"
+        ],
+        "line": 39
+      },
+      {
+        "kind": "from",
+        "module": "brain_v9.core.memory",
+        "names": [
+          "MemoryManager"
+        ],
+        "line": 40
+      },
+      {
+        "kind": "from",
+        "module": "brain_v9.core.session_memory_state",
+        "names": [
+          "build_session_memory",
+          "get_session_memory_latest"
+        ],
+        "line": 41
+      },
+      {
+        "kind": "from",
+        "module": "brain_v9.core.intent",
+        "names": [
+          "IntentDetector"
+        ],
+        "line": 45
+      },
+      {
+        "kind": "from",
+        "module": "brain_v9.core.state_io",
+        "names": [
+          "read_json",
+          "write_json"
+        ],
+        "line": 46
+      },
+      {
+        "kind": "from",
+        "module": "brain_v9.core.governed_action_kernel",
+        "names": [
+          "detect_action_intent",
+          "evaluate_action_policy",
+          "requires_governed_tool",
+          "render_policy_block",
+          "render_permission_request",
+          "validate_no_false_execution_claim",
+          "build_synthetic_message"
+        ],
+        "line": 47
+      },
+      {
+        "kind": "from",
+        "module": "brain_v9.core.session_routing_constants",
+        "names": [
+          "AGENT_INTENTS",
+          "AGENT_KEYWORDS",
+          "_AGENT_PATTERNS",
+          "_CODE_ANALYSIS_PATH_RE",
+          "_LEAK_TAIL_RE",
+          "_CONTINUE_WORDS_RE",
+          "_CORRECTION_RE"
+        ],
+        "line": 108
+      },
+      {
+        "kind": "import",
+        "names": [
+          "time"
+        ],
+        "line": 120
+      },
+      {
+        "kind": "import",
+        "names": [
+          "threading"
+        ],
+        "line": 121
+      },
+      {
+        "kind": "from",
+        "module": "brain_v9.core.session_chat_metrics",
+        "names": [
+          "ChatMetrics",
+          "get_chat_metrics",
+          "_GLOBAL_CHAT_METRICS_LOCK"
+        ],
+        "line": 143
+      },
+      {
+        "kind": "from",
+        "module": "brain_v9.core",
+        "names": [
+          "session_chat_metrics"
+        ],
+        "line": 148
+      },
+      {
+        "kind": "from",
+        "module": "brain_v9.core",
+        "names": [
+          "session_query_predicates"
+        ],
+        "line": 154
+      },
+      {
+        "kind": "from",
+        "module": "brain_v9.core.session_response_hygiene",
+        "names": [
+          "sanitize_llm_chat_response"
+        ],
+        "line": 160
+      }
+    ]
+  },
+  "brain_session": {
+    "line_start": 231,
+    "line_end": 5737,
+    "method_count": 173,
+    "method_groups_by_prefix": {
+      "_load_": {
+        "count": 1,
+        "total_size": 5,
+        "methods": [
+          {
+            "name": "_load_chat_dev_mode_default",
+            "size": 5,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          }
+        ]
+      },
+      "_handle_": {
+        "count": 1,
+        "total_size": 69,
+        "methods": [
+          {
+            "name": "_handle_command",
+            "size": 69,
+            "decos": [],
+            "self": 31,
+            "cls": 0
+          }
+        ]
+      },
+      "_cmd_": {
+        "count": 31,
+        "total_size": 703,
+        "methods": [
+          {
+            "name": "_cmd_help",
+            "size": 5,
+            "decos": [],
+            "self": 1,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_status",
+            "size": 23,
+            "decos": [],
+            "self": 3,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_control",
+            "size": 26,
+            "decos": [],
+            "self": 1,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_freeze",
+            "size": 10,
+            "decos": [],
+            "self": 2,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_unfreeze",
+            "size": 10,
+            "decos": [],
+            "self": 2,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_dev",
+            "size": 18,
+            "decos": [],
+            "self": 9,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_clear",
+            "size": 3,
+            "decos": [],
+            "self": 2,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_model",
+            "size": 9,
+            "decos": [],
+            "self": 6,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_autonomy",
+            "size": 19,
+            "decos": [],
+            "self": 3,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_priority",
+            "size": 29,
+            "decos": [],
+            "self": 1,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_strategy",
+            "size": 21,
+            "decos": [],
+            "self": 1,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_edge",
+            "size": 17,
+            "decos": [],
+            "self": 1,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_ranking",
+            "size": 17,
+            "decos": [],
+            "self": 1,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_trade",
+            "size": 16,
+            "decos": [],
+            "self": 1,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_pipeline",
+            "size": 41,
+            "decos": [],
+            "self": 1,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_risk",
+            "size": 26,
+            "decos": [],
+            "self": 1,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_governance",
+            "size": 27,
+            "decos": [],
+            "self": 1,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_posttrade",
+            "size": 21,
+            "decos": [],
+            "self": 2,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_hypothesis",
+            "size": 21,
+            "decos": [],
+            "self": 2,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_security",
+            "size": 32,
+            "decos": [],
+            "self": 1,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_diagnostic",
+            "size": 12,
+            "decos": [],
+            "self": 2,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_memory",
+            "size": 14,
+            "decos": [],
+            "self": 3,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_learning",
+            "size": 25,
+            "decos": [],
+            "self": 2,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_catalog",
+            "size": 20,
+            "decos": [],
+            "self": 2,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_trading_analysis",
+            "size": 71,
+            "decos": [],
+            "self": 1,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_context_edge",
+            "size": 21,
+            "decos": [],
+            "self": 2,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_mode",
+            "size": 16,
+            "decos": [],
+            "self": 3,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_approve",
+            "size": 34,
+            "decos": [],
+            "self": 8,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_reject",
+            "size": 10,
+            "decos": [],
+            "self": 3,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_pending",
+            "size": 19,
+            "decos": [],
+            "self": 2,
+            "cls": 0
+          },
+          {
+            "name": "_cmd_schedule",
+            "size": 70,
+            "decos": [],
+            "self": 12,
+            "cls": 0
+          }
+        ]
+      },
+      "_prefers_": {
+        "count": 1,
+        "total_size": 29,
+        "methods": [
+          {
+            "name": "_prefers_no_tool_analysis",
+            "size": 29,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          }
+        ]
+      },
+      "_has_": {
+        "count": 1,
+        "total_size": 18,
+        "methods": [
+          {
+            "name": "_has_explicit_tool_target",
+            "size": 18,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          }
+        ]
+      },
+      "_should_": {
+        "count": 3,
+        "total_size": 150,
+        "methods": [
+          {
+            "name": "_should_use_agent",
+            "size": 78,
+            "decos": [],
+            "self": 12,
+            "cls": 0
+          },
+          {
+            "name": "_should_use_compact_chat_prompt",
+            "size": 25,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 4
+          },
+          {
+            "name": "_should_use_analysis_frontier",
+            "size": 47,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 7
+          }
+        ]
+      },
+      "_truncate_": {
+        "count": 2,
+        "total_size": 54,
+        "methods": [
+          {
+            "name": "_truncate_message",
+            "size": 7,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_truncate_to_budget",
+            "size": 47,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 2
+          }
+        ]
+      },
+      "_context_": {
+        "count": 1,
+        "total_size": 40,
+        "methods": [
+          {
+            "name": "_context_budget",
+            "size": 40,
+            "decos": [],
+            "self": 0,
+            "cls": 0
+          }
+        ]
+      },
+      "_looks_like_": {
+        "count": 2,
+        "total_size": 4,
+        "methods": [
+          {
+            "name": "_looks_like_canned_failure",
+            "size": 2,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_looks_like_deep_analysis",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          }
+        ]
+      },
+      "_sanitize_": {
+        "count": 2,
+        "total_size": 22,
+        "methods": [
+          {
+            "name": "_sanitize_user_visible_response",
+            "size": 2,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 1
+          },
+          {
+            "name": "_sanitize_memory_content",
+            "size": 20,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          }
+        ]
+      },
+      "_render_": {
+        "count": 2,
+        "total_size": 116,
+        "methods": [
+          {
+            "name": "_render_agent_failure_reply",
+            "size": 35,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 3
+          },
+          {
+            "name": "_render_operational_agent_summary",
+            "size": 81,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 1
+          }
+        ]
+      },
+      "_route_": {
+        "count": 2,
+        "total_size": 564,
+        "methods": [
+          {
+            "name": "_route_to_llm",
+            "size": 116,
+            "decos": [],
+            "self": 8,
+            "cls": 0
+          },
+          {
+            "name": "_route_to_agent",
+            "size": 448,
+            "decos": [],
+            "self": 48,
+            "cls": 0
+          }
+        ]
+      },
+      "_is_": {
+        "count": 32,
+        "total_size": 111,
+        "methods": [
+          {
+            "name": "_is_benign_security_audit_query",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_agent_execution_failure",
+            "size": 10,
+            "decos": [],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_safe_workspace_path",
+            "size": 36,
+            "decos": [],
+            "self": 1,
+            "cls": 0
+          },
+          {
+            "name": "_is_confirmation",
+            "size": 2,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_code_change_request",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_tool_confirmation_request_response",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_dashboard_query",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_greeting_query",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_capabilities_query",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_llm_status_query",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_codex_role_query",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_codex_comparison_query",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_recent_activity_query",
+            "size": 2,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_chat_interaction_review_query",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_brain_diagnostic_analysis_query",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_grounded_code_analysis_query",
+            "size": 2,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_chat_ui_background_change_query",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_chat_ui_background_restore_query",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_chat_send_button_move_query",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_qc_live_query",
+            "size": 7,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_brain_status_query",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_deep_brain_analysis_query",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_deep_risk_analysis_query",
+            "size": 2,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_deep_edge_analysis_query",
+            "size": 2,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_deep_strategy_analysis_query",
+            "size": 2,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_deep_pipeline_analysis_query",
+            "size": 2,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_self_build_query",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_self_build_resolution_query",
+            "size": 2,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_consciousness_query",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_abstract_reasoning_query",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_operational_agent_query",
+            "size": 2,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_is_temporal_query",
+            "size": 2,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          }
+        ]
+      },
+      "_set_": {
+        "count": 1,
+        "total_size": 21,
+        "methods": [
+          {
+            "name": "_set_pending_continuation",
+            "size": 21,
+            "decos": [],
+            "self": 5,
+            "cls": 0
+          }
+        ]
+      },
+      "_extract_": {
+        "count": 2,
+        "total_size": 43,
+        "methods": [
+          {
+            "name": "_extract_candidate_paths",
+            "size": 26,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_extract_symbol_hint",
+            "size": 17,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          }
+        ]
+      },
+      "_build_": {
+        "count": 2,
+        "total_size": 50,
+        "methods": [
+          {
+            "name": "_build_grounded_file_excerpt",
+            "size": 43,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 1
+          },
+          {
+            "name": "_build_test_reference_excerpt",
+            "size": 7,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 1
+          }
+        ]
+      },
+      "_format_": {
+        "count": 2,
+        "total_size": 66,
+        "methods": [
+          {
+            "name": "_format_action_value",
+            "size": 21,
+            "decos": [
+              "staticmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_format_tool_result",
+            "size": 45,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 3
+          }
+        ]
+      },
+      "_fmt_": {
+        "count": 17,
+        "total_size": 295,
+        "methods": [
+          {
+            "name": "_fmt_check_port",
+            "size": 27,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_fmt_check_http_service",
+            "size": 11,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_fmt_check_all_services",
+            "size": 14,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_fmt_check_service_status",
+            "size": 13,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_fmt_get_live_autonomy_status",
+            "size": 18,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_fmt_run_diagnostic",
+            "size": 13,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_fmt_get_system_info",
+            "size": 14,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_fmt_run_command",
+            "size": 11,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_fmt_read_file",
+            "size": 8,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_fmt_list_directory",
+            "size": 15,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_fmt_search_files",
+            "size": 15,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_fmt_list_processes",
+            "size": 15,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_fmt_grep_codebase",
+            "size": 20,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_fmt_list_recent_brain_changes",
+            "size": 27,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_fmt_get_chat_metrics",
+            "size": 24,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_fmt_semantic_memory_search",
+            "size": 22,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          },
+          {
+            "name": "_fmt_get_technical_introspection",
+            "size": 28,
+            "decos": [
+              "classmethod"
+            ],
+            "self": 0,
+            "cls": 0
+          }
+        ]
+      },
+      "_save_": {
+        "count": 1,
+        "total_size": 9,
+        "methods": [
+          {
+            "name": "_save_turn",
+            "size": 9,
+            "decos": [],
+            "self": 6,
+            "cls": 0
+          }
+        ]
+      },
+      "_get_": {
+        "count": 1,
+        "total_size": 54,
+        "methods": [
+          {
+            "name": "_get_curated_ingestion_response",
+            "size": 54,
+            "decos": [],
+            "self": 0,
+            "cls": 0
+          }
+        ]
+      }
+    }
+  },
+  "pure_candidates_count": 76,
+  "pure_candidates_top20_by_size": [
+    {
+      "name": "_render_operational_agent_summary",
+      "line_start": 4859,
+      "line_end": 4939,
+      "size": 81,
+      "self_uses": 0,
+      "cls_uses": 1,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "n_args": 3
+    },
+    {
+      "name": "_truncate_to_budget",
+      "line_start": 1911,
+      "line_end": 1957,
+      "size": 47,
+      "self_uses": 0,
+      "cls_uses": 2,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "n_args": 2
+    },
+    {
+      "name": "_should_use_analysis_frontier",
+      "line_start": 2201,
+      "line_end": 2247,
+      "size": 47,
+      "self_uses": 0,
+      "cls_uses": 7,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "n_args": 5
+    },
+    {
+      "name": "_format_tool_result",
+      "line_start": 4803,
+      "line_end": 4847,
+      "size": 45,
+      "self_uses": 0,
+      "cls_uses": 3,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "n_args": 5
+    },
+    {
+      "name": "_build_grounded_file_excerpt",
+      "line_start": 4040,
+      "line_end": 4082,
+      "size": 43,
+      "self_uses": 0,
+      "cls_uses": 1,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "n_args": 4
+    },
+    {
+      "name": "_render_agent_failure_reply",
+      "line_start": 2020,
+      "line_end": 2054,
+      "size": 35,
+      "self_uses": 0,
+      "cls_uses": 3,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "n_args": 3
+    },
+    {
+      "name": "_prefers_no_tool_analysis",
+      "line_start": 1767,
+      "line_end": 1795,
+      "size": 29,
+      "self_uses": 0,
+      "cls_uses": 0,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "n_args": 1
+    },
+    {
+      "name": "_fmt_get_technical_introspection",
+      "line_start": 4747,
+      "line_end": 4774,
+      "size": 28,
+      "self_uses": 0,
+      "cls_uses": 0,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "n_args": 2
+    },
+    {
+      "name": "_fmt_check_port",
+      "line_start": 4447,
+      "line_end": 4473,
+      "size": 27,
+      "self_uses": 0,
+      "cls_uses": 0,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "n_args": 2
+    },
+    {
+      "name": "_fmt_list_recent_brain_changes",
+      "line_start": 4668,
+      "line_end": 4694,
+      "size": 27,
+      "self_uses": 0,
+      "cls_uses": 0,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "n_args": 2
+    },
+    {
+      "name": "_extract_candidate_paths",
+      "line_start": 3984,
+      "line_end": 4009,
+      "size": 26,
+      "self_uses": 0,
+      "cls_uses": 0,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "n_args": 1
+    },
+    {
+      "name": "_should_use_compact_chat_prompt",
+      "line_start": 2174,
+      "line_end": 2198,
+      "size": 25,
+      "self_uses": 0,
+      "cls_uses": 4,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "n_args": 5
+    },
+    {
+      "name": "_fmt_get_chat_metrics",
+      "line_start": 4697,
+      "line_end": 4720,
+      "size": 24,
+      "self_uses": 0,
+      "cls_uses": 0,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "n_args": 2
+    },
+    {
+      "name": "_fmt_semantic_memory_search",
+      "line_start": 4723,
+      "line_end": 4744,
+      "size": 22,
+      "self_uses": 0,
+      "cls_uses": 0,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "n_args": 2
+    },
+    {
+      "name": "_format_action_value",
+      "line_start": 4420,
+      "line_end": 4440,
+      "size": 21,
+      "self_uses": 0,
+      "cls_uses": 0,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "value",
+      "n_args": 1
+    },
+    {
+      "name": "_fmt_grep_codebase",
+      "line_start": 4646,
+      "line_end": 4665,
+      "size": 20,
+      "self_uses": 0,
+      "cls_uses": 0,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "n_args": 2
+    },
+    {
+      "name": "_sanitize_memory_content",
+      "line_start": 5635,
+      "line_end": 5654,
+      "size": 20,
+      "self_uses": 0,
+      "cls_uses": 0,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "n_args": 2
+    },
+    {
+      "name": "_has_explicit_tool_target",
+      "line_start": 1798,
+      "line_end": 1815,
+      "size": 18,
+      "self_uses": 0,
+      "cls_uses": 0,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "n_args": 1
+    },
+    {
+      "name": "_fmt_get_live_autonomy_status",
+      "line_start": 4520,
+      "line_end": 4537,
+      "size": 18,
+      "self_uses": 0,
+      "cls_uses": 0,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "n_args": 2
+    },
+    {
+      "name": "_extract_symbol_hint",
+      "line_start": 4012,
+      "line_end": 4028,
+      "size": 17,
+      "self_uses": 0,
+      "cls_uses": 0,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "n_args": 1
+    }
+  ],
+  "largest_methods_top20": [
+    {
+      "name": "chat",
+      "line_start": 300,
+      "line_end": 943,
+      "size": 644,
+      "self_uses": 112,
+      "cls_uses": 0,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "n_args": 3
+    },
+    {
+      "name": "_route_to_agent",
+      "line_start": 2981,
+      "line_end": 3428,
+      "size": 448,
+      "self_uses": 48,
+      "cls_uses": 0,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "n_args": 3
+    },
+    {
+      "name": "_policy_route_decision",
+      "line_start": 4960,
+      "line_end": 5146,
+      "size": 187,
+      "self_uses": 12,
+      "cls_uses": 0,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "n_args": 2
+    },
+    {
+      "name": "_tool01_execute",
+      "line_start": 2812,
+      "line_end": 2979,
+      "size": 168,
+      "self_uses": 18,
+      "cls_uses": 0,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "n_args": 3
+    },
+    {
+      "name": "_maybe_fastpath",
+      "line_start": 3513,
+      "line_end": 3641,
+      "size": 129,
+      "self_uses": 62,
+      "cls_uses": 0,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "n_args": 3
+    },
+    {
+      "name": "_recent_activity_fastpath",
+      "line_start": 3784,
+      "line_end": 3911,
+      "size": 128,
+      "self_uses": 5,
+      "cls_uses": 0,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "n_args": 2
+    },
+    {
+      "name": "_route_to_llm",
+      "line_start": 2056,
+      "line_end": 2171,
+      "size": 116,
+      "self_uses": 8,
+      "cls_uses": 0,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "n_args": 5
+    },
+    {
+      "name": "_maybe_grounded_ui_edit_fastpath",
+      "line_start": 4191,
+      "line_end": 4287,
+      "size": 97,
+      "self_uses": 10,
+      "cls_uses": 0,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "n_args": 2
+    },
+    {
+      "name": "_render_operational_agent_summary",
+      "line_start": 4859,
+      "line_end": 4939,
+      "size": 81,
+      "self_uses": 0,
+      "cls_uses": 1,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "n_args": 3
+    },
+    {
+      "name": "_should_use_agent",
+      "line_start": 1817,
+      "line_end": 1894,
+      "size": 78,
+      "self_uses": 12,
+      "cls_uses": 0,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "n_args": 4
+    },
+    {
+      "name": "_cmd_trading_analysis",
+      "line_start": 1514,
+      "line_end": 1584,
+      "size": 71,
+      "self_uses": 1,
+      "cls_uses": 0,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "n_args": 1
+    },
+    {
+      "name": "_cmd_schedule",
+      "line_start": 1693,
+      "line_end": 1762,
+      "size": 70,
+      "self_uses": 12,
+      "cls_uses": 0,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "n_args": 2
+    },
+    {
+      "name": "_handle_command",
+      "line_start": 957,
+      "line_end": 1025,
+      "size": 69,
+      "self_uses": 31,
+      "cls_uses": 0,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "n_args": 2
+    },
+    {
+      "name": "_maybe_qc_live_fastpath",
+      "line_start": 4298,
+      "line_end": 4364,
+      "size": 67,
+      "self_uses": 5,
+      "cls_uses": 0,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "n_args": 2
+    },
+    {
+      "name": "_chat_interaction_review_fastpath",
+      "line_start": 3913,
+      "line_end": 3976,
+      "size": 64,
+      "self_uses": 1,
+      "cls_uses": 0,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "n_args": 1
+    },
+    {
+      "name": "_search_files_fastpath",
+      "line_start": 5482,
+      "line_end": 5542,
+      "size": 61,
+      "self_uses": 1,
+      "cls_uses": 0,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "n_args": 2
+    },
+    {
+      "name": "_get_curated_ingestion_response",
+      "line_start": 5676,
+      "line_end": 5729,
+      "size": 54,
+      "self_uses": 0,
+      "cls_uses": 0,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "n_args": 1
+    },
+    {
+      "name": "_llm_agent_salvage",
+      "line_start": 2296,
+      "line_end": 2344,
+      "size": 49,
+      "self_uses": 6,
+      "cls_uses": 0,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "n_args": 2
+    },
+    {
+      "name": "_maybe_grounded_code_analysis_fastpath",
+      "line_start": 4112,
+      "line_end": 4160,
+      "size": 49,
+      "self_uses": 10,
+      "cls_uses": 0,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "n_args": 2
+    },
+    {
+      "name": "_truncate_to_budget",
+      "line_start": 1911,
+      "line_end": 1957,
+      "size": 47,
+      "self_uses": 0,
+      "cls_uses": 2,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "n_args": 2
+    }
+  ],
+  "fmt_bundle": {
+    "count": 17,
+    "methods": [
+      {
+        "name": "_fmt_check_port",
+        "line_start": 4447,
+        "line_end": 4473,
+        "size": 27,
+        "self_uses": 0,
+        "cls_uses": 0,
+        "decorators": [
+          "classmethod"
+        ],
+        "is_async": false,
+        "first_arg": "cls",
+        "n_args": 2
+      },
+      {
+        "name": "_fmt_check_http_service",
+        "line_start": 4476,
+        "line_end": 4486,
+        "size": 11,
+        "self_uses": 0,
+        "cls_uses": 0,
+        "decorators": [
+          "classmethod"
+        ],
+        "is_async": false,
+        "first_arg": "cls",
+        "n_args": 2
+      },
+      {
+        "name": "_fmt_check_all_services",
+        "line_start": 4489,
+        "line_end": 4502,
+        "size": 14,
+        "self_uses": 0,
+        "cls_uses": 0,
+        "decorators": [
+          "classmethod"
+        ],
+        "is_async": false,
+        "first_arg": "cls",
+        "n_args": 2
+      },
+      {
+        "name": "_fmt_check_service_status",
+        "line_start": 4505,
+        "line_end": 4517,
+        "size": 13,
+        "self_uses": 0,
+        "cls_uses": 0,
+        "decorators": [
+          "classmethod"
+        ],
+        "is_async": false,
+        "first_arg": "cls",
+        "n_args": 2
+      },
+      {
+        "name": "_fmt_get_live_autonomy_status",
+        "line_start": 4520,
+        "line_end": 4537,
+        "size": 18,
+        "self_uses": 0,
+        "cls_uses": 0,
+        "decorators": [
+          "classmethod"
+        ],
+        "is_async": false,
+        "first_arg": "cls",
+        "n_args": 2
+      },
+      {
+        "name": "_fmt_run_diagnostic",
+        "line_start": 4540,
+        "line_end": 4552,
+        "size": 13,
+        "self_uses": 0,
+        "cls_uses": 0,
+        "decorators": [
+          "classmethod"
+        ],
+        "is_async": false,
+        "first_arg": "cls",
+        "n_args": 2
+      },
+      {
+        "name": "_fmt_get_system_info",
+        "line_start": 4555,
+        "line_end": 4568,
+        "size": 14,
+        "self_uses": 0,
+        "cls_uses": 0,
+        "decorators": [
+          "classmethod"
+        ],
+        "is_async": false,
+        "first_arg": "cls",
+        "n_args": 2
+      },
+      {
+        "name": "_fmt_run_command",
+        "line_start": 4571,
+        "line_end": 4581,
+        "size": 11,
+        "self_uses": 0,
+        "cls_uses": 0,
+        "decorators": [
+          "classmethod"
+        ],
+        "is_async": false,
+        "first_arg": "cls",
+        "n_args": 2
+      },
+      {
+        "name": "_fmt_read_file",
+        "line_start": 4584,
+        "line_end": 4591,
+        "size": 8,
+        "self_uses": 0,
+        "cls_uses": 0,
+        "decorators": [
+          "classmethod"
+        ],
+        "is_async": false,
+        "first_arg": "cls",
+        "n_args": 2
+      },
+      {
+        "name": "_fmt_list_directory",
+        "line_start": 4594,
+        "line_end": 4608,
+        "size": 15,
+        "self_uses": 0,
+        "cls_uses": 0,
+        "decorators": [
+          "classmethod"
+        ],
+        "is_async": false,
+        "first_arg": "cls",
+        "n_args": 2
+      },
+      {
+        "name": "_fmt_search_files",
+        "line_start": 4611,
+        "line_end": 4625,
+        "size": 15,
+        "self_uses": 0,
+        "cls_uses": 0,
+        "decorators": [
+          "classmethod"
+        ],
+        "is_async": false,
+        "first_arg": "cls",
+        "n_args": 2
+      },
+      {
+        "name": "_fmt_list_processes",
+        "line_start": 4628,
+        "line_end": 4642,
+        "size": 15,
+        "self_uses": 0,
+        "cls_uses": 0,
+        "decorators": [
+          "classmethod"
+        ],
+        "is_async": false,
+        "first_arg": "cls",
+        "n_args": 2
+      },
+      {
+        "name": "_fmt_grep_codebase",
+        "line_start": 4646,
+        "line_end": 4665,
+        "size": 20,
+        "self_uses": 0,
+        "cls_uses": 0,
+        "decorators": [
+          "classmethod"
+        ],
+        "is_async": false,
+        "first_arg": "cls",
+        "n_args": 2
+      },
+      {
+        "name": "_fmt_list_recent_brain_changes",
+        "line_start": 4668,
+        "line_end": 4694,
+        "size": 27,
+        "self_uses": 0,
+        "cls_uses": 0,
+        "decorators": [
+          "classmethod"
+        ],
+        "is_async": false,
+        "first_arg": "cls",
+        "n_args": 2
+      },
+      {
+        "name": "_fmt_get_chat_metrics",
+        "line_start": 4697,
+        "line_end": 4720,
+        "size": 24,
+        "self_uses": 0,
+        "cls_uses": 0,
+        "decorators": [
+          "classmethod"
+        ],
+        "is_async": false,
+        "first_arg": "cls",
+        "n_args": 2
+      },
+      {
+        "name": "_fmt_semantic_memory_search",
+        "line_start": 4723,
+        "line_end": 4744,
+        "size": 22,
+        "self_uses": 0,
+        "cls_uses": 0,
+        "decorators": [
+          "classmethod"
+        ],
+        "is_async": false,
+        "first_arg": "cls",
+        "n_args": 2
+      },
+      {
+        "name": "_fmt_get_technical_introspection",
+        "line_start": 4747,
+        "line_end": 4774,
+        "size": 28,
+        "self_uses": 0,
+        "cls_uses": 0,
+        "decorators": [
+          "classmethod"
+        ],
+        "is_async": false,
+        "first_arg": "cls",
+        "n_args": 2
+      }
+    ],
+    "total_size_lines": 295
+  },
+  "fmt_dispatcher_meta": {
+    "_format_action_value": {
+      "size": 21,
+      "line_start": 4420,
+      "line_end": 4440,
+      "decorators": [
+        "staticmethod"
+      ],
+      "self": 0,
+      "cls": 0,
+      "uses_TOOL_FORMATTERS": false,
+      "uses_getattr_cls": false
+    },
+    "_format_tool_result": {
+      "size": 45,
+      "line_start": 4803,
+      "line_end": 4847,
+      "decorators": [
+        "classmethod"
+      ],
+      "self": 0,
+      "cls": 3,
+      "uses_TOOL_FORMATTERS": true,
+      "uses_getattr_cls": true
+    }
+  },
+  "tool_formatters_assign": {
+    "line_start": 4780,
+    "line_end": 4800,
+    "size": 21,
+    "snippet": "    _TOOL_FORMATTERS = {\n        \"check_port\":              \"_fmt_check_port\",\n        \"check_http_service\":      \"_fmt_check_http_service\",\n        \"check_url\":               \"_fmt_check_http_service\",\n        \"check_all_services\":      \"_fmt_check_all_services\",\n        \"check_service_status\":    \"_fmt_check_service_status\",\n        \"get_live_autonomy_status\": \"_fmt_get_live_autonomy_status\",\n        \"run_diagnostic\":          \"_fmt_run_diagnostic\",\n        \"get_system_info\":         \"_fmt_get_system_info\",\n        \"run_command\":             \"_fmt_run_command\",\n        \"read_file\":          "
+  }
+}

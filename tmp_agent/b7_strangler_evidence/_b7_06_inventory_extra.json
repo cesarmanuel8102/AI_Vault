@@ -1,0 +1,3285 @@
+{
+  "session_total_lines": 5743,
+  "brain_session_class": {
+    "line_start": 231,
+    "line_end": 5737,
+    "method_count": 173
+  },
+  "method_prefix_groups": [
+    {
+      "prefix": "_cmd",
+      "method_count": 31,
+      "total_lines": 703,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 1027,
+      "last_line": 1762,
+      "names_sample": [
+        "_cmd_help",
+        "_cmd_status",
+        "_cmd_control",
+        "_cmd_freeze",
+        "_cmd_unfreeze",
+        "_cmd_dev"
+      ]
+    },
+    {
+      "prefix": "chat",
+      "method_count": 1,
+      "total_lines": 644,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 300,
+      "last_line": 943,
+      "names_sample": [
+        "chat"
+      ]
+    },
+    {
+      "prefix": "_route",
+      "method_count": 2,
+      "total_lines": 564,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 2056,
+      "last_line": 3428,
+      "names_sample": [
+        "_route_to_llm",
+        "_route_to_agent"
+      ]
+    },
+    {
+      "prefix": "_maybe",
+      "method_count": 8,
+      "total_lines": 461,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 2414,
+      "last_line": 5674,
+      "names_sample": [
+        "_maybe_emit_capability_decline",
+        "_maybe_resume_pending_continuation",
+        "_maybe_fastpath",
+        "_maybe_grounded_code_analysis_fastpath",
+        "_maybe_grounded_ui_edit_fastpath",
+        "_maybe_qc_live_fastpath"
+      ]
+    },
+    {
+      "prefix": "_tool01",
+      "method_count": 12,
+      "total_lines": 363,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 2569,
+      "last_line": 2979,
+      "names_sample": [
+        "_tool01_get_risk_level",
+        "_tool01_has_permission",
+        "_tool01_request_permission",
+        "_tool01_approve_permission",
+        "_tool01_router",
+        "_tool01_has_permission_grant"
+      ]
+    },
+    {
+      "prefix": "_fmt",
+      "method_count": 17,
+      "total_lines": 295,
+      "pure_count": 17,
+      "pure_total_lines": 295,
+      "first_line": 4447,
+      "last_line": 4774,
+      "names_sample": [
+        "_fmt_check_port",
+        "_fmt_check_http_service",
+        "_fmt_check_all_services",
+        "_fmt_check_service_status",
+        "_fmt_get_live_autonomy_status",
+        "_fmt_run_diagnostic"
+      ]
+    },
+    {
+      "prefix": "_policy",
+      "method_count": 1,
+      "total_lines": 187,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 4960,
+      "last_line": 5146,
+      "names_sample": [
+        "_policy_route_decision"
+      ]
+    },
+    {
+      "prefix": "_should",
+      "method_count": 3,
+      "total_lines": 150,
+      "pure_count": 2,
+      "pure_total_lines": 72,
+      "first_line": 1817,
+      "last_line": 2247,
+      "names_sample": [
+        "_should_use_agent",
+        "_should_use_compact_chat_prompt",
+        "_should_use_analysis_frontier"
+      ]
+    },
+    {
+      "prefix": "_recent",
+      "method_count": 1,
+      "total_lines": 128,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 3784,
+      "last_line": 3911,
+      "names_sample": [
+        "_recent_activity_fastpath"
+      ]
+    },
+    {
+      "prefix": "_llm",
+      "method_count": 3,
+      "total_lines": 121,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 2269,
+      "last_line": 3704,
+      "names_sample": [
+        "_llm_direct_fallback",
+        "_llm_agent_salvage",
+        "_llm_status_fastpath"
+      ]
+    },
+    {
+      "prefix": "_render",
+      "method_count": 2,
+      "total_lines": 116,
+      "pure_count": 2,
+      "pure_total_lines": 116,
+      "first_line": 2020,
+      "last_line": 4939,
+      "names_sample": [
+        "_render_agent_failure_reply",
+        "_render_operational_agent_summary"
+      ]
+    },
+    {
+      "prefix": "_is",
+      "method_count": 32,
+      "total_lines": 111,
+      "pure_count": 30,
+      "pure_total_lines": 65,
+      "first_line": 2250,
+      "last_line": 5658,
+      "names_sample": [
+        "_is_benign_security_audit_query",
+        "_is_agent_execution_failure",
+        "_is_safe_workspace_path",
+        "_is_confirmation",
+        "_is_code_change_request",
+        "_is_tool_confirmation_request_response"
+      ]
+    },
+    {
+      "prefix": "_deep",
+      "method_count": 5,
+      "total_lines": 87,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 5177,
+      "last_line": 5267,
+      "names_sample": [
+        "_deep_brain_analysis_fastpath",
+        "_deep_risk_analysis_fastpath",
+        "_deep_edge_analysis_fastpath",
+        "_deep_strategy_analysis_fastpath",
+        "_deep_pipeline_analysis_fastpath"
+      ]
+    },
+    {
+      "prefix": "_handle",
+      "method_count": 1,
+      "total_lines": 69,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 957,
+      "last_line": 1025,
+      "names_sample": [
+        "_handle_command"
+      ]
+    },
+    {
+      "prefix": "_format",
+      "method_count": 2,
+      "total_lines": 66,
+      "pure_count": 2,
+      "pure_total_lines": 66,
+      "first_line": 4420,
+      "last_line": 4847,
+      "names_sample": [
+        "_format_action_value",
+        "_format_tool_result"
+      ]
+    },
+    {
+      "prefix": "_chat",
+      "method_count": 1,
+      "total_lines": 64,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 3913,
+      "last_line": 3976,
+      "names_sample": [
+        "_chat_interaction_review_fastpath"
+      ]
+    },
+    {
+      "prefix": "_search",
+      "method_count": 1,
+      "total_lines": 61,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 5482,
+      "last_line": 5542,
+      "names_sample": [
+        "_search_files_fastpath"
+      ]
+    },
+    {
+      "prefix": "_truncate",
+      "method_count": 2,
+      "total_lines": 54,
+      "pure_count": 2,
+      "pure_total_lines": 54,
+      "first_line": 1902,
+      "last_line": 1957,
+      "names_sample": [
+        "_truncate_message",
+        "_truncate_to_budget"
+      ]
+    },
+    {
+      "prefix": "_get",
+      "method_count": 1,
+      "total_lines": 54,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 5676,
+      "last_line": 5729,
+      "names_sample": [
+        "_get_curated_ingestion_response"
+      ]
+    },
+    {
+      "prefix": "_build",
+      "method_count": 2,
+      "total_lines": 50,
+      "pure_count": 2,
+      "pure_total_lines": 50,
+      "first_line": 4040,
+      "last_line": 4110,
+      "names_sample": [
+        "_build_grounded_file_excerpt",
+        "_build_test_reference_excerpt"
+      ]
+    },
+    {
+      "prefix": "_running",
+      "method_count": 1,
+      "total_lines": 44,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 5437,
+      "last_line": 5480,
+      "names_sample": [
+        "_running_services_fastpath"
+      ]
+    },
+    {
+      "prefix": "_extract",
+      "method_count": 2,
+      "total_lines": 43,
+      "pure_count": 2,
+      "pure_total_lines": 43,
+      "first_line": 3984,
+      "last_line": 4028,
+      "names_sample": [
+        "_extract_candidate_paths",
+        "_extract_symbol_hint"
+      ]
+    },
+    {
+      "prefix": "_emit",
+      "method_count": 1,
+      "total_lines": 41,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 2449,
+      "last_line": 2489,
+      "names_sample": [
+        "_emit_chat_completed"
+      ]
+    },
+    {
+      "prefix": "_context",
+      "method_count": 1,
+      "total_lines": 40,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 1959,
+      "last_line": 1998,
+      "names_sample": [
+        "_context_budget"
+      ]
+    },
+    {
+      "prefix": "_self",
+      "method_count": 2,
+      "total_lines": 39,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 5269,
+      "last_line": 5308,
+      "names_sample": [
+        "_self_build_fastpath",
+        "_self_build_resolution_fastpath"
+      ]
+    },
+    {
+      "prefix": "_dashboard",
+      "method_count": 1,
+      "total_lines": 39,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 5325,
+      "last_line": 5363,
+      "names_sample": [
+        "_dashboard_status_fastpath"
+      ]
+    },
+    {
+      "prefix": "_codex",
+      "method_count": 2,
+      "total_lines": 38,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 3714,
+      "last_line": 3752,
+      "names_sample": [
+        "_codex_role_fastpath",
+        "_codex_comparison_fastpath"
+      ]
+    },
+    {
+      "prefix": "_disk",
+      "method_count": 1,
+      "total_lines": 32,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 5404,
+      "last_line": 5435,
+      "names_sample": [
+        "_disk_space_fastpath"
+      ]
+    },
+    {
+      "prefix": "_utility",
+      "method_count": 3,
+      "total_lines": 29,
+      "pure_count": 2,
+      "pure_total_lines": 6,
+      "first_line": 948,
+      "last_line": 5387,
+      "names_sample": [
+        "_utility_score",
+        "_utility_blockers",
+        "_utility_status_fastpath"
+      ]
+    },
+    {
+      "prefix": "_prefers",
+      "method_count": 1,
+      "total_lines": 29,
+      "pure_count": 1,
+      "pure_total_lines": 29,
+      "first_line": 1767,
+      "last_line": 1795,
+      "names_sample": [
+        "_prefers_no_tool_analysis"
+      ]
+    },
+    {
+      "prefix": "_brain",
+      "method_count": 1,
+      "total_lines": 28,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 5148,
+      "last_line": 5175,
+      "names_sample": [
+        "_brain_status_fastpath"
+      ]
+    },
+    {
+      "prefix": "_sanitize",
+      "method_count": 2,
+      "total_lines": 22,
+      "pure_count": 2,
+      "pure_total_lines": 22,
+      "first_line": 2016,
+      "last_line": 5654,
+      "names_sample": [
+        "_sanitize_user_visible_response",
+        "_sanitize_memory_content"
+      ]
+    },
+    {
+      "prefix": "_set",
+      "method_count": 1,
+      "total_lines": 21,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 3456,
+      "last_line": 3476,
+      "names_sample": [
+        "_set_pending_continuation"
+      ]
+    },
+    {
+      "prefix": "_list",
+      "method_count": 1,
+      "total_lines": 21,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 5544,
+      "last_line": 5564,
+      "names_sample": [
+        "_list_directory_fastpath"
+      ]
+    },
+    {
+      "prefix": "_select",
+      "method_count": 2,
+      "total_lines": 20,
+      "pure_count": 1,
+      "pure_total_lines": 13,
+      "first_line": 2254,
+      "last_line": 3454,
+      "names_sample": [
+        "_select_llm_chain",
+        "_select_agent_model_priority"
+      ]
+    },
+    {
+      "prefix": "_has",
+      "method_count": 1,
+      "total_lines": 18,
+      "pure_count": 1,
+      "pure_total_lines": 18,
+      "first_line": 1798,
+      "last_line": 1815,
+      "names_sample": [
+        "_has_explicit_tool_target"
+      ]
+    },
+    {
+      "prefix": "__dunder__",
+      "method_count": 1,
+      "total_lines": 17,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 263,
+      "last_line": 279,
+      "names_sample": [
+        "__init__"
+      ]
+    },
+    {
+      "prefix": "_find",
+      "method_count": 1,
+      "total_lines": 17,
+      "pure_count": 1,
+      "pure_total_lines": 17,
+      "first_line": 4085,
+      "last_line": 4101,
+      "names_sample": [
+        "_find_test_references"
+      ]
+    },
+    {
+      "prefix": "_blocks",
+      "method_count": 1,
+      "total_lines": 15,
+      "pure_count": 1,
+      "pure_total_lines": 15,
+      "first_line": 4175,
+      "last_line": 4189,
+      "names_sample": [
+        "_blocks_grounded_ui_edit_fastpath"
+      ]
+    },
+    {
+      "prefix": "_consciousness",
+      "method_count": 1,
+      "total_lines": 14,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 5310,
+      "last_line": 5323,
+      "names_sample": [
+        "_consciousness_fastpath"
+      ]
+    },
+    {
+      "prefix": "_python",
+      "method_count": 1,
+      "total_lines": 12,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 5391,
+      "last_line": 5402,
+      "names_sample": [
+        "_python_version_fastpath"
+      ]
+    },
+    {
+      "prefix": "_save",
+      "method_count": 1,
+      "total_lines": 9,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 5624,
+      "last_line": 5632,
+      "names_sample": [
+        "_save_turn"
+      ]
+    },
+    {
+      "prefix": "_persist",
+      "method_count": 1,
+      "total_lines": 8,
+      "pure_count": 1,
+      "pure_total_lines": 8,
+      "first_line": 289,
+      "last_line": 296,
+      "names_sample": [
+        "_persist_chat_dev_mode_default"
+      ]
+    },
+    {
+      "prefix": "_health",
+      "method_count": 1,
+      "total_lines": 8,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 4941,
+      "last_line": 4948,
+      "names_sample": [
+        "_health_fastpath"
+      ]
+    },
+    {
+      "prefix": "_slice",
+      "method_count": 1,
+      "total_lines": 7,
+      "pure_count": 1,
+      "pure_total_lines": 7,
+      "first_line": 4031,
+      "last_line": 4037,
+      "names_sample": [
+        "_slice_lines"
+      ]
+    },
+    {
+      "prefix": "_summarize",
+      "method_count": 1,
+      "total_lines": 7,
+      "pure_count": 1,
+      "pure_total_lines": 7,
+      "first_line": 4850,
+      "last_line": 4856,
+      "names_sample": [
+        "_summarize_action_output"
+      ]
+    },
+    {
+      "prefix": "close",
+      "method_count": 1,
+      "total_lines": 7,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 5731,
+      "last_line": 5737,
+      "names_sample": [
+        "close"
+      ]
+    },
+    {
+      "prefix": "_current",
+      "method_count": 1,
+      "total_lines": 6,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 5566,
+      "last_line": 5571,
+      "names_sample": [
+        "_current_time_fastpath"
+      ]
+    },
+    {
+      "prefix": "_load",
+      "method_count": 1,
+      "total_lines": 5,
+      "pure_count": 1,
+      "pure_total_lines": 5,
+      "first_line": 282,
+      "last_line": 286,
+      "names_sample": [
+        "_load_chat_dev_mode_default"
+      ]
+    },
+    {
+      "prefix": "_agent",
+      "method_count": 1,
+      "total_lines": 5,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 2502,
+      "last_line": 2506,
+      "names_sample": [
+        "_agent_failure_notice"
+      ]
+    },
+    {
+      "prefix": "_looks",
+      "method_count": 2,
+      "total_lines": 4,
+      "pure_count": 2,
+      "pure_total_lines": 4,
+      "first_line": 2012,
+      "last_line": 4376,
+      "names_sample": [
+        "_looks_like_canned_failure",
+        "_looks_like_deep_analysis"
+      ]
+    },
+    {
+      "prefix": "_greeting",
+      "method_count": 1,
+      "total_lines": 4,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 4950,
+      "last_line": 4953,
+      "names_sample": [
+        "_greeting_fastpath"
+      ]
+    },
+    {
+      "prefix": "_capabilities",
+      "method_count": 1,
+      "total_lines": 4,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 4955,
+      "last_line": 4958,
+      "names_sample": [
+        "_capabilities_fastpath"
+      ]
+    },
+    {
+      "prefix": "_contains",
+      "method_count": 1,
+      "total_lines": 3,
+      "pure_count": 1,
+      "pure_total_lines": 3,
+      "first_line": 2007,
+      "last_line": 2009,
+      "names_sample": [
+        "_contains_raw_tool_markup"
+      ]
+    },
+    {
+      "prefix": "_clear",
+      "method_count": 1,
+      "total_lines": 3,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 3478,
+      "last_line": 3480,
+      "names_sample": [
+        "_clear_pending_continuation"
+      ]
+    },
+    {
+      "prefix": "_normalize",
+      "method_count": 1,
+      "total_lines": 3,
+      "pure_count": 1,
+      "pure_total_lines": 3,
+      "first_line": 4411,
+      "last_line": 4413,
+      "names_sample": [
+        "_normalize_model_priority"
+      ]
+    },
+    {
+      "prefix": "_system",
+      "method_count": 1,
+      "total_lines": 3,
+      "pure_count": 0,
+      "pure_total_lines": 0,
+      "first_line": 5575,
+      "last_line": 5577,
+      "names_sample": [
+        "_system_reply"
+      ]
+    }
+  ],
+  "all_methods": [
+    {
+      "name": "__init__",
+      "line_start": 263,
+      "line_end": 279,
+      "size": 17,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 36,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_load_chat_dev_mode_default",
+      "line_start": 282,
+      "line_end": 286,
+      "size": 5,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": null,
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_persist_chat_dev_mode_default",
+      "line_start": 289,
+      "line_end": 296,
+      "size": 8,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "enabled",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "chat",
+      "line_start": 300,
+      "line_end": 943,
+      "size": 644,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "self_uses_total": 223,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_utility_score",
+      "line_start": 948,
+      "line_end": 949,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "utility",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_utility_blockers",
+      "line_start": 952,
+      "line_end": 955,
+      "size": 4,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "utility",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_handle_command",
+      "line_start": 957,
+      "line_end": 1025,
+      "size": 69,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "self_uses_total": 62,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_help",
+      "line_start": 1027,
+      "line_end": 1031,
+      "size": 5,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_status",
+      "line_start": 1033,
+      "line_end": 1055,
+      "size": 23,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 6,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_control",
+      "line_start": 1057,
+      "line_end": 1082,
+      "size": 26,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_freeze",
+      "line_start": 1084,
+      "line_end": 1093,
+      "size": 10,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 4,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_unfreeze",
+      "line_start": 1095,
+      "line_end": 1104,
+      "size": 10,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 4,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_dev",
+      "line_start": 1106,
+      "line_end": 1123,
+      "size": 18,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 18,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_clear",
+      "line_start": 1125,
+      "line_end": 1127,
+      "size": 3,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 4,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_model",
+      "line_start": 1129,
+      "line_end": 1137,
+      "size": 9,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 12,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_autonomy",
+      "line_start": 1139,
+      "line_end": 1157,
+      "size": 19,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 6,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_priority",
+      "line_start": 1159,
+      "line_end": 1187,
+      "size": 29,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_strategy",
+      "line_start": 1189,
+      "line_end": 1209,
+      "size": 21,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_edge",
+      "line_start": 1211,
+      "line_end": 1227,
+      "size": 17,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_ranking",
+      "line_start": 1229,
+      "line_end": 1245,
+      "size": 17,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_trade",
+      "line_start": 1247,
+      "line_end": 1262,
+      "size": 16,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_pipeline",
+      "line_start": 1264,
+      "line_end": 1304,
+      "size": 41,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_risk",
+      "line_start": 1306,
+      "line_end": 1331,
+      "size": 26,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_governance",
+      "line_start": 1333,
+      "line_end": 1359,
+      "size": 27,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_posttrade",
+      "line_start": 1361,
+      "line_end": 1381,
+      "size": 21,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 4,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_hypothesis",
+      "line_start": 1383,
+      "line_end": 1403,
+      "size": 21,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 4,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_security",
+      "line_start": 1405,
+      "line_end": 1436,
+      "size": 32,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_diagnostic",
+      "line_start": 1438,
+      "line_end": 1449,
+      "size": 12,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 4,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_memory",
+      "line_start": 1451,
+      "line_end": 1464,
+      "size": 14,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 6,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_learning",
+      "line_start": 1466,
+      "line_end": 1490,
+      "size": 25,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 4,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_catalog",
+      "line_start": 1492,
+      "line_end": 1511,
+      "size": 20,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 4,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_trading_analysis",
+      "line_start": 1514,
+      "line_end": 1584,
+      "size": 71,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_context_edge",
+      "line_start": 1586,
+      "line_end": 1606,
+      "size": 21,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 4,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_mode",
+      "line_start": 1610,
+      "line_end": 1625,
+      "size": 16,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 6,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_approve",
+      "line_start": 1627,
+      "line_end": 1660,
+      "size": 34,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "self_uses_total": 16,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_reject",
+      "line_start": 1662,
+      "line_end": 1671,
+      "size": 10,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 6,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_pending",
+      "line_start": 1673,
+      "line_end": 1691,
+      "size": 19,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 4,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_cmd_schedule",
+      "line_start": 1693,
+      "line_end": 1762,
+      "size": 70,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 24,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_prefers_no_tool_analysis",
+      "line_start": 1767,
+      "line_end": 1795,
+      "size": 29,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_has_explicit_tool_target",
+      "line_start": 1798,
+      "line_end": 1815,
+      "size": 18,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_should_use_agent",
+      "line_start": 1817,
+      "line_end": 1894,
+      "size": 78,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 24,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_truncate_message",
+      "line_start": 1902,
+      "line_end": 1908,
+      "size": 7,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "msg",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_truncate_to_budget",
+      "line_start": 1911,
+      "line_end": 1957,
+      "size": 47,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 4
+    },
+    {
+      "name": "_context_budget",
+      "line_start": 1959,
+      "line_end": 1998,
+      "size": 40,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_contains_raw_tool_markup",
+      "line_start": 2007,
+      "line_end": 2009,
+      "size": 3,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_looks_like_canned_failure",
+      "line_start": 2012,
+      "line_end": 2013,
+      "size": 2,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_sanitize_user_visible_response",
+      "line_start": 2016,
+      "line_end": 2017,
+      "size": 2,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 2
+    },
+    {
+      "name": "_render_agent_failure_reply",
+      "line_start": 2020,
+      "line_end": 2054,
+      "size": 35,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 6
+    },
+    {
+      "name": "_route_to_llm",
+      "line_start": 2056,
+      "line_end": 2171,
+      "size": 116,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "self_uses_total": 16,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_should_use_compact_chat_prompt",
+      "line_start": 2174,
+      "line_end": 2198,
+      "size": 25,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 8
+    },
+    {
+      "name": "_should_use_analysis_frontier",
+      "line_start": 2201,
+      "line_end": 2247,
+      "size": 47,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 14
+    },
+    {
+      "name": "_is_benign_security_audit_query",
+      "line_start": 2250,
+      "line_end": 2251,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_select_llm_chain",
+      "line_start": 2254,
+      "line_end": 2266,
+      "size": 13,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 4
+    },
+    {
+      "name": "_llm_direct_fallback",
+      "line_start": 2269,
+      "line_end": 2294,
+      "size": 26,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "self_uses_total": 6,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_llm_agent_salvage",
+      "line_start": 2296,
+      "line_end": 2344,
+      "size": 49,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "self_uses_total": 12,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_maybe_emit_capability_decline",
+      "line_start": 2414,
+      "line_end": 2447,
+      "size": 34,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 4,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_emit_chat_completed",
+      "line_start": 2449,
+      "line_end": 2489,
+      "size": 41,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 1,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_agent_execution_failure",
+      "line_start": 2491,
+      "line_end": 2500,
+      "size": 10,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_agent_failure_notice",
+      "line_start": 2502,
+      "line_end": 2506,
+      "size": 5,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_tool01_get_risk_level",
+      "line_start": 2569,
+      "line_end": 2574,
+      "size": 6,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 4,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_tool01_has_permission",
+      "line_start": 2576,
+      "line_end": 2582,
+      "size": 7,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_tool01_request_permission",
+      "line_start": 2584,
+      "line_end": 2603,
+      "size": 20,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 12,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_tool01_approve_permission",
+      "line_start": 2605,
+      "line_end": 2626,
+      "size": 22,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 6,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_tool01_router",
+      "line_start": 2628,
+      "line_end": 2665,
+      "size": 38,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "self_uses_total": 12,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_tool01_has_permission_grant",
+      "line_start": 2667,
+      "line_end": 2675,
+      "size": 9,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_tool01_handle_permission_response",
+      "line_start": 2677,
+      "line_end": 2716,
+      "size": 40,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "self_uses_total": 11,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_tool01_extract_path",
+      "line_start": 2718,
+      "line_end": 2725,
+      "size": 8,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_tool01_policy_check_path",
+      "line_start": 2727,
+      "line_end": 2742,
+      "size": 16,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_safe_workspace_path",
+      "line_start": 2744,
+      "line_end": 2779,
+      "size": 36,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_tool01_extract_write_content",
+      "line_start": 2781,
+      "line_end": 2799,
+      "size": 19,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_tool01_write_evidence",
+      "line_start": 2801,
+      "line_end": 2810,
+      "size": 10,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_tool01_execute",
+      "line_start": 2812,
+      "line_end": 2979,
+      "size": 168,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "self_uses_total": 36,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_route_to_agent",
+      "line_start": 2981,
+      "line_end": 3428,
+      "size": 448,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "self_uses_total": 96,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_confirmation",
+      "line_start": 3441,
+      "line_end": 3442,
+      "size": 2,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_code_change_request",
+      "line_start": 3445,
+      "line_end": 3446,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_select_agent_model_priority",
+      "line_start": 3448,
+      "line_end": 3454,
+      "size": 7,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 4,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_set_pending_continuation",
+      "line_start": 3456,
+      "line_end": 3476,
+      "size": 21,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 10,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_clear_pending_continuation",
+      "line_start": 3478,
+      "line_end": 3480,
+      "size": 3,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 4,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_maybe_resume_pending_continuation",
+      "line_start": 3482,
+      "line_end": 3507,
+      "size": 26,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "self_uses_total": 16,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_tool_confirmation_request_response",
+      "line_start": 3510,
+      "line_end": 3511,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "response",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_maybe_fastpath",
+      "line_start": 3513,
+      "line_end": 3641,
+      "size": 129,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 124,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_dashboard_query",
+      "line_start": 3644,
+      "line_end": 3645,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_greeting_query",
+      "line_start": 3648,
+      "line_end": 3649,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_capabilities_query",
+      "line_start": 3652,
+      "line_end": 3653,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_llm_status_query",
+      "line_start": 3656,
+      "line_end": 3657,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_llm_status_fastpath",
+      "line_start": 3659,
+      "line_end": 3704,
+      "size": 46,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 6,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_codex_role_query",
+      "line_start": 3707,
+      "line_end": 3708,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_codex_comparison_query",
+      "line_start": 3711,
+      "line_end": 3712,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_codex_role_fastpath",
+      "line_start": 3714,
+      "line_end": 3732,
+      "size": 19,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 4,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_codex_comparison_fastpath",
+      "line_start": 3734,
+      "line_end": 3752,
+      "size": 19,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_recent_activity_query",
+      "line_start": 3773,
+      "line_end": 3774,
+      "size": 2,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_chat_interaction_review_query",
+      "line_start": 3777,
+      "line_end": 3778,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_brain_diagnostic_analysis_query",
+      "line_start": 3781,
+      "line_end": 3782,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_recent_activity_fastpath",
+      "line_start": 3784,
+      "line_end": 3911,
+      "size": 128,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 10,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_chat_interaction_review_fastpath",
+      "line_start": 3913,
+      "line_end": 3976,
+      "size": 64,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_grounded_code_analysis_query",
+      "line_start": 3980,
+      "line_end": 3981,
+      "size": 2,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_extract_candidate_paths",
+      "line_start": 3984,
+      "line_end": 4009,
+      "size": 26,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_extract_symbol_hint",
+      "line_start": 4012,
+      "line_end": 4028,
+      "size": 17,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_slice_lines",
+      "line_start": 4031,
+      "line_end": 4037,
+      "size": 7,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "lines",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_build_grounded_file_excerpt",
+      "line_start": 4040,
+      "line_end": 4082,
+      "size": 43,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 2
+    },
+    {
+      "name": "_find_test_references",
+      "line_start": 4085,
+      "line_end": 4101,
+      "size": 17,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_build_test_reference_excerpt",
+      "line_start": 4104,
+      "line_end": 4110,
+      "size": 7,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 2
+    },
+    {
+      "name": "_maybe_grounded_code_analysis_fastpath",
+      "line_start": 4112,
+      "line_end": 4160,
+      "size": 49,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "self_uses_total": 20,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_chat_ui_background_change_query",
+      "line_start": 4163,
+      "line_end": 4164,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_chat_ui_background_restore_query",
+      "line_start": 4167,
+      "line_end": 4168,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_chat_send_button_move_query",
+      "line_start": 4171,
+      "line_end": 4172,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_blocks_grounded_ui_edit_fastpath",
+      "line_start": 4175,
+      "line_end": 4189,
+      "size": 15,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_maybe_grounded_ui_edit_fastpath",
+      "line_start": 4191,
+      "line_end": 4287,
+      "size": 97,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "self_uses_total": 20,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_qc_live_query",
+      "line_start": 4290,
+      "line_end": 4296,
+      "size": 7,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_maybe_qc_live_fastpath",
+      "line_start": 4298,
+      "line_end": 4364,
+      "size": 67,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "self_uses_total": 10,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_brain_status_query",
+      "line_start": 4367,
+      "line_end": 4368,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_deep_brain_analysis_query",
+      "line_start": 4371,
+      "line_end": 4372,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_looks_like_deep_analysis",
+      "line_start": 4375,
+      "line_end": 4376,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_deep_risk_analysis_query",
+      "line_start": 4379,
+      "line_end": 4380,
+      "size": 2,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_deep_edge_analysis_query",
+      "line_start": 4383,
+      "line_end": 4384,
+      "size": 2,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_deep_strategy_analysis_query",
+      "line_start": 4387,
+      "line_end": 4388,
+      "size": 2,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_deep_pipeline_analysis_query",
+      "line_start": 4391,
+      "line_end": 4392,
+      "size": 2,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_self_build_query",
+      "line_start": 4395,
+      "line_end": 4396,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_self_build_resolution_query",
+      "line_start": 4399,
+      "line_end": 4400,
+      "size": 2,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_consciousness_query",
+      "line_start": 4403,
+      "line_end": 4404,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_abstract_reasoning_query",
+      "line_start": 4407,
+      "line_end": 4408,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_normalize_model_priority",
+      "line_start": 4411,
+      "line_end": 4413,
+      "size": 3,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 2
+    },
+    {
+      "name": "_is_operational_agent_query",
+      "line_start": 4416,
+      "line_end": 4417,
+      "size": 2,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "message",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_format_action_value",
+      "line_start": 4420,
+      "line_end": 4440,
+      "size": 21,
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "first_arg": "value",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_fmt_check_port",
+      "line_start": 4447,
+      "line_end": 4473,
+      "size": 27,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_fmt_check_http_service",
+      "line_start": 4476,
+      "line_end": 4486,
+      "size": 11,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_fmt_check_all_services",
+      "line_start": 4489,
+      "line_end": 4502,
+      "size": 14,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_fmt_check_service_status",
+      "line_start": 4505,
+      "line_end": 4517,
+      "size": 13,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_fmt_get_live_autonomy_status",
+      "line_start": 4520,
+      "line_end": 4537,
+      "size": 18,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_fmt_run_diagnostic",
+      "line_start": 4540,
+      "line_end": 4552,
+      "size": 13,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_fmt_get_system_info",
+      "line_start": 4555,
+      "line_end": 4568,
+      "size": 14,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_fmt_run_command",
+      "line_start": 4571,
+      "line_end": 4581,
+      "size": 11,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_fmt_read_file",
+      "line_start": 4584,
+      "line_end": 4591,
+      "size": 8,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_fmt_list_directory",
+      "line_start": 4594,
+      "line_end": 4608,
+      "size": 15,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_fmt_search_files",
+      "line_start": 4611,
+      "line_end": 4625,
+      "size": 15,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_fmt_list_processes",
+      "line_start": 4628,
+      "line_end": 4642,
+      "size": 15,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_fmt_grep_codebase",
+      "line_start": 4646,
+      "line_end": 4665,
+      "size": 20,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_fmt_list_recent_brain_changes",
+      "line_start": 4668,
+      "line_end": 4694,
+      "size": 27,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_fmt_get_chat_metrics",
+      "line_start": 4697,
+      "line_end": 4720,
+      "size": 24,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_fmt_semantic_memory_search",
+      "line_start": 4723,
+      "line_end": 4744,
+      "size": 22,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_fmt_get_technical_introspection",
+      "line_start": 4747,
+      "line_end": 4774,
+      "size": 28,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_format_tool_result",
+      "line_start": 4803,
+      "line_end": 4847,
+      "size": 45,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 5
+    },
+    {
+      "name": "_summarize_action_output",
+      "line_start": 4850,
+      "line_end": 4856,
+      "size": 7,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 2
+    },
+    {
+      "name": "_render_operational_agent_summary",
+      "line_start": 4859,
+      "line_end": 4939,
+      "size": 81,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 2
+    },
+    {
+      "name": "_health_fastpath",
+      "line_start": 4941,
+      "line_end": 4948,
+      "size": 8,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 6,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_greeting_fastpath",
+      "line_start": 4950,
+      "line_end": 4953,
+      "size": 4,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_capabilities_fastpath",
+      "line_start": 4955,
+      "line_end": 4958,
+      "size": 4,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_policy_route_decision",
+      "line_start": 4960,
+      "line_end": 5146,
+      "size": 187,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 24,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_brain_status_fastpath",
+      "line_start": 5148,
+      "line_end": 5175,
+      "size": 28,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 6,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_deep_brain_analysis_fastpath",
+      "line_start": 5177,
+      "line_end": 5206,
+      "size": 30,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_deep_risk_analysis_fastpath",
+      "line_start": 5208,
+      "line_end": 5223,
+      "size": 16,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_deep_edge_analysis_fastpath",
+      "line_start": 5225,
+      "line_end": 5237,
+      "size": 13,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_deep_strategy_analysis_fastpath",
+      "line_start": 5239,
+      "line_end": 5252,
+      "size": 14,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_deep_pipeline_analysis_fastpath",
+      "line_start": 5254,
+      "line_end": 5267,
+      "size": 14,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_self_build_fastpath",
+      "line_start": 5269,
+      "line_end": 5285,
+      "size": 17,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_self_build_resolution_fastpath",
+      "line_start": 5287,
+      "line_end": 5308,
+      "size": 22,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_consciousness_fastpath",
+      "line_start": 5310,
+      "line_end": 5323,
+      "size": 14,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_dashboard_status_fastpath",
+      "line_start": 5325,
+      "line_end": 5363,
+      "size": 39,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_utility_status_fastpath",
+      "line_start": 5365,
+      "line_end": 5387,
+      "size": 23,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 8,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_python_version_fastpath",
+      "line_start": 5391,
+      "line_end": 5402,
+      "size": 12,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_disk_space_fastpath",
+      "line_start": 5404,
+      "line_end": 5435,
+      "size": 32,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_running_services_fastpath",
+      "line_start": 5437,
+      "line_end": 5480,
+      "size": 44,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_search_files_fastpath",
+      "line_start": 5482,
+      "line_end": 5542,
+      "size": 61,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_list_directory_fastpath",
+      "line_start": 5544,
+      "line_end": 5564,
+      "size": 21,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 4,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_current_time_fastpath",
+      "line_start": 5566,
+      "line_end": 5571,
+      "size": 6,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_system_reply",
+      "line_start": 5575,
+      "line_end": 5577,
+      "size": 3,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_maybe_persist_correction",
+      "line_start": 5579,
+      "line_end": 5622,
+      "size": 44,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 6,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_save_turn",
+      "line_start": 5624,
+      "line_end": 5632,
+      "size": 9,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "self_uses_total": 12,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_sanitize_memory_content",
+      "line_start": 5635,
+      "line_end": 5654,
+      "size": 20,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_is_temporal_query",
+      "line_start": 5657,
+      "line_end": 5658,
+      "size": 2,
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "first_arg": "cls",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_maybe_dev_block",
+      "line_start": 5660,
+      "line_end": 5674,
+      "size": 15,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 2,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "_get_curated_ingestion_response",
+      "line_start": 5676,
+      "line_end": 5729,
+      "size": 54,
+      "decorators": [],
+      "is_async": false,
+      "first_arg": "self",
+      "self_uses_total": 0,
+      "cls_uses_total": 0
+    },
+    {
+      "name": "close",
+      "line_start": 5731,
+      "line_end": 5737,
+      "size": 7,
+      "decorators": [],
+      "is_async": true,
+      "first_arg": "self",
+      "self_uses_total": 8,
+      "cls_uses_total": 0
+    }
+  ],
+  "fmt_bodies_analysis": [
+    {
+      "name": "_fmt_check_port",
+      "calls_external": [
+        "list"
+      ],
+      "uses_cls_attr": [],
+      "uses_self": false,
+      "exceptions": [],
+      "raises": [],
+      "imports_inside": [],
+      "string_literal_count": 26,
+      "returns_str": true
+    },
+    {
+      "name": "_fmt_check_http_service",
+      "calls_external": [],
+      "uses_cls_attr": [],
+      "uses_self": false,
+      "exceptions": [],
+      "raises": [],
+      "imports_inside": [],
+      "string_literal_count": 16,
+      "returns_str": true
+    },
+    {
+      "name": "_fmt_check_all_services",
+      "calls_external": [],
+      "uses_cls_attr": [],
+      "uses_self": false,
+      "exceptions": [],
+      "raises": [],
+      "imports_inside": [],
+      "string_literal_count": 19,
+      "returns_str": true
+    },
+    {
+      "name": "_fmt_check_service_status",
+      "calls_external": [
+        "isinstance",
+        "isinstance"
+      ],
+      "uses_cls_attr": [],
+      "uses_self": false,
+      "exceptions": [],
+      "raises": [],
+      "imports_inside": [],
+      "string_literal_count": 12,
+      "returns_str": true
+    },
+    {
+      "name": "_fmt_get_live_autonomy_status",
+      "calls_external": [],
+      "uses_cls_attr": [],
+      "uses_self": false,
+      "exceptions": [],
+      "raises": [],
+      "imports_inside": [],
+      "string_literal_count": 25,
+      "returns_str": true
+    },
+    {
+      "name": "_fmt_run_diagnostic",
+      "calls_external": [],
+      "uses_cls_attr": [],
+      "uses_self": false,
+      "exceptions": [],
+      "raises": [],
+      "imports_inside": [],
+      "string_literal_count": 19,
+      "returns_str": true
+    },
+    {
+      "name": "_fmt_get_system_info",
+      "calls_external": [],
+      "uses_cls_attr": [],
+      "uses_self": false,
+      "exceptions": [],
+      "raises": [],
+      "imports_inside": [],
+      "string_literal_count": 21,
+      "returns_str": true
+    },
+    {
+      "name": "_fmt_run_command",
+      "calls_external": [
+        "len"
+      ],
+      "uses_cls_attr": [],
+      "uses_self": false,
+      "exceptions": [],
+      "raises": [],
+      "imports_inside": [],
+      "string_literal_count": 10,
+      "returns_str": true
+    },
+    {
+      "name": "_fmt_read_file",
+      "calls_external": [
+        "len"
+      ],
+      "uses_cls_attr": [],
+      "uses_self": false,
+      "exceptions": [],
+      "raises": [],
+      "imports_inside": [],
+      "string_literal_count": 17,
+      "returns_str": true
+    },
+    {
+      "name": "_fmt_list_directory",
+      "calls_external": [
+        "isinstance",
+        "isinstance",
+        "isinstance",
+        "str",
+        "len",
+        "len",
+        "len",
+        "str",
+        "len",
+        "str",
+        "str"
+      ],
+      "uses_cls_attr": [],
+      "uses_self": false,
+      "exceptions": [],
+      "raises": [],
+      "imports_inside": [],
+      "string_literal_count": 13,
+      "returns_str": true
+    },
+    {
+      "name": "_fmt_search_files",
+      "calls_external": [
+        "isinstance",
+        "str",
+        "isinstance",
+        "len",
+        "len",
+        "len"
+      ],
+      "uses_cls_attr": [],
+      "uses_self": false,
+      "exceptions": [],
+      "raises": [],
+      "imports_inside": [],
+      "string_literal_count": 12,
+      "returns_str": true
+    },
+    {
+      "name": "_fmt_list_processes",
+      "calls_external": [
+        "isinstance",
+        "str",
+        "isinstance",
+        "len",
+        "len",
+        "len"
+      ],
+      "uses_cls_attr": [],
+      "uses_self": false,
+      "exceptions": [],
+      "raises": [],
+      "imports_inside": [],
+      "string_literal_count": 13,
+      "returns_str": true
+    },
+    {
+      "name": "_fmt_grep_codebase",
+      "calls_external": [
+        "isinstance",
+        "isinstance",
+        "len",
+        "str",
+        "len",
+        "isinstance",
+        "len",
+        "len"
+      ],
+      "uses_cls_attr": [],
+      "uses_self": false,
+      "exceptions": [],
+      "raises": [],
+      "imports_inside": [],
+      "string_literal_count": 19,
+      "returns_str": true
+    },
+    {
+      "name": "_fmt_list_recent_brain_changes",
+      "calls_external": [
+        "isinstance",
+        "isinstance",
+        "isinstance",
+        "len",
+        "str",
+        "isinstance",
+        "isinstance",
+        "len",
+        "len",
+        "str"
+      ],
+      "uses_cls_attr": [],
+      "uses_self": false,
+      "exceptions": [],
+      "raises": [],
+      "imports_inside": [],
+      "string_literal_count": 37,
+      "returns_str": true
+    },
+    {
+      "name": "_fmt_get_chat_metrics",
+      "calls_external": [
+        "isinstance",
+        "isinstance",
+        "str",
+        "isinstance",
+        "isinstance",
+        "isinstance",
+        "sum",
+        "str",
+        "sorted",
+        "sorted",
+        "isinstance",
+        "len",
+        "isinstance",
+        "isinstance"
+      ],
+      "uses_cls_attr": [],
+      "uses_self": false,
+      "exceptions": [],
+      "raises": [],
+      "imports_inside": [],
+      "string_literal_count": 26,
+      "returns_str": true
+    },
+    {
+      "name": "_fmt_semantic_memory_search",
+      "calls_external": [
+        "isinstance",
+        "isinstance",
+        "len",
+        "str",
+        "isinstance",
+        "len",
+        "isinstance",
+        "len",
+        "str",
+        "str"
+      ],
+      "uses_cls_attr": [],
+      "uses_self": false,
+      "exceptions": [],
+      "raises": [],
+      "imports_inside": [],
+      "string_literal_count": 32,
+      "returns_str": true
+    },
+    {
+      "name": "_fmt_get_technical_introspection",
+      "calls_external": [
+        "isinstance",
+        "isinstance",
+        "isinstance",
+        "isinstance",
+        "isinstance",
+        "isinstance",
+        "str",
+        "len",
+        "str",
+        "len"
+      ],
+      "uses_cls_attr": [],
+      "uses_self": false,
+      "exceptions": [],
+      "raises": [],
+      "imports_inside": [],
+      "string_literal_count": 43,
+      "returns_str": true
+    }
+  ],
+  "fmt_builtin_calls": [
+    [
+      "isinstance",
+      35
+    ],
+    [
+      "len",
+      25
+    ],
+    [
+      "str",
+      16
+    ],
+    [
+      "sorted",
+      2
+    ],
+    [
+      "list",
+      1
+    ],
+    [
+      "sum",
+      1
+    ]
+  ],
+  "fmt_cross_calls": [],
+  "fmt_uses_self_count": {},
+  "fmt_uses_cls_attr_count": {},
+  "fmt_local_caller_lines": [
+    {
+      "name": "_fmt_search_files",
+      "line": 4611,
+      "text": "def _fmt_search_files(cls, out: Dict) -> str:"
+    },
+    {
+      "name": "_fmt_search_files",
+      "line": 4792,
+      "text": "\"search_files\":            \"_fmt_search_files\","
+    },
+    {
+      "name": "_fmt_run_command",
+      "line": 4571,
+      "text": "def _fmt_run_command(cls, out: Dict) -> str:"
+    },
+    {
+      "name": "_fmt_run_command",
+      "line": 4789,
+      "text": "\"run_command\":             \"_fmt_run_command\","
+    },
+    {
+      "name": "_fmt_grep_codebase",
+      "line": 4646,
+      "text": "def _fmt_grep_codebase(cls, out) -> str:"
+    },
+    {
+      "name": "_fmt_grep_codebase",
+      "line": 4795,
+      "text": "\"grep_codebase\":               \"_fmt_grep_codebase\","
+    },
+    {
+      "name": "_fmt_get_technical_introspection",
+      "line": 4747,
+      "text": "def _fmt_get_technical_introspection(cls, out: Dict) -> str:"
+    },
+    {
+      "name": "_fmt_get_technical_introspection",
+      "line": 4799,
+      "text": "\"get_technical_introspection\": \"_fmt_get_technical_introspection\","
+    },
+    {
+      "name": "_fmt_check_all_services",
+      "line": 4489,
+      "text": "def _fmt_check_all_services(cls, out: Dict) -> str:"
+    },
+    {
+      "name": "_fmt_check_all_services",
+      "line": 4784,
+      "text": "\"check_all_services\":      \"_fmt_check_all_services\","
+    },
+    {
+      "name": "_fmt_get_system_info",
+      "line": 4555,
+      "text": "def _fmt_get_system_info(cls, out: Dict) -> str:"
+    },
+    {
+      "name": "_fmt_get_system_info",
+      "line": 4788,
+      "text": "\"get_system_info\":         \"_fmt_get_system_info\","
+    },
+    {
+      "name": "_fmt_list_recent_brain_changes",
+      "line": 4668,
+      "text": "def _fmt_list_recent_brain_changes(cls, out: Dict) -> str:"
+    },
+    {
+      "name": "_fmt_list_recent_brain_changes",
+      "line": 4796,
+      "text": "\"list_recent_brain_changes\":   \"_fmt_list_recent_brain_changes\","
+    },
+    {
+      "name": "_fmt_list_processes",
+      "line": 4628,
+      "text": "def _fmt_list_processes(cls, out: Dict) -> str:"
+    },
+    {
+      "name": "_fmt_list_processes",
+      "line": 4793,
+      "text": "\"list_processes\":          \"_fmt_list_processes\","
+    },
+    {
+      "name": "_fmt_check_port",
+      "line": 4447,
+      "text": "def _fmt_check_port(cls, out: Dict) -> str:"
+    },
+    {
+      "name": "_fmt_check_port",
+      "line": 4781,
+      "text": "\"check_port\":              \"_fmt_check_port\","
+    },
+    {
+      "name": "_fmt_read_file",
+      "line": 4584,
+      "text": "def _fmt_read_file(cls, out: Dict) -> str:"
+    },
+    {
+      "name": "_fmt_read_file",
+      "line": 4790,
+      "text": "\"read_file\":               \"_fmt_read_file\","
+    },
+    {
+      "name": "_fmt_check_http_service",
+      "line": 4476,
+      "text": "def _fmt_check_http_service(cls, out: Dict) -> str:"
+    },
+    {
+      "name": "_fmt_check_http_service",
+      "line": 4782,
+      "text": "\"check_http_service\":      \"_fmt_check_http_service\","
+    },
+    {
+      "name": "_fmt_check_http_service",
+      "line": 4783,
+      "text": "\"check_url\":               \"_fmt_check_http_service\","
+    },
+    {
+      "name": "_fmt_list_directory",
+      "line": 4594,
+      "text": "def _fmt_list_directory(cls, out) -> str:"
+    },
+    {
+      "name": "_fmt_list_directory",
+      "line": 4791,
+      "text": "\"list_directory\":          \"_fmt_list_directory\","
+    },
+    {
+      "name": "_fmt_semantic_memory_search",
+      "line": 4723,
+      "text": "def _fmt_semantic_memory_search(cls, out: Dict) -> str:"
+    },
+    {
+      "name": "_fmt_semantic_memory_search",
+      "line": 4798,
+      "text": "\"semantic_memory_search\":      \"_fmt_semantic_memory_search\","
+    },
+    {
+      "name": "_fmt_check_service_status",
+      "line": 4505,
+      "text": "def _fmt_check_service_status(cls, out: Dict) -> str:"
+    },
+    {
+      "name": "_fmt_check_service_status",
+      "line": 4785,
+      "text": "\"check_service_status\":    \"_fmt_check_service_status\","
+    },
+    {
+      "name": "_fmt_get_live_autonomy_status",
+      "line": 4520,
+      "text": "def _fmt_get_live_autonomy_status(cls, out: Dict) -> str:"
+    },
+    {
+      "name": "_fmt_get_live_autonomy_status",
+      "line": 4786,
+      "text": "\"get_live_autonomy_status\": \"_fmt_get_live_autonomy_status\","
+    },
+    {
+      "name": "_fmt_run_diagnostic",
+      "line": 4540,
+      "text": "def _fmt_run_diagnostic(cls, out: Dict) -> str:"
+    },
+    {
+      "name": "_fmt_run_diagnostic",
+      "line": 4787,
+      "text": "\"run_diagnostic\":          \"_fmt_run_diagnostic\","
+    },
+    {
+      "name": "_fmt_get_chat_metrics",
+      "line": 4697,
+      "text": "def _fmt_get_chat_metrics(cls, out: Dict) -> str:"
+    },
+    {
+      "name": "_fmt_get_chat_metrics",
+      "line": 4797,
+      "text": "\"get_chat_metrics\":            \"_fmt_get_chat_metrics\","
+    }
+  ],
+  "fmt_and_dispatcher_external_callers_repo": []
+}

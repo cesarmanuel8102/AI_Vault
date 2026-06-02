@@ -1,0 +1,38 @@
+{
+  "task": "B7-STRANGLER-06-INVENTORY",
+  "repo_root": "C:/AI_VAULT",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "3162aa2b",
+  "origin_head": "3162aa2b",
+  "head_match": true,
+  "head_message": "refactor(b7): extract response hygiene sanitizer from session module",
+  "staged_files": [],
+  "modified_tracked_files_unrelated": [
+    "memory/semantic/semantic_memory.jsonl"
+  ],
+  "untracked_unrelated_categories": [
+    "tmp_agent/strategies/mean_reversion_eq/* (research artifacts)",
+    "tmp_agent/brain_v9/chat_area_upgrade/* (rollback/diagnostic)",
+    "tmp_agent/brain_v9/ops/smoke_*.ps1 / tool01_write_test.py (smoke artifacts)",
+    "tmp_agent/visual_trace_console_v1/* (visual trace artifacts)",
+    "apply_chat_patch.py / tmp_agent/bor3_llm_audit*.{py,json} (audit artifacts)",
+    "C\\357\\200\\272AI_VAULT* (mojibake ledger backup)"
+  ],
+  "session_py_lines_post_b7_05": 5743,
+  "cumulative_reduction_lines": 1894,
+  "cumulative_reduction_pct": 24.80,
+  "b7_history": [
+    {"id": "B7-02", "commit": "22c2b6af", "module": "session_chat_metrics.py"},
+    {"id": "B7-03", "commit": "9de07d65", "module": "session_query_predicates.py"},
+    {"id": "B7-04", "commit": "57a5e3a4", "module": "session_routing_constants.py"},
+    {"id": "B7-05", "commit": "3162aa2b", "module": "session_response_hygiene.py"}
+  ],
+  "rules_acknowledged": {
+    "no_commit": true,
+    "no_push": true,
+    "no_session_py_modification": true,
+    "no_test_modification": true,
+    "evidence_only": true,
+    "protected_paths_untouched": true
+  }
+}

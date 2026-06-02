@@ -1,0 +1,85 @@
+{
+  "task": "B7-STRANGLER-06-INVENTORY",
+  "phase": "C_fmt_bundle_deep_analysis",
+  "confirmations": {
+    "exact_count": 17,
+    "all_classmethods": true,
+    "all_self_uses_zero": true,
+    "all_cls_uses_zero": true,
+    "no_cross_fmt_calls": true,
+    "external_repo_callers_count": 0,
+    "local_session_py_references": 35,
+    "local_reference_breakdown": "17 method definitions + 17 _TOOL_FORMATTERS values + 1 alias entry (check_url -> _fmt_check_http_service)"
+  },
+  "fmt_methods": [
+    {"name": "_fmt_check_port",                  "line_start": 4447, "line_end": 4473, "size": 27},
+    {"name": "_fmt_check_http_service",          "line_start": 4476, "line_end": 4486, "size": 11},
+    {"name": "_fmt_check_all_services",          "line_start": 4489, "line_end": 4502, "size": 14},
+    {"name": "_fmt_check_service_status",        "line_start": 4505, "line_end": 4517, "size": 13},
+    {"name": "_fmt_get_live_autonomy_status",    "line_start": 4520, "line_end": 4537, "size": 18},
+    {"name": "_fmt_run_diagnostic",              "line_start": 4540, "line_end": 4552, "size": 13},
+    {"name": "_fmt_get_system_info",             "line_start": 4555, "line_end": 4568, "size": 14},
+    {"name": "_fmt_run_command",                 "line_start": 4571, "line_end": 4581, "size": 11},
+    {"name": "_fmt_read_file",                   "line_start": 4584, "line_end": 4591, "size": 8},
+    {"name": "_fmt_list_directory",              "line_start": 4594, "line_end": 4608, "size": 15},
+    {"name": "_fmt_search_files",                "line_start": 4611, "line_end": 4625, "size": 15},
+    {"name": "_fmt_list_processes",              "line_start": 4628, "line_end": 4642, "size": 15},
+    {"name": "_fmt_grep_codebase",               "line_start": 4646, "line_end": 4665, "size": 20},
+    {"name": "_fmt_list_recent_brain_changes",   "line_start": 4668, "line_end": 4694, "size": 27},
+    {"name": "_fmt_get_chat_metrics",            "line_start": 4697, "line_end": 4720, "size": 24},
+    {"name": "_fmt_semantic_memory_search",      "line_start": 4723, "line_end": 4744, "size": 22},
+    {"name": "_fmt_get_technical_introspection", "line_start": 4747, "line_end": 4774, "size": 28}
+  ],
+  "fmt_bundle_total_lines": 295,
+  "builtin_call_surface": [
+    ["isinstance", 35], ["len", 25], ["str", 16], ["sorted", 2], ["list", 1], ["sum", 1]
+  ],
+  "intra_module_imports_used": ["Dict (typing)"],
+  "dispatcher_model": {
+    "registry_attribute": "_TOOL_FORMATTERS",
+    "registry_location": "L4780-L4800 (21 lines, 18 entries; 17 unique formatter names + 1 alias check_url -> _fmt_check_http_service)",
+    "dispatcher_method": "_format_tool_result",
+    "dispatcher_location": "L4803-L4847 (45 lines, classmethod, cls_uses_total=5)",
+    "dispatcher_resolution": "name = _TOOL_FORMATTERS.get(tool_name); fn = getattr(cls, name, None); return fn(out) if fn else default",
+    "critical_constraint": "getattr(cls, name) MUST resolve to a callable that accepts (out) — i.e. a classmethod-style descriptor whose __get__ binds correctly when invoked as fn(out)."
+  },
+  "extraction_decision": {
+    "scope": "extract _fmt_* only (17 methods)",
+    "do_not_move": ["_TOOL_FORMATTERS", "_format_tool_result", "_format_action_value"],
+    "rationale_for_not_moving_dispatcher": [
+      "_format_tool_result resolves names against cls via getattr; moving formatters but keeping dispatcher in BrainSession ensures the existing dispatcher invariant is preserved unchanged (shims are still bound to cls).",
+      "Extracting dispatcher would require either: (a) moving registry+resolver to new module and adding a re-export back, OR (b) passing cls/registry across module boundary. Both increase blast radius unnecessarily for B7-06.",
+      "Defer dispatcher to a follow-up B7-07 once C1 is validated."
+    ]
+  },
+  "shim_form_analysis": {
+    "candidate_A": {
+      "form": "_fmt_x = classmethod(fmt_x)",
+      "viability": false,
+      "reason": "fmt_x signature is (out) — classmethod(fmt_x) would inject cls as first arg, making fmt_x receive cls=out and fail. Not viable without an adapter wrapper."
+    },
+    "candidate_B": {
+      "form": "_fmt_x = classmethod(lambda cls, out: fmt_x(out))",
+      "viability": true,
+      "drawback": "lambdas hurt traceback readability; 17 lines but opaque debugging."
+    },
+    "candidate_C_RECOMMENDED": {
+      "form": "@classmethod\ndef _fmt_x(cls, out):\n    return fmt_x(out)",
+      "viability": true,
+      "advantages": [
+        "Preserves getattr(cls, name) semantics: descriptor resolves to a bound method with arity (out,).",
+        "Readable tracebacks (frame name = `_fmt_x`).",
+        "Trivial to delete in a future cleanup once direct callers migrate."
+      ],
+      "size_per_shim_lines": 3,
+      "total_shim_lines": "~51 (17 shims × 3 lines)",
+      "net_session_py_reduction_lines": "295 (bundle removed) - 51 (shims added) = ~244 net lines down"
+    },
+    "selected": "candidate_C_RECOMMENDED"
+  },
+  "compatibility_test_required": [
+    "Invoke BrainSession._format_tool_result(tool_name, mock_result) for each of the 18 _TOOL_FORMATTERS keys (17 names + alias `check_url`) and assert the dispatcher still resolves through shims via getattr(cls, _TOOL_FORMATTERS[tool_name]).",
+    "Assert each shim `getattr(BrainSession, '_fmt_<name>')` is callable AND classmethod-bound.",
+    "Assert each module-level `fmt_<name>(out)` returns the same string as `BrainSession._fmt_<name>(out)` for representative `out` payloads."
+  ]
+}

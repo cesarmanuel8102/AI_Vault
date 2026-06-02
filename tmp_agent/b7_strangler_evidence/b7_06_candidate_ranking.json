@@ -1,0 +1,139 @@
+{
+  "task": "B7-STRANGLER-06-INVENTORY",
+  "phase": "B_candidate_ranking",
+  "ranking_criteria": [
+    "isolation: zero coupling to BrainSession instance/class state (low risk)",
+    "size: number of lines extractable",
+    "cohesion: methods form a logical bundle",
+    "external_call_surface: avoids touching protected paths",
+    "shim_simplicity: trivial classmethod/staticmethod redirects"
+  ],
+  "candidates": [
+    {
+      "id": "C1",
+      "name": "_fmt_* tool result formatters bundle",
+      "scope": "17 @classmethod methods _fmt_check_port .. _fmt_get_technical_introspection",
+      "line_range": "L4447-4774",
+      "lines": 295,
+      "isolation": "PERFECT (all 17: self_uses_total=0, cls_uses_total=0, no cross-fmt calls, no external repo callers)",
+      "external_call_surface": "only `isinstance` (35), `len` (25), `str` (16), `sorted` (2), `list` (1), `sum` (1) — pure stdlib",
+      "callers": "only via _TOOL_FORMATTERS dispatcher (L4780-4800) → _format_tool_result (L4803-4847) via getattr(cls, name)",
+      "risk": "low",
+      "estimated_session_py_reduction_lines": -244,
+      "shim_strategy": "@classmethod def _fmt_x(cls, out): return fmt_x(out)",
+      "rank": 1,
+      "rationale": "Cleanest extraction in the file. Largest single isolated bundle (52% of all pure-modular lines). Already validated by B7-05 inventory as runner-up C2."
+    },
+    {
+      "id": "C2",
+      "name": "_format_tool_result + _format_action_value + _TOOL_FORMATTERS",
+      "scope": "_format_action_value (L4420-4440, 21L, static), _TOOL_FORMATTERS (L4780-4800, 21L), _format_tool_result (L4803-4847, 45L, classmethod, uses TOOL_FORMATTERS + getattr)",
+      "lines": 87,
+      "isolation": "_format_tool_result uses cls.* attribute access for getattr(cls, name) — moving it requires either passing the registry+resolver, or moving formatters with it",
+      "risk": "medium",
+      "estimated_session_py_reduction_lines": -70,
+      "shim_strategy": "delegating method that calls module function with cls or registry argument",
+      "rank": 5,
+      "rationale": "Coupled to _fmt_* dispatch via getattr(cls,...). Better extracted AFTER C1 in a follow-up (B7-07). Higher complexity per line moved."
+    },
+    {
+      "id": "C3",
+      "name": "_render_* operational summaries",
+      "scope": "_render_agent_failure_reply (L2020-2054, 35L, classmethod), _render_operational_agent_summary (L4859-4939, 81L, classmethod)",
+      "lines": 116,
+      "isolation": "both are classmethods with self_uses=0; cls_uses>0 (cls.* attribute access for sibling classmethods)",
+      "risk": "medium",
+      "estimated_session_py_reduction_lines": -110,
+      "shim_strategy": "delegate to module function with extra cls/dependency arguments",
+      "rank": 4,
+      "rationale": "Sizable, but cls_uses>0 means cross-method dependencies need re-wiring. Lower cohesion than C1."
+    },
+    {
+      "id": "C4",
+      "name": "_truncate_to_budget + _truncate_message + _context_budget",
+      "scope": "_truncate_message (L1902-1908, 7L, static), _truncate_to_budget (L1911-1957, 47L, classmethod, cls_uses=4), _context_budget (L1959-1998, 40L, instance method)",
+      "lines": 94,
+      "isolation": "_context_budget is an instance method (uses self.* config), couples cluster to BrainSession state",
+      "risk": "medium",
+      "estimated_session_py_reduction_lines": -80,
+      "rank": 6,
+      "rationale": "Mixed bundle (instance + class + static). _context_budget keeps it tethered. Defer."
+    },
+    {
+      "id": "C5",
+      "name": "_extract_* + _build_* + _slice_lines + _find_test_references (grounded code helpers)",
+      "scope": "_extract_candidate_paths (26L static), _extract_symbol_hint (17L static), _slice_lines (7L static), _build_grounded_file_excerpt (43L classmethod cls=2), _find_test_references (17L classmethod cls=0), _build_test_reference_excerpt (7L classmethod cls=2)",
+      "line_range": "L3984-4110",
+      "lines": 117,
+      "isolation": "good: most are static or pure classmethod; 2 helpers use cls.* for sibling helpers",
+      "risk": "low-medium",
+      "estimated_session_py_reduction_lines": -100,
+      "rank": 3,
+      "rationale": "Solid contiguous block (L3984-L4110). Smaller than C1 but well-cohesive. Strong B7-07 candidate."
+    },
+    {
+      "id": "C6",
+      "name": "Query intent helpers: _prefers_no_tool_analysis + _has_explicit_tool_target + _sanitize_memory_content + _looks_like_canned_failure + _looks_like_deep_analysis + _contains_raw_tool_markup",
+      "scope": "6 mixed pure helpers across L1767-1815, L2007-2013, L4375-4376, L5635-5654",
+      "lines": 76,
+      "isolation": "all pure (self=0, cls=0)",
+      "risk": "low",
+      "estimated_session_py_reduction_lines": -60,
+      "rank": 7,
+      "rationale": "Lower cohesion (different domains). Better split into 2-3 modules later."
+    },
+    {
+      "id": "C7",
+      "name": "_should_use_compact_chat_prompt + _should_use_analysis_frontier",
+      "scope": "L2174-2247, both classmethod, cls_uses=8 and 14 respectively",
+      "lines": 72,
+      "isolation": "high cls.* usage (sibling classmethod calls)",
+      "risk": "medium",
+      "estimated_session_py_reduction_lines": -55,
+      "rank": 8,
+      "rationale": "cls.* coupling to other prompt-strategy classmethods makes shim harder."
+    },
+    {
+      "id": "C8",
+      "name": "Static utilities: _persist_chat_dev_mode_default + _load_chat_dev_mode_default + _utility_score + _utility_blockers + _blocks_grounded_ui_edit_fastpath",
+      "scope": "5 static utilities, ~36L total",
+      "lines": 36,
+      "isolation": "perfect (all static, self=0, cls=0)",
+      "risk": "low",
+      "estimated_session_py_reduction_lines": -25,
+      "rank": 9,
+      "rationale": "Too small individually, low cohesion across them. Roll-up later."
+    },
+    {
+      "id": "C9",
+      "name": "_is_* small predicates not yet extracted (30 pure, 65L)",
+      "scope": "30 small classifier predicates at various locations",
+      "lines": 65,
+      "isolation": "perfect",
+      "risk": "low",
+      "estimated_session_py_reduction_lines": -45,
+      "rank": 10,
+      "rationale": "B7-03 already extracted the cohesive query-intent _is_* set. Remainder is scattered/heterogeneous; lower ROI per line moved."
+    },
+    {
+      "id": "C10",
+      "name": "_cmd_* slash-command handlers (31 methods, 703 lines)",
+      "scope": "L?-?",
+      "lines": 703,
+      "isolation": "all use self heavily (instance methods); 0 pure",
+      "risk": "high",
+      "estimated_session_py_reduction_lines": "n/a (would require deep self-decoupling)",
+      "rank": 11,
+      "rationale": "Largest single group BUT all instance methods. Would require splitting per-command handlers and broad refactor. Out of scope for strangler-style B7."
+    }
+  ],
+  "selected_for_b7_06_implement": "C1",
+  "selection_reasoning": [
+    "Largest fully-pure isolated bundle in session.py (295 lines, 52% of all pure-modular surface).",
+    "Zero internal coupling: all 17 methods have self_uses=0 AND cls_uses=0 AND no cross-fmt calls.",
+    "Zero external repo callers (verified via repo-wide scan in _b7_06_inventory_extra.json).",
+    "Single dispatcher entry point (_TOOL_FORMATTERS + _format_tool_result via getattr(cls, name)) — preservable with same-arity classmethod shims.",
+    "Already pre-identified as the natural B7-06 successor in B7-05 inventory (runner-up C2).",
+    "Lowest implementation risk per line moved across all candidates."
+  ]
+}

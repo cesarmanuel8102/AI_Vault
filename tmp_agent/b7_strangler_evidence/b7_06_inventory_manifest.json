@@ -1,0 +1,56 @@
+{
+  "task": "B7-STRANGLER-06-INVENTORY",
+  "phase": "F_final_manifest",
+  "branch": "codex/own-capital-sustainable-return",
+  "head": "3162aa2b6cc5088ce179311ba68db4c2458b6687",
+  "head_message": "refactor(b7): extract response hygiene sanitizer from session module",
+  "session_py_lines": 5743,
+  "session_py_diff_status": "no diff (untouched)",
+  "staged_files": [],
+  "modified_productive_files": [],
+  "evidence_files_emitted": [
+    "b7_06_inventory_preflight.json",
+    "b7_06_session_inventory.json",
+    "b7_06_session_inventory.md",
+    "b7_06_candidate_ranking.json",
+    "b7_06_candidate_ranking.md",
+    "b7_06_fmt_bundle_analysis.json",
+    "b7_06_fmt_bundle_analysis.md",
+    "b7_06_selected_candidate_plan.json",
+    "b7_06_selected_candidate_plan.md",
+    "b7_06_readonly_validation_report.json",
+    "b7_06_inventory_manifest.json"
+  ],
+  "raw_helper_files_emitted": [
+    "_b7_06_analyzer.py",
+    "_b7_06_extra.py",
+    "_b7_06_inventory_raw.json",
+    "_b7_06_inventory_extra.json"
+  ],
+  "selected_candidate_for_b7_06_implement": {
+    "id": "C1",
+    "name": "_fmt_* tool result formatters bundle",
+    "method_count": 17,
+    "lines_to_extract": 295,
+    "new_module": "tmp_agent/brain_v9/core/session_fmt_helpers.py",
+    "shim_form": "@classmethod def _fmt_x(cls, out): return fmt_x(out)",
+    "estimated_session_py_reduction_lines": -244,
+    "risk": "low"
+  },
+  "validations_summary": {
+    "phase1_local_validation_ps1": "PASS",
+    "phase1_pytest_baseline": "PASS (5/5)",
+    "b7_carryover_pytest": "PASS (97/97)",
+    "session_py_import_smoke": "PASS",
+    "extracted_modules_import_smoke": "PASS"
+  },
+  "rules_compliance": {
+    "no_commit": true,
+    "no_push": true,
+    "no_session_py_modification": true,
+    "no_test_modification": true,
+    "evidence_only": true,
+    "protected_paths_untouched": true,
+    "already_extracted_modules_untouched": true
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "task": "B7-STRANGLER-06-INVENTORY",
+  "phase": "D_selected_candidate_plan",
+  "candidate": "C1",
+  "candidate_name": "_fmt_* tool result formatters bundle",
+  "new_module_path": "tmp_agent/brain_v9/core/session_fmt_helpers.py",
+  "symbols_to_move": [
+    {"old_name": "BrainSession._fmt_check_port",                  "new_name": "fmt_check_port",                  "old_lines": "L4447-4473"},
+    {"old_name": "BrainSession._fmt_check_http_service",          "new_name": "fmt_check_http_service",          "old_lines": "L4476-4486"},
+    {"old_name": "BrainSession._fmt_check_all_services",          "new_name": "fmt_check_all_services",          "old_lines": "L4489-4502"},
+    {"old_name": "BrainSession._fmt_check_service_status",        "new_name": "fmt_check_service_status",        "old_lines": "L4505-4517"},
+    {"old_name": "BrainSession._fmt_get_live_autonomy_status",    "new_name": "fmt_get_live_autonomy_status",    "old_lines": "L4520-4537"},
+    {"old_name": "BrainSession._fmt_run_diagnostic",              "new_name": "fmt_run_diagnostic",              "old_lines": "L4540-4552"},
+    {"old_name": "BrainSession._fmt_get_system_info",             "new_name": "fmt_get_system_info",             "old_lines": "L4555-4568"},
+    {"old_name": "BrainSession._fmt_run_command",                 "new_name": "fmt_run_command",                 "old_lines": "L4571-4581"},
+    {"old_name": "BrainSession._fmt_read_file",                   "new_name": "fmt_read_file",                   "old_lines": "L4584-4591"},
+    {"old_name": "BrainSession._fmt_list_directory",              "new_name": "fmt_list_directory",              "old_lines": "L4594-4608"},
+    {"old_name": "BrainSession._fmt_search_files",                "new_name": "fmt_search_files",                "old_lines": "L4611-4625"},
+    {"old_name": "BrainSession._fmt_list_processes",              "new_name": "fmt_list_processes",              "old_lines": "L4628-4642"},
+    {"old_name": "BrainSession._fmt_grep_codebase",               "new_name": "fmt_grep_codebase",               "old_lines": "L4646-4665"},
+    {"old_name": "BrainSession._fmt_list_recent_brain_changes",   "new_name": "fmt_list_recent_brain_changes",   "old_lines": "L4668-4694"},
+    {"old_name": "BrainSession._fmt_get_chat_metrics",            "new_name": "fmt_get_chat_metrics",            "old_lines": "L4697-4720"},
+    {"old_name": "BrainSession._fmt_semantic_memory_search",      "new_name": "fmt_semantic_memory_search",      "old_lines": "L4723-4744"},
+    {"old_name": "BrainSession._fmt_get_technical_introspection", "new_name": "fmt_get_technical_introspection", "old_lines": "L4747-4774"}
+  ],
+  "shim_form": "@classmethod\ndef _fmt_x(cls, out):\n    return fmt_x(out)",
+  "shim_count": 17,
+  "shims_to_keep_in_session_py": [
+    "_fmt_check_port", "_fmt_check_http_service", "_fmt_check_all_services",
+    "_fmt_check_service_status", "_fmt_get_live_autonomy_status", "_fmt_run_diagnostic",
+    "_fmt_get_system_info", "_fmt_run_command", "_fmt_read_file", "_fmt_list_directory",
+    "_fmt_search_files", "_fmt_list_processes", "_fmt_grep_codebase",
+    "_fmt_list_recent_brain_changes", "_fmt_get_chat_metrics", "_fmt_semantic_memory_search",
+    "_fmt_get_technical_introspection"
+  ],
+  "symbols_excluded_from_extraction": [
+    {"name": "_TOOL_FORMATTERS",     "reason": "dispatcher registry; keep with dispatcher"},
+    {"name": "_format_tool_result",  "reason": "uses getattr(cls, name); keep with shims for safest invariant preservation"},
+    {"name": "_format_action_value", "reason": "out of scope (separate concern, not _fmt_* bundle)"}
+  ],
+  "new_module_imports": ["from typing import Any, Dict"],
+  "new_module_signature_pattern": "def fmt_<name>(out: Dict) -> str:",
+  "tests_to_add": [
+    {
+      "path": "tests/unit/test_b7_fmt_helpers_import_compat.py",
+      "purpose": "Verify all 17 module-level fmt_<name> symbols are importable from session_fmt_helpers and that BrainSession._fmt_<name> still exists as classmethod-bound shim."
+    },
+    {
+      "path": "tests/unit/test_b7_fmt_helpers_dispatcher_compat.py",
+      "purpose": "Critical compatibility test: for each of 18 _TOOL_FORMATTERS keys (17 names + check_url alias), invoke BrainSession._format_tool_result(key, sample_payload) and assert it produces a non-empty string and equals the result of calling the corresponding module-level fmt_<name> directly. This validates getattr(cls, name) still resolves through shims."
+    },
+    {
+      "path": "tests/unit/test_b7_fmt_helpers_no_session_dependency.py",
+      "purpose": "Import session_fmt_helpers in isolation and call each fmt_<name>({}) without importing BrainSession. Asserts the helpers are independently usable (no hidden coupling)."
+    }
+  ],
+  "validations_to_run_post_implement": [
+    "tmp_agent/brain_v9/ops/phase1_local_validation.ps1",
+    "pytest tests/unit/test_phase1_import_baseline.py tests/unit/test_phase1_security_defaults.py",
+    "pytest -k b7_  (expect prior 97 carryover + new B7-06 tests still green)",
+    "python -c \"from tmp_agent.brain_v9.core.session_fmt_helpers import fmt_check_port, fmt_get_technical_introspection\"",
+    "python -c \"from tmp_agent.brain_v9.core.session import BrainSession; assert callable(getattr(BrainSession, '_fmt_check_port'))\""
+  ],
+  "rollback_plan": [
+    "git restore tmp_agent/brain_v9/core/session.py",
+    "rm tmp_agent/brain_v9/core/session_fmt_helpers.py",
+    "rm tests/unit/test_b7_fmt_helpers_*.py"
+  ],
+  "risks": [
+    {"risk": "shim arity mismatch", "mitigation": "use form C (classmethod def with explicit (cls, out) signature) — verified safe"},
+    {"risk": "alias check_url breaks if shim missing", "mitigation": "alias resolves via _TOOL_FORMATTERS['check_url'] -> '_fmt_check_http_service' which IS shimmed — verified"},
+    {"risk": "indentation/import drift in session.py during patch", "mitigation": "patch via surgical edit on contiguous L4447-L4774 block only"},
+    {"risk": "hidden self/cls usage in formatter bodies", "mitigation": "AST analysis confirmed self_uses_total=0, cls_uses_total=0 for all 17 (b7_06_inventory_extra.json)"}
+  ],
+  "estimated_metrics": {
+    "session_py_lines_before": 5743,
+    "session_py_lines_after_estimate": 5499,
+    "net_reduction_lines": -244,
+    "cumulative_reduction_after_b7_06": "7637 -> 5499 = -2138 / -28.0%"
+  },
+  "allowed_paths_for_b7_06_implement": [
+    "tmp_agent/brain_v9/core/session.py (modify ONLY the _fmt_* block + remove definitions; replace with shims)",
+    "tmp_agent/brain_v9/core/session_fmt_helpers.py (NEW)",
+    "tests/unit/test_b7_fmt_helpers_*.py (NEW, 3 files)",
+    "tmp_agent/b7_strangler_evidence/b7_06_*.{json,md,patch} (evidence)"
+  ],
+  "forbidden_paths": [
+    "tmp_agent/brain_v9/ui/*",
+    "memory/semantic/*",
+    "tmp_agent/strategies/*",
+    "docs/MIGRATION_CONTROL_LEDGER.md",
+    "ROADMAP_STATUS.json",
+    "tmp_agent/brain_v9/main.py",
+    "config.py",
+    "governance/execution_gate.py",
+    "api_security.py",
+    "Tool01 internals",
+    "routing core (_route_to_*, _maybe_*, _policy_*)",
+    "fastpath helpers (_*_fastpath)",
+    "session_chat_metrics.py / session_query_predicates.py / session_routing_constants.py / session_response_hygiene.py (already extracted)"
+  ]
+}

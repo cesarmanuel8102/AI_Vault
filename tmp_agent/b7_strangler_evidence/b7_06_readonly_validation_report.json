@@ -1,0 +1,55 @@
+{
+  "task": "B7-STRANGLER-06-INVENTORY",
+  "phase": "E_readonly_validation",
+  "phase1_local_validation_ps1": {
+    "status": "PASS",
+    "py_compile": ["main.py", "config.py", "execution_gate.py", "api_security.py", "core/session.py"],
+    "unit_tests": [
+      {"file": "tests/unit/test_execution_gate_god_p3.py", "result": "OK"},
+      {"file": "tests/unit/test_dev_endpoints_default_off.py", "result": "OK"},
+      {"file": "tests/unit/test_selfdev_protected_paths.py", "result": "OK"}
+    ],
+    "import_smoke": "PHASE1_IMPORT_SMOKE_OK",
+    "summary": "PHASE1_LOCAL_VALIDATION: ALL PASS"
+  },
+  "phase1_pytest_baseline": {
+    "status": "PASS",
+    "command": "pytest tests/unit/test_phase1_import_baseline.py tests/unit/test_phase1_security_defaults.py",
+    "result": "5 passed in 1.39s"
+  },
+  "b7_carryover_pytest": {
+    "status": "PASS",
+    "command": "pytest tests/unit -k b7_",
+    "result": "97 passed, 1433 deselected, 3 warnings in 2.84s",
+    "expected_count": 97,
+    "actual_count": 97
+  },
+  "import_smoke_session_py": {
+    "status": "PASS",
+    "checks": {
+      "BrainSession_import": "OK",
+      "TOOL_FORMATTERS_entries": 18,
+      "fmt_methods_resolvable_via_getattr": "17/17",
+      "missing": [],
+      "_format_tool_result_callable": true,
+      "_format_action_value_callable": true
+    }
+  },
+  "import_smoke_extracted_modules": {
+    "status": "PASS",
+    "modules": {
+      "session_chat_metrics.ChatMetrics": "OK",
+      "session_query_predicates.is_dashboard_query": "OK",
+      "session_routing_constants.AGENT_INTENTS": "OK (4 entries)",
+      "session_routing_constants.AGENT_KEYWORDS": "OK (169 entries)",
+      "session_response_hygiene.sanitize_llm_chat_response": "OK"
+    }
+  },
+  "session_py_untouched": {
+    "lines_before_inventory": 5743,
+    "lines_after_inventory": 5743,
+    "git_status_short": "(empty - file unchanged)",
+    "git_diff_stat": "(empty - no diff)"
+  },
+  "overall": "ALL_PASS"
+}
