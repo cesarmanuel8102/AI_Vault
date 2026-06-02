@@ -1,0 +1,27 @@
+{
+  "ticket": "B7-STRANGLER-09-IMPLEMENT",
+  "phase": "A-confirm-inventory",
+  "session_py_exists": true,
+  "session_py_lines": 5385,
+  "_prefers_no_tool_analysis": {
+    "exists": true,
+    "lines": "1794-1823",
+    "decorator": "@staticmethod",
+    "self_uses": 0,
+    "cls_uses": 0,
+    "module_deps": []
+  },
+  "_has_explicit_tool_target": {
+    "exists": true,
+    "lines": "1825-1843",
+    "decorator": "@staticmethod",
+    "self_uses": 0,
+    "cls_uses": 0,
+    "module_deps": ["re", "_CODE_ANALYSIS_PATH_RE"]
+  },
+  "_CODE_ANALYSIS_PATH_RE_source": "brain_v9.core.session_routing_constants",
+  "_should_use_agent_uses_both": true,
+  "_should_use_agent_keep_in_session_py": true,
+  "external_consumer_tests/unit/test_brain_chat_hygiene.py": true,
+  "routing_guards_parallel_duplicates_out_of_scope": true
+}

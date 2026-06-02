@@ -1,0 +1,76 @@
+{
+  "task": "B7-STRANGLER-09-IMPLEMENT",
+  "report_kind": "patch_manifest",
+  "timestamp_utc": "2026-06-02T17:17:20Z",
+  "branch": "codex/own-capital-sustainable-return",
+  "head": "1e8a67ddde26181a43a3b400b6dc70bdbbb9f1f6",
+  "patch": {
+    "path": "tmp_agent/b7_strangler_evidence/b7_09_tool_analysis_prefs_extraction.patch",
+    "size_bytes": 25061,
+    "sha256": "f94fbbb519c67e5d616845bd6c9dd31edc5a04a72ce7b7bc9ad65f993625cc2f",
+    "generation_method": "binary-safe custom python script: git diff (bytes) for modified file + synthesized 'new file mode 100644 / --- /dev/null / +++ b/...' blocks for new files",
+    "generator_script": "tmp_agent/b7_strangler_evidence/_b7_09_generate_patch.py",
+    "git_add_n_used": false,
+    "applies_cleanly_against_head": "1e8a67ddde26181a43a3b400b6dc70bdbbb9f1f6",
+    "reverse_apply_check_against_worktree": "PASS"
+  },
+  "files_in_patch": [
+    {
+      "path": "tmp_agent/brain_v9/core/session.py",
+      "change_type": "modified",
+      "lines_before": 5385,
+      "lines_after": 5366,
+      "delta_lines": -19,
+      "diff_stat": {"insertions": 26, "deletions": 45},
+      "sha256_after": "b836c43406c3df89ce1601f88648a5ac7349b451196b6b88353d565b8bf545c7"
+    },
+    {
+      "path": "tmp_agent/brain_v9/core/session_tool_analysis_prefs.py",
+      "change_type": "added",
+      "size_bytes": 3561,
+      "lines": 95,
+      "sha256": "9e1d673ec95b79aa6d3efefdff903388bee02a838699dcfc55f7cc9bd4b27f32",
+      "kind": "productive"
+    },
+    {
+      "path": "tests/unit/test_b7_tool_analysis_prefs_import_compat.py",
+      "change_type": "added",
+      "size_bytes": 4134,
+      "lines": 115,
+      "sha256": "6390123df033a8bf057a46f6e5b051860181534383865c61ca2ff7e3e460fe85",
+      "kind": "test"
+    },
+    {
+      "path": "tests/unit/test_b7_tool_analysis_prefs_behavior_smoke.py",
+      "change_type": "added",
+      "size_bytes": 6381,
+      "lines": 189,
+      "sha256": "11d3c189c38f899686cff622ce73cb54d33516644421b567984dbadcb973b322",
+      "kind": "test"
+    },
+    {
+      "path": "tests/unit/test_b7_tool_analysis_prefs_no_session_dependency.py",
+      "change_type": "added",
+      "size_bytes": 5282,
+      "lines": 148,
+      "sha256": "5f7044bc2b1160ddb132607f529dc952c2b114c8dd7be71aeb6db07816b19f7e",
+      "kind": "test"
+    }
+  ],
+  "files_NOT_in_patch": {
+    "evidence_artifacts": "evidence files under tmp_agent/b7_strangler_evidence/ are gitignored and excluded from patch by design",
+    "approved_ignore_dirty_files": "semantic_memory.jsonl, strategies/*, visual_trace_console_v1/*, ops/smoke_*.ps1, tool01_write_test.py, bor3_llm_audit*, apply_chat_patch.py, mojibake ledger backup — all excluded"
+  },
+  "guard_rails": {
+    "protected_paths_in_patch": false,
+    "routing_core_in_patch": false,
+    "fastpaths_in_patch": false,
+    "tool01_in_patch": false,
+    "routing_guards_in_patch": false,
+    "existing_tests_modified_in_patch": false
+  },
+  "apply_instructions": {
+    "command": "git apply --check tmp_agent/b7_strangler_evidence/b7_09_tool_analysis_prefs_extraction.patch && git apply tmp_agent/b7_strangler_evidence/b7_09_tool_analysis_prefs_extraction.patch",
+    "expected_post_apply_state": "session.py modified-tracked; 4 new files untracked; identical to current working tree"
+  }
+}

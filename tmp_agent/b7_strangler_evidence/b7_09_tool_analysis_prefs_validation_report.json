@@ -1,0 +1,100 @@
+{
+  "task": "B7-STRANGLER-09-IMPLEMENT",
+  "report_kind": "validation",
+  "timestamp_utc": "2026-06-02T17:17:20Z",
+  "branch": "codex/own-capital-sustainable-return",
+  "head": "1e8a67ddde26181a43a3b400b6dc70bdbbb9f1f6",
+  "overall_status": "PASS",
+  "buckets": [
+    {
+      "name": "py_compile",
+      "status": "PASS",
+      "targets": [
+        "tmp_agent/brain_v9/core/session.py",
+        "tmp_agent/brain_v9/core/session_tool_analysis_prefs.py"
+      ]
+    },
+    {
+      "name": "phase1_powershell",
+      "status": "PASS",
+      "notes": "PHASE1_LOCAL_VALIDATION: ALL PASS"
+    },
+    {
+      "name": "phase1_pytest",
+      "status": "PASS",
+      "passed": 5,
+      "failed": 0,
+      "total": 5
+    },
+    {
+      "name": "b7_09_new_tests",
+      "status": "PASS",
+      "passed": 83,
+      "failed": 0,
+      "total": 83,
+      "files": [
+        "tests/unit/test_b7_tool_analysis_prefs_import_compat.py",
+        "tests/unit/test_b7_tool_analysis_prefs_behavior_smoke.py",
+        "tests/unit/test_b7_tool_analysis_prefs_no_session_dependency.py"
+      ]
+    },
+    {
+      "name": "b7_carryover_21_files",
+      "status": "PASS",
+      "passed": 194,
+      "failed": 0,
+      "total": 194,
+      "duration_seconds": 2.11
+    },
+    {
+      "name": "shim_cleanliness_ast_audit",
+      "status": "PASS",
+      "script": "tmp_agent/b7_strangler_evidence/_b7_09_shim_cleanliness_audit.py",
+      "checks": [
+        "BrainSession._prefers_no_tool_analysis: @staticmethod + docstring + single Return _tap.prefers_no_tool_analysis(message)",
+        "BrainSession._has_explicit_tool_target: @staticmethod + docstring + single Return _tap.has_explicit_tool_target(message)",
+        "neither shim contains ast.Name 'msg'",
+        "neither shim contains any(...) Call",
+        "neither shim contains .search(...) Call (re.search / _CODE_ANALYSIS_PATH_RE.search)",
+        "neither shim contains inline tuple-of-string-markers",
+        "session_tool_analysis_prefs.py: contains required FunctionDefs",
+        "session_tool_analysis_prefs.py: no import from session, no BrainSession code reference"
+      ],
+      "output": "B7_09_SHIM_CLEANLINESS_AST_AUDIT: PASS"
+    },
+    {
+      "name": "consumer_test_baseline_equivalence",
+      "status": "PASS",
+      "method": "worktree at baseline 1e8a67dd; diff of FAILED-set (main vs baseline)",
+      "files": [
+        "tests/unit/test_brain_chat_hygiene.py",
+        "tmp_agent/tests/core/test_session.py",
+        "tmp_agent/tests/core/test_b7_routing_heuristics_characterization.py"
+      ],
+      "main_failed_count": 48,
+      "baseline_failed_count": 48,
+      "regressions_introduced": 0,
+      "diff": "EMPTY",
+      "current_run_summary": "48 failed, 112 passed, 3 warnings in 12.60s"
+    },
+    {
+      "name": "patch_reverse_apply_check",
+      "status": "PASS",
+      "command": "git apply --reverse --check tmp_agent/b7_strangler_evidence/b7_09_tool_analysis_prefs_extraction.patch",
+      "result": "PATCH_REVERSES_CLEAN"
+    }
+  ],
+  "guard_rails": {
+    "protected_paths_touched": false,
+    "routing_core_touched": false,
+    "fastpaths_touched": false,
+    "tool01_touched": false,
+    "routing_guards_touched": false,
+    "existing_tests_modified": false,
+    "productive_files_modified_outside_session_py": false,
+    "commit_created": false,
+    "push_done": false,
+    "git_add_n_used": false
+  },
+  "lsp_errors_status": "pre-existing only (approved-ignore); no new errors introduced"
+}

@@ -1,0 +1,659 @@
+diff --git a/tmp_agent/brain_v9/core/session.py b/tmp_agent/brain_v9/core/session.py
+index 8de3c261..82c61a5e 100644
+--- a/tmp_agent/brain_v9/core/session.py
++++ b/tmp_agent/brain_v9/core/session.py
+@@ -189,6 +189,20 @@ from brain_v9.core import session_grounded_excerpt as _gex  # noqa: E402,F401
+ # ``::TestTruncateToBudget``) keep resolving exactly as before.
+ from brain_v9.core import session_context_budget as _cb  # noqa: E402,F401
+ 
++# B7-STRANGLER-09: Tool-analysis preference predicates
++# (``_prefers_no_tool_analysis``, ``_has_explicit_tool_target``) extracted to
++# ``brain_v9.core.session_tool_analysis_prefs``.  ``BrainSession`` keeps two
++# ``@staticmethod`` one-line shims that delegate here, preserving the
++# descriptor type so external bindings such as
++# ``BrainSession._prefers_no_tool_analysis`` /
++# ``BrainSession._has_explicit_tool_target`` (used by
++# ``tests/unit/test_brain_chat_hygiene.py`` via both class- and instance-level
++# access) keep resolving exactly as before.  ``_should_use_agent`` (the sole
++# internal consumer) remains in ``session.py`` and continues to call
++# ``self._prefers_no_tool_analysis(...)`` / ``self._has_explicit_tool_target(...)``
++# unchanged.
++from brain_v9.core import session_tool_analysis_prefs as _tap  # noqa: E402,F401
++
+ 
+ def __getattr__(name):  # PEP 562: proxy live _GLOBAL_CHAT_METRICS
+     if name == "_GLOBAL_CHAT_METRICS":
+@@ -1793,54 +1807,21 @@ class BrainSession:
+ 
+     @staticmethod
+     def _prefers_no_tool_analysis(message: str) -> bool:
+-        """Detect explicit user preference for pure analysis/chat without tools."""
+-        msg = (message or "").lower()
+-        return any(
+-            marker in msg
+-            for marker in (
+-                "no uses tools",
+-                "no use tools",
+-                "no herramientas",
+-                "sin herramientas",
+-                "sin tools",
+-                "no ejecutes herramientas",
+-                "no ejecutar herramientas",
+-                "no modifiques",
+-                "no modificar",
+-                "no cambies",
+-                "no cambiar",
+-                "no edites",
+-                "no editar",
+-                "no toques",
+-                "sin cambios",
+-                "sin modificar",
+-                "no hagas cambios",
+-                "solo analiza",
+-                "solo analizar",
+-                "solo razona",
+-                "solo explica",
+-            )
+-        )
++        """Detect explicit user preference for pure analysis/chat without tools.
++
++        B7-STRANGLER-09 shim — delegates to
++        :func:`brain_v9.core.session_tool_analysis_prefs.prefers_no_tool_analysis`.
++        """
++        return _tap.prefers_no_tool_analysis(message)
+ 
+     @staticmethod
+     def _has_explicit_tool_target(message: str) -> bool:
+-        """Keep agent routing when the user names a concrete file/service/command target."""
+-        msg = (message or "").lower()
+-        return bool(
+-            _CODE_ANALYSIS_PATH_RE.search(message or "")
+-            or re.search(r"\b(?:[a-z]:[\\/]|/[\w.-]+/)", message or "", re.IGNORECASE)
+-            or re.search(r"\b(?:puerto|port)\s*\d{2,5}\b", msg)
+-            or re.search(r"\b\d{1,3}(?:\.\d{1,3}){3}(?:/\d{1,2})?\b", msg)
+-            or re.search(r"\b(?:ejecuta|ejecutar|corre|run|execute)\s+[\w./:-]+", msg)
+-            or any(
+-                token in msg
+-                for token in (
+-                    "servicio brain", "servicios brain", "ollama", "dashboard",
+-                    "log", "logs", "archivo", "carpeta", "directorio",
+-                    "file", "folder", "directory",
+-                )
+-            )
+-        )
++        """Keep agent routing when the user names a concrete file/service/command target.
++
++        B7-STRANGLER-09 shim — delegates to
++        :func:`brain_v9.core.session_tool_analysis_prefs.has_explicit_tool_target`.
++        """
++        return _tap.has_explicit_tool_target(message)
+ 
+     def _should_use_agent(self, message: str, intent: str, confidence: float = 1.0) -> bool:
+         """Decide if the message needs real tool execution (agent) or just LLM chat."""
+diff --git a/tmp_agent/brain_v9/core/session_tool_analysis_prefs.py b/tmp_agent/brain_v9/core/session_tool_analysis_prefs.py
+new file mode 100644
+--- /dev/null
++++ b/tmp_agent/brain_v9/core/session_tool_analysis_prefs.py
+@@ -0,0 +1,95 @@
++"""B7-STRANGLER-09: Tool-analysis preference predicates.
++
++Pure, side-effect-free helpers extracted from
++``brain_v9.core.session.BrainSession`` to keep ``session.py`` lean.
++
++Two predicates participate in agent-vs-LLM routing:
++
++* :func:`prefers_no_tool_analysis` — detects explicit user preference for a
++  pure analysis/chat reply without invoking tools (e.g. ``"no uses tools"``,
++  ``"sin herramientas"``, ``"solo analiza"``).
++* :func:`has_explicit_tool_target` — detects when the user names a concrete
++  file/service/command target (path, port, IP, run/execute verb, ``log``,
++  ``archivo``, ``ollama``...). When this is true, the agent route is kept
++  even if :func:`prefers_no_tool_analysis` also matches.
++
++Both functions preserve the exact semantics of the original
++``BrainSession._prefers_no_tool_analysis`` / ``BrainSession._has_explicit_tool_target``
++``@staticmethod`` implementations. ``BrainSession`` keeps two ``@staticmethod``
++shim methods that delegate here, so external callers (including
++``tests/unit/test_brain_chat_hygiene.py`` which exercises both class- and
++instance-level access) continue to work without modification.
++
++Notes
++-----
++* This module is pure: no I/O, no logging, no global state, no dependency on
++  ``BrainSession`` or ``brain_v9.core.session``.
++* The shared ``_CODE_ANALYSIS_PATH_RE`` regex is imported from
++  ``brain_v9.core.session_routing_constants`` (B7-STRANGLER-04) — the single
++  source of truth.
++* ``brain_v9.core.routing.guards`` exports parallel ``prefers_no_tool_analysis``
++  / ``has_explicit_tool_target`` helpers. Consolidating those duplicates is
++  intentionally **out of scope** for B7-09 (would touch routing core).
++"""
++
++from __future__ import annotations
++
++import re
++
++from brain_v9.core.session_routing_constants import _CODE_ANALYSIS_PATH_RE
++
++__all__ = [
++    "prefers_no_tool_analysis",
++    "has_explicit_tool_target",
++]
++
++
++def prefers_no_tool_analysis(message: str) -> bool:
++    """Detect explicit user preference for pure analysis/chat without tools."""
++    msg = (message or "").lower()
++    return any(
++        marker in msg
++        for marker in (
++            "no uses tools",
++            "no use tools",
++            "no herramientas",
++            "sin herramientas",
++            "sin tools",
++            "no ejecutes herramientas",
++            "no ejecutar herramientas",
++            "no modifiques",
++            "no modificar",
++            "no cambies",
++            "no cambiar",
++            "no edites",
++            "no editar",
++            "no toques",
++            "sin cambios",
++            "sin modificar",
++            "no hagas cambios",
++            "solo analiza",
++            "solo analizar",
++            "solo razona",
++            "solo explica",
++        )
++    )
++
++
++def has_explicit_tool_target(message: str) -> bool:
++    """Keep agent routing when the user names a concrete file/service/command target."""
++    msg = (message or "").lower()
++    return bool(
++        _CODE_ANALYSIS_PATH_RE.search(message or "")
++        or re.search(r"\b(?:[a-z]:[\\/]|/[\w.-]+/)", message or "", re.IGNORECASE)
++        or re.search(r"\b(?:puerto|port)\s*\d{2,5}\b", msg)
++        or re.search(r"\b\d{1,3}(?:\.\d{1,3}){3}(?:/\d{1,2})?\b", msg)
++        or re.search(r"\b(?:ejecuta|ejecutar|corre|run|execute)\s+[\w./:-]+", msg)
++        or any(
++            token in msg
++            for token in (
++                "servicio brain", "servicios brain", "ollama", "dashboard",
++                "log", "logs", "archivo", "carpeta", "directorio",
++                "file", "folder", "directory",
++            )
++        )
++    )
+diff --git a/tests/unit/test_b7_tool_analysis_prefs_import_compat.py b/tests/unit/test_b7_tool_analysis_prefs_import_compat.py
+new file mode 100644
+--- /dev/null
++++ b/tests/unit/test_b7_tool_analysis_prefs_import_compat.py
+@@ -0,0 +1,115 @@
++"""B7-STRANGLER-09: import-compat tests for session_tool_analysis_prefs.
++
++Verifies:
++
++* The new module exports the two public predicates and an explicit ``__all__``.
++* ``BrainSession`` keeps both legacy attribute names as ``@staticmethod``
++  descriptors (preserving class- and instance-level access semantics).
++* The shim methods produce identical results to the standalone functions for
++  representative payloads (so external callers of
++  ``BrainSession._prefers_no_tool_analysis`` /
++  ``BrainSession._has_explicit_tool_target`` keep observing the same outputs).
++"""
++
++from __future__ import annotations
++
++import sys
++from pathlib import Path
++
++_REPO_ROOT = Path(__file__).resolve().parents[2]
++_TMP_AGENT = _REPO_ROOT / "tmp_agent"
++if str(_TMP_AGENT) not in sys.path:
++    sys.path.insert(0, str(_TMP_AGENT))
++
++from brain_v9.core import session_tool_analysis_prefs as tap
++from brain_v9.core.session import BrainSession
++
++
++# ── Module-level surface ────────────────────────────────────────────────────
++
++
++def test_module_importable():
++    import brain_v9.core.session_tool_analysis_prefs as m
++    assert m is tap
++
++
++def test_public_callables_exist():
++    assert callable(tap.prefers_no_tool_analysis)
++    assert callable(tap.has_explicit_tool_target)
++
++
++def test_all_exports_exact():
++    assert set(tap.__all__) == {
++        "prefers_no_tool_analysis",
++        "has_explicit_tool_target",
++    }
++
++
++# ── BrainSession descriptor compatibility ───────────────────────────────────
++
++
++def test_brainsession_keeps_prefers_no_tool_analysis_attr():
++    assert hasattr(BrainSession, "_prefers_no_tool_analysis")
++    assert callable(BrainSession._prefers_no_tool_analysis)
++
++
++def test_brainsession_keeps_has_explicit_tool_target_attr():
++    assert hasattr(BrainSession, "_has_explicit_tool_target")
++    assert callable(BrainSession._has_explicit_tool_target)
++
++
++def test_prefers_no_tool_analysis_is_staticmethod_descriptor():
++    raw = BrainSession.__dict__["_prefers_no_tool_analysis"]
++    assert isinstance(raw, staticmethod)
++
++
++def test_has_explicit_tool_target_is_staticmethod_descriptor():
++    raw = BrainSession.__dict__["_has_explicit_tool_target"]
++    assert isinstance(raw, staticmethod)
++
++
++def test_class_level_access_returns_callable():
++    # BrainSession._prefers_no_tool_analysis(msg) must work without an instance.
++    assert BrainSession._prefers_no_tool_analysis("no uses tools") is True
++    assert BrainSession._has_explicit_tool_target("revisa /tmp/foo/bar") is True
++
++
++def test_instance_level_access_returns_callable():
++    # Use __new__ to avoid heavy __init__ side effects.
++    inst = BrainSession.__new__(BrainSession)
++    assert inst._prefers_no_tool_analysis("solo analiza") is True
++    assert inst._has_explicit_tool_target("ejecuta servicio brain") is True
++
++
++# ── Behavioural equivalence: shim == standalone ─────────────────────────────
++
++
++_PAYLOADS = [
++    "",
++    "hola",
++    "no uses tools",
++    "no use tools",
++    "sin herramientas",
++    "solo analiza el archivo",
++    "revisa C:\\AI_VAULT\\tmp_agent\\brain_v9\\core\\session.py",
++    "verifica el puerto 8000",
++    "ping a 192.168.1.1",
++    "ejecuta run_phase207",
++    "revisa los logs de ollama",
++    "no toques nada en el dashboard",
++    None,  # exercises ``message or ""`` fallback
++]
++
++
++def test_shim_matches_standalone_prefers():
++    for payload in _PAYLOADS:
++        a = BrainSession._prefers_no_tool_analysis(payload)  # type: ignore[arg-type]
++        b = tap.prefers_no_tool_analysis(payload)  # type: ignore[arg-type]
++        assert a == b, f"mismatch for prefers payload={payload!r}: shim={a} std={b}"
++
++
++def test_shim_matches_standalone_has_target():
++    for payload in _PAYLOADS:
++        a = BrainSession._has_explicit_tool_target(payload)  # type: ignore[arg-type]
++        b = tap.has_explicit_tool_target(payload)  # type: ignore[arg-type]
++        assert a == b, f"mismatch for target payload={payload!r}: shim={a} std={b}"
+diff --git a/tests/unit/test_b7_tool_analysis_prefs_behavior_smoke.py b/tests/unit/test_b7_tool_analysis_prefs_behavior_smoke.py
+new file mode 100644
+--- /dev/null
++++ b/tests/unit/test_b7_tool_analysis_prefs_behavior_smoke.py
+@@ -0,0 +1,189 @@
++"""B7-STRANGLER-09: behaviour smoke tests for tool-analysis preference predicates.
++
++Exercises representative inputs to lock in the semantics of
++:func:`brain_v9.core.session_tool_analysis_prefs.prefers_no_tool_analysis` and
++:func:`...has_explicit_tool_target`, as well as the BrainSession shim path.
++
++This complements the import-compat tests: those check the surface and shim
++descriptor types; these check observable behaviour (true/false outputs,
++case-insensitivity, empty-string safety, target-overrides-no-tool semantics).
++"""
++
++from __future__ import annotations
++
++import sys
++from pathlib import Path
++
++_REPO_ROOT = Path(__file__).resolve().parents[2]
++_TMP_AGENT = _REPO_ROOT / "tmp_agent"
++if str(_TMP_AGENT) not in sys.path:
++    sys.path.insert(0, str(_TMP_AGENT))
++
++import pytest
++
++from brain_v9.core import session_tool_analysis_prefs as tap
++from brain_v9.core.session import BrainSession
++
++
++# ── prefers_no_tool_analysis: positive cases ────────────────────────────────
++
++
++@pytest.mark.parametrize(
++    "msg",
++    [
++        "no uses tools",
++        "no use tools",
++        "no herramientas",
++        "sin herramientas",
++        "sin tools",
++        "no ejecutes herramientas",
++        "no ejecutar herramientas",
++        "no modifiques nada",
++        "no modificar el archivo",
++        "no cambies el codigo",
++        "no cambiar la logica",
++        "no edites el repo",
++        "no editar nada",
++        "no toques la config",
++        "sin cambios por favor",
++        "sin modificar archivos",
++        "no hagas cambios",
++        "solo analiza el flujo",
++        "solo analizar la salida",
++        "solo razona sobre esto",
++        "solo explica el bug",
++        # Case-insensitivity
++        "NO USES TOOLS",
++        "Solo Analiza esto",
++    ],
++)
++def test_prefers_no_tool_analysis_positive(msg):
++    assert tap.prefers_no_tool_analysis(msg) is True
++    assert BrainSession._prefers_no_tool_analysis(msg) is True
++
++
++# ── prefers_no_tool_analysis: negative cases ────────────────────────────────
++
++
++@pytest.mark.parametrize(
++    "msg",
++    [
++        "",
++        "hola",
++        "ejecuta el script",
++        "modifica el archivo",
++        "cambia la configuracion",
++        "que ves?",
++        "lista de tools disponibles",
++        "ana liza esto",  # word-fragment must not match "analiza"
++    ],
++)
++def test_prefers_no_tool_analysis_negative(msg):
++    assert tap.prefers_no_tool_analysis(msg) is False
++    assert BrainSession._prefers_no_tool_analysis(msg) is False
++
++
++def test_prefers_no_tool_analysis_none_safe():
++    # Original code uses ``(message or "").lower()`` so None must be safe.
++    assert tap.prefers_no_tool_analysis(None) is False  # type: ignore[arg-type]
++
++
++# ── has_explicit_tool_target: positive cases ────────────────────────────────
++
++
++@pytest.mark.parametrize(
++    "msg",
++    [
++        # Windows-style absolute path (matches the [a-z]:[\\/] regex)
++        "revisa C:\\AI_VAULT\\tmp_agent\\brain_v9\\core\\session.py",
++        # POSIX-style absolute path
++        "abre /var/log/syslog",
++        # Port mention
++        "verifica el puerto 8000",
++        "check port 4321",
++        # IP address (with optional CIDR)
++        "haz ping a 192.168.1.1",
++        "block 10.0.0.0/8",
++        # Run/execute verb followed by token
++        "ejecuta run_phase207.py",
++        "ejecutar build:dev",
++        "corre tests/unit",
++        "run pytest -q",
++        "execute the script",
++        # Service / object tokens
++        "estado del servicio brain",
++        "los servicios brain estan ok",
++        "consulta ollama",
++        "abre el dashboard",
++        "revisa el log",
++        "los logs estan en /var",
++        "lee el archivo",
++        "abre la carpeta",
++        "lista el directorio",
++        "open this file",
++        "list the folder",
++        "show me the directory",
++    ],
++)
++def test_has_explicit_tool_target_positive(msg):
++    assert tap.has_explicit_tool_target(msg) is True
++    assert BrainSession._has_explicit_tool_target(msg) is True
++
++
++# ── has_explicit_tool_target: negative cases ────────────────────────────────
++
++
++@pytest.mark.parametrize(
++    "msg",
++    [
++        "",
++        "hola",
++        "que opinas?",
++        "explicame la idea",
++        "no entiendo",
++    ],
++)
++def test_has_explicit_tool_target_negative(msg):
++    assert tap.has_explicit_tool_target(msg) is False
++    assert BrainSession._has_explicit_tool_target(msg) is False
++
++
++def test_has_explicit_tool_target_none_safe():
++    assert tap.has_explicit_tool_target(None) is False  # type: ignore[arg-type]
++
++
++# ── Combined semantics: explicit target overrides no-tool preference ────────
++
++
++def test_target_overrides_no_tool_preference():
++    """The two predicates are independent. ``_should_use_agent`` (which we do NOT
++    re-implement here) uses ``has_explicit_tool_target`` to override
++    ``prefers_no_tool_analysis``; this test pins the building-block semantics
++    needed for that override to keep working unchanged after extraction.
++    """
++    msg = "no uses tools, pero revisa /var/log/syslog"
++    assert tap.prefers_no_tool_analysis(msg) is True
++    assert tap.has_explicit_tool_target(msg) is True
++
++
++def test_pure_no_tool_message_has_no_target():
++    msg = "solo analiza esto, por favor"
++    assert tap.prefers_no_tool_analysis(msg) is True
++    assert tap.has_explicit_tool_target(msg) is False
++
++
++# ── Shim equivalence (catch-all) ────────────────────────────────────────────
++
++
++def test_shim_equivalence_random_strings():
++    samples = [
++        "", " ", "x", "PUERTO 80", "puerto 8",  # port < 2 digits → no match
++        "1.2.3", "1.2.3.4", "1.2.3.4/24",
++        "/", "/a", "/a/b/", "C:/x", "c:\\x",
++        "ejecutarx algo",  # no \b boundary on suffix → still matches "ejecutar"
++        "no usestools",  # missing space → no marker match
++        "Sin Herramientas Por Favor",
++    ]
++    for s in samples:
++        assert tap.prefers_no_tool_analysis(s) == BrainSession._prefers_no_tool_analysis(s), s
++        assert tap.has_explicit_tool_target(s) == BrainSession._has_explicit_tool_target(s), s
+diff --git a/tests/unit/test_b7_tool_analysis_prefs_no_session_dependency.py b/tests/unit/test_b7_tool_analysis_prefs_no_session_dependency.py
+new file mode 100644
+--- /dev/null
++++ b/tests/unit/test_b7_tool_analysis_prefs_no_session_dependency.py
+@@ -0,0 +1,148 @@
++"""B7-STRANGLER-09: AST guard — session_tool_analysis_prefs has no session dependency.
++
++Verifies that the extracted module:
++
++* Does not import (directly or via ``from``) ``brain_v9.core.session``.
++* Does not reference ``BrainSession`` as a name anywhere in its AST.
++* No public function takes ``self`` or ``cls`` as its first parameter.
++* No function body uses ``self`` or ``cls`` as a free name.
++* All imports come from the allow-list:
++    - ``__future__``
++    - ``re``
++    - ``brain_v9.core.session_routing_constants``
++
++Also checks at runtime that importing the module does NOT pull
++``brain_v9.core.session`` into ``sys.modules`` if it was not already loaded.
++"""
++
++from __future__ import annotations
++
++import ast
++import importlib
++import subprocess
++import sys
++from pathlib import Path
++
++_REPO_ROOT = Path(__file__).resolve().parents[2]
++_TMP_AGENT = _REPO_ROOT / "tmp_agent"
++if str(_TMP_AGENT) not in sys.path:
++    sys.path.insert(0, str(_TMP_AGENT))
++
++_MODULE_PATH = _TMP_AGENT / "brain_v9" / "core" / "session_tool_analysis_prefs.py"
++
++ALLOWED_IMPORT_PREFIXES = (
++    "__future__",
++    "re",
++    "brain_v9.core.session_routing_constants",
++)
++
++
++def _load_ast() -> ast.Module:
++    src = _MODULE_PATH.read_text(encoding="utf-8")
++    return ast.parse(src, filename=str(_MODULE_PATH))
++
++
++# ── Static (AST) checks ─────────────────────────────────────────────────────
++
++
++def test_module_file_exists():
++    assert _MODULE_PATH.exists(), f"missing: {_MODULE_PATH}"
++
++
++def test_no_import_of_session_module():
++    tree = _load_ast()
++    for node in ast.walk(tree):
++        if isinstance(node, ast.Import):
++            for alias in node.names:
++                assert alias.name != "brain_v9.core.session", (
++                    f"forbidden absolute import: {alias.name}"
++                )
++        elif isinstance(node, ast.ImportFrom):
++            mod = node.module or ""
++            assert mod != "brain_v9.core.session", (
++                f"forbidden from-import: from {mod} import ..."
++            )
++
++
++def test_no_reference_to_brain_session_name():
++    tree = _load_ast()
++    for node in ast.walk(tree):
++        if isinstance(node, ast.Name):
++            assert node.id != "BrainSession", (
++                "session_tool_analysis_prefs must not reference BrainSession"
++            )
++        if isinstance(node, ast.Attribute):
++            assert node.attr != "BrainSession", (
++                "session_tool_analysis_prefs must not reference BrainSession via attribute"
++            )
++
++
++def test_public_functions_have_no_self_or_cls_first_param():
++    tree = _load_ast()
++    for node in tree.body:
++        if isinstance(node, ast.FunctionDef) and not node.name.startswith("_"):
++            args = node.args.args
++            if args:
++                first = args[0].arg
++                assert first not in ("self", "cls"), (
++                    f"public function {node.name!r} has '{first}' first arg"
++                )
++
++
++def test_no_self_or_cls_in_function_bodies():
++    tree = _load_ast()
++    for node in ast.walk(tree):
++        if isinstance(node, ast.FunctionDef):
++            for sub in ast.walk(node):
++                if isinstance(sub, ast.Name) and sub.id in ("self", "cls"):
++                    raise AssertionError(
++                        f"function {node.name!r} references free name "
++                        f"{sub.id!r} (line {sub.lineno})"
++                    )
++
++
++def test_imports_only_from_allowlist():
++    tree = _load_ast()
++    for node in ast.walk(tree):
++        if isinstance(node, ast.Import):
++            for alias in node.names:
++                assert any(alias.name == p or alias.name.startswith(p + ".")
++                           for p in ALLOWED_IMPORT_PREFIXES), (
++                    f"disallowed import: {alias.name}"
++                )
++        elif isinstance(node, ast.ImportFrom):
++            mod = node.module or ""
++            assert any(mod == p or mod.startswith(p + ".")
++                       for p in ALLOWED_IMPORT_PREFIXES), (
++                f"disallowed from-import: from {mod} import ..."
++            )
++
++
++# ── Runtime check: importing the module does not load session ───────────────
++
++
++def test_importing_module_does_not_load_session():
++    code = (
++        "import sys; "
++        f"sys.path.insert(0, r'{_TMP_AGENT}'); "
++        "import brain_v9.core.session_tool_analysis_prefs as tap; "
++        "loaded_session = 'brain_v9.core.session' in sys.modules; "
++        "print('SESSION_LOADED:', loaded_session)"
++    )
++    result = subprocess.run(
++        [sys.executable, "-c", code],
++        capture_output=True, text=True, timeout=60,
++    )
++    assert result.returncode == 0, (
++        f"subprocess failed: stdout={result.stdout!r} stderr={result.stderr!r}"
++    )
++    assert "SESSION_LOADED: False" in result.stdout, (
++        f"session module was unexpectedly loaded; stdout={result.stdout!r}"
++    )
++
++
++def test_module_importable_directly():
++    mod = importlib.import_module("brain_v9.core.session_tool_analysis_prefs")
++    assert callable(mod.prefers_no_tool_analysis)
++    assert callable(mod.has_explicit_tool_target)
++    assert set(mod.__all__) == {"prefers_no_tool_analysis", "has_explicit_tool_target"}

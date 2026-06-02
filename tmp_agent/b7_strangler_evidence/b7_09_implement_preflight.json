@@ -1,0 +1,13 @@
+{
+  "ticket": "B7-STRANGLER-09-IMPLEMENT",
+  "phase": "0-preflight",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "1e8a67dd",
+  "origin_head": "1e8a67dd",
+  "no_staged": true,
+  "session_py_clean": true,
+  "session_py_lines_before": 5385,
+  "dirty_files_approved_ignore": true,
+  "selected_candidate": "C-D",
+  "new_module": "tmp_agent/brain_v9/core/session_tool_analysis_prefs.py"
+}

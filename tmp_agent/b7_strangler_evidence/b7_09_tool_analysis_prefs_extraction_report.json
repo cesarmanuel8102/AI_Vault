@@ -1,0 +1,118 @@
+{
+  "task": "B7-STRANGLER-09-IMPLEMENT",
+  "title": "Extract _prefers_no_tool_analysis and _has_explicit_tool_target from BrainSession",
+  "status": "COMPLETE",
+  "timestamp_utc": "2026-06-02T17:17:20Z",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_before": "1e8a67ddde26181a43a3b400b6dc70bdbbb9f1f6",
+  "head_after": "1e8a67ddde26181a43a3b400b6dc70bdbbb9f1f6",
+  "commit_created": false,
+  "push_done": false,
+  "shim_cleanliness_followup": {
+    "operator_concern": "operator suspected inline duplicate logic remaining inside BrainSession shims",
+    "investigation_finding": "shims were already clean: docstring + single 'return _tap.X(message)' under @staticmethod; no msg/any/re.search/_CODE_ANALYSIS_PATH_RE/inline-tuple",
+    "session_py_modified_in_followup": false,
+    "session_tool_analysis_prefs_py_modified_in_followup": false,
+    "ast_audit_added": true,
+    "ast_audit_script": "tmp_agent/b7_strangler_evidence/_b7_09_shim_cleanliness_audit.py",
+    "ast_audit_result": "PASS",
+    "patch_regenerated_in_followup": true,
+    "patch_regeneration_reason": "improved binary-safe synthesis of new-file blocks; previous patch had encoding artifacts that prevented git apply --reverse --check from succeeding"
+  },
+  "extraction": {
+    "source_file": "tmp_agent/brain_v9/core/session.py",
+    "source_lines_before": 5385,
+    "source_lines_after": 5366,
+    "source_lines_delta": -19,
+    "source_diff_stat": {"insertions": 26, "deletions": 45, "net": -19},
+    "target_module": "tmp_agent/brain_v9/core/session_tool_analysis_prefs.py",
+    "target_module_lines": 95,
+    "helpers_extracted_count": 2,
+    "symbols_extracted": [
+      "prefers_no_tool_analysis",
+      "has_explicit_tool_target"
+    ],
+    "symbols_reexported_or_shimmed": [
+      {
+        "name": "BrainSession._prefers_no_tool_analysis",
+        "kind": "@staticmethod shim",
+        "form": "docstring + single Return _tap.prefers_no_tool_analysis(message)",
+        "delegates_to": "session_tool_analysis_prefs.prefers_no_tool_analysis"
+      },
+      {
+        "name": "BrainSession._has_explicit_tool_target",
+        "kind": "@staticmethod shim",
+        "form": "docstring + single Return _tap.has_explicit_tool_target(message)",
+        "delegates_to": "session_tool_analysis_prefs.has_explicit_tool_target"
+      }
+    ],
+    "shim_form_used": "2 @staticmethod wrappers; AST-confirmed clean one-return shims",
+    "shim_cleanliness_ast_audit": "PASS",
+    "consumer_call_sites_in_session_py": [
+      "BrainSession._should_use_agent (unchanged, line ~1891)"
+    ],
+    "module_dependencies": [
+      "__future__.annotations",
+      "re (stdlib)",
+      "brain_v9.core.session_routing_constants._CODE_ANALYSIS_PATH_RE"
+    ],
+    "no_session_dependency": true,
+    "purity": "pure functions; no I/O, no globals mutation, no BrainSession import"
+  },
+  "compatibility": {
+    "staticmethod_decorator_preserved": true,
+    "class_level_access_supported": true,
+    "instance_level_access_supported": true,
+    "out_of_scope_explicit": [
+      "routing/guards.py parallel duplicates NOT consolidated (per spec)"
+    ]
+  },
+  "validations_summary": {
+    "py_compile": "PASS",
+    "phase1_powershell": "PASS",
+    "phase1_pytest": "5/5 PASS",
+    "b7_09_new_tests": "83/83 PASS",
+    "b7_carryover_21_files": "194/194 PASS in 2.11s",
+    "shim_cleanliness_ast_audit": "PASS",
+    "consumer_test_baseline_equivalence": "48 pre-existing failures across test_brain_chat_hygiene.py + tmp_agent/tests/core/test_session.py + test_b7_routing_heuristics_characterization.py; diff vs baseline 1e8a67dd = EMPTY (0 regressions)"
+  },
+  "guard_rails": {
+    "protected_paths_touched": false,
+    "routing_core_touched": false,
+    "fastpaths_touched": false,
+    "tool01_touched": false,
+    "routing_guards_touched": false,
+    "existing_tests_modified": false,
+    "productive_files_modified_outside_session_py": false
+  },
+  "patch": {
+    "path": "tmp_agent/b7_strangler_evidence/b7_09_tool_analysis_prefs_extraction.patch",
+    "size_bytes": 25061,
+    "sha256": "f94fbbb519c67e5d616845bd6c9dd31edc5a04a72ce7b7bc9ad65f993625cc2f",
+    "generation_method": "binary-safe custom python script: git diff (bytes) for modified file + synthesized 'new file mode 100644 / --- /dev/null / +++ b/...' blocks for new files",
+    "git_add_n_used": false,
+    "applies_cleanly_against_head": "1e8a67ddde26181a43a3b400b6dc70bdbbb9f1f6",
+    "reverse_apply_check_against_worktree": "PASS"
+  },
+  "artifacts": {
+    "modified_tracked": ["tmp_agent/brain_v9/core/session.py"],
+    "created_productive": ["tmp_agent/brain_v9/core/session_tool_analysis_prefs.py"],
+    "created_tests": [
+      "tests/unit/test_b7_tool_analysis_prefs_import_compat.py",
+      "tests/unit/test_b7_tool_analysis_prefs_behavior_smoke.py",
+      "tests/unit/test_b7_tool_analysis_prefs_no_session_dependency.py"
+    ],
+    "created_evidence": [
+      "tmp_agent/b7_strangler_evidence/b7_09_implement_preflight.json",
+      "tmp_agent/b7_strangler_evidence/b7_09_implement_confirm_inventory.json",
+      "tmp_agent/b7_strangler_evidence/b7_09_tool_analysis_prefs_extraction.patch",
+      "tmp_agent/b7_strangler_evidence/b7_09_tool_analysis_prefs_extraction_report.json",
+      "tmp_agent/b7_strangler_evidence/b7_09_tool_analysis_prefs_extraction_report.md",
+      "tmp_agent/b7_strangler_evidence/b7_09_tool_analysis_prefs_validation_report.json",
+      "tmp_agent/b7_strangler_evidence/b7_09_tool_analysis_prefs_patch_manifest.json",
+      "tmp_agent/b7_strangler_evidence/_b7_09_shim_cleanliness_audit.py",
+      "tmp_agent/b7_strangler_evidence/_b7_09_generate_patch.py"
+    ]
+  },
+  "next_recommended_action": "Operator review patch + manual commit/push, then proceed to B7-STRANGLER-10-INVENTORY"
+}

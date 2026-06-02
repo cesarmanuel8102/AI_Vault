@@ -189,6 +189,20 @@ from brain_v9.core import session_grounded_excerpt as _gex  # noqa: E402,F401
 # ``::TestTruncateToBudget``) keep resolving exactly as before.
 from brain_v9.core import session_context_budget as _cb  # noqa: E402,F401
 
+# B7-STRANGLER-09: Tool-analysis preference predicates
+# (``_prefers_no_tool_analysis``, ``_has_explicit_tool_target``) extracted to
+# ``brain_v9.core.session_tool_analysis_prefs``.  ``BrainSession`` keeps two
+# ``@staticmethod`` one-line shims that delegate here, preserving the
+# descriptor type so external bindings such as
+# ``BrainSession._prefers_no_tool_analysis`` /
+# ``BrainSession._has_explicit_tool_target`` (used by
+# ``tests/unit/test_brain_chat_hygiene.py`` via both class- and instance-level
+# access) keep resolving exactly as before.  ``_should_use_agent`` (the sole
+# internal consumer) remains in ``session.py`` and continues to call
+# ``self._prefers_no_tool_analysis(...)`` / ``self._has_explicit_tool_target(...)``
+# unchanged.
+from brain_v9.core import session_tool_analysis_prefs as _tap  # noqa: E402,F401
+
 
 def __getattr__(name):  # PEP 562: proxy live _GLOBAL_CHAT_METRICS
     if name == "_GLOBAL_CHAT_METRICS":
@@ -1793,54 +1807,21 @@ class BrainSession:
 
     @staticmethod
     def _prefers_no_tool_analysis(message: str) -> bool:
-        """Detect explicit user preference for pure analysis/chat without tools."""
-        msg = (message or "").lower()
-        return any(
-            marker in msg
-            for marker in (
-                "no uses tools",
-                "no use tools",
-                "no herramientas",
-                "sin herramientas",
-                "sin tools",
-                "no ejecutes herramientas",
-                "no ejecutar herramientas",
-                "no modifiques",
-                "no modificar",
-                "no cambies",
-                "no cambiar",
-                "no edites",
-                "no editar",
-                "no toques",
-                "sin cambios",
-                "sin modificar",
-                "no hagas cambios",
-                "solo analiza",
-                "solo analizar",
-                "solo razona",
-                "solo explica",
-            )
-        )
+        """Detect explicit user preference for pure analysis/chat without tools.
+
+        B7-STRANGLER-09 shim — delegates to
+        :func:`brain_v9.core.session_tool_analysis_prefs.prefers_no_tool_analysis`.
+        """
+        return _tap.prefers_no_tool_analysis(message)
 
     @staticmethod
     def _has_explicit_tool_target(message: str) -> bool:
-        """Keep agent routing when the user names a concrete file/service/command target."""
-        msg = (message or "").lower()
-        return bool(
-            _CODE_ANALYSIS_PATH_RE.search(message or "")
-            or re.search(r"\b(?:[a-z]:[\\/]|/[\w.-]+/)", message or "", re.IGNORECASE)
-            or re.search(r"\b(?:puerto|port)\s*\d{2,5}\b", msg)
-            or re.search(r"\b\d{1,3}(?:\.\d{1,3}){3}(?:/\d{1,2})?\b", msg)
-            or re.search(r"\b(?:ejecuta|ejecutar|corre|run|execute)\s+[\w./:-]+", msg)
-            or any(
-                token in msg
-                for token in (
-                    "servicio brain", "servicios brain", "ollama", "dashboard",
-                    "log", "logs", "archivo", "carpeta", "directorio",
-                    "file", "folder", "directory",
-                )
-            )
-        )
+        """Keep agent routing when the user names a concrete file/service/command target.
+
+        B7-STRANGLER-09 shim — delegates to
+        :func:`brain_v9.core.session_tool_analysis_prefs.has_explicit_tool_target`.
+        """
+        return _tap.has_explicit_tool_target(message)
 
     def _should_use_agent(self, message: str, intent: str, confidence: float = 1.0) -> bool:
         """Decide if the message needs real tool execution (agent) or just LLM chat."""
