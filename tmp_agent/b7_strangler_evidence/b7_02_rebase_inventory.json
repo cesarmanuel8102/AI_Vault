@@ -1,0 +1,101 @@
+{
+  "task_id": "B7-STRANGLER-02-REBASE",
+  "phase": "A_inventory",
+  "source_file": "tmp_agent/brain_v9/core/session.py",
+  "source_total_lines": 7637,
+  "chat_metrics_class": {
+    "class_start_line": 252,
+    "class_end_line": 1748,
+    "class_block_lines": 1497,
+    "class_attrs": {
+      "_PERSIST_EVERY": {"line": 260, "value": 1, "comment": "R7.4: persist every chat"},
+      "_SOFT_ARBITRATION_ENABLED": {"line": 681, "value": false, "comment": "F4: default OFF"}
+    },
+    "methods": [
+      {"name": "__init__", "line": 262},
+      {"name": "_load", "line": 284},
+      {"name": "record", "line": 310},
+      {"name": "record_response_quality", "line": 337},
+      {"name": "record_validator", "line": 352},
+      {"name": "snapshot", "line": 370},
+      {"name": "_persist", "line": 393},
+      {"name": "force_persist", "line": 416},
+      {"name": "record_routing_decision", "line": 420},
+      {"name": "_persist_routing_log_slice", "line": 465},
+      {"name": "get_routing_stats", "line": 485},
+      {"name": "_detect_overfire_candidates", "line": 515},
+      {"name": "get_overfire_analytics", "line": 570},
+      {"name": "get_trend_analysis", "line": 777},
+      {"name": "generate_arbitration_advisory", "line": 831},
+      {"name": "enable_soft_arbitration", "line": 935, "kind": "classmethod"},
+      {"name": "apply_soft_arbitration", "line": 950},
+      {"name": "validate_semantic_coherence", "line": 1056},
+      {"name": "_generate_coherence_recommendation", "line": 1243},
+      {"name": "record_coherence_validation", "line": 1272},
+      {"name": "get_coherence_analytics", "line": 1311},
+      {"name": "record_routing_outcome", "line": 1352},
+      {"name": "get_route_reliability_scores", "line": 1436},
+      {"name": "get_guard_effectiveness_scores", "line": 1477},
+      {"name": "_generate_route_recommendation", "line": 1520},
+      {"name": "_generate_guard_recommendation", "line": 1536},
+      {"name": "get_false_positive_analytics", "line": 1549},
+      {"name": "get_semantic_drift_indicators", "line": 1601},
+      {"name": "get_contradiction_learning_summary", "line": 1681}
+    ],
+    "method_count": 29
+  },
+  "module_globals_to_move": {
+    "_GLOBAL_CHAT_METRICS": {"line": 1755, "type": "Optional[ChatMetrics]", "init": "None"},
+    "_GLOBAL_CHAT_METRICS_LOCK": {"line": 1756, "type": "threading.Lock"},
+    "get_chat_metrics": {"line": 1759, "kind": "function", "end_line": 1766}
+  },
+  "module_dependencies_used_inside_chat_metrics": {
+    "module_level_symbols_referenced": ["_CHAT_METRICS_PATH", "NO_TOOL_MARKERS", "json", "logging"],
+    "stdlib_used": ["json", "logging", "re", "statistics"],
+    "typing_used": ["Dict", "List", "Optional", "Tuple"],
+    "threading": "needed for _GLOBAL_CHAT_METRICS_LOCK only (not for ChatMetrics class itself)",
+    "validator_metrics": "NOT used inside ChatMetrics (only in BrainSession)",
+    "datetime": "NOT used (only timestamps via record() arg)",
+    "no_circular_risk": "guards.py and config.py do not import session.py"
+  },
+  "external_imports_of_symbols": {
+    "ChatMetrics": [
+      "tests/unit/test_chat_metrics_extended.py:20",
+      "tests/unit/test_contradiction_learning_layer.py:17",
+      "tests/unit/test_semantic_coherence_validation.py:18",
+      "tests/unit/test_fases_2_3_4_routing_analytics.py:14",
+      "tests/unit/test_b7_routing_heuristics_characterization.py (via session_mod.ChatMetrics)"
+    ],
+    "get_chat_metrics": [
+      "tmp_agent/brain_v9/main.py:3798",
+      "tests/unit/test_chat_metrics_extended.py:20"
+    ],
+    "_GLOBAL_CHAT_METRICS": [
+      "tmp_agent/brain_v9/main.py:1924 (CRITICAL: reads .data attr; needs PEP562 __getattr__ proxy in session.py to return live ref)"
+    ],
+    "ChatMetrics._SOFT_ARBITRATION_ENABLED": [
+      "tests/unit/test_fases_2_3_4_routing_analytics.py"
+    ],
+    "ChatMetrics.enable_soft_arbitration": [
+      "tests/unit/test_fases_2_3_4_routing_analytics.py"
+    ]
+  },
+  "internal_self_references_inside_brainsession": {
+    "self.chat_metrics = get_chat_metrics()": {"line": 1875, "ok_via_reexport": true}
+  },
+  "lines_to_remove_from_session_py": "[252..1766] inclusive (1515 lines: ChatMetrics class + global singletons + get_chat_metrics fn)",
+  "lines_to_keep_intact": {
+    "imports_block": "[1..249]",
+    "_CHAT_METRICS_PATH_constant": "line 244 — kept in session.py as well, but extracted module gets its own copy/import",
+    "_normalize": "line 1815",
+    "BrainSession_class": "[1828..7637]"
+  },
+  "extraction_strategy": {
+    "approach": "Move ChatMetrics + _GLOBAL_CHAT_METRICS + _GLOBAL_CHAT_METRICS_LOCK + get_chat_metrics into new module session_chat_metrics.py. In session.py, replace the removed block with a re-export shim using `from .session_chat_metrics import ChatMetrics, get_chat_metrics, _GLOBAL_CHAT_METRICS_LOCK` plus a PEP 562 module-level __getattr__ proxy for _GLOBAL_CHAT_METRICS to keep main.py's `from brain_v9.core.session import _GLOBAL_CHAT_METRICS` returning the live object after lazy creation.",
+    "_CHAT_METRICS_PATH_handling": "Define _CHAT_METRICS_PATH inside session_chat_metrics.py from BASE_PATH; leave the duplicate in session.py untouched (read-only constant; same value). No risk of drift since both derive from same BASE_PATH.",
+    "circular_import_risk": "NONE — session_chat_metrics imports only brain_v9.config (BASE_PATH) and brain_v9.core.routing.guards (NO_TOOL_MARKERS); neither imports session.py.",
+    "behavior_preservation": "Identical: same class object, same singleton semantics, same persistence path. No tests modified."
+  },
+  "blocker_status": "NONE",
+  "go_no_go": "GO"
+}

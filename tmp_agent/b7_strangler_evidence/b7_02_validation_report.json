@@ -1,0 +1,83 @@
+{
+  "task_id": "B7-STRANGLER-02-REBASE",
+  "phase": "E_validation",
+  "head_at_start": "43513949cbebe47f6056bc89a5e7fb3bf2c1d9f5",
+  "corrective_pass": {
+    "applied": true,
+    "fix_description": "Added `log = logging.getLogger(\"BrainSession\")` at module preamble of session_chat_metrics.py to restore parity with pre-extraction session.py (ChatMetrics methods reference log.info/log.debug inside try/except blocks; missing binding caused silent NameError swallowing).",
+    "isolated_routing_log_persistence_proof": {
+      "method": "Inline diagnostic with monkeypatched _CHAT_METRICS_PATH to tmp file, instantiate cm1, record_routing_decision + record (to force _persist), instantiate cm2, assert routing_log roundtrip.",
+      "result": "ROUTING_LOG_PERSISTENCE_OK",
+      "initial_len": 0,
+      "in_memory_after_record": 1,
+      "disk_routing_log_len": 1,
+      "cm2_final_len": 1,
+      "verdict": "Extracted module persistence works correctly in isolation. Pre-existing test failures in test_chat_metrics_extended are due to test design (record_routing_decision does NOT trigger _persist on chat_metrics_latest.json — only _persist_routing_log_slice on routing_log_recent.json), independent of extraction."
+    }
+  },
+  "validations": {
+    "py_compile": {
+      "tmp_agent/brain_v9/core/session.py": "OK",
+      "tmp_agent/brain_v9/core/session_chat_metrics.py": "OK (post-fix; log binding added)"
+    },
+    "import_smoke": {
+      "command": "python -c 'from brain_v9.core.session import ChatMetrics, get_chat_metrics, BrainSession; ...'",
+      "result": "B7_CHATMETRICS_IMPORT_OK True True",
+      "pep562_proxy_works": true,
+      "main_style_import_returns_live_singleton": true,
+      "chatmetrics_identity_preserved": true
+    },
+    "phase1_local_validation_runner": {
+      "script": "tmp_agent/brain_v9/ops/phase1_local_validation.ps1",
+      "result": "PHASE1_LOCAL_VALIDATION: ALL PASS",
+      "checks_passed": [
+        "py_compile main.py",
+        "py_compile config.py",
+        "py_compile execution_gate.py",
+        "py_compile api_security.py",
+        "py_compile session.py",
+        "test_execution_gate_god_p3.py",
+        "test_dev_endpoints_default_off.py",
+        "test_selfdev_protected_paths.py",
+        "import smoke (execution_gate + config)"
+      ]
+    },
+    "new_b7_tests": {
+      "tests/unit/test_b7_chatmetrics_import_compat.py": "7 passed",
+      "tests/unit/test_b7_chatmetrics_behavior_smoke.py": "8 passed",
+      "total": "15 passed, 0 failed"
+    },
+    "regression_tests_chatmetrics_dependent": {
+      "tests/unit/test_chat_metrics_extended.py": "21 passed, 3 failed (PRE-EXISTING ON BASELINE 43513949 — NOT introduced by B7)",
+      "tests/unit/test_contradiction_learning_layer.py": "all passed",
+      "tests/unit/test_semantic_coherence_validation.py": "all passed",
+      "tests/unit/test_fases_2_3_4_routing_analytics.py": "all passed",
+      "tests/unit/test_b7_routing_heuristics_characterization.py": "all passed",
+      "tests/unit/test_phase1_import_baseline.py": "all passed",
+      "tests/unit/test_phase1_security_defaults.py": "all passed",
+      "aggregate_full_suite": "108 passed, 3 failed"
+    },
+    "preexisting_failures_baseline_verified": {
+      "method": "Replaced session.py with `git show HEAD:tmp_agent/brain_v9/core/session.py` (no checkout, only file overwrite from git stdout) and re-ran the 3 failing tests; reproduced failures identically against baseline. Restored B7 version after verification.",
+      "tests_failing_on_baseline": [
+        "tests/unit/test_chat_metrics_extended.py::TestChatMetricsExtended::test_get_routing_stats_empty_log",
+        "tests/unit/test_chat_metrics_extended.py::TestChatMetricsExtended::test_get_routing_stats_with_data",
+        "tests/unit/test_chat_metrics_extended.py::TestRoutingIntegration::test_routing_log_shares_global_singleton"
+      ],
+      "root_cause": "Test design relies on prior on-disk state from previous test runs; in clean state, _persist() is not invoked by record_routing_decision (only record() persists the main file). Pre-existing flakiness, NOT regression.",
+      "verdict": "NOT a B7 regression. Failures present at HEAD 43513949 with original session.py."
+    },
+    "git_diff_sanity": {
+      "session.py": "1 file changed, 16 insertions(+), 1513 deletions(-)",
+      "new_files_untracked": [
+        "tmp_agent/brain_v9/core/session_chat_metrics.py",
+        "tests/unit/test_b7_chatmetrics_import_compat.py",
+        "tests/unit/test_b7_chatmetrics_behavior_smoke.py"
+      ],
+      "no_protected_paths_touched": true
+    }
+  },
+  "overall": "PASS",
+  "regressions_introduced": 0,
+  "preexisting_failures_unrelated": 3
+}

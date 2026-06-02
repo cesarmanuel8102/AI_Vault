@@ -1,0 +1,42 @@
+{
+  "task_id": "B7-STRANGLER-02-REBASE",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_commit": "43513949cbebe47f6056bc89a5e7fb3bf2c1d9f5",
+  "head_message": "Phase 1 baseline/testing/CI (43513949) — closed and pushed",
+  "origin_synced": true,
+  "phase_0_closed": true,
+  "phase_1_closed": true,
+  "phase_0_commits": ["35fc676c", "53ca0f16", "0dcce5bd", "bb486c5a"],
+  "phase_1_commit": "43513949",
+  "staged_files": [],
+  "b7_relevant_dirty_paths": {
+    "tmp_agent/brain_v9/core/": "clean",
+    "tests/": "clean",
+    "tmp_agent/b7_strangler_evidence/": "clean (just created)"
+  },
+  "preexisting_dirty_unrelated": [
+    "memory/semantic/semantic_memory.jsonl (M, protected)",
+    "tmp_agent/strategies/* (untracked, protected)",
+    "tmp_agent/brain_v9/ops/smoke_*.ps1 (untracked)",
+    "tmp_agent/bor3_llm_audit*.{py,json} (untracked)",
+    "apply_chat_patch.py (untracked)",
+    "tmp_agent/brain_v9/chat_area_upgrade/ (untracked)",
+    "C\\357\\200\\272AI_VAULT...ledger_head_backup.md (untracked, garbled name; protected)"
+  ],
+  "rules_acknowledged": {
+    "no_commit": true,
+    "no_push": true,
+    "no_add_all": true,
+    "no_reset": true,
+    "no_checkout": true,
+    "no_clean": true,
+    "no_stash": true,
+    "protected_paths_untouched": true,
+    "tests_existing_unmodified": true,
+    "abort_if_patch_does_not_apply": true
+  },
+  "evidence_dir": "tmp_agent/b7_strangler_evidence/",
+  "evidence_dir_gitignored": true,
+  "evidence_dir_gitignore_pattern": "tmp_agent/**/*_evidence/ (line 107 of .gitignore)",
+  "preflight_status": "OK"
+}

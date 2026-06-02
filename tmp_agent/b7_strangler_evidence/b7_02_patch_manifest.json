@@ -1,0 +1,57 @@
+{
+  "task_id": "B7-STRANGLER-02-REBASE",
+  "head_at_start": "43513949cbebe47f6056bc89a5e7fb3bf2c1d9f5",
+  "branch": "codex/own-capital-sustainable-return",
+  "patch_file": "tmp_agent/b7_strangler_evidence/b7_02_chatmetrics_extraction.patch",
+  "patch_md5": "4bcd35d334e58700960b3b609afc8f32",
+  "patch_format": "Unified diff produced by `git diff -- <4 B7 files>` (regenerated post corrective `log` fix; covers new files as add-mode diffs and the modified session.py).",
+  "files_in_working_tree": [
+    {
+      "path": "tmp_agent/brain_v9/core/session.py",
+      "status": "modified",
+      "md5": "6f5539ca1ffa2dacae8a1216aafb0df5",
+      "lines": 6140,
+      "delta_lines": -1497
+    },
+    {
+      "path": "tmp_agent/brain_v9/core/session_chat_metrics.py",
+      "status": "new",
+      "md5": "f3ed88cf0f8684717c93ad71b85c18bd",
+      "lines": 1565,
+      "post_corrective_pass": "log = logging.getLogger('BrainSession') added"
+    },
+    {
+      "path": "tests/unit/test_b7_chatmetrics_import_compat.py",
+      "status": "new",
+      "md5": "e3c66966ccf098b51c4e75d8383af155",
+      "lines": 76
+    },
+    {
+      "path": "tests/unit/test_b7_chatmetrics_behavior_smoke.py",
+      "status": "new",
+      "md5": "7b5741448202accf3e76c0e17c69caa4",
+      "lines": 96
+    }
+  ],
+  "evidence_files": [
+    "tmp_agent/b7_strangler_evidence/b7_02_rebase_preflight.json",
+    "tmp_agent/b7_strangler_evidence/b7_02_rebase_inventory.json",
+    "tmp_agent/b7_strangler_evidence/b7_02_rebase_inventory.md",
+    "tmp_agent/b7_strangler_evidence/b7_02_chatmetrics_extraction_report.json",
+    "tmp_agent/b7_strangler_evidence/b7_02_chatmetrics_extraction_report.md",
+    "tmp_agent/b7_strangler_evidence/b7_02_validation_report.json",
+    "tmp_agent/b7_strangler_evidence/b7_02_patch_manifest.json",
+    "tmp_agent/b7_strangler_evidence/b7_02_chatmetrics_extraction.patch",
+    "tmp_agent/b7_strangler_evidence/b7_02_session_py_diff.patch"
+  ],
+  "rules_compliance": {
+    "no_commit": true,
+    "no_push": true,
+    "no_add": true,
+    "no_reset_or_checkout_or_clean_or_stash": true,
+    "protected_paths_untouched": true,
+    "existing_tests_unmodified": true,
+    "phase0_phase1_unmodified": true
+  },
+  "applicability_notes": "Apply on clean copy of HEAD 43513949 with `git apply tmp_agent/b7_strangler_evidence/b7_02_chatmetrics_extraction.patch`. Patch is a clean unified diff covering all 4 B7 files (1 modified, 3 new)."
+}

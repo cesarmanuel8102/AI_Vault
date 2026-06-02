@@ -1,0 +1,47 @@
+{
+  "task_id": "B7-STRANGLER-02-REBASE",
+  "phase": "C_extraction",
+  "result": "SUCCESS",
+  "files_created": [
+    "tmp_agent/brain_v9/core/session_chat_metrics.py",
+    "tests/unit/test_b7_chatmetrics_import_compat.py",
+    "tests/unit/test_b7_chatmetrics_behavior_smoke.py"
+  ],
+  "files_modified": [
+    "tmp_agent/brain_v9/core/session.py"
+  ],
+  "session_py_changes": {
+    "before_lines": 7637,
+    "after_lines": 6140,
+    "delta_lines": -1497,
+    "removed_block": "[252..1766] (ChatMetrics class + globals + accessor)",
+    "inserted_block_size": 18,
+    "shim_includes": [
+      "from brain_v9.core.session_chat_metrics import ChatMetrics, get_chat_metrics, _GLOBAL_CHAT_METRICS_LOCK",
+      "from brain_v9.core import session_chat_metrics as _session_chat_metrics",
+      "PEP 562 module __getattr__ proxy for _GLOBAL_CHAT_METRICS"
+    ]
+  },
+  "new_module_size_lines": 1565,
+  "extraction_method": "verbatim copy of class body + globals; preamble adds explicit imports (json, logging, re, statistics, threading, typing, BASE_PATH, NO_TOOL_MARKERS) and `log = logging.getLogger('BrainSession')`",
+  "corrective_pass_applied": {
+    "issue": "session_chat_metrics.py initially defined `import logging` but did NOT bind `log = logging.getLogger('BrainSession')`. Methods `_load` (line 99) and `record_routing_decision` (line 256) reference `log.info/log.debug` inside try/except blocks, so NameError was silently swallowed.",
+    "fix": "Added `log = logging.getLogger('BrainSession')` at module preamble (after BASE_PATH import).",
+    "module_lines_after_fix": 1565,
+    "py_compile": "OK",
+    "isolated_routing_log_persistence_proof": "ROUTING_LOG_PERSISTENCE_OK"
+  },
+  "imports_added_in_new_module": [
+    "import json",
+    "import logging",
+    "import re",
+    "import statistics",
+    "import threading as _threading",
+    "from typing import Dict, List, Optional, Tuple",
+    "from brain_v9.config import BASE_PATH",
+    "from brain_v9.core.routing.guards import NO_TOOL_MARKERS (defensive try/except)",
+    "log = logging.getLogger('BrainSession')"
+  ],
+  "compatibility_strategy": "Re-export of ChatMetrics, get_chat_metrics, _GLOBAL_CHAT_METRICS_LOCK directly; PEP 562 __getattr__ for _GLOBAL_CHAT_METRICS so legacy imports observe live singleton mutation.",
+  "behavior_change": "NONE — verbatim relocation. Same class object, same singleton accessor, same persistence path."
+}
