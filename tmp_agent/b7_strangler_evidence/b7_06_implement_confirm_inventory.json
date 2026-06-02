@@ -1,0 +1,41 @@
+{
+  "task": "B7-STRANGLER-06-IMPLEMENT",
+  "phase": "A_confirm_inventory",
+  "head": "aabe4a84",
+  "session_py_lines": 5743,
+  "invariants_verified": {
+    "session_py_exists": true,
+    "session_py_lines_approx_5743": true,
+    "fmt_method_count": 17,
+    "all_inside_BrainSession": true,
+    "all_classmethod": true,
+    "self_uses_total_zero": true,
+    "cls_uses_total_zero": true,
+    "no_cross_fmt_calls": true,
+    "_TOOL_FORMATTERS_present_at_L4780_4800": true,
+    "_format_tool_result_present_at_L4802_4847_uses_getattr_cls_name": true,
+    "_format_action_value_present_in_session_py": true,
+    "no_external_consumers_of_fmt_": true
+  },
+  "fmt_method_inventory": [
+    {"name": "_fmt_check_port",                  "line_start": 4447, "line_end": 4473},
+    {"name": "_fmt_check_http_service",          "line_start": 4476, "line_end": 4486},
+    {"name": "_fmt_check_all_services",          "line_start": 4489, "line_end": 4502},
+    {"name": "_fmt_check_service_status",        "line_start": 4505, "line_end": 4517},
+    {"name": "_fmt_get_live_autonomy_status",    "line_start": 4520, "line_end": 4537},
+    {"name": "_fmt_run_diagnostic",              "line_start": 4540, "line_end": 4552},
+    {"name": "_fmt_get_system_info",             "line_start": 4555, "line_end": 4568},
+    {"name": "_fmt_run_command",                 "line_start": 4571, "line_end": 4581},
+    {"name": "_fmt_read_file",                   "line_start": 4584, "line_end": 4591},
+    {"name": "_fmt_list_directory",              "line_start": 4594, "line_end": 4608},
+    {"name": "_fmt_search_files",                "line_start": 4611, "line_end": 4625},
+    {"name": "_fmt_list_processes",              "line_start": 4628, "line_end": 4642},
+    {"name": "_fmt_grep_codebase",               "line_start": 4646, "line_end": 4665},
+    {"name": "_fmt_list_recent_brain_changes",   "line_start": 4668, "line_end": 4694},
+    {"name": "_fmt_get_chat_metrics",            "line_start": 4697, "line_end": 4720},
+    {"name": "_fmt_semantic_memory_search",      "line_start": 4723, "line_end": 4744},
+    {"name": "_fmt_get_technical_introspection", "line_start": 4747, "line_end": 4774}
+  ],
+  "external_consumers_search": "rg _fmt_<name> across repo: only session.py + sandbox snapshots (frozen learning_sandboxes/*); no live external callers.",
+  "ready_for_phase_B": true
+}

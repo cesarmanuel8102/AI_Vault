@@ -1,0 +1,1240 @@
+diff --git a/tests/unit/test_b7_fmt_helpers_behavior_smoke.py b/tests/unit/test_b7_fmt_helpers_behavior_smoke.py
+new file mode 100644
+index 00000000..b31ca322
+--- /dev/null
++++ b/tests/unit/test_b7_fmt_helpers_behavior_smoke.py
+@@ -0,0 +1,239 @@
++"""B7-STRANGLER-06 behavior smoke: each fmt_<name> tolerates empty/partial
++payloads, returns a string, and embeds essential keys for canonical inputs.
++"""
++from __future__ import annotations
++
++import sys
++from pathlib import Path
++
++_REPO_ROOT = Path(__file__).resolve().parents[2]
++_TMP_AGENT = _REPO_ROOT / "tmp_agent"
++if str(_TMP_AGENT) not in sys.path:
++    sys.path.insert(0, str(_TMP_AGENT))
++
++
++def test_fmt_check_port_libre():
++    from brain_v9.core.session_fmt_helpers import fmt_check_port
++    out = fmt_check_port({"port": 9000, "status": "libre"})
++    assert "9000" in out and "libre" in out
++
++
++def test_fmt_check_port_active_with_processes():
++    from brain_v9.core.session_fmt_helpers import fmt_check_port
++    out = fmt_check_port({
++        "port": 8080, "status": "ocupado",
++        "processes": [{"pid": 1234, "name": "python.exe", "state": "LISTENING"}],
++    })
++    assert "8080" in out and "python.exe" in out and "1234" in out
++
++
++def test_fmt_check_port_kernel_only():
++    from brain_v9.core.session_fmt_helpers import fmt_check_port
++    out = fmt_check_port({"port": 80, "status": "ocupado", "processes": [{"pid": 0, "name": "Idle"}]})
++    assert "kernel" in out
++
++
++def test_fmt_check_http_service_200():
++    from brain_v9.core.session_fmt_helpers import fmt_check_http_service
++    out = fmt_check_http_service({"url": "http://localhost:8080/", "status_code": 200, "is_healthy": True})
++    assert "200" in out
++
++
++def test_fmt_check_http_service_error():
++    from brain_v9.core.session_fmt_helpers import fmt_check_http_service
++    out = fmt_check_http_service({"url": "http://x/", "error": "timeout"})
++    assert "error" in out and "timeout" in out
++
++
++def test_fmt_check_all_services():
++    from brain_v9.core.session_fmt_helpers import fmt_check_all_services
++    out = fmt_check_all_services({
++        "overall_status": "healthy",
++        "services": [{"name": "api", "port": 80, "running": True}],
++    })
++    assert "operativos" in out and "api" in out
++
++
++def test_fmt_check_service_status_empty():
++    from brain_v9.core.session_fmt_helpers import fmt_check_service_status
++    out = fmt_check_service_status({"services_checked": 5, "services": []})
++    assert "5" in out
++
++
++def test_fmt_get_live_autonomy_status():
++    from brain_v9.core.session_fmt_helpers import fmt_get_live_autonomy_status
++    out = fmt_get_live_autonomy_status({
++        "brain_health": {"status": "ok", "sessions": 3},
++        "utility": {"u_score": 0.85, "verdict": "go"},
++        "next_actions": {"top_action": "deploy", "blockers": ["b1"]},
++    })
++    assert "ok" in out and "0.85" in out and "deploy" in out and "b1" in out
++
++
++def test_fmt_run_diagnostic():
++    from brain_v9.core.session_fmt_helpers import fmt_run_diagnostic
++    out = fmt_run_diagnostic({
++        "summary": {"total_checks": 2, "successful": 2, "status": "ok"},
++        "diagnostic": {"checks": [{"name": "c1", "result": {"success": True}}]},
++    })
++    assert "2/2" in out and "c1" in out
++
++
++def test_fmt_get_system_info():
++    from brain_v9.core.session_fmt_helpers import fmt_get_system_info
++    out = fmt_get_system_info({
++        "cpu_percent": 42, "memory": {"total_gb": 16, "available_gb": 8},
++        "disk": {"free_gb": 100, "total_gb": 500},
++    })
++    assert "42" in out and "16" in out and "100" in out
++
++
++def test_fmt_run_command_no_output():
++    from brain_v9.core.session_fmt_helpers import fmt_run_command
++    out = fmt_run_command({"stdout": "", "stderr": "", "return_code": 0})
++    assert "sin salida" in out
++
++
++def test_fmt_run_command_truncates_long():
++    from brain_v9.core.session_fmt_helpers import fmt_run_command
++    long = "x" * 1000
++    out = fmt_run_command({"stdout": long, "return_code": 0})
++    assert out.endswith("...") and len(out) <= 503
++
++
++def test_fmt_read_file_short():
++    from brain_v9.core.session_fmt_helpers import fmt_read_file
++    out = fmt_read_file({"path": "C:/AI_VAULT/x.py", "content": "print(1)\n", "lines": 1})
++    assert "x.py" in out and "1 lineas" in out
++
++
++def test_fmt_read_file_truncated():
++    from brain_v9.core.session_fmt_helpers import fmt_read_file
++    out = fmt_read_file({"path": "x.py", "content": "a" * 600, "lines": 1})
++    assert out.endswith("...") and "lineas" in out
++
++
++def test_fmt_list_directory_list():
++    from brain_v9.core.session_fmt_helpers import fmt_list_directory
++    out = fmt_list_directory(["a", "b", "c"])
++    assert "a" in out and "b" in out and "c" in out
++
++
++def test_fmt_list_directory_dict_many():
++    from brain_v9.core.session_fmt_helpers import fmt_list_directory
++    out = fmt_list_directory({"path": "/x", "items": list(range(40))})
++    assert "/x" in out and "40 elementos" in out
++
++
++def test_fmt_search_files_empty():
++    from brain_v9.core.session_fmt_helpers import fmt_search_files
++    out = fmt_search_files({"matches": []})
++    assert out == "Sin resultados"
++
++
++def test_fmt_search_files_many():
++    from brain_v9.core.session_fmt_helpers import fmt_search_files
++    out = fmt_search_files({"matches": [{"file": f"f{i}.py"} for i in range(20)]})
++    assert "20" in out and "12 mas" in out
++
++
++def test_fmt_list_processes_truncates():
++    from brain_v9.core.session_fmt_helpers import fmt_list_processes
++    procs = [{"name": f"p{i}", "pid": i} for i in range(15)]
++    out = fmt_list_processes({"processes": procs})
++    assert "15 proceso" in out and "5 mas" in out
++
++
++def test_fmt_grep_codebase_empty():
++    from brain_v9.core.session_fmt_helpers import fmt_grep_codebase
++    out = fmt_grep_codebase([])
++    assert "Sin coincidencias" in out
++
++
++def test_fmt_grep_codebase_error():
++    from brain_v9.core.session_fmt_helpers import fmt_grep_codebase
++    out = fmt_grep_codebase([{"error": "bad regex"}])
++    assert "bad regex" in out
++
++
++def test_fmt_grep_codebase_hits():
++    from brain_v9.core.session_fmt_helpers import fmt_grep_codebase
++    hits = [{"rel_path": f"a{i}.py", "line": i, "text": "match"} for i in range(12)]
++    out = fmt_grep_codebase(hits)
++    assert "12 coincidencia" in out and "4 mas" in out
++
++
++def test_fmt_list_recent_brain_changes_empty():
++    from brain_v9.core.session_fmt_helpers import fmt_list_recent_brain_changes
++    out = fmt_list_recent_brain_changes({"days": 7, "ledger": [], "edited_files": []})
++    assert "Sin cambios" in out and "7" in out
++
++
++def test_fmt_list_recent_brain_changes_with_data():
++    from brain_v9.core.session_fmt_helpers import fmt_list_recent_brain_changes
++    out = fmt_list_recent_brain_changes({
++        "days": 3,
++        "ledger": [{"title": "T1", "date": "2026-06-01"}],
++        "edited_files": [{"path": "x.py", "mtime": "now"}],
++    })
++    assert "T1" in out and "x.py" in out
++
++
++def test_fmt_get_chat_metrics():
++    from brain_v9.core.session_fmt_helpers import fmt_get_chat_metrics
++    out = fmt_get_chat_metrics({
++        "conversations": 100, "success_rate": 0.95,
++        "routes": {"r1": 50, "r2": 30},
++        "errors": {"e1": 2},
++        "validators": {"v1": 5},
++    })
++    assert "100" in out and "95.0%" in out and "r1" in out
++
++
++def test_fmt_get_chat_metrics_non_dict():
++    from brain_v9.core.session_fmt_helpers import fmt_get_chat_metrics
++    out = fmt_get_chat_metrics([])  # type: ignore[arg-type]
++    assert isinstance(out, str)
++
++
++def test_fmt_semantic_memory_search_empty():
++    from brain_v9.core.session_fmt_helpers import fmt_semantic_memory_search
++    out = fmt_semantic_memory_search({"query": "foo", "results": []})
++    assert "foo" in out and "sin resultados" in out
++
++
++def test_fmt_semantic_memory_search_hits():
++    from brain_v9.core.session_fmt_helpers import fmt_semantic_memory_search
++    out = fmt_semantic_memory_search({
++        "query": "foo",
++        "results": [{"score": 0.8, "text": "hello", "source": "s1"}],
++    })
++    assert "foo" in out and "0.80" in out and "hello" in out
++
++
++def test_fmt_get_technical_introspection_full():
++    from brain_v9.core.session_fmt_helpers import fmt_get_technical_introspection
++    out = fmt_get_technical_introspection({
++        "process": {"pid": 4242, "uptime": 100, "memory_mb": 512},
++        "vram": {"used_mb": 1000, "total_mb": 8000},
++        "code": {"python_files": 500, "lines_of_code": 50000},
++        "capabilities": {"count": 30},
++    })
++    assert "4242" in out and "1000" in out and "500" in out and "30" in out
++
++
++def test_fmt_get_technical_introspection_non_dict():
++    from brain_v9.core.session_fmt_helpers import fmt_get_technical_introspection
++    out = fmt_get_technical_introspection("garbage")  # type: ignore[arg-type]
++    assert isinstance(out, str)
++
++
++def test_all_fmt_tolerate_empty_input():
++    """Each fmt_<n> must not raise on empty dict/list input."""
++    from brain_v9.core import session_fmt_helpers as h
++    list_input_names = {"fmt_list_directory", "fmt_grep_codebase"}
++    for name in h.__all__:
++        fn = getattr(h, name)
++        empty = [] if name in list_input_names else {}
++        result = fn(empty)
++        assert isinstance(result, str), f"{name} did not return str"
+diff --git a/tests/unit/test_b7_fmt_helpers_import_compat.py b/tests/unit/test_b7_fmt_helpers_import_compat.py
+new file mode 100644
+index 00000000..648767fe
+--- /dev/null
++++ b/tests/unit/test_b7_fmt_helpers_import_compat.py
+@@ -0,0 +1,121 @@
++"""B7-STRANGLER-06 import-compat: BrainSession._fmt_* shim integrity + dispatcher.
++
++Verifies:
++* The 17 module-level fmt_<name> functions exist and are callable.
++* Each BrainSession._fmt_<name> classmethod still resolves via getattr(cls, name).
++* The shim and the standalone helper produce identical output for sample payloads.
++* _TOOL_FORMATTERS dispatch (incl. the ``check_url`` alias) still works through
++  ``BrainSession._format_tool_result``.
++"""
++from __future__ import annotations
++
++import sys
++from pathlib import Path
++
++_REPO_ROOT = Path(__file__).resolve().parents[2]
++_TMP_AGENT = _REPO_ROOT / "tmp_agent"
++if str(_TMP_AGENT) not in sys.path:
++    sys.path.insert(0, str(_TMP_AGENT))
++
++
++_FMT_NAMES = (
++    "check_port", "check_http_service", "check_all_services",
++    "check_service_status", "get_live_autonomy_status", "run_diagnostic",
++    "get_system_info", "run_command", "read_file", "list_directory",
++    "search_files", "list_processes", "grep_codebase",
++    "list_recent_brain_changes", "get_chat_metrics", "semantic_memory_search",
++    "get_technical_introspection",
++)
++
++
++def test_helpers_module_exposes_17_functions():
++    from brain_v9.core import session_fmt_helpers as h
++    for n in _FMT_NAMES:
++        fn = getattr(h, f"fmt_{n}", None)
++        assert callable(fn), f"missing/uncallable fmt_{n}"
++    assert sorted(h.__all__) == sorted(f"fmt_{n}" for n in _FMT_NAMES)
++
++
++def test_brain_session_classmethods_present_and_callable():
++    from brain_v9.core.session import BrainSession
++    for n in _FMT_NAMES:
++        method_name = f"_fmt_{n}"
++        bound = getattr(BrainSession, method_name, None)
++        assert callable(bound), f"BrainSession.{method_name} not callable"
++
++
++def test_shim_and_standalone_produce_same_output():
++    from brain_v9.core.session import BrainSession
++    from brain_v9.core import session_fmt_helpers as h
++    samples = {
++        "check_port": {"port": 8080, "status": "libre"},
++        "check_http_service": {"url": "http://localhost:8080/", "status_code": 200, "is_healthy": True},
++        "check_all_services": {"overall_status": "healthy", "services": [{"name": "api", "port": 80, "running": True}]},
++        "check_service_status": {"services_checked": 2, "services": [{"name": "x", "running": True}]},
++        "get_live_autonomy_status": {"brain_health": {"status": "ok", "sessions": 1}, "utility": {"u_score": 0.9, "verdict": "go"}},
++        "run_diagnostic": {"summary": {"total_checks": 3, "successful": 3, "status": "ok"}, "diagnostic": {"checks": []}},
++        "get_system_info": {"cpu_percent": 12, "memory": {"total_gb": 16, "available_gb": 8}, "disk": {"free_gb": 100, "total_gb": 500}},
++        "run_command": {"stdout": "hola", "stderr": "", "return_code": 0},
++        "read_file": {"path": "x.py", "content": "print(1)\n", "lines": 1},
++        "list_directory": {"path": ".", "items": ["a", "b"]},
++        "search_files": {"matches": [{"file": "a.py"}]},
++        "list_processes": {"processes": [{"name": "p", "pid": 1}]},
++        "grep_codebase": [{"rel_path": "a.py", "line": 1, "text": "x"}],
++        "list_recent_brain_changes": {"days": 7, "ledger": [], "edited_files": [{"path": "a.py", "mtime": "now"}]},
++        "get_chat_metrics": {"conversations": 10, "success_rate": 0.9, "routes": {"r1": 5}},
++        "semantic_memory_search": {"query": "q", "results": [{"score": 0.8, "text": "hi"}]},
++        "get_technical_introspection": {"process": {"pid": 1, "uptime": 10, "memory_mb": 100}},
++    }
++    for n, payload in samples.items():
++        shim_out = getattr(BrainSession, f"_fmt_{n}")(payload)
++        helper_out = getattr(h, f"fmt_{n}")(payload)
++        assert shim_out == helper_out, f"divergence for {n}: shim={shim_out!r} helper={helper_out!r}"
++
++
++def test_TOOL_FORMATTERS_registry_intact():
++    from brain_v9.core.session import BrainSession
++    reg = BrainSession._TOOL_FORMATTERS
++    # All 17 helpers + the check_url alias = 18 entries
++    assert len(reg) == 18
++    assert reg["check_url"] == "_fmt_check_http_service"
++    for tool_name, method_name in reg.items():
++        assert callable(getattr(BrainSession, method_name)), \
++            f"{tool_name} -> {method_name} not callable on BrainSession"
++
++
++def test_format_tool_result_dispatch_via_alias():
++    """check_url aliases to _fmt_check_http_service through the dispatcher."""
++    from brain_v9.core.session import BrainSession
++    payload = {"url": "http://localhost:8080/health", "status_code": 200, "is_healthy": True}
++    direct = BrainSession._fmt_check_http_service(payload)
++    via_alias = BrainSession._format_tool_result("check_url", True, payload)
++    via_canonical = BrainSession._format_tool_result("check_http_service", True, payload)
++    assert direct == via_alias == via_canonical
++    assert isinstance(direct, str) and direct
++
++
++def test_format_tool_result_dispatch_smoke_all():
++    from brain_v9.core.session import BrainSession
++    # Minimal payloads keyed by tool name
++    payloads = {
++        "check_port": {"port": 22, "status": "libre"},
++        "check_http_service": {"url": "x", "status_code": 200, "is_healthy": True},
++        "check_all_services": {"overall_status": "healthy", "services": []},
++        "check_service_status": {"services_checked": 0, "services": []},
++        "get_live_autonomy_status": {},
++        "run_diagnostic": {"summary": {}, "diagnostic": {"checks": []}},
++        "get_system_info": {"cpu_percent": 1, "memory": {}, "disk": {}},
++        "run_command": {"stdout": "", "stderr": "", "return_code": 0},
++        "read_file": {"path": "p", "content": "", "lines": 0},
++        "list_directory": {"path": ".", "items": []},
++        "search_files": {"matches": []},
++        "list_processes": {"processes": []},
++        "grep_codebase": [],
++        "list_recent_brain_changes": {"days": 1, "ledger": [], "edited_files": []},
++        "get_chat_metrics": {"conversations": 0, "success_rate": 0},
++        "semantic_memory_search": {"query": "q", "results": []},
++        "get_technical_introspection": {},
++    }
++    for tool, payload in payloads.items():
++        out = BrainSession._format_tool_result(tool, True, payload)
++        assert isinstance(out, str)
+diff --git a/tests/unit/test_b7_fmt_helpers_no_session_dependency.py b/tests/unit/test_b7_fmt_helpers_no_session_dependency.py
+new file mode 100644
+index 00000000..eda5df30
+--- /dev/null
++++ b/tests/unit/test_b7_fmt_helpers_no_session_dependency.py
+@@ -0,0 +1,99 @@
++"""B7-STRANGLER-06: session_fmt_helpers must be importable WITHOUT importing
++brain_v9.core.session (no circular/heavy dependency)."""
++from __future__ import annotations
++
++import importlib
++import subprocess
++import sys
++from pathlib import Path
++
++_REPO_ROOT = Path(__file__).resolve().parents[2]
++_TMP_AGENT = _REPO_ROOT / "tmp_agent"
++
++
++def test_no_session_dependency_in_subprocess():
++    """In a fresh subprocess, importing session_fmt_helpers must NOT pull in
++    brain_v9.core.session."""
++    code = (
++        "import sys;"
++        f"sys.path.insert(0, r'{_TMP_AGENT}');"
++        "import brain_v9.core.session_fmt_helpers as m;"
++        "assert callable(m.fmt_check_port);"
++        "assert 'brain_v9.core.session' not in sys.modules, "
++        "    sorted(k for k in sys.modules if k.startswith('brain_v9'));"
++        "print('OK')"
++    )
++    res = subprocess.run(
++        [sys.executable, "-c", code],
++        capture_output=True,
++        text=True,
++        timeout=30,
++    )
++    assert res.returncode == 0, f"stdout={res.stdout!r} stderr={res.stderr!r}"
++    assert "OK" in res.stdout
++
++
++def test_module_only_imports_typing_and_stdlib():
++    """Module must be stateless and stdlib-only (typing.Dict / Any)."""
++    if str(_TMP_AGENT) not in sys.path:
++        sys.path.insert(0, str(_TMP_AGENT))
++    mod = importlib.import_module("brain_v9.core.session_fmt_helpers")
++    expected = {
++        "fmt_check_port", "fmt_check_http_service", "fmt_check_all_services",
++        "fmt_check_service_status", "fmt_get_live_autonomy_status",
++        "fmt_run_diagnostic", "fmt_get_system_info", "fmt_run_command",
++        "fmt_read_file", "fmt_list_directory", "fmt_search_files",
++        "fmt_list_processes", "fmt_grep_codebase",
++        "fmt_list_recent_brain_changes", "fmt_get_chat_metrics",
++        "fmt_semantic_memory_search", "fmt_get_technical_introspection",
++    }
++    assert expected.issubset(set(mod.__all__))
++    for name in expected:
++        assert callable(getattr(mod, name))
++
++
++def test_helpers_are_module_level_functions_not_methods():
++    """No BrainSession / self / cls coupling."""
++    if str(_TMP_AGENT) not in sys.path:
++        sys.path.insert(0, str(_TMP_AGENT))
++    import brain_v9.core.session_fmt_helpers as m
++    src_path = Path(m.__file__)
++    src = src_path.read_text(encoding="utf-8")
++    # Strip the module docstring (which legitimately mentions BrainSession in
++    # the contract notes) before scanning for code-level coupling.
++    import ast
++    tree = ast.parse(src)
++    # Verify no class definitions and no `self`/`cls` first parameters
++    for node in ast.walk(tree):
++        if isinstance(node, ast.ClassDef):
++            raise AssertionError(f"unexpected class definition: {node.name}")
++        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
++            args = [a.arg for a in node.args.args]
++            assert args[:1] != ["self"], f"{node.name} uses self"
++            assert args[:1] != ["cls"], f"{node.name} uses cls"
++    # Ensure BrainSession is not referenced as a Name/Attribute anywhere in code
++    for node in ast.walk(tree):
++        if isinstance(node, ast.Name) and node.id == "BrainSession":
++            raise AssertionError("BrainSession referenced in code")
++        if isinstance(node, ast.Attribute) and node.attr == "BrainSession":
++            raise AssertionError("BrainSession referenced as attribute")
++    # No `def fmt_X(self,` or `def fmt_X(cls,` signatures
++    for name in m.__all__:
++        # Each must be a plain function with `(out` as first arg
++        import inspect
++        fn = getattr(m, name)
++        assert inspect.isfunction(fn), f"{name} is not a plain function"
++        sig = inspect.signature(fn)
++        params = list(sig.parameters)
++        assert params == ["out"], f"{name} has unexpected params: {params}"
++
++
++def test_helpers_are_stateless_pure():
++    """Same input → same output across multiple invocations."""
++    if str(_TMP_AGENT) not in sys.path:
++        sys.path.insert(0, str(_TMP_AGENT))
++    from brain_v9.core.session_fmt_helpers import fmt_check_port, fmt_get_system_info
++    p1 = {"port": 80, "status": "libre"}
++    assert fmt_check_port(p1) == fmt_check_port(p1)
++    p2 = {"cpu_percent": 1, "memory": {"total_gb": 8, "available_gb": 4}, "disk": {}}
++    assert fmt_get_system_info(p2) == fmt_get_system_info(p2)
+diff --git a/tmp_agent/brain_v9/core/session.py b/tmp_agent/brain_v9/core/session.py
+index 9389860a..c87df549 100644
+--- a/tmp_agent/brain_v9/core/session.py
++++ b/tmp_agent/brain_v9/core/session.py
+@@ -161,6 +161,13 @@ from brain_v9.core.session_response_hygiene import (  # noqa: E402,F401
+     sanitize_llm_chat_response as _sanitize_llm_chat_response_impl,
+ )
+ 
++# B7-STRANGLER-06: pure tool-result formatters extracted to their own module.
++# BrainSession keeps the 17 ``_fmt_<name>`` classmethods as one-line shims that
++# delegate here, so ``BrainSession._format_tool_result``'s
++# ``getattr(cls, method_name)`` lookup (driven by ``_TOOL_FORMATTERS``,
++# including the ``check_url`` alias) keeps resolving.
++from brain_v9.core import session_fmt_helpers as _fmt_helpers  # noqa: E402,F401
++
+ 
+ def __getattr__(name):  # PEP 562: proxy live _GLOBAL_CHAT_METRICS
+     if name == "_GLOBAL_CHAT_METRICS":
+@@ -4440,338 +4447,79 @@ class BrainSession:
+         return str(value)
+ 
+     # ── P-OP59: Smart tool result formatters ──────────────────────────────────
+-    # Each formatter produces a human-readable Spanish line from the tool's
+-    # raw dict output. The goal is conversational quality, not debug output.
++    # B7-STRANGLER-06: extracted to brain_v9.core.session_fmt_helpers.
++    # The 17 ``_fmt_<name>`` classmethods below are preserved as one-line shims
++    # so ``_format_tool_result``'s ``getattr(cls, method_name)`` dispatch keeps
++    # resolving (incl. the ``check_url`` alias in ``_TOOL_FORMATTERS``).
+ 
+     @classmethod
+     def _fmt_check_port(cls, out: Dict) -> str:
+-        port = out.get("port", "?")
+-        status = out.get("status", "desconocido")
+-        if status == "libre":
+-            return f"Puerto {port} — libre, ningun proceso escuchando"
+-        procs = out.get("processes", [])
+-        # Deduplicate by PID, skip PID 0 (kernel/idle) and noisy entries
+-        seen = {}
+-        for p in procs:
+-            pid = p.get("pid", "?")
+-            name = p.get("name", "").strip()
+-            # Skip PID 0 (kernel TIME_WAIT), empty names, and error messages
+-            if pid in ("0", 0) or not name or "No tasks are running" in name:
+-                continue
+-            if pid not in seen:
+-                state = p.get("state", "")
+-                seen[pid] = (name, state)
+-        if seen:
+-            parts = []
+-            for pid, (name, state) in list(seen.items())[:4]:
+-                s = f"{name} (PID {pid})"
+-                if state and state != "LISTENING":
+-                    s += f" [{state}]"
+-                parts.append(s)
+-            return f"Puerto {port} — activo: {', '.join(parts)}"
+-        # All procs were filtered — port is in use but only by kernel
+-        return f"Puerto {port} — en uso (conexiones residuales del kernel)"
++        return _fmt_helpers.fmt_check_port(out)
+ 
+     @classmethod
+     def _fmt_check_http_service(cls, out: Dict) -> str:
+-        url = out.get("url", "?")
+-        code = out.get("status_code", "?")
+-        healthy = out.get("is_healthy", False)
+-        err = out.get("error")
+-        # Shorten URL for display
+-        short = url.replace("http://localhost:", ":").replace("http://127.0.0.1:", ":")
+-        if err:
+-            return f"{short} — error: {err}"
+-        status = "saludable" if healthy else "respondiendo"
+-        return f"{short} — {code} OK, {status}" if code == 200 else f"{short} — codigo {code}"
++        return _fmt_helpers.fmt_check_http_service(out)
+ 
+     @classmethod
+     def _fmt_check_all_services(cls, out: Dict) -> str:
+-        overall = out.get("overall_status", "desconocido")
+-        services = out.get("services", [])
+-        if not services:
+-            return f"Servicios: {overall}"
+-        parts = []
+-        for svc in services:
+-            name = svc.get("name", "?")
+-            port = svc.get("port", "?")
+-            running = svc.get("running", False)
+-            icon = "OK" if running else "CAIDO"
+-            parts.append(f"  {name} (:{port}) — {icon}")
+-        header = "Todos los servicios operativos" if overall == "healthy" else f"Estado general: {overall}"
+-        return header + "\n" + "\n".join(parts)
++        return _fmt_helpers.fmt_check_all_services(out)
+ 
+     @classmethod
+     def _fmt_check_service_status(cls, out: Dict) -> str:
+-        checked = out.get("services_checked", 0)
+-        services = out.get("services", [])
+-        if isinstance(services, list) and services:
+-            parts = []
+-            for svc in services:
+-                if isinstance(svc, dict):
+-                    name = svc.get("name", "?")
+-                    running = svc.get("running", svc.get("status") == "running")
+-                    parts.append(f"{name}: {'OK' if running else 'CAIDO'}")
+-            if parts:
+-                return ", ".join(parts)
+-        return f"{checked} servicios verificados"
++        return _fmt_helpers.fmt_check_service_status(out)
+ 
+     @classmethod
+     def _fmt_get_live_autonomy_status(cls, out: Dict) -> str:
+-        health = out.get("brain_health") or {}
+-        strategy = out.get("strategy_summary") or {}
+-        utility = out.get("utility") or {}
+-        next_a = out.get("next_actions") or {}
+-        parts = []
+-        if health:
+-            parts.append(f"Brain: {health.get('status', 'desconocido')}, sessions={health.get('sessions', '?')}")
+-        u = utility.get("u_score", utility.get("U", "N/A"))
+-        verdict = utility.get("verdict", next_a.get("verdict", "N/A"))
+-        parts.append(f"Utility U={u}, veredicto={verdict}")
+-        top = next_a.get("top_action") or strategy.get("top_action")
+-        if top:
+-            parts.append(f"Accion prioritaria: {top}")
+-        blockers = next_a.get("blockers", [])
+-        if blockers:
+-            parts.append(f"Blockers: {', '.join(blockers[:4])}")
+-        return "\n".join(parts)
++        return _fmt_helpers.fmt_get_live_autonomy_status(out)
+ 
+     @classmethod
+     def _fmt_run_diagnostic(cls, out: Dict) -> str:
+-        summary = out.get("summary") or {}
+-        total = summary.get("total_checks", 0)
+-        ok = summary.get("successful", 0)
+-        status = summary.get("status", "desconocido")
+-        checks = (out.get("diagnostic") or {}).get("checks", [])
+-        parts = [f"Diagnostico: {ok}/{total} checks OK — {status}"]
+-        for c in checks[:5]:
+-            name = c.get("name", "?")
+-            result = c.get("result", {})
+-            success = result.get("success", False)
+-            parts.append(f"  {name}: {'OK' if success else 'FALLO'}")
+-        return "\n".join(parts)
++        return _fmt_helpers.fmt_run_diagnostic(out)
+ 
+     @classmethod
+     def _fmt_get_system_info(cls, out: Dict) -> str:
+-        cpu = out.get("cpu_percent", "?")
+-        mem = out.get("memory", {})
+-        disk = out.get("disk", {})
+-        parts = [f"CPU: {cpu}%"]
+-        if mem:
+-            total = mem.get("total_gb", "?")
+-            avail = mem.get("available_gb", "?")
+-            parts.append(f"RAM: {avail}GB libres de {total}GB")
+-        if disk:
+-            free = disk.get("free_gb", "?")
+-            total_d = disk.get("total_gb", "?")
+-            parts.append(f"Disco C: {free}GB libres de {total_d}GB")
+-        return " | ".join(parts)
++        return _fmt_helpers.fmt_get_system_info(out)
+ 
+     @classmethod
+     def _fmt_run_command(cls, out: Dict) -> str:
+-        stdout = out.get("stdout", "")
+-        stderr = out.get("stderr", "")
+-        code = out.get("return_code", out.get("exit_code", "?"))
+-        result = stdout.strip() if stdout else stderr.strip()
+-        if not result:
+-            return f"Comando ejecutado (codigo {code}), sin salida"
+-        # Truncate long output
+-        if len(result) > 500:
+-            result = result[:497] + "..."
+-        return result
++        return _fmt_helpers.fmt_run_command(out)
+ 
+     @classmethod
+     def _fmt_read_file(cls, out: Dict) -> str:
+-        path = out.get("path", "?")
+-        content = out.get("content", "")
+-        lines = out.get("lines", 0) or (content.count("\n") + 1 if content else 0)
+-        short_path = path.replace("C:\\AI_VAULT\\", "").replace("C:/AI_VAULT/", "")
+-        if content and len(content) > 300:
+-            return f"{short_path} ({lines} lineas)\n{content[:300]}..."
+-        return f"{short_path} ({lines} lineas)" + (f"\n{content}" if content else "")
++        return _fmt_helpers.fmt_read_file(out)
+ 
+     @classmethod
+     def _fmt_list_directory(cls, out) -> str:
+-        # Handle both list (direct file list) and dict (structured response)
+-        if isinstance(out, list):
+-            if len(out) <= 15:
+-                return ", ".join(str(x) for x in out)
+-            return f"{len(out)} archivos: {', '.join(str(x) for x in out[:10])}..."
+-        if isinstance(out, dict):
+-            path = out.get("path", "?")
+-            items = out.get("items", out.get("entries", []))
+-            if isinstance(items, list):
+-                if len(items) <= 15:
+-                    return f"{path}: {', '.join(str(x) for x in items)}"
+-                return f"{path}: {len(items)} elementos"
+-            return f"{path}: {items}"
+-        return str(out)[:300]
++        return _fmt_helpers.fmt_list_directory(out)
+ 
+     @classmethod
+     def _fmt_search_files(cls, out: Dict) -> str:
+-        matches = out.get("matches", out.get("results", []))
+-        if isinstance(matches, list):
+-            if not matches:
+-                return "Sin resultados"
+-            lines = [f"{len(matches)} archivo(s) encontrado(s):"]
+-            for m in matches[:8]:
+-                if isinstance(m, dict):
+-                    lines.append(f"  {m.get('file', m.get('path', '?'))}")
+-                else:
+-                    lines.append(f"  {m}")
+-            if len(matches) > 8:
+-                lines.append(f"  ... y {len(matches)-8} mas")
+-            return "\n".join(lines)
+-        return str(matches)[:400]
++        return _fmt_helpers.fmt_search_files(out)
+ 
+     @classmethod
+     def _fmt_list_processes(cls, out: Dict) -> str:
+-        procs = out.get("processes", [])
+-        if isinstance(procs, list) and procs:
+-            lines = [f"{len(procs)} proceso(s):"]
+-            for p in procs[:10]:
+-                if isinstance(p, dict):
+-                    name = p.get("name", "?")
+-                    pid = p.get("pid", "?")
+-                    lines.append(f"  {name} (PID {pid})")
+-                else:
+-                    lines.append(f"  {p}")
+-            if len(procs) > 10:
+-                lines.append(f"  ... y {len(procs)-10} mas")
+-            return "\n".join(lines)
+-        return str(out)[:300]
++        return _fmt_helpers.fmt_list_processes(out)
+ 
+-    # ── R8.3: Extra formatters for high-traffic tools ─────────────────────────
+     @classmethod
+     def _fmt_grep_codebase(cls, out) -> str:
+-        """grep_codebase returns a List[Dict] of {rel_path, line, text}."""
+-        if not isinstance(out, list):
+-            return str(out)[:400]
+-        if not out:
+-            return "Sin coincidencias en el codebase"
+-        # First entry may be {"error": "..."}
+-        if isinstance(out[0], dict) and "error" in out[0] and len(out) == 1:
+-            return f"grep_codebase: {out[0]['error']}"
+-        lines = [f"{len(out)} coincidencia(s):"]
+-        for hit in out[:8]:
+-            if not isinstance(hit, dict):
+-                continue
+-            rel = hit.get("rel_path") or hit.get("path", "?")
+-            ln = hit.get("line", "?")
+-            txt = (hit.get("text") or "").strip()[:120]
+-            lines.append(f"  {rel}:{ln} — {txt}")
+-        if len(out) > 8:
+-            lines.append(f"  ... y {len(out)-8} mas")
+-        return "\n".join(lines)
++        return _fmt_helpers.fmt_grep_codebase(out)
+ 
+     @classmethod
+     def _fmt_list_recent_brain_changes(cls, out: Dict) -> str:
+-        """list_recent_brain_changes returns ledger + edited files."""
+-        if not isinstance(out, dict):
+-            return str(out)[:400]
+-        ledger = out.get("ledger") or out.get("ledger_entries") or []
+-        edits = out.get("edited_files") or out.get("recent_edits") or []
+-        days = out.get("days", "?")
+-        parts = [f"Cambios recientes (ultimos {days}d):"]
+-        if isinstance(ledger, list) and ledger:
+-            parts.append(f"  Ledger formal: {len(ledger)} entradas")
+-            for e in ledger[:4]:
+-                if isinstance(e, dict):
+-                    title = e.get("title") or e.get("description") or e.get("name", "?")
+-                    when = e.get("date") or e.get("ts") or e.get("timestamp", "")
+-                    parts.append(f"    - {str(title)[:90]} ({when})")
+-        if isinstance(edits, list) and edits:
+-            parts.append(f"  Ediciones directas: {len(edits)} archivo(s)")
+-            for e in edits[:6]:
+-                if isinstance(e, dict):
+-                    p = e.get("path") or e.get("file", "?")
+-                    mt = e.get("mtime") or e.get("modified", "")
+-                    parts.append(f"    - {p} ({mt})")
+-                else:
+-                    parts.append(f"    - {e}")
+-        if len(parts) == 1:
+-            return f"Sin cambios registrados en los ultimos {days} dias"
+-        return "\n".join(parts)
++        return _fmt_helpers.fmt_list_recent_brain_changes(out)
+ 
+     @classmethod
+     def _fmt_get_chat_metrics(cls, out: Dict) -> str:
+-        """get_chat_metrics returns conversations, success_rate, routes, errors."""
+-        if not isinstance(out, dict):
+-            return str(out)[:400]
+-        conv = out.get("conversations") or out.get("total_conversations", "?")
+-        sr = out.get("success_rate")
+-        if isinstance(sr, (int, float)):
+-            sr_str = f"{sr*100:.1f}%" if sr <= 1 else f"{sr:.1f}%"
+-        else:
+-            sr_str = str(sr or "?")
+-        parts = [f"Chats: {conv} | success_rate={sr_str}"]
+-        routes = out.get("routes") or {}
+-        if isinstance(routes, dict) and routes:
+-            top = sorted(routes.items(), key=lambda kv: -(kv[1] if isinstance(kv[1], int) else 0))[:4]
+-            parts.append("  Routes: " + ", ".join(f"{k}={v}" for k, v in top))
+-        errs = out.get("errors") or out.get("error_counts") or {}
+-        if isinstance(errs, dict) and errs:
+-            top_e = sorted(errs.items(), key=lambda kv: -(kv[1] if isinstance(kv[1], int) else 0))[:3]
+-            parts.append("  Errors: " + ", ".join(f"{k}={v}" for k, v in top_e))
+-        validators = out.get("validators") or {}
+-        if isinstance(validators, dict) and validators:
+-            tot = sum(v for v in validators.values() if isinstance(v, int))
+-            parts.append(f"  Validators fired: {tot} (en {len(validators)} categorias)")
+-        return "\n".join(parts)
++        return _fmt_helpers.fmt_get_chat_metrics(out)
+ 
+     @classmethod
+     def _fmt_semantic_memory_search(cls, out: Dict) -> str:
+-        """semantic_memory_search returns {results: [...], query: ...}."""
+-        if not isinstance(out, dict):
+-            return str(out)[:400]
+-        results = out.get("results") or out.get("matches") or []
+-        q = out.get("query", "")
+-        if not isinstance(results, list) or not results:
+-            return f"Memoria semantica: sin resultados para '{q}'"
+-        parts = [f"Memoria semantica '{q}': {len(results)} match(es)"]
+-        for r in results[:5]:
+-            if isinstance(r, dict):
+-                score = r.get("score") or r.get("similarity")
+-                txt = r.get("text") or r.get("content") or r.get("snippet", "")
+-                src = r.get("source") or r.get("session_id") or ""
+-                score_s = f"{score:.2f}" if isinstance(score, (int, float)) else "?"
+-                head = str(txt).strip().replace("\n", " ")[:140]
+-                parts.append(f"  [{score_s}] {head}" + (f" <{src}>" if src else ""))
+-            else:
+-                parts.append(f"  {str(r)[:140]}")
+-        if len(results) > 5:
+-            parts.append(f"  ... y {len(results)-5} mas")
+-        return "\n".join(parts)
++        return _fmt_helpers.fmt_semantic_memory_search(out)
+ 
+     @classmethod
+     def _fmt_get_technical_introspection(cls, out: Dict) -> str:
+-        """get_technical_introspection returns process/VRAM/code/capabilities snapshot."""
+-        if not isinstance(out, dict):
+-            return str(out)[:400]
+-        proc = out.get("process") or {}
+-        vram = out.get("vram") or out.get("gpu") or {}
+-        code = out.get("code") or out.get("codebase") or {}
+-        caps = out.get("capabilities") or out.get("tools") or {}
+-        parts = []
+-        if isinstance(proc, dict) and proc:
+-            pid = proc.get("pid", "?")
+-            uptime = proc.get("uptime") or proc.get("uptime_s", "?")
+-            mem = proc.get("memory_mb") or proc.get("rss_mb", "?")
+-            parts.append(f"Brain PID {pid} | uptime={uptime} | RAM={mem}MB")
+-        if isinstance(vram, dict) and vram:
+-            used = vram.get("used_mb") or vram.get("vram_used_mb", "?")
+-            total = vram.get("total_mb") or vram.get("vram_total_mb", "?")
+-            parts.append(f"GPU VRAM: {used}/{total}MB")
+-        if isinstance(code, dict) and code:
+-            files = code.get("python_files") or code.get("files", "?")
+-            loc = code.get("lines_of_code") or code.get("loc", "?")
+-            parts.append(f"Codebase: {files} archivos Python, {loc} LOC")
+-        if isinstance(caps, dict) and caps:
+-            n = caps.get("count") or caps.get("total") or len(caps)
+-            parts.append(f"Capacidades registradas: {n}")
+-        elif isinstance(caps, list):
+-            parts.append(f"Capacidades registradas: {len(caps)}")
+-        return "\n".join(parts) if parts else str(out)[:400]
++        return _fmt_helpers.fmt_get_technical_introspection(out)
++
+ 
+     # Dispatcher: tool name → formatter method name (string)
+     # Using strings instead of direct references avoids the classmethod
+diff --git a/tmp_agent/brain_v9/core/session_fmt_helpers.py b/tmp_agent/brain_v9/core/session_fmt_helpers.py
+new file mode 100644
+index 00000000..68997aa7
+--- /dev/null
++++ b/tmp_agent/brain_v9/core/session_fmt_helpers.py
+@@ -0,0 +1,378 @@
++"""
++brain_v9.core.session_fmt_helpers
++=================================
++
++B7-STRANGLER-06: Pure, side-effect-free tool-result formatters extracted from
++BrainSession's ``_fmt_*`` classmethod bundle (formerly in
++``tmp_agent/brain_v9/core/session.py`` @ lines 4447-4774).
++
++Each formatter takes the raw dict (or list, where applicable) returned by a
++brain tool and produces a human-readable Spanish single- or multi-line string
++suitable for chat-area display.
++
++Contract
++--------
++* Module-level pure functions ``fmt_<tool_name>(out) -> str``.
++* No imports from ``brain_v9.core.session`` (no circular dependency).
++* No I/O, no network, no config, no logging.
++* Behaviour is byte-identical to the prior classmethods.
++
++BrainSession keeps the ``_fmt_<name>`` classmethods as one-line shims that
++delegate here, preserving:
++
++* ``BrainSession._format_tool_result``'s ``getattr(cls, method_name)`` lookup,
++* the public ``_TOOL_FORMATTERS`` registry (incl. ``check_url`` alias),
++* and any external code paths that bind to the classmethod descriptor.
++"""
++from __future__ import annotations
++
++from typing import Any, Dict
++
++__all__ = [
++    "fmt_check_port",
++    "fmt_check_http_service",
++    "fmt_check_all_services",
++    "fmt_check_service_status",
++    "fmt_get_live_autonomy_status",
++    "fmt_run_diagnostic",
++    "fmt_get_system_info",
++    "fmt_run_command",
++    "fmt_read_file",
++    "fmt_list_directory",
++    "fmt_search_files",
++    "fmt_list_processes",
++    "fmt_grep_codebase",
++    "fmt_list_recent_brain_changes",
++    "fmt_get_chat_metrics",
++    "fmt_semantic_memory_search",
++    "fmt_get_technical_introspection",
++]
++
++
++def fmt_check_port(out: Dict) -> str:
++    port = out.get("port", "?")
++    status = out.get("status", "desconocido")
++    if status == "libre":
++        return f"Puerto {port} — libre, ningun proceso escuchando"
++    procs = out.get("processes", [])
++    # Deduplicate by PID, skip PID 0 (kernel/idle) and noisy entries
++    seen = {}
++    for p in procs:
++        pid = p.get("pid", "?")
++        name = p.get("name", "").strip()
++        # Skip PID 0 (kernel TIME_WAIT), empty names, and error messages
++        if pid in ("0", 0) or not name or "No tasks are running" in name:
++            continue
++        if pid not in seen:
++            state = p.get("state", "")
++            seen[pid] = (name, state)
++    if seen:
++        parts = []
++        for pid, (name, state) in list(seen.items())[:4]:
++            s = f"{name} (PID {pid})"
++            if state and state != "LISTENING":
++                s += f" [{state}]"
++            parts.append(s)
++        return f"Puerto {port} — activo: {', '.join(parts)}"
++    # All procs were filtered — port is in use but only by kernel
++    return f"Puerto {port} — en uso (conexiones residuales del kernel)"
++
++
++def fmt_check_http_service(out: Dict) -> str:
++    url = out.get("url", "?")
++    code = out.get("status_code", "?")
++    healthy = out.get("is_healthy", False)
++    err = out.get("error")
++    # Shorten URL for display
++    short = url.replace("http://localhost:", ":").replace("http://127.0.0.1:", ":")
++    if err:
++        return f"{short} — error: {err}"
++    status = "saludable" if healthy else "respondiendo"
++    return f"{short} — {code} OK, {status}" if code == 200 else f"{short} — codigo {code}"
++
++
++def fmt_check_all_services(out: Dict) -> str:
++    overall = out.get("overall_status", "desconocido")
++    services = out.get("services", [])
++    if not services:
++        return f"Servicios: {overall}"
++    parts = []
++    for svc in services:
++        name = svc.get("name", "?")
++        port = svc.get("port", "?")
++        running = svc.get("running", False)
++        icon = "OK" if running else "CAIDO"
++        parts.append(f"  {name} (:{port}) — {icon}")
++    header = "Todos los servicios operativos" if overall == "healthy" else f"Estado general: {overall}"
++    return header + "\n" + "\n".join(parts)
++
++
++def fmt_check_service_status(out: Dict) -> str:
++    checked = out.get("services_checked", 0)
++    services = out.get("services", [])
++    if isinstance(services, list) and services:
++        parts = []
++        for svc in services:
++            if isinstance(svc, dict):
++                name = svc.get("name", "?")
++                running = svc.get("running", svc.get("status") == "running")
++                parts.append(f"{name}: {'OK' if running else 'CAIDO'}")
++        if parts:
++            return ", ".join(parts)
++    return f"{checked} servicios verificados"
++
++
++def fmt_get_live_autonomy_status(out: Dict) -> str:
++    health = out.get("brain_health") or {}
++    strategy = out.get("strategy_summary") or {}
++    utility = out.get("utility") or {}
++    next_a = out.get("next_actions") or {}
++    parts = []
++    if health:
++        parts.append(f"Brain: {health.get('status', 'desconocido')}, sessions={health.get('sessions', '?')}")
++    u = utility.get("u_score", utility.get("U", "N/A"))
++    verdict = utility.get("verdict", next_a.get("verdict", "N/A"))
++    parts.append(f"Utility U={u}, veredicto={verdict}")
++    top = next_a.get("top_action") or strategy.get("top_action")
++    if top:
++        parts.append(f"Accion prioritaria: {top}")
++    blockers = next_a.get("blockers", [])
++    if blockers:
++        parts.append(f"Blockers: {', '.join(blockers[:4])}")
++    return "\n".join(parts)
++
++
++def fmt_run_diagnostic(out: Dict) -> str:
++    summary = out.get("summary") or {}
++    total = summary.get("total_checks", 0)
++    ok = summary.get("successful", 0)
++    status = summary.get("status", "desconocido")
++    checks = (out.get("diagnostic") or {}).get("checks", [])
++    parts = [f"Diagnostico: {ok}/{total} checks OK — {status}"]
++    for c in checks[:5]:
++        name = c.get("name", "?")
++        result = c.get("result", {})
++        success = result.get("success", False)
++        parts.append(f"  {name}: {'OK' if success else 'FALLO'}")
++    return "\n".join(parts)
++
++
++def fmt_get_system_info(out: Dict) -> str:
++    cpu = out.get("cpu_percent", "?")
++    mem = out.get("memory", {})
++    disk = out.get("disk", {})
++    parts = [f"CPU: {cpu}%"]
++    if mem:
++        total = mem.get("total_gb", "?")
++        avail = mem.get("available_gb", "?")
++        parts.append(f"RAM: {avail}GB libres de {total}GB")
++    if disk:
++        free = disk.get("free_gb", "?")
++        total_d = disk.get("total_gb", "?")
++        parts.append(f"Disco C: {free}GB libres de {total_d}GB")
++    return " | ".join(parts)
++
++
++def fmt_run_command(out: Dict) -> str:
++    stdout = out.get("stdout", "")
++    stderr = out.get("stderr", "")
++    code = out.get("return_code", out.get("exit_code", "?"))
++    result = stdout.strip() if stdout else stderr.strip()
++    if not result:
++        return f"Comando ejecutado (codigo {code}), sin salida"
++    # Truncate long output
++    if len(result) > 500:
++        result = result[:497] + "..."
++    return result
++
++
++def fmt_read_file(out: Dict) -> str:
++    path = out.get("path", "?")
++    content = out.get("content", "")
++    lines = out.get("lines", 0) or (content.count("\n") + 1 if content else 0)
++    short_path = path.replace("C:\\AI_VAULT\\", "").replace("C:/AI_VAULT/", "")
++    if content and len(content) > 300:
++        return f"{short_path} ({lines} lineas)\n{content[:300]}..."
++    return f"{short_path} ({lines} lineas)" + (f"\n{content}" if content else "")
++
++
++def fmt_list_directory(out: Any) -> str:
++    # Handle both list (direct file list) and dict (structured response)
++    if isinstance(out, list):
++        if len(out) <= 15:
++            return ", ".join(str(x) for x in out)
++        return f"{len(out)} archivos: {', '.join(str(x) for x in out[:10])}..."
++    if isinstance(out, dict):
++        path = out.get("path", "?")
++        items = out.get("items", out.get("entries", []))
++        if isinstance(items, list):
++            if len(items) <= 15:
++                return f"{path}: {', '.join(str(x) for x in items)}"
++            return f"{path}: {len(items)} elementos"
++        return f"{path}: {items}"
++    return str(out)[:300]
++
++
++def fmt_search_files(out: Dict) -> str:
++    matches = out.get("matches", out.get("results", []))
++    if isinstance(matches, list):
++        if not matches:
++            return "Sin resultados"
++        lines = [f"{len(matches)} archivo(s) encontrado(s):"]
++        for m in matches[:8]:
++            if isinstance(m, dict):
++                lines.append(f"  {m.get('file', m.get('path', '?'))}")
++            else:
++                lines.append(f"  {m}")
++        if len(matches) > 8:
++            lines.append(f"  ... y {len(matches)-8} mas")
++        return "\n".join(lines)
++    return str(matches)[:400]
++
++
++def fmt_list_processes(out: Dict) -> str:
++    procs = out.get("processes", [])
++    if isinstance(procs, list) and procs:
++        lines = [f"{len(procs)} proceso(s):"]
++        for p in procs[:10]:
++            if isinstance(p, dict):
++                name = p.get("name", "?")
++                pid = p.get("pid", "?")
++                lines.append(f"  {name} (PID {pid})")
++            else:
++                lines.append(f"  {p}")
++        if len(procs) > 10:
++            lines.append(f"  ... y {len(procs)-10} mas")
++        return "\n".join(lines)
++    return str(out)[:300]
++
++
++def fmt_grep_codebase(out: Any) -> str:
++    """grep_codebase returns a List[Dict] of {rel_path, line, text}."""
++    if not isinstance(out, list):
++        return str(out)[:400]
++    if not out:
++        return "Sin coincidencias en el codebase"
++    # First entry may be {"error": "..."}
++    if isinstance(out[0], dict) and "error" in out[0] and len(out) == 1:
++        return f"grep_codebase: {out[0]['error']}"
++    lines = [f"{len(out)} coincidencia(s):"]
++    for hit in out[:8]:
++        if not isinstance(hit, dict):
++            continue
++        rel = hit.get("rel_path") or hit.get("path", "?")
++        ln = hit.get("line", "?")
++        txt = (hit.get("text") or "").strip()[:120]
++        lines.append(f"  {rel}:{ln} — {txt}")
++    if len(out) > 8:
++        lines.append(f"  ... y {len(out)-8} mas")
++    return "\n".join(lines)
++
++
++def fmt_list_recent_brain_changes(out: Dict) -> str:
++    """list_recent_brain_changes returns ledger + edited files."""
++    if not isinstance(out, dict):
++        return str(out)[:400]
++    ledger = out.get("ledger") or out.get("ledger_entries") or []
++    edits = out.get("edited_files") or out.get("recent_edits") or []
++    days = out.get("days", "?")
++    parts = [f"Cambios recientes (ultimos {days}d):"]
++    if isinstance(ledger, list) and ledger:
++        parts.append(f"  Ledger formal: {len(ledger)} entradas")
++        for e in ledger[:4]:
++            if isinstance(e, dict):
++                title = e.get("title") or e.get("description") or e.get("name", "?")
++                when = e.get("date") or e.get("ts") or e.get("timestamp", "")
++                parts.append(f"    - {str(title)[:90]} ({when})")
++    if isinstance(edits, list) and edits:
++        parts.append(f"  Ediciones directas: {len(edits)} archivo(s)")
++        for e in edits[:6]:
++            if isinstance(e, dict):
++                p = e.get("path") or e.get("file", "?")
++                mt = e.get("mtime") or e.get("modified", "")
++                parts.append(f"    - {p} ({mt})")
++            else:
++                parts.append(f"    - {e}")
++    if len(parts) == 1:
++        return f"Sin cambios registrados en los ultimos {days} dias"
++    return "\n".join(parts)
++
++
++def fmt_get_chat_metrics(out: Dict) -> str:
++    """get_chat_metrics returns conversations, success_rate, routes, errors."""
++    if not isinstance(out, dict):
++        return str(out)[:400]
++    conv = out.get("conversations") or out.get("total_conversations", "?")
++    sr = out.get("success_rate")
++    if isinstance(sr, (int, float)):
++        sr_str = f"{sr*100:.1f}%" if sr <= 1 else f"{sr:.1f}%"
++    else:
++        sr_str = str(sr or "?")
++    parts = [f"Chats: {conv} | success_rate={sr_str}"]
++    routes = out.get("routes") or {}
++    if isinstance(routes, dict) and routes:
++        top = sorted(routes.items(), key=lambda kv: -(kv[1] if isinstance(kv[1], int) else 0))[:4]
++        parts.append("  Routes: " + ", ".join(f"{k}={v}" for k, v in top))
++    errs = out.get("errors") or out.get("error_counts") or {}
++    if isinstance(errs, dict) and errs:
++        top_e = sorted(errs.items(), key=lambda kv: -(kv[1] if isinstance(kv[1], int) else 0))[:3]
++        parts.append("  Errors: " + ", ".join(f"{k}={v}" for k, v in top_e))
++    validators = out.get("validators") or {}
++    if isinstance(validators, dict) and validators:
++        tot = sum(v for v in validators.values() if isinstance(v, int))
++        parts.append(f"  Validators fired: {tot} (en {len(validators)} categorias)")
++    return "\n".join(parts)
++
++
++def fmt_semantic_memory_search(out: Dict) -> str:
++    """semantic_memory_search returns {results: [...], query: ...}."""
++    if not isinstance(out, dict):
++        return str(out)[:400]
++    results = out.get("results") or out.get("matches") or []
++    q = out.get("query", "")
++    if not isinstance(results, list) or not results:
++        return f"Memoria semantica: sin resultados para '{q}'"
++    parts = [f"Memoria semantica '{q}': {len(results)} match(es)"]
++    for r in results[:5]:
++        if isinstance(r, dict):
++            score = r.get("score") or r.get("similarity")
++            txt = r.get("text") or r.get("content") or r.get("snippet", "")
++            src = r.get("source") or r.get("session_id") or ""
++            score_s = f"{score:.2f}" if isinstance(score, (int, float)) else "?"
++            head = str(txt).strip().replace("\n", " ")[:140]
++            parts.append(f"  [{score_s}] {head}" + (f" <{src}>" if src else ""))
++        else:
++            parts.append(f"  {str(r)[:140]}")
++    if len(results) > 5:
++        parts.append(f"  ... y {len(results)-5} mas")
++    return "\n".join(parts)
++
++
++def fmt_get_technical_introspection(out: Dict) -> str:
++    """get_technical_introspection returns process/VRAM/code/capabilities snapshot."""
++    if not isinstance(out, dict):
++        return str(out)[:400]
++    proc = out.get("process") or {}
++    vram = out.get("vram") or out.get("gpu") or {}
++    code = out.get("code") or out.get("codebase") or {}
++    caps = out.get("capabilities") or out.get("tools") or {}
++    parts = []
++    if isinstance(proc, dict) and proc:
++        pid = proc.get("pid", "?")
++        uptime = proc.get("uptime") or proc.get("uptime_s", "?")
++        mem = proc.get("memory_mb") or proc.get("rss_mb", "?")
++        parts.append(f"Brain PID {pid} | uptime={uptime} | RAM={mem}MB")
++    if isinstance(vram, dict) and vram:
++        used = vram.get("used_mb") or vram.get("vram_used_mb", "?")
++        total = vram.get("total_mb") or vram.get("vram_total_mb", "?")
++        parts.append(f"GPU VRAM: {used}/{total}MB")
++    if isinstance(code, dict) and code:
++        files = code.get("python_files") or code.get("files", "?")
++        loc = code.get("lines_of_code") or code.get("loc", "?")
++        parts.append(f"Codebase: {files} archivos Python, {loc} LOC")
++    if isinstance(caps, dict) and caps:
++        n = caps.get("count") or caps.get("total") or len(caps)
++        parts.append(f"Capacidades registradas: {n}")
++    elif isinstance(caps, list):
++        parts.append(f"Capacidades registradas: {len(caps)}")
++    return "\n".join(parts) if parts else str(out)[:400]

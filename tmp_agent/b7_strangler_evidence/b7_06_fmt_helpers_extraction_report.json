@@ -1,0 +1,43 @@
+{
+  "task": "B7-STRANGLER-06-IMPLEMENT",
+  "phase": "F_extraction_report",
+  "head": "aabe4a84",
+  "module_created": "tmp_agent/brain_v9/core/session_fmt_helpers.py",
+  "lines_in_new_module": 378,
+  "session_py_lines_before": 5743,
+  "session_py_lines_after": 5491,
+  "session_py_net_delta": -252,
+  "estimate_was": -244,
+  "cumulative_b7_reduction": "7637 -> 5491 = -2146 lines / -28.1%",
+  "shims_added": 17,
+  "shim_form_used": "@classmethod\\ndef _fmt_x(cls, out):\\n    return _fmt_helpers.fmt_x(out)",
+  "shim_form_rationale": "Explicit (cls, out) classmethod wrapper preserves arity. The alternative `_fmt_x = classmethod(fmt_x)` would inject `cls` into fmt_x's (out)-only signature and break the dispatcher's getattr(cls, name)(payload) call shape.",
+  "import_added_to_session_py": "from brain_v9.core import session_fmt_helpers as _fmt_helpers  # noqa: E402,F401",
+  "dispatcher_invariants_preserved": {
+    "_TOOL_FORMATTERS_in_session_py": true,
+    "_TOOL_FORMATTERS_entries": 18,
+    "check_url_alias_intact": true,
+    "_format_tool_result_in_session_py": true,
+    "_format_tool_result_uses_getattr_cls_method_name": true,
+    "_format_action_value_in_session_py": true
+  },
+  "extracted_methods": [
+    {"old": "BrainSession._fmt_check_port",                  "new": "fmt_check_port"},
+    {"old": "BrainSession._fmt_check_http_service",          "new": "fmt_check_http_service"},
+    {"old": "BrainSession._fmt_check_all_services",          "new": "fmt_check_all_services"},
+    {"old": "BrainSession._fmt_check_service_status",        "new": "fmt_check_service_status"},
+    {"old": "BrainSession._fmt_get_live_autonomy_status",    "new": "fmt_get_live_autonomy_status"},
+    {"old": "BrainSession._fmt_run_diagnostic",              "new": "fmt_run_diagnostic"},
+    {"old": "BrainSession._fmt_get_system_info",             "new": "fmt_get_system_info"},
+    {"old": "BrainSession._fmt_run_command",                 "new": "fmt_run_command"},
+    {"old": "BrainSession._fmt_read_file",                   "new": "fmt_read_file"},
+    {"old": "BrainSession._fmt_list_directory",              "new": "fmt_list_directory"},
+    {"old": "BrainSession._fmt_search_files",                "new": "fmt_search_files"},
+    {"old": "BrainSession._fmt_list_processes",              "new": "fmt_list_processes"},
+    {"old": "BrainSession._fmt_grep_codebase",               "new": "fmt_grep_codebase"},
+    {"old": "BrainSession._fmt_list_recent_brain_changes",   "new": "fmt_list_recent_brain_changes"},
+    {"old": "BrainSession._fmt_get_chat_metrics",            "new": "fmt_get_chat_metrics"},
+    {"old": "BrainSession._fmt_semantic_memory_search",      "new": "fmt_semantic_memory_search"},
+    {"old": "BrainSession._fmt_get_technical_introspection", "new": "fmt_get_technical_introspection"}
+  ]
+}

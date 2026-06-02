@@ -1,0 +1,28 @@
+{
+  "task": "B7-STRANGLER-06-IMPLEMENT",
+  "repo_root": "C:/AI_VAULT",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "aabe4a84",
+  "origin_head": "aabe4a84",
+  "head_match": true,
+  "head_message": "docs(b7): inventory formatter helpers extraction candidate",
+  "staged_files": [],
+  "modified_tracked_files_unrelated": ["memory/semantic/semantic_memory.jsonl"],
+  "untracked_unrelated_categories": [
+    "tmp_agent/strategies/mean_reversion_eq/* (research artifacts)",
+    "tmp_agent/brain_v9/chat_area_upgrade/* (rollback/diagnostic)",
+    "tmp_agent/brain_v9/ops/smoke_*.ps1 / tool01_write_test.py",
+    "tmp_agent/visual_trace_console_v1/* (visual trace artifacts)",
+    "apply_chat_patch.py / tmp_agent/bor3_llm_audit*",
+    "C\\357\\200\\272AI_VAULT* (mojibake ledger backup)"
+  ],
+  "session_py_lines_before": 5743,
+  "rules_acknowledged": {
+    "no_commit": true, "no_push": true, "no_git_add_all": true,
+    "no_reset_checkout_clean_stash": true,
+    "no_test_modification": true, "evidence_only_for_b7_dir": true,
+    "protected_paths_untouched": true,
+    "extracted_modules_untouched": true,
+    "no_move_dispatcher_or_action_value": true
+  }
+}

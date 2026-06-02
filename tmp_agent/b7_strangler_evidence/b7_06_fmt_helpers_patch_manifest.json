@@ -1,0 +1,59 @@
+{
+  "task": "B7-STRANGLER-06-IMPLEMENT",
+  "head": "aabe4a84",
+  "no_commits_made": true,
+  "patch_file": "tmp_agent/b7_strangler_evidence/b7_06_fmt_helpers_extraction.patch",
+  "patch_lines": 1240,
+  "files": [
+    {
+      "path": "tmp_agent/brain_v9/core/session.py",
+      "status": "modified",
+      "kind": "tracked",
+      "summary": "+1 import line near other B7 imports (after session_response_hygiene); 17 method bodies (L4447-L4774) replaced with classmethod shims that delegate to brain_v9.core.session_fmt_helpers; line count 5743 -> 5491 (-252)."
+    },
+    {
+      "path": "tmp_agent/brain_v9/core/session_fmt_helpers.py",
+      "status": "added",
+      "kind": "untracked->intent_to_add",
+      "lines": 378,
+      "summary": "NEW pure-function module: 17 fmt_<name>(out) -> str helpers + __all__. Imports only typing.{Any, Dict}. Zero coupling to BrainSession/session module."
+    },
+    {
+      "path": "tests/unit/test_b7_fmt_helpers_import_compat.py",
+      "status": "added",
+      "kind": "untracked->intent_to_add",
+      "tests": 6,
+      "summary": "Verifies all 17 fmt_* exist; all 17 _fmt_* shims callable; shim==helper output for sample payloads; _TOOL_FORMATTERS has 18 entries with check_url alias; dispatch via _format_tool_result equals direct call for both check_url and check_http_service."
+    },
+    {
+      "path": "tests/unit/test_b7_fmt_helpers_behavior_smoke.py",
+      "status": "added",
+      "kind": "untracked->intent_to_add",
+      "tests": 31,
+      "summary": "Per-formatter behaviour smoke: canonical inputs embed essential keys; truncation paths (run_command 500-char cap, read_file 300-char cap); empty/edge tolerance; non-dict tolerance for grep_codebase/list_recent_brain_changes/get_chat_metrics/get_technical_introspection; bulk empty-input tolerance for all 17."
+    },
+    {
+      "path": "tests/unit/test_b7_fmt_helpers_no_session_dependency.py",
+      "status": "added",
+      "kind": "untracked->intent_to_add",
+      "tests": 4,
+      "summary": "Subprocess test ensures importing session_fmt_helpers does NOT load brain_v9.core.session into sys.modules; AST-level audit confirms no classes / no self/cls params / no BrainSession references in code; helpers are stateless pure functions with stable I/O."
+    }
+  ],
+  "protected_paths_unmodified": true,
+  "extracted_modules_unmodified": [
+    "session_chat_metrics.py",
+    "session_query_predicates.py",
+    "session_routing_constants.py",
+    "session_response_hygiene.py"
+  ],
+  "evidence_files": [
+    "tmp_agent/b7_strangler_evidence/b7_06_implement_preflight.json",
+    "tmp_agent/b7_strangler_evidence/b7_06_implement_confirm_inventory.json",
+    "tmp_agent/b7_strangler_evidence/b7_06_fmt_helpers_extraction_report.json",
+    "tmp_agent/b7_strangler_evidence/b7_06_fmt_helpers_extraction_report.md",
+    "tmp_agent/b7_strangler_evidence/b7_06_fmt_helpers_validation_report.json",
+    "tmp_agent/b7_strangler_evidence/b7_06_fmt_helpers_patch_manifest.json",
+    "tmp_agent/b7_strangler_evidence/b7_06_fmt_helpers_extraction.patch"
+  ]
+}

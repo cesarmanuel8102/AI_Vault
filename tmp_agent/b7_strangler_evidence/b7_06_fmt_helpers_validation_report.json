@@ -1,0 +1,56 @@
+{
+  "task": "B7-STRANGLER-06-IMPLEMENT",
+  "phase": "F_validation_report",
+  "head_at_start": "aabe4a84",
+  "head_at_end": "aabe4a84",
+  "no_commits_made": true,
+  "validations": {
+    "py_compile_session_py":           {"result": "PASS", "details": "python -m py_compile tmp_agent/brain_v9/core/session.py"},
+    "py_compile_session_fmt_helpers":  {"result": "PASS", "details": "python -m py_compile tmp_agent/brain_v9/core/session_fmt_helpers.py"},
+    "phase1_local_validation_ps1":     {"result": "PASS", "details": "PHASE1_LOCAL_VALIDATION: ALL PASS"},
+    "phase1_pytest_baseline":          {"result": "PASS", "details": "5 passed (test_phase1_import_baseline.py + test_phase1_security_defaults.py)"},
+    "b7_carryover_total":              {"result": "PASS", "details": "138 passed (97 prior B7 carryover + 41 new B7-06 tests)"},
+    "b7_06_new_tests": {
+      "result": "PASS",
+      "details": "41 passed (6 import_compat + 31 behavior_smoke + 4 no_session_dependency)",
+      "files": [
+        "tests/unit/test_b7_fmt_helpers_import_compat.py",
+        "tests/unit/test_b7_fmt_helpers_behavior_smoke.py",
+        "tests/unit/test_b7_fmt_helpers_no_session_dependency.py"
+      ]
+    },
+    "consumer_suites": {
+      "result": "PRE_EXISTING_FAILURES_UNCHANGED",
+      "files": [
+        "tmp_agent/tests/core/test_session.py",
+        "tests/unit/test_b7_routing_heuristics_characterization.py",
+        "tests/unit/test_brain_chat_hygiene.py"
+      ],
+      "modified_worktree": "48 failed, 112 passed",
+      "baseline_worktree_at_aabe4a84": "48 failed, 112 passed",
+      "delta": "0 — failures are 100% pre-existing, unrelated to _fmt_* extraction. All failures concern fastpath wording (e.g. 'Validacion de Edge' vs 'Edge Validation'), no_tool_analysis routing, execution_gate session filtering, etc. None reference _fmt_* / _TOOL_FORMATTERS / _format_tool_result.",
+      "baseline_worktree_path": "C:/AI_VAULT_b7_06_baseline (created via 'git worktree add', tested, then removed via 'git worktree remove --force')"
+    },
+    "dispatcher_smoke": {
+      "result": "PASS",
+      "details": "B7_06_FMT_DISPATCHER_OK — all 18 _TOOL_FORMATTERS keys (17 + check_url alias) resolve to callable BrainSession classmethods."
+    },
+    "import_smoke_helpers": {"result": "PASS", "details": "IMPORT_OK"},
+    "import_smoke_session_shim": {"result": "PASS", "details": "SHIM_OK"}
+  },
+  "protected_paths_check": {
+    "main_py":               "untouched",
+    "config_py":             "untouched",
+    "execution_gate":        "untouched",
+    "api_security":          "untouched",
+    "ui_dir":                "untouched",
+    "memory_semantic":       "pre-existing dirty (not modified by this task)",
+    "strategies":            "pre-existing dirty (not modified by this task)",
+    "MIGRATION_CONTROL_LEDGER_md": "untouched",
+    "ROADMAP_STATUS_json":   "untouched",
+    "session_chat_metrics":  "untouched",
+    "session_query_predicates":  "untouched",
+    "session_routing_constants": "untouched",
+    "session_response_hygiene":  "untouched"
+  }
+}
