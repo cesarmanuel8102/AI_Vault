@@ -1,0 +1,47 @@
+{
+  "phase": "FASE-1-BASELINE",
+  "timestamp_utc": "2026-06-01T00:00:00Z",
+  "status": "SUCCESS",
+  "validations": {
+    "py_compile": {
+      "tmp_agent/brain_v9/main.py": "PASS",
+      "tmp_agent/brain_v9/config.py": "PASS",
+      "tmp_agent/brain_v9/governance/execution_gate.py": "PASS",
+      "tmp_agent/brain_v9/api_security.py": "PASS",
+      "tmp_agent/brain_v9/core/session.py": "PASS"
+    },
+    "phase0_tests": {
+      "tests/unit/test_execution_gate_god_p3.py": "PASS",
+      "tests/unit/test_dev_endpoints_default_off.py": "PASS",
+      "tests/unit/test_selfdev_protected_paths.py": "PASS"
+    },
+    "phase1_tests": {
+      "tests/unit/test_phase1_import_baseline.py": "PASS (3 cases)",
+      "tests/unit/test_phase1_security_defaults.py": "PASS (2 cases)"
+    },
+    "import_smoke": "PHASE1_IMPORT_SMOKE_OK",
+    "local_runner": "PHASE1_LOCAL_VALIDATION: ALL PASS"
+  },
+  "validations_run": 13,
+  "validations_passed": 13,
+  "validations_failed": 0,
+  "tests_created": [
+    "tests/unit/test_phase1_import_baseline.py",
+    "tests/unit/test_phase1_security_defaults.py"
+  ],
+  "files_created": [
+    "tmp_agent/brain_v9/ops/phase1_local_validation.ps1",
+    ".github/workflows/phase1-ci.yml",
+    "tests/unit/test_phase1_import_baseline.py",
+    "tests/unit/test_phase1_security_defaults.py",
+    "tmp_agent/phase1_baseline_evidence/phase1_preflight.json",
+    "tmp_agent/phase1_baseline_evidence/phase1_test_inventory.json",
+    "tmp_agent/phase1_baseline_evidence/phase1_validation_report.json",
+    "tmp_agent/phase1_baseline_evidence/phase1_ci_summary.md",
+    "tmp_agent/phase1_baseline_evidence/phase1_patch_manifest.json"
+  ],
+  "files_modified": [],
+  "protected_paths_touched": [],
+  "commit_created": false,
+  "push_done": false
+}

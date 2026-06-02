@@ -1,0 +1,29 @@
+{
+  "phase": "FASE-1-BASELINE",
+  "timestamp_utc": "2026-06-01T00:00:00Z",
+  "repo_root": "C:/AI_VAULT",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "bb486c5a",
+  "origin_head": "bb486c5a",
+  "head_synced": true,
+  "no_staged_files": true,
+  "expected_dirty_files_present": [
+    "memory/semantic/semantic_memory.jsonl",
+    "tmp_agent/strategies/*",
+    "tmp_agent/brain_v9/ops/smoke_read_file.ps1",
+    "tmp_agent/brain_v9/ops/smoke_write_file.ps1",
+    "tmp_agent/brain_v9/ops/tool01_write_test.py",
+    "tmp_agent/visual_trace_console_v1/*",
+    "tmp_agent/brain_v9/chat_area_upgrade/rollback/",
+    "tmp_agent/bor3_llm_audit*.py",
+    "apply_chat_patch.py"
+  ],
+  "phase0_commits_present": [
+    "35fc676c security(phase0/0A)",
+    "53ca0f16 security(phase0/0B+0D)",
+    "0dcce5bd security(phase0/0C)",
+    "bb486c5a docs(phase0)"
+  ],
+  "protected_paths_status": "untouched",
+  "ready_to_proceed": true
+}

@@ -1,0 +1,34 @@
+{
+  "phase": "FASE-1-BASELINE",
+  "timestamp_utc": "2026-06-01T00:00:00Z",
+  "python_version": "3.11.9",
+  "pytest_available": true,
+  "pytest_version": "9.0.2",
+  "tests_dir_present": true,
+  "test_counts": {
+    "tests/unit": 72,
+    "tests/smoke": 23,
+    "tests/security": 3,
+    "tests/integration": 9,
+    "total_py_files": 107
+  },
+  "phase0_tests_present": [
+    "tests/unit/test_execution_gate_god_p3.py",
+    "tests/unit/test_dev_endpoints_default_off.py",
+    "tests/unit/test_selfdev_protected_paths.py"
+  ],
+  "ci_workflows_dir_exists_before_phase1": false,
+  "config_files": {
+    "requirements.txt": false,
+    "pyproject.toml": false,
+    "pytest.ini": false,
+    "setup.cfg": false,
+    "tests/requirements_test.txt": true,
+    "tests/conftest.py": true
+  },
+  "conftest_notes": [
+    "tests/conftest.py inserts AI_VAULT root in sys.path",
+    "autouse fixture clean_environment resets os.environ between tests",
+    "imports use module name brain_v9.* but module lives at tmp_agent/brain_v9, so tests must add tmp_agent to sys.path"
+  ]
+}

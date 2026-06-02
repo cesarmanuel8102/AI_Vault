@@ -1,0 +1,38 @@
+{
+  "phase": "FASE-1-BASELINE",
+  "files_created": [
+    "tmp_agent/brain_v9/ops/phase1_local_validation.ps1",
+    ".github/workflows/phase1-ci.yml",
+    "tests/unit/test_phase1_import_baseline.py",
+    "tests/unit/test_phase1_security_defaults.py",
+    "tmp_agent/phase1_baseline_evidence/phase1_preflight.json",
+    "tmp_agent/phase1_baseline_evidence/phase1_test_inventory.json",
+    "tmp_agent/phase1_baseline_evidence/phase1_validation_report.json",
+    "tmp_agent/phase1_baseline_evidence/phase1_ci_summary.md",
+    "tmp_agent/phase1_baseline_evidence/phase1_patch_manifest.json"
+  ],
+  "files_modified": [],
+  "tests_created": [
+    "tests/unit/test_phase1_import_baseline.py",
+    "tests/unit/test_phase1_security_defaults.py"
+  ],
+  "validations_run": 13,
+  "validations_passed": 13,
+  "validations_failed": 0,
+  "validation_breakdown": {
+    "py_compile": 5,
+    "phase0_tests": 3,
+    "phase1_tests": 2,
+    "import_smoke": 1,
+    "local_runner_overall": 1,
+    "phase1_runner_invocation": 1
+  },
+  "protected_paths_touched": [],
+  "commit_created": false,
+  "push_done": false,
+  "notes": [
+    "Static analyzer (LSP) warnings on main.py, session.py, governance_health.py, etc. are pre-existing and unrelated to Phase 1.",
+    "tests use sys.path.insert for both repo root and tmp_agent so `brain_v9.*` resolves at runtime.",
+    "Conftest autouse fixture clean_environment isolates env vars between tests, important for BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS reload."
+  ]
+}
