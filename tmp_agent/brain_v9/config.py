@@ -121,9 +121,17 @@ BRAIN_START_PROACTIVE = os.getenv("BRAIN_START_PROACTIVE", "false").lower() == "
 BRAIN_START_SELF_DIAGNOSTIC = os.getenv("BRAIN_START_SELF_DIAGNOSTIC", "false").lower() == "true"
 BRAIN_START_QC_LIVE_MONITOR = os.getenv("BRAIN_START_QC_LIVE_MONITOR", "false").lower() == "true"
 BRAIN_WARMUP_MODEL = os.getenv("BRAIN_WARMUP_MODEL", "false").lower() == "true"
-BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS = (
-    os.getenv("BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS", "true").lower() == "true"
-)
+# FASE-0-SEGURIDAD / Patch 0C: dev endpoints OFF por defecto.
+# Solo se habilitan con un valor explicito truthy estricto. Cualquier otro
+# valor (incluyendo vacio o ausente) deja los endpoints /dev y /godmode OFF.
+_UNSAFE_DEV_RAW = os.getenv("BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS", "false").strip().lower()
+BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS = _UNSAFE_DEV_RAW in {"1", "true", "yes", "on"}
+if BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS:
+    _log.warning(
+        "SECURITY: BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS=%s -> /dev y /godmode HABILITADOS. "
+        "Esto expone endpoints sin sandbox. Deshabilitar en produccion.",
+        _UNSAFE_DEV_RAW,
+    )
 BRAIN_CHAT_DEV_MODE = os.getenv("BRAIN_CHAT_DEV_MODE", "true").lower() == "true"
 BRAIN_ENABLE_FINANCIAL_AUTOCYCLE = (
     os.getenv("BRAIN_ENABLE_FINANCIAL_AUTOCYCLE", "false").lower() == "true"

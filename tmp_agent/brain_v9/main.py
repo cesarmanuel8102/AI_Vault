@@ -3829,11 +3829,11 @@ async def dev_mode_endpoint(req: DevModeRequest):
     Requiere autenticacion previa
     """
     if not BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS:
-        return {
-            "success": False,
-            "error": "Endpoint /dev deshabilitado por seguridad",
-            "enable": "BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS=true y BRAIN_SAFE_MODE=false",
-        }
+        # FASE-0-SEGURIDAD / Patch 0C: HTTP 403 estricto (no JSON 200 con success=false).
+        raise HTTPException(
+            status_code=403,
+            detail="Endpoint /dev deshabilitado por seguridad. Set BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS=true para habilitar.",
+        )
 
     global _pad_authenticated_sessions
     
@@ -3911,11 +3911,11 @@ async def godmode_endpoint(req: GodModeRequest):
     Requiere autenticacion PAD previa via /chat
     """
     if not BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS:
-        return {
-            "success": False,
-            "error": "Endpoint /godmode deshabilitado por seguridad",
-            "enable": "BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS=true y BRAIN_SAFE_MODE=false",
-        }
+        # FASE-0-SEGURIDAD / Patch 0C: HTTP 403 estricto (no JSON 200 con success=false).
+        raise HTTPException(
+            status_code=403,
+            detail="Endpoint /godmode deshabilitado por seguridad. Set BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS=true para habilitar.",
+        )
 
     global _pad_authenticated_sessions
     
