@@ -1,0 +1,23 @@
+{
+  "ticket": "B7-STRANGLER-04-INVENTORY",
+  "timestamp_utc": "2026-06-01T00:00:00Z",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "9de07d65",
+  "origin_head": "9de07d65",
+  "head_matches_origin": true,
+  "staged_files": [],
+  "dirty_files_ignored_per_instructions": [
+    "memory/semantic/semantic_memory.jsonl",
+    "tmp_agent/strategies/* (untracked phase runs/snapshots)",
+    "tmp_agent/visual_trace_console_v1/vtc_c1_runtime_smoke_transcript.md",
+    "tmp_agent/brain_v9/chat_area_upgrade/* (rollback/diagnostic untracked)",
+    "tmp_agent/brain_v9/ops/smoke_*.ps1 (untracked)",
+    "tmp_agent/brain_v9/ops/tool01_write_test.py (untracked)",
+    "tmp_agent/bor3_llm_audit*.py/json (untracked)",
+    "apply_chat_patch.py (untracked)",
+    "C︰AI_VAULT...ledger_head_backup.md (mojibake untracked file)"
+  ],
+  "protected_paths_modified": [],
+  "session_py_modified": false,
+  "preflight_status": "OK"
+}

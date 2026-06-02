@@ -1,0 +1,83 @@
+{
+  "ticket_for_implementation": "B7-STRANGLER-04-IMPLEMENT",
+  "selected_candidate_id": "C1",
+  "selected_candidate_name": "Routing regex constants module",
+  "new_module_path": "tmp_agent/brain_v9/core/session_routing_constants.py",
+  "symbols_to_move": [
+    {"name": "AGENT_INTENTS", "current_lines": "105", "kind": "set[str]"},
+    {"name": "AGENT_KEYWORDS", "current_lines": "109-190", "kind": "list[str]"},
+    {"name": "_AGENT_PATTERNS", "current_lines": "193", "kind": "list[re.Pattern], derived from AGENT_KEYWORDS"},
+    {"name": "_CODE_ANALYSIS_PATH_RE", "current_lines": "195-199", "kind": "re.Pattern"},
+    {"name": "_LEAK_TAIL_RE", "current_lines": "202-206", "kind": "re.Pattern"},
+    {"name": "_CONTINUE_WORDS_RE", "current_lines": "212-216", "kind": "re.Pattern"},
+    {"name": "_CORRECTION_RE", "current_lines": "221-236", "kind": "re.Pattern"}
+  ],
+  "symbols_kept_inplace_in_session_py": [
+    "log (line 90)",
+    "_PROCESS_START_TIME (line 211 — semantic anchor must remain at session.py module-load time)",
+    "all _STATE_PATH/_UI_*/_CHAT_*_PATH/_EPISODIC_MEMORY_PATH/_CAPABILITY_GOVERNOR_STATUS_PATH constants (monkeypatch hazard)",
+    "SLASH_COMMANDS (separate concern, see C3)"
+  ],
+  "symbols_to_reexport_from_session_py": [
+    "AGENT_INTENTS",
+    "AGENT_KEYWORDS",
+    "_AGENT_PATTERNS",
+    "_CODE_ANALYSIS_PATH_RE",
+    "_LEAK_TAIL_RE",
+    "_CONTINUE_WORDS_RE",
+    "_CORRECTION_RE"
+  ],
+  "reexport_pattern": "Replace the original definition block in session.py with: `from brain_v9.core.session_routing_constants import (AGENT_INTENTS, AGENT_KEYWORDS, _AGENT_PATTERNS, _CODE_ANALYSIS_PATH_RE, _LEAK_TAIL_RE, _CONTINUE_WORDS_RE, _CORRECTION_RE)  # noqa: F401  (B7-STRANGLER-04 strangler reexport)`. Mirrors the B7-03 query_predicates pattern.",
+  "estimated_session_py_line_reduction": 95,
+  "projected_session_py_post_b7_04_lines": 5830,
+  "projected_cumulative_reduction_post_b7_04": 1807,
+  "expected_risk": "low",
+  "tests_recommended": [
+    {
+      "test_path": "tests/unit/test_b7_routing_constants_import_compat.py",
+      "purpose": "Assert that all 7 names continue to be importable from brain_v9.core.session AND from brain_v9.core.session_routing_constants, and that they are the SAME object (identity check) — guarantees re-export shim works.",
+      "shape": "test_module_attrs_present, test_session_reexports_are_same_object, test_external_consumer_imports_compat (mirrors tmp_agent/tests/core/test_session.py imports of SLASH_COMMANDS, AGENT_KEYWORDS, _AGENT_PATTERNS but limited to the 7 moved names)"
+    },
+    {
+      "test_path": "tests/unit/test_b7_routing_constants_behavior_smoke.py",
+      "purpose": "Snapshot tests pinning the regex semantics: _AGENT_PATTERNS matches a representative agent-keyword sample; _CODE_ANALYSIS_PATH_RE finds a path in a known string; _LEAK_TAIL_RE catches a leak tail; _CONTINUE_WORDS_RE matches a single continuation word; _CORRECTION_RE matches a representative correction phrase.",
+      "shape": "5 deterministic pattern.search/match assertions"
+    },
+    {
+      "test_path": "tests/unit/test_b7_routing_constants_no_session_dependency.py",
+      "purpose": "Importing brain_v9.core.session_routing_constants must NOT trigger import of brain_v9.core.session (avoid circular-import regression). Mirrors test_b7_query_predicates_no_session_dependency.py.",
+      "shape": "with sys.modules sentinel ensure 'brain_v9.core.session' is absent after fresh import of routing_constants"
+    }
+  ],
+  "validations_to_run_in_implement_ticket": [
+    "powershell phase1_local_validation.ps1",
+    "tests/unit/test_phase1_import_baseline.py",
+    "tests/unit/test_phase1_security_defaults.py",
+    "B7-02 ChatMetrics tests (compat + behavior smoke)",
+    "B7-03 query predicates tests (compat + behavior smoke + no_session_dependency)",
+    "NEW B7-04 routing constants tests (compat + behavior smoke + no_session_dependency)",
+    "tmp_agent/tests/core/test_session.py (existing external consumer)",
+    "tests/unit/test_brain_chat_hygiene.py (monkeypatch on session_mod._AGENT_PATTERNS)",
+    "tests/unit/test_b7_routing_heuristics_characterization.py (session_mod.AGENT_KEYWORDS)",
+    "tmp_agent/debug_routing.py: import smoke (script-level)"
+  ],
+  "rollback_plan": [
+    "Single-commit revert: git revert <impl-commit> recovers session.py and removes session_routing_constants.py.",
+    "If revert is non-trivial, restore session.py original block and delete session_routing_constants.py + new tests."
+  ],
+  "risks_and_mitigations": [
+    {"risk": "Test imports `_AGENT_PATTERNS` from session.py", "mitigation": "Re-export from session_routing_constants. Verified via test_b7_routing_constants_import_compat.py."},
+    {"risk": "Hygiene test reads session_mod._AGENT_PATTERNS dynamically", "mitigation": "Re-export creates a module-level name on session.py bound to the same list object."},
+    {"risk": "Circular import (new module imports back from session)", "mitigation": "New module imports only re/typing; explicit no-session-dep test."},
+    {"risk": "Pattern semantics drift after extraction", "mitigation": "Behavior smoke test pins compiled-pattern .search()/.match() outputs on canonical inputs."},
+    {"risk": "_PROCESS_START_TIME accidentally moved (would shift uptime semantic anchor)", "mitigation": "Explicitly excluded in 'symbols_kept_inplace_in_session_py'."}
+  ],
+  "out_of_scope_for_b7_04_implement": [
+    "Moving SLASH_COMMANDS (C3, deferred)",
+    "Moving _fmt_*/_render_*/_format_* (C2, C4)",
+    "Moving _sanitize_llm_chat_response (C5, runner-up for B7-05)",
+    "Touching path constants (C6, rejected)",
+    "Touching _tool01_* (C7, off-limits)"
+  ],
+  "protected_paths_touched_by_plan": "none"
+}

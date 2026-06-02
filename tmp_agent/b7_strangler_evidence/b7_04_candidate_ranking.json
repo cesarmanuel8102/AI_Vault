@@ -1,0 +1,195 @@
+{
+  "ticket": "B7-STRANGLER-04-INVENTORY",
+  "session_py_total_lines_post_b7_03": 5925,
+  "evaluation_criteria": [
+    "low_risk", "low_coupling_with_BrainSession", "no_main_py_change",
+    "no_protected_path_touch", "preserve_via_reexport_or_shim",
+    "small_clear_tests", "real_line_reduction", "no_circular_import"
+  ],
+  "candidates": [
+    {
+      "id": "C1",
+      "name": "Routing regex constants module",
+      "proposed_new_module": "tmp_agent/brain_v9/core/session_routing_constants.py",
+      "symbols_to_move": [
+        "AGENT_INTENTS",
+        "AGENT_KEYWORDS",
+        "_AGENT_PATTERNS",
+        "_CODE_ANALYSIS_PATH_RE",
+        "_LEAK_TAIL_RE",
+        "_CONTINUE_WORDS_RE",
+        "_CORRECTION_RE"
+      ],
+      "approx_lines_in_session_today": 113,
+      "estimated_session_line_reduction": 95,
+      "reexport_required_in_session": [
+        "AGENT_KEYWORDS",
+        "_AGENT_PATTERNS",
+        "AGENT_INTENTS",
+        "_CODE_ANALYSIS_PATH_RE",
+        "_LEAK_TAIL_RE",
+        "_CONTINUE_WORDS_RE",
+        "_CORRECTION_RE"
+      ],
+      "external_consumers": [
+        "tmp_agent/tests/core/test_session.py imports AGENT_KEYWORDS, _AGENT_PATTERNS",
+        "tmp_agent/debug_routing.py imports _AGENT_PATTERNS",
+        "tests/unit/test_brain_chat_hygiene.py reads session_mod._AGENT_PATTERNS",
+        "tests/unit/test_b7_routing_heuristics_characterization.py reads session_mod.AGENT_KEYWORDS"
+      ],
+      "self_or_cls_usage": "none (pure module-level constants)",
+      "circular_import_risk": "low (no imports back to session)",
+      "difficulty": "low",
+      "value": "high",
+      "testability": "high (deterministic regex/list values; trivial import-compat + value smoke tests)",
+      "monkeypatch_concern": "tests/unit/test_brain_chat_hygiene.py:182 does session_mod._AGENT_PATTERNS read-only access. As long as session.py re-exports it (assignment), session_mod._AGENT_PATTERNS resolves. No tests monkeypatch._AGENT_PATTERNS to a new value, so re-export is sufficient.",
+      "risk_factors": [
+        "Tests import names directly from brain_v9.core.session — re-export is mandatory.",
+        "agent/loop.py:2224 has its OWN _LEAK_TAIL_RE on a class — same name but unrelated; no impact.",
+        "session_query_predicates.py already keeps its own copy of _CODE_ANALYSIS_PATH_RE (post-B7-03) — safe; does not depend on session.py copy."
+      ],
+      "recommendation": "SELECT",
+      "justification": "Highest-value, lowest-risk candidate. Pure data, no self/cls coupling, follows B7-02/B7-03 strangler pattern (extract+reexport). Real ~95-line reduction. Tests are simple value/identity assertions plus an import-compat shim test. No protected paths involved."
+    },
+    {
+      "id": "C2",
+      "name": "_fmt_* formatter classmethod bundle",
+      "proposed_new_module": "tmp_agent/brain_v9/core/session_fmt_helpers.py",
+      "symbols_to_move": "17 _fmt_* classmethods (295 lines of method bodies)",
+      "approx_lines_in_session_today": 295,
+      "estimated_session_line_reduction": 270,
+      "reexport_required_in_session": "BrainSession would need 17 thin classmethod shims OR import-and-attach pattern; tests reference some via instance methods",
+      "external_consumers": "none discovered (private cls helpers)",
+      "self_or_cls_usage": "0 self refs; minimal cls refs",
+      "circular_import_risk": "medium (helpers may need types from session)",
+      "difficulty": "medium",
+      "value": "high (largest pure-method block)",
+      "testability": "medium (each formatter takes a structured payload, deterministic outputs)",
+      "risk_factors": [
+        "Methods are bound to BrainSession class; moving requires wrapper shims or rebinding.",
+        "Possible coupling via ChatMetrics enrichments (need careful audit).",
+        "Higher coordination cost vs C1; better as a follow-up ticket once routing constants are out."
+      ],
+      "recommendation": "DEFER",
+      "justification": "Strong long-term candidate but bigger implementation surface than this round warrants. Right after C1 ships."
+    },
+    {
+      "id": "C3",
+      "name": "SLASH_COMMANDS dict alone",
+      "proposed_new_module": "tmp_agent/brain_v9/core/session_slash_commands.py",
+      "symbols_to_move": ["SLASH_COMMANDS"],
+      "approx_lines_in_session_today": 32,
+      "estimated_session_line_reduction": 25,
+      "reexport_required_in_session": ["SLASH_COMMANDS"],
+      "external_consumers": ["tmp_agent/tests/core/test_session.py:23"],
+      "self_or_cls_usage": "none (string -> string mapping)",
+      "circular_import_risk": "low",
+      "difficulty": "very low",
+      "value": "low (only ~25 lines)",
+      "testability": "high",
+      "risk_factors": ["Tiny payoff alone; better bundled with routing constants OR deferred."],
+      "recommendation": "DEFER (or fold into a future combined ticket)",
+      "justification": "Real but small. Doing it standalone yields too little reduction to justify a strangler ticket; doing it with routing constants would mix unrelated concerns."
+    },
+    {
+      "id": "C4",
+      "name": "_render_* + _format_* small classmethod bundle",
+      "proposed_new_module": "tmp_agent/brain_v9/core/session_render_helpers.py",
+      "symbols_to_move": [
+        "_render_operational_agent_summary",
+        "_render_agent_failure_reply",
+        "_format_tool_result",
+        "_format_action_value"
+      ],
+      "approx_lines_in_session_today": 182,
+      "estimated_session_line_reduction": 165,
+      "reexport_required_in_session": "rebind as classmethods on BrainSession or import-and-attach",
+      "external_consumers": "none discovered",
+      "self_or_cls_usage": "0 self; small cls refs",
+      "circular_import_risk": "low",
+      "difficulty": "medium",
+      "value": "medium",
+      "testability": "high (pure render helpers)",
+      "risk_factors": [
+        "Like C2, needs rebinding pattern; requires deciding between 'free helper functions in new module' vs 'classmethods'.",
+        "Best done after C1 lands and C2 paves the rebinding pattern."
+      ],
+      "recommendation": "DEFER",
+      "justification": "Reasonable but better paired with C2."
+    },
+    {
+      "id": "C5",
+      "name": "_sanitize_llm_chat_response single staticmethod",
+      "proposed_new_module": "tmp_agent/brain_v9/core/session_response_hygiene.py",
+      "symbols_to_move": ["_sanitize_llm_chat_response"],
+      "approx_lines_in_session_today": 80,
+      "estimated_session_line_reduction": 72,
+      "reexport_required_in_session": "thin staticmethod shim",
+      "external_consumers": "none",
+      "self_or_cls_usage": "0 self / 0 cls (pure staticmethod)",
+      "circular_import_risk": "low",
+      "difficulty": "low",
+      "value": "medium (one focused method)",
+      "testability": "high (pure transformer)",
+      "risk_factors": [
+        "Sits inside the LLM routing flow — high-touch area; sanitiser bug = visible regression.",
+        "Single-symbol module is justifiable but smaller than C1."
+      ],
+      "recommendation": "RUNNER-UP",
+      "justification": "Cleaner one-shot extraction but lower reduction than C1 and lives in the routing core, increasing review surface."
+    },
+    {
+      "id": "C6",
+      "name": "Path constants bundle (_STATE_PATH and friends)",
+      "proposed_new_module": "tmp_agent/brain_v9/core/session_paths.py",
+      "symbols_to_move": [
+        "_STATE_PATH","_UI_PATH","_UI_INDEX","_UI_DASHBOARD","_UI_EDIT_STATE_PATH",
+        "_CHAT_METRICS_PATH","_CHAT_SESSION_DEFAULTS_PATH","_EPISODIC_MEMORY_PATH",
+        "_CAPABILITY_GOVERNOR_STATUS_PATH"
+      ],
+      "approx_lines_in_session_today": 9,
+      "estimated_session_line_reduction": 5,
+      "reexport_required_in_session": "all of them",
+      "external_consumers": [
+        "tmp_agent/tests/conftest.py:39 monkeypatch.setattr(sess, '_STATE_PATH', ...)",
+        "tests/unit/test_brain_chat_hygiene.py monkeypatches session_mod._UI_INDEX, _UI_EDIT_STATE_PATH, _CHAT_SESSION_DEFAULTS_PATH"
+      ],
+      "self_or_cls_usage": "none",
+      "circular_import_risk": "low",
+      "difficulty": "HIGH (monkeypatch-semantics trap)",
+      "value": "very low (~5 lines)",
+      "testability": "low (monkeypatch correctness is hard to assert)",
+      "risk_factors": [
+        "Multiple existing tests monkeypatch session_mod._STATE_PATH and friends; if session.py only re-imports the new module, in-file callsites must reference the variable through the re-exported name AND tests must patch the new module.",
+        "High likelihood of subtle test breakage for trivial reduction."
+      ],
+      "recommendation": "REJECT",
+      "justification": "Tiny payoff combined with real monkeypatch hazard. Wrong shape for a strangler ticket."
+    },
+    {
+      "id": "C7",
+      "name": "Tool01 subsystem (_tool01_*)",
+      "proposed_new_module": "n/a",
+      "symbols_to_move": "12 _tool01_* methods (363 lines)",
+      "approx_lines_in_session_today": 363,
+      "estimated_session_line_reduction": "high (~340)",
+      "reexport_required_in_session": "n/a",
+      "external_consumers": "tests/unit/test_tool01_*",
+      "self_or_cls_usage": "heavy self usage (security/permission gate)",
+      "circular_import_risk": "medium-high",
+      "difficulty": "high",
+      "value": "would be very high",
+      "testability": "good (already test-covered)",
+      "risk_factors": [
+        "Tool01 is part of the security/permission gate domain; touching it is OFF-LIMITS per ticket rules (protected: tool permission/permission gate adjacent)."
+      ],
+      "recommendation": "REJECT",
+      "justification": "Out of scope per task hard rules (Tool01 / permission gate adjacent)."
+    }
+  ],
+  "selected_candidate_id": "C1",
+  "selected_candidate_name": "Routing regex constants module",
+  "runner_up_id": "C5",
+  "deferred_for_future_tickets": ["C2", "C3", "C4"],
+  "rejected": ["C6", "C7"]
+}

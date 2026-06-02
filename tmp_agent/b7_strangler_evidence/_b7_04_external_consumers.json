@@ -1,0 +1,154 @@
+{
+  "scan_method": "ripgrep over C:/AI_VAULT, *.py, excluding session.py, b7_strangler_evidence, __pycache__",
+  "scan_date_utc_local": "2026-06-01",
+  "queries_run": [
+    "regex of all routing+regex+path constants",
+    "imports of brain_v9.core.session"
+  ],
+  "external_consumers_of_routing_and_path_constants": {
+    "AGENT_INTENTS": {
+      "external_imports": [],
+      "external_attribute_access": [],
+      "notes": "Only referenced inside session.py at definition (105) and use (1994). No external consumer."
+    },
+    "AGENT_KEYWORDS": {
+      "external_imports": [
+        "tmp_agent/tests/core/test_session.py:24 (from brain_v9.core.session import ... AGENT_KEYWORDS)"
+      ],
+      "external_attribute_access": [
+        "tests/unit/test_b7_routing_heuristics_characterization.py:20-22 (session_mod.AGENT_KEYWORDS)"
+      ],
+      "notes": "Public name (no underscore). Tests assert it exists on session module and is a non-empty list/tuple. MUST re-export from session.py."
+    },
+    "_AGENT_PATTERNS": {
+      "external_imports": [
+        "tmp_agent/tests/core/test_session.py:25 (from brain_v9.core.session import _AGENT_PATTERNS)",
+        "tmp_agent/debug_routing.py:29 (from brain_v9.core.session import _AGENT_PATTERNS)"
+      ],
+      "external_attribute_access": [
+        "tests/unit/test_brain_chat_hygiene.py:182 (session_mod._AGENT_PATTERNS)",
+        "tests/integration/test_chat_routing.py: text-grep references inside session.py source string (no import) — irrelevant for module shape"
+      ],
+      "notes": "MUST re-export from session.py. Pattern list derived from AGENT_KEYWORDS, so move both together."
+    },
+    "_CODE_ANALYSIS_PATH_RE": {
+      "external_imports": [],
+      "external_attribute_access": [],
+      "notes": "Only referenced inside session.py (def 195, use 1908, 4169). NOTE: a duplicate copy already exists in session_query_predicates.py (post-B7-03). Safe to extract; query_predicates would still keep its own local copy."
+    },
+    "_LEAK_TAIL_RE": {
+      "external_imports": [],
+      "external_attribute_access": [],
+      "notes": "Only inside session.py (def 202, use 960). agent/loop.py:2224 has its own SEPARATE class-level _LEAK_TAIL_RE — same name but unrelated copy. Safe to extract."
+    },
+    "_PROCESS_START_TIME": {
+      "external_imports": [],
+      "external_attribute_access": [],
+      "notes": "Only inside session.py (def 211, use 863). Runtime monotonic baseline. Extracting changes its semantic anchor (module-load time of new module vs session.py). LOW value, KEEP IN-PLACE."
+    },
+    "_CONTINUE_WORDS_RE": {
+      "external_imports": [],
+      "external_attribute_access": [],
+      "notes": "Only inside session.py (def 212, use 864). Safe to extract."
+    },
+    "_CORRECTION_RE": {
+      "external_imports": [],
+      "external_attribute_access": [],
+      "notes": "Only inside session.py (def 221). Safe to extract."
+    },
+    "SLASH_COMMANDS": {
+      "external_imports": [
+        "tmp_agent/tests/core/test_session.py:23 (from brain_v9.core.session import SLASH_COMMANDS)"
+      ],
+      "external_attribute_access": [],
+      "notes": "Public dict. Test iterates SLASH_COMMANDS keys. MUST re-export. Values are descriptive strings (not callables), so no method coupling. Extractable but is a separate concern from routing regexes."
+    },
+    "_STATE_PATH": {
+      "external_imports": [],
+      "external_attribute_access": [
+        "tmp_agent/tests/conftest.py:39 (monkeypatch.setattr(sess, '_STATE_PATH', tmp_path/...))"
+      ],
+      "notes": "Tests monkeypatch session._STATE_PATH at runtime; many other in-file methods read via this constant. Extracting is non-trivial because monkeypatching the new module would NOT affect session.py callsites that captured the value via direct symbol use. KEEP IN-PLACE for this round."
+    },
+    "_UI_PATH": {
+      "external_imports": [],
+      "external_attribute_access": [],
+      "notes": "Internal only. Tied to _UI_INDEX/_UI_DASHBOARD."
+    },
+    "_UI_INDEX": {
+      "external_imports": [],
+      "external_attribute_access": [
+        "tests/unit/test_brain_chat_hygiene.py:236, 277, 305, 330, 355, 375 (monkeypatch.setattr(session_mod, '_UI_INDEX', ...))"
+      ],
+      "notes": "Tests monkeypatch session_mod._UI_INDEX. KEEP IN-PLACE this round (same monkeypatch concern as _STATE_PATH)."
+    },
+    "_UI_DASHBOARD": {
+      "external_imports": [],
+      "external_attribute_access": [],
+      "notes": "Internal only."
+    },
+    "_UI_EDIT_STATE_PATH": {
+      "external_imports": [],
+      "external_attribute_access": [
+        "tests/unit/test_brain_chat_hygiene.py:237, 278, 306, 331, 356 (monkeypatch.setattr(session_mod, '_UI_EDIT_STATE_PATH', ...))"
+      ],
+      "notes": "Tests monkeypatch session_mod._UI_EDIT_STATE_PATH. KEEP IN-PLACE this round."
+    },
+    "_CHAT_METRICS_PATH": {
+      "external_imports": [],
+      "external_attribute_access": [],
+      "notes": "session_chat_metrics.py has its OWN _CHAT_METRICS_PATH (post-B7-02). session.py copy is now unused there but B7-02 left it; would be removable but out of scope of this ticket selection."
+    },
+    "_CHAT_SESSION_DEFAULTS_PATH": {
+      "external_imports": [],
+      "external_attribute_access": [
+        "tests/unit/test_brain_chat_hygiene.py:117 (monkeypatch.setattr(session_mod, '_CHAT_SESSION_DEFAULTS_PATH', ...))"
+      ],
+      "notes": "Tests monkeypatch session_mod. KEEP IN-PLACE this round."
+    },
+    "_EPISODIC_MEMORY_PATH": {
+      "external_imports": [],
+      "external_attribute_access": [],
+      "notes": "Internal only."
+    },
+    "_CAPABILITY_GOVERNOR_STATUS_PATH": {
+      "external_imports": [],
+      "external_attribute_access": [],
+      "notes": "Internal only."
+    }
+  },
+  "summary": {
+    "must_reexport_from_session_if_extracted": [
+      "AGENT_KEYWORDS",
+      "_AGENT_PATTERNS",
+      "SLASH_COMMANDS",
+      "_STATE_PATH",
+      "_UI_INDEX",
+      "_UI_EDIT_STATE_PATH",
+      "_CHAT_SESSION_DEFAULTS_PATH"
+    ],
+    "must_keep_in_place_due_to_monkeypatch_semantics": [
+      "_STATE_PATH",
+      "_UI_INDEX",
+      "_UI_EDIT_STATE_PATH",
+      "_CHAT_SESSION_DEFAULTS_PATH"
+    ],
+    "fully_internal_safe_to_move_purely": [
+      "AGENT_INTENTS",
+      "_CODE_ANALYSIS_PATH_RE",
+      "_LEAK_TAIL_RE",
+      "_CONTINUE_WORDS_RE",
+      "_CORRECTION_RE",
+      "_UI_PATH",
+      "_UI_DASHBOARD",
+      "_EPISODIC_MEMORY_PATH",
+      "_CAPABILITY_GOVERNOR_STATUS_PATH",
+      "_CHAT_METRICS_PATH (in session.py; ssm has own)"
+    ],
+    "movable_with_reexport_only": [
+      "AGENT_KEYWORDS",
+      "_AGENT_PATTERNS",
+      "SLASH_COMMANDS"
+    ]
+  }
+}

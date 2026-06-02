@@ -1,0 +1,1236 @@
+{
+  "session_py": "C:\\AI_VAULT\\tmp_agent\\brain_v9\\core\\session.py",
+  "total_lines": 5925,
+  "cumulative_reduction": {
+    "pre_b7_02_lines": 7637,
+    "post_b7_02_lines": 6140,
+    "post_b7_03_lines": 5925,
+    "delta_b7_02": 1497,
+    "delta_b7_03": 215,
+    "delta_total": 1712
+  },
+  "imports_count": 26,
+  "top_level_classes": [
+    {
+      "name": "BrainSession",
+      "lineno": 337,
+      "end_lineno": 5919,
+      "body_lines": 5583
+    }
+  ],
+  "top_level_functions": [
+    {
+      "name": "__getattr__",
+      "lineno": 271,
+      "end_lineno": 274,
+      "body_lines": 4,
+      "is_async": false
+    },
+    {
+      "name": "_normalize",
+      "lineno": 324,
+      "end_lineno": 334,
+      "body_lines": 11,
+      "is_async": false
+    },
+    {
+      "name": "get_or_create_session",
+      "lineno": 5922,
+      "end_lineno": 5925,
+      "body_lines": 4,
+      "is_async": false
+    }
+  ],
+  "top_level_constants": [
+    {
+      "name": "log",
+      "lineno": 90,
+      "end_lineno": 90
+    },
+    {
+      "name": "AGENT_INTENTS",
+      "lineno": 105,
+      "end_lineno": 105
+    },
+    {
+      "name": "AGENT_KEYWORDS",
+      "lineno": 109,
+      "end_lineno": 190
+    },
+    {
+      "name": "_AGENT_PATTERNS",
+      "lineno": 193,
+      "end_lineno": 193
+    },
+    {
+      "name": "_CODE_ANALYSIS_PATH_RE",
+      "lineno": 195,
+      "end_lineno": 199
+    },
+    {
+      "name": "_LEAK_TAIL_RE",
+      "lineno": 202,
+      "end_lineno": 206
+    },
+    {
+      "name": "_PROCESS_START_TIME",
+      "lineno": 211,
+      "end_lineno": 211
+    },
+    {
+      "name": "_CONTINUE_WORDS_RE",
+      "lineno": 212,
+      "end_lineno": 216
+    },
+    {
+      "name": "_CORRECTION_RE",
+      "lineno": 221,
+      "end_lineno": 236
+    },
+    {
+      "name": "_STATE_PATH",
+      "lineno": 239,
+      "end_lineno": 239
+    },
+    {
+      "name": "_UI_PATH",
+      "lineno": 240,
+      "end_lineno": 240
+    },
+    {
+      "name": "_UI_INDEX",
+      "lineno": 241,
+      "end_lineno": 241
+    },
+    {
+      "name": "_UI_DASHBOARD",
+      "lineno": 242,
+      "end_lineno": 242
+    },
+    {
+      "name": "_UI_EDIT_STATE_PATH",
+      "lineno": 243,
+      "end_lineno": 243
+    },
+    {
+      "name": "_CHAT_METRICS_PATH",
+      "lineno": 244,
+      "end_lineno": 244
+    },
+    {
+      "name": "_CHAT_SESSION_DEFAULTS_PATH",
+      "lineno": 245,
+      "end_lineno": 245
+    },
+    {
+      "name": "_EPISODIC_MEMORY_PATH",
+      "lineno": 246,
+      "end_lineno": 246
+    },
+    {
+      "name": "_CAPABILITY_GOVERNOR_STATUS_PATH",
+      "lineno": 247,
+      "end_lineno": 247
+    },
+    {
+      "name": "SLASH_COMMANDS",
+      "lineno": 280,
+      "end_lineno": 311
+    }
+  ],
+  "first_class_line": 337,
+  "brain_session": {
+    "exists": true,
+    "lineno": 337,
+    "end_lineno": 5919,
+    "method_count": 174,
+    "class_attrs_count": 13
+  },
+  "method_groups_by_prefix": [
+    {
+      "group": "_other_",
+      "count": 47,
+      "total_lines": 1263,
+      "sample_names": [
+        "_policy_route_decision",
+        "_recent_activity_fastpath",
+        "_sanitize_llm_chat_response",
+        "_search_files_fastpath",
+        "_llm_agent_salvage",
+        "_truncate_to_budget",
+        "_llm_status_fastpath",
+        "_running_services_fastpath"
+      ]
+    },
+    {
+      "group": "_chat_*",
+      "count": 2,
+      "total_lines": 708,
+      "sample_names": [
+        "chat",
+        "_chat_interaction_review_fastpath"
+      ]
+    },
+    {
+      "group": "_cmd_*",
+      "count": 31,
+      "total_lines": 703,
+      "sample_names": [
+        "_cmd_trading_analysis",
+        "_cmd_schedule",
+        "_cmd_pipeline",
+        "_cmd_approve",
+        "_cmd_security",
+        "_cmd_priority",
+        "_cmd_governance",
+        "_cmd_control"
+      ]
+    },
+    {
+      "group": "_route_*",
+      "count": 2,
+      "total_lines": 564,
+      "sample_names": [
+        "_route_to_agent",
+        "_route_to_llm"
+      ]
+    },
+    {
+      "group": "_maybe_*",
+      "count": 8,
+      "total_lines": 461,
+      "sample_names": [
+        "_maybe_fastpath",
+        "_maybe_grounded_ui_edit_fastpath",
+        "_maybe_qc_live_fastpath",
+        "_maybe_grounded_code_analysis_fastpath",
+        "_maybe_persist_correction",
+        "_maybe_emit_capability_decline",
+        "_maybe_resume_pending_continuation",
+        "_maybe_dev_block"
+      ]
+    },
+    {
+      "group": "_tool01_*",
+      "count": 12,
+      "total_lines": 363,
+      "sample_names": [
+        "_tool01_execute",
+        "_tool01_handle_permission_response",
+        "_tool01_router",
+        "_tool01_approve_permission",
+        "_tool01_request_permission",
+        "_tool01_extract_write_content",
+        "_tool01_policy_check_path",
+        "_tool01_write_evidence"
+      ]
+    },
+    {
+      "group": "_predicate_*",
+      "count": 39,
+      "total_lines": 312,
+      "sample_names": [
+        "_should_use_agent",
+        "_should_use_analysis_frontier",
+        "_is_safe_workspace_path",
+        "_prefers_no_tool_analysis",
+        "_should_use_compact_chat_prompt",
+        "_has_explicit_tool_target",
+        "_is_agent_execution_failure",
+        "_is_qc_live_query"
+      ]
+    },
+    {
+      "group": "_fmt_*",
+      "count": 17,
+      "total_lines": 295,
+      "sample_names": [
+        "_fmt_get_technical_introspection",
+        "_fmt_check_port",
+        "_fmt_list_recent_brain_changes",
+        "_fmt_get_chat_metrics",
+        "_fmt_semantic_memory_search",
+        "_fmt_grep_codebase",
+        "_fmt_get_live_autonomy_status",
+        "_fmt_list_directory"
+      ]
+    },
+    {
+      "group": "_render_*",
+      "count": 2,
+      "total_lines": 116,
+      "sample_names": [
+        "_render_operational_agent_summary",
+        "_render_agent_failure_reply"
+      ]
+    },
+    {
+      "group": "_handle_*",
+      "count": 1,
+      "total_lines": 69,
+      "sample_names": [
+        "_handle_command"
+      ]
+    },
+    {
+      "group": "_format_*",
+      "count": 2,
+      "total_lines": 66,
+      "sample_names": [
+        "_format_tool_result",
+        "_format_action_value"
+      ]
+    },
+    {
+      "group": "_get/_resolve_*",
+      "count": 1,
+      "total_lines": 54,
+      "sample_names": [
+        "_get_curated_ingestion_response"
+      ]
+    },
+    {
+      "group": "_build_*",
+      "count": 2,
+      "total_lines": 50,
+      "sample_names": [
+        "_build_grounded_file_excerpt",
+        "_build_test_reference_excerpt"
+      ]
+    },
+    {
+      "group": "_persist/_save/_load_*",
+      "count": 3,
+      "total_lines": 22,
+      "sample_names": [
+        "_save_turn",
+        "_persist_chat_dev_mode_default",
+        "_load_chat_dev_mode_default"
+      ]
+    },
+    {
+      "group": "_select_*",
+      "count": 2,
+      "total_lines": 20,
+      "sample_names": [
+        "_select_llm_chain",
+        "_select_agent_model_priority"
+      ]
+    },
+    {
+      "group": "dunder",
+      "count": 1,
+      "total_lines": 17,
+      "sample_names": [
+        "__init__"
+      ]
+    },
+    {
+      "group": "_summarize_*",
+      "count": 1,
+      "total_lines": 7,
+      "sample_names": [
+        "_summarize_action_output"
+      ]
+    },
+    {
+      "group": "_normalize_*",
+      "count": 1,
+      "total_lines": 3,
+      "sample_names": [
+        "_normalize_model_priority"
+      ]
+    }
+  ],
+  "largest_methods_top30": [
+    {
+      "name": "chat",
+      "lineno": 406,
+      "end_lineno": 1049,
+      "body_lines": 644,
+      "is_async": true,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 111,
+      "cls_refs": 0,
+      "n_args": 3
+    },
+    {
+      "name": "_route_to_agent",
+      "lineno": 3163,
+      "end_lineno": 3610,
+      "body_lines": 448,
+      "is_async": true,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 48,
+      "cls_refs": 0,
+      "n_args": 3
+    },
+    {
+      "name": "_policy_route_decision",
+      "lineno": 5142,
+      "end_lineno": 5328,
+      "body_lines": 187,
+      "is_async": false,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 12,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_tool01_execute",
+      "lineno": 2994,
+      "end_lineno": 3161,
+      "body_lines": 168,
+      "is_async": true,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 18,
+      "cls_refs": 0,
+      "n_args": 3
+    },
+    {
+      "name": "_maybe_fastpath",
+      "lineno": 3695,
+      "end_lineno": 3823,
+      "body_lines": 129,
+      "is_async": false,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 62,
+      "cls_refs": 0,
+      "n_args": 3
+    },
+    {
+      "name": "_recent_activity_fastpath",
+      "lineno": 3966,
+      "end_lineno": 4093,
+      "body_lines": 128,
+      "is_async": false,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 5,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_route_to_llm",
+      "lineno": 2238,
+      "end_lineno": 2353,
+      "body_lines": 116,
+      "is_async": true,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 8,
+      "cls_refs": 0,
+      "n_args": 5
+    },
+    {
+      "name": "_maybe_grounded_ui_edit_fastpath",
+      "lineno": 4373,
+      "end_lineno": 4469,
+      "body_lines": 97,
+      "is_async": true,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 10,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_render_operational_agent_summary",
+      "lineno": 5041,
+      "end_lineno": 5121,
+      "body_lines": 81,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 1,
+      "n_args": 3
+    },
+    {
+      "name": "_sanitize_llm_chat_response",
+      "lineno": 2107,
+      "end_lineno": 2186,
+      "body_lines": 80,
+      "is_async": false,
+      "decorators": [
+        "staticmethod"
+      ],
+      "first_arg": "content",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 1
+    },
+    {
+      "name": "_should_use_agent",
+      "lineno": 1923,
+      "end_lineno": 2000,
+      "body_lines": 78,
+      "is_async": false,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 12,
+      "cls_refs": 0,
+      "n_args": 4
+    },
+    {
+      "name": "_cmd_trading_analysis",
+      "lineno": 1620,
+      "end_lineno": 1690,
+      "body_lines": 71,
+      "is_async": false,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 1,
+      "cls_refs": 0,
+      "n_args": 1
+    },
+    {
+      "name": "_cmd_schedule",
+      "lineno": 1799,
+      "end_lineno": 1868,
+      "body_lines": 70,
+      "is_async": false,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 12,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_handle_command",
+      "lineno": 1063,
+      "end_lineno": 1131,
+      "body_lines": 69,
+      "is_async": true,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 31,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_maybe_qc_live_fastpath",
+      "lineno": 4480,
+      "end_lineno": 4546,
+      "body_lines": 67,
+      "is_async": true,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 5,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_chat_interaction_review_fastpath",
+      "lineno": 4095,
+      "end_lineno": 4158,
+      "body_lines": 64,
+      "is_async": false,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 1,
+      "cls_refs": 0,
+      "n_args": 1
+    },
+    {
+      "name": "_search_files_fastpath",
+      "lineno": 5664,
+      "end_lineno": 5724,
+      "body_lines": 61,
+      "is_async": false,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 1,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_get_curated_ingestion_response",
+      "lineno": 5858,
+      "end_lineno": 5911,
+      "body_lines": 54,
+      "is_async": false,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 1
+    },
+    {
+      "name": "_llm_agent_salvage",
+      "lineno": 2478,
+      "end_lineno": 2526,
+      "body_lines": 49,
+      "is_async": true,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 6,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_maybe_grounded_code_analysis_fastpath",
+      "lineno": 4294,
+      "end_lineno": 4342,
+      "body_lines": 49,
+      "is_async": true,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 10,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_truncate_to_budget",
+      "lineno": 2017,
+      "end_lineno": 2063,
+      "body_lines": 47,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 2,
+      "n_args": 2
+    },
+    {
+      "name": "_should_use_analysis_frontier",
+      "lineno": 2383,
+      "end_lineno": 2429,
+      "body_lines": 47,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 7,
+      "n_args": 5
+    },
+    {
+      "name": "_llm_status_fastpath",
+      "lineno": 3841,
+      "end_lineno": 3886,
+      "body_lines": 46,
+      "is_async": false,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 3,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_format_tool_result",
+      "lineno": 4985,
+      "end_lineno": 5029,
+      "body_lines": 45,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 2,
+      "n_args": 5
+    },
+    {
+      "name": "_running_services_fastpath",
+      "lineno": 5619,
+      "end_lineno": 5662,
+      "body_lines": 44,
+      "is_async": false,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 1,
+      "cls_refs": 0,
+      "n_args": 1
+    },
+    {
+      "name": "_maybe_persist_correction",
+      "lineno": 5761,
+      "end_lineno": 5804,
+      "body_lines": 44,
+      "is_async": false,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 3,
+      "cls_refs": 0,
+      "n_args": 3
+    },
+    {
+      "name": "_build_grounded_file_excerpt",
+      "lineno": 4222,
+      "end_lineno": 4264,
+      "body_lines": 43,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 1,
+      "n_args": 4
+    },
+    {
+      "name": "_cmd_pipeline",
+      "lineno": 1370,
+      "end_lineno": 1410,
+      "body_lines": 41,
+      "is_async": false,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 1,
+      "cls_refs": 0,
+      "n_args": 1
+    },
+    {
+      "name": "_emit_chat_completed",
+      "lineno": 2631,
+      "end_lineno": 2671,
+      "body_lines": 41,
+      "is_async": false,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 1
+    },
+    {
+      "name": "_context_budget",
+      "lineno": 2065,
+      "end_lineno": 2104,
+      "body_lines": 40,
+      "is_async": false,
+      "decorators": [],
+      "first_arg": "self",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 4
+    }
+  ],
+  "pure_methods_top30": [
+    {
+      "name": "_render_operational_agent_summary",
+      "lineno": 5041,
+      "end_lineno": 5121,
+      "body_lines": 81,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 1,
+      "n_args": 3
+    },
+    {
+      "name": "_sanitize_llm_chat_response",
+      "lineno": 2107,
+      "end_lineno": 2186,
+      "body_lines": 80,
+      "is_async": false,
+      "decorators": [
+        "staticmethod"
+      ],
+      "first_arg": "content",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 1
+    },
+    {
+      "name": "_truncate_to_budget",
+      "lineno": 2017,
+      "end_lineno": 2063,
+      "body_lines": 47,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 2,
+      "n_args": 2
+    },
+    {
+      "name": "_should_use_analysis_frontier",
+      "lineno": 2383,
+      "end_lineno": 2429,
+      "body_lines": 47,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 7,
+      "n_args": 5
+    },
+    {
+      "name": "_format_tool_result",
+      "lineno": 4985,
+      "end_lineno": 5029,
+      "body_lines": 45,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 2,
+      "n_args": 5
+    },
+    {
+      "name": "_build_grounded_file_excerpt",
+      "lineno": 4222,
+      "end_lineno": 4264,
+      "body_lines": 43,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 1,
+      "n_args": 4
+    },
+    {
+      "name": "_render_agent_failure_reply",
+      "lineno": 2202,
+      "end_lineno": 2236,
+      "body_lines": 35,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 3,
+      "n_args": 3
+    },
+    {
+      "name": "_prefers_no_tool_analysis",
+      "lineno": 1873,
+      "end_lineno": 1901,
+      "body_lines": 29,
+      "is_async": false,
+      "decorators": [
+        "staticmethod"
+      ],
+      "first_arg": "message",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 1
+    },
+    {
+      "name": "_fmt_get_technical_introspection",
+      "lineno": 4929,
+      "end_lineno": 4956,
+      "body_lines": 28,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_fmt_check_port",
+      "lineno": 4629,
+      "end_lineno": 4655,
+      "body_lines": 27,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_fmt_list_recent_brain_changes",
+      "lineno": 4850,
+      "end_lineno": 4876,
+      "body_lines": 27,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_extract_candidate_paths",
+      "lineno": 4166,
+      "end_lineno": 4191,
+      "body_lines": 26,
+      "is_async": false,
+      "decorators": [
+        "staticmethod"
+      ],
+      "first_arg": "message",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 1
+    },
+    {
+      "name": "_should_use_compact_chat_prompt",
+      "lineno": 2356,
+      "end_lineno": 2380,
+      "body_lines": 25,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 4,
+      "n_args": 5
+    },
+    {
+      "name": "_fmt_get_chat_metrics",
+      "lineno": 4879,
+      "end_lineno": 4902,
+      "body_lines": 24,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_fmt_semantic_memory_search",
+      "lineno": 4905,
+      "end_lineno": 4926,
+      "body_lines": 22,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_format_action_value",
+      "lineno": 4602,
+      "end_lineno": 4622,
+      "body_lines": 21,
+      "is_async": false,
+      "decorators": [
+        "staticmethod"
+      ],
+      "first_arg": "value",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 1
+    },
+    {
+      "name": "_fmt_grep_codebase",
+      "lineno": 4828,
+      "end_lineno": 4847,
+      "body_lines": 20,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_sanitize_memory_content",
+      "lineno": 5817,
+      "end_lineno": 5836,
+      "body_lines": 20,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_has_explicit_tool_target",
+      "lineno": 1904,
+      "end_lineno": 1921,
+      "body_lines": 18,
+      "is_async": false,
+      "decorators": [
+        "staticmethod"
+      ],
+      "first_arg": "message",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 1
+    },
+    {
+      "name": "_fmt_get_live_autonomy_status",
+      "lineno": 4702,
+      "end_lineno": 4719,
+      "body_lines": 18,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_extract_symbol_hint",
+      "lineno": 4194,
+      "end_lineno": 4210,
+      "body_lines": 17,
+      "is_async": false,
+      "decorators": [
+        "staticmethod"
+      ],
+      "first_arg": "message",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 1
+    },
+    {
+      "name": "_find_test_references",
+      "lineno": 4267,
+      "end_lineno": 4283,
+      "body_lines": 17,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_blocks_grounded_ui_edit_fastpath",
+      "lineno": 4357,
+      "end_lineno": 4371,
+      "body_lines": 15,
+      "is_async": false,
+      "decorators": [
+        "staticmethod"
+      ],
+      "first_arg": "message",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 1
+    },
+    {
+      "name": "_fmt_list_directory",
+      "lineno": 4776,
+      "end_lineno": 4790,
+      "body_lines": 15,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_fmt_search_files",
+      "lineno": 4793,
+      "end_lineno": 4807,
+      "body_lines": 15,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_fmt_list_processes",
+      "lineno": 4810,
+      "end_lineno": 4824,
+      "body_lines": 15,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_fmt_check_all_services",
+      "lineno": 4671,
+      "end_lineno": 4684,
+      "body_lines": 14,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_fmt_get_system_info",
+      "lineno": 4737,
+      "end_lineno": 4750,
+      "body_lines": 14,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 2
+    },
+    {
+      "name": "_select_llm_chain",
+      "lineno": 2436,
+      "end_lineno": 2448,
+      "body_lines": 13,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 2,
+      "n_args": 5
+    },
+    {
+      "name": "_fmt_check_service_status",
+      "lineno": 4687,
+      "end_lineno": 4699,
+      "body_lines": 13,
+      "is_async": false,
+      "decorators": [
+        "classmethod"
+      ],
+      "first_arg": "cls",
+      "self_refs": 0,
+      "cls_refs": 0,
+      "n_args": 2
+    }
+  ],
+  "candidate_constant_locations": {
+    "AGENT_INTENTS": [
+      {
+        "name": "AGENT_INTENTS",
+        "line": 104
+      }
+    ],
+    "AGENT_KEYWORDS": [
+      {
+        "name": "AGENT_KEYWORDS",
+        "line": 109
+      }
+    ],
+    "_AGENT_PATTERNS": [
+      {
+        "name": "_AGENT_PATTERNS",
+        "line": 193
+      }
+    ],
+    "_CODE_ANALYSIS_PATH_RE": [
+      {
+        "name": "_CODE_ANALYSIS_PATH_RE",
+        "line": 194
+      }
+    ],
+    "_LEAK_TAIL_RE": [
+      {
+        "name": "_LEAK_TAIL_RE",
+        "line": 202
+      }
+    ],
+    "_PROCESS_START_TIME": [
+      {
+        "name": "_PROCESS_START_TIME",
+        "line": 211
+      }
+    ],
+    "_CONTINUE_WORDS_RE": [
+      {
+        "name": "_CONTINUE_WORDS_RE",
+        "line": 212
+      }
+    ],
+    "_CORRECTION_RE": [
+      {
+        "name": "_CORRECTION_RE",
+        "line": 221
+      }
+    ],
+    "SLASH_COMMANDS": [
+      {
+        "name": "SLASH_COMMANDS",
+        "line": 279
+      }
+    ],
+    "_CONFIRM_PATTERNS": [
+      {
+        "name": "_CONFIRM_PATTERNS",
+        "line": 3615
+      }
+    ],
+    "_TEMPORAL_QUERY_RE": [
+      {
+        "name": "_TEMPORAL_QUERY_RE",
+        "line": 364
+      }
+    ],
+    "_RECENT_ACTIVITY_PATTERNS": [
+      {
+        "name": "_RECENT_ACTIVITY_PATTERNS",
+        "line": 3937
+      }
+    ],
+    "DEFAULT_PRIORITY": [],
+    "CHAT_DEV_MODE": [],
+    "CHAT_DEV_DEFAULTS": []
+  },
+  "text_search": {
+    "SLASH_COMMANDS_def_count": 1,
+    "AGENT_INTENTS_def_count": 1,
+    "AGENT_KEYWORDS_def_count": 1,
+    "_CODE_ANALYSIS_PATH_RE_def_count": 1,
+    "_LEAK_TAIL_RE_def_count": 1,
+    "_PROCESS_START_TIME_def_count": 1,
+    "_CONTINUE_WORDS_RE_def_count": 1,
+    "_CORRECTION_RE_def_count": 1,
+    "Tool01_class_count": 0,
+    "tool01_method_count": 12,
+    "_cmd_method_count": 31,
+    "_fmt_method_count": 17,
+    "_render_method_count": 2,
+    "_format_method_count": 2,
+    "_normalize_method_count": 1,
+    "predicate_shim_count": 35
+  }
+}

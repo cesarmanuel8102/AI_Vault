@@ -1,0 +1,77 @@
+{
+  "ticket": "B7-STRANGLER-04-INVENTORY",
+  "status": "READY_FOR_B7-STRANGLER-04-IMPLEMENT",
+  "repo_root": "C:/AI_VAULT",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "9de07d6582596b6c153f6abfa8c1228401ae40bb",
+  "origin_head": "9de07d6582596b6c153f6abfa8c1228401ae40bb",
+  "head_subject": "refactor(b7): extract query predicates from session module",
+  "session_py_total_lines": 5925,
+  "cumulative_line_reduction_since_pre_b7_02": 1712,
+  "session_py_modified": false,
+  "protected_paths_touched": [],
+  "commit_created": false,
+  "push_done": false,
+  "phases": {
+    "preflight": "PASS",
+    "phase_a_inventory": "PASS",
+    "phase_b_candidate_ranking": "PASS (7 candidates evaluated; >=6 required)",
+    "phase_c_selected_candidate_plan": "PASS (1 candidate selected: C1)",
+    "phase_d_readonly_validations": "PASS (6/6)",
+    "phase_e_final_verification": "PASS"
+  },
+  "candidates_evaluated_count": 7,
+  "selected_candidate": {
+    "id": "C1",
+    "name": "Routing regex constants module",
+    "new_module_path": "tmp_agent/brain_v9/core/session_routing_constants.py",
+    "symbols_to_move": [
+      "AGENT_INTENTS","AGENT_KEYWORDS","_AGENT_PATTERNS",
+      "_CODE_ANALYSIS_PATH_RE","_LEAK_TAIL_RE","_CONTINUE_WORDS_RE","_CORRECTION_RE"
+    ],
+    "symbols_to_reexport_from_session_py": [
+      "AGENT_INTENTS","AGENT_KEYWORDS","_AGENT_PATTERNS",
+      "_CODE_ANALYSIS_PATH_RE","_LEAK_TAIL_RE","_CONTINUE_WORDS_RE","_CORRECTION_RE"
+    ],
+    "estimated_session_line_reduction": 95,
+    "projected_session_lines_post_b7_04": 5830,
+    "projected_cumulative_reduction_post_b7_04": 1807,
+    "expected_risk": "low",
+    "tests_recommended": [
+      "tests/unit/test_b7_routing_constants_import_compat.py",
+      "tests/unit/test_b7_routing_constants_behavior_smoke.py",
+      "tests/unit/test_b7_routing_constants_no_session_dependency.py"
+    ]
+  },
+  "validations_passed": [
+    "phase1_local_validation_ps1",
+    "test_phase1_import_baseline",
+    "test_phase1_security_defaults",
+    "b7_02_chatmetrics_tests (15 passed)",
+    "b7_03_query_predicates_tests (36 passed)",
+    "b7_04_baseline_import_smoke"
+  ],
+  "validations_failed": [],
+  "evidence_files": [
+    {"path": "tmp_agent/b7_strangler_evidence/b7_04_inventory_preflight.json", "bytes": 932},
+    {"path": "tmp_agent/b7_strangler_evidence/b7_04_session_inventory.json", "bytes": 27396},
+    {"path": "tmp_agent/b7_strangler_evidence/b7_04_session_inventory.md", "bytes": 5551},
+    {"path": "tmp_agent/b7_strangler_evidence/_b7_04_external_consumers.json", "bytes": null, "note": "regenerated from ripgrep scan; small JSON"},
+    {"path": "tmp_agent/b7_strangler_evidence/_b7_04_analyzer.py", "bytes": null, "note": "auxiliary AST analyzer"},
+    {"path": "tmp_agent/b7_strangler_evidence/b7_04_candidate_ranking.json", "bytes": 9896},
+    {"path": "tmp_agent/b7_strangler_evidence/b7_04_candidate_ranking.md", "bytes": 3241},
+    {"path": "tmp_agent/b7_strangler_evidence/b7_04_selected_candidate_plan.json", "bytes": 5725},
+    {"path": "tmp_agent/b7_strangler_evidence/b7_04_selected_candidate_plan.md", "bytes": 3861},
+    {"path": "tmp_agent/b7_strangler_evidence/b7_04_readonly_validation_report.json", "bytes": 1885},
+    {"path": "tmp_agent/b7_strangler_evidence/b7_04_inventory_manifest.json", "bytes": null, "note": "this file"}
+  ],
+  "evidence_dir_gitignore_status": "tmp_agent/**/*_evidence/ in .gitignore:107 — evidence files are NOT tracked by git (no commit risk).",
+  "git_state_post_task": {
+    "session_py_status": "untracked changes: none",
+    "staged_files": "none",
+    "untracked_in_evidence_dir": "ignored by .gitignore",
+    "head_unchanged": true
+  },
+  "blockers": [],
+  "next_recommended_action": "Open ticket B7-STRANGLER-04-IMPLEMENT to execute the C1 plan in tmp_agent/b7_strangler_evidence/b7_04_selected_candidate_plan.md/json. Mirrors B7-02 (ChatMetrics) and B7-03 (query predicates) extraction+reexport pattern. Expected: session.py 5925 -> ~5830 lines (-95), cumulative -1807; 3 new tests (import-compat, behavior-smoke, no-session-dependency); zero protected-path touches; rollback by single revert."
+}

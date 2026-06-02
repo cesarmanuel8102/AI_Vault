@@ -1,0 +1,46 @@
+{
+  "ticket": "B7-STRANGLER-04-INVENTORY",
+  "phase": "D - read-only validations (baseline before any code change)",
+  "session_py_modified": false,
+  "validations": [
+    {
+      "id": "phase1_local_validation_ps1",
+      "command": "powershell -ExecutionPolicy Bypass -File C:\\AI_VAULT\\tmp_agent\\brain_v9\\ops\\phase1_local_validation.ps1",
+      "result": "PASS",
+      "summary": "PHASE1_LOCAL_VALIDATION: ALL PASS — py_compile main/config/execution_gate/api_security/session, ran test_execution_gate_god_p3, test_dev_endpoints_default_off, test_selfdev_protected_paths, import smoke."
+    },
+    {
+      "id": "phase1_import_baseline",
+      "command": "python tests/unit/test_phase1_import_baseline.py",
+      "result": "PASS",
+      "summary": "OK: test_phase1_import_baseline"
+    },
+    {
+      "id": "phase1_security_defaults",
+      "command": "python tests/unit/test_phase1_security_defaults.py",
+      "result": "PASS",
+      "summary": "OK: test_phase1_security_defaults"
+    },
+    {
+      "id": "b7_02_chatmetrics_tests",
+      "command": "python -m pytest tests/unit/test_b7_chatmetrics_import_compat.py tests/unit/test_b7_chatmetrics_behavior_smoke.py -v",
+      "result": "PASS",
+      "summary": "15 passed in 0.57s"
+    },
+    {
+      "id": "b7_03_query_predicates_tests",
+      "command": "python -m pytest tests/unit/test_b7_query_predicates_import_compat.py tests/unit/test_b7_query_predicates_behavior_smoke.py tests/unit/test_b7_query_predicates_no_session_dependency.py -v",
+      "result": "PASS",
+      "summary": "36 passed in 0.55s"
+    },
+    {
+      "id": "b7_04_baseline_import_smoke",
+      "command": "python -c 'import ... BrainSession, ChatMetrics, get_chat_metrics, qp.is_dashboard_query'",
+      "result": "PASS",
+      "summary": "B7_04_BASELINE_IMPORT_OK True True True True"
+    }
+  ],
+  "passed": 6,
+  "failed": 0,
+  "all_pass": true
+}
