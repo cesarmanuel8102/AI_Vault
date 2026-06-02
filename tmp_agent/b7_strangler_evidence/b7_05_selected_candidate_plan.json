@@ -1,0 +1,114 @@
+{
+  "task": "B7-STRANGLER-05 — selected candidate plan (no implementation in this ticket)",
+  "selected_candidate_id": "C1",
+  "selected_candidate_name": "_sanitize_llm_chat_response (single pure staticmethod)",
+  "current_location": "tmp_agent/brain_v9/core/session.py BrainSession._sanitize_llm_chat_response @ lines 1993-2072",
+  "proposed_new_module": "tmp_agent/brain_v9/core/session_response_hygiene.py",
+
+  "symbols_to_move": [
+    {
+      "name": "sanitize_llm_chat_response",
+      "kind": "module-level pure function",
+      "signature": "def sanitize_llm_chat_response(content: str) -> str",
+      "source": "Verbatim body of BrainSession._sanitize_llm_chat_response, with no behavioral edits"
+    }
+  ],
+
+  "symbols_to_reexport_or_shim": [
+    {
+      "name": "BrainSession._sanitize_llm_chat_response",
+      "kind": "staticmethod shim on BrainSession that delegates to the new module",
+      "shim_form": "_sanitize_llm_chat_response = staticmethod(_session_response_hygiene.sanitize_llm_chat_response)"
+    }
+  ],
+
+  "symbols_explicitly_excluded": [
+    "_sanitize_memory_content (different concern: memory record sanitization, defer to later ticket)",
+    "_prefers_no_tool_analysis (different concern: routing predicate, defer)",
+    "_has_explicit_tool_target (defer)",
+    "All _fmt_* methods (runner-up C2, plan as B7-STRANGLER-06)",
+    "Any path constants (_STATE_PATH/_UI_*/_CHAT_*/_EPISODIC_*/_CAPABILITY_*) — test monkeypatch surface, leave in place",
+    "_PROCESS_START_TIME (must anchor to module-load)",
+    "SLASH_COMMANDS (defer to slash-commands extraction)"
+  ],
+
+  "tests_recommended": [
+    {
+      "path": "tests/unit/test_b7_response_hygiene_import_compat.py",
+      "purpose": "Identity check — BrainSession._sanitize_llm_chat_response IS session_response_hygiene.sanitize_llm_chat_response after shim binding; both callable; staticmethod descriptor preserved."
+    },
+    {
+      "path": "tests/unit/test_b7_response_hygiene_behavior_smoke.py",
+      "purpose": "Pin behavior on representative inputs: theater prose stripped, fake tool-call blocks stripped, ORAV markers stripped, placeholder lines stripped, empty/whitespace-only input handled, idempotency (sanitize(sanitize(x)) == sanitize(x)), Unicode preservation."
+    },
+    {
+      "path": "tests/unit/test_b7_response_hygiene_no_session_dependency.py",
+      "purpose": "Import session_response_hygiene WITHOUT importing brain_v9.core.session; assert callable and stateless. Mirrors B7-03's no_session_dependency pattern."
+    }
+  ],
+
+  "validations_proposed": [
+    "py_compile both files",
+    "powershell phase1_local_validation.ps1 must remain ALL PASS",
+    "tests/unit/test_phase1_import_baseline.py — OK",
+    "tests/unit/test_phase1_security_defaults.py — OK",
+    "All B7-02/03/04 carryover suites must remain green",
+    "tests/unit/test_brain_chat_hygiene.py / test_agent_ghost_completion_hardening.py / test_real_verification_tool_trace_required.py — must show 0 NEW failures vs. HEAD baseline (worktree-baseline comparison required if any preexisting failures exist)",
+    "tmp_agent/tests/core/test_session.py — same 0-new-failures contract",
+    "Import smoke: from brain_v9.core.session import BrainSession; assert callable(BrainSession._sanitize_llm_chat_response); from brain_v9.core import session_response_hygiene as srh; assert BrainSession._sanitize_llm_chat_response.__func__ is srh.sanitize_llm_chat_response (or equivalent identity assertion compatible with staticmethod descriptor)"
+  ],
+
+  "rollback_plan": [
+    "Single revert of the IMPLEMENT commit restores byte-identical session.py.",
+    "Until commit: git diff --stat will show exactly two productive paths (session.py and session_response_hygiene.py) plus three new test files; remove with git checkout/restore tmp_agent/brain_v9/core/session.py and rm new files.",
+    "Shim line in session.py is a one-liner; trivial to remove if regression discovered post-merge."
+  ],
+
+  "risks_and_mitigations": [
+    {
+      "risk": "Regex literal mutation during copy → silent behavior drift",
+      "mitigation": "Compute sha256 of the lifted source range before/after. Behavior-smoke tests pin externally observable outputs."
+    },
+    {
+      "risk": "main.py uses session._sanitize_llm_chat_response(...) on instance — staticmethod-via-class-attr must remain descriptor-correct",
+      "mitigation": "Use staticmethod(sanitize_llm_chat_response) shim form (NOT a bare reference). Add explicit identity test in import_compat suite."
+    },
+    {
+      "risk": "Circular import when session_response_hygiene grows",
+      "mitigation": "New module imports only re. Forbid imports of session.* in this module. Validated by no_session_dependency test."
+    },
+    {
+      "risk": "Pre-existing test failures attributed to this change",
+      "mitigation": "MANDATORY git-worktree baseline comparison (per B7-04 protocol) — record HEAD failures before edit, compare after."
+    }
+  ],
+
+  "paths_allowed_for_implementation": [
+    "tmp_agent/brain_v9/core/session.py (modify — replace method body with shim, add import line)",
+    "tmp_agent/brain_v9/core/session_response_hygiene.py (create)",
+    "tests/unit/test_b7_response_hygiene_import_compat.py (create)",
+    "tests/unit/test_b7_response_hygiene_behavior_smoke.py (create)",
+    "tests/unit/test_b7_response_hygiene_no_session_dependency.py (create)",
+    "tmp_agent/b7_strangler_evidence/* (evidence only)"
+  ],
+
+  "paths_explicitly_forbidden": [
+    "tmp_agent/brain_v9/main.py",
+    "tmp_agent/brain_v9/config.py",
+    "tmp_agent/brain_v9/governance/execution_gate.py",
+    "tmp_agent/brain_v9/api_security.py",
+    "tmp_agent/brain_v9/ui/*",
+    "memory/semantic/*",
+    "tmp_agent/strategies/*",
+    "docs/MIGRATION_CONTROL_LEDGER.md",
+    "ROADMAP_STATUS.json",
+    "Any existing test file (no test mutations allowed)"
+  ],
+
+  "estimated_line_reduction": 80,
+  "expected_risk": "low",
+
+  "session_py_modified_in_this_inventory_ticket": false,
+  "commit_created_in_this_ticket": false,
+  "push_done_in_this_ticket": false
+}

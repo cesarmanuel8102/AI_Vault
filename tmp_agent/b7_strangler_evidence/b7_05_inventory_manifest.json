@@ -1,0 +1,28 @@
+{
+  "task": "B7-STRANGLER-05-INVENTORY — manifest",
+  "branch": "codex/own-capital-sustainable-return",
+  "head": "57a5e3a4",
+  "session_py_modified": false,
+  "tests_modified": false,
+  "commit_created": false,
+  "push_done": false,
+  "protected_paths_touched": [],
+  "evidence_files": [
+    "tmp_agent/b7_strangler_evidence/b7_05_inventory_preflight.json",
+    "tmp_agent/b7_strangler_evidence/b7_05_session_inventory.json",
+    "tmp_agent/b7_strangler_evidence/b7_05_session_inventory.md",
+    "tmp_agent/b7_strangler_evidence/b7_05_candidate_ranking.json",
+    "tmp_agent/b7_strangler_evidence/b7_05_candidate_ranking.md",
+    "tmp_agent/b7_strangler_evidence/b7_05_selected_candidate_plan.json",
+    "tmp_agent/b7_strangler_evidence/b7_05_selected_candidate_plan.md",
+    "tmp_agent/b7_strangler_evidence/b7_05_readonly_validation_report.json",
+    "tmp_agent/b7_strangler_evidence/b7_05_inventory_manifest.json",
+    "tmp_agent/b7_strangler_evidence/_b7_05_analyzer.py (helper, evidence-dir only)",
+    "tmp_agent/b7_strangler_evidence/_b7_05_callers.py (helper, evidence-dir only)",
+    "tmp_agent/b7_strangler_evidence/_b7_05_extra.json (intermediate AST data)"
+  ],
+  "git_diff_name_status_session_py": "<empty>",
+  "git_diff_cached_name_status": "<empty>",
+  "git_status_short_session_py": "<empty>",
+  "git_status_short_evidence_dir": "<untracked new files only — to be reviewed by user>"
+}

@@ -1,0 +1,30 @@
+{
+  "task": "B7-STRANGLER-05-INVENTORY",
+  "repo_root": "C:/AI_VAULT",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "57a5e3a4",
+  "origin_head": "57a5e3a4",
+  "head_match": true,
+  "head_message": "refactor(b7): extract routing constants from session module",
+  "staged_files": [],
+  "modified_tracked_files_unrelated": [
+    "memory/semantic/semantic_memory.jsonl"
+  ],
+  "untracked_unrelated_categories": [
+    "tmp_agent/strategies/mean_reversion_eq/* (research artifacts)",
+    "tmp_agent/brain_v9/chat_area_upgrade/* (rollback/diagnostic)",
+    "tmp_agent/brain_v9/ops/smoke_*.ps1 / tool01_write_test.py (smoke artifacts)",
+    "tmp_agent/visual_trace_console_v1/* (visual trace artifacts)",
+    "apply_chat_patch.py / tmp_agent/bor3_llm_audit*.{py,json} (audit artifacts)",
+    "C\\357\\200\\272AI_VAULT* (mojibake ledger backup)"
+  ],
+  "session_py_lines_post_b7_04": 5811,
+  "rules_acknowledged": {
+    "no_commit": true,
+    "no_push": true,
+    "no_session_py_modification": true,
+    "no_test_modification": true,
+    "evidence_only": true,
+    "protected_paths_untouched": true
+  }
+}

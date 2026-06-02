@@ -1,0 +1,517 @@
+{
+  "cmd": [
+    {
+      "name": "_cmd_help",
+      "lineno": 1019,
+      "end": 1023,
+      "sz": 5,
+      "deco": [],
+      "self": 1,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_status",
+      "lineno": 1025,
+      "end": 1047,
+      "sz": 23,
+      "deco": [],
+      "self": 3,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_control",
+      "lineno": 1049,
+      "end": 1074,
+      "sz": 26,
+      "deco": [],
+      "self": 1,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_freeze",
+      "lineno": 1076,
+      "end": 1085,
+      "sz": 10,
+      "deco": [],
+      "self": 2,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_unfreeze",
+      "lineno": 1087,
+      "end": 1096,
+      "sz": 10,
+      "deco": [],
+      "self": 2,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_dev",
+      "lineno": 1098,
+      "end": 1115,
+      "sz": 18,
+      "deco": [],
+      "self": 9,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_clear",
+      "lineno": 1117,
+      "end": 1119,
+      "sz": 3,
+      "deco": [],
+      "self": 2,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_model",
+      "lineno": 1121,
+      "end": 1129,
+      "sz": 9,
+      "deco": [],
+      "self": 6,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_autonomy",
+      "lineno": 1131,
+      "end": 1149,
+      "sz": 19,
+      "deco": [],
+      "self": 3,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_priority",
+      "lineno": 1151,
+      "end": 1179,
+      "sz": 29,
+      "deco": [],
+      "self": 1,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_strategy",
+      "lineno": 1181,
+      "end": 1201,
+      "sz": 21,
+      "deco": [],
+      "self": 1,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_edge",
+      "lineno": 1203,
+      "end": 1219,
+      "sz": 17,
+      "deco": [],
+      "self": 1,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_ranking",
+      "lineno": 1221,
+      "end": 1237,
+      "sz": 17,
+      "deco": [],
+      "self": 1,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_trade",
+      "lineno": 1239,
+      "end": 1254,
+      "sz": 16,
+      "deco": [],
+      "self": 1,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_pipeline",
+      "lineno": 1256,
+      "end": 1296,
+      "sz": 41,
+      "deco": [],
+      "self": 1,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_risk",
+      "lineno": 1298,
+      "end": 1323,
+      "sz": 26,
+      "deco": [],
+      "self": 1,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_governance",
+      "lineno": 1325,
+      "end": 1351,
+      "sz": 27,
+      "deco": [],
+      "self": 1,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_posttrade",
+      "lineno": 1353,
+      "end": 1373,
+      "sz": 21,
+      "deco": [],
+      "self": 2,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_hypothesis",
+      "lineno": 1375,
+      "end": 1395,
+      "sz": 21,
+      "deco": [],
+      "self": 2,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_security",
+      "lineno": 1397,
+      "end": 1428,
+      "sz": 32,
+      "deco": [],
+      "self": 1,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_diagnostic",
+      "lineno": 1430,
+      "end": 1441,
+      "sz": 12,
+      "deco": [],
+      "self": 2,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_memory",
+      "lineno": 1443,
+      "end": 1456,
+      "sz": 14,
+      "deco": [],
+      "self": 3,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_learning",
+      "lineno": 1458,
+      "end": 1482,
+      "sz": 25,
+      "deco": [],
+      "self": 2,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_catalog",
+      "lineno": 1484,
+      "end": 1503,
+      "sz": 20,
+      "deco": [],
+      "self": 2,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_trading_analysis",
+      "lineno": 1506,
+      "end": 1576,
+      "sz": 71,
+      "deco": [],
+      "self": 1,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_context_edge",
+      "lineno": 1578,
+      "end": 1598,
+      "sz": 21,
+      "deco": [],
+      "self": 2,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_mode",
+      "lineno": 1602,
+      "end": 1617,
+      "sz": 16,
+      "deco": [],
+      "self": 3,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_approve",
+      "lineno": 1619,
+      "end": 1652,
+      "sz": 34,
+      "deco": [],
+      "self": 8,
+      "cls": 0,
+      "is_async": true
+    },
+    {
+      "name": "_cmd_reject",
+      "lineno": 1654,
+      "end": 1663,
+      "sz": 10,
+      "deco": [],
+      "self": 3,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_pending",
+      "lineno": 1665,
+      "end": 1683,
+      "sz": 19,
+      "deco": [],
+      "self": 2,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_cmd_schedule",
+      "lineno": 1685,
+      "end": 1754,
+      "sz": 70,
+      "deco": [],
+      "self": 12,
+      "cls": 0,
+      "is_async": false
+    }
+  ],
+  "should": [
+    {
+      "name": "_should_use_agent",
+      "lineno": 1809,
+      "end": 1886,
+      "sz": 78,
+      "deco": [],
+      "self": 12,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_should_use_compact_chat_prompt",
+      "lineno": 2242,
+      "end": 2266,
+      "sz": 25,
+      "deco": [
+        "classmethod"
+      ],
+      "self": 0,
+      "cls": 4,
+      "is_async": false
+    },
+    {
+      "name": "_should_use_analysis_frontier",
+      "lineno": 2269,
+      "end": 2315,
+      "sz": 47,
+      "deco": [
+        "classmethod"
+      ],
+      "self": 0,
+      "cls": 7,
+      "is_async": false
+    }
+  ],
+  "render_format": [
+    {
+      "name": "_render_agent_failure_reply",
+      "lineno": 2088,
+      "end": 2122,
+      "sz": 35,
+      "deco": [
+        "classmethod"
+      ],
+      "self": 0,
+      "cls": 3,
+      "is_async": false
+    },
+    {
+      "name": "_format_action_value",
+      "lineno": 4488,
+      "end": 4508,
+      "sz": 21,
+      "deco": [
+        "staticmethod"
+      ],
+      "self": 0,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_format_tool_result",
+      "lineno": 4871,
+      "end": 4915,
+      "sz": 45,
+      "deco": [
+        "classmethod"
+      ],
+      "self": 0,
+      "cls": 2,
+      "is_async": false
+    },
+    {
+      "name": "_render_operational_agent_summary",
+      "lineno": 4927,
+      "end": 5007,
+      "sz": 81,
+      "deco": [
+        "classmethod"
+      ],
+      "self": 0,
+      "cls": 1,
+      "is_async": false
+    }
+  ],
+  "extract": [
+    {
+      "name": "_extract_candidate_paths",
+      "lineno": 4052,
+      "end": 4077,
+      "sz": 26,
+      "deco": [
+        "staticmethod"
+      ],
+      "self": 0,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_extract_symbol_hint",
+      "lineno": 4080,
+      "end": 4096,
+      "sz": 17,
+      "deco": [
+        "staticmethod"
+      ],
+      "self": 0,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_build_grounded_file_excerpt",
+      "lineno": 4108,
+      "end": 4150,
+      "sz": 43,
+      "deco": [
+        "classmethod"
+      ],
+      "self": 0,
+      "cls": 1,
+      "is_async": false
+    },
+    {
+      "name": "_find_test_references",
+      "lineno": 4153,
+      "end": 4169,
+      "sz": 17,
+      "deco": [
+        "classmethod"
+      ],
+      "self": 0,
+      "cls": 0,
+      "is_async": false
+    }
+  ],
+  "truncate_budget": [
+    {
+      "name": "_truncate_to_budget",
+      "lineno": 1903,
+      "end": 1949,
+      "sz": 47,
+      "deco": [
+        "classmethod"
+      ],
+      "self": 0,
+      "cls": 2,
+      "is_async": false
+    },
+    {
+      "name": "_context_budget",
+      "lineno": 1951,
+      "end": 1990,
+      "sz": 40,
+      "deco": [],
+      "self": 0,
+      "cls": 0,
+      "is_async": false
+    }
+  ],
+  "sanitize_other": [
+    {
+      "name": "_prefers_no_tool_analysis",
+      "lineno": 1759,
+      "end": 1787,
+      "sz": 29,
+      "deco": [
+        "staticmethod"
+      ],
+      "self": 0,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_has_explicit_tool_target",
+      "lineno": 1790,
+      "end": 1807,
+      "sz": 18,
+      "deco": [
+        "staticmethod"
+      ],
+      "self": 0,
+      "cls": 0,
+      "is_async": false
+    },
+    {
+      "name": "_sanitize_memory_content",
+      "lineno": 5703,
+      "end": 5722,
+      "sz": 20,
+      "deco": [
+        "classmethod"
+      ],
+      "self": 0,
+      "cls": 0,
+      "is_async": false
+    }
+  ],
+  "SLASH_COMMANDS": {
+    "lineno": 166,
+    "end": 197,
+    "sz": 32
+  }
+}

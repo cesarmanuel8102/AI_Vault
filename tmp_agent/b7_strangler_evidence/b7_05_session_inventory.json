@@ -1,0 +1,2073 @@
+{
+  "session_py_path": "C:/AI_VAULT/tmp_agent/brain_v9/core/session.py",
+  "session_py_lines": 5811,
+  "cumulative_reduction": {
+    "pre_b7_02": 7637,
+    "post_b7_02": 6140,
+    "post_b7_03": 5925,
+    "post_b7_04": 5811,
+    "delta_b7_02": 1497,
+    "delta_b7_03": 215,
+    "delta_b7_04": 114,
+    "total_reduction_lines": 1826,
+    "total_reduction_pct": 23.91
+  },
+  "top_level_classes": [
+    {
+      "name": "BrainSession",
+      "lineno": 223,
+      "end_lineno": 5805,
+      "size": 5583
+    }
+  ],
+  "top_level_functions_count": 3,
+  "top_level_functions": [
+    {
+      "name": "__getattr__",
+      "lineno": 157,
+      "end_lineno": 160,
+      "size": 4,
+      "is_async": false
+    },
+    {
+      "name": "_normalize",
+      "lineno": 210,
+      "end_lineno": 220,
+      "size": 11,
+      "is_async": false
+    },
+    {
+      "name": "get_or_create_session",
+      "lineno": 5808,
+      "end_lineno": 5811,
+      "size": 4,
+      "is_async": false
+    }
+  ],
+  "top_level_constants_count": 12,
+  "top_level_constants": [
+    {
+      "name": "log",
+      "lineno": 90
+    },
+    {
+      "name": "_PROCESS_START_TIME",
+      "lineno": 122
+    },
+    {
+      "name": "_STATE_PATH",
+      "lineno": 125
+    },
+    {
+      "name": "_UI_PATH",
+      "lineno": 126
+    },
+    {
+      "name": "_UI_INDEX",
+      "lineno": 127
+    },
+    {
+      "name": "_UI_DASHBOARD",
+      "lineno": 128
+    },
+    {
+      "name": "_UI_EDIT_STATE_PATH",
+      "lineno": 129
+    },
+    {
+      "name": "_CHAT_METRICS_PATH",
+      "lineno": 130
+    },
+    {
+      "name": "_CHAT_SESSION_DEFAULTS_PATH",
+      "lineno": 131
+    },
+    {
+      "name": "_EPISODIC_MEMORY_PATH",
+      "lineno": 132
+    },
+    {
+      "name": "_CAPABILITY_GOVERNOR_STATUS_PATH",
+      "lineno": 133
+    },
+    {
+      "name": "SLASH_COMMANDS",
+      "lineno": 166
+    }
+  ],
+  "top_level_imports_count": 50,
+  "top_level_imports_sample": [
+    {
+      "kind": "import",
+      "name": "asyncio",
+      "asname": null,
+      "lineno": 23
+    },
+    {
+      "kind": "import",
+      "name": "json",
+      "asname": null,
+      "lineno": 24
+    },
+    {
+      "kind": "import",
+      "name": "logging",
+      "asname": null,
+      "lineno": 25
+    },
+    {
+      "kind": "import",
+      "name": "os",
+      "asname": null,
+      "lineno": 26
+    },
+    {
+      "kind": "import",
+      "name": "platform",
+      "asname": null,
+      "lineno": 27
+    },
+    {
+      "kind": "import",
+      "name": "re",
+      "asname": null,
+      "lineno": 28
+    },
+    {
+      "kind": "import",
+      "name": "shutil",
+      "asname": null,
+      "lineno": 29
+    },
+    {
+      "kind": "import",
+      "name": "subprocess",
+      "asname": null,
+      "lineno": 30
+    },
+    {
+      "kind": "import",
+      "name": "textwrap",
+      "asname": null,
+      "lineno": 31
+    },
+    {
+      "kind": "import",
+      "name": "urllib.request",
+      "asname": null,
+      "lineno": 32
+    },
+    {
+      "kind": "from",
+      "module": "datetime",
+      "name": "datetime",
+      "asname": null,
+      "level": 0,
+      "lineno": 33
+    },
+    {
+      "kind": "from",
+      "module": "pathlib",
+      "name": "Path",
+      "asname": null,
+      "level": 0,
+      "lineno": 34
+    },
+    {
+      "kind": "from",
+      "module": "typing",
+      "name": "Dict",
+      "asname": null,
+      "level": 0,
+      "lineno": 35
+    },
+    {
+      "kind": "from",
+      "module": "typing",
+      "name": "List",
+      "asname": null,
+      "level": 0,
+      "lineno": 35
+    },
+    {
+      "kind": "from",
+      "module": "typing",
+      "name": "Optional",
+      "asname": null,
+      "level": 0,
+      "lineno": 35
+    },
+    {
+      "kind": "from",
+      "module": "typing",
+      "name": "Tuple",
+      "asname": null,
+      "level": 0,
+      "lineno": 35
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.config",
+      "name": "SYSTEM_IDENTITY",
+      "asname": null,
+      "level": 0,
+      "lineno": 37
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.config",
+      "name": "BASE_PATH",
+      "asname": null,
+      "level": 0,
+      "lineno": 37
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.config",
+      "name": "SERVER_HOST",
+      "asname": null,
+      "level": 0,
+      "lineno": 37
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.config",
+      "name": "SERVER_PORT",
+      "asname": null,
+      "level": 0,
+      "lineno": 37
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.config",
+      "name": "BRAIN_CHAT_DEV_MODE",
+      "asname": null,
+      "level": 0,
+      "lineno": 37
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.llm",
+      "name": "LLMManager",
+      "asname": null,
+      "level": 0,
+      "lineno": 38
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core",
+      "name": "validator_metrics",
+      "asname": "_validator_metrics",
+      "level": 0,
+      "lineno": 39
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.memory",
+      "name": "MemoryManager",
+      "asname": null,
+      "level": 0,
+      "lineno": 40
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.session_memory_state",
+      "name": "build_session_memory",
+      "asname": null,
+      "level": 0,
+      "lineno": 41
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.session_memory_state",
+      "name": "get_session_memory_latest",
+      "asname": null,
+      "level": 0,
+      "lineno": 41
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.intent",
+      "name": "IntentDetector",
+      "asname": null,
+      "level": 0,
+      "lineno": 45
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.state_io",
+      "name": "read_json",
+      "asname": null,
+      "level": 0,
+      "lineno": 46
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.state_io",
+      "name": "write_json",
+      "asname": null,
+      "level": 0,
+      "lineno": 46
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.governed_action_kernel",
+      "name": "detect_action_intent",
+      "asname": null,
+      "level": 0,
+      "lineno": 47
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.governed_action_kernel",
+      "name": "evaluate_action_policy",
+      "asname": null,
+      "level": 0,
+      "lineno": 47
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.governed_action_kernel",
+      "name": "requires_governed_tool",
+      "asname": null,
+      "level": 0,
+      "lineno": 47
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.governed_action_kernel",
+      "name": "render_policy_block",
+      "asname": null,
+      "level": 0,
+      "lineno": 47
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.governed_action_kernel",
+      "name": "render_permission_request",
+      "asname": null,
+      "level": 0,
+      "lineno": 47
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.governed_action_kernel",
+      "name": "validate_no_false_execution_claim",
+      "asname": null,
+      "level": 0,
+      "lineno": 47
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.governed_action_kernel",
+      "name": "build_synthetic_message",
+      "asname": null,
+      "level": 0,
+      "lineno": 47
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.session_routing_constants",
+      "name": "AGENT_INTENTS",
+      "asname": null,
+      "level": 0,
+      "lineno": 108
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.session_routing_constants",
+      "name": "AGENT_KEYWORDS",
+      "asname": null,
+      "level": 0,
+      "lineno": 108
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.session_routing_constants",
+      "name": "_AGENT_PATTERNS",
+      "asname": null,
+      "level": 0,
+      "lineno": 108
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.session_routing_constants",
+      "name": "_CODE_ANALYSIS_PATH_RE",
+      "asname": null,
+      "level": 0,
+      "lineno": 108
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.session_routing_constants",
+      "name": "_LEAK_TAIL_RE",
+      "asname": null,
+      "level": 0,
+      "lineno": 108
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.session_routing_constants",
+      "name": "_CONTINUE_WORDS_RE",
+      "asname": null,
+      "level": 0,
+      "lineno": 108
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.session_routing_constants",
+      "name": "_CORRECTION_RE",
+      "asname": null,
+      "level": 0,
+      "lineno": 108
+    },
+    {
+      "kind": "import",
+      "name": "time",
+      "asname": "_r3_time",
+      "lineno": 120
+    },
+    {
+      "kind": "import",
+      "name": "threading",
+      "asname": "_threading",
+      "lineno": 121
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.session_chat_metrics",
+      "name": "ChatMetrics",
+      "asname": null,
+      "level": 0,
+      "lineno": 143
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.session_chat_metrics",
+      "name": "get_chat_metrics",
+      "asname": null,
+      "level": 0,
+      "lineno": 143
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core.session_chat_metrics",
+      "name": "_GLOBAL_CHAT_METRICS_LOCK",
+      "asname": null,
+      "level": 0,
+      "lineno": 143
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core",
+      "name": "session_chat_metrics",
+      "asname": "_session_chat_metrics",
+      "level": 0,
+      "lineno": 148
+    },
+    {
+      "kind": "from",
+      "module": "brain_v9.core",
+      "name": "session_query_predicates",
+      "asname": "_qp",
+      "level": 0,
+      "lineno": 154
+    }
+  ],
+  "brain_session_method_count": 174,
+  "brain_session_method_prefix_groups": {
+    "_cmd_": {
+      "count": 31,
+      "total_lines": 703,
+      "names": [
+        "_cmd_help",
+        "_cmd_status",
+        "_cmd_control",
+        "_cmd_freeze",
+        "_cmd_unfreeze",
+        "_cmd_dev",
+        "_cmd_clear",
+        "_cmd_model",
+        "_cmd_autonomy",
+        "_cmd_priority",
+        "_cmd_strategy",
+        "_cmd_edge",
+        "_cmd_ranking",
+        "_cmd_trade",
+        "_cmd_pipeline",
+        "_cmd_risk",
+        "_cmd_governance",
+        "_cmd_posttrade",
+        "_cmd_hypothesis",
+        "_cmd_security",
+        "_cmd_diagnostic",
+        "_cmd_memory",
+        "_cmd_learning",
+        "_cmd_catalog",
+        "_cmd_trading_analysis",
+        "_cmd_context_edge",
+        "_cmd_mode",
+        "_cmd_approve",
+        "_cmd_reject",
+        "_cmd_pending",
+        "_cmd_schedule"
+      ]
+    },
+    "_emit_log_": {
+      "count": 1,
+      "total_lines": 41,
+      "names": [
+        "_emit_chat_completed"
+      ]
+    },
+    "_extract_": {
+      "count": 2,
+      "total_lines": 43,
+      "names": [
+        "_extract_candidate_paths",
+        "_extract_symbol_hint"
+      ]
+    },
+    "_fmt_": {
+      "count": 17,
+      "total_lines": 295,
+      "names": [
+        "_fmt_check_port",
+        "_fmt_check_http_service",
+        "_fmt_check_all_services",
+        "_fmt_check_service_status",
+        "_fmt_get_live_autonomy_status",
+        "_fmt_run_diagnostic",
+        "_fmt_get_system_info",
+        "_fmt_run_command",
+        "_fmt_read_file",
+        "_fmt_list_directory",
+        "_fmt_search_files",
+        "_fmt_list_processes",
+        "_fmt_grep_codebase",
+        "_fmt_list_recent_brain_changes",
+        "_fmt_get_chat_metrics",
+        "_fmt_semantic_memory_search",
+        "_fmt_get_technical_introspection"
+      ]
+    },
+    "_format_": {
+      "count": 2,
+      "total_lines": 66,
+      "names": [
+        "_format_action_value",
+        "_format_tool_result"
+      ]
+    },
+    "_handle_": {
+      "count": 1,
+      "total_lines": 69,
+      "names": [
+        "_handle_command"
+      ]
+    },
+    "_other_": {
+      "count": 108,
+      "total_lines": 2930,
+      "names": [
+        "__init__",
+        "_persist_chat_dev_mode_default",
+        "chat",
+        "_utility_score",
+        "_utility_blockers",
+        "_prefers_no_tool_analysis",
+        "_has_explicit_tool_target",
+        "_truncate_message",
+        "_truncate_to_budget",
+        "_context_budget",
+        "_contains_raw_tool_markup",
+        "_looks_like_canned_failure",
+        "_is_benign_security_audit_query",
+        "_select_llm_chain",
+        "_llm_direct_fallback",
+        "_llm_agent_salvage",
+        "_maybe_emit_capability_decline",
+        "_is_agent_execution_failure",
+        "_agent_failure_notice",
+        "_tool01_get_risk_level",
+        "_tool01_has_permission",
+        "_tool01_request_permission",
+        "_tool01_approve_permission",
+        "_tool01_router",
+        "_tool01_has_permission_grant",
+        "_tool01_handle_permission_response",
+        "_tool01_extract_path",
+        "_tool01_policy_check_path",
+        "_is_safe_workspace_path",
+        "_tool01_extract_write_content",
+        "_tool01_write_evidence",
+        "_tool01_execute",
+        "_is_confirmation",
+        "_is_code_change_request",
+        "_select_agent_model_priority",
+        "_set_pending_continuation",
+        "_clear_pending_continuation",
+        "_maybe_resume_pending_continuation",
+        "_is_tool_confirmation_request_response",
+        "_maybe_fastpath",
+        "_is_dashboard_query",
+        "_is_greeting_query",
+        "_is_capabilities_query",
+        "_is_llm_status_query",
+        "_llm_status_fastpath",
+        "_is_codex_role_query",
+        "_is_codex_comparison_query",
+        "_codex_role_fastpath",
+        "_codex_comparison_fastpath",
+        "_is_recent_activity_query",
+        "_is_chat_interaction_review_query",
+        "_is_brain_diagnostic_analysis_query",
+        "_recent_activity_fastpath",
+        "_chat_interaction_review_fastpath",
+        "_is_grounded_code_analysis_query",
+        "_slice_lines",
+        "_build_grounded_file_excerpt",
+        "_find_test_references",
+        "_build_test_reference_excerpt",
+        "_maybe_grounded_code_analysis_fastpath",
+        "_is_chat_ui_background_change_query",
+        "_is_chat_ui_background_restore_query",
+        "_is_chat_send_button_move_query",
+        "_blocks_grounded_ui_edit_fastpath",
+        "_maybe_grounded_ui_edit_fastpath",
+        "_is_qc_live_query",
+        "_maybe_qc_live_fastpath",
+        "_is_brain_status_query",
+        "_is_deep_brain_analysis_query",
+        "_looks_like_deep_analysis",
+        "_is_deep_risk_analysis_query",
+        "_is_deep_edge_analysis_query",
+        "_is_deep_strategy_analysis_query",
+        "_is_deep_pipeline_analysis_query",
+        "_is_self_build_query",
+        "_is_self_build_resolution_query",
+        "_is_consciousness_query",
+        "_is_abstract_reasoning_query",
+        "_normalize_model_priority",
+        "_is_operational_agent_query",
+        "_summarize_action_output",
+        "_health_fastpath",
+        "_greeting_fastpath",
+        "_capabilities_fastpath",
+        "_policy_route_decision",
+        "_brain_status_fastpath",
+        "_deep_brain_analysis_fastpath",
+        "_deep_risk_analysis_fastpath",
+        "_deep_edge_analysis_fastpath",
+        "_deep_strategy_analysis_fastpath",
+        "_deep_pipeline_analysis_fastpath",
+        "_self_build_fastpath",
+        "_self_build_resolution_fastpath",
+        "_consciousness_fastpath",
+        "_dashboard_status_fastpath",
+        "_utility_status_fastpath",
+        "_python_version_fastpath",
+        "_disk_space_fastpath",
+        "_running_services_fastpath",
+        "_search_files_fastpath",
+        "_list_directory_fastpath",
+        "_current_time_fastpath",
+        "_system_reply",
+        "_maybe_persist_correction",
+        "_is_temporal_query",
+        "_maybe_dev_block",
+        "_get_curated_ingestion_response",
+        "close"
+      ]
+    },
+    "_render_": {
+      "count": 2,
+      "total_lines": 116,
+      "names": [
+        "_render_agent_failure_reply",
+        "_render_operational_agent_summary"
+      ]
+    },
+    "_route_": {
+      "count": 2,
+      "total_lines": 564,
+      "names": [
+        "_route_to_llm",
+        "_route_to_agent"
+      ]
+    },
+    "_sanitize_": {
+      "count": 3,
+      "total_lines": 102,
+      "names": [
+        "_sanitize_llm_chat_response",
+        "_sanitize_user_visible_response",
+        "_sanitize_memory_content"
+      ]
+    },
+    "_save_load_": {
+      "count": 2,
+      "total_lines": 14,
+      "names": [
+        "_load_chat_dev_mode_default",
+        "_save_turn"
+      ]
+    },
+    "_should_": {
+      "count": 3,
+      "total_lines": 150,
+      "names": [
+        "_should_use_agent",
+        "_should_use_compact_chat_prompt",
+        "_should_use_analysis_frontier"
+      ]
+    }
+  },
+  "top_30_methods_by_size": [
+    {
+      "name": "chat",
+      "lineno": 292,
+      "end_lineno": 935,
+      "size": 644,
+      "kind": "method",
+      "decorators": [],
+      "is_async": true,
+      "self_uses": 111,
+      "cls_uses": 0
+    },
+    {
+      "name": "_route_to_agent",
+      "lineno": 3049,
+      "end_lineno": 3496,
+      "size": 448,
+      "kind": "method",
+      "decorators": [],
+      "is_async": true,
+      "self_uses": 48,
+      "cls_uses": 0
+    },
+    {
+      "name": "_policy_route_decision",
+      "lineno": 5028,
+      "end_lineno": 5214,
+      "size": 187,
+      "kind": "method",
+      "decorators": [],
+      "is_async": false,
+      "self_uses": 12,
+      "cls_uses": 0
+    },
+    {
+      "name": "_tool01_execute",
+      "lineno": 2880,
+      "end_lineno": 3047,
+      "size": 168,
+      "kind": "method",
+      "decorators": [],
+      "is_async": true,
+      "self_uses": 18,
+      "cls_uses": 0
+    },
+    {
+      "name": "_maybe_fastpath",
+      "lineno": 3581,
+      "end_lineno": 3709,
+      "size": 129,
+      "kind": "method",
+      "decorators": [],
+      "is_async": false,
+      "self_uses": 62,
+      "cls_uses": 0
+    },
+    {
+      "name": "_recent_activity_fastpath",
+      "lineno": 3852,
+      "end_lineno": 3979,
+      "size": 128,
+      "kind": "method",
+      "decorators": [],
+      "is_async": false,
+      "self_uses": 5,
+      "cls_uses": 0
+    },
+    {
+      "name": "_route_to_llm",
+      "lineno": 2124,
+      "end_lineno": 2239,
+      "size": 116,
+      "kind": "method",
+      "decorators": [],
+      "is_async": true,
+      "self_uses": 8,
+      "cls_uses": 0
+    },
+    {
+      "name": "_maybe_grounded_ui_edit_fastpath",
+      "lineno": 4259,
+      "end_lineno": 4355,
+      "size": 97,
+      "kind": "method",
+      "decorators": [],
+      "is_async": true,
+      "self_uses": 10,
+      "cls_uses": 0
+    },
+    {
+      "name": "_render_operational_agent_summary",
+      "lineno": 4927,
+      "end_lineno": 5007,
+      "size": 81,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 1
+    },
+    {
+      "name": "_sanitize_llm_chat_response",
+      "lineno": 1993,
+      "end_lineno": 2072,
+      "size": 80,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_should_use_agent",
+      "lineno": 1809,
+      "end_lineno": 1886,
+      "size": 78,
+      "kind": "method",
+      "decorators": [],
+      "is_async": false,
+      "self_uses": 12,
+      "cls_uses": 0
+    },
+    {
+      "name": "_cmd_trading_analysis",
+      "lineno": 1506,
+      "end_lineno": 1576,
+      "size": 71,
+      "kind": "method",
+      "decorators": [],
+      "is_async": false,
+      "self_uses": 1,
+      "cls_uses": 0
+    },
+    {
+      "name": "_cmd_schedule",
+      "lineno": 1685,
+      "end_lineno": 1754,
+      "size": 70,
+      "kind": "method",
+      "decorators": [],
+      "is_async": false,
+      "self_uses": 12,
+      "cls_uses": 0
+    },
+    {
+      "name": "_handle_command",
+      "lineno": 949,
+      "end_lineno": 1017,
+      "size": 69,
+      "kind": "method",
+      "decorators": [],
+      "is_async": true,
+      "self_uses": 31,
+      "cls_uses": 0
+    },
+    {
+      "name": "_maybe_qc_live_fastpath",
+      "lineno": 4366,
+      "end_lineno": 4432,
+      "size": 67,
+      "kind": "method",
+      "decorators": [],
+      "is_async": true,
+      "self_uses": 5,
+      "cls_uses": 0
+    },
+    {
+      "name": "_chat_interaction_review_fastpath",
+      "lineno": 3981,
+      "end_lineno": 4044,
+      "size": 64,
+      "kind": "method",
+      "decorators": [],
+      "is_async": false,
+      "self_uses": 1,
+      "cls_uses": 0
+    },
+    {
+      "name": "_search_files_fastpath",
+      "lineno": 5550,
+      "end_lineno": 5610,
+      "size": 61,
+      "kind": "method",
+      "decorators": [],
+      "is_async": false,
+      "self_uses": 1,
+      "cls_uses": 0
+    },
+    {
+      "name": "_get_curated_ingestion_response",
+      "lineno": 5744,
+      "end_lineno": 5797,
+      "size": 54,
+      "kind": "method",
+      "decorators": [],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_llm_agent_salvage",
+      "lineno": 2364,
+      "end_lineno": 2412,
+      "size": 49,
+      "kind": "method",
+      "decorators": [],
+      "is_async": true,
+      "self_uses": 6,
+      "cls_uses": 0
+    },
+    {
+      "name": "_maybe_grounded_code_analysis_fastpath",
+      "lineno": 4180,
+      "end_lineno": 4228,
+      "size": 49,
+      "kind": "method",
+      "decorators": [],
+      "is_async": true,
+      "self_uses": 10,
+      "cls_uses": 0
+    },
+    {
+      "name": "_truncate_to_budget",
+      "lineno": 1903,
+      "end_lineno": 1949,
+      "size": 47,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 2
+    },
+    {
+      "name": "_should_use_analysis_frontier",
+      "lineno": 2269,
+      "end_lineno": 2315,
+      "size": 47,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 7
+    },
+    {
+      "name": "_llm_status_fastpath",
+      "lineno": 3727,
+      "end_lineno": 3772,
+      "size": 46,
+      "kind": "method",
+      "decorators": [],
+      "is_async": false,
+      "self_uses": 3,
+      "cls_uses": 0
+    },
+    {
+      "name": "_format_tool_result",
+      "lineno": 4871,
+      "end_lineno": 4915,
+      "size": 45,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 2
+    },
+    {
+      "name": "_running_services_fastpath",
+      "lineno": 5505,
+      "end_lineno": 5548,
+      "size": 44,
+      "kind": "method",
+      "decorators": [],
+      "is_async": false,
+      "self_uses": 1,
+      "cls_uses": 0
+    },
+    {
+      "name": "_maybe_persist_correction",
+      "lineno": 5647,
+      "end_lineno": 5690,
+      "size": 44,
+      "kind": "method",
+      "decorators": [],
+      "is_async": false,
+      "self_uses": 3,
+      "cls_uses": 0
+    },
+    {
+      "name": "_build_grounded_file_excerpt",
+      "lineno": 4108,
+      "end_lineno": 4150,
+      "size": 43,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 1
+    },
+    {
+      "name": "_cmd_pipeline",
+      "lineno": 1256,
+      "end_lineno": 1296,
+      "size": 41,
+      "kind": "method",
+      "decorators": [],
+      "is_async": false,
+      "self_uses": 1,
+      "cls_uses": 0
+    },
+    {
+      "name": "_emit_chat_completed",
+      "lineno": 2517,
+      "end_lineno": 2557,
+      "size": 41,
+      "kind": "method",
+      "decorators": [],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_context_budget",
+      "lineno": 1951,
+      "end_lineno": 1990,
+      "size": 40,
+      "kind": "method",
+      "decorators": [],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    }
+  ],
+  "pure_static_classmethod_candidates": [
+    {
+      "name": "_render_operational_agent_summary",
+      "lineno": 4927,
+      "end_lineno": 5007,
+      "size": 81,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 1
+    },
+    {
+      "name": "_sanitize_llm_chat_response",
+      "lineno": 1993,
+      "end_lineno": 2072,
+      "size": 80,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_truncate_to_budget",
+      "lineno": 1903,
+      "end_lineno": 1949,
+      "size": 47,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 2
+    },
+    {
+      "name": "_should_use_analysis_frontier",
+      "lineno": 2269,
+      "end_lineno": 2315,
+      "size": 47,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 7
+    },
+    {
+      "name": "_format_tool_result",
+      "lineno": 4871,
+      "end_lineno": 4915,
+      "size": 45,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 2
+    },
+    {
+      "name": "_build_grounded_file_excerpt",
+      "lineno": 4108,
+      "end_lineno": 4150,
+      "size": 43,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 1
+    },
+    {
+      "name": "_render_agent_failure_reply",
+      "lineno": 2088,
+      "end_lineno": 2122,
+      "size": 35,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 3
+    },
+    {
+      "name": "_prefers_no_tool_analysis",
+      "lineno": 1759,
+      "end_lineno": 1787,
+      "size": 29,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_fmt_get_technical_introspection",
+      "lineno": 4815,
+      "end_lineno": 4842,
+      "size": 28,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_fmt_check_port",
+      "lineno": 4515,
+      "end_lineno": 4541,
+      "size": 27,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_fmt_list_recent_brain_changes",
+      "lineno": 4736,
+      "end_lineno": 4762,
+      "size": 27,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_extract_candidate_paths",
+      "lineno": 4052,
+      "end_lineno": 4077,
+      "size": 26,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_should_use_compact_chat_prompt",
+      "lineno": 2242,
+      "end_lineno": 2266,
+      "size": 25,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 4
+    },
+    {
+      "name": "_fmt_get_chat_metrics",
+      "lineno": 4765,
+      "end_lineno": 4788,
+      "size": 24,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_fmt_semantic_memory_search",
+      "lineno": 4791,
+      "end_lineno": 4812,
+      "size": 22,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_format_action_value",
+      "lineno": 4488,
+      "end_lineno": 4508,
+      "size": 21,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_fmt_grep_codebase",
+      "lineno": 4714,
+      "end_lineno": 4733,
+      "size": 20,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_sanitize_memory_content",
+      "lineno": 5703,
+      "end_lineno": 5722,
+      "size": 20,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_has_explicit_tool_target",
+      "lineno": 1790,
+      "end_lineno": 1807,
+      "size": 18,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_fmt_get_live_autonomy_status",
+      "lineno": 4588,
+      "end_lineno": 4605,
+      "size": 18,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_extract_symbol_hint",
+      "lineno": 4080,
+      "end_lineno": 4096,
+      "size": 17,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_find_test_references",
+      "lineno": 4153,
+      "end_lineno": 4169,
+      "size": 17,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_blocks_grounded_ui_edit_fastpath",
+      "lineno": 4243,
+      "end_lineno": 4257,
+      "size": 15,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_fmt_list_directory",
+      "lineno": 4662,
+      "end_lineno": 4676,
+      "size": 15,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_fmt_search_files",
+      "lineno": 4679,
+      "end_lineno": 4693,
+      "size": 15,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_fmt_list_processes",
+      "lineno": 4696,
+      "end_lineno": 4710,
+      "size": 15,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_fmt_check_all_services",
+      "lineno": 4557,
+      "end_lineno": 4570,
+      "size": 14,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_fmt_get_system_info",
+      "lineno": 4623,
+      "end_lineno": 4636,
+      "size": 14,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_select_llm_chain",
+      "lineno": 2322,
+      "end_lineno": 2334,
+      "size": 13,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 2
+    },
+    {
+      "name": "_fmt_check_service_status",
+      "lineno": 4573,
+      "end_lineno": 4585,
+      "size": 13,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_fmt_run_diagnostic",
+      "lineno": 4608,
+      "end_lineno": 4620,
+      "size": 13,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_fmt_check_http_service",
+      "lineno": 4544,
+      "end_lineno": 4554,
+      "size": 11,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_fmt_run_command",
+      "lineno": 4639,
+      "end_lineno": 4649,
+      "size": 11,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_persist_chat_dev_mode_default",
+      "lineno": 281,
+      "end_lineno": 288,
+      "size": 8,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_fmt_read_file",
+      "lineno": 4652,
+      "end_lineno": 4659,
+      "size": 8,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_truncate_message",
+      "lineno": 1894,
+      "end_lineno": 1900,
+      "size": 7,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_slice_lines",
+      "lineno": 4099,
+      "end_lineno": 4105,
+      "size": 7,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_build_test_reference_excerpt",
+      "lineno": 4172,
+      "end_lineno": 4178,
+      "size": 7,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 1
+    },
+    {
+      "name": "_is_qc_live_query",
+      "lineno": 4358,
+      "end_lineno": 4364,
+      "size": 7,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_summarize_action_output",
+      "lineno": 4918,
+      "end_lineno": 4924,
+      "size": 7,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 1
+    },
+    {
+      "name": "_load_chat_dev_mode_default",
+      "lineno": 274,
+      "end_lineno": 278,
+      "size": 5,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_utility_blockers",
+      "lineno": 944,
+      "end_lineno": 947,
+      "size": 4,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_contains_raw_tool_markup",
+      "lineno": 2075,
+      "end_lineno": 2077,
+      "size": 3,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_normalize_model_priority",
+      "lineno": 4479,
+      "end_lineno": 4481,
+      "size": 3,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 1
+    },
+    {
+      "name": "_utility_score",
+      "lineno": 940,
+      "end_lineno": 941,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_looks_like_canned_failure",
+      "lineno": 2080,
+      "end_lineno": 2081,
+      "size": 2,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_sanitize_user_visible_response",
+      "lineno": 2084,
+      "end_lineno": 2085,
+      "size": 2,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 1
+    },
+    {
+      "name": "_is_benign_security_audit_query",
+      "lineno": 2318,
+      "end_lineno": 2319,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_confirmation",
+      "lineno": 3509,
+      "end_lineno": 3510,
+      "size": 2,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_code_change_request",
+      "lineno": 3513,
+      "end_lineno": 3514,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_tool_confirmation_request_response",
+      "lineno": 3578,
+      "end_lineno": 3579,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_dashboard_query",
+      "lineno": 3712,
+      "end_lineno": 3713,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_greeting_query",
+      "lineno": 3716,
+      "end_lineno": 3717,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_capabilities_query",
+      "lineno": 3720,
+      "end_lineno": 3721,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_llm_status_query",
+      "lineno": 3724,
+      "end_lineno": 3725,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_codex_role_query",
+      "lineno": 3775,
+      "end_lineno": 3776,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_codex_comparison_query",
+      "lineno": 3779,
+      "end_lineno": 3780,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_recent_activity_query",
+      "lineno": 3841,
+      "end_lineno": 3842,
+      "size": 2,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_chat_interaction_review_query",
+      "lineno": 3845,
+      "end_lineno": 3846,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_brain_diagnostic_analysis_query",
+      "lineno": 3849,
+      "end_lineno": 3850,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_grounded_code_analysis_query",
+      "lineno": 4048,
+      "end_lineno": 4049,
+      "size": 2,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_chat_ui_background_change_query",
+      "lineno": 4231,
+      "end_lineno": 4232,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_chat_ui_background_restore_query",
+      "lineno": 4235,
+      "end_lineno": 4236,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_chat_send_button_move_query",
+      "lineno": 4239,
+      "end_lineno": 4240,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_brain_status_query",
+      "lineno": 4435,
+      "end_lineno": 4436,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_deep_brain_analysis_query",
+      "lineno": 4439,
+      "end_lineno": 4440,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_looks_like_deep_analysis",
+      "lineno": 4443,
+      "end_lineno": 4444,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_deep_risk_analysis_query",
+      "lineno": 4447,
+      "end_lineno": 4448,
+      "size": 2,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_deep_edge_analysis_query",
+      "lineno": 4451,
+      "end_lineno": 4452,
+      "size": 2,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_deep_strategy_analysis_query",
+      "lineno": 4455,
+      "end_lineno": 4456,
+      "size": 2,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_deep_pipeline_analysis_query",
+      "lineno": 4459,
+      "end_lineno": 4460,
+      "size": 2,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_self_build_query",
+      "lineno": 4463,
+      "end_lineno": 4464,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_self_build_resolution_query",
+      "lineno": 4467,
+      "end_lineno": 4468,
+      "size": 2,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_consciousness_query",
+      "lineno": 4471,
+      "end_lineno": 4472,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_abstract_reasoning_query",
+      "lineno": 4475,
+      "end_lineno": 4476,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_operational_agent_query",
+      "lineno": 4484,
+      "end_lineno": 4485,
+      "size": 2,
+      "kind": "staticmethod",
+      "decorators": [
+        "staticmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    },
+    {
+      "name": "_is_temporal_query",
+      "lineno": 5725,
+      "end_lineno": 5726,
+      "size": 2,
+      "kind": "classmethod",
+      "decorators": [
+        "classmethod"
+      ],
+      "is_async": false,
+      "self_uses": 0,
+      "cls_uses": 0
+    }
+  ]
+}
