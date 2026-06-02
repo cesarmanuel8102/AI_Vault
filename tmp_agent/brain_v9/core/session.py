@@ -213,6 +213,16 @@ from brain_v9.core import session_tool_analysis_prefs as _tap  # noqa: E402,F401
 # ``BrainSession._normalize_model_priority`` keep resolving exactly as before.
 from brain_v9.core import session_llm_chain_select as _llm_chain_select  # noqa: E402,F401
 
+# B7-STRANGLER-11: Agent output rendering helpers extracted to
+# ``brain_v9.core.session_agent_render``.  ``BrainSession`` keeps three
+# ``@classmethod`` one-line shims that delegate here, preserving the
+# descriptor type so external bindings such as
+# ``BrainSession._render_agent_failure_reply`` /
+# ``BrainSession._summarize_action_output`` /
+# ``BrainSession._render_operational_agent_summary`` keep resolving
+# exactly as before.
+from brain_v9.core import session_agent_render as _agent_render  # noqa: E402,F401
+
 
 def __getattr__(name):  # PEP 562: proxy live _GLOBAL_CHAT_METRICS
     if name == "_GLOBAL_CHAT_METRICS":
@@ -1992,39 +2002,15 @@ class BrainSession:
 
     @classmethod
     def _render_agent_failure_reply(cls, status: str, raw_text: str = "") -> str:
-        status_map = {
-            "ghost_completion": (
-                "No pude completar esta peticion con herramientas en este turno. "
-                "El agente no llego a ejecutar ninguna herramienta."
-            ),
-            "max_steps_reached": (
-                "Agente agoto pasos sin cerrar la tarea. "
-                "Suele ocurrir cuando el modelo LLM no responde. "
-                "Verifica que Ollama este activo (ollama serve) o reformula en partes concretas."
-            ),
-            "llm_pool_unavailable": (
-                "LLM pool no disponible: todos los modelos del chain estan con circuit breaker abierto. "
-                "Inicia Ollama (ollama serve) para restaurar modelos locales."
-            ),
-            "retry_exhausted": (
-                "No pude completar esta peticion con herramientas en este turno. "
-                "El agente agoto sus reintentos antes de cerrarla."
-            ),
-            "timeout": (
-                "No pude completar esta peticion con herramientas en este turno. "
-                "La ejecucion del agente expiro por tiempo."
-            ),
-        }
-        prefix = status_map.get(
+        """B7-STRANGLER-11 shim — delegates to
+        :func:`brain_v9.core.session_agent_render.render_agent_failure_reply`.
+        """
+        return _agent_render.render_agent_failure_reply(
             status,
-            "No pude completar esta peticion con herramientas en este turno.",
-        )
-        cleaned = cls._sanitize_user_visible_response(raw_text)
-        if cleaned and not cls._contains_raw_tool_markup(cleaned) and not cls._looks_like_canned_failure(cleaned):
-            return f"{cleaned}\n\n{prefix}"
-        return (
-            f"{prefix} Reformula la peticion o pideme que verifique una fuente, archivo "
-            f"o servicio concreto."
+            raw_text,
+            sanitize_user_visible_response_func=cls._sanitize_user_visible_response,
+            contains_raw_tool_markup_func=cls._contains_raw_tool_markup,
+            looks_like_canned_failure_func=cls._looks_like_canned_failure,
         )
 
     async def _route_to_llm(
@@ -4430,12 +4416,13 @@ class BrainSession:
 
     @classmethod
     def _summarize_action_output(cls, action: Dict) -> str:
-        """Format a single agent action for display. Used by _render_operational_agent_summary."""
-        tool = action.get("tool", "tool")
-        ok = action.get("success", False)
-        out = action.get("output")
-        err = action.get("error")
-        return cls._format_tool_result(tool, ok, out, err)
+        """B7-STRANGLER-11 shim — delegates to
+        :func:`brain_v9.core.session_agent_render.summarize_action_output`.
+        """
+        return _agent_render.summarize_action_output(
+            action,
+            format_tool_result_func=cls._format_tool_result,
+        )
 
     @classmethod
     def _render_operational_agent_summary(
@@ -4446,79 +4433,19 @@ class BrainSession:
         steps: int,
         status: str,
     ) -> str:
-        """Render agent results as a clean, conversational response.
-
-        P-OP59: No debug metadata, no task echo, no action counts.
-        Just the information the user asked for, clearly formatted.
-
-        R7.1: Structured extractive fallback. Groups actions by tool,
-        counts success/failure, applies known formatters per tool, and
-        keeps the rendered output bounded so the user never sees a
-        raw source-code dump even when LLM synthesis collapses.
+        """B7-STRANGLER-11 shim — delegates to
+        :func:`brain_v9.core.session_agent_render.render_operational_agent_summary`.
         """
-        if not actions:
-            return (
-                "*[Resumen extractivo — sintesis LLM no disponible]*\n"
-                "No se ejecutaron herramientas. Reformula la pregunta o "
-                "intenta de nuevo en unos segundos."
-            )
-
-        successful = [a for a in actions if a.get("success")]
-        failed = [a for a in actions if not a.get("success")]
-
-        # Group successful actions by tool name for compact rendering
-        by_tool: Dict[str, List[Dict]] = {}
-        for a in successful:
-            by_tool.setdefault(a.get("tool", "tool"), []).append(a)
-
-        # R7.1: Header with high-signal counts (replaces R6.2 banner)
-        header = (
-            f"*[Resumen extractivo — sintesis LLM no disponible]* "
-            f"({len(successful)} ok, {len(failed)} fallos, {steps} pasos)"
-        )
-        lines = [header]
-
-        # One block per tool, one rendered output per tool (the first/best)
-        # to avoid repetition. Cap total tools shown at 6.
-        for tool_name, tool_actions in list(by_tool.items())[:6]:
-            count = len(tool_actions)
-            tag = f"{tool_name} (x{count})" if count > 1 else tool_name
-            # Use the formatter on the first successful action of the group
-            rendered = cls._summarize_action_output(tool_actions[0])
-            # Defensive cap: never let a single tool block exceed 400 chars
-            if len(rendered) > 400:
-                rendered = rendered[:380] + " [...truncado]"
-            lines.append(f"- {tag}: {rendered}")
-
-        if len(by_tool) > 6:
-            lines.append(f"- (+{len(by_tool) - 6} herramientas adicionales)")
-
-        # Failures grouped by tool with their error reason (truncated)
-        if failed:
-            fail_groups: Dict[str, str] = {}
-            for a in failed:
-                t = a.get("tool", "?")
-                err = str(a.get("error") or "sin detalle")[:120]
-                fail_groups.setdefault(t, err)
-            fail_summary = "; ".join(
-                f"{t} ({err})" for t, err in list(fail_groups.items())[:5]
-            )
-            lines.append(f"\nFallos: {fail_summary}")
-
-        # Footer: status + suggested next action
-        if status == "timeout":
-            lines.append("*(resultados parciales — timeout del agente)*")
-        elif status not in ("success", "completed", "ok"):
-            lines.append(f"*(estado: {status})*")
-
-        # R7.1: Suggest a retry path so the user has agency
-        lines.append(
-            "\n_Sugerencia: si necesitas un analisis sintetizado, reintenta "
-            "en unos segundos o reformula mas corto (los modelos LLM no "
-            "respondieron a tiempo)._"
+        return _agent_render.render_operational_agent_summary(
+            message,
+            actions,
+            steps=steps,
+            status=status,
+            summarize_action_output_func=cls._summarize_action_output,
+            format_tool_result_func=cls._format_tool_result,
+            format_action_value_func=cls._format_action_value,
         )
 
-        return "\n".join(lines)
 
     def _health_fastpath(self) -> Dict:
         text = (

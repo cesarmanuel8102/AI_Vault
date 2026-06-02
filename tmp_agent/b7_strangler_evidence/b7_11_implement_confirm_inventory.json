@@ -1,0 +1,35 @@
+{
+  "ticket": "B7-STRANGLER-11-IMPLEMENT",
+  "phase": "FASE A — CONFIRMAR INVENTARIO BASE",
+  "head": "f957531e",
+  "session_py_lines": 5325,
+  "session_py_exists": true,
+  "confirmed_symbols": [
+    {"name": "_render_agent_failure_reply", "line_start": 1994, "line_end": 2029, "size": 36, "kind": "classmethod", "self_uses": 0, "cls_uses": 0},
+    {"name": "_summarize_action_output", "line_start": 4432, "line_end": 4439, "size": 8, "kind": "classmethod", "self_uses": 0, "cls_uses": 0},
+    {"name": "_render_operational_agent_summary", "line_start": 4441, "line_end": 4522, "size": 82, "kind": "classmethod", "self_uses": 0, "cls_uses": 0}
+  ],
+  "dependencies_confirmed": {
+    "_render_agent_failure_reply_uses": ["cls._sanitize_user_visible_response", "cls._contains_raw_tool_markup", "cls._looks_like_canned_failure"],
+    "_summarize_action_output_uses": ["cls._format_tool_result"],
+    "_render_operational_agent_summary_uses": ["cls._summarize_action_output"]
+  },
+  "internal_consumers_confirmed": [
+    {"method": "_llm_agent_salvage", "line": 2251, "calls": ["_render_operational_agent_summary"]},
+    {"method": "_route_to_agent", "lines": [3299, 3311, 3316], "calls": ["_render_operational_agent_summary", "_render_agent_failure_reply"]}
+  ],
+  "external_consumers_confirmed": [
+    {"file": "tests/unit/test_brain_chat_hygiene.py", "line": 36, "note": "1 test for _render_agent_failure_reply"},
+    {"file": "tests/integration/test_agent_non_blocking_timeout.py", "line": 66, "note": "existence test"}
+  ],
+  "symbols_that_must_remain_in_session": [
+    "_format_tool_result",
+    "_format_action_value",
+    "_TOOL_FORMATTERS",
+    "_fmt_* shims",
+    "_sanitize_user_visible_response",
+    "_contains_raw_tool_markup",
+    "_looks_like_canned_failure"
+  ],
+  "verdict": "INVENTORY CONFIRMED — all symbols present with expected signatures and dependencies. Ready to proceed."
+}

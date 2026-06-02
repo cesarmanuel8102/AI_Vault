@@ -1,0 +1,24 @@
+{
+  "ticket": "B7-STRANGLER-11-IMPLEMENT",
+  "files_in_patch": [
+    "tmp_agent/brain_v9/core/session.py",
+    "tmp_agent/brain_v9/core/session_agent_render.py",
+    "tests/unit/test_b7_agent_render_import_compat.py",
+    "tests/unit/test_b7_agent_render_behavior_smoke.py",
+    "tests/unit/test_b7_agent_render_no_session_dependency.py"
+  ],
+  "tracked_files": [
+    "tmp_agent/brain_v9/core/session.py"
+  ],
+  "untracked_files": [
+    "tmp_agent/brain_v9/core/session_agent_render.py",
+    "tests/unit/test_b7_agent_render_import_compat.py",
+    "tests/unit/test_b7_agent_render_behavior_smoke.py",
+    "tests/unit/test_b7_agent_render_no_session_dependency.py"
+  ],
+  "patch_path": "C:\\AI_VAULT\\tmp_agent\\b7_strangler_evidence\\b7_11_agent_render_extraction.patch",
+  "patch_bytes": 30528,
+  "patch_lines": 717,
+  "patch_sha256": "d1a85af389983c2fde7f2074f24acf92a93b5a58368b4b5f3359f6fe6c32de4d",
+  "git_add_n_used": false
+}

@@ -1,0 +1,41 @@
+{
+  "ticket": "B7-STRANGLER-11-IMPLEMENT",
+  "head": "f957531e",
+  "session_py_lines_before": 5325,
+  "session_py_lines_after": 5252,
+  "new_module": "tmp_agent/brain_v9/core/session_agent_render.py",
+  "new_module_lines": 154,
+  "helpers_extracted_count": 3,
+  "symbols_extracted": [
+    "render_agent_failure_reply",
+    "summarize_action_output",
+    "render_operational_agent_summary"
+  ],
+  "shim_cleanliness_ast_audit": "PASS",
+  "patch_reverse_apply_check": "PASS",
+  "patch_path": "tmp_agent/b7_strangler_evidence/b7_11_agent_render_extraction.patch",
+  "patch_size_bytes": 30528,
+  "validations_passed": [
+    "phase1_local_validation",
+    "b7_carryover_27_files_329_passed",
+    "agent_render_new_tests_34_passed",
+    "import_smoke",
+    "shim_cleanliness_ast_audit",
+    "py_compile_session_py",
+    "py_compile_new_module",
+    "patch_reverse_apply_check"
+  ],
+  "validations_failed": [],
+  "consumer_tests_brain_chat_hygiene": "BASELINE_EQUIVALENT (40 pre-existing failures)",
+  "consumer_tests_agent_non_blocking_timeout": "PASS (7 passed)",
+  "protected_paths_touched": false,
+  "routing_core_touched": false,
+  "fastpaths_touched": false,
+  "tool01_touched": false,
+  "routing_guards_touched": false,
+  "already_extracted_modules_touched": false,
+  "commit_created": false,
+  "push_done": false,
+  "blockers": [],
+  "next_recommended_action": "Commit with message 'refactor(b7): extract agent rendering helpers' and push to origin."
+}

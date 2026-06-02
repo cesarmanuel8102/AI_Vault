@@ -1,0 +1,17 @@
+{
+  "ticket": "B7-STRANGLER-11-IMPLEMENT",
+  "phase": "FASE 0 — PREFLIGHT",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "f957531e",
+  "origin_head": "f957531e",
+  "local_equals_origin": true,
+  "expected_head": "f957531e",
+  "head_matches_expected": true,
+  "no_staged_files": true,
+  "dirty_files_all_in_approved_ignore": true,
+  "last_commit_subject": "refactor(b7): extract LLM chain selection heuristics",
+  "session_py_path": "tmp_agent/brain_v9/core/session.py",
+  "session_py_lines_expected": 5325,
+  "new_module_path": "tmp_agent/brain_v9/core/session_agent_render.py",
+  "selected_candidate": "C1 — Agent rendering helpers"
+}
