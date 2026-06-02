@@ -178,6 +178,17 @@ from brain_v9.core import session_fmt_helpers as _fmt_helpers  # noqa: E402,F401
 # ``tests/unit/test_grounded_code_fastpath.py``) keep resolving.
 from brain_v9.core import session_grounded_excerpt as _gex  # noqa: E402,F401
 
+# B7-STRANGLER-08: Token-aware truncation / context budget helpers
+# (``_MAX_MSG_CHARS``, ``_truncate_message``, ``_truncate_to_budget``) extracted
+# to ``brain_v9.core.session_context_budget``.  ``BrainSession`` keeps a class
+# attribute and two one-line shims that delegate here, preserving the
+# descriptor type (``@staticmethod`` vs ``@classmethod``) so external bindings
+# such as ``BrainSession._truncate_message`` /
+# ``BrainSession._truncate_to_budget`` (used by
+# ``tmp_agent/tests/core/test_session.py::TestTruncateMessage`` and
+# ``::TestTruncateToBudget``) keep resolving exactly as before.
+from brain_v9.core import session_context_budget as _cb  # noqa: E402,F401
+
 
 def __getattr__(name):  # PEP 562: proxy live _GLOBAL_CHAT_METRICS
     if name == "_GLOBAL_CHAT_METRICS":
@@ -1911,18 +1922,19 @@ class BrainSession:
         return False
 
     # ── Token-Aware Context Truncation ──────────────────────────────────────
+    # B7-STRANGLER-08: extracted to brain_v9.core.session_context_budget.
+    # BrainSession keeps a class-attribute re-bind plus two one-line shims
+    # that delegate to the standalone module functions, preserving the
+    # descriptor type so tests calling ``BrainSession._truncate_message`` /
+    # ``BrainSession._truncate_to_budget`` directly keep working.
 
     # Maximum characters per single message before tail-truncation
-    _MAX_MSG_CHARS = 6000   # ~2000 tokens at 3.0 chars/token
+    _MAX_MSG_CHARS = _cb.MAX_MSG_CHARS
 
     @staticmethod
     def _truncate_message(msg: Dict, max_chars: int) -> Dict:
         """Tail-truncate a single message if it exceeds *max_chars*."""
-        content = msg.get("content", "")
-        if len(content) <= max_chars:
-            return msg
-        truncated = content[:max_chars] + "\n... [truncado por longitud]"
-        return {**msg, "content": truncated}
+        return _cb.truncate_message(msg, max_chars)
 
     @classmethod
     def _truncate_to_budget(
@@ -1943,35 +1955,12 @@ class BrainSession:
         The system message (if any) is NOT expected here — callers should
         pass only user/assistant history.
         """
-        if max_msg_chars <= 0:
-            max_msg_chars = cls._MAX_MSG_CHARS
-
-        # First pass: tail-truncate any individual oversized messages
-        trimmed: List[Dict] = [
-            cls._truncate_message(m, max_msg_chars) for m in history
-        ]
-
-        # Compute tokens for each message (4 overhead + content estimate)
-        costs = [
-            4 + LLMManager.estimate_tokens(m.get("content", ""))
-            for m in trimmed
-        ]
-
-        # Drop oldest messages until we fit in budget
-        total = sum(costs)
-        start = 0
-        while total > budget_tokens and start < len(costs):
-            total -= costs[start]
-            start += 1
-
-        result = trimmed[start:]
-        if start > 0:
-            log.info(
-                "Context truncation: dropped %d oldest messages "
-                "(budget=%d tokens, kept=%d msgs)",
-                start, budget_tokens, len(result),
-            )
-        return result
+        return _cb.truncate_to_budget(
+            history,
+            budget_tokens=budget_tokens,
+            max_msg_chars=max_msg_chars,
+            max_msg_chars_default=cls._MAX_MSG_CHARS,
+        )
 
     def _context_budget(self, system: str, user_message: str, chain: str) -> int:
         """

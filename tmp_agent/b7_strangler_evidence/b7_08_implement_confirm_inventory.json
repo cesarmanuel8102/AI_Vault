@@ -1,0 +1,64 @@
+{
+  "ticket": "B7-STRANGLER-08-IMPLEMENT",
+  "phase": "A_confirm_inventory",
+  "generated_utc": "2026-06-02T16:11:00Z",
+  "session_py_path": "tmp_agent/brain_v9/core/session.py",
+  "session_py_exists": true,
+  "session_py_lines": 5396,
+  "lines_match_expected_5396": true,
+  "symbols": {
+    "_MAX_MSG_CHARS": {
+      "exists": true,
+      "kind": "class_attr",
+      "line": 1916,
+      "value": 6000
+    },
+    "_truncate_message": {
+      "exists": true,
+      "lines": "1919-1925",
+      "decorators": ["staticmethod"],
+      "uses_self_or_cls": false
+    },
+    "_truncate_to_budget": {
+      "exists": true,
+      "lines": "1928-1974",
+      "decorators": ["classmethod"],
+      "uses_self": false,
+      "uses_cls_for": ["cls._MAX_MSG_CHARS", "cls._truncate_message"]
+    },
+    "_context_budget": {
+      "exists": true,
+      "lines": "1976-2015",
+      "decorators": [],
+      "stays_in_session_py": true
+    }
+  },
+  "internal_consumers": {
+    "_route_to_llm_call_at_line": 2170,
+    "_route_to_agent_call_at_line": 3256,
+    "calls_via_self": true
+  },
+  "external_consumers": {
+    "tmp_agent/tests/core/test_session.py": {
+      "TestTruncateMessage_lines": "1164-1188",
+      "TestTruncateMessage_calls": "BrainSession._truncate_message(...)",
+      "TestTruncateToBudget_lines": "1191-1264",
+      "TestTruncateToBudget_calls": "BrainSession._truncate_to_budget(...)"
+    }
+  },
+  "session_py_imports_relevant": {
+    "logging_imported": "L25",
+    "LLMManager_imported": "from brain_v9.core.llm import LLMManager (L38)",
+    "log_binding_present": true
+  },
+  "extracted_module_imports_pattern": [
+    "L108: session_routing_constants",
+    "L143: session_chat_metrics (re-export)",
+    "L148: session_chat_metrics (alias)",
+    "L154: session_query_predicates as _qp",
+    "L160: session_response_hygiene",
+    "L169: session_fmt_helpers as _fmt_helpers",
+    "L179: session_grounded_excerpt as _gex"
+  ],
+  "ready_for_phase_B": true
+}

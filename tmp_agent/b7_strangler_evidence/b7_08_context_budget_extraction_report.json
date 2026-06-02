@@ -1,0 +1,149 @@
+{
+  "ticket": "B7-STRANGLER-08-IMPLEMENT",
+  "phase": "extraction_report",
+  "generated_utc": "2026-06-02T16:14:00Z",
+  "head_base": "ef7b3770",
+  "branch": "codex/own-capital-sustainable-return",
+  "session_py_path": "tmp_agent/brain_v9/core/session.py",
+  "session_py_lines_before": 5396,
+  "session_py_lines_after": 5385,
+  "new_module_path": "tmp_agent/brain_v9/core/session_context_budget.py",
+  "new_module_lines": 133,
+  "session_py_delta": -11,
+  "net_loc_change_total": 122,
+  "helpers_extracted_count": 3,
+
+  "symbols_moved_to_new_module": [
+    {
+      "src_name": "_MAX_MSG_CHARS",
+      "src_kind": "class_attr (BrainSession)",
+      "src_line_before": 1916,
+      "dst_name": "MAX_MSG_CHARS",
+      "dst_kind": "module-level int constant",
+      "value": 6000
+    },
+    {
+      "src_name": "_truncate_message",
+      "src_kind": "@staticmethod (BrainSession)",
+      "src_lines_before": "1919-1925",
+      "dst_name": "truncate_message",
+      "dst_kind": "module-level function",
+      "signature": "(msg: Dict, max_chars: int) -> Dict"
+    },
+    {
+      "src_name": "_truncate_to_budget",
+      "src_kind": "@classmethod (BrainSession)",
+      "src_lines_before": "1928-1974",
+      "dst_name": "truncate_to_budget",
+      "dst_kind": "module-level function",
+      "signature": "(history: List[Dict], *, budget_tokens: int, max_msg_chars: int = 0, max_msg_chars_default: int = MAX_MSG_CHARS) -> List[Dict]"
+    }
+  ],
+
+  "shim_form_used": {
+    "class_attr_rebind": "BrainSession._MAX_MSG_CHARS = _cb.MAX_MSG_CHARS",
+    "staticmethod_wrapper_count": 1,
+    "classmethod_wrapper_count": 1,
+    "import_added": "from brain_v9.core import session_context_budget as _cb",
+    "descriptor_types_preserved": true
+  },
+
+  "symbols_explicitly_not_moved": [
+    "_context_budget (uses self.config; stays in BrainSession)",
+    "_route_to_llm (consumer; unchanged)",
+    "_route_to_agent (consumer; unchanged)",
+    "LLMManager (lives in brain_v9.core.llm; imported by new module)",
+    "log (re-defined as logger('session_context_budget') inside new module)"
+  ],
+
+  "internal_consumers_preserved": {
+    "_route_to_llm": {
+      "line": 2170,
+      "call": "self._truncate_to_budget(history_msgs, budget_tokens=budget)",
+      "still_resolves": true
+    },
+    "_route_to_agent": {
+      "line": 3256,
+      "call": "self._truncate_to_budget(...)",
+      "still_resolves": true
+    },
+    "_context_budget": {
+      "lines": "1976-2015",
+      "modified": false
+    }
+  },
+
+  "external_consumers_preserved": {
+    "tmp_agent/tests/core/test_session.py::TestTruncateMessage": {
+      "tests": 4,
+      "calls": "BrainSession._truncate_message(msg, max_chars)",
+      "result": "PASS (4/4)"
+    },
+    "tmp_agent/tests/core/test_session.py::TestTruncateToBudget": {
+      "tests": 8,
+      "calls": "BrainSession._truncate_to_budget(history, budget_tokens=..., [max_msg_chars=...])",
+      "result": "PASS (8/8)"
+    }
+  },
+
+  "tests_created": [
+    {
+      "path": "tests/unit/test_b7_context_budget_import_compat.py",
+      "lines": 148,
+      "test_count": 16
+    },
+    {
+      "path": "tests/unit/test_b7_context_budget_behavior_smoke.py",
+      "lines": 175,
+      "test_count": 15
+    },
+    {
+      "path": "tests/unit/test_b7_context_budget_no_session_dependency.py",
+      "lines": 159,
+      "test_count": 8
+    }
+  ],
+  "tests_created_total": 39,
+
+  "validations_summary": {
+    "py_compile_session": "PASS",
+    "py_compile_new_module": "PASS",
+    "phase1_powershell": "ALL PASS",
+    "phase1_pytest": "5/5 PASS",
+    "b7_carryover_18_files": "155/155 PASS",
+    "b7_08_new_tests": "39/39 PASS",
+    "existing_truncation_tests": "12/12 PASS (TestTruncateMessage 4 + TestTruncateToBudget 8)",
+    "import_smoke": "PASS (B7_08_CONTEXT_BUDGET_IMPORT_OK 6000 True True True True)",
+    "consumer_tests_main_worktree": "48 failed, 112 passed",
+    "consumer_tests_baseline_ef7b3770": "48 failed, 112 passed",
+    "consumer_tests_failure_set_diff": "IDENTICAL (FAILURE_SETS_IDENTICAL via diff)",
+    "baseline_comparison_used": true,
+    "baseline_worktree": "C:/AI_VAULT_b7_08_baseline (created and removed)",
+    "consumer_failures_pre_existing": true,
+    "b7_08_introduced_failures": 0
+  },
+
+  "protected_paths_touched": false,
+  "already_extracted_modules_touched": false,
+  "tool01_touched": false,
+  "main_py_touched": false,
+  "config_py_touched": false,
+  "execution_gate_touched": false,
+  "api_security_touched": false,
+  "ui_touched": false,
+  "memory_semantic_touched": false,
+  "strategies_touched": false,
+  "ledger_touched": false,
+  "roadmap_touched": false,
+
+  "commit_created": false,
+  "push_done": false,
+  "git_add_N_used": true,
+  "git_add_N_files": [
+    "tmp_agent/brain_v9/core/session_context_budget.py",
+    "tests/unit/test_b7_context_budget_import_compat.py",
+    "tests/unit/test_b7_context_budget_behavior_smoke.py",
+    "tests/unit/test_b7_context_budget_no_session_dependency.py"
+  ],
+  "git_add_N_rationale": "Required for `git diff` to include untracked files in the patch artifact. `git add -N` only marks intent-to-add; no objects are staged for commit (`git diff --cached --name-status` is empty)."
+}

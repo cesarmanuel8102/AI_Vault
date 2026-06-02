@@ -1,0 +1,86 @@
+{
+  "ticket": "B7-STRANGLER-08-IMPLEMENT",
+  "phase": "validation_report",
+  "generated_utc": "2026-06-02T16:14:00Z",
+  "head_base": "ef7b3770",
+  "branch": "codex/own-capital-sustainable-return",
+
+  "py_compile": {
+    "session_py": "PASS",
+    "session_context_budget_py": "PASS"
+  },
+
+  "phase1_powershell": {
+    "command": "powershell -ExecutionPolicy Bypass -File tmp_agent/brain_v9/ops/phase1_local_validation.ps1",
+    "result": "PHASE1_LOCAL_VALIDATION: ALL PASS"
+  },
+
+  "phase1_pytest": {
+    "command": "pytest tests/unit/test_phase1_import_baseline.py tests/unit/test_phase1_security_defaults.py -q",
+    "passed": 5,
+    "failed": 0,
+    "result": "PASS"
+  },
+
+  "b7_carryover_suite": {
+    "files": 18,
+    "passed": 155,
+    "failed": 0,
+    "duration_seconds": 1.75,
+    "result": "PASS"
+  },
+
+  "b7_08_new_tests": {
+    "files": 3,
+    "passed": 39,
+    "failed": 0,
+    "duration_seconds": 0.96,
+    "result": "PASS",
+    "breakdown": {
+      "test_b7_context_budget_import_compat.py": 16,
+      "test_b7_context_budget_behavior_smoke.py": 15,
+      "test_b7_context_budget_no_session_dependency.py": 8
+    }
+  },
+
+  "existing_truncation_tests": {
+    "command": "pytest tmp_agent/tests/core/test_session.py::TestTruncateMessage tmp_agent/tests/core/test_session.py::TestTruncateToBudget -v",
+    "passed": 12,
+    "failed": 0,
+    "result": "PASS"
+  },
+
+  "import_smoke": {
+    "stdout": "B7_08_CONTEXT_BUDGET_IMPORT_OK 6000 True True True True",
+    "result": "PASS"
+  },
+
+  "consumer_tests_baseline_comparison": {
+    "command": "pytest tmp_agent/tests/core/test_session.py tests/unit/test_b7_routing_heuristics_characterization.py tests/unit/test_brain_chat_hygiene.py -q",
+    "main_worktree_result": "48 failed, 112 passed (13.19s)",
+    "baseline_worktree": "C:/AI_VAULT_b7_08_baseline (created at ef7b3770, removed after comparison)",
+    "baseline_worktree_result": "48 failed, 112 passed (13.88s)",
+    "diff_failure_sets": "FAILURE_SETS_IDENTICAL",
+    "conclusion": "All 48 failures are PRE-EXISTING at ef7b3770 baseline; B7-08 introduced 0 new failures.",
+    "no_reset_or_checkout_in_main": true,
+    "baseline_method": "git worktree add (separate filesystem path)"
+  },
+
+  "overall_status": "PASS",
+
+  "git_state_after_implement": {
+    "session_py_modified": true,
+    "session_py_lines_before": 5396,
+    "session_py_lines_after": 5385,
+    "new_files_intent_to_add": [
+      "tmp_agent/brain_v9/core/session_context_budget.py",
+      "tests/unit/test_b7_context_budget_import_compat.py",
+      "tests/unit/test_b7_context_budget_behavior_smoke.py",
+      "tests/unit/test_b7_context_budget_no_session_dependency.py"
+    ],
+    "git_diff_cached_empty": true,
+    "commit_created": false,
+    "push_done": false,
+    "protected_paths_touched": false
+  }
+}
