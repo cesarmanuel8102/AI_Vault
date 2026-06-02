@@ -1,0 +1,24 @@
+{
+  "task": "B7-STRANGLER-05-IMPLEMENT patch manifest",
+  "patch_path": "tmp_agent/b7_strangler_evidence/b7_05_response_hygiene_extraction.patch",
+  "patch_size_bytes": 19225,
+  "patch_files_count": 5,
+  "patch_files": [
+    "tests/unit/test_b7_response_hygiene_behavior_smoke.py",
+    "tests/unit/test_b7_response_hygiene_import_compat.py",
+    "tests/unit/test_b7_response_hygiene_no_session_dependency.py",
+    "tmp_agent/brain_v9/core/session.py",
+    "tmp_agent/brain_v9/core/session_response_hygiene.py"
+  ],
+  "session_py_diff_stat": "+13 -81 (net -68)",
+  "patch_generation_method": [
+    "git add -N <new files>  # intent-to-add only, no actual staging of contents",
+    "git diff -- <5 paths> > extraction.patch",
+    "git reset HEAD -- <new files>  # path-scoped removal of intent-to-add markers"
+  ],
+  "destructive_ops_used": false,
+  "git_add_dash_A_or_dot_used": false,
+  "commit_created": false,
+  "push_done": false,
+  "applies_cleanly_to_HEAD": "4bb1893b0db9636af64435734f9307d851564bdb"
+}

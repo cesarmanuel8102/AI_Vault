@@ -1,0 +1,66 @@
+{
+  "task": "B7-STRANGLER-05-IMPLEMENT validation report",
+  "py_compile": {
+    "session.py": "OK",
+    "session_response_hygiene.py": "OK"
+  },
+  "identity_check": {
+    "BrainSession._sanitize_llm_chat_response is session_response_hygiene.sanitize_llm_chat_response": true,
+    "descriptor_type": "staticmethod"
+  },
+  "phase1_local_validation_ps1": "ALL PASS",
+  "test_phase1_import_baseline": {"passed": 4, "failed": 0},
+  "test_phase1_security_defaults": {"covered_via_phase1_script": true},
+  "phase1_combined_pytest": {"passed": 5, "failed": 0},
+  "b7_carryover_minus_b7_05": {
+    "selector": "-k b7_ (incl. b7-02 chat metrics, b7-03 query predicates, b7-04 routing constants, b7-05 response hygiene)",
+    "passed_total": 97,
+    "failed_total": 0,
+    "b7_response_hygiene_subset": {"passed": 21, "failed": 0}
+  },
+  "consumer_hygiene_after_edit": {
+    "selector": "tests/unit/test_brain_chat_hygiene.py tests/unit/test_agent_ghost_completion_hardening.py tests/unit/test_real_verification_tool_trace_required.py",
+    "passed": 68,
+    "failed": 4,
+    "failures": [
+      "tests/unit/test_brain_chat_hygiene.py::test_execution_gate_filters_pending_by_session",
+      "tests/unit/test_brain_chat_hygiene.py::test_routing_respects_no_tool_analysis_preference[no uses tools, revisa el archivo tmp_agent/brain_v9/core/session.py-True]",
+      "tests/unit/test_brain_chat_hygiene.py::test_routing_respects_no_tool_analysis_preference[verifica servicios activos del sistema-True]",
+      "tests/unit/test_brain_chat_hygiene.py::test_routing_respects_no_tool_analysis_preference[no uses tools, pero dime qué hay en /tmp/logs-True]"
+    ]
+  },
+  "consumer_hygiene_baseline_4bb1893b": {
+    "passed": 68,
+    "failed": 4,
+    "failures": [
+      "tests/unit/test_brain_chat_hygiene.py::test_execution_gate_filters_pending_by_session",
+      "tests/unit/test_brain_chat_hygiene.py::test_routing_respects_no_tool_analysis_preference[no uses tools, revisa el archivo tmp_agent/brain_v9/core/session.py-True]",
+      "tests/unit/test_brain_chat_hygiene.py::test_routing_respects_no_tool_analysis_preference[verifica servicios activos del sistema-True]",
+      "tests/unit/test_brain_chat_hygiene.py::test_routing_respects_no_tool_analysis_preference[no uses tools, pero dime qué hay en /tmp/logs-True]"
+    ]
+  },
+  "consumer_hygiene_new_failures": 0,
+  "tmp_agent_tests_core_test_session_after_edit": {
+    "passed": 56,
+    "failed": 42
+  },
+  "tmp_agent_tests_core_test_session_baseline_4bb1893b": {
+    "passed": 56,
+    "failed": 42
+  },
+  "tmp_agent_tests_core_test_session_new_failures": 0,
+  "baseline_comparison_method": {
+    "tool": "git worktree add ../AI_VAULT_b7_05_baseline 4bb1893b",
+    "cleanup": "git worktree remove --force (no destructive ops on main worktree)",
+    "main_working_tree_modifications": "untouched during baseline run"
+  },
+  "summary": {
+    "all_phase1_pass": true,
+    "all_b7_pass": true,
+    "zero_new_failures_on_consumer_tests": true,
+    "import_compatibility_ok": true,
+    "protected_paths_touched": false,
+    "commit_created": false,
+    "push_done": false
+  }
+}

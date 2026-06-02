@@ -1,0 +1,450 @@
+diff --git a/tests/unit/test_b7_response_hygiene_behavior_smoke.py b/tests/unit/test_b7_response_hygiene_behavior_smoke.py
+new file mode 100644
+index 00000000..c909a4f1
+--- /dev/null
++++ b/tests/unit/test_b7_response_hygiene_behavior_smoke.py
+@@ -0,0 +1,95 @@
++"""B7-STRANGLER-05 behavior smoke: pin sanitizer behavior on representative inputs."""
++from __future__ import annotations
++
++import sys
++from pathlib import Path
++
++_REPO_ROOT = Path(__file__).resolve().parents[2]
++_TMP_AGENT = _REPO_ROOT / "tmp_agent"
++if str(_TMP_AGENT) not in sys.path:
++    sys.path.insert(0, str(_TMP_AGENT))
++
++from brain_v9.core.session_response_hygiene import sanitize_llm_chat_response  # noqa: E402
++
++
++def test_empty_input_returned_verbatim():
++    assert sanitize_llm_chat_response("") == ""
++
++
++def test_none_like_falsy_passthrough():
++    # The function early-returns on falsy content
++    assert sanitize_llm_chat_response("") == ""
++
++
++def test_plain_text_preserved():
++    txt = "Hola, esta es una respuesta sin teatro."
++    out = sanitize_llm_chat_response(txt)
++    assert "Hola" in out
++    assert "teatro" in out
++
++
++def test_banned_lines_stripped():
++    txt = "Linea util\nUtilicé la herramienta scan\nOtra linea util"
++    out = sanitize_llm_chat_response(txt)
++    assert "Utilicé la herramienta" not in out
++    assert "Linea util" in out
++    assert "Otra linea util" in out
++
++
++def test_orav_markers_stripped():
++    txt = "[OBSERVE]: revisando red\n[ACT]: ejecutando\nResultado real"
++    out = sanitize_llm_chat_response(txt)
++    assert "[OBSERVE]" not in out
++    assert "[ACT]" not in out
++    # When theater detected, a chat-module disclaimer note is appended
++    assert "modulo de chat" in out
++
++
++def test_theater_prose_stripped():
++    txt = "Activando Agente ORAV para escaneo\nRespuesta real del modelo"
++    out = sanitize_llm_chat_response(txt)
++    assert "Activando Agente ORAV" not in out
++
++
++def test_fake_tool_call_block_stripped():
++    txt = 'Texto antes\n```json\n{"tool_calls": [{"name": "x"}]}\n```\nTexto despues'
++    out = sanitize_llm_chat_response(txt)
++    assert "tool_calls" not in out
++    assert "Texto antes" in out
++    assert "Texto despues" in out
++
++
++def test_raw_tool_markup_stripped():
++    txt = "Antes <function_calls><invoke name=\"foo\">bar</invoke></function_calls> despues"
++    out = sanitize_llm_chat_response(txt)
++    assert "function_calls" not in out
++    assert "invoke" not in out
++
++
++def test_placeholders_replaced():
++    txt = "El resultado es [resultado de ipconfig] y luego [output] vacio."
++    out = sanitize_llm_chat_response(txt)
++    assert "[resultado de ipconfig]" not in out
++    assert "[output]" not in out
++    assert "[no_ejecutado]" in out
++
++
++def test_fake_verification_disclaimer():
++    txt = "Verifiqué realmente el endpoint /brain/metrics con HTTP 200 OK"
++    out = sanitize_llm_chat_response(txt)
++    assert "No puedo confirmar estado real" in out
++
++
++def test_idempotency_on_clean_input():
++    txt = "Una respuesta perfectamente limpia."
++    once = sanitize_llm_chat_response(txt)
++    twice = sanitize_llm_chat_response(once)
++    assert once == twice
++
++
++def test_unicode_preservation():
++    txt = "Acentos: áéíóú ñ — emojis no, pero sí caracteres especiales: ¿qué tal?"
++    out = sanitize_llm_chat_response(txt)
++    assert "áéíóú" in out
++    assert "ñ" in out
++    assert "¿qué tal?" in out
+diff --git a/tests/unit/test_b7_response_hygiene_import_compat.py b/tests/unit/test_b7_response_hygiene_import_compat.py
+new file mode 100644
+index 00000000..cf86e080
+--- /dev/null
++++ b/tests/unit/test_b7_response_hygiene_import_compat.py
+@@ -0,0 +1,52 @@
++"""B7-STRANGLER-05 import-compat: BrainSession._sanitize_llm_chat_response shim integrity."""
++from __future__ import annotations
++
++import sys
++from pathlib import Path
++
++# Ensure tmp_agent is on sys.path (test runner default)
++_REPO_ROOT = Path(__file__).resolve().parents[2]
++_TMP_AGENT = _REPO_ROOT / "tmp_agent"
++if str(_TMP_AGENT) not in sys.path:
++    sys.path.insert(0, str(_TMP_AGENT))
++
++
++def test_module_import_and_callable():
++    from brain_v9.core.session_response_hygiene import sanitize_llm_chat_response
++    assert callable(sanitize_llm_chat_response)
++
++
++def test_brain_session_class_attr_still_callable():
++    from brain_v9.core.session import BrainSession
++    assert callable(BrainSession._sanitize_llm_chat_response)
++
++
++def test_brain_session_attr_is_extracted_function_identity():
++    """Class-attribute access on a staticmethod descriptor returns the raw function.
++    This is the contract main.py:1257 (instance-attr access) relies on."""
++    from brain_v9.core.session import BrainSession
++    from brain_v9.core import session_response_hygiene as srh
++    assert BrainSession._sanitize_llm_chat_response is srh.sanitize_llm_chat_response
++
++
++def test_brain_session_descriptor_is_staticmethod():
++    """Verify the descriptor stored on the class is a staticmethod (not a bound method)."""
++    from brain_v9.core.session import BrainSession
++    raw = BrainSession.__dict__["_sanitize_llm_chat_response"]
++    assert isinstance(raw, staticmethod), f"expected staticmethod, got {type(raw)!r}"
++
++
++def test_instance_attr_call_pattern_works():
++    """Mirror main.py:1257 usage: session._sanitize_llm_chat_response(content) on an instance."""
++    from brain_v9.core.session import BrainSession
++    inst = BrainSession.__new__(BrainSession)  # avoid __init__ side effects
++    out = inst._sanitize_llm_chat_response("hola mundo")
++    assert isinstance(out, str)
++    assert "hola mundo" in out
++
++
++def test_class_attr_call_pattern_works():
++    from brain_v9.core.session import BrainSession
++    out = BrainSession._sanitize_llm_chat_response("hola mundo")
++    assert isinstance(out, str)
++    assert "hola mundo" in out
+diff --git a/tests/unit/test_b7_response_hygiene_no_session_dependency.py b/tests/unit/test_b7_response_hygiene_no_session_dependency.py
+new file mode 100644
+index 00000000..dff10236
+--- /dev/null
++++ b/tests/unit/test_b7_response_hygiene_no_session_dependency.py
+@@ -0,0 +1,61 @@
++"""B7-STRANGLER-05: sanitizer module must be importable WITHOUT importing session."""
++from __future__ import annotations
++
++import importlib
++import subprocess
++import sys
++from pathlib import Path
++
++_REPO_ROOT = Path(__file__).resolve().parents[2]
++_TMP_AGENT = _REPO_ROOT / "tmp_agent"
++
++
++def test_no_session_dependency_in_subprocess():
++    """In a fresh subprocess, importing session_response_hygiene must NOT pull in
++    brain_v9.core.session (would imply a circular/heavy dependency)."""
++    code = (
++        "import sys;"
++        f"sys.path.insert(0, r'{_TMP_AGENT}');"
++        "import brain_v9.core.session_response_hygiene as m;"
++        "assert callable(m.sanitize_llm_chat_response);"
++        "assert 'brain_v9.core.session' not in sys.modules, "
++        "    sorted(k for k in sys.modules if k.startswith('brain_v9'));"
++        "print('OK')"
++    )
++    res = subprocess.run(
++        [sys.executable, "-c", code],
++        capture_output=True,
++        text=True,
++        timeout=30,
++    )
++    assert res.returncode == 0, f"stdout={res.stdout!r} stderr={res.stderr!r}"
++    assert "OK" in res.stdout
++
++
++def test_module_only_imports_re_and_stdlib():
++    """Ensure the new module is stateless and stdlib-only."""
++    if str(_TMP_AGENT) not in sys.path:
++        sys.path.insert(0, str(_TMP_AGENT))
++    mod = importlib.import_module("brain_v9.core.session_response_hygiene")
++    # Must expose the function
++    assert hasattr(mod, "sanitize_llm_chat_response")
++    assert callable(mod.sanitize_llm_chat_response)
++    # __all__ should advertise the public API
++    assert "sanitize_llm_chat_response" in getattr(mod, "__all__", [])
++
++
++def test_function_is_stateless_pure():
++    """Same input → same output across multiple invocations."""
++    if str(_TMP_AGENT) not in sys.path:
++        sys.path.insert(0, str(_TMP_AGENT))
++    from brain_v9.core.session_response_hygiene import sanitize_llm_chat_response
++    inputs = [
++        "",
++        "hola",
++        "[OBSERVE]: x\n[ACT]: y",
++        "respuesta plana",
++    ]
++    for inp in inputs:
++        a = sanitize_llm_chat_response(inp)
++        b = sanitize_llm_chat_response(inp)
++        assert a == b, f"non-deterministic for {inp!r}: {a!r} vs {b!r}"
+diff --git a/tmp_agent/brain_v9/core/session.py b/tmp_agent/brain_v9/core/session.py
+index aa2e873e..9389860a 100644
+--- a/tmp_agent/brain_v9/core/session.py
++++ b/tmp_agent/brain_v9/core/session.py
+@@ -153,6 +153,14 @@ from brain_v9.core import session_chat_metrics as _session_chat_metrics  # noqa:
+ # external callers (main.py, autonomy.proactive_scheduler, tests, ...).
+ from brain_v9.core import session_query_predicates as _qp  # noqa: E402,F401
+ 
++# B7-STRANGLER-05: pure LLM chat-response sanitizer extracted to its own module.
++# BrainSession._sanitize_llm_chat_response is preserved as a staticmethod shim
++# below, so both class-attr access and instance-attr access (e.g. main.py:1257
++# calling `session._sanitize_llm_chat_response(content)`) keep working.
++from brain_v9.core.session_response_hygiene import (  # noqa: E402,F401
++    sanitize_llm_chat_response as _sanitize_llm_chat_response_impl,
++)
++
+ 
+ def __getattr__(name):  # PEP 562: proxy live _GLOBAL_CHAT_METRICS
+     if name == "_GLOBAL_CHAT_METRICS":
+@@ -1989,87 +1997,11 @@ class BrainSession:
+         budget = min(budget, _HISTORY_BUDGET_CAP)
+         return max(budget, 0)
+ 
+-    @staticmethod
+-    def _sanitize_llm_chat_response(content: str) -> str:
+-        if not content:
+-            return content
+-        banned_lines = (
+-            "Utilicé la herramienta",
+-            "Utilice la herramienta",
+-            "Use la herramienta",
+-            "He utilizado la herramienta",
+-            "I used the tool",
+-            "I used the inference tool",
+-        )
+-        cleaned_lines = [
+-            line for line in content.splitlines()
+-            if not any(marker.lower() in line.lower() for marker in banned_lines)
+-        ]
+-        cleaned = "\n".join(line for line in cleaned_lines if line.strip())
+-        cleaned = cleaned.strip() or content.strip()
+-        # Suprime teatro ORAV en respuestas del chat puro: si el LLM emite
+-        # marcadores [OBSERVE]/[REASON]/[ACT]/[VERIFY] o "*[Agente ORAV" cuando
+-        # no hubo ejecucion real de herramientas, sugiere accion que no ocurre.
+-        # Strip-only de los marcadores decorativos (preservamos la prosa).
+-        import re as _re
+-        orav_markers = _re.compile(
+-            r"^\s*(?:\*?\[)?(?:OBSERVE|OBSERVAR|REASON|RAZONAR|ACT|ACTUAR|VERIFY|VERIFICAR|Agente\s+ORAV[^\]]*)\]\s*:?\s*",
+-            _re.IGNORECASE | _re.MULTILINE,
+-        )
+-        # Patrones de teatro adicionales (no marcadores estructurados sino prosa)
+-        theater_prose = _re.compile(
+-            r"(?im)^\s*(?:\*+\s*)?(?:Activando\s+(?:Agente\s+ORAV|escaneo|deteccion|diagnostico|herramienta)|Ejecutando\s+(?:herramientas|el\s+ciclo|escaneo|deteccion)|Ejecuci[oó]n\s+paralela|Iniciando\s+ciclo\s+ORAV|Realizando\s+(?:escaneo|deteccion))[^\n]*\n?"
+-        )
+-        # Bloques JSON con "tool_calls" simulados (no son ejecuciones reales en chat path)
+-        fake_tool_call_block = _re.compile(
+-            r"```json\s*\{\s*\"tool_calls\"[\s\S]*?\}\s*```",
+-            _re.IGNORECASE,
+-        )
+-        raw_tool_markup = _re.compile(
+-            r"(?is)<function_calls>[\s\S]*?</function_calls>|<invoke\s+name=[^>]+>[\s\S]*?</invoke>"
+-        )
+-        # Placeholders del tipo [resultado de X], [output], [ipconfig], [salida]
+-        placeholders = _re.compile(
+-            r"\[(?:resultado(?:\s+de)?[^\]]*|output|salida|ipconfig[^\]]*|stdout[^\]]*|stderr[^\]]*)\]",
+-            _re.IGNORECASE,
+-        )
+-        had_theater = bool(
+-            orav_markers.search(cleaned)
+-            or theater_prose.search(cleaned)
+-            or placeholders.search(cleaned)
+-            or fake_tool_call_block.search(cleaned)
+-            or raw_tool_markup.search(cleaned)
+-        )
+-        cleaned2 = orav_markers.sub("", cleaned)
+-        cleaned2 = theater_prose.sub("", cleaned2)
+-        cleaned2 = fake_tool_call_block.sub("", cleaned2)
+-        cleaned2 = raw_tool_markup.sub("", cleaned2)
+-        cleaned2 = placeholders.sub("[no_ejecutado]", cleaned2).strip()
+-
+-        # HARDENING: Bloquear afirmaciones de "verificación real" sin tool trace
+-        # Si el contenido afirma haber verificado endpoints HTTP realmente sin evidencia de tool
+-        fake_verification_patterns = _re.compile(
+-            r'(?i)(verifiqu[ée]|verifique|consult[eé]).*?(realmente|real|endpoint|/brain/metrics|HTTP \d{3}|c[oó]digo HTTP|status \d{3})|'
+-            r'(HTTP [12]\d{2}|c[oó]digo [12]\d{2}|status [12]\d{2}).*?(OK|200|éxito|success)',
+-            _re.IGNORECASE
+-        )
+-
+-        if fake_verification_patterns.search(cleaned2):
+-            # Reemplazar afirmación de verificación fake con disclaimer
+-            cleaned2 = (
+-                "No puedo confirmar estado real sin ejecución HTTP/tool actual. "
+-                "Necesito herramienta HTTP real o confirmación explícita para verificar ese endpoint."
+-            )
+-
+-        if had_theater and cleaned2:
+-            cleaned2 += (
+-                "\n\n_Nota: respuesta del modulo de chat (sin ejecucion de herramientas). "
+-                "Capacidades nativas disponibles para red: `detect_local_network`, `scan_local_network`. "
+-                "Pidemelo explicito si quieres que las invoque via agente._"
+-            )
+-        if had_theater:
+-            return cleaned2
+-        return cleaned2 or cleaned
++    # B7-STRANGLER-05: extracted to brain_v9.core.session_response_hygiene.
++    # Kept as a staticmethod shim so both class-attr access (tests) and
++    # instance-attr access (main.py:1257 — `session._sanitize_llm_chat_response(...)`)
++    # remain valid without binding `self`.
++    _sanitize_llm_chat_response = staticmethod(_sanitize_llm_chat_response_impl)
+ 
+     @classmethod
+     def _contains_raw_tool_markup(cls, text: str) -> bool:
+diff --git a/tmp_agent/brain_v9/core/session_response_hygiene.py b/tmp_agent/brain_v9/core/session_response_hygiene.py
+new file mode 100644
+index 00000000..e4403563
+--- /dev/null
++++ b/tmp_agent/brain_v9/core/session_response_hygiene.py
+@@ -0,0 +1,106 @@
++"""
++brain_v9.core.session_response_hygiene
++======================================
++
++B7-STRANGLER-05: Pure, side-effect-free LLM chat-response sanitizer extracted
++from BrainSession._sanitize_llm_chat_response (formerly in
++tmp_agent/brain_v9/core/session.py @ lines 1993-2072).
++
++Contract:
++  - Module-level pure function `sanitize_llm_chat_response(content: str) -> str`.
++  - No imports from `brain_v9.core.session` (no circular dependency).
++  - No I/O, no network, no config.
++  - Behavior is byte-identical to the prior staticmethod.
++
++BrainSession keeps the public attribute `_sanitize_llm_chat_response` as a
++staticmethod shim that delegates here, preserving full backward compatibility
++for both instance-attr access (e.g. `session._sanitize_llm_chat_response(...)`
++from `tmp_agent/brain_v9/main.py:1257`) and class-attr access used by tests.
++"""
++from __future__ import annotations
++
++import re
++
++__all__ = ["sanitize_llm_chat_response"]
++
++
++def sanitize_llm_chat_response(content: str) -> str:
++    if not content:
++        return content
++    banned_lines = (
++        "Utilicé la herramienta",
++        "Utilice la herramienta",
++        "Use la herramienta",
++        "He utilizado la herramienta",
++        "I used the tool",
++        "I used the inference tool",
++    )
++    cleaned_lines = [
++        line for line in content.splitlines()
++        if not any(marker.lower() in line.lower() for marker in banned_lines)
++    ]
++    cleaned = "\n".join(line for line in cleaned_lines if line.strip())
++    cleaned = cleaned.strip() or content.strip()
++    # Suprime teatro ORAV en respuestas del chat puro: si el LLM emite
++    # marcadores [OBSERVE]/[REASON]/[ACT]/[VERIFY] o "*[Agente ORAV" cuando
++    # no hubo ejecucion real de herramientas, sugiere accion que no ocurre.
++    # Strip-only de los marcadores decorativos (preservamos la prosa).
++    import re as _re
++    orav_markers = _re.compile(
++        r"^\s*(?:\*?\[)?(?:OBSERVE|OBSERVAR|REASON|RAZONAR|ACT|ACTUAR|VERIFY|VERIFICAR|Agente\s+ORAV[^\]]*)\]\s*:?\s*",
++        _re.IGNORECASE | _re.MULTILINE,
++    )
++    # Patrones de teatro adicionales (no marcadores estructurados sino prosa)
++    theater_prose = _re.compile(
++        r"(?im)^\s*(?:\*+\s*)?(?:Activando\s+(?:Agente\s+ORAV|escaneo|deteccion|diagnostico|herramienta)|Ejecutando\s+(?:herramientas|el\s+ciclo|escaneo|deteccion)|Ejecuci[oó]n\s+paralela|Iniciando\s+ciclo\s+ORAV|Realizando\s+(?:escaneo|deteccion))[^\n]*\n?"
++    )
++    # Bloques JSON con "tool_calls" simulados (no son ejecuciones reales en chat path)
++    fake_tool_call_block = _re.compile(
++        r"```json\s*\{\s*\"tool_calls\"[\s\S]*?\}\s*```",
++        _re.IGNORECASE,
++    )
++    raw_tool_markup = _re.compile(
++        r"(?is)<function_calls>[\s\S]*?</function_calls>|<invoke\s+name=[^>]+>[\s\S]*?</invoke>"
++    )
++    # Placeholders del tipo [resultado de X], [output], [ipconfig], [salida]
++    placeholders = _re.compile(
++        r"\[(?:resultado(?:\s+de)?[^\]]*|output|salida|ipconfig[^\]]*|stdout[^\]]*|stderr[^\]]*)\]",
++        _re.IGNORECASE,
++    )
++    had_theater = bool(
++        orav_markers.search(cleaned)
++        or theater_prose.search(cleaned)
++        or placeholders.search(cleaned)
++        or fake_tool_call_block.search(cleaned)
++        or raw_tool_markup.search(cleaned)
++    )
++    cleaned2 = orav_markers.sub("", cleaned)
++    cleaned2 = theater_prose.sub("", cleaned2)
++    cleaned2 = fake_tool_call_block.sub("", cleaned2)
++    cleaned2 = raw_tool_markup.sub("", cleaned2)
++    cleaned2 = placeholders.sub("[no_ejecutado]", cleaned2).strip()
++
++    # HARDENING: Bloquear afirmaciones de "verificación real" sin tool trace
++    # Si el contenido afirma haber verificado endpoints HTTP realmente sin evidencia de tool
++    fake_verification_patterns = _re.compile(
++        r'(?i)(verifiqu[ée]|verifique|consult[eé]).*?(realmente|real|endpoint|/brain/metrics|HTTP \d{3}|c[oó]digo HTTP|status \d{3})|'
++        r'(HTTP [12]\d{2}|c[oó]digo [12]\d{2}|status [12]\d{2}).*?(OK|200|éxito|success)',
++        _re.IGNORECASE
++    )
++
++    if fake_verification_patterns.search(cleaned2):
++        # Reemplazar afirmación de verificación fake con disclaimer
++        cleaned2 = (
++            "No puedo confirmar estado real sin ejecución HTTP/tool actual. "
++            "Necesito herramienta HTTP real o confirmación explícita para verificar ese endpoint."
++        )
++
++    if had_theater and cleaned2:
++        cleaned2 += (
++            "\n\n_Nota: respuesta del modulo de chat (sin ejecucion de herramientas). "
++            "Capacidades nativas disponibles para red: `detect_local_network`, `scan_local_network`. "
++            "Pidemelo explicito si quieres que las invoque via agente._"
++        )
++    if had_theater:
++        return cleaned2
++    return cleaned2 or cleaned

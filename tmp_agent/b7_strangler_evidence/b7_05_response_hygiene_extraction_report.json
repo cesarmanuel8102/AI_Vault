@@ -1,0 +1,33 @@
+{
+  "task": "B7-STRANGLER-05-IMPLEMENT extraction report",
+  "selected_candidate_id": "C1",
+  "function_extracted": "BrainSession._sanitize_llm_chat_response -> sanitize_llm_chat_response",
+  "source_file": "tmp_agent/brain_v9/core/session.py",
+  "source_lines_before_edit": "1992-2072 (decorator+def..return), 81 lines",
+  "destination_module": "tmp_agent/brain_v9/core/session_response_hygiene.py",
+  "destination_module_lines": 106,
+  "destination_module_sha256": "e28eaa7f1eccf553e8e24d9e9ff1064ffb8071c96439d86cbf4959f1a6c5ba91",
+  "session_py_lines_before": 5811,
+  "session_py_lines_after": 5743,
+  "session_py_net_delta": -68,
+  "shim_form": "_sanitize_llm_chat_response = staticmethod(_sanitize_llm_chat_response_impl)",
+  "import_added_in_session_py": "from brain_v9.core.session_response_hygiene import sanitize_llm_chat_response as _sanitize_llm_chat_response_impl",
+  "behavior_change": "none (verbatim function body)",
+  "backward_compatibility": {
+    "class_attr_access_BrainSession_sanitize_llm_chat_response": "preserved (callable, identity == new module function)",
+    "instance_attr_access_via_main_py_1257": "preserved (staticmethod descriptor)",
+    "self_call_pattern_inside_chat_flow": "preserved"
+  },
+  "files_created": [
+    "tmp_agent/brain_v9/core/session_response_hygiene.py",
+    "tests/unit/test_b7_response_hygiene_import_compat.py",
+    "tests/unit/test_b7_response_hygiene_behavior_smoke.py",
+    "tests/unit/test_b7_response_hygiene_no_session_dependency.py"
+  ],
+  "files_modified": [
+    "tmp_agent/brain_v9/core/session.py"
+  ],
+  "protected_paths_touched": [],
+  "commit_created": false,
+  "push_done": false
+}

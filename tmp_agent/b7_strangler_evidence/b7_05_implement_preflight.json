@@ -1,0 +1,27 @@
+{
+  "task": "B7-STRANGLER-05-IMPLEMENT preflight",
+  "repo_root": "C:/AI_VAULT",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "4bb1893b0db9636af64435734f9307d851564bdb",
+  "origin_head": "4bb1893b0db9636af64435734f9307d851564bdb",
+  "head_matches_origin": true,
+  "no_staged_files": true,
+  "dirty_files_relevant": [],
+  "dirty_files_ignored_per_policy": [
+    "memory/semantic/semantic_memory.jsonl",
+    "tmp_agent/strategies/* (run_phase*, _phase*_generated_main_snapshot, main_phase17*)",
+    "tmp_agent/brain_v9/chat_area_upgrade/*",
+    "tmp_agent/brain_v9/ops/smoke_*.ps1, tool01_write_test.py",
+    "tmp_agent/visual_trace_console_v1 mojibake ledger backup",
+    "tmp_agent/bor3_llm_audit*",
+    "apply_chat_patch.py"
+  ],
+  "preflight_ok": true,
+  "policy_locks": {
+    "no_commit": true,
+    "no_push": true,
+    "no_git_add_dash_A_or_dot": true,
+    "no_reset_checkout_clean_stash_destructive": true,
+    "no_existing_test_modification": true
+  }
+}

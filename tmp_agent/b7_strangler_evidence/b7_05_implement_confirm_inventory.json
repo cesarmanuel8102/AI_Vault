@@ -1,0 +1,35 @@
+{
+  "task": "B7-STRANGLER-05-IMPLEMENT confirm inventory",
+  "selected_candidate_id": "C1",
+  "selected_candidate_name": "_sanitize_llm_chat_response",
+  "current_location": {
+    "file": "tmp_agent/brain_v9/core/session.py",
+    "method": "BrainSession._sanitize_llm_chat_response",
+    "decorator": "@staticmethod",
+    "line_decorator": 1992,
+    "line_def": 1993,
+    "line_end_inclusive": 2072,
+    "line_count_total_including_decorator_and_blank": 81
+  },
+  "purity": {
+    "self_uses": 0,
+    "cls_uses": 0,
+    "external_state": "none",
+    "external_io": "none",
+    "depends_on": ["re (via inline import re as _re)"]
+  },
+  "external_consumers_observed": [
+    "tmp_agent/brain_v9/main.py:1257 (instance-attr style: session._sanitize_llm_chat_response(...))",
+    "tests/unit/test_brain_chat_hygiene.py",
+    "tests/unit/test_agent_ghost_completion_hardening.py",
+    "tests/unit/test_real_verification_tool_trace_required.py",
+    "tmp_agent/tests/core/test_session.py"
+  ],
+  "shim_form_required": "BrainSession._sanitize_llm_chat_response = staticmethod(_sanitize_llm_chat_response_impl)",
+  "rationale_for_staticmethod_form": "main.py uses session._sanitize_llm_chat_response(content) on an instance; staticmethod descriptor on class attr makes that callable without binding self.",
+  "session_py_lines_before": 5811,
+  "expected_session_py_lines_after_estimate": 5734,
+  "expected_reduction_lines": 77,
+  "plan_authoritative_path": "tmp_agent/b7_strangler_evidence/b7_05_selected_candidate_plan.json",
+  "ready_to_implement": true
+}

@@ -153,6 +153,14 @@ from brain_v9.core import session_chat_metrics as _session_chat_metrics  # noqa:
 # external callers (main.py, autonomy.proactive_scheduler, tests, ...).
 from brain_v9.core import session_query_predicates as _qp  # noqa: E402,F401
 
+# B7-STRANGLER-05: pure LLM chat-response sanitizer extracted to its own module.
+# BrainSession._sanitize_llm_chat_response is preserved as a staticmethod shim
+# below, so both class-attr access and instance-attr access (e.g. main.py:1257
+# calling `session._sanitize_llm_chat_response(content)`) keep working.
+from brain_v9.core.session_response_hygiene import (  # noqa: E402,F401
+    sanitize_llm_chat_response as _sanitize_llm_chat_response_impl,
+)
+
 
 def __getattr__(name):  # PEP 562: proxy live _GLOBAL_CHAT_METRICS
     if name == "_GLOBAL_CHAT_METRICS":
@@ -1989,87 +1997,11 @@ class BrainSession:
         budget = min(budget, _HISTORY_BUDGET_CAP)
         return max(budget, 0)
 
-    @staticmethod
-    def _sanitize_llm_chat_response(content: str) -> str:
-        if not content:
-            return content
-        banned_lines = (
-            "Utilicé la herramienta",
-            "Utilice la herramienta",
-            "Use la herramienta",
-            "He utilizado la herramienta",
-            "I used the tool",
-            "I used the inference tool",
-        )
-        cleaned_lines = [
-            line for line in content.splitlines()
-            if not any(marker.lower() in line.lower() for marker in banned_lines)
-        ]
-        cleaned = "\n".join(line for line in cleaned_lines if line.strip())
-        cleaned = cleaned.strip() or content.strip()
-        # Suprime teatro ORAV en respuestas del chat puro: si el LLM emite
-        # marcadores [OBSERVE]/[REASON]/[ACT]/[VERIFY] o "*[Agente ORAV" cuando
-        # no hubo ejecucion real de herramientas, sugiere accion que no ocurre.
-        # Strip-only de los marcadores decorativos (preservamos la prosa).
-        import re as _re
-        orav_markers = _re.compile(
-            r"^\s*(?:\*?\[)?(?:OBSERVE|OBSERVAR|REASON|RAZONAR|ACT|ACTUAR|VERIFY|VERIFICAR|Agente\s+ORAV[^\]]*)\]\s*:?\s*",
-            _re.IGNORECASE | _re.MULTILINE,
-        )
-        # Patrones de teatro adicionales (no marcadores estructurados sino prosa)
-        theater_prose = _re.compile(
-            r"(?im)^\s*(?:\*+\s*)?(?:Activando\s+(?:Agente\s+ORAV|escaneo|deteccion|diagnostico|herramienta)|Ejecutando\s+(?:herramientas|el\s+ciclo|escaneo|deteccion)|Ejecuci[oó]n\s+paralela|Iniciando\s+ciclo\s+ORAV|Realizando\s+(?:escaneo|deteccion))[^\n]*\n?"
-        )
-        # Bloques JSON con "tool_calls" simulados (no son ejecuciones reales en chat path)
-        fake_tool_call_block = _re.compile(
-            r"```json\s*\{\s*\"tool_calls\"[\s\S]*?\}\s*```",
-            _re.IGNORECASE,
-        )
-        raw_tool_markup = _re.compile(
-            r"(?is)<function_calls>[\s\S]*?</function_calls>|<invoke\s+name=[^>]+>[\s\S]*?</invoke>"
-        )
-        # Placeholders del tipo [resultado de X], [output], [ipconfig], [salida]
-        placeholders = _re.compile(
-            r"\[(?:resultado(?:\s+de)?[^\]]*|output|salida|ipconfig[^\]]*|stdout[^\]]*|stderr[^\]]*)\]",
-            _re.IGNORECASE,
-        )
-        had_theater = bool(
-            orav_markers.search(cleaned)
-            or theater_prose.search(cleaned)
-            or placeholders.search(cleaned)
-            or fake_tool_call_block.search(cleaned)
-            or raw_tool_markup.search(cleaned)
-        )
-        cleaned2 = orav_markers.sub("", cleaned)
-        cleaned2 = theater_prose.sub("", cleaned2)
-        cleaned2 = fake_tool_call_block.sub("", cleaned2)
-        cleaned2 = raw_tool_markup.sub("", cleaned2)
-        cleaned2 = placeholders.sub("[no_ejecutado]", cleaned2).strip()
-
-        # HARDENING: Bloquear afirmaciones de "verificación real" sin tool trace
-        # Si el contenido afirma haber verificado endpoints HTTP realmente sin evidencia de tool
-        fake_verification_patterns = _re.compile(
-            r'(?i)(verifiqu[ée]|verifique|consult[eé]).*?(realmente|real|endpoint|/brain/metrics|HTTP \d{3}|c[oó]digo HTTP|status \d{3})|'
-            r'(HTTP [12]\d{2}|c[oó]digo [12]\d{2}|status [12]\d{2}).*?(OK|200|éxito|success)',
-            _re.IGNORECASE
-        )
-
-        if fake_verification_patterns.search(cleaned2):
-            # Reemplazar afirmación de verificación fake con disclaimer
-            cleaned2 = (
-                "No puedo confirmar estado real sin ejecución HTTP/tool actual. "
-                "Necesito herramienta HTTP real o confirmación explícita para verificar ese endpoint."
-            )
-
-        if had_theater and cleaned2:
-            cleaned2 += (
-                "\n\n_Nota: respuesta del modulo de chat (sin ejecucion de herramientas). "
-                "Capacidades nativas disponibles para red: `detect_local_network`, `scan_local_network`. "
-                "Pidemelo explicito si quieres que las invoque via agente._"
-            )
-        if had_theater:
-            return cleaned2
-        return cleaned2 or cleaned
+    # B7-STRANGLER-05: extracted to brain_v9.core.session_response_hygiene.
+    # Kept as a staticmethod shim so both class-attr access (tests) and
+    # instance-attr access (main.py:1257 — `session._sanitize_llm_chat_response(...)`)
+    # remain valid without binding `self`.
+    _sanitize_llm_chat_response = staticmethod(_sanitize_llm_chat_response_impl)
 
     @classmethod
     def _contains_raw_tool_markup(cls, text: str) -> bool:
