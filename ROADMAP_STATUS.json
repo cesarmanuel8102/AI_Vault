@@ -1,5 +1,6 @@
 {
-  "current_head": "347eb1a5",
+  "current_head": "69f70127",
+  "current_remote_head": "69f70127",
   "branch": "codex/own-capital-sustainable-return",
   "migration_status": "phase0_chat_ops_push_synced",
   "last_applied_checkpoint": "PUSH-SYNC-01",
@@ -23,7 +24,9 @@
     "VTC_F2_sse_e2e_automated_test",
     "Phase0_Security",
     "Chat_Ops",
-    "PUSH_SYNC_01"
+    "PUSH_SYNC_01",
+    "PROMOTION_GATE_V1_CONTRACT",
+    "PROMOTION_GATE_V1_DRY_RUN_COORDINATOR"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -77,6 +80,56 @@
     "push_type": "normal",
     "force_push": false,
     "merge_rebase": false
+  },
+  "promotion_gate_v1_contract": {
+    "status": "done",
+    "commit": "ddfec7aa",
+    "remote_synced": true,
+    "tests": "33 passed",
+    "real_write_allowed": false,
+    "files": [
+      "brain/promotion_gate_v1.py",
+      "tests/unit/test_promotion_gate_v1_contract.py",
+      "tests/unit/test_promotion_gate_v1_no_go.py"
+    ],
+    "notes": [
+      "Contract and validator implementation",
+      "Dry-run only, no real writes",
+      "33 tests passing"
+    ]
+  },
+  "promotion_gate_v1_dry_run_coordinator": {
+    "status": "done",
+    "commit": "69f70127",
+    "remote_synced": true,
+    "files": [
+      "brain/promotion_gate_v1_coordinator.py",
+      "tests/unit/test_promotion_gate_v1_coordinator.py",
+      "tests/smoke/smoke_promotion_gate_v1_coordinator_dry_run.py"
+    ],
+    "tests": {
+      "coordinator_smoke": "15 passed",
+      "gate_existing": "33 passed",
+      "total": "48 passed"
+    },
+    "guarantees": {
+      "no_runtime_modified": true,
+      "no_memory_semantic_modified": true,
+      "no_trading_touched": true,
+      "no_b8_touched": true,
+      "real_write_allowed": false,
+      "faiss_write_allowed": false,
+      "dry_run_verified_is_not_real_promotion": true
+    }
+  },
+  "real_write_status": {
+    "status": "blocked",
+    "reason": "rollback fixture and production write gate not implemented"
+  },
+  "recommended_next_front": {
+    "name": "CURATED-LEARNING-RUNTIME-READONLY-LOOKUP-PLAN-01",
+    "status": "recommended_next",
+    "reason": "coordinator is complete; next safe step is read-only runtime lookup, not real write"
   },
   "trading_phase299": {
     "status": "deferred_final_integration",

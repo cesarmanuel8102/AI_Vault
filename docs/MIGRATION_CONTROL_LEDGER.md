@@ -737,7 +737,56 @@
   - OPTIONAL: VTC-E UI operator polish (banner, badges, redaction indicator)
   - PRIMARY: User-selected next priority
 
-## LEDGER-ROADMAP-SSOT-01 — Phase0 + Chat Ops GitHub sync recorded
+## LEDGER-ROADMAP-SSOT-PROMOTION-GATE-COORDINATOR-01 — Promotion Gate v1 Dry-Run Coordinator Completed and Synced
+- **Fecha/hora**: 2026-06-04T10:45:00Z
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: 69f70127
+- **Estado**: Promotion Gate v1 dry-run coordinator cerrado y sincronizado en GitHub.
+
+### Promotion Gate v1 Contract / Validators
+- **Status**: done
+- **Commit**: ddfec7aa — curated-learning: add promotion gate v1 contract validators
+- **Remote synced**: true
+- **Files**:
+  - brain/promotion_gate_v1.py
+  - tests/unit/test_promotion_gate_v1_contract.py
+  - tests/unit/test_promotion_gate_v1_no_go.py
+- **Validation**: 33 tests passed; py_compile passed.
+- **Security**: real_write_allowed=false; no runtime modification; no memory/semantic modification.
+
+### Promotion Gate v1 Dry-Run Coordinator
+- **Status**: done
+- **Commit**: 69f70127 — curated-learning: add promotion gate v1 dry-run coordinator
+- **Remote synced**: true
+- **Files**:
+  - brain/promotion_gate_v1_coordinator.py (594 lines, 23,058 bytes)
+  - tests/unit/test_promotion_gate_v1_coordinator.py (245 lines, 8,277 bytes)
+  - tests/smoke/smoke_promotion_gate_v1_coordinator_dry_run.py (61 lines, 2,249 bytes)
+- **Validation**:
+  - py_compile: PASS (3/3 files)
+  - Coordinator + smoke: 15 passed
+  - Gate tests existentes: 33 passed
+  - Total: 48 passed
+- **Security guarantees**:
+  - No runtime modification
+  - No memory/semantic modification
+  - No trading/B8 modification
+  - No real adapter import
+  - No semantic bridge import
+  - No real writes
+  - No FAISS writes
+- **Explicit limitation**:
+  - dry_run_verified is NOT production-promoted knowledge
+  - Runtime read-only lookup still pending
+  - Real writes remain BLOCKED until rollback fixture and approval gate are implemented
+
+### Real Write Status
+- **Status**: BLOCKED
+- **Reason**: rollback fixture and production write gate not implemented
+- **Next safe step**: CURATED-LEARNING-RUNTIME-READONLY-LOOKUP-PLAN-01 (read-only runtime lookup, not real write)
+
+---
+
 - **Fecha/hora**: 2026-06-04T08:45:00Z
 - **Branch**: codex/own-capital-sustainable-return
 - **HEAD local/remoto**: 347eb1a5
