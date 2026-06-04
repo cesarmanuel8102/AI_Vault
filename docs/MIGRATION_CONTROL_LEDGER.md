@@ -787,6 +787,50 @@
 
 ---
 
+## LEDGER-ROADMAP-SSOT-RUNTIME-READONLY-LOOKUP-01 — Runtime Read-Only Lookup Module Implemented and Synced
+- **Fecha/hora**: 2026-06-04T12:30:00Z
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: 05cf8f79
+- **Estado**: Runtime read-only lookup module implementado, auditado, commiteado y sincronizado en GitHub.
+
+### Runtime Read-Only Lookup Module
+- **Status**: done
+- **Commit**: 05cf8f79 — curated-learning: add runtime read-only lookup module and tests
+- **Remote synced**: true
+- **Files**:
+  - brain/curated_runtime_lookup.py (399 lines, read-only module)
+  - tests/unit/test_curated_runtime_lookup.py (20 tests)
+  - tests/smoke/smoke_curated_runtime_lookup_readonly.py (8 tests)
+  - tests/fixtures/readonly_lookup_index.jsonl (10 fixture records)
+- **Validation**:
+  - py_compile: PASS (3/3 files)
+  - Unit tests: 20 passed
+  - Smoke tests: 8 passed
+  - Total: 28 passed, 0 failed
+- **Security guarantees**:
+  - No runtime modification
+  - No memory/semantic modification (verified by hash smoke tests)
+  - No trading/B8 modification
+  - No real adapter import
+  - No semantic bridge import
+  - No real writes (REAL_WRITE_ALLOWED = False)
+  - No FAISS writes (FAISS_WRITE_ALLOWED = False)
+  - Module is read-only (assert_lookup_is_read_only executed at import)
+  - Fail-closed design (provenance required, stale filtered, blocked rejected)
+- **Explicit limitation**:
+  - dry_run_verified is NOT production-promoted knowledge
+  - Endpoint plan NOT implemented yet (future RL-05 phase)
+  - Chat command NOT implemented yet (future RL-06 phase)
+  - Context injection remains BLOCKED until explicit approval
+  - Real writes remain BLOCKED until rollback fixture and approval gate implemented
+
+### Next Recommended Fronts
+- **RUNTIME_READONLY_LOOKUP_ENDPOINT_PLAN_01**: Implement read-only endpoints in main.py
+- **RUNTIME_READONLY_LOOKUP_CHAT_01**: Implement explicit chat command
+- Real writes: BLOCKED
+
+---
+
 - **Fecha/hora**: 2026-06-04T08:45:00Z
 - **Branch**: codex/own-capital-sustainable-return
 - **HEAD local/remoto**: 347eb1a5

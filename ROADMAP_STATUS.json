@@ -1,6 +1,6 @@
 {
-  "current_head": "69f70127",
-  "current_remote_head": "69f70127",
+  "current_head": "05cf8f79",
+  "current_remote_head": "05cf8f79",
   "branch": "codex/own-capital-sustainable-return",
   "migration_status": "phase0_chat_ops_push_synced",
   "last_applied_checkpoint": "PUSH-SYNC-01",
@@ -26,7 +26,8 @@
     "Chat_Ops",
     "PUSH_SYNC_01",
     "PROMOTION_GATE_V1_CONTRACT",
-    "PROMOTION_GATE_V1_DRY_RUN_COORDINATOR"
+    "PROMOTION_GATE_V1_DRY_RUN_COORDINATOR",
+    "RUNTIME_READONLY_LOOKUP"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -127,9 +128,35 @@
     "reason": "rollback fixture and production write gate not implemented"
   },
   "recommended_next_front": {
-    "name": "CURATED-LEARNING-RUNTIME-READONLY-LOOKUP-PLAN-01",
+    "name": "RUNTIME_READONLY_LOOKUP_ENDPOINT_PLAN_01",
     "status": "recommended_next",
-    "reason": "coordinator is complete; next safe step is read-only runtime lookup, not real write"
+    "reason": "read-only lookup module implemented; next safe step is endpoint plan implementation, not real write"
+  },
+  "runtime_readonly_lookup": {
+    "status": "done",
+    "commit": "05cf8f79",
+    "remote_synced": true,
+    "files": [
+      "brain/curated_runtime_lookup.py",
+      "tests/unit/test_curated_runtime_lookup.py",
+      "tests/smoke/smoke_curated_runtime_lookup_readonly.py",
+      "tests/fixtures/readonly_lookup_index.jsonl"
+    ],
+    "tests": {
+      "unit_tests": "20 passed",
+      "smoke_tests": "8 passed",
+      "total": "28 passed"
+    },
+    "guarantees": {
+      "no_runtime_modified": true,
+      "no_memory_semantic_modified": true,
+      "no_trading_touched": true,
+      "no_b8_touched": true,
+      "real_write_allowed": false,
+      "faiss_write_allowed": false,
+      "dry_run_verified_is_not_real_promotion": true,
+      "module_is_read_only": true
+    }
   },
   "trading_phase299": {
     "status": "deferred_final_integration",
