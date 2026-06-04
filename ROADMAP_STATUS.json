@@ -1,8 +1,8 @@
 {
-  "current_head": "5846fd71",
+  "current_head": "347eb1a5",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "vtc_f_operational_readiness_closed",
-  "last_applied_checkpoint": "VTC-F_closeout",
+  "migration_status": "phase0_chat_ops_push_synced",
+  "last_applied_checkpoint": "PUSH-SYNC-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -20,7 +20,10 @@
     "MRC-01A_post_GAK_ledger_reconciliation",
     "VTC_v1_trace_redaction_hardening_and_closeout",
     "VTC_F1_operator_access_runbook",
-    "VTC_F2_sse_e2e_automated_test"
+    "VTC_F2_sse_e2e_automated_test",
+    "Phase0_Security",
+    "Chat_Ops",
+    "PUSH_SYNC_01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -29,7 +32,66 @@
     "tmp_agent/strategies",
     "tmp_agent/reports"
   ],
-  "recommended_next_front": "USER_SELECTED_PRIORITY_OR_VTC_E_OPTIONAL",
+  "recommended_next_front": "LEDGER-ROADMAP-COMMIT-01",
   "ready_for_next_front": true,
-  "last_updated": "2026-05-29T02:15:00Z"
+  "last_updated": "2026-06-04T08:45:00Z",
+  "phase0_security": {
+    "status": "done",
+    "commits": [
+      "35fc676c",
+      "53ca0f16",
+      "0dcce5bd"
+    ],
+    "remote_synced": true,
+    "validation": {
+      "phase0_tests": "14 passed",
+      "py_compile": "passed"
+    },
+    "notes": [
+      ".dev_auth no trackeado y cubierto por .gitignore",
+      "GOD P3 guardrail aplicado",
+      "dev endpoints default OFF",
+      "selfdev protected paths aplicado"
+    ]
+  },
+  "chat_ops": {
+    "status": "done",
+    "commit": "347eb1a5",
+    "remote_synced": true,
+    "validation": {
+      "sequence_control": "passed",
+      "tool01_git_status_permission": "passed",
+      "tool01_git_diff_permission": "passed",
+      "last_result_followup": "passed"
+    },
+    "notes": [
+      "inline sequence fixed",
+      "continua no LLM",
+      "git.diff analysis real"
+    ]
+  },
+  "push_sync": {
+    "status": "done",
+    "remote_before": "f389b164",
+    "remote_after": "347eb1a5",
+    "push_type": "normal",
+    "force_push": false,
+    "merge_rebase": false
+  },
+  "trading_phase299": {
+    "status": "deferred_final_integration",
+    "note": "User will continue trading/QC work separately and provide results later for integration."
+  },
+  "b8": {
+    "status": "paused",
+    "note": "Do not resume until explicitly approved."
+  },
+  "next_recommended_fronts": [
+    "Curated ingestion / learning promotion audit-hardening",
+    "Persistent autonomy loop hardening",
+    "Governed self-rewrite hardening",
+    "Visual Trace Console MVP",
+    "main.py / repo hygiene",
+    "Trading final integration"
+  ]
 }

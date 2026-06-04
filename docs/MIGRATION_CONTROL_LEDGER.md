@@ -737,3 +737,46 @@
   - OPTIONAL: VTC-E UI operator polish (banner, badges, redaction indicator)
   - PRIMARY: User-selected next priority
 
+## LEDGER-ROADMAP-SSOT-01 — Phase0 + Chat Ops GitHub sync recorded
+- **Fecha/hora**: 2026-06-04T08:45:00Z
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: 347eb1a5
+- **Estado**: Phase0 Security, Chat Ops y Push Sync cerrados y sincronizados en GitHub.
+
+### Phase0 Security
+- **Status**: done
+- **Commits**:
+  - 35fc676c — security(phase0/0A): untrack .dev_auth credentials and harden .gitignore
+  - 53ca0f16 — security(phase0/0B+0D): GOD-P3 guardrail and selfdev protected paths
+  - 0dcce5bd — security(phase0/0C): dev endpoints default OFF and return HTTP 403
+- **Remote synced**: true
+- **Validation**: Phase0 tests 14 passed; py_compile passed.
+- **Notes**: .dev_auth no trackeado; GOD P3 guardrail aplicado; dev endpoints default OFF; selfdev protected paths aplicado.
+
+### Chat Ops
+- **Status**: done
+- **Commit**: 347eb1a5 — chat-ops: stabilize tool results, sequence control, and diff analysis
+- **Remote synced**: true
+- **Validation**: sequence_control passed; Tool01 git.status permission passed; Tool01 git.diff permission passed; last_result_followup passed.
+- **Notes**: inline sequence fixed; continua no LLM; git.diff analysis real.
+
+### Push Sync
+- **Status**: done
+- **Remote before**: f389b164
+- **Remote after**: 347eb1a5
+- **Push type**: normal
+- **Force push**: false
+- **Merge/rebase**: false
+
+### Deferred / paused
+- **Trading/Phase299**: deferred_final_integration. User will continue trading/QC work separately and provide results later for integration.
+- **B8**: paused. Do not resume until explicitly approved.
+
+### Next recommended fronts
+1. Curated ingestion / learning promotion audit-hardening
+2. Persistent autonomy loop hardening
+3. Governed self-rewrite hardening
+4. Visual Trace Console MVP
+5. main.py / repo hygiene
+6. Trading final integration
+
