@@ -790,7 +790,7 @@
 ## LEDGER-ROADMAP-SSOT-RUNTIME-READONLY-LOOKUP-01 — Runtime Read-Only Lookup Module Implemented and Synced
 - **Fecha/hora**: 2026-06-04T12:30:00Z
 - **Branch**: codex/own-capital-sustainable-return
-- **HEAD local/remoto**: 05cf8f79
+- **HEAD local/remoto**: 75de98d2
 - **Estado**: Runtime read-only lookup module implementado, auditado, commiteado y sincronizado en GitHub.
 
 ### Runtime Read-Only Lookup Module
@@ -828,6 +828,13 @@
 - **RUNTIME_READONLY_LOOKUP_ENDPOINT_PLAN_01**: Implement read-only endpoints in main.py
 - **RUNTIME_READONLY_LOOKUP_CHAT_01**: Implement explicit chat command
 - Real writes: BLOCKED
+
+### SSOT Head Correction
+- **Fecha/hora**: 2026-06-04T12:40:00Z
+- **Commit**: 75de98d2 — ledger: fix runtime readonly lookup ssot head
+- **Cambio**: Corrected ROADMAP_STATUS.json current_head/current_remote_head from 05cf8f79 to 75de98d2
+- **Rationale**: 05cf8f79 is the runtime lookup module commit, 75de98d2 is the ledger sync commit which is the actual branch HEAD
+- **Verificacion**: runtime_readonly_lookup.commit remains 05cf8f79 (module commit unchanged)
 
 ---
 
