@@ -314,6 +314,8 @@ class BrainSession:
         self._pending_confirmed_action: Optional[Dict] = None
         self._tool01_permission_grants: Dict[str, Dict] = {}
         self._tool01_permission_counter: int = 0
+        self._last_tool_result: Optional[Dict] = None
+        self._pending_chat_sequence: Optional[Dict] = None
         self.chat_metrics = get_chat_metrics()
         self.logger.info("BrainSession '%s' v4-unified lista", session_id)
 
@@ -364,6 +366,63 @@ class BrainSession:
                 duration_ms=(_time.monotonic() - _t0) * 1000,
             )
             return result
+
+        # CHAT-OPS-SEQUENCE-RECOVERY-01: numbered workflow gate
+        #   - If message contains a numbered list, extract steps and dispatch the first actionable one.
+        #   - If message is a continuation request ("continua", "sigue", etc.) and a sequence is active,
+        #     advance to the next actionable step and dispatch it.
+        #   - Steps like "Allow Once / confirmo" are skipped automatically.
+        original_message = message
+        if self._is_continue_sequence_message(msg_stripped):
+            had_active_sequence = bool(
+                getattr(self, "_pending_chat_sequence", None)
+                and self._pending_chat_sequence.get("active")
+            )
+            next_step = self._maybe_advance_chat_sequence()
+            if next_step:
+                self.logger.info("Sequence continuation: advancing to step: %s", next_step[:80])
+                msg_stripped = next_step
+                message = next_step
+            else:
+                result = self._format_sequence_control_response(had_active_sequence)
+                await self._save_turn(message, result)
+                self.chat_metrics.record("sequence_control", True, (_time.monotonic() - _t0) * 1000)
+                self._emit_chat_completed(
+                    route="sequence_control",
+                    message=message,
+                    result=result,
+                    duration_ms=(_time.monotonic() - _t0) * 1000,
+                )
+                return self._maybe_dev_block(result)
+        else:
+            seq_steps = self._extract_numbered_sequence(original_message)
+            if seq_steps:
+                self._pending_chat_sequence = {
+                    "active": True,
+                    "steps": seq_steps,
+                    "current_index": 0,
+                    "created_at": datetime.utcnow().isoformat() + "Z",
+                    "source_message": original_message[:200],
+                }
+                # Advance past any manual-confirmation steps to find the first real step
+                first_step = self._maybe_advance_chat_sequence()
+                if first_step:
+                    self.logger.info("Sequence detected (%d steps). Dispatching first step: %s", len(seq_steps), first_step[:80])
+                    msg_stripped = first_step
+                    message = first_step
+                else:
+                    # All steps were manual-only; deactivate and fall through
+                    self._pending_chat_sequence["active"] = False
+                    result = self._format_sequence_control_response(True)
+                    await self._save_turn(message, result)
+                    self.chat_metrics.record("sequence_control", True, (_time.monotonic() - _t0) * 1000)
+                    self._emit_chat_completed(
+                        route="sequence_control",
+                        message=message,
+                        result=result,
+                        duration_ms=(_time.monotonic() - _t0) * 1000,
+                    )
+                    return self._maybe_dev_block(result)
 
         # TOOL-01A: deterministic governed real-tool router must run before
         # policy/fastpath/LLM routing so explicit simple tool requests never
@@ -851,6 +910,17 @@ class BrainSession:
             msg_stripped[:50], intent, confidence,
             "AGENT" if use_agent else "LLM"
         )
+
+        # CHAT-OPS-RESULTS-01B: Follow-up resolver — answer about last tool result without LLM.
+        # Runs AFTER all tool/fastpath/gak routes but BEFORE LLM/agent to avoid intercepting new requests.
+        if self._is_last_result_followup(msg_stripped):
+            result = self._format_last_tool_result(msg_stripped)
+            self.chat_metrics.record("last_result_followup", True, (_time.monotonic() - _t0) * 1000)
+            self._emit_chat_completed(
+                route="last_result_followup", message=message, result=result,
+                duration_ms=(_time.monotonic() - _t0) * 1000,
+            )
+            return self._maybe_dev_block(result)
 
         # 4. Route to agent or LLM
         agent_model_priority = self._select_agent_model_priority(msg_stripped, model_priority)
@@ -2049,14 +2119,14 @@ class BrainSession:
             )
             system += (
                 "\n\nPROHIBIDO en esta ruta de chat puro:\n"
-                "- NO uses frases como 'Activando Agente ORAV', 'Ejecutando herramientas', 'Ejecución paralela', "
+                "- NO uses frases como 'Activando Agente ORAV', 'Ejecutando herramientas', 'Ejecucion paralela', "
                 "'[OBSERVE]/[ACT]/[REASON]/[VERIFY]'.\n"
                 "- NO muestres bloques de codigo PowerShell/bash como si los hubieras ejecutado.\n"
                 "- NO escribas placeholders del tipo '[resultado de ...]', '[output]', '[ipconfig]'.\n"
                 "- Si el usuario pide una ejecucion (escanear, listar, ejecutar, detectar) y NO hay tool real "
-                "asociada, di literalmente: 'No ejecuto en esta ruta de chat. Hay capacidades nativas disponibles "
-                "(p.ej. detect_local_network, scan_local_network) que puedo invocar via el endpoint de agente; "
-                "confirma si quieres que las llame.'\n"
+                "asociada, di literalmente: 'No puedo ejecutar esa accion desde esta ruta de chat. "
+                "Para usar herramientas reales, formula la solicitud con un verbo operativo explicito "
+                "(ej: ejecuta git status, usa herramientas para revisar cambios).'\n"
                 "- Si conoces un tool nativo, mencionalo por su nombre exacto, no inventes nombres."
             )
         if self._is_abstract_reasoning_query(message.lower()):
@@ -2116,7 +2186,16 @@ class BrainSession:
         messages.extend(truncated)
         messages.append({"role": "user", "content": message})
 
-        result = await self.llm.query(messages, model_priority=chain)
+        try:
+            result = await asyncio.wait_for(
+                self.llm.query(messages, model_priority=chain),
+                timeout=12.0,
+            )
+        except asyncio.TimeoutError:
+            return self._system_reply(
+                "El modelo tardó demasiado en responder. El servidor sigue operativo; intenta de nuevo con una instrucción más concreta.",
+                success=False,
+            )
         if result.get("success") and result.get("content"):
             sanitized = self._sanitize_llm_chat_response(result["content"])
             result["content"] = sanitized
@@ -2449,6 +2528,20 @@ class BrainSession:
             r"\bread\s*file\b", r"\blee\s*archivo\b", r"\bcat\b",
             r"\bmuestra\s*archivo\b", r"\bcontenido de\b", r"\blee\b.*\b(?:lineas|líneas)\b",
         ],
+        "git_diff": [
+            r"\bgit\s+diff\b",
+            r"\blee\b.*\bdiff\b",
+            r"\brevisa\b.*\bdiff\b",
+            r"\banaliza\b.*\bdiff\b",
+            r"\banaliza\b.*\bcambios\b",
+            r"\banaliza\b.*\bc[\u00f3o]digo\s+modificado\b",
+            r"\bexplica\b.*\bcambios\b",
+            r"\bqu[eé]\s+cambi[oó]\b.*\bsession\.py\b",
+            r"\bque\s+cambio\b.*\bsession\.py\b",
+            r"\bqu[eé]\s+cambi[oó]\b.*\bmain\.py\b",
+            r"\bdime\b.*\bqu[eé]\s+cambi[oó]\b",
+            r"\bdime\b.*\bque\s+cambio\b",
+        ],
         "write_file": [
             r"\bwrite\s*file\b", r"\bescribir\s*archivo\b", r"\bcrear\s*archivo\b",
             r"\bcreate\s*file\b", r"\bescribir\b.*\barchivo\b", r"\bvtc_permission_test\.txt\b",
@@ -2466,6 +2559,25 @@ class BrainSession:
             r"\bcambios\s+en\s+el\s+chat\b",
             r"\brevisa\s+sistema\b",
             r"\bverifica\s+sistema\b",
+            # CHAT-OPS-01B: broader natural-language repo-change patterns
+            r"\brevisa\b.*\bcambios\b",
+            r"\brevisa\b.*\bcommits\b",
+            r"\brevisa\b.*\bultimos\b.*\bdias\b",
+            r"\bcambios\b.*\bultimos\b.*\bdias\b",
+            r"\bcommits\b.*\bultimos\b",
+            r"\bgit\s+status\b",
+            r"\bgit\b.*\bcambios\b",
+            r"\bultimos\b.*\bdias\b",
+            r"\bultimos\b.*\bd\u00edas\b",
+            r"\barchivos\s+modificados\b",
+            r"\brepositorio\b.*\bcambios\b",
+            # CHAT-OPS-RECOVERY-01: operational analysis of changes must NOT go to LLM
+            r"\banaliza\b.*\bcambios\b",
+            r"\banaliza\b.*\bc[\u00f3o]digo\s+modificado\b",
+            r"\bexplica\b.*\bcambios\b",
+            r"\blee\b.*\barchivos\s+modificados\b",
+            r"\bqu[eé]\s+cambio\b.*\bsession\.py\b",
+            r"\bqu[eé]\s+cambio\b.*\bmain\.py\b",
         ],
     }
 
@@ -2474,6 +2586,7 @@ class BrainSession:
         "git_status": "git.status",
         "list_directory": "filesystem.list_dir",
         "read_file": "filesystem.read_file",
+        "git_diff": "git.diff",
         "write_file": "filesystem.write_file",
         "diagnostic_general": "diagnostic.general",
     }
@@ -2485,13 +2598,16 @@ class BrainSession:
     )
 
     _TOOL01_LOW_RISK_TOOLS = frozenset({
-        "health_check", "git_status", "list_directory", "read_file", "diagnostic_general"
+        "health_check", "git_status", "list_directory", "read_file", "git_diff", "diagnostic_general"
     })
 
     _TOOL01_HIGH_RISK_TOOLS = frozenset({
         "install", "write_code", "restart_service", "git_commit_push",
         "pytest_broad", "py_compile_write", "write_file"
     })  # placeholder for future high-risk tools
+
+    # CHAT-OPS-ARCH-02B: Disable ORAV delegation by default until timeout validated
+    _ENABLE_ORAV_POST_APPROVAL = False
 
     def _tool01_get_risk_level(self, tool_name: str) -> str:
         if tool_name in self._TOOL01_LOW_RISK_TOOLS:
@@ -2609,12 +2725,23 @@ class BrainSession:
             return None
         msg_lower = message.lower().strip()
         # Map various user inputs to decisions
-        if any(x in msg_lower for x in ["allow_once", "allow once", "una vez", "solo una vez", "permitir una vez"]):
+        if any(x in msg_lower for x in ["allow_once", "allow once", "una vez", "solo una vez", "permitir una vez",
+                                          "confirmo", "sí", "si", "dale", "ejecuta", "procede", "aprobado", "ok", "yes", "ya", "aprueba", "aprobar", "confirma", "confirmo"]):
             result = self._tool01_approve_permission(perm["permission_id"], "allow_once")
             if result.get("success"):
-                # Execute the tool using the ORIGINAL message stored in the permission, not the confirmation text
                 original_message = perm.get("original_message", message)
-                return await self._tool01_execute(result["tool_name"], original_message)
+                tool_name = result["tool_name"]
+                # CHAT-OPS-ARCH-02B: Compute ORAV delegation intent, but gate with feature flag (disabled by default)
+                delegate_to_orav = self._should_delegate_tool01_to_orav(tool_name, perm)
+                if self._ENABLE_ORAV_POST_APPROVAL and delegate_to_orav:
+                    # Use ORAV executor for complex multi-step tasks
+                    return await self._run_orav_as_approved_executor(
+                        plan=original_message,
+                        permission_context={"tool_name": tool_name, "permission_id": perm.get("permission_id"), "original_message": original_message},
+                        max_steps=8,
+                    )
+                # Direct Tool01 execution (default)
+                return await self._tool01_execute(tool_name, original_message)
             return result
         elif any(x in msg_lower for x in ["allow_session", "allow for session", "permite sesion", "sesion completa", "toda la sesion"]):
             # Only allow for low-risk
@@ -2705,6 +2832,101 @@ class BrainSession:
             pass
         return True, "", resolved
 
+    def _tool01_extract_git_diff_targets(self, message: str) -> List[str]:
+        """Return a conservative allowlist of repo paths for git diff analysis."""
+        msg = (message or "").lower()
+        allowed = {
+            "session.py": "tmp_agent/brain_v9/core/session.py",
+            "main.py": "tmp_agent/brain_v9/main.py",
+        }
+        targets: List[str] = []
+        for name, rel_path in allowed.items():
+            if name in msg or rel_path.lower() in msg:
+                targets.append(rel_path)
+        if not targets:
+            targets = [allowed["session.py"], allowed["main.py"]]
+        # Preserve order while avoiding duplicates.
+        return list(dict.fromkeys(targets))
+
+    def _tool01_summarize_git_diff(self, diff_text: str, targets: Optional[List[str]] = None) -> str:
+        """Create a bounded, evidence-backed summary from raw git diff text."""
+        import re as _re
+
+        if not diff_text.strip():
+            target_text = ", ".join(targets or [])
+            return (
+                "Resultado anterior (git.diff):\n\n"
+                f"No hay diff activo para: {target_text or 'rutas consultadas'}."
+            )
+
+        chunks = _re.split(r"(?=^diff --git a/)", diff_text, flags=_re.MULTILINE)
+        file_sections = [c for c in chunks if c.strip().startswith("diff --git")]
+        lines: List[str] = ["Resultado anterior (git.diff):", "", "Archivos tocados:"]
+        sensitive_prefixes = ("memory/semantic", "tmp_agent/strategies", "tmp_agent/reports")
+
+        for idx, section in enumerate(file_sections[:10], start=1):
+            header = _re.search(r"^diff --git a/(.*?) b/(.*?)$", section, _re.MULTILINE)
+            file_path = header.group(2) if header else "desconocido"
+            additions = len([
+                line for line in section.splitlines()
+                if line.startswith("+") and not line.startswith("+++")
+            ])
+            deletions = len([
+                line for line in section.splitlines()
+                if line.startswith("-") and not line.startswith("---")
+            ])
+            lowered = section.lower()
+            path_lower = file_path.lower()
+            notes: List[str] = []
+            if any(path_lower == p or path_lower.startswith(p + "/") for p in sensitive_prefixes):
+                notes.append("toca ruta sensible bloqueada/observada")
+            if "tool01" in lowered or "permission" in lowered or "permiso" in lowered:
+                notes.append("afecta routing/permisos Tool01")
+            if "sequence_control" in lowered or "continua" in lowered or "_pending_chat_sequence" in lowered:
+                notes.append("afecta control de secuencias del chat")
+            if "git_diff" in lowered or "git.diff" in lowered:
+                notes.append("agrega análisis real de diff")
+            if "subprocess.run" in lowered:
+                notes.append("usa subprocess read-only con argumentos fijos")
+
+            if any(path_lower == p or path_lower.startswith(p + "/") for p in sensitive_prefixes):
+                risk = "alto"
+            elif any(term in lowered for term in ("permission", "permiso", "tool01", "subprocess.run", "route")):
+                risk = "medio"
+            else:
+                risk = "bajo"
+
+            if additions and deletions:
+                change_type = "modificación"
+            elif additions:
+                change_type = "adición"
+            elif deletions:
+                change_type = "eliminación"
+            else:
+                change_type = "metadata/sin hunks visibles"
+
+            impact = "No se puede inferir más sin leer el archivo completo."
+            if "session.py" in path_lower:
+                impact = "Cambia comportamiento de sesión/chat, routing Tool01 o respuesta a follow-ups."
+            elif "main.py" in path_lower:
+                impact = "Cambia endpoints/runtime principal de Brain V9."
+
+            lines.extend([
+                f"{idx}. {file_path}",
+                f"   - tipo: {change_type} (+{additions}/-{deletions})",
+                f"   - riesgo: {risk}",
+                f"   - impacto funcional: {impact}",
+                f"   - notas: {', '.join(notes) if notes else 'sin indicadores sensibles obvios en el diff'}",
+            ])
+
+        if len(file_sections) > 10 or len(diff_text) > 12000:
+            lines.append("")
+            lines.append("Diff truncado; usa una consulta más específica por archivo.")
+
+        raw_preview = diff_text[:4000]
+        lines.extend(["", "Diff bruto (preview):", raw_preview])
+        return "\n".join(lines)
+
     def _tool01_extract_write_content(self, message: str) -> str:
         """Extract content for write_file from message"""
         import re
@@ -2792,6 +3014,38 @@ class BrainSession:
                     result.update({"success": False, "error": raw.get("error"), "path": str(resolved)})
                 else:
                     result.update({"success": True, "path": str(resolved), "content": str(raw), "preview": str(raw)[:2000], "evidence": {"size_bytes": resolved.stat().st_size}})
+            elif tool_name == "git_diff":
+                import subprocess as _subprocess
+
+                targets = self._tool01_extract_git_diff_targets(message)
+                cmd = ["git", "diff", "--", *targets]
+                raw = _subprocess.run(
+                    cmd,
+                    cwd=str(BASE_PATH),
+                    capture_output=True,
+                    text=True,
+                    timeout=15,
+                    shell=False,
+                )
+                stdout = raw.stdout or ""
+                stderr = raw.stderr or ""
+                summary = self._tool01_summarize_git_diff(stdout, targets)
+                result.update({
+                    "success": raw.returncode == 0,
+                    "stdout": stdout,
+                    "stderr": stderr,
+                    "returncode": raw.returncode,
+                    "content": summary,
+                    "response": summary,
+                    "targets": targets,
+                    "evidence": {
+                        "cwd": str(BASE_PATH),
+                        "command": cmd,
+                        "stdout_preview": stdout[:1000],
+                        "summary_preview": summary[:1000],
+                        "truncated": len(stdout) > 12000,
+                    },
+                })
             elif tool_name == "write_file":
                 path = self._tool01_extract_path(message, "tmp_agent/workspace/vtc_permission_test.txt", require_file=True)
                 ok, reason, resolved = self._is_safe_workspace_path(path)
@@ -2899,6 +3153,8 @@ class BrainSession:
         result["duration_ms"] = round((_time.monotonic() - _t0) * 1000, 1)
         result["real_tool_executed"] = True
         result["evidence_path"] = self._tool01_write_evidence(result)
+        # CHAT-OPS-RESULTS-01: Store real tool result for follow-up resolution
+        self._save_last_tool_result(result)
         # Mark allow_once grant as used
         grant = self._tool01_permission_grants.get(tool_name)
         if grant and grant.get("grant_type") == "allow_once":
@@ -4838,38 +5094,41 @@ class BrainSession:
         localhost_host = "localhost" if host == "127.0.0.1" else host
         port = SERVER_PORT or 8090
 
-        runtime_status = "unknown"
-        verified_by = "not_verified"
-        http_ok = False
-        try:
-            req = urllib.request.Request(
-                f"http://{localhost_host}:{port}/health",
-                method="GET",
-            )
-            with urllib.request.urlopen(req, timeout=2) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                if data.get("status") == "healthy":
-                    runtime_status = "verified"
-                    verified_by = "http_health"
-                    http_ok = True
-                else:
-                    runtime_status = "degraded"
-                    verified_by = "http_health"
-        except Exception:
-            runtime_status = "unknown"
-            verified_by = "http_health_failed"
+        # B3-FAKE-GROUNDED-REMEDIATION-02: self-HTTP probe removed to avoid deadlock.
+        # In single-worker/event-loop mode, calling http://localhost:8090/health from
+        # within /chat handler blocks the worker and causes ~4s timeout.
+        runtime_status = "not_verified_in_process"
+        verified_by = "file_presence_only"
+        http_health_ok = None
+        file_presence_ok = ui_ready or dashboard_ready
+
+        # Use in-process flag as weak signal; do NOT claim healthy from it alone.
+        inprocess_running = bool(self.is_running)
 
         text = (
-            f"El dashboard esta integrado en Brain V9.\n"
+            f"Dashboard: archivos presentes, runtime no verificado desde fastpath interno.\n"
             f"runtime_status: {runtime_status}\n"
             f"verified_by: {verified_by}\n"
             f"host: {host}\n"
             f"puerto: {port}\n"
             f"ui_url: http://{localhost_host}:{port}/ui\n"
             f"dashboard_url: http://{localhost_host}:{port}/dashboard\n"
-            f"ui_files: index={'ok' if ui_ready else 'missing'} | dashboard={'ok' if dashboard_ready else 'missing'}"
+            f"file_presence: index={'ok' if ui_ready else 'missing'} | dashboard={'ok' if dashboard_ready else 'missing'}\n"
+            f"inprocess_running: {inprocess_running}\n"
+            f"\n"
+            f"No hago self-HTTP probe desde /chat porque puede bloquear el servidor. "
+            f"Para verificar runtime real, usar GET /health externo o smoke externo."
         )
-        return self._system_reply(text, success=(ui_ready or dashboard_ready) and http_ok)
+
+        result = self._system_reply(text, success=False)
+        result["route"] = "fastpath_dashboard_status"
+        result["runtime_status"] = runtime_status
+        result["verified_by"] = verified_by
+        result["file_presence_ok"] = file_presence_ok
+        result["http_health_ok"] = http_health_ok
+        result["ui_route_ok"] = None
+        result["dashboard_route_ok"] = None
+        return result
 
     def _utility_status_fastpath(self) -> Dict:
         utility = read_json(_STATE_PATH / "utility_u_latest.json", default={})
@@ -5244,6 +5503,319 @@ class BrainSession:
         await self.llm.close()
         self.is_running = False
         self.logger.info("BrainSession '%s' cerrada", self.session_id)
+
+    # ── CHAT-OPS-SEQUENCE-RECOVERY-01: numbered workflow continuation ────────
+    @staticmethod
+    def _extract_numbered_sequence(message: str) -> Optional[List[str]]:
+        """Extract numbered steps, including inline lists like '1. a 2. b'."""
+        marker_re = re.compile(r"(?<!\d)(\d+)\.\s+")
+        markers = list(marker_re.finditer(message))
+        steps: List[str] = []
+        if markers:
+            for index, marker in enumerate(markers):
+                start = marker.end()
+                end = markers[index + 1].start() if index + 1 < len(markers) else len(message)
+                step = message[start:end].strip()
+                if step:
+                    steps.append(re.sub(r"\s+", " ", step))
+            return steps if steps else None
+
+        for line in message.splitlines():
+            m = re.match(r"^\s*(?:-\s*|\*\s*)\s*(.+)\s*$", line)
+            if m:
+                steps.append(m.group(1).strip())
+        return steps if steps else None
+
+    @staticmethod
+    def _is_manual_confirmation_step(text: str) -> bool:
+        """Skip steps that are just confirmation instructions."""
+        t = text.lower()
+        manual_keywords = [
+            "allow once", "allow_once", "allow session", "allow_session",
+            "confirmo", "confirma", "dale", "sigue", "continua", "continúa",
+            "próximo", "proximo", "next", "manual", "aprueba",
+        ]
+        return any(k in t for k in manual_keywords)
+
+    @staticmethod
+    def _is_continue_sequence_message(text: str) -> bool:
+        """Detect continuation requests for active sequences."""
+        t = text.lower().strip().rstrip(".!?")
+        return t in ("continua", "continúa", "sigue", "próximo", "proximo",
+                       "next", "dale", "continuar", "adelante", "procede",
+                       "continua...", "sigue...")
+
+    def _maybe_advance_chat_sequence(self) -> Optional[str]:
+        """Return next actionable step text if sequence active, else None."""
+        seq = getattr(self, "_pending_chat_sequence", None)
+        if not seq or not seq.get("active"):
+            return None
+        steps = seq.get("steps", [])
+        idx = seq.get("current_index", 0)
+        while idx < len(steps):
+            step_text = steps[idx]
+            if self._is_manual_confirmation_step(step_text):
+                idx += 1
+                continue
+            seq["current_index"] = idx + 1  # Advance past this step for next call
+            return step_text
+        # No more actionable steps
+        seq["current_index"] = idx
+        seq["active"] = False
+        return None
+
+    def _format_sequence_control_response(self, had_active_sequence: bool) -> Dict:
+        """Return controlled response for continuation requests; never route to LLM."""
+        if had_active_sequence:
+            text = "No hay más pasos accionables en la secuencia."
+        else:
+            text = "No hay una secuencia activa para continuar. Escribe 'resultados' para ver el último resultado o da una acción concreta."
+        last = getattr(self, "_last_tool_result", None)
+        if last and last.get("tool_name"):
+            text += f"\nÚltimo resultado disponible: {last.get('tool_name')}."
+        return {
+            "success": True,
+            "content": text,
+            "response": text,
+            "route": "sequence_control",
+            "intent": "SEQUENCE_CONTROL",
+            "model": "sequence_control",
+            "model_used": "sequence_control",
+            "fallback": False,
+            "agent_status_timeout": False,
+            "tool01_router_used": False,
+            "tool01_real": False,
+        }
+
+    def _mark_chat_sequence_step_done(self) -> None:
+        """Advance sequence index after a step has been successfully executed."""
+        seq = getattr(self, "_pending_chat_sequence", None)
+        if not seq or not seq.get("active"):
+            return
+        idx = seq.get("current_index", 0)
+        seq["current_index"] = idx + 1
+
+    # ── CHAT-OPS-RESULTS-01: last tool result store and follow-up resolver ───
+    def _save_last_tool_result(self, result: Dict) -> None:
+        """Store real tool result for session-scoped follow-up queries (no LLM)."""
+        if not result.get("tool01_real"):
+            return
+        self._last_tool_result = {
+            "exists": True,
+            "tool_name": result.get("tool_name"),
+            "internal_tool": result.get("internal_tool"),
+            "content": (
+                result.get("content")
+                or result.get("stdout")
+                or result.get("response")
+                or result.get("stderr")
+                or ""
+            ),
+            "raw": result,
+            "created_at": datetime.utcnow().isoformat() + "Z",
+            "room_id": self.session_id,
+            "source": "tool01",
+            "tool01_real": True,
+        }
+
+    _LAST_RESULT_FOLLOWUP_PATTERNS = (
+        r"^\s*y\s+(?:los\s+)?resultados\??\s*$",
+        r"^\s*(?:muestra|dime|dame|mu[eé]strame)\s+(?:los\s+)?resultados\s*$",
+        r"^\s*responde\s+lo\s+que\s+se\s+pregunta\s*$",
+        r"^\s*(?:qu[eé]\s+(?:salió|encontr[oó])|qu[eé]\s+pas[oó])\s*\??\s*$",
+        r"^\s*(?:mu[eé]stralo|dame\s+el\s+resumen)\s*$",
+        r"^\s*(?:lista|listalos)\s+por\s+importancia\s*$",
+        r"^\s*(?:haz|hazme)\s+(?:el\s+)?resumen\s*$",
+        r"^\s*(?:se\s+realizaron\s+cambios\s+en\s+.*)\??\s*$",
+        r"^\s*(?:y\s+.*)\??\s*$",
+    )
+
+    def _is_last_result_followup(self, message: str) -> bool:
+        """Detect anaphoric follow-ups referring to the last tool result.
+        
+        Only triggers on short, explicitly result-seeking messages.
+        Long original requests (e.g., 'revisa cambios y listalos...') must NOT match.
+        """
+        msg_lower = message.lower().strip()
+        # Must be short (< 40 chars) OR match explicit regex patterns
+        if len(message) > 40:
+            # Long messages are likely new requests, not follow-ups
+            # Only allow if they match very explicit short patterns exactly
+            for pat in self._LAST_RESULT_FOLLOWUP_PATTERNS:
+                if re.search(pat, msg_lower):
+                    return True
+            return False
+        # Short messages: keyword heuristic
+        keywords = ["resultados", "resumen", "salió", "encontró", "pasó", "muestralo"]
+        if any(k in msg_lower for k in keywords):
+            return True
+        for pat in self._LAST_RESULT_FOLLOWUP_PATTERNS:
+            if re.search(pat, msg_lower):
+                return True
+        return False
+
+    def _format_last_tool_result(self, message: str) -> Dict:
+        """Answer from last tool result without LLM."""
+        last = self._last_tool_result
+        if not last:
+            text = "No hay un resultado reciente de herramienta para resumir. Indica qué quieres revisar."
+            return {
+                "success": True,
+                "content": text,
+                "response": text,
+                "route": "last_result_followup",
+                "intent": "QUERY",
+                "model": "last_result_followup",
+                "model_used": "last_result_followup",
+            }
+        content = last.get("content") or ""
+        lines: List[str] = []
+        lines.append(f"Resultado anterior ({last.get('tool_name', 'herramienta')}):")
+        if last.get("internal_tool") == "git_diff" or last.get("tool_name") == "git.diff":
+            raw = last.get("raw") or {}
+            diff_text = raw.get("stdout") or ""
+            targets = raw.get("targets") or []
+            text = self._tool01_summarize_git_diff(diff_text, targets)
+            return {
+                "success": True,
+                "content": text,
+                "response": text,
+                "route": "last_result_followup",
+                "intent": "QUERY",
+                "model": "last_result_followup",
+                "model_used": "last_result_followup",
+                "last_tool_name": last.get("tool_name"),
+            }
+        # Summarize git status if present
+        if "git status" in content.lower() or "modified files" in content.lower():
+            import re as _re
+            files = _re.findall(r"^[\s]*([MADRC?]{1,2})\s+(.+)$", content, _re.MULTILINE)
+            if files:
+                lines.append("Archivos modificados (por importancia):")
+                priority_order = {"session.py": 1, "main.py": 2, "semantic_memory.jsonl": 3}
+                sorted_files = sorted(files, key=lambda x: priority_order.get(Path(x[1]).name.lower(), 99))
+                for _, fpath in sorted_files[:15]:
+                    lines.append(f"  - {fpath}")
+                if len(files) > 15:
+                    lines.append(f"  ... y {len(files)-15} más.")
+            else:
+                # Fallback: just include first 800 chars of content as bullets
+                for line in content.splitlines()[:30]:
+                    if line.strip():
+                        lines.append(f"  {line.strip()}")
+        else:
+            # Generic content
+            for line in content.splitlines()[:30]:
+                if line.strip():
+                    lines.append(f"  {line.strip()}")
+        lines.append("")
+        lines.append("(No se ejecutó nueva herramienta; este es un resumen del último resultado real.)")
+        text = "\n".join(lines)
+        return {
+            "success": True,
+            "content": text,
+            "response": text,
+            "route": "last_result_followup",
+            "intent": "QUERY",
+            "model": "last_result_followup",
+            "model_used": "last_result_followup",
+            "last_tool_name": last.get("tool_name"),
+        }
+
+    def _should_delegate_tool01_to_orav(self, tool_name: str, perm: Dict) -> bool:
+        """CHAT-OPS-ARCH-02: Decide si ejecutar con Tool-01 directo o delegar a ORAV.
+        
+        Directo (NO ORAV):
+        - diagnostic_general
+        - health_check  
+        - git_status
+        - list_directory
+        - read_file
+        - write_file (success only)
+        
+        Delegado a ORAV:
+        - Tareas diagnostic_general cuando se especifica "multi-step", "analisis completo", "avanzado", "profundo"
+        - Cualquier pending action con risk_level medium/high y más de 3 patrones asociados
+        - Tareas con original_message explícitamente largo o multi-tool
+        """
+        direct_tools = {"health_check", "git_status", "list_directory", "read_file", "write_file"}
+        if tool_name in direct_tools:
+            return False
+        
+        if tool_name == "diagnostic_general":
+            msg = (perm.get("original_message", "") or "").lower()
+            # Si es una solicitud compleja que requiere análisis profundo/multi-fase
+            complex_keywords = ["analisis completo", "profundo", "avanzado", "multi-step", "muchos pasos", "plan detallado", "diagnostico total", "evaluacion exhaustiva"]
+            if any(k in msg for k in complex_keywords):
+                return True
+            # Si no es complejo, dejar Tool-01 directo
+            return False
+        
+        # Default: no delegar
+        return False
+
+    # ── CHAT-OPS-ARCH-01: ORAV executor subordination stub ─────────────────
+    async def _run_orav_as_approved_executor(
+        self,
+        plan: str,
+        permission_context: Dict,
+        max_steps: int = 8,
+    ) -> Dict:
+        """
+        Ejecuta AgentLoop/ORAV como executor subordinado, solo después de que
+        TOOL-01 / execution_gate hayan aprobado la acción.
+        
+        CHAT-OPS-ARCH-01: BrainSession es autoridad única; ORAV no decide
+        permisos, solo ejecuta planes aprobados.
+        
+        Args:
+            plan: descripción de la tarea a ejecutar (ya aprobada)
+            permission_context: dict con permission_id, tool_name, scope, etc.
+            max_steps: límite de pasos ORAV
+        
+        Returns:
+            Dict con resultado de ejecución ORAV
+        """
+        from brain_v9.agent.loop import AgentLoop
+        
+        # TOOL-01 executor (mismo path que usa _tool01_execute en session.py:2764)
+        executor = getattr(self, "_executor", None)
+        if executor is None:
+            # Lazy init using path real del runtime
+            from brain_v9.agent.tools import build_standard_executor
+            executor = build_standard_executor()
+            self._executor = executor
+        
+        loop = AgentLoop(self.llm, executor)
+        loop.MAX_STEPS = max_steps
+        
+        # Run with timeout guard
+        timeout = min(max_steps * 45, 360)
+        try:
+            result = await asyncio.wait_for(
+                loop.run(plan, context={"model_priority": "kimi", "approved": True}),
+                timeout=timeout,
+            )
+        except asyncio.TimeoutError:
+            return {
+                "success": False,
+                "error": f"ORAV executor timeout ({timeout}s)",
+                "route": "orav_executor",
+                "model": "agent_orav",
+                "model_used": "agent_orav",
+            }
+        
+        return {
+            "success": result.get("success", False),
+            "content": result.get("result", "Sin resultado"),
+            "response": result.get("result", "Sin resultado"),
+            "route": "orav_executor",
+            "model": "agent_orav",
+            "model_used": "agent_orav",
+            "steps": result.get("steps", 0),
+            "status": result.get("status", "unknown"),
+            "tools_executed": result.get("tools_executed", []),
+        }
 
 
 def get_or_create_session(session_id: str, sessions: Dict) -> "BrainSession":
