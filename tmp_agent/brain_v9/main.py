@@ -3537,6 +3537,17 @@ class ClaimAuditRequest(BaseModel):
     evidence: str = ""
 
 
+class CuratedKnowledgeDemoSearchRequest(BaseModel):
+    query: str
+    demo_index_path: str
+    top_k: int = 5
+    min_validation_score: float = DEFAULT_MIN_VALIDATION_SCORE
+    min_curation_score: float = DEFAULT_MIN_CURATION_SCORE
+    require_provenance: bool = True
+    include_stale: bool = False
+    demo_mode: bool = True
+
+
 @app.get("/brain/semantic-memory/status")
 async def brain_semantic_memory_status():
     from brain_v9.core.semantic_memory import get_semantic_memory
@@ -3607,6 +3618,50 @@ def _curated_lookup_result_payload(result: Any) -> Dict[str, Any]:
         "dry_run_id": result.dry_run_id,
         "label": result.label,
     }
+
+
+def _resolve_demo_curated_index_path(demo_index_path: str) -> Path:
+    raw = str(demo_index_path or "").strip()
+    if not raw:
+        raise HTTPException(status_code=400, detail="demo_index_path is required")
+
+    lowered = raw.lower()
+    if lowered.startswith(("http://", "https://", "file://")):
+        raise HTTPException(status_code=403, detail="demo_index_path URL schemes are not allowed")
+
+    candidate = Path(raw)
+    if candidate.suffix.lower() != ".jsonl":
+        raise HTTPException(status_code=422, detail="demo_index_path must point to a .jsonl file")
+
+    repo_root = Path(__file__).resolve().parents[2]
+    tmp_agent_root = (repo_root / "tmp_agent").resolve()
+    resolved = (repo_root / candidate).resolve() if not candidate.is_absolute() else candidate.resolve()
+
+    try:
+        resolved.relative_to(tmp_agent_root)
+    except ValueError:
+        raise HTTPException(status_code=403, detail="demo_index_path must resolve under tmp_agent")
+
+    protected_roots = [
+        (repo_root / "memory" / "semantic").resolve(),
+        (repo_root / "tmp_agent" / "strategies").resolve(),
+        (repo_root / ".git").resolve(),
+    ]
+    for protected in protected_roots:
+        try:
+            resolved.relative_to(protected)
+            raise HTTPException(status_code=403, detail="demo_index_path targets a protected path")
+        except ValueError:
+            pass
+
+    if not resolved.exists():
+        raise HTTPException(status_code=404, detail="demo index not found")
+    if not resolved.is_file():
+        raise HTTPException(status_code=422, detail="demo_index_path must be a file")
+    if resolved.stat().st_size > 5 * 1024 * 1024:
+        raise HTTPException(status_code=422, detail="demo index exceeds 5 MB limit")
+
+    return resolved
 
 
 @app.get("/brain/curated-knowledge/status")
@@ -3681,6 +3736,71 @@ async def brain_curated_knowledge_search(_operator: OperatorAccess, payload: Dic
                 "error": "curated lookup search failed",
                 "real_write_allowed": False,
                 "faiss_write_allowed": False,
+            },
+        )
+
+
+@app.post("/brain/curated-knowledge/demo-search")
+async def brain_curated_knowledge_demo_search(
+    payload: CuratedKnowledgeDemoSearchRequest,
+    _operator: OperatorAccess,
+):
+    query = str(payload.query or "").strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="query is required")
+    if not payload.demo_mode:
+        raise HTTPException(status_code=400, detail="demo_mode must be true")
+    if payload.require_provenance is False:
+        raise HTTPException(status_code=400, detail="require_provenance cannot be false")
+
+    resolved_demo_index_path = _resolve_demo_curated_index_path(payload.demo_index_path)
+    repo_root = Path(__file__).resolve().parents[2]
+    top_k = max(1, min(int(payload.top_k or 5), 10))
+    warnings = ["demo_index_override_request_scoped"]
+
+    try:
+        record = search_curated_candidates(
+            query,
+            index_path=resolved_demo_index_path,
+            top_k=top_k,
+            min_validation_score=float(payload.min_validation_score),
+            min_curation_score=float(payload.min_curation_score),
+            require_provenance=True,
+            include_stale=bool(payload.include_stale),
+        )
+        return {
+            "ok": True,
+            "label": "verified_curated_readonly_demo",
+            "demo_mode": True,
+            "query": query,
+            "demo_index_path": str(resolved_demo_index_path.relative_to(repo_root).as_posix()),
+            "result_count": len(record.results),
+            "total_available": record.total_available,
+            "filtered_out": record.filtered_out,
+            "results": [_curated_lookup_result_payload(r) for r in record.results],
+            "warnings": warnings,
+            "real_write_allowed": False,
+            "faiss_write_allowed": False,
+            "global_config_mutated": False,
+            "automatic_context_injection": False,
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        log.warning("curated-knowledge/demo-search failed: %s", exc)
+        return JSONResponse(
+            status_code=500,
+            content={
+                "ok": False,
+                "label": "verified_curated_readonly_demo",
+                "demo_mode": True,
+                "query": query,
+                "results": [],
+                "error": "curated demo lookup failed",
+                "real_write_allowed": False,
+                "faiss_write_allowed": False,
+                "global_config_mutated": False,
+                "automatic_context_injection": False,
             },
         )
 
