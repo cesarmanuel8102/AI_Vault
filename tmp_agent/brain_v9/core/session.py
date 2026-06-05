@@ -424,6 +424,27 @@ class BrainSession:
                     )
                     return self._maybe_dev_block(result)
 
+        # Explicit curated-knowledge lookup is read-only and must never fall
+        # through to Tool01, GAK, agent, or LLM fallback.
+        curated_lookup_command = self._parse_curated_lookup_command(msg_stripped)
+        if curated_lookup_command is not None:
+            result = self._run_curated_lookup_command(
+                curated_lookup_command.get("query", ""),
+                top_k=curated_lookup_command.get("top_k", 5),
+            )
+            self.chat_metrics.record(
+                "curated_lookup_readonly",
+                result.get("success", True),
+                (_time.monotonic() - _t0) * 1000,
+            )
+            self._emit_chat_completed(
+                route="curated_lookup_readonly",
+                message=message,
+                result=result,
+                duration_ms=(_time.monotonic() - _t0) * 1000,
+            )
+            return self._maybe_dev_block(result)
+
         # TOOL-01A: deterministic governed real-tool router must run before
         # policy/fastpath/LLM routing so explicit simple tool requests never
         # fall through to templates, grounded_code_fastpath, or AgentLoop timeout.
@@ -1062,6 +1083,174 @@ class BrainSession:
         gate = utility.get("promotion_gate") or {}
         blockers = gate.get("blockers")
         return blockers if isinstance(blockers, list) else []
+
+    def _parse_curated_lookup_command(self, message: str) -> Optional[Dict]:
+        """Parse explicit read-only curated-knowledge chat commands."""
+        raw = (message or "").strip()
+        if not raw:
+            return None
+
+        lowered = raw.lower()
+        colon_trigger = "busca en conocimiento curado:"
+        prefix_triggers = (
+            "que aprendiste sobre",
+            "qué aprendiste sobre",
+            "usa curated knowledge para responder",
+            "usa conocimiento curado para responder",
+        )
+
+        query: Optional[str] = None
+        if lowered.startswith(colon_trigger):
+            query = raw.split(":", 1)[1].strip() if ":" in raw else ""
+        else:
+            for trigger in prefix_triggers:
+                if lowered.startswith(trigger):
+                    query = raw[len(trigger):].strip()
+                    break
+
+        if query is None:
+            return None
+
+        return {
+            "query": query[:500].strip(),
+            "top_k": 5,
+        }
+
+    def _run_curated_lookup_command(self, query: str, top_k: int = 5) -> Dict:
+        """Run curated lookup without LLM fallback, writes, or promotion."""
+        query = (query or "").strip()
+        warnings: List[str] = []
+        if not query:
+            content = self._format_curated_lookup_chat_response(query, None, warnings=["query_required"])
+            return {
+                "success": False,
+                "content": content,
+                "response": content,
+                "route": "curated_lookup_readonly",
+                "intent": "QUERY",
+                "model": "curated_lookup_readonly",
+                "metadata": {
+                    "label": "verified_curated_readonly",
+                    "result_count": 0,
+                    "warnings": ["query_required"],
+                    "real_write_allowed": False,
+                    "faiss_write_allowed": False,
+                    "llm_fallback_used": False,
+                    "automatic_context_injection": False,
+                },
+            }
+
+        try:
+            from brain.curated_runtime_lookup import search_curated_candidates
+
+            record = search_curated_candidates(
+                query,
+                top_k=max(1, min(int(top_k or 5), 10)),
+                require_provenance=True,
+                include_stale=False,
+            )
+            content = self._format_curated_lookup_chat_response(query, record, warnings=warnings)
+            result_count = len(getattr(record, "results", ()) or ())
+            return {
+                "success": True,
+                "content": content,
+                "response": content,
+                "route": "curated_lookup_readonly",
+                "intent": "QUERY",
+                "model": "curated_lookup_readonly",
+                "metadata": {
+                    "label": "verified_curated_readonly",
+                    "result_count": result_count,
+                    "total_available": getattr(record, "total_available", 0),
+                    "filtered_out": getattr(record, "filtered_out", 0),
+                    "warnings": warnings,
+                    "real_write_allowed": False,
+                    "faiss_write_allowed": False,
+                    "llm_fallback_used": False,
+                    "automatic_context_injection": False,
+                },
+            }
+        except Exception as exc:
+            warnings = ["lookup_unavailable"]
+            content = self._format_curated_lookup_chat_response(query, None, warnings=warnings, error=str(exc)[:160])
+            return {
+                "success": False,
+                "content": content,
+                "response": content,
+                "route": "curated_lookup_readonly",
+                "intent": "QUERY",
+                "model": "curated_lookup_readonly",
+                "metadata": {
+                    "label": "verified_curated_readonly",
+                    "result_count": 0,
+                    "warnings": warnings,
+                    "real_write_allowed": False,
+                    "faiss_write_allowed": False,
+                    "llm_fallback_used": False,
+                    "automatic_context_injection": False,
+                },
+            }
+
+    def _format_curated_lookup_chat_response(
+        self,
+        query: str,
+        lookup_result,
+        warnings: Optional[List[str]] = None,
+        error: Optional[str] = None,
+    ) -> str:
+        warnings = list(warnings or [])
+        query = (query or "").strip()
+        lines = ["[verified_curated_readonly]", ""]
+
+        if not query:
+            lines.append("Consulta vacía. Usa: busca en conocimiento curado: <tema>")
+        elif error:
+            lines.append("No pude consultar el índice curated read-only de forma segura.")
+            lines.append(f"Motivo: {error}")
+            lines.append("No se ejecutó fallback LLM ni escritura de memoria.")
+        else:
+            results = list(getattr(lookup_result, "results", ()) or ())
+            total_available = getattr(lookup_result, "total_available", len(results))
+            filtered_out = getattr(lookup_result, "filtered_out", 0)
+            if not results:
+                lines.append(f"No encontré resultados curados para: \"{query}\".")
+                lines.append("")
+                lines.append("Esto no activa LLM fallback ni búsqueda externa.")
+            else:
+                lines.append(f"Encontré {len(results)} resultados curados para: \"{query}\"")
+                lines.append(f"Total disponible: {total_available}; filtrados: {filtered_out}")
+                lines.append("")
+                for idx, item in enumerate(results, 1):
+                    text = (getattr(item, "text", "") or "").strip()
+                    snippet = text[:360] + ("..." if len(text) > 360 else "")
+                    evidence_refs = list(getattr(item, "evidence_refs", ()) or ())
+                    lines.append(f"{idx}. Resumen:")
+                    lines.append(f"   {snippet or '(sin texto)'}")
+                    lines.append("   Fuente:")
+                    lines.append(f"   source_id: {getattr(item, 'source_id', 'unknown')}")
+                    lines.append("   Evidencia:")
+                    if evidence_refs:
+                        for ref in evidence_refs[:5]:
+                            lines.append(f"   - {ref}")
+                    else:
+                        lines.append("   - unknown")
+                    lines.append("   Scores:")
+                    lines.append(f"   validation_score: {getattr(item, 'validation_score', 'unknown')}")
+                    lines.append(f"   curation_score: {getattr(item, 'curation_score', 'unknown')}")
+                    lines.append(f"   trust_score: {getattr(item, 'trust_score', 'unknown')}")
+                    lines.append(f"   freshness: {getattr(item, 'freshness', 'unknown')}")
+                    lines.append(f"   dry_run_id: {getattr(item, 'dry_run_id', 'unknown')}")
+                    lines.append("")
+
+        if warnings:
+            lines.append("Warnings:")
+            for warning in warnings:
+                lines.append(f"- {warning}")
+            lines.append("")
+
+        lines.append("Limitación:")
+        lines.append("Esto es conocimiento curado read-only. No está promovido a memoria real.")
+        return "\n".join(lines).strip()
 
     async def _handle_command(self, message: str) -> Dict:
         """Handle /slash commands. Returns result dict."""
