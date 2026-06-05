@@ -925,3 +925,56 @@
 - RUNTIME_READONLY_LOOKUP_CHAT_COMMAND_PLAN_01
 - EXTERNAL-CURATED-INGESTION-DRY-RUN-DEMO-01 after chat command or as explicit endpoint-only demo
 
+
+---
+
+## LEDGER-ROADMAP-SSOT-RUNTIME-READONLY-CHAT-COMMAND-01 — Runtime Read-Only Lookup Chat Command Implemented and Synced
+- **Fecha/hora**: 2026-06-05T07:45:34.2149514Z
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: affc6614
+- **Estado**: Runtime read-only lookup chat command implementado, validado, commiteado y sincronizado en GitHub.
+
+### Commit Registrado
+- **Commit**: affc6614 — runtime: add read-only curated knowledge chat command
+- **Remote synced**: true
+
+### Route
+- curated_lookup_readonly
+
+### Triggers
+- busca en conocimiento curado: <query>
+- qué aprendiste sobre <query>
+- que aprendiste sobre <query>
+- usa curated knowledge para responder <query>
+- usa conocimiento curado para responder <query>
+
+### Files
+- tmp_agent/brain_v9/core/session.py
+- tests/smoke/smoke_runtime_readonly_lookup_chat_command.py
+
+### Validation
+- py_compile: PASS
+- isolated smoke: 13 passed
+- curated suite: 53 passed
+
+### Guarantees
+- Explicit command only
+- Response label [verified_curated_readonly]
+- No LLM fallback
+- No _save_turn in curated route
+- No memory/semantic writes
+- No FAISS writes
+- No real writes
+- No automatic context injection
+- No chain-of-thought exposure
+- No main.py touched
+- No trading/B8 touched
+
+### Limitations
+- External curated ingestion dry-run not executed yet
+- Real writes still blocked
+- Automatic context injection still blocked
+- Promotion to real memory still blocked
+
+### Next Recommended
+- EXTERNAL-CURATED-INGESTION-DRY-RUN-DEMO-01
