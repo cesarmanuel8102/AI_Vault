@@ -1,9 +1,9 @@
 {
-  "current_head": "affc6614",
-  "current_remote_head": "affc6614",
+  "current_head": "99450804",
+  "current_remote_head": "99450804",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "runtime_readonly_lookup_chat_command_synced",
-  "last_applied_checkpoint": "LEDGER-ROADMAP-SSOT-RUNTIME-READONLY-CHAT-COMMAND-01",
+  "migration_status": "runtime_readonly_demo_search_endpoint_synced",
+  "last_applied_checkpoint": "LEDGER-ROADMAP-SSOT-RUNTIME-READONLY-DEMO-SEARCH-ENDPOINT-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -29,7 +29,8 @@
     "PROMOTION_GATE_V1_DRY_RUN_COORDINATOR",
     "RUNTIME_READONLY_LOOKUP",
     "RUNTIME_READONLY_LOOKUP_ENDPOINTS",
-    "RUNTIME_READONLY_LOOKUP_CHAT_COMMAND"
+    "RUNTIME_READONLY_LOOKUP_CHAT_COMMAND",
+    "RUNTIME_READONLY_LOOKUP_DEMO_SEARCH_ENDPOINT"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -39,12 +40,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "EXTERNAL-CURATED-INGESTION-DRY-RUN-DEMO-01",
+    "name": "EXTERNAL-CURATED-INGESTION-DRY-RUN-DEMO-02",
     "status": "recommended_next",
-    "reason": "read-only lookup module, endpoints, and explicit chat command are complete; next safe step is external curated ingestion dry-run demo, not real writes"
+    "reason": "demo-search endpoint is now available; next safe step is to repeat the external curated ingestion dry-run through the operator-only demo endpoint"
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-06-05T01:23:58.228135+00:00",
+  "last_updated": "2026-06-04T08:50:00Z",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -229,6 +230,48 @@
         "automatic_context_injection": "blocked",
         "promotion_to_real_memory": "blocked"
       }
+    },
+    "demo_search_endpoint": {
+      "status": "done",
+      "commit": "99450804",
+      "remote_synced": true,
+      "route": "POST /brain/curated-knowledge/demo-search",
+      "request_model": "CuratedKnowledgeDemoSearchRequest",
+      "path_policy_helper": "_resolve_demo_curated_index_path",
+      "files": [
+        "tmp_agent/brain_v9/main.py",
+        "tests/smoke/smoke_runtime_readonly_lookup_demo_search_endpoint.py"
+      ],
+      "tests": {
+        "py_compile": "PASS",
+        "isolated_smoke": "14 passed",
+        "curated_suite": "67 passed"
+      },
+      "guarantees": {
+        "operator_access_required": true,
+        "demo_mode_required": true,
+        "path_must_be_under_tmp_agent": true,
+        "jsonl_only": true,
+        "rejects_memory_semantic": true,
+        "rejects_tmp_agent_strategies": true,
+        "rejects_git_paths": true,
+        "rejects_urls": true,
+        "rejects_path_traversal": true,
+        "uses_search_curated_candidates_index_path": true,
+        "response_label": "verified_curated_readonly_demo",
+        "no_default_lookup_index_mutation": true,
+        "no_global_env_override": true,
+        "no_chat_path_argument": true,
+        "no_real_writes": true,
+        "no_faiss_writes": true,
+        "no_memory_semantic_write": true
+      },
+      "limitations": {
+        "real_writes": "blocked",
+        "automatic_context_injection": "blocked",
+        "promotion_to_real_memory": "blocked",
+        "chat_demo_path": "not implemented by design"
+      }
     }
   },
   "trading_phase299": {
@@ -241,7 +284,7 @@
   },
   "next_recommended_fronts": [
     "RUNTIME_READONLY_LOOKUP_CHAT_COMMAND_PLAN_01",
-    "EXTERNAL-CURATED-INGESTION-DRY-RUN-DEMO-01",
+    "EXTERNAL-CURATED-INGESTION-DRY-RUN-DEMO-02",
     "Curated ingestion / learning promotion audit-hardening",
     "Persistent autonomy loop hardening",
     "Governed self-rewrite hardening",

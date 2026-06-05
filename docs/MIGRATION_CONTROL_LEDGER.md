@@ -978,3 +978,64 @@
 
 ### Next Recommended
 - EXTERNAL-CURATED-INGESTION-DRY-RUN-DEMO-01
+
+
+---
+
+## LEDGER-ROADMAP-SSOT-RUNTIME-READONLY-DEMO-SEARCH-ENDPOINT-01 — Runtime Read-Only Demo Search Endpoint Implemented and Synced
+- **Fecha/hora**: 2026-06-04T08:50:00Z
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: 99450804
+- **Estado**: Runtime read-only demo search endpoint implementado, validado, commiteado y sincronizado en GitHub.
+
+### Commit Registrado
+- **Commit**: 99450804 — runtime: add curated read-only demo search endpoint
+- **Remote synced**: true
+
+### Endpoint
+- POST /brain/curated-knowledge/demo-search
+
+### Request Model
+- CuratedKnowledgeDemoSearchRequest
+
+### Path Policy Helper
+- `_resolve_demo_curated_index_path`
+
+### Files
+- tmp_agent/brain_v9/main.py
+- tests/smoke/smoke_runtime_readonly_lookup_demo_search_endpoint.py
+
+### Validation
+- py_compile: PASS
+- isolated smoke: 14 passed
+- curated suite: 67 passed
+
+### Guarantees
+- OperatorAccess required
+- demo_mode:true required
+- demo_index_path validated by strict path policy
+- path under tmp_agent only
+- .jsonl only
+- memory/semantic rejected
+- tmp_agent/strategies rejected
+- .git rejected
+- URLs rejected
+- traversal rejected
+- search_curated_candidates(index_path=...) used
+- response label verified_curated_readonly_demo
+- no DEFAULT_LOOKUP_INDEX_PATH mutation
+- no global env override
+- no path by chat
+- no real writes
+- no FAISS writes
+- no memory/semantic writes
+
+### Limitations
+- Real writes still blocked
+- Automatic context injection still blocked
+- Promotion to real memory still blocked
+- Chat demo path intentionally not implemented
+
+### Next Recommended
+- EXTERNAL-CURATED-INGESTION-DRY-RUN-DEMO-02
+
