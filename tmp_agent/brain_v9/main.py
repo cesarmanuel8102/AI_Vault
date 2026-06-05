@@ -27,6 +27,18 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from brain.curated_runtime_lookup import (
+    ALLOWED_STATES_FOR_LOOKUP,
+    DEFAULT_FRESHNESS_DAYS,
+    DEFAULT_LOOKUP_INDEX_PATH,
+    DEFAULT_MIN_CURATION_SCORE,
+    DEFAULT_MIN_VALIDATION_SCORE,
+    FAISS_WRITE_ALLOWED,
+    LOOKUP_VERSION,
+    REAL_WRITE_ALLOWED,
+    load_curated_lookup_index,
+    search_curated_candidates,
+)
 from brain_v9.api_security import require_operator_access, StrictOperatorAccess
 from brain_v9.config import (
     BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS,
@@ -3529,6 +3541,148 @@ class ClaimAuditRequest(BaseModel):
 async def brain_semantic_memory_status():
     from brain_v9.core.semantic_memory import get_semantic_memory
     return get_semantic_memory().status()
+
+
+def _curated_knowledge_status_payload() -> Dict[str, Any]:
+    index_path = DEFAULT_LOOKUP_INDEX_PATH
+    records = load_curated_lookup_index(index_path)
+    warnings: list[str] = []
+    total_records = 0
+    malformed_count = 0
+    if index_path.exists():
+        for line in index_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            total_records += 1
+            try:
+                json.loads(line)
+            except json.JSONDecodeError:
+                malformed_count += 1
+        last_updated = datetime.fromtimestamp(index_path.stat().st_mtime, tz=timezone.utc).isoformat()
+    else:
+        last_updated = None
+        warnings.append("readonly lookup index not found")
+    if malformed_count:
+        warnings.append(f"malformed records skipped: {malformed_count}")
+
+    stale_count = 0
+    now = datetime.now(timezone.utc)
+    for record in records:
+        try:
+            freshness = datetime.fromisoformat(record.freshness)
+            if (now - freshness).days > DEFAULT_FRESHNESS_DAYS:
+                stale_count += 1
+        except Exception:
+            stale_count += 1
+
+    return {
+        "ok": True,
+        "label": "verified_curated_readonly",
+        "index_exists": index_path.exists(),
+        "index_path": str(index_path),
+        "total_records": total_records,
+        "allowed_records": len(records),
+        "blocked_filtered_count": max(0, total_records - len(records)),
+        "stale_count": stale_count,
+        "last_updated": last_updated,
+        "lookup_version": LOOKUP_VERSION,
+        "real_write_allowed": REAL_WRITE_ALLOWED,
+        "faiss_write_allowed": FAISS_WRITE_ALLOWED,
+        "warnings": warnings,
+    }
+
+
+def _curated_lookup_result_payload(result: Any) -> Dict[str, Any]:
+    return {
+        "candidate_id": result.candidate_id,
+        "state": result.state,
+        "text": result.text,
+        "source_id": result.source_id,
+        "evidence_refs": list(result.evidence_refs),
+        "validation_score": result.validation_score,
+        "curation_score": result.curation_score,
+        "trust_score": result.trust_score,
+        "freshness": result.freshness,
+        "dry_run_id": result.dry_run_id,
+        "label": result.label,
+    }
+
+
+@app.get("/brain/curated-knowledge/status")
+async def brain_curated_knowledge_status(_operator: OperatorAccess):
+    try:
+        return _curated_knowledge_status_payload()
+    except Exception as exc:
+        log.warning("curated-knowledge/status failed: %s", exc)
+        return JSONResponse(
+            status_code=500,
+            content={
+                "ok": False,
+                "label": "verified_curated_readonly",
+                "error": "curated lookup status failed",
+                "real_write_allowed": False,
+                "faiss_write_allowed": False,
+            },
+        )
+
+
+@app.post("/brain/curated-knowledge/search")
+async def brain_curated_knowledge_search(_operator: OperatorAccess, payload: Dict[str, Any] = Body(default={})):
+    query = str(payload.get("query") or "").strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="query is required")
+
+    top_k = max(1, min(int(payload.get("top_k") or 5), 25))
+    requested_states = payload.get("allowed_states")
+    if isinstance(requested_states, list):
+        allowed_states = tuple(s for s in requested_states if s in ALLOWED_STATES_FOR_LOOKUP)
+    else:
+        allowed_states = tuple(sorted(ALLOWED_STATES_FOR_LOOKUP))
+    if not allowed_states:
+        allowed_states = tuple(sorted(ALLOWED_STATES_FOR_LOOKUP))
+
+    min_validation_score = float(payload.get("min_validation_score", DEFAULT_MIN_VALIDATION_SCORE))
+    min_curation_score = float(payload.get("min_curation_score", DEFAULT_MIN_CURATION_SCORE))
+    require_provenance = bool(payload.get("require_provenance", True))
+    include_stale = bool(payload.get("include_stale", False))
+
+    try:
+        record = search_curated_candidates(
+            query,
+            allowed_states=allowed_states,
+            top_k=top_k,
+            min_validation_score=min_validation_score,
+            min_curation_score=min_curation_score,
+            require_provenance=require_provenance,
+            include_stale=include_stale,
+        )
+        return {
+            "ok": True,
+            "label": "verified_curated_readonly",
+            "query": query,
+            "result_count": len(record.results),
+            "total_available": record.total_available,
+            "filtered_out": record.filtered_out,
+            "results": [_curated_lookup_result_payload(r) for r in record.results],
+            "warnings": [],
+            "real_write_allowed": REAL_WRITE_ALLOWED,
+            "faiss_write_allowed": FAISS_WRITE_ALLOWED,
+        }
+    except Exception as exc:
+        log.warning("curated-knowledge/search failed: %s", exc)
+        return JSONResponse(
+            status_code=500,
+            content={
+                "ok": False,
+                "label": "verified_curated_readonly",
+                "query": query,
+                "results": [],
+                "error": "curated lookup search failed",
+                "real_write_allowed": False,
+                "faiss_write_allowed": False,
+            },
+        )
 
 
 @app.get("/brain/semantic-memory/search")
