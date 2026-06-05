@@ -1,9 +1,9 @@
 {
-  "current_head": "75de98d2",
-  "current_remote_head": "75de98d2",
+  "current_head": "0e0eaadf",
+  "current_remote_head": "0e0eaadf",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "phase0_chat_ops_push_synced",
-  "last_applied_checkpoint": "PUSH-SYNC-01",
+  "migration_status": "runtime_readonly_lookup_endpoints_synced",
+  "last_applied_checkpoint": "LEDGER-ROADMAP-SSOT-RUNTIME-READONLY-ENDPOINTS-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -27,7 +27,8 @@
     "PUSH_SYNC_01",
     "PROMOTION_GATE_V1_CONTRACT",
     "PROMOTION_GATE_V1_DRY_RUN_COORDINATOR",
-    "RUNTIME_READONLY_LOOKUP"
+    "RUNTIME_READONLY_LOOKUP",
+    "RUNTIME_READONLY_LOOKUP_ENDPOINTS"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -36,9 +37,13 @@
     "tmp_agent/strategies",
     "tmp_agent/reports"
   ],
-  "recommended_next_front": "LEDGER-ROADMAP-COMMIT-01",
+  "recommended_next_front": {
+    "name": "RUNTIME_READONLY_LOOKUP_CHAT_COMMAND_PLAN_01",
+    "status": "recommended_next",
+    "reason": "endpoints are now available; next safe step is explicit chat command, not automatic context injection or real writes"
+  },
   "ready_for_next_front": true,
-  "last_updated": "2026-06-04T08:45:00Z",
+  "last_updated": "2026-06-05T01:23:58.228135+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -125,12 +130,7 @@
   },
   "real_write_status": {
     "status": "blocked",
-    "reason": "rollback fixture and production write gate not implemented"
-  },
-  "recommended_next_front": {
-    "name": "RUNTIME_READONLY_LOOKUP_ENDPOINT_PLAN_01",
-    "status": "recommended_next",
-    "reason": "read-only lookup module implemented; next safe step is endpoint plan implementation, not real write"
+    "reason": "rollback fixture and production write gate not implemented; runtime endpoints are read-only only"
   },
   "runtime_readonly_lookup": {
     "status": "done",
@@ -156,6 +156,39 @@
       "faiss_write_allowed": false,
       "dry_run_verified_is_not_real_promotion": true,
       "module_is_read_only": true
+    },
+    "endpoints": {
+      "status": "done",
+      "commit": "0e0eaadf",
+      "remote_synced": true,
+      "routes": [
+        "GET /brain/curated-knowledge/status",
+        "POST /brain/curated-knowledge/search"
+      ],
+      "files": [
+        "tmp_agent/brain_v9/main.py",
+        "tests/smoke/smoke_runtime_readonly_lookup_endpoints.py"
+      ],
+      "tests": {
+        "py_compile": "PASS",
+        "isolated_smoke": "12 passed",
+        "full_validation": "40 passed"
+      },
+      "guarantees": {
+        "operator_access": true,
+        "no_llm_fallback": true,
+        "no_real_writes": true,
+        "no_faiss_writes": true,
+        "no_memory_semantic_write": true,
+        "no_trading_b8_touched": true,
+        "evidence_not_committed": true
+      },
+      "limitations": {
+        "chat_command_implemented": false,
+        "external_curated_ingestion_dry_run_executed": false,
+        "real_writes": "blocked",
+        "automatic_context_injection": "blocked"
+      }
     }
   },
   "trading_phase299": {
@@ -167,6 +200,8 @@
     "note": "Do not resume until explicitly approved."
   },
   "next_recommended_fronts": [
+    "RUNTIME_READONLY_LOOKUP_CHAT_COMMAND_PLAN_01",
+    "EXTERNAL-CURATED-INGESTION-DRY-RUN-DEMO-01",
     "Curated ingestion / learning promotion audit-hardening",
     "Persistent autonomy loop hardening",
     "Governed self-rewrite hardening",

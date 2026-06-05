@@ -880,3 +880,48 @@
 5. main.py / repo hygiene
 6. Trading final integration
 
+
+---
+
+## LEDGER-ROADMAP-SSOT-RUNTIME-READONLY-ENDPOINTS-01 — Runtime Read-Only Lookup Endpoints Implemented and Synced
+- **Fecha/hora**: 2026-06-05T01:23:58.2463363Z
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: 0e0eaadf
+- **Estado**: Runtime read-only lookup endpoints implementados, validados, commiteados y sincronizados en GitHub.
+
+### Commit Registrado
+- **Commit**: 0e0eaadf — runtime: add read-only curated knowledge endpoints
+- **Remote synced**: true
+
+### Endpoints
+- GET /brain/curated-knowledge/status
+- POST /brain/curated-knowledge/search
+
+### Files
+- tmp_agent/brain_v9/main.py
+- tests/smoke/smoke_runtime_readonly_lookup_endpoints.py
+
+### Validation
+- py_compile: PASS
+- isolated smoke: 12 passed
+- full validation: 40 passed
+
+### Guarantees
+- OperatorAccess required
+- No LLM fallback
+- No real writes
+- No FAISS writes
+- No memory/semantic write
+- No trading/B8 touched
+- Evidence not committed
+
+### Limitations
+- Chat command not implemented yet
+- External curated ingestion dry-run not executed yet
+- Real writes still blocked
+- Automatic context injection still blocked
+
+### Next Recommended
+- RUNTIME_READONLY_LOOKUP_CHAT_COMMAND_PLAN_01
+- EXTERNAL-CURATED-INGESTION-DRY-RUN-DEMO-01 after chat command or as explicit endpoint-only demo
+
