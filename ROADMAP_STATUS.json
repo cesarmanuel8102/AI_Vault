@@ -1,9 +1,9 @@
 {
-  "current_head": "1a5f9801",
-  "current_remote_head": "1a5f9801",
+  "current_head": "c864b4c6",
+  "current_remote_head": "c864b4c6",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "self_improvement_first_five_patch_recommendation_dry_run_synced",
-  "last_applied_checkpoint": "SELF-IMPROVEMENT-FIRST-FIVE-PATCH-RECOMMENDATION-DRY-RUN-01",
+  "migration_status": "self_improvement_first_five_patch_plan_dry_run_synced",
+  "last_applied_checkpoint": "SELF-IMPROVEMENT-FIRST-FIVE-PATCH-PLAN-DRY-RUN-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -43,7 +43,8 @@
     "SELF_IMPROVEMENT_FIRST_FIVE_LIVE_SOURCE_VALIDATION_DRY_RUN",
     "SELF_IMPROVEMENT_FIRST_FIVE_BENCHMARK_DESIGN_DRY_RUN",
     "SELF_IMPROVEMENT_FIRST_FIVE_BENCHMARK_HARNESS_DRY_RUN",
-    "SELF_IMPROVEMENT_FIRST_FIVE_PATCH_RECOMMENDATION_DRY_RUN"
+    "SELF_IMPROVEMENT_FIRST_FIVE_PATCH_RECOMMENDATION_DRY_RUN",
+    "SELF_IMPROVEMENT_FIRST_FIVE_PATCH_PLAN_DRY_RUN"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -53,12 +54,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "SELF-IMPROVEMENT-FIRST-FIVE-PATCH-PLAN-DRY-RUN-01",
+    "name": "SELF-IMPROVEMENT-FIRST-FIVE-PATCH-PLAN-REVIEW-DRY-RUN-01",
     "status": "recommended_next",
-    "reason": "patch recommendations are dry-run complete; next safe step is a patch plan dry-run, not applying patches"
+    "reason": "patch plans are dry-run complete; next safe step is human review dry-run, not applying patches"
   },
-  "ready_for_next_front": "SELF-IMPROVEMENT-FIRST-FIVE-PATCH-PLAN-DRY-RUN-01",
-  "last_updated": "2026-06-06T21:41:25.488700+00:00",
+  "ready_for_next_front": "SELF-IMPROVEMENT-FIRST-FIVE-PATCH-PLAN-REVIEW-DRY-RUN-01",
+  "last_updated": "2026-06-06T22:10:52.992768+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -862,6 +863,63 @@
     },
     "limitations": {
       "patch_plan_not_created_yet": true,
+      "patch_application_not_allowed_yet": true,
+      "memory_write_still_blocked": true,
+      "promotion_still_blocked": true
+    }
+  },
+  "self_improvement_first_five_patch_plan_dry_run": {
+    "status": "done",
+    "commit": "c864b4c6",
+    "remote_synced": true,
+    "plan_items": 4,
+    "high_priority_count": 0,
+    "medium_priority_count": 4,
+    "low_priority_count": 0,
+    "governance_status": "plan_only_not_executable",
+    "execution_allowed_now": false,
+    "patches_generated": false,
+    "patches_applied": false,
+    "next_safe_front": "SELF-IMPROVEMENT-FIRST-FIVE-PATCH-PLAN-REVIEW-DRY-RUN-01",
+    "files": [
+      "brain/external_sources/self_improvement_first_five_patch_plan_dry_run.py",
+      "tests/smoke/smoke_self_improvement_first_five_patch_plan_dry_run.py"
+    ],
+    "outputs": [
+      "first_five_patch_plan_items.json",
+      "first_five_patch_plan_items.jsonl",
+      "first_five_patch_plan_execution_order.json",
+      "first_five_patch_plan_governance.json",
+      "first_five_patch_plan_summary.json",
+      "first_five_patch_plan_report.md"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "71 passed",
+      "dry_run": "PASS",
+      "token_leak_check": "PASS",
+      "no_mutation_validation": "PASS"
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "plan_only_not_executable": true,
+      "applicable_diffs_generated": false,
+      "patches_generated": false,
+      "patches_applied": false,
+      "no_raw_body_saved": true,
+      "no_token_logged": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "no_runtime_chat_integration": true,
+      "no_trading_use": true,
+      "no_b8_touch": true,
+      "must_separate_code_and_ledger_commits": true,
+      "must_preserve_dirty_preexisting_files": true
+    },
+    "limitations": {
+      "patch_plan_review_not_completed_yet": true,
       "patch_application_not_allowed_yet": true,
       "memory_write_still_blocked": true,
       "promotion_still_blocked": true
