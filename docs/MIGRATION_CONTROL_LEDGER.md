@@ -1288,3 +1288,54 @@
 ### Next Recommended
 - EXTERNAL-SOURCE-LEARNING-RESULTS-REPORT-DRY-RUN-01
 
+---
+
+## LEDGER-ROADMAP-SSOT-EXTERNAL-SOURCE-LEARNING-RESULTS-REPORT-DRY-RUN-01
+- **Fecha/hora**: 2026-06-06T18:46:29Z
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: c742fcb0
+- **Estado**: External source learning results report dry-run synced.
+
+### Commit Registrado
+- **Commit**: c742fcb0 - external-sources: add learning results report dry-run
+- **Remote synced**: true
+
+### Archivos Registrados
+- `brain/external_sources/learning_results_report_dry_run.py`
+- `tests/smoke/smoke_external_source_learning_results_report_dry_run.py`
+
+### Validaciones
+- py_compile: PASS
+- pytest: 23 passed
+- learning_results_report_dry_run: PASS
+
+### Resultados Visibles
+- sources_seen: 5
+- records_normalized: 5
+- candidates_created: 3
+- candidates_approved: 3
+- queue_items: 3
+- promotion_plan_items: 3
+- learning_result_cards: 3
+
+### Garantias
+- dry-run only
+- operator-visible results available
+- no token committed
+- no memory write
+- no FAISS write
+- no real write
+- no promotion
+- no runtime/chat integration
+- no trading use
+- no B8 touch
+
+### Limitaciones
+- runtime results endpoint not implemented yet
+- real memory promotion still blocked
+- memory/semantic write still blocked
+- FAISS write still blocked
+
+### Next Recommended
+- RUNTIME-READONLY-EXTERNAL-KNOWLEDGE-RESULTS-ENDPOINT-DRY-RUN-01
+
