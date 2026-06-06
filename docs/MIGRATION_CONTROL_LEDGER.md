@@ -1238,3 +1238,53 @@
 ### Next Recommended
 - EXTERNAL-SOURCE-PROMOTION-PLAN-DRY-RUN-01
 
+---
+
+## LEDGER-ROADMAP-SSOT-EXTERNAL-SOURCE-PROMOTION-PLAN-DRY-RUN-01
+- **Fecha/hora**: 2026-06-06T18:41:44Z
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: 2ee7af7b
+- **Estado**: External source promotion plan dry-run synced.
+
+### Commit Registrado
+- **Commit**: 2ee7af7b - external-sources: add promotion plan dry-run
+- **Remote synced**: true
+
+### Archivos Registrados
+- `brain/external_sources/promotion_plan_dry_run.py`
+- `tests/smoke/smoke_external_source_promotion_plan_dry_run.py`
+
+### Validaciones
+- py_compile: PASS
+- pytest: 28 passed
+- promotion_plan_dry_run: PASS
+
+### Resultados
+- promotion_plan_items: 3
+- eligible_for_future_operator_approval: 3
+- memory_write_performed: false
+- faiss_write_performed: false
+- real_write_performed: false
+- promotion_performed: false
+- trading_used: false
+- b8_touched: false
+
+### Garantias
+- dry-run only
+- no token committed
+- no memory write
+- no FAISS write
+- no real write
+- no promotion
+- no runtime integration
+- no trading use
+
+### Limitaciones
+- explicit operator approval required before any write
+- no production promotion
+- no memory/semantic write
+- no FAISS write
+
+### Next Recommended
+- EXTERNAL-SOURCE-LEARNING-RESULTS-REPORT-DRY-RUN-01
+
