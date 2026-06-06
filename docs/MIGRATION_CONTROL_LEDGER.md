@@ -1435,3 +1435,61 @@
 ### Next Recommended
 - SELF-IMPROVEMENT-FIRST-FIVE-UTILITY-EVALUATION-DRY-RUN-01
 
+
+## SELF-IMPROVEMENT-FIRST-FIVE-UTILITY-EVALUATION-DRY-RUN-01 - Utility Evaluation Synced
+
+- recorded_at_utc: 2026-06-06T20:39:46Z
+- branch: codex/own-capital-sustainable-return
+- head_before_ledger_md_correction: eb7aae74
+- remote_before_ledger_md_correction: eb7aae74
+- module_commit: ddad084a - external-sources: add first five self-improvement utility evaluation dry-run
+- roadmap_ledger_commit: eb7aae74 - ledger: record first five self-improvement utility evaluation sync
+
+### Scope
+- Evaluated the real dry-run utility of the first five self-improvement learning fronts produced by the previous deterministic/offline ingestion front.
+- No live source fetch was performed in this front.
+- No runtime/chat integration was added.
+- No promotion, memory write, FAISS write, or real write was performed.
+
+### Files Committed In Module Commit
+- brain/external_sources/self_improvement_first_five_utility_evaluation_dry_run.py
+- tests/smoke/smoke_self_improvement_first_five_utility_evaluation_dry_run.py
+
+### Results
+- candidates_evaluated: 5
+- utility_evaluations: 5
+- actionability_matrix_rows: 5
+- ready_for_live_source_validation: 2
+- useful_but_needs_live_evidence: 0
+- useful_but_needs_benchmark: 0
+- rejected: 0
+- live_source_validation_required: 2
+- benchmark_required: 0
+
+### Validation
+- py_compile: PASS
+- pytest: 31 passed
+- token_leak_check: PASS
+- no_mutation_validation: PASS
+
+### Guarantees
+- no_tokens_leaked: true
+- no_authorization_value_logged: true
+- no_raw_body_saved: true
+- memory_write_performed: false
+- faiss_write_performed: false
+- real_write_performed: false
+- promotion_performed: false
+- runtime_chat_integration: false
+- trading_used: false
+- b8_touched: false
+
+### Evidence
+- tmp_agent/self_improvement_first_five_utility_evaluation_dry_run_01_evidence/report.json
+- tmp_agent/self_improvement_first_five_utility_evaluation_dry_run_01_evidence/report.md
+- tmp_agent/self_improvement_first_five_utility_evaluation_dry_run_01_evidence/run_output/first_five_utility_report.md
+- tmp_agent/self_improvement_first_five_utility_evaluation_dry_run_01_evidence/run_output/first_five_utility_summary.json
+- tmp_agent/self_improvement_first_five_utility_evaluation_dry_run_01_evidence/run_output/first_five_actionability_matrix.json
+
+### Next Recommended
+- SELF-IMPROVEMENT-FIRST-FIVE-LIVE-SOURCE-VALIDATION-DRY-RUN-01
