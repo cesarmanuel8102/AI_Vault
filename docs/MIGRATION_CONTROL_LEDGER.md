@@ -1140,3 +1140,55 @@
 
 ### Next Recommended
 - NEXT_FRONT_TO_DEFINE_AFTER_LEDGER_SYNC
+
+---
+
+## LEDGER-ROADMAP-SSOT-EXTERNAL-SOURCE-CANDIDATE-REVIEW-GATE-DRY-RUN-01
+- **Fecha/hora**: 2026-06-07T14:00:00Z
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: 19bb3217
+- **Estado**: External source candidate review gate synced.
+
+### Commit Registrado
+- **Commit**: 19bb3217
+- **Remote synced**: true
+
+### Archivos Registrados
+- `brain/external_sources/candidate_review_gate_dry_run.py`
+- `tests/smoke/smoke_external_source_candidate_review_gate_dry_run.py`
+
+### Validaciones
+- py_compile: PASS
+- pytest: 18 passed
+- review_gate_dry_run: PASS
+
+### Resultados
+- candidates_reviewed: 3
+- approved_for_operator_review: 3
+- operator_review_queue_count: 3
+- rejected: 0
+
+### Decisiones
+- approved_for_operator_review: 3
+- needs_more_evidence: 0
+- rejected_low_quality: 0
+- rejected_policy_or_safety: 0
+- rejected_missing_provenance: 0
+
+### Garantías
+- dry-run only
+- no token committed
+- no memory write
+- no FAISS write
+- no real write
+- no promotion
+- operator review required before promotion
+
+### Limitaciones
+- no production promotion
+- no memory/semantic write
+- no FAISS write
+- operator review still required
+
+### Next Recommended
+- EXTERNAL-SOURCE-OPERATOR-REVIEW-QUEUE-DRY-RUN-01

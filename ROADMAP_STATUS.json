@@ -1,9 +1,9 @@
 {
-  "current_head": "2d449301",
-  "current_remote_head": "2d449301",
+  "current_head": "19bb3217",
+  "current_remote_head": "19bb3217",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "external_source_ingestion_dry_run_real_source_synced",
-  "last_applied_checkpoint": "LEDGER-ROADMAP-SSOT-EXTERNAL-SOURCE-INGESTION-DRY-RUN-REAL-SOURCE-01",
+  "migration_status": "external_source_candidate_review_gate_dry_run_synced",
+  "last_applied_checkpoint": "LEDGER-ROADMAP-SSOT-EXTERNAL-SOURCE-CANDIDATE-REVIEW-GATE-DRY-RUN-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -32,7 +32,8 @@
     "RUNTIME_READONLY_LOOKUP_CHAT_COMMAND",
     "RUNTIME_READONLY_LOOKUP_DEMO_SEARCH_ENDPOINT",
     "EXTERNAL_SOURCE_CONNECTIVITY_SMOKE",
-    "EXTERNAL_SOURCE_INGESTION_DRY_RUN_REAL_SOURCE"
+    "EXTERNAL_SOURCE_INGESTION_DRY_RUN_REAL_SOURCE",
+    "EXTERNAL_SOURCE_CANDIDATE_REVIEW_GATE_DRY_RUN"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -42,9 +43,9 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "NEXT_FRONT_TO_DEFINE_AFTER_LEDGER_SYNC",
+    "name": "EXTERNAL-SOURCE-OPERATOR-REVIEW-QUEUE-DRY-RUN-01",
     "status": "recommended_next",
-    "reason": "external source ingestion dry-run complete; next front to be defined by operator"
+    "reason": "external source candidate review gate complete; next is operator review queue dry-run"
   },
   "ready_for_next_front": true,
   "last_updated": "2026-06-06T17:55:00Z",
@@ -376,6 +377,45 @@
       "production_ingestion_not_enabled": true,
       "promotion_to_memory_blocked": true,
       "operator_review_required_before_promotion": true
+    }
+  },
+  "external_source_candidate_review_gate_dry_run": {
+    "status": "done",
+    "commit": "19bb3217",
+    "remote_synced": true,
+    "files": [
+      "brain/external_sources/candidate_review_gate_dry_run.py",
+      "tests/smoke/smoke_external_source_candidate_review_gate_dry_run.py"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "18 passed",
+      "review_gate_dry_run": "PASS",
+      "candidates_reviewed": 3,
+      "approved_for_operator_review": 3,
+      "operator_review_queue_count": 3
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "no_token_committed": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "operator_review_required_before_promotion": true
+    },
+    "decisions": {
+      "approved_for_operator_review": 3,
+      "needs_more_evidence": 0,
+      "rejected_low_quality": 0,
+      "rejected_policy_or_safety": 0,
+      "rejected_missing_provenance": 0
+    },
+    "limitations": {
+      "production_promotion_not_enabled": true,
+      "memory_write_still_blocked": true,
+      "faiss_write_still_blocked": true,
+      "operator_review_required": true
     }
   }
 }
