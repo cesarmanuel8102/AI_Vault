@@ -1339,3 +1339,48 @@
 ### Next Recommended
 - RUNTIME-READONLY-EXTERNAL-KNOWLEDGE-RESULTS-ENDPOINT-DRY-RUN-01
 
+---
+
+## LEDGER-ROADMAP-SSOT-RUNTIME-READONLY-EXTERNAL-KNOWLEDGE-RESULTS-ENDPOINT-DRY-RUN-01 - Runtime Read-Only External Knowledge Results Synced
+- **Fecha/hora**: 2026-06-06T20:13:32Z
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: 634040db
+- **Estado**: Runtime read-only external knowledge results access synced.
+
+### Commit Registrado
+- **Commit**: 634040db - external-sources: add runtime read-only learning results access
+- **Remote synced**: true
+
+### Archivos Registrados
+- `brain/external_sources/learning_results_runtime_readonly.py`
+- `tests/smoke/smoke_external_source_learning_results_runtime_readonly.py`
+
+### Validaciones
+- py_compile: PASS
+- pytest: 23 passed
+- readonly response: PASS
+- cards_loaded: 3
+- search github: 2 resultados
+
+### Garantias
+- read-only
+- no network calls
+- no LLM
+- no embeddings
+- no FAISS write
+- no memory write
+- no real write
+- no promotion
+- no main.py/session.py touch
+- no trading/B8
+
+### Limitaciones
+- chat command todavia no integrado
+- endpoint HTTP real todavia no integrado
+- no memoria real
+- no FAISS real
+- no promocion
+
+### Next Recommended
+- RUNTIME-READONLY-EXTERNAL-KNOWLEDGE-CHAT-COMMAND-DRY-RUN-01
+

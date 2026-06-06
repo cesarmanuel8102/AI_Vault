@@ -1,9 +1,9 @@
 {
-  "current_head": "c742fcb0",
-  "current_remote_head": "c742fcb0",
+  "current_head": "634040db",
+  "current_remote_head": "634040db",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "external_source_learning_results_report_dry_run_synced",
-  "last_applied_checkpoint": "LEDGER-ROADMAP-SSOT-EXTERNAL-SOURCE-LEARNING-RESULTS-REPORT-DRY-RUN-01",
+  "migration_status": "runtime_readonly_external_knowledge_results_endpoint_dry_run_synced",
+  "last_applied_checkpoint": "LEDGER-ROADMAP-SSOT-RUNTIME-READONLY-EXTERNAL-KNOWLEDGE-RESULTS-ENDPOINT-DRY-RUN-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -36,7 +36,8 @@
     "EXTERNAL_SOURCE_CANDIDATE_REVIEW_GATE_DRY_RUN",
     "EXTERNAL_SOURCE_OPERATOR_REVIEW_QUEUE_DRY_RUN",
     "EXTERNAL_SOURCE_PROMOTION_PLAN_DRY_RUN",
-    "EXTERNAL_SOURCE_LEARNING_RESULTS_REPORT_DRY_RUN"
+    "EXTERNAL_SOURCE_LEARNING_RESULTS_REPORT_DRY_RUN",
+    "RUNTIME_READONLY_EXTERNAL_KNOWLEDGE_RESULTS_ENDPOINT_DRY_RUN"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -46,12 +47,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "RUNTIME-READONLY-EXTERNAL-KNOWLEDGE-RESULTS-ENDPOINT-DRY-RUN-01",
+    "name": "RUNTIME-READONLY-EXTERNAL-KNOWLEDGE-CHAT-COMMAND-DRY-RUN-01",
     "status": "recommended_next",
-    "reason": "operator-visible dry-run learning results are available; next safe step is read-only runtime endpoint to view them, not memory writes or promotion"
+    "reason": "runtime read-only external knowledge result access is registered; next safe step is explicit chat command dry-run without memory or promotion writes"
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-06-06T18:46:29Z",
+  "last_updated": "2026-06-06T20:13:32Z",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -527,6 +528,45 @@
       "production_promotion_not_enabled": true,
       "memory_write_still_blocked": true,
       "faiss_write_still_blocked": true
+    }
+  },
+  "runtime_readonly_external_knowledge_results_endpoint_dry_run": {
+    "status": "done",
+    "commit": "634040db",
+    "remote_synced": true,
+    "files": [
+      "brain/external_sources/learning_results_runtime_readonly.py",
+      "tests/smoke/smoke_external_source_learning_results_runtime_readonly.py"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "23 passed",
+      "readonly_response": "PASS",
+      "cards_loaded": 3,
+      "search_works": true,
+      "github_search_results": 2
+    },
+    "guarantees": {
+      "readonly": true,
+      "no_network_calls": true,
+      "no_llm": true,
+      "no_embeddings": true,
+      "no_faiss_write": true,
+      "no_memory_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "no_runtime_mutation": true,
+      "no_main_py_touch": true,
+      "no_session_py_touch": true,
+      "no_trading_use": true,
+      "no_b8_touch": true
+    },
+    "limitations": {
+      "chat_command_not_integrated": true,
+      "runtime_http_endpoint_not_integrated": true,
+      "memory_write_still_blocked": true,
+      "faiss_write_still_blocked": true,
+      "promotion_still_blocked": true
     }
   }
 }
