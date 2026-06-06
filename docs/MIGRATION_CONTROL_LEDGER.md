@@ -1384,3 +1384,54 @@
 ### Next Recommended
 - RUNTIME-READONLY-EXTERNAL-KNOWLEDGE-CHAT-COMMAND-DRY-RUN-01
 
+---
+
+## SELF-IMPROVEMENT-FIRST-FIVE-LEARNING-FRONTS-DRY-RUN-01 - First Five Canonical Self-Improvement Fronts Synced
+- **Fecha/hora**: 2026-06-06T20:24:29Z
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: fb26a30c
+- **Estado**: First five self-improvement learning fronts localized, ingested in dry-run, validated, committed and synced.
+
+### Commit Registrado
+- **Commit**: fb26a30c - external-sources: add first five self-improvement learning fronts dry-run
+- **Remote synced**: true
+
+### Archivos Registrados
+- `brain/external_sources/self_improvement_first_five_ingestion_dry_run.py`
+- `tests/smoke/smoke_self_improvement_first_five_ingestion_dry_run.py`
+
+### Validaciones
+- py_compile: PASS
+- pytest: 34 passed
+- dry-run: PASS
+- token leak check: PASS
+
+### Resultados
+- attempted_fronts: 5
+- fronts_enumerated: 5
+- candidates_generated: 5
+- useful_candidates: 5
+- needs_more_evidence: 0
+- rejected: 0
+- deferred_sources: 5
+
+### Garantias
+- dry-run only
+- no memory write
+- no FAISS write
+- no real write
+- no promotion
+- no runtime/chat integration
+- no trading/B8
+- no raw API bodies saved
+- no tokens logged
+
+### Limitaciones
+- live external fetch deferred
+- utility evaluation not run yet
+- no real memory promotion
+- no FAISS real write
+
+### Next Recommended
+- SELF-IMPROVEMENT-FIRST-FIVE-UTILITY-EVALUATION-DRY-RUN-01
+
