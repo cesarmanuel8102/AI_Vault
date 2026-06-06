@@ -1,9 +1,9 @@
 {
-  "current_head": "19bb3217",
-  "current_remote_head": "19bb3217",
+  "current_head": "9e9ba861",
+  "current_remote_head": "9e9ba861",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "external_source_candidate_review_gate_dry_run_synced",
-  "last_applied_checkpoint": "LEDGER-ROADMAP-SSOT-EXTERNAL-SOURCE-CANDIDATE-REVIEW-GATE-DRY-RUN-01",
+  "migration_status": "external_source_operator_review_queue_dry_run_synced",
+  "last_applied_checkpoint": "LEDGER-ROADMAP-SSOT-EXTERNAL-SOURCE-OPERATOR-REVIEW-QUEUE-DRY-RUN-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -33,7 +33,8 @@
     "RUNTIME_READONLY_LOOKUP_DEMO_SEARCH_ENDPOINT",
     "EXTERNAL_SOURCE_CONNECTIVITY_SMOKE",
     "EXTERNAL_SOURCE_INGESTION_DRY_RUN_REAL_SOURCE",
-    "EXTERNAL_SOURCE_CANDIDATE_REVIEW_GATE_DRY_RUN"
+    "EXTERNAL_SOURCE_CANDIDATE_REVIEW_GATE_DRY_RUN",
+    "EXTERNAL_SOURCE_OPERATOR_REVIEW_QUEUE_DRY_RUN"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -43,12 +44,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "EXTERNAL-SOURCE-OPERATOR-REVIEW-QUEUE-DRY-RUN-01",
+    "name": "EXTERNAL-SOURCE-PROMOTION-PLAN-DRY-RUN-01",
     "status": "recommended_next",
-    "reason": "external source candidate review gate complete; next is operator review queue dry-run"
+    "reason": "operator review queue dry-run complete; next is dry-run promotion plan without memory, FAISS, or real writes"
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-06-06T17:55:00Z",
+  "last_updated": "2026-06-06T18:37:31Z",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -416,6 +417,40 @@
       "memory_write_still_blocked": true,
       "faiss_write_still_blocked": true,
       "operator_review_required": true
+    }
+  },
+  "external_source_operator_review_queue_dry_run": {
+    "status": "done",
+    "commit": "9e9ba861",
+    "remote_synced": true,
+    "queue_items": 3,
+    "approved_candidates_seen": 3,
+    "rejected_or_deferred_excluded": 0,
+    "operator_status": "pending_operator_review",
+    "files": [
+      "brain/external_sources/operator_review_queue_dry_run.py",
+      "tests/smoke/smoke_external_source_operator_review_queue_dry_run.py"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "26 passed",
+      "dry_run": "PASS",
+      "queue_items": 3,
+      "token_leak_detected": false
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "operator_review_required_before_promotion": true
+    },
+    "limitations": {
+      "production_promotion_not_enabled": true,
+      "memory_write_still_blocked": true,
+      "faiss_write_still_blocked": true,
+      "operator_decision_required": true
     }
   }
 }

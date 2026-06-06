@@ -1192,3 +1192,49 @@
 
 ### Next Recommended
 - EXTERNAL-SOURCE-OPERATOR-REVIEW-QUEUE-DRY-RUN-01
+
+---
+
+## LEDGER-ROADMAP-SSOT-EXTERNAL-SOURCE-OPERATOR-REVIEW-QUEUE-DRY-RUN-01
+- **Fecha/hora**: 2026-06-06T18:37:31Z
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: 9e9ba861
+- **Estado**: External source operator review queue dry-run synced.
+
+### Commit Registrado
+- **Commit**: 9e9ba861 - external-sources: add operator review queue dry-run
+- **Remote synced**: true
+
+### Archivos Registrados
+- `brain/external_sources/operator_review_queue_dry_run.py`
+- `tests/smoke/smoke_external_source_operator_review_queue_dry_run.py`
+
+### Validaciones
+- py_compile: PASS
+- pytest: 26 passed
+- operator_review_queue_dry_run: PASS
+
+### Resultados
+- queue_items: 3
+- approved_candidates_seen: 3
+- rejected_or_deferred_excluded: 0
+- operator_status: pending_operator_review
+
+### Garantias
+- dry-run only
+- no token committed
+- no memory write
+- no FAISS write
+- no real write
+- no promotion
+- operator review required before promotion
+
+### Limitaciones
+- no production promotion
+- no memory/semantic write
+- no FAISS write
+- operator decision still required
+
+### Next Recommended
+- EXTERNAL-SOURCE-PROMOTION-PLAN-DRY-RUN-01
+
