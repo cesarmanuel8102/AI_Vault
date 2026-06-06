@@ -1550,3 +1550,57 @@
 
 ### Next Recommended
 - SELF-IMPROVEMENT-FIRST-FIVE-BENCHMARK-DESIGN-DRY-RUN-01
+
+## SELF-IMPROVEMENT-FIRST-FIVE-BENCHMARK-DESIGN-DRY-RUN-01 - Benchmark Design Synced
+
+- recorded_at_utc: 2026-06-06T21:03:17Z
+- branch: codex/own-capital-sustainable-return
+- module_commit: be98ee99 - external-sources: add first five benchmark design dry-run
+
+### Scope
+- Designed dry-run benchmarks for the five canonical self-improvement fronts.
+- Created metrics, fixtures, pass/fail criteria, failure modes, evidence requirements, and a non-executable execution plan.
+- No benchmark was executed.
+- No runtime/chat integration was added.
+- No memory write, FAISS write, real write, or promotion was performed.
+
+### Files Committed In Module Commit
+- brain/external_sources/self_improvement_first_five_benchmark_design_dry_run.py
+- tests/smoke/smoke_self_improvement_first_five_benchmark_design_dry_run.py
+
+### Results
+- benchmark_designs: 5
+- execution_plan_created: True
+- execution_allowed_now: False
+- next_safe_front: SELF-IMPROVEMENT-FIRST-FIVE-BENCHMARK-HARNESS-DRY-RUN-01
+
+### Validation
+- py_compile: PASS
+- pytest: 41 passed
+- dry_run: PASS
+- token_leak_check: PASS
+- no_mutation_validation: PASS
+
+### Guarantees
+- dry_run_design_only: true
+- no_benchmarks_executed: true
+- no_tokens_leaked: true
+- no_authorization_value_logged: true
+- no_raw_body_saved: true
+- memory_write_performed: false
+- faiss_write_performed: false
+- real_write_performed: false
+- promotion_performed: false
+- runtime_chat_integration: false
+- trading_used: false
+- b8_touched: false
+
+### Evidence
+- tmp_agent/self_improvement_first_five_benchmark_design_dry_run_01_evidence/report.json
+- tmp_agent/self_improvement_first_five_benchmark_design_dry_run_01_evidence/report.md
+- tmp_agent/self_improvement_first_five_benchmark_design_dry_run_01_evidence/run_output/first_five_benchmark_report.md
+- tmp_agent/self_improvement_first_five_benchmark_design_dry_run_01_evidence/run_output/first_five_benchmark_summary.json
+- tmp_agent/self_improvement_first_five_benchmark_design_dry_run_01_evidence/run_output/first_five_benchmark_execution_plan.json
+
+### Next Recommended
+- SELF-IMPROVEMENT-FIRST-FIVE-BENCHMARK-HARNESS-DRY-RUN-01
