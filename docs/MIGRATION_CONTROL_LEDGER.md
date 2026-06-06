@@ -1493,3 +1493,60 @@
 
 ### Next Recommended
 - SELF-IMPROVEMENT-FIRST-FIVE-LIVE-SOURCE-VALIDATION-DRY-RUN-01
+
+## SELF-IMPROVEMENT-FIRST-FIVE-LIVE-SOURCE-VALIDATION-DRY-RUN-01 - Live Source Validation Synced
+
+- recorded_at_utc: 2026-06-06T20:53:27Z
+- branch: codex/own-capital-sustainable-return
+- module_commit: af3febd5 - external-sources: add first five live source validation dry-run
+
+### Scope
+- Validated candidates marked ready_for_live_source_validation using safe live/verifiable metadata checks.
+- GitHub provider is credential-aware and does not log Authorization or tokens.
+- Official docs and paper index checks use HEAD/metadata only.
+- No raw API bodies were saved.
+- No runtime/chat integration was added.
+- No memory write, FAISS write, real write, or promotion was performed.
+
+### Files Committed In Module Commit
+- brain/external_sources/self_improvement_first_five_live_source_validation_dry_run.py
+- tests/smoke/smoke_self_improvement_first_five_live_source_validation_dry_run.py
+
+### Results
+- candidates_selected: 2
+- validation_results: 2
+- validated_live_source: 0
+- partially_validated: 2
+- deferred_missing_credentials: 0
+- deferred_no_network: 0
+- not_found: 0
+- failed_safely: 0
+
+### Validation
+- py_compile: PASS
+- pytest: 38 passed
+- dry_run: PASS
+- token_leak_check: PASS
+- no_mutation_validation: PASS
+
+### Guarantees
+- no_tokens_leaked: true
+- no_authorization_value_logged: true
+- no_raw_body_saved: true
+- memory_write_performed: false
+- faiss_write_performed: false
+- real_write_performed: false
+- promotion_performed: false
+- runtime_chat_integration: false
+- trading_used: false
+- b8_touched: false
+
+### Evidence
+- tmp_agent/self_improvement_first_five_live_source_validation_dry_run_01_evidence/report.json
+- tmp_agent/self_improvement_first_five_live_source_validation_dry_run_01_evidence/report.md
+- tmp_agent/self_improvement_first_five_live_source_validation_dry_run_01_evidence/run_output/live_validation_report.md
+- tmp_agent/self_improvement_first_five_live_source_validation_dry_run_01_evidence/run_output/live_validation_summary.json
+- tmp_agent/self_improvement_first_five_live_source_validation_dry_run_01_evidence/run_output/live_validation_results.json
+
+### Next Recommended
+- SELF-IMPROVEMENT-FIRST-FIVE-BENCHMARK-DESIGN-DRY-RUN-01
