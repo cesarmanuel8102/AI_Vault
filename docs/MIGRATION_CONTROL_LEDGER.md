@@ -1039,3 +1039,50 @@
 ### Next Recommended
 - EXTERNAL-CURATED-INGESTION-DRY-RUN-DEMO-02
 
+---
+
+## LEDGER-ROADMAP-SSOT-EXTERNAL-SOURCE-CONNECTIVITY-SMOKE-01 — External Source Connectivity Smoke Implemented and Synced
+- **Fecha/hora**: 2026-06-06T16:55:00Z
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: 5853ddaa
+- **Estado**: External source connectivity smoke implementado, validado, commiteado y sincronizado en GitHub.
+
+### Commit Registrado
+- **Commit**: 5853ddaa — external-sources: add credential-aware connectivity smoke
+- **Remote synced**: true
+
+### Archivos
+- brain/external_sources/__init__.py
+- brain/external_sources/connectivity_smoke.py
+- tests/smoke/smoke_external_source_connectivity.py
+
+### Validaciones
+- py_compile: PASS
+- pytest: 12 passed
+- GitHub authenticated smoke: PASS (rate limit 5000/4993)
+- SEC EDGAR smoke: PASS
+- Official docs smoke: PASS
+- FRED: credential_missing (aceptable; deferred)
+
+### Fuentes Probadas
+- GitHub (authenticated)
+- SEC EDGAR
+- Official docs (GitHub REST)
+- FRED (deferred — credential_missing)
+
+### Garantias
+- credential_aware: true
+- no_token_committed: true
+- no_memory_write: true
+- no_faiss_write: true
+- no_real_write: true
+- no_curated_promotion: true
+
+### Limitaciones
+- FRED API key pendiente
+- Produccion ingestion todavia no habilitada
+- Promocion a memory/semantic todavia bloqueada
+
+### Next Recommended
+- EXTERNAL-SOURCE-INGESTION-DRY-RUN-REAL-SOURCE-01
+

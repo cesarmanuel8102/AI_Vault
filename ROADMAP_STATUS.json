@@ -1,9 +1,9 @@
 {
-  "current_head": "99450804",
-  "current_remote_head": "99450804",
+  "current_head": "5853ddaa",
+  "current_remote_head": "5853ddaa",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "runtime_readonly_demo_search_endpoint_synced",
-  "last_applied_checkpoint": "LEDGER-ROADMAP-SSOT-RUNTIME-READONLY-DEMO-SEARCH-ENDPOINT-01",
+  "migration_status": "external_source_connectivity_smoke_synced",
+  "last_applied_checkpoint": "LEDGER-ROADMAP-SSOT-EXTERNAL-SOURCE-CONNECTIVITY-SMOKE-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -30,7 +30,8 @@
     "RUNTIME_READONLY_LOOKUP",
     "RUNTIME_READONLY_LOOKUP_ENDPOINTS",
     "RUNTIME_READONLY_LOOKUP_CHAT_COMMAND",
-    "RUNTIME_READONLY_LOOKUP_DEMO_SEARCH_ENDPOINT"
+    "RUNTIME_READONLY_LOOKUP_DEMO_SEARCH_ENDPOINT",
+    "EXTERNAL_SOURCE_CONNECTIVITY_SMOKE"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -40,12 +41,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "EXTERNAL-CURATED-INGESTION-DRY-RUN-DEMO-02",
+    "name": "EXTERNAL-SOURCE-INGESTION-DRY-RUN-REAL-SOURCE-01",
     "status": "recommended_next",
-    "reason": "demo-search endpoint is now available; next safe step is to repeat the external curated ingestion dry-run through the operator-only demo endpoint"
+    "reason": "external source connectivity smoke passed; next is ingestion dry-run with real sources"
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-06-04T08:50:00Z",
+  "last_updated": "2026-06-06T16:55:00Z",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -199,7 +200,7 @@
       "route": "curated_lookup_readonly",
       "triggers": [
         "busca en conocimiento curado: <query>",
-        "qué aprendiste sobre <query>",
+        "qu\u00c3\u00a9 aprendiste sobre <query>",
         "que aprendiste sobre <query>",
         "usa curated knowledge para responder <query>",
         "usa conocimiento curado para responder <query>"
@@ -291,5 +292,36 @@
     "Visual Trace Console MVP",
     "main.py / repo hygiene",
     "Trading final integration"
-  ]
+  ],
+  "external_source_connectivity_smoke": {
+    "status": "done",
+    "commit": "5853ddaa",
+    "remote_synced": true,
+    "files": [
+      "brain/external_sources/__init__.py",
+      "brain/external_sources/connectivity_smoke.py",
+      "tests/smoke/smoke_external_source_connectivity.py"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "12 passed",
+      "github_authenticated_smoke_previously_passed": true,
+      "sec_smoke_previously_passed": true,
+      "docs_smoke_previously_passed": true,
+      "fred_deferred": true
+    },
+    "guarantees": {
+      "credential_aware": true,
+      "no_token_committed": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_curated_promotion": true
+    },
+    "limitations": {
+      "fred_api_key_missing": true,
+      "production_ingestion_not_enabled": true,
+      "promotion_to_memory_blocked": true
+    }
+  }
 }
