@@ -1,9 +1,9 @@
 {
-  "current_head": "5853ddaa",
-  "current_remote_head": "5853ddaa",
+  "current_head": "2d449301",
+  "current_remote_head": "2d449301",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "external_source_connectivity_smoke_synced",
-  "last_applied_checkpoint": "LEDGER-ROADMAP-SSOT-EXTERNAL-SOURCE-CONNECTIVITY-SMOKE-01",
+  "migration_status": "external_source_ingestion_dry_run_real_source_synced",
+  "last_applied_checkpoint": "LEDGER-ROADMAP-SSOT-EXTERNAL-SOURCE-INGESTION-DRY-RUN-REAL-SOURCE-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -31,7 +31,8 @@
     "RUNTIME_READONLY_LOOKUP_ENDPOINTS",
     "RUNTIME_READONLY_LOOKUP_CHAT_COMMAND",
     "RUNTIME_READONLY_LOOKUP_DEMO_SEARCH_ENDPOINT",
-    "EXTERNAL_SOURCE_CONNECTIVITY_SMOKE"
+    "EXTERNAL_SOURCE_CONNECTIVITY_SMOKE",
+    "EXTERNAL_SOURCE_INGESTION_DRY_RUN_REAL_SOURCE"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -41,12 +42,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "EXTERNAL-SOURCE-INGESTION-DRY-RUN-REAL-SOURCE-01",
+    "name": "NEXT_FRONT_TO_DEFINE_AFTER_LEDGER_SYNC",
     "status": "recommended_next",
-    "reason": "external source connectivity smoke passed; next is ingestion dry-run with real sources"
+    "reason": "external source ingestion dry-run complete; next front to be defined by operator"
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-06-06T16:55:00Z",
+  "last_updated": "2026-06-06T17:55:00Z",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -322,6 +323,59 @@
       "fred_api_key_missing": true,
       "production_ingestion_not_enabled": true,
       "promotion_to_memory_blocked": true
+    }
+  },
+  "external_source_ingestion_dry_run_real_source": {
+    "status": "done",
+    "commit": "2d449301",
+    "remote_synced": true,
+    "files": [
+      "brain/external_sources/real_source_ingestion_dry_run.py",
+      "tests/smoke/smoke_external_source_ingestion_dry_run.py"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "21 passed",
+      "dry_run_executed": true,
+      "candidate_gating_fixed": true,
+      "failed_http_sources_do_not_generate_candidates": true,
+      "all_candidates_http_200": true,
+      "candidates_only_from_passed_providers": true
+    },
+    "results": {
+      "normalized_records_count": 5,
+      "curated_candidates_count": 3,
+      "github_candidates_count": 1,
+      "sec_candidates_count": 1,
+      "docs_candidates_count": 1,
+      "fred_candidates_count": 0,
+      "openbb_candidates_count": 0,
+      "providers_passed": [
+        "github",
+        "sec",
+        "docs"
+      ],
+      "providers_deferred": [
+        "fred",
+        "openbb"
+      ]
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "credential_aware": true,
+      "no_token_committed": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_curated_promotion": true,
+      "no_candidate_from_failed_http_source": true
+    },
+    "limitations": {
+      "fred_api_key_missing": true,
+      "openbb_provider_planned": true,
+      "production_ingestion_not_enabled": true,
+      "promotion_to_memory_blocked": true,
+      "operator_review_required_before_promotion": true
     }
   }
 }

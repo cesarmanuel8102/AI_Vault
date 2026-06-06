@@ -1086,3 +1086,57 @@
 ### Next Recommended
 - EXTERNAL-SOURCE-INGESTION-DRY-RUN-REAL-SOURCE-01
 
+
+---
+
+## LEDGER-ROADMAP-SSOT-EXTERNAL-SOURCE-INGESTION-DRY-RUN-REAL-SOURCE-01 - External Source Ingestion Dry-Run Implemented and Synced
+- **Fecha/hora**: 2026-06-06T17:55:00Z
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: 2d449301
+- **Estado**: External source ingestion dry-run implementado, validado, commiteado y sincronizado en GitHub.
+
+### Commit Registrado
+- **Commit**: 2d449301 - external-sources: add real source ingestion dry-run
+- **Remote synced**: true
+
+### Archivos
+- brain/external_sources/real_source_ingestion_dry_run.py
+- tests/smoke/smoke_external_source_ingestion_dry_run.py
+
+### Validaciones
+- py_compile: PASS
+- pytest: 21 passed
+- candidate_gating_fixed: true
+- all_candidates_http_200: true
+- candidates_only_from_passed_providers: true
+
+### Resultados
+- normalized_records_count: 5
+- curated_candidates_count: 3
+- github_candidates_count: 1
+- sec_candidates_count: 1
+- docs_candidates_count: 1
+- fred_candidates_count: 0
+- openbb_candidates_count: 0
+- providers_passed: GitHub, SEC, Docs
+- providers_deferred: FRED, OpenBB
+
+### Garantias
+- dry_run_only: true
+- credential_aware: true
+- no_token_committed: true
+- no_memory_write: true
+- no_faiss_write: true
+- no_real_write: true
+- no_curated_promotion: true
+- no_candidate_from_failed_http_source: true
+
+### Limitaciones
+- FRED API key pendiente
+- OpenBB provider planned/deferred
+- Produccion ingestion todavia no habilitada
+- Promocion a memory/semantic todavia bloqueada
+- Operator review required before promotion
+
+### Next Recommended
+- NEXT_FRONT_TO_DEFINE_AFTER_LEDGER_SYNC
