@@ -12,7 +12,7 @@ from pathlib import Path
 import os
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
-os.environ.setdefault("BRAIN_APPROVAL_4D_DRY_GATE_TOKEN", "CESAR_APPROVES_4D_DRY_GATE_ONLY")
+os.environ.setdefault("BRAIN_APPROVAL_4D_DRY_GATE_TOKEN", "test_approval_token_front_sec_01")
 
 from brain.semantic_memory_real_write_readiness_gate import (
     SemanticMemoryRealWriteReadinessGate,

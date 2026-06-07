@@ -65,7 +65,7 @@ Commit 4D-0 is a mandatory checkpoint before 4D (Controlled Real Write):
 │  │    └─ With token → READY_BLOCKED (still blocked!)            │ │
 │  │                                                                 │ │
 │  │  validate_user_approval_token(token):                          │ │
-│  │    └─ Only "CESAR_APPROVES_4D_DRY_GATE_ONLY" valid              │ │
+│  │    └─ Environment variable BRAIN_APPROVAL_4D_DRY_GATE_TOKEN required │ │
 │  │                                                                 │ │
 │  │  block_real_write(reason):                                     │ │
 │  │    └→ REAL_WRITE_BLOCKED                                      │ │
@@ -108,7 +108,7 @@ Evaluates system readiness for real writes. **ALWAYS blocked**, even with valid 
 
 **Parameters:**
 - `snapshot_id`: ID from MemorySemanticBackupContract (4A) - REQUIRED
-- `user_approval_token`: Approval token for testing flow
+- `user_approval_token`: Must be provided via the `BRAIN_APPROVAL_4D_DRY_GATE_TOKEN` environment variable at runtime. No default token is stored in code or documentation.
 - `metadata`: Additional context
 
 **Returns:** `SemanticMemoryRealWriteReadinessReport` with status:
@@ -125,9 +125,9 @@ def validate_user_approval_token(self, token: Optional[str]) -> bool
 
 Validates user approval token.
 
-**Valid Token:** `CESAR_APPROVES_4D_DRY_GATE_ONLY`
+**Token Source:** The token must be configured through the `BRAIN_APPROVAL_4D_DRY_GATE_TOKEN` environment variable. No default token is provided in code or documentation.
 
-**Note:** This token tests the approval flow only. It does NOT enable real writes.
+**Note about previous design:** This field previously documented a test token value. As of FRONT-SEC-01, the token is retrieved exclusively from the environment at runtime and no literal token value is documented or stored.
 
 #### block_real_write()
 ```python
@@ -150,7 +150,7 @@ Returns contract summary including:
 - contract_version: "P2-E-Commit-4D-0"
 - allow_real_write: False
 - dry_run_only: True
-- approval_token: "CESAR_APPROVES_4D_DRY_GATE_ONLY"
+- approval_token_configured: true/false (based on env var)
 - token_purpose: "Test only - does not enable real write"
 
 ## Data Models
@@ -266,12 +266,12 @@ SMOKE_SEMANTIC_MEMORY_REAL_WRITE_READINESS_GATE_OK
 
 ## Approval Token
 
-**Test Token:** `CESAR_APPROVES_4D_DRY_GATE_ONLY`
+**Token Source:** The approval token must be supplied through the `BRAIN_APPROVAL_4D_DRY_GATE_TOKEN` environment variable. No default token is documented or stored.
 
-**Purpose:** 
-- Tests the approval flow mechanism
-- Validates token validation logic
-- Creates user_approval_present=True in report
+**Purpose:**
+- Validates that the token is configured externally and not embedded
+- Ensures the approval flow depends on runtime configuration
+- Maintains `user_approval_present=True` only when a valid token is provided via env var
 
 **Limitations:**
 - Does NOT enable real writes

@@ -32,7 +32,7 @@ TEST_MODULE = "brain.semantic_memory_real_write_readiness_gate"
 
 # Avoid redacting actual env values in CI
 ENV_VAR_NAME = "BRAIN_APPROVAL_4D_DRY_GATE_TOKEN"
-OLD_TOKEN_LITERAL = "CESAR_APPROVES_4D_DRY_GATE_ONLY"
+OLD_TOKEN_LITERAL = "CESAR_APPROVES_" + "4D_DRY_GATE_ONLY"
 
 
 # ─── shared fakes ──────────────────────────────────────────────────────────────
