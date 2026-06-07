@@ -290,8 +290,20 @@ def run_first_five_real_patch_plan_dry_run(
         out.mkdir(parents=True, exist_ok=True)
 
     review_out = str(out / "run_patch_generation_review") if out else None
-    review_result = run_first_five_patch_generation_review_dry_run(output_dir=review_out)
-    artifacts = load_real_patch_planning_queue_artifacts(review_out or review_result.get("output_dir", "tmp_agent/run"))
+    # Check if upstream artifacts already exist to avoid regenerating random data
+    if review_out:
+        review_path = Path(review_out)
+        queue_path = review_path / "first_five_real_patch_planning_queue.json"
+        if queue_path.exists():
+            # Use existing upstream artifacts
+            artifacts = load_real_patch_planning_queue_artifacts(review_out)
+        else:
+            # Generate upstream artifacts
+            review_result = run_first_five_patch_generation_review_dry_run(output_dir=review_out)
+            artifacts = load_real_patch_planning_queue_artifacts(review_out or review_result.get("output_dir", "tmp_agent/run"))
+    else:
+        review_result = run_first_five_patch_generation_review_dry_run(output_dir=review_out)
+        artifacts = load_real_patch_planning_queue_artifacts(review_out or review_result.get("output_dir", "tmp_agent/run"))
 
     plans = build_all_real_patch_plans(artifacts["queue"], artifacts["reviews"])
     order = build_real_patch_execution_order(plans)

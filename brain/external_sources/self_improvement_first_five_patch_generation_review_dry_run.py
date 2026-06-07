@@ -282,7 +282,11 @@ def build_real_patch_planning_queue(reviews: List[Dict[str, Any]]) -> List[Dict[
             "real_patch_generation_allowed_now": False,
             "patch_application_allowed_now": False,
             "requires_operator_approval": True,
-            "required_tests": ["tests must be added before execution"],
+            "required_tests": r.get("required_tests", ["python -m pytest tests/smoke -q"]),
+            "acceptance_criteria": r.get("acceptance_criteria", []),
+            "target_files_suggested": r.get("target_files_suggested", []),
+            "risk_level": r.get("risk_level", "medium"),
+            "risk_notes": r.get("risk_notes", ""),
             "rollback_required": True,
             "next_safe_front": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-DRY-RUN-01",
         })
