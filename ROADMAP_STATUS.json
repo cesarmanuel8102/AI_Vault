@@ -1,6 +1,6 @@
 {
-  "current_head": "81be0741",
-  "current_remote_head": "81be0741",
+  "current_head": "b8c8e37a",
+  "current_remote_head": "b8c8e37a",
   "branch": "codex/own-capital-sustainable-return",
   "migration_status": "front_test_03_deployment_reproducibility_preflight_complete",
   "last_applied_checkpoint": "FRONT-TEST-03",
@@ -79,7 +79,7 @@
     "status": "recommended_next",
     "reason": "FRONT-SEC-01 completed; next step is timing-attack hardening and compare_digest verification"
   },
-  "ready_for_next_front": "FRONT-SEC-02 — Timing attack compare_digest",
+  "ready_for_next_front": "FRONT-SEC-02 \u00e2\u20ac\u201d Timing attack compare_digest",
   "last_updated": "2026-06-07T23:32:32.914887+00:00",
   "phase0_security": {
     "status": "done",
@@ -234,7 +234,7 @@
       "route": "curated_lookup_readonly",
       "triggers": [
         "busca en conocimiento curado: <query>",
-        "quÃƒÂ© aprendiste sobre <query>",
+        "qu\u00c3\u0192\u00c6\u2019\u00c3\u201a\u00c2\u00a9 aprendiste sobre <query>",
         "que aprendiste sobre <query>",
         "usa curated knowledge para responder <query>",
         "usa conocimiento curado para responder <query>"
