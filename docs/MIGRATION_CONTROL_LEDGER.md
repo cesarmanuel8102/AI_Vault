@@ -1999,3 +1999,70 @@
 
 ### Next Recommended
 - TBD
+
+## SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-DRY-RUN-01 - Real Patch Plan Dry-Run Synced
+
+- recorded_at_utc: 2026-06-07T00:00:00Z
+- branch: codex/own-capital-sustainable-return
+- module_commit: 7c0c086f - external-sources: add first five real patch plan dry-run
+
+### Scope
+- Converted approved real-patch-planning-queue candidates into concrete real patch plans.
+- Determined execution order based on category, risk, and patch type.
+- Produced governance dict forbidding any implementation or application.
+- Did not apply patches.
+- Did not stage patches.
+- Did not modify target suggested files.
+- No runtime/chat integration was added.
+- No memory write, FAISS write, real write, or promotion was performed.
+
+### Files Committed In Module Commit
+- brain/external_sources/self_improvement_first_five_real_patch_plan_dry_run.py
+- tests/smoke/smoke_self_improvement_first_five_real_patch_plan_dry_run.py
+
+### Results
+- plans_count: 3
+- execution_order_count: 3
+- operator_review_required: true
+- implementation_allowed_now: false
+- patch_application_allowed_now: false
+- patches_generated_for_application: false
+- patches_applied: false
+- patches_staged: false
+
+### Validation
+- py_compile: PASS
+- pytest: 67 passed
+- dry_run: PASS
+- token_leak_check: PASS
+- no_mutation_validation: PASS
+
+### Guarantees
+- dry_run_only: true
+- real_patch_plan_only_not_executable: true
+- operator_review_required: true
+- implementation_allowed_now: false
+- patch_application_allowed_now: false
+- patches_generated_for_application: false
+- patches_applied: false
+- patches_staged: false
+- target_files_modified: false
+- no_tokens_leaked: true
+- no_authorization_value_logged: true
+- no_raw_body_saved: true
+- memory_write_performed: false
+- faiss_write_performed: false
+- real_write_performed: false
+- promotion_performed: false
+- runtime_chat_integration: false
+- trading_used: false
+- b8_touched: false
+- must_keep_code_and_ledger_commits_separate: true
+- must_preserve_dirty_preexisting_files: true
+
+### Evidence
+- tmp_agent/self_improvement_first_five_real_patch_plan_dry_run_01_evidence/report.json
+- tmp_agent/self_improvement_first_five_real_patch_plan_dry_run_01_evidence/report.md
+
+### Next Recommended
+- SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-REVIEW-DRY-RUN-01

@@ -1,9 +1,9 @@
 {
-  "current_head": "5342597f",
-  "current_remote_head": "5342597f",
+  "current_head": "7c0c086f",
+  "current_remote_head": "7c0c086f",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "self_improvement_first_five_patch_generation_review_dry_run_synced",
-  "last_applied_checkpoint": "SELF-IMPROVEMENT-FIRST-FIVE-PATCH-GENERATION-REVIEW-DRY-RUN-01",
+  "migration_status": "self_improvement_first_five_real_patch_plan_dry_run_synced",
+  "last_applied_checkpoint": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-DRY-RUN-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -47,7 +47,8 @@
     "SELF_IMPROVEMENT_FIRST_FIVE_PATCH_PLAN_DRY_RUN",
     "SELF_IMPROVEMENT_FIRST_FIVE_PATCH_PLAN_REVIEW_DRY_RUN",
     "SELF_IMPROVEMENT_FIRST_FIVE_PATCH_GENERATION_DRY_RUN",
-    "SELF-IMPROVEMENT-FIRST-FIVE-PATCH-GENERATION-REVIEW-DRY-RUN-01"
+    "SELF-IMPROVEMENT-FIRST-FIVE-PATCH-GENERATION-REVIEW-DRY-RUN-01",
+    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-DRY-RUN-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
