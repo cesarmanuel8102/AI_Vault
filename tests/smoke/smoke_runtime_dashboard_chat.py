@@ -6,6 +6,7 @@ Does not require server to be pre-running (starts it if needed).
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import time
@@ -37,17 +38,17 @@ def _start_server() -> subprocess.Popen:
         "BRAIN_PORT": "8090",
         "BRAIN_SAFE_MODE": "true",
         "BRAIN_START_AUTONOMY": "false",
-        "PATH": sys.environ.get("PATH", ""),
+        "PATH": os.environ.get("PATH", ""),
     }
     proc = subprocess.Popen(
         [sys.executable, "start_safe_server.py"],
         cwd=str(SERVER_DIR),
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        env={**sys.environ, **env},
+        env={**os.environ, **env},
     )
     # Wait for health
-    for _ in range(30):
+    for _ in range(60):
         time.sleep(1)
         code = _probe(HEALTH_URL, timeout=2)
         if code == 200:
@@ -81,14 +82,31 @@ def test_dashboard_responds():
             proc.wait(timeout=10)
 
 
+def _probe_post(url: str, timeout: float = 5.0) -> int:
+    try:
+        import urllib.request
+        import urllib.error
+        req = urllib.request.Request(url, method="POST", data=b'{}',
+                                     headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.status
+    except urllib.error.HTTPError as e:
+        return e.code
+    except Exception:
+        return 0
+
+
 def test_chat_endpoint_exists():
     proc = None
     try:
-        code = _probe(CHAT_URL, timeout=2)
+        code = _probe_post(CHAT_URL, timeout=2)
         if code == 0:
             proc = _start_server()
-            code = _probe(CHAT_URL, timeout=5)
-        # POST-only endpoint may return 405 or 422 on GET
+            for _ in range(20):
+                time.sleep(0.5)
+                code = _probe_post(CHAT_URL, timeout=2)
+                if code in (405, 422, 200):
+                    break
         assert code in (405, 422, 200), f"Chat endpoint returned {code}"
     finally:
         if proc:
