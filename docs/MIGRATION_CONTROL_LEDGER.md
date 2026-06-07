@@ -2705,7 +2705,7 @@ Reviews inert patch draft proposals and decides which qualify for materializatio
 - SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-MATERIALIZATION-PLAN-DRY-RUN-01
 
 ### Front: FRONT-SEC-01
-**Commit:** 
+**Commit:**  
 **Scope:** Fix hardcoded approval token in SemanticMemoryRealWriteReadinessGate — require env var BRAIN_APPROVAL_4D_DRY_GATE_TOKEN
 **Finding Source:** GLM51-DEEP-INTEGRAL-AUDIT-01
 **Tests:** 22 passed (smoke_front_sec_01_approval_token), 23 passed (existing unit/smoke)
@@ -2731,6 +2731,45 @@ Reviews inert patch draft proposals and decides which qualify for materializatio
 - tests/unit/test_semantic_memory_real_write_readiness_gate.py
 - tests/smoke/smoke_semantic_memory_real_write_readiness_gate.py
 - tests/smoke/smoke_front_sec_01_approval_token.py
+
+#### Safety Flags
+- materialization_allowed_now: false
+- patch_file_creation_allowed_now: false
+- git_apply_allowed_now: false
+- target_file_modification_allowed_now: false
+- patch_generation_allowed_now: false
+- diff_generation_allowed_now: false
+- patch_application_allowed_now: false
+- real_patch_application_allowed_now: false
+- patches_generated_for_application: false
+- patches_applied: false
+- patches_staged: false
+- memory_write_allowed: false
+- faiss_write_allowed: false
+- real_write_allowed: false
+- promotion_allowed: false
+- must_not_create_patch_files: true
+- must_not_run_git_apply: true
+- must_not_modify_target_files: true
+
+### Next Recommended
+- FRONT-SEC-02 — Timing attack compare_digest
+- Patch/materialization pipeline remains paused until security conditions met
+
+
+### Front: FRONT-SEC-01-SECRET-HYGIENE
+**Commit:** 
+**Scope:** Redact lingering approval token references in docs/tests
+**Base Front:** FRONT-SEC-01
+**Module Commit:** 
+**Ledger Commit:** 
+
+#### Security Hygiene
+- no_full_token_in_productive_code: true
+- no_full_token_in_docs: true
+- no_full_token_in_tests: true
+- old_token_constructed_by_parts_if_needed: true
+- tests_passed: 45
 
 #### Safety Flags
 - materialization_allowed_now: false
