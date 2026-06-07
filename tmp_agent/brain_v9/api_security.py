@@ -56,10 +56,10 @@ async def require_strict_operator_access(
 
     Does NOT allow local address bypass. Requires BRAIN_ADMIN_TOKEN and matching X-Brain-Token.
     """
-    expected = os.getenv("BRAIN_ADMIN_TOKEN")
+    expected = os.getenv("BRAIN_ADMIN_TOKEN", "").strip()
     if not expected:
         raise HTTPException(status_code=403, detail="strict operator token not configured")
-    if not x_brain_token or x_brain_token != expected:
+    if not x_brain_token or not compare_digest(x_brain_token, expected):
         raise HTTPException(status_code=403, detail="strict operator access required")
 
 
