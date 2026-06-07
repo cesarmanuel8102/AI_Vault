@@ -547,3 +547,100 @@ def test_score_test_readiness_max():
 def test_score_implementation_boundedness_max():
     p = _mock_plan()
     assert rp._score_implementation_boundedness(p) == 1.0
+
+
+def test_real_reviews_count_not_equal_pytest_total():
+    reviews = [rp.review_real_patch_plan(_mock_plan())]
+    assert len(reviews) != 69
+
+
+def test_empty_upstream_is_reported_as_not_ok(monkeypatch, tmp_path):
+    def _empty_run(output_dir=None):
+        p = Path(output_dir) if output_dir else Path("tmp_agent/run")
+        p.mkdir(parents=True, exist_ok=True)
+        (p / "first_five_real_patch_plans.json").write_text("[]", encoding="utf-8")
+        (p / "first_five_real_patch_execution_order.json").write_text("[]", encoding="utf-8")
+        (p / "first_five_real_patch_plan_governance.json").write_text("{}", encoding="utf-8")
+        (p / "first_five_real_patch_plan_summary.json").write_text("{}", encoding="utf-8")
+        return {"ok": True, "output_dir": str(p), "plans_count": 0}
+    monkeypatch.setattr(rp, "run_first_five_real_patch_plan_dry_run", _empty_run)
+    out = tmp_path / "review"
+    result = rp.run_first_five_real_patch_plan_review_dry_run(str(out))
+    assert result.get("ok") is False
+    assert result.get("upstream_empty") is True
+    assert result.get("failure_reason") == "upstream_real_patch_plan_output_empty"
+
+
+def test_missing_upstream_artifact_is_reported_as_not_ok(monkeypatch, tmp_path):
+    def _missing_run(output_dir=None):
+        p = Path(output_dir) if output_dir else Path("tmp_agent/run")
+        p.mkdir(parents=True, exist_ok=True)
+        # Do NOT create first_five_real_patch_plans.json
+        return {"ok": True, "output_dir": str(p), "plans_count": 0}
+    monkeypatch.setattr(rp, "run_first_five_real_patch_plan_dry_run", _missing_run)
+    out = tmp_path / "review"
+    result = rp.run_first_five_real_patch_plan_review_dry_run(str(out))
+    assert result.get("ok") is False
+    assert result.get("missing_upstream_artifacts") is True
+    assert result.get("failure_reason") == "missing_first_five_real_patch_plans_json"
+
+
+def test_non_empty_upstream_reviews_count_matches_plan_count(monkeypatch, tmp_path):
+    def _populated_run(output_dir=None):
+        p = Path(output_dir) if output_dir else Path("tmp_agent/run")
+        p.mkdir(parents=True, exist_ok=True)
+        plans = [
+            _mock_plan(real_patch_plan_id="plan_001"),
+            _mock_plan(real_patch_plan_id="plan_002", patch_type="policy_patch", category="patch_hygiene_gap"),
+        ]
+        (p / "first_five_real_patch_plans.json").write_text(json.dumps(plans), encoding="utf-8")
+        (p / "first_five_real_patch_execution_order.json").write_text(json.dumps([]), encoding="utf-8")
+        (p / "first_five_real_patch_plan_governance.json").write_text(json.dumps({}), encoding="utf-8")
+        (p / "first_five_real_patch_plan_summary.json").write_text(json.dumps({}), encoding="utf-8")
+        return {"ok": True, "output_dir": str(p), "plans_count": 2}
+    monkeypatch.setattr(rp, "run_first_five_real_patch_plan_dry_run", _populated_run)
+    out = tmp_path / "review"
+    result = rp.run_first_five_real_patch_plan_review_dry_run(str(out))
+    assert result.get("reviews_count") == 2
+    assert result.get("real_plans_count") == 2
+    assert result.get("functional_dry_run_passed") is True
+
+
+def test_summary_has_real_plans_count(monkeypatch, tmp_path):
+    def _populated_run(output_dir=None):
+        p = Path(output_dir) if output_dir else Path("tmp_agent/run")
+        p.mkdir(parents=True, exist_ok=True)
+        plans = [_mock_plan(real_patch_plan_id="plan_001")]
+        (p / "first_five_real_patch_plans.json").write_text(json.dumps(plans), encoding="utf-8")
+        (p / "first_five_real_patch_execution_order.json").write_text(json.dumps([]), encoding="utf-8")
+        (p / "first_five_real_patch_plan_governance.json").write_text(json.dumps({}), encoding="utf-8")
+        (p / "first_five_real_patch_plan_summary.json").write_text(json.dumps({}), encoding="utf-8")
+        return {"ok": True, "output_dir": str(p), "plans_count": 1}
+    monkeypatch.setattr(rp, "run_first_five_real_patch_plan_dry_run", _populated_run)
+    out = tmp_path / "review"
+    result = rp.run_first_five_real_patch_plan_review_dry_run(str(out))
+    assert result.get("real_plans_count") == 1
+
+
+def test_summary_has_functional_dry_run_passed(monkeypatch, tmp_path):
+    def _populated_run(output_dir=None):
+        p = Path(output_dir) if output_dir else Path("tmp_agent/run")
+        p.mkdir(parents=True, exist_ok=True)
+        plans = [_mock_plan(real_patch_plan_id="plan_001")]
+        (p / "first_five_real_patch_plans.json").write_text(json.dumps(plans), encoding="utf-8")
+        (p / "first_five_real_patch_execution_order.json").write_text(json.dumps([]), encoding="utf-8")
+        (p / "first_five_real_patch_plan_governance.json").write_text(json.dumps({}), encoding="utf-8")
+        (p / "first_five_real_patch_plan_summary.json").write_text(json.dumps({}), encoding="utf-8")
+        return {"ok": True, "output_dir": str(p), "plans_count": 1}
+    monkeypatch.setattr(rp, "run_first_five_real_patch_plan_dry_run", _populated_run)
+    out = tmp_path / "review"
+    result = rp.run_first_five_real_patch_plan_review_dry_run(str(out))
+    assert result.get("functional_dry_run_passed") is True
+
+
+def test_report_does_not_mix_pytest_total_with_reviews_count(monkeypatch, tmp_path):
+    monkeypatch.setattr(rp, "run_first_five_real_patch_plan_dry_run", _mock_run_first_five_real_patch_plan_dry_run)
+    out = tmp_path / "review"
+    result = rp.run_first_five_real_patch_plan_review_dry_run(str(out))
+    assert result.get("reviews_count") == 2
+    assert "pytest_total" not in result

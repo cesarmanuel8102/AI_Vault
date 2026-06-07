@@ -318,14 +318,16 @@ def build_real_patch_plan_review_governance(reviews: List[Dict[str, Any]]) -> Di
     }
 
 
-def summarize_real_patch_plan_review(reviews: List[Dict[str, Any]], queue: List[Dict[str, Any]]) -> Dict[str, Any]:
+def summarize_real_patch_plan_review(reviews: List[Dict[str, Any]], queue: List[Dict[str, Any]], upstream_empty: bool = False, missing_upstream: bool = False) -> Dict[str, Any]:
     decisions = {}
     for r in reviews:
         d = r.get("decision", "unknown")
         decisions[d] = decisions.get(d, 0) + 1
-    return {
+
+    result = {
         "ok": len(reviews) > 0,
         "reviews_count": len(reviews),
+        "real_plans_count": len(reviews),
         "approved_for_real_patch_implementation_planning": decisions.get("approve_for_real_patch_implementation_planning", 0),
         "request_more_tests": decisions.get("request_more_tests", 0),
         "request_scope_reduction": decisions.get("request_scope_reduction", 0),
@@ -346,6 +348,23 @@ def summarize_real_patch_plan_review(reviews: List[Dict[str, Any]], queue: List[
         "timestamp": now_utc(),
     }
 
+    if missing_upstream:
+        result["ok"] = False
+        result["upstream_empty"] = False
+        result["missing_upstream_artifacts"] = True
+        result["failure_reason"] = "missing_first_five_real_patch_plans_json"
+    elif upstream_empty:
+        result["ok"] = False
+        result["upstream_empty"] = True
+        result["missing_upstream_artifacts"] = False
+        result["failure_reason"] = "upstream_real_patch_plan_output_empty"
+    else:
+        result["upstream_empty"] = False
+        result["missing_upstream_artifacts"] = False
+        result["functional_dry_run_passed"] = len(reviews) > 0
+
+    return result
+
 
 def _check_token_leak(text: str) -> bool:
     return any(marker in text for marker in TOKEN_MARKERS)
@@ -360,12 +379,18 @@ def run_first_five_real_patch_plan_review_dry_run(
 
     plan_out = str(out / "run_real_patch_plan") if out else None
     plan_result = run_first_five_real_patch_plan_dry_run(output_dir=plan_out)
-    artifacts = load_real_patch_plan_artifacts(plan_out or plan_result.get("output_dir", "tmp_agent/run"))
+    artifacts_dir = plan_out or plan_result.get("output_dir", "tmp_agent/run")
+    artifacts = load_real_patch_plan_artifacts(artifacts_dir)
 
-    reviews = review_all_real_patch_plans(artifacts["plans"])
+    plans = artifacts.get("plans", [])
+    upstream_empty = len(plans) == 0
+    plans_path = Path(artifacts_dir) / "first_five_real_patch_plans.json"
+    missing_upstream = not plans_path.exists()
+
+    reviews = review_all_real_patch_plans(plans)
     queue = build_real_patch_implementation_planning_queue(reviews)
     governance = build_real_patch_plan_review_governance(reviews)
-    summary = summarize_real_patch_plan_review(reviews, queue)
+    summary = summarize_real_patch_plan_review(reviews, queue, upstream_empty=upstream_empty, missing_upstream=missing_upstream)
 
     token_leak = False
     if out is not None:
