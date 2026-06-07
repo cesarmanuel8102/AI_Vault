@@ -2456,3 +2456,43 @@ SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-REVIEW-DRY-RUN-02
 
 ### Recommended next front
 SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-DRY-RUN-01
+
+## RUNTIME-DASHBOARD-CHAT-RECOVERY-SMOKE-FIX-01 - Dashboard and Chat Smoke Fix Verification
+
+- status: COMMITTED_AND_PUSHED
+- head_before: 8f1247c5
+- head_after: 8de68bb7
+- smoke_fix_commit: 8de68bb7 - runtime: fix dashboard chat smoke startup environment
+- ledger_commit: TBD
+
+### Scope
+- Fix smoke test `tests/smoke/smoke_runtime_dashboard_chat.py`.
+- Correct `sys.environ` -> `os.environ` bug in `_start_server()`.
+- Fix chat endpoint probe to use POST instead of GET.
+- Add retry loop for chat endpoint registration.
+- Increase health wait timeout from 30s to 60s.
+- Verify live endpoint probe passes with running server.
+- No modifications to protected paths.
+
+### Files Committed In Module Commit
+- tests/smoke/smoke_runtime_dashboard_chat.py
+
+### Results
+- pytest: 6 passed / 0 failed / 0 skipped
+- health_endpoint: 200
+- dashboard_endpoint: 200
+- docs_endpoint: 200
+- chat_endpoint: 422 (alive, empty payload rejected as expected)
+- backend_alive: true
+- dashboard_alive: true
+- chat_alive: true
+- no_token_leak: true
+
+### Validation
+- py_compile: passed
+- smoke: passed
+- live probe: passed (all endpoints respond)
+- protected paths untouched
+
+### Recommended next front
+SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-DRY-RUN-01
