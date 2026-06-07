@@ -132,7 +132,7 @@ if BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS:
         "Esto expone endpoints sin sandbox. Deshabilitar en produccion.",
         _UNSAFE_DEV_RAW,
     )
-BRAIN_CHAT_DEV_MODE = os.getenv("BRAIN_CHAT_DEV_MODE", "true").lower() == "true"
+BRAIN_CHAT_DEV_MODE = os.getenv("BRAIN_CHAT_DEV_MODE", "false").lower() == "true"
 BRAIN_ENABLE_FINANCIAL_AUTOCYCLE = (
     os.getenv("BRAIN_ENABLE_FINANCIAL_AUTOCYCLE", "false").lower() == "true"
 )
