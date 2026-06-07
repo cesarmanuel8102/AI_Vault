@@ -2176,3 +2176,40 @@ Upstream chain must be fixed first because real patch plan review has no real pl
 
 ### Recommended next front
 SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-REVIEW-UPSTREAM-FIX-01
+
+## SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-REVIEW-UPSTREAM-FIX-01
+
+Status: COMMITTED_AND_PUSHED
+
+### Commits
+- upstream_fix_commit: fd1dc2d0 - external-sources: fix real patch plan upstream artifact flow
+- ledger_commit: TBD
+
+### Evidence
+- pytest_total: 132 (65 patch generation review + 67 real patch plan)
+- final_plans_count: 3
+- final_execution_order_count: 3
+- upstream_empty: false
+- functional_dry_run_passed: true
+
+### Root Cause
+real_patch_plan_dry_run regenerates upstream chain every call, producing random proposals that fail review. Fix: read existing upstream artifacts if available, preserving approved candidates.
+
+### Governance
+- implementation_allowed_now: false
+- patch_application_allowed_now: false
+- real_patch_application_allowed_now: false
+- patches_generated_for_application: false
+- patches_applied: false
+- patches_staged: false
+- memory_write_allowed: false
+- faiss_write_allowed: false
+- real_write_allowed: false
+- promotion_allowed: false
+
+### Files Changed
+- brain/external_sources/self_improvement_first_five_patch_generation_review_dry_run.py
+- brain/external_sources/self_improvement_first_five_real_patch_plan_dry_run.py
+
+### Recommended next front
+SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-REVIEW-DRY-RUN-02
