@@ -454,7 +454,10 @@ def _report_md(plans, order, gov, summary) -> str:
 # ─── entry point ──────────────────────────────────────────────────────────────
 
 
-def run_first_five_real_patch_materialization_plan_dry_run(output_dir=None) -> Dict:
+def run_first_five_real_patch_materialization_plan_dry_run(output_dir: Optional[str] = None) -> Dict[str, Any]:
+    import sys
+    out: Optional[Path] = Path(output_dir) if output_dir else None
+    # ... rest of the function
     import sys
     out: Optional[Path] = Path(output_dir) if output_dir else None
     if out is not None:
