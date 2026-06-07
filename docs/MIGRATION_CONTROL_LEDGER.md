@@ -2213,3 +2213,43 @@ real_patch_plan_dry_run regenerates upstream chain every call, producing random 
 
 ### Recommended next front
 SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-REVIEW-DRY-RUN-02
+
+## SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-COLD-START-FIX-01
+
+Status: COMMITTED_AND_PUSHED
+
+### Commits
+- cold_start_fix_commit: 3c764e67 - external-sources: fix real patch plan cold-start artifact flow
+- ledger_commit: TBD
+
+### Evidence
+- pytest_total: 132
+- final_cold_start_plans_count: 3
+- final_cold_start_execution_order_count: 3
+- upstream_empty: false
+- functional_dry_run_passed: true
+
+### Root Cause
+real_patch_plan_dry_run had two issues:
+1. Used output_dir/run_patch_generation_review as review_out, but upstream wrote artifacts directly to output_dir
+2. Did not detect stale empty artifacts and force regeneration
+
+Fix: Use output_dir directly; clear stale empty artifacts before regeneration.
+
+### Governance
+- implementation_allowed_now: false
+- patch_application_allowed_now: false
+- real_patch_application_allowed_now: false
+- patches_generated_for_application: false
+- patches_applied: false
+- patches_staged: false
+- memory_write_allowed: false
+- faiss_write_allowed: false
+- real_write_allowed: false
+- promotion_allowed: false
+
+### Files Changed
+- brain/external_sources/self_improvement_first_five_real_patch_plan_dry_run.py
+
+### Recommended next front
+SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-REVIEW-DRY-RUN-02
