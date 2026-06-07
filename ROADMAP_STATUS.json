@@ -1,9 +1,9 @@
 {
-  "current_head": "097de952",
-  "current_remote_head": "097de952",
+  "current_head": "cd210bd7",
+  "current_remote_head": "cd210bd7",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "self_improvement_first_five_real_patch_implementation_plan_dry_run_synced",
-  "last_applied_checkpoint": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-IMPLEMENTATION-PLAN-DRY-RUN-01",
+  "migration_status": "self_improvement_first_five_real_patch_implementation_plan_review_dry_run_synced",
+  "last_applied_checkpoint": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-IMPLEMENTATION-PLAN-REVIEW-DRY-RUN-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -51,7 +51,8 @@
     "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-DRY-RUN-01",
     "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-REVIEW-DRY-RUN-01",
     "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-REVIEW-DRY-RUN-02",
-    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-IMPLEMENTATION-PLAN-DRY-RUN-01"
+    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-IMPLEMENTATION-PLAN-DRY-RUN-01",
+    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-IMPLEMENTATION-PLAN-REVIEW-DRY-RUN-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -61,12 +62,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-IMPLEMENTATION-PLAN-REVIEW-DRY-RUN-01",
+    "name": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-DRY-RUN-01",
     "status": "recommended_next",
-    "reason": "implementation plan dry-run-01 created 3 plans from approved queue; ready for operator review before implementation"
+    "reason": "implementation plan review dry-run-01 approved 3/3 plans for patch generation planning; ready for generation plan dry-run"
   },
-  "ready_for_next_front": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-IMPLEMENTATION-PLAN-REVIEW-DRY-RUN-01",
-  "last_updated": "2026-06-07T02:40:00Z",
+  "ready_for_next_front": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-DRY-RUN-01",
+  "last_updated": "2026-06-07T14:40:00Z",
   "phase0_security": {
     "status": "done",
     "commits": [
