@@ -289,14 +289,25 @@ def run_first_five_real_patch_plan_dry_run(
     if out is not None:
         out.mkdir(parents=True, exist_ok=True)
 
-    review_out = str(out / "run_patch_generation_review") if out else None
-    # Check if upstream artifacts already exist to avoid regenerating random data
+    # Use output_dir directly; let upstream functions manage their own subdirectories
+    review_out = str(out) if out else None
+    # Check if upstream artifacts already exist AND are non-empty to avoid regenerating
     if review_out:
         review_path = Path(review_out)
         queue_path = review_path / "first_five_real_patch_planning_queue.json"
         if queue_path.exists():
-            # Use existing upstream artifacts
-            artifacts = load_real_patch_planning_queue_artifacts(review_out)
+            # Use existing upstream artifacts only if queue is non-empty
+            existing_queue = _read_json(queue_path, [])
+            if existing_queue:
+                artifacts = load_real_patch_planning_queue_artifacts(review_out)
+            else:
+                # Queue file exists but is empty (stale from previous run)
+                # Clear the upstream directory to force regeneration, ignoring errors
+                import shutil
+                if review_path.exists():
+                    shutil.rmtree(review_path, ignore_errors=True)
+                review_result = run_first_five_patch_generation_review_dry_run(output_dir=review_out)
+                artifacts = load_real_patch_planning_queue_artifacts(review_out or review_result.get("output_dir", "tmp_agent/run"))
         else:
             # Generate upstream artifacts
             review_result = run_first_five_patch_generation_review_dry_run(output_dir=review_out)
