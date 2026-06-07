@@ -2939,3 +2939,50 @@ Reviews inert patch draft proposals and decides which qualify for materializatio
 ### Next Recommended
 - FRONT-TEST-02 — self_improvement.py minimum test coverage
 - Patch/materialization pipeline remains paused until security conditions met
+
+### Front: FRONT-TEST-02
+**Commit:** 1e83db10
+**Scope:** Minimum coverage/characterization tests for self_improvement.py via AST inspection
+**Tests:** 36 passed (smoke_front_test_02_self_improvement_minimum_coverage)
+**Evidence:** tmp_agent/front_test_02/
+**Python:** 3.11.9
+**py_compile:** PASS
+
+#### Fields
+- tests_characterization_only: true
+- no_product_behavior_change: true
+- public_api_inventory_stable: true
+- risky_calls_guarded_or_reported: true
+- no_token_leak: true
+- no_memory_write: true
+- no_faiss_write: true
+- no_real_write: true
+- no_promotion: true
+- next_safe_front: FRONT-TEST-03 — deployment reproducibility preflight
+
+#### Files Changed
+- tests/smoke/smoke_front_test_02_self_improvement_minimum_coverage.py
+
+#### Safety Flags
+- materialization_allowed_now: false
+- patch_file_creation_allowed_now: false
+- git_apply_allowed_now: false
+- target_file_modification_allowed_now: false
+- patch_generation_allowed_now: false
+- diff_generation_allowed_now: false
+- patch_application_allowed_now: false
+- real_patch_application_allowed_now: false
+- patches_generated_for_application: false
+- patches_applied: false
+- patches_staged: false
+- memory_write_allowed: false
+- faiss_write_allowed: false
+- real_write_allowed: false
+- promotion_allowed: false
+- must_not_create_patch_files: true
+- must_not_run_git_apply: true
+- must_not_modify_target_files: true
+
+### Next Recommended
+- FRONT-TEST-03 — deployment reproducibility preflight
+- Patch/materialization pipeline remains paused until security conditions met
