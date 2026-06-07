@@ -9,8 +9,10 @@ NO toca FAISS.
 
 import sys
 from pathlib import Path
+import os
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+os.environ.setdefault("BRAIN_APPROVAL_4D_DRY_GATE_TOKEN", "CESAR_APPROVES_4D_DRY_GATE_ONLY")
 
 from brain.semantic_memory_real_write_readiness_gate import (
     SemanticMemoryRealWriteReadinessGate,
@@ -88,10 +90,10 @@ def smoke_test_readiness_gate():
     
     # 4. Evaluar con snapshot y token valido
     print("\n[4/6] Evaluando con snapshot y token valido...")
-    print(f"    Token: {gate.APPROVAL_TOKEN}")
+    print(f'    Token: {os.environ.get("BRAIN_APPROVAL_4D_DRY_GATE_TOKEN", "")}')
     report_with_token = gate.evaluate_readiness(
         snapshot_id="snap_smoke_test_001",
-        user_approval_token=gate.APPROVAL_TOKEN,
+        user_approval_token=os.environ.get("BRAIN_APPROVAL_4D_DRY_GATE_TOKEN", ""),
     )
     print(f"    Status: {report_with_token.status}")
     print(f"    user_approval_present: {report_with_token.user_approval_present}")

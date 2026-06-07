@@ -8,11 +8,13 @@ NO importan FAISS.
 """
 
 import pytest
+import os
 import sys
 from pathlib import Path
 from datetime import datetime, timezone
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+os.environ.setdefault("BRAIN_APPROVAL_4D_DRY_GATE_TOKEN", "CESAR_APPROVES_4D_DRY_GATE_ONLY")
 
 from brain.semantic_memory_real_write_readiness_gate import (
     SemanticMemoryRealWriteReadinessGate,
@@ -77,7 +79,7 @@ class TestSemanticMemoryRealWriteReadinessGate:
         
         report = gate.evaluate_readiness(
             snapshot_id="snap_test_001",
-            user_approval_token=gate.APPROVAL_TOKEN,
+            user_approval_token=os.environ.get("BRAIN_APPROVAL_4D_DRY_GATE_TOKEN", ""),
         )
         
         assert report.status == SemanticMemoryRealWriteReadinessStatus.READY_BLOCKED
@@ -109,7 +111,7 @@ class TestSemanticMemoryRealWriteReadinessGate:
         # Con snapshot y token
         report = gate.evaluate_readiness(
             snapshot_id="snap_test",
-            user_approval_token=gate.APPROVAL_TOKEN,
+            user_approval_token=os.environ.get("BRAIN_APPROVAL_4D_DRY_GATE_TOKEN", ""),
         )
         assert report.allow_real_write is False
     
@@ -122,7 +124,7 @@ class TestSemanticMemoryRealWriteReadinessGate:
         
         report = gate.evaluate_readiness(
             snapshot_id="snap_test",
-            user_approval_token=gate.APPROVAL_TOKEN,
+            user_approval_token=os.environ.get("BRAIN_APPROVAL_4D_DRY_GATE_TOKEN", ""),
         )
         assert report.dry_run_only is True
     
@@ -135,7 +137,7 @@ class TestSemanticMemoryRealWriteReadinessGate:
         
         report = gate.evaluate_readiness(
             snapshot_id="snap_test",
-            user_approval_token=gate.APPROVAL_TOKEN,
+            user_approval_token=os.environ.get("BRAIN_APPROVAL_4D_DRY_GATE_TOKEN", ""),
         )
         assert report.user_approval_required is True
     
@@ -164,7 +166,7 @@ class TestSemanticMemoryRealWriteReadinessGate:
         
         report = gate.evaluate_readiness(
             snapshot_id="snap_test",
-            user_approval_token=gate.APPROVAL_TOKEN,
+            user_approval_token=os.environ.get("BRAIN_APPROVAL_4D_DRY_GATE_TOKEN", ""),
         )
         
         assert report.user_approval_present is True
@@ -221,7 +223,7 @@ class TestSemanticMemoryRealWriteReadinessGate:
         
         report = gate.evaluate_readiness(
             snapshot_id="snap_test",
-            user_approval_token=gate.APPROVAL_TOKEN,
+            user_approval_token=os.environ.get("BRAIN_APPROVAL_4D_DRY_GATE_TOKEN", ""),
         )
         
         assert report.backup_contract_ok is False
@@ -237,7 +239,7 @@ class TestSemanticMemoryRealWriteReadinessGate:
         
         report = gate.evaluate_readiness(
             snapshot_id="snap_test",
-            user_approval_token=gate.APPROVAL_TOKEN,
+            user_approval_token=os.environ.get("BRAIN_APPROVAL_4D_DRY_GATE_TOKEN", ""),
         )
         
         assert report.real_adapter_ok is False
@@ -253,7 +255,7 @@ class TestSemanticMemoryRealWriteReadinessGate:
         
         report = gate.evaluate_readiness(
             snapshot_id="snap_test",
-            user_approval_token=gate.APPROVAL_TOKEN,
+            user_approval_token=os.environ.get("BRAIN_APPROVAL_4D_DRY_GATE_TOKEN", ""),
         )
         
         assert report.rollback_simulation_ok is False

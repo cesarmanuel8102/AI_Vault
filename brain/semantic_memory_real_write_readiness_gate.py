@@ -30,6 +30,8 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
+import hmac
+import os
 import uuid
 
 
@@ -103,13 +105,14 @@ class SemanticMemoryRealWriteReadinessGate:
     - SIEMPRE bloquea allow_real_write
     - Aun con aprobación, status es READY_BLOCKED (no READY)
     
-    Token de aprobación para pruebas:
-    - CESAR_APPROVES_4D_DRY_GATE_ONLY
-    - Este token NO autoriza escritura real, solo prueba el flujo
+    
+    Token de aprobación:
+    - Se lee de variable de entorno BRAIN_APPROVAL_4D_DRY_GATE_TOKEN
+    - Si no está definida, la aprobación falla cerrado
+    - NO hay token hardcoded
     """
     
-    # Token válido para pruebas (no habilita escritura real)
-    APPROVAL_TOKEN = "CESAR_APPROVES_4D_DRY_GATE_ONLY"
+    _ENV_VAR_NAME = "BRAIN_APPROVAL_4D_DRY_GATE_TOKEN"
     
     def __init__(
         self,
@@ -257,13 +260,22 @@ class SemanticMemoryRealWriteReadinessGate:
         """
         Validar token de aprobación de usuario.
         
+        Lee de variable de entorno BRAIN_APPROVAL_4D_DRY_GATE_TOKEN.
+        Sin variable de entorno: aprobación falla cerrado.
+        No loguea token recibido ni token esperado.
+        
         Args:
             token: Token de aprobación
             
         Returns:
             True si el token es válido
         """
-        return token == self.APPROVAL_TOKEN
+        expected = os.getenv(self._ENV_VAR_NAME, "")
+        if not expected:
+            return False
+        if token is None:
+            return False
+        return hmac.compare_digest(str(token), expected)
     
     def block_real_write(
         self,
@@ -330,7 +342,7 @@ class SemanticMemoryRealWriteReadinessGate:
                 "brain.semantic_memory_adapter_real (4B)",
                 "brain.semantic_memory_rollback_simulation (4C)",
             ],
-            "approval_token": self.APPROVAL_TOKEN,
-            "token_purpose": "Test only - does not enable real write",
+            "env_var_name": self._ENV_VAR_NAME,
+            "token_source": "environment_variable",
             "next_step": "Commit 4D: Controlled real write",
         }
