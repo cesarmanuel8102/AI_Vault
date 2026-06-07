@@ -1,9 +1,9 @@
 {
-  "current_head": "8de68bb7",
-  "current_remote_head": "8de68bb7",
+  "current_head": "27930646",
+  "current_remote_head": "27930646",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "runtime_dashboard_chat_recovery_synced",
-  "last_applied_checkpoint": "RUNTIME-DASHBOARD-CHAT-RECOVERY-SMOKE-FIX-01",
+  "migration_status": "self_improvement_first_five_real_patch_generation_plan_dry_run_synced",
+  "last_applied_checkpoint": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-DRY-RUN-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -54,7 +54,8 @@
     "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-IMPLEMENTATION-PLAN-DRY-RUN-01",
     "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-IMPLEMENTATION-PLAN-REVIEW-DRY-RUN-01",
     "RUNTIME-DASHBOARD-CHAT-RECOVERY-01",
-    "RUNTIME-DASHBOARD-CHAT-RECOVERY-SMOKE-FIX-01"
+    "RUNTIME-DASHBOARD-CHAT-RECOVERY-SMOKE-FIX-01",
+    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-DRY-RUN-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -64,12 +65,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-DRY-RUN-01",
+    "name": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-REVIEW-DRY-RUN-01",
     "status": "recommended_next",
-    "reason": "runtime dashboard and chat recovered; smoke fix verified (6/6 passed, all endpoints alive); ready for generation plan dry-run"
+    "reason": "generation plan dry-run-01 created 3 plans from approved queue; ready for review"
   },
-  "ready_for_next_front": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-DRY-RUN-01",
-  "last_updated": "2026-06-07T16:00:00Z",
+  "ready_for_next_front": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-REVIEW-DRY-RUN-01",
+  "last_updated": "2026-06-07T16:10:00Z",
   "phase0_security": {
     "status": "done",
     "commits": [
