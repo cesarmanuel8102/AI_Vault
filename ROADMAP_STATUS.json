@@ -1,6 +1,6 @@
 {
-  "current_head": "8cf3de27",
-  "current_remote_head": "8cf3de27",
+  "current_head": "9f94502f",
+  "current_remote_head": "9f94502f",
   "branch": "codex/own-capital-sustainable-return",
   "migration_status": "self_improvement_first_five_real_patch_plan_review_dry_run_synced",
   "last_applied_checkpoint": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-REVIEW-DRY-RUN-01",
@@ -59,11 +59,11 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "SELF-IMPROVEMENT-FIRST-FIVE-PATCH-GENERATION-REVIEW-DRY-RUN-01",
+    "name": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-REVIEW-UPSTREAM-FIX-01",
     "status": "recommended_next",
-    "reason": "patch generation dry-run complete; next safe step is operator review of generated patch proposals, not applying patches"
+    "reason": "real patch plan review evidence fix completed; upstream chain produces empty plans requiring upstream fix before implementation planning"
   },
-  "ready_for_next_front": "SELF-IMPROVEMENT-FIRST-FIVE-PATCH-GENERATION-REVIEW-DRY-RUN-01",
+  "ready_for_next_front": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-REVIEW-UPSTREAM-FIX-01",
   "last_updated": "2026-06-06T22:37:33Z",
   "phase0_security": {
     "status": "done",
