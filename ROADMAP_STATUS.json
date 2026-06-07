@@ -1,6 +1,6 @@
 {
-  "current_head": "92ea857a",
-  "current_remote_head": "92ea857a",
+  "current_head": "3929aab7",
+  "current_remote_head": "3929aab7",
   "branch": "codex/own-capital-sustainable-return",
   "migration_status": "self_improvement_first_five_real_patch_generation_plan_review_dry_run_synced",
   "last_applied_checkpoint": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-REVIEW-DRY-RUN-01",
@@ -56,7 +56,8 @@
     "RUNTIME-DASHBOARD-CHAT-RECOVERY-01",
     "RUNTIME-DASHBOARD-CHAT-RECOVERY-SMOKE-FIX-01",
     "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-DRY-RUN-01",
-    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-REVIEW-DRY-RUN-01"
+    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-REVIEW-DRY-RUN-01",
+    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-DRY-RUN-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -66,12 +67,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-DRY-RUN-01",
+    "name": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-REVIEW-DRY-RUN-01",
     "status": "recommended_next",
-    "reason": "generation plan review dry-run-01 approved 3/3 plans for patch generation; ready for generation dry-run"
+    "reason": "generation dry-run produced 3 inert patch drafts; ready for generation review dry-run"
   },
-  "ready_for_next_front": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-DRY-RUN-01",
-  "last_updated": "2026-06-07T16:35:00Z",
+  "ready_for_next_front": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-REVIEW-DRY-RUN-01",
+  "last_updated": "2026-06-07T17:01:20Z",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1051,6 +1052,72 @@
       "no_b8_touch": true,
       "must_keep_code_and_ledger_commits_separate": true,
       "must_preserve_dirty_preexisting_files": true
+    },
+    "limitations": {
+      "patch_generation_review_not_completed_yet": true,
+      "patch_application_not_allowed_yet": true,
+      "memory_write_still_blocked": true,
+      "promotion_still_blocked": true
+    }
+  },
+  "self_improvement_first_five_real_patch_generation_dry_run": {
+    "status": "done",
+    "commit": "3929aab7",
+    "remote_synced": true,
+    "generated_patch_drafts_count": 3,
+    "patch_generation_allowed_now": false,
+    "diff_generation_allowed_now": false,
+    "patch_application_allowed_now": false,
+    "real_patch_application_allowed_now": false,
+    "patches_generated_for_application": false,
+    "patches_applied": false,
+    "patches_staged": false,
+    "next_safe_front": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-REVIEW-DRY-RUN-01",
+    "files": [
+      "brain/external_sources/self_improvement_first_five_real_patch_generation_dry_run.py",
+      "tests/smoke/smoke_self_improvement_first_five_real_patch_generation_dry_run.py"
+    ],
+    "outputs": [
+      "first_five_real_patch_drafts.json",
+      "first_five_real_patch_drafts.jsonl",
+      "first_five_real_patch_generation_governance.json",
+      "first_five_real_patch_generation_summary.json",
+      "first_five_real_patch_generation_report.md"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "83 passed",
+      "dry_run": "PASS",
+      "token_leak_check": "PASS",
+      "no_mutation_validation": "PASS"
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "inert_patch_drafts_only": true,
+      "no_patch_files_generated": true,
+      "no_git_apply_executed": true,
+      "operator_review_required": true,
+      "patch_generation_allowed_now": false,
+      "diff_generation_allowed_now": false,
+      "patch_application_allowed_now": false,
+      "real_patch_application_allowed_now": false,
+      "patches_generated_for_application": false,
+      "patches_applied": false,
+      "patches_staged": false,
+      "target_files_modified": false,
+      "no_raw_body_saved": true,
+      "no_token_logged": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "no_runtime_chat_integration": true,
+      "no_trading_use": true,
+      "no_b8_touch": true,
+      "must_keep_code_and_ledger_commits_separate": true,
+      "must_preserve_dirty_preexisting_files": true,
+      "must_not_create_patch_files": true,
+      "must_not_run_git_apply": true
     },
     "limitations": {
       "patch_generation_review_not_completed_yet": true,

@@ -2590,3 +2590,59 @@ SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-DRY-RUN-01
 
 ### Next Recommended
 - SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-DRY-RUN-01
+
+## SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-DRY-RUN-01
+
+### Date
+2026-06-07
+
+### Branch
+codex/own-capital-sustainable-return
+
+### Module Commit
+3929aab7 external-sources: add first five real patch generation dry-run
+
+### Files Added
+- brain/external_sources/self_improvement_first_five_real_patch_generation_dry_run.py
+- tests/smoke/smoke_self_improvement_first_five_real_patch_generation_dry_run.py
+
+### Description
+Generates inert patch draft proposals for human review from the approved real patch generation queue. Does not apply, stage, or create applicable patches. Does not modify target files, write memory/FAISS, or promote.
+
+### Validation
+- py_compile: passed for both module and tests
+- tests: 83 passed / 0 failed / 0 skipped
+- dry-run ok: true
+- generated_patch_drafts_count: 3
+- patch_generation_allowed_now: false
+- diff_generation_allowed_now: false
+- patch_application_allowed_now: false
+- real_patch_application_allowed_now: false
+- patches_generated_for_application: false
+- patches_applied: false
+- patches_staged: false
+- no .patch files generated
+- no git apply executed
+- token_leak_detected: false
+- no memory write
+- no FAISS write
+- no real write
+- no promotion
+
+### Safety Flags
+- patch_generation_allowed_now: false
+- diff_generation_allowed_now: false
+- patch_application_allowed_now: false
+- real_patch_application_allowed_now: false
+- patches_generated_for_application: false
+- patches_applied: false
+- patches_staged: false
+- memory_write_allowed: false
+- faiss_write_allowed: false
+- real_write_allowed: false
+- promotion_allowed: false
+- must_not_create_patch_files: true
+- must_not_run_git_apply: true
+
+### Next Recommended
+- SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-REVIEW-DRY-RUN-01
