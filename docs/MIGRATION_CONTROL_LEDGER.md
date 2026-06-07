@@ -2403,3 +2403,56 @@ Fix: Use output_dir directly; clear stale empty artifacts before regeneration.
 
 ### Recommended next front
 SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-REVIEW-DRY-RUN-02
+
+## RUNTIME-DASHBOARD-CHAT-RECOVERY-01 - Dashboard and Chat Runtime Recovery
+
+- status: COMMITTED_AND_PUSHED
+- head_before: ba004f5c
+- head_after: 8b56ea6f
+- module_commit: 8b56ea6f - runtime: restore dashboard and chat health checks
+- ledger_commit: 8b56ea6f
+
+### Scope
+- Audit runtime for dashboard and chat components.
+- Diagnose why services were reported as "not alive".
+- Recover with minimal fix: no code bug detected.
+- Root cause: process not running.
+- Process was not started after recent system changes or reboot.
+- No modifications to brain/curated_runtime_lookup.py, tmp_agent/brain_v9/main.py, tmp_agent/brain_v9/core/session.py.
+- No memory write.
+- No FAISS write.
+- No promotion.
+
+### Files Committed In Module Commit
+- scripts/runtime/start_dashboard_and_chat.ps1
+- docs/runtime_dashboard_chat_runbook.md
+- tests/smoke/smoke_runtime_dashboard_chat.py
+
+### Results
+- backend_import: OK
+- backend_start: OK
+- health_endpoint: 200
+- dashboard_endpoint: 200
+- chat_endpoint: 405 (POST-only, expected)
+- docs_endpoint: 200
+- backend_process_listening: 8090 confirmed
+- no_token_leak: true
+
+### Validation
+- py_compile: passed for module
+- smoke: manually verified (health endpoint 200 when server started)
+- no_tests_added_to_suite: true (smoke file created, not run in CI yet)
+
+### Architecture Discovered
+- Backend: FastAPI on uvicorn, port 8090, host 127.0.0.1
+- Dashboard: tmp_agent/brain_v9/ui/dashboard.html served at /dashboard
+- Chat: POST /chat and POST /chat/introspectivo
+- Start scripts: start_full_server.py, start_safe_server.py, start_brain_v9.bat
+
+### Files Changed (excluding ledger)
+- scripts/runtime/start_dashboard_and_chat.ps1 — NEW startup script with health wait
+- docs/runtime_dashboard_chat_runbook.md — NEW runbook with root cause and commands
+- tests/smoke/smoke_runtime_dashboard_chat.py — NEW smoke tests for import/health
+
+### Recommended next front
+SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-DRY-RUN-01
