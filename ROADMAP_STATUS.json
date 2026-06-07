@@ -1,9 +1,9 @@
 {
-  "current_head": "556f9ace",
-  "current_remote_head": "556f9ace",
+  "current_head": "52d9dd82",
+  "current_remote_head": "52d9dd82",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "self_improvement_first_five_real_patch_generation_plan_review_dry_run_synced",
-  "last_applied_checkpoint": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-REVIEW-DRY-RUN-01",
+  "migration_status": "front_sec_01_approval_token_hardened",
+  "last_applied_checkpoint": "FRONT-SEC-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -58,7 +58,8 @@
     "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-DRY-RUN-01",
     "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-REVIEW-DRY-RUN-01",
     "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-DRY-RUN-01",
-    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-REVIEW-DRY-RUN-01"
+    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-REVIEW-DRY-RUN-01",
+    "FRONT-SEC-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -68,12 +69,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-MATERIALIZATION-PLAN-DRY-RUN-01",
+    "name": "FRONT-SEC-02",
     "status": "recommended_next",
-    "reason": "generation review dry-run approved 3/3 drafts for materialization planning; ready for materialization plan dry-run"
+    "reason": "FRONT-SEC-01 completed; next step is timing-attack hardening and compare_digest verification"
   },
-  "ready_for_next_front": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-MATERIALIZATION-PLAN-DRY-RUN-01",
-  "last_updated": "2026-06-07T17:41:52Z",
+  "ready_for_next_front": "FRONT-SEC-02 — Timing attack compare_digest",
+  "last_updated": "2026-06-07T19:27:42.247666+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -227,7 +228,7 @@
       "route": "curated_lookup_readonly",
       "triggers": [
         "busca en conocimiento curado: <query>",
-        "qu\u00c3\u0192\u00c2\u00a9 aprendiste sobre <query>",
+        "quÃƒÂ© aprendiste sobre <query>",
         "que aprendiste sobre <query>",
         "usa curated knowledge para responder <query>",
         "usa conocimiento curado para responder <query>"
