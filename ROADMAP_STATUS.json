@@ -1,9 +1,9 @@
 {
-  "current_head": "c12c36d8",
-  "current_remote_head": "c12c36d8",
+  "current_head": "92ea857a",
+  "current_remote_head": "92ea857a",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "self_improvement_first_five_real_patch_generation_plan_dry_run_synced",
-  "last_applied_checkpoint": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-DRY-RUN-01",
+  "migration_status": "self_improvement_first_five_real_patch_generation_plan_review_dry_run_synced",
+  "last_applied_checkpoint": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-REVIEW-DRY-RUN-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -55,7 +55,8 @@
     "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-IMPLEMENTATION-PLAN-REVIEW-DRY-RUN-01",
     "RUNTIME-DASHBOARD-CHAT-RECOVERY-01",
     "RUNTIME-DASHBOARD-CHAT-RECOVERY-SMOKE-FIX-01",
-    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-DRY-RUN-01"
+    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-DRY-RUN-01",
+    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-REVIEW-DRY-RUN-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -65,12 +66,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-REVIEW-DRY-RUN-01",
+    "name": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-DRY-RUN-01",
     "status": "recommended_next",
-    "reason": "generation plan dry-run-01 created 3 plans from approved queue; ready for review"
+    "reason": "generation plan review dry-run-01 approved 3/3 plans for patch generation; ready for generation dry-run"
   },
-  "ready_for_next_front": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-REVIEW-DRY-RUN-01",
-  "last_updated": "2026-06-07T16:10:00Z",
+  "ready_for_next_front": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-DRY-RUN-01",
+  "last_updated": "2026-06-07T16:35:00Z",
   "phase0_security": {
     "status": "done",
     "commits": [
