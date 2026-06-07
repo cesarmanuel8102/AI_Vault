@@ -1,9 +1,9 @@
 {
-  "current_head": "9b7ba284",
-  "current_remote_head": "9b7ba284",
+  "current_head": "569bed3b",
+  "current_remote_head": "569bed3b",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_sec_03_dev_mode_hardened",
-  "last_applied_checkpoint": "FRONT-SEC-03",
+  "migration_status": "front_test_01_minimal_e2e_pipeline_complete",
+  "last_applied_checkpoint": "FRONT-TEST-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -62,7 +62,8 @@
     "FRONT-SEC-01",
     "FRONT-SEC-01-SECRET-HYGIENE",
     "FRONT-SEC-02",
-    "FRONT-SEC-03"
+    "FRONT-SEC-03",
+    "FRONT-TEST-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -77,7 +78,7 @@
     "reason": "FRONT-SEC-01 completed; next step is timing-attack hardening and compare_digest verification"
   },
   "ready_for_next_front": "FRONT-SEC-02 — Timing attack compare_digest",
-  "last_updated": "2026-06-07T22:01:43.300427+00:00",
+  "last_updated": "2026-06-07T22:47:56.751931+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
