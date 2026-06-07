@@ -2646,3 +2646,60 @@ Generates inert patch draft proposals for human review from the approved real pa
 
 ### Next Recommended
 - SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-REVIEW-DRY-RUN-01
+
+## SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-REVIEW-DRY-RUN-01
+
+### Date
+2026-06-07
+
+### Branch
+codex/own-capital-sustainable-return
+
+### Module Commit
+556f9ace external-sources: add first five real patch generation review dry-run
+
+### Files Added
+- brain/external_sources/self_improvement_first_five_real_patch_generation_review_dry_run.py
+- tests/smoke/smoke_self_improvement_first_five_real_patch_generation_review_dry_run.py
+
+### Description
+Reviews inert patch draft proposals and decides which qualify for materialization planning. Does not generate, apply, modify, stage, promote, or write any persistent state.
+
+### Validation
+- py_compile: passed for both module and tests
+- tests: 88 passed / 0 failed / 0 skipped
+- dry-run: PASS
+- reviews_count: 3
+- approved_for_materialization_planning: 3
+- patch_generation_allowed_now: false
+- diff_generation_allowed_now: false
+- patch_application_allowed_now: false
+- real_patch_application_allowed_now: false
+- patches_generated_for_application: false
+- patches_applied: false
+- patches_staged: false
+- no .patch files generated
+- no git apply executed
+- token_leak_detected: false
+- no memory write
+- no FAISS write
+- no real write
+- no promotion
+
+### Safety Flags
+- patch_generation_allowed_now: false
+- diff_generation_allowed_now: false
+- patch_application_allowed_now: false
+- real_patch_application_allowed_now: false
+- patches_generated_for_application: false
+- patches_applied: false
+- patches_staged: false
+- memory_write_allowed: false
+- faiss_write_allowed: false
+- real_write_allowed: false
+- promotion_allowed: false
+- must_not_create_patch_files: true
+- must_not_run_git_apply: true
+
+### Next Recommended
+- SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-MATERIALIZATION-PLAN-DRY-RUN-01
