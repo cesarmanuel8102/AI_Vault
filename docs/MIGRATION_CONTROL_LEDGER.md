@@ -3266,3 +3266,63 @@ Reviews inert patch draft proposals and decides which qualify for materializatio
 - FRONT-REAL-CANARY-PLAN-01 — single-record canary execution plan
 - Alternative: FRONT-INFRA-03 — startup/runbook reproducibility
 - Patch/materialization pipeline remains paused until explicitly reopened
+
+### Front: FRONT-REAL-CANARY-PLAN-01
+**Commit:** c12035da
+**Scope:** Single-record canary execution plan only
+**Tests:** 20 passed (smoke_front_real_canary_plan_01)
+**Evidence:** tmp_agent/front_real_canary_plan_01/
+**Python:** 3.11.9
+**py_compile:** PASS
+
+#### Fields
+- canary_plan_only: true
+- no_execution_authorized: true
+- target_store: memory/semantic/semantic_memory.jsonl
+- single_record_limit: true
+- canary_record_schema_defined: true
+- human_approval_required: true
+- double_confirmation_required: true
+- backup_required: true
+- rollback_required: true
+- hash_verification_required: true
+- retrieval_verification_required: true
+- no_memory_write: true
+- no_faiss_write: true
+- no_real_write: true
+- no_promotion: true
+- no_patch_files_generated: true
+- no_git_apply_executed: true
+- no_trading_B8: true
+- no_product_behavior_change: true
+- no_tokens_leaked: true
+- next_safe_front: FRONT-REAL-CANARY-APPROVAL-01 — approve canary execution package OR FRONT-INFRA-03 — startup/runbook reproducibility
+
+#### Files Changed
+- docs/FRONT_REAL_CANARY_PLAN_01_SINGLE_RECORD_CANARY.md
+- tests/smoke/smoke_front_real_canary_plan_01.py
+
+#### Safety Flags
+- materialization_allowed_now: false
+- patch_file_creation_allowed_now: false
+- git_apply_allowed_now: false
+- target_file_modification_allowed_now: false
+- patch_generation_allowed_now: false
+- diff_generation_allowed_now: false
+- patch_application_allowed_now: false
+- real_patch_application_allowed_now: false
+- patches_generated_for_application: false
+- patches_applied: false
+- patches_staged: false
+- memory_write_allowed: false
+- faiss_write_allowed: false
+- real_write_allowed: false
+- promotion_allowed: false
+- must_not_create_patch_files: true
+- must_not_run_git_apply: true
+- must_not_modify_target_files: true
+
+### Next Recommended
+- FRONT-REAL-CANARY-APPROVAL-01 — approve canary execution package
+- Alternative: FRONT-INFRA-03 — startup/runbook reproducibility
+- Patch/materialization pipeline remains paused until explicitly reopened
