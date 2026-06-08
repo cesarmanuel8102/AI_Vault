@@ -1,9 +1,9 @@
 {
-  "current_head": "849dd43d",
-  "current_remote_head": "849dd43d",
+  "current_head": "93b9c2ba",
+  "current_remote_head": "93b9c2ba",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_real_canary_exec_01_complete",
-  "last_applied_checkpoint": "FRONT-REAL-CANARY-EXEC-01",
+  "migration_status": "front_real_canary_post_audit_01_complete",
+  "last_applied_checkpoint": "FRONT-REAL-CANARY-POST-AUDIT-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -68,7 +68,8 @@
     "FRONT-TEST-03",
     "FRONT-REAL-CANARY-PLAN-01",
     "FRONT-REAL-CANARY-EXEC-FINAL-GO-NOGO-01",
-    "FRONT-REAL-CANARY-EXEC-01"
+    "FRONT-REAL-CANARY-EXEC-01",
+    "FRONT-REAL-CANARY-POST-AUDIT-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -78,12 +79,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-REAL-CANARY-POST-AUDIT-01",
+    "name": "FRONT-REAL-CANARY-RETENTION-01",
     "status": "recommended_next",
-    "reason": "Canary write executed; next step is post-canary audit, verification, and rollback decision"
+    "reason": "Canary retained; next step is permanent retention decision or infrastructure"
   },
-  "ready_for_next_front": "FRONT-REAL-CANARY-POST-AUDIT-01 — post-canary audit and rollback decision",
-  "last_updated": "2026-06-08T20:56:00+00:00",
+  "ready_for_next_front": "FRONT-REAL-CANARY-RETENTION-01 — permanent canary retention OR FRONT-INFRA-03 — startup/runbook reproducibility",
+  "last_updated": "2026-06-08T16:25:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1229,5 +1230,25 @@
       "tests/smoke/smoke_front_real_canary_exec_01.py"
     ],
     "next_recommended_front": "FRONT-REAL-CANARY-POST-AUDIT-01 — post-canary audit and rollback decision OR FRONT-INFRA-03 — startup/runbook reproducibility"
+  },
+  "front_real_canary_post_audit_01": {
+    "status": "done",
+    "commit": "93b9c2ba",
+    "remote_synced": true,
+    "purpose": "post-canary audit and retention decision",
+    "canary_record_id": "canary-00000000-0000-0000-0000-000000000001",
+    "canary_exists_exactly_once": true,
+    "canary_is_last_line": true,
+    "faiss_index_unchanged": true,
+    "commit_scope_clean": true,
+    "roadmap_ledger_consistent": true,
+    "rollback_executed": false,
+    "decision": "KEEP_CANARY",
+    "tests_passed": true,
+    "files": [
+      "docs/FRONT_REAL_CANARY_POST_AUDIT_01.md",
+      "tests/smoke/smoke_front_real_canary_post_audit_01.py"
+    ],
+    "next_recommended_front": "FRONT-REAL-CANARY-RETENTION-01 — permanent canary retention OR FRONT-INFRA-03 — startup/runbook reproducibility"
   }
 }

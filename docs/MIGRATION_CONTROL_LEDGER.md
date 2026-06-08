@@ -3534,3 +3534,63 @@ Execute the first explicitly authorized single-record canary write to `memory/se
 - real_write_allowed: false (governed)
 - promotion_allowed: false
 - rollback_executed: false
+
+---
+
+## FRONT-REAL-CANARY-POST-AUDIT-01: Post-Canary Audit and Retention Decision
+
+**Status:** COMPLETE ✅
+**Date:** 2026-06-08
+**Branch:** codex/own-capital-sustainable-return
+**Post-Audit Commit:** 93b9c2ba
+**Ledger Commit:** PENDING
+**Head Before:** 5c988592
+**Head After:** PENDING
+
+### Objective
+Auditar el estado post-canary y producir una decisión explícita de retención.
+
+### Audits Performed
+- **Canary presence audit:** PASSED ✅
+  - Canary exists exactly once
+  - Canary is last line
+  - Schema and metadata valid
+- **Prior execution evidence audit:** PASSED ✅
+  - All 11 evidence files present
+  - write_completed=true, lines_appended=1
+  - post_write_verification.result=PASSED
+- **FAISS/index integrity audit:** PASSED ✅
+  - semantic_memory_faiss.index: unmodified
+  - semantic_memory_faiss_ids.json: unmodified
+  - semantic_memory_index.npz: unmodified
+- **Git commit scope audit:** PASSED ✅
+  - Commit 849dd43d scope clean (only target + test)
+  - Commit 5c988592 scope clean (only ROADMAP + ledger)
+- **Roadmap/ledger consistency audit:** PASSED_WITH_DISCREPANCY ✅
+  - All checks passed
+  - Minor: current_head showed canary commit instead of ledger commit (corrected in this front)
+
+### Decision
+**KEEP_CANARY**
+
+All audits passed. The canary record is intact, correctly positioned, metadata-safe, and surrounded by verified evidence. No FAISS mutation detected. Commit scopes clean. Risk is low. No rollback recommended.
+
+### Next Recommended
+- FRONT-REAL-CANARY-RETENTION-01 — permanent canary retention decision
+- Alternative: FRONT-INFRA-03 — startup/runbook reproducibility
+
+### Safety Flags (Post-Audit)
+- materialization_allowed_now: false
+- patch_file_creation_allowed_now: false
+- git_apply_allowed_now: false
+- target_file_modification_allowed_now: false (except under explicit governance)
+- patch_generation_allowed_now: false
+- diff_generation_allowed_now: false
+- patch_application_allowed_now: false
+- real_patch_application_allowed_now: false
+- memory_write_allowed: false
+- faiss_write_allowed: false
+- real_write_allowed: false
+- promotion_allowed: false
+- rollback_executed: false
+- canary_retained: true
