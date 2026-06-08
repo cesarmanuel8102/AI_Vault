@@ -1,9 +1,9 @@
 {
-  "current_head": "c12035da",
-  "current_remote_head": "c12035da",
+  "current_head": "611cd18d",
+  "current_remote_head": "611cd18d",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_real_canary_plan_01_complete",
-  "last_applied_checkpoint": "FRONT-REAL-CANARY-PLAN-01",
+  "migration_status": "front_real_canary_approval_01_complete",
+  "last_applied_checkpoint": "FRONT-REAL-CANARY-APPROVAL-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -66,7 +66,8 @@
     "FRONT-TEST-01",
     "FRONT-TEST-02",
     "FRONT-TEST-03",
-    "FRONT-REAL-CANARY-PLAN-01"
+    "FRONT-REAL-CANARY-PLAN-01",
+    "FRONT-REAL-CANARY-APPROVAL-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
