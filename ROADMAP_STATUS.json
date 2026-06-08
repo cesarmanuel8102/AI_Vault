@@ -1,9 +1,9 @@
 {
-  "current_head": "09554bc4",
-  "current_remote_head": "09554bc4",
+  "current_head": "0c5c904c",
+  "current_remote_head": "0c5c904c",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_external_audit_delta_reconciliation_01_complete",
-  "last_applied_checkpoint": "FRONT-EXTERNAL-AUDIT-DELTA-RECONCILIATION-01",
+  "migration_status": "front_security_phase0_reverify_01_complete",
+  "last_applied_checkpoint": "FRONT-SECURITY-PHASE0-REVERIFY-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -83,7 +83,8 @@
     "FRONT-BRAIN-KNOWLEDGE-READ-API-01",
     "FRONT-REAL-MEMORY-FAISS-PROMOTION-01",
     "FRONT-REAL-PATCH-MATERIALIZATION-01",
-    "FRONT-EXTERNAL-AUDIT-DELTA-RECONCILIATION-01"
+    "FRONT-EXTERNAL-AUDIT-DELTA-RECONCILIATION-01",
+    "FRONT-SECURITY-PHASE0-REVERIFY-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -93,12 +94,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-SECURITY-PHASE0-REVERIFY-01",
+    "name": "FRONT-INGESTION-REGISTRY-01",
     "status": "recommended_next",
-    "reason": "Security re-verification after real applicable batch changes"
+    "reason": "Ingestion request registry (read-only dry-run) after security re-verification"
   },
-  "ready_for_next_front": "FRONT-SECURITY-PHASE0-REVERIFY-01",
-  "last_updated": "2026-06-08T23:00:00+00:00",
+  "ready_for_next_front": "FRONT-INGESTION-REGISTRY-01",
+  "last_updated": "2026-06-08T23:32:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1616,5 +1617,38 @@
       "tests/smoke/smoke_front_external_audit_delta_reconciliation_01.py"
     ],
     "recommended_next_front": "FRONT-SECURITY-PHASE0-REVERIFY-01"
+  },
+  "front_security_phase0_reverify_01": {
+    "status": "done",
+    "commit": "0c5c904c",
+    "remote_synced": false,
+    "purpose": "reverify critical security phase 0 blockers after real applicable batch",
+    "decision": "SECURITY_PHASE0_REVERIFIED",
+    "secrets_status": "CLOSED",
+    "god_p3_status": "CLOSED",
+    "selfdev_governance_status": "PARTIAL",
+    "dev_endpoints_status": "CLOSED",
+    "rbac_status": "NOT_IMPLEMENTED",
+    "patch_application_status": "CLOSED",
+    "critical_blockers_count": 0,
+    "recommended_next_fronts": [
+      "FRONT-INGESTION-REGISTRY-01",
+      "FRONT-INGESTION-DRY-RUN-01",
+      "FRONT-TESTING-CORE-BASELINE-01",
+      "FRONT-VISUAL-TRACE-CONSOLE-MVP-01",
+      "FRONT-ARCHITECTURE-STRANGLER-NEXT-01"
+    ],
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "docs/FRONT_SECURITY_PHASE0_REVERIFY_01.md",
+      "tests/smoke/smoke_front_security_phase0_reverify_01.py"
+    ],
+    "recommended_next_front": "FRONT-INGESTION-REGISTRY-01"
   }
 }
