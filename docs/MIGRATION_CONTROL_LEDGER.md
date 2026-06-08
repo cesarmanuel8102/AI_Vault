@@ -3149,3 +3149,63 @@ Reviews inert patch draft proposals and decides which qualify for materializatio
 - FRONT-REAL-PLAN-01 — controlled real e2e write plan
 - Alternative: FRONT-INFRA-03 — startup/runbook reproducibility
 - Patch/materialization pipeline remains paused until explicitly reopened
+
+### Front: FRONT-REAL-PLAN-01
+**Commit:** b1c128b8
+**Scope:** Controlled real e2e write plan only
+**Tests:** 15 passed (smoke_front_real_plan_01_controlled_e2e_write_plan)
+**Evidence:** tmp_agent/front_real_plan_01/
+**Python:** 3.11.9
+**py_compile:** PASS
+
+#### Fields
+- plan_only: true
+- no_execution_authorized: true
+- no_memory_write: true
+- no_faiss_write: true
+- no_real_write: true
+- no_promotion: true
+- no_patch_files_generated: true
+- no_git_apply_executed: true
+- no_trading_B8: true
+- target_store_named: memory/semantic/semantic_memory.jsonl
+- backup_required: true
+- rollback_required: true
+- approval_required: true
+- single_record_limit: true
+- human_approval_gate: true
+- stop_conditions_defined: true
+- failure_modes_defined: true
+- ledger_requirements_defined: true
+- no_product_behavior_change: true
+- no_tokens_leaked: true
+- next_safe_front: FRONT-REAL-APPROVAL-01 — operator approval gate for controlled write OR FRONT-INFRA-03 — startup/runbook reproducibility
+
+#### Files Changed
+- docs/FRONT_REAL_PLAN_01_CONTROLLED_E2E_WRITE_PLAN.md
+- tests/smoke/smoke_front_real_plan_01_controlled_e2e_write_plan.py
+
+#### Safety Flags
+- materialization_allowed_now: false
+- patch_file_creation_allowed_now: false
+- git_apply_allowed_now: false
+- target_file_modification_allowed_now: false
+- patch_generation_allowed_now: false
+- diff_generation_allowed_now: false
+- patch_application_allowed_now: false
+- real_patch_application_allowed_now: false
+- patches_generated_for_application: false
+- patches_applied: false
+- patches_staged: false
+- memory_write_allowed: false
+- faiss_write_allowed: false
+- real_write_allowed: false
+- promotion_allowed: false
+- must_not_create_patch_files: true
+- must_not_run_git_apply: true
+- must_not_modify_target_files: true
+
+### Next Recommended
+- FRONT-REAL-APPROVAL-01 — operator approval gate for controlled write
+- Alternative: FRONT-INFRA-03 — startup/runbook reproducibility
+- Patch/materialization pipeline remains paused until explicitly reopened
