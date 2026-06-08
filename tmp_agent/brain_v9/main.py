@@ -167,11 +167,13 @@ app = FastAPI(title="Brain Chat V9", version="9.0.0", lifespan=lifespan)
 
 from brain_v9.trading.router  import router as trading_router
 from brain_v9.autonomy.router import router as autonomy_router
+from brain_v9.routes.canary_lookup_read_only import router as canary_lookup_read_only_router
 from brain_v9.agent.tools import build_standard_executor
 from brain_v9.agent.loop import AgentLoop
 from brain_v9.autonomy.action_executor import execute_action
 app.include_router(trading_router)
 app.include_router(autonomy_router)
+app.include_router(canary_lookup_read_only_router)
 
 # UPGRADE: AOS + L2 + Sandbox + EventBus + Settings
 try:
