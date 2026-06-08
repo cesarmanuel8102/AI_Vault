@@ -1,9 +1,9 @@
 {
-  "current_head": "b60feae2",
-  "current_remote_head": "b60feae2",
+  "current_head": "82bc5aef",
+  "current_remote_head": "82bc5aef",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_real_read_verify_01_complete",
-  "last_applied_checkpoint": "FRONT-REAL-READ-VERIFY-01",
+  "migration_status": "front_real_read_lookup_adapter_01_complete",
+  "last_applied_checkpoint": "FRONT-REAL-READ-LOOKUP-ADAPTER-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -72,7 +72,8 @@
     "FRONT-REAL-CANARY-POST-AUDIT-01",
     "FRONT-REAL-CANARY-RETENTION-01",
     "FRONT-INFRA-03",
-    "FRONT-REAL-READ-VERIFY-01"
+    "FRONT-REAL-READ-VERIFY-01",
+    "FRONT-REAL-READ-LOOKUP-ADAPTER-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -82,12 +83,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-REAL-READ-LOOKUP-ADAPTER-01",
+    "name": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-PLAN-01",
     "status": "recommended_next",
-    "reason": "Read-only endpoint inventory complete; need adapter for runtime-to-canary read-only retrieval"
+    "reason": "Adapter ready; next is exposing it through a safe read-only runtime endpoint"
   },
-  "ready_for_next_front": "FRONT-REAL-READ-LOOKUP-ADAPTER-01 — implement or verify read-only lookup adapter",
-  "last_updated": "2026-06-08T17:05:00+00:00",
+  "ready_for_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-PLAN-01 — expose adapter through safe read-only runtime endpoint",
+  "last_updated": "2026-06-08T17:25:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1316,5 +1317,27 @@
       "tests/smoke/smoke_front_real_read_verify_01.py"
     ],
     "next_recommended_front": "FRONT-REAL-READ-LOOKUP-ADAPTER-01 — implement or verify read-only lookup adapter"
+  },
+  "front_real_read_lookup_adapter_01": {
+    "status": "done",
+    "commit": "82bc5aef",
+    "remote_synced": true,
+    "purpose": "read-only semantic memory canary lookup adapter",
+    "decision": "READ_ONLY_LOOKUP_ADAPTER_READY",
+    "adapter_path": "brain/semantic_memory_canary_lookup_read_only.py",
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "faiss_imported": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "canary_lookup_success": true,
+    "hashes_unchanged": true,
+    "tests_passed": true,
+    "files": [
+      "brain/semantic_memory_canary_lookup_read_only.py",
+      "docs/FRONT_REAL_READ_LOOKUP_ADAPTER_01.md",
+      "tests/smoke/smoke_front_real_read_lookup_adapter_01.py"
+    ],
+    "next_recommended_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-PLAN-01 — expose adapter through safe read-only runtime endpoint"
   }
 }

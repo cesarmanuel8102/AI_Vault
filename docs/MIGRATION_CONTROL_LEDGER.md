@@ -3799,3 +3799,35 @@ Canary is stable and files are unmodified. Future front needed with runtime up t
 ### Next Recommended
 - FRONT-REAL-READ-LOOKUP-ADAPTER-01 — implement or verify read-only lookup adapter
 - Alternative: FRONT-INFRA-04 — Dockerfile/container reproducibility
+
+---
+
+## FRONT-REAL-READ-LOOKUP-ADAPTER-01: Read-Only Canary Lookup Adapter
+
+**Status:** COMPLETE ✅
+**Date:** 2026-06-08
+**Branch:** codex/own-capital-sustainable-return
+**Head Before:** a5565fb4
+**Adapter Commit:** 82bc5aef
+**Ledger Commit:** PENDING
+
+### Objective
+Implementar una capacidad real y util: un adapter read-only que pueda localizar y validar el canary directamente desde `memory/semantic/semantic_memory.jsonl`.
+
+### Files Created
+- `brain/semantic_memory_canary_lookup_read_only.py`
+- `docs/FRONT_REAL_READ_LOOKUP_ADAPTER_01.md`
+- `tests/smoke/smoke_front_real_read_lookup_adapter_01.py`
+
+### Validation
+- Tests passed: 20/20
+- Canary found: 1
+- Canary is last line: True
+- Metadata safe: True
+- Hashes unchanged: True
+
+### Decision
+READ_ONLY_LOOKUP_ADAPTER_READY
+
+### Next Recommended
+FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-PLAN-01 — expose adapter through safe read-only runtime endpoint
