@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+pydantic
+httpx
+requests
+aiohttp
+pandas
+numpy
+psutil
+faiss-cpu
+
+# test
+pytest
