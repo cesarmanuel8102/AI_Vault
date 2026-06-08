@@ -1,9 +1,9 @@
 {
-  "current_head": "184449e5",
-  "current_remote_head": "184449e5",
+  "current_head": "849dd43d",
+  "current_remote_head": "849dd43d",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_real_canary_exec_final_go_nogo_01_complete",
-  "last_applied_checkpoint": "FRONT-REAL-CANARY-EXEC-FINAL-GO-NOGO-01",
+  "migration_status": "front_real_canary_exec_01_complete",
+  "last_applied_checkpoint": "FRONT-REAL-CANARY-EXEC-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -67,7 +67,8 @@
     "FRONT-TEST-02",
     "FRONT-TEST-03",
     "FRONT-REAL-CANARY-PLAN-01",
-    "FRONT-REAL-CANARY-EXEC-FINAL-GO-NOGO-01"
+    "FRONT-REAL-CANARY-EXEC-FINAL-GO-NOGO-01",
+    "FRONT-REAL-CANARY-EXEC-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -77,12 +78,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-SEC-02",
+    "name": "FRONT-REAL-CANARY-POST-AUDIT-01",
     "status": "recommended_next",
-    "reason": "FRONT-SEC-01 completed; next step is timing-attack hardening and compare_digest verification"
+    "reason": "Canary write executed; next step is post-canary audit, verification, and rollback decision"
   },
-  "ready_for_next_front": "FRONT-SEC-02 â€” Timing attack compare_digest",
-  "last_updated": "2026-06-08T00:12:54.712951+00:00",
+  "ready_for_next_front": "FRONT-REAL-CANARY-POST-AUDIT-01 — post-canary audit and rollback decision",
+  "last_updated": "2026-06-08T20:56:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1203,5 +1204,30 @@
       "memory_write_still_blocked": true,
       "promotion_still_blocked": true
     }
+  },
+  "front_real_canary_exec_01": {
+    "status": "done",
+    "commit": "849dd43d",
+    "remote_synced": true,
+    "real_canary_write_executed": true,
+    "records_written": 1,
+    "target_store": "memory/semantic/semantic_memory.jsonl",
+    "canary_record_id": "canary-00000000-0000-0000-0000-000000000001",
+    "backup_created": true,
+    "backup_verified": true,
+    "post_write_verified": true,
+    "rollback_readiness_verified": true,
+    "rollback_executed": false,
+    "no_faiss_write": true,
+    "no_promotion": true,
+    "no_patch_application": true,
+    "no_trading_b8": true,
+    "tests_passed": true,
+    "patch_materialization_pipeline_remains_paused": true,
+    "files": [
+      "memory/semantic/semantic_memory.jsonl",
+      "tests/smoke/smoke_front_real_canary_exec_01.py"
+    ],
+    "next_recommended_front": "FRONT-REAL-CANARY-POST-AUDIT-01 — post-canary audit and rollback decision OR FRONT-INFRA-03 — startup/runbook reproducibility"
   }
 }

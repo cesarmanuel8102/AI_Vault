@@ -3457,3 +3457,80 @@ Reviews inert patch draft proposals and decides which qualify for materializatio
 - FRONT-REAL-CANARY-EXEC-01 — execute single-record canary write
 - Alternative: FRONT-INFRA-03 — startup/runbook reproducibility
 - Patch/materialization pipeline remains paused until explicitly reopened
+
+---
+
+## FRONT-REAL-CANARY-EXEC-01: Execute Single-Record Canary Write
+
+**Status:** COMPLETE ✅
+**Date:** 2026-06-08
+**Branch:** codex/own-capital-sustainable-return
+**Commit:** 849dd43d
+**Head Before:** 8da23897
+**Head After:** 849dd43d
+
+### Objective
+Execute the first explicitly authorized single-record canary write to `memory/semantic/semantic_memory.jsonl`.
+
+### Preconditions (All Passed)
+- Git working tree: staged empty ✅
+- Runtime stopped (port 8090 closed) ✅
+- Target exists: memory/semantic/semantic_memory.jsonl ✅
+- Local HEAD == Remote HEAD == 8da23897 ✅
+- Canary ID not pre-existing ✅
+- Authorization documents verified ✅
+
+### Execution
+- Target: memory/semantic/semantic_memory.jsonl
+- Records written: 1
+- Canary record ID: canary-00000000-0000-0000-0000-000000000001
+- Write type: append-only JSONL, 1 line, compact JSON
+- Backup created: tmp_agent/front_real_canary_exec_01/backups/semantic_memory.jsonl.backup_20260608_203610.jsonl
+- Backup verified: SHA256 matches pre-write snapshot ✅
+
+### Verification
+- Line count before: 1705
+- Line count after: 1706 ✅
+- File size increased: 771069 → 771694 ✅
+- SHA256 changed: verified ✅
+- Canary appears exactly once: verified ✅
+- Last line is canary with correct schema: verified ✅
+- Metadata flags safe: all false (faiss_write, promotion, patch_application, trading, b8) ✅
+- Post-write verification: PASSED ✅
+- Rollback readiness: verified ✅
+- Tests: 16/16 passed ✅
+
+### Security / No-Mutation
+- FAISS untouched ✅
+- No promotion ✅
+- No patches ✅
+- No trading ✅
+- No B8 touch ✅
+- No server start ✅
+- No Docker ✅
+- No network ✅
+- No install ✅
+- Protected paths untouched except authorized target ✅
+
+### Files Committed
+- memory/semantic/semantic_memory.jsonl (1 line appended)
+- tests/smoke/smoke_front_real_canary_exec_01.py (new test)
+
+### Next Recommended
+- FRONT-REAL-CANARY-POST-AUDIT-01 — post-canary audit and rollback decision
+- Alternative: FRONT-INFRA-03 — startup/runbook reproducibility
+
+### Safety Flags (Post-Execution)
+- materialization_allowed_now: false
+- patch_file_creation_allowed_now: false
+- git_apply_allowed_now: false
+- target_file_modification_allowed_now: false (except under explicit governance)
+- patch_generation_allowed_now: false
+- diff_generation_allowed_now: false
+- patch_application_allowed_now: false
+- real_patch_application_allowed_now: false
+- memory_write_allowed: false (governed)
+- faiss_write_allowed: false
+- real_write_allowed: false (governed)
+- promotion_allowed: false
+- rollback_executed: false
