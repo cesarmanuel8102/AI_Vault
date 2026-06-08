@@ -4221,3 +4221,55 @@ Verify that the integrated read-only canary lookup endpoint (`GET /brain/read-on
 ### Next Recommended
 FRONT-BRAIN-KNOWLEDGE-READ-API-01 — create real knowledge read API (brain module, route, integration)
 
+
+---
+
+*End of ledger entry for FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01*
+
+---
+
+## FRONT-BRAIN-KNOWLEDGE-READ-API-01
+
+**Status:** COMPLETE
+**Date:** 2026-06-08
+**Branch:** codex/own-capital-sustainable-return
+**Functional Commit:** 18ae7873
+**Ledger Commit:** PENDING
+**Head Before:** 386b7381
+**Head After:** PENDING
+**Type:** feature — real knowledge read API with search, filters, pagination
+
+### Objective
+Create a real knowledge read API that queries the semantic memory store with keyword search, filtering, and pagination — all read-only.
+
+### Files Created
+- `brain/knowledge_read_api.py` — Core module with `KnowledgeRecord`, `KnowledgeQueryResult`, `query_knowledge()`
+- `tmp_agent/brain_v9/routes/knowledge_read_api.py` — FastAPI router `GET /brain/knowledge/read`
+- `tests/smoke/smoke_front_brain_knowledge_read_api_01.py` — Smoke tests
+- `docs/FRONT_BRAIN_KNOWLEDGE_READ_API_01.md` — Documentation
+
+### Files Modified
+- `tmp_agent/brain_v9/main.py` — Added `knowledge_read_api_router` import and `app.include_router()`
+
+### Endpoint
+`GET /brain/knowledge/read`
+
+Query parameters: query, kind, source, session_id, limit (1-100), offset, include_full_text
+
+### Guarantees
+- no_memory_semantic_write: true
+- no_faiss_write: true
+- no_real_write: true
+- no_promotion: true
+- no_patch_application: true
+- no_trading_b8: true
+
+### Test Results
+10 passed in 0.61s
+
+### Decision
+**KNOWLEDGE_READ_API_READY**
+
+### Next Recommended
+FRONT-REAL-MEMORY-FAISS-PROMOTION-01 — controlled memory to FAISS promotion
+

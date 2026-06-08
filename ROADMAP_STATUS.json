@@ -1,9 +1,9 @@
 {
-  "current_head": "59b70578",
-  "current_remote_head": "e659ef4b",
+  "current_head": "18ae7873",
+  "current_remote_head": "386b7381",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_real_runtime_lookup_endpoint_live_smoke_01_complete",
-  "last_applied_checkpoint": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01",
+  "migration_status": "front_brain_knowledge_read_api_01_complete",
+  "last_applied_checkpoint": "FRONT-BRAIN-KNOWLEDGE-READ-API-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -79,7 +79,8 @@
     "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01",
     "FRONT-MAIN-PY-DIRTY-COMMIT-01",
     "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01",
-    "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01"
+    "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01",
+    "FRONT-BRAIN-KNOWLEDGE-READ-API-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -93,8 +94,8 @@
     "status": "recommended_next",
     "reason": "Integration complete — local runtime smoke for integrated endpoint"
   },
-  "ready_for_next_front": "FRONT-BRAIN-KNOWLEDGE-READ-API-01 — create real knowledge read API (brain module, route, integration)",
-  "last_updated": "2026-06-08T20:25:00+00:00",
+  "ready_for_next_front": "FRONT-REAL-MEMORY-FAISS-PROMOTION-01 — controlled memory to FAISS promotion",
+  "last_updated": "2026-06-08T20:32:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1507,5 +1508,26 @@
       "tests/smoke/smoke_front_real_runtime_lookup_endpoint_live_smoke_01.py"
     ],
     "recommended_next_front": "FRONT-BRAIN-KNOWLEDGE-READ-API-01 — create real knowledge read API"
+  },
+  "front_brain_knowledge_read_api_01": {
+    "status": "done",
+    "commit": "18ae7873",
+    "remote_synced": false,
+    "purpose": "create real knowledge read API with search, filters, and pagination",
+    "decision": "KNOWLEDGE_READ_API_READY",
+    "endpoint": "GET /brain/knowledge/read",
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "faiss_imported": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "tests_passed": true,
+    "files": [
+      "brain/knowledge_read_api.py",
+      "tmp_agent/brain_v9/routes/knowledge_read_api.py",
+      "docs/FRONT_BRAIN_KNOWLEDGE_READ_API_01.md",
+      "tests/smoke/smoke_front_brain_knowledge_read_api_01.py"
+    ],
+    "recommended_next_front": "FRONT-REAL-MEMORY-FAISS-PROMOTION-01 — controlled memory to FAISS promotion"
   }
 }
