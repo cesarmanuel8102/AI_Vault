@@ -1,9 +1,9 @@
 {
-  "current_head": "e659ef4b",
+  "current_head": "59b70578",
   "current_remote_head": "e659ef4b",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_real_runtime_lookup_endpoint_integration_01_complete",
-  "last_applied_checkpoint": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01",
+  "migration_status": "front_real_runtime_lookup_endpoint_live_smoke_01_complete",
+  "last_applied_checkpoint": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -78,7 +78,8 @@
     "FRONT-MAIN-PY-DIRTY-TRIAGE-01",
     "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01",
     "FRONT-MAIN-PY-DIRTY-COMMIT-01",
-    "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01"
+    "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01",
+    "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -92,8 +93,8 @@
     "status": "recommended_next",
     "reason": "Integration complete — local runtime smoke for integrated endpoint"
   },
-  "ready_for_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01 — local runtime smoke for integrated endpoint",
-  "last_updated": "2026-06-08T23:10:00+00:00",
+  "ready_for_next_front": "FRONT-BRAIN-KNOWLEDGE-READ-API-01 — create real knowledge read API (brain module, route, integration)",
+  "last_updated": "2026-06-08T20:25:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1482,5 +1483,29 @@
       "tests/smoke/smoke_front_real_runtime_lookup_endpoint_integration_01.py"
     ],
     "recommended_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01 — local runtime smoke for integrated endpoint"
+  },
+  "front_real_runtime_lookup_endpoint_live_smoke_01": {
+    "status": "done",
+    "commit": "59b70578",
+    "remote_synced": false,
+    "purpose": "live runtime smoke test for integrated read-only canary lookup endpoint",
+    "decision": "LIVE_SMOKE_PASSED",
+    "endpoint": "GET /brain/read-only/canary",
+    "runtime_started_by_this_front": true,
+    "runtime_stopped_by_this_front": true,
+    "port_8090_closed": true,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "faiss_imported": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "canary_lookup_success": true,
+    "hashes_unchanged": true,
+    "tests_passed": true,
+    "files": [
+      "docs/FRONT_REAL_RUNTIME_LOOKUP_ENDPOINT_LIVE_SMOKE_01.md",
+      "tests/smoke/smoke_front_real_runtime_lookup_endpoint_live_smoke_01.py"
+    ],
+    "recommended_next_front": "FRONT-BRAIN-KNOWLEDGE-READ-API-01 — create real knowledge read API"
   }
 }

@@ -4141,3 +4141,83 @@ FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 was blocked with status:
 
 ### Next Recommended
 FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01 — operator review of preexisting main.py dirty state
+
+---
+
+*End of ledger entry for FRONT-MAIN-PY-DIRTY-TRIAGE-01*
+
+---
+
+## FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01
+
+**Status:** COMPLETE
+**Date:** 2026-06-08
+**Branch:** codex/own-capital-sustainable-return
+**Functional Commit:** 59b70578
+**Ledger Commit:** PENDING
+**Head Before:** 4cd213f5
+**Head After:** PENDING
+**Type:** live runtime smoke — verifies integrated endpoint on real uvicorn runtime
+
+### Objective
+Verify that the integrated read-only canary lookup endpoint (`GET /brain/read-only/canary`) responds correctly when the real uvicorn runtime is started, queried, and stopped.
+
+### Endpoint Verified
+`GET http://127.0.0.1:8090/brain/read-only/canary`
+
+### Baseline Snapshot (Pre-Runtime)
+- `tmp_agent/front_real_runtime_lookup_endpoint_live_smoke_01/baseline_snapshot.json`
+- memory/semantic hash: stable
+- FAISS index hash: stable
+
+### Live Smoke Results
+- HTTP status: 200
+- Response body `status`: ok
+- Response body `found`: true
+- Response body `count`: 1
+- Response body `no_write`: true
+- Response body `faiss_used`: false
+- Response body `promotion`: false
+- Response body `is_last_line`: true
+- Response body `validation.valid`: true
+
+### Post-Smoke Snapshot (Post-Runtime)
+- `tmp_agent/front_real_runtime_lookup_endpoint_live_smoke_01/post_smoke_snapshot.json`
+- memory/semantic hash: unchanged from baseline
+- FAISS index hash: unchanged from baseline
+
+### Runtime Management
+- Runtime started by this front: true
+- PID at smoke time: 122364
+- Runtime stopped by this front: true
+- Port 8090 confirmed closed after stop: true
+- Runtime stdout/stderr captured: true
+
+### Decision
+**LIVE_SMOKE_PASSED** — integrated endpoint is verified on live runtime. No mutations to protected stores.
+
+### Guarantees
+- no_memory_semantic_write: true
+- no_faiss_write: true
+- no_real_write: true
+- no_promotion: true
+- no_patch_application: true
+- no_trading_b8: true
+- runtime_isolated: true (started and stopped within front)
+- hashes_unchanged: true
+
+### Files Created / Modified (Evidence Only)
+- `tmp_agent/front_real_runtime_lookup_endpoint_live_smoke_01/baseline_snapshot.json`
+- `tmp_agent/front_real_runtime_lookup_endpoint_live_smoke_01/live_endpoint_result.json`
+- `tmp_agent/front_real_runtime_lookup_endpoint_live_smoke_01/post_smoke_snapshot.json`
+- `tmp_agent/front_real_runtime_lookup_endpoint_live_smoke_01/runtime_stop_decision.json`
+- `tmp_agent/front_real_runtime_lookup_endpoint_live_smoke_01/runtime_stdout.log`
+- `tmp_agent/front_real_runtime_lookup_endpoint_live_smoke_01/runtime_stderr.log`
+
+### Files Committed (Functional Scope)
+- `docs/FRONT_REAL_RUNTIME_LOOKUP_ENDPOINT_LIVE_SMOKE_01.md`
+- `tests/smoke/smoke_front_real_runtime_lookup_endpoint_live_smoke_01.py`
+
+### Next Recommended
+FRONT-BRAIN-KNOWLEDGE-READ-API-01 — create real knowledge read API (brain module, route, integration)
+
