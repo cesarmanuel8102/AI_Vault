@@ -3209,3 +3209,60 @@ Reviews inert patch draft proposals and decides which qualify for materializatio
 - FRONT-REAL-APPROVAL-01 — operator approval gate for controlled write
 - Alternative: FRONT-INFRA-03 — startup/runbook reproducibility
 - Patch/materialization pipeline remains paused until explicitly reopened
+
+### Front: FRONT-REAL-APPROVAL-01
+**Commit:** 70365932
+**Scope:** Operator approval gate for controlled write
+**Tests:** 18 passed (smoke_front_real_approval_01_operator_gate)
+**Evidence:** tmp_agent/front_real_approval_01/
+**Python:** 3.11.9
+**py_compile:** PASS
+
+#### Fields
+- approval_gate_only: true
+- no_execution_authorized: true
+- human_approval_required: true
+- double_confirmation_required: true
+- approval_token_env_var: BRAIN_APPROVAL_4D_DRY_GATE_TOKEN
+- fail_closed_behavior: true
+- no_tokens_printed: true
+- no_secret_values_written: true
+- no_memory_write: true
+- no_faiss_write: true
+- no_real_write: true
+- no_promotion: true
+- no_patch_files_generated: true
+- no_git_apply_executed: true
+- no_trading_B8: true
+- no_product_behavior_change: true
+- no_tokens_leaked: true
+- next_safe_front: FRONT-REAL-CANARY-PLAN-01 — single-record canary execution plan OR FRONT-INFRA-03 — startup/runbook reproducibility
+
+#### Files Changed
+- docs/FRONT_REAL_APPROVAL_01_OPERATOR_APPROVAL_GATE.md
+- tests/smoke/smoke_front_real_approval_01_operator_gate.py
+
+#### Safety Flags
+- materialization_allowed_now: false
+- patch_file_creation_allowed_now: false
+- git_apply_allowed_now: false
+- target_file_modification_allowed_now: false
+- patch_generation_allowed_now: false
+- diff_generation_allowed_now: false
+- patch_application_allowed_now: false
+- real_patch_application_allowed_now: false
+- patches_generated_for_application: false
+- patches_applied: false
+- patches_staged: false
+- memory_write_allowed: false
+- faiss_write_allowed: false
+- real_write_allowed: false
+- promotion_allowed: false
+- must_not_create_patch_files: true
+- must_not_run_git_apply: true
+- must_not_modify_target_files: true
+
+### Next Recommended
+- FRONT-REAL-CANARY-PLAN-01 — single-record canary execution plan
+- Alternative: FRONT-INFRA-03 — startup/runbook reproducibility
+- Patch/materialization pipeline remains paused until explicitly reopened
