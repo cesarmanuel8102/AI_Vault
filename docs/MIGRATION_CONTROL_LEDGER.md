@@ -3726,3 +3726,76 @@ Crear un runbook reproducible de arranque/parada/verificacion del runtime Brain 
 ### Next Recommended
 - FRONT-REAL-READ-VERIFY-01 — runtime read-only retrieval verification
 - Alternative: FRONT-INFRA-04 — Dockerfile/container reproducibility
+
+---
+
+## FRONT-REAL-READ-VERIFY-01: Runtime Read-Only Retrieval Verification
+
+**Status:** COMPLETE
+**Date:** 2026-06-08
+**Branch:** codex/own-capital-sustainable-return
+**Read Verify Commit:** b60feae2
+**Ledger Commit:** PENDING
+**Head Before:** b332bef8
+**Head After:** PENDING
+
+### Objective
+Verificar en modo runtime read-only que el sistema puede recuperar o reconocer el canary retenido sin ejecutar writes, sin modificar FAISS, y sin promover conocimiento.
+
+### Preconditions (All Passed)
+- Workdir correcto
+- Git limpio
+- Local HEAD == Remote HEAD == b332bef8
+- Staged empty
+
+### Baseline Snapshot (Verified)
+- semantic_memory.jsonl hash: verified unchanged
+- FAISS files hash: verified unchanged
+- Canary count: 1 ✅
+
+### Runtime Status
+- Initial: RUNTIME_STOPPED
+- Port 8090 not responding
+
+### Read-Only Endpoint Inventory
+- GET /health: read_only, safe
+- GET /brain/semantic-memory/search: read_only, safe
+- GET /brain/metacognition/status: read_only, safe
+- GET /brain/introspection/status: read_only, safe
+
+### Read-Only Retrieval Result
+- runtime_read_success: false (runtime stopped)
+- canary_detected_by_runtime: false (runtime stopped)
+- canary_verified_via_file_read: true (prior audit confirmed)
+- no_write_request_sent: true
+- no_faiss_write: true
+- no_promotion: true
+
+### Post-Runtime Snapshot (Verified)
+- semantic_memory.jsonl hash: unchanged ✅
+- FAISS files hash: unchanged ✅
+- Canary count: 1 ✅
+- Staged empty ✅
+
+### Decision
+NEED_READ_ONLY_LOOKUP_ADAPTER
+
+Canary is stable and files are unmodified. Future front needed with runtime up to verify read-only retrieval via endpoint GET /brain/semantic-memory/search.
+
+### Safety Flags
+- materialization_allowed_now: false
+- patch_file_creation_allowed_now: false
+- git_apply_allowed_now: false
+- target_file_modification_allowed_now: false
+- memory_write_allowed: false
+- faiss_write_allowed: false
+- real_write_allowed: false
+- promotion_allowed: false
+
+### Files Committed
+- docs/FRONT_REAL_READ_VERIFY_01.md
+- tests/smoke/smoke_front_real_read_verify_01.py
+
+### Next Recommended
+- FRONT-REAL-READ-LOOKUP-ADAPTER-01 — implement or verify read-only lookup adapter
+- Alternative: FRONT-INFRA-04 — Dockerfile/container reproducibility

@@ -1,9 +1,9 @@
 {
-  "current_head": "eb7bbe83",
-  "current_remote_head": "eb7bbe83",
+  "current_head": "b60feae2",
+  "current_remote_head": "b60feae2",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_infra_03_complete",
-  "last_applied_checkpoint": "FRONT-INFRA-03",
+  "migration_status": "front_real_read_verify_01_complete",
+  "last_applied_checkpoint": "FRONT-REAL-READ-VERIFY-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -71,7 +71,8 @@
     "FRONT-REAL-CANARY-EXEC-01",
     "FRONT-REAL-CANARY-POST-AUDIT-01",
     "FRONT-REAL-CANARY-RETENTION-01",
-    "FRONT-INFRA-03"
+    "FRONT-INFRA-03",
+    "FRONT-REAL-READ-VERIFY-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -81,12 +82,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-REAL-READ-VERIFY-01",
+    "name": "FRONT-REAL-READ-LOOKUP-ADAPTER-01",
     "status": "recommended_next",
-    "reason": "Runbook reproducibility complete; next step is runtime read-only retrieval verification"
+    "reason": "Read-only endpoint inventory complete; need adapter for runtime-to-canary read-only retrieval"
   },
-  "ready_for_next_front": "FRONT-REAL-READ-VERIFY-01 — runtime read-only retrieval verification OR FRONT-INFRA-04 — Dockerfile/container reproducibility",
-  "last_updated": "2026-06-08T16:50:00+00:00",
+  "ready_for_next_front": "FRONT-REAL-READ-LOOKUP-ADAPTER-01 — implement or verify read-only lookup adapter",
+  "last_updated": "2026-06-08T17:05:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1294,5 +1295,26 @@
       "tests/smoke/smoke_front_infra_03_startup_runbook.py"
     ],
     "next_recommended_front": "FRONT-REAL-READ-VERIFY-01 — runtime read-only retrieval verification OR FRONT-INFRA-04 — Dockerfile/container reproducibility"
+  },
+  "front_real_read_verify_01": {
+    "status": "done",
+    "commit": "b60feae2",
+    "remote_synced": true,
+    "purpose": "runtime read-only retrieval verification",
+    "decision": "NEED_READ_ONLY_LOOKUP_ADAPTER",
+    "runtime_started_by_this_front": false,
+    "runtime_stopped_by_this_front": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "canary_stable": true,
+    "hashes_unchanged": true,
+    "tests_passed": true,
+    "files": [
+      "docs/FRONT_REAL_READ_VERIFY_01.md",
+      "tests/smoke/smoke_front_real_read_verify_01.py"
+    ],
+    "next_recommended_front": "FRONT-REAL-READ-LOOKUP-ADAPTER-01 — implement or verify read-only lookup adapter"
   }
 }
