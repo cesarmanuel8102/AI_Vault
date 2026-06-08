@@ -89,7 +89,7 @@
     "status": "blocked",
     "reason": "Preexisting dirty main.py requires operator review before any integration front can proceed"
   },
-  "ready_for_next_front": "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01 — operator review of preexisting main.py dirty state, then either commit, discard, or split into separate fronts",
+  "ready_for_next_front": "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01 — operator review of preexisting main.py dirty state",
   "last_updated": "2026-06-08T22:10:00+00:00",
   "phase0_security": {
     "status": "done",
@@ -1395,6 +1395,7 @@
     "recommended_next_front": "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01 — operator review of preexisting main.py dirty state OR FRONT-MAIN-PY-DIRTY-COMMIT-01 — commit preexisting changes OR FRONT-MAIN-PY-DIRTY-DISCARD-PLAN-01 — plan to discard changes",
     "blocked_fronts_after_this": [
       "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01"
-    ]
+    ],
+    "diagnostic_only": true
   }
 }
