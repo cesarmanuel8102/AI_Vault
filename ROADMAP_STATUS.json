@@ -1,9 +1,9 @@
 {
-  "current_head": "91979360",
-  "current_remote_head": "91979360",
+  "current_head": "1f1f9e68",
+  "current_remote_head": "1f1f9e68",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_infra_01_dependency_manifest_complete",
-  "last_applied_checkpoint": "FRONT-INFRA-01",
+  "migration_status": "front_infra_02_env_example_complete",
+  "last_applied_checkpoint": "FRONT-INFRA-02",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -66,7 +66,7 @@
     "FRONT-TEST-01",
     "FRONT-TEST-02",
     "FRONT-TEST-03",
-    "FRONT-INFRA-01"
+    "FRONT-INFRA-02"
   ],
   "open_fronts": [],
   "blocked_fronts": [],

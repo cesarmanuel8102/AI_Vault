@@ -3088,3 +3088,64 @@ Reviews inert patch draft proposals and decides which qualify for materializatio
 ### Next Recommended
 - FRONT-INFRA-02 — .env.example
 - Patch/materialization pipeline remains paused until security conditions met
+
+### Front: FRONT-INFRA-02
+**Commit:** 1f1f9e68
+**Scope:** Minimal .env.example
+**Tests:** 10 passed (smoke_front_infra_02_env_example)
+**Evidence:** tmp_agent/front_infra_02/
+**Python:** 3.11.9
+**py_compile:** PASS
+
+#### Fields
+- env_example_created: true
+- no_real_secrets: true
+- empty_secret_values_allowed: true
+- secret_regex_does_not_cross_newlines: true
+- dev_mode_false: true
+- unsafe_dev_endpoints_false: true
+- real_write_flags_false: true
+- paper_only_true: true
+- no_install_executed: true
+- no_server_started: true
+- no_docker_invoked: true
+- no_network_required: true
+- no_product_behavior_change: true
+- no_memory_write: true
+- no_faiss_write: true
+- no_real_write: true
+- no_promotion: true
+- no_patch_files_generated: true
+- no_git_apply_executed: true
+- no_trading_or_b8_touch: true
+- patch_materialization_pipeline_paused: true
+- next_safe_front: FRONT-REAL-PLAN-01 — controlled real e2e write plan OR FRONT-INFRA-03 — startup/runbook reproducibility
+
+#### Files Changed
+- .env.example
+- tests/smoke/smoke_front_infra_02_env_example.py
+
+#### Safety Flags
+- materialization_allowed_now: false
+- patch_file_creation_allowed_now: false
+- git_apply_allowed_now: false
+- target_file_modification_allowed_now: false
+- patch_generation_allowed_now: false
+- diff_generation_allowed_now: false
+- patch_application_allowed_now: false
+- real_patch_application_allowed_now: false
+- patches_generated_for_application: false
+- patches_applied: false
+- patches_staged: false
+- memory_write_allowed: false
+- faiss_write_allowed: false
+- real_write_allowed: false
+- promotion_allowed: false
+- must_not_create_patch_files: true
+- must_not_run_git_apply: true
+- must_not_modify_target_files: true
+
+### Next Recommended
+- FRONT-REAL-PLAN-01 — controlled real e2e write plan
+- Alternative: FRONT-INFRA-03 — startup/runbook reproducibility
+- Patch/materialization pipeline remains paused until explicitly reopened
