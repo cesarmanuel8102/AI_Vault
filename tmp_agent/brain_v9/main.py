@@ -1086,6 +1086,27 @@ async def status():
     }
 
 
+@app.get("/healthz")
+async def healthz():
+    return await health()
+
+
+@app.get("/v1/agent/healthz")
+async def v1_agent_healthz():
+    return await health()
+
+
+@app.get("/v1/agent/status")
+async def v1_agent_status(room_id: str | None = None):
+    return {
+        "ok": True,
+        "status": "running",
+        "room_id": room_id,
+        "service": "brain_v9",
+        "ts": datetime.now(timezone.utc).isoformat(),
+    }
+
+
 @app.get("/brain/operating-context")
 async def brain_operating_context():
     from brain_v9.trading.router import trading_policy
@@ -1294,11 +1315,76 @@ Responde a esta pregunta USANDO los datos de arriba cuando sea relevante:
     )
 
 
+def _trivial_chat_fastpath(message: str) -> dict | None:
+    """Patch01A: Fastpath ultra-temprano para mensajes triviales.
+    Evita que ping/hola/status entren al pipeline completo.
+    """
+    m = (message or "").strip().lower()
+    if not m:
+        return {
+            "response": "Mensaje vacío.",
+            "route": "fastpath",
+            "intent": "EMPTY",
+            "model": "local",
+            "success": True,
+        }
+
+    if len(m) > 80:
+        return None
+
+    blocked_terms = (
+        "ejecuta", "crea", "modifica", "borra", "escribe", "archivo",
+        "aplica", "run", "execute", "delete", "write", "patch",
+        "tool", "herramienta", "diagnostica", "revisa"
+    )
+    if any(t in m for t in blocked_terms):
+        return None
+
+    if m in ("ping", "pong"):
+        return {
+            "response": "Pong. Operativo.",
+            "route": "fastpath",
+            "intent": "HEALTH_PING",
+            "model": "local",
+            "success": True,
+        }
+
+    if m in ("hola", "hello", "hi", "hey", "buenas", "buenos dias", "buenos días", "buenas tardes", "buenas noches"):
+        return {
+            "response": "Hola. Brain V9 está operativo. Dime qué quieres revisar.",
+            "route": "fastpath",
+            "intent": "GREETING",
+            "model": "local",
+            "success": True,
+        }
+
+    if m in ("status", "estado", "health", "salud"):
+        return {
+            "response": "Brain V9 está operativo en 8090. Health/status disponibles.",
+            "route": "fastpath",
+            "intent": "STATUS_BASIC",
+            "model": "local",
+            "success": True,
+        }
+
+    return None
+
+
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
     """
     Chat endpoint con soporte para autenticacion PAD (Modo Desarrollador)
     """
+    # Patch01A: Fastpath ultra-temprano para mensajes triviales
+    trivial = _trivial_chat_fastpath(req.message)
+    if trivial is not None:
+        return ChatResponse(
+            response=trivial["response"],
+            session_id=req.session_id,
+            model_used=trivial.get("model", "local"),
+            success=trivial.get("success", True),
+        )
+
     global _pad_authenticated_sessions
     mensaje_lower = req.message.lower()
     
@@ -1667,17 +1753,17 @@ Las restricciones se reactivaran en 60 minutos o al escribir:
     try:
         result = await asyncio.wait_for(
             session.chat(req.message, req.model_priority),
-            timeout=600,
+            timeout=30,
         )
     except asyncio.TimeoutError:
-        log.warning("Chat request timed out after 600s for session %s", req.session_id)
+        log.warning("Chat request timed out after 30s for session %s", req.session_id)
         _emit_agent_trace_internal(
             req.session_id, "chat_ui", "error",
             "Chat processing timeout",
-            "The request exceeded the 600s limit.",
+            "The request exceeded the 30s limit.",
             severity="warning"
         )
-        result = {"content": "La consulta excedió el tiempo límite (600s). Intenta una pregunta más corta o usa `/model chat`.",
+        result = {"content": "El modelo tardó demasiado en responder. El servidor sigue operativo; intenta de nuevo con una instrucción más concreta.",
                   "success": False, "model": None}
 
     # Extract pending_action from response text if present
@@ -3870,9 +3956,11 @@ async def brain_introspection_gpu():
 @app.post("/agent")
 async def run_agent(req: AgentRequest, _operator: StrictOperatorAccess):
     """
-    Ejecuta una tarea usando el ciclo ORAV completo.
-    Diferencia con /chat: el agente planifica, ejecuta tools reales
-    y verifica resultados — no es solo una consulta al LLM.
+    [INTERNAL/DEPRECATED] Ciclo ORAV completo.
+    
+    NOTA OPERATIVA (CHAT-OPS-ARCH-01): /agent es endpoint interno para operador.
+    Para flujo gobernado con permisos y pending_action, use POST /chat.
+    /chat es la autoridad operacional única para usuarios.
     """
     global _agent_executor
     if _agent_executor is None:
