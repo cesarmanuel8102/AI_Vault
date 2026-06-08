@@ -1,9 +1,9 @@
 {
-  "current_head": "2b5c622d",
-  "current_remote_head": "2b5c622d",
+  "current_head": "72637951",
+  "current_remote_head": "72637951",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_main_py_dirty_triage_01_complete",
-  "last_applied_checkpoint": "FRONT-MAIN-PY-DIRTY-TRIAGE-01",
+  "migration_status": "front_main_py_dirty_human_review_01_functional_complete_ledger_pending",
+  "last_applied_checkpoint": "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -75,7 +75,8 @@
     "FRONT-REAL-READ-VERIFY-01",
     "FRONT-REAL-READ-LOOKUP-ADAPTER-01",
     "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-01",
-    "FRONT-MAIN-PY-DIRTY-TRIAGE-01"
+    "FRONT-MAIN-PY-DIRTY-TRIAGE-01",
+    "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -85,12 +86,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01",
-    "status": "blocked",
-    "reason": "Preexisting dirty main.py requires operator review before any integration front can proceed"
+    "name": "FRONT-MAIN-PY-DIRTY-COMMIT-01",
+    "status": "recommended_next",
+    "reason": "Human review recommends KEEP_AND_COMMIT — operator approval required to commit preexisting main.py changes"
   },
-  "ready_for_next_front": "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01 — operator review of preexisting main.py dirty state",
-  "last_updated": "2026-06-08T22:10:00+00:00",
+  "ready_for_next_front": "FRONT-MAIN-PY-DIRTY-COMMIT-01 — commit preexisting main.py monitoring endpoints and chat fastpath (operator approval required)",
+  "last_updated": "2026-06-08T22:45:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1397,5 +1398,39 @@
       "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01"
     ],
     "diagnostic_only": true
+  },
+  "front_main_py_dirty_human_review_01": {
+    "status": "done",
+    "commit": "72637951",
+    "remote_synced": true,
+    "purpose": "operator-assisted review of preexisting main.py dirty state",
+    "decision": "KEEP_AND_COMMIT_MAIN_PY_CHANGES",
+    "risk_level": "LOW",
+    "main_py_dirty": true,
+    "main_py_modified_by_this_front": false,
+    "main_py_staged": false,
+    "cleanup_executed": false,
+    "diagnostic_only": true,
+    "operator_assisted_review": true,
+    "tests_passed": true,
+    "files": [
+      "docs/FRONT_MAIN_PY_DIRTY_HUMAN_REVIEW_01.md",
+      "tests/smoke/smoke_front_main_py_dirty_human_review_01.py",
+      "tmp_agent/front_main_py_dirty_human_review_01/main_py_review_sections.json",
+      "tmp_agent/front_main_py_dirty_human_review_01/main_py_review_sections.md",
+      "tmp_agent/front_main_py_dirty_human_review_01/main_py_formatting_vs_functional.json",
+      "tmp_agent/front_main_py_dirty_human_review_01/main_py_head_vs_worktree_summary.md",
+      "tmp_agent/front_main_py_dirty_human_review_01/precise_route_function_diff.txt",
+      "tmp_agent/front_main_py_dirty_human_review_01/security_check.json",
+      "tmp_agent/front_main_py_dirty_human_review_01/no_mutation_validation.json"
+    ],
+    "recommended_next_front": "FRONT-MAIN-PY-DIRTY-COMMIT-01 — commit preexisting main.py monitoring endpoints and chat fastpath (requires operator approval)",
+    "blocked_fronts_after_this": [
+      "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01"
+    ],
+    "next_recommended_fronts": [
+      "FRONT-MAIN-PY-DIRTY-COMMIT-01",
+      "FRONT-MAIN-PY-DIRTY-DISCARD-PLAN-01"
+    ]
   }
 }

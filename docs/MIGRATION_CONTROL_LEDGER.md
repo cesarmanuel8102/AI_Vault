@@ -3873,6 +3873,178 @@ FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 — integrate router into main
 **Date:** 2026-06-08
 **Branch:** codex/own-capital-sustainable-return
 **Functional Commit:** 2b5c622d
+**Ledger Commit:** ed43dbb2
+**Head Before:** baf2722d
+**Head After:** ed43dbb2
+**Type:** diagnostic-only — no cleanup, no main.py modification
+
+### Objective
+Diagnosticar las modificaciones preexistentes en `tmp_agent/brain_v9/main.py` antes de permitir cualquier integracion de router en el runtime principal.
+
+### Motive for Block
+FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 was blocked with status:
+**FAILED_MAIN_PY_PREEXISTING_DIRTY**
+
+### Preflight Result
+- git workdir: limpio excepto main.py
+- staged: vacio
+- main.py: dirty
+- HEAD: baf2722d (sincronizado local == remote)
+
+### Diff Summary
+- Total de lineas en diff: ~8,833
+- Inserciones: 4,413
+- Borrados: 4,325
+
+### Classification
+| Seccion | Riesgo |
+|---|---|
+| imports | LOW |
+| curated_runtime_lookup | MEDIUM |
+| routes/endpoints | HIGH |
+| security | HIGH |
+| memory/FAISS paths | HIGH |
+| trading/B8 | HIGH |
+
+### Decision
+**NEED_HUMAN_REVIEW**
+
+### Why No Cleanup Was Executed
+- No git reset/checkout/clean/stash executed.
+- main.py was not modified by this front.
+- main.py was not staged.
+- main.py was not committed.
+
+### Files Created / Modified (Evidence Only)
+- `tmp_agent/front_main_py_dirty_triage_01/main_py_diff.patch.txt`
+- `tmp_agent/front_main_py_dirty_triage_01/main_py_diff_stat.txt`
+- `tmp_agent/front_main_py_dirty_triage_01/main_py_diff_numstat.txt`
+- `tmp_agent/front_main_py_dirty_triage_01/main_py_diff_unified0.txt`
+- `tmp_agent/front_main_py_dirty_triage_01/main_py_diff_classification.json`
+- `tmp_agent/front_main_py_dirty_triage_01/main_py_diff_classification.md`
+- `tmp_agent/front_main_py_dirty_triage_01/security_check.json`
+- `tmp_agent/front_main_py_dirty_triage_01/no_mutation_validation.json`
+
+### Files Committed (Functional Scope)
+- `docs/FRONT_MAIN_PY_DIRTY_TRIAGE_01.md`
+- `tests/smoke/smoke_front_main_py_dirty_triage_01.py`
+
+### Blocked Fronts After This
+- FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 (requires clean main.py for router integration)
+
+### Next Recommended
+FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01 — operator review of preexisting main.py dirty state
+
+---
+
+## FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01: Operator-Assisted Review of Preexisting main.py Dirty State
+
+**Status:** COMPLETE ✅
+**Date:** 2026-06-08
+**Branch:** codex/own-capital-sustainable-return
+**Functional Commit:** 72637951
+**Ledger Commit:** PENDING
+**Head Before:** ed43dbb2
+**Head After:** PENDING
+**Type:** operator-assisted review, diagnostic-only, no mutations
+
+### Objective
+Revisar asistida por operador el diff preexistente en `tmp_agent/brain_v9/main.py` para decidir resolucion.
+
+### Preflight Result
+- HEAD: ed43dbb2 (sincronizado local == remote)
+- main.py: dirty preexistente, unstaged
+- Diff aproximado: ~8,834 lineas, 4,413 insertions, 4,325 deletions
+
+### Precise Diff Analysis
+| Metric | Value |
+|---|---|
+| Total diff lines | 8,834 |
+| Net line change | +88 |
+| HEAD line count | 4,416 |
+| Worktree line count | 4,504 |
+| Import count | 180 (unchanged) |
+| Route count | 168 (+3 from HEAD) |
+| Function count | 55 (+1 from HEAD) |
+
+### Added Routes (3)
+- `GET /healthz -> healthz()` — Health check endpoint
+- `GET /v1/agent/healthz -> v1_agent_healthz()` — Agent health check
+- `GET /v1/agent/status -> v1_agent_status(room_id)` — Agent status with room
+
+### Added Functions (1)
+- `_trivial_chat_fastpath(message: str)` — Chat optimization fastpath
+
+### Removed Routes
+- None
+
+### Removed Functions
+- None
+
+### Key Finding
+**All changes are ADDITIVE only.** No existing functions were modified or deleted. No security, auth, memory, FAISS, or trading changes detected. The massive diff line count is entirely from code block reorganization (2 large chunks). Actual functional delta is minimal (~100 lines).
+
+### Risk Assessment (Revised)
+| Categoria | Riesgo |
+|---|---|
+| Security/Auth | LOW |
+| Memory/Semantic | LOW |
+| FAISS | LOW |
+| Trading/B8 | LOW |
+| Runtime stability | LOW |
+| Data integrity | LOW |
+| **Overall** | **LOW** |
+
+### Decision
+**KEEP_AND_COMMIT_MAIN_PY_CHANGES**
+
+Razonamiento:
+1. All changes are additive (no deletions, no modifications)
+2. Added routes are standard monitoring/health patterns
+3. Added function is a chat optimization fastpath
+4. No security, auth, memory, FAISS, or trading changes
+5. No new imports or dependencies
+6. No CRLF conversion or formatting issues
+7. Risk is LOW, not HIGH
+8. The massive diff line count is entirely from code reorganization
+9. Blocking integration for this is unnecessary
+
+### Why No Cleanup Was Executed
+- No git reset/checkout/clean/stash executed.
+- main.py was not modified by this front.
+- main.py was not staged.
+- main.py was not committed.
+- All analysis was read-only.
+
+### Files Created / Modified (Evidence Only)
+- `tmp_agent/front_main_py_dirty_human_review_01/main_py_review_sections.json`
+- `tmp_agent/front_main_py_dirty_human_review_01/main_py_review_sections.md`
+- `tmp_agent/front_main_py_dirty_human_review_01/main_py_formatting_vs_functional.json`
+- `tmp_agent/front_main_py_dirty_human_review_01/main_py_head_vs_worktree_summary.md`
+- `tmp_agent/front_main_py_dirty_human_review_01/precise_route_function_diff.txt`
+- `tmp_agent/front_main_py_dirty_human_review_01/security_check.json`
+- `tmp_agent/front_main_py_dirty_human_review_01/no_mutation_validation.json`
+
+### Files Committed (Functional Scope)
+- `docs/FRONT_MAIN_PY_DIRTY_HUMAN_REVIEW_01.md`
+- `tests/smoke/smoke_front_main_py_dirty_human_review_01.py`
+
+### Blocked Fronts After This
+- FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 (requires main.py to be resolved first)
+
+### Next Recommended
+FRONT-MAIN-PY-DIRTY-COMMIT-01 — commit preexisting main.py monitoring endpoints and chat fastpath (requires operator approval)
+
+Alternative: FRONT-MAIN-PY-DIRTY-DISCARD-PLAN-01 — plan to discard changes (not recommended)
+
+---
+
+*End of ledger entry for FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01*
+
+**Status:** COMPLETE ✅
+**Date:** 2026-06-08
+**Branch:** codex/own-capital-sustainable-return
+**Functional Commit:** 2b5c622d
 **Ledger Commit:** PENDING
 **Head Before:** baf2722d
 **Head After:** PENDING
