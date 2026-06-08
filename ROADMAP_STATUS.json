@@ -1,9 +1,9 @@
 {
-  "current_head": "e46cc0ee",
-  "current_remote_head": "e46cc0ee",
+  "current_head": "2b5c622d",
+  "current_remote_head": "2b5c622d",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_real_runtime_lookup_endpoint_01_complete",
-  "last_applied_checkpoint": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-01",
+  "migration_status": "front_main_py_dirty_triage_01_complete",
+  "last_applied_checkpoint": "FRONT-MAIN-PY-DIRTY-TRIAGE-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -74,7 +74,8 @@
     "FRONT-INFRA-03",
     "FRONT-REAL-READ-VERIFY-01",
     "FRONT-REAL-READ-LOOKUP-ADAPTER-01",
-    "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-01"
+    "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-01",
+    "FRONT-MAIN-PY-DIRTY-TRIAGE-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -84,12 +85,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01",
-    "status": "recommended_next",
-    "reason": "Router ready; next step is integration into main app safely"
+    "name": "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01",
+    "status": "blocked",
+    "reason": "Preexisting dirty main.py requires operator review before any integration front can proceed"
   },
-  "ready_for_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-PLAN-01 — expose adapter through safe read-only runtime endpoint",
-  "last_updated": "2026-06-08T18:02:00+00:00",
+  "ready_for_next_front": "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01 — operator review of preexisting main.py dirty state, then either commit, discard, or split into separate fronts",
+  "last_updated": "2026-06-08T22:10:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1357,5 +1358,43 @@
     "canary_lookup_success": true,
     "hashes_unchanged": true,
     "tests_passed": true
+  },
+  "front_main_py_dirty_triage_01": {
+    "status": "done",
+    "commit": "2b5c622d",
+    "remote_synced": true,
+    "purpose": "diagnostic-only triage of preexisting main.py dirty state",
+    "decision": "NEED_HUMAN_REVIEW",
+    "main_py_dirty": true,
+    "diff_lines": 8833,
+    "diff_insertions": 4413,
+    "diff_deletions": 4325,
+    "risk_level": "HIGH",
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "main_py_modified_by_this_front": false,
+    "main_py_staged": false,
+    "main_py_committed": false,
+    "main_py_reset_or_checkouted": false,
+    "cleanup_executed": false,
+    "tests_passed": true,
+    "files": [
+      "docs/FRONT_MAIN_PY_DIRTY_TRIAGE_01.md",
+      "tests/smoke/smoke_front_main_py_dirty_triage_01.py",
+      "tmp_agent/front_main_py_dirty_triage_01/main_py_diff.patch.txt",
+      "tmp_agent/front_main_py_dirty_triage_01/main_py_diff_stat.txt",
+      "tmp_agent/front_main_py_dirty_triage_01/main_py_diff_numstat.txt",
+      "tmp_agent/front_main_py_dirty_triage_01/main_py_diff_unified0.txt",
+      "tmp_agent/front_main_py_dirty_triage_01/main_py_diff_classification.json",
+      "tmp_agent/front_main_py_dirty_triage_01/main_py_diff_classification.md",
+      "tmp_agent/front_main_py_dirty_triage_01/security_check.json",
+      "tmp_agent/front_main_py_dirty_triage_01/no_mutation_validation.json"
+    ],
+    "recommended_next_front": "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01 — operator review of preexisting main.py dirty state OR FRONT-MAIN-PY-DIRTY-COMMIT-01 — commit preexisting changes OR FRONT-MAIN-PY-DIRTY-DISCARD-PLAN-01 — plan to discard changes",
+    "blocked_fronts_after_this": [
+      "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01"
+    ]
   }
 }

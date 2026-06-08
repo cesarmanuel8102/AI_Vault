@@ -3864,3 +3864,73 @@ RUNTIME_LOOKUP_ROUTER_READY
 
 ### Next Recommended
 FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 — integrate router into main app safely
+
+---
+
+## FRONT-MAIN-PY-DIRTY-TRIAGE-01: Diagnose Preexisting main.py Dirty State
+
+**Status:** COMPLETE ✅
+**Date:** 2026-06-08
+**Branch:** codex/own-capital-sustainable-return
+**Functional Commit:** 2b5c622d
+**Ledger Commit:** PENDING
+**Head Before:** baf2722d
+**Head After:** PENDING
+**Type:** diagnostic-only — no cleanup, no main.py modification
+
+### Objective
+Diagnosticar las modificaciones preexistentes en `tmp_agent/brain_v9/main.py` antes de permitir cualquier integración de router en el runtime principal.
+
+### Motive for Block
+FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 was blocked with status:
+**FAILED_MAIN_PY_PREEXISTING_DIRTY**
+
+### Preflight Result
+- git workdir: limpio excepto main.py
+- staged: vacio
+- main.py: dirty
+- HEAD: baf2722d (sincronizado local == remote)
+
+### Diff Summary
+- Total de lineas en diff: ~8,833
+- Inserciones: 4,413
+- Borrados: 4,325
+
+### Classification
+| Seccion | Riesgo |
+|---|---|
+| imports | LOW |
+| curated_runtime_lookup | MEDIUM |
+| routes/endpoints | HIGH |
+| security | HIGH |
+| memory/FAISS paths | HIGH |
+| trading/B8 | HIGH |
+
+### Decision
+**NEED_HUMAN_REVIEW**
+
+### Why No Cleanup Was Executed
+- No git reset/checkout/clean/stash executed.
+- main.py was not modified by this front.
+- main.py was not staged.
+- main.py was not committed.
+
+### Files Created / Modified (Evidence Only)
+- `tmp_agent/front_main_py_dirty_triage_01/main_py_diff.patch.txt`
+- `tmp_agent/front_main_py_dirty_triage_01/main_py_diff_stat.txt`
+- `tmp_agent/front_main_py_dirty_triage_01/main_py_diff_numstat.txt`
+- `tmp_agent/front_main_py_dirty_triage_01/main_py_diff_unified0.txt`
+- `tmp_agent/front_main_py_dirty_triage_01/main_py_diff_classification.json`
+- `tmp_agent/front_main_py_dirty_triage_01/main_py_diff_classification.md`
+- `tmp_agent/front_main_py_dirty_triage_01/security_check.json`
+- `tmp_agent/front_main_py_dirty_triage_01/no_mutation_validation.json`
+
+### Files Committed (Functional Scope)
+- `docs/FRONT_MAIN_PY_DIRTY_TRIAGE_01.md`
+- `tests/smoke/smoke_front_main_py_dirty_triage_01.py`
+
+### Blocked Fronts After This
+- FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 (requires clean main.py for router integration)
+
+### Next Recommended
+FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01 — operator review of preexisting main.py dirty state
