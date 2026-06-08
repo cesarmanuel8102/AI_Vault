@@ -3863,7 +3863,56 @@ Create a read-only FastAPI router that exposes the canary lookup adapter via saf
 RUNTIME_LOOKUP_ROUTER_READY
 
 ### Next Recommended
-FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 — integrate router into main app safely
+FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 — integrate read-only canary router into main app (unblocked)
+
+---
+
+## FRONT-MAIN-PY-DIRTY-COMMIT-01: Commit Preexisting main.py Monitoring Endpoints and Chat Fastpath
+
+**Status:** COMPLETE ✅
+**Date:** 2026-06-08
+**Branch:** codex/own-capital-sustainable-return
+**Functional Commit:** 1d9a0800
+**Ledger Commit:** PENDING
+**Head Before:** b77cec68
+**Head After:** PENDING
+**Type:** functional commit of preexisting changes
+
+### Objective
+Committear los cambios preexistentes en `tmp_agent/brain_v9/main.py` aprobados por human review.
+
+### Human Review Reference
+FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01 decision: **KEEP_AND_COMMIT_MAIN_PY_CHANGES**
+
+### Changes Committed
+| Type | Count | Details |
+|---|---|---|
+| Routes added | 3 | GET /healthz, GET /v1/agent/healthz, GET /v1/agent/status |
+| Functions added | 1 | _trivial_chat_fastpath(message: str) |
+| Routes removed | 0 | — |
+| Functions removed | 0 | — |
+| Import changes | 0 | — |
+
+### Safety Guarantees
+- main.py was NOT modified by this front (committed as-is)
+- No memory write
+- No FAISS write
+- No promotion
+- No patch application
+- No trading/B8/Docker/network/install
+
+### Files Committed
+- `tmp_agent/brain_v9/main.py`
+
+### Blocked Fronts After This
+- None — FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 is now **unblocked**
+
+### Next Recommended
+FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 — integrate read-only canary router into main app
+
+---
+
+*End of ledger entry for FRONT-MAIN-PY-DIRTY-COMMIT-01*
 
 ---
 

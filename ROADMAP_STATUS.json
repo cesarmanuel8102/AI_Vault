@@ -1,9 +1,9 @@
 {
-  "current_head": "72637951",
-  "current_remote_head": "72637951",
+  "current_head": "1d9a0800",
+  "current_remote_head": "1d9a0800",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_main_py_dirty_human_review_01_functional_complete_ledger_pending",
-  "last_applied_checkpoint": "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01",
+  "migration_status": "front_main_py_dirty_commit_01_complete",
+  "last_applied_checkpoint": "FRONT-MAIN-PY-DIRTY-COMMIT-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -76,7 +76,8 @@
     "FRONT-REAL-READ-LOOKUP-ADAPTER-01",
     "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-01",
     "FRONT-MAIN-PY-DIRTY-TRIAGE-01",
-    "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01"
+    "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01",
+    "FRONT-MAIN-PY-DIRTY-COMMIT-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -86,12 +87,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-MAIN-PY-DIRTY-COMMIT-01",
+    "name": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01",
     "status": "recommended_next",
-    "reason": "Human review recommends KEEP_AND_COMMIT — operator approval required to commit preexisting main.py changes"
+    "reason": "main.py dirty state resolved — integration front can now proceed safely"
   },
-  "ready_for_next_front": "FRONT-MAIN-PY-DIRTY-COMMIT-01 — commit preexisting main.py monitoring endpoints and chat fastpath (operator approval required)",
-  "last_updated": "2026-06-08T22:45:00+00:00",
+  "ready_for_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 — integrate read-only canary router into main app",
+  "last_updated": "2026-06-08T22:58:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1432,5 +1433,30 @@
       "FRONT-MAIN-PY-DIRTY-COMMIT-01",
       "FRONT-MAIN-PY-DIRTY-DISCARD-PLAN-01"
     ]
+  },
+  "front_main_py_dirty_commit_01": {
+    "status": "done",
+    "commit": "1d9a0800",
+    "remote_synced": true,
+    "purpose": "commit preexisting main.py monitoring endpoints and chat fastpath",
+    "decision": "MAIN_PY_PREEXISTING_CHANGES_COMMITTED",
+    "main_py_commit": "1d9a0800",
+    "main_py_clean_after_commit": true,
+    "routes_committed": [
+      "GET /healthz",
+      "GET /v1/agent/healthz",
+      "GET /v1/agent/status"
+    ],
+    "function_committed": "_trivial_chat_fastpath(message: str)",
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "tests_passed": true,
+    "files": [
+      "tmp_agent/brain_v9/main.py"
+    ],
+    "recommended_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 — integrate read-only canary router into main app",
+    "blocked_fronts_after_this": []
   }
 }
