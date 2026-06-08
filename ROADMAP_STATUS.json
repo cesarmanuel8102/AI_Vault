@@ -1,9 +1,9 @@
 {
-  "current_head": "4c5f3c3d",
-  "current_remote_head": "4c5f3c3d",
+  "current_head": "eb7bbe83",
+  "current_remote_head": "eb7bbe83",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_real_canary_retention_01_complete",
-  "last_applied_checkpoint": "FRONT-REAL-CANARY-RETENTION-01",
+  "migration_status": "front_infra_03_complete",
+  "last_applied_checkpoint": "FRONT-INFRA-03",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -70,7 +70,8 @@
     "FRONT-REAL-CANARY-EXEC-FINAL-GO-NOGO-01",
     "FRONT-REAL-CANARY-EXEC-01",
     "FRONT-REAL-CANARY-POST-AUDIT-01",
-    "FRONT-REAL-CANARY-RETENTION-01"
+    "FRONT-REAL-CANARY-RETENTION-01",
+    "FRONT-INFRA-03"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -80,12 +81,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-INFRA-03",
+    "name": "FRONT-REAL-READ-VERIFY-01",
     "status": "recommended_next",
-    "reason": "Canary retention formalized; next step is infrastructure/runbook reproducibility"
+    "reason": "Runbook reproducibility complete; next step is runtime read-only retrieval verification"
   },
-  "ready_for_next_front": "FRONT-INFRA-03 — startup/runbook reproducibility",
-  "last_updated": "2026-06-08T16:40:00+00:00",
+  "ready_for_next_front": "FRONT-REAL-READ-VERIFY-01 — runtime read-only retrieval verification OR FRONT-INFRA-04 — Dockerfile/container reproducibility",
+  "last_updated": "2026-06-08T16:50:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1274,5 +1275,24 @@
       "tests/smoke/smoke_front_real_canary_retention_01.py"
     ],
     "next_recommended_front": "FRONT-INFRA-03 — startup/runbook reproducibility OR FRONT-REAL-READ-VERIFY-01 — runtime read-only retrieval verification"
+  },
+  "front_infra_03": {
+    "status": "done",
+    "commit": "eb7bbe83",
+    "remote_synced": true,
+    "purpose": "startup/runbook reproducibility",
+    "runbook_created": true,
+    "runtime_started": false,
+    "runtime_stopped": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "tests_passed": true,
+    "files": [
+      "docs/FRONT_INFRA_03_STARTUP_RUNBOOK.md",
+      "tests/smoke/smoke_front_infra_03_startup_runbook.py"
+    ],
+    "next_recommended_front": "FRONT-REAL-READ-VERIFY-01 — runtime read-only retrieval verification OR FRONT-INFRA-04 — Dockerfile/container reproducibility"
   }
 }

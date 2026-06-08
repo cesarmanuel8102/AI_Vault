@@ -3672,3 +3672,57 @@ El canary se retiene como marker historico de la primera escritura real controla
 ### Next Recommended
 - FRONT-INFRA-03 — startup/runbook reproducibility
 - Alternative: FRONT-REAL-READ-VERIFY-01 — runtime read-only retrieval verification
+
+---
+
+## FRONT-INFRA-03: Startup/Runbook Reproducibility
+
+**Status:** COMPLETE ✅
+**Date:** 2026-06-08
+**Branch:** codex/own-capital-sustainable-return
+**Infra Commit:** eb7bbe83
+**Ledger Commit:** PENDING
+**Head Before:** 2d19afc6
+**Head After:** PENDING
+
+### Objective
+Crear un runbook reproducible de arranque/parada/verificacion del runtime Brain V9 sin modificar runtime productivo.
+
+### Preconditions (All Passed)
+- Workdir correcto 🟢
+- Git limpio 🟢
+- Local HEAD == Remote HEAD == 2d19afc6 🟢
+- Staged empty 🟢
+
+### Inventario Detectado
+- Startup scripts: start_full_server.py, start_safe_server.py
+- Port: 8090 (default)
+- Host: 127.0.0.1 (default)
+- Health endpoint: 127.0.0.1:8090/health
+- Env vars: BRAIN_PORT, BRAIN_HOST, BRAIN_SAFE_MODE, BRAIN_ADMIN_TOKEN, etc.
+- No shutdown script exists (manual stop required)
+
+### Runbook Created
+- docs/FRONT_INFRA_03_STARTUP_RUNBOOK.md
+- Documents: startup commands, shutdown commands, health checks, port verification, safe_mode guidance, git pre-checks, stop conditions, troubleshooting
+- Explicitly states: "This runbook does not start or stop the runtime by itself."
+
+### Files Committed
+- docs/FRONT_INFRA_03_STARTUP_RUNBOOK.md (new)
+- tests/smoke/smoke_front_infra_03_startup_runbook.py (new)
+
+### Safety Flags (Post-Infra)
+- materialization_allowed_now: false
+- patch_file_creation_allowed_now: false
+- git_apply_allowed_now: false
+- target_file_modification_allowed_now: false
+- memory_write_allowed: false
+- faiss_write_allowed: false
+- real_write_allowed: false
+- promotion_allowed: false
+- runtime_started: false
+- runtime_stopped: false
+
+### Next Recommended
+- FRONT-REAL-READ-VERIFY-01 — runtime read-only retrieval verification
+- Alternative: FRONT-INFRA-04 — Dockerfile/container reproducibility
