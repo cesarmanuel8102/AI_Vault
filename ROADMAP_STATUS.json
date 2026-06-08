@@ -1,9 +1,9 @@
 {
-  "current_head": "79428a88",
-  "current_remote_head": "79428a88",
+  "current_head": "5c2b9e33",
+  "current_remote_head": "5c2b9e33",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_brain_knowledge_read_api_01_complete",
-  "last_applied_checkpoint": "FRONT-BRAIN-KNOWLEDGE-READ-API-01",
+  "migration_status": "front_real_memory_faiss_promotion_01_complete",
+  "last_applied_checkpoint": "FRONT-REAL-MEMORY-FAISS-PROMOTION-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -80,7 +80,8 @@
     "FRONT-MAIN-PY-DIRTY-COMMIT-01",
     "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01",
     "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01",
-    "FRONT-BRAIN-KNOWLEDGE-READ-API-01"
+    "FRONT-BRAIN-KNOWLEDGE-READ-API-01",
+    "FRONT-REAL-MEMORY-FAISS-PROMOTION-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -90,12 +91,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01",
+    "name": "FRONT-REAL-PATCH-MATERIALIZATION-01",
     "status": "recommended_next",
-    "reason": "Integration complete — local runtime smoke for integrated endpoint"
+    "reason": "First governed patch artifact materialization"
   },
-  "ready_for_next_front": "FRONT-REAL-MEMORY-FAISS-PROMOTION-01 — controlled memory to FAISS promotion",
-  "last_updated": "2026-06-08T20:32:00+00:00",
+  "ready_for_next_front": "FRONT-REAL-PATCH-MATERIALIZATION-01 — first governed patch artifact materialization",
+  "last_updated": "2026-06-08T21:05:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1529,5 +1530,32 @@
       "tests/smoke/smoke_front_brain_knowledge_read_api_01.py"
     ],
     "recommended_next_front": "FRONT-REAL-MEMORY-FAISS-PROMOTION-01 — controlled memory to FAISS promotion"
+  },
+  "front_real_memory_faiss_promotion_01": {
+    "status": "done",
+    "commit": "5c2b9e33",
+    "remote_synced": true,
+    "purpose": "controlled canary promotion to FAISS index",
+    "decision": "PROMOTED_CANARY_TO_FAISS",
+    "canary_id": "canary-00000000-0000-0000-0000-000000000001",
+    "semantic_memory_jsonl_unchanged": true,
+    "faiss_write_executed": true,
+    "promotion_executed": true,
+    "faiss_index_before": 1606,
+    "faiss_index_after": 1607,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "backups_created": true,
+    "rollback_available": true,
+    "tests_passed": true,
+    "files": [
+      "brain/semantic_memory_faiss_promotion.py",
+      "memory/semantic/semantic_memory_faiss.index",
+      "memory/semantic/semantic_memory_faiss_ids.json",
+      "docs/FRONT_REAL_MEMORY_FAISS_PROMOTION_01.md",
+      "tests/smoke/smoke_front_real_memory_faiss_promotion_01.py"
+    ],
+    "recommended_next_front": "FRONT-REAL-PATCH-MATERIALIZATION-01 — first governed patch artifact materialization"
   }
 }

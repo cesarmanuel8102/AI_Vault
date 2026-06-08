@@ -4273,3 +4273,62 @@ Query parameters: query, kind, source, session_id, limit (1-100), offset, includ
 ### Next Recommended
 FRONT-REAL-MEMORY-FAISS-PROMOTION-01 — controlled memory to FAISS promotion
 
+
+---
+
+*End of ledger entry for FRONT-BRAIN-KNOWLEDGE-READ-API-01*
+
+---
+
+## FRONT-REAL-MEMORY-FAISS-PROMOTION-01
+
+**Status:** COMPLETE
+**Date:** 2026-06-08
+**Branch:** codex/own-capital-sustainable-return
+**Functional Commit:** 5c2b9e33
+**Ledger Commit:** PENDING
+**Head Before:** feb069b9
+**Head After:** PENDING
+**Type:** controlled canary promotion to FAISS index
+
+### Objective
+Execute the first controlled canary promotion from memory/semantic/semantic_memory.jsonl to the FAISS index, limited to a single canary record.
+
+### Canary Record
+- **ID:** canary-00000000-0000-0000-0000-000000000001
+- **Source:** front_real_canary_exec_01
+- **In JSONL:** Yes, exactly once, last line
+
+### Files Changed (Functional Scope)
+- memory/semantic/semantic_memory_faiss.index (appended canary vector, 1606 → 1607)
+- memory/semantic/semantic_memory_faiss_ids.json (appended canary id, 1606 → 1607)
+- brain/semantic_memory_faiss_promotion.py (new adapter)
+- docs/FRONT_REAL_MEMORY_FAISS_PROMOTION_01.md
+- tests/smoke/smoke_front_real_memory_faiss_promotion_01.py
+
+### Files NOT Changed
+- memory/semantic/semantic_memory.jsonl — unchanged (guaranteed)
+- tmp_agent/brain_v9/core/session.py — untouched
+- tmp_agent/brain_v9/main.py — untouched
+- brain/curated_runtime_lookup.py — untouched
+- .env — untouched
+
+### Guarantees
+- semantic_memory_jsonl_modified: false
+- faiss_write_executed: true (single canary vector + id)
+- promotion_executed: true
+- patch_application_executed: false
+- trading_executed: false
+- b8_touched: false
+- backups_created: true
+- rollback_available: true
+
+### Test Results
+18 passed in 0.46s
+
+### Decision
+**PROMOTED_CANARY_TO_FAISS**
+
+### Next Recommended
+FRONT-REAL-PATCH-MATERIALIZATION-01 — first governed patch artifact materialization
+
