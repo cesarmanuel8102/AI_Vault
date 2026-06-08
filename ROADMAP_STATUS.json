@@ -1,9 +1,9 @@
 {
-  "current_head": "93b9c2ba",
-  "current_remote_head": "93b9c2ba",
+  "current_head": "4c5f3c3d",
+  "current_remote_head": "4c5f3c3d",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_real_canary_post_audit_01_complete",
-  "last_applied_checkpoint": "FRONT-REAL-CANARY-POST-AUDIT-01",
+  "migration_status": "front_real_canary_retention_01_complete",
+  "last_applied_checkpoint": "FRONT-REAL-CANARY-RETENTION-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -69,7 +69,8 @@
     "FRONT-REAL-CANARY-PLAN-01",
     "FRONT-REAL-CANARY-EXEC-FINAL-GO-NOGO-01",
     "FRONT-REAL-CANARY-EXEC-01",
-    "FRONT-REAL-CANARY-POST-AUDIT-01"
+    "FRONT-REAL-CANARY-POST-AUDIT-01",
+    "FRONT-REAL-CANARY-RETENTION-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -79,12 +80,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-REAL-CANARY-RETENTION-01",
+    "name": "FRONT-INFRA-03",
     "status": "recommended_next",
-    "reason": "Canary retained; next step is permanent retention decision or infrastructure"
+    "reason": "Canary retention formalized; next step is infrastructure/runbook reproducibility"
   },
-  "ready_for_next_front": "FRONT-REAL-CANARY-RETENTION-01 — permanent canary retention OR FRONT-INFRA-03 — startup/runbook reproducibility",
-  "last_updated": "2026-06-08T16:25:00+00:00",
+  "ready_for_next_front": "FRONT-INFRA-03 — startup/runbook reproducibility",
+  "last_updated": "2026-06-08T16:40:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1250,5 +1251,28 @@
       "tests/smoke/smoke_front_real_canary_post_audit_01.py"
     ],
     "next_recommended_front": "FRONT-REAL-CANARY-RETENTION-01 — permanent canary retention OR FRONT-INFRA-03 — startup/runbook reproducibility"
+  },
+  "front_real_canary_retention_01": {
+    "status": "done",
+    "commit": "4c5f3c3d",
+    "remote_synced": true,
+    "purpose": "formal canary retention decision",
+    "decision": "KEEP_CANARY_PERMANENT_MARKER",
+    "canary_record_id": "canary-00000000-0000-0000-0000-000000000001",
+    "target_store": "memory/semantic/semantic_memory.jsonl",
+    "new_records_written": 0,
+    "rollback_executed": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "canary_stable": true,
+    "faiss_index_unchanged": true,
+    "tests_passed": true,
+    "files": [
+      "docs/FRONT_REAL_CANARY_RETENTION_01.md",
+      "tests/smoke/smoke_front_real_canary_retention_01.py"
+    ],
+    "next_recommended_front": "FRONT-INFRA-03 — startup/runbook reproducibility OR FRONT-REAL-READ-VERIFY-01 — runtime read-only retrieval verification"
   }
 }

@@ -3594,3 +3594,81 @@ All audits passed. The canary record is intact, correctly positioned, metadata-s
 - promotion_allowed: false
 - rollback_executed: false
 - canary_retained: true
+
+---
+
+## FRONT-REAL-CANARY-RETENTION-01: Formal Canary Retention Decision
+
+**Status:** COMPLETE ✅
+**Date:** 2026-06-08
+**Branch:** codex/own-capital-sustainable-return
+**Retention Commit:** 4c5f3c3d
+**Ledger Commit:** PENDING
+**Head Before:** cf49ca35
+**Head After:** PENDING
+
+### Objective
+Formalizar la retencion permanente del canary como marker valido de primera escritura real controlada.
+
+### Preconditions (All Passed)
+- Workdir correcto ✅
+- Git limpio ✅
+- Local HEAD == Remote HEAD == cf49ca35 ✅
+- Staged empty ✅
+
+### Evidence Reviewed
+- FRONT-REAL-CANARY-EXEC-01: reviewed ✅
+- FRONT-REAL-CANARY-POST-AUDIT-01: reviewed ✅
+- Canary presence audit: reviewed ✅
+- Prior execution evidence audit: reviewed ✅
+- FAISS/index integrity audit: reviewed ✅
+- Git commit scope audit: reviewed ✅
+- Roadmap/ledger consistency audit: reviewed ✅
+
+### Decision
+**RETENTION_DECISION = KEEP_CANARY_PERMANENT_MARKER**
+
+El canary se retiene como marker historico de la primera escritura real controlada en memoria semantica.
+
+### Canary Summary
+- **ID:** canary-00000000-0000-0000-0000-000000000001
+- **Target:** memory/semantic/semantic_memory.jsonl
+- **Line count:** 1706
+- **Position:** Ultima linea
+- **Kind:** canary
+- **Source:** front_real_canary_exec_01
+
+### FAISS/Index Status
+- semantic_memory_faiss.index: unmodified ✅
+- semantic_memory_faiss_ids.json: unmodified ✅
+- semantic_memory_index.npz: unmodified ✅
+
+### Rollback Status
+- rollback_executed: false ✅
+- Backup still exists and verified ✅
+- Rollback possible future ✅
+
+### Files Committed
+- docs/FRONT_REAL_CANARY_RETENTION_01.md
+- tests/smoke/smoke_front_real_canary_retention_01.py
+
+### Safety Flags (Post-Retention)
+- materialization_allowed_now: false
+- patch_file_creation_allowed_now: false
+- git_apply_allowed_now: false
+- target_file_modification_allowed_now: false
+- patch_generation_allowed_now: false
+- diff_generation_allowed_now: false
+- patch_application_allowed_now: false
+- real_patch_application_allowed_now: false
+- memory_write_allowed: false
+- faiss_write_allowed: false
+- real_write_allowed: false
+- promotion_allowed: false
+- rollback_executed: false
+- canary_retained: true
+- future_writes_require_separate_front: true
+
+### Next Recommended
+- FRONT-INFRA-03 — startup/runbook reproducibility
+- Alternative: FRONT-REAL-READ-VERIFY-01 — runtime read-only retrieval verification
