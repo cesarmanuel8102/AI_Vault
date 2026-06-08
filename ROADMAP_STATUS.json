@@ -1,9 +1,9 @@
 {
-  "current_head": "5c2b9e33",
-  "current_remote_head": "5c2b9e33",
+  "current_head": "c9441899",
+  "current_remote_head": "c9441899",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_real_memory_faiss_promotion_01_complete",
-  "last_applied_checkpoint": "FRONT-REAL-MEMORY-FAISS-PROMOTION-01",
+  "migration_status": "front_real_patch_materialization_01_complete",
+  "last_applied_checkpoint": "FRONT-REAL-PATCH-MATERIALIZATION-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -81,7 +81,8 @@
     "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01",
     "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01",
     "FRONT-BRAIN-KNOWLEDGE-READ-API-01",
-    "FRONT-REAL-MEMORY-FAISS-PROMOTION-01"
+    "FRONT-REAL-MEMORY-FAISS-PROMOTION-01",
+    "FRONT-REAL-PATCH-MATERIALIZATION-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -91,12 +92,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-REAL-PATCH-MATERIALIZATION-01",
+    "name": "FRONT-EXTERNAL-AUDIT-DELTA-RECONCILIATION-01",
     "status": "recommended_next",
-    "reason": "First governed patch artifact materialization"
+    "reason": "First external audit and delta reconciliation after real applicable batch"
   },
-  "ready_for_next_front": "FRONT-REAL-PATCH-MATERIALIZATION-01 — first governed patch artifact materialization",
-  "last_updated": "2026-06-08T21:05:00+00:00",
+  "ready_for_next_front": "FRONT-EXTERNAL-AUDIT-DELTA-RECONCILIATION-01",
+  "last_updated": "2026-06-08T21:27:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1557,5 +1558,33 @@
       "tests/smoke/smoke_front_real_memory_faiss_promotion_01.py"
     ],
     "recommended_next_front": "FRONT-REAL-PATCH-MATERIALIZATION-01 — first governed patch artifact materialization"
+  },
+  "front_real_patch_materialization_01": {
+    "status": "done",
+    "commit": "c9441899",
+    "remote_synced": false,
+    "purpose": "first governed patch artifact materialization",
+    "decision": "MATERIALIZED_NOT_APPLIED",
+    "patch_file": "tmp_agent/materialized_patches/front_real_patch_materialization_01/proposed.patch",
+    "target_files": [
+      "docs/PROPOSED_KNOWLEDGE_READ_API_USAGE.md"
+    ],
+    "git_apply_executed": false,
+    "patch_application_executed": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "human_review_required": true,
+    "tests_passed": true,
+    "files": [
+      "tmp_agent/materialized_patches/front_real_patch_materialization_01/proposed.patch",
+      "tmp_agent/materialized_patches/front_real_patch_materialization_01/patch_manifest.json",
+      "tmp_agent/materialized_patches/front_real_patch_materialization_01/patch_summary.md",
+      "tmp_agent/materialized_patches/front_real_patch_materialization_01/governance_decision.json",
+      "docs/FRONT_REAL_PATCH_MATERIALIZATION_01.md",
+      "tests/smoke/smoke_front_real_patch_materialization_01.py"
+    ],
+    "recommended_next_front": "FRONT-EXTERNAL-AUDIT-DELTA-RECONCILIATION-01"
   }
 }
