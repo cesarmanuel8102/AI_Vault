@@ -3831,3 +3831,36 @@ READ_ONLY_LOOKUP_ADAPTER_READY
 
 ### Next Recommended
 FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-PLAN-01 — expose adapter through safe read-only runtime endpoint
+
+---
+
+## FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-01: Runtime Canary Lookup Endpoint
+
+**Status:** COMPLETE ✅
+**Date:** 2026-06-08
+**Branch:** codex/own-capital-sustainable-return
+**Router Commit:** e46cc0ee
+**Ledger Commit:** PENDING
+**Head Before:** 199d1bf2
+**Head After:** PENDING
+
+### Objective
+Create a read-only FastAPI router that exposes the canary lookup adapter via safe GET endpoint without modifying main runtime.
+
+### Files Created
+- tmp_agent/brain_v9/routes/canary_lookup_read_only.py
+- tests/smoke/smoke_front_real_runtime_lookup_endpoint_01.py
+- docs/FRONT_REAL_RUNTIME_LOOKUP_ENDPOINT_01.md
+
+### Validation
+- Tests passed: 20/20
+- Router responds 200 to GET /brain/read-only/canary
+- Response is safe (no full text exposure)
+- Response has no_write=true, faiss_used=false
+- Router does not modify main.py
+
+### Decision
+RUNTIME_LOOKUP_ROUTER_READY
+
+### Next Recommended
+FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 — integrate router into main app safely

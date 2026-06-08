@@ -1,9 +1,9 @@
 {
-  "current_head": "82bc5aef",
-  "current_remote_head": "82bc5aef",
+  "current_head": "e46cc0ee",
+  "current_remote_head": "e46cc0ee",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_real_read_lookup_adapter_01_complete",
-  "last_applied_checkpoint": "FRONT-REAL-READ-LOOKUP-ADAPTER-01",
+  "migration_status": "front_real_runtime_lookup_endpoint_01_complete",
+  "last_applied_checkpoint": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -73,7 +73,8 @@
     "FRONT-REAL-CANARY-RETENTION-01",
     "FRONT-INFRA-03",
     "FRONT-REAL-READ-VERIFY-01",
-    "FRONT-REAL-READ-LOOKUP-ADAPTER-01"
+    "FRONT-REAL-READ-LOOKUP-ADAPTER-01",
+    "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -83,12 +84,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-PLAN-01",
+    "name": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01",
     "status": "recommended_next",
-    "reason": "Adapter ready; next is exposing it through a safe read-only runtime endpoint"
+    "reason": "Router ready; next step is integration into main app safely"
   },
   "ready_for_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-PLAN-01 — expose adapter through safe read-only runtime endpoint",
-  "last_updated": "2026-06-08T17:25:00+00:00",
+  "last_updated": "2026-06-08T18:02:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1339,5 +1340,22 @@
       "tests/smoke/smoke_front_real_read_lookup_adapter_01.py"
     ],
     "next_recommended_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-PLAN-01 — expose adapter through safe read-only runtime endpoint"
+  },
+  "front_real_runtime_lookup_endpoint_01": {
+    "status": "done",
+    "commit": "e46cc0ee",
+    "remote_synced": true,
+    "purpose": "safe read-only runtime canary lookup router",
+    "decision": "RUNTIME_LOOKUP_ROUTER_READY",
+    "router_path": "tmp_agent/brain_v9/routes/canary_lookup_read_only.py",
+    "integrated_into_main": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "faiss_imported": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "canary_lookup_success": true,
+    "hashes_unchanged": true,
+    "tests_passed": true
   }
 }
