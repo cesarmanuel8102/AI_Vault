@@ -1,9 +1,9 @@
 {
-  "current_head": "1d9a0800",
-  "current_remote_head": "1d9a0800",
+  "current_head": "e659ef4b",
+  "current_remote_head": "e659ef4b",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_main_py_dirty_commit_01_complete",
-  "last_applied_checkpoint": "FRONT-MAIN-PY-DIRTY-COMMIT-01",
+  "migration_status": "front_real_runtime_lookup_endpoint_integration_01_complete",
+  "last_applied_checkpoint": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -77,7 +77,8 @@
     "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-01",
     "FRONT-MAIN-PY-DIRTY-TRIAGE-01",
     "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01",
-    "FRONT-MAIN-PY-DIRTY-COMMIT-01"
+    "FRONT-MAIN-PY-DIRTY-COMMIT-01",
+    "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -87,12 +88,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01",
+    "name": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01",
     "status": "recommended_next",
-    "reason": "main.py dirty state resolved — integration front can now proceed safely"
+    "reason": "Integration complete — local runtime smoke for integrated endpoint"
   },
-  "ready_for_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 — integrate read-only canary router into main app",
-  "last_updated": "2026-06-08T22:58:00+00:00",
+  "ready_for_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01 — local runtime smoke for integrated endpoint",
+  "last_updated": "2026-06-08T23:10:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1458,5 +1459,28 @@
     ],
     "recommended_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 — integrate read-only canary router into main app",
     "blocked_fronts_after_this": []
+  },
+  "front_real_runtime_lookup_endpoint_integration_01": {
+    "status": "done",
+    "commit": "e659ef4b",
+    "remote_synced": true,
+    "purpose": "integrate read-only canary lookup endpoint into main app",
+    "decision": "RUNTIME_LOOKUP_ENDPOINT_INTEGRATED",
+    "integrated_into_main": true,
+    "endpoint": "GET /brain/read-only/canary",
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "faiss_imported": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "canary_lookup_success": true,
+    "hashes_unchanged": true,
+    "tests_passed": true,
+    "files": [
+      "tmp_agent/brain_v9/main.py",
+      "docs/FRONT_REAL_RUNTIME_LOOKUP_ENDPOINT_INTEGRATION_01.md",
+      "tests/smoke/smoke_front_real_runtime_lookup_endpoint_integration_01.py"
+    ],
+    "recommended_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01 — local runtime smoke for integrated endpoint"
   }
 }

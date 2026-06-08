@@ -3830,89 +3830,75 @@ Implementar una capacidad real y util: un adapter read-only que pueda localizar 
 READ_ONLY_LOOKUP_ADAPTER_READY
 
 ### Next Recommended
-FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-PLAN-01 — expose adapter through safe read-only runtime endpoint
+FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01 — local runtime smoke for integrated endpoint
 
 ---
 
-## FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-01: Runtime Canary Lookup Endpoint
+## FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01: Integrate Safe Read-Only Canary Router into Main App
 
 **Status:** COMPLETE ✅
 **Date:** 2026-06-08
 **Branch:** codex/own-capital-sustainable-return
-**Router Commit:** e46cc0ee
+**Functional Commit:** e659ef4b
 **Ledger Commit:** PENDING
-**Head Before:** 199d1bf2
+**Head Before:** dd2901e5
 **Head After:** PENDING
+**Type:** router integration into main FastAPI app
 
 ### Objective
-Create a read-only FastAPI router that exposes the canary lookup adapter via safe GET endpoint without modifying main runtime.
+Integrar el router read-only `canary_lookup_read_only` en `tmp_agent/brain_v9/main.py` para exponer `GET /brain/read-only/canary`.
 
-### Files Created
-- tmp_agent/brain_v9/routes/canary_lookup_read_only.py
-- tests/smoke/smoke_front_real_runtime_lookup_endpoint_01.py
-- docs/FRONT_REAL_RUNTIME_LOOKUP_ENDPOINT_01.md
+### Integration Details
 
-### Validation
-- Tests passed: 20/20
-- Router responds 200 to GET /brain/read-only/canary
-- Response is safe (no full text exposure)
-- Response has no_write=true, faiss_used=false
-- Router does not modify main.py
-
-### Decision
-RUNTIME_LOOKUP_ROUTER_READY
-
-### Next Recommended
-FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 — integrate read-only canary router into main app (unblocked)
-
----
-
-## FRONT-MAIN-PY-DIRTY-COMMIT-01: Commit Preexisting main.py Monitoring Endpoints and Chat Fastpath
-
-**Status:** COMPLETE ✅
-**Date:** 2026-06-08
-**Branch:** codex/own-capital-sustainable-return
-**Functional Commit:** 1d9a0800
-**Ledger Commit:** PENDING
-**Head Before:** b77cec68
-**Head After:** PENDING
-**Type:** functional commit of preexisting changes
-
-### Objective
-Committear los cambios preexistentes en `tmp_agent/brain_v9/main.py` aprobados por human review.
-
-### Human Review Reference
-FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01 decision: **KEEP_AND_COMMIT_MAIN_PY_CHANGES**
-
-### Changes Committed
-| Type | Count | Details |
-|---|---|---|
-| Routes added | 3 | GET /healthz, GET /v1/agent/healthz, GET /v1/agent/status |
-| Functions added | 1 | _trivial_chat_fastpath(message: str) |
-| Routes removed | 0 | — |
-| Functions removed | 0 | — |
-| Import changes | 0 | — |
+| Aspect | Value |
+|---|---|
+| Router file | `tmp_agent/brain_v9/routes/canary_lookup_read_only.py` |
+| Import added | `from brain_v9.routes.canary_lookup_read_only import router as canary_lookup_read_only_router` |
+| Include added | `app.include_router(canary_lookup_read_only_router)` |
+| Endpoint | `GET /brain/read-only/canary` |
+| Response status | 200 |
+| Response found | True |
+| Response no_write | True |
+| Response faiss_used | False |
 
 ### Safety Guarantees
-- main.py was NOT modified by this front (committed as-is)
+- Only 2 lines added to main.py (import + include_router)
+- No modifications to existing endpoints
+- No middleware/auth/security changes
 - No memory write
 - No FAISS write
 - No promotion
 - No patch application
+- No runtime start in this front
 - No trading/B8/Docker/network/install
 
-### Files Committed
-- `tmp_agent/brain_v9/main.py`
+### Files Changed
+- `tmp_agent/brain_v9/main.py` — added import and include_router
+
+### Files Created
+- `docs/FRONT_REAL_RUNTIME_LOOKUP_ENDPOINT_INTEGRATION_01.md`
+- `tests/smoke/smoke_front_real_runtime_lookup_endpoint_integration_01.py`
+
+### Post-Integration Verification
+| Check | Result |
+|---|---|
+| semantic_memory.jsonl hash | Unchanged ✅ |
+| semantic_memory_faiss.index hash | Unchanged ✅ |
+| semantic_memory_faiss_ids.json hash | Unchanged ✅ |
+| semantic_memory_index.npz hash | Unchanged ✅ |
+| canary count | 1 (unchanged) ✅ |
+| canary is last | True (unchanged) ✅ |
+| smoke tests | 21/21 passed ✅ |
 
 ### Blocked Fronts After This
-- None — FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 is now **unblocked**
+- None
 
 ### Next Recommended
-FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 — integrate read-only canary router into main app
+FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01 — local runtime smoke for integrated endpoint
 
 ---
 
-*End of ledger entry for FRONT-MAIN-PY-DIRTY-COMMIT-01*
+*End of ledger entry for FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01*
 
 ---
 
