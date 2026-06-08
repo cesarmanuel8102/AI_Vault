@@ -1,0 +1,76 @@
+diff --git a/docs/PROPOSED_KNOWLEDGE_READ_API_USAGE.md b/docs/PROPOSED_KNOWLEDGE_READ_API_USAGE.md
+new file mode 100644
+index 0000000..1234567
+--- /dev/null
++++ b/docs/PROPOSED_KNOWLEDGE_READ_API_USAGE.md
+@@ -0,0 +1,60 @@
++# Knowledge Read API Usage Guide
++
++## Endpoint
++`GET /brain/knowledge/read`
++
++## Query Parameters
++| Parameter | Type | Description |
++|-----------|------|-------------|
++| `query` | string | Keyword search across text, id, kind, source, session_id |
++| `kind` | string | Filter by record kind (e.g., "session_fragment") |
++| `source` | string | Filter by record source |
++| `session_id` | string | Filter by session ID |
++| `limit` | integer | Max records to return (1-100, default 10) |
++| `offset` | integer | Records to skip (default 0) |
++| `include_full_text` | boolean | Return full text instead of preview |
++
++## Guarantees
++- **no_write**: true — endpoint never writes to memory
++- **faiss_used**: false — reads from JSONL directly, no FAISS index required
++- **promotion**: false — no automatic memory promotion occurs
++
++## Example Requests
++
++### Search by keyword
++```bash
+curl -s "http://127.0.0.1:8090/brain/knowledge/read?query=session&limit=5"
+```
++
++### Filter by kind
++```bash
+curl -s "http://127.0.0.1:8090/brain/knowledge/read?kind=canary&limit=1"
+```
++
++### Filter by source
++```bash
+curl -s "http://127.0.0.1:8090/brain/knowledge/read?source=front_real_canary_exec_01"
+```
++
++## Example Response (summary mode)
++```json
+{
+  "status": "ok",
+  "total_count": 1,
+  "returned_count": 1,
+  "limit": 10,
+  "offset": 0,
+  "query": null,
+  "filters": {},
+  "records": [
+    {
+      "id": "canary-00000000-0000-0000-0000-000000000001",
+      "kind": "canary",
+      "source": "front_real_canary_exec_01",
+      "session_id": "canary_session",
+      "created_utc": "2026-01-01T00:00:00Z",
+      "text_preview": "Canary record for controlled real write verification...",
+      "metadata": {}
+    }
+  ],
+  "errors": [],
+  "no_write": true,
+  "faiss_used": false,
+  "promotion": false
+}
+```
++
++## Notes
++- This guide is a **patch artifact only**; it has not been applied to the repository.
++- The actual application requires human review via FRONT-REAL-PATCH-APPLICATION-REVIEW-01.
++- No chain-of-thought or reasoning is exposed in API responses.

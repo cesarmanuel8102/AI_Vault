@@ -1,0 +1,14 @@
+{
+  "patch_id": "PATCH-KNOWLEDGE-READ-USAGE-01",
+  "front_id": "FRONT-REAL-PATCH-MATERIALIZATION-01",
+  "created_at": "2026-06-08T21:26:00.939238Z",
+  "patch_file": "tmp_agent/materialized_patches/front_real_patch_materialization_01/proposed.patch",
+  "target_files": [
+    "docs/PROPOSED_KNOWLEDGE_READ_API_USAGE.md"
+  ],
+  "protected_paths_touched": false,
+  "apply_executed": false,
+  "git_apply_executed": false,
+  "human_review_required": true,
+  "risk_level": "LOW"
+}

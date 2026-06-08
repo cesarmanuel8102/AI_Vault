@@ -1,0 +1,7 @@
+{
+  "decision": "MATERIALIZED_NOT_APPLIED",
+  "reason": "Patch artifact created for documentation improvement. Application deferred to human-reviewed front.",
+  "apply_allowed_now": false,
+  "human_review_required": true,
+  "next_front": "FRONT-REAL-PATCH-APPLICATION-REVIEW-01"
+}
