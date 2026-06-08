@@ -1,9 +1,9 @@
 {
-  "current_head": "b8c8e37a",
-  "current_remote_head": "b8c8e37a",
+  "current_head": "91979360",
+  "current_remote_head": "91979360",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_test_03_deployment_reproducibility_preflight_complete",
-  "last_applied_checkpoint": "FRONT-TEST-03",
+  "migration_status": "front_infra_01_dependency_manifest_complete",
+  "last_applied_checkpoint": "FRONT-INFRA-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -65,7 +65,8 @@
     "FRONT-SEC-03",
     "FRONT-TEST-01",
     "FRONT-TEST-02",
-    "FRONT-TEST-03"
+    "FRONT-TEST-03",
+    "FRONT-INFRA-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -79,8 +80,8 @@
     "status": "recommended_next",
     "reason": "FRONT-SEC-01 completed; next step is timing-attack hardening and compare_digest verification"
   },
-  "ready_for_next_front": "FRONT-SEC-02 \u00e2\u20ac\u201d Timing attack compare_digest",
-  "last_updated": "2026-06-07T23:32:32.914887+00:00",
+  "ready_for_next_front": "FRONT-SEC-02 â€” Timing attack compare_digest",
+  "last_updated": "2026-06-08T00:12:54.712951+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -234,7 +235,7 @@
       "route": "curated_lookup_readonly",
       "triggers": [
         "busca en conocimiento curado: <query>",
-        "qu\u00c3\u0192\u00c6\u2019\u00c3\u201a\u00c2\u00a9 aprendiste sobre <query>",
+        "quÃƒÆ’Ã‚Â© aprendiste sobre <query>",
         "que aprendiste sobre <query>",
         "usa curated knowledge para responder <query>",
         "usa conocimiento curado para responder <query>"

@@ -3035,3 +3035,56 @@ Reviews inert patch draft proposals and decides which qualify for materializatio
 ### Next Recommended
 - FRONT-INFRA-01 - minimal dependency manifest
 - Patch/materialization pipeline remains paused until security conditions met
+
+### Front: FRONT-INFRA-01
+**Commit:** 91979360
+**Scope:** Minimal dependency manifest
+**Tests:** 14 passed (smoke_front_infra_01_dependency_manifest)
+**Evidence:** tmp_agent/front_infra_01/
+**Python:** 3.11.9
+**py_compile:** PASS
+
+#### Fields
+- requirements_created: true
+- requirements_force_added_due_to_gitignore: true
+- dependency_inventory_created: true
+- manifest_covers_detected_third_party_imports: true
+- textual_detected: false
+- textual_included: false
+- faiss_cpu_used_for_faiss_import: true
+- no_install_executed: true
+- no_product_behavior_change: true
+- no_token_leak: true
+- no_memory_write: true
+- no_faiss_write: true
+- no_real_write: true
+- no_promotion: true
+- next_safe_front: FRONT-INFRA-02 — .env.example
+
+#### Files Changed
+- requirements.txt
+- tests/smoke/smoke_front_infra_01_dependency_manifest.py
+
+#### Safety Flags
+- materialization_allowed_now: false
+- patch_file_creation_allowed_now: false
+- git_apply_allowed_now: false
+- target_file_modification_allowed_now: false
+- patch_generation_allowed_now: false
+- diff_generation_allowed_now: false
+- patch_application_allowed_now: false
+- real_patch_application_allowed_now: false
+- patches_generated_for_application: false
+- patches_applied: false
+- patches_staged: false
+- memory_write_allowed: false
+- faiss_write_allowed: false
+- real_write_allowed: false
+- promotion_allowed: false
+- must_not_create_patch_files: true
+- must_not_run_git_apply: true
+- must_not_modify_target_files: true
+
+### Next Recommended
+- FRONT-INFRA-02 — .env.example
+- Patch/materialization pipeline remains paused until security conditions met
