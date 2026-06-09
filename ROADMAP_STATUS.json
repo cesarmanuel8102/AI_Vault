@@ -1,9 +1,9 @@
 {
-  "current_head": "1264102e",
-  "current_remote_head": "1264102e",
+  "current_head": "9468cb61",
+  "current_remote_head": "9468cb61",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_ingestion_manual_approval_sample_02_complete",
-  "last_applied_checkpoint": "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02",
+  "migration_status": "front_runtime_recovery_real_execution_gate_01_complete",
+  "last_applied_checkpoint": "FRONT-RUNTIME-RECOVERY-REAL-EXECUTION-GATE-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -93,7 +93,8 @@
     "FRONT-INGESTION-APPROVAL-DECISION-DRY-RUN-01",
     "FRONT-INGESTION-REVIEWED-DRY-RUN-EXECUTION-01",
     "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01",
-    "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02"
+    "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02",
+    "FRONT-RUNTIME-RECOVERY-REAL-EXECUTION-GATE-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -103,12 +104,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-INGESTION-MANUAL-APPROVAL-PERSISTENT-QUEUE-01",
+    "name": "FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01",
     "status": "recommended_next",
-    "reason": "Create persistent queue for manual approval decisions across sessions"
+    "reason": "First real local ingestion dry-run after runtime recovery"
   },
-  "ready_for_next_front": "FRONT-INGESTION-MANUAL-APPROVAL-PERSISTENT-QUEUE-01",
-  "last_updated": "2026-06-09T15:20:00+00:00",
+  "ready_for_next_front": "FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01",
+  "last_updated": "2026-06-09T16:15:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1944,6 +1945,38 @@
       "tests/smoke/smoke_front_ingestion_manual_approval_sample_02.py",
       "docs/FRONT_INGESTION_MANUAL_APPROVAL_SAMPLE_02.md"
     ],
-    "recommended_next_front": "FRONT-INGESTION-MANUAL-APPROVAL-PERSISTENT-QUEUE-01"
+    "recommended_next_front": "FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01"
+  },
+  "front_runtime_recovery_real_execution_gate_01": {
+    "status": "done",
+    "commit": "9468cb61",
+    "remote_synced": true,
+    "purpose": "recover runtime observability and create real execution readiness gate",
+    "decision": "RUNTIME_RECOVERY_AND_REAL_EXECUTION_GATE_CREATED",
+    "dashboard_recovery_status": "documented_startup_required",
+    "brain_server_status": "documented_startup_required",
+    "ollama_status": "up",
+    "real_execution_allowed": false,
+    "semantic_memory_write_allowed": false,
+    "faiss_write_allowed": false,
+    "ingestion_executed": false,
+    "content_read": false,
+    "network_called": false,
+    "connector_called": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "brain/real_execution_gate.py",
+      "tests/smoke/smoke_front_runtime_recovery_real_execution_gate_01.py",
+      "scripts/ops/runtime_health_check.ps1",
+      "docs/RUNTIME_RECOVERY_RUNBOOK.md",
+      "docs/REAL_EXECUTION_POLICY.md"
+    ],
+    "recommended_next_front": "FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01"
   }
 }

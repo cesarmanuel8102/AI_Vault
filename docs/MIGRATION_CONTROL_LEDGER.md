@@ -5008,6 +5008,67 @@ FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02 — expand to multi-source batch with 
 **INGESTION_MANUAL_APPROVAL_BATCH_SAMPLE_CREATED**
 
 ### Recommended Next Front
-FRONT-INGESTION-MANUAL-APPROVAL-PERSISTENT-QUEUE-01
+FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01
+
+---
+
+## FRONT-RUNTIME-RECOVERY-REAL-EXECUTION-GATE-01 — Runtime Recovery and Real Execution Gate
+- **Status**: COMPLETE
+- **Fecha/hora**: 2026-06-09T16:15:00Z
+- **Branch**: codex/own-capital-sustainable-return
+- **Functional Commit**: 9468cb61 — runtime: add recovery checks and real execution gate
+
+### Scope
+- Diagnosed runtime: all services down (no code bug; services simply not started)
+- Created `brain/real_execution_gate.py` — real execution readiness gate
+- Created `scripts/ops/runtime_health_check.ps1` — non-destructive health check
+- Created `docs/RUNTIME_RECOVERY_RUNBOOK.md` — startup runbook
+- Created `docs/REAL_EXECUTION_POLICY.md` — policy for first real execution
+
+### Runtime Diagnostic Summary
+| Service | Port | Status | Cause |
+|---------|------|--------|-------|
+| Ollama | 11434 | UP | Already running |
+| Brain V9 Server | 8090 | DOWN | Process not started |
+| Open WebUI / Dashboard | 3000 | DOWN | Docker daemon off |
+| Brain Legacy Server | 8010 | DOWN | Process not started |
+
+### Recovery Path
+1. Start Docker Desktop (if Open WebUI needed)
+2. Start Brain V9 server on port 8090 via `tmp_agent/brain_v9/start_full_server.py`
+3. Verify with `scripts/ops/runtime_health_check.ps1`
+4. Confirm `real_execution_allowed` remains false until all conditions met
+
+### Test Results
+- smoke_front_runtime_recovery_real_execution_gate_01.py: 29 passed, 0 failed
+- Full regression suite: 251 passed, 0 failed (no regressions)
+
+### Files Changed
+- brain/real_execution_gate.py (new)
+- tests/smoke/smoke_front_runtime_recovery_real_execution_gate_01.py (new)
+- scripts/ops/runtime_health_check.ps1 (new)
+- docs/RUNTIME_RECOVERY_RUNBOOK.md (new)
+- docs/REAL_EXECUTION_POLICY.md (new)
+
+### Guarantees
+- ingestion_executed: false
+- content_read: false
+- memory_write_executed: false
+- faiss_write_executed: false
+- network_called: false
+- connector_called: false
+- patch_application_executed: false
+- trading_executed: false
+- b8_touched: false
+- env_modified: false
+- real_execution_allowed: false (by design)
+- semantic_memory_write_allowed: false
+- faiss_write_allowed: false
+
+### Decision
+**RUNTIME_RECOVERY_AND_REAL_EXECUTION_GATE_CREATED**
+
+### Recommended Next Front
+FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01
 
 
