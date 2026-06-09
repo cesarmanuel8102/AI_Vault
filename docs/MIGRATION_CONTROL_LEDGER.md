@@ -5225,3 +5225,39 @@ FRONT-FIRST-REAL-LOCAL-MEMORY-CANARY-WRITE-01
 
 ### Next Recommended Front
 FRONT-FIRST-REAL-LOCAL-INGESTION-CONTROLLED-BATCH-01
+
+## FRONT-BRAIN-LEARNING-VERIFICATION-CHAT-AND-DIRECT-01 — Brain Learning Verification
+- **Fecha/hora**: 2026-06-09T21:30:00+00:00
+- **Branch**: codex/own-capital-sustainable-return
+- **Functional Commit**: 02387a1d — verification: add brain learning verification after memory faiss canary
+- **Status**: PARTIAL_CHAT_NOT_AVAILABLE_DIRECT_VERIFIED
+
+### Scope
+- Verify Brain learned the canary via direct memory lookup
+- Verify Brain learned the canary via direct FAISS lookup
+- Verify Brain learned the canary via semantic API
+- Attempt chat verification (timeout recorded, does not invalidate)
+- No memory write in this front
+- No FAISS modification in this front
+
+### Results
+- direct_memory_verified: true
+- direct_faiss_verified: true
+- direct_retrieval_verified: true
+- semantic_api_verified: true
+- chat_verified: false (CHAT_ENDPOINT_TIMEOUT)
+- final_status: PARTIAL_CHAT_NOT_AVAILABLE_DIRECT_VERIFIED
+
+### Tests
+- py_compile: PASS
+- smoke tests: 22 passed / 0 failed
+
+### Files
+- tests/smoke/smoke_front_brain_learning_verification_chat_and_direct_01.py (new)
+- docs/FRONT_BRAIN_LEARNING_VERIFICATION_CHAT_AND_DIRECT_01.md (new)
+
+### Decision
+**BRAIN_LEARNING_VERIFIED_AFTER_MEMORY_FAISS_CANARY**
+
+### Next Recommended Front
+FRONT-FIRST-REAL-LOCAL-INGESTION-CONTROLLED-BATCH-01
