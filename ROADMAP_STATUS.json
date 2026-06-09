@@ -1,9 +1,9 @@
 {
-  "current_head": "17e0e9c9",
-  "current_remote_head": "17e0e9c9",
+  "current_head": "4a6b4d3c",
+  "current_remote_head": "4a6b4d3c",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_first_real_local_ingestion_dry_run_01_complete",
-  "last_applied_checkpoint": "FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01",
+  "migration_status": "front_first_real_local_memory_faiss_canary_01_complete",
+  "last_applied_checkpoint": "FRONT-FIRST-REAL-LOCAL-MEMORY-FAISS-CANARY-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -96,7 +96,8 @@
     "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02",
     "FRONT-RUNTIME-RECOVERY-REAL-EXECUTION-GATE-01",
     "FRONT-RUNTIME-ACTUAL-STARTUP-VERIFY-01",
-    "FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01"
+    "FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01",
+    "FRONT-FIRST-REAL-LOCAL-MEMORY-FAISS-CANARY-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -106,12 +107,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-FIRST-REAL-LOCAL-MEMORY-CANARY-WRITE-01",
+    "name": "FRONT-FIRST-REAL-LOCAL-INGESTION-CONTROLLED-BATCH-01",
     "status": "recommended_next",
-    "reason": "First real local memory canary write after ingestion dry-run"
+    "reason": "First controlled batch ingestion after canary success"
   },
-  "ready_for_next_front": "FRONT-FIRST-REAL-LOCAL-MEMORY-CANARY-WRITE-01",
-  "last_updated": "2026-06-09T17:05:00+00:00",
+  "ready_for_next_front": "FRONT-FIRST-REAL-LOCAL-INGESTION-CONTROLLED-BATCH-01",
+  "last_updated": "2026-06-09T19:05:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2038,5 +2039,36 @@
       "docs/FRONT_FIRST_REAL_LOCAL_INGESTION_DRY_RUN_01.md"
     ],
     "recommended_next_front": "FRONT-FIRST-REAL-LOCAL-MEMORY-CANARY-WRITE-01"
+  },
+  "front_first_real_local_memory_faiss_canary_01": {
+    "status": "done",
+    "commit": "4a6b4d3c",
+    "remote_synced": true,
+    "purpose": "write first controlled semantic memory canary record and promote to FAISS",
+    "decision": "FIRST_REAL_LOCAL_SEMANTIC_MEMORY_AND_FAISS_CANARY_WRITTEN",
+    "canary_id": "front_first_real_local_memory_faiss_canary_01",
+    "source_front": "FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01",
+    "source_path": "docs/REAL_EXECUTION_POLICY.md",
+    "source_sha256": "b493b364185a60c2c9ad116907a347e69890c9978ec6fa6bb18c7bee0ae1801d",
+    "semantic_memory_write_executed": true,
+    "faiss_write_executed": true,
+    "network_called": false,
+    "connector_called": false,
+    "promotion_executed": true,
+    "trading_executed": false,
+    "b8_touched": false,
+    "memory_canary_count": 1,
+    "faiss_canary_count": 1,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "brain/first_real_local_memory_faiss_canary.py",
+      "tests/smoke/smoke_front_first_real_local_memory_faiss_canary_01.py",
+      "docs/FRONT_FIRST_REAL_LOCAL_MEMORY_FAISS_CANARY_01.md",
+      "memory/semantic/semantic_memory.jsonl",
+      "memory/semantic/semantic_memory_faiss.index",
+      "memory/semantic/semantic_memory_faiss_ids.json"
+    ],
+    "recommended_next_front": "FRONT-FIRST-REAL-LOCAL-INGESTION-CONTROLLED-BATCH-01"
   }
 }
