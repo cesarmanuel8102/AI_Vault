@@ -5165,3 +5165,63 @@ FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01
 
 ### Next Recommended Front
 FRONT-FIRST-REAL-LOCAL-MEMORY-CANARY-WRITE-01
+
+## FRONT-FIRST-REAL-LOCAL-MEMORY-FAISS-CANARY-01 — First Real Local Memory and FAISS Canary
+- **Fecha/hora**: 2026-06-09T19:00:00+00:00
+- **Branch**: codex/own-capital-sustainable-return
+- **Functional Commit**: 4a6b4d3c — memory: write and promote first real local FAISS canary
+- **Status**: COMPLETE
+
+### Scope
+- Write exactly 1 canary record to semantic memory
+- Promote exactly that canary to FAISS index
+- No mass ingestion
+- No global reindex
+- No network except Ollama localhost embeddings
+- No connectors
+- No trading/B8
+
+### Canary Record
+- **ID**: front_first_real_local_memory_faiss_canary_01
+- **Source Front**: FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01
+- **Source Path**: docs/REAL_EXECUTION_POLICY.md
+- **Source SHA256**: b493b364185a60c2c9ad116907a347e69890c9978ec6fa6bb18c7bee0ae1801d
+
+### Before / After
+| Artifact | Before | After | Delta |
+|----------|--------|-------|-------|
+| semantic_memory.jsonl lines | 1706 | 1707 | +1 |
+| semantic_memory.jsonl SHA | 476740f5... | 188c10ec... | changed |
+| semantic_memory_faiss_ids count | 1607 | 1608 | +1 |
+| semantic_memory_faiss_ids SHA | 8b5de7a2... | dd9d7067... | changed |
+| semantic_memory_faiss.index SHA | 9e140bc4... | 206b6754... | changed |
+
+### Results
+- semantic_memory_write_executed: true
+- faiss_write_executed: true
+- network_called: false
+- connector_called: false
+- promotion_executed: true
+- trading_executed: false
+- b8_touched: false
+- memory_canary_count: 1
+- faiss_canary_count: 1
+
+### Files
+- brain/first_real_local_memory_faiss_canary.py (new)
+- tests/smoke/smoke_front_first_real_local_memory_faiss_canary_01.py (new)
+- docs/FRONT_FIRST_REAL_LOCAL_MEMORY_FAISS_CANARY_01.md (new)
+- memory/semantic/semantic_memory.jsonl (modified)
+- memory/semantic/semantic_memory_faiss.index (modified)
+- memory/semantic/semantic_memory_faiss_ids.json (modified)
+
+### Tests
+- py_compile: PASS
+- smoke tests: 33 passed / 0 failed
+- idempotency verified
+
+### Decision
+**FIRST_REAL_LOCAL_SEMANTIC_MEMORY_AND_FAISS_CANARY_WRITTEN**
+
+### Next Recommended Front
+FRONT-FIRST-REAL-LOCAL-INGESTION-CONTROLLED-BATCH-01
