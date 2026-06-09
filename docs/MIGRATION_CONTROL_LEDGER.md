@@ -5072,3 +5072,54 @@ FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01
 FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01
 
 
+
+---
+
+## LEDGER-ROADMAP-SSOT-FRONT-RUNTIME-ACTUAL-STARTUP-VERIFY-01 — Brain V9 Server Started and Live Execution Gate Verified
+- **Fecha/hora**: 2026-06-09T16:40:00+00:00
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: 5d5ff60f
+- **Estado**: Brain V9 server started successfully, live health verified, real execution gate evaluated with runtime UP. Functional commit and ledger sync pushed.
+
+### Commit Registrado
+- **Commit**: 5d5ff60f — runtime: verify actual startup readiness
+- **Remote synced**: true
+
+### Scope
+- Brain V9 server startup fix: added repo root to sys.path in start_safe_server.py and start_full_server.py (critical fix for brain.curated_runtime_lookup import)
+- Brain V9 server started in safe mode on 127.0.0.1:8090 (PID 168136)
+- Health check executed: Ollama UP, Brain 8090 UP, Dashboard UP, OpenWebUI DOWN (Docker not running, expected)
+- Live real execution gate evaluation: real_execution_allowed = false (correct by design, operator_approval_visible = false)
+- Smoke tests: 21 passed
+
+### Files
+- docs/FRONT_RUNTIME_ACTUAL_STARTUP_VERIFY_01.md
+- tests/smoke/smoke_front_runtime_actual_startup_verify_01.py
+- tmp_agent/brain_v9/start_safe_server.py (launcher fix)
+- tmp_agent/brain_v9/start_full_server.py (launcher fix)
+
+### Validation
+- Brain V9 /health: {"status":"healthy","sessions":1,"version":"9.0.0","safe_mode":true}
+- Dashboard: http://127.0.0.1:8090/dashboard — responsive
+- Docs: http://127.0.0.1:8090/docs — Swagger UI responsive
+- Ollama: 127.0.0.1:11434 — UP with 11 models
+- Open WebUI: DOWN (expected, Docker Desktop not running)
+- Smoke tests: 21 passed / 0 failed
+
+### Guarantees
+- No memory/semantic writes
+- No FAISS writes
+- No real writes (execution gate blocked)
+- No trading/B8 touched
+- No .env modified
+- No session.py touched
+- No curated_runtime_lookup.py touched
+- No main.py touched (launcher sys.path fix only)
+- No execution_gate.py touched
+- Git working tree: tracked files clean after commit
+
+### Decision
+**RUNTIME_UP_AND_REAL_EXECUTION_GATE_VERIFIED_LIVE**
+
+### Recommended Next Front
+FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01

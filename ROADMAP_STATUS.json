@@ -1,9 +1,9 @@
 {
-  "current_head": "9468cb61",
-  "current_remote_head": "9468cb61",
+  "current_head": "5d5ff60f",
+  "current_remote_head": "5d5ff60f",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_runtime_recovery_real_execution_gate_01_complete",
-  "last_applied_checkpoint": "FRONT-RUNTIME-RECOVERY-REAL-EXECUTION-GATE-01",
+  "migration_status": "front_runtime_actual_startup_verify_01_complete",
+  "last_applied_checkpoint": "FRONT-RUNTIME-ACTUAL-STARTUP-VERIFY-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -94,7 +94,8 @@
     "FRONT-INGESTION-REVIEWED-DRY-RUN-EXECUTION-01",
     "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01",
     "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02",
-    "FRONT-RUNTIME-RECOVERY-REAL-EXECUTION-GATE-01"
+    "FRONT-RUNTIME-RECOVERY-REAL-EXECUTION-GATE-01",
+    "FRONT-RUNTIME-ACTUAL-STARTUP-VERIFY-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -1976,6 +1977,38 @@
       "scripts/ops/runtime_health_check.ps1",
       "docs/RUNTIME_RECOVERY_RUNBOOK.md",
       "docs/REAL_EXECUTION_POLICY.md"
+    ],
+    "recommended_next_front": "FRONT-RUNTIME-ACTUAL-STARTUP-VERIFY-01"
+  },
+  "front_runtime_actual_startup_verify_01": {
+    "status": "done",
+    "commit": "5d5ff60f",
+    "remote_synced": true,
+    "purpose": "start brain v9 server, verify live health, evaluate real execution gate with running runtime",
+    "decision": "RUNTIME_UP_AND_REAL_EXECUTION_GATE_VERIFIED_LIVE",
+    "brain_server_status": "up_on_8090",
+    "dashboard_status": "up_fallback_to_8090",
+    "ollama_status": "up",
+    "openwebui_status": "down_docker_not_running",
+    "real_execution_allowed": false,
+    "semantic_memory_write_allowed": false,
+    "faiss_write_allowed": false,
+    "ingestion_executed": false,
+    "content_read": false,
+    "network_called": false,
+    "connector_called": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "docs/FRONT_RUNTIME_ACTUAL_STARTUP_VERIFY_01.md",
+      "tests/smoke/smoke_front_runtime_actual_startup_verify_01.py",
+      "tmp_agent/brain_v9/start_safe_server.py",
+      "tmp_agent/brain_v9/start_full_server.py"
     ],
     "recommended_next_front": "FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01"
   }
