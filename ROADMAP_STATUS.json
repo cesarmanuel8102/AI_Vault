@@ -1,9 +1,9 @@
 {
-  "current_head": "40bee60f",
-  "current_remote_head": "40bee60f",
+  "current_head": "b1bc071f",
+  "current_remote_head": "b1bc071f",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_security_rbac_minimal_01_complete",
-  "last_applied_checkpoint": "FRONT-SECURITY-RBAC-MINIMAL-01",
+  "migration_status": "front_security_selfdev_governance_block_01_complete",
+  "last_applied_checkpoint": "FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -85,7 +85,8 @@
     "FRONT-REAL-PATCH-MATERIALIZATION-01",
     "FRONT-EXTERNAL-AUDIT-DELTA-RECONCILIATION-01",
     "FRONT-SECURITY-PHASE0-REVERIFY-01",
-    "FRONT-SECURITY-RBAC-MINIMAL-01"
+    "FRONT-SECURITY-RBAC-MINIMAL-01",
+    "FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -1683,5 +1684,41 @@
       "tests/smoke/smoke_front_security_rbac_minimal_01.py"
     ],
     "recommended_next_front": "FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01"
+  },
+  "front_security_selfdev_governance_block_01": {
+    "status": "done",
+    "commit": "b1bc071f",
+    "remote_synced": false,
+    "purpose": "harden self-dev protections with centralized protected_paths module and extended coverage",
+    "decision": "SELFDEV_GOVERNANCE_BLOCK_IMPLEMENTED",
+    "selfdev_governance_status": "CLOSED",
+    "extended_paths_covered": [
+      ".env",
+      ".dev_auth",
+      "memory/semantic",
+      "tmp_agent/brain_v9/core/session.py",
+      "brain/curated_runtime_lookup.py",
+      "trading",
+      "strategies",
+      "b8"
+    ],
+    "god_mode_cannot_override": true,
+    "rbac_admin_cannot_override": true,
+    "selfdev_bypass_cannot_override": true,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "tmp_agent/brain_v9/governance/protected_paths.py",
+      "tmp_agent/brain_v9/governance/execution_gate.py",
+      "tests/smoke/smoke_front_security_selfdev_governance_block_01.py",
+      "tests/unit/test_selfdev_protected_paths.py",
+      "docs/FRONT_SECURITY_SELFDEV_GOVERNANCE_BLOCK_01.md"
+    ],
+    "recommended_next_front": "FRONT-INGESTION-REGISTRY-01"
   }
 }

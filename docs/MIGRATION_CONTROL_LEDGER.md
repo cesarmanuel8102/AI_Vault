@@ -4572,3 +4572,62 @@ Implement minimal verifiable RBAC to close SEC-005 from NOT_IMPLEMENTED to CLOSE
 ### Recommended Next Front
 FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01
 
+---
+
+## LEDGER-ROADMAP-SSOT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01 — Self-Dev Governance Block Implemented and Synced
+- **Fecha/hora**: 2026-06-09T00:30:00Z
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: b1bc071f
+- **Estado**: FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01 completado, commiteado y sincronizado.
+
+### Commit Registrado
+- **Commit**: b1bc071f — security: add centralized protected_paths module with extended coverage and integration tests
+- **Remote synced**: true (pending push)
+
+### Scope
+- Created centralized `tmp_agent/brain_v9/governance/protected_paths.py` with extended protected path coverage
+- Integrated with `execution_gate.py` via minimal non-invasive import + fallthrough
+- Updated legacy tests to reflect strengthened protections (memory/semantic, session.py now protected)
+- Created 17 comprehensive smoke tests
+
+### Extended Protected Paths (new coverage)
+- `.env`, `.dev_auth/`
+- `memory/semantic/` (semantic_memory.jsonl, faiss index)
+- `tmp_agent/brain_v9/core/session.py`
+- `brain/curated_runtime_lookup.py`
+- `governance/`, `security/` directories
+- Exact basenames: api_security.py, trace_redactor.py, execution_gate.py, ethics_kernel.py
+- Basename tokens: execution_gate, ethics_kernel, api_security, trace_redactor, approval, auth, policy, governance
+
+### Ledger Exceptions
+- `ROADMAP_STATUS.json`
+- `docs/MIGRATION_CONTROL_LEDGER.md`
+
+### Files Changed
+- tmp_agent/brain_v9/governance/protected_paths.py (new)
+- tmp_agent/brain_v9/governance/execution_gate.py (integrated)
+- tests/smoke/smoke_front_security_selfdev_governance_block_01.py (new)
+- tests/unit/test_selfdev_protected_paths.py (updated)
+- docs/FRONT_SECURITY_SELFDEV_GOVERNANCE_BLOCK_01.md
+
+### Guarantees
+- memory_write_executed: false
+- faiss_write_executed: false
+- patch_application_executed: false
+- trading_executed: false
+- b8_touched: false
+- env_modified: false
+
+### Test Results
+- smoke_front_security_selfdev_governance_block_01.py: 17 passed
+- test_execution_gate_god_p3.py: 3 passed
+- test_selfdev_protected_paths.py: 6 passed
+- Total: 26 passed, 0 failed
+
+### Decision
+**SELFDEV_GOVERNANCE_BLOCK_IMPLEMENTED**
+
+### Recommended Next Front
+FRONT-INGESTION-REGISTRY-01
+
+
