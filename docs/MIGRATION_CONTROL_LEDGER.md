@@ -5123,3 +5123,45 @@ FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01
 
 ### Recommended Next Front
 FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01
+
+## FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01 — First Real Local File Ingestion Dry-Run
+- **Fecha/hora**: 2026-06-09T17:03:00+00:00
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD**: 0ce7c245
+- **Estado**: First real local file read dry-run executed and ledger synced
+
+### Scope
+- Read real local file: docs/REAL_EXECUTION_POLICY.md
+- No semantic memory write
+- No FAISS write
+- No network/connectors
+- No trading/B8
+- Execution packet generated with evidence
+
+### Files
+- brain/first_real_local_ingestion_dry_run.py (new module)
+- tests/smoke/smoke_front_first_real_local_ingestion_dry_run_01.py (33 tests)
+- docs/FRONT_FIRST_REAL_LOCAL_INGESTION_DRY_RUN_01.md (canonical doc)
+
+### Results
+- source_path: docs/REAL_EXECUTION_POLICY.md
+- source_size_bytes: 1923
+- sha256: b493b364185a60c2c9ad116907a347e69890c9978ec6fa6bb18c7bee0ae1801d
+- read_executed: true
+- semantic_memory_write_executed: false
+- faiss_write_executed: false
+- network_called: false
+- connector_called: false
+- promotion_executed: false
+- trading_executed: false
+- b8_touched: false
+
+### Tests
+- py_compile: PASS
+- smoke tests: 33 passed
+
+### Decision
+**FIRST_REAL_LOCAL_FILE_READ_DRY_RUN_EXECUTED**
+
+### Next Recommended Front
+FRONT-FIRST-REAL-LOCAL-MEMORY-CANARY-WRITE-01
