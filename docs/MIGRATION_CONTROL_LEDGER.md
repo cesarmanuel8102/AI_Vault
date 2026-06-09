@@ -4690,4 +4690,58 @@ FRONT-INGESTION-REGISTRY-01
 ### Recommended Next Front
 FRONT-INGESTION-DRY-RUN-01
 
+---
+
+## FRONT-INGESTION-DRY-RUN-01 — Controlled Ingestion Dry-Run Planner
+- **Status**: COMPLETE
+- **Fecha/hora**: 2026-06-09T01:20:00Z
+- **Branch**: codex/own-capital-sustainable-return
+- **Functional Commit**: d8d5a364 — ingestion: add controlled dry-run planner
+- **Ledger Commit**: PENDING (this entry)
+- **Module**: brain/ingestion_dry_run.py
+- **Registry module used**: brain/ingestion_registry.py
+
+### Scope
+- Created `brain/ingestion_dry_run.py` controlled dry-run ingestion planner
+- Consumes ingestion registry and simulates pipeline without real execution
+- Validates and classifies all 6 default registry records
+- Assigns dry-run statuses: candidate, operator_review_required, blocked, registry_only, invalid
+- Generates planned actions and blocked reasons for each record
+- Produces immutable safety flags documenting no execution occurred
+
+### Dry-Run Result Summary (from 6 records)
+| Status | Count | Records |
+|--------|-------|---------|
+| candidate | 1 | local_file_dry_run_only |
+| operator_review_required | 3 | uploaded_document, connector_reference, web_reference |
+| blocked | 1 | api_reference_blocked_until_credentials_policy |
+| registry_only | 1 | manual_text_low_risk |
+| invalid | 0 | — |
+
+### Test Results
+- smoke_front_ingestion_dry_run_01.py: 27 passed, 0 failed
+
+### Files Changed
+- brain/ingestion_dry_run.py (new)
+- tests/smoke/smoke_front_ingestion_dry_run_01.py (new)
+- docs/FRONT_INGESTION_DRY_RUN_01.md (new)
+
+### Guarantees
+- ingestion_executed: false
+- content_read: false
+- memory_write_executed: false
+- faiss_write_executed: false
+- network_called: false
+- connector_called: false
+- patch_application_executed: false
+- trading_executed: false
+- b8_touched: false
+- env_modified: false
+
+### Decision
+**INGESTION_DRY_RUN_PLANNER_CREATED**
+
+### Recommended Next Front
+FRONT-INGESTION-OPERATOR-REVIEW-01
+
 

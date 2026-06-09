@@ -1,9 +1,9 @@
 {
-  "current_head": "c79ac340",
-  "current_remote_head": "c79ac340",
+  "current_head": "b4fb3216",
+  "current_remote_head": "b4fb3216",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_ingestion_registry_01_complete",
-  "last_applied_checkpoint": "FRONT-INGESTION-REGISTRY-01",
+  "migration_status": "front_ingestion_dry_run_01_complete",
+  "last_applied_checkpoint": "FRONT-INGESTION-DRY-RUN-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -87,7 +87,8 @@
     "FRONT-SECURITY-PHASE0-REVERIFY-01",
     "FRONT-SECURITY-RBAC-MINIMAL-01",
     "FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01",
-    "FRONT-INGESTION-REGISTRY-01"
+    "FRONT-INGESTION-REGISTRY-01",
+    "FRONT-INGESTION-DRY-RUN-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -1750,5 +1751,35 @@
       "docs/FRONT_INGESTION_REGISTRY_01.md"
     ],
     "recommended_next_front": "FRONT-INGESTION-DRY-RUN-01"
+  },
+  "front_ingestion_dry_run_01": {
+    "status": "done",
+    "commit": "d8d5a364",
+    "remote_synced": false,
+    "purpose": "create controlled dry-run ingestion planner",
+    "decision": "INGESTION_DRY_RUN_PLANNER_CREATED",
+    "dry_run_candidates_count": 1,
+    "blocked_count": 1,
+    "invalid_count": 0,
+    "operator_review_required_count": 3,
+    "ingestion_executed": false,
+    "content_read": false,
+    "can_write_semantic_memory": false,
+    "can_promote_faiss": false,
+    "network_called": false,
+    "connector_called": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "brain/ingestion_dry_run.py",
+      "tests/smoke/smoke_front_ingestion_dry_run_01.py",
+      "docs/FRONT_INGESTION_DRY_RUN_01.md"
+    ],
+    "recommended_next_front": "FRONT-INGESTION-OPERATOR-REVIEW-01"
   }
 }
