@@ -1,9 +1,9 @@
 {
-  "current_head": "02387a1d",
-  "current_remote_head": "02387a1d",
+  "current_head": "525f1240",
+  "current_remote_head": "525f1240",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_brain_learning_verification_chat_and_direct_01_complete",
-  "last_applied_checkpoint": "FRONT-BRAIN-LEARNING-VERIFICATION-CHAT-AND-DIRECT-01",
+  "migration_status": "front_first_real_local_ingestion_controlled_batch_01_complete",
+  "last_applied_checkpoint": "FRONT-FIRST-REAL-LOCAL-INGESTION-CONTROLLED-BATCH-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -98,7 +98,8 @@
     "FRONT-RUNTIME-ACTUAL-STARTUP-VERIFY-01",
     "FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01",
     "FRONT-FIRST-REAL-LOCAL-MEMORY-FAISS-CANARY-01",
-    "FRONT-BRAIN-LEARNING-VERIFICATION-CHAT-AND-DIRECT-01"
+    "FRONT-BRAIN-LEARNING-VERIFICATION-CHAT-AND-DIRECT-01",
+    "FRONT-FIRST-REAL-LOCAL-INGESTION-CONTROLLED-BATCH-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -108,12 +109,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-FIRST-REAL-LOCAL-INGESTION-CONTROLLED-BATCH-01",
+    "name": "FRONT-CONTROLLED-BATCH-RETRIEVAL-QUALITY-EVAL-01",
     "status": "recommended_next",
-    "reason": "First controlled batch ingestion after canary success"
+    "reason": "Evaluate retrieval quality for controlled batch ingestion"
   },
-  "ready_for_next_front": "FRONT-FIRST-REAL-LOCAL-INGESTION-CONTROLLED-BATCH-01",
-  "last_updated": "2026-06-09T19:05:00+00:00",
+  "ready_for_next_front": "FRONT-CONTROLLED-BATCH-RETRIEVAL-QUALITY-EVAL-01",
+  "last_updated": "2026-06-09T23:15:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2097,5 +2098,34 @@
       "docs/FRONT_BRAIN_LEARNING_VERIFICATION_CHAT_AND_DIRECT_01.md"
     ],
     "recommended_next_front": "FRONT-FIRST-REAL-LOCAL-INGESTION-CONTROLLED-BATCH-01"
+  },
+  "front_first_real_local_ingestion_controlled_batch_01": {
+    "status": "done",
+    "commit": "525f1240",
+    "remote_synced": true,
+    "purpose": "execute first controlled real local batch ingestion of 3 whitelisted documents to semantic memory and FAISS",
+    "decision": "FIRST_CONTROLLED_LOCAL_BATCH_INGESTION_COMPLETED",
+    "attempted_count": 3,
+    "ready_source_count": 3,
+    "skipped_count": 0,
+    "memory_written_count": 3,
+    "faiss_promoted_count": 3,
+    "already_complete_count": 0,
+    "failed_count": 0,
+    "network_called": false,
+    "connector_called": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "retrieval_verified": true,
+    "tests_passed": true,
+    "files": [
+      "brain/first_real_local_ingestion_controlled_batch.py",
+      "tests/smoke/smoke_front_first_real_local_ingestion_controlled_batch_01.py",
+      "docs/FRONT_FIRST_REAL_LOCAL_INGESTION_CONTROLLED_BATCH_01.md",
+      "memory/semantic/semantic_memory.jsonl",
+      "memory/semantic/semantic_memory_faiss.index",
+      "memory/semantic/semantic_memory_faiss_ids.json"
+    ],
+    "recommended_next_front": "FRONT-CONTROLLED-BATCH-RETRIEVAL-QUALITY-EVAL-01"
   }
 }
