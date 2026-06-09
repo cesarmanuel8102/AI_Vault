@@ -1,9 +1,9 @@
 {
-  "current_head": "02e7845e",
-  "current_remote_head": "02e7845e",
+  "current_head": "daf8146a",
+  "current_remote_head": "daf8146a",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_ingestion_reviewed_dry_run_execution_01_complete",
-  "last_applied_checkpoint": "FRONT-INGESTION-REVIEWED-DRY-RUN-EXECUTION-01",
+  "migration_status": "front_ingestion_manual_approval_sample_01_complete",
+  "last_applied_checkpoint": "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -91,7 +91,8 @@
     "FRONT-INGESTION-DRY-RUN-01",
     "FRONT-INGESTION-OPERATOR-REVIEW-01",
     "FRONT-INGESTION-APPROVAL-DECISION-DRY-RUN-01",
-    "FRONT-INGESTION-REVIEWED-DRY-RUN-EXECUTION-01"
+    "FRONT-INGESTION-REVIEWED-DRY-RUN-EXECUTION-01",
+    "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -101,12 +102,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01",
+    "name": "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01",
     "status": "recommended_next",
-    "reason": "Expand denylist tests and add allowlist for safe self-dev paths"
+    "reason": "Create end-to-end manual approval sample demonstrating full ingestion pipeline with synthetic approval/rejection"
   },
-  "ready_for_next_front": "FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01",
-  "last_updated": "2026-06-09T00:08:00+00:00",
+  "ready_for_next_front": "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01",
+  "last_updated": "2026-06-09T15:12:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1879,5 +1880,36 @@
       "docs/FRONT_INGESTION_REVIEWED_DRY_RUN_EXECUTION_01.md"
     ],
     "recommended_next_front": "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01"
+  },
+  "front_ingestion_manual_approval_sample_01": {
+    "status": "done",
+    "commit": "daf8146a",
+    "remote_synced": true,
+    "purpose": "create end-to-end manual approval sample demonstrating full ingestion pipeline with synthetic approval/rejection",
+    "decision": "MANUAL_APPROVAL_SAMPLE_COMPLETE",
+    "synthetic_approved_count": 1,
+    "synthetic_denied_count": 1,
+    "reviewed_dry_run_planned_count": 1,
+    "reviewed_dry_run_skipped_no_approval_count": 0,
+    "rejected_count": 1,
+    "ingestion_executed": false,
+    "content_read": false,
+    "can_write_semantic_memory": false,
+    "can_promote_faiss": false,
+    "network_called": false,
+    "connector_called": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "brain/ingestion_manual_approval_sample.py",
+      "tests/smoke/smoke_front_ingestion_manual_approval_sample_01.py",
+      "docs/FRONT_INGESTION_MANUAL_APPROVAL_SAMPLE_01.md"
+    ],
+    "recommended_next_front": "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02"
   }
 }

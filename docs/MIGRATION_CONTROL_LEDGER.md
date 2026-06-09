@@ -4901,4 +4901,55 @@ FRONT-INGESTION-REVIEWED-DRY-RUN-EXECUTION-01
 ### Recommended Next Front
 FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01
 
+---
+
+## FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01 — End-to-End Manual Approval Sample
+- **Status**: COMPLETE
+- **Fecha/hora**: 2026-06-09T15:12:00Z
+- **Branch**: codex/own-capital-sustainable-return
+- **Functional Commit**: daf8146a — FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01: Add end-to-end pipeline sample with synthetic approval/rejection
+- **Module**: brain/ingestion_manual_approval_sample.py
+
+### Scope
+- Created `brain/ingestion_manual_approval_sample.py` end-to-end pipeline sample
+- Demonstrates complete ingestion pipeline with synthetic approval and rejection
+- Two synthetic fixtures: `synthetic_approved_document` (approved) and `synthetic_denied_document` (rejected)
+- Does NOT execute real ingestion, does NOT read content, does NOT write storage
+
+### Pipeline Demonstrated
+| Stage | Module | Default Output | Approved Output | Denied Output |
+|-------|--------|---------------|-----------------|---------------|
+| Registry | ingestion_registry | Validated | Validated | Validated |
+| Dry-run | ingestion_dry_run | candidate / operator_review | candidate | operator_review_required |
+| Review queue | ingestion_operator_review | pending | pending | pending |
+| Decision | ingestion_approval_decision_dry_run | more_context | accepted | rejected |
+| Execution | ingestion_reviewed_dry_run_execution | skipped | planned | rejected |
+
+### Test Results
+- smoke_front_ingestion_manual_approval_sample_01.py: 24 passed, 0 failed
+- All 6 ingestion fronts + security front: 156 passed, 0 failed (no regressions)
+
+### Files Changed
+- brain/ingestion_manual_approval_sample.py (new)
+- tests/smoke/smoke_front_ingestion_manual_approval_sample_01.py (new)
+- docs/FRONT_INGESTION_MANUAL_APPROVAL_SAMPLE_01.md (new)
+
+### Guarantees
+- ingestion_executed: false
+- content_read: false
+- memory_write_executed: false
+- faiss_write_executed: false
+- network_called: false
+- connector_called: false
+- patch_application_executed: false
+- trading_executed: false
+- b8_touched: false
+- env_modified: false
+
+### Decision
+**MANUAL_APPROVAL_SAMPLE_COMPLETE**
+
+### Recommended Next Front
+FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02 — expand to multi-source batch with mixed approvals/rejections
+
 
