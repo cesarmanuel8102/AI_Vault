@@ -24,6 +24,8 @@ Risk levels:
     P2 (services)   — taskkill, pip install, python script.py, restart services, write outside sandbox
     P3 (destructive) — rm -rf, format, shutdown, registry edits, write outside AI_VAULT
 """
+from __future__ import annotations
+
 import json
 import logging
 import re
@@ -34,6 +36,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from brain_v9.config import BASE_PATH
+
+# FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01
+# Delegate protected path checks to centralized module for extended coverage
+# (.env, memory/semantic/, trading/, strategies/, B8/, session.py, etc.)
+from brain_v9.governance.protected_paths import is_protected_path
 
 log = logging.getLogger("governance.execution_gate")
 
@@ -109,7 +116,9 @@ def _is_protected_selfdev_path(path_value: str) -> bool:
     for token in _PROTECTED_SELFDEV_FILE_TOKENS:
         if token in base:
             return True
-    return False
+    # FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01
+    # Fallthrough to centralized module for extended coverage
+    return is_protected_path(path_value)
 
 
 def _extract_candidate_paths(tool_name: str, args: Dict) -> List[str]:

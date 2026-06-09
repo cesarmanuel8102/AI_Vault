@@ -45,12 +45,17 @@ def test_helper_allows_normal_paths():
     safe = [
         "tmp_agent/strategies/some_strategy.py",
         "tmp_agent/brain_v9/ui/dashboard.py",
-        "memory/semantic/data.jsonl",
-        "tmp_agent/brain_v9/core/session.py",
         "",
     ]
     for s in safe:
         assert not _is_protected_selfdev_path(s), f"NO debe bloquear: {s!r}"
+
+
+def test_helper_now_blocks_memory_semantic_and_session():
+    from brain_v9.governance.execution_gate import _is_protected_selfdev_path
+    # FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01 extended coverage
+    assert _is_protected_selfdev_path("memory/semantic/data.jsonl")
+    assert _is_protected_selfdev_path("tmp_agent/brain_v9/core/session.py")
 
 
 def test_god_mode_cannot_edit_governance():
