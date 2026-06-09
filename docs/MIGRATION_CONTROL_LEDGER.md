@@ -4795,4 +4795,57 @@ FRONT-INGESTION-OPERATOR-REVIEW-01
 ### Recommended Next Front
 FRONT-INGESTION-APPROVAL-DECISION-DRY-RUN-01
 
+---
+
+## FRONT-INGESTION-APPROVAL-DECISION-DRY-RUN-01 — Approval Decision Dry-Run Simulator
+- **Status**: COMPLETE
+- **Fecha/hora**: 2026-06-09T02:10:00Z
+- **Branch**: codex/own-capital-sustainable-return
+- **Functional Commit**: 5fbad3c6 — ingestion: add approval decision dry run planner
+- **Module**: brain/ingestion_approval_decision_dry_run.py
+- **Operator review module used**: brain/ingestion_operator_review.py
+
+### Scope
+- Created `brain/ingestion_approval_decision_dry_run.py` approval decision simulator
+- Consumes operator review queue and applies deterministic default decisions
+- Simulates operator approval without executing real ingestion
+- Does NOT read content, does NOT write storage, does NOT trigger real actions
+
+### Decision Result Summary (from 6 records with default decisions)
+| Status | Count | Records |
+|--------|-------|---------|
+| accepted_for_future_dry_run | 0 | — |
+| rejected | 0 | — |
+| more_context_required | 4 | local_file, uploaded_document, connector_reference, web_reference |
+| kept_blocked | 1 | api_reference_blocked_until_credentials_policy |
+| no_action | 1 | manual_text_low_risk |
+| denied_invalid_decision | 0 | — |
+
+### Test Results
+- smoke_front_ingestion_approval_decision_dry_run_01.py: 27 passed, 0 failed
+
+### Files Changed
+- brain/ingestion_approval_decision_dry_run.py (new)
+- tests/smoke/smoke_front_ingestion_approval_decision_dry_run_01.py (new)
+- docs/FRONT_INGESTION_APPROVAL_DECISION_DRY_RUN_01.md (new)
+
+### Guarantees
+- ingestion_executed: false
+- content_read: false
+- memory_write_executed: false
+- faiss_write_executed: false
+- network_called: false
+- connector_called: false
+- patch_application_executed: false
+- trading_executed: false
+- b8_touched: false
+- env_modified: false
+- approval_authorizes_real_ingestion: false
+
+### Decision
+**INGESTION_APPROVAL_DECISION_DRY_RUN_CREATED**
+
+### Recommended Next Front
+FRONT-INGESTION-REVIEWED-DRY-RUN-EXECUTION-01
+
 
