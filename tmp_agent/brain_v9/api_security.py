@@ -5,6 +5,8 @@ Policy:
 - localhost and test clients are trusted for operator routes
 - non-local mutating requests require X-Brain-Token when BRAIN_ADMIN_TOKEN is set
 - if BRAIN_ADMIN_TOKEN is not configured, non-local mutating requests are denied
+
+FRONT-SECURITY-RBAC-MINIMAL-01: Minimal RBAC added without breaking existing auth.
 """
 from __future__ import annotations
 
@@ -13,6 +15,15 @@ from hmac import compare_digest
 from typing import Annotated, Optional
 
 from fastapi import Depends, Header, HTTPException, Request, status
+
+from tmp_agent.brain_v9.security.rbac import (
+    Role,
+    Permission,
+    classify_request_role,
+    has_permission,
+    normalize_role,
+    require_permission as _require_rbac_permission,
+)
 
 
 _LOCAL_CLIENT_HOSTS = {"127.0.0.1", "::1", "localhost", "testclient"}
@@ -29,10 +40,13 @@ def is_local_request(request: Request) -> bool:
     return _client_host(request) in _LOCAL_CLIENT_HOSTS
 
 
+# ── Existing functions preserved (backward compatible) ──
+
 async def require_operator_access(
     request: Request,
     x_brain_token: Optional[str] = Header(default=None, alias="X-Brain-Token"),
 ) -> None:
+    """Require operator access for non-local requests."""
     if is_local_request(request):
         return
 
@@ -63,5 +77,76 @@ async def require_strict_operator_access(
         raise HTTPException(status_code=403, detail="strict operator access required")
 
 
+# ── New RBAC helpers ──
+
+def _validate_admin_token(x_brain_token: Optional[str]) -> bool:
+    """Check if the provided token matches BRAIN_ADMIN_TOKEN."""
+    expected = os.getenv("BRAIN_ADMIN_TOKEN", "").strip()
+    if not expected or not x_brain_token:
+        return False
+    return compare_digest(x_brain_token, expected)
+
+
+def get_request_role(request: Request, x_brain_token: Optional[str] = None) -> Role:
+    """
+    Determine the RBAC role for a request.
+
+    - Valid admin token -> ADMIN
+    - Localhost -> OPERATOR (backward compatible with existing behavior)
+    - Everything else -> VIEWER
+    """
+    admin_token_valid = _validate_admin_token(x_brain_token)
+    localhost_allowed = is_local_request(request)
+    return classify_request_role(
+        admin_token_valid=admin_token_valid,
+        localhost_allowed=localhost_allowed,
+    )
+
+
+async def require_role(
+    request: Request,
+    role: Role | str,
+    x_brain_token: Optional[str] = Header(default=None, alias="X-Brain-Token"),
+) -> Role:
+    """
+    FastAPI dependency that enforces a minimum RBAC role.
+    Raises 403 if the caller's role is insufficient.
+    """
+    actual_role = get_request_role(request, x_brain_token)
+    required_role = normalize_role(role)
+    role_order = [Role.VIEWER, Role.OPERATOR, Role.ADMIN]
+    try:
+        actual_index = role_order.index(actual_role)
+        required_index = role_order.index(required_role)
+    except ValueError:
+        raise HTTPException(status_code=403, detail="invalid role hierarchy")
+
+    if actual_index < required_index:
+        raise HTTPException(
+            status_code=403,
+            detail=f"{required_role.value} access required. Current role: {actual_role.value}",
+        )
+    return actual_role
+
+
+async def require_permission(
+    request: Request,
+    permission: str,
+    x_brain_token: Optional[str] = Header(default=None, alias="X-Brain-Token"),
+) -> Role:
+    """
+    FastAPI dependency that enforces a specific RBAC permission.
+    Raises 403 if the caller lacks the permission.
+    """
+    actual_role = get_request_role(request, x_brain_token)
+    if not has_permission(actual_role, permission):
+        raise HTTPException(
+            status_code=403,
+            detail=f"permission '{permission}' denied for role '{actual_role.value}'",
+        )
+    return actual_role
+
+
+# Keep existing FastAPI dependency aliases
 OperatorAccess = Annotated[None, Depends(require_operator_access)]
 StrictOperatorAccess = Annotated[None, Depends(require_strict_operator_access)]
