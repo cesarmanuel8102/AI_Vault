@@ -1,9 +1,9 @@
 {
-  "current_head": "daf8146a",
-  "current_remote_head": "daf8146a",
+  "current_head": "1264102e",
+  "current_remote_head": "1264102e",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_ingestion_manual_approval_sample_01_complete",
-  "last_applied_checkpoint": "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01",
+  "migration_status": "front_ingestion_manual_approval_sample_02_complete",
+  "last_applied_checkpoint": "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -92,7 +92,8 @@
     "FRONT-INGESTION-OPERATOR-REVIEW-01",
     "FRONT-INGESTION-APPROVAL-DECISION-DRY-RUN-01",
     "FRONT-INGESTION-REVIEWED-DRY-RUN-EXECUTION-01",
-    "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01"
+    "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01",
+    "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -102,12 +103,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01",
+    "name": "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02",
     "status": "recommended_next",
-    "reason": "Create end-to-end manual approval sample demonstrating full ingestion pipeline with synthetic approval/rejection"
+    "reason": "Create multi-source synthetic manual approval batch sample with mixed decisions"
   },
-  "ready_for_next_front": "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01",
-  "last_updated": "2026-06-09T15:12:00+00:00",
+  "ready_for_next_front": "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02",
+  "last_updated": "2026-06-09T15:20:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -1911,5 +1912,38 @@
       "docs/FRONT_INGESTION_MANUAL_APPROVAL_SAMPLE_01.md"
     ],
     "recommended_next_front": "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02"
+  },
+  "front_ingestion_manual_approval_sample_02": {
+    "status": "done",
+    "commit": "1264102e",
+    "remote_synced": true,
+    "purpose": "create multi-source synthetic manual approval batch sample with mixed decisions",
+    "decision": "INGESTION_MANUAL_APPROVAL_BATCH_SAMPLE_CREATED",
+    "approved_count": 1,
+    "rejected_count": 1,
+    "more_context_required_count": 2,
+    "kept_blocked_count": 1,
+    "no_action_count": 1,
+    "reviewed_dry_run_planned_count": 1,
+    "reviewed_dry_run_skipped_no_approval_count": 2,
+    "ingestion_executed": false,
+    "content_read": false,
+    "can_write_semantic_memory": false,
+    "can_promote_faiss": false,
+    "network_called": false,
+    "connector_called": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "brain/ingestion_manual_approval_batch_sample.py",
+      "tests/smoke/smoke_front_ingestion_manual_approval_sample_02.py",
+      "docs/FRONT_INGESTION_MANUAL_APPROVAL_SAMPLE_02.md"
+    ],
+    "recommended_next_front": "FRONT-INGESTION-MANUAL-APPROVAL-PERSISTENT-QUEUE-01"
   }
 }

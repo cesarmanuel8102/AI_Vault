@@ -4952,4 +4952,62 @@ FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01
 ### Recommended Next Front
 FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02 — expand to multi-source batch with mixed approvals/rejections
 
+---
+
+## FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02 — Multi-Source Manual Approval Batch Sample
+- **Status**: COMPLETE
+- **Fecha/hora**: 2026-06-09T15:20:00Z
+- **Branch**: codex/own-capital-sustainable-return
+- **Functional Commit**: 1264102e — ingestion: add manual approval batch sample
+- **Module**: brain/ingestion_manual_approval_batch_sample.py
+
+### Scope
+- Created `brain/ingestion_manual_approval_batch_sample.py` multi-source batch orchestrator
+- Demonstrates mixed operator decisions across all 6 default registry sources
+- Default decision plan:
+  - `local_file_dry_run_only` → **approved** for future dry-run
+  - `uploaded_document_operator_review` → **rejected**
+  - `connector_reference_operator_review` → **more context required**
+  - `web_reference_operator_review` → **more context required**
+  - `api_reference_blocked_until_credentials_policy` → **kept blocked**
+  - `manual_text_low_risk` → **no action**
+- Does NOT execute real ingestion, does NOT read content, does NOT write storage
+
+### Execution Result Summary (from 6 records with mixed decisions)
+| Status | Count | Records |
+|--------|-------|---------|
+| reviewed_dry_run_planned | 1 | local_file_dry_run_only |
+| reviewed_dry_run_skipped_no_approval | 2 | connector_reference_operator_review, web_reference_operator_review |
+| rejected | 1 | uploaded_document_operator_review |
+| blocked | 1 | api_reference_blocked_until_credentials_policy |
+| no_action | 1 | manual_text_low_risk |
+| invalid | 0 | — |
+
+### Test Results
+- smoke_front_ingestion_manual_approval_sample_02.py: 42 passed, 0 failed
+- All ingestion fronts + security front: 180 passed, 0 failed (no regressions)
+
+### Files Changed
+- brain/ingestion_manual_approval_batch_sample.py (new)
+- tests/smoke/smoke_front_ingestion_manual_approval_sample_02.py (new)
+- docs/FRONT_INGESTION_MANUAL_APPROVAL_SAMPLE_02.md (new)
+
+### Guarantees
+- ingestion_executed: false
+- content_read: false
+- memory_write_executed: false
+- faiss_write_executed: false
+- network_called: false
+- connector_called: false
+- patch_application_executed: false
+- trading_executed: false
+- b8_touched: false
+- env_modified: false
+
+### Decision
+**INGESTION_MANUAL_APPROVAL_BATCH_SAMPLE_CREATED**
+
+### Recommended Next Front
+FRONT-INGESTION-MANUAL-APPROVAL-PERSISTENT-QUEUE-01
+
 
