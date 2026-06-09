@@ -103,11 +103,11 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02",
+    "name": "FRONT-INGESTION-MANUAL-APPROVAL-PERSISTENT-QUEUE-01",
     "status": "recommended_next",
-    "reason": "Create multi-source synthetic manual approval batch sample with mixed decisions"
+    "reason": "Create persistent queue for manual approval decisions across sessions"
   },
-  "ready_for_next_front": "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02",
+  "ready_for_next_front": "FRONT-INGESTION-MANUAL-APPROVAL-PERSISTENT-QUEUE-01",
   "last_updated": "2026-06-09T15:20:00+00:00",
   "phase0_security": {
     "status": "done",
@@ -1911,7 +1911,7 @@
       "tests/smoke/smoke_front_ingestion_manual_approval_sample_01.py",
       "docs/FRONT_INGESTION_MANUAL_APPROVAL_SAMPLE_01.md"
     ],
-    "recommended_next_front": "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02"
+    "recommended_next_front": "FRONT-INGESTION-MANUAL-APPROVAL-PERSISTENT-QUEUE-01"
   },
   "front_ingestion_manual_approval_sample_02": {
     "status": "done",
