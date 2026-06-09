@@ -4513,3 +4513,62 @@ Re-verify the critical Phase 0 security blockers after completing REAL APPLICABL
 4. FRONT-VISUAL-TRACE-CONSOLE-MVP-01
 5. FRONT-ARCHITECTURE-STRANGLER-NEXT-01
 
+
+---
+
+*End of ledger entry for FRONT-SECURITY-PHASE0-REVERIFY-01*
+
+---
+
+## FRONT-SECURITY-RBAC-MINIMAL-01
+
+**Status:** COMPLETE
+**Date:** 2026-06-08
+**Branch:** codex/own-capital-sustainable-return
+**Functional Commit:** 40bee60f
+**Ledger Commit:** PENDING
+**Head Before:** da6a64f9
+**Head After:** PENDING
+**Type:** minimal RBAC implementation (viewer/operator/admin)
+
+### Objective
+Implement minimal verifiable RBAC to close SEC-005 from NOT_IMPLEMENTED to CLOSED/PARTIAL.
+
+### Roles Implemented
+- viewer: read only
+- operator: read + approve
+- admin: read + approve + apply_patch (gated) + access_dev_endpoints (env-gated)
+
+### Permissions NOT Granted
+- MODIFY_GOVERNANCE: not granted to any role (still blocked at ExecutionGate)
+- P3 auto-approval: RBAC does not override ExecutionGate
+
+### Files Changed
+- tmp_agent/brain_v9/security/rbac.py (new)
+- tmp_agent/brain_v9/security/__init__.py (new)
+- tmp_agent/brain_v9/api_security.py (integrated RBAC helpers)
+- tmp_agent/__init__.py (new)
+- docs/FRONT_SECURITY_RBAC_MINIMAL_01.md
+- tests/smoke/smoke_front_security_rbac_minimal_01.py
+
+### Backward Compatibility
+- require_operator_access: unchanged
+- require_strict_operator_access: unchanged
+
+### Guarantees
+- memory_write_executed: false
+- faiss_write_executed: false
+- patch_application_executed: false
+- trading_executed: false
+- b8_touched: false
+- env_modified: false
+
+### Test Results
+26 passed in 0.97s
+
+### Decision
+**MINIMAL_RBAC_IMPLEMENTED**
+
+### Recommended Next Front
+FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01
+
