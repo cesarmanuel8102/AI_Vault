@@ -4848,4 +4848,57 @@ FRONT-INGESTION-APPROVAL-DECISION-DRY-RUN-01
 ### Recommended Next Front
 FRONT-INGESTION-REVIEWED-DRY-RUN-EXECUTION-01
 
+---
+
+## FRONT-INGESTION-REVIEWED-DRY-RUN-EXECUTION-01 — Reviewed Dry-Run Execution Planner
+- **Status**: COMPLETE
+- **Fecha/hora**: 2026-06-09T02:30:00Z
+- **Branch**: codex/own-capital-sustainable-return
+- **Functional Commit**: 02e7845e — ingestion: add reviewed dry-run execution planner
+- **Module**: brain/ingestion_reviewed_dry_run_execution.py
+- **Approval decision module used**: brain/ingestion_approval_decision_dry_run.py
+
+### Scope
+- Created `brain/ingestion_reviewed_dry_run_execution.py` reviewed dry-run execution planner
+- Consumes approval decision results and maps to execution statuses
+- Default state has **zero approved items** (all require more context or are blocked)
+- Does NOT execute real ingestion, does NOT read content, does NOT write storage
+
+### Execution Result Summary (from 6 records with default decisions)
+| Status | Count | Records |
+|--------|-------|---------|
+| reviewed_dry_run_planned | 0 | — |
+| reviewed_dry_run_skipped_no_approval | 4 | local_file, uploaded_document, connector_reference, web_reference |
+| blocked | 1 | api_reference_blocked_until_credentials_policy |
+| no_action | 1 | manual_text_low_risk |
+| rejected | 0 | — |
+| invalid | 0 | — |
+
+### Test Results
+- smoke_front_ingestion_reviewed_dry_run_execution_01.py: 28 passed, 0 failed
+
+### Files Changed
+- brain/ingestion_reviewed_dry_run_execution.py (new)
+- tests/smoke/smoke_front_ingestion_reviewed_dry_run_execution_01.py (new)
+- docs/FRONT_INGESTION_REVIEWED_DRY_RUN_EXECUTION_01.md (new)
+
+### Guarantees
+- ingestion_executed: false
+- content_read: false
+- memory_write_executed: false
+- faiss_write_executed: false
+- network_called: false
+- connector_called: false
+- patch_application_executed: false
+- trading_executed: false
+- b8_touched: false
+- env_modified: false
+- default_approved_items: 0
+
+### Decision
+**INGESTION_REVIEWED_DRY_RUN_EXECUTION_PLANNER_CREATED**
+
+### Recommended Next Front
+FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01
+
 

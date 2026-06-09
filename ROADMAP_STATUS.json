@@ -1,9 +1,9 @@
 {
-  "current_head": "5fbad3c6",
-  "current_remote_head": "5fbad3c6",
+  "current_head": "02e7845e",
+  "current_remote_head": "02e7845e",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_ingestion_approval_decision_dry_run_01_complete",
-  "last_applied_checkpoint": "FRONT-INGESTION-APPROVAL-DECISION-DRY-RUN-01",
+  "migration_status": "front_ingestion_reviewed_dry_run_execution_01_complete",
+  "last_applied_checkpoint": "FRONT-INGESTION-REVIEWED-DRY-RUN-EXECUTION-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -90,7 +90,8 @@
     "FRONT-INGESTION-REGISTRY-01",
     "FRONT-INGESTION-DRY-RUN-01",
     "FRONT-INGESTION-OPERATOR-REVIEW-01",
-    "FRONT-INGESTION-APPROVAL-DECISION-DRY-RUN-01"
+    "FRONT-INGESTION-APPROVAL-DECISION-DRY-RUN-01",
+    "FRONT-INGESTION-REVIEWED-DRY-RUN-EXECUTION-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -1846,5 +1847,37 @@
       "docs/FRONT_INGESTION_APPROVAL_DECISION_DRY_RUN_01.md"
     ],
     "recommended_next_front": "FRONT-INGESTION-REVIEWED-DRY-RUN-EXECUTION-01"
+  },
+  "front_ingestion_reviewed_dry_run_execution_01": {
+    "status": "done",
+    "commit": "02e7845e",
+    "remote_synced": false,
+    "purpose": "create reviewed dry-run execution planner with zero default approvals",
+    "decision": "INGESTION_REVIEWED_DRY_RUN_EXECUTION_PLANNER_CREATED",
+    "reviewed_dry_run_planned_count": 0,
+    "reviewed_dry_run_skipped_no_approval_count": 4,
+    "blocked_count": 1,
+    "no_action_count": 1,
+    "rejected_count": 0,
+    "invalid_count": 0,
+    "ingestion_executed": false,
+    "content_read": false,
+    "can_write_semantic_memory": false,
+    "can_promote_faiss": false,
+    "network_called": false,
+    "connector_called": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "brain/ingestion_reviewed_dry_run_execution.py",
+      "tests/smoke/smoke_front_ingestion_reviewed_dry_run_execution_01.py",
+      "docs/FRONT_INGESTION_REVIEWED_DRY_RUN_EXECUTION_01.md"
+    ],
+    "recommended_next_front": "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01"
   }
 }
