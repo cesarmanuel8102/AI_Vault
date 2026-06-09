@@ -1,9 +1,9 @@
 {
-  "current_head": "b1bc071f",
-  "current_remote_head": "b1bc071f",
+  "current_head": "c79ac340",
+  "current_remote_head": "c79ac340",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_security_selfdev_governance_block_01_complete",
-  "last_applied_checkpoint": "FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01",
+  "migration_status": "front_ingestion_registry_01_complete",
+  "last_applied_checkpoint": "FRONT-INGESTION-REGISTRY-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -86,7 +86,8 @@
     "FRONT-EXTERNAL-AUDIT-DELTA-RECONCILIATION-01",
     "FRONT-SECURITY-PHASE0-REVERIFY-01",
     "FRONT-SECURITY-RBAC-MINIMAL-01",
-    "FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01"
+    "FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01",
+    "FRONT-INGESTION-REGISTRY-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -1720,5 +1721,34 @@
       "docs/FRONT_SECURITY_SELFDEV_GOVERNANCE_BLOCK_01.md"
     ],
     "recommended_next_front": "FRONT-INGESTION-REGISTRY-01"
+  },
+  "front_ingestion_registry_01": {
+    "status": "done",
+    "commit": "c79ac340",
+    "remote_synced": false,
+    "purpose": "create read-only ingestion source registry",
+    "decision": "INGESTION_REGISTRY_CREATED_READ_ONLY",
+    "registry_records_count": 6,
+    "source_types_count": 7,
+    "risk_levels_count": 4,
+    "can_write_semantic_memory": false,
+    "can_promote_faiss": false,
+    "ingestion_executed": false,
+    "dry_run_executed": false,
+    "network_called": false,
+    "connector_called": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "brain/ingestion_registry.py",
+      "tests/smoke/smoke_front_ingestion_registry_01.py",
+      "docs/FRONT_INGESTION_REGISTRY_01.md"
+    ],
+    "recommended_next_front": "FRONT-INGESTION-DRY-RUN-01"
   }
 }

@@ -4630,4 +4630,64 @@ FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01
 ### Recommended Next Front
 FRONT-INGESTION-REGISTRY-01
 
+---
+
+## LEDGER-ROADMAP-SSOT-INGESTION-REGISTRY-01 — Read-Only Ingestion Source Registry Implemented and Synced
+- **Fecha/hora**: 2026-06-09T00:55:00Z
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: c79ac340
+- **Estado**: FRONT-INGESTION-REGISTRY-01 completado, commiteado y sincronizado.
+
+### Commit Registrado
+- **Commit**: c79ac340 — ingestion: add read-only source registry
+- **Remote synced**: true (pending push)
+
+### Scope
+- Created `brain/ingestion_registry.py` with pure Python, no external deps, no network, no file writes
+- Defined source schema with 7 types, 4 risk levels, 4 allowed modes
+- Implemented validation, classification, and summarization functions
+- Created 6 default safe source records covering all types
+- Added 27 comprehensive smoke tests
+
+### Source Types
+- local_file, local_directory, uploaded_document, manual_text
+- connector_reference, api_reference, web_reference
+
+### Risk Levels
+- low, medium, high, blocked
+
+### Default Registry (6 records)
+1. manual_text_low_risk — low risk, registry_only
+2. uploaded_document_operator_review — medium risk, operator_review_required
+3. local_file_dry_run_only — low risk, dry_run_only
+4. connector_reference_operator_review — medium risk, operator_review_required
+5. api_reference_blocked_until_credentials_policy — blocked
+6. web_reference_operator_review — medium risk, operator_review_required
+
+### Guarantees
+- memory_write_executed: false
+- faiss_write_executed: false
+- ingestion_executed: false
+- dry_run_executed: false
+- network_called: false
+- connector_called: false
+- patch_application_executed: false
+- trading_executed: false
+- b8_touched: false
+- env_modified: false
+
+### Test Results
+- smoke_front_ingestion_registry_01.py: 27 passed, 0 failed
+
+### Files Changed
+- brain/ingestion_registry.py (new)
+- tests/smoke/smoke_front_ingestion_registry_01.py (new)
+- docs/FRONT_INGESTION_REGISTRY_01.md (new)
+
+### Decision
+**INGESTION_REGISTRY_CREATED_READ_ONLY**
+
+### Recommended Next Front
+FRONT-INGESTION-DRY-RUN-01
+
 
