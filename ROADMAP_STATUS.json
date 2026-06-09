@@ -1,6 +1,6 @@
 {
-  "current_head": "c8d104e6",
-  "current_remote_head": "c8d104e6",
+  "current_head": "8157f31b",
+  "current_remote_head": "8157f31b",
   "branch": "codex/own-capital-sustainable-return",
   "migration_status": "front_first_real_local_ingestion_dry_run_01_complete",
   "last_applied_checkpoint": "FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01",
@@ -95,7 +95,8 @@
     "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01",
     "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02",
     "FRONT-RUNTIME-RECOVERY-REAL-EXECUTION-GATE-01",
-    "FRONT-RUNTIME-ACTUAL-STARTUP-VERIFY-01"
+    "FRONT-RUNTIME-ACTUAL-STARTUP-VERIFY-01",
+    "FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -105,12 +106,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01",
+    "name": "FRONT-FIRST-REAL-LOCAL-MEMORY-CANARY-WRITE-01",
     "status": "recommended_next",
-    "reason": "First real local ingestion dry-run after runtime recovery"
+    "reason": "First real local memory canary write after ingestion dry-run"
   },
-  "ready_for_next_front": "FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01",
-  "last_updated": "2026-06-09T16:15:00+00:00",
+  "ready_for_next_front": "FRONT-FIRST-REAL-LOCAL-MEMORY-CANARY-WRITE-01",
+  "last_updated": "2026-06-09T17:05:00+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2010,6 +2011,32 @@
       "tmp_agent/brain_v9/start_safe_server.py",
       "tmp_agent/brain_v9/start_full_server.py"
     ],
-    "recommended_next_front": "FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01"
+    "recommended_next_front": "FRONT-FIRST-REAL-LOCAL-MEMORY-CANARY-WRITE-01"
+  },
+  "front_first_real_local_ingestion_dry_run_01": {
+    "status": "done",
+    "commit": "c8d104e6",
+    "remote_synced": true,
+    "purpose": "execute first real local file read dry-run with operator approval",
+    "decision": "FIRST_REAL_LOCAL_FILE_READ_DRY_RUN_EXECUTED",
+    "source_path": "docs/REAL_EXECUTION_POLICY.md",
+    "source_size_bytes": 1923,
+    "sha256": "b493b364185a60c2c9ad116907a347e69890c9978ec6fa6bb18c7bee0ae1801d",
+    "read_executed": true,
+    "semantic_memory_write_executed": false,
+    "faiss_write_executed": false,
+    "network_called": false,
+    "connector_called": false,
+    "promotion_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "brain/first_real_local_ingestion_dry_run.py",
+      "tests/smoke/smoke_front_first_real_local_ingestion_dry_run_01.py",
+      "docs/FRONT_FIRST_REAL_LOCAL_INGESTION_DRY_RUN_01.md"
+    ],
+    "recommended_next_front": "FRONT-FIRST-REAL-LOCAL-MEMORY-CANARY-WRITE-01"
   }
 }
