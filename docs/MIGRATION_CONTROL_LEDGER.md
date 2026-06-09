@@ -5261,3 +5261,57 @@ FRONT-FIRST-REAL-LOCAL-INGESTION-CONTROLLED-BATCH-01
 
 ### Next Recommended Front
 FRONT-FIRST-REAL-LOCAL-INGESTION-CONTROLLED-BATCH-01
+
+## FRONT-FIRST-REAL-LOCAL-INGESTION-CONTROLLED-BATCH-01 — First Controlled Local Batch Ingestion
+- **Fecha/hora**: 2026-06-09T23:20:00+00:00
+- **Branch**: codex/own-capital-sustainable-return
+- **Functional Commit**: 525f1240 — ingestion: run first controlled local memory faiss batch
+- **Status**: COMPLETE
+
+### Scope
+- Execute first controlled real batch ingestion of 3 whitelisted local documents
+- Write 3 records to semantic memory
+- Promote 3 vectors to FAISS
+- No mass ingestion
+- No global reindex
+- No external network, connectors, trading, B8
+
+### Sources
+1. docs/REAL_EXECUTION_POLICY.md → controlled_batch_01_real_execution_policy
+2. docs/RUNTIME_RECOVERY_RUNBOOK.md → controlled_batch_01_runtime_recovery_runbook
+3. docs/FRONT_FIRST_REAL_LOCAL_MEMORY_FAISS_CANARY_01.md → controlled_batch_01_memory_faiss_canary_doc
+
+### Results
+- attempted_count: 3
+- ready_source_count: 3
+- skipped_count: 0
+- memory_written_count: 3
+- faiss_promoted_count: 3
+- already_complete_count: 0
+- failed_count: 0
+
+### Before / After
+- Memory lines: 1707 → 1710 (+3)
+- FAISS ids: 1608 → 1611 (+3)
+- FAISS index: updated (3 new vectors)
+
+### Retrieval
+All 3 records retrieved as top-1 via FAISS search for their respective queries.
+
+### Tests
+- py_compile: PASS
+- smoke tests: 25 passed / 0 failed
+
+### Files
+- brain/first_real_local_ingestion_controlled_batch.py (new)
+- tests/smoke/smoke_front_first_real_local_ingestion_controlled_batch_01.py (new)
+- docs/FRONT_FIRST_REAL_LOCAL_INGESTION_CONTROLLED_BATCH_01.md (new)
+- memory/semantic/semantic_memory.jsonl (modified)
+- memory/semantic/semantic_memory_faiss.index (modified)
+- memory/semantic/semantic_memory_faiss_ids.json (modified)
+
+### Decision
+**FIRST_CONTROLLED_LOCAL_BATCH_INGESTION_COMPLETED**
+
+### Next Recommended Front
+FRONT-CONTROLLED-BATCH-RETRIEVAL-QUALITY-EVAL-01
