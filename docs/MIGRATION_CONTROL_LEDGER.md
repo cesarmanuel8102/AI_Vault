@@ -4744,4 +4744,55 @@ FRONT-INGESTION-DRY-RUN-01
 ### Recommended Next Front
 FRONT-INGESTION-OPERATOR-REVIEW-01
 
+---
+
+## FRONT-INGESTION-OPERATOR-REVIEW-01 — Operator Review Queue Planner
+- **Status**: COMPLETE
+- **Fecha/hora**: 2026-06-09T01:50:00Z
+- **Branch**: codex/own-capital-sustainable-return
+- **Functional Commit**: c9504dd6 — ingestion: add operator review queue planner
+- **Module**: brain/ingestion_operator_review.py
+- **Dry-run module used**: brain/ingestion_dry_run.py
+
+### Scope
+- Created `brain/ingestion_operator_review.py` operator review queue planner
+- Consumes dry-run results and maps statuses to review statuses
+- Structures human decision-making for future dry-run steps
+- Does NOT execute ingestion, does NOT read content, does NOT write storage
+
+### Review Queue Summary (from 6 records)
+| Status | Count | Records |
+|--------|-------|---------|
+| pending_operator_review | 4 | local_file, uploaded_document, connector_reference, web_reference |
+| blocked | 1 | api_reference_blocked_until_credentials_policy |
+| registry_only | 1 | manual_text_low_risk |
+| not_reviewable | 0 | — |
+
+### Test Results
+- smoke_front_ingestion_operator_review_01.py: 30 passed, 0 failed
+
+### Files Changed
+- brain/ingestion_operator_review.py (new)
+- tests/smoke/smoke_front_ingestion_operator_review_01.py (new)
+- docs/FRONT_INGESTION_OPERATOR_REVIEW_01.md (new)
+
+### Guarantees
+- ingestion_executed: false
+- content_read: false
+- memory_write_executed: false
+- faiss_write_executed: false
+- network_called: false
+- connector_called: false
+- patch_application_executed: false
+- trading_executed: false
+- b8_touched: false
+- env_modified: false
+- approval_authorizes_real_ingestion: false
+
+### Decision
+**INGESTION_OPERATOR_REVIEW_QUEUE_CREATED**
+
+### Recommended Next Front
+FRONT-INGESTION-APPROVAL-DECISION-DRY-RUN-01
+
 
