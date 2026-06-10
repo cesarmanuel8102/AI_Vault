@@ -1,9 +1,9 @@
 {
-  "current_head": "c77926d",
-  "current_remote_head": "c77926d",
+  "current_head": "b7f48a5",
+  "current_remote_head": "b7f48a5",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_chat_retrieval_injection_patch_01_complete",
-  "last_applied_checkpoint": "FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-PATCH-01",
+  "migration_status": "front_chat_retrieval_injection_repair_01_complete",
+  "last_applied_checkpoint": "FRONT-CHAT-RETRIEVAL-INJECTION-REPAIR-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -104,7 +104,8 @@
     "FRONT-CHAT-ROUTE-LATENCY-STABILIZATION-01",
     "FRONT-CHAT-ROUTE-LEARNING-RETRIEVAL-INTEGRATION-VERIFY-01",
     "FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-AUTHORIZATION-01",
-    "FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-PATCH-01"
+    "FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-PATCH-01",
+    "FRONT-CHAT-RETRIEVAL-INJECTION-REPAIR-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -114,12 +115,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-CHAT-RETRIEVAL-INJECTION-REPAIR-01",
+    "name": "FRONT-CHAT-RETRIEVAL-INJECTION-REPAIR-02",
     "status": "recommended_next",
-    "reason": "Tune retrieval injection prompt format to improve marker pass rate"
+    "reason": "Further tuning of retrieval injection to improve marker pass rate"
   },
-  "ready_for_next_front": "FRONT-CHAT-RETRIEVAL-INJECTION-REPAIR-01",
-  "last_updated": "2026-06-10T22:50:20.101743Z",
+  "ready_for_next_front": "FRONT-CHAT-RETRIEVAL-INJECTION-REPAIR-02",
+  "last_updated": "2026-06-10T23:05:26.261820Z",
   "phase0_security": {
     "status": "done",
     "commits": [

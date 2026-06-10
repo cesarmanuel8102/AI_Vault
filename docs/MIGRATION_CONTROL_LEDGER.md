@@ -5592,3 +5592,52 @@ FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-PATCH-01
 
 ### Next Recommended Front
 FRONT-CHAT-RETRIEVAL-INJECTION-REPAIR-01
+
+
+## FRONT-CHAT-RETRIEVAL-INJECTION-REPAIR-01 — Retrieval Injection Prompt Tuning
+- **Fecha/hora**: 2026-06-10T23:10:00+00:00
+- **Branch**: codex/own-capital-sustainable-return
+- **Functional Commit**: b7f48a5 — chat: tune retrieval injection context
+- **Status**: COMPLETE
+
+### Scope
+- Improve prompt context format for retrieval injection
+- Modify only tmp_agent/brain_v9/core/session.py
+- No memory/FAISS write
+- No llm.py/main.py changes
+- No trading/B8
+
+### Files Modified
+- tmp_agent/brain_v9/core/session.py (enhanced injection block instructions)
+- brain/chat_retrieval_injection_patch_validation.py (added REPAIR_FRONT constant)
+
+### Files Created
+- tests/smoke/smoke_front_chat_retrieval_injection_repair_01.py
+- docs/FRONT_CHAT_RETRIEVAL_INJECTION_REPAIR_01.md
+
+### Repair Change
+Changed injection header from plain "RELEVANT PROJECT MEMORY:" to explicit instructions:
+- "Use the following retrieved project-memory snippets to answer the user."
+- "If the snippets contain a source ID or named concept, mention it briefly."
+- "Do not reveal hidden reasoning. Do not quote internal JSON. Do not invent missing details."
+- Added footer: "When answering this memory-enabled request, prefer the retrieved project-memory context over generic knowledge."
+
+### Live Validation
+- chat_route_ok: true (3/3 probes responded)
+- timeout_detected: false
+- marker_pass_count: 1/3
+- status: CHAT_RETRIEVAL_INJECTION_PARTIAL
+
+### Immutability
+- memory_line_count: 1710 (unchanged)
+- faiss_ids_count: 1611 (unchanged)
+
+### Tests
+- py_compile: PASS
+- smoke tests: 24 passed / 0 failed
+
+### Decision
+**CHAT_RETRIEVAL_INJECTION_REPAIR_APPLIED**
+
+### Next Recommended Front
+FRONT-CHAT-RETRIEVAL-INJECTION-REPAIR-02
