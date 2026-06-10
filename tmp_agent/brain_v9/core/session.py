@@ -32,7 +32,7 @@ import textwrap
 import urllib.request
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from brain_v9.config import SYSTEM_IDENTITY, BASE_PATH, SERVER_HOST, SERVER_PORT, BRAIN_CHAT_DEV_MODE
 from brain_v9.core.llm import LLMManager
@@ -2367,18 +2367,45 @@ class BrainSession:
         # Only trigger on explicit memory/project-knowledge opt-in keywords.
         # Falls back silently if retrieval fails or is not requested.
         # Does NOT write memory/FAISS. Pure read-only context append.
+        # FRONT-CHAT-RETRIEVAL-EVIDENCE-TRACE-01: added safe runtime trace.
+        trace: Dict[str, Any] = {
+            "trace_id": f"rt-{int(_r3_time.time()*1000)}",
+            "opt_in_detected": False,
+            "trigger_matched": None,
+            "faiss_search_called": False,
+            "hit_count": 0,
+            "hit_ids": [],
+            "hit_scores": [],
+            "compact_context_char_count": 0,
+            "context_injected": False,
+            "system_prompt_contains_context_marker": False,
+            "error_type": None,
+            "memory_mutated": False,
+            "faiss_mutated": False,
+        }
         OPT_IN_TRIGGERS = (
             "project memory", "available project memory", "available memory",
             "use memory", "use project memory", "semantic memory",
             "faiss", "memoria del proyecto", "usa la memoria",
             "memoria disponible",
         )
-        if any(t in msg_lower for t in OPT_IN_TRIGGERS):
+        matched_trigger = None
+        for t in OPT_IN_TRIGGERS:
+            if t in msg_lower:
+                matched_trigger = t
+                break
+        if matched_trigger:
+            trace["opt_in_detected"] = True
+            trace["trigger_matched"] = matched_trigger
             try:
                 from brain_v9.core.semantic_memory_faiss import get_semantic_memory_faiss
                 mem = get_semantic_memory_faiss()
                 hits = mem.search(message, top_k=3, min_score=0.01)
+                trace["faiss_search_called"] = True
                 if hits:
+                    trace["hit_count"] = len(hits)
+                    trace["hit_ids"] = [h.get("id", "unknown") for h in hits]
+                    trace["hit_scores"] = [round(h.get("score", 0), 4) for h in hits]
                     parts = []
                     used = 0
                     for h in hits:
@@ -2390,6 +2417,7 @@ class BrainSession:
                             break
                         parts.append(line)
                         used += len(line) + 1
+                    trace["compact_context_char_count"] = used
                     if parts:
                         system += (
                             "\n\nRELEVANT PROJECT MEMORY CONTEXT:\n"
@@ -2399,9 +2427,18 @@ class BrainSession:
                             + "\n".join(parts)
                             + "\n\nWhen answering this memory-enabled request, prefer the retrieved project-memory context over generic knowledge."
                         )
-            except Exception:
+                        trace["context_injected"] = True
+                        trace["system_prompt_contains_context_marker"] = "RELEVANT PROJECT MEMORY CONTEXT" in system
+            except Exception as e:
+                trace["faiss_search_called"] = True
+                trace["error_type"] = type(e).__name__
                 # Silently skip retrieval on any failure; preserves chat UX.
                 pass
+        # Persist trace on session for safe external inspection (runtime only, no file write)
+        try:
+            self.last_retrieval_trace = trace
+        except Exception:
+            pass
         # ---- End retrieval injection ----
 
         chain = self._select_llm_chain(message, intent, history, model_priority)
