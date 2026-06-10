@@ -5641,3 +5641,65 @@ Changed injection header from plain "RELEVANT PROJECT MEMORY:" to explicit instr
 
 ### Next Recommended Front
 FRONT-CHAT-RETRIEVAL-INJECTION-REPAIR-02
+
+
+## FRONT-CHAT-RETRIEVAL-EVIDENCE-TRACE-01 — Safe Retrieval Evidence Trace
+- **Fecha/hora**: 2026-06-10T23:50:00+00:00
+- **Branch**: codex/own-capital-sustainable-return
+- **Functional Commit**: 9b6c57f — chat: add safe retrieval evidence trace
+- **Status**: COMPLETE
+
+### Scope
+- Add safe runtime trace to session.py retrieval injection block
+- Verify trace structure exists without exposing secrets/chain-of-thought
+- No main.py/llm.py changes
+- No memory/FAISS write
+- No trading/B8
+
+### Files Modified
+- tmp_agent/brain_v9/core/session.py (safe trace instrumentation in _route_to_llm)
+
+### Files Created
+- brain/chat_retrieval_evidence_trace.py
+- tests/smoke/smoke_front_chat_retrieval_evidence_trace_01.py
+- docs/FRONT_CHAT_RETRIEVAL_EVIDENCE_TRACE_01.md
+
+### Trace Design
+Safe in-memory trace stored in self.last_retrieval_trace:
+- trace_id, opt_in_detected, trigger_matched
+- faiss_search_called, hit_count, hit_ids, hit_scores
+- compact_context_char_count, context_injected
+- system_prompt_contains_context_marker, error_type
+- memory_mutated:false, faiss_mutated:false
+
+Forbidden fields never logged:
+- chain_of_thought, raw_cot, full_system_prompt, full_retrieved_documents
+- raw_json_memory_records, secrets, env_vars, api_keys, trading_actions
+
+### Trace Accessibility
+- trace_accessible: false
+- Reason: No safe external endpoint to read session trace without modifying main.py
+
+### Code Inspection
+- trace_structure_in_code: true
+- safe_fields_present: true
+- forbidden_fields_present: false
+
+### Live Validation
+- chat_route_ok: true (3/3 probes responded)
+- timeout_detected: false
+- status: TRACE_PARTIAL_CONTEXT_INJECTION
+
+### Immutability
+- memory_line_count: 1710 (unchanged)
+- faiss_ids_count: 1611 (unchanged)
+
+### Tests
+- py_compile: PASS
+- smoke tests: 22 passed / 0 failed
+
+### Decision
+**CHAT_RETRIEVAL_EVIDENCE_TRACE_RECORDED**
+
+### Next Recommended Front
+FRONT-CHAT-SAFE-TRACE-ENDPOINT-AUTHORIZATION-01
