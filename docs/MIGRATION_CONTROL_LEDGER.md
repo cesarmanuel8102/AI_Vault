@@ -5499,3 +5499,51 @@ All 3 batch records retrieved as top-1 via FAISS:
 
 ### Next Recommended Front
 FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-AUTHORIZATION-01
+
+
+## FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-AUTHORIZATION-01 — Retrieval Injection Authorization
+- **Fecha/hora**: 2026-06-10T09:00:00+00:00
+- **Branch**: codex/own-capital-sustainable-return
+- **Functional Commit**: 297eadd — chat: authorize retrieval injection design
+- **Status**: COMPLETE
+
+### Scope
+- Prepare authorization package for injecting FAISS retrieval context into /chat
+- Planning only: no protected files modified
+- No memory/FAISS write
+- No trading/B8
+- No external network
+
+### Current /chat Flow
+- main.py:1377 -> session.chat() -> _route_to_llm() -> llm.query() -> Ollama POST
+- _route_to_llm() at line ~2275 is insertion point
+
+### Proposed Insertion Point
+- file: tmp_agent/brain_v9/core/session.py
+- function: _route_to_llm()
+- line_approx: 2280
+- action: query FAISS, compact hits, inject into system prompt
+- protected_file: true
+
+### Protected Files Requiring Authorization
+- tmp_agent/brain_v9/core/session.py (required, medium risk)
+- tmp_agent/brain_v9/core/llm.py (optional, timeout adjustment)
+- tmp_agent/brain_v9/main.py (optional, asyncio envelope adjustment)
+
+### Retrieval Injection Contract
+- read_only_memory: true
+- read_only_faiss: true
+- max_retrieval_hits: 3
+- max_context_chars: 2500
+- retrieval_summary_only: true
+- no_raw_cot: true
+- timeout_budget_s: 20
+- fallback_if_retrieval_fails: true
+- no_trading/b8/connectors/network: true
+
+### Decision
+**CHAT_RETRIEVAL_INJECTION_AUTHORIZATION_REQUIRED**
+
+### Next Recommended Front
+FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-PATCH-01
+(only after explicit user authorization to modify protected runtime files)
