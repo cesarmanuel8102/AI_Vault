@@ -5315,3 +5315,69 @@ All 3 records retrieved as top-1 via FAISS search for their respective queries.
 
 ### Next Recommended Front
 FRONT-CONTROLLED-BATCH-RETRIEVAL-QUALITY-EVAL-01
+
+
+## FRONT-CONTROLLED-BATCH-RETRIEVAL-QUALITY-EVAL-01 — Controlled Batch Retrieval Quality Evaluation
+- **Fecha/hora**: 2026-06-10T01:15:00+00:00
+- **Branch**: codex/own-capital-sustainable-return
+- **Functional Commit**: 1169768 — retrieval: evaluate controlled batch quality
+- **Status**: COMPLETE
+
+### Scope
+- Evaluate retrieval quality of 3 controlled batch records
+- Read-only: no memory write, no FAISS write, no reindex
+- No external network, connectors, trading, B8
+
+### Records Evaluated
+1. controlled_batch_01_real_execution_policy
+2. controlled_batch_01_runtime_recovery_runbook
+3. controlled_batch_01_memory_faiss_canary_doc
+
+### Query Suite
+- 15 total queries (5 per record)
+- Semantically varied paraphrases
+
+### Results
+| Metric | Value |
+|---|---|
+| total_queries | 15 |
+| top_1_pass_count | 15 |
+| top_3_pass_count | 15 |
+| top_5_pass_count | 15 |
+| top_10_pass_count | 15 |
+| top_5_pass_rate | 1.00 |
+| top_10_pass_rate | 1.00 |
+
+### Pass Criteria Met
+- Each record top-5 ≥4/5 ✅
+- Each record top-10 5/5 ✅
+- Each record top-1 ≥2/5 ✅
+- Overall top-5 rate ≥0.80 ✅
+- Overall top-10 rate =1.00 ✅
+- No memory/FAISS mutation ✅
+
+### Read-Only Confirmation
+| Item | Status |
+|---|---|
+| Memory written | ❌ No |
+| FAISS written | ❌ No |
+| Reindex | ❌ No |
+| Network externa | ❌ No |
+| Connectors | ❌ No |
+| Trading | ❌ No |
+| B8 | ❌ No |
+
+### Tests
+- py_compile: PASS
+- smoke tests: 24 passed / 0 failed
+
+### Files
+- brain/controlled_batch_retrieval_quality_eval.py (new)
+- tests/smoke/smoke_front_controlled_batch_retrieval_quality_eval_01.py (new)
+- docs/FRONT_CONTROLLED_BATCH_RETRIEVAL_QUALITY_EVAL_01.md (new)
+
+### Decision
+**CONTROLLED_BATCH_RETRIEVAL_QUALITY_EVALUATED**
+
+### Next Recommended Front
+FRONT-CHAT-ROUTE-LATENCY-STABILIZATION-01
