@@ -5547,3 +5547,48 @@ FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-AUTHORIZATION-01
 ### Next Recommended Front
 FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-PATCH-01
 (only after explicit user authorization to modify protected runtime files)
+
+
+## FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-PATCH-01 — Minimal Retrieval Injection Patch
+- **Fecha/hora**: 2026-06-10T23:00:00+00:00
+- **Branch**: codex/own-capital-sustainable-return
+- **Functional Commit**: c77926d — chat: inject retrieval context on memory opt-in
+- **Status**: COMPLETE
+
+### Scope
+- Apply minimal patch to tmp_agent/brain_v9/core/session.py
+- Add FAISS retrieval context injection on explicit opt-in keywords
+- No memory/FAISS write
+- No llm.py/main.py changes
+- No trading/B8
+
+### Files Modified
+- tmp_agent/brain_v9/core/session.py (retrieval injection block in _route_to_llm)
+
+### Files Created
+- brain/chat_retrieval_injection_patch_validation.py
+- tests/smoke/smoke_front_chat_retrieval_injection_patch_01.py
+- docs/FRONT_CHAT_ROUTE_RETRIEVAL_INJECTION_PATCH_01.md
+
+### Opt-In Triggers
+- project memory, available memory, use memory, semantic memory, faiss, memoria del proyecto, usa la memoria, memoria disponible
+
+### Live Validation
+- chat_route_ok: true (3/3 probes responded)
+- timeout_detected: false
+- marker_pass_count: 1/3
+- status: CHAT_RETRIEVAL_INJECTION_PARTIAL
+
+### Immutability
+- memory_line_count: 1710 (unchanged)
+- faiss_ids_count: 1611 (unchanged)
+
+### Tests
+- py_compile: PASS
+- smoke tests: 23 passed / 0 failed
+
+### Decision
+**CHAT_RETRIEVAL_INJECTION_PATCH_APPLIED**
+
+### Next Recommended Front
+FRONT-CHAT-RETRIEVAL-INJECTION-REPAIR-01
