@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 BATCH_FRONT = "FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-PATCH-01"
+REPAIR_FRONT = "FRONT-CHAT-RETRIEVAL-INJECTION-REPAIR-01"
 
 OPT_IN_TRIGGERS = [
     "project memory",

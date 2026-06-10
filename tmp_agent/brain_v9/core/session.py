@@ -2392,8 +2392,12 @@ class BrainSession:
                         used += len(line) + 1
                     if parts:
                         system += (
-                            "\n\nRELEVANT PROJECT MEMORY:\n"
+                            "\n\nRELEVANT PROJECT MEMORY CONTEXT:\n"
+                            + "Use the following retrieved project-memory snippets to answer the user. "
+                            + "If the snippets contain a source ID or named concept, mention it briefly. "
+                            + "Do not reveal hidden reasoning. Do not quote internal JSON. Do not invent missing details.\n\n"
                             + "\n".join(parts)
+                            + "\n\nWhen answering this memory-enabled request, prefer the retrieved project-memory context over generic knowledge."
                         )
             except Exception:
                 # Silently skip retrieval on any failure; preserves chat UX.
