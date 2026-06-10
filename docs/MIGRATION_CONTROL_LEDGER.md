@@ -5381,3 +5381,64 @@ FRONT-CONTROLLED-BATCH-RETRIEVAL-QUALITY-EVAL-01
 
 ### Next Recommended Front
 FRONT-CHAT-ROUTE-LATENCY-STABILIZATION-01
+
+
+## FRONT-CHAT-ROUTE-LATENCY-STABILIZATION-01 — Chat Route Latency Diagnostics & Stabilization Policy
+- **Fecha/hora**: 2026-06-10T07:45:00+00:00
+- **Branch**: codex/own-capital-sustainable-return
+- **Functional Commit**: 9c21c91 — chat: add route latency diagnostics and stabilization policy
+- **Status**: COMPLETE
+
+### Scope
+- Diagnose /chat latency without modifying protected runtime files
+- Create read-only diagnostic module
+- Create stabilization policy module with compact-context builder and fallback response
+- No memory/FAISS write
+- No trading/B8
+- No external network (localhost only for live test)
+
+### Discovery
+- /chat defined at tmp_agent/brain_v9/main.py line 1377
+- Handler: async def chat(req: ChatRequest) at line 1378
+- Flow: main.py → session.chat() → _route_to_llm() → llm.query() → aiohttp POST to Ollama
+- Timeout layers: 30s envelope (main.py) → 12s envelope (session.py) → 60–90s per-model (llm.py)
+- Standard chat does NOT trigger semantic_memory_faiss.search()
+
+### Service Health
+- Port 8090 active, healthy
+- /chat responds successfully under 15s
+- No timeout detected
+
+### Diagnosis
+- status: CHAT_ROUTE_OK
+- service_running: true
+- chat_route_found: true
+- chat_route_ok: true
+- timeout_detected: false
+- protected_runtime_change_required: false
+
+### Read-Only Confirmation
+| Item | Status |
+|---|---|
+| Memory written | ❌ No |
+| FAISS written | ❌ No |
+| Protected files modified | ❌ No |
+| Network externa | ❌ No |
+| Trading | ❌ No |
+| B8 | ❌ No |
+
+### Tests
+- py_compile: PASS
+- smoke tests: 24 passed / 0 failed
+
+### Files
+- brain/chat_route_latency_diagnostic.py (new)
+- brain/chat_route_latency_stabilization.py (new)
+- tests/smoke/smoke_front_chat_route_latency_stabilization_01.py (new)
+- docs/FRONT_CHAT_ROUTE_LATENCY_STABILIZATION_01.md (new)
+
+### Decision
+**CHAT_ROUTE_LATENCY_STABILIZATION_DIAGNOSED**
+
+### Next Recommended Front
+FRONT-CHAT-ROUTE-LEARNING-RETRIEVAL-INTEGRATION-VERIFY-01

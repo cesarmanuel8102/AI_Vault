@@ -1,9 +1,9 @@
 {
-  "current_head": "1169768",
-  "current_remote_head": "1169768",
+  "current_head": "9c21c91",
+  "current_remote_head": "9c21c91",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_controlled_batch_retrieval_quality_eval_01_complete",
-  "last_applied_checkpoint": "FRONT-CONTROLLED-BATCH-RETRIEVAL-QUALITY-EVAL-01",
+  "migration_status": "front_chat_route_latency_stabilization_01_complete",
+  "last_applied_checkpoint": "FRONT-CHAT-ROUTE-LATENCY-STABILIZATION-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -100,7 +100,8 @@
     "FRONT-FIRST-REAL-LOCAL-MEMORY-FAISS-CANARY-01",
     "FRONT-BRAIN-LEARNING-VERIFICATION-CHAT-AND-DIRECT-01",
     "FRONT-FIRST-REAL-LOCAL-INGESTION-CONTROLLED-BATCH-01",
-    "FRONT-CONTROLLED-BATCH-RETRIEVAL-QUALITY-EVAL-01"
+    "FRONT-CONTROLLED-BATCH-RETRIEVAL-QUALITY-EVAL-01",
+    "FRONT-CHAT-ROUTE-LATENCY-STABILIZATION-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -110,12 +111,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-CHAT-ROUTE-LATENCY-STABILIZATION-01",
+    "name": "FRONT-CHAT-ROUTE-LEARNING-RETRIEVAL-INTEGRATION-VERIFY-01",
     "status": "recommended_next",
-    "reason": "Stabilize chat route latency after retrieval quality confirmation"
+    "reason": "Verify controlled batch retrieval injects safely into chat context"
   },
-  "ready_for_next_front": "FRONT-CHAT-ROUTE-LATENCY-STABILIZATION-01",
-  "last_updated": "2026-06-10T01:16:29.193010Z",
+  "ready_for_next_front": "FRONT-CHAT-ROUTE-LEARNING-RETRIEVAL-INTEGRATION-VERIFY-01",
+  "last_updated": "2026-06-10T07:43:38.309896Z",
   "phase0_security": {
     "status": "done",
     "commits": [
