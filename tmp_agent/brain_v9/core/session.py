@@ -2362,6 +2362,44 @@ class BrainSession:
                 "Esto convierte una refusal opaca en una guia accionable."
             )
 
+        # ---- FAISS retrieval context injection (opt-in only) ----
+        # FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-PATCH-01
+        # Only trigger on explicit memory/project-knowledge opt-in keywords.
+        # Falls back silently if retrieval fails or is not requested.
+        # Does NOT write memory/FAISS. Pure read-only context append.
+        OPT_IN_TRIGGERS = (
+            "project memory", "available project memory", "available memory",
+            "use memory", "use project memory", "semantic memory",
+            "faiss", "memoria del proyecto", "usa la memoria",
+            "memoria disponible",
+        )
+        if any(t in msg_lower for t in OPT_IN_TRIGGERS):
+            try:
+                from brain_v9.core.semantic_memory_faiss import get_semantic_memory_faiss
+                mem = get_semantic_memory_faiss()
+                hits = mem.search(message, top_k=3, min_score=0.01)
+                if hits:
+                    parts = []
+                    used = 0
+                    for h in hits:
+                        sid = h.get("id", "unknown")
+                        score = round(h.get("score", 0), 4)
+                        snippet = str(h.get("snippet", ""))[:300]
+                        line = f"- source={sid} score={score}: {snippet}"
+                        if used + len(line) + 1 > 2500:
+                            break
+                        parts.append(line)
+                        used += len(line) + 1
+                    if parts:
+                        system += (
+                            "\n\nRELEVANT PROJECT MEMORY:\n"
+                            + "\n".join(parts)
+                        )
+            except Exception:
+                # Silently skip retrieval on any failure; preserves chat UX.
+                pass
+        # ---- End retrieval injection ----
+
         chain = self._select_llm_chain(message, intent, history, model_priority)
 
         # Token-aware history truncation (replaces old history[-20:])
