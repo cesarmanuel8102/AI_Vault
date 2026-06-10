@@ -5442,3 +5442,60 @@ FRONT-CHAT-ROUTE-LATENCY-STABILIZATION-01
 
 ### Next Recommended Front
 FRONT-CHAT-ROUTE-LEARNING-RETRIEVAL-INTEGRATION-VERIFY-01
+
+
+## FRONT-CHAT-ROUTE-LEARNING-RETRIEVAL-INTEGRATION-VERIFY-01 — Chat Learning Retrieval Integration Verification
+- **Fecha/hora**: 2026-06-10T08:45:00+00:00
+- **Branch**: codex/own-capital-sustainable-return
+- **Functional Commit**: 7fcf47d — chat: verify learning retrieval integration
+- **Status**: COMPLETE
+
+### Scope
+- Verify whether /chat incorporates learned semantic memory
+- Read-only: no memory/FAISS write
+- No protected files modified
+- No trading/B8
+- Localhost only
+
+### Direct Retrieval Control
+All 3 batch records retrieved as top-1 via FAISS:
+- controlled_batch_01_real_execution_policy: rank=1, score=0.7538
+- controlled_batch_01_runtime_recovery_runbook: rank=1, score=0.7091
+- controlled_batch_01_memory_faiss_canary_doc: rank=1, score=0.7243
+
+### Live Chat Probes
+- Probe 1 (real execution policy): 200 OK, marker_pass=false
+- Probe 2 (runtime recovery): 200 OK, marker_pass=false
+- Probe 3 (memory FAISS canary): 200 OK, marker_pass=false
+
+### Result
+- chat_route_ok: true
+- timeout_detected: false
+- retrieval_confirmed: false
+- status: CHAT_RESPONDS_BUT_RETRIEVAL_NOT_CONFIRMED
+- protected_runtime_change_required: true
+
+### Read-Only Confirmation
+| Item | Status |
+|---|---|
+| Memory written | ❌ No |
+| FAISS written | ❌ No |
+| Protected files modified | ❌ No |
+| Network externa | ❌ No |
+| Trading | ❌ No |
+| B8 | ❌ No |
+
+### Tests
+- py_compile: PASS
+- smoke tests: 23 passed / 0 failed
+
+### Files
+- brain/chat_learning_retrieval_integration_verify.py (new)
+- tests/smoke/smoke_front_chat_learning_retrieval_integration_verify_01.py (new)
+- docs/FRONT_CHAT_ROUTE_LEARNING_RETRIEVAL_INTEGRATION_VERIFY_01.md (new)
+
+### Decision
+**CHAT_ROUTE_LEARNING_RETRIEVAL_INTEGRATION_VERIFIED**
+
+### Next Recommended Front
+FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-AUTHORIZATION-01

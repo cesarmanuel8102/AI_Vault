@@ -1,9 +1,9 @@
 {
-  "current_head": "9c21c91",
-  "current_remote_head": "9c21c91",
+  "current_head": "7fcf47d",
+  "current_remote_head": "7fcf47d",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_chat_route_latency_stabilization_01_complete",
-  "last_applied_checkpoint": "FRONT-CHAT-ROUTE-LATENCY-STABILIZATION-01",
+  "migration_status": "front_chat_learning_retrieval_integration_verify_01_complete",
+  "last_applied_checkpoint": "FRONT-CHAT-ROUTE-LEARNING-RETRIEVAL-INTEGRATION-VERIFY-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -101,7 +101,8 @@
     "FRONT-BRAIN-LEARNING-VERIFICATION-CHAT-AND-DIRECT-01",
     "FRONT-FIRST-REAL-LOCAL-INGESTION-CONTROLLED-BATCH-01",
     "FRONT-CONTROLLED-BATCH-RETRIEVAL-QUALITY-EVAL-01",
-    "FRONT-CHAT-ROUTE-LATENCY-STABILIZATION-01"
+    "FRONT-CHAT-ROUTE-LATENCY-STABILIZATION-01",
+    "FRONT-CHAT-ROUTE-LEARNING-RETRIEVAL-INTEGRATION-VERIFY-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -111,12 +112,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-CHAT-ROUTE-LEARNING-RETRIEVAL-INTEGRATION-VERIFY-01",
+    "name": "FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-AUTHORIZATION-01",
     "status": "recommended_next",
-    "reason": "Verify controlled batch retrieval injects safely into chat context"
+    "reason": "Authorize protected runtime changes to inject retrieval context into /chat"
   },
-  "ready_for_next_front": "FRONT-CHAT-ROUTE-LEARNING-RETRIEVAL-INTEGRATION-VERIFY-01",
-  "last_updated": "2026-06-10T07:43:38.309896Z",
+  "ready_for_next_front": "FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-AUTHORIZATION-01",
+  "last_updated": "2026-06-10T08:28:38.724693Z",
   "phase0_security": {
     "status": "done",
     "commits": [
