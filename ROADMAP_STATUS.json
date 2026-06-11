@@ -1,9 +1,9 @@
 {
-  "current_head": "9a48b14",
+  "current_head": "ea44a3b",
   "current_remote_head": "9b6c57f",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_external_curated_learning_memory_rag_knowledge_architecture_01_complete",
-  "last_applied_checkpoint": "FRONT-EXTERNAL-CURATED-LEARNING-MEMORY-RAG-KNOWLEDGE-ARCHITECTURE-01",
+  "migration_status": "front_external_curated_learning_security_governance_sandboxing_01_complete",
+  "last_applied_checkpoint": "FRONT-EXTERNAL-CURATED-LEARNING-SECURITY-GOVERNANCE-SANDBOXING-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -109,7 +109,8 @@
     "FRONT-CHAT-RETRIEVAL-EVIDENCE-TRACE-01",
     "FRONT-EXTERNAL-CURATED-LEARNING-AGENTIC-SYSTEMS-01",
     "FRONT-EXTERNAL-CURATED-LEARNING-EVALUATION-BENCHMARKING-01",
-    "FRONT-EXTERNAL-CURATED-LEARNING-MEMORY-RAG-KNOWLEDGE-ARCHITECTURE-01"
+    "FRONT-EXTERNAL-CURATED-LEARNING-MEMORY-RAG-KNOWLEDGE-ARCHITECTURE-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-SECURITY-GOVERNANCE-SANDBOXING-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -119,12 +120,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-EXTERNAL-CURATED-LEARNING-SECURITY-GOVERNANCE-SANDBOXING-01",
+    "name": "FRONT-EXTERNAL-CURATED-LEARNING-AUTONOMOUS-CODING-PATCH-GENERATION-01",
     "status": "recommended_next",
-    "reason": "Curate safe, attributable sources for Security, Governance, and Sandboxing"
+    "reason": "Curate safe, attributable sources for Autonomous Coding and Patch Generation"
   },
-  "ready_for_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-SECURITY-GOVERNANCE-SANDBOXING-01",
-  "last_updated": "2026-06-11T01:36:40.680709+00:00",
+  "ready_for_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-AUTONOMOUS-CODING-PATCH-GENERATION-01",
+  "last_updated": "2026-06-11T04:37:55.017544+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2226,5 +2227,36 @@
       "docs/FRONT_EXTERNAL_CURATED_LEARNING_MEMORY_RAG_KNOWLEDGE_ARCHITECTURE_01.md"
     ],
     "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-SECURITY-GOVERNANCE-SANDBOXING-01"
+  },
+  "front_external_curated_learning_security_governance_sandboxing_01": {
+    "status": "done",
+    "commit": "ea44a3b",
+    "remote_synced": true,
+    "purpose": "Create canonical curated source plan for Brain to learn Security / Governance / Sandboxing safely",
+    "decision": "EXTERNAL_CURATED_LEARNING_SECURITY_GOVERNANCE_SANDBOXING_PLAN_CREATED",
+    "domain": "security_governance_sandboxing",
+    "source_count": 25,
+    "taxonomy_count": 22,
+    "capability_map_count": 18,
+    "source_groups": [
+      "paper",
+      "standard",
+      "repo",
+      "docs",
+      "framework"
+    ],
+    "accepted_count": 24,
+    "hold_count": 0,
+    "rejected_count": 1,
+    "ingestion_status": "dry_run_only",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "tests_passed": true,
+    "files": [
+      "brain/external_curated_learning_security_governance_sandboxing.py",
+      "tests/smoke/smoke_front_external_curated_learning_security_governance_sandboxing_01.py",
+      "docs/FRONT_EXTERNAL_CURATED_LEARNING_SECURITY_GOVERNANCE_SANDBOXING_01.md"
+    ],
+    "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-AUTONOMOUS-CODING-PATCH-GENERATION-01"
   }
 }

@@ -5873,3 +5873,61 @@ Create a canonical curated source plan for Brain to learn Memory / RAG / Knowled
 FRONT-EXTERNAL-CURATED-LEARNING-SECURITY-GOVERNANCE-SANDBOXING-01
 
 ---
+
+## FRONT-EXTERNAL-CURATED-LEARNING-SECURITY-GOVERNANCE-SANDBOXING-01
+
+**Timestamp**: 2026-06-11T04:30Z
+**Status**: COMPLETE
+**Branch**: codex/own-capital-sustainable-return
+**Functional Commit**: ea44a3b
+
+### Objective
+Create a canonical curated source plan for Brain to learn Security / Governance / Sandboxing safely, without ingesting into memory or FAISS.
+
+### Scope
+- Curation dry-run only
+- No memory writes
+- No FAISS writes
+- No protected runtime modifications
+- No full paper/repo downloads
+- No offensive security content
+
+### Outputs
+- `brain/external_curated_learning_security_governance_sandboxing.py` — curation module
+- `tests/smoke/smoke_front_external_curated_learning_security_governance_sandboxing_01.py` — 41 tests
+- `docs/FRONT_EXTERNAL_CURATED_LEARNING_SECURITY_GOVERNANCE_SANDBOXING_01.md` — canonical doc
+
+### Source Summary
+- **Total sources**: 25
+- **Taxonomy categories**: 22
+- **Capability map entries**: 18
+- **Accepted**: 24
+- **Hold**: 0
+- **Rejected**: 1 (Unknown Security Blog — no attribution)
+- **Source groups**: paper, standard, repo, docs, framework
+
+### Key Design Decisions
+- Safety rubric expanded to 18 dimensions (max 90) to capture security-specific risks
+- Added `security_misuse_risk` field to every source to prevent offensive content emphasis
+- Added `brain_governance_capability_map()` with 18 capability targets
+- Cross-source contrast includes 9 pairs covering standards, frameworks, sandboxing, and supply-chain
+- All sources are defensive-only; no exploit/malware emphasis
+
+### Immutability
+- memory_line_count: 1710 (unchanged)
+- faiss_ids_count: 1611 (unchanged)
+- memory_sha: 655d32381e38ada348c3f201c50484551e02d98ae0869fa53826912c6973ab54 (unchanged)
+- faiss_index_sha: b7b755c753cd4017344fb18d51e2ff3d81766151ac3a3dbf753c1004f7d16484 (unchanged)
+- faiss_ids_sha: 004362363f7a392fd15193392f7fac592e333355e6cc28ba665d3cfb5e9368c1 (unchanged)
+
+### Tests
+- py_compile: PASS
+- smoke tests: 41 passed / 0 failed
+
+### Decision
+**DRY_RUN_CURATED_PLAN_COMPLETE**
+
+### Next Recommended Front
+FRONT-EXTERNAL-CURATED-LEARNING-AUTONOMOUS-CODING-PATCH-GENERATION-01
+
+---
