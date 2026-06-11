@@ -1,9 +1,9 @@
 {
-  "current_head": "a3cc81b",
+  "current_head": "68ba828",
   "current_remote_head": "9b6c57f",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_external_curated_learning_agentic_systems_01_complete",
-  "last_applied_checkpoint": "FRONT-EXTERNAL-CURATED-LEARNING-AGENTIC-SYSTEMS-01",
+  "migration_status": "front_external_curated_learning_evaluation_benchmarking_01_complete",
+  "last_applied_checkpoint": "FRONT-EXTERNAL-CURATED-LEARNING-EVALUATION-BENCHMARKING-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -107,7 +107,8 @@
     "FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-PATCH-01",
     "FRONT-CHAT-RETRIEVAL-INJECTION-REPAIR-01",
     "FRONT-CHAT-RETRIEVAL-EVIDENCE-TRACE-01",
-    "FRONT-EXTERNAL-CURATED-LEARNING-AGENTIC-SYSTEMS-01"
+    "FRONT-EXTERNAL-CURATED-LEARNING-AGENTIC-SYSTEMS-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-EVALUATION-BENCHMARKING-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -117,12 +118,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-EXTERNAL-CURATED-LEARNING-EVALUATION-BENCHMARKING-01",
+    "name": "FRONT-EXTERNAL-CURATED-LEARNING-MEMORY-RAG-KNOWLEDGE-ARCHITECTURE-01",
     "status": "recommended_next",
-    "reason": "Curate safe, attributable sources for evaluating and benchmarking agent behavior"
+    "reason": "Curate safe, attributable sources for Memory, RAG, and Knowledge Architecture"
   },
-  "ready_for_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-EVALUATION-BENCHMARKING-01",
-  "last_updated": "2026-06-11T00:27:47.726844+00:00",
+  "ready_for_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-MEMORY-RAG-KNOWLEDGE-ARCHITECTURE-01",
+  "last_updated": "2026-06-11T01:25:33.821487+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2164,5 +2165,35 @@
       "docs/FRONT_EXTERNAL_CURATED_LEARNING_AGENTIC_SYSTEMS_01.md"
     ],
     "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-EVALUATION-BENCHMARKING-01"
+  },
+  "front_external_curated_learning_evaluation_benchmarking_01": {
+    "status": "done",
+    "commit": "68ba828",
+    "remote_synced": true,
+    "purpose": "Create canonical curated source plan for Brain to learn Evaluation and Benchmarking safely",
+    "decision": "EXTERNAL_CURATED_LEARNING_EVALUATION_BENCHMARKING_PLAN_CREATED",
+    "domain": "evaluation_benchmarking",
+    "source_count": 24,
+    "taxonomy_count": 15,
+    "capability_map_count": 12,
+    "source_groups": [
+      "paper",
+      "repo",
+      "docs",
+      "benchmark"
+    ],
+    "accepted_count": 22,
+    "hold_count": 1,
+    "rejected_count": 1,
+    "ingestion_status": "dry_run_only",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "tests_passed": true,
+    "files": [
+      "brain/external_curated_learning_evaluation_benchmarking.py",
+      "tests/smoke/smoke_front_external_curated_learning_evaluation_benchmarking_01.py",
+      "docs/FRONT_EXTERNAL_CURATED_LEARNING_EVALUATION_BENCHMARKING_01.md"
+    ],
+    "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-MEMORY-RAG-KNOWLEDGE-ARCHITECTURE-01"
   }
 }

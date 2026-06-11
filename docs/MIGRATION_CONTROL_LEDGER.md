@@ -5758,4 +5758,62 @@ Create the first canonical curated source plan for Brain to learn Agentic System
 **DRY_RUN_CURATED_PLAN_COMPLETE**
 
 ### Next Recommended Front
-FRONT-CHAT-SAFE-TRACE-ENDPOINT-AUTHORIZATION-01
+FRONT-EXTERNAL-CURATED-LEARNING-EVALUATION-BENCHMARKING-01
+
+---
+
+## FRONT-EXTERNAL-CURATED-LEARNING-EVALUATION-BENCHMARKING-01
+
+**Timestamp**: 2026-06-11T01:20Z
+**Status**: COMPLETE
+**Branch**: codex/own-capital-sustainable-return
+**Functional Commit**: 68ba828
+
+### Objective
+Create a canonical curated source plan for Brain to learn Evaluation & Benchmarking safely, without ingesting into memory or FAISS.
+
+### Scope
+- Curation dry-run only
+- No memory writes
+- No FAISS writes
+- No protected runtime modifications
+- No full paper/repo downloads
+
+### Outputs
+- `brain/external_curated_learning_evaluation_benchmarking.py` — curation module
+- `tests/smoke/smoke_front_external_curated_learning_evaluation_benchmarking_01.py` — 31 tests
+- `docs/FRONT_EXTERNAL_CURATED_LEARNING_EVALUATION_BENCHMARKING_01.md` — canonical doc
+
+### Source Summary
+- **Total sources**: 24
+- **Taxonomy categories**: 15
+- **Capability map entries**: 12
+- **Accepted**: 22
+- **Hold**: 1 (MiniWoB++ — maintenance mode, less representative)
+- **Rejected**: 1 (Unknown Eval Blog — no attribution)
+- **Source groups**: paper, repo, docs, benchmark
+
+### Key Design Decisions
+- Safety rubric expanded to 15 dimensions (max 75) to capture evaluation-specific risks
+- Added `metric_gaming_risk` field to every source
+- Added `brain_evaluation_capability_map()` to explicitly link sources to Brain capabilities
+- Cross-source contrast includes 8 pairs covering paper/repo, modern/older, framework/benchmark
+
+### Immutability
+- memory_line_count: 1710 (unchanged)
+- faiss_ids_count: 1611 (unchanged)
+- memory_sha: 655d32381e38ada348c3f201c50484551e02d98ae0869fa53826912c6973ab54 (unchanged)
+- faiss_index_sha: b7b755c753cd4017344fb18d51e2ff3d81766151ac3a3dbf753c1004f7d16484 (unchanged)
+- faiss_ids_sha: 004362363f7a392fd15193392f7fac592e333355e6cc28ba665d3cfb5e9368c1 (unchanged)
+
+### Tests
+- py_compile: PASS
+- smoke tests: 31 passed / 0 failed
+
+### Decision
+**DRY_RUN_CURATED_PLAN_COMPLETE**
+
+### Next Recommended Front
+FRONT-EXTERNAL-CURATED-LEARNING-MEMORY-RAG-KNOWLEDGE-ARCHITECTURE-01
+
+---
