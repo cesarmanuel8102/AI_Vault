@@ -6,7 +6,6 @@ NUNCA hardcodear rutas o credenciales aquí.
 import json
 import logging
 import os
-import platform
 from pathlib import Path
 from typing import Dict
 
@@ -41,10 +40,7 @@ def _load_env_file(path: Path) -> None:
         _log.debug("_load_env_file failed for %s: %s", path, exc)
 
 # ─── Rutas base ──────────────────────────────────────────────────────────────
-_default_base = (
-    "C:/AI_VAULT" if platform.system() == "Windows"
-    else str(Path.home() / "AI_VAULT")
-)
+_default_base = str(Path(__file__).resolve().parent.parent.parent)
 BASE_PATH   = Path(os.getenv("BRAIN_BASE_PATH", _default_base))
 _load_env_file(BASE_PATH / ".env")
 MEMORY_PATH = BASE_PATH / "tmp_agent" / "state" / "memory"
