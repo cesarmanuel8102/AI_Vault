@@ -5702,4 +5702,60 @@ Forbidden fields never logged:
 **CHAT_RETRIEVAL_EVIDENCE_TRACE_RECORDED**
 
 ### Next Recommended Front
+- FRONT-CHAT-SAFE-TRACE-ENDPOINT-AUTHORIZATION-01
+
+---
+
+## FRONT-EXTERNAL-CURATED-LEARNING-AGENTIC-SYSTEMS-01
+
+**Timestamp**: 2026-06-11T00:05Z
+**Status**: COMPLETE
+**Branch**: codex/own-capital-sustainable-return
+**Functional Commit**: a3cc81b
+
+### Objective
+Create the first canonical curated source plan for Brain to learn Agentic Systems safely, without ingesting into memory or FAISS.
+
+### Scope
+- Curation dry-run only
+- No memory writes
+- No FAISS writes
+- No protected runtime modifications
+- No full paper/repo downloads
+
+### Outputs
+- `brain/external_curated_learning_agentic_systems.py` — curation module
+- `tests/smoke/smoke_front_external_curated_learning_agentic_systems_01.py` — 28 tests
+- `docs/FRONT_EXTERNAL_CURATED_LEARNING_AGENTIC_SYSTEMS_01.md` — canonical doc
+
+### Source Summary
+- **Total sources**: 21
+- **Taxonomy categories**: 14
+- **Accepted**: 19
+- **Hold**: 1 (OpenAI Swarm — archived, superseded)
+- **Rejected**: 1 (AgentArena — unverifiable)
+- **Source groups**: paper, repo, docs, benchmark
+
+### Key Web Metadata Updates
+- AutoGen: maintenance status changed to "maintenance" (Microsoft official notice, 2025)
+- SWE-agent: superseded by mini-swe-agent (repo README, 2025)
+- LangGraph: 34.4k stars, very active (last release Jun 10 2026)
+- MetaGPT: 68.7k stars, active
+- ReAct arXiv: title and authors verified
+
+### Immutability
+- memory_line_count: 1710 (unchanged)
+- faiss_ids_count: 1611 (unchanged)
+- memory_sha: 655d32381e38ada348c3f201c50484551e02d98ae0869fa53826912c6973ab54 (unchanged)
+- faiss_index_sha: b7b755c753cd4017344fb18d51e2ff3d81766151ac3a3dbf753c1004f7d16484 (unchanged)
+- faiss_ids_sha: 004362363f7a392fd15193392f7fac592e333355e6cc28ba665d3cfb5e9368c1 (unchanged)
+
+### Tests
+- py_compile: PASS
+- smoke tests: 28 passed / 0 failed
+
+### Decision
+**DRY_RUN_CURATED_PLAN_COMPLETE**
+
+### Next Recommended Front
 FRONT-CHAT-SAFE-TRACE-ENDPOINT-AUTHORIZATION-01

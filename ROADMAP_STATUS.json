@@ -1,9 +1,9 @@
 {
-  "current_head": "9b6c57f",
+  "current_head": "a3cc81b",
   "current_remote_head": "9b6c57f",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_chat_retrieval_evidence_trace_01_complete",
-  "last_applied_checkpoint": "FRONT-CHAT-RETRIEVAL-EVIDENCE-TRACE-01",
+  "migration_status": "front_external_curated_learning_agentic_systems_01_complete",
+  "last_applied_checkpoint": "FRONT-EXTERNAL-CURATED-LEARNING-AGENTIC-SYSTEMS-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -106,7 +106,8 @@
     "FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-AUTHORIZATION-01",
     "FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-PATCH-01",
     "FRONT-CHAT-RETRIEVAL-INJECTION-REPAIR-01",
-    "FRONT-CHAT-RETRIEVAL-EVIDENCE-TRACE-01"
+    "FRONT-CHAT-RETRIEVAL-EVIDENCE-TRACE-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-AGENTIC-SYSTEMS-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -116,12 +117,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-CHAT-SAFE-TRACE-ENDPOINT-AUTHORIZATION-01",
+    "name": "FRONT-EXTERNAL-CURATED-LEARNING-EVALUATION-BENCHMARKING-01",
     "status": "recommended_next",
-    "reason": "Authorize adding a safe debug endpoint in main.py to read session trace without exposing secrets or chain-of-thought"
+    "reason": "Curate safe, attributable sources for evaluating and benchmarking agent behavior"
   },
-  "ready_for_next_front": "FRONT-CHAT-SAFE-TRACE-ENDPOINT-AUTHORIZATION-01",
-  "last_updated": "2026-06-10T23:48:11.182896Z",
+  "ready_for_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-EVALUATION-BENCHMARKING-01",
+  "last_updated": "2026-06-11T00:27:47.726844+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2134,5 +2135,34 @@
       "memory/semantic/semantic_memory_faiss_ids.json"
     ],
     "recommended_next_front": "FRONT-CONTROLLED-BATCH-RETRIEVAL-QUALITY-EVAL-01"
+  },
+  "front_external_curated_learning_agentic_systems_01": {
+    "status": "done",
+    "commit": "a3cc81b",
+    "remote_synced": true,
+    "purpose": "Create first canonical curated source plan for Brain to learn Agentic Systems safely",
+    "decision": "EXTERNAL_CURATED_LEARNING_AGENTIC_SYSTEMS_PLAN_CREATED",
+    "domain": "agentic_systems",
+    "source_count": 21,
+    "taxonomy_count": 14,
+    "source_groups": [
+      "paper",
+      "repo",
+      "docs",
+      "benchmark"
+    ],
+    "accepted_count": 19,
+    "hold_count": 1,
+    "rejected_count": 1,
+    "ingestion_status": "dry_run_only",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "tests_passed": true,
+    "files": [
+      "brain/external_curated_learning_agentic_systems.py",
+      "tests/smoke/smoke_front_external_curated_learning_agentic_systems_01.py",
+      "docs/FRONT_EXTERNAL_CURATED_LEARNING_AGENTIC_SYSTEMS_01.md"
+    ],
+    "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-EVALUATION-BENCHMARKING-01"
   }
 }
