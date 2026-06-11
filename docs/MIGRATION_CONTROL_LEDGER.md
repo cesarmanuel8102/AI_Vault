@@ -5989,3 +5989,67 @@ Create a canonical curated source plan for Brain to learn Autonomous Coding and 
 
 ### Next Recommended Front
 FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01 — **LOCKED**: user must explicitly approve before executing.
+
+---
+
+## FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01
+
+**Timestamp**: 2026-06-11T05:33Z
+**Status**: COMPLETE
+**Branch**: codex/own-capital-sustainable-return
+**Functional Commit**: 811265c
+
+### Objective
+Create a canonical curated source plan for Brain to learn Financial Motor / Trading Intelligence safely, without ingesting into memory or FAISS, without executing trades, and without connecting to brokers.
+
+### Scope
+- Curation dry-run only
+- No memory writes
+- No FAISS writes
+- No protected runtime modifications
+- No full paper/repo downloads
+- No real trading execution
+- No broker API connections
+- No executable strategies
+- No personalized financial advice
+
+### Outputs
+- `brain/external_curated_learning_financial_motor_trading_intelligence.py` — curation module
+- `tests/smoke/smoke_front_external_curated_learning_financial_motor_trading_intelligence_01.py` — 63 tests
+- `docs/FRONT_EXTERNAL_CURATED_LEARNING_FINANCIAL_MOTOR_TRADING_INTELLIGENCE_01.md` — canonical doc
+
+### Source Summary
+- **Total sources**: 28
+- **Taxonomy categories**: 32
+- **Capability map entries**: 24
+- **Accepted**: 27
+- **Hold**: 0
+- **Rejected**: 1 (Unknown Trading Blog — guaranteed returns, no attribution)
+- **Source groups**: academic_paper, book_metadata, regulatory, repo, docs, framework, internal_reference, standard
+
+### Key Design Decisions
+- Safety rubric expanded to 25 dimensions (max 125) to capture financial-specific risks
+- Added `trading_execution_risk`, `personalized_advice_risk`, `overfitting_risk`, `data_quality_risk` to every source
+- Added `brain_financial_capability_map()` with 24 capability targets
+- Cross-source contrast includes 10 pairs covering academic vs practitioner, framework comparisons, regulatory sources, broker APIs, and internal governance
+- All broker/API docs are governance-reference-only in this front
+- Books and copyrighted papers are metadata-only
+- yfinance accepted with data_quality_risk=high as cautionary example
+- Unknown Trading Blog auto-rejected for guaranteed returns and no attribution
+
+### Immutability
+- memory_line_count: 1710 (unchanged)
+- faiss_ids_count: 1611 (unchanged)
+- memory_sha: 655d32381e38ada348c3f201c50484551e02d98ae0869fa53826912c6973ab54 (unchanged)
+- faiss_index_sha: b7b755c753cd4017344fb18d51e2ff3d81766151ac3a3dbf753c1004f7d16484 (unchanged)
+- faiss_ids_sha: 004362363f7a392fd15193392f7fac592e333355e6cc28ba665d3cfb5e9368c1 (unchanged)
+
+### Tests
+- py_compile: PASS
+- smoke tests: 63 passed / 0 failed
+
+### Decision
+**DRY_RUN_CURATED_PLAN_COMPLETE**
+
+### Next Recommended Front
+FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01 — **LOCKED**: user must explicitly approve before executing.

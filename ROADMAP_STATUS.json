@@ -1,9 +1,9 @@
 {
-  "current_head": "ac1d51e",
-  "current_remote_head": "ac1d51e",
+  "current_head": "811265c",
+  "current_remote_head": "811265c",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_external_curated_learning_autonomous_coding_patch_generation_01_complete",
-  "last_applied_checkpoint": "FRONT-EXTERNAL-CURATED-LEARNING-AUTONOMOUS-CODING-PATCH-GENERATION-01",
+  "migration_status": "front_external_curated_learning_financial_motor_trading_intelligence_01_complete",
+  "last_applied_checkpoint": "FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -111,11 +111,12 @@
     "FRONT-EXTERNAL-CURATED-LEARNING-EVALUATION-BENCHMARKING-01",
     "FRONT-EXTERNAL-CURATED-LEARNING-MEMORY-RAG-KNOWLEDGE-ARCHITECTURE-01",
     "FRONT-EXTERNAL-CURATED-LEARNING-SECURITY-GOVERNANCE-SANDBOXING-01",
-    "FRONT-EXTERNAL-CURATED-LEARNING-AUTONOMOUS-CODING-PATCH-GENERATION-01"
+    "FRONT-EXTERNAL-CURATED-LEARNING-AUTONOMOUS-CODING-PATCH-GENERATION-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
-    "FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01"
+    "FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01"
   ],
   "protected_out_of_scope": [
     "memory/semantic",
@@ -123,12 +124,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01",
+    "name": "FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01",
     "status": "LOCKED",
-    "reason": "User must explicitly approve before executing the Financial Motor / Trading Intelligence curated learning front."
+    "reason": "User must explicitly approve before executing the Controlled Ingestion / Authorization curated learning front."
   },
-  "ready_for_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01",
-  "last_updated": "2026-06-11T04:51:00.000000+00:00",
+  "ready_for_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01",
+  "last_updated": "2026-06-11T05:35:00.000000+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2292,5 +2293,39 @@
       "tmp_agent/front_external_curated_learning_autonomous_coding_patch_generation_01/canonical_curated_learning_plan.json"
     ],
     "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01"
+  },
+  "front_external_curated_learning_financial_motor_trading_intelligence_01": {
+    "status": "done",
+    "commit": "811265c",
+    "remote_synced": true,
+    "purpose": "Create canonical curated source plan for Brain to learn Financial Motor / Trading Intelligence safely",
+    "decision": "EXTERNAL_CURATED_LEARNING_FINANCIAL_MOTOR_TRADING_INTELLIGENCE_PLAN_CREATED",
+    "domain": "financial_motor_trading_intelligence",
+    "source_count": 28,
+    "taxonomy_count": 32,
+    "capability_map_count": 24,
+    "source_groups": [
+      "academic_paper",
+      "book_metadata",
+      "regulatory",
+      "repo",
+      "docs",
+      "framework",
+      "internal_reference",
+      "standard"
+    ],
+    "accepted_count": 27,
+    "hold_count": 0,
+    "rejected_count": 1,
+    "ingestion_status": "dry_run_only",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "tests_passed": true,
+    "files": [
+      "brain/external_curated_learning_financial_motor_trading_intelligence.py",
+      "tests/smoke/smoke_front_external_curated_learning_financial_motor_trading_intelligence_01.py",
+      "docs/FRONT_EXTERNAL_CURATED_LEARNING_FINANCIAL_MOTOR_TRADING_INTELLIGENCE_01.md"
+    ],
+    "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01"
   }
 }
