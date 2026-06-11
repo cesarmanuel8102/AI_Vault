@@ -1,9 +1,9 @@
 {
-  "current_head": "ea44a3b",
-  "current_remote_head": "9b6c57f",
+  "current_head": "ac1d51e",
+  "current_remote_head": "ac1d51e",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_external_curated_learning_security_governance_sandboxing_01_complete",
-  "last_applied_checkpoint": "FRONT-EXTERNAL-CURATED-LEARNING-SECURITY-GOVERNANCE-SANDBOXING-01",
+  "migration_status": "front_external_curated_learning_autonomous_coding_patch_generation_01_complete",
+  "last_applied_checkpoint": "FRONT-EXTERNAL-CURATED-LEARNING-AUTONOMOUS-CODING-PATCH-GENERATION-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -110,22 +110,25 @@
     "FRONT-EXTERNAL-CURATED-LEARNING-AGENTIC-SYSTEMS-01",
     "FRONT-EXTERNAL-CURATED-LEARNING-EVALUATION-BENCHMARKING-01",
     "FRONT-EXTERNAL-CURATED-LEARNING-MEMORY-RAG-KNOWLEDGE-ARCHITECTURE-01",
-    "FRONT-EXTERNAL-CURATED-LEARNING-SECURITY-GOVERNANCE-SANDBOXING-01"
+    "FRONT-EXTERNAL-CURATED-LEARNING-SECURITY-GOVERNANCE-SANDBOXING-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-AUTONOMOUS-CODING-PATCH-GENERATION-01"
   ],
   "open_fronts": [],
-  "blocked_fronts": [],
+  "blocked_fronts": [
+    "FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01"
+  ],
   "protected_out_of_scope": [
     "memory/semantic",
     "tmp_agent/strategies",
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-EXTERNAL-CURATED-LEARNING-AUTONOMOUS-CODING-PATCH-GENERATION-01",
-    "status": "recommended_next",
-    "reason": "Curate safe, attributable sources for Autonomous Coding and Patch Generation"
+    "name": "FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01",
+    "status": "LOCKED",
+    "reason": "User must explicitly approve before executing the Financial Motor / Trading Intelligence curated learning front."
   },
-  "ready_for_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-AUTONOMOUS-CODING-PATCH-GENERATION-01",
-  "last_updated": "2026-06-11T04:37:55.017544+00:00",
+  "ready_for_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01",
+  "last_updated": "2026-06-11T04:51:00.000000+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2258,5 +2261,36 @@
       "docs/FRONT_EXTERNAL_CURATED_LEARNING_SECURITY_GOVERNANCE_SANDBOXING_01.md"
     ],
     "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-AUTONOMOUS-CODING-PATCH-GENERATION-01"
+  },
+  "front_external_curated_learning_autonomous_coding_patch_generation_01": {
+    "status": "done",
+    "commit": "ac1d51e",
+    "remote_synced": true,
+    "purpose": "Create canonical curated source plan for Brain to learn Autonomous Coding and Patch Generation safely",
+    "decision": "EXTERNAL_CURATED_LEARNING_AUTONOMOUS_CODING_PATCH_GENERATION_PLAN_CREATED",
+    "domain": "autonomous_coding_patch_generation",
+    "source_count": 24,
+    "taxonomy_count": 25,
+    "capability_map_count": 20,
+    "source_groups": [
+      "paper",
+      "benchmark",
+      "repo",
+      "docs",
+      "framework"
+    ],
+    "accepted_count": 23,
+    "hold_count": 0,
+    "rejected_count": 1,
+    "ingestion_status": "dry_run_only",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "tests_passed": true,
+    "files": [
+      "brain/external_curated_learning_autonomous_coding_patch_generation.py",
+      "tests/smoke/smoke_front_external_curated_learning_autonomous_coding_patch_generation_01.py",
+      "tmp_agent/front_external_curated_learning_autonomous_coding_patch_generation_01/canonical_curated_learning_plan.json"
+    ],
+    "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01"
   }
 }

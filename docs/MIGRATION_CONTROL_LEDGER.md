@@ -5931,3 +5931,61 @@ Create a canonical curated source plan for Brain to learn Security / Governance 
 FRONT-EXTERNAL-CURATED-LEARNING-AUTONOMOUS-CODING-PATCH-GENERATION-01
 
 ---
+
+## FRONT-EXTERNAL-CURATED-LEARNING-AUTONOMOUS-CODING-PATCH-GENERATION-01
+
+**Timestamp**: 2026-06-11T04:50Z
+**Status**: COMPLETE
+**Branch**: codex/own-capital-sustainable-return
+**Functional Commit**: ac1d51e
+
+### Objective
+Create a canonical curated source plan for Brain to learn Autonomous Coding and Patch Generation safely, without ingesting into memory or FAISS.
+
+### Scope
+- Curation dry-run only
+- No memory writes
+- No FAISS writes
+- No protected runtime modifications
+- No full paper/repo downloads
+- No untrusted code execution
+- No trading code modification in this front
+
+### Outputs
+- `brain/external_curated_learning_autonomous_coding_patch_generation.py` — curation module
+- `tests/smoke/smoke_front_external_curated_learning_autonomous_coding_patch_generation_01.py` — 42 tests
+- `tmp_agent/front_external_curated_learning_autonomous_coding_patch_generation_01/canonical_curated_learning_plan.json` — canonical plan JSON
+
+### Source Summary
+- **Total sources**: 24
+- **Taxonomy categories**: 25
+- **Capability map entries**: 20
+- **Accepted**: 23
+- **Hold**: 0
+- **Rejected**: 1 (Unknown Coding Blog — no attribution)
+- **Source groups**: paper, benchmark, repo, docs, framework
+
+### Key Design Decisions
+- Safety rubric expanded to 19 dimensions (max 95) to capture coding-specific risks
+- Added `unsafe_code_execution_risk`, `repo_state_corruption_risk`, and `vendor_lock_in_risk` fields to every source
+- Added `brain_coding_capability_map()` with 20 capability targets
+- Cross-source contrast includes 9 pairs covering paper vs repo, sandboxing comparisons, and eval frameworks
+- All sources are defensive/quality-focused; no malware or exploit emphasis
+- Explicit `avoid_untrusted` capability with sandboxing sources (gVisor, Docker, Firecracker)
+
+### Immutability
+- memory_line_count: 1710 (unchanged)
+- faiss_ids_count: 1611 (unchanged)
+- memory_sha: 655d32381e38ada348c3f201c50484551e02d98ae0869fa53826912c6973ab54 (unchanged)
+- faiss_index_sha: b7b755c753cd4017344fb18d51e2ff3d81766151ac3a3dbf753c1004f7d16484 (unchanged)
+- faiss_ids_sha: 004362363f7a392fd15193392f7fac592e333355e6cc28ba665d3cfb5e9368c1 (unchanged)
+
+### Tests
+- py_compile: PASS
+- smoke tests: 42 passed / 0 failed
+
+### Decision
+**DRY_RUN_CURATED_PLAN_COMPLETE**
+
+### Next Recommended Front
+FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01 — **LOCKED**: user must explicitly approve before executing.
