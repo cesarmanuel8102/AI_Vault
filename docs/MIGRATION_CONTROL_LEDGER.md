@@ -6053,3 +6053,58 @@ Create a canonical curated source plan for Brain to learn Financial Motor / Trad
 
 ### Next Recommended Front
 FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01 — **LOCKED**: user must explicitly approve before executing.
+
+---
+
+## FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01
+
+**Timestamp**: 2026-06-11T05:55Z
+**Status**: COMPLETE
+**Branch**: codex/own-capital-sustainable-return
+**Functional Commit**: 3290960
+
+### Objective
+Create a canonical controlled ingestion authorization plan that defines exactly when, how, and under what human-approved conditions the Brain may ingest curated external sources into semantic memory and FAISS.
+
+### Scope
+- Authorization plan only
+- No memory writes
+- No FAISS writes
+- No actual ingestion
+- No backup created (not needed for authorization-only front)
+- Defines policies, schemas, limits, and approval requirements
+
+### Outputs
+- `brain/external_curated_learning_controlled_ingestion_authorization.py` — authorization module
+- `tests/smoke/smoke_front_external_curated_learning_controlled_ingestion_authorization_01.py` — 83 tests
+- `docs/FRONT_EXTERNAL_CURATED_LEARNING_CONTROLLED_INGESTION_AUTHORIZATION_01.md` — canonical doc
+
+### Key Design Decisions
+- Six domains ordered by risk: Security/Governance first, Financial last
+- First canary: 3-5 records, security_governance_sandboxing only, no FAISS
+- Memory record schema v1 with strict validation rules
+- Forbidden fields: chain-of-thought, credentials, broker_api_data, trading_signal, executable_code
+- Source exclusion policy rejects rejected/hold/candidate/unknown/guaranteed-returns/signal-selling sources
+- Pre-ingestion rules: backup, schema validation, duplicate check, human approval
+- Post-ingestion rules: exact line count increase, no orphans, retrieval smoke tests
+- Retrieval eval: top-k metrics, contamination check, domain precision
+- Rollback requirements: restore all three memory files, verify SHA returns to baseline
+- Human approval: must include domain, batch_id, source_ids, record_count, expected counts
+- Financial and coding domains locked until separate authorization
+
+### Immutability
+- memory_line_count: 1710 (unchanged)
+- faiss_ids_count: 1611 (unchanged)
+- memory_sha: 655d32381e38ada348c3f201c50484551e02d98ae0869fa53826912c6973ab54 (unchanged)
+- faiss_index_sha: b7b755c753cd4017344fb18d51e2ff3d81766151ac3a3dbf753c1004f7d16484 (unchanged)
+- faiss_ids_sha: 004362363f7a392fd15193392f7fac592e333355e6cc28ba665d3cfb5e9368c1 (unchanged)
+
+### Tests
+- py_compile: PASS
+- smoke tests: 83 passed / 0 failed
+
+### Decision
+**AUTHORIZATION_PLAN_CREATED_NO_MUTATION**
+
+### Next Recommended Front
+FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01 — **LOCKED**: user must explicitly approve before executing.

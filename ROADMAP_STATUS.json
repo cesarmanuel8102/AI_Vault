@@ -1,9 +1,9 @@
 {
-  "current_head": "811265c",
-  "current_remote_head": "811265c",
+  "current_head": "3290960",
+  "current_remote_head": "3290960",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_external_curated_learning_financial_motor_trading_intelligence_01_complete",
-  "last_applied_checkpoint": "FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01",
+  "migration_status": "front_external_curated_learning_controlled_ingestion_authorization_01_complete",
+  "last_applied_checkpoint": "FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -112,11 +112,12 @@
     "FRONT-EXTERNAL-CURATED-LEARNING-MEMORY-RAG-KNOWLEDGE-ARCHITECTURE-01",
     "FRONT-EXTERNAL-CURATED-LEARNING-SECURITY-GOVERNANCE-SANDBOXING-01",
     "FRONT-EXTERNAL-CURATED-LEARNING-AUTONOMOUS-CODING-PATCH-GENERATION-01",
-    "FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01"
+    "FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
-    "FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01"
+    "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01"
   ],
   "protected_out_of_scope": [
     "memory/semantic",
@@ -124,12 +125,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01",
+    "name": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01",
     "status": "LOCKED",
-    "reason": "User must explicitly approve before executing the Controlled Ingestion / Authorization curated learning front."
+    "reason": "User must explicitly approve before executing the first canary ingestion prep front for Security / Governance sources."
   },
-  "ready_for_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01",
-  "last_updated": "2026-06-11T05:35:00.000000+00:00",
+  "ready_for_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01",
+  "last_updated": "2026-06-11T05:58:00.000000+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2327,5 +2328,31 @@
       "docs/FRONT_EXTERNAL_CURATED_LEARNING_FINANCIAL_MOTOR_TRADING_INTELLIGENCE_01.md"
     ],
     "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01"
+  },
+  "front_external_curated_learning_controlled_ingestion_authorization_01": {
+    "status": "done",
+    "commit": "3290960",
+    "remote_synced": true,
+    "purpose": "Create controlled ingestion authorization plan before any memory/FAISS mutation",
+    "decision": "EXTERNAL_CURATED_LEARNING_CONTROLLED_INGESTION_AUTHORIZATION_CREATED",
+    "domain": "controlled_ingestion_authorization",
+    "authorization_status": "authorization_plan_created_no_mutation",
+    "actual_memory_mutation_authorized": false,
+    "actual_faiss_mutation_authorized": false,
+    "first_canary_domain": "security_governance_sandboxing",
+    "first_canary_record_min": 3,
+    "first_canary_record_max": 5,
+    "financial_domain_locked": true,
+    "autonomous_coding_domain_locked": true,
+    "requires_future_user_approval_for_mutation": true,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "tests_passed": true,
+    "files": [
+      "brain/external_curated_learning_controlled_ingestion_authorization.py",
+      "tests/smoke/smoke_front_external_curated_learning_controlled_ingestion_authorization_01.py",
+      "docs/FRONT_EXTERNAL_CURATED_LEARNING_CONTROLLED_INGESTION_AUTHORIZATION_01.md"
+    ],
+    "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01"
   }
 }
