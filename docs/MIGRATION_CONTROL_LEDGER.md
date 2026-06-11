@@ -6457,3 +6457,104 @@ FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-EXECUTE-SECURITY-GOVERNAN
 ### Next Front Status
 LOCKED pending explicit user approval phrase.
 
+---
+
+## FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-EXECUTE-SECURITY-GOVERNANCE-01: FAISS Promotion Execute (Controlled Real Mutation)
+
+**Status:** COMPLETE
+**Date:** 2026-06-11
+**Branch:** codex/own-capital-sustainable-return
+**Functional Commit:** edd455a
+**Ledger Commit:** PENDING
+**Head Before:** b557e56
+**Head After:** PENDING
+**Type:** controlled real FAISS mutation — first authorized canary FAISS promotion
+
+### Objective
+Execute the first controlled FAISS promotion for the security governance canary batch SEC_GOV_CANARY_001 after explicit user approval.
+
+### Explicit User Approval
+- Approval phrase used: `APPROVE_SECURITY_GOVERNANCE_CANARY_FAISS_PROMOTION_BATCH_SEC_GOV_CANARY_001`
+- Found in user prompt: Yes
+- Verified at: 2026-06-11
+
+### Preconditions (All Passed)
+- Workdir correcto
+- Git limpio (staged empty, no unstaged tracked)
+- Local HEAD == Remote HEAD == b557e56
+- semantic_memory.jsonl lines: 1715
+- FAISS ids count: 1611
+- Approval phrase verified
+
+### Candidate Records (5)
+- SEC_GOV_CANARY_001_nist_csf_001 (nist_csf)
+- SEC_GOV_CANARY_001_nist_ai_rmf_002 (nist_ai_rmf)
+- SEC_GOV_CANARY_001_opa_docs_003 (opa_docs)
+- SEC_GOV_CANARY_001_mitre_atlas_004 (mitre_atlas)
+- SEC_GOV_CANARY_001_gvisor_docs_005 (gvisor_docs)
+
+### Embedding / FAISS Stack Used
+- Stack: `tmp_agent/brain_v9/core/semantic_memory_faiss.py`
+- Embedding API: Ollama localhost:11434/api/embeddings
+- Model: nomic-embed-text
+- Dimension: 768
+- FAISS index type: `faiss.IndexFlatIP` (cosine similarity)
+- Promotion method: Direct incremental add to canonical index/ids
+
+### Before / After FAISS
+| Metric | Before | After |
+|--------|--------|-------|
+| FAISS ids count | 1611 | 1616 |
+| FAISS ntotal | 1611 | 1616 |
+| semantic_memory.jsonl lines | 1715 | 1715 (unchanged) |
+
+### Semantic Memory Unchanged Proof
+- semantic_memory.jsonl SHA: unchanged from baseline
+- Line count: 1715 before, 1715 after
+- No append occurred
+
+### Retrieval Eval Result
+| Metric | Value |
+|--------|-------|
+| top_1_hit_rate | 0.875 |
+| top_3_hit_rate | 1.0 |
+| top_5_hit_rate | 1.0 |
+| mrr | 0.9375 |
+| domain_precision | 0.725 |
+
+All 8/8 positive queries achieved top-5 hit.
+
+### Negative Query Contamination Result
+- Contamination detected: False
+- No trading/broker/coding execution contamination.
+
+### Rollback Plan
+- Backup dir: `tmp_agent/front_external_curated_learning_canary_faiss_promotion_execute_security_governance_01/backups/SEC_GOV_CANARY_001/`
+- Backup files: semantic_memory.jsonl, semantic_memory_faiss.index, semantic_memory_faiss_ids.json
+- Backup verified: SHAs match baseline
+- Rollback available: Yes
+
+### Files Committed (Functional Scope)
+- memory/semantic/semantic_memory_faiss.index (modified)
+- memory/semantic/semantic_memory_faiss_ids.json (modified)
+- tests/smoke/smoke_front_external_curated_learning_canary_faiss_promotion_execute_security_governance_01.py
+- docs/FRONT_EXTERNAL_CURATED_LEARNING_CANARY_FAISS_PROMOTION_EXECUTE_SECURITY_GOVERNANCE_01.md
+
+### Tests
+- 25/25 passed
+
+### Safety Flags (Post-Execution)
+- semantic_memory_mutated: false
+- faiss_mutated: true
+- embeddings_created: true
+- broker_api_used: false
+- trading_used: false
+- rollback_available: true
+- memory_write_allowed: false
+- faiss_write_allowed: false (this was one-time authorized)
+- real_write_allowed: false
+- promotion_allowed: false
+
+### Next Recommended Front
+FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-POST-PROMOTION-VERIFY-SECURITY-GOVERNANCE-01 — remains LOCKED until explicitly requested.
+
