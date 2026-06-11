@@ -6644,3 +6644,78 @@ All 5 promoted IDs verified present in FAISS and mapping to semantic records wit
 ### Next Recommended Front
 FRONT-RUNTIME-PATH-ALIGNMENT-CANONICAL-VERIFY-01 — align runtime BASE_PATH to canonical repo path and clean up legacy mutation. LOCKED until explicitly requested.
 
+---
+
+## FRONT-RUNTIME-PATH-ALIGNMENT-CANONICAL-VERIFY-01: Runtime Path Alignment to Canonical Repo
+
+**Status:** COMPLETE
+**Date:** 2026-06-11
+**Branch:** codex/own-capital-sustainable-return
+**Functional Commit:** ee99821
+**Ledger Commit:** PENDING
+**Head Before:** 09890ec
+**Type:** minimal path fix — one config file changed, no mutation to memory/FAISS
+
+### Objective
+Audit and minimally correct the Brain V9 runtime path resolution so that `BASE_PATH` resolves to the canonical repo `C:\AI_VAULT_CANONICAL` instead of the legacy hardcoded `C:\AI_VAULT`.
+
+### Prior Anomaly
+During FAISS promotion execution, `SemanticMemoryFAISS` resolved `BASE_PATH` to `C:\AI_VAULT` because `tmp_agent/brain_v9/config.py` hardcoded the Windows default. This caused FAISS mutation to write to the legacy path. The agent corrected by using direct canonical paths, but root cause remained in `config.py`.
+
+### Legacy Path Audit (Read-Only)
+| Check | Result |
+|-------|--------|
+| Legacy path exists | Yes (`C:\AI_VAULT`) |
+| Legacy FAISS ntotal | 1616 (mutated preexisting) |
+| Legacy FAISS ids count | 1616 |
+| Legacy canary IDs present | Yes |
+| Runtime points to legacy | Yes (before patch) |
+
+### Path Definition Found
+- **File**: `tmp_agent/brain_v9/config.py` line 44-48
+- **Hardcoded path**: `C:/AI_VAULT`
+- **Depends on env var**: `BRAIN_BASE_PATH` with hardcoded default
+
+### Patch Applied
+- **File modified**: `tmp_agent/brain_v9/config.py`
+- **Change**: Replaced hardcoded `_default_base` with dynamic resolution from `__file__` location
+- **Before**: `C:/AI_VAULT` on Windows
+- **After**: `str(Path(__file__).resolve().parent.parent.parent)` → resolves to repo root
+- **Also removed**: unused `import platform`
+
+### Post-Patch Verification
+| Check | Result |
+|-------|--------|
+| BASE_PATH ends with AI_VAULT_CANONICAL | Yes |
+| STATE_PATH under BASE_PATH | Yes |
+| FAISS index_path canonical | Yes |
+| FAISS ids_path canonical | Yes |
+| FAISS ntotal | 1616 |
+| FAISS ids count | 1616 |
+
+### Canonical FAISS Count
+- semantic_memory.jsonl lines: 1715
+- FAISS ids count: 1616
+- FAISS ntotal: 1616
+
+### Memory/FAISS Immutability Proof
+- semantic_memory.jsonl SHA: unchanged
+- FAISS index SHA: unchanged
+- FAISS ids SHA: unchanged
+- No append occurred
+- Legacy not modified
+
+### Tests
+- 20/20 passed
+
+### Safety Flags (Post-Execution)
+- memory_mutated: false
+- faiss_mutated: false
+- embeddings_created: false
+- broker_api_used: false
+- trading_used: false
+- legacy_path_touched: false (read-only audit only)
+
+### Next Recommended Front
+FRONT-LEGACY-PATH-CLEANUP-PLAN-01 — plan cleanup of `C:\AI_VAULT` legacy mutation. LOCKED until explicitly requested.
+
