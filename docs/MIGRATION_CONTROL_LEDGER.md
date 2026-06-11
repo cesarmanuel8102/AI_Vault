@@ -6368,5 +6368,92 @@ c3d30b7
 - broker_api_used: false
 - trading_used: false
 
-### Next Front Locked
-FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-PREP-SECURITY-GOVERNANCE-01
+
+## FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-PREP-SECURITY-GOVERNANCE-01: FAISS Promotion Prep (Dry-Run Only)
+
+**Status:** COMPLETE
+**Date:** 2026-06-11
+**Branch:** codex/own-capital-sustainable-return
+**Functional Commit:** ac8883b
+**Ledger Commit:** PENDING
+**Head Before:** 83efa16
+**Head After:** PENDING
+**Type:** prep / dry-run — NO FAISS mutation, NO embeddings created, NO memory write
+
+### Objective
+Prepare a deterministic, read-only FAISS promotion package for the security governance canary batch SEC_GOV_CANARY_001, pending explicit user approval before any FAISS mutation.
+
+### Preconditions (All Passed)
+- Workdir correcto
+- Git limpio (staged empty, no unstaged tracked)
+- Local HEAD == Remote HEAD == 83efa16
+- semantic_memory.jsonl lines: 1715
+- FAISS ids count: 1611
+
+### Candidate Records (5)
+- SEC_GOV_CANARY_001_nist_csf_001 (nist_csf)
+- SEC_GOV_CANARY_001_nist_ai_rmf_002 (nist_ai_rmf)
+- SEC_GOV_CANARY_001_opa_docs_003 (opa_docs)
+- SEC_GOV_CANARY_001_mitre_atlas_004 (mitre_atlas)
+- SEC_GOV_CANARY_001_gvisor_docs_005 (gvisor_docs)
+
+### Prep Actions Performed
+- Loaded 5 canary records from memory/semantic/semantic_memory.jsonl (read-only)
+- Validated all 5 candidates (zero errors)
+- Built deterministic embedding text from existing fields (no model call)
+- Generated SHA-256 of embedding texts
+- Created promotion plan (proposed_only)
+- Created backup/rollback plan
+- Created future execution plan
+- Generated human approval package with exact phrases
+
+### Embedding Text Design
+- Deterministic: same input always produces same output
+- Built only from existing record fields
+- No model call
+- No embeddings created
+
+### Promotion Plan
+- promotion_status: proposed_only
+- expected FAISS ids before: 1611
+- expected FAISS ids after if approved: 1616
+- memory lines remain: 1715
+
+### Human Approval Package
+- approval_phrase_required: APPROVE_SECURITY_GOVERNANCE_CANARY_FAISS_PROMOTION_BATCH_SEC_GOV_CANARY_001
+- denial_phrase: DENY_SECURITY_GOVERNANCE_CANARY_FAISS_PROMOTION_BATCH_SEC_GOV_CANARY_001
+
+### Files Committed (Functional Scope)
+- brain/external_curated_learning_canary_faiss_promotion_prep_security_governance.py
+- tests/smoke/smoke_front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01.py
+- docs/FRONT_EXTERNAL_CURATED_LEARNING_CANARY_FAISS_PROMOTION_PREP_SECURITY_GOVERNANCE_01.md
+
+### Tests
+- 40/40 passed
+
+### Immutability Verification
+- semantic_memory.jsonl SHA: unchanged
+- semantic_memory.jsonl lines: 1715 (unchanged)
+- semantic_memory_faiss.index SHA: unchanged
+- semantic_memory_faiss_ids.json SHA: unchanged
+- FAISS ids count: 1611 (unchanged)
+- No staged memory/FAISS
+- No unstaged tracked memory/FAISS
+
+### Safety Flags
+- faiss_index_mutation_authorized_now: false
+- faiss_ids_mutation_authorized_now: false
+- embeddings_creation_authorized_now: false
+- memory_write_allowed: false
+- faiss_write_allowed: false
+- real_write_allowed: false
+- promotion_allowed: false
+- broker_api_used: false
+- trading_used: false
+
+### Next Recommended Front
+FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-EXECUTE-SECURITY-GOVERNANCE-01 — requires exact user approval phrase because this next front will mutate FAISS.
+
+### Next Front Status
+LOCKED pending explicit user approval phrase.
+
