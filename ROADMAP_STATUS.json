@@ -1,9 +1,9 @@
 {
-  "current_head": "cdb7984",
-  "current_remote_head": "55695e0",
+  "current_head": "c3d30b7",
+  "current_remote_head": "c3d30b7",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_external_curated_learning_canary_post_ingestion_verify_security_governance_01_complete",
-  "last_applied_checkpoint": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-POST-INGESTION-VERIFY-SECURITY-GOVERNANCE-01",
+  "migration_status": "front_external_curated_learning_canary_retrieval_eval_security_governance_01_complete",
+  "last_applied_checkpoint": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-RETRIEVAL-EVAL-SECURITY-GOVERNANCE-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -119,7 +119,8 @@
     "FRONT-CHAT-UI-LIVE-RUNTIME-SOURCE-RECOVERY-AND-CURATED-WIRING-01",
     "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01",
     "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-EXECUTE-SECURITY-GOVERNANCE-01",
-    "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-POST-INGESTION-VERIFY-SECURITY-GOVERNANCE-01"
+    "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-POST-INGESTION-VERIFY-SECURITY-GOVERNANCE-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-RETRIEVAL-EVAL-SECURITY-GOVERNANCE-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -129,12 +130,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-POST-INGESTION-VERIFY-SECURITY-GOVERNANCE-01",
+    "name": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-PREP-SECURITY-GOVERNANCE-01",
     "status": "LOCKED",
-    "reason": "User must explicitly approve before executing the post-ingestion verification front."
+    "reason": "FAISS promotion prep requires explicit user approval because it may prepare future FAISS mutation."
   },
-  "ready_for_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-POST-INGESTION-VERIFY-SECURITY-GOVERNANCE-01",
-  "last_updated": "2026-06-11T08:20:00.000000+00:00",
+  "ready_for_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-PREP-SECURITY-GOVERNANCE-01",
+  "last_updated": "2026-06-11T08:50:00.000000+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [

@@ -6337,3 +6337,36 @@ aebbea4
 
 ### Next Recommended Front
 **FRONT-EXTERNAL-CURATED-LEARNING-CANARY-RETRIEVAL-EVAL-SECURITY-GOVERNANCE-01** — **LOCKED** pending explicit user approval.
+
+---
+
+## FRONT-EXTERNAL-CURATED-LEARNING-CANARY-RETRIEVAL-EVAL-SECURITY-GOVERNANCE-01
+
+### Status
+CANARY_RETRIEVAL_EVAL_PASSED_MEMORY_ONLY
+
+### Functional Commit
+c3d30b7
+
+### Metrics
+- batch_id: SEC_GOV_CANARY_001
+- records_evaluated: 5
+- memory_line_count: 1715
+- faiss_ids_count: 1611
+- faiss_mutated: false
+- embeddings_created: false
+- direct_memory_eval_passed: true
+- top_1_hit_rate: 1.0
+- top_3_hit_rate: 1.0
+- top_5_hit_rate: 1.0
+- mrr: 1.0
+- domain_precision: 1.0
+- negative_query_contamination_detected: false
+- chat_ui_probe_status: PARTIAL_4_OF_5
+- tests_passed: true
+- memory_mutated_during_eval: false
+- broker_api_used: false
+- trading_used: false
+
+### Next Front Locked
+FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-PREP-SECURITY-GOVERNANCE-01
