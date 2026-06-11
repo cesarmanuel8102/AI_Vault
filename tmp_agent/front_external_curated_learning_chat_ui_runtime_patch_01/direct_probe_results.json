@@ -1,0 +1,22 @@
+{
+  "Q01": {
+    "decision": "explain",
+    "confidence": "high"
+  },
+  "Q02": {
+    "decision": "explain",
+    "confidence": "high"
+  },
+  "Q03": {
+    "decision": "explain",
+    "confidence": "high"
+  },
+  "Q04": {
+    "decision": "explain",
+    "confidence": "high"
+  },
+  "Q05": {
+    "decision": "deny",
+    "confidence": "high"
+  }
+}

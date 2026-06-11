@@ -1,0 +1,16 @@
+{
+  "chat_route_discovery_status": "LOCAL_CHAT_ROUTE_NOT_FOUND",
+  "findings": [
+    "No app.post('/chat') found in any Python file in brain/ or tmp_agent/",
+    "No tmp_agent/brain_v9/core/session.py exists",
+    "FastAPI app found only in tmp_agent/advisor_server_clean.py with /v1/advisor/next endpoint",
+    "Chat references exist only in audit JSONs (b1_route_inventory.json) and external probe scripts",
+    "No local chat server process detected on port 8090 or 8010"
+  ],
+  "chat_route_file": null,
+  "chat_route_function_or_class": null,
+  "can_patch_safely": false,
+  "patch_strategy": "LOCAL_CHAT_ROUTE_NOT_FOUND_RUNTIME_PATCH_BLOCKED",
+  "fallback_strategy": "Create CLI adapter + document blockage",
+  "rollback_strategy": "N/A — no runtime file modified"
+}
