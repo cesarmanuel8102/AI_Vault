@@ -5817,3 +5817,59 @@ Create a canonical curated source plan for Brain to learn Evaluation & Benchmark
 FRONT-EXTERNAL-CURATED-LEARNING-MEMORY-RAG-KNOWLEDGE-ARCHITECTURE-01
 
 ---
+
+## FRONT-EXTERNAL-CURATED-LEARNING-MEMORY-RAG-KNOWLEDGE-ARCHITECTURE-01
+
+**Timestamp**: 2026-06-11T01:30Z
+**Status**: COMPLETE
+**Branch**: codex/own-capital-sustainable-return
+**Functional Commit**: 9a48b14
+
+### Objective
+Create a canonical curated source plan for Brain to learn Memory / RAG / Knowledge Architecture safely, without ingesting into memory or FAISS.
+
+### Scope
+- Curation dry-run only
+- No memory writes
+- No FAISS writes
+- No protected runtime modifications
+- No full paper/repo downloads
+
+### Outputs
+- `brain/external_curated_learning_memory_rag_knowledge_architecture.py` — curation module
+- `tests/smoke/smoke_front_external_curated_learning_memory_rag_knowledge_architecture_01.py` — 36 tests
+- `docs/FRONT_EXTERNAL_CURATED_LEARNING_MEMORY_RAG_KNOWLEDGE_ARCHITECTURE_01.md` — canonical doc
+
+### Source Summary
+- **Total sources**: 28
+- **Taxonomy categories**: 20
+- **Capability map entries**: 16
+- **Accepted**: 25
+- **Hold**: 2 (Pinecone — high vendor lock-in; LangSmith — proprietary platform)
+- **Rejected**: 1 (Unknown Vector DB Blog — no attribution)
+- **Source groups**: paper, repo, docs, benchmark
+
+### Key Design Decisions
+- Safety rubric expanded to 17 dimensions (max 85) to capture memory-specific risks: vendor lock-in, privacy leakage, architecture clarity
+- Added `privacy_risk` and `vendor_lock_in_risk` fields to every source
+- Added `brain_memory_capability_map()` with 16 capability targets explicitly linked to taxonomy
+- Cross-source contrast includes 9 pairs covering paper/framework, vector DB comparisons, eval frameworks, and vendor vs open-source
+
+### Immutability
+- memory_line_count: 1710 (unchanged)
+- faiss_ids_count: 1611 (unchanged)
+- memory_sha: 655d32381e38ada348c3f201c50484551e02d98ae0869fa53826912c6973ab54 (unchanged)
+- faiss_index_sha: b7b755c753cd4017344fb18d51e2ff3d81766151ac3a3dbf753c1004f7d16484 (unchanged)
+- faiss_ids_sha: 004362363f7a392fd15193392f7fac592e333355e6cc28ba665d3cfb5e9368c1 (unchanged)
+
+### Tests
+- py_compile: PASS
+- smoke tests: 36 passed / 0 failed
+
+### Decision
+**DRY_RUN_CURATED_PLAN_COMPLETE**
+
+### Next Recommended Front
+FRONT-EXTERNAL-CURATED-LEARNING-SECURITY-GOVERNANCE-SANDBOXING-01
+
+---
