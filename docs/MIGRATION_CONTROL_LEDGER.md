@@ -6265,3 +6265,46 @@ tmp_agent/brain_v9/main.py
 
 ### Next Recommended Front
 **FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01** — **LOCKED**: requires explicit user approval.
+
+---
+
+## FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-EXECUTE-SECURITY-GOVERNANCE-01
+
+### Status
+CANARY_INGESTION_EXECUTED_MEMORY_ONLY_NO_FAISS
+
+### Functional Commit
+36f6dc2
+
+### Execution Summary
+- domain: security_governance_sandboxing
+- batch_id: SEC_GOV_CANARY_001
+- approval_phrase_used: APPROVE_SECURITY_GOVERNANCE_CANARY_INGESTION_BATCH_SEC_GOV_CANARY_001
+- appended_count: 5
+- source_ids: nist_csf, nist_ai_rmf, opa_docs, mitre_atlas, gvisor_docs
+- appended_memory_ids:
+  - SEC_GOV_CANARY_001_nist_csf_001
+  - SEC_GOV_CANARY_001_nist_ai_rmf_002
+  - SEC_GOV_CANARY_001_opa_docs_003
+  - SEC_GOV_CANARY_001_mitre_atlas_004
+  - SEC_GOV_CANARY_001_gvisor_docs_005
+
+### Counts
+- before_memory_line_count: 1710
+- after_memory_line_count: 1715
+- before_faiss_ids_count: 1611
+- after_faiss_ids_count: 1611
+
+### Safety
+- faiss_mutated: false
+- embeddings_created: false
+- broker_api_used: false
+- trading_used: false
+- rollback_available: true
+
+### Tests
+- 32/32 smoke tests passed
+- All py_compile checks passed
+
+### Next Recommended Front
+**FRONT-EXTERNAL-CURATED-LEARNING-CANARY-POST-INGESTION-VERIFY-SECURITY-GOVERNANCE-01** — **LOCKED** pending explicit user approval.
