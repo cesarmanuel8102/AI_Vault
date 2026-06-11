@@ -39,6 +39,7 @@ from brain.curated_runtime_lookup import (
     load_curated_lookup_index,
     search_curated_candidates,
 )
+from brain.curated_learning_chat_access import answer_chat_probe
 from brain_v9.api_security import require_operator_access, StrictOperatorAccess
 from brain_v9.config import (
     BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS,
@@ -1374,6 +1375,34 @@ def _trivial_chat_fastpath(message: str) -> dict | None:
     return None
 
 
+def _looks_like_curated_learning_probe(message: str) -> bool:
+    m = (message or "").lower()
+    markers = [
+        "q01", "q02", "q03", "q04", "q05",
+        "dominios de aprendizaje externo curado",
+        "fuentes rechazadas",
+        "primer dominio para canary",
+        "canary ingestion",
+        "ingesta masiva",
+        "financial locked",
+        "coding locked",
+        "security_governance_sandboxing",
+    ]
+    return any(x in m for x in markers)
+
+
+def _format_curated_probe_response(result: dict) -> str:
+    return (
+        f"Decision: {result.get('decision')}\n"
+        f"Domains used: {', '.join(result.get('domains_used', []))}\n"
+        f"Sources or source types used: {', '.join(result.get('sources_or_source_types_used', []))}\n"
+        f"Policy constraints applied: {', '.join(result.get('policy_constraints_applied', []))}\n"
+        f"Risk flags: {', '.join(result.get('risk_flags', []))}\n"
+        f"Final answer:\n{result.get('final_answer')}\n"
+        f"Confidence: {result.get('confidence')}"
+    )
+
+
 @app.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
     """
@@ -1388,6 +1417,21 @@ async def chat(req: ChatRequest):
             model_used=trivial.get("model", "local"),
             success=trivial.get("success", True),
         )
+
+    # Curated learning helper fastpath (read-only, no memory/FAISS mutation)
+    if _looks_like_curated_learning_probe(req.message):
+        try:
+            result = answer_chat_probe(question=req.message)
+            reply = _format_curated_probe_response(result)
+            return ChatResponse(
+                response=reply,
+                session_id=req.session_id,
+                model_used="curated_helper",
+                success=True,
+            )
+        except Exception as exc:
+            # Safe fallback: continue to normal chat flow
+            log.debug("Curated helper fastpath error: %s", exc)
 
     global _pad_authenticated_sessions
     mensaje_lower = req.message.lower()
