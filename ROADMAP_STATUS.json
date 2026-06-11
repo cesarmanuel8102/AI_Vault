@@ -1,9 +1,9 @@
 {
-  "current_head": "3290960",
-  "current_remote_head": "3290960",
+  "current_head": "4b34255",
+  "current_remote_head": "4b34255",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_external_curated_learning_controlled_ingestion_authorization_01_complete",
-  "last_applied_checkpoint": "FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01",
+  "migration_status": "front_external_curated_learning_chat_ui_usage_repair_01_complete",
+  "last_applied_checkpoint": "FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-USAGE-REPAIR-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -113,11 +113,13 @@
     "FRONT-EXTERNAL-CURATED-LEARNING-SECURITY-GOVERNANCE-SANDBOXING-01",
     "FRONT-EXTERNAL-CURATED-LEARNING-AUTONOMOUS-CODING-PATCH-GENERATION-01",
     "FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01",
-    "FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01"
+    "FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-USAGE-REPAIR-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
-    "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01"
+    "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-RUNTIME-PATCH-01"
   ],
   "protected_out_of_scope": [
     "memory/semantic",
@@ -127,10 +129,10 @@
   "recommended_next_front": {
     "name": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01",
     "status": "LOCKED",
-    "reason": "User must explicitly approve before executing the first canary ingestion prep front for Security / Governance sources."
+    "reason": "User must explicitly approve before executing the first canary ingestion prep front. Alternative: FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-RUNTIME-PATCH-01 for runtime patch."
   },
   "ready_for_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01",
-  "last_updated": "2026-06-11T05:58:00.000000+00:00",
+  "last_updated": "2026-06-11T06:28:00.000000+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2354,5 +2356,42 @@
       "docs/FRONT_EXTERNAL_CURATED_LEARNING_CONTROLLED_INGESTION_AUTHORIZATION_01.md"
     ],
     "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01"
+  },
+  "front_external_curated_learning_chat_ui_usage_repair_01": {
+    "status": "done",
+    "commit": "4b34255",
+    "remote_synced": true,
+    "purpose": "Repair chat/UI/agent ability to answer curated learning probes correctly without memory/FAISS mutation",
+    "decision": "CHAT_UI_CURATED_LEARNING_ACCESS_HELPER_CREATED",
+    "domain": "chat_ui_usage_repair_curated_learning",
+    "status_detail": "CHAT_UI_USAGE_HELPER_CREATED_RUNTIME_PATCH_REQUIRED",
+    "canonical_total_sources": 152,
+    "canonical_total_accepted": 142,
+    "canonical_total_hold": 4,
+    "canonical_total_rejected": 6,
+    "count_mismatch_detected": true,
+    "count_mismatch_notes": [
+      "security_governance_sandboxing: computed src=23 acc=22 vs prev src=25 acc=24",
+      "financial_motor_trading_intelligence: computed src=32 acc=31 vs prev src=28 acc=27"
+    ],
+    "q01_direct_probe_passed": true,
+    "q02_direct_probe_passed": true,
+    "q03_direct_probe_passed": true,
+    "q04_direct_probe_passed": true,
+    "q05_direct_probe_passed": true,
+    "direct_helper_working": true,
+    "current_chat_route_uses_helper": false,
+    "current_ui_can_answer_q01_without_pasted_context": false,
+    "runtime_patch_required": true,
+    "likely_runtime_file_required": "tmp_agent/brain_v9/core/session.py or equivalent chat route handler",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "tests_passed": true,
+    "files": [
+      "brain/curated_learning_chat_access.py",
+      "tests/smoke/smoke_front_external_curated_learning_chat_ui_usage_repair_01.py",
+      "docs/FRONT_EXTERNAL_CURATED_LEARNING_CHAT_UI_USAGE_REPAIR_01.md"
+    ],
+    "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-RUNTIME-PATCH-01"
   }
 }

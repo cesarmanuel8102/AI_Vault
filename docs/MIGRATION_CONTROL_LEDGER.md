@@ -6108,3 +6108,80 @@ Create a canonical controlled ingestion authorization plan that defines exactly 
 
 ### Next Recommended Front
 FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01 — **LOCKED**: user must explicitly approve before executing.
+
+---
+
+## FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-USAGE-REPAIR-01
+
+**Timestamp**: 2026-06-11T06:26Z
+**Status**: COMPLETE
+**Branch**: codex/own-capital-sustainable-return
+**Functional Commit**: 4b34255
+
+### Objective
+Repair and harden the Brain's ability to answer curated learning probes (Q01–Q35) correctly from Chat/UI/Agent without requiring pasted context, and without mutating memory or FAISS.
+
+### Scope
+- Create read-only chat access helper
+- Compute canonical counts directly from curated modules
+- Answer Q01-Q10 probes deterministically
+- No memory/FAISS mutation
+- No broker/API/trading
+- No runtime patch in this front (separate front required)
+
+### Outputs
+- `brain/curated_learning_chat_access.py` — chat-safe helper
+- `tests/smoke/smoke_front_external_curated_learning_chat_ui_usage_repair_01.py` — 56 tests
+- `docs/FRONT_EXTERNAL_CURATED_LEARNING_CHAT_UI_USAGE_REPAIR_01.md` — canonical doc
+
+### Canonical Count Audit
+
+| Domain | Sources | Accepted | Hold | Rejected | Taxonomy | Capabilities |
+|--------|---------|----------|------|----------|----------|--------------|
+| Agentic Systems | 21 | 19 | 1 | 1 | 14 | 0 |
+| Evaluation & Benchmarking | 24 | 22 | 1 | 1 | 15 | 12 |
+| Memory / RAG | 28 | 25 | 2 | 1 | 20 | 16 |
+| Security / Governance | 23 | 22 | 0 | 1 | 22 | 18 |
+| Autonomous Coding | 24 | 23 | 0 | 1 | 25 | 20 |
+| Financial | 32 | 31 | 0 | 1 | 32 | 24 |
+| **Total** | **152** | **142** | **4** | **6** | **128** | **90** |
+
+### Count Mismatch Detected
+- security_governance_sandboxing: computed 23 vs previously reported 25
+- financial_motor_trading_intelligence: computed 32 vs previously reported 28
+
+### Rejected Sources
+6 rejected across 6 domains. Common reasons: no attribution, guaranteed returns, signal selling, SEO content.
+
+### Direct Probe Results
+- Q01 (explain): All 6 domains with counts and capabilities
+- Q02 (explain): 6 rejected sources listed
+- Q03 (explain): Authorized and locked domains
+- Q04 (explain): security_governance_sandboxing first, 3-5 records
+- Q05 (deny): Mass ingestion denied
+- Q06 (defer): Requires approval package
+- Q07 (deny): Financial locked
+- Q08 (deny): Coding locked
+- Q09 (deny): Hold excluded
+- Q10 (deny): No attribution/URL excluded
+
+### UI/Chat Route Assessment
+- Direct helper: Working
+- Current chat route uses helper: No (no chat route exists)
+- Runtime patch required: Yes
+- Likely file: tmp_agent/brain_v9/core/session.py or equivalent
+
+### Immutability
+- memory_line_count: 1710 (unchanged)
+- faiss_ids_count: 1611 (unchanged)
+- All SHAs unchanged
+
+### Tests
+- py_compile: PASS
+- smoke tests: 56 passed / 0 failed
+
+### Decision
+**CHAT_UI_USAGE_HELPER_CREATED_RUNTIME_PATCH_REQUIRED**
+
+### Next Recommended Front
+**FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-RUNTIME-PATCH-01** — **LOCKED**: requires explicit user approval.
