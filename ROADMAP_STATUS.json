@@ -1,9 +1,9 @@
 {
-  "current_head": "4b34255",
-  "current_remote_head": "4b34255",
+  "current_head": "ecd103c",
+  "current_remote_head": "ecd103c",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_external_curated_learning_chat_ui_usage_repair_01_complete",
-  "last_applied_checkpoint": "FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-USAGE-REPAIR-01",
+  "migration_status": "front_external_curated_learning_chat_ui_runtime_patch_01_complete",
+  "last_applied_checkpoint": "FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-RUNTIME-PATCH-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -114,12 +114,12 @@
     "FRONT-EXTERNAL-CURATED-LEARNING-AUTONOMOUS-CODING-PATCH-GENERATION-01",
     "FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01",
     "FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01",
-    "FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-USAGE-REPAIR-01"
+    "FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-USAGE-REPAIR-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-RUNTIME-PATCH-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
-    "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01",
-    "FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-RUNTIME-PATCH-01"
+    "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01"
   ],
   "protected_out_of_scope": [
     "memory/semantic",
@@ -129,10 +129,10 @@
   "recommended_next_front": {
     "name": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01",
     "status": "LOCKED",
-    "reason": "User must explicitly approve before executing the first canary ingestion prep front. Alternative: FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-RUNTIME-PATCH-01 for runtime patch."
+    "reason": "User must explicitly approve before executing the first canary ingestion prep front."
   },
   "ready_for_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01",
-  "last_updated": "2026-06-11T06:28:00.000000+00:00",
+  "last_updated": "2026-06-11T06:42:00.000000+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [

@@ -6185,3 +6185,35 @@ Repair and harden the Brain's ability to answer curated learning probes (Q01–Q
 
 ### Next Recommended Front
 **FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-RUNTIME-PATCH-01** — **LOCKED**: requires explicit user approval.
+
+---
+
+## FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-RUNTIME-PATCH-01
+
+### Status
+LOCKED_CLEAN
+
+### Functional Commit
+ecd103c
+
+### Key Facts
+- local_chat_route_found: false
+- runtime_file_patched: none
+- direct_q01_q05_passed: true
+- live_chat_probe_skipped: true (no local server/route available)
+- canonical_total_sources: 152
+- canonical_total_accepted: 142
+- canonical_total_hold: 4
+- canonical_total_rejected: 6
+
+### Immutability
+- memory_line_count: 1710 (unchanged)
+- faiss_ids_count: 1611 (unchanged)
+- memory_mutated: false
+- faiss_mutated: false
+
+### Decision
+CHAT_UI_RUNTIME_PATCH_BLOCKED_EXTERNAL_ROUTE
+
+### Next Recommended Front
+**FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01** — **LOCKED**: requires explicit user approval.
