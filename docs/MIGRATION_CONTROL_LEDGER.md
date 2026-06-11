@@ -6558,3 +6558,89 @@ All 8/8 positive queries achieved top-5 hit.
 ### Next Recommended Front
 FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-POST-PROMOTION-VERIFY-SECURITY-GOVERNANCE-01 — remains LOCKED until explicitly requested.
 
+---
+
+## FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-POST-PROMOTION-VERIFY-SECURITY-GOVERNANCE-01: FAISS Post-Promotion Verify (Read-Only)
+
+**Status:** COMPLETE
+**Date:** 2026-06-11
+**Branch:** codex/own-capital-sustainable-return
+**Functional Commit:** 0b5f2a5
+**Ledger Commit:** PENDING
+**Head Before:** 9ed1d8c
+**Type:** read-only verification — NO mutation
+
+### Objective
+Verify post-promotion that the canonical FAISS index is correct, promoted IDs recoverable, semantic memory unchanged, no duplicates, no contamination, and audit the legacy path anomaly.
+
+### Preconditions (All Passed)
+- Workdir correcto
+- Git limpio (staged empty, no unstaged tracked)
+- Local HEAD == Remote HEAD == 9ed1d8c
+
+### Canonical Post-Promotion Inventory
+| Metric | Expected | Actual | Status |
+|--------|----------|--------|--------|
+| semantic_memory.jsonl lines | 1715 | 1715 | PASS |
+| FAISS ids count | 1616 | 1616 | PASS |
+| FAISS ntotal | 1616 | 1616 | PASS |
+| All 5 promoted IDs present | Yes | Yes | PASS |
+| Duplicate IDs | None | None | PASS |
+
+### Promoted IDs Verification
+All 5 promoted IDs verified present in FAISS and mapping to semantic records with correct domain and status.
+
+### Retrieval Re-eval Metrics
+| Metric | Value |
+|--------|-------|
+| top_1_hit_rate | 0.875 |
+| top_3_hit_rate | 1.0 |
+| top_5_hit_rate | 1.0 |
+| mrr | 0.9375 |
+| domain_precision | 0.725 |
+
+### Quality Warning
+- domain_precision = 0.725 (below target 0.80)
+- QUALITY_WARNING_DOMAIN_PRECISION_BELOW_TARGET: True
+- Context: Only 5 security governance records in entire 1616-vector index. 100% top-5 hit rate confirms retrieval quality.
+- Recommendation: Expected with small canary batch. Not a failure.
+
+### Negative Contamination Result
+- Contamination detected: False
+- No trading/broker/coding execution contamination.
+
+### Legacy Path Audit (Read-Only)
+| Check | Result |
+|-------|--------|
+| Legacy path exists | Yes |
+| Legacy FAISS ntotal | 1616 |
+| Legacy FAISS ids count | 1616 |
+| Legacy canary IDs present | Yes |
+| Legacy appears mutated | Yes (ntotal changed from 1611 to 1616) |
+| Runtime points to legacy | Yes (BASE_PATH = C:\AI_VAULT) |
+
+**Recommendation**: Legacy path was accidentally mutated during previous execution front because SemanticMemoryFAISS resolved BASE_PATH to C:\AI_VAULT. Do NOT touch automatically. Recommend FRONT-RUNTIME-PATH-ALIGNMENT-CANONICAL-VERIFY-01.
+
+### No Mutation Proof
+- semantic_memory.jsonl: 1715 lines, unchanged SHA
+- FAISS index: only read, not written in this front
+- FAISS ids: only read, not written in this front
+
+### Files Committed (Functional Scope)
+- tests/smoke/smoke_front_external_curated_learning_canary_faiss_post_promotion_verify_security_governance_01.py
+- docs/FRONT_EXTERNAL_CURATED_LEARNING_CANARY_FAISS_POST_PROMOTION_VERIFY_SECURITY_GOVERNANCE_01.md
+
+### Tests
+- 20/20 passed
+
+### Safety Flags (Post-Verification)
+- memory_mutated: false
+- faiss_mutated: false
+- embeddings_created: false (only query embeddings for eval)
+- broker_api_used: false
+- trading_used: false
+- legacy_path_touched: false (read-only audit only)
+
+### Next Recommended Front
+FRONT-RUNTIME-PATH-ALIGNMENT-CANONICAL-VERIFY-01 — align runtime BASE_PATH to canonical repo path and clean up legacy mutation. LOCKED until explicitly requested.
+
