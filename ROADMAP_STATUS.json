@@ -1,9 +1,9 @@
 {
-  "current_head": "ecd103c",
+  "current_head": "951dc81",
   "current_remote_head": "ecd103c",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_external_curated_learning_chat_ui_runtime_patch_01_complete",
-  "last_applied_checkpoint": "FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-RUNTIME-PATCH-01",
+  "migration_status": "front_chat_ui_live_runtime_source_recovery_and_curated_wiring_01_complete",
+  "last_applied_checkpoint": "FRONT-CHAT-UI-LIVE-RUNTIME-SOURCE-RECOVERY-AND-CURATED-WIRING-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -115,7 +115,12 @@
     "FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01",
     "FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01",
     "FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-USAGE-REPAIR-01",
-    "FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-RUNTIME-PATCH-01"
+    "FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-RUNTIME-PATCH-01",
+    "FRONT-CHAT-UI-LIVE-RUNTIME-SOURCE-RECOVERY-AND-CURATED-WIRING-01"
+  ],
+  "open_fronts": [],
+  "blocked_fronts": [
+    "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [

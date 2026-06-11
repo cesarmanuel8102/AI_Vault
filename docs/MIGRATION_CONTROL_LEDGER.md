@@ -6217,3 +6217,51 @@ CHAT_UI_RUNTIME_PATCH_BLOCKED_EXTERNAL_ROUTE
 
 ### Next Recommended Front
 **FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01** — **LOCKED**: requires explicit user approval.
+
+---
+
+## FRONT-CHAT-UI-LIVE-RUNTIME-SOURCE-RECOVERY-AND-CURATED-WIRING-01
+
+### Status
+CHAT_UI_RUNTIME_RECONSTRUCTED_AND_HELPER_WIRED
+
+### Functional Commit
+951dc81
+
+### Discovery
+- Live UI reachable: http://127.0.0.1:8090/ui/
+- Initial assumption: chat_ui_server.py serves port 8090
+- Contradiction: chat_ui_server.py does not exist on disk or in git
+- Actual runtime: tmp_agent/brain_v9/start_safe_server.py launches brain_v9.main:app
+- Real /chat route: tmp_agent/brain_v9/main.py (tracked in git)
+
+### Runtime File Patched
+tmp_agent/brain_v9/main.py
+
+### Key Facts
+- source_file_found_initially: false (chat_ui_server.py not present)
+- source_file_reconstructed: true (patched brain_v9/main.py)
+- helper_wired: true
+- q01_live_passed: true
+- q02_live_passed: true
+- q03_live_passed: true
+- q04_live_passed: true
+- q05_live_passed: true
+- canonical_total_sources: 152
+- canonical_total_accepted: 142
+- canonical_total_hold: 4
+- canonical_total_rejected: 6
+
+### Immutability
+- memory_line_count: 1710 (unchanged)
+- faiss_ids_count: 1611 (unchanged)
+- memory_mutated: false
+- faiss_mutated: false
+
+### Safety
+- broker_api_used: false
+- trading_used: false
+- canary_ingestion_prep_executed: false
+
+### Next Recommended Front
+**FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01** — **LOCKED**: requires explicit user approval.
