@@ -7810,3 +7810,51 @@ The adapter/router/governance metadata layer is working, but answer-generation q
   - secrets_exposed: `false`
 - evidence_path: `tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01`
 - next_front_locked: `FRONT-BRAIN-AUTONOMY-GAP-CLOSURE-01`
+
+## LEDGER-ROADMAP-SSOT-MEGA-FRONT-BRAIN-SELF-TRAINING-AUTONOMY-MAXIMIZATION-200CYCLES-01 — Brain Self-Training Autonomy Maximization
+
+- timestamp_utc: `2026-06-12T23:16:14.737065+00:00`
+- status: `BRAIN_SELF_TRAINING_AUTONOMY_MAXIMIZATION_COMPLETED`
+- branch: `codex/own-capital-sustainable-return`
+- functional_commits:
+  - `c37f36c` — `feat: add Kimi autonomy dialogue calibration`
+  - `5394f1f` — `feat: add Brain mega autonomy cycle runner`
+  - `54e47ed` — `feat: improve Brain operational learning and excellence scoring`
+  - `9140eb6` — `feat: add Brain daily autonomous dry-run tooling`
+  - `f716bce` — `test: add mega autonomy maximization smoke coverage`
+- cycles_targeted: `200`
+- cycles_completed: `200`
+- batches_completed: `20`
+- provider_success_rate: `0.75`
+- kimi_open_dialogue_stability: `KIMI_OPEN_AUTONOMY_DIALOGUE_STABLE`
+- stable_prompt_profiles: `exact_output, bullet_only, json_only, role_compressed, one_sentence_proposal, critic`
+- fallback_rate: `0.25`
+- implemented_improvements: `120`
+- blocked_improvements: `0`
+- tracked_learning:
+  - lessons_created: `20`
+  - mistakes_recorded: `5`
+  - promotion_candidates_created: `5`
+- evidence_learning:
+  - lessons_created: `120`
+  - mistakes_recorded: `6`
+  - promotion_candidates_created: `12`
+- tests:
+  - required_suite: `57 passed, 2 warnings`
+  - py_compile: `PASS`
+- score:
+  - before: `0.869`
+  - after: `0.94`
+  - delta: `0.071`
+- daily_dryrun_ready: `true`
+- safety:
+  - memory_mutated: `false`
+  - faiss_mutated: `false`
+  - semantic_memory_lines: `1715`
+  - faiss_ids: `1616`
+  - faiss_ntotal: `1616`
+  - trading_touched: `false`
+  - b8_touched: `false`
+  - secrets_exposed: `false`
+- evidence_path: `tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01`
+- next_front_locked: `FRONT-BRAIN-DAILY-AUTONOMOUS-OPERATIONS-DRYRUN-01`

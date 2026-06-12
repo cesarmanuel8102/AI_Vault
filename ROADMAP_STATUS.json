@@ -1,9 +1,9 @@
 {
-  "current_head": "b4046ed",
-  "current_remote_head": "b4046ed",
+  "current_head": "f716bce",
+  "current_remote_head": "f716bce",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "brain_aggressive_governed_autonomy_excellence_partial",
-  "last_applied_checkpoint": "MACRO-FRONT-BRAIN-AGGRESSIVE-GOVERNED-AUTONOMY-EXCELLENCE-01",
+  "migration_status": "brain_self_training_autonomy_maximization_completed",
+  "last_applied_checkpoint": "MEGA-FRONT-BRAIN-SELF-TRAINING-AUTONOMY-MAXIMIZATION-200CYCLES-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -150,7 +150,8 @@
     "FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01",
     "MACRO-FRONT-BRAIN-FINAL-AUTONOMY-ACCELERATION-CYCLE-01",
     "FRONT-KIMI-K2-6-LIVE-CHAT-PROBE-AND-SAFETY-FILTER-01",
-    "MACRO-FRONT-BRAIN-AGGRESSIVE-GOVERNED-AUTONOMY-EXCELLENCE-01"
+    "MACRO-FRONT-BRAIN-AGGRESSIVE-GOVERNED-AUTONOMY-EXCELLENCE-01",
+    "MEGA-FRONT-BRAIN-SELF-TRAINING-AUTONOMY-MAXIMIZATION-200CYCLES-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -165,12 +166,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-AUTONOMY-GAP-CLOSURE-01",
+    "name": "FRONT-BRAIN-DAILY-AUTONOMOUS-OPERATIONS-DRYRUN-01",
     "status": "recommended_next",
-    "reason": "Aggressive autonomy artifacts, learning, operations, and excellence scoring are in place; open autonomy Kimi prompts still return EMPTY_RESPONSE and require provider/gap closure before claiming full autonomous excellence."
+    "reason": "Mega self-training completed 200 logical cycles with tests passing and manual daily autonomous dry-run tooling ready; next safe step is operator-reviewed daily dry-run execution."
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-06-12T22:52:57.848701+00:00",
+  "last_updated": "2026-06-12T23:16:14.737065+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -3432,5 +3433,73 @@
     "evidence_path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01",
     "next_front_locked": "FRONT-BRAIN-AUTONOMY-GAP-CLOSURE-01",
     "updated_at_utc": "2026-06-12T22:52:57.848701+00:00"
+  },
+  "mega_front_brain_self_training_autonomy_maximization_200cycles_01": {
+    "front": "MEGA-FRONT-BRAIN-SELF-TRAINING-AUTONOMY-MAXIMIZATION-200CYCLES-01",
+    "status": "BRAIN_SELF_TRAINING_AUTONOMY_MAXIMIZATION_COMPLETED",
+    "cycles_targeted": 200,
+    "cycles_completed": 200,
+    "batches_completed": 20,
+    "provider_success_rate": 0.75,
+    "kimi_open_dialogue_stability": "KIMI_OPEN_AUTONOMY_DIALOGUE_STABLE",
+    "stable_prompt_profiles": [
+      "exact_output",
+      "bullet_only",
+      "json_only",
+      "role_compressed",
+      "one_sentence_proposal",
+      "critic"
+    ],
+    "fallback_rate": 0.25,
+    "implemented_improvements": 120,
+    "blocked_improvements": 0,
+    "lessons_created": 20,
+    "mistakes_recorded": 5,
+    "promotion_candidates_created": 5,
+    "evidence_lessons_created": 120,
+    "evidence_mistakes_created": 6,
+    "evidence_promotion_candidates_created": 12,
+    "tests_added": [
+      "tests/smoke/smoke_mega_front_brain_self_training_autonomy_maximization_200cycles_01.py",
+      "tests/smoke/smoke_front_kimi_open_autonomy_dialogue_calibration_01.py"
+    ],
+    "score_before": 0.869,
+    "score_after": 0.94,
+    "score_delta": 0.071,
+    "daily_dryrun_ready": true,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "b8_touched": false,
+    "secrets_exposed": false,
+    "functional_commits": [
+      {
+        "hash": "c37f36c",
+        "message": "feat: add Kimi autonomy dialogue calibration"
+      },
+      {
+        "hash": "5394f1f",
+        "message": "feat: add Brain mega autonomy cycle runner"
+      },
+      {
+        "hash": "54e47ed",
+        "message": "feat: improve Brain operational learning and excellence scoring"
+      },
+      {
+        "hash": "9140eb6",
+        "message": "feat: add Brain daily autonomous dry-run tooling"
+      },
+      {
+        "hash": "f716bce",
+        "message": "test: add mega autonomy maximization smoke coverage"
+      }
+    ],
+    "tests": {
+      "required_suite": "57 passed, 2 warnings",
+      "py_compile": "PASS"
+    },
+    "evidence_path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01",
+    "next_front_locked": "FRONT-BRAIN-DAILY-AUTONOMOUS-OPERATIONS-DRYRUN-01",
+    "updated_at_utc": "2026-06-12T23:16:14.737065+00:00"
   }
 }
