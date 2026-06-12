@@ -1,9 +1,9 @@
 {
-  "current_head": "bcced50",
-  "current_remote_head": "bcced50",
+  "current_head": "c99b453",
+  "current_remote_head": "c99b453",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_legacy_path_cleanup_plan_01_complete",
-  "last_applied_checkpoint": "FRONT-LEGACY-PATH-CLEANUP-PLAN-01",
+  "migration_status": "front_legacy_path_cleanup_execute_01_complete",
+  "last_applied_checkpoint": "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -125,7 +125,8 @@
     "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-EXECUTE-SECURITY-GOVERNANCE-01",
     "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-POST-PROMOTION-VERIFY-SECURITY-GOVERNANCE-01",
     "FRONT-RUNTIME-PATH-ALIGNMENT-CANONICAL-VERIFY-01",
-    "FRONT-LEGACY-PATH-CLEANUP-PLAN-01"
+    "FRONT-LEGACY-PATH-CLEANUP-PLAN-01",
+    "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -135,12 +136,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01",
+    "name": "FRONT-CANONICAL-RUNTIME-SMOKE-VERIFY-01",
     "status": "LOCKED",
-    "reason": "Legacy path cleanup requires explicit user approval because it will rename C:\\AI_VAULT."
+    "reason": "Legacy path cleanup encountered Windows file lock. Recommend reboot and retry, or manual cleanup."
   },
-  "ready_for_next_front": "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01",
-  "last_updated": "2026-06-12T01:29:21.894774+00:00",
+  "ready_for_next_front": "FRONT-CANONICAL-RUNTIME-SMOKE-VERIFY-01",
+  "last_updated": "2026-06-12T02:10:01.645193+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2484,5 +2485,21 @@
     "tests_passed": true,
     "functional_commit": "bcced50",
     "next_front_locked": "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01"
+  },
+  "front_legacy_path_cleanup_execute_01": {
+    "status": "LEGACY_PATH_CLEANUP_EXECUTED_QUARANTINE_RENAME_BLOCKED",
+    "canonical_path": "C:\\AI_VAULT_CANONICAL",
+    "original_legacy_path": "C:\\AI_VAULT",
+    "quarantine_target": "C:\\AI_VAULT_LEGACY_QUARANTINE_20260611_220646",
+    "rename_performed": false,
+    "rename_blocked_reason": "WINDOWS_FILE_LOCK_ACTIVE_PROCESS",
+    "deletion_authorized": false,
+    "deletion_performed": false,
+    "rollback_possible": true,
+    "canonical_memory_mutated": false,
+    "canonical_faiss_mutated": false,
+    "tests_passed": true,
+    "functional_commit": "c99b453",
+    "next_front_locked": "FRONT-CANONICAL-RUNTIME-SMOKE-VERIFY-01"
   }
 }

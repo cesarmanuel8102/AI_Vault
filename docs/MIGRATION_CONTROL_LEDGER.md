@@ -6813,3 +6813,102 @@ Audit and prepare a safe, read-only plan for treating the legacy path `C:\AI_VAU
 ### Next Recommended Front
 FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01 — remains LOCKED until explicit user approval.
 
+---
+
+## FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01: Legacy Path Cleanup Execute (Blocked by Windows File Lock)
+
+**Status:** COMPLETE (with failure documented)
+**Date:** 2026-06-11
+**Branch:** codex/own-capital-sustainable-return
+**Functional Commit:** c99b453
+**Ledger Commit:** PENDING
+**Head Before:** a3f37f7
+**Type:** attempted reversible quarantine rename — blocked by OS file lock, no data lost
+
+### Objective
+Execute cleanup of legacy path `C:\AI_VAULT` via reversible quarantine rename, after explicit user approval.
+
+### Explicit User Approval
+- Approval phrase used: `APPROVE_LEGACY_PATH_CLEANUP_EXECUTE_AI_VAULT`
+- Found in user prompt: Yes
+- Verified at: 2026-06-11
+
+### Pre-Cleanup Manifest
+- Legacy path: `C:\AI_VAULT`
+- Exists: Yes
+- Git repo: Yes (dirty, branch codex/own-capital-sustainable-return, head fe89f2f5)
+- semantic_memory.jsonl lines: 1711
+- FAISS ids count: 1616
+- FAISS ntotal: 1616
+- Total files: ~56,272
+
+### Runtime Process Safety Result
+- BASE_PATH: canonical
+- Active legacy processes: none detected
+- Runtime server: not running
+- Safety check: PASS
+
+### Quarantine Rename Attempt
+- Planned target: `C:\AI_VAULT_LEGACY_QUARANTINE_20260611_220646`
+- Rename attempted: Yes
+- Rename succeeded: **No**
+- Failure: `WinError 32` — The process cannot access the file because it is being used by another process.
+- Failure reason: `WINDOWS_FILE_LOCK_ACTIVE_PROCESS`
+
+### What Was NOT Done (Safety Compliance)
+- No processes were killed
+- No admin elevation was used
+- No force-delete or force-move was attempted
+- No canonical files were modified
+- No registry changes were made
+
+### Post-Rename Canonical Verification
+| Check | Result |
+|-------|--------|
+| `C:\AI_VAULT` exists | Yes (rename failed) |
+| Quarantine target exists | No |
+| `C:\AI_VAULT_CANONICAL` exists | Yes |
+| semantic_memory.jsonl unchanged | Yes |
+| FAISS index unchanged | Yes |
+| FAISS ids unchanged | Yes |
+| semantic_memory lines | 1715 |
+| FAISS ids count | 1616 |
+| FAISS ntotal | 1616 |
+
+### Rollback Plan
+- Rollback needed: No
+- Reason: Rename never succeeded; `C:\AI_VAULT` remains in place
+- Future rollback possible: Yes — reverse the rename if it succeeds later
+
+### No Delete Proof
+- Deletion authorized: No
+- Deletion performed: No
+- Move authorized: No
+- Copy authorized: No
+- Sync authorized: No
+
+### No Canonical Memory/FAISS Mutation Proof
+- canonical semantic_memory.jsonl SHA: unchanged
+- canonical FAISS index SHA: unchanged
+- canonical FAISS ids SHA: unchanged
+- No append occurred
+
+### Tests
+- 20/20 passed
+
+### Safety Flags (Post-Execution)
+- memory_mutated: false
+- faiss_mutated: false
+- broker_api_used: false
+- trading_used: false
+- legacy_path_touched: false (rename blocked, no modification)
+
+### Next Recommended Front
+FRONT-CANONICAL-RUNTIME-SMOKE-VERIFY-01 — remains LOCKED until explicit user request.
+
+### Recommendation
+The legacy path cleanup failed due to a Windows file lock. Recommended next steps:
+1. Reboot the system to release file locks
+2. Re-run rename manually or via a new front
+3. Verify `C:\AI_VAULT` is quarantined and `C:\AI_VAULT_CANONICAL` is intact
+
