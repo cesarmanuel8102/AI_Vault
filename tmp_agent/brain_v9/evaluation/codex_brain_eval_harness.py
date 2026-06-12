@@ -37,8 +37,14 @@ def extract_brain_metadata(response: Dict[str, Any]) -> Dict[str, Any]:
     return response.get("brain") or response.get("brain_metadata") or response.get("metadata") or choice_meta or {}
 
 
-def call_brain(base_url: str, model: str, prompt: str, timeout: int) -> Dict[str, Any]:
-    payload = {"model": model, "messages": [{"role": "user", "content": prompt}], "stream": False}
+def call_brain(base_url: str, model: str, prompt: str, timeout: int, dry_run: bool = True) -> Dict[str, Any]:
+    payload = {
+        "model": model,
+        "messages": [{"role": "user", "content": prompt}],
+        "stream": False,
+        "dry_run": dry_run,
+        "metadata": {"dry_run": dry_run, "read_only": dry_run, "evaluation": True},
+    }
     req = urllib.request.Request(
         base_url.rstrip("/") + "/chat/completions",
         data=json.dumps(payload).encode("utf-8"),
@@ -55,13 +61,14 @@ def call_brain(base_url: str, model: str, prompt: str, timeout: int) -> Dict[str
                 "latency_ms": round((time.perf_counter() - started) * 1000, 2),
                 "content": content,
                 "brain": extract_brain_metadata(parsed),
+                "dry_run": dry_run,
                 "raw_object": parsed.get("object"),
                 "error": None,
             }
     except urllib.error.HTTPError as exc:
-        return {"status_code": exc.code, "latency_ms": round((time.perf_counter() - started) * 1000, 2), "content": exc.read().decode("utf-8", errors="replace")[:1000], "brain": {}, "error": "HTTPError"}
+        return {"status_code": exc.code, "latency_ms": round((time.perf_counter() - started) * 1000, 2), "content": exc.read().decode("utf-8", errors="replace")[:1000], "brain": {}, "dry_run": dry_run, "error": "HTTPError"}
     except Exception as exc:
-        return {"status_code": None, "latency_ms": round((time.perf_counter() - started) * 1000, 2), "content": "", "brain": {}, "error": repr(exc)}
+        return {"status_code": None, "latency_ms": round((time.perf_counter() - started) * 1000, 2), "content": "", "brain": {}, "dry_run": dry_run, "error": repr(exc)}
 
 
 def classify_row(row: Dict[str, Any]) -> Dict[str, Any]:
@@ -112,17 +119,17 @@ def score_results(results: Iterable[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def run_harness(base_url: str, model: str, suite_path: str, out_dir: str, timeout: int = 45, max_prompts: Optional[int] = None, compact: bool = False) -> Dict[str, Any]:
+def run_harness(base_url: str, model: str, suite_path: str, out_dir: str, timeout: int = 45, max_prompts: Optional[int] = None, compact: bool = False, dry_run: bool = True) -> Dict[str, Any]:
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
     prompts = load_suite(suite_path, max_prompts=max_prompts)
     results = []
     for item in prompts:
-        result = call_brain(base_url, model, item["prompt"], timeout)
+        result = call_brain(base_url, model, item["prompt"], timeout, dry_run=dry_run)
         result.update({"prompt_id": item["prompt_id"], "category": item["category"], "prompt": item["prompt"]})
         results.append(classify_row(result))
     summary = score_results(results)
-    payload = {"base_url": base_url, "model": model, "suite_path": str(suite_path), "summary": summary, "results": results if not compact else []}
+    payload = {"base_url": base_url, "model": model, "suite_path": str(suite_path), "dry_run": dry_run, "summary": summary, "results": results if not compact else []}
     (out / "eval_results.json").write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
     (out / "eval_summary.md").write_text("# Codex Brain Eval Summary\n\n" + "\n".join(f"- {k}: `{v}`" for k, v in summary.items()) + "\n", encoding="utf-8")
     return payload
@@ -137,8 +144,9 @@ def main() -> None:
     parser.add_argument("--timeout", type=int, default=45)
     parser.add_argument("--max-prompts", type=int, default=None)
     parser.add_argument("--compact", action="store_true")
+    parser.add_argument("--live", action="store_true", help="Disable the default dry_run/read_only evaluation guard.")
     args = parser.parse_args()
-    print(json.dumps(run_harness(args.base_url, args.model, args.suite, args.out, args.timeout, args.max_prompts, args.compact)["summary"], indent=2))
+    print(json.dumps(run_harness(args.base_url, args.model, args.suite, args.out, args.timeout, args.max_prompts, args.compact, dry_run=not args.live)["summary"], indent=2))
 
 
 if __name__ == "__main__":

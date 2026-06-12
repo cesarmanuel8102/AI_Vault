@@ -2489,7 +2489,7 @@ class BrainSession:
         if governed_direct:
             return self._system_reply(governed_direct, success=True)
 
-        llm_timeout_s = float(os.getenv("BRAIN_CHAT_LLM_TIMEOUT", "30"))
+        llm_timeout_s = float(os.getenv("BRAIN_CHAT_LLM_TIMEOUT", "90"))
         try:
             result = await asyncio.wait_for(
                 self.llm.query(messages, model_priority=chain, max_time=llm_timeout_s),
@@ -2498,11 +2498,33 @@ class BrainSession:
         except asyncio.TimeoutError:
             governed_fallback = self._governed_self_improvement_eval_fallback(message)
             if governed_fallback:
-                return self._system_reply(governed_fallback, success=True)
-            return self._system_reply(
+                reply = self._system_reply(governed_fallback, success=True)
+                reply.update(
+                    {
+                        "source": "llm_timeout_fallback",
+                        "fallback_used": True,
+                        "fallback_reason": "llm_timeout_governed_eval_fallback",
+                        "timeout_budget_s": llm_timeout_s,
+                        "model_attempted": chain,
+                        "recovery_suggestion": "Inspect local LLM health or rerun with a shorter prompt before treating the answer as model-generated.",
+                    }
+                )
+                return reply
+            reply = self._system_reply(
                 f"El modelo tardó demasiado en responder tras {int(llm_timeout_s)}s. El servidor sigue operativo; intenta de nuevo con una instrucción más concreta.",
                 success=False,
             )
+            reply.update(
+                {
+                    "source": "llm_timeout_fallback",
+                    "fallback_used": True,
+                    "fallback_reason": "llm_timeout",
+                    "timeout_budget_s": llm_timeout_s,
+                    "model_attempted": chain,
+                    "recovery_suggestion": "Inspect local LLM health, reduce prompt scope, or raise BRAIN_CHAT_LLM_TIMEOUT only after provider latency is measured.",
+                }
+            )
+            return reply
         if not result.get("success") or self._looks_like_canned_failure(result.get("content") or ""):
             governed_fallback = self._governed_self_improvement_eval_fallback(message)
             if governed_fallback:

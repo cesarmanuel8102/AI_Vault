@@ -38,6 +38,8 @@ class OpenAIChatCompletionRequest(BaseModel):
     temperature: Optional[float] = None
     max_tokens: Optional[int] = None
     user: Optional[str] = None
+    dry_run: bool = False
+    metadata: Optional[Dict[str, Any]] = None
 
     class Config:
         extra = "allow"
@@ -91,6 +93,16 @@ def _safe_brain_metadata(result: Dict[str, Any]) -> Dict[str, Any]:
     return {k: v for k, v in metadata.items() if k not in FORBIDDEN_DIAGNOSTIC_KEYS}
 
 
+def _request_dry_run(payload: OpenAIChatCompletionRequest) -> bool:
+    metadata = payload.metadata or {}
+    return bool(
+        payload.dry_run
+        or metadata.get("dry_run")
+        or metadata.get("read_only")
+        or metadata.get("evaluation")
+    )
+
+
 @router.get("/models")
 async def list_models() -> Dict[str, Any]:
     return {
@@ -113,15 +125,20 @@ async def chat_completions(payload: OpenAIChatCompletionRequest) -> Dict[str, An
         model_id = payload.model
 
     message = _latest_user_message(payload.messages)
+    dry_run = _request_dry_run(payload)
     started = time.monotonic()
     try:
         result = await handle_user_message(
             message,
             room=payload.user or "openai_compat",
+            dry_run=dry_run,
             context={
                 "model_priority": "chat",
                 "source": "openai_compat",
                 "requested_model": payload.model,
+                "dry_run": dry_run,
+                "read_only": dry_run,
+                "evaluation": dry_run,
             },
         )
     except HTTPException:
@@ -151,5 +168,9 @@ async def chat_completions(payload: OpenAIChatCompletionRequest) -> Dict[str, An
             **_safe_brain_metadata(result),
             "adapter": "openai_compat",
             "adapter_latency_ms": round((time.monotonic() - started) * 1000, 3),
+            "dry_run": dry_run,
+            "read_only": dry_run,
+            "fallback_used": bool(result.get("fallback_used") or result.get("llm_fallback_used")),
+            "fallback_reason": result.get("fallback_reason"),
         },
     }
