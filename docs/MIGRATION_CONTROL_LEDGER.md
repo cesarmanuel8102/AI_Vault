@@ -7592,3 +7592,39 @@ The adapter/router/governance metadata layer is working, but answer-generation q
 - secrets_exposed: `false`
 - evidence_path: `tmp_agent/front_brain_timeout_generation_quality_fix_01`
 - next_front_locked: `FRONT-BRAIN-LOCAL-LLM-PROVIDER-OPTIMIZATION-01`
+
+
+## LEDGER-ROADMAP-SSOT-FRONT-BRAIN-LLM-PROVIDER-CHAIN-OPTIMIZATION-01 — Brain LLM Provider Chain Optimization
+
+- timestamp_utc: `2026-06-12T18:48:29.343514+00:00`
+- status: `BRAIN_LLM_PROVIDER_CHAIN_OPTIMIZATION_PARTIAL_KIMI_CONFIG_MISSING`
+- branch: `codex/own-capital-sustainable-return`
+- functional_commit: `9367f8d` — `feat: optimize Brain LLM provider chain`
+- primary_provider: `kimi_k2_6_cloud`
+- primary_model_id: `kimi-k2.6`
+- secondary_provider: `codex`
+- tertiary_provider: `local_ollama`
+- kimi_status: `CONFIG_MISSING`
+- codex_status: `EXECUTOR_AVAILABLE_NOT_SELF_BENCHMARKED`
+- local_status: `AVAILABLE`
+- provider_selected_for_chat: `kimi_k2_6_cloud when configured, else codex, else llama8b/deepseek14b`
+- provider_selected_for_coding: `kimi_k2_6_cloud when configured, else codex, else qwen2.5-coder:14b`
+- provider_selected_for_autonomy: `kimi_k2_6_cloud when configured, else codex, else llama8b/deepseek14b`
+- local_fallback_model: `llama3.1:8b`
+- demoted_or_disabled: `kimi-k2.5:cloud removed from primary chains because it returned empty on autonomy probe`
+- direct_latency_before: `llama3.1:8b previous 52.917s after Kimi fallback`
+- direct_latency_after: `llama3.1:8b tiny 29.523s; short 21.389s; autonomy 29.941s`
+- legacy_kimi_k2_5_probe: `tiny 4.131s; autonomy empty_response`
+- dry_run_eval_score: `1.0`
+- fallback_count: `0`
+- memory_mutated: `false`
+- faiss_mutated: `false`
+- semantic_memory_lines: `1715`
+- faiss_ids: `1616`
+- faiss_ntotal: `1616`
+- trading_touched: `false`
+- raw_cot_exposed: `false`
+- secrets_exposed: `false`
+- tests_passed: `true`
+- test_count: `27`
+- next_front_locked: `FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01`

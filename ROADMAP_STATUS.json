@@ -1,9 +1,9 @@
 {
-  "current_head": "fa51d51",
-  "current_remote_head": "fa51d51",
+  "current_head": "9367f8d",
+  "current_remote_head": "9367f8d",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "brain_timeout_generation_quality_fix_partial_provider_slow",
-  "last_applied_checkpoint": "FRONT-BRAIN-TIMEOUT-GENERATION-QUALITY-FIX-01",
+  "migration_status": "brain_llm_provider_chain_optimization_partial_kimi_config_missing",
+  "last_applied_checkpoint": "FRONT-BRAIN-LLM-PROVIDER-CHAIN-OPTIMIZATION-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -145,7 +145,8 @@
     "FRONT-MEMORY-FAISS-RETRIEVAL-QUALITY-PACK-01",
     "FRONT-BRAIN-AUTONOMOUS-OBSERVER-REPORTS-01",
     "FRONT-BRAIN-GOVERNED-AUTONOMY-WALKER-V1",
-    "FRONT-BRAIN-TIMEOUT-GENERATION-QUALITY-FIX-01"
+    "FRONT-BRAIN-TIMEOUT-GENERATION-QUALITY-FIX-01",
+    "FRONT-BRAIN-LLM-PROVIDER-CHAIN-OPTIMIZATION-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -160,12 +161,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-LOCAL-LLM-PROVIDER-OPTIMIZATION-01",
+    "name": "FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01",
     "status": "recommended_next",
-    "reason": "read-only eval guard and 90s timeout fixed evaluation path; direct LLM probe still needed fallback from kimi_cloud to llama3.1:8b with ~52.9s latency, so provider latency/empty-response root cause remains."
+    "reason": "Provider chain now prioritizes Kimi K2.6 cloud -> Codex -> local Ollama, but KIMI/MOONSHOT config is missing; next safe step is a secrets-safe setup runbook, not hardcoding credentials."
   },
-  "ready_for_next_front": "FRONT-BRAIN-LOCAL-LLM-PROVIDER-OPTIMIZATION-01",
-  "last_updated": "2026-06-12T18:10:48.373244+00:00",
+  "ready_for_next_front": "FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01",
+  "last_updated": "2026-06-12T18:48:29.343514+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -3134,5 +3135,67 @@
     "evidence_path": "tmp_agent/front_brain_timeout_generation_quality_fix_01",
     "next_front_locked": "FRONT-BRAIN-LOCAL-LLM-PROVIDER-OPTIMIZATION-01",
     "updated_at_utc": "2026-06-12T18:10:48.373244+00:00"
+  },
+  "front_brain_llm_provider_chain_optimization_01": {
+    "front": "FRONT-BRAIN-LLM-PROVIDER-CHAIN-OPTIMIZATION-01",
+    "status": "BRAIN_LLM_PROVIDER_CHAIN_OPTIMIZATION_PARTIAL_KIMI_CONFIG_MISSING",
+    "functional_commit": "9367f8d",
+    "remote_synced": true,
+    "primary_provider": "kimi_k2_6_cloud",
+    "primary_model_id": "kimi-k2.6",
+    "secondary_provider": "codex",
+    "tertiary_provider": "local_ollama",
+    "kimi_status": "CONFIG_MISSING",
+    "codex_status": "EXECUTOR_AVAILABLE_NOT_SELF_BENCHMARKED",
+    "local_status": "AVAILABLE",
+    "provider_selected_for_chat": "kimi_k2_6_cloud when configured, else codex, else llama8b/deepseek14b",
+    "provider_selected_for_coding": "kimi_k2_6_cloud when configured, else codex, else qwen2.5-coder:14b",
+    "provider_selected_for_autonomy": "kimi_k2_6_cloud when configured, else codex, else llama8b/deepseek14b",
+    "local_fallback_model": "llama3.1:8b",
+    "disabled_or_demoted_providers": [
+      "kimi-k2.5:cloud removed from primary chains because it returned empty on autonomy probe"
+    ],
+    "direct_latency_before": {
+      "llama3.1:8b_previous_probe_s": 52.917,
+      "fallback_from_kimi_cloud": true
+    },
+    "direct_latency_after": {
+      "llama3.1:8b_tiny_s": 29.523,
+      "llama3.1:8b_short_s": 21.389,
+      "llama3.1:8b_autonomy_s": 29.941,
+      "kimi-k2.5-cloud_tiny_s": 4.131,
+      "kimi-k2.5-cloud_autonomy_status": "kimi_cloud: Ollama devolvio respuesta vacia"
+    },
+    "dry_run_eval_score": 1.0,
+    "fallback_count": 0,
+    "provider_status": "PARTIAL_KIMI_CONFIG_MISSING_LOCAL_HARDWARE_LIMITED",
+    "patches": {
+      "provider_priority_chain": "Kimi K2.6 cloud -> Codex -> local Ollama",
+      "empty_response_is_failure": true,
+      "chain_continues_after_empty_response": true,
+      "budget_skip_uses_effective_cap": true,
+      "provider_metadata_exposed": true,
+      "dry_run_guard_preserved": true
+    },
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "semantic_memory_lines": 1715,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "trading_touched": false,
+    "raw_cot_exposed": false,
+    "secrets_exposed": false,
+    "tests_passed": true,
+    "test_count": 27,
+    "runtime_8091_restarted": true,
+    "runtime_8090_touched": false,
+    "files": [
+      "tmp_agent/brain_v9/core/llm.py",
+      "tmp_agent/brain_v9/api/openai_compat.py",
+      "tests/smoke/smoke_front_brain_llm_provider_chain_optimization_01.py"
+    ],
+    "evidence_path": "tmp_agent/front_brain_llm_provider_chain_optimization_01",
+    "next_front_locked": "FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01",
+    "updated_at_utc": "2026-06-12T18:48:29.343514+00:00"
   }
 }
