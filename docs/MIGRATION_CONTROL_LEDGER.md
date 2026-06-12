@@ -7250,3 +7250,62 @@ APPROVE_LEGACY_PATH_CLEANUP_EXECUTE_AI_VAULT
 
 ### Next Locked Front
 `FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01` remains `LOCKED`.
+
+
+## LEDGER-ROADMAP-SSOT-FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01 — Brain OpenAI Adapter Loaded on Alternate Runtime
+
+- timestamp_utc: `2026-06-12T07:23:42.808547+00:00`
+- branch: `codex/own-capital-sustainable-return`
+- front: `FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01`
+- status: `BRAIN_V9_ADAPTER_RUNTIME_LOADED_ON_ALTERNATE_PORT_8091`
+- canonical_path: `C:\AI_VAULT_CANONICAL`
+- functional_commit: `3d81691`
+
+### Runtime Selection
+- selected_runtime_port: `8091`
+- safe_restart_performed: `false`
+- alternate_port_used: `true`
+- 8090 owner was not safely classifiable because Windows did not expose command line/path for PID `193980`.
+- 8090 was not killed.
+
+### Runtime Probe
+- health_ok: `true`
+- runtime_models_passed: `true`
+- runtime_chat_passed: `true`
+- stream_behavior_ok: `true`
+- adapter_calls_handle_user_message: `true`
+- adapter_direct_llm_query: `false`
+
+### Codex-to-Brain Dialogue
+- codex_to_brain_dialogue_ran: `true`
+- dialogue_success_count: `5`
+- intent_metadata_present: `true`
+- route_metadata_present: `true`
+- governance_metadata_present: `true`
+- no_cot_ok: `true`
+- canonical_path_ok: `true`
+- preliminary_score: `1.0`
+
+### Container / Open WebUI
+- container_to_brain_passed: `true`
+- openwebui_provider_base_url: `http://host.docker.internal:8091/v1`
+
+### Canonical Safety
+- memory_mutated: `false`
+- faiss_mutated: `false`
+- trading_touched: `false`
+- legacy_touched: `false`
+- raw_cot_exposed: `false`
+- secrets_exposed: `false`
+- semantic_memory_lines: `1715`
+- faiss_ids: `1616`
+- faiss_ntotal: `1616`
+
+### Validation
+- tests_passed: `true`
+- test_count: `16`
+- documentation: `docs/FRONT_BRAIN_V9_ADAPTER_RUNTIME_LOAD_FIX_01.md`
+- smoke test: `tests/smoke/smoke_front_brain_v9_adapter_runtime_load_fix_01.py`
+
+### Next Locked Front
+`FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01` remains `LOCKED`.

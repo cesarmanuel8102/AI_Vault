@@ -1,9 +1,9 @@
 {
-  "current_head": "2c11a37",
-  "current_remote_head": "2c11a37",
+  "current_head": "3d81691",
+  "current_remote_head": "3d81691",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "chat_openai_compatibility_adapter_preserve_router_applied_partial_runtime_load_pending",
-  "last_applied_checkpoint": "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01",
+  "migration_status": "brain_v9_adapter_runtime_loaded_on_alternate_port_8091",
+  "last_applied_checkpoint": "FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -133,7 +133,8 @@
     "FRONT-CHAT-UI-E2E-FAILURE-DIAGNOSTIC-01",
     "FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01",
     "FRONT-CHAT-ROUTER-PRESERVATION-ENTRYPOINT-01",
-    "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01"
+    "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01",
+    "FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -147,12 +148,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01",
+    "name": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
     "status": "locked_next_fix",
-    "reason": "adapter source and TestClient validation passed, but live runtime 8090 has not loaded /v1 routes because safe restart was skipped"
+    "reason": "OpenAI adapter loaded and verified on safe alternate port 8091; production 8090 still runs old process and needs controlled switchover"
   },
-  "ready_for_next_front": "FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01",
-  "last_updated": "2026-06-12T07:07:54.188223+00:00",
+  "ready_for_next_front": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
+  "last_updated": "2026-06-12T07:23:42.808547+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2738,5 +2739,46 @@
     ],
     "next_front_locked": "FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01",
     "updated_at_utc": "2026-06-12T07:07:54.188223+00:00"
+  },
+  "front_brain_v9_adapter_runtime_load_fix_01": {
+    "front": "FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01",
+    "status": "BRAIN_V9_ADAPTER_RUNTIME_LOADED_ON_ALTERNATE_PORT_8091",
+    "canonical_path": "C:\\AI_VAULT_CANONICAL",
+    "selected_runtime_port": 8091,
+    "safe_restart_performed": false,
+    "alternate_port_used": true,
+    "health_ok": true,
+    "runtime_models_passed": true,
+    "runtime_chat_passed": true,
+    "stream_behavior_ok": true,
+    "adapter_calls_handle_user_message": true,
+    "codex_to_brain_dialogue_ran": true,
+    "dialogue_success_count": 5,
+    "intent_metadata_present": true,
+    "route_metadata_present": true,
+    "governance_metadata_present": true,
+    "no_cot_ok": true,
+    "canonical_path_ok": true,
+    "preliminary_score": 1.0,
+    "container_to_brain_passed": true,
+    "openwebui_provider_base_url": "http://host.docker.internal:8091/v1",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "raw_cot_exposed": false,
+    "secrets_exposed": false,
+    "semantic_memory_lines": 1715,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "tests_passed": true,
+    "test_count": 16,
+    "functional_commit": "3d81691",
+    "runtime_8090_status": "existing process left untouched because owner was not safely classifiable",
+    "runtime_8091_pid_note": "see tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/runtime_start_8091.json",
+    "documentation": "docs/FRONT_BRAIN_V9_ADAPTER_RUNTIME_LOAD_FIX_01.md",
+    "smoke_test": "tests/smoke/smoke_front_brain_v9_adapter_runtime_load_fix_01.py",
+    "next_front_locked": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
+    "updated_at_utc": "2026-06-12T07:23:42.808547+00:00"
   }
 }
