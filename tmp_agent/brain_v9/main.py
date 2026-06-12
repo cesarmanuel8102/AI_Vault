@@ -41,6 +41,7 @@ from brain.curated_runtime_lookup import (
 )
 from brain.curated_learning_chat_access import answer_chat_probe
 from brain_v9.api_security import require_operator_access, StrictOperatorAccess
+from brain_v9.core.router_entrypoint import handle_user_message
 from brain_v9.config import (
     BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS,
     BRAIN_SAFE_MODE,
@@ -1786,10 +1787,6 @@ Las restricciones se reactivaran en 60 minutos o al escribir:
         except Exception as _net_err:
             log.debug("network grounded fastpath skip: %s", _net_err)
     
-    # Chat normal ORAV
-    from brain_v9.core.session import get_or_create_session
-    session = get_or_create_session(req.session_id, active_sessions)
-    
     # ── Emit trace event: user request received ──
     _emit_agent_trace_internal(
         req.session_id, "chat_ui", "thinking",
@@ -1800,7 +1797,15 @@ Las restricciones se reactivaran en 60 minutos o al escribir:
     
     try:
         result = await asyncio.wait_for(
-            session.chat(req.message, req.model_priority),
+            handle_user_message(
+                req.message,
+                room=req.session_id,
+                context={
+                    "active_sessions": active_sessions,
+                    "model_priority": req.model_priority,
+                    "source": "native_chat",
+                },
+            ),
             timeout=30,
         )
     except asyncio.TimeoutError:
