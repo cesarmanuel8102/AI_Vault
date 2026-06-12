@@ -7858,3 +7858,51 @@ The adapter/router/governance metadata layer is working, but answer-generation q
   - secrets_exposed: `false`
 - evidence_path: `tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01`
 - next_front_locked: `FRONT-BRAIN-DAILY-AUTONOMOUS-OPERATIONS-DRYRUN-01`
+
+## LEDGER-ROADMAP-SSOT-MEGA-FRONT-BRAIN-PERSISTENT-AUTONOMY-REAL-MEMORY-CHAT-DASHBOARD-01 — Persistent Autonomy, Real Memory Staging, Chat Dashboard
+
+- timestamp_utc: `2026-06-12T23:48:03.993993+00:00`
+- status: `BRAIN_PERSISTENT_AUTONOMY_REAL_MEMORY_PARTIAL`
+- branch: `codex/own-capital-sustainable-return`
+- functional_commits:
+  - `523098b` — `feat: add persistent Brain autonomy supervisor`
+  - `a8baddb` — `feat: add Brain real memory promotion pipeline`
+  - `6722bf3` — `feat: add Brain chat dashboard recovery`
+  - `380b2cb` — `feat: add Brain autonomy monitoring and correction queue`
+  - `9a783d7` — `test: add persistent autonomy memory dashboard smoke coverage`
+- persistent_autonomy_created: `true`
+- scheduled_task_tooling_created: `true`
+- scheduled_task_created: `false`
+- scheduled_task_enabled: `false`
+- run_once_verified: `true`
+- status_verified: `true`
+- cycles_run: `3`
+- memory:
+  - autonomous_events_written: `8`
+  - promotion_candidates_created: `5`
+  - semantic_staging_created: `true`
+  - semantic_staging_count: `5`
+  - canonical_semantic_promoted: `false`
+  - promoted_count: `0`
+  - blocker: `canonical promotion deferred to dedicated scale-up gate`
+- canonical_counts:
+  - old_semantic_lines: `1715`
+  - new_semantic_lines: `1715`
+  - old_faiss_ntotal: `1616`
+  - new_faiss_ntotal: `1616`
+- dashboard_status: `ready_to_run_on_8092`
+- chat_status: `proxy_route_implemented_to_8091_provider_probe`
+- dashboard_url: `http://127.0.0.1:8092/`
+- rollback_available: `true`
+- tests_passed: `true`
+- test_result: `44 passed`
+- safety:
+  - real_autonomous_memory_mutated: `true`
+  - canonical_semantic_mutated: `false`
+  - faiss_mutated: `false`
+  - trading_touched: `false`
+  - b8_touched: `false`
+  - secrets_exposed: `false`
+  - raw_cot_leak: `false`
+- evidence_path: `tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01`
+- next_front_locked: `FRONT-BRAIN-SCHEDULER-ENABLEMENT-02`
