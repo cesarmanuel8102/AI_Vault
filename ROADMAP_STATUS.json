@@ -1,9 +1,9 @@
 {
-  "current_head": "1bec62e",
-  "current_remote_head": "1bec62e",
+  "current_head": "0a16a95",
+  "current_remote_head": "0a16a95",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "codex_to_brain_evaluation_harness_v2_created",
-  "last_applied_checkpoint": "FRONT-CODEX-TO-BRAIN-EVALUATION-HARNESS-V2-01",
+  "migration_status": "switchover_blocked_unsafe_8090_owner",
+  "last_applied_checkpoint": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -143,7 +143,8 @@
   "blocked_fronts": [
     "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
     "FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01",
-    "FRONT-LEGACY-LOCK-HANDLE-TOOL-INSTALL-OR-SAFE-MODE-PLAN-01"
+    "FRONT-LEGACY-LOCK-HANDLE-TOOL-INSTALL-OR-SAFE-MODE-PLAN-01",
+    "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01"
   ],
   "protected_out_of_scope": [
     "memory/semantic",
@@ -151,12 +152,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
+    "name": "FRONT-CHAT-UI-BRAIN-PROVIDER-CONFIG-8091-01",
     "status": "locked_next",
-    "reason": "evaluation harness is now repeatable; next attempt controlled runtime switchover"
+    "reason": "8090 switchover blocked; use 8091 for Open WebUI provider"
   },
-  "ready_for_next_front": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
-  "last_updated": "2026-06-12T08:41:47.978628+00:00",
+  "ready_for_next_front": "FRONT-CHAT-UI-BRAIN-PROVIDER-CONFIG-8091-01",
+  "last_updated": "2026-06-12T08:45:22.544170+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2851,5 +2852,21 @@
     "legacy_touched": false,
     "next_front_locked": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
     "updated_at_utc": "2026-06-12T08:41:47.978628+00:00"
+  },
+  "front_brain_v9_runtime_switchover_8091_to_8090_01": {
+    "front": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
+    "status": "SWITCHOVER_BLOCKED_UNSAFE_8090_OWNER",
+    "functional_commit": "0a16a95",
+    "safe_to_stop_8090": false,
+    "switchover_performed": false,
+    "runtime_8091_remains_active": true,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "tests_passed": true,
+    "test_count": 4,
+    "next_front_locked": "FRONT-CHAT-UI-BRAIN-PROVIDER-CONFIG-8091-01",
+    "updated_at_utc": "2026-06-12T08:45:22.544170+00:00"
   }
 }

@@ -7393,3 +7393,20 @@ The adapter/router/governance metadata layer is working, but answer-generation q
 - trading_touched: `false`
 - legacy_touched: `false`
 - next_front_locked: `FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01`
+
+
+## LEDGER-ROADMAP-SSOT-FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01 — Brain Runtime Switchover Blocked Safely
+
+- timestamp_utc: `2026-06-12T08:45:22.544170+00:00`
+- status: `SWITCHOVER_BLOCKED_UNSAFE_8090_OWNER`
+- functional_commit: `0a16a95`
+- safe_to_stop_8090: `false`
+- switchover_performed: `false`
+- runtime_8091_remains_active: `true`
+- memory_mutated: `false`
+- faiss_mutated: `false`
+- trading_touched: `false`
+- legacy_touched: `false`
+- tests_passed: `true`
+- test_count: `4`
+- next_front_locked: `FRONT-CHAT-UI-BRAIN-PROVIDER-CONFIG-8091-01`
