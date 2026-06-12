@@ -1,9 +1,9 @@
 {
-  "current_head": "5a50d40",
-  "current_remote_head": "5a50d40",
+  "current_head": "c2c802e",
+  "current_remote_head": "c2c802e",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_legacy_lock_diagnostic_manual_steps_01_complete",
-  "last_applied_checkpoint": "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
+  "migration_status": "front_legacy_lock_release_and_quarantine_retry_01_blocked_no_safe_candidate",
+  "last_applied_checkpoint": "FRONT-LEGACY-LOCK-RELEASE-AND-QUARANTINE-RETRY-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -128,12 +128,14 @@
     "FRONT-LEGACY-PATH-CLEANUP-PLAN-01",
     "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01",
     "FRONT-LEGACY-PATH-CLEANUP-RETRY-POST-REBOOT-01",
-    "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01"
+    "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
+    "FRONT-LEGACY-LOCK-RELEASE-AND-QUARANTINE-RETRY-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
     "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
-    "FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01"
+    "FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01",
+    "FRONT-LEGACY-LOCK-HANDLE-TOOL-INSTALL-OR-SAFE-MODE-PLAN-01"
   ],
   "protected_out_of_scope": [
     "memory/semantic",
@@ -141,12 +143,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01",
+    "name": "FRONT-LEGACY-LOCK-HANDLE-TOOL-INSTALL-OR-SAFE-MODE-PLAN-01",
     "status": "LOCKED",
-    "reason": "Manual lock release is required before another legacy path quarantine retry. Do not retry blindly while lock source is unconfirmed."
+    "reason": "No safe lock process candidate found. Install/use Sysinternals Handle or perform Safe Mode manual plan before another retry."
   },
   "ready_for_next_front": false,
-  "last_updated": "2026-06-12T03:44:28.711055+00:00",
+  "last_updated": "2026-06-12T04:03:30.440027+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2566,5 +2568,27 @@
     "next_front_locked": "FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01",
     "manual_action_required": true,
     "recommended_manual_action": "Use Resource Monitor or Process Explorer to identify the C:\\AI_VAULT handle owner; close only safe non-critical apps manually; retry only after handles disappear and explicit approval is renewed."
+  },
+  "legacy_lock_release_and_quarantine_retry": {
+    "front": "FRONT-LEGACY-LOCK-RELEASE-AND-QUARANTINE-RETRY-01",
+    "status": "NO_SAFE_LOCK_PROCESS_CANDIDATE_FOUND",
+    "canonical_path": "C:\\AI_VAULT_CANONICAL",
+    "legacy_path": "C:\\AI_VAULT",
+    "quarantine_target": "C:\\AI_VAULT_LEGACY_QUARANTINE_NOT_CREATED_NO_SAFE_CANDIDATE",
+    "candidate_processes_detected": 10,
+    "processes_closed": [],
+    "process_killed_count": 0,
+    "rename_attempted": false,
+    "rename_success": false,
+    "delete_performed": false,
+    "copy_performed": false,
+    "sync_performed": false,
+    "canonical_memory_mutated": false,
+    "canonical_faiss_mutated": false,
+    "tests_passed": true,
+    "test_count": 25,
+    "functional_commit": "c2c802e",
+    "next_front_locked": "FRONT-LEGACY-LOCK-HANDLE-TOOL-INSTALL-OR-SAFE-MODE-PLAN-01",
+    "reason": "No process met strict high-confidence criteria for safe close/kill; handle.exe unavailable; rename not attempted."
   }
 }
