@@ -33,3 +33,14 @@ Remove or disable the Open WebUI provider entry and return to the previous provi
 
 ## 8090 Note
 Port `8090` remains pending until its owner can be classified safely. Do not kill unknown 8090 processes. Use `8091` until switchover is explicitly safe.
+
+## Final Autonomy Provider Note
+
+Updated: 2026-06-12T19:10:30.941341+00:00
+
+- Primary intended cloud provider: `kimi_k2_6_cloud` via Ollama Cloud tag `kimi-k2.6:cloud`.
+- Current blocking condition: `KIMI_K2_6_OLLAMA_TAG_MISSING`.
+- Temporary K2.5 tag exists but returned empty content in diagnostic probing; do not treat it as autonomy-ready.
+- Provider metadata should be inspected for `cloud_provider_available`, `codex_provider_available`, and `local_fallback_used`.
+- No `.env` writes or secrets printing are required by the committed runbook.
+
