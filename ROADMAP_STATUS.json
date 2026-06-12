@@ -1,9 +1,9 @@
 {
-  "current_head": "1d831b1",
-  "current_remote_head": "1d831b1",
+  "current_head": "2c0f8c5",
+  "current_remote_head": "2c0f8c5",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "openwebui_brain_provider_8091_runbook_created",
-  "last_applied_checkpoint": "FRONT-CHAT-UI-BRAIN-PROVIDER-CONFIG-8091-01",
+  "migration_status": "brain_import_side_effect_guard_created",
+  "last_applied_checkpoint": "FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -138,7 +138,8 @@
     "FRONT-CODEX-TO-BRAIN-GOVERNED-SELF-IMPROVEMENT-CYCLE-01",
     "FRONT-BRAIN-V9-LLM-TIMEOUT-QUALITY-STABILIZATION-01",
     "FRONT-CODEX-TO-BRAIN-EVALUATION-HARNESS-V2-01",
-    "FRONT-CHAT-UI-BRAIN-PROVIDER-CONFIG-8091-01"
+    "FRONT-CHAT-UI-BRAIN-PROVIDER-CONFIG-8091-01",
+    "FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -153,12 +154,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01",
+    "name": "FRONT-CEI-FDOT-EVALUATION-PACK-01",
     "status": "locked_next",
-    "reason": "UI provider runbook done; next harden import side effects"
+    "reason": "Import/TestClient side-effect guard is in place; next safe utility pack is CEI/FDOT evaluation behavior benchmark."
   },
-  "ready_for_next_front": "FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01",
-  "last_updated": "2026-06-12T08:47:04.684745+00:00",
+  "ready_for_next_front": "FRONT-CEI-FDOT-EVALUATION-PACK-01",
+  "last_updated": "2026-06-12T08:52:30.921176+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2884,5 +2885,29 @@
     "legacy_touched": false,
     "next_front_locked": "FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01",
     "updated_at_utc": "2026-06-12T08:47:04.684745+00:00"
+  },
+  "front_brain_v9_import_side_effects_hardening_01": {
+    "front": "FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01",
+    "status": "IMPORT_TESTCLIENT_SIDE_EFFECT_GUARD_CREATED",
+    "functional_commit": "2c0f8c5",
+    "remote_synced": true,
+    "runtime_used": "TestClient import only",
+    "side_effect_reproduced": false,
+    "github_knowledge_diff_after_import": false,
+    "files": [
+      "docs/FRONT_BRAIN_V9_IMPORT_SIDE_EFFECTS_HARDENING_01.md",
+      "tests/smoke/smoke_front_brain_v9_import_side_effects_hardening_01.py"
+    ],
+    "tests_passed": true,
+    "test_count": 2,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "raw_cot_exposed": false,
+    "secrets_exposed": false,
+    "evidence_path": "tmp_agent/front_brain_v9_import_side_effects_hardening_01",
+    "next_front_locked": "FRONT-CEI-FDOT-EVALUATION-PACK-01",
+    "updated_at_utc": "2026-06-12T08:52:30.921176+00:00"
   }
 }
