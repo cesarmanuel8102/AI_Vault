@@ -1,9 +1,9 @@
 {
-  "current_head": "2c0f8c5",
-  "current_remote_head": "2c0f8c5",
+  "current_head": "20704bd",
+  "current_remote_head": "20704bd",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "brain_import_side_effect_guard_created",
-  "last_applied_checkpoint": "FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01",
+  "migration_status": "cei_fdot_evaluation_pack_created",
+  "last_applied_checkpoint": "FRONT-CEI-FDOT-EVALUATION-PACK-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -139,7 +139,8 @@
     "FRONT-BRAIN-V9-LLM-TIMEOUT-QUALITY-STABILIZATION-01",
     "FRONT-CODEX-TO-BRAIN-EVALUATION-HARNESS-V2-01",
     "FRONT-CHAT-UI-BRAIN-PROVIDER-CONFIG-8091-01",
-    "FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01"
+    "FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01",
+    "FRONT-CEI-FDOT-EVALUATION-PACK-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -154,12 +155,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-CEI-FDOT-EVALUATION-PACK-01",
+    "name": "FRONT-FINANCIAL-RESEARCH-SAFETY-PACK-01",
     "status": "locked_next",
-    "reason": "Import/TestClient side-effect guard is in place; next safe utility pack is CEI/FDOT evaluation behavior benchmark."
+    "reason": "CEI/FDOT behavior pack created; next safe pack is financial research safety boundaries."
   },
-  "ready_for_next_front": "FRONT-CEI-FDOT-EVALUATION-PACK-01",
-  "last_updated": "2026-06-12T08:52:30.921176+00:00",
+  "ready_for_next_front": "FRONT-FINANCIAL-RESEARCH-SAFETY-PACK-01",
+  "last_updated": "2026-06-12T09:03:28.681576+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2909,5 +2910,28 @@
     "evidence_path": "tmp_agent/front_brain_v9_import_side_effects_hardening_01",
     "next_front_locked": "FRONT-CEI-FDOT-EVALUATION-PACK-01",
     "updated_at_utc": "2026-06-12T08:52:30.921176+00:00"
+  },
+  "front_cei_fdot_evaluation_pack_01": {
+    "front": "FRONT-CEI-FDOT-EVALUATION-PACK-01",
+    "status": "CEI_FDOT_EVALUATION_PACK_CREATED",
+    "functional_commit": "20704bd",
+    "remote_synced": true,
+    "prompts": 12,
+    "tests_passed": true,
+    "test_count": 5,
+    "internet_used": false,
+    "official_fdot_facts_embedded": false,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched_only_authorized_cleanup": true,
+    "files": [
+      "docs/FRONT_CEI_FDOT_EVALUATION_PACK_01.md",
+      "tests/fixtures/cei_fdot_eval_pack_v1.json",
+      "tests/smoke/smoke_front_cei_fdot_evaluation_pack_01.py"
+    ],
+    "evidence_path": "tmp_agent/front_cei_fdot_evaluation_pack_01",
+    "next_front_locked": "FRONT-FINANCIAL-RESEARCH-SAFETY-PACK-01",
+    "updated_at_utc": "2026-06-12T09:03:28.681576+00:00"
   }
 }
