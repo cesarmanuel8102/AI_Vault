@@ -1,9 +1,9 @@
 {
-  "current_head": "0a16a95",
-  "current_remote_head": "0a16a95",
+  "current_head": "1d831b1",
+  "current_remote_head": "1d831b1",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "switchover_blocked_unsafe_8090_owner",
-  "last_applied_checkpoint": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
+  "migration_status": "openwebui_brain_provider_8091_runbook_created",
+  "last_applied_checkpoint": "FRONT-CHAT-UI-BRAIN-PROVIDER-CONFIG-8091-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -137,7 +137,8 @@
     "FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01",
     "FRONT-CODEX-TO-BRAIN-GOVERNED-SELF-IMPROVEMENT-CYCLE-01",
     "FRONT-BRAIN-V9-LLM-TIMEOUT-QUALITY-STABILIZATION-01",
-    "FRONT-CODEX-TO-BRAIN-EVALUATION-HARNESS-V2-01"
+    "FRONT-CODEX-TO-BRAIN-EVALUATION-HARNESS-V2-01",
+    "FRONT-CHAT-UI-BRAIN-PROVIDER-CONFIG-8091-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -152,12 +153,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-CHAT-UI-BRAIN-PROVIDER-CONFIG-8091-01",
+    "name": "FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01",
     "status": "locked_next",
-    "reason": "8090 switchover blocked; use 8091 for Open WebUI provider"
+    "reason": "UI provider runbook done; next harden import side effects"
   },
-  "ready_for_next_front": "FRONT-CHAT-UI-BRAIN-PROVIDER-CONFIG-8091-01",
-  "last_updated": "2026-06-12T08:45:22.544170+00:00",
+  "ready_for_next_front": "FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01",
+  "last_updated": "2026-06-12T08:47:04.684745+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2868,5 +2869,20 @@
     "test_count": 4,
     "next_front_locked": "FRONT-CHAT-UI-BRAIN-PROVIDER-CONFIG-8091-01",
     "updated_at_utc": "2026-06-12T08:45:22.544170+00:00"
+  },
+  "front_chat_ui_brain_provider_config_8091_01": {
+    "front": "FRONT-CHAT-UI-BRAIN-PROVIDER-CONFIG-8091-01",
+    "status": "OPENWEBUI_BRAIN_PROVIDER_8091_RUNBOOK_CREATED",
+    "functional_commit": "1d831b1",
+    "provider_base_url": "http://host.docker.internal:8091/v1",
+    "container_to_brain_passed": true,
+    "tests_passed": true,
+    "test_count": 3,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "next_front_locked": "FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01",
+    "updated_at_utc": "2026-06-12T08:47:04.684745+00:00"
   }
 }

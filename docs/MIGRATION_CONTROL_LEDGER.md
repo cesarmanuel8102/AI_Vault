@@ -7410,3 +7410,19 @@ The adapter/router/governance metadata layer is working, but answer-generation q
 - tests_passed: `true`
 - test_count: `4`
 - next_front_locked: `FRONT-CHAT-UI-BRAIN-PROVIDER-CONFIG-8091-01`
+
+
+## LEDGER-ROADMAP-SSOT-FRONT-CHAT-UI-BRAIN-PROVIDER-CONFIG-8091-01 — Open WebUI Brain Provider 8091 Runbook
+
+- timestamp_utc: `2026-06-12T08:47:04.684745+00:00`
+- status: `OPENWEBUI_BRAIN_PROVIDER_8091_RUNBOOK_CREATED`
+- functional_commit: `1d831b1`
+- provider_base_url: `http://host.docker.internal:8091/v1`
+- container_to_brain_passed: `true`
+- tests_passed: `true`
+- test_count: `3`
+- memory_mutated: `false`
+- faiss_mutated: `false`
+- trading_touched: `false`
+- legacy_touched: `false`
+- next_front_locked: `FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01`
