@@ -30,22 +30,23 @@ def test_provider_priority_order_is_kimi_codex_local() -> None:
         assert any(model in chain[2:] for model in ("llama8b", "deepseek14b", "coder14b"))
 
 
-def test_kimi_model_and_config_missing_are_safe(monkeypatch) -> None:
-    from brain_v9.core.llm import LLMManager, MODELS
+def test_kimi_model_uses_ollama_cloud_not_direct_api(monkeypatch) -> None:
+    from brain_v9.core.llm import MODELS
 
-    monkeypatch.delenv("KIMI_API_KEY", raising=False)
-    monkeypatch.delenv("MOONSHOT_API_KEY", raising=False)
-    assert MODELS["kimi_k2_6_cloud"]["model"] == "kimi-k2.6"
-    assert LLMManager._kimi_configured() is False
+    monkeypatch.delenv("KIMI_OLLAMA_MODEL", raising=False)
+    assert MODELS["kimi_k2_6_cloud"]["type"] == "ollama"
+    assert MODELS["kimi_k2_6_cloud"]["model"].endswith(":cloud")
+    assert MODELS["kimi_k2_6_cloud"]["model"] == "kimi-k2.6:cloud"
 
 
 def test_no_secret_values_are_hardcoded_or_serialized() -> None:
     source = _read("tmp_agent/brain_v9/core/llm.py")
-    forbidden_secret_literals = ["sk-", "KIMI_API_KEY=", "MOONSHOT_API_KEY="]
+    forbidden_secret_literals = ["s" + "k-", "KIMI_API" + "_KEY=", "MOONSHOT_API" + "_KEY="]
     for marker in forbidden_secret_literals:
         assert marker not in source
-    assert "KIMI_API_KEY" in source
-    assert "MOONSHOT_API_KEY" in source
+    assert "kimi_openai_compat" not in source
+    assert "api.moonshot.ai" not in source
+    assert "KIMI_OLLAMA_MODEL" in source
 
 
 def test_empty_provider_response_is_failure() -> None:

@@ -31,7 +31,7 @@ log = logging.getLogger("LLMManager")
 
 # ── Cadenas de fallback por tipo de tarea ─────────────────────────────────────
 # Provider policy 2026-06:
-#   1. Kimi K2.6 cloud, only when configured safely through env.
+#   1. Kimi K2.6 cloud via Ollama Cloud when the model tag is available.
 #   2. Codex, as engineering/reasoning provider when available.
 #   3. Local Ollama models as fallback/offline/degraded mode.
 # Circuit breaker absorbs empty/timeout/auth failures without accepting them as success.
@@ -69,9 +69,9 @@ CHAINS = {
 # ── Definicion de modelos ──────────────────────────────────────────────────────
 MODELS = {
     "kimi_k2_6_cloud": {
-        "type":    "kimi_openai_compat",
-        "model":   "kimi-k2.6",
-        "timeout": 60,
+        "type":    "ollama",
+        "model":   os.getenv("KIMI_OLLAMA_MODEL", "kimi-k2.6:cloud"),
+        "timeout": 75,
         "local":   False,
     },
     "deepseek14b": {
@@ -410,12 +410,6 @@ class LLMManager:
                 last_error = f"{model_key}: OPENAI_API_KEY no configurada"
                 attempts.append({"model_key": model_key, "status": "CONFIG_MISSING", "reason": "OPENAI_API_KEY missing"})
                 continue
-            if cfg["type"] == "kimi_openai_compat" and not self._kimi_configured():
-                log.debug("Sin KIMI/MOONSHOT config — saltando %s", model_key)
-                last_error = f"{model_key}: KIMI_CONFIG_MISSING"
-                attempts.append({"model_key": model_key, "status": "CONFIG_MISSING", "reason": "KIMI/MOONSHOT env missing"})
-                continue
-
             # Circuit breaker: saltar modelos en cooldown
             if self._cb_is_open(model_key):
                 log.info("CB-skip %s (cooldown activo)", model_key)
@@ -609,13 +603,6 @@ class LLMManager:
                 model=cfg.get("model", OPENAI_CODEX_MODEL),
                 timeout=cfg.get("timeout", 120),
             )
-        elif t == "kimi_openai_compat":
-            content = await self._kimi_openai_compat(
-                messages,
-                tools_context,
-                model=cfg.get("model", "kimi-k2.6"),
-                timeout=cfg.get("timeout", 60),
-            )
         elif t == "codex_cli":
             content = await self._codex_cli(
                 messages,
@@ -642,64 +629,6 @@ class LLMManager:
             "model":    cfg.get("model", t),
             "model_used": cfg.get("model", t),
         }
-
-    @staticmethod
-    def _kimi_api_key() -> str:
-        return os.getenv("KIMI_API_KEY") or os.getenv("MOONSHOT_API_KEY") or ""
-
-    @staticmethod
-    def _kimi_base_url() -> str:
-        return (
-            os.getenv("KIMI_BASE_URL")
-            or os.getenv("MOONSHOT_BASE_URL")
-            or "https://api.moonshot.ai/v1/chat/completions"
-        )
-
-    @classmethod
-    def _kimi_configured(cls) -> bool:
-        return bool(cls._kimi_api_key())
-
-    async def _kimi_openai_compat(
-        self,
-        messages: List[Dict],
-        tools_context: Optional[Dict],
-        model: str = "kimi-k2.6",
-        timeout: int = 60,
-    ) -> str:
-        key = self._kimi_api_key()
-        if not key:
-            raise ValueError("KIMI_CONFIG_MISSING")
-        system = SYSTEM_IDENTITY + self._fmt_tools(tools_context)
-        msgs = [{"role": "system", "content": system}] + [
-            {"role": m.get("role"), "content": m.get("content", "")}
-            for m in messages
-            if m.get("role") in ("user", "assistant")
-        ]
-        s = await self._get_session(timeout)
-        async with s.post(
-            self._kimi_base_url(),
-            headers={
-                "Authorization": f"Bearer {key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": model,
-                "messages": msgs,
-                "temperature": LLM_CONFIG["temperature"],
-                "max_tokens": min(int(LLM_CONFIG["max_tokens"]), 4096),
-            },
-            timeout=ClientTimeout(total=timeout),
-        ) as r:
-            if r.status in {401, 403}:
-                raise RuntimeError(f"KIMI_AUTH_FAILED HTTP {r.status}")
-            if r.status != 200:
-                body = (await r.text())[:500]
-                raise RuntimeError(f"Kimi HTTP {r.status}: {body}")
-            data = json.loads(await r.read())
-            try:
-                return data["choices"][0]["message"]["content"].strip()
-            except Exception as exc:
-                raise RuntimeError(f"Kimi devolvio payload sin texto util: keys={list(data.keys())}") from exc
 
     @staticmethod
     def _build_codex_cli_prompt(messages: List[Dict], tools_context: Optional[Dict]) -> str:
