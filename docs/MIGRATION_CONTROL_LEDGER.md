@@ -7147,3 +7147,50 @@ APPROVE_LEGACY_PATH_CLEANUP_EXECUTE_AI_VAULT
 
 ### Next Locked Front
 `FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-01` remains `LOCKED`.
+
+
+## LEDGER-ROADMAP-SSOT-FRONT-CHAT-ROUTER-PRESERVATION-ENTRYPOINT-01 — Canonical Chat Router Entrypoint Created
+
+- timestamp_utc: `2026-06-12T06:34:00.711778+00:00`
+- branch: `codex/own-capital-sustainable-return`
+- front: `FRONT-CHAT-ROUTER-PRESERVATION-ENTRYPOINT-01`
+- status: `CHAT_ROUTER_PRESERVATION_ENTRYPOINT_CREATED`
+- canonical_path: `C:\AI_VAULT_CANONICAL`
+- functional_commit: `dc62119`
+
+### Router Preservation
+- canonical_entrypoint_created: `true`
+- entrypoint_file: `tmp_agent/brain_v9/core/router_entrypoint.py`
+- intent_detector_called: `true`
+- governance_applied: `true`
+- native_chat_wired: `true`
+- router_bypass_risk_reduced: `true`
+- naive_adapter_blocked: `true`
+- openai_adapter_next: `true`
+- future adapter rule: `/v1/chat/completions` must call `handle_user_message()` and must not call `LLMManager.query()` directly.
+
+### Runtime Probe
+- backend_8090_healthy: `true`
+- runtime_has_loaded_new_entrypoint: `false`
+- server_restart_required: `true`
+- server_restart_performed: `false`
+
+### Canonical Safety
+- memory_mutated: `false`
+- faiss_mutated: `false`
+- trading_touched: `false`
+- legacy_touched: `false`
+- raw_cot_exposed: `false`
+- semantic_memory_lines: `1715`
+- faiss_ids: `1616`
+- faiss_ntotal: `1616`
+- runtime_base_path: `C:\AI_VAULT_CANONICAL`
+
+### Validation
+- tests_passed: `true`
+- test_count: `23`
+- documentation: `docs/FRONT_CHAT_ROUTER_PRESERVATION_ENTRYPOINT_01.md`
+- smoke test: `tests/smoke/smoke_front_chat_router_preservation_entrypoint_01.py`
+
+### Next Locked Front
+`FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01` remains `LOCKED`.
