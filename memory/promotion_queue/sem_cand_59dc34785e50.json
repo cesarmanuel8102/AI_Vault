@@ -1,0 +1,12 @@
+{
+  "text": "Canonical semantic promotion requires snapshot, shadow index, rollback verification, and small batch gate.",
+  "source_event_id": "auto_mem_4c221fc438f2",
+  "source_cycle": "persistent_cycle_005",
+  "category": "system_failure",
+  "confidence": 0.89,
+  "evidence_path": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01/preflight.md",
+  "candidate_id": "sem_cand_59dc34785e50",
+  "semantic_memory_allowed": false,
+  "faiss_write_allowed": false,
+  "created_utc": "2026-06-12T23:41:48.231530+00:00"
+}

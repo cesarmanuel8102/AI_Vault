@@ -1,0 +1,12 @@
+{
+  "text": "Kimi K2.6 provider_probe on 8091 is available and returns fast governed metadata.",
+  "source_event_id": "auto_mem_8e46a1eb8e3b",
+  "source_cycle": "persistent_cycle_001",
+  "category": "provider_behavior",
+  "confidence": 0.91,
+  "evidence_path": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01/preflight.md",
+  "candidate_id": "sem_cand_9d63233fad75",
+  "semantic_memory_allowed": false,
+  "faiss_write_allowed": false,
+  "created_utc": "2026-06-12T23:41:48.221916+00:00"
+}

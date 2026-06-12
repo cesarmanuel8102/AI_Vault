@@ -1,0 +1,12 @@
+{
+  "text": "Persistent autonomy must run bounded cycles with STOP and PAUSE controls before any scheduler escalation.",
+  "source_event_id": "auto_mem_c01377fb5bd3",
+  "source_cycle": "persistent_cycle_002",
+  "category": "autonomy_lesson",
+  "confidence": 0.88,
+  "evidence_path": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01/preflight.md",
+  "candidate_id": "sem_cand_c6f627550fe1",
+  "semantic_memory_allowed": false,
+  "faiss_write_allowed": false,
+  "created_utc": "2026-06-12T23:41:48.228870+00:00"
+}

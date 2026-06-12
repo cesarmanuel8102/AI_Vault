@@ -1,0 +1,12 @@
+{
+  "text": "Dashboard recovery should use safe port 8092 to avoid touching 8090 or destabilizing 8091.",
+  "source_event_id": "auto_mem_a36b2878471a",
+  "source_cycle": "persistent_cycle_003",
+  "category": "chat_dashboard_lesson",
+  "confidence": 0.86,
+  "evidence_path": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01/preflight.md",
+  "candidate_id": "sem_cand_5e0081aeaf4d",
+  "semantic_memory_allowed": false,
+  "faiss_write_allowed": false,
+  "created_utc": "2026-06-12T23:41:48.228870+00:00"
+}

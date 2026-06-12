@@ -1,0 +1,12 @@
+{
+  "text": "Fallback must remain visible in reports and dashboard instead of being hidden as provider success.",
+  "source_event_id": "auto_mem_b8b3c94223d2",
+  "source_cycle": "persistent_cycle_004",
+  "category": "correction",
+  "confidence": 0.9,
+  "evidence_path": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01/preflight.md",
+  "candidate_id": "sem_cand_387aa13574f5",
+  "semantic_memory_allowed": false,
+  "faiss_write_allowed": false,
+  "created_utc": "2026-06-12T23:41:48.228870+00:00"
+}
