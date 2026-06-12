@@ -7194,3 +7194,59 @@ APPROVE_LEGACY_PATH_CLEANUP_EXECUTE_AI_VAULT
 
 ### Next Locked Front
 `FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01` remains `LOCKED`.
+
+
+## LEDGER-ROADMAP-SSOT-FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01 — OpenAI-Compatible Brain Adapter Added
+
+- timestamp_utc: `2026-06-12T07:07:54.188223+00:00`
+- branch: `codex/own-capital-sustainable-return`
+- front: `FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01`
+- status: `CHAT_OPENAI_COMPATIBILITY_ADAPTER_PRESERVE_ROUTER_APPLIED_PARTIAL_RUNTIME_LOAD_PENDING`
+- canonical_path: `C:\AI_VAULT_CANONICAL`
+- functional_commit: `2c11a37`
+
+### Adapter Result
+- source `/v1/models` endpoint added: `true`
+- source `/v1/chat/completions` endpoint added: `true`
+- adapter calls `handle_user_message(...)`: `true`
+- adapter direct `LLMManager.query()` usage: `false`
+- direct client created: `tmp_agent/brain_v9/evolution/direct_brain_client.py`
+- dialogue probe created: `tmp_agent/brain_v9/evolution/codex_brain_dialogue_probe.py`
+
+### Validation
+- TestClient `/v1/models`: `true`
+- TestClient `/v1/chat/completions`: `true`
+- smoke test: `tests/smoke/smoke_front_chat_openai_compatibility_adapter_preserve_router_01.py`
+- tests_passed: `true`
+- test_count: `34`
+
+### Runtime Status
+- runtime_restart_performed: `false`
+- runtime_restart_status: `RUNTIME_RESTART_SKIPPED_UNSAFE_PORT_OWNER`
+- runtime `/v1/models` passed: `false`
+- runtime `/v1/chat/completions` passed: `false`
+- container_to_brain_passed: `false`
+- runtime_load_pending: `true`
+- dialogue_probe_ran: `false`
+- dialogue_probe_skip_reason: `SERVER_RESTART_REQUIRED_FOR_ADAPTER`
+- dialogue_probe_preliminary_score: `0.0`
+
+### Import/TestClient Side Effect
+- unexpected_import_side_effect_detected: `true`
+- unexpected_import_side_effect_reverted: `true`
+- unexpected_side_effect_path: `tmp_agent/knowledge/external/github`
+- evidence: `tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/unexpected_github_knowledge_side_effect.diff`
+- side-effect files staged: `false`
+- recommended hardening front: `FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01`
+
+### Canonical Safety
+- memory_mutated: `false`
+- faiss_mutated: `false`
+- trading_touched: `false`
+- legacy_touched: `false`
+- semantic_memory_lines: `1715`
+- faiss_ids: `1616`
+- faiss_ntotal: `1616`
+
+### Next Locked Front
+`FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01` remains `LOCKED`.

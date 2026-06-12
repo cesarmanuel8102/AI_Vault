@@ -1,9 +1,9 @@
 {
-  "current_head": "dc62119",
-  "current_remote_head": "dc62119",
+  "current_head": "2c11a37",
+  "current_remote_head": "2c11a37",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "chat_router_preservation_entrypoint_created",
-  "last_applied_checkpoint": "FRONT-CHAT-ROUTER-PRESERVATION-ENTRYPOINT-01",
+  "migration_status": "chat_openai_compatibility_adapter_preserve_router_applied_partial_runtime_load_pending",
+  "last_applied_checkpoint": "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -132,7 +132,8 @@
     "FRONT-LEGACY-LOCK-RELEASE-AND-QUARANTINE-RETRY-01",
     "FRONT-CHAT-UI-E2E-FAILURE-DIAGNOSTIC-01",
     "FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01",
-    "FRONT-CHAT-ROUTER-PRESERVATION-ENTRYPOINT-01"
+    "FRONT-CHAT-ROUTER-PRESERVATION-ENTRYPOINT-01",
+    "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -146,12 +147,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01",
+    "name": "FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01",
     "status": "locked_next_fix",
-    "reason": "canonical chat entrypoint now exists; OpenAI-compatible adapter must call handle_user_message and must not call LLMManager.query directly"
+    "reason": "adapter source and TestClient validation passed, but live runtime 8090 has not loaded /v1 routes because safe restart was skipped"
   },
-  "ready_for_next_front": "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01",
-  "last_updated": "2026-06-12T06:34:00.711778+00:00",
+  "ready_for_next_front": "FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01",
+  "last_updated": "2026-06-12T07:07:54.188223+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2688,5 +2689,54 @@
     "smoke_test": "tests/smoke/smoke_front_chat_router_preservation_entrypoint_01.py",
     "next_front_locked": "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01",
     "updated_at_utc": "2026-06-12T06:34:00.711778+00:00"
+  },
+  "front_chat_openai_compatibility_adapter_preserve_router_01": {
+    "front": "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01",
+    "status": "CHAT_OPENAI_COMPATIBILITY_ADAPTER_PRESERVE_ROUTER_APPLIED_PARTIAL_RUNTIME_LOAD_PENDING",
+    "canonical_path": "C:\\AI_VAULT_CANONICAL",
+    "functional_commit": "2c11a37",
+    "remote_synced": true,
+    "openai_models_endpoint_source": true,
+    "openai_chat_completions_endpoint_source": true,
+    "testclient_models_passed": true,
+    "testclient_chat_passed": true,
+    "adapter_calls_handle_user_message": true,
+    "adapter_direct_llm_query": false,
+    "direct_client_created": true,
+    "dialogue_probe_created": true,
+    "dialogue_probe_ran": false,
+    "dialogue_probe_skip_reason": "SERVER_RESTART_REQUIRED_FOR_ADAPTER",
+    "dialogue_probe_preliminary_score": 0.0,
+    "runtime_restart_performed": false,
+    "runtime_restart_status": "RUNTIME_RESTART_SKIPPED_UNSAFE_PORT_OWNER",
+    "runtime_models_passed": false,
+    "runtime_chat_passed": false,
+    "runtime_load_pending": true,
+    "container_to_brain_passed": false,
+    "unexpected_import_side_effect_detected": true,
+    "unexpected_import_side_effect_reverted": true,
+    "unexpected_side_effect_path": "tmp_agent/knowledge/external/github",
+    "unexpected_side_effect_evidence": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/unexpected_github_knowledge_side_effect.diff",
+    "recommended_side_effect_front": "FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "tests_passed": true,
+    "test_count": 34,
+    "semantic_memory_lines": 1715,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "files": [
+      "tmp_agent/brain_v9/api/__init__.py",
+      "tmp_agent/brain_v9/api/openai_compat.py",
+      "tmp_agent/brain_v9/main.py",
+      "tmp_agent/brain_v9/evolution/direct_brain_client.py",
+      "tmp_agent/brain_v9/evolution/codex_brain_dialogue_probe.py",
+      "tests/smoke/smoke_front_chat_openai_compatibility_adapter_preserve_router_01.py",
+      "docs/FRONT_CHAT_OPENAI_COMPATIBILITY_ADAPTER_PRESERVE_ROUTER_01.md"
+    ],
+    "next_front_locked": "FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01",
+    "updated_at_utc": "2026-06-12T07:07:54.188223+00:00"
   }
 }
