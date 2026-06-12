@@ -1,0 +1,34 @@
+{
+  "pack_id": "memory_faiss_retrieval_quality_pack_v1",
+  "front": "FRONT-MEMORY-FAISS-RETRIEVAL-QUALITY-PACK-01",
+  "purpose": "Define read-only retrieval quality checks for semantic memory and FAISS artifacts without mutation.",
+  "mode": "read_only_quality_spec",
+  "protected_paths": [
+    "memory/semantic/semantic_memory.jsonl",
+    "memory/semantic/semantic_memory_faiss.index",
+    "memory/semantic/semantic_memory_faiss_ids.json"
+  ],
+  "quality_dimensions": [
+    "artifact_exists",
+    "hash_stable_before_after",
+    "record_count_positive",
+    "faiss_id_count_positive",
+    "no_staged_memory_changes",
+    "top_k_response_shape_when_api_exists",
+    "metadata_present_when_retrieval_api_exists",
+    "canary_preservation_when_authorized"
+  ],
+  "evaluation_queries": [
+    {"id":"mem_quality_001_identity","query":"Brain identity and canonical path","requires_api":false},
+    {"id":"mem_quality_002_governance","query":"governance constraints and protected paths","requires_api":false},
+    {"id":"mem_quality_003_curated_learning","query":"curated learning promotion dry run","requires_api":false},
+    {"id":"mem_quality_004_financial_safety","query":"financial research safety no live trading","requires_api":false},
+    {"id":"mem_quality_005_cei","query":"CEI FDOT evidence uncertainty behavior","requires_api":false}
+  ],
+  "mutation_policy": {
+    "semantic_memory_write_allowed": false,
+    "faiss_write_allowed": false,
+    "embedding_creation_allowed": false,
+    "reindex_allowed": false
+  }
+}
