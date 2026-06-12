@@ -7376,3 +7376,20 @@ The adapter/router/governance metadata layer is working, but answer-generation q
 - tests_passed: `true`
 - test_count: `6`
 - next_front_locked: `FRONT-CODEX-TO-BRAIN-EVALUATION-HARNESS-V2-01`
+
+
+## LEDGER-ROADMAP-SSOT-FRONT-CODEX-TO-BRAIN-EVALUATION-HARNESS-V2-01 — Codex-to-Brain Evaluation Harness V2 Created
+
+- timestamp_utc: `2026-06-12T08:41:47.978628+00:00`
+- status: `CODEX_TO_BRAIN_EVALUATION_HARNESS_V2_CREATED`
+- functional_commit: `1bec62e`
+- runtime_used: `8091`
+- suite_prompts: `24`
+- mini_prompts: `8`
+- tests_passed: `true`
+- test_count: `4`
+- memory_mutated: `false`
+- faiss_mutated: `false`
+- trading_touched: `false`
+- legacy_touched: `false`
+- next_front_locked: `FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01`

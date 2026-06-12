@@ -1,9 +1,9 @@
 {
-  "current_head": "68b87ff",
-  "current_remote_head": "68b87ff",
+  "current_head": "1bec62e",
+  "current_remote_head": "1bec62e",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "brain_v9_llm_timeout_quality_stabilized",
-  "last_applied_checkpoint": "FRONT-BRAIN-V9-LLM-TIMEOUT-QUALITY-STABILIZATION-01",
+  "migration_status": "codex_to_brain_evaluation_harness_v2_created",
+  "last_applied_checkpoint": "FRONT-CODEX-TO-BRAIN-EVALUATION-HARNESS-V2-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -136,7 +136,8 @@
     "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01",
     "FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01",
     "FRONT-CODEX-TO-BRAIN-GOVERNED-SELF-IMPROVEMENT-CYCLE-01",
-    "FRONT-BRAIN-V9-LLM-TIMEOUT-QUALITY-STABILIZATION-01"
+    "FRONT-BRAIN-V9-LLM-TIMEOUT-QUALITY-STABILIZATION-01",
+    "FRONT-CODEX-TO-BRAIN-EVALUATION-HARNESS-V2-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -150,12 +151,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-CODEX-TO-BRAIN-EVALUATION-HARNESS-V2-01",
+    "name": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
     "status": "locked_next",
-    "reason": "timeout quality path stabilized; next create recurring evaluation harness"
+    "reason": "evaluation harness is now repeatable; next attempt controlled runtime switchover"
   },
-  "ready_for_next_front": "FRONT-CODEX-TO-BRAIN-EVALUATION-HARNESS-V2-01",
-  "last_updated": "2026-06-12T08:35:25.164933+00:00",
+  "ready_for_next_front": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
+  "last_updated": "2026-06-12T08:41:47.978628+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2834,5 +2835,21 @@
     "test_count": 6,
     "next_front_locked": "FRONT-CODEX-TO-BRAIN-EVALUATION-HARNESS-V2-01",
     "updated_at_utc": "2026-06-12T08:35:25.164933+00:00"
+  },
+  "front_codex_to_brain_evaluation_harness_v2_01": {
+    "front": "FRONT-CODEX-TO-BRAIN-EVALUATION-HARNESS-V2-01",
+    "status": "CODEX_TO_BRAIN_EVALUATION_HARNESS_V2_CREATED",
+    "functional_commit": "1bec62e",
+    "runtime_used": 8091,
+    "suite_prompts": 24,
+    "mini_prompts": 8,
+    "tests_passed": true,
+    "test_count": 4,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "next_front_locked": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
+    "updated_at_utc": "2026-06-12T08:41:47.978628+00:00"
   }
 }
