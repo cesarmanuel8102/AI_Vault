@@ -1,9 +1,9 @@
 {
-  "current_head": "2d22c65",
-  "current_remote_head": "2d22c65",
+  "current_head": "053869d",
+  "current_remote_head": "053869d",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "memory_faiss_retrieval_quality_pack_created",
-  "last_applied_checkpoint": "FRONT-MEMORY-FAISS-RETRIEVAL-QUALITY-PACK-01",
+  "migration_status": "autonomous_observer_report_schema_created",
+  "last_applied_checkpoint": "FRONT-BRAIN-AUTONOMOUS-OBSERVER-REPORTS-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -142,7 +142,8 @@
     "FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01",
     "FRONT-CEI-FDOT-EVALUATION-PACK-01",
     "FRONT-FINANCIAL-RESEARCH-SAFETY-PACK-01",
-    "FRONT-MEMORY-FAISS-RETRIEVAL-QUALITY-PACK-01"
+    "FRONT-MEMORY-FAISS-RETRIEVAL-QUALITY-PACK-01",
+    "FRONT-BRAIN-AUTONOMOUS-OBSERVER-REPORTS-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -157,12 +158,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-AUTONOMOUS-OBSERVER-REPORTS-01",
-    "status": "locked_next",
-    "reason": "Memory/FAISS retrieval quality read-only pack created; next safe front standardizes autonomous observer reports."
+    "name": "FRONT-CODEX-TO-BRAIN-EVALUATION-RUN-01",
+    "status": "recommended_next",
+    "reason": "Macro support packs are complete; next safe step is running the evaluation harness against Brain 8091 and reviewing quality scores."
   },
-  "ready_for_next_front": "FRONT-BRAIN-AUTONOMOUS-OBSERVER-REPORTS-01",
-  "last_updated": "2026-06-12T09:07:05.155923+00:00",
+  "ready_for_next_front": "FRONT-CODEX-TO-BRAIN-EVALUATION-RUN-01",
+  "last_updated": "2026-06-12T09:08:39.040900+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2982,5 +2983,26 @@
     "evidence_path": "tmp_agent/front_memory_faiss_retrieval_quality_pack_01",
     "next_front_locked": "FRONT-BRAIN-AUTONOMOUS-OBSERVER-REPORTS-01",
     "updated_at_utc": "2026-06-12T09:07:05.155923+00:00"
+  },
+  "front_brain_autonomous_observer_reports_01": {
+    "front": "FRONT-BRAIN-AUTONOMOUS-OBSERVER-REPORTS-01",
+    "status": "AUTONOMOUS_OBSERVER_REPORT_SCHEMA_CREATED",
+    "functional_commit": "053869d",
+    "remote_synced": true,
+    "tests_passed": true,
+    "test_count": 4,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "raw_cot_exposed": false,
+    "secrets_exposed": false,
+    "files": [
+      "docs/BRAIN_AUTONOMOUS_OBSERVER_REPORT_SCHEMA.md",
+      "tests/fixtures/autonomous_observer_report_example.json",
+      "tests/smoke/smoke_front_brain_autonomous_observer_reports_01.py"
+    ],
+    "evidence_path": "tmp_agent/front_brain_autonomous_observer_reports_01",
+    "next_recommended_front": "FRONT-CODEX-TO-BRAIN-EVALUATION-RUN-01",
+    "updated_at_utc": "2026-06-12T09:08:39.040900+00:00"
   }
 }
