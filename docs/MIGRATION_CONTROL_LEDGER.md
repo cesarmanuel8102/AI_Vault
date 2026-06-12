@@ -6960,3 +6960,51 @@ The legacy path cleanup failed due to a Windows file lock. Recommended next step
 `FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01` remains `LOCKED`.
 
 The next step is manual lock diagnostic, not another blind retry. No process was killed, no force unlock was attempted, and no canonical memory/FAISS mutation occurred.
+
+
+## LEDGER-ROADMAP-SSOT-FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01 — Legacy Lock Diagnostic Manual Steps Created
+
+- timestamp_utc: `2026-06-12T03:44:28.716759+00:00`
+- branch: `codex/own-capital-sustainable-return`
+- front: `FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01`
+- status: `LEGACY_LOCK_DIAGNOSTIC_MANUAL_STEPS_CREATED`
+- canonical_path: `C:\AI_VAULT_CANONICAL`
+- legacy_path: `C:\AI_VAULT`
+- repeated_rename_failures: `true`
+- failure_reason: `WinError 32 file lock`
+- functional_commit: `5a50d40`
+
+### Diagnostic Summary
+- Read-only process and port diagnostics were run.
+- `handle.exe` / `handle64.exe` was not installed, so exact handle owner remains unknown.
+- Likely sources include Python PID `244420` listening on port `8090` and Python PID `265004` running a QC backtest from the legacy path.
+- No process was killed.
+- No force action was used.
+- No server was restarted.
+
+### Safety
+- delete_performed: `false`
+- rename_performed: `false`
+- copy_performed: `false`
+- sync_performed: `false`
+- canonical_memory_mutated: `false`
+- canonical_faiss_mutated: `false`
+- process_killed: `false`
+- force_action_used: `false`
+- broker_api_used: `false`
+- trading_used_by_this_front: `false`
+
+### Validation
+- tests_passed: `true`
+- test_count: `16`
+- documentation: `docs/FRONT_LEGACY_LOCK_DIAGNOSTIC_MANUAL_STEPS_01.md`
+- smoke test: `tests/smoke/smoke_front_legacy_lock_diagnostic_manual_steps_01.py`
+
+### Next Step
+`FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01` remains `LOCKED`.
+
+Manual lock release is required before retry. The required approval phrase remains:
+
+```text
+APPROVE_LEGACY_PATH_CLEANUP_EXECUTE_AI_VAULT
+```

@@ -1,9 +1,9 @@
 {
-  "current_head": "fd1b56e",
-  "current_remote_head": "fd1b56e",
+  "current_head": "5a50d40",
+  "current_remote_head": "5a50d40",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_legacy_path_cleanup_retry_post_reboot_01_locked",
-  "last_applied_checkpoint": "FRONT-LEGACY-PATH-CLEANUP-RETRY-POST-REBOOT-01",
+  "migration_status": "front_legacy_lock_diagnostic_manual_steps_01_complete",
+  "last_applied_checkpoint": "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -127,11 +127,13 @@
     "FRONT-RUNTIME-PATH-ALIGNMENT-CANONICAL-VERIFY-01",
     "FRONT-LEGACY-PATH-CLEANUP-PLAN-01",
     "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01",
-    "FRONT-LEGACY-PATH-CLEANUP-RETRY-POST-REBOOT-01"
+    "FRONT-LEGACY-PATH-CLEANUP-RETRY-POST-REBOOT-01",
+    "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
-    "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01"
+    "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
+    "FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01"
   ],
   "protected_out_of_scope": [
     "memory/semantic",
@@ -139,12 +141,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
+    "name": "FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01",
     "status": "LOCKED",
-    "reason": "Second legacy quarantine rename attempt failed with WinError 32; next step is manual lock diagnostic, not another blind retry."
+    "reason": "Manual lock release is required before another legacy path quarantine retry. Do not retry blindly while lock source is unconfirmed."
   },
   "ready_for_next_front": false,
-  "last_updated": "2026-06-12T03:30:36.830454+00:00",
+  "last_updated": "2026-06-12T03:44:28.711055+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2536,5 +2538,33 @@
       "Canonical memory and FAISS remained unchanged.",
       "Legacy path still exists; next step is manual lock diagnostic, not another blind retry."
     ]
+  },
+  "legacy_lock_diagnostic_manual_steps": {
+    "front": "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
+    "status": "LEGACY_LOCK_DIAGNOSTIC_MANUAL_STEPS_CREATED",
+    "canonical_path": "C:\\AI_VAULT_CANONICAL",
+    "legacy_path": "C:\\AI_VAULT",
+    "repeated_rename_failures": true,
+    "failure_reason": "WinError 32 file lock",
+    "lock_source_detected": "unknown",
+    "likely_lock_sources": [
+      "python_pid_244420_port_8090",
+      "python_pid_265004_qc_runner_legacy_path",
+      "unknown_file_handle_owner"
+    ],
+    "delete_performed": false,
+    "rename_performed": false,
+    "copy_performed": false,
+    "sync_performed": false,
+    "canonical_memory_mutated": false,
+    "canonical_faiss_mutated": false,
+    "process_killed": false,
+    "force_action_used": false,
+    "tests_passed": true,
+    "test_count": 16,
+    "functional_commit": "5a50d40",
+    "next_front_locked": "FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01",
+    "manual_action_required": true,
+    "recommended_manual_action": "Use Resource Monitor or Process Explorer to identify the C:\\AI_VAULT handle owner; close only safe non-critical apps manually; retry only after handles disappear and explicit approval is renewed."
   }
 }
