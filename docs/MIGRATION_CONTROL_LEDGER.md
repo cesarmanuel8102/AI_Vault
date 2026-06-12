@@ -6719,3 +6719,97 @@ During FAISS promotion execution, `SemanticMemoryFAISS` resolved `BASE_PATH` to 
 ### Next Recommended Front
 FRONT-LEGACY-PATH-CLEANUP-PLAN-01 — plan cleanup of `C:\AI_VAULT` legacy mutation. LOCKED until explicitly requested.
 
+---
+
+## FRONT-LEGACY-PATH-CLEANUP-PLAN-01: Legacy Path Cleanup Plan (Read-Only)
+
+**Status:** COMPLETE
+**Date:** 2026-06-11
+**Branch:** codex/own-capital-sustainable-return
+**Functional Commit:** bcced50
+**Ledger Commit:** PENDING
+**Head Before:** 3768ea3
+**Type:** read-only plan — NO mutation to legacy or canonical
+
+### Objective
+Audit and prepare a safe, read-only plan for treating the legacy path `C:\AI_VAULT` after runtime alignment to canonical `C:\AI_VAULT_CANONICAL`.
+
+### Preconditions (All Passed)
+- Workdir correcto
+- Git limpio (staged empty, no unstaged tracked)
+- Local HEAD == Remote HEAD == 3768ea3
+- Runtime BASE_PATH now canonical
+
+### Canonical Baseline
+| Metric | Value |
+|--------|-------|
+| semantic_memory.jsonl lines | 1715 |
+| FAISS ids count | 1616 |
+| FAISS ntotal | 1616 |
+| BASE_PATH canonical | Yes |
+
+### Legacy Baseline
+| Metric | Value |
+|--------|-------|
+| Path exists | Yes |
+| Git repo | Yes (branch: codex/own-capital-sustainable-return, head: fe89f2f5, dirty) |
+| semantic_memory.jsonl lines | 1711 |
+| FAISS ids count | 1616 |
+| FAISS ntotal | 1616 |
+| Canary IDs present | Yes |
+| Legacy mutated | Yes |
+
+### Directory Diff Summary
+- Canonical files: ~6,710
+- Legacy files: ~56,272
+- Only in legacy: ~49,968
+- Only in canonical: ~406
+- Same SHA: ~2,738
+- Different SHA: ~3,566
+
+### Runtime Dependency Audit
+- Imported BASE_PATH: canonical
+- Env BRAIN_BASE_PATH: not set
+- Active legacy processes: none detected
+- Runtime server: not running
+
+### Risk Classification
+| Factor | Value |
+|--------|-------|
+| Legacy mutated preexisting | Yes |
+| Legacy runtime dependency | No |
+| Runtime running | No |
+| **Risk level** | **MEDIUM** |
+| **Preferred strategy** | **quarantine_rename_plan** |
+
+### Cleanup Plan Package
+- Plan only: yes
+- Deletion authorized: no
+- Move authorized: no
+- Copy authorized: no
+- Symlink authorized: no
+
+### Future Execution Front
+**FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01** — LOCKED
+- Approval phrase: `APPROVE_LEGACY_PATH_CLEANUP_EXECUTE_AI_VAULT`
+- Denial phrase: `DENY_LEGACY_PATH_CLEANUP_EXECUTE_AI_VAULT`
+
+### No Mutation Proof
+- canonical semantic_memory.jsonl SHA: unchanged
+- canonical FAISS index SHA: unchanged
+- canonical FAISS ids SHA: unchanged
+- legacy files: not modified (read-only audit only)
+
+### Tests
+- 22/22 passed
+
+### Safety Flags (Post-Execution)
+- memory_mutated: false
+- faiss_mutated: false
+- broker_api_used: false
+- trading_used: false
+- legacy_path_touched: false (read-only audit only)
+
+### Next Recommended Front
+FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01 — remains LOCKED until explicit user approval.
+

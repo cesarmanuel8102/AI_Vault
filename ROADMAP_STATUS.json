@@ -1,9 +1,9 @@
 {
-  "current_head": "ee99821",
-  "current_remote_head": "ee99821",
+  "current_head": "bcced50",
+  "current_remote_head": "bcced50",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_runtime_path_alignment_canonical_verify_01_complete",
-  "last_applied_checkpoint": "FRONT-RUNTIME-PATH-ALIGNMENT-CANONICAL-VERIFY-01",
+  "migration_status": "front_legacy_path_cleanup_plan_01_complete",
+  "last_applied_checkpoint": "FRONT-LEGACY-PATH-CLEANUP-PLAN-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -124,7 +124,8 @@
     "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-PREP-SECURITY-GOVERNANCE-01",
     "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-EXECUTE-SECURITY-GOVERNANCE-01",
     "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-POST-PROMOTION-VERIFY-SECURITY-GOVERNANCE-01",
-    "FRONT-RUNTIME-PATH-ALIGNMENT-CANONICAL-VERIFY-01"
+    "FRONT-RUNTIME-PATH-ALIGNMENT-CANONICAL-VERIFY-01",
+    "FRONT-LEGACY-PATH-CLEANUP-PLAN-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [],
@@ -134,12 +135,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-LEGACY-PATH-CLEANUP-PLAN-01",
+    "name": "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01",
     "status": "LOCKED",
-    "reason": "Legacy C:\\AI_VAULT path has preexisting mutation. Recommend cleanup plan front, but do NOT execute automatically."
+    "reason": "Legacy path cleanup requires explicit user approval because it will rename C:\\AI_VAULT."
   },
-  "ready_for_next_front": "FRONT-LEGACY-PATH-CLEANUP-PLAN-01",
-  "last_updated": "2026-06-11T09:59:01.149131+00:00",
+  "ready_for_next_front": "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01",
+  "last_updated": "2026-06-12T01:29:21.894774+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2466,5 +2467,22 @@
     "tests_passed": true,
     "functional_commit": "ee99821",
     "next_front_locked": "FRONT-LEGACY-PATH-CLEANUP-PLAN-01"
+  },
+  "front_legacy_path_cleanup_plan_01": {
+    "status": "LEGACY_PATH_CLEANUP_PLAN_CREATED_READ_ONLY",
+    "canonical_path": "C:\\AI_VAULT_CANONICAL",
+    "legacy_path": "C:\\AI_VAULT",
+    "legacy_exists": true,
+    "legacy_mutated_preexisting": true,
+    "cleanup_risk_level": "MEDIUM",
+    "preferred_strategy": "quarantine_rename_plan",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "deletion_authorized": false,
+    "move_authorized": false,
+    "copy_authorized": false,
+    "tests_passed": true,
+    "functional_commit": "bcced50",
+    "next_front_locked": "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01"
   }
 }
