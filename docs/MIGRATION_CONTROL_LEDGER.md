@@ -7525,3 +7525,33 @@ The adapter/router/governance metadata layer is working, but answer-generation q
 - fixture: `tests/fixtures/autonomous_observer_report_example.json`
 - smoke_test: `tests/smoke/smoke_front_brain_autonomous_observer_reports_01.py`
 - next_recommended_front: `FRONT-CODEX-TO-BRAIN-EVALUATION-RUN-01`
+
+
+## LEDGER-ROADMAP-SSOT-FRONT-BRAIN-GOVERNED-AUTONOMY-WALKER-V1 — Brain Governed Autonomy Walker V1 Completed
+
+- timestamp_utc: `2026-06-12T17:27:58.364915+00:00`
+- status: `BRAIN_GOVERNED_AUTONOMY_WALKER_V1_COMPLETED_WITH_TIMEOUT_QUALITY_CAVEAT`
+- selected_runtime_port: `8091`
+- runtime_recovered: `true`
+- actions_applied: `teacher_student_training_scaffold`, `timeout_fallback_classification_in_harness`, `domain_evaluation_run`, `observer_report_helper`, `openwebui_runbook_refresh`
+- actions_blocked: `memory_faiss_mutation`, `trading_execution`, `broker_api_integration`, `raw_chain_of_thought_exposure`, `direct_session_timeout_patch_deferred_pending_root_cause`
+- training_cycles_run: `3`
+- lesson_cards_created: `3`
+- mistake_entries_created: `3`
+- promotion_gates_created: `9`
+- timeout_fallback_before: `20/24`
+- timeout_fallback_after: `8`
+- score_before: `0.583`
+- score_after: `0.667`
+- metadata_full_rate_after: `1.0`
+- no_cot_rate_after: `1.0`
+- integrated_tests_passed: `true`
+- integrated_test_count: `28`
+- memory_mutated: `false`
+- faiss_mutated: `false`
+- trading_touched: `false`
+- legacy_touched: `false`
+- raw_cot_exposed: `false`
+- secrets_exposed: `false`
+- functional_commits: `027e5a7, d28196b, fad74d6`
+- next_front_locked: `FRONT-BRAIN-TIMEOUT-GENERATION-QUALITY-ROOT-CAUSE-01`
