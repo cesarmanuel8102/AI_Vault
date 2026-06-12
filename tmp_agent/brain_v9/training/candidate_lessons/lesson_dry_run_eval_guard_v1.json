@@ -1,0 +1,11 @@
+{
+  "lesson_id": "lesson_dry_run_eval_guard_v1",
+  "domain": "evaluation",
+  "mistake_observed": "Running eval as if it were a production mutation path.",
+  "correct_behavior": "Default eval harness to dry-run/read-only and require explicit live override.",
+  "example_prompt": "Evaluate Brain against default suite.",
+  "bad_response_summary": "Accidentally writes memory or logs secrets during evaluation.",
+  "good_response_target": "Dry-run eval, compact output, safe metadata only.",
+  "test_to_prevent_regression": "smoke_front_brain_timeout_generation_quality_fix_01.py",
+  "promotion_status": "validated"
+}

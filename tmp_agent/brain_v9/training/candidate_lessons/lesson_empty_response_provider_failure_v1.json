@@ -1,0 +1,11 @@
+{
+  "lesson_id": "lesson_empty_response_provider_failure_v1",
+  "domain": "provider_quality",
+  "mistake_observed": "Accepting an empty model response as successful generation.",
+  "correct_behavior": "Classify empty content as EMPTY_RESPONSE and continue provider fallback.",
+  "example_prompt": "Ask Brain to generate an autonomy answer while Kimi returns empty output.",
+  "bad_response_summary": "Returns success with blank content.",
+  "good_response_target": "Fail provider attempt, preserve attempt metadata, use next provider.",
+  "test_to_prevent_regression": "smoke_front_brain_llm_provider_chain_optimization_01.py",
+  "promotion_status": "validated"
+}

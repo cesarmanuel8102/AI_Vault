@@ -1,0 +1,62 @@
+{
+  "version": "1.0-final-autonomy-dry-run",
+  "updated_utc": "2026-06-12T19:10:30.941341+00:00",
+  "global_guards": {
+    "No semantic memory writes": true,
+    "No FAISS writes": true,
+    "No trading or broker actions": true,
+    "No B8 changes": true,
+    "No secrets printed or persisted": true,
+    "No raw chain-of-thought exposure": true
+  },
+  "gates": [
+    {
+      "gate_id": "gate_provider_route_verified_v1",
+      "requires": [
+        "ollama_tag_inventory",
+        "safe_env_status",
+        "no_direct_moonshot_assumption"
+      ],
+      "blocks_if": [
+        "configured_tag_missing",
+        "secret_requested_without_need"
+      ]
+    },
+    {
+      "gate_id": "gate_empty_response_failure_v1",
+      "requires": [
+        "non_empty_content",
+        "provider_attempt_metadata"
+      ],
+      "blocks_if": [
+        "empty_content_success"
+      ]
+    },
+    {
+      "gate_id": "gate_memory_promotion_v1",
+      "requires": [
+        "candidate_lesson",
+        "evidence_refs",
+        "rollback_plan",
+        "tests_passed"
+      ],
+      "blocks_if": [
+        "semantic_write_requested",
+        "faiss_write_requested"
+      ]
+    },
+    {
+      "gate_id": "gate_autonomy_cycle_v1",
+      "requires": [
+        "scope_check",
+        "dry_run_evidence",
+        "test_results",
+        "ledger_update"
+      ],
+      "blocks_if": [
+        "protected_path_touched",
+        "staged_unexpected"
+      ]
+    }
+  ]
+}

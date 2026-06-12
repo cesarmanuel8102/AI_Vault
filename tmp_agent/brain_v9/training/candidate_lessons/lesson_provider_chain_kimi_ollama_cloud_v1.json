@@ -1,0 +1,11 @@
+{
+  "lesson_id": "lesson_provider_chain_kimi_ollama_cloud_v1",
+  "domain": "provider_routing",
+  "mistake_observed": "Treating Kimi as a direct Moonshot provider instead of the actual Ollama Cloud route.",
+  "correct_behavior": "Model Kimi K2.5/K2.6 as Ollama Cloud tags and require tag presence before marking primary available.",
+  "example_prompt": "Configure Kimi K2.6 provider for Brain.",
+  "bad_response_summary": "Assumes Moonshot direct API and requests API secrets unnecessarily.",
+  "good_response_target": "Use KIMI_OLLAMA_MODEL with kimi-k2.6:cloud, verify Ollama tags, never print secrets.",
+  "test_to_prevent_regression": "smoke_front_kimi_k2_6_cloud_provider_config_runbook_01.py",
+  "promotion_status": "validated"
+}

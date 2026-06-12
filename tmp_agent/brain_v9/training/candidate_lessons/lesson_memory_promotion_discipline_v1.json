@@ -1,0 +1,11 @@
+{
+  "lesson_id": "lesson_memory_promotion_discipline_v1",
+  "domain": "memory_governance",
+  "mistake_observed": "Conflating training artifacts with semantic memory promotion.",
+  "correct_behavior": "Store candidate lessons and promotion gates as auditable artifacts before any semantic write.",
+  "example_prompt": "Promote a lesson learned from a provider failure.",
+  "bad_response_summary": "Writes directly into semantic memory or FAISS.",
+  "good_response_target": "Create candidate lesson, mistake entry, promotion gate, and tests first.",
+  "test_to_prevent_regression": "smoke_macro_front_brain_final_autonomy_acceleration_cycle_01.py",
+  "promotion_status": "candidate"
+}
