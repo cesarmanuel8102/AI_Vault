@@ -7659,3 +7659,58 @@ The adapter/router/governance metadata layer is working, but answer-generation q
 - test_count: `23`
 - manual_user_action_if_needed: `make kimi-k2.6:cloud available in Ollama Cloud, then run tools/setup_kimi_k2_6_provider_user_env.ps1 -Mode User -ModelTag kimi-k2.6:cloud; for temporary K2.5 testing use -ModelTag kimi-k2.5:cloud explicitly`
 - next_front_locked: `FRONT-KIMI-K2-6-OLLAMA-CLOUD-MODEL-ENABLEMENT-01`
+
+## LEDGER-ROADMAP-SSOT-MACRO-FRONT-BRAIN-FINAL-AUTONOMY-ACCELERATION-CYCLE-01 — Final Autonomy Acceleration Cycle
+
+- timestamp_utc: `2026-06-12T19:14:52.740452+00:00`
+- status: `BRAIN_FINAL_AUTONOMY_ACCELERATION_PARTIAL_KIMI_K2_6_UNAVAILABLE`
+- branch: `codex/own-capital-sustainable-return`
+- provider_health_commit: `0b364d1` — `feat: harden Brain provider health and routing`
+- training_artifacts_commit: `74e8796` — `feat: add Brain autonomy training artifacts`
+- chat_readiness_commit: `2e2546d` — `docs: add Brain final chat readiness`
+- kimi_route: `Ollama Cloud`
+- configured_kimi_tag: `kimi-k2.6:cloud`
+- kimi_k2_6_cloud_present: `false`
+- kimi_k2_5_cloud_present: `true`
+- kimi_k2_5_probe: `empty_response`
+- codex_provider_available: `true`
+- local_llama_available: `true`
+- provider_metadata_added:
+  - `cloud_provider_available`
+  - `codex_provider_available`
+- provider_health_module: `tmp_agent/brain_v9/provider_health/provider_health.py`
+- training_artifacts:
+  - `docs/BRAIN_TRAINING_CURRICULUM.md`
+  - `tmp_agent/brain_v9/training/candidate_lessons/*`
+  - `tmp_agent/brain_v9/training/promoted_operational_lessons.jsonl`
+  - `tmp_agent/brain_v9/training/mistake_registry.jsonl`
+  - `tmp_agent/brain_v9/training/promotion_gates.json`
+- chat_readiness_doc: `docs/BRAIN_CHAT_READINESS_FINAL.md`
+- autonomy_walker_v2_dry_run_cycles: `8`
+- dry_run_eval:
+  - prompts_attempted: `8`
+  - successful_responses: `8`
+  - average_score: `1.0`
+  - metadata_full_rate: `1.0`
+  - no_cot_rate: `1.0`
+  - raw_cot_count: `0`
+- tests:
+  - relevant_macro_suite: `58 passed, 2 warnings`
+  - provider_health_commit_tests: `14 passed`
+  - training_commit_tests: `8 passed`
+  - docs_commit_tests: `5 passed`
+- runtime_decision:
+  - port_8090: `not_listening_during_macro_check`
+  - port_8091: `healthy_200`
+  - decision: `KEEP_8090_UNTOUCHED_USE_8091_FOR_SAFE_RUNTIME`
+- memory_mutated: `false`
+- faiss_mutated: `false`
+- semantic_memory_lines: `1715`
+- faiss_ids: `1616`
+- faiss_ntotal: `1616`
+- trading_touched: `false`
+- b8_touched: `false`
+- secrets_exposed: `false`
+- env_file_written: `false`
+- next_front_locked: `FRONT-KIMI-K2-6-OLLAMA-CLOUD-MODEL-ENABLEMENT-01`
+
