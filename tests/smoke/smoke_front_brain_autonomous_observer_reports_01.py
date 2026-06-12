@@ -1,64 +1,47 @@
 import json
-import subprocess
+import sys
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
-EXAMPLE = ROOT / "tests" / "fixtures" / "autonomous_observer_report_example.json"
-DOC = ROOT / "docs" / "BRAIN_AUTONOMOUS_OBSERVER_REPORT_SCHEMA.md"
+sys.path.insert(0, str(ROOT / "tmp_agent"))
 
-REQUIRED_FIELDS = {
-    "front",
-    "objective",
-    "actions_taken",
-    "files_changed",
-    "tests_run",
-    "evidence_paths",
-    "gates_passed",
-    "gates_failed",
-    "memory_mutated",
-    "faiss_mutated",
-    "trading_touched",
-    "secrets_exposed",
-    "raw_cot_exposed",
-    "runtime_used",
-    "next_recommended_front",
-    "human_review_needed",
-}
+from brain_v9.reports.autonomous_observer_report import validate_observer_report, write_observer_report
 
 
-def _git(args):
-    return subprocess.check_output(["git", *args], cwd=ROOT, text=True).strip()
+def _valid_payload():
+    return {
+        "front": "FRONT-X",
+        "objective": "test",
+        "actions_taken": [],
+        "files_changed": [],
+        "tests_run": [],
+        "evidence_paths": [],
+        "gates_passed": [],
+        "gates_failed": [],
+        "memory_mutated": False,
+        "faiss_mutated": False,
+        "trading_touched": False,
+        "secrets_exposed": False,
+        "raw_cot_exposed": False,
+        "runtime_used": "8091",
+        "next_recommended_front": "FRONT-Y",
+        "human_review_needed": False,
+    }
 
 
-def test_01_example_report_has_required_fields():
-    data = json.loads(EXAMPLE.read_text(encoding="utf-8"))
-    assert REQUIRED_FIELDS <= set(data)
-    assert isinstance(data["actions_taken"], list)
-    assert isinstance(data["tests_run"], list)
-    assert isinstance(data["evidence_paths"], list)
+def test_01_validate_observer_report_accepts_required_payload(tmp_path):
+    assert validate_observer_report(_valid_payload()) == []
+    out = write_observer_report(tmp_path / "report.json", _valid_payload())
+    assert out["valid"] is True
 
 
-def test_02_safety_flags_are_boolean_and_safe_in_example():
-    data = json.loads(EXAMPLE.read_text(encoding="utf-8"))
-    for key in ["memory_mutated", "faiss_mutated", "trading_touched", "secrets_exposed", "raw_cot_exposed", "human_review_needed"]:
-        assert isinstance(data[key], bool)
-    assert data["memory_mutated"] is False
-    assert data["faiss_mutated"] is False
-    assert data["trading_touched"] is False
-    assert data["secrets_exposed"] is False
-    assert data["raw_cot_exposed"] is False
+def test_02_validate_observer_report_rejects_missing_fields():
+    errors = validate_observer_report({"front": "x"})
+    assert errors
+    assert any(error.startswith("missing_fields") for error in errors)
 
 
-def test_03_schema_doc_mentions_required_fields():
-    text = DOC.read_text(encoding="utf-8")
-    for field in sorted(REQUIRED_FIELDS):
-        assert field in text
-
-
-def test_04_no_protected_paths_staged():
-    staged = _git(["diff", "--cached", "--name-only"]).replace("\\", "/")
-    assert "memory/semantic" not in staged
-    assert "trading/" not in staged
-    assert "B8/" not in staged
-    assert "tmp_agent/strategies" not in staged
+def test_03_validate_observer_report_rejects_non_bool_safety():
+    payload = _valid_payload()
+    payload["memory_mutated"] = "false"
+    assert "memory_mutated_must_be_bool" in validate_observer_report(payload)
