@@ -24,6 +24,12 @@ RAW_COT_MARKERS = (
     "hidden reasoning",
     "chain of thought",
     "analysis:",
+    "thinking...",
+    "done thinking",
+    "<thinking>",
+    "<think>",
+    "scratchpad:",
+    "chain-of-thought:",
 )
 
 _ENTRYPOINT_SESSIONS: Dict[str, Any] = {}
@@ -70,8 +76,10 @@ def detect_intent(message: str, history: Optional[List[Dict[str, Any]]] = None) 
     }
 
 
-def select_route(intent_result: Mapping[str, Any], *, dry_run: bool = False) -> str:
+def select_route(intent_result: Mapping[str, Any], *, dry_run: bool = False, provider_probe: bool = False) -> str:
     """Choose a conservative route label without executing tools or LLMs."""
+    if provider_probe:
+        return "provider_probe"
     if dry_run:
         return "diagnostic_dry_run"
     intent = str(intent_result.get("intent") or "UNKNOWN").upper()
@@ -112,7 +120,8 @@ def apply_governance(content: str, metadata: Optional[Dict[str, Any]] = None) ->
     try:
         from brain_v9.core.session import BrainSession
 
-        sanitized = BrainSession._sanitize_llm_chat_response(sanitized).strip()
+        sanitized, hygiene = BrainSession._sanitize_llm_chat_response_with_metadata(sanitized)
+        metadata["thinking_stripped"] = bool(metadata.get("thinking_stripped") or hygiene["thinking_stripped"])
     except Exception:
         sanitized = sanitized.strip()
 
@@ -155,9 +164,10 @@ async def handle_user_message(
     errors: List[str] = []
     evidence_ids = list(context.get("evidence_ids") or [])
     history = list(context.get("history") or [])
+    provider_probe = bool(context.get("provider_probe"))
 
     intent_result = detect_intent(message, history)
-    route = select_route(intent_result, dry_run=dry_run)
+    route = select_route(intent_result, dry_run=dry_run, provider_probe=provider_probe)
 
     if dry_run:
         governed = apply_governance(
@@ -184,6 +194,81 @@ async def handle_user_message(
                 },
             )
         )
+
+    if provider_probe:
+        try:
+            from brain_v9.core.session import get_or_create_session
+
+            active_sessions = context.get("active_sessions")
+            if active_sessions is None:
+                active_sessions = _ENTRYPOINT_SESSIONS
+            model_priority = str(context.get("model_priority") or "chat")
+            session = get_or_create_session(room, active_sessions)
+            downstream = await session.provider_probe(message, model_priority=model_priority)
+        except Exception as exc:
+            errors.append(f"{type(exc).__name__}: {str(exc)[:300]}")
+            downstream = {
+                "content": "provider_probe failed safely before provider selection.",
+                "success": False,
+                "route": "provider_probe",
+                "model": "canonical_router_provider_probe_error",
+                "no_cot_leak": True,
+            }
+        downstream = _strip_raw_cot_fields(downstream if isinstance(downstream, dict) else {"content": str(downstream)})
+        content = str(downstream.get("content") or downstream.get("response") or "")
+        governed = apply_governance(content, {"downstream": downstream, "intent_result": intent_result, "provider_probe": True})
+        result = ChatRouterOutput(
+            content=governed["content"],
+            route="provider_probe",
+            intent=str(downstream.get("intent") or intent_result["intent"]),
+            evidence_ids=evidence_ids,
+            governance_applied=governed["governance_applied"],
+            no_cot_leak=governed["no_cot_leak"],
+            errors=errors,
+            latency_ms=round((time.monotonic() - started) * 1000, 3),
+            model=downstream.get("model"),
+            success=bool(downstream.get("success", not errors)),
+            metadata={
+                "entrypoint_version": CANONICAL_CHAT_ENTRYPOINT_VERSION,
+                "intent_detector_called": True,
+                "selected_route": "provider_probe",
+                "provider_probe": True,
+                "read_only": True,
+                "evaluation": True,
+                "tools_blocked": True,
+                "memory_writes_blocked": True,
+                "faiss_writes_blocked": True,
+                "external_side_effects_blocked": True,
+                "thinking_stripped": bool(governed["metadata"].get("thinking_stripped") or downstream.get("thinking_stripped")),
+                "future_adapter_policy": "OpenAI adapters must call handle_user_message; direct LLMManager.query is forbidden.",
+            },
+        )
+        payload = render_response(result)
+        for key in (
+            "provider_chain",
+            "provider_attempts",
+            "provider_selected",
+            "model_selected",
+            "provider_status",
+            "provider_latency_ms",
+            "fallback_used",
+            "fallback_reason",
+            "primary_provider_available",
+            "secondary_provider_available",
+            "cloud_provider_available",
+            "codex_provider_available",
+            "local_fallback_used",
+            "thinking_stripped",
+            "tools_blocked",
+            "memory_writes_blocked",
+            "faiss_writes_blocked",
+            "external_side_effects_blocked",
+            "save_turn_skipped",
+            "aiohttp_session_closed_after_probe",
+        ):
+            if key in downstream:
+                payload[key] = downstream[key]
+        return payload
 
     try:
         from brain_v9.core.session import get_or_create_session
@@ -242,4 +327,3 @@ async def handle_user_message(
         if key in downstream:
             payload[key] = downstream[key]
     return payload
-

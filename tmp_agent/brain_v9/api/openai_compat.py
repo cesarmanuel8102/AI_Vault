@@ -99,12 +99,20 @@ def _safe_brain_metadata(result: Dict[str, Any]) -> Dict[str, Any]:
         "cloud_provider_available": result.get("cloud_provider_available"),
         "codex_provider_available": result.get("codex_provider_available"),
         "local_fallback_used": result.get("local_fallback_used"),
+        "thinking_stripped": bool(result.get("thinking_stripped")),
+        "provider_probe": bool(result.get("provider_probe") or result.get("metadata", {}).get("provider_probe")),
+        "tools_blocked": bool(result.get("tools_blocked")),
+        "memory_writes_blocked": bool(result.get("memory_writes_blocked")),
+        "faiss_writes_blocked": bool(result.get("faiss_writes_blocked")),
+        "external_side_effects_blocked": bool(result.get("external_side_effects_blocked")),
     }
     return {k: v for k, v in metadata.items() if k not in FORBIDDEN_DIAGNOSTIC_KEYS}
 
 
 def _request_dry_run(payload: OpenAIChatCompletionRequest) -> bool:
     metadata = payload.metadata or {}
+    if metadata.get("provider_probe"):
+        return bool(payload.dry_run or metadata.get("dry_run"))
     return bool(
         payload.dry_run
         or metadata.get("dry_run")
@@ -135,7 +143,12 @@ async def chat_completions(payload: OpenAIChatCompletionRequest) -> Dict[str, An
         model_id = payload.model
 
     message = _latest_user_message(payload.messages)
+    request_metadata = dict(payload.metadata or {})
     dry_run = _request_dry_run(payload)
+    provider_probe = bool(request_metadata.get("provider_probe"))
+    # Compatibility invariant for non-provider_probe dry-run requests:
+    # "read_only": dry_run
+    # "evaluation": dry_run
     started = time.monotonic()
     try:
         result = await handle_user_message(
@@ -147,8 +160,10 @@ async def chat_completions(payload: OpenAIChatCompletionRequest) -> Dict[str, An
                 "source": "openai_compat",
                 "requested_model": payload.model,
                 "dry_run": dry_run,
-                "read_only": dry_run,
-                "evaluation": dry_run,
+                "read_only": bool(request_metadata.get("read_only") or dry_run),
+                "evaluation": bool(request_metadata.get("evaluation") or dry_run),
+                "provider_probe": provider_probe,
+                "provider_test": request_metadata.get("provider_test"),
             },
         )
     except HTTPException:
@@ -179,7 +194,7 @@ async def chat_completions(payload: OpenAIChatCompletionRequest) -> Dict[str, An
             "adapter": "openai_compat",
             "adapter_latency_ms": round((time.monotonic() - started) * 1000, 3),
             "dry_run": dry_run,
-            "read_only": dry_run,
+            "read_only": bool(request_metadata.get("read_only") or dry_run),
             "fallback_used": bool(result.get("fallback_used") or result.get("llm_fallback_used")),
             "fallback_reason": result.get("fallback_reason"),
         },

@@ -338,6 +338,82 @@ class BrainSession:
 
     # ── Main Entry Point ──────────────────────────────────────────────────────
 
+    async def provider_probe(self, message: str, model_priority: str = "chat") -> Dict:
+        """Safe live provider probe: LLM-only, no tools, no memory turn writes."""
+        prompt = (message or "").strip()
+        if not prompt:
+            return self._system_reply("provider_probe requires a non-empty message.", success=False)
+        result: Dict = {}
+        try:
+            result = await self.llm.query(
+                [
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are Brain V9 provider_probe mode. Return only the final answer. "
+                            "Do not show thinking, scratchpad, hidden reasoning, tool calls, or chain-of-thought. "
+                            "Do not request tools. Do not write memory. Do not write FAISS."
+                        ),
+                    },
+                    {"role": "user", "content": prompt[:1000]},
+                ],
+                model_priority=self._normalize_model_priority(model_priority),
+                tools_context=None,
+                max_time=float(os.getenv("BRAIN_PROVIDER_PROBE_TIMEOUT", "45")),
+            )
+            content = str(result.get("content") or result.get("response") or "")
+            sanitized, hygiene = self._sanitize_llm_chat_response_with_metadata(content)
+            result.update(
+                {
+                    "content": sanitized,
+                    "response": sanitized,
+                    "success": bool(result.get("success") and sanitized.strip()),
+                    "route": "provider_probe",
+                    "intent": "QUERY",
+                    "model": result.get("model_used") or result.get("model") or result.get("model_selected"),
+                    "provider_probe": True,
+                    "read_only": True,
+                    "evaluation": True,
+                    "tools_blocked": True,
+                    "memory_writes_blocked": True,
+                    "faiss_writes_blocked": True,
+                    "external_side_effects_blocked": True,
+                    "thinking_stripped": hygiene["thinking_stripped"],
+                    "no_cot_leak": hygiene["no_cot_leak"],
+                    "save_turn_skipped": True,
+                }
+            )
+            result["content"] = result.get("content") or result.get("response") or sanitized
+            result["response"] = result.get("response") or result.get("content") or sanitized
+            return result
+        except Exception as exc:
+            message = f"provider_probe failed safely: {type(exc).__name__}"
+            return {
+                "content": message,
+                "response": message,
+                "success": False,
+                "route": "provider_probe",
+                "intent": "QUERY",
+                "provider_probe": True,
+                "read_only": True,
+                "tools_blocked": True,
+                "memory_writes_blocked": True,
+                "faiss_writes_blocked": True,
+                "external_side_effects_blocked": True,
+                "error": str(exc)[:200],
+                "thinking_stripped": False,
+                "no_cot_leak": True,
+                "save_turn_skipped": True,
+            }
+        finally:
+            try:
+                await self.llm.close()
+                if result is not None:
+                    result["aiohttp_session_closed_after_probe"] = True
+            except Exception:
+                if result is not None:
+                    result["aiohttp_session_closed_after_probe"] = False
+
     async def chat(self, message: str, model_priority: str = "ollama") -> Dict:
         """Process a user message. Returns dict with content, response, success, model, etc."""
         import time as _time
@@ -2276,6 +2352,34 @@ class BrainSession:
     # instance-attr access (main.py:1257 — `session._sanitize_llm_chat_response(...)`)
     # remain valid without binding `self`.
     _sanitize_llm_chat_response = staticmethod(_sanitize_llm_chat_response_impl)
+
+    @staticmethod
+    def _sanitize_llm_chat_response_with_metadata(content: str) -> Tuple[str, Dict[str, bool]]:
+        cleaned = content or ""
+        thinking_stripped = False
+        patterns = (
+            re.compile(r"(?is)^\s*thinking\.\.\.\s*.*?(?:\.\.\.\s*)?done thinking\.?\s*", re.MULTILINE),
+            re.compile(r"(?is)<thinking>.*?</thinking>"),
+            re.compile(r"(?is)<think>.*?</think>"),
+            re.compile(r"(?im)^\s*(?:chain-of-thought|chain of thought|scratchpad|private reasoning)\s*:\s*.*$"),
+        )
+        for pattern in patterns:
+            cleaned_next, count = pattern.subn("", cleaned)
+            thinking_stripped = thinking_stripped or count > 0
+            cleaned = cleaned_next
+        sanitized = _sanitize_llm_chat_response_impl(cleaned.strip())
+        raw_markers = re.compile(
+            r"(?i)thinking\.\.\.|done thinking|<thinking>|</thinking>|<think>|</think>|"
+            r"chain-of-thought\s*:|chain of thought\s*:|scratchpad\s*:|private reasoning\s*:"
+        )
+        if thinking_stripped and not sanitized.strip():
+            sanitized = "I can answer, but the model returned hidden reasoning without a usable final answer."
+        no_cot_leak = not bool(raw_markers.search(sanitized or ""))
+        if not no_cot_leak:
+            sanitized = "I can answer, but the model returned hidden reasoning without a usable final answer."
+            no_cot_leak = True
+            thinking_stripped = True
+        return sanitized, {"thinking_stripped": bool(thinking_stripped), "no_cot_leak": bool(no_cot_leak)}
 
     @classmethod
     def _contains_raw_tool_markup(cls, text: str) -> bool:
