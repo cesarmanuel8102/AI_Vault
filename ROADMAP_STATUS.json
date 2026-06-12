@@ -1,9 +1,9 @@
 {
-  "current_head": "c99b453",
-  "current_remote_head": "c99b453",
+  "current_head": "fd1b56e",
+  "current_remote_head": "fd1b56e",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "front_legacy_path_cleanup_execute_01_complete",
-  "last_applied_checkpoint": "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01",
+  "migration_status": "front_legacy_path_cleanup_retry_post_reboot_01_locked",
+  "last_applied_checkpoint": "FRONT-LEGACY-PATH-CLEANUP-RETRY-POST-REBOOT-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -126,22 +126,25 @@
     "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-POST-PROMOTION-VERIFY-SECURITY-GOVERNANCE-01",
     "FRONT-RUNTIME-PATH-ALIGNMENT-CANONICAL-VERIFY-01",
     "FRONT-LEGACY-PATH-CLEANUP-PLAN-01",
-    "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01"
+    "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01",
+    "FRONT-LEGACY-PATH-CLEANUP-RETRY-POST-REBOOT-01"
   ],
   "open_fronts": [],
-  "blocked_fronts": [],
+  "blocked_fronts": [
+    "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01"
+  ],
   "protected_out_of_scope": [
     "memory/semantic",
     "tmp_agent/strategies",
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-CANONICAL-RUNTIME-SMOKE-VERIFY-01",
+    "name": "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
     "status": "LOCKED",
-    "reason": "Legacy path cleanup encountered Windows file lock. Recommend reboot and retry, or manual cleanup."
+    "reason": "Second legacy quarantine rename attempt failed with WinError 32; next step is manual lock diagnostic, not another blind retry."
   },
-  "ready_for_next_front": "FRONT-CANONICAL-RUNTIME-SMOKE-VERIFY-01",
-  "last_updated": "2026-06-12T02:10:01.645193+00:00",
+  "ready_for_next_front": false,
+  "last_updated": "2026-06-12T03:30:36.830454+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2501,5 +2504,37 @@
     "tests_passed": true,
     "functional_commit": "c99b453",
     "next_front_locked": "FRONT-CANONICAL-RUNTIME-SMOKE-VERIFY-01"
+  },
+  "legacy_path_cleanup_retry_post_reboot": {
+    "front": "FRONT-LEGACY-PATH-CLEANUP-RETRY-POST-REBOOT-01",
+    "status": "FAILED_QUARANTINE_RENAME_WINDOWS_FILE_LOCK_CANONICAL_UNCHANGED_RETRY",
+    "canonical_path": "C:\\AI_VAULT_CANONICAL",
+    "original_legacy_path": "C:\\AI_VAULT",
+    "quarantine_target": "C:\\AI_VAULT_LEGACY_QUARANTINE_20260611_223045",
+    "deletion_performed": false,
+    "copy_performed": false,
+    "sync_performed": false,
+    "rename_attempted": true,
+    "rename_success": false,
+    "rollback_possible": false,
+    "current_rollback_required": false,
+    "canonical_memory_mutated": false,
+    "canonical_faiss_mutated": false,
+    "canonical_baseline": {
+      "semantic_memory_lines": 1715,
+      "faiss_ids": 1616,
+      "faiss_ntotal": 1616,
+      "base_path": "C:\\AI_VAULT_CANONICAL"
+    },
+    "tests_passed": true,
+    "test_count": 22,
+    "functional_commit": "fd1b56e",
+    "next_front_locked": "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
+    "notes": [
+      "Second rename attempt failed with WinError 32.",
+      "No force action taken and no process killed.",
+      "Canonical memory and FAISS remained unchanged.",
+      "Legacy path still exists; next step is manual lock diagnostic, not another blind retry."
+    ]
   }
 }

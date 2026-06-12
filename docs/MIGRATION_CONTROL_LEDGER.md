@@ -6912,3 +6912,51 @@ The legacy path cleanup failed due to a Windows file lock. Recommended next step
 2. Re-run rename manually or via a new front
 3. Verify `C:\AI_VAULT` is quarantined and `C:\AI_VAULT_CANONICAL` is intact
 
+
+
+## LEDGER-ROADMAP-SSOT-FRONT-LEGACY-PATH-CLEANUP-RETRY-POST-REBOOT-01 — Legacy Path Cleanup Retry Locked
+
+- timestamp_utc: `2026-06-12T03:30:36.846841+00:00`
+- branch: `codex/own-capital-sustainable-return`
+- front: `FRONT-LEGACY-PATH-CLEANUP-RETRY-POST-REBOOT-01`
+- status: `FAILED_QUARANTINE_RENAME_WINDOWS_FILE_LOCK_CANONICAL_UNCHANGED_RETRY`
+- canonical_path: `C:\AI_VAULT_CANONICAL`
+- original_legacy_path: `C:\AI_VAULT`
+- quarantine_target: `C:\AI_VAULT_LEGACY_QUARANTINE_20260611_223045`
+- functional_commit: `fd1b56e`
+
+### Retry Outcome
+- Second rename attempt failed with `WinError 32`.
+- `rename_attempted`: `true`
+- `rename_success`: `false`
+- `C:\AI_VAULT` still exists: `true`
+- quarantine target exists: `false`
+- `deletion_performed`: `false`
+- `copy_performed`: `false`
+- `sync_performed`: `false`
+
+### Canonical Safety
+- no force action taken: `true`
+- process killed: `false`
+- canonical memory mutated: `false`
+- canonical FAISS mutated: `false`
+- canonical semantic_memory lines: `1715`
+- canonical FAISS ids: `1616`
+- canonical FAISS ntotal: `1616`
+- runtime `BASE_PATH`: `C:\AI_VAULT_CANONICAL`
+
+### Validation
+- tests passed: `true`
+- test count: `22`
+- smoke test: `tests/smoke/smoke_front_legacy_path_cleanup_retry_post_reboot_01.py`
+- documentation: `docs/FRONT_LEGACY_PATH_CLEANUP_RETRY_POST_REBOOT_01.md`
+
+### Rollback
+- rollback possible: `false`
+- current rollback required: `false`
+- reason: rename never succeeded, so there is no quarantine target to roll back from.
+
+### Next Step
+`FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01` remains `LOCKED`.
+
+The next step is manual lock diagnostic, not another blind retry. No process was killed, no force unlock was attempted, and no canonical memory/FAISS mutation occurred.
