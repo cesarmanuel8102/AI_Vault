@@ -523,6 +523,8 @@ class LLMManager:
                     a.get("model_key") == "codex" and a.get("status") in {"FAST_SUCCESS", "SLOW_SUCCESS"}
                     for a in attempts
                 )
+                result["cloud_provider_available"] = result["primary_provider_available"]
+                result["codex_provider_available"] = result["secondary_provider_available"]
                 result["local_fallback_used"] = bool(cfg.get("local"))
                 log.info("LLM query OK: model_key=%s latency=%.2fs fallback=%s",
                          model_key, latency, idx > 0)
@@ -581,6 +583,8 @@ class LLMManager:
             "fallback_reason": last_error or "all_providers_failed",
             "primary_provider_available": False,
             "secondary_provider_available": False,
+            "cloud_provider_available": False,
+            "codex_provider_available": False,
             "local_fallback_used": any(a.get("status") in {"FAST_SUCCESS", "SLOW_SUCCESS"} and MODELS.get(a.get("model_key"), {}).get("local") for a in attempts),
         }
 

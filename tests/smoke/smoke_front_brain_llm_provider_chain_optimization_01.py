@@ -150,6 +150,8 @@ def test_provider_metadata_fields_are_exposed() -> None:
         "fallback_reason",
         "primary_provider_available",
         "secondary_provider_available",
+        "cloud_provider_available",
+        "codex_provider_available",
         "local_fallback_used",
     ):
         assert field in llm

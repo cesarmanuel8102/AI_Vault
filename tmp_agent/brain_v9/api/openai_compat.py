@@ -96,6 +96,8 @@ def _safe_brain_metadata(result: Dict[str, Any]) -> Dict[str, Any]:
         "provider_latency_ms": result.get("provider_latency_ms"),
         "primary_provider_available": result.get("primary_provider_available"),
         "secondary_provider_available": result.get("secondary_provider_available"),
+        "cloud_provider_available": result.get("cloud_provider_available"),
+        "codex_provider_available": result.get("codex_provider_available"),
         "local_fallback_used": result.get("local_fallback_used"),
     }
     return {k: v for k, v in metadata.items() if k not in FORBIDDEN_DIAGNOSTIC_KEYS}
