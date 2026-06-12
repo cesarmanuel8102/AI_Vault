@@ -7101,3 +7101,49 @@ APPROVE_LEGACY_PATH_CLEANUP_EXECUTE_AI_VAULT
 
 ### Next Locked Fix Front
 `FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01` remains `LOCKED`.
+
+
+## LEDGER-ROADMAP-SSOT-FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01 — Open WebUI Docker Networking Restored
+
+- timestamp_utc: `2026-06-12T04:34:01.934737+00:00`
+- branch: `codex/own-capital-sustainable-return`
+- front: `FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01`
+- status: `UI_RESTORED_BUT_BRAIN_OPENAI_COMPAT_MISSING`
+- canonical_path: `C:\AI_VAULT_CANONICAL`
+- functional_commit: `1d192c9`
+
+### UI / Docker Result
+- open_webui_reachable_before: `False`
+- open_webui_reachable_after: `True`
+- ui_layer_restored: `True`
+- action_taken: `docker_start_existing`
+- container_id: `61edccb48634`
+- image: `ghcr.io/open-webui/open-webui:main`
+
+### Provider Connectivity
+- ollama_reachable: `True`
+- ollama_reachable_from_container: `True`
+- brain_backend_reachable: `True`
+- brain_provider_ready: `False`
+- needs_openai_compat_adapter: `True`
+
+### Canonical Safety
+- canonical_memory_mutated: `false`
+- canonical_faiss_mutated: `false`
+- semantic_memory_lines: `1715`
+- faiss_ids: `1616`
+- faiss_ntotal: `1616`
+- runtime_base_path: `C:\AI_VAULT_CANONICAL`
+- broker_api_used: `false`
+- trading_used: `false`
+- process_killed: `false`
+- force_action_used: `false`
+
+### Validation
+- tests_passed: `true`
+- test_count: `20`
+- documentation: `docs/FRONT_CHAT_UI_DOCKER_NETWORKING_FIX_01.md`
+- smoke test: `tests/smoke/smoke_front_chat_ui_docker_networking_fix_01.py`
+
+### Next Locked Front
+`FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-01` remains `LOCKED`.
