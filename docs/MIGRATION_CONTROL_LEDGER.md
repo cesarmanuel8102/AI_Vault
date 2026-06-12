@@ -7309,3 +7309,51 @@ APPROVE_LEGACY_PATH_CLEANUP_EXECUTE_AI_VAULT
 
 ### Next Locked Front
 `FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01` remains `LOCKED`.
+
+
+## LEDGER-ROADMAP-SSOT-FRONT-CODEX-TO-BRAIN-GOVERNED-SELF-IMPROVEMENT-CYCLE-01 — Codex-to-Brain Governed Self-Improvement Cycle Completed
+
+- timestamp_utc: `2026-06-12T07:48:31.342931+00:00`
+- branch: `codex/own-capital-sustainable-return`
+- front: `FRONT-CODEX-TO-BRAIN-GOVERNED-SELF-IMPROVEMENT-CYCLE-01`
+- status: `CODEX_TO_BRAIN_GOVERNED_SELF_IMPROVEMENT_CYCLE_COMPLETED`
+- functional_commit: `0a1f7fc`
+
+### Runtime / Endpoint
+- runtime_used: `8091`
+- endpoint_used: `http://127.0.0.1:8091/v1/chat/completions`
+
+### Dialogue / Evaluation
+- prompts_attempted: `24`
+- successful_responses: `24`
+- average_score: `0.583`
+- metadata_full_rate: `1.0`
+- timeout_fallback_count: `20`
+- top_gaps_count: `10`
+- proposals_created: `9`
+
+### Key Finding
+The adapter/router/governance metadata layer is working, but answer-generation quality is constrained by timeout fallback behavior. This is governed self-improvement evidence, not model training.
+
+### Safety
+- memory_mutated: `false`
+- faiss_mutated: `false`
+- trading_touched: `false`
+- legacy_touched: `false`
+- raw_cot_exposed: `false`
+- secrets_exposed: `false`
+- semantic_memory_lines: `1715`
+- faiss_ids: `1616`
+- faiss_ntotal: `1616`
+
+### Validation
+- tests_passed: `true`
+- test_count: `12`
+- documentation: `docs/FRONT_CODEX_TO_BRAIN_GOVERNED_SELF_IMPROVEMENT_CYCLE_01.md`
+- smoke test: `tests/smoke/smoke_front_codex_to_brain_governed_self_improvement_cycle_01.py`
+
+### Next Locked Front
+`FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01` remains `LOCKED`.
+
+### Alternate Quality Front
+`FRONT-BRAIN-V9-LLM-TIMEOUT-QUALITY-STABILIZATION-01` is recommended if Cesar prioritizes answer quality before port switchover.

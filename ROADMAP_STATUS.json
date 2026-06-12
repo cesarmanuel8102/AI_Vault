@@ -1,9 +1,9 @@
 {
-  "current_head": "3d81691",
-  "current_remote_head": "3d81691",
+  "current_head": "0a1f7fc",
+  "current_remote_head": "0a1f7fc",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "brain_v9_adapter_runtime_loaded_on_alternate_port_8091",
-  "last_applied_checkpoint": "FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01",
+  "migration_status": "codex_to_brain_governed_self_improvement_cycle_completed",
+  "last_applied_checkpoint": "FRONT-CODEX-TO-BRAIN-GOVERNED-SELF-IMPROVEMENT-CYCLE-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -134,7 +134,8 @@
     "FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01",
     "FRONT-CHAT-ROUTER-PRESERVATION-ENTRYPOINT-01",
     "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01",
-    "FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01"
+    "FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01",
+    "FRONT-CODEX-TO-BRAIN-GOVERNED-SELF-IMPROVEMENT-CYCLE-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -150,10 +151,10 @@
   "recommended_next_front": {
     "name": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
     "status": "locked_next_fix",
-    "reason": "OpenAI adapter loaded and verified on safe alternate port 8091; production 8090 still runs old process and needs controlled switchover"
+    "reason": "runtime 8090 remains unresolved; 8091 works and self-improvement cycle exposed timeout-quality gap"
   },
   "ready_for_next_front": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
-  "last_updated": "2026-06-12T07:23:42.808547+00:00",
+  "last_updated": "2026-06-12T07:48:31.342931+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2780,5 +2781,35 @@
     "smoke_test": "tests/smoke/smoke_front_brain_v9_adapter_runtime_load_fix_01.py",
     "next_front_locked": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
     "updated_at_utc": "2026-06-12T07:23:42.808547+00:00"
+  },
+  "front_codex_to_brain_governed_self_improvement_cycle_01": {
+    "front": "FRONT-CODEX-TO-BRAIN-GOVERNED-SELF-IMPROVEMENT-CYCLE-01",
+    "status": "CODEX_TO_BRAIN_GOVERNED_SELF_IMPROVEMENT_CYCLE_COMPLETED",
+    "runtime_used": 8091,
+    "endpoint_used": "http://127.0.0.1:8091/v1/chat/completions",
+    "prompts_attempted": 24,
+    "successful_responses": 24,
+    "average_score": 0.583,
+    "metadata_full_rate": 1.0,
+    "timeout_fallback_count": 20,
+    "top_gaps_count": 10,
+    "proposals_created": 9,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "raw_cot_exposed": false,
+    "secrets_exposed": false,
+    "semantic_memory_lines": 1715,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "tests_passed": true,
+    "test_count": 12,
+    "functional_commit": "0a1f7fc",
+    "documentation": "docs/FRONT_CODEX_TO_BRAIN_GOVERNED_SELF_IMPROVEMENT_CYCLE_01.md",
+    "smoke_test": "tests/smoke/smoke_front_codex_to_brain_governed_self_improvement_cycle_01.py",
+    "next_front_locked": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
+    "alternate_quality_front": "FRONT-BRAIN-V9-LLM-TIMEOUT-QUALITY-STABILIZATION-01",
+    "updated_at_utc": "2026-06-12T07:48:31.342931+00:00"
   }
 }
