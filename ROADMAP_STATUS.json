@@ -1,9 +1,9 @@
 {
-  "current_head": "fad74d6",
-  "current_remote_head": "fad74d6",
+  "current_head": "fa51d51",
+  "current_remote_head": "fa51d51",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "brain_governed_autonomy_walker_v1_completed",
-  "last_applied_checkpoint": "FRONT-BRAIN-GOVERNED-AUTONOMY-WALKER-V1",
+  "migration_status": "brain_timeout_generation_quality_fix_partial_provider_slow",
+  "last_applied_checkpoint": "FRONT-BRAIN-TIMEOUT-GENERATION-QUALITY-FIX-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -144,7 +144,8 @@
     "FRONT-FINANCIAL-RESEARCH-SAFETY-PACK-01",
     "FRONT-MEMORY-FAISS-RETRIEVAL-QUALITY-PACK-01",
     "FRONT-BRAIN-AUTONOMOUS-OBSERVER-REPORTS-01",
-    "FRONT-BRAIN-GOVERNED-AUTONOMY-WALKER-V1"
+    "FRONT-BRAIN-GOVERNED-AUTONOMY-WALKER-V1",
+    "FRONT-BRAIN-TIMEOUT-GENERATION-QUALITY-FIX-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -159,12 +160,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-TIMEOUT-GENERATION-QUALITY-ROOT-CAUSE-01",
+    "name": "FRONT-BRAIN-LOCAL-LLM-PROVIDER-OPTIMIZATION-01",
     "status": "recommended_next",
-    "reason": "Autonomy scaffold and evaluation harness are complete; mini eval still shows high deterministic fallback count, so next work should isolate local LLM/provider latency root cause."
+    "reason": "read-only eval guard and 90s timeout fixed evaluation path; direct LLM probe still needed fallback from kimi_cloud to llama3.1:8b with ~52.9s latency, so provider latency/empty-response root cause remains."
   },
-  "ready_for_next_front": "FRONT-BRAIN-TIMEOUT-GENERATION-QUALITY-ROOT-CAUSE-01",
-  "last_updated": "2026-06-12T17:27:58.364915+00:00",
+  "ready_for_next_front": "FRONT-BRAIN-LOCAL-LLM-PROVIDER-OPTIMIZATION-01",
+  "last_updated": "2026-06-12T18:10:48.373244+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -3062,5 +3063,76 @@
     "recovery_evidence_path": "tmp_agent/recover_brain_8091_and_rerun_autonomy_walker_v1",
     "next_front_locked": "FRONT-BRAIN-TIMEOUT-GENERATION-QUALITY-ROOT-CAUSE-01",
     "updated_at_utc": "2026-06-12T17:27:58.364915+00:00"
+  },
+  "front_brain_timeout_generation_quality_fix_01": {
+    "front": "FRONT-BRAIN-TIMEOUT-GENERATION-QUALITY-FIX-01",
+    "status": "BRAIN_TIMEOUT_GENERATION_QUALITY_FIX_PARTIAL_PROVIDER_SLOW",
+    "functional_commit": "fa51d51",
+    "remote_synced": true,
+    "runtime_used": 8091,
+    "memory_cleanup_performed": true,
+    "memory_cleanup_command": "git restore --worktree -- memory/semantic/semantic_memory.jsonl",
+    "memory_cleanup_scope": "exactly one probe-added semantic_memory.jsonl line removed after diff and FAISS baseline validation",
+    "read_only_eval_guard_added": true,
+    "openai_compat_dry_run_supported": true,
+    "eval_harness_dry_run_default": true,
+    "eval_harness_live_requires_explicit_flag": "--live",
+    "timeout_default_before_s": 30,
+    "timeout_default_after_s": 90,
+    "timeout_fallback_metadata_added": true,
+    "quality_eval": {
+      "before_historical": {
+        "prompts_attempted": 24,
+        "timeout_fallback_count": 20,
+        "average_score": 0.583
+      },
+      "before_pre_fix_mini": {
+        "prompts_attempted": 8,
+        "timeout_fallback_count": 8,
+        "average_score": 0.667
+      },
+      "after_dry_run_mini": {
+        "prompts_attempted": 8,
+        "successful_responses": 8,
+        "timeout_fallback_count": 0,
+        "average_score": 1.0,
+        "metadata_full_rate": 1.0,
+        "no_cot_rate": 1.0
+      },
+      "direct_llm_probe_90s": {
+        "success": true,
+        "latency_s": 52.917,
+        "model_used": "llama3.1:8b",
+        "fallback_from_kimi_cloud": true,
+        "provider_status": "partial_slow"
+      }
+    },
+    "immutability": {
+      "memory_mutated_after_fix": false,
+      "faiss_mutated_after_fix": false,
+      "semantic_memory_lines": 1715,
+      "faiss_ids": 1616,
+      "faiss_ntotal": 1616,
+      "semantic_memory_sha256": "ce81fbe1f97e257e2b124d7a929f0b2af86ce61e9ff1d8d832fdb5da1f69e64e",
+      "faiss_index_sha256": "adbb6051f79ecbeab0223d631a6013939c00bcc13216fbae437efe83047efa21",
+      "faiss_ids_sha256": "43736047db548caf9b26dfa61cdffe40e179c738bc8e8c295891f29cedd69102"
+    },
+    "files": [
+      "tmp_agent/brain_v9/api/openai_compat.py",
+      "tmp_agent/brain_v9/core/session.py",
+      "tmp_agent/brain_v9/evaluation/codex_brain_eval_harness.py",
+      "tests/smoke/smoke_front_brain_timeout_generation_quality_fix_01.py"
+    ],
+    "tests_passed": true,
+    "test_count": 16,
+    "runtime_restarted_8091": true,
+    "runtime_8090_touched": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "raw_cot_exposed": false,
+    "secrets_exposed": false,
+    "evidence_path": "tmp_agent/front_brain_timeout_generation_quality_fix_01",
+    "next_front_locked": "FRONT-BRAIN-LOCAL-LLM-PROVIDER-OPTIMIZATION-01",
+    "updated_at_utc": "2026-06-12T18:10:48.373244+00:00"
   }
 }

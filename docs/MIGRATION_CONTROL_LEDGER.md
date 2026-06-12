@@ -7555,3 +7555,40 @@ The adapter/router/governance metadata layer is working, but answer-generation q
 - secrets_exposed: `false`
 - functional_commits: `027e5a7, d28196b, fad74d6`
 - next_front_locked: `FRONT-BRAIN-TIMEOUT-GENERATION-QUALITY-ROOT-CAUSE-01`
+
+
+## LEDGER-ROADMAP-SSOT-FRONT-BRAIN-TIMEOUT-GENERATION-QUALITY-FIX-01 — Brain Timeout Generation Quality Fix
+
+- timestamp_utc: `2026-06-12T18:10:48.373244+00:00`
+- status: `BRAIN_TIMEOUT_GENERATION_QUALITY_FIX_PARTIAL_PROVIDER_SLOW`
+- branch: `codex/own-capital-sustainable-return`
+- functional_commit: `fa51d51` — `test: harden Brain timeout diagnostics and read-only eval`
+- runtime_used: `8091`
+- memory_cleanup_performed: `true`
+- cleanup_scope: `exactly one probe-added memory/semantic/semantic_memory.jsonl line removed after diff + FAISS validation`
+- read_only_eval_guard_added: `true`
+- openai_compat_dry_run_supported: `true`
+- eval_harness_default: `dry_run/read_only`; live mode requires explicit `--live`
+- timeout_default_before_s: `30`
+- timeout_default_after_s: `90`
+- timeout_fallback_metadata_added: `true`
+- before_historical_timeout_fallback: `20/24`
+- before_pre_fix_mini_timeout_fallback: `8/8`
+- after_dry_run_mini_timeout_fallback: `0/8`
+- after_dry_run_mini_successful_responses: `8/8`
+- after_dry_run_mini_average_score: `1.0`
+- direct_llm_probe_90s: `success=true`, `latency_s=52.917`, `model_used=llama3.1:8b`, `fallback_from_kimi_cloud=true`
+- provider_status: `partial_slow`
+- tests_passed: `true`
+- test_count: `16`
+- memory_mutated_after_fix: `false`
+- faiss_mutated_after_fix: `false`
+- semantic_memory_lines: `1715`
+- faiss_ids: `1616`
+- faiss_ntotal: `1616`
+- trading_touched: `false`
+- legacy_touched: `false`
+- raw_cot_exposed: `false`
+- secrets_exposed: `false`
+- evidence_path: `tmp_agent/front_brain_timeout_generation_quality_fix_01`
+- next_front_locked: `FRONT-BRAIN-LOCAL-LLM-PROVIDER-OPTIMIZATION-01`
