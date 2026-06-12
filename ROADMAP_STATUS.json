@@ -1,9 +1,9 @@
 {
-  "current_head": "0a1f7fc",
-  "current_remote_head": "0a1f7fc",
+  "current_head": "68b87ff",
+  "current_remote_head": "68b87ff",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "codex_to_brain_governed_self_improvement_cycle_completed",
-  "last_applied_checkpoint": "FRONT-CODEX-TO-BRAIN-GOVERNED-SELF-IMPROVEMENT-CYCLE-01",
+  "migration_status": "brain_v9_llm_timeout_quality_stabilized",
+  "last_applied_checkpoint": "FRONT-BRAIN-V9-LLM-TIMEOUT-QUALITY-STABILIZATION-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -135,7 +135,8 @@
     "FRONT-CHAT-ROUTER-PRESERVATION-ENTRYPOINT-01",
     "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01",
     "FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01",
-    "FRONT-CODEX-TO-BRAIN-GOVERNED-SELF-IMPROVEMENT-CYCLE-01"
+    "FRONT-CODEX-TO-BRAIN-GOVERNED-SELF-IMPROVEMENT-CYCLE-01",
+    "FRONT-BRAIN-V9-LLM-TIMEOUT-QUALITY-STABILIZATION-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -149,12 +150,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
-    "status": "locked_next_fix",
-    "reason": "runtime 8090 remains unresolved; 8091 works and self-improvement cycle exposed timeout-quality gap"
+    "name": "FRONT-CODEX-TO-BRAIN-EVALUATION-HARNESS-V2-01",
+    "status": "locked_next",
+    "reason": "timeout quality path stabilized; next create recurring evaluation harness"
   },
-  "ready_for_next_front": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
-  "last_updated": "2026-06-12T07:48:31.342931+00:00",
+  "ready_for_next_front": "FRONT-CODEX-TO-BRAIN-EVALUATION-HARNESS-V2-01",
+  "last_updated": "2026-06-12T08:35:25.164933+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -2811,5 +2812,27 @@
     "next_front_locked": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
     "alternate_quality_front": "FRONT-BRAIN-V9-LLM-TIMEOUT-QUALITY-STABILIZATION-01",
     "updated_at_utc": "2026-06-12T07:48:31.342931+00:00"
+  },
+  "front_brain_v9_llm_timeout_quality_stabilization_01": {
+    "front": "FRONT-BRAIN-V9-LLM-TIMEOUT-QUALITY-STABILIZATION-01",
+    "status": "BRAIN_V9_LLM_TIMEOUT_QUALITY_STABILIZED",
+    "functional_commit": "68b87ff",
+    "runtime_used": 8091,
+    "mini_suite": {
+      "prompts_attempted": 8,
+      "successful_responses": 8,
+      "timeout_fallback_count": 0,
+      "metadata_full_rate": 1.0,
+      "raw_cot_count": 0,
+      "passed": true
+    },
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "tests_passed": true,
+    "test_count": 6,
+    "next_front_locked": "FRONT-CODEX-TO-BRAIN-EVALUATION-HARNESS-V2-01",
+    "updated_at_utc": "2026-06-12T08:35:25.164933+00:00"
   }
 }
