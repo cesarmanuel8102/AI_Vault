@@ -1,9 +1,9 @@
 {
-  "current_head": "a046b94",
-  "current_remote_head": "a046b94",
+  "current_head": "b4046ed",
+  "current_remote_head": "b4046ed",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "kimi_k2_6_live_chat_probe_and_safety_filter_completed",
-  "last_applied_checkpoint": "FRONT-KIMI-K2-6-LIVE-CHAT-PROBE-AND-SAFETY-FILTER-01",
+  "migration_status": "brain_aggressive_governed_autonomy_excellence_partial",
+  "last_applied_checkpoint": "MACRO-FRONT-BRAIN-AGGRESSIVE-GOVERNED-AUTONOMY-EXCELLENCE-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -149,7 +149,8 @@
     "FRONT-BRAIN-LLM-PROVIDER-CHAIN-OPTIMIZATION-01",
     "FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01",
     "MACRO-FRONT-BRAIN-FINAL-AUTONOMY-ACCELERATION-CYCLE-01",
-    "FRONT-KIMI-K2-6-LIVE-CHAT-PROBE-AND-SAFETY-FILTER-01"
+    "FRONT-KIMI-K2-6-LIVE-CHAT-PROBE-AND-SAFETY-FILTER-01",
+    "MACRO-FRONT-BRAIN-AGGRESSIVE-GOVERNED-AUTONOMY-EXCELLENCE-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -164,12 +165,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-GOVERNED-AUTONOMY-OPERATIONS-MODE-01",
+    "name": "FRONT-BRAIN-AUTONOMY-GAP-CLOSURE-01",
     "status": "recommended_next",
-    "reason": "Kimi K2.6 is verified through the safe live chat provider_probe route with no CoT leak and memory/FAISS unchanged."
+    "reason": "Aggressive autonomy artifacts, learning, operations, and excellence scoring are in place; open autonomy Kimi prompts still return EMPTY_RESPONSE and require provider/gap closure before claiming full autonomous excellence."
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-06-12T22:24:47.199456+00:00",
+  "last_updated": "2026-06-12T22:52:57.848701+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -3327,5 +3328,109 @@
       "timeout_quality_smoke": "7 passed, 2 warnings"
     },
     "next_front_locked": "FRONT-BRAIN-GOVERNED-AUTONOMY-OPERATIONS-MODE-01"
+  },
+  "macro_front_brain_aggressive_governed_autonomy_excellence_01": {
+    "front": "MACRO-FRONT-BRAIN-AGGRESSIVE-GOVERNED-AUTONOMY-EXCELLENCE-01",
+    "status": "BRAIN_AGGRESSIVE_GOVERNED_AUTONOMY_EXCELLENCE_PARTIAL",
+    "functional_commits": [
+      {
+        "hash": "3a0627b",
+        "message": "feat: add Brain aggressive autonomy teaching loop"
+      },
+      {
+        "hash": "0998806",
+        "message": "feat: add Brain operational learning and excellence scoring"
+      },
+      {
+        "hash": "688c401",
+        "message": "feat: add governed operations status and domain excellence packs"
+      },
+      {
+        "hash": "741779d",
+        "message": "test: add aggressive autonomy excellence smoke coverage"
+      },
+      {
+        "hash": "b4046ed",
+        "message": "docs: add Brain autonomy excellence doctrine"
+      }
+    ],
+    "runtime_used": 8091,
+    "provider": {
+      "preflight_provider_probe": {
+        "provider_selected": "kimi_k2_6_cloud",
+        "model_selected": "kimi-k2.6:cloud",
+        "status": "FAST_SUCCESS",
+        "content_preview": "OK",
+        "no_cot_leak": true
+      },
+      "open_autonomy_prompt_result": {
+        "kimi_status": "EMPTY_RESPONSE",
+        "fallback_provider": "codex",
+        "fallback_model": "gpt-5.5",
+        "all_provider_kimi": false,
+        "reason": "Kimi K2.6 provider_probe short prompt works, but open autonomy prompts returned empty responses and fell through to Codex."
+      }
+    },
+    "autonomy_cycles_run": 3,
+    "brain_codex_dialogues_run": 5,
+    "cycle_improvements_proposed": 3,
+    "cycle_improvements_implemented": 0,
+    "cycle_improvements_blocked": 3,
+    "codex_artifacts_implemented": [
+      "token conservation policy",
+      "teacher/student autonomy loop",
+      "operational non-semantic learning registries",
+      "excellence scoring and scorecard",
+      "domain excellence packs",
+      "governed operations status tooling",
+      "macro smoke coverage",
+      "autonomy excellence doctrine"
+    ],
+    "operational_learning": {
+      "lessons_created": 3,
+      "mistakes_recorded": 1,
+      "promotion_candidates_created": 2,
+      "semantic_memory_write": false,
+      "faiss_write": false
+    },
+    "excellence_score": {
+      "before": 0.804,
+      "after": 0.869,
+      "delta": 0.065,
+      "weakest_after": [
+        "cei_fdot_usefulness",
+        "coding_reliability",
+        "token_efficiency"
+      ]
+    },
+    "token_policy_created": true,
+    "operations_status_created": true,
+    "domain_excellence_packs": [
+      "cei_fdot_excellence",
+      "financial_research_safety_excellence",
+      "brain_development_excellence",
+      "chat_ux_excellence"
+    ],
+    "tests": {
+      "macro_smoke": "11 passed",
+      "kimi_live_probe_smoke": "11 passed",
+      "final_autonomy_macro_smoke": "3 passed",
+      "provider_chain_smoke": "11 passed",
+      "timeout_quality_smoke": "7 passed, 2 warnings",
+      "tests_passed": true
+    },
+    "immutability": {
+      "memory_mutated": false,
+      "faiss_mutated": false,
+      "semantic_memory_lines": 1715,
+      "faiss_ids": 1616,
+      "faiss_ntotal": 1616,
+      "trading_touched": false,
+      "b8_touched": false,
+      "secrets_exposed": false
+    },
+    "evidence_path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01",
+    "next_front_locked": "FRONT-BRAIN-AUTONOMY-GAP-CLOSURE-01",
+    "updated_at_utc": "2026-06-12T22:52:57.848701+00:00"
   }
 }

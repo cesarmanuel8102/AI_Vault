@@ -7753,3 +7753,60 @@ The adapter/router/governance metadata layer is working, but answer-generation q
 - aiohttp_cleanup: `provider_probe closes LLM aiohttp session after probe path`
 - next_front_locked: `FRONT-BRAIN-GOVERNED-AUTONOMY-OPERATIONS-MODE-01`
 
+
+## LEDGER-ROADMAP-SSOT-MACRO-FRONT-BRAIN-AGGRESSIVE-GOVERNED-AUTONOMY-EXCELLENCE-01 — Aggressive Governed Autonomy Excellence Cycle
+
+- timestamp_utc: `2026-06-12T22:52:57.848701+00:00`
+- status: `BRAIN_AGGRESSIVE_GOVERNED_AUTONOMY_EXCELLENCE_PARTIAL`
+- branch: `codex/own-capital-sustainable-return`
+- functional_commits:
+  - `3a0627b` — `feat: add Brain aggressive autonomy teaching loop`
+  - `0998806` — `feat: add Brain operational learning and excellence scoring`
+  - `688c401` — `feat: add governed operations status and domain excellence packs`
+  - `741779d` — `test: add aggressive autonomy excellence smoke coverage`
+  - `b4046ed` — `docs: add Brain autonomy excellence doctrine`
+- provider_result:
+  - preflight_provider_probe: `kimi_k2_6_cloud`, model `kimi-k2.6:cloud`, status `FAST_SUCCESS`, content `OK`
+  - open_autonomy_prompts: `Kimi EMPTY_RESPONSE`, fallback provider `codex`, model `gpt-5.5`
+  - closure_reason: `partial because open Brain/Codex autonomy dialogue did not stay on Kimi`
+- autonomy_cycles_run: `3`
+- brain_codex_dialogues_run: `5`
+- cycle_improvements_proposed: `3`
+- cycle_improvements_implemented: `0`
+- cycle_improvements_blocked: `3`
+- codex_artifacts_implemented:
+  - token conservation policy
+  - teacher/student autonomy loop
+  - operational non-semantic learning registries
+  - excellence scoring and scorecard
+  - domain excellence packs
+  - governed operations status tooling
+  - macro smoke coverage
+  - autonomy excellence doctrine
+- operational_learning:
+  - lessons_created: `3`
+  - mistakes_recorded: `1`
+  - promotion_candidates_created: `2`
+  - semantic_memory_write: `false`
+  - faiss_write: `false`
+- excellence_score:
+  - before: `0.804`
+  - after: `0.869`
+  - delta: `0.065`
+- tests:
+  - macro smoke: `11 passed`
+  - Kimi live probe smoke: `11 passed`
+  - final autonomy macro smoke: `3 passed`
+  - provider chain smoke: `11 passed`
+  - timeout quality smoke: `7 passed, 2 warnings`
+- safety:
+  - memory_mutated: `false`
+  - faiss_mutated: `false`
+  - semantic_memory_lines: `1715`
+  - faiss_ids: `1616`
+  - faiss_ntotal: `1616`
+  - trading_touched: `false`
+  - b8_touched: `false`
+  - secrets_exposed: `false`
+- evidence_path: `tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01`
+- next_front_locked: `FRONT-BRAIN-AUTONOMY-GAP-CLOSURE-01`
