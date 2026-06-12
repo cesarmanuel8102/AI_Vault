@@ -1,9 +1,9 @@
 {
-  "current_head": "9367f8d",
-  "current_remote_head": "9367f8d",
+  "current_head": "228372e",
+  "current_remote_head": "228372e",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "brain_llm_provider_chain_optimization_partial_kimi_config_missing",
-  "last_applied_checkpoint": "FRONT-BRAIN-LLM-PROVIDER-CHAIN-OPTIMIZATION-01",
+  "migration_status": "kimi_k2_6_cloud_provider_config_runbook_completed",
+  "last_applied_checkpoint": "FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -146,7 +146,8 @@
     "FRONT-BRAIN-AUTONOMOUS-OBSERVER-REPORTS-01",
     "FRONT-BRAIN-GOVERNED-AUTONOMY-WALKER-V1",
     "FRONT-BRAIN-TIMEOUT-GENERATION-QUALITY-FIX-01",
-    "FRONT-BRAIN-LLM-PROVIDER-CHAIN-OPTIMIZATION-01"
+    "FRONT-BRAIN-LLM-PROVIDER-CHAIN-OPTIMIZATION-01",
+    "FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -161,12 +162,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01",
+    "name": "FRONT-KIMI-K2-6-OLLAMA-CLOUD-MODEL-ENABLEMENT-01",
     "status": "recommended_next",
-    "reason": "Provider chain now prioritizes Kimi K2.6 cloud -> Codex -> local Ollama, but KIMI/MOONSHOT config is missing; next safe step is a secrets-safe setup runbook, not hardcoding credentials."
+    "reason": "Kimi provider is documented and wired for Ollama Cloud, but local Ollama exposes kimi-k2.5:cloud and not kimi-k2.6:cloud; next step is enabling/verifying K2.6 Ollama cloud tag or intentionally selecting K2.5 as temporary fallback."
   },
-  "ready_for_next_front": "FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01",
-  "last_updated": "2026-06-12T18:48:29.343514+00:00",
+  "ready_for_next_front": "FRONT-KIMI-K2-6-OLLAMA-CLOUD-MODEL-ENABLEMENT-01",
+  "last_updated": "2026-06-12T19:00:19.000875+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -3197,5 +3198,44 @@
     "evidence_path": "tmp_agent/front_brain_llm_provider_chain_optimization_01",
     "next_front_locked": "FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01",
     "updated_at_utc": "2026-06-12T18:48:29.343514+00:00"
+  },
+  "front_kimi_k2_6_cloud_provider_config_runbook_01": {
+    "front": "FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01",
+    "status": "KIMI_K2_6_CLOUD_PROVIDER_CONFIG_RUNBOOK_COMPLETED",
+    "functional_commit": "228372e",
+    "remote_synced": true,
+    "provider_route": "ollama_cloud",
+    "kimi_status": "KIMI_CONFIG_MISSING",
+    "configured_model_tag": "kimi-k2.6:cloud",
+    "kimi_k2_5_cloud_present": true,
+    "kimi_k2_6_cloud_present": false,
+    "ollama_reachable": true,
+    "brain_models_status": "AVAILABLE",
+    "setup_script_created": true,
+    "verify_script_created": true,
+    "runbook_created": true,
+    "secrets_exposed": false,
+    "env_values_printed": false,
+    "env_file_written": false,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "semantic_memory_lines": 1715,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "trading_touched": false,
+    "tests_passed": true,
+    "test_count": 23,
+    "files": [
+      "docs/KIMI_K2_6_CLOUD_PROVIDER_SETUP_RUNBOOK.md",
+      "tools/setup_kimi_k2_6_provider_user_env.ps1",
+      "tools/verify_kimi_k2_6_provider_config.ps1",
+      "tests/smoke/smoke_front_kimi_k2_6_cloud_provider_config_runbook_01.py",
+      "tmp_agent/brain_v9/core/llm.py",
+      "tests/smoke/smoke_front_brain_llm_provider_chain_optimization_01.py"
+    ],
+    "manual_user_action_if_needed": "To target K2.6, make kimi-k2.6:cloud available in Ollama Cloud and optionally run tools/setup_kimi_k2_6_provider_user_env.ps1 -Mode User -ModelTag kimi-k2.6:cloud. For temporary K2.5 testing, use -ModelTag kimi-k2.5:cloud explicitly.",
+    "evidence_path": "tmp_agent/front_kimi_k2_6_cloud_provider_config_runbook_01",
+    "next_front_locked": "FRONT-KIMI-K2-6-OLLAMA-CLOUD-MODEL-ENABLEMENT-01",
+    "updated_at_utc": "2026-06-12T19:00:19.000875+00:00"
   }
 }

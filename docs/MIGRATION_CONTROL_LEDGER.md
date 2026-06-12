@@ -7628,3 +7628,34 @@ The adapter/router/governance metadata layer is working, but answer-generation q
 - tests_passed: `true`
 - test_count: `27`
 - next_front_locked: `FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01`
+
+
+## LEDGER-ROADMAP-SSOT-FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01 — Kimi Ollama Cloud Provider Setup Runbook
+
+- timestamp_utc: `2026-06-12T19:00:19.000875+00:00`
+- status: `KIMI_K2_6_CLOUD_PROVIDER_CONFIG_RUNBOOK_COMPLETED`
+- branch: `codex/own-capital-sustainable-return`
+- functional_commit: `228372e` — `docs: add Kimi Ollama cloud provider setup runbook`
+- provider_route: `ollama_cloud`
+- configured_model_tag: `kimi-k2.6:cloud`
+- kimi_status: `KIMI_CONFIG_MISSING`
+- kimi_k2_5_cloud_present: `True`
+- kimi_k2_6_cloud_present: `False`
+- ollama_reachable: `True`
+- brain_models_status: `AVAILABLE`
+- setup_script_created: `true`
+- verify_script_created: `true`
+- runbook_created: `true`
+- secrets_exposed: `false`
+- env_values_printed: `false`
+- env_file_written: `false`
+- memory_mutated: `false`
+- faiss_mutated: `false`
+- semantic_memory_lines: `1715`
+- faiss_ids: `1616`
+- faiss_ntotal: `1616`
+- trading_touched: `false`
+- tests_passed: `true`
+- test_count: `23`
+- manual_user_action_if_needed: `make kimi-k2.6:cloud available in Ollama Cloud, then run tools/setup_kimi_k2_6_provider_user_env.ps1 -Mode User -ModelTag kimi-k2.6:cloud; for temporary K2.5 testing use -ModelTag kimi-k2.5:cloud explicitly`
+- next_front_locked: `FRONT-KIMI-K2-6-OLLAMA-CLOUD-MODEL-ENABLEMENT-01`
