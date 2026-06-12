@@ -7053,3 +7053,51 @@ APPROVE_LEGACY_PATH_CLEANUP_EXECUTE_AI_VAULT
 
 ### Next Locked Front
 `FRONT-LEGACY-LOCK-HANDLE-TOOL-INSTALL-OR-SAFE-MODE-PLAN-01` remains `LOCKED`.
+
+
+## LEDGER-ROADMAP-SSOT-FRONT-CHAT-UI-E2E-FAILURE-DIAGNOSTIC-01 — Chat/UI E2E Failure Diagnostic Completed
+
+- timestamp_utc: `2026-06-12T04:22:55.229120+00:00`
+- branch: `codex/own-capital-sustainable-return`
+- front: `FRONT-CHAT-UI-E2E-FAILURE-DIAGNOSTIC-01`
+- status: `CHAT_UI_E2E_FAILURE_DIAGNOSTIC_COMPLETED`
+- canonical_path: `C:\AI_VAULT_CANONICAL`
+- functional_commit: `d1332e2`
+
+### Diagnostic Result
+- chat_ui_status: `failing`
+- primary_failure: `UI_NOT_REACHABLE`
+- secondary_failures: `OPENAI_COMPATIBILITY_MISSING, TIMEOUT, STREAMING_SSE_MISMATCH, RETRIEVAL_INJECTION_FAILURE, CANONICAL_PATH_OK_BUT_UI_NOT_CONNECTED`
+- confidence: `HIGH`
+- recommended_fix_front: `FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01`
+
+### Endpoint / Runtime Evidence
+- Open WebUI 3000 reachable: `False`
+- Brain backend 8090 reachable: `True`
+- Ollama 11434 reachable: `True`
+- OpenAPI available: `True`
+- OpenAI-compatible `/v1/chat/completions`: `False`
+- direct_backend_chat_passed: `False`
+- retrieval_injection_passed: `False`
+- streaming_compatible: `False`
+
+### Canonical Safety
+- canonical_memory_mutated: `false`
+- canonical_faiss_mutated: `false`
+- semantic_memory_lines: `1715`
+- faiss_ids: `1616`
+- faiss_ntotal: `1616`
+- runtime_base_path: `C:\AI_VAULT_CANONICAL`
+- process_killed: `false`
+- server_restarted: `false`
+- broker_api_used: `false`
+- trading_used: `false`
+
+### Validation
+- tests_passed: `true`
+- test_count: `22`
+- documentation: `docs/FRONT_CHAT_UI_E2E_FAILURE_DIAGNOSTIC_01.md`
+- smoke test: `tests/smoke/smoke_front_chat_ui_e2e_failure_diagnostic_01.py`
+
+### Next Locked Fix Front
+`FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01` remains `LOCKED`.
