@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "scores": {
+    "provider_reliability": 0.88,
+    "no_cot_safety": 0.94,
+    "memory_discipline": 0.95,
+    "coding_reliability": 0.78,
+    "test_discipline": 0.82,
+    "cei_fdot_usefulness": 0.68,
+    "financial_safety": 0.8,
+    "autonomy_planning": 0.8,
+    "token_efficiency": 0.82,
+    "operator_clarity": 0.86
+  },
+  "overall": 0.833
+}
