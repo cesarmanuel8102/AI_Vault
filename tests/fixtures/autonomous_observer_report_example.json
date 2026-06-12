@@ -1,0 +1,44 @@
+{
+  "schema_id": "brain_autonomous_observer_report_v1",
+  "front": "FRONT-EXAMPLE-01",
+  "objective": "Example objective for an autonomous governed front.",
+  "status": "COMPLETED",
+  "actions_taken": [
+    "preflight",
+    "baseline_safety",
+    "implementation",
+    "tests",
+    "scope_validation",
+    "ledger_update"
+  ],
+  "files_changed": [
+    "docs/EXAMPLE.md",
+    "tests/smoke/smoke_example.py"
+  ],
+  "tests_run": [
+    {"command": "python -m pytest tests/smoke/smoke_example.py -q", "passed": true, "test_count": 3}
+  ],
+  "evidence_paths": [
+    "tmp_agent/front_example_01/final_report.json",
+    "tmp_agent/front_example_01/test_results.txt"
+  ],
+  "gates_passed": [
+    "canonical_repo_guard",
+    "staged_scope_guard",
+    "protected_paths_guard",
+    "tests_passed"
+  ],
+  "gates_failed": [],
+  "memory_mutated": false,
+  "faiss_mutated": false,
+  "trading_touched": false,
+  "secrets_exposed": false,
+  "raw_cot_exposed": false,
+  "runtime_used": "http://127.0.0.1:8091/v1",
+  "next_recommended_front": "FRONT-NEXT-EXAMPLE-01",
+  "human_review_needed": false,
+  "commit_hashes": {
+    "functional_commit": "abcdef1",
+    "ledger_commit": "abcdef2"
+  }
+}
