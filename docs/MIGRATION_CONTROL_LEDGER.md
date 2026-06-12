@@ -7714,3 +7714,42 @@ The adapter/router/governance metadata layer is working, but answer-generation q
 - env_file_written: `false`
 - next_front_locked: `FRONT-KIMI-K2-6-OLLAMA-CLOUD-MODEL-ENABLEMENT-01`
 
+## LEDGER-ROADMAP-SSOT-FRONT-KIMI-K2-6-LIVE-CHAT-PROBE-AND-SAFETY-FILTER-01 — Kimi K2.6 Live Chat Probe and Safety Filter
+
+- timestamp_utc: `2026-06-12T22:24:47.199456+00:00`
+- status: `KIMI_K2_6_LIVE_CHAT_PROBE_AND_SAFETY_FILTER_COMPLETED`
+- branch: `codex/own-capital-sustainable-return`
+- functional_commit: `a046b94` — `feat: enable safe Kimi K2.6 live provider probe`
+- kimi_k2_6_core_verified: `true`
+- kimi_k2_6_chat_endpoint_verified: `true`
+- route: `provider_probe`
+- provider_selected: `kimi_k2_6_cloud`
+- model_selected: `kimi-k2.6:cloud`
+- provider_status: `FAST_SUCCESS`
+- latency_ms: `1236.04`
+- provider_latency_ms: `1060.738`
+- content_preview: `OK`
+- thinking_stripped: `False`
+- no_cot_leak: `True`
+- local_fallback_used: `False`
+- fallback_used: `False`
+- safety:
+  - tools_blocked: `true`
+  - memory_writes_blocked: `true`
+  - faiss_writes_blocked: `true`
+  - external_side_effects_blocked: `true`
+  - memory_mutated: `false`
+  - faiss_mutated: `false`
+  - semantic_memory_lines: `1715`
+  - faiss_ids: `1616`
+  - faiss_ntotal: `1616`
+  - trading_touched: `false`
+  - secrets_exposed: `false`
+- tests:
+  - front_smoke: `11 passed`
+  - macro_smoke: `3 passed`
+  - provider_chain_smoke: `11 passed`
+  - timeout_quality_smoke: `7 passed, 2 warnings`
+- aiohttp_cleanup: `provider_probe closes LLM aiohttp session after probe path`
+- next_front_locked: `FRONT-BRAIN-GOVERNED-AUTONOMY-OPERATIONS-MODE-01`
+
