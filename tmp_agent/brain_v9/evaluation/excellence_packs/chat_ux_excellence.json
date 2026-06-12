@@ -1,0 +1,19 @@
+{
+  "domain": "chat_ux",
+  "checks": [
+    "concise_answer",
+    "no_raw_reasoning",
+    "clear_next_action",
+    "explicit_limits"
+  ],
+  "blocked": [
+    "raw_cot",
+    "fake_tool_claim",
+    "verbose_noise"
+  ],
+  "prompts": [
+    "Explain current status and next action compactly."
+  ],
+  "version": "1.0",
+  "created_utc": "2026-06-12T22:39:24.832314+00:00"
+}

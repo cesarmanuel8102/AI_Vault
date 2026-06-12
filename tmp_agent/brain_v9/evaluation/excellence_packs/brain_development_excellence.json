@@ -1,0 +1,19 @@
+{
+  "domain": "brain_development",
+  "checks": [
+    "small_patch",
+    "tests_first",
+    "protected_path_awareness",
+    "rollback_note"
+  ],
+  "blocked": [
+    "semantic_write",
+    "faiss_write",
+    "destructive_git"
+  ],
+  "prompts": [
+    "Propose a safe Brain code improvement."
+  ],
+  "version": "1.0",
+  "created_utc": "2026-06-12T22:39:24.832314+00:00"
+}
