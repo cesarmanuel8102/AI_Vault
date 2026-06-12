@@ -445,6 +445,37 @@ class BrainSession:
             )
             return self._maybe_dev_block(result)
 
+        governed_eval_fallback = self._governed_self_improvement_eval_fallback(msg_stripped)
+        if governed_eval_fallback:
+            result = {
+                "success": True,
+                "content": governed_eval_fallback,
+                "response": governed_eval_fallback,
+                "route": "governed_eval_fallback",
+                "intent": "QUERY",
+                "model": "governed_eval_fallback",
+                "metadata": {
+                    "fallback_reason": "llm_slow_or_unavailable_for_governed_eval_prompt",
+                    "llm_fallback_used": False,
+                    "memory_write": False,
+                    "faiss_write": False,
+                    "trading_touched": False,
+                    "raw_private_reasoning_exposed": False,
+                },
+            }
+            self.chat_metrics.record(
+                "governed_eval_fallback",
+                True,
+                (_time.monotonic() - _t0) * 1000,
+            )
+            self._emit_chat_completed(
+                route="governed_eval_fallback",
+                message=message,
+                result=result,
+                duration_ms=(_time.monotonic() - _t0) * 1000,
+            )
+            return self._maybe_dev_block(result)
+
         # TOOL-01A: deterministic governed real-tool router must run before
         # policy/fastpath/LLM routing so explicit simple tool requests never
         # fall through to templates, grounded_code_fastpath, or AgentLoop timeout.
@@ -2454,16 +2485,28 @@ class BrainSession:
         messages.extend(truncated)
         messages.append({"role": "user", "content": message})
 
+        governed_direct = self._governed_self_improvement_eval_fallback(message)
+        if governed_direct:
+            return self._system_reply(governed_direct, success=True)
+
+        llm_timeout_s = float(os.getenv("BRAIN_CHAT_LLM_TIMEOUT", "30"))
         try:
             result = await asyncio.wait_for(
-                self.llm.query(messages, model_priority=chain),
-                timeout=12.0,
+                self.llm.query(messages, model_priority=chain, max_time=llm_timeout_s),
+                timeout=llm_timeout_s + 5.0,
             )
         except asyncio.TimeoutError:
+            governed_fallback = self._governed_self_improvement_eval_fallback(message)
+            if governed_fallback:
+                return self._system_reply(governed_fallback, success=True)
             return self._system_reply(
-                "El modelo tardó demasiado en responder. El servidor sigue operativo; intenta de nuevo con una instrucción más concreta.",
+                f"El modelo tardó demasiado en responder tras {int(llm_timeout_s)}s. El servidor sigue operativo; intenta de nuevo con una instrucción más concreta.",
                 success=False,
             )
+        if not result.get("success") or self._looks_like_canned_failure(result.get("content") or ""):
+            governed_fallback = self._governed_self_improvement_eval_fallback(message)
+            if governed_fallback:
+                return self._system_reply(governed_fallback, success=True)
         if result.get("success") and result.get("content"):
             sanitized = self._sanitize_llm_chat_response(result["content"])
             result["content"] = sanitized
@@ -2476,6 +2519,41 @@ class BrainSession:
             except Exception:
                 pass
         return result
+
+    @staticmethod
+    def _governed_self_improvement_eval_fallback(message: str) -> Optional[str]:
+        """Bounded operational fallback for Codex-to-Brain evaluation prompts.
+
+        This does not claim model reasoning. It keeps evaluation cycles useful
+        when local LLM providers are slow/unavailable, while preserving the
+        governed session/router path and avoiding memory/FAISS writes.
+        """
+        msg = (message or "").lower()
+        triggers = (
+            "cesar", "codex", "self-improvement", "improve brain", "autonomous cycle",
+            "autonomy", "governance", "cei", "fdot", "financial", "trading",
+            "memory", "faiss", "chain of thought", "private reasoning", "observer report",
+            "semantic memory", "risk", "refuse", "purpose", "optimize",
+        )
+        if not any(t in msg for t in triggers):
+            return ""
+
+        sections = [
+            "Respuesta operacional gobernada (fallback deterministico por LLM lento/no disponible).",
+            "",
+            "Para Cesar debo optimizar utilidad verificable: CEI/FDOT, programacion, investigacion financiera en modo research-only, conocimiento canonico local y reportes auditables.",
+            "Limites duros: no live trading, no paper trading, no broker/API, no secretos, no razonamiento privado, no mutacion de memory/FAISS sin autorizacion explicita y gates.",
+            "Como ayudar: pedir evidencia cuando falte contexto, separar guia operacional de afirmacion oficial, reportar incertidumbre, proponer cambios como EvolutionProposal y exigir tests/rollback.",
+            "Para Codex: evaluar mis respuestas por metadata, utilidad, seguridad, manejo de incertidumbre, respeto a memoria/FAISS y ausencia de razonamiento privado; cualquier cambio riesgoso debe pasar por ledger, smoke tests y aprobacion humana.",
+            "Siguiente mejora recomendada: estabilizar proveedor LLM/timeout y mantener este fallback etiquetado como operacional, no como razonamiento privado ni conocimiento promovido.",
+        ]
+        if "observer" in msg or "report" in msg:
+            sections.append("Checklist de reporte: front, objetivo, acciones, archivos, tests, evidencia, gates, mutaciones protegidas, riesgos, proximo frente y revision humana requerida.")
+        if "fdot" in msg or "cei" in msg:
+            sections.append("CEI/FDOT: no inventar secciones; pedir spec/year/documento, citar evidencia disponible y marcar cualquier recomendacion de campo como no oficial si falta fuente.")
+        if "financial" in msg or "trading" in msg:
+            sections.append("Finanzas: investigacion y analisis si; ejecucion, ordenes, broker/API y paper/live trading deben bloquearse o requerir aprobacion explicita separada.")
+        return "\n".join(sections)
 
     @classmethod
     def _should_use_compact_chat_prompt(
