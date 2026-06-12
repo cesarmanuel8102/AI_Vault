@@ -172,7 +172,7 @@
     "reason": "Persistent run_once, dashboard 8092, real autonomous journal, promotion queue, and semantic staging are complete; scheduler tooling exists but scheduled task was intentionally not installed/enabled pending operator review."
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-06-12T23:48:03.993993+00:00",
+  "last_updated": "2026-06-12T23:49:30.075936+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -3524,7 +3524,7 @@
     "new_semantic_lines": 1715,
     "old_faiss_ntotal": 1616,
     "new_faiss_ntotal": 1616,
-    "dashboard_status": "ready_to_run_on_8092",
+    "dashboard_status": "running_on_8092",
     "chat_status": "proxy_route_implemented_to_8091_provider_probe",
     "dashboard_url": "http://127.0.0.1:8092/",
     "provider_success_rate": "not_remeasured_batch; 8091 provider_probe kimi_k2_6_cloud passed",
@@ -3562,6 +3562,12 @@
     ],
     "evidence_path": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01",
     "next_front_locked": "FRONT-BRAIN-SCHEDULER-ENABLEMENT-02",
-    "updated_at_utc": "2026-06-12T23:48:03.993993+00:00"
+    "updated_at_utc": "2026-06-12T23:49:30.075936+00:00",
+    "dashboard_pid": 45172,
+    "dashboard_health": {
+      "ok": true,
+      "dashboard": "brain_persistent_autonomy",
+      "port": 8092
+    }
   }
 }

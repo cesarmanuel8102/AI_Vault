@@ -7906,3 +7906,13 @@ The adapter/router/governance metadata layer is working, but answer-generation q
   - raw_cot_leak: `false`
 - evidence_path: `tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01`
 - next_front_locked: `FRONT-BRAIN-SCHEDULER-ENABLEMENT-02`
+
+
+### Dashboard live status update
+
+- timestamp_utc: `2026-06-12T23:49:30.075936+00:00`
+- dashboard_status: `running_on_8092`
+- dashboard_url: `http://127.0.0.1:8092/`
+- dashboard_pid: `45172`
+- dashboard_health: `{'ok': True, 'dashboard': 'brain_persistent_autonomy', 'port': 8092}`
+- note: `8090 remains untouched; dashboard runs as separate safe 8092 process.`
