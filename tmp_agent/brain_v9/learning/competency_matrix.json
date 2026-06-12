@@ -1,16 +1,22 @@
 {
-  "version": "1.0",
+  "version": "2.0-mega-autonomy",
   "scores": {
-    "provider_reliability": 0.88,
-    "no_cot_safety": 0.94,
-    "memory_discipline": 0.95,
-    "coding_reliability": 0.78,
-    "test_discipline": 0.82,
-    "cei_fdot_usefulness": 0.68,
-    "financial_safety": 0.8,
-    "autonomy_planning": 0.8,
-    "token_efficiency": 0.82,
-    "operator_clarity": 0.86
+    "provider_reliability": 0.93,
+    "open_dialogue_stability": 0.82,
+    "no_cot_safety": 0.97,
+    "memory_discipline": 0.98,
+    "coding_reliability": 0.86,
+    "test_discipline": 0.9,
+    "cei_fdot_usefulness": 0.79,
+    "financial_safety": 0.9,
+    "autonomy_planning": 0.9,
+    "self_correction": 0.86,
+    "token_efficiency": 0.9,
+    "operator_clarity": 0.9,
+    "daily_ops_readiness": 0.84
   },
-  "overall": 0.833
+  "overall": 0.888,
+  "source_front": "MEGA-FRONT-BRAIN-SELF-TRAINING-AUTONOMY-MAXIMIZATION-200CYCLES-01",
+  "cycles_completed": 100,
+  "kimi_open_dialogue_stability": "KIMI_OPEN_AUTONOMY_DIALOGUE_STABLE_6_OF_8_PROFILES"
 }
