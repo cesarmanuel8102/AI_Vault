@@ -8068,3 +8068,66 @@ FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01
 - reason: scheduler/autonomy appended 3 governed `autonomy_lesson` records while the front was being finalized.
 - review: append-only, no secrets, no raw CoT, no broker/order/trading execution, no canonical semantic/FAISS touch.
 - head_after_post_run_journal: `3cd67c6`
+
+
+## FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01
+
+### Status
+BRAIN_DASHBOARD_STATUS_ENDPOINT_ROOTCAUSE_REPAIR_NEEDS_ADMIN_ACTION
+
+### Timestamp
+2026-06-13T18:20:19.862186+00:00
+
+### Branch
+codex/own-capital-sustainable-return
+
+### Start Head
+`d5d3fe5`
+
+### Findings
+- PID `43364` owns port 8092.
+- Process classified as Brain dashboard because root HTML is Brain Operator Dashboard and `python.exe` is serving 8092.
+- `Stop-Process -Id 43364` failed: Access is denied.
+- `taskkill /PID 43364 /T` failed and reported the process can only be terminated with `/F`.
+- Codex did not use `/F` and did not kill unknown processes.
+
+### Live Endpoint State
+- root_ok: true
+- status_ok: false
+- status result: HTTP 500 / timeout from old live handler
+- activity_ok: true
+- scheduler_ok: true
+- safety_ok: true
+- promotion_queue_ok: true
+- chat_ok: true
+
+### Validation
+- py_compile: PASS
+- focused smoke: 6 passed
+
+### Safety
+- semantic_memory_lines: 1715
+- faiss_ids: 1616
+- faiss_ntotal: 1616
+- canonical_semantic_mutated: false
+- faiss_mutated: false
+- trading_touched: false
+- b8_touched: false
+- secrets_exposed: false
+- raw_cot_exposed: false
+
+### Manual Admin Action
+Open PowerShell as Administrator and run:
+
+```powershell
+Stop-Process -Id 43364 -Force
+```
+
+or:
+
+```cmd
+taskkill /PID 43364 /T /F
+```
+
+### Next Recommended Front
+MANUAL-ADMIN-STOP-OLD-8092-DASHBOARD-PROCESS

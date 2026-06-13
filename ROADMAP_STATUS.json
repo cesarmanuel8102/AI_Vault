@@ -1,9 +1,9 @@
 {
-  "current_head": "3cd67c6116c3de2115c6929448629e913d1693e7",
-  "current_remote_head": "3cd67c6116c3de2115c6929448629e913d1693e7",
+  "current_head": "d5d3fe527c42366234681a27a3f8a9eb43ff4948",
+  "current_remote_head": "d5d3fe527c42366234681a27a3f8a9eb43ff4948",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "brain_autonomy_stability_status_fix_partial_live_8092_blocked",
-  "last_applied_checkpoint": "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-01",
+  "migration_status": "brain_dashboard_status_endpoint_rootcause_repair_needs_admin_action",
+  "last_applied_checkpoint": "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -163,7 +163,8 @@
     "FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01",
     "FRONT-LEGACY-LOCK-HANDLE-TOOL-INSTALL-OR-SAFE-MODE-PLAN-01",
     "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
-    "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-01"
+    "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-01",
+    "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01"
   ],
   "protected_out_of_scope": [
     "memory/semantic",
@@ -171,12 +172,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01",
+    "name": "MANUAL-ADMIN-STOP-OLD-8092-DASHBOARD-PROCESS",
     "status": "recommended_next",
-    "reason": "Source status route is fixed, but live 8092 still serves old handler and could not be restarted due Access denied; broad autonomy cycles remain gated until live status returns HTTP 200 under 5 seconds."
+    "reason": "8092 owner is classified as Brain dashboard but cannot be stopped by Codex due Access denied; admin must terminate PID 43364 before clean 8092 restart."
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-06-13T18:09:54.801967+00:00",
+  "last_updated": "2026-06-13T18:20:19.862186+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -3646,5 +3647,57 @@
     "post_run_journal_commit": "3cd67c6",
     "post_run_journal_added_records": 3,
     "post_run_journal_safe": true
+  },
+  "front_brain_dashboard_status_endpoint_rootcause_repair_01": {
+    "front": "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01",
+    "status": "BRAIN_DASHBOARD_STATUS_ENDPOINT_ROOTCAUSE_REPAIR_NEEDS_ADMIN_ACTION",
+    "pid_8092": 43364,
+    "classified_as_brain_dashboard": true,
+    "stop_attempted": true,
+    "stop_success": false,
+    "taskkill_attempted": true,
+    "taskkill_success": false,
+    "restart_success": false,
+    "needs_admin_action": true,
+    "manual_admin_command": "Open PowerShell as Administrator and run: Stop-Process -Id 43364 -Force; or taskkill /PID 43364 /T /F",
+    "dashboard": {
+      "root_ok": true,
+      "status_ok": false,
+      "status_http": null,
+      "status_latency_ms": 4440.78,
+      "activity_ok": true,
+      "scheduler_ok": true,
+      "safety_ok": true,
+      "promotion_queue_ok": true,
+      "chat_ok": true,
+      "no_window_verified": true
+    },
+    "autonomy": {
+      "scheduler_state": 3,
+      "scheduler_enabled": true,
+      "autonomy_stopped": false,
+      "autonomy_paused": false,
+      "heartbeat_status": "idle",
+      "journal_count": 74
+    },
+    "immutability": {
+      "semantic_memory_lines": 1715,
+      "faiss_ids": 1616,
+      "faiss_ntotal": 1616,
+      "canonical_semantic_mutated": false,
+      "faiss_mutated": false,
+      "trading_touched": false,
+      "b8_touched": false,
+      "tmp_agent_strategies_touched": false,
+      "secrets_exposed": false,
+      "raw_cot_exposed": false
+    },
+    "tests": {
+      "py_compile": "PASS",
+      "focused_smoke": "6 passed"
+    },
+    "evidence_path": "tmp_agent/front_brain_dashboard_status_endpoint_rootcause_repair_01",
+    "next_front_locked": "MANUAL-ADMIN-STOP-OLD-8092-DASHBOARD-PROCESS",
+    "updated_at_utc": "2026-06-13T18:20:19.862186+00:00"
   }
 }
