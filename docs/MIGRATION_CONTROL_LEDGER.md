@@ -8131,3 +8131,61 @@ taskkill /PID 43364 /T /F
 
 ### Next Recommended Front
 MANUAL-ADMIN-STOP-OLD-8092-DASHBOARD-PROCESS
+
+
+## FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01-RETRY-AFTER-ADMIN-STOP
+
+### Status
+BRAIN_DASHBOARD_STATUS_ENDPOINT_ROOTCAUSE_REPAIR_COMPLETED
+
+### Timestamp
+2026-06-13T18:30:52.393761+00:00
+
+### Branch
+codex/own-capital-sustainable-return
+
+### Start Head
+`d9b8845`
+
+### Result
+- Admin action freed port 8092.
+- Clean dashboard started from canonical repo on PID `89832`.
+- Command line: `"C:\Users\cesar\AppData\Local\Programs\Python\Python311\python.exe" -m uvicorn tmp_agent.brain_v9.dashboard.dashboard_app:app --host 127.0.0.1 --port 8092`.
+- Live `/brain-dashboard/status` returned HTTP 200 in `12.525` ms.
+- 60-second polling validation passed with status max latency `176.926` ms and scheduler max latency `3079.883` ms.
+
+### Endpoint Validation
+- root_ok: true
+- status_ok: true
+- activity_ok: true
+- scheduler_ok: true
+- safety_ok: true
+- promotion_queue_ok: true
+- chat_ok: true
+- no_window_verified: true
+
+### Autonomy State
+- scheduler_state: `3`
+- scheduler_enabled: `True`
+- autonomy_stopped: `False`
+- autonomy_paused: `False`
+- heartbeat_status: `idle`
+- journal_count: `74`
+
+### Validation
+- py_compile: PASS
+- focused smoke: 4 passed
+
+### Safety
+- semantic_memory_lines: 1715
+- faiss_ids: 1616
+- faiss_ntotal: 1616
+- canonical_semantic_mutated: false
+- faiss_mutated: false
+- trading_touched: false
+- b8_touched: false
+- secrets_exposed: false
+- raw_cot_exposed: false
+
+### Next Recommended Front
+MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-RERUN-01

@@ -1,9 +1,9 @@
 {
-  "current_head": "d5d3fe527c42366234681a27a3f8a9eb43ff4948",
-  "current_remote_head": "d5d3fe527c42366234681a27a3f8a9eb43ff4948",
+  "current_head": "d9b88459819ee4ca37285b76c3b643ab69bba8bf",
+  "current_remote_head": "d9b88459819ee4ca37285b76c3b643ab69bba8bf",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "brain_dashboard_status_endpoint_rootcause_repair_needs_admin_action",
-  "last_applied_checkpoint": "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01",
+  "migration_status": "brain_dashboard_status_endpoint_rootcause_repair_completed",
+  "last_applied_checkpoint": "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01-RETRY-AFTER-ADMIN-STOP",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -155,7 +155,8 @@
     "MEGA-FRONT-BRAIN-PERSISTENT-AUTONOMY-REAL-MEMORY-CHAT-DASHBOARD-01",
     "FRONT-BRAIN-SCHEDULER-ENABLEMENT-AND-CONTINUOUS-AUTONOMY-01",
     "FRONT-BRAIN-OPERATOR-DASHBOARD-UX-AND-AUTONOMY-VISIBILITY-01",
-    "FRONT-BRAIN-PREFLIGHT-JOURNAL-CLEANUP-THEN-RERUN-STABILITY-CYCLES-01"
+    "FRONT-BRAIN-PREFLIGHT-JOURNAL-CLEANUP-THEN-RERUN-STABILITY-CYCLES-01",
+    "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01-RETRY-AFTER-ADMIN-STOP"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -163,8 +164,7 @@
     "FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01",
     "FRONT-LEGACY-LOCK-HANDLE-TOOL-INSTALL-OR-SAFE-MODE-PLAN-01",
     "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
-    "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-01",
-    "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01"
+    "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-01"
   ],
   "protected_out_of_scope": [
     "memory/semantic",
@@ -172,12 +172,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "MANUAL-ADMIN-STOP-OLD-8092-DASHBOARD-PROCESS",
+    "name": "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-RERUN-01",
     "status": "recommended_next",
-    "reason": "8092 owner is classified as Brain dashboard but cannot be stopped by Codex due Access denied; admin must terminate PID 43364 before clean 8092 restart."
+    "reason": "Live 8092 dashboard now runs from corrected canonical source and /brain-dashboard/status returns HTTP 200 under 5 seconds; next safe step is rerun governed stability cycles with normal gates."
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-06-13T18:20:19.862186+00:00",
+  "last_updated": "2026-06-13T18:30:52.393761+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -3699,5 +3699,54 @@
     "evidence_path": "tmp_agent/front_brain_dashboard_status_endpoint_rootcause_repair_01",
     "next_front_locked": "MANUAL-ADMIN-STOP-OLD-8092-DASHBOARD-PROCESS",
     "updated_at_utc": "2026-06-13T18:20:19.862186+00:00"
+  },
+  "front_brain_dashboard_status_endpoint_rootcause_repair_01_retry_after_admin_stop": {
+    "front": "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01-RETRY-AFTER-ADMIN-STOP",
+    "status": "BRAIN_DASHBOARD_STATUS_ENDPOINT_ROOTCAUSE_REPAIR_COMPLETED",
+    "previous_old_pid_stopped_by_admin": true,
+    "port_free_before_start": true,
+    "started_pid": 89832,
+    "restart_success": true,
+    "dashboard": {
+      "root_ok": true,
+      "status_ok": true,
+      "status_http": 200,
+      "status_latency_ms": 12.525,
+      "activity_ok": true,
+      "scheduler_ok": true,
+      "safety_ok": true,
+      "promotion_queue_ok": true,
+      "chat_ok": true,
+      "no_window_verified": true,
+      "max_status_latency_ms_60s": 176.926,
+      "max_scheduler_latency_ms_60s": 3079.883
+    },
+    "autonomy": {
+      "scheduler_state": 3,
+      "scheduler_enabled": true,
+      "autonomy_stopped": false,
+      "autonomy_paused": false,
+      "heartbeat_status": "idle",
+      "journal_count": 74
+    },
+    "immutability": {
+      "semantic_memory_lines": 1715,
+      "faiss_ids": 1616,
+      "faiss_ntotal": 1616,
+      "canonical_semantic_mutated": false,
+      "faiss_mutated": false,
+      "trading_touched": false,
+      "b8_touched": false,
+      "tmp_agent_strategies_touched": false,
+      "secrets_exposed": false,
+      "raw_cot_exposed": false
+    },
+    "tests": {
+      "py_compile": "PASS",
+      "focused_smoke": "4 passed"
+    },
+    "evidence_path": "tmp_agent/front_brain_dashboard_status_endpoint_rootcause_repair_01_retry_after_admin_stop",
+    "next_front_locked": "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-RERUN-01",
+    "updated_at_utc": "2026-06-13T18:30:52.393761+00:00"
   }
 }
