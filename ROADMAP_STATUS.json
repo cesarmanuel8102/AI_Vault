@@ -1,9 +1,9 @@
 {
-  "current_head": "b184be2fc98ff2290c52504dd8a7c074aa8b2187",
-  "current_remote_head": "b184be2fc98ff2290c52504dd8a7c074aa8b2187",
+  "current_head": "950778cf2d96730f8266d00f220863b58cf5bf7d",
+  "current_remote_head": "950778cf2d96730f8266d00f220863b58cf5bf7d",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_completed",
-  "last_applied_checkpoint": "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-RERUN-01",
+  "migration_status": "brain_canonical_memory_promotion_scaleup_no_promotion_needed",
+  "last_applied_checkpoint": "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-SCALEUP-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -157,7 +157,8 @@
     "FRONT-BRAIN-OPERATOR-DASHBOARD-UX-AND-AUTONOMY-VISIBILITY-01",
     "FRONT-BRAIN-PREFLIGHT-JOURNAL-CLEANUP-THEN-RERUN-STABILITY-CYCLES-01",
     "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01-RETRY-AFTER-ADMIN-STOP",
-    "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-RERUN-01"
+    "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-RERUN-01",
+    "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-SCALEUP-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -173,12 +174,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-SCALEUP-01",
+    "name": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
     "status": "recommended_next",
-    "reason": "120 governed autonomy cycles completed with dashboard stable and canonical semantic/FAISS unchanged; next safe step is promotion scale-up review with snapshots, retrieval smoke, rollback proof, and explicit operator approval."
+    "reason": "No canonical promotion was needed because deterministic-cycle candidates were generic/redundant; next step is LLM-grounded governed cycles to create more specific evidence-backed candidates."
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-06-13T18:42:14.596111+00:00",
+  "last_updated": "2026-06-13T19:37:06.002440+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -3797,5 +3798,42 @@
     "evidence_path": "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01",
     "next_front_locked": "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-SCALEUP-01",
     "updated_at_utc": "2026-06-13T18:42:14.596111+00:00"
+  },
+  "front_brain_canonical_memory_promotion_scaleup_01": {
+    "front": "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-SCALEUP-01",
+    "status": "BRAIN_CANONICAL_MEMORY_PROMOTION_SCALEUP_NO_PROMOTION_NEEDED",
+    "background_journal_commit": "950778c",
+    "journal_events_reviewed": 197,
+    "promotion_queue_reviewed": 12,
+    "semantic_staging_reviewed": 8,
+    "rejected": 20,
+    "approved": 0,
+    "promoted": 0,
+    "canonical_promotion_performed": false,
+    "reason": "Reviewed candidates were safe but low-value/redundant deterministic runner templates; no durable canonical memory item met threshold.",
+    "memory": {
+      "semantic_lines_before": 1715,
+      "semantic_lines_after": 1715,
+      "faiss_ids_before": 1616,
+      "faiss_ids_after": 1616,
+      "faiss_ntotal_before": 1616,
+      "faiss_ntotal_after": 1616
+    },
+    "safety": {
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "trading_touched": false,
+      "b8_touched": false,
+      "strategies_touched": false,
+      "canonical_semantic_mutated": false,
+      "faiss_mutated": false
+    },
+    "tests": {
+      "py_compile": "PASS",
+      "focused_smoke": "5 passed"
+    },
+    "evidence_path": "tmp_agent/front_brain_canonical_memory_promotion_scaleup_01",
+    "next_front_locked": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
+    "updated_at_utc": "2026-06-13T19:37:06.002440+00:00"
   }
 }
