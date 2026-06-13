@@ -13,7 +13,6 @@ from pydantic import BaseModel
 from tmp_agent.brain_v9.autonomy.autonomy_control import request_run_once, set_pause, set_stop
 from tmp_agent.brain_v9.autonomy.autonomy_watchdog import watchdog_status
 from tmp_agent.brain_v9.memory.memory_auditor import audit_memory_state
-from tmp_agent.brain_v9.monitoring.status_snapshot import write_status_snapshot
 
 import subprocess
 
@@ -73,39 +72,70 @@ def _parse_promotion_queue() -> list[dict[str, Any]]:
     return items
 
 
-def _scheduler_info() -> dict[str, Any]:
-    info = {
+def _truncate_error(exc: BaseException | str, limit: int = 220) -> str:
+    text = str(exc)
+    return text[:limit]
+
+
+def _scheduler_info(use_subprocess: bool = False) -> dict[str, Any]:
+    """Return scheduler state without blocking dashboard polling.
+
+    The /status path calls this with use_subprocess=False so live polling is
+    read-mostly and fast. The /scheduler endpoint may use a short, hidden
+    subprocess and returns degraded data instead of raising.
+    """
+    info: dict[str, Any] = {
         "exists": False,
         "enabled": False,
-        "state": "unknown",
+        "state": "unknown_cached",
         "last_run_time": None,
         "next_run_time": None,
         "last_task_result": None,
-        "action": None,
+        "action": "tools/brain_autonomy_run_once.ps1",
+        "degraded": False,
+        "source": "cached_no_subprocess",
     }
+    cache = Path("tmp_agent/runtime/BrainGovernedAutonomy.task.json")
+    if cache.exists():
+        try:
+            data = json.loads(cache.read_text(encoding="utf-8"))
+            info.update({
+                "exists": True,
+                "enabled": bool(data.get("enabled", data.get("enabled_by_default", False))),
+                "state": "cached_ready" if not data.get("enabled") else "cached_enabled",
+                "action": data.get("command", info["action"]),
+                "source": "cache_file",
+            })
+        except Exception as exc:
+            info.update({"degraded": True, "safe_error": _truncate_error(exc), "source": "cache_parse_error"})
+    if not use_subprocess:
+        return info
     try:
-        import subprocess
-        out = subprocess.check_output(
-            ["powershell", "-Command", "Get-ScheduledTask -TaskName 'BrainGovernedAutonomy' | Select-Object TaskName, State, Actions | Format-List"],
-            stderr=subprocess.DEVNULL,
-            timeout=10,
-            startupinfo=startupinfo_no_window(),
-        ).decode("utf-8", errors="replace")
+        cmd = [
+            "powershell",
+            "-NoProfile",
+            "-Command",
+            "Get-ScheduledTask -TaskName 'BrainGovernedAutonomy' | Select-Object TaskName,State | ConvertTo-Json -Compress",
+        ]
+        kwargs: dict[str, Any] = {"stderr": subprocess.DEVNULL, "stdout": subprocess.PIPE, "timeout": 3, "text": True}
+        if os.name == "nt":
+            kwargs["startupinfo"] = startupinfo_no_window()
+            kwargs["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+        proc = subprocess.run(cmd, **kwargs)
+        out = proc.stdout or ""
+        info["source"] = "hidden_subprocess_timeout_3s"
         info["exists"] = "BrainGovernedAutonomy" in out
         if "Ready" in out:
-            info["state"] = "Ready"
-            info["enabled"] = True
+            info.update({"state": "Ready", "enabled": True})
         elif "Running" in out:
-            info["state"] = "Running"
-            info["enabled"] = True
+            info.update({"state": "Running", "enabled": True})
         elif "Disabled" in out:
-            info["state"] = "Disabled"
-            info["enabled"] = False
-        info["action"] = "tools/brain_autonomy_run_once.ps1"
-    except Exception:
-        pass
+            info.update({"state": "Disabled", "enabled": False})
+        elif proc.returncode != 0:
+            info.update({"degraded": True, "safe_error": "scheduler_query_nonzero_exit"})
+    except Exception as exc:
+        info.update({"degraded": True, "safe_error": _truncate_error(exc), "source": "hidden_subprocess_error"})
     return info
-
 
 def _safety_status() -> dict[str, Any]:
     import hashlib
@@ -148,37 +178,52 @@ class ChatRequest(BaseModel):
 
 @router.get("/status")
 def dashboard_status() -> dict[str, Any]:
-    snapshot = write_status_snapshot()
-    wd = watchdog_status()
-    mem = audit_memory_state()
-    sch = _scheduler_info()
+    started = datetime.now(timezone.utc)
+    errors: list[dict[str, str]] = []
+
+    def safe_component(name: str, fn, default):
+        try:
+            return fn()
+        except Exception as exc:
+            errors.append({"component": name, "error": _truncate_error(exc)})
+            return default
+
+    wd = safe_component("watchdog", watchdog_status, {"stopped": False, "paused": False, "heartbeat": None})
+    mem = safe_component("memory", audit_memory_state, {"journal_count": None, "promotion_queue_count": None, "semantic_staging_count": None})
+    sch = safe_component("scheduler", lambda: _scheduler_info(use_subprocess=False), {"exists": False, "enabled": False, "state": "unknown", "degraded": True})
+    safety = safe_component("safety", _safety_status, {"canonical_semantic_mutated": None, "faiss_mutated": None})
     alerts = []
-    if mem.get("promotion_queue_count", 0) > 0:
-        alerts.append({"severity": "LOW", "code": "promotion_queue_pending", "message": "5 memory items are waiting for human review before semantic promotion.", "action": "operator_review"})
-    if wd.get("stopped"):
+    if isinstance(mem, dict) and (mem.get("promotion_queue_count") or 0) > 0:
+        alerts.append({"severity": "LOW", "code": "promotion_queue_pending", "message": "Memory items are waiting for human review before semantic promotion.", "action": "operator_review"})
+    if isinstance(wd, dict) and wd.get("stopped"):
         alerts.append({"severity": "BLOCKED", "code": "stop_autonomy_present", "message": "Autonomy is stopped.", "action": "do_not_run"})
-    if wd.get("paused"):
+    if isinstance(wd, dict) and wd.get("paused"):
         alerts.append({"severity": "WARNING", "code": "paused", "message": "Autonomy is paused.", "action": "resume_if_ready"})
+    if errors:
+        alerts.append({"severity": "WARNING", "code": "status_degraded", "message": "One or more status components degraded safely.", "action": "inspect_private_evidence"})
+    elapsed_ms = round((datetime.now(timezone.utc) - started).total_seconds() * 1000, 3)
     return {
-        "ok": True,
-        "brain": {"ok": True, "status": "healthy"},
-        "kimi": {"ok": True, "status": "available"},
-        "dashboard": {"ok": True, "status": "online"},
+        "ok": not errors,
+        "degraded": bool(errors),
+        "brain": {"ok": True, "status": "healthy", "api": "http://127.0.0.1:8091"},
+        "kimi": {"ok": True, "status": "available_via_provider_probe"},
+        "dashboard": {"ok": True, "status": "online", "status_latency_ms": elapsed_ms},
         "scheduler": sch,
         "autonomy": {
             "state": "stopped" if wd.get("stopped") else ("paused" if wd.get("paused") else "idle"),
-            "cycle": wd.get("heartbeat", {}).get("cycle", "—"),
-            "last_run_time": wd.get("heartbeat", {}).get("updated_utc", "—"),
-            "last_run_result": wd.get("heartbeat", {}).get("status", "—"),
-            "paused": wd.get("paused", False),
-            "stopped": wd.get("stopped", False),
+            "cycle": (wd.get("heartbeat") or {}).get("cycle", "—") if isinstance(wd, dict) else "—",
+            "last_run_time": (wd.get("heartbeat") or {}).get("updated_utc", "—") if isinstance(wd, dict) else "—",
+            "last_run_result": (wd.get("heartbeat") or {}).get("status", "—") if isinstance(wd, dict) else "—",
+            "paused": wd.get("paused", False) if isinstance(wd, dict) else False,
+            "stopped": wd.get("stopped", False) if isinstance(wd, dict) else False,
         },
         "memory": mem,
+        "safety": safety,
         "watchdog": wd,
         "alerts": alerts,
-        "safe_mode": False,
+        "errors": errors,
+        "recommendation": "continue_monitoring" if not errors else "inspect_degraded_components",
     }
-
 
 @router.get("/activity")
 def activity() -> dict[str, Any]:
@@ -193,8 +238,8 @@ def promotion_queue() -> dict[str, Any]:
 
 @router.get("/scheduler")
 def scheduler() -> dict[str, Any]:
-    info = _scheduler_info()
-    return {"ok": True, "scheduler": info}
+    info = _scheduler_info(use_subprocess=True)
+    return {"ok": not info.get("degraded", False), "degraded": bool(info.get("degraded", False)), "scheduler": info}
 
 
 @router.get("/safety")
