@@ -1,0 +1,8 @@
+{
+  "checked_utc": "2026-06-13T18:01:46.303917+00:00",
+  "status_path_uses_cached_scheduler": true,
+  "scheduler_endpoint_uses_create_no_window": true,
+  "status_route_no_write_status_snapshot": true,
+  "live_process_restart_blocked_by_access_denied": true,
+  "no_visible_powershell_windows_observed": "source_uses_hidden_subprocess_for_scheduler_endpoint_only"
+}

@@ -1,0 +1,42 @@
+{
+  "checked_utc": "2026-06-13T18:01:46.302760+00:00",
+  "endpoints": {
+    "root": {
+      "ok": true,
+      "status_code": 200,
+      "latency_ms": 22.978,
+      "preview": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Brain Operator Dashboard</title>\n  <link rel=\"stylesheet\" href=\"/static/styles.css\">\n</head>\n<b"
+    },
+    "status": {
+      "ok": false,
+      "latency_ms": 4956.99,
+      "safe_error": "HTTP Error 500: Internal Server Error"
+    },
+    "activity": {
+      "ok": true,
+      "status_code": 200,
+      "latency_ms": 12.038,
+      "preview": "{\"ok\":true,\"events\":[]}"
+    },
+    "scheduler": {
+      "ok": true,
+      "status_code": 200,
+      "latency_ms": 4621.852,
+      "preview": "{\"ok\":true,\"scheduler\":{\"exists\":true,\"enabled\":true,\"state\":\"Ready\",\"last_run_time\":null,\"next_run_time\":null,\"last_task_result\":null,\"action\":\"tools/brain_autonomy_run_once.ps1\"}}"
+    },
+    "safety": {
+      "ok": true,
+      "status_code": 200,
+      "latency_ms": 3.99,
+      "preview": "{\"ok\":true,\"semantic_memory_lines\":1715,\"faiss_ids\":1616,\"faiss_ntotal\":1616,\"canonical_semantic_mutated\":false,\"faiss_mutated\":false,\"trading_touched\":false,\"b8_touched\":false,\"secrets_exposed\":false}"
+    },
+    "promotion_queue": {
+      "ok": true,
+      "status_code": 200,
+      "latency_ms": 4.155,
+      "preview": "{\"ok\":true,\"count\":0,\"items\":[]}"
+    }
+  },
+  "status_endpoint_fixed_live": false,
+  "status_endpoint_fixed_source": true
+}

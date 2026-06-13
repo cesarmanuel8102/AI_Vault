@@ -1,0 +1,83 @@
+{
+  "status": "BRAIN_AUTONOMY_STABILITY_STATUS_FIX_AND_VERIFIABLE_CYCLES_PARTIAL",
+  "checked_utc": "2026-06-13T18:04:50.9937482Z",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_local": "cd304f2",
+  "head_remote": "4459870",
+  "cleanup": {
+    "dirty_journal_reviewed": true,
+    "dirty_journal_safe": true,
+    "journal_commit": "4459870",
+    "tree_clean_after_cleanup": true
+  },
+  "dashboard": {
+    "status_endpoint_fixed_source": true,
+    "status_endpoint_fixed_live": false,
+    "root_ok": true,
+    "status_ok": false,
+    "status_latency_ms": 4956.99,
+    "scheduler_ok": true,
+    "safety_ok": true,
+    "no_window_verified": true,
+    "live_blocker": "Access denied stopping old 8092 dashboard process; live endpoint still returns 500/timeout."
+  },
+  "autonomy": {
+    "scheduler_enabled": true,
+    "autonomy_stopped": false,
+    "autonomy_paused": false,
+    "cycles_targeted": 120,
+    "cycles_completed": 0,
+    "batches_completed": 0,
+    "skipped_reason": "Live status endpoint not fixed."
+  },
+  "learning": {
+    "lessons_created": 0,
+    "mistakes_recorded": 0,
+    "promotion_candidates_created": 0,
+    "journal_count_before": 71,
+    "journal_count_after": 71
+  },
+  "score": {
+    "score_before": 0.94,
+    "score_after": 0.945,
+    "delta": 0.0050000000000000044
+  },
+  "safety": {
+    "checked_utc": "2026-06-13T18:04:50.8687830Z",
+    "semantic_memory_lines": 1715,
+    "semantic_memory_sha256": "ce81fbe1f97e257e2b124d7a929f0b2af86ce61e9ff1d8d832fdb5da1f69e64e",
+    "semantic_memory_hash_unchanged": true,
+    "faiss_index_sha256": "adbb6051f79ecbeab0223d631a6013939c00bcc13216fbae437efe83047efa21",
+    "faiss_index_hash_unchanged": true,
+    "faiss_ids_sha256": "43736047db548caf9b26dfa61cdffe40e179c738bc8e8c295891f29cedd69102",
+    "faiss_ids_hash_unchanged": true,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "canonical_semantic_mutated": false,
+    "faiss_mutated": false,
+    "env_touched": false,
+    "trading_touched": false,
+    "b8_touched": false,
+    "strategies_touched": false,
+    "raw_cot_exposed": false,
+    "secrets_exposed": false,
+    "dashboard_status_endpoint_fixed_source": true,
+    "dashboard_status_endpoint_fixed_live": false,
+    "no_window_verified": true,
+    "broad_cycles_run": false,
+    "broad_cycles_skipped_reason": "Live 8092 dashboard process continued serving old status endpoint and could not be restarted: Stop-Process returned Access is denied."
+  },
+  "tests": {
+    "py_compile": "PASS",
+    "focused_smoke": "6 passed",
+    "relevant_smokes": "focused stability smoke passed; broad autonomy cycles not run because live status endpoint gate failed"
+  },
+  "commits": {
+    "journal": "4459870",
+    "status_fix": "a56419c",
+    "smoke": "cd304f2",
+    "reports": null,
+    "ledger": null
+  },
+  "recommended_next_action": "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01"
+}

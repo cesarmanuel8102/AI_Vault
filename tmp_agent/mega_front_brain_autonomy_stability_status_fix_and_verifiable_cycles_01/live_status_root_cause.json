@@ -1,0 +1,19 @@
+{
+  "checked_utc": "2026-06-13T18:04:50.9270494Z",
+  "status_endpoint_fixed_source": true,
+  "status_endpoint_fixed_live": false,
+  "root_ok": true,
+  "status_live": {
+    "ok": false,
+    "latency_ms": 4956.99,
+    "safe_error": "HTTP Error 500: Internal Server Error"
+  },
+  "suspected_live_process_pid": 43364,
+  "suspected_live_process_classification": "python listener on 8092 classified by HTTP root content as Brain Operator Dashboard; command line unavailable/null",
+  "restart_attempted": true,
+  "restart_blocked": true,
+  "restart_blocker": "Stop-Process PID 43364 failed: Access is denied.",
+  "cycles_run": 0,
+  "cycles_skipped_reason": "Status endpoint live contract was not satisfied; broad cycles are blocked by prompt gate.",
+  "safe_next_action": "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01"
+}

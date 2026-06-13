@@ -1,0 +1,17 @@
+{
+  "previous_processes": [
+    {
+      "pid": 43364,
+      "name": "python.exe",
+      "command_line": null
+    }
+  ],
+  "classified_dashboard": false,
+  "stopped_previous": false,
+  "started_pid": 91764,
+  "status_ok": false,
+  "status_latency_ms": 4915,
+  "status_payload": {
+    "error": "Response status code does not indicate success: 500 (Internal Server Error)."
+  }
+}

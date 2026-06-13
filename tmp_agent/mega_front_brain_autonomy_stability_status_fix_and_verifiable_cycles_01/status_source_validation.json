@@ -1,0 +1,8 @@
+{
+  "checked_utc": "2026-06-13T18:01:36.005667+00:00",
+  "source_status_ok": true,
+  "source_status_payload_ok": true,
+  "source_status_degraded": false,
+  "source_status_latency_ms": 8.4,
+  "has_required_keys": true
+}

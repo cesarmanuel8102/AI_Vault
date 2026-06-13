@@ -1,0 +1,67 @@
+{
+  "checked_utc": "2026-06-13T17:58:42.4933320Z",
+  "repo_top_level": "C:/AI_VAULT_CANONICAL",
+  "repo_top_level_canonical": true,
+  "branch": "codex/own-capital-sustainable-return",
+  "branch_ok": true,
+  "head_full": "4459870c1628e98b772af77dab48258d3b003f93",
+  "head_local": "4459870",
+  "remote_full": "4459870c1628e98b772af77dab48258d3b003f93",
+  "head_remote": "4459870",
+  "expected_head": "4459870c1628e98b772af77dab48258d3b003f93",
+  "local_equals_remote": true,
+  "staged_empty": true,
+  "tracked_unstaged_empty": true,
+  "roadmap_valid": true,
+  "ledger_exists": true,
+  "semantic_memory_lines": 1715,
+  "semantic_memory_sha256": "ce81fbe1f97e257e2b124d7a929f0b2af86ce61e9ff1d8d832fdb5da1f69e64e",
+  "faiss_index_sha256": "adbb6051f79ecbeab0223d631a6013939c00bcc13216fbae437efe83047efa21",
+  "faiss_ids_sha256": "43736047db548caf9b26dfa61cdffe40e179c738bc8e8c295891f29cedd69102",
+  "faiss_ids": 1616,
+  "faiss_ntotal": 1616,
+  "brain_8091_health": {
+    "status": "healthy",
+    "sessions": 1,
+    "version": "9.0.0",
+    "safe_mode": false
+  },
+  "models_8091": {
+    "object": "list",
+    "data": [
+      {
+        "id": "brain-v9-local",
+        "object": "model",
+        "created": 0,
+        "owned_by": "local"
+      },
+      {
+        "id": "brain",
+        "object": "model",
+        "created": 0,
+        "owned_by": "local"
+      },
+      {
+        "id": "ai-vault-brain",
+        "object": "model",
+        "created": 0,
+        "owned_by": "local"
+      }
+    ]
+  },
+  "dashboard_root_initial": true,
+  "dashboard_status_initial": {
+    "error": "The request was canceled due to the configured HttpClient.Timeout of 5 seconds elapsing."
+  },
+  "scheduler_task": {
+    "TaskName": "BrainGovernedAutonomy",
+    "State": 3,
+    "TaskPath": "\\"
+  },
+  "control_flags": {
+    "STOP_AUTONOMY": false,
+    "PAUSE_AUTONOMY": false,
+    "RUN_ONCE": false
+  },
+  "hard_gate_pass": true
+}
