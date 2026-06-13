@@ -1,0 +1,72 @@
+{
+  "checked_utc": "2026-06-13T18:18:16.933847+00:00",
+  "status": "NEEDS_ADMIN_ACTION_LIVE_OLD_PROCESS",
+  "endpoints": {
+    "root": {
+      "ok": true,
+      "status_code": 200,
+      "latency_ms": 9.68,
+      "preview": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Brain Operator Dashboard</title>\n  <link rel=\"stylesheet\" href=\"/static/styles.css\">\n</head>\n<body>\n  <main>\n    <header class=\"header-bar\">\n      <h1>Brain Persistent Autonomy</h1>\n      <div id=\"header-meta\">\n        <span id=\"mode-badge\" class=\"badge\">Loading\u2026</span>\n        <span id=\"scheduler-badge\" class=\"badge\">Scheduler: \u2026</span>\n        <span id=\"heartbeat-badge\" class=\"badge\">Heartbeat: \u2026</span>\n        <span id=\"next-run-badge\" class=\"badge\">Next run: \u2026</span>\n      </div>\n    </header>\n\n    <section class=\"grid cols-3\" id=\"status-cards\">\n      <div class=\"card\"><h3>Brain API</h3><div id=\"brain-api-status\">Checking\u2026</div></div>\n      <div class=\"card\"><h3>Kimi Provider</h3><div id=\"kimi-status\">Checking\u2026</div></div>\n      <div class=\"card\"><h3>Dashboard</h3><div id=\"dashboard-status\">Checking\u2026</div></div>\n      <div class=\"card\"><h3>Scheduler</h3><div id=\"scheduler-status\">Checking\u2026</div></div>\n      <div class=\"card\"><h3>Autonomy</h3><div id=\"autonomy-status\">Checking\u2026</div></div>\n      <div class=\"card\"><h3>Memory</h3><div id=\"memory-status\">Checking\u2026</div></div>\n    </section>\n\n    <section class=\"panel\">\n      <h2>What Brain is Doing Now</h2>\n      <div class=\"kv-grid\" id=\"doing-now\">\n        <div><label>State</label><span id=\"now-state\">\u2026</span></div>\n        <div><label>Cycle</label><span id=\"now-cycle\">\u2026</span></div>\n        <div><label>Last Run</label><span id=\"now-last-run\">\u2026</span></div>\n        <div><label>Last Result</label><span id=\"now-last-result\">\u2026</span></div>\n        <div><label>Next Run</label><span id=\"now-next-run\">\u2026</span></div>\n        <div><label>Last Error</label><span id=\"now-last-error\">\u2014</span></div>\n      </div>\n    </section>\n\n    <section class=\"panel\">\n      <h2>Recent Activity</h2>\n      <div id=\"activity-timeline\" class=\"timeline\">Loading\u2026</div>\n",
+      "raw_traceback": false,
+      "raw_cot": false
+    },
+    "status": {
+      "ok": false,
+      "latency_ms": 4440.78,
+      "error": "HTTP Error 500: Internal Server Error",
+      "raw_traceback": false,
+      "raw_cot": false
+    },
+    "activity": {
+      "ok": true,
+      "status_code": 200,
+      "latency_ms": 16.111,
+      "preview": "{\"ok\":true,\"events\":[]}",
+      "raw_traceback": false,
+      "raw_cot": false
+    },
+    "scheduler": {
+      "ok": true,
+      "status_code": 200,
+      "latency_ms": 4448.551,
+      "preview": "{\"ok\":true,\"scheduler\":{\"exists\":true,\"enabled\":true,\"state\":\"Ready\",\"last_run_time\":null,\"next_run_time\":null,\"last_task_result\":null,\"action\":\"tools/brain_autonomy_run_once.ps1\"}}",
+      "raw_traceback": false,
+      "raw_cot": false
+    },
+    "safety": {
+      "ok": true,
+      "status_code": 200,
+      "latency_ms": 24.784,
+      "preview": "{\"ok\":true,\"semantic_memory_lines\":1715,\"faiss_ids\":1616,\"faiss_ntotal\":1616,\"canonical_semantic_mutated\":false,\"faiss_mutated\":false,\"trading_touched\":false,\"b8_touched\":false,\"secrets_exposed\":false}",
+      "raw_traceback": false,
+      "raw_cot": false
+    },
+    "promotion_queue": {
+      "ok": true,
+      "status_code": 200,
+      "latency_ms": 3.427,
+      "preview": "{\"ok\":true,\"count\":0,\"items\":[]}",
+      "raw_traceback": false,
+      "raw_cot": false
+    },
+    "chat": {
+      "ok": true,
+      "status_code": 200,
+      "latency_ms": 3561.877,
+      "preview": "{\"ok\":true,\"content\":\"STATUS_REPAIR_CHAT_OK\",\"provider_selected\":\"kimi_k2_6_cloud\",\"model_selected\":\"kimi-k2.6:cloud\",\"fallback_used\":false,\"no_cot_leak\":true}",
+      "raw_traceback": false,
+      "raw_cot": false
+    }
+  },
+  "root_ok": true,
+  "status_ok": false,
+  "status_http": null,
+  "status_latency_ms": 4440.78,
+  "activity_ok": true,
+  "scheduler_ok": true,
+  "safety_ok": true,
+  "promotion_queue_ok": true,
+  "chat_ok": true,
+  "no_raw_traceback": true,
+  "no_raw_cot": true
+}

@@ -1,0 +1,63 @@
+{
+  "checked_utc": "2026-06-13T18:17:23.267350+00:00",
+  "classified_processes": [
+    {
+      "pid": 43364,
+      "connection": {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 8092,
+        "State": 2,
+        "OwningProcess": 43364
+      },
+      "process": {
+        "Id": 43364,
+        "ProcessName": "python",
+        "Path": null,
+        "StartTime": "/Date(1781313446697)/"
+      },
+      "process_error": null,
+      "cim": {
+        "ProcessId": 43364,
+        "ParentProcessId": 60452,
+        "Name": "python.exe",
+        "ExecutablePath": null,
+        "CommandLine": null
+      },
+      "cim_error": null,
+      "owner": {
+        "raw": "Method invocation failed because [Microsoft.Management.Infrastructure.CimInstance] does not contain a method named \n'GetOwner'.\nAt line:1 char:1\n+ (Get-CimInstance Win32_Process -Filter \"ProcessId=43364\").GetOwner()  ...\n+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n    + CategoryInfo          : InvalidOperation: (GetOwner:String) [], RuntimeException\n    + FullyQualifiedErrorId : MethodNotFound",
+        "parse_error": true
+      },
+      "owner_error": "exit_1",
+      "classification_criteria": {
+        "http_root_contains_brain_dashboard_html": true,
+        "command_line_contains_dashboard_app": false,
+        "command_line_or_path_contains_canonical": false,
+        "python_or_uvicorn_serving_8092": true,
+        "module_indicates_dashboard": false
+      },
+      "criteria_true_count": 2,
+      "classified_as_brain_dashboard": true
+    }
+  ],
+  "stop_attempted": true,
+  "stop_success": false,
+  "taskkill_attempted": true,
+  "taskkill_success": false,
+  "port_free_after": false,
+  "needs_admin_action": true,
+  "manual_admin_command": "Open PowerShell as Administrator and run: Stop-Process -Id 43364 -Force  # classified Brain dashboard PID; or taskkill /PID 43364 /T /F",
+  "errors": [],
+  "pid": 43364,
+  "stop_process_result": {
+    "ok": false,
+    "output": "Stop-Process : Cannot stop process \"python (43364)\" because of the following error: Access is denied\nAt line:1 char:1\n+ Stop-Process -Id 43364 -ErrorAction Stop\n+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n    + CategoryInfo          : CloseError: (System.Diagnostics.Process (python):Process) [Stop-Process], ProcessCommand \n   Exception\n    + FullyQualifiedErrorId : CouldNotStopProcess,Microsoft.PowerShell.Commands.StopProcessCommand",
+    "code": 1
+  },
+  "taskkill_result": {
+    "returncode": 255,
+    "stdout": "",
+    "stderr": "ERROR: The process with PID 43364 (child process of PID 60452) could not be terminated.\nReason: This process can only be terminated forcefully (with /F option)."
+  },
+  "status": "NEEDS_ADMIN_ACTION"
+}

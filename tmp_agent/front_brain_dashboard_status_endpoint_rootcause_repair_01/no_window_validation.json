@@ -1,0 +1,10 @@
+{
+  "checked_utc": "2026-06-13T18:18:16.935880+00:00",
+  "trace_seconds": 0,
+  "trace_run": false,
+  "trace_skipped_reason": "Live 8092 old process could not be stopped/restarted; no-window validated from source only.",
+  "status_path_uses_cached_scheduler": true,
+  "status_route_no_write_status_snapshot": true,
+  "scheduler_endpoint_uses_create_no_window": true,
+  "no_visible_powershell_windows_observed": "not_applicable_needs_admin_action"
+}

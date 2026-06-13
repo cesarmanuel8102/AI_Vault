@@ -1,0 +1,26 @@
+{
+  "checked_utc": "2026-06-13T18:18:35.878097+00:00",
+  "scheduler_task": {
+    "TaskName": "BrainGovernedAutonomy",
+    "State": 3,
+    "TaskPath": "\\"
+  },
+  "scheduler_exists": true,
+  "scheduler_state": 3,
+  "scheduler_enabled": true,
+  "control_flags": {
+    "STOP_AUTONOMY": false,
+    "PAUSE_AUTONOMY": false,
+    "RUN_ONCE": false
+  },
+  "autonomy_stopped": false,
+  "autonomy_paused": false,
+  "heartbeat": {
+    "updated_utc": "2026-06-13T18:07:25.581764+00:00",
+    "status": "idle",
+    "cycle": "complete"
+  },
+  "heartbeat_status": "idle",
+  "journal_count": 74,
+  "state_changed": false
+}

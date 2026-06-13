@@ -1,0 +1,58 @@
+{
+  "checked_utc": "2026-06-13T18:17:04.778193+00:00",
+  "connections": [
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 8092,
+      "State": 2,
+      "OwningProcess": 43364
+    }
+  ],
+  "processes": [
+    {
+      "pid": 43364,
+      "connection": {
+        "LocalAddress": "127.0.0.1",
+        "LocalPort": 8092,
+        "State": 2,
+        "OwningProcess": 43364
+      },
+      "process": {
+        "Id": 43364,
+        "ProcessName": "python",
+        "Path": null,
+        "StartTime": "/Date(1781313446697)/"
+      },
+      "process_error": null,
+      "cim": {
+        "ProcessId": 43364,
+        "ParentProcessId": 60452,
+        "Name": "python.exe",
+        "ExecutablePath": null,
+        "CommandLine": null
+      },
+      "cim_error": null,
+      "owner": {
+        "raw": "Method invocation failed because [Microsoft.Management.Infrastructure.CimInstance] does not contain a method named \n'GetOwner'.\nAt line:1 char:1\n+ (Get-CimInstance Win32_Process -Filter \"ProcessId=43364\").GetOwner()  ...\n+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n    + CategoryInfo          : InvalidOperation: (GetOwner:String) [], RuntimeException\n    + FullyQualifiedErrorId : MethodNotFound",
+        "parse_error": true
+      },
+      "owner_error": "exit_1",
+      "classification_criteria": {
+        "http_root_contains_brain_dashboard_html": true,
+        "command_line_contains_dashboard_app": false,
+        "command_line_or_path_contains_canonical": false,
+        "python_or_uvicorn_serving_8092": true,
+        "module_indicates_dashboard": false
+      },
+      "criteria_true_count": 2,
+      "classified_as_brain_dashboard": true
+    }
+  ],
+  "root_response": {
+    "ok": true,
+    "status_code": 200,
+    "latency_ms": 15.622,
+    "preview": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Brain Operator Dashboard</title>\n  <link rel=\"stylesheet\" href=\"/static/styles.css\">\n</head>\n<body>\n  <main>\n    <header class=\"header-bar\">\n      <h1>Brain Persistent Autonomy</h1>\n      <div id=\"header-meta\">\n        <span id=\"mode-badge\" class=\"badge\">Loading\u2026</span>\n        <span id=\"scheduler-badge\" class=\"badge\">Scheduler: \u2026</span>\n        <span id=\"heartbeat-badge\" class=\"badge\">Heartbeat: \u2026</span>\n        <span id=\"next-run-badge\" class=\"badge\">Next run: \u2026</span>\n      </div>\n    </header>\n\n    <section class=\"grid cols-3\" id=\"status-cards\">\n      <div class=\"card\"><h3>Brain API</h3><div id=\"brain-api-status\">Checking\u2026</div></div>\n      <div class=\"card\"><h3>Kimi Provider</h3><div id=\"kimi-status\">Checking\u2026</div></div>\n      <div class=\"card\"><h3>Dashboard</h3><div id=\"dashboard-status\">Checking\u2026</div></div>\n      <div cl"
+  },
+  "any_classified_brain_dashboard": true
+}
