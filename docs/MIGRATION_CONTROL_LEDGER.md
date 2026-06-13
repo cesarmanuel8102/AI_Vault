@@ -7916,3 +7916,31 @@ The adapter/router/governance metadata layer is working, but answer-generation q
 - dashboard_pid: `45172`
 - dashboard_health: `{'ok': True, 'dashboard': 'brain_persistent_autonomy', 'port': 8092}`
 - note: `8090 remains untouched; dashboard runs as separate safe 8092 process.`
+
+## FRONT-BRAIN-SCHEDULER-ENABLEMENT-AND-CONTINUOUS-AUTONOMY-01
+
+### Status
+COMPLETE
+
+### Functional Commit
+fe8a71a (no new commit; journal updated only)
+
+### Key Facts
+- scheduler_created: true
+- scheduler_enabled: true
+- observation_runs: 3
+- memory_events_before: 11
+- memory_events_after: 20
+- canonical_semantic_mutated: false
+- faiss_mutated: false
+- dashboard_status: running_on_8092
+- chat_status: provider_probe 8091 healthy
+- controls_verified: pause/resume/stop all working
+- tests: 172 pre-existing failures; 0 new failures introduced
+- remote_synced: true
+
+### Decision
+BRAIN_SCHEDULER_CONTINUOUS_AUTONOMY_ENABLED
+
+### Next Recommended Front
+FRONT-BRAIN-SCHEDULER-ENABLEMENT-02
