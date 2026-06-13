@@ -8059,3 +8059,12 @@ codex/own-capital-sustainable-return
 
 ### Next Recommended Front
 FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01
+
+
+### Post-run journal cleanup update
+
+- timestamp_utc: `2026-06-13T18:09:54.801967+00:00`
+- commit: `3cd67c6` - memory: record governed autonomy post-run journal events
+- reason: scheduler/autonomy appended 3 governed `autonomy_lesson` records while the front was being finalized.
+- review: append-only, no secrets, no raw CoT, no broker/order/trading execution, no canonical semantic/FAISS touch.
+- head_after_post_run_journal: `3cd67c6`

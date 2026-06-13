@@ -1,6 +1,6 @@
 {
-  "current_head": "8d55412f4005a2d1003fb0bc5145411d1658e070",
-  "current_remote_head": "4459870c1628e98b772af77dab48258d3b003f93",
+  "current_head": "3cd67c6116c3de2115c6929448629e913d1693e7",
+  "current_remote_head": "3cd67c6116c3de2115c6929448629e913d1693e7",
   "branch": "codex/own-capital-sustainable-return",
   "migration_status": "brain_autonomy_stability_status_fix_partial_live_8092_blocked",
   "last_applied_checkpoint": "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-01",
@@ -176,7 +176,7 @@
     "reason": "Source status route is fixed, but live 8092 still serves old handler and could not be restarted due Access denied; broad autonomy cycles remain gated until live status returns HTTP 200 under 5 seconds."
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-06-13T18:08:20.741962+00:00",
+  "last_updated": "2026-06-13T18:09:54.801967+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -3590,6 +3590,10 @@
       {
         "hash": "8d55412",
         "message": "docs: add Brain autonomy stability cycle reports"
+      },
+      {
+        "hash": "3cd67c6",
+        "message": "memory: record governed autonomy post-run journal events"
       }
     ],
     "dashboard": {
@@ -3638,6 +3642,9 @@
     },
     "evidence_path": "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_01",
     "next_front_locked": "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01",
-    "updated_at_utc": "2026-06-13T18:08:20.741962+00:00"
+    "updated_at_utc": "2026-06-13T18:09:54.801967+00:00",
+    "post_run_journal_commit": "3cd67c6",
+    "post_run_journal_added_records": 3,
+    "post_run_journal_safe": true
   }
 }
