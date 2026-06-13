@@ -1,0 +1,64 @@
+{
+  "status": "BRAIN_DASHBOARD_STATUS_ENDPOINT_ROOTCAUSE_REPAIR_COMPLETED",
+  "checked_utc": "2026-06-13T18:29:58.119843+00:00",
+  "branch": "codex/own-capital-sustainable-return",
+  "start_head": "d9b8845",
+  "current_head": "d9b8845",
+  "current_remote_head": "d9b8845",
+  "process_8092": {
+    "previous_old_pid_stopped_by_admin": true,
+    "port_free_before_start": true,
+    "started_pid": 89832,
+    "classified_as_brain_dashboard": true,
+    "restart_success": true,
+    "command_line": "\"C:\\Users\\cesar\\AppData\\Local\\Programs\\Python\\Python311\\python.exe\" -m uvicorn tmp_agent.brain_v9.dashboard.dashboard_app:app --host 127.0.0.1 --port 8092"
+  },
+  "dashboard": {
+    "root_ok": true,
+    "status_ok": true,
+    "status_http": 200,
+    "status_latency_ms": 12.525,
+    "activity_ok": true,
+    "scheduler_ok": true,
+    "safety_ok": true,
+    "promotion_queue_ok": true,
+    "chat_ok": true,
+    "no_window_verified": true,
+    "max_status_latency_ms_60s": 176.926,
+    "max_scheduler_latency_ms_60s": 3079.883
+  },
+  "autonomy": {
+    "scheduler_state": 3,
+    "scheduler_enabled": true,
+    "autonomy_stopped": false,
+    "autonomy_paused": false,
+    "heartbeat_status": "idle",
+    "journal_count": 74
+  },
+  "safety": {
+    "checked_utc": "2026-06-13T18:29:57.952459+00:00",
+    "semantic_memory_lines": 1715,
+    "semantic_memory_sha256": "ce81fbe1f97e257e2b124d7a929f0b2af86ce61e9ff1d8d832fdb5da1f69e64e",
+    "semantic_memory_hash_unchanged": true,
+    "faiss_index_sha256": "adbb6051f79ecbeab0223d631a6013939c00bcc13216fbae437efe83047efa21",
+    "faiss_index_hash_unchanged": true,
+    "faiss_ids_sha256": "43736047db548caf9b26dfa61cdffe40e179c738bc8e8c295891f29cedd69102",
+    "faiss_ids_hash_unchanged": true,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "env_touched": false,
+    "trading_touched": false,
+    "b8_touched": false,
+    "strategies_touched": false,
+    "raw_cot_exposed": false,
+    "secrets_exposed": false,
+    "canonical_semantic_mutated": false,
+    "faiss_mutated": false
+  },
+  "tests": {
+    "py_compile": "PASS",
+    "focused_smoke": "4 passed"
+  },
+  "commits": [],
+  "recommended_next_action": "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-RERUN-01"
+}

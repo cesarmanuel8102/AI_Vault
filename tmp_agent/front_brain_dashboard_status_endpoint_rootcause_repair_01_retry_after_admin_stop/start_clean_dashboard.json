@@ -1,0 +1,20 @@
+{
+  "checked_utc": "2026-06-13T18:25:58.6712518Z",
+  "started_pid": 89832,
+  "has_exited": false,
+  "process": {
+    "ProcessId": 89832,
+    "ParentProcessId": 84720,
+    "Name": "python.exe",
+    "ExecutablePath": "C:\\Users\\cesar\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+    "CommandLine": "\"C:\\Users\\cesar\\AppData\\Local\\Programs\\Python\\Python311\\python.exe\" -m uvicorn tmp_agent.brain_v9.dashboard.dashboard_app:app --host 127.0.0.1 --port 8092"
+  },
+  "listener": {
+    "LocalAddress": "127.0.0.1",
+    "LocalPort": 8092,
+    "State": 2,
+    "OwningProcess": 89832
+  },
+  "stdout_log": "C:\\AI_VAULT_CANONICAL\\tmp_agent\\front_brain_dashboard_status_endpoint_rootcause_repair_01_retry_after_admin_stop\\uvicorn_8092_stdout.log",
+  "stderr_log": "C:\\AI_VAULT_CANONICAL\\tmp_agent\\front_brain_dashboard_status_endpoint_rootcause_repair_01_retry_after_admin_stop\\uvicorn_8092_stderr.log"
+}

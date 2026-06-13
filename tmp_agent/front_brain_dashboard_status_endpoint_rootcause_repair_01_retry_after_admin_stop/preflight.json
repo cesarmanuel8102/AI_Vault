@@ -1,0 +1,23 @@
+{
+  "checked_utc": "2026-06-13T18:25:24.778018+00:00",
+  "branch": "codex/own-capital-sustainable-return",
+  "head": "d9b88459819ee4ca37285b76c3b643ab69bba8bf",
+  "head_short": "d9b8845",
+  "remote": "d9b88459819ee4ca37285b76c3b643ab69bba8bf",
+  "remote_short": "d9b8845",
+  "expected_head": "d9b8845",
+  "expected_head_match": true,
+  "local_equals_remote": true,
+  "staged": [],
+  "tracked_status": [],
+  "semantic_memory_lines": 1715,
+  "semantic_memory_sha256": "ce81fbe1f97e257e2b124d7a929f0b2af86ce61e9ff1d8d832fdb5da1f69e64e",
+  "faiss_index_sha256": "adbb6051f79ecbeab0223d631a6013939c00bcc13216fbae437efe83047efa21",
+  "faiss_ids_sha256": "43736047db548caf9b26dfa61cdffe40e179c738bc8e8c295891f29cedd69102",
+  "faiss_ids": 1616,
+  "faiss_ntotal": 1616,
+  "branch_ok": true,
+  "staged_empty": true,
+  "tracked_unstaged_empty": true,
+  "hard_gate_pass": true
+}

@@ -1,0 +1,210 @@
+{
+  "checked_utc": "2026-06-13T18:28:42.894062+00:00",
+  "duration_seconds": 97.448,
+  "poll_count": 12,
+  "polls": [
+    {
+      "iteration": 1,
+      "status": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 176.926,
+        "raw_traceback": false
+      },
+      "scheduler": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 3079.616,
+        "raw_traceback": false
+      },
+      "conhost_count": 26
+    },
+    {
+      "iteration": 2,
+      "status": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 11.683,
+        "raw_traceback": false
+      },
+      "scheduler": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 3049.768,
+        "raw_traceback": false
+      },
+      "conhost_count": 26
+    },
+    {
+      "iteration": 3,
+      "status": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 27.255,
+        "raw_traceback": false
+      },
+      "scheduler": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 3065.575,
+        "raw_traceback": false
+      },
+      "conhost_count": 28
+    },
+    {
+      "iteration": 4,
+      "status": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 37.104,
+        "raw_traceback": false
+      },
+      "scheduler": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 3064.478,
+        "raw_traceback": false
+      },
+      "conhost_count": 29
+    },
+    {
+      "iteration": 5,
+      "status": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 24.685,
+        "raw_traceback": false
+      },
+      "scheduler": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 3052.223,
+        "raw_traceback": false
+      },
+      "conhost_count": 26
+    },
+    {
+      "iteration": 6,
+      "status": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 34.652,
+        "raw_traceback": false
+      },
+      "scheduler": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 3063.158,
+        "raw_traceback": false
+      },
+      "conhost_count": 29
+    },
+    {
+      "iteration": 7,
+      "status": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 36.277,
+        "raw_traceback": false
+      },
+      "scheduler": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 3058.142,
+        "raw_traceback": false
+      },
+      "conhost_count": 25
+    },
+    {
+      "iteration": 8,
+      "status": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 38.889,
+        "raw_traceback": false
+      },
+      "scheduler": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 3062.977,
+        "raw_traceback": false
+      },
+      "conhost_count": 26
+    },
+    {
+      "iteration": 9,
+      "status": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 14.268,
+        "raw_traceback": false
+      },
+      "scheduler": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 3061.4,
+        "raw_traceback": false
+      },
+      "conhost_count": 26
+    },
+    {
+      "iteration": 10,
+      "status": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 28.856,
+        "raw_traceback": false
+      },
+      "scheduler": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 3079.883,
+        "raw_traceback": false
+      },
+      "conhost_count": 27
+    },
+    {
+      "iteration": 11,
+      "status": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 13.39,
+        "raw_traceback": false
+      },
+      "scheduler": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 3057.202,
+        "raw_traceback": false
+      },
+      "conhost_count": 25
+    },
+    {
+      "iteration": 12,
+      "status": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 26.77,
+        "raw_traceback": false
+      },
+      "scheduler": {
+        "ok": true,
+        "status_code": 200,
+        "latency_ms": 3057.281,
+        "raw_traceback": false
+      },
+      "conhost_count": 29
+    }
+  ],
+  "all_status_http_200": true,
+  "all_scheduler_http_200": true,
+  "max_status_latency_ms": 176.926,
+  "max_scheduler_latency_ms": 3079.883,
+  "status_path_uses_cached_scheduler": true,
+  "status_route_no_write_status_snapshot": true,
+  "scheduler_endpoint_uses_create_no_window": true,
+  "conhost_count_before": 27,
+  "conhost_count_after": 27,
+  "no_repeated_visible_conhost_observed": true,
+  "no_window_verified": true
+}
