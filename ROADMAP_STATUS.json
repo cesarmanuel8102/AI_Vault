@@ -1,6 +1,6 @@
 {
-  "current_head": "9a783d7",
-  "current_remote_head": "9a783d7",
+  "current_head": "6f399783b360f86843b974da84a3249c8caf86f6",
+  "current_remote_head": "6f399783b360f86843b974da84a3249c8caf86f6",
   "branch": "codex/own-capital-sustainable-return",
   "migration_status": "brain_persistent_autonomy_real_memory_partial_staging_only",
   "last_applied_checkpoint": "MEGA-FRONT-BRAIN-PERSISTENT-AUTONOMY-REAL-MEMORY-CHAT-DASHBOARD-01",
@@ -153,7 +153,8 @@
     "MACRO-FRONT-BRAIN-AGGRESSIVE-GOVERNED-AUTONOMY-EXCELLENCE-01",
     "MEGA-FRONT-BRAIN-SELF-TRAINING-AUTONOMY-MAXIMIZATION-200CYCLES-01",
     "MEGA-FRONT-BRAIN-PERSISTENT-AUTONOMY-REAL-MEMORY-CHAT-DASHBOARD-01",
-    "FRONT-BRAIN-SCHEDULER-ENABLEMENT-AND-CONTINUOUS-AUTONOMY-01"
+    "FRONT-BRAIN-SCHEDULER-ENABLEMENT-AND-CONTINUOUS-AUTONOMY-01",
+    "FRONT-BRAIN-OPERATOR-DASHBOARD-UX-AND-AUTONOMY-VISIBILITY-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [

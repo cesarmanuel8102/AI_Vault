@@ -7944,3 +7944,63 @@ BRAIN_SCHEDULER_CONTINUOUS_AUTONOMY_ENABLED
 
 ### Next Recommended Front
 FRONT-BRAIN-SCHEDULER-ENABLEMENT-02
+
+## FRONT-BRAIN-OPERATOR-DASHBOARD-UX-AND-AUTONOMY-VISIBILITY-01
+
+### Status
+BRAIN_OPERATOR_DASHBOARD_UX_AND_AUTONOMY_VISIBILITY_COMPLETED
+
+### Functional Commit
+(feat: improve Brain operator dashboard visibility)
+
+### Key Facts
+- dashboard_url: http://127.0.0.1:8092/
+- ux_upgraded: true
+- status_cards: 6 cards (Brain API, Kimi Provider, Dashboard, Scheduler, Autonomy, Memory)
+- scheduler_panel: true (BrainGovernedAutonomy exists, enabled, Ready)
+- memory_panel: true (journal, promotion queue, semantic staging, canonical lines, FAISS IDs)
+- activity_timeline: true (last 10 journal events, human-readable)
+- promotion_queue_panel: true (5 pending candidates, human review required)
+- chat_metadata_visible: true (provider, model, fallback, CoT leak blocked)
+- controls: Run Once, Pause (confirm), Resume, Stop (confirm), Refresh
+- safety_message: "Canonical semantic memory and FAISS are not being modified automatically."
+
+### Endpoints Validated
+- GET /brain-dashboard/status
+- GET /brain-dashboard/activity
+- GET /brain-dashboard/scheduler
+- GET /brain-dashboard/safety
+- GET /brain-dashboard/promotion-queue
+- POST /brain-dashboard/control/run-once
+- POST /brain-dashboard/control/pause
+- POST /brain-dashboard/control/resume
+- POST /brain-dashboard/control/stop
+- POST /brain-dashboard/chat
+
+### Safety
+- semantic_memory_lines: 1715 (unchanged)
+- faiss_ids: 1616 (unchanged)
+- canonical_semantic_mutated: false
+- faiss_mutated: false
+- trading_touched: false
+- b8_touched: false
+- secrets_exposed: false
+- no_raw_cot_leak: true
+
+### Tests
+- py_compile: PASS
+- smoke: 18 passed, 0 failed
+
+### Files
+- tmp_agent/brain_v9/dashboard/dashboard_routes.py
+- tmp_agent/brain_v9/dashboard/static/index.html
+- tmp_agent/brain_v9/dashboard/static/app.js
+- tmp_agent/brain_v9/dashboard/static/styles.css
+- tests/smoke/smoke_front_brain_operator_dashboard_ux_and_autonomy_visibility_01.py
+- docs/BRAIN_OPERATOR_DASHBOARD_GUIDE.md
+- tmp_agent/front_brain_operator_dashboard_ux_and_autonomy_visibility_01/final_report.md
+- tmp_agent/front_brain_operator_dashboard_ux_and_autonomy_visibility_01/cesar_review_report.md
+- tmp_agent/front_brain_operator_dashboard_ux_and_autonomy_visibility_01/OPERATOR_UI_GUIDE.md
+
+### Next Recommended Front
+FRONT-BRAIN-SCHEDULER-STABILITY-AUDIT-24H-01

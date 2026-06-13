@@ -1,1 +1,62 @@
-body{font-family:Segoe UI,system-ui,sans-serif;background:#101418;color:#e8f0f2;margin:0}main{max-width:1100px;margin:24px auto;padding:24px}section{background:#182129;border:1px solid #2d3b46;border-radius:14px;padding:16px;margin:14px 0}button{margin:4px;padding:10px 14px;border-radius:10px;border:0;background:#8fd3ff;color:#071017;font-weight:700}textarea{width:100%;min-height:90px;background:#0b1115;color:#e8f0f2;border:1px solid #31434f;border-radius:10px;padding:10px}pre,#status{white-space:pre-wrap;overflow:auto}
+body{font-family:Segoe UI,system-ui,sans-serif;background:#0b0f12;color:#e8f0f2;margin:0}
+main{max-width:1200px;margin:24px auto;padding:24px}
+.header-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;padding:16px 20px;background:#121820;border:1px solid #263240;border-radius:14px;margin-bottom:20px}
+.header-bar h1{margin:0;font-size:1.35rem}
+#header-meta{display:flex;gap:10px;flex-wrap:wrap}
+.badge{display:inline-block;padding:6px 12px;border-radius:999px;font-size:.82rem;font-weight:700}
+.badge.green{background:#1a4d2e;color:#7af0a8}
+.badge.yellow{background:#4d3b1a;color:#f0d07a}
+.badge.red{background:#4d1a1a;color:#f07a7a}
+.badge.blue{background:#1a2d4d;color:#7aa8f0}
+.badge.gray{background:#2a2a2a;color:#aaa}
+
+.panel{background:#141c24;border:1px solid #263240;border-radius:14px;padding:18px;margin-bottom:18px}
+.panel h2{margin:0 0 14px 0;font-size:1.1rem;color:#8fd3ff}
+
+.grid{display:grid;gap:14px;margin-bottom:18px}
+.cols-3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.card{background:#141c24;border:1px solid #263240;border-radius:14px;padding:14px}
+.card h3{margin:0 0 8px 0;font-size:.9rem;color:#8fd3ff}
+
+.kv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.kv-grid div{display:flex;flex-direction:column;background:#0e141a;border:1px solid #1f2e38;border-radius:10px;padding:10px}
+.kv-grid label{font-size:.75rem;color:#8a9aab;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.kv-grid span{font-size:.95rem}
+
+.timeline{display:flex;flex-direction:column;gap:10px}
+.timeline-item{display:flex;gap:12px;align-items:flex-start;background:#0e141a;border:1px solid #1f2e38;border-radius:10px;padding:12px}
+.timeline-item .dot{width:10px;height:10px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.timeline-item .dot.green{background:#4ade80}
+.timeline-item .dot.yellow{background:#facc15}
+.timeline-item .dot.red{background:#f87171}
+.timeline-item .info{flex:1}
+.timeline-item .time{font-size:.75rem;color:#8a9aab}
+.timeline-item .title{font-weight:700;margin-bottom:2px}
+.timeline-item .detail{font-size:.85rem;color:#b0c4d6}
+
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #1f2e38}
+th{color:#8fd3ff;font-weight:700}
+tr:hover{background:#0e141a}
+
+.controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.controls button{padding:10px 16px;border-radius:10px;border:0;background:#8fd3ff;color:#071017;font-weight:700;cursor:pointer}
+.controls button.secondary{background:#2a3a4a;color:#e8f0f2}
+.controls button.warn{background:#f0c36d;color:#2a1d00}
+.controls button.danger{background:#f07a7a;color:#2a0505}
+.controls button:hover{opacity:.92}
+.control-result{font-size:.9rem;color:#7af0a8;min-height:1.2em}
+
+.chat{display:flex;flex-direction:column;gap:10px}
+.chat textarea{width:100%;min-height:80px;background:#0b1115;color:#e8f0f2;border:1px solid #31434f;border-radius:10px;padding:10px;resize:vertical;box-sizing:border-box}
+.chat-meta{font-size:.78rem;color:#8a9aab}
+.chat-output{background:#0e141a;border:1px solid #1f2e38;border-radius:10px;padding:12px;margin-top:10px;min-height:40px;white-space:pre-wrap}
+
+.recommendation{background:#0e141a;border:1px solid #1f2e38;border-radius:10px;padding:12px;font-size:.95rem}
+.alerts{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.alert{padding:10px 12px;border-radius:8px;font-size:.85rem}
+.alert.green{background:#1a4d2e;color:#7af0a8}
+.alert.yellow{background:#4d3b1a;color:#f0d07a}
+.alert.red{background:#4d1a1a;color:#f07a7a}
+.safety-msg{margin-top:12px;padding:10px 12px;border-radius:8px;background:#1a2d1a;color:#7af0a8;font-size:.9rem}
