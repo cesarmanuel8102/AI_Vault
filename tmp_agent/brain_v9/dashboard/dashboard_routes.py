@@ -15,6 +15,17 @@ from tmp_agent.brain_v9.autonomy.autonomy_watchdog import watchdog_status
 from tmp_agent.brain_v9.memory.memory_auditor import audit_memory_state
 from tmp_agent.brain_v9.monitoring.status_snapshot import write_status_snapshot
 
+import subprocess
+
+
+def startupinfo_no_window():
+    """Return subprocess.STARTUPINFO configured to hide console windows on Windows."""
+    si = subprocess.STARTUPINFO()
+    si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+    si.wShowWindow = subprocess.SW_HIDE
+    return si
+
+
 router = APIRouter(prefix="/brain-dashboard")
 
 
@@ -78,6 +89,7 @@ def _scheduler_info() -> dict[str, Any]:
             ["powershell", "-Command", "Get-ScheduledTask -TaskName 'BrainGovernedAutonomy' | Select-Object TaskName, State, Actions | Format-List"],
             stderr=subprocess.DEVNULL,
             timeout=10,
+            startupinfo=startupinfo_no_window(),
         ).decode("utf-8", errors="replace")
         info["exists"] = "BrainGovernedAutonomy" in out
         if "Ready" in out:
