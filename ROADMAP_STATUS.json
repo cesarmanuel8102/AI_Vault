@@ -1,9 +1,9 @@
 {
-  "current_head": "d9b88459819ee4ca37285b76c3b643ab69bba8bf",
-  "current_remote_head": "d9b88459819ee4ca37285b76c3b643ab69bba8bf",
+  "current_head": "b184be2fc98ff2290c52504dd8a7c074aa8b2187",
+  "current_remote_head": "b184be2fc98ff2290c52504dd8a7c074aa8b2187",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "brain_dashboard_status_endpoint_rootcause_repair_completed",
-  "last_applied_checkpoint": "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01-RETRY-AFTER-ADMIN-STOP",
+  "migration_status": "brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_completed",
+  "last_applied_checkpoint": "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-RERUN-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -156,7 +156,8 @@
     "FRONT-BRAIN-SCHEDULER-ENABLEMENT-AND-CONTINUOUS-AUTONOMY-01",
     "FRONT-BRAIN-OPERATOR-DASHBOARD-UX-AND-AUTONOMY-VISIBILITY-01",
     "FRONT-BRAIN-PREFLIGHT-JOURNAL-CLEANUP-THEN-RERUN-STABILITY-CYCLES-01",
-    "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01-RETRY-AFTER-ADMIN-STOP"
+    "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01-RETRY-AFTER-ADMIN-STOP",
+    "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-RERUN-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -172,12 +173,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-RERUN-01",
+    "name": "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-SCALEUP-01",
     "status": "recommended_next",
-    "reason": "Live 8092 dashboard now runs from corrected canonical source and /brain-dashboard/status returns HTTP 200 under 5 seconds; next safe step is rerun governed stability cycles with normal gates."
+    "reason": "120 governed autonomy cycles completed with dashboard stable and canonical semantic/FAISS unchanged; next safe step is promotion scale-up review with snapshots, retrieval smoke, rollback proof, and explicit operator approval."
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-06-13T18:30:52.393761+00:00",
+  "last_updated": "2026-06-13T18:42:14.596111+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -3748,5 +3749,53 @@
     "evidence_path": "tmp_agent/front_brain_dashboard_status_endpoint_rootcause_repair_01_retry_after_admin_stop",
     "next_front_locked": "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-RERUN-01",
     "updated_at_utc": "2026-06-13T18:30:52.393761+00:00"
+  },
+  "mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01": {
+    "front": "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-RERUN-01",
+    "status": "BRAIN_AUTONOMY_STABILITY_STATUS_FIX_AND_VERIFIABLE_CYCLES_RERUN_COMPLETED",
+    "cycles_targeted": 120,
+    "cycles_completed": 120,
+    "batches_completed": 12,
+    "stop_reason": "completed_minimum_120_cycles_stop_by_design",
+    "provider": {
+      "runner_success_rate": 1.0,
+      "fallback_rate": 0.058,
+      "timeout_count": 0,
+      "empty_response_count": 0,
+      "kimi_success_rate": "control_plane_available_not_invoked_per_cycle"
+    },
+    "learning": {
+      "lessons_created": 60,
+      "mistakes_recorded": 4,
+      "promotion_candidates_created": 12,
+      "journal_count_before": 74,
+      "journal_count_after": 194,
+      "semantic_staging_count": 8,
+      "canonical_promotions": 0
+    },
+    "score": {
+      "before": 0.903,
+      "after": 0.927,
+      "delta": 0.024
+    },
+    "immutability": {
+      "semantic_memory_lines": 1715,
+      "faiss_ids": 1616,
+      "faiss_ntotal": 1616,
+      "canonical_semantic_mutated": false,
+      "faiss_mutated": false,
+      "trading_touched": false,
+      "b8_touched": false,
+      "tmp_agent_strategies_touched": false,
+      "secrets_exposed": false,
+      "raw_cot_exposed": false
+    },
+    "tests": {
+      "py_compile": "PASS",
+      "focused_smoke": "5 passed"
+    },
+    "evidence_path": "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01",
+    "next_front_locked": "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-SCALEUP-01",
+    "updated_at_utc": "2026-06-13T18:42:14.596111+00:00"
   }
 }
