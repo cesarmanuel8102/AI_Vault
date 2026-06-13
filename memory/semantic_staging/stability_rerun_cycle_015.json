@@ -1,0 +1,19 @@
+{
+  "id": "semantic_staging_cycle_015",
+  "created_utc": "2026-06-13T18:38:05.434761+00:00",
+  "source_cycle": "cycle_015",
+  "kind": "semantic_staging",
+  "status": "operator_review_required",
+  "canonical_promotion": false,
+  "real_write_allowed": false,
+  "faiss_write_allowed": false,
+  "summary": "Governed stability cycle 15 checked provider behavior; no canonical memory/FAISS write and no trading execution.",
+  "evidence_refs": [
+    "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01/batches/batch_02.json"
+  ],
+  "safety": {
+    "no_raw_cot": true,
+    "no_secrets": true,
+    "no_trading_execution": true
+  }
+}

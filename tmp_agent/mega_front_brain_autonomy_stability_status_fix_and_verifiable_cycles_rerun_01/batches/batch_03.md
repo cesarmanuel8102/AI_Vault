@@ -1,0 +1,22 @@
+# batch_03
+
+- cycles_run: `10`
+- cumulative_cycles: `30`
+- provider_success_rate: `1.0`
+- fallback_rate: `0.0`
+- timeout_count: `0`
+- empty_response_count: `0`
+- avg_quality_score: `0.919`
+- lessons_created: `5`
+- mistakes_recorded: `0`
+- promotion_candidates_created: `1`
+- dashboard_status_ok: `True`
+- scheduler_ok: `True`
+- no_window_ok: `True`
+- semantic_lines: `1715`
+- faiss_ids: `1616`
+- faiss_ntotal: `1616`
+- canonical_semantic_mutated: `False`
+- faiss_mutated: `False`
+- anomalies: `[]`
+- recommended_next_correction: `none`

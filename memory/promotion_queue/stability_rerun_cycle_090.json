@@ -1,0 +1,19 @@
+{
+  "id": "promotion_candidate_cycle_090",
+  "created_utc": "2026-06-13T18:39:18.346304+00:00",
+  "source_cycle": "cycle_090",
+  "kind": "promotion_candidate",
+  "status": "operator_review_required",
+  "canonical_promotion": false,
+  "real_write_allowed": false,
+  "faiss_write_allowed": false,
+  "summary": "Governed stability cycle 90 checked memory queue quality; no canonical memory/FAISS write and no trading execution.",
+  "evidence_refs": [
+    "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01/batches/batch_09.json"
+  ],
+  "safety": {
+    "no_raw_cot": true,
+    "no_secrets": true,
+    "no_trading_execution": true
+  }
+}

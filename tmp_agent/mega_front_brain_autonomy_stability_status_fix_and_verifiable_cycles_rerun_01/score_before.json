@@ -1,0 +1,15 @@
+{
+  "operational_stability": 0.945,
+  "provider_reliability": 0.88,
+  "dashboard_control_plane": 0.95,
+  "scheduler_reliability": 0.84,
+  "memory_governance": 0.91,
+  "no_cot_safety": 1.0,
+  "CEI_FDOT_usefulness": 0.82,
+  "coding_reliability": 0.88,
+  "financial_safety": 0.96,
+  "operator_clarity": 0.9,
+  "test_coverage": 0.86,
+  "report_quality": 0.89,
+  "overall": 0.903
+}
