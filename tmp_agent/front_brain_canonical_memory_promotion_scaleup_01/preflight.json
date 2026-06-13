@@ -1,0 +1,43 @@
+{
+  "checked_utc": "2026-06-13T19:34:30.644536+00:00",
+  "branch": "codex/own-capital-sustainable-return",
+  "head": "950778cf2d96730f8266d00f220863b58cf5bf7d",
+  "head_short": "950778c",
+  "remote": "950778cf2d96730f8266d00f220863b58cf5bf7d",
+  "remote_short": "950778c",
+  "expected_head": "ef3a5c8",
+  "expected_head_match": false,
+  "expected_head_mismatch_explained": "950778c is safe background journal commit created by this front before continuing",
+  "local_equals_remote": true,
+  "staged_empty": true,
+  "tracked_unstaged_empty": true,
+  "tracked_status": [],
+  "staged": [],
+  "semantic_memory_lines": 1715,
+  "semantic_memory_sha256": "ce81fbe1f97e257e2b124d7a929f0b2af86ce61e9ff1d8d832fdb5da1f69e64e",
+  "faiss_index_sha256": "adbb6051f79ecbeab0223d631a6013939c00bcc13216fbae437efe83047efa21",
+  "faiss_ids_sha256": "43736047db548caf9b26dfa61cdffe40e179c738bc8e8c295891f29cedd69102",
+  "faiss_ids": 1616,
+  "faiss_ntotal": 1616,
+  "status_endpoint": {
+    "ok": true,
+    "status_code": 200,
+    "latency_ms": 17.826,
+    "preview": "{\"ok\":true,\"degraded\":false,\"brain\":{\"ok\":true,\"status\":\"healthy\",\"api\":\"http://127.0.0.1:8091\"},\"kimi\":{\"ok\":true,\"status\":\"available_via_provider_probe\"},\"dashboard\":{\"ok\":true,\"status\":\"online\",\"status_latency_ms\":9.292},\"scheduler\":{\"exists\":true,\"enabled\":false,\"state\":\"cached_ready\",\"last_run_time\":null,\"next_run_time\":null,\"last_task_result\":null,\"action\":\"powershell -ExecutionPolicy Bypass -File tools/brain_autonomy_run_once.ps1\",\"degraded\":false,\"source\":\"cache_file\"},\"autonomy\":{\"state\":\"idle\",\"cycle\":\"complete\",\"last_run_time\":\"2026-06-13T19:07:25.143864+00:00\",\"last_run_result\":\"idle\",\"paused\":false,\"stopped\":false},\"memory\":{\"journal_count\":197,\"promotion_queue_count\":17,\"semantic_staging_count\":5,\"promotion_audit_count\":1,\"canonical_promotion_performed\":false},\"safety\":{\"semantic_memory_lines\":1715,\"faiss_ids\":1616,\"faiss_ntotal\":1616,\"canonical_semantic_mutated\":false,\"faiss_mutated\":false,\"trading_touched\":false,\"b8_touched\":false,\"secrets_exposed\":false},\"watchdog\":{\"c",
+    "raw_traceback": false,
+    "raw_cot": false
+  },
+  "safety_endpoint": {
+    "ok": true,
+    "status_code": 200,
+    "latency_ms": 15.702,
+    "preview": "{\"ok\":true,\"semantic_memory_lines\":1715,\"faiss_ids\":1616,\"faiss_ntotal\":1616,\"canonical_semantic_mutated\":false,\"faiss_mutated\":false,\"trading_touched\":false,\"b8_touched\":false,\"secrets_exposed\":false}",
+    "raw_traceback": false,
+    "raw_cot": false
+  },
+  "status_ok": true,
+  "safety_ok": true,
+  "no_raw_traceback": true,
+  "no_raw_cot": true,
+  "hard_gate_pass": true
+}
