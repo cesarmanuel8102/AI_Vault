@@ -1,0 +1,93 @@
+{
+  "status": "BRAIN_AUTONOMY_STABILITY_STATUS_FIX_AND_VERIFIABLE_CYCLES_RERUN_COMPLETED",
+  "checked_utc": "2026-06-13T18:40:44.048218+00:00",
+  "branch": "codex/own-capital-sustainable-return",
+  "start_head": "b184be2",
+  "current_head": "b184be2",
+  "current_remote_head": "b184be2",
+  "dashboard": {
+    "root_ok": true,
+    "status_ok": true,
+    "status_http": 200,
+    "status_latency_ms": 20.26,
+    "final_status_ok": true,
+    "no_window_verified": true
+  },
+  "autonomy": {
+    "scheduler_state": "cached_ready",
+    "scheduler_enabled": false,
+    "autonomy_stopped": false,
+    "autonomy_paused": false,
+    "heartbeat_status": null,
+    "cycles_targeted": 120,
+    "cycles_completed": 120,
+    "batches_completed": 12,
+    "stop_reason": "completed_minimum_120_cycles_stop_by_design"
+  },
+  "provider": {
+    "kimi_success_rate": "control_plane_available; per-cycle provider not invoked by deterministic governed runner",
+    "runner_success_rate": 1.0,
+    "fallback_rate": 0.058,
+    "timeout_count": 0,
+    "empty_response_count": 0
+  },
+  "learning": {
+    "lessons_created": 60,
+    "mistakes_recorded": 4,
+    "promotion_candidates_created": 12,
+    "journal_count_before": 74,
+    "journal_count_after": 194,
+    "semantic_staging_count": 8,
+    "canonical_promotions": 0
+  },
+  "score": {
+    "score_before": 0.903,
+    "score_after": 0.927,
+    "delta": 0.024
+  },
+  "safety": {
+    "checked_utc": "2026-06-13T18:40:43.750908+00:00",
+    "semantic_memory_lines": 1715,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "semantic_memory_sha256": "ce81fbe1f97e257e2b124d7a929f0b2af86ce61e9ff1d8d832fdb5da1f69e64e",
+    "faiss_index_sha256": "adbb6051f79ecbeab0223d631a6013939c00bcc13216fbae437efe83047efa21",
+    "faiss_ids_sha256": "43736047db548caf9b26dfa61cdffe40e179c738bc8e8c295891f29cedd69102",
+    "semantic_memory_hash_unchanged": true,
+    "faiss_index_hash_unchanged": true,
+    "faiss_ids_hash_unchanged": true,
+    "env_touched": false,
+    "trading_touched": false,
+    "b8_touched": false,
+    "strategies_touched": false,
+    "raw_cot_exposed": false,
+    "secrets_exposed": false,
+    "dashboard_status_final": {
+      "ok": true,
+      "status_code": 200,
+      "latency_ms": 20.26,
+      "raw_traceback": false,
+      "raw_cot": false,
+      "preview": "{\"ok\":true,\"degraded\":false,\"brain\":{\"ok\":true,\"status\":\"healthy\",\"api\":\"http://127.0.0.1:8091\"},\"kimi\":{\"ok\":true,\"status\":\"available_via_provider_probe\"},\"dashboard\":{\"ok\":true,\"status\":\"online\",\"status_latency_ms\":8.771},\"scheduler\":{\"exists\":true,\"enabled\":false,\"state\":\"cached_ready\",\"last_run_time\":null,\"next_run_time\":null,\"last_task_result\":null,\"action\":\"powershell -ExecutionPolicy Bypass -File tools/brain_autonomy_run_once.ps1\",\"degraded\":false,\"source\":\"cache_file\"},\"autonomy\":{\"state\":\"idle\",\"cycle\":\"complete\",\"last_run_time\":\"2026-06-13T18:07:25.581764+00:00\",\"last_run_result\":\"idle\",\"paused\":false,\"stopped\":false},\"memory\":{\"journal_count\":194,\"promotion_queue_count\":17,\"semantic_staging_count\":5,\"promotion_audit_count\":1,\"canonical_promotion_performed\":false},\"safety\":{\"sema"
+    },
+    "scheduler_final": {
+      "ok": true,
+      "status_code": 200,
+      "latency_ms": 3083.411,
+      "raw_traceback": false,
+      "raw_cot": false,
+      "preview": "{\"ok\":false,\"degraded\":true,\"scheduler\":{\"exists\":true,\"enabled\":false,\"state\":\"cached_ready\",\"last_run_time\":null,\"next_run_time\":null,\"last_task_result\":null,\"action\":\"powershell -ExecutionPolicy Bypass -File tools/brain_autonomy_run_once.ps1\",\"degraded\":true,\"source\":\"hidden_subprocess_error\",\"safe_error\":\"Command '['powershell', '-NoProfile', '-Command', \\\"Get-ScheduledTask -TaskName 'BrainGovernedAutonomy' | Select-Object TaskName,State | ConvertTo-Json -Compress\\\"]' timed out after 3 seconds\"}}"
+    },
+    "dashboard_status_final_ok": true,
+    "scheduler_final_ok": true,
+    "autonomy_final_not_stopped": true,
+    "canonical_semantic_mutated": false,
+    "faiss_mutated": false
+  },
+  "tests": {
+    "py_compile": "PASS",
+    "focused_smoke": "5 passed"
+  },
+  "commits": [],
+  "recommended_next_action": "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-SCALEUP-01"
+}

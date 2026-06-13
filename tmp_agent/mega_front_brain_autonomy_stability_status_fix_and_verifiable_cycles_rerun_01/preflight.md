@@ -1,0 +1,20 @@
+# Rerun Preflight
+
+- branch: `codex/own-capital-sustainable-return`
+- head: `b184be2`
+- remote: `b184be2`
+- expected_head_match: `True`
+- local_equals_remote: `True`
+- staged_empty: `True`
+- tracked_unstaged_empty: `True`
+- status_ok: `True`
+- status_latency_ms: `10.535`
+- scheduler_endpoint_http_200: `True`
+- direct_scheduler_ready: `True`
+- safety_ok: `True`
+- chat_ok: `True`
+- journal_count: `194`
+- semantic_memory_lines: `1715`
+- faiss_ids: `1616`
+- faiss_ntotal: `1616`
+- hard_gate_pass: `True`

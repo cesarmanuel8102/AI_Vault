@@ -1,0 +1,102 @@
+{
+  "checked_utc": "2026-06-13T18:35:55.083961+00:00",
+  "branch": "codex/own-capital-sustainable-return",
+  "head": "b184be2fc98ff2290c52504dd8a7c074aa8b2187",
+  "head_short": "b184be2",
+  "remote": "b184be2fc98ff2290c52504dd8a7c074aa8b2187",
+  "remote_short": "b184be2",
+  "expected_head": "b184be2",
+  "expected_head_match": true,
+  "local_equals_remote": true,
+  "staged_empty": true,
+  "tracked_unstaged_empty": true,
+  "tracked_status": [],
+  "staged": [],
+  "semantic_memory_lines": 1715,
+  "semantic_memory_sha256": "ce81fbe1f97e257e2b124d7a929f0b2af86ce61e9ff1d8d832fdb5da1f69e64e",
+  "faiss_index_sha256": "adbb6051f79ecbeab0223d631a6013939c00bcc13216fbae437efe83047efa21",
+  "faiss_ids_sha256": "43736047db548caf9b26dfa61cdffe40e179c738bc8e8c295891f29cedd69102",
+  "faiss_ids": 1616,
+  "faiss_ntotal": 1616,
+  "live_endpoints": {
+    "root": {
+      "ok": true,
+      "status_code": 200,
+      "latency_ms": 17.127,
+      "preview": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Brain Operator Dashboard</title>\n  <link rel=\"stylesheet\" href=\"/static/styles.css\">\n</head>\n<body>\n  <main>\n    <header class=\"header-bar\">\n      <h1>Brain Persistent Autonomy</h1>\n      <div id=\"header-meta\">\n        <span id=\"mode-badge\" class=\"badge\">Loading\u2026</span>\n        <span id=\"scheduler-badge\" class=\"badge\">Scheduler: \u2026</span>\n        <span id=\"heartbeat-badge\" class=\"badge\">Heartbeat: \u2026</span>\n        <span id=\"next-run-badge\" class=\"badge\">Next run: \u2026</span>\n      </div>\n    </header>\n\n    <section class=\"grid cols-3\" id=\"status-cards\">\n      <div class=\"card\"><h3>Brain API</h3><div id=\"brain-api-status\">Checking\u2026</div></div>\n      <d",
+      "raw_traceback": false,
+      "raw_cot": false
+    },
+    "status": {
+      "ok": true,
+      "status_code": 200,
+      "latency_ms": 10.535,
+      "preview": "{\"ok\":true,\"degraded\":false,\"brain\":{\"ok\":true,\"status\":\"healthy\",\"api\":\"http://127.0.0.1:8091\"},\"kimi\":{\"ok\":true,\"status\":\"available_via_provider_probe\"},\"dashboard\":{\"ok\":true,\"status\":\"online\",\"status_latency_ms\":7.052},\"scheduler\":{\"exists\":true,\"enabled\":false,\"state\":\"cached_ready\",\"last_run_time\":null,\"next_run_time\":null,\"last_task_result\":null,\"action\":\"powershell -ExecutionPolicy Bypass -File tools/brain_autonomy_run_once.ps1\",\"degraded\":false,\"source\":\"cache_file\"},\"autonomy\":{\"state\":\"idle\",\"cycle\":\"complete\",\"last_run_time\":\"2026-06-13T18:07:25.581764+00:00\",\"last_run_result\":\"idle\",\"paused\":false,\"stopped\":false},\"memory\":{\"journal_count\":74,\"promotion_queue_count\":5,\"semantic_staging_count\":5,\"promotion_audit_count\":1,\"canonical_promotion_performed\":false},\"safety\":{\"semant",
+      "raw_traceback": false,
+      "raw_cot": false
+    },
+    "scheduler": {
+      "ok": true,
+      "status_code": 200,
+      "latency_ms": 3068.816,
+      "preview": "{\"ok\":false,\"degraded\":true,\"scheduler\":{\"exists\":true,\"enabled\":false,\"state\":\"cached_ready\",\"last_run_time\":null,\"next_run_time\":null,\"last_task_result\":null,\"action\":\"powershell -ExecutionPolicy Bypass -File tools/brain_autonomy_run_once.ps1\",\"degraded\":true,\"source\":\"hidden_subprocess_error\",\"safe_error\":\"Command '['powershell', '-NoProfile', '-Command', \\\"Get-ScheduledTask -TaskName 'BrainGovernedAutonomy' | Select-Object TaskName,State | ConvertTo-Json -Compress\\\"]' timed out after 3 seconds\"}}",
+      "raw_traceback": false,
+      "raw_cot": false
+    },
+    "safety": {
+      "ok": true,
+      "status_code": 200,
+      "latency_ms": 35.499,
+      "preview": "{\"ok\":true,\"semantic_memory_lines\":1715,\"faiss_ids\":1616,\"faiss_ntotal\":1616,\"canonical_semantic_mutated\":false,\"faiss_mutated\":false,\"trading_touched\":false,\"b8_touched\":false,\"secrets_exposed\":false}",
+      "raw_traceback": false,
+      "raw_cot": false
+    },
+    "chat": {
+      "ok": true,
+      "status_code": 200,
+      "latency_ms": 1676.067,
+      "preview": "{\"ok\":true,\"content\":\"CYCLE_PREFLIGHT_CHAT_OK\",\"provider_selected\":\"kimi_k2_6_cloud\",\"model_selected\":\"kimi-k2.6:cloud\",\"fallback_used\":false,\"no_cot_leak\":true}",
+      "raw_traceback": false,
+      "raw_cot": false
+    }
+  },
+  "root_ok": true,
+  "status_ok": true,
+  "status_http": 200,
+  "status_latency_ms": 10.535,
+  "scheduler_ok": true,
+  "safety_ok": true,
+  "chat_ok": true,
+  "no_raw_traceback": true,
+  "no_raw_cot": true,
+  "scheduler_state": "cached_ready",
+  "scheduler_enabled": false,
+  "autonomy_stopped": false,
+  "autonomy_paused": false,
+  "heartbeat_status": "idle",
+  "journal_count": 194,
+  "hard_gate_pass": true,
+  "status_payload_full_checked": true,
+  "status_payload_memory": {
+    "journal_count": 194,
+    "promotion_queue_count": 17,
+    "semantic_staging_count": 5,
+    "promotion_audit_count": 1,
+    "canonical_promotion_performed": false
+  },
+  "status_payload_autonomy": {
+    "state": "idle",
+    "cycle": "complete",
+    "last_run_time": "2026-06-13T18:07:25.581764+00:00",
+    "last_run_result": "idle",
+    "paused": false,
+    "stopped": false
+  },
+  "direct_scheduler_task": {
+    "TaskName": "BrainGovernedAutonomy",
+    "State": 3,
+    "TaskPath": "\\"
+  },
+  "direct_scheduler_ready": true,
+  "scheduler_endpoint_degraded_http_200_allowed": true
+}
