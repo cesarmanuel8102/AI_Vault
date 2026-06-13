@@ -1,0 +1,12 @@
+{
+  "checked_utc": "2026-06-13T19:35:17.943246+00:00",
+  "approved_before_dedup": 0,
+  "approved_after_dedup": 0,
+  "all_candidates_low_value_or_duplicate": true,
+  "dedup_methods": [
+    "exact text",
+    "normalized lowercase text",
+    "repeated operational template"
+  ],
+  "decision": "NO_PROMOTION_NEEDED"
+}

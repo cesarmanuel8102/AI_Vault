@@ -1,0 +1,8 @@
+{
+  "checked_utc": "2026-06-13T19:35:38.550655+00:00",
+  "status": "NO_PROMOTION_MANIFEST_EMPTY",
+  "selected_candidates": [],
+  "max_batch": 5,
+  "canonical_write_allowed": false,
+  "reason": "All reviewed candidates were rejected before canonical gate."
+}

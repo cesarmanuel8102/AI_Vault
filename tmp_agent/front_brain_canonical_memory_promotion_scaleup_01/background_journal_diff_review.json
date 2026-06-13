@@ -1,0 +1,21 @@
+{
+  "source_cycles": [
+    "persistent_run_once_001",
+    "persistent_run_once_002",
+    "persistent_run_once_003"
+  ],
+  "added_records": 3,
+  "touches_canonical_semantic": false,
+  "contains_raw_cot": false,
+  "touches_canonical_faiss": false,
+  "checked_utc": "2026-06-13T19:33:58.5887222Z",
+  "only_tracked_dirty_file": true,
+  "categories": [
+    "autonomy_lesson"
+  ],
+  "contains_trading_execution": false,
+  "dirty_file": "memory/autonomous_journal.jsonl",
+  "append_only": true,
+  "contains_secrets": false,
+  "safe_to_commit": true
+}

@@ -1,0 +1,22 @@
+# Rejected Candidates
+
+- `promotion_candidate_cycle_010`: repeated deterministic runner template, below promotion threshold
+- `promotion_candidate_cycle_020`: repeated deterministic runner template, below promotion threshold
+- `promotion_candidate_cycle_030`: repeated deterministic runner template, below promotion threshold
+- `promotion_candidate_cycle_040`: repeated deterministic runner template, below promotion threshold
+- `promotion_candidate_cycle_050`: repeated deterministic runner template, below promotion threshold
+- `promotion_candidate_cycle_060`: repeated deterministic runner template, below promotion threshold
+- `promotion_candidate_cycle_070`: repeated deterministic runner template, below promotion threshold
+- `promotion_candidate_cycle_080`: repeated deterministic runner template, below promotion threshold
+- `promotion_candidate_cycle_090`: repeated deterministic runner template, below promotion threshold
+- `promotion_candidate_cycle_100`: repeated deterministic runner template, below promotion threshold
+- `promotion_candidate_cycle_110`: repeated deterministic runner template, below promotion threshold
+- `promotion_candidate_cycle_120`: repeated deterministic runner template, below promotion threshold
+- `semantic_staging_cycle_015`: repeated deterministic runner template, below promotion threshold
+- `semantic_staging_cycle_030`: repeated deterministic runner template, duplicate text, below promotion threshold
+- `semantic_staging_cycle_045`: repeated deterministic runner template, below promotion threshold
+- `semantic_staging_cycle_060`: repeated deterministic runner template, duplicate text, below promotion threshold
+- `semantic_staging_cycle_075`: repeated deterministic runner template, below promotion threshold
+- `semantic_staging_cycle_090`: repeated deterministic runner template, duplicate text, below promotion threshold
+- `semantic_staging_cycle_105`: repeated deterministic runner template, below promotion threshold
+- `semantic_staging_cycle_120`: repeated deterministic runner template, duplicate text, below promotion threshold

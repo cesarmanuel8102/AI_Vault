@@ -1,0 +1,34 @@
+{
+  "checked_utc": "2026-06-13T19:35:17.935586+00:00",
+  "journal_count": 197,
+  "new_events_since_cycle_front": 123,
+  "cycle_journal_events": 120,
+  "promotion_queue_count": 17,
+  "promotion_queue_reviewed": 12,
+  "semantic_staging_count": 8,
+  "semantic_staging_reviewed": 8,
+  "candidate_categories": [
+    "promotion_queue",
+    "semantic_staging"
+  ],
+  "duplicate_candidates": 4,
+  "low_value_candidates": 20,
+  "unsafe_candidates": 0,
+  "candidates_derived_from_deterministic_runner": 20,
+  "candidates_derived_from_real_provider_interactions": 0,
+  "evidence_paths": [
+    "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01/batches/batch_01.json",
+    "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01/batches/batch_02.json",
+    "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01/batches/batch_03.json",
+    "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01/batches/batch_04.json",
+    "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01/batches/batch_05.json",
+    "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01/batches/batch_06.json",
+    "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01/batches/batch_07.json",
+    "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01/batches/batch_08.json",
+    "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01/batches/batch_09.json",
+    "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01/batches/batch_10.json",
+    "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01/batches/batch_11.json",
+    "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01/batches/batch_12.json"
+  ],
+  "confidence_scores": []
+}
