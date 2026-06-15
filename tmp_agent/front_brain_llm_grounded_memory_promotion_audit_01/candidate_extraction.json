@@ -1,0 +1,29 @@
+{
+  "front": "FRONT-BRAIN-LLM-GROUNDED-MEMORY-PROMOTION-AUDIT-01",
+  "phase": "PHASE_3_CANDIDATE_EXTRACTION",
+  "timestamp_utc": "2026-06-15T23:41:23+00:00",
+  "total_candidates": 53,
+  "unique_candidates": 37,
+  "duplicates_marked": 16,
+  "unsafe_rejected": 16,
+  "promote_later": 5,
+  "needs_human_review": 16,
+  "domain_distribution": {
+    "coding_debugging": 34,
+    "CEI_FDOT": 2,
+    "provider_reliability": 5,
+    "governance": 5,
+    "memory_quality": 2,
+    "financial_safety": 2,
+    "operator_ux": 2,
+    "dashboard_reliability": 1
+  },
+  "decision_distribution": {
+    "needs_human_review": 16,
+    "promote_later": 5,
+    "unsafe_reject": 16,
+    "duplicate": 16
+  },
+  "canonical_promotion_allowed_overall": false,
+  "safety_verdict": "SAFE_NO_CANONICAL_WRITE_THIS_FRONT"
+}
