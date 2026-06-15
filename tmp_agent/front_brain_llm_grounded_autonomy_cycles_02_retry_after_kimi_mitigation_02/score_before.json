@@ -1,0 +1,5 @@
+{
+  "front": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02",
+  "phase": "score_before",
+  "baseline": "kimi_mitigation_02_post_patch"
+}

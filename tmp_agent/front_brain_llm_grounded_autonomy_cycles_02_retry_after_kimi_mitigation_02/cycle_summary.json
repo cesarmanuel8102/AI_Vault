@@ -1,0 +1,11 @@
+{
+  "cycles_targeted": 30,
+  "cycles_completed": 30,
+  "batches_completed": 6,
+  "success_count": 30,
+  "timeout_count": 0,
+  "empty_response_count": 0,
+  "dry_run_count": 0,
+  "avg_latency_ms": 15693.1,
+  "stop_reason": "COMPLETED_ALL_30"
+}

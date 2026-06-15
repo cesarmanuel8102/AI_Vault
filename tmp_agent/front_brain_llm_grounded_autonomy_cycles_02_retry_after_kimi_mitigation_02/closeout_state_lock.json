@@ -1,0 +1,22 @@
+{
+  "front": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-02",
+  "phase": "CLOSEOUT_STATE_LOCK",
+  "timestamp_utc": "2026-06-15T23:30:00+00:00",
+  "branch": "codex/own-capital-sustainable-return",
+  "start_head": "2f216f0",
+  "remote_head": "2f216f0",
+  "local_equals_remote": true,
+  "staged_empty": true,
+  "dirty_tracked_files": [
+    "ROADMAP_STATUS.json",
+    "docs/MIGRATION_CONTROL_LEDGER.md",
+    "memory/autonomous_journal.jsonl"
+  ],
+  "journal_lines_before": 367,
+  "journal_lines_current": 370,
+  "journal_delta": 3,
+  "journal_safe": "pending_phase_2_verify",
+  "untracked_repo_files_count": 83,
+  "front_evidence_files_count": 21,
+  "phase0_passed": true
+}

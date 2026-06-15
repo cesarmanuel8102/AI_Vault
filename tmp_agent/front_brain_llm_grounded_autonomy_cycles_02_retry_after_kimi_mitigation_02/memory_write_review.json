@@ -1,0 +1,23 @@
+{
+  "front": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-02",
+  "phase": "PHASE_2_MEMORY_WRITE_REVIEW",
+  "timestamp_utc": "2026-06-15T23:30:00+00:00",
+  "journal_lines_before": 367,
+  "journal_lines_after": 370,
+  "journal_lines_added": 3,
+  "journal_safe": true,
+  "journal_valid_json": true,
+  "journal_no_secrets": true,
+  "journal_no_raw_cot": true,
+  "journal_no_trading": true,
+  "journal_no_semantic_mutation": true,
+  "promotion_queue_count": 33,
+  "semantic_staging_count": 27,
+  "canonical_promotions": 0,
+  "canonical_semantic_mutated": false,
+  "faiss_mutated": false,
+  "trading_execution_detected": false,
+  "secrets_exposed": false,
+  "raw_cot_exposed": false,
+  "verdict": "MEMORY_WRITE_REVIEW_PASSED"
+}

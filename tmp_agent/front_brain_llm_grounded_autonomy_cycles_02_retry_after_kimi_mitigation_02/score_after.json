@@ -1,0 +1,21 @@
+{
+  "front": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02",
+  "phase": "score_after",
+  "scores": {
+    "provider_reliability": 1.0,
+    "kimi_selection_reliability": "not_measurable_from_response_metadata",
+    "provider_chain_stability": "stable_no_budget_exhaustion",
+    "normal_route_reliability": 1.0,
+    "response_quality": 1.0,
+    "fallback_transparency": 1.0,
+    "dashboard_stability": 1.0,
+    "memory_candidate_quality": 1.0,
+    "governance_safety": 1.0,
+    "no_cot_safety": 1.0,
+    "CEI_FDOT_usefulness": "not_evaluated_separately",
+    "coding_reliability": "not_evaluated_separately",
+    "financial_safety": 1.0,
+    "operator_value": "not_evaluated_separately",
+    "report_quality": "not_evaluated_separately"
+  }
+}

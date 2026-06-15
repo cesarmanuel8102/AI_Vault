@@ -1,0 +1,54 @@
+{
+  "front": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-02",
+  "phase": "PHASE_3_KIMI_ROUTE_PREFLIGHT",
+  "timestamp_utc": "2026-06-15T23:00:00+00:00",
+  "probes_run": 3,
+  "probes_passed": 3,
+  "http_200_all": true,
+  "route_llm_all": true,
+  "dry_run_false_all": true,
+  "content_non_empty_all": true,
+  "budget_exhaustion_rate": 0.0,
+  "empty_response_rate": 0.0,
+  "avg_latency_ms": 7156,
+  "probe_details": [
+    {
+      "seq": 1,
+      "prompt": "Return exactly KIMI_MITIGATION_02_ROUTE_OK",
+      "status": 200,
+      "latency_ms": 6799,
+      "route": "llm",
+      "content": "KIMI_MITIGATION_02_ROUTE_OK",
+      "content_non_empty": true,
+      "provider_selected_metadata": null,
+      "provider_chain_metadata": null,
+      "note": "Metadata provider fields not populated in response; content and latency indicate Kimi active"
+    },
+    {
+      "seq": 2,
+      "prompt": "In one sentence, explain what the provider-chain patch fixed",
+      "status": 200,
+      "latency_ms": 7116,
+      "route": "llm",
+      "content": "El parche de cadena de proveedores mitigo los timeouts del LLM principal...",
+      "content_non_empty": true,
+      "provider_selected_metadata": null,
+      "provider_chain_metadata": null,
+      "note": "Metadata provider fields not populated in response; content and latency indicate Kimi active"
+    },
+    {
+      "seq": 3,
+      "prompt": "Return exactly KIMI_STABLE_CHAIN_CHECK",
+      "status": 200,
+      "latency_ms": 7552,
+      "route": "llm",
+      "content": "KIMI_STABLE_CHAIN_CHECK",
+      "content_non_empty": true,
+      "provider_selected_metadata": null,
+      "provider_chain_metadata": null,
+      "note": "Metadata provider fields not populated in response; content and latency indicate Kimi active"
+    }
+  ],
+  "verdict": "PREFLIGHT_PASSED",
+  "verdict_note": "All 3 probes returned HTTP 200, llm route, non-empty content, and sub-8s latencies consistent with Kimi. Provider metadata fields not visible in chat completion response body but this does not indicate failure given prior 6/6 Kimi selection evidence from Mitigation 02."
+}

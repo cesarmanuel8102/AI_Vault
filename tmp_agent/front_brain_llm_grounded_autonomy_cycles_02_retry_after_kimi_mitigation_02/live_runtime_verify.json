@@ -1,0 +1,25 @@
+{
+  "front": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-02",
+  "phase": "PHASE_2_LIVE_RUNTIME_VERIFY",
+  "timestamp_utc": "2026-06-15T23:00:00+00:00",
+  "brain_8091": {
+    "health_http_200": true,
+    "safe_mode": false,
+    "version": "9.0.0",
+    "sessions": 1,
+    "models_http_200": true,
+    "models": ["brain-v9-local", "brain", "ai-vault-brain"]
+  },
+  "dashboard_8092": {
+    "started_by_this_front": true,
+    "pid": 714,
+    "status_http_200": true,
+    "safety_http_200": true,
+    "log_file": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02_retry_after_kimi_mitigation_02/dashboard_8092.log",
+    "status_response": {"ok":true,"degraded":false,"brain":{"ok":true,"status":"healthy"},"kimi":{"ok":true,"status":"available_via_provider_probe"},"dashboard":{"ok":true,"status":"online"},"scheduler":{"exists":true,"enabled":false,"state":"cached_ready"},"autonomy":{"state":"idle","cycle":"complete","paused":false,"stopped":false},"memory":{"journal_count":367,"promotion_queue_count":33,"semantic_staging_count":5,"canonical_promotion_performed":false},"safety":{"semantic_memory_lines":1715,"faiss_ids":1616,"faiss_ntotal":1616,"canonical_semantic_mutated":false,"faiss_mutated":false,"trading_touched":false,"b8_touched":false,"secrets_exposed":false}},
+    "safety_response": {"ok":true,"semantic_memory_lines":1715,"faiss_ids":1616,"faiss_ntotal":1616,"canonical_semantic_mutated":false,"faiss_mutated":false,"trading_touched":false,"b8_touched":false,"secrets_exposed":false}
+  },
+  "raw_traceback": false,
+  "raw_cot": false,
+  "verdict": "LIVE_RUNTIME_VERIFY_PASSED"
+}
