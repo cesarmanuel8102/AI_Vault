@@ -1,0 +1,25 @@
+# FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01
+
+- status: FAILED_PROVIDER_STABILITY_GATE
+- cycles_completed: 10
+- batches_completed: 2
+- stop_reason: fallback_rate_above_0_50_after_10_cycles
+- provider_probe_required_for_llm_grounded_route: true
+- route_limitation: Normal 8091 route returned dry-run canonical router; provider_probe:true was required to reach real provider responses.
+- primary_provider: kimi_k2_6_cloud
+- kimi_used: True
+- provider_success_rate: 1.0
+- fallback_rate: 0.8
+- timeout_count: 0
+- empty_response_count: 0
+- avg_latency_ms: 16581.5
+- avg_quality_score: 0.944
+- lessons_created: 10
+- mistakes_recorded: 0
+- promotion_candidates_created: 9
+- canonical_promotions: 0
+- canonical_semantic_mutated: False
+- faiss_mutated: False
+- raw_cot_exposed: False
+- secrets_exposed: False
+- next: FRONT-BRAIN-PROVIDER-RELIABILITY-ROOTCAUSE-01
