@@ -1,0 +1,15 @@
+{
+  "front": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01",
+  "phase": "PHASE_0_STATE_RECHECK",
+  "timestamp_utc": "2026-06-15T18:00:00+00:00",
+  "repo_root": "C:\\AI_VAULT_CANONICAL",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "be724f2",
+  "remote_head": "be724f2",
+  "local_equals_remote": true,
+  "staged_changes": [],
+  "tracked_dirty": ["memory/autonomous_journal.jsonl"],
+  "untracked_files_present": true,
+  "untracked_roots_to_ignore": ["dry_run", "evaluation", "read_only", "stream"],
+  "verdict": "STATE_LOCKED"
+}
