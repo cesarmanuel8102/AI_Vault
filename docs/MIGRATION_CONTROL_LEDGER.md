@@ -8440,3 +8440,53 @@ codex/own-capital-sustainable-return
 
 ### Next Recommended Front
 FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02
+
+
+## RESTART-BRAIN-8091-LOAD-PATCHED-PROVIDER-ROUTE-01 — Brain 8091 Patched Provider Route Reloaded
+
+### Status
+BRAIN_8091_PATCHED_PROVIDER_ROUTE_RELOAD_COMPLETED
+
+### Timestamp
+2026-06-15T16:04:33.268191+00:00
+
+### Branch
+codex/own-capital-sustainable-return
+
+### Head At Reload
+`addcd297`
+
+### Process
+- old_pid: `46620`
+- old_process: `python`
+- old_command: `"C:\Users\cesar\AppData\Local\Programs\Python\Python311\python.exe" -m brain_v9.main`
+- stop_success: `True`
+- new_pid: `50624`
+- start_command: `python -u tmp_agent\brain_v9\start_safe_server.py`
+- working_directory: `C:\AI_VAULT_CANONICAL`
+- safe_mode: `true`
+
+### Live Route Validation
+- route: `llm_grounded_provider_eval`
+- dry_run: `False`
+- provider_selected: `kimi_k2_6_cloud`
+- model_selected: `kimi-k2.6:cloud`
+- fallback_used: `False`
+- fallback_rate_probe: `0`
+- content_non_empty_count: `3/4`
+- provider_probe_used_in_request: `false`
+
+### Safety
+- semantic lines: `1715 -> 1715`
+- FAISS ids: `1616 -> 1616`
+- FAISS ntotal: `1616 -> 1616`
+- canonical semantic mutated: `false`
+- FAISS mutated: `false`
+- trading touched: `false`
+- B8 touched: `false`
+- strategies touched: `false`
+- secrets exposed: `false`
+- raw CoT exposed: `false`
+
+### Next Recommended
+FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-8091-RELOAD

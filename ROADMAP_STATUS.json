@@ -1,9 +1,9 @@
 {
-  "current_head": "2cb4575dad74b4023ad93acf5431f08c5bc30a47",
-  "current_remote_head": "2cb4575dad74b4023ad93acf5431f08c5bc30a47",
+  "current_head": "addcd29721af120fa2864172d079c355d3d80554",
+  "current_remote_head": "addcd29721af120fa2864172d079c355d3d80554",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "brain_provider_reliability_rootcause_completed_with_patch",
-  "last_applied_checkpoint": "FRONT-BRAIN-PROVIDER-RELIABILITY-ROOTCAUSE-01",
+  "migration_status": "brain_8091_patched_provider_route_reload_completed",
+  "last_applied_checkpoint": "RESTART-BRAIN-8091-LOAD-PATCHED-PROVIDER-ROUTE-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -159,7 +159,8 @@
     "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01-RETRY-AFTER-ADMIN-STOP",
     "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-RERUN-01",
     "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-SCALEUP-01",
-    "FRONT-BRAIN-PROVIDER-RELIABILITY-ROOTCAUSE-01"
+    "FRONT-BRAIN-PROVIDER-RELIABILITY-ROOTCAUSE-01",
+    "RESTART-BRAIN-8091-LOAD-PATCHED-PROVIDER-ROUTE-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -176,12 +177,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02",
+    "name": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-8091-RELOAD",
     "status": "recommended_next",
-    "reason": "Provider route semantics bug patched; normal read-only/evaluation llm_grounded_cycle now reaches real provider path. Residual Kimi empty-response instability remains measurable but fallback rate improved in post-patch probes."
+    "reason": "Live 8091 now serves llm_grounded_provider_eval with dry_run=false from the normal llm_grounded_cycle route."
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-06-15T15:32:34.759912+00:00",
+  "last_updated": "2026-06-15T16:04:33.268191+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -335,7 +336,7 @@
       "route": "curated_lookup_readonly",
       "triggers": [
         "busca en conocimiento curado: <query>",
-        "quÃƒÆ’Ã‚Â© aprendiste sobre <query>",
+        "qu\u00c3\u0192\u00c6\u2019\u00c3\u201a\u00c2\u00a9 aprendiste sobre <query>",
         "que aprendiste sobre <query>",
         "usa curated knowledge para responder <query>",
         "usa conocimiento curado para responder <query>"
@@ -1326,7 +1327,7 @@
       "memory/semantic/semantic_memory.jsonl",
       "tests/smoke/smoke_front_real_canary_exec_01.py"
     ],
-    "next_recommended_front": "FRONT-REAL-CANARY-POST-AUDIT-01 — post-canary audit and rollback decision OR FRONT-INFRA-03 — startup/runbook reproducibility"
+    "next_recommended_front": "FRONT-REAL-CANARY-POST-AUDIT-01 \u2014 post-canary audit and rollback decision OR FRONT-INFRA-03 \u2014 startup/runbook reproducibility"
   },
   "front_real_canary_post_audit_01": {
     "status": "done",
@@ -1346,7 +1347,7 @@
       "docs/FRONT_REAL_CANARY_POST_AUDIT_01.md",
       "tests/smoke/smoke_front_real_canary_post_audit_01.py"
     ],
-    "next_recommended_front": "FRONT-REAL-CANARY-RETENTION-01 — permanent canary retention OR FRONT-INFRA-03 — startup/runbook reproducibility"
+    "next_recommended_front": "FRONT-REAL-CANARY-RETENTION-01 \u2014 permanent canary retention OR FRONT-INFRA-03 \u2014 startup/runbook reproducibility"
   },
   "front_real_canary_retention_01": {
     "status": "done",
@@ -1369,7 +1370,7 @@
       "docs/FRONT_REAL_CANARY_RETENTION_01.md",
       "tests/smoke/smoke_front_real_canary_retention_01.py"
     ],
-    "next_recommended_front": "FRONT-INFRA-03 — startup/runbook reproducibility OR FRONT-REAL-READ-VERIFY-01 — runtime read-only retrieval verification"
+    "next_recommended_front": "FRONT-INFRA-03 \u2014 startup/runbook reproducibility OR FRONT-REAL-READ-VERIFY-01 \u2014 runtime read-only retrieval verification"
   },
   "front_infra_03": {
     "status": "done",
@@ -1388,7 +1389,7 @@
       "docs/FRONT_INFRA_03_STARTUP_RUNBOOK.md",
       "tests/smoke/smoke_front_infra_03_startup_runbook.py"
     ],
-    "next_recommended_front": "FRONT-REAL-READ-VERIFY-01 — runtime read-only retrieval verification OR FRONT-INFRA-04 — Dockerfile/container reproducibility"
+    "next_recommended_front": "FRONT-REAL-READ-VERIFY-01 \u2014 runtime read-only retrieval verification OR FRONT-INFRA-04 \u2014 Dockerfile/container reproducibility"
   },
   "front_real_read_verify_01": {
     "status": "done",
@@ -1409,7 +1410,7 @@
       "docs/FRONT_REAL_READ_VERIFY_01.md",
       "tests/smoke/smoke_front_real_read_verify_01.py"
     ],
-    "next_recommended_front": "FRONT-REAL-READ-LOOKUP-ADAPTER-01 — implement or verify read-only lookup adapter"
+    "next_recommended_front": "FRONT-REAL-READ-LOOKUP-ADAPTER-01 \u2014 implement or verify read-only lookup adapter"
   },
   "front_real_read_lookup_adapter_01": {
     "status": "done",
@@ -1431,7 +1432,7 @@
       "docs/FRONT_REAL_READ_LOOKUP_ADAPTER_01.md",
       "tests/smoke/smoke_front_real_read_lookup_adapter_01.py"
     ],
-    "next_recommended_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-PLAN-01 — expose adapter through safe read-only runtime endpoint"
+    "next_recommended_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-PLAN-01 \u2014 expose adapter through safe read-only runtime endpoint"
   },
   "front_real_runtime_lookup_endpoint_01": {
     "status": "done",
@@ -1483,7 +1484,7 @@
       "tmp_agent/front_main_py_dirty_triage_01/security_check.json",
       "tmp_agent/front_main_py_dirty_triage_01/no_mutation_validation.json"
     ],
-    "recommended_next_front": "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01 — operator review of preexisting main.py dirty state OR FRONT-MAIN-PY-DIRTY-COMMIT-01 — commit preexisting changes OR FRONT-MAIN-PY-DIRTY-DISCARD-PLAN-01 — plan to discard changes",
+    "recommended_next_front": "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01 \u2014 operator review of preexisting main.py dirty state OR FRONT-MAIN-PY-DIRTY-COMMIT-01 \u2014 commit preexisting changes OR FRONT-MAIN-PY-DIRTY-DISCARD-PLAN-01 \u2014 plan to discard changes",
     "blocked_fronts_after_this": [
       "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01"
     ],
@@ -1514,7 +1515,7 @@
       "tmp_agent/front_main_py_dirty_human_review_01/security_check.json",
       "tmp_agent/front_main_py_dirty_human_review_01/no_mutation_validation.json"
     ],
-    "recommended_next_front": "FRONT-MAIN-PY-DIRTY-COMMIT-01 — commit preexisting main.py monitoring endpoints and chat fastpath (requires operator approval)",
+    "recommended_next_front": "FRONT-MAIN-PY-DIRTY-COMMIT-01 \u2014 commit preexisting main.py monitoring endpoints and chat fastpath (requires operator approval)",
     "blocked_fronts_after_this": [
       "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01"
     ],
@@ -1545,7 +1546,7 @@
     "files": [
       "tmp_agent/brain_v9/main.py"
     ],
-    "recommended_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 — integrate read-only canary router into main app",
+    "recommended_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 \u2014 integrate read-only canary router into main app",
     "blocked_fronts_after_this": []
   },
   "front_real_runtime_lookup_endpoint_integration_01": {
@@ -1569,7 +1570,7 @@
       "docs/FRONT_REAL_RUNTIME_LOOKUP_ENDPOINT_INTEGRATION_01.md",
       "tests/smoke/smoke_front_real_runtime_lookup_endpoint_integration_01.py"
     ],
-    "recommended_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01 — local runtime smoke for integrated endpoint"
+    "recommended_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01 \u2014 local runtime smoke for integrated endpoint"
   },
   "front_real_runtime_lookup_endpoint_live_smoke_01": {
     "status": "done",
@@ -1593,7 +1594,7 @@
       "docs/FRONT_REAL_RUNTIME_LOOKUP_ENDPOINT_LIVE_SMOKE_01.md",
       "tests/smoke/smoke_front_real_runtime_lookup_endpoint_live_smoke_01.py"
     ],
-    "recommended_next_front": "FRONT-BRAIN-KNOWLEDGE-READ-API-01 — create real knowledge read API"
+    "recommended_next_front": "FRONT-BRAIN-KNOWLEDGE-READ-API-01 \u2014 create real knowledge read API"
   },
   "front_brain_knowledge_read_api_01": {
     "status": "done",
@@ -1614,7 +1615,7 @@
       "docs/FRONT_BRAIN_KNOWLEDGE_READ_API_01.md",
       "tests/smoke/smoke_front_brain_knowledge_read_api_01.py"
     ],
-    "recommended_next_front": "FRONT-REAL-MEMORY-FAISS-PROMOTION-01 — controlled memory to FAISS promotion"
+    "recommended_next_front": "FRONT-REAL-MEMORY-FAISS-PROMOTION-01 \u2014 controlled memory to FAISS promotion"
   },
   "front_real_memory_faiss_promotion_01": {
     "status": "done",
@@ -1641,7 +1642,7 @@
       "docs/FRONT_REAL_MEMORY_FAISS_PROMOTION_01.md",
       "tests/smoke/smoke_front_real_memory_faiss_promotion_01.py"
     ],
-    "recommended_next_front": "FRONT-REAL-PATCH-MATERIALIZATION-01 — first governed patch artifact materialization"
+    "recommended_next_front": "FRONT-REAL-PATCH-MATERIALIZATION-01 \u2014 first governed patch artifact materialization"
   },
   "front_real_patch_materialization_01": {
     "status": "done",
@@ -3963,5 +3964,38 @@
     "evidence_path": "tmp_agent/front_brain_provider_reliability_rootcause_01",
     "next_front_locked": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02",
     "updated_at_utc": "2026-06-15T15:32:34.759912+00:00"
+  },
+  "restart_brain_8091_load_patched_provider_route_01": {
+    "front": "RESTART-BRAIN-8091-LOAD-PATCHED-PROVIDER-ROUTE-01",
+    "status": "BRAIN_8091_PATCHED_PROVIDER_ROUTE_RELOAD_COMPLETED",
+    "old_pid": 46620,
+    "new_pid": 50624,
+    "restart_success": true,
+    "route": "llm_grounded_provider_eval",
+    "dry_run": false,
+    "provider_selected": "kimi_k2_6_cloud",
+    "model_selected": "kimi-k2.6:cloud",
+    "fallback_rate_probe": 0,
+    "content_non_empty_count": 3,
+    "probe_count": 4,
+    "safe_mode": true,
+    "safety": {
+      "semantic_lines_before": 1715,
+      "semantic_lines_after": 1715,
+      "faiss_ids_before": 1616,
+      "faiss_ids_after": 1616,
+      "faiss_ntotal_before": 1616,
+      "faiss_ntotal_after": 1616,
+      "canonical_semantic_mutated": false,
+      "faiss_mutated": false,
+      "trading_touched": false,
+      "b8_touched": false,
+      "strategies_touched": false,
+      "secrets_exposed": false,
+      "raw_cot_exposed": false
+    },
+    "evidence_path": "tmp_agent/restart_brain_8091_load_patched_provider_route_01",
+    "updated_at_utc": "2026-06-15T16:04:33.268191+00:00",
+    "next_front_locked": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-8091-RELOAD"
   }
 }
