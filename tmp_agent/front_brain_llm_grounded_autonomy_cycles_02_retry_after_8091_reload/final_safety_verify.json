@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-06-15T16:38:39.088956+00:00",
+  "semantic_lines_before": 1715,
+  "semantic_lines_after": 1715,
+  "faiss_ids_before": 1616,
+  "faiss_ids_after": 1616,
+  "faiss_ntotal_before": 1616,
+  "faiss_ntotal_after": 1616,
+  "semantic_hash_unchanged": true,
+  "faiss_index_hash_unchanged": true,
+  "faiss_ids_hash_unchanged": true,
+  "canonical_semantic_mutated": false,
+  "faiss_mutated": false,
+  "env_touched": false,
+  "trading_touched": false,
+  "b8_touched": false,
+  "strategies_touched": false,
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "dashboard_status_final_ok": true,
+  "dashboard_status_latency_ms": 20,
+  "scheduler_ok": true,
+  "safety_ok": true,
+  "normal_route_dry_run_count": 0,
+  "tracked_status": [
+    " M memory/autonomous_journal.jsonl"
+  ],
+  "staged": [],
+  "tracked_status_after_reports": [
+    " M ROADMAP_STATUS.json",
+    " M docs/MIGRATION_CONTROL_LEDGER.md",
+    " M memory/autonomous_journal.jsonl"
+  ],
+  "staged_after_reports": []
+}

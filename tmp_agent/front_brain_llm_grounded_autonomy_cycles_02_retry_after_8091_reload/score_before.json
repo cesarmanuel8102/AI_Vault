@@ -1,0 +1,15 @@
+{
+  "provider_reliability": 0.6,
+  "normal_route_reliability": 0.95,
+  "response_quality": 0.75,
+  "fallback_transparency": 0.7,
+  "dashboard_stability": 0.95,
+  "memory_candidate_quality": 0.7,
+  "governance_safety": 0.95,
+  "no_cot_safety": 1.0,
+  "CEI_FDOT_usefulness": 0.7,
+  "coding_reliability": 0.75,
+  "financial_safety": 0.95,
+  "operator_value": 0.75,
+  "report_quality": 0.75
+}

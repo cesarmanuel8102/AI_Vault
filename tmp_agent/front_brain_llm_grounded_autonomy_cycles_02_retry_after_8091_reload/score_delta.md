@@ -1,0 +1,15 @@
+# Score Delta
+
+- provider_reliability: 0.6 -> 0.533 (-0.067)
+- normal_route_reliability: 0.95 -> 1.0 (+0.05)
+- response_quality: 0.75 -> 0.65 (-0.1)
+- fallback_transparency: 0.7 -> 0.7 (+0.0)
+- dashboard_stability: 0.95 -> 1.0 (+0.05)
+- memory_candidate_quality: 0.7 -> 0.82 (+0.12)
+- governance_safety: 0.95 -> 1.0 (+0.05)
+- no_cot_safety: 1.0 -> 1.0 (+0.0)
+- CEI_FDOT_usefulness: 0.7 -> 0.3 (-0.4)
+- coding_reliability: 0.75 -> 0.95 (+0.2)
+- financial_safety: 0.95 -> 1.0 (+0.05)
+- operator_value: 0.75 -> 0.8 (+0.05)
+- report_quality: 0.75 -> 0.85 (+0.1)

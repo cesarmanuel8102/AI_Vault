@@ -1,0 +1,64 @@
+{
+  "timestamp": "2026-06-15T12:26:03.5365089-04:00",
+  "files_checked": {
+    "tmp_agent\\front_brain_provider_reliability_rootcause_01\\post_patch_probe_matrix.json": true,
+    "tmp_agent\\front_brain_provider_reliability_rootcause_01\\final_report.json": true,
+    "tmp_agent\\front_brain_provider_reliability_rootcause_01\\root_cause_classification.json": true,
+    "tmp_agent\\restart_brain_8091_load_patched_provider_route_01\\cesar_review_report.md": true,
+    "tmp_agent\\restart_brain_8091_load_patched_provider_route_01\\final_report.json": true
+  },
+  "provider_route_patch_status": "BRAIN_PROVIDER_RELIABILITY_ROOTCAUSE_COMPLETED_WITH_PATCH",
+  "provider_route_patch_applied": null,
+  "restart_8091_status": "BRAIN_8091_PATCHED_PROVIDER_ROUTE_RELOAD_COMPLETED",
+  "live_route_validation": {
+    "route_ok": true,
+    "route": "llm_grounded_provider_eval",
+    "dry_run": false,
+    "provider_selected": "kimi_k2_6_cloud",
+    "model_selected": "kimi-k2.6:cloud",
+    "fallback_used": false,
+    "fallback_rate_probe": 0,
+    "provider_success_count": 3,
+    "probe_count": 4,
+    "content_non_empty_count": 3,
+    "latency_ms": 3449,
+    "content_non_empty": true,
+    "provider_probe_used_in_request": false,
+    "metadata_location": "brain",
+    "notes": [
+      "One additional probe returned provider_status=FAILED with empty content; route still remained llm_grounded_provider_eval and dry_run=false."
+    ]
+  },
+  "residual_kimi_instability": {
+    "rootcause_secondary": null,
+    "restart_probe_note": [
+      "One additional probe returned provider_status=FAILED with empty content; route still remained llm_grounded_provider_eval and dry_run=false."
+    ]
+  },
+  "expected_stop_gates": [
+    "dry_run_count > 0",
+    "fallback_rate > 0.50 after 10 cycles",
+    "provider_success_rate < 0.60 after 10 cycles",
+    "timeout/empty response rate > 0.30 after 10 cycles",
+    "dashboard failure twice",
+    "semantic/FAISS mutation",
+    "raw CoT/secrets/trading/B8/strategies touched"
+  ],
+  "current_baseline": {
+    "semantic": {
+      "path": "memory\\semantic\\semantic_memory.jsonl",
+      "lines": 1715,
+      "sha256": "CE81FBE1F97E257E2B124D7A929F0B2AF86CE61E9FF1D8D832FDB5DA1F69E64E"
+    },
+    "faiss_index": {
+      "path": "memory\\semantic\\semantic_memory_faiss.index",
+      "sha256": "ADBB6051F79ECBEAB0223D631A6013939C00BCC13216FBAE437EFE83047EFA21",
+      "ntotal": 1616
+    },
+    "faiss_ids": {
+      "path": "memory\\semantic\\semantic_memory_faiss_ids.json",
+      "count": 1616,
+      "sha256": "43736047DB548CAF9B26DFA61CDFFE40E179C738BC8E8C295891F29CEDD69102"
+    }
+  }
+}

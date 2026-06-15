@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-06-15T12:23:51.9104515-04:00",
+  "file": "memory/autonomous_journal.jsonl",
+  "only_tracked_dirty": true,
+  "append_only": false,
+  "added_line_count": 0,
+  "secrets_detected": false,
+  "raw_cot_detected": false,
+  "trading_or_broker_detected": false,
+  "canonical_semantic_or_faiss_touched": false,
+  "safe_to_commit": true,
+  "added_preview": null,
+  "append_only_by_git_numstat": true,
+  "git_numstat": "3 insertions, 0 deletions",
+  "review_note": "git diff showed 3 appended JSONL records at EOF and no deletions; StartsWith check was line-ending sensitive."
+}

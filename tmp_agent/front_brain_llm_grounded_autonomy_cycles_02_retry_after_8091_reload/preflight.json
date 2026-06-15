@@ -1,0 +1,79 @@
+{
+  "timestamp": "2026-06-15T12:25:27.6612527-04:00",
+  "repo": "C:\\AI_VAULT_CANONICAL",
+  "branch": "codex/own-capital-sustainable-return",
+  "head": "3d165de1a89dc3ac4846b04647f28901cdccb65e",
+  "remote": "3d165de1a89dc3ac4846b04647f28901cdccb65e",
+  "head_short": "3d165de1",
+  "remote_short": "3d165de1",
+  "local_equals_remote": true,
+  "expected_head_from_prompt": "9324b41",
+  "effective_head_after_authorized_journal_commit": "3d165de",
+  "expected_mismatch_explained": "preexisting append-only autonomous_journal commit authorized by prompt and pushed before cycles",
+  "tracked_status": null,
+  "tracked_clean": true,
+  "staged": null,
+  "staged_empty": true,
+  "latest_log": [
+    "3d165de memory: record governed autonomy background journal events",
+    "9324b41 ledger: record Brain 8091 patched route reload",
+    "cb7fc02 docs: add Brain 8091 patched route reload report",
+    "43a05dc test: add Brain 8091 patched route reload smoke",
+    "addcd29 ledger: record provider reliability rootcause",
+    "add97a1 docs: add provider reliability rootcause reports",
+    "d907da3 test: add provider reliability rootcause smoke",
+    "0f18cf7 fix: stabilize LLM grounded provider route"
+  ],
+  "semantic": {
+    "path": "memory\\semantic\\semantic_memory.jsonl",
+    "lines": 1715,
+    "sha256": "CE81FBE1F97E257E2B124D7A929F0B2AF86CE61E9FF1D8D832FDB5DA1F69E64E"
+  },
+  "faiss_index": {
+    "path": "memory\\semantic\\semantic_memory_faiss.index",
+    "sha256": "ADBB6051F79ECBEAB0223D631A6013939C00BCC13216FBAE437EFE83047EFA21",
+    "ntotal": 1616
+  },
+  "faiss_ids": {
+    "path": "memory\\semantic\\semantic_memory_faiss_ids.json",
+    "count": 1616,
+    "sha256": "43736047DB548CAF9B26DFA61CDFFE40E179C738BC8E8C295891F29CEDD69102"
+  },
+  "dashboard": {
+    "status": {
+      "url": "http://127.0.0.1:8092/brain-dashboard/status",
+      "http_status": 200,
+      "latency_ms": 181,
+      "error": null,
+      "raw_traceback": false,
+      "raw_cot_exposed": false,
+      "content_preview": "{\"ok\":true,\"degraded\":false,\"brain\":{\"ok\":true,\"status\":\"healthy\",\"api\":\"http://127.0.0.1:8091\"},\"kimi\":{\"ok\":true,\"status\":\"available_via_provider_probe\"},\"dashboard\":{\"ok\":true,\"status\":\"online\",\"status_latency_ms\":5.631},\"scheduler\":{\"exists\":true,\"enabled\":false,\"state\":\"cached_ready\",\"last_run_"
+    },
+    "safety": {
+      "url": "http://127.0.0.1:8092/brain-dashboard/safety",
+      "http_status": 200,
+      "latency_ms": 11,
+      "error": null,
+      "raw_traceback": false,
+      "raw_cot_exposed": false,
+      "content_preview": "{\"ok\":true,\"semantic_memory_lines\":1715,\"faiss_ids\":1616,\"faiss_ntotal\":1616,\"canonical_semantic_mutated\":false,\"faiss_mutated\":false,\"trading_touched\":false,\"b8_touched\":false,\"secrets_exposed\":false}"
+    }
+  },
+  "route_probe": {
+    "http_status": 200,
+    "latency_ms": 7757,
+    "route": "llm_grounded_provider_eval",
+    "dry_run": false,
+    "provider_selected": "kimi_k2_6_cloud",
+    "model_selected": "kimi-k2.6:cloud",
+    "fallback_used": false,
+    "fallback_reason": null,
+    "provider_status": "FAST_SUCCESS",
+    "content": "LLM_CYCLE02_RETRY_PREFLIGHT_OK",
+    "content_non_empty": true,
+    "raw_cot_exposed": false,
+    "secrets_exposed": false
+  },
+  "hard_gate_pass": true,
+  "hard_gate_recomputed_with_python": true
+}
