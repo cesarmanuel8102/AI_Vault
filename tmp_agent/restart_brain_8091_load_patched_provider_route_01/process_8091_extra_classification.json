@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-06-15T11:55:09.6317625-04:00",
+  "process": {
+    "pid": 46620,
+    "command_line": "\"C:\\Users\\cesar\\AppData\\Local\\Programs\\Python\\Python311\\python.exe\" -m brain_v9.main",
+    "executable_path": "C:\\Users\\cesar\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+    "parent_process_id": 40180
+  },
+  "parent": null,
+  "env_probe_note": "Windows does not expose target process CWD through standard safe cmdlets here; classification relies on port owner, python -m brain_v9.main, Brain V9 health/models, and patched route reload objective."
+}

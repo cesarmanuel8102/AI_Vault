@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-06-15T11:55:28.8451146-04:00",
+  "old_pid": 46620,
+  "before": {
+    "LocalAddress": "127.0.0.1",
+    "LocalPort": 8091,
+    "OwningProcess": 46620
+  },
+  "stop_attempted": true,
+  "stop_success": true,
+  "error": null,
+  "after": null,
+  "port_free": true,
+  "needs_admin_action": false,
+  "manual_admin_command": null
+}

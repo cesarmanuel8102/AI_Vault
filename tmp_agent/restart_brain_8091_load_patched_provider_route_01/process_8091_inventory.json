@@ -1,0 +1,27 @@
+{
+  "timestamp": "2026-06-15T11:54:55.3829787-04:00",
+  "connections": [
+    {
+      "local_address": "127.0.0.1",
+      "local_port": 8091,
+      "owning_process": 46620,
+      "process_name": "python",
+      "executable_path": "C:\\Users\\cesar\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+      "command_line": "\"C:\\Users\\cesar\\AppData\\Local\\Programs\\Python\\Python311\\python.exe\" -m brain_v9.main",
+      "parent_process_id": 40180,
+      "owner": "CXASUS_TUF_F16\\cesar",
+      "health_response": "{\"status\":\"healthy\",\"sessions\":1,\"version\":\"9.0.0\",\"safe_mode\":false}",
+      "models_response": "{\"object\":\"list\",\"data\":[{\"id\":\"brain-v9-local\",\"object\":\"model\",\"created\":0,\"owned_by\":\"local\"},{\"id\":\"brain\",\"object\":\"model\",\"created\":0,\"owned_by\":\"local\"},{\"id\":\"ai-vault-brain\",\"object\":\"model\",\"created\":0,\"owned_by\":\"local\"}]}",
+      "classification_score": 4,
+      "classification_reasons": [
+        "command_line_contains_server_markers",
+        "python_process",
+        "health_or_models_identifies_brain",
+        "command_line_points_tmp_agent_brain_v9"
+      ],
+      "classified_as_canonical_brain_api": true
+    }
+  ],
+  "any_listener": true,
+  "note": "Corrected inventory after avoiding PowerShell reserved PID variable."
+}

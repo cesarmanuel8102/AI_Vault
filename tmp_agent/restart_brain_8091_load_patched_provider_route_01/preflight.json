@@ -1,0 +1,46 @@
+{
+  "timestamp": "2026-06-15T11:54:00.5052697-04:00",
+  "repo": "C:\\AI_VAULT_CANONICAL",
+  "branch": "codex/own-capital-sustainable-return",
+  "head": "addcd29721af120fa2864172d079c355d3d80554",
+  "remote": "addcd29721af120fa2864172d079c355d3d80554",
+  "head_short": "addcd297",
+  "remote_short": "addcd297",
+  "local_equals_remote": true,
+  "expected_head": "addcd29",
+  "head_matches_expected": true,
+  "tracked_status": null,
+  "tracked_clean": true,
+  "staged": null,
+  "staged_empty": true,
+  "latest_log": [
+    "addcd29 ledger: record provider reliability rootcause",
+    "add97a1 docs: add provider reliability rootcause reports",
+    "d907da3 test: add provider reliability rootcause smoke",
+    "0f18cf7 fix: stabilize LLM grounded provider route",
+    "051e000 diag: map Brain provider reliability root cause"
+  ],
+  "semantic": {
+    "path": "memory\\semantic\\semantic_memory.jsonl",
+    "lines": 1715,
+    "sha256": "CE81FBE1F97E257E2B124D7A929F0B2AF86CE61E9FF1D8D832FDB5DA1F69E64E"
+  },
+  "faiss_index": {
+    "path": "memory\\semantic\\semantic_memory_faiss.index",
+    "sha256": "ADBB6051F79ECBEAB0223D631A6013939C00BCC13216FBAE437EFE83047EFA21",
+    "ntotal": 1616
+  },
+  "faiss_ids": {
+    "path": "memory\\semantic\\semantic_memory_faiss_ids.json",
+    "count": 1616,
+    "sha256": "43736047DB548CAF9B26DFA61CDFFE40E179C738BC8E8C295891F29CEDD69102"
+  },
+  "source_check": {
+    "openai_compat_has_llm_grounded_cycle": true,
+    "openai_compat_has_llm_grounded_provider_eval": true,
+    "router_has_llm_grounded_provider_eval": true,
+    "router_mentions_provider_probe": true,
+    "router_mentions_tools_block": true,
+    "router_mentions_memory_faiss_block": true
+  }
+}

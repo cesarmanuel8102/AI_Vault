@@ -1,0 +1,29 @@
+{
+  "timestamp": "2026-06-15T12:02:16.6233286-04:00",
+  "checks": [
+    {
+      "endpoint": "status",
+      "url": "http://127.0.0.1:8092/brain-dashboard/status",
+      "http_status": 200,
+      "latency_ms": 179,
+      "error": null,
+      "content_preview": "{\"ok\":true,\"degraded\":false,\"brain\":{\"ok\":true,\"status\":\"healthy\",\"api\":\"http://127.0.0.1:8091\"},\"kimi\":{\"ok\":true,\"status\":\"available_via_provider_probe\"},\"dashboard\":{\"ok\":true,\"status\":\"online\",\"status_latency_ms\":6.606},\"scheduler\":{\"exists\":true,\"enabled\":false,\"state\":\"cached_ready\",\"last_run_time\":null,\"next_run_time\":null,\"last_task_result\":null,\"action\":\"powershell -ExecutionPolicy Bypass -File tools/brain_autonomy_run_once.ps1\",\"degraded\":false,\"source\":\"cache_file\"},\"autonomy\":{\"state",
+      "raw_traceback": false,
+      "raw_cot_exposed": false
+    },
+    {
+      "endpoint": "safety",
+      "url": "http://127.0.0.1:8092/brain-dashboard/safety",
+      "http_status": 200,
+      "latency_ms": 10,
+      "error": null,
+      "content_preview": "{\"ok\":true,\"semantic_memory_lines\":1715,\"faiss_ids\":1616,\"faiss_ntotal\":1616,\"canonical_semantic_mutated\":false,\"faiss_mutated\":false,\"trading_touched\":false,\"b8_touched\":false,\"secrets_exposed\":false}",
+      "raw_traceback": false,
+      "raw_cot_exposed": false
+    }
+  ],
+  "status_ok": true,
+  "safety_ok": true,
+  "raw_traceback": false,
+  "raw_cot_exposed": false
+}

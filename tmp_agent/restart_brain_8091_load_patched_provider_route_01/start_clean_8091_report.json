@@ -1,0 +1,34 @@
+{
+  "timestamp": "2026-06-15T11:58:02.2213789-04:00",
+  "previous_attempt": {
+    "command": "python -u -m brain_v9.main",
+    "result": "started 8090, stopped because target is 8091",
+    "pid": 52844
+  },
+  "command": "python -u tmp_agent\\brain_v9\\start_safe_server.py",
+  "working_directory": "C:\\AI_VAULT_CANONICAL",
+  "env": {
+    "PYTHONPATH": "C:\\AI_VAULT_CANONICAL;C:\\AI_VAULT_CANONICAL\\tmp_agent",
+    "BRAIN_PORT": "8091",
+    "BRAIN_HOST": "127.0.0.1",
+    "BRAIN_SAFE_MODE": "true",
+    "BRAIN_START_AUTONOMY": "false",
+    "BRAIN_START_PROACTIVE": "false",
+    "BRAIN_START_SELF_DIAGNOSTIC": "false",
+    "BRAIN_START_QC_LIVE_MONITOR": "false",
+    "BRAIN_WARMUP_MODEL": "false",
+    "BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS": "false"
+  },
+  "started_pid": 50624,
+  "command_line": "\"C:\\Users\\cesar\\AppData\\Local\\Programs\\Python\\Python311\\python.exe\" -u tmp_agent\\brain_v9\\start_safe_server.py",
+  "stdout_log": "C:\\AI_VAULT_CANONICAL\\tmp_agent\\restart_brain_8091_load_patched_provider_route_01\\brain_8091_safe_stdout.log",
+  "stderr_log": "C:\\AI_VAULT_CANONICAL\\tmp_agent\\restart_brain_8091_load_patched_provider_route_01\\brain_8091_safe_stderr.log",
+  "listener": {
+    "LocalAddress": "127.0.0.1",
+    "LocalPort": 8091,
+    "OwningProcess": 50624
+  },
+  "health_response": "{\"status\":\"healthy\",\"sessions\":1,\"version\":\"9.0.0\",\"safe_mode\":true}",
+  "models_response": "{\"object\":\"list\",\"data\":[{\"id\":\"brain-v9-local\",\"object\":\"model\",\"created\":0,\"owned_by\":\"local\"},{\"id\":\"brain\",\"object\":\"model\",\"created\":0,\"owned_by\":\"local\"},{\"id\":\"ai-vault-brain\",\"object\":\"model\",\"created\":0,\"owned_by\":\"local\"}]}",
+  "restart_success": true
+}
