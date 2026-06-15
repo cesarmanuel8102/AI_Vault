@@ -1,0 +1,26 @@
+{
+  "front": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
+  "phase": "CLOSEOUT_STATE_LOCK",
+  "timestamp_utc": "2026-06-15T19:00:00+00:00",
+  "branch": "codex/own-capital-sustainable-return",
+  "start_head": "1cec285",
+  "remote_head": "1cec285",
+  "local_equals_remote": true,
+  "no_staged_changes": true,
+  "dirty_tracked_files": [
+    "ROADMAP_STATUS.json",
+    "docs/MIGRATION_CONTROL_LEDGER.md",
+    "memory/autonomous_journal.jsonl",
+    "tmp_agent/brain_v9/core/llm.py",
+    "tmp_agent/brain_v9/start_safe_server.py"
+  ],
+  "untracked_repo_files": [
+    "tmp_agent/front_brain_kimi_cloud_stability_mitigation_02/*",
+    "tests/smoke/smoke_front_brain_kimi_cloud_stability_mitigation_02.py",
+    "tmp_agent/brain_v9/start_8091_wrapper.py"
+  ],
+  "root_junk_untracked": ["dry_run","evaluation","read_only","stream"],
+  "canonical_repo_verified": true,
+  "windows_system32_irrelevant": true,
+  "phase0_passed": true
+}

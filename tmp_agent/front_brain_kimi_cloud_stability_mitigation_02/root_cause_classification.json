@@ -1,0 +1,44 @@
+{
+  "front": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
+  "phase": "PHASE_4_ROOT_CAUSE_CLASSIFICATION",
+  "timestamp_utc": "2026-06-15T18:35:00+00:00",
+  "root_causes": [
+    {
+      "code": "PROVIDER_CHAIN_ORDER_REVERSAL",
+      "description": "llm.py pre-flight ctx routing sorts non-ollama providers before ollama providers when chain cooldown is active. Since kimi_k2_6_cloud is type=ollama and codex is type=codex_cli, codex moves to position 0 and kimi to position 3 during reorder.",
+      "severity": "CRITICAL",
+      "confirmed_by": "probe chain comparison and code audit"
+    },
+    {
+      "code": "PROVIDER_CHAIN_BUDGET_EXHAUSTION",
+      "description": "Total request budget (90s) is consumed by first providers in the reordered chain. By the time loop reaches kimi at position 3, remaining budget is less than min_provider_budget (8s), so kimi is skipped entirely.",
+      "severity": "CRITICAL",
+      "confirmed_by": "fallback_reason 'budget exhausted' in probes 2/3"
+    },
+    {
+      "code": "SAME_PROVIDER_RETRY_MISSING",
+      "description": "When kimi fails by timeout or empty response, the loop advances to next provider. There is no retry logic for the same provider, so a transient Kimi failure permanently loses the provider for that request.",
+      "severity": "HIGH",
+      "confirmed_by": "llm.py loop iterates each provider once"
+    },
+    {
+      "code": "KIMI_TIMEOUT_TOO_LONG_FOR_EVAL",
+      "description": "Kimi timeout is 75s. Combined with reorder and budget sharing, this means a single provider failure can consume the entire request budget.",
+      "severity": "MEDIUM",
+      "confirmed_by": "MODELS config in llm.py:74"
+    },
+    {
+      "code": "COOLDOWN_OR_CIRCUIT_BREAKER_SIDE_EFFECT",
+      "description": "_chain_in_cooldown forces reorder for ALL queries on the chain, not just slow ones. This degrades the provider chain globally after failures, causing even fast-query probes to hit the reordered chain.",
+      "severity": "HIGH",
+      "confirmed_by": "llm.py:362 _force_reorder = self._chain_in_cooldown(model_priority)"
+    }
+  ],
+  "ruled_out": [
+    "ROUTE_REGRESSION",
+    "PROVIDER_PROBE_DEPENDENCY",
+    "SAFE_MODE_WARMUP_ISSUE",
+    "CANONICAL_MEMORY_MUTATION",
+    "TRADING_B8_TOUCH"
+  ]
+}

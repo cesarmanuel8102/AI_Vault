@@ -1,0 +1,17 @@
+{
+  "front": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
+  "phase": "PHASE_0_HARD_STATE_LOCK",
+  "timestamp_utc": "2026-06-15T18:30:00+00:00",
+  "repo_root": "C:\\AI_VAULT_CANONICAL",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "1cec285",
+  "remote_head": "1cec285",
+  "local_equals_remote": true,
+  "staged_changes": [],
+  "tracked_dirty": [],
+  "baseline_semantic_lines": 1715,
+  "baseline_faiss_ids": 1616,
+  "baseline_faiss_ntotal": 1616,
+  "hard_prohibitions_acknowledged": true,
+  "status": "STATE_LOCKED"
+}

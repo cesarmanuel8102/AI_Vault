@@ -1,0 +1,45 @@
+{
+  "front": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
+  "phase": "PHASE_1_PRIOR_FAILURE_SUMMARY",
+  "timestamp_utc": "2026-06-15T18:30:00+00:00",
+  "safe_mode_false": true,
+  "prior_kimi_5_of_5_success": true,
+  "latest_preflight_result": "1/3 success",
+  "probes": [
+    {
+      "seq": 1,
+      "provider_chain": ["kimi_k2_6_cloud", "codex", "llama8b", "deepseek14b"],
+      "provider_selected": "kimi_k2_6_cloud",
+      "provider_status": "FAST_SUCCESS",
+      "latency_ms": 8484,
+      "content_non_empty": true,
+      "fallback_used": false
+    },
+    {
+      "seq": 2,
+      "provider_chain": ["codex", "llama8b", "deepseek14b", "kimi_k2_6_cloud"],
+      "provider_selected": null,
+      "provider_status": "FAILED",
+      "latency_ms": 45281,
+      "empty_response": true,
+      "fallback_reason": "kimi_k2_6_cloud: skipped (budget exhausted, -0s left)"
+    },
+    {
+      "seq": 3,
+      "provider_chain": ["codex", "llama8b", "deepseek14b", "kimi_k2_6_cloud"],
+      "provider_selected": null,
+      "provider_status": "FAILED",
+      "latency_ms": 45265,
+      "empty_response": true,
+      "fallback_reason": "kimi_k2_6_cloud: skipped (budget exhausted, -0s left)"
+    }
+  ],
+  "chain_order_changed": true,
+  "chain_order_change_pattern": "kimi moved from position 0 to position 3; codex moved from position 1 to position 0",
+  "timeout_symptoms": true,
+  "budget_exhaustion_symptoms": true,
+  "kimi_intermittently_available": true,
+  "fallback_attempted": false,
+  "budget_exhausted_before_any_fallback": true,
+  "exact_stop_reason": "FAILED_KIMI_NOT_SELECTED_PREFLIGHT: provider_selected missing in 2/3 probes. Budget exhaustion after timeout."
+}

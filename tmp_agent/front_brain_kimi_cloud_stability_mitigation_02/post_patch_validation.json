@@ -1,0 +1,29 @@
+{
+  "front": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
+  "phase": "PHASE_5_POST_PATCH_VALIDATION",
+  "timestamp_utc": "2026-06-15T18:45:00+00:00",
+  "patch_applied": true,
+  "patch_file": "tmp_agent/brain_v9/core/llm.py",
+  "patch_lines": "379-386",
+  "patch_description": "Preserve primary provider (kimi_k2_6_cloud) at position 0 during forced chain cooldown reorder. Adds block after ollamas sorting that checks _force_reorder and primary in new_chain, then rebuilds new_chain with primary first if it was displaced.",
+  "probes": [
+    {"seq":1,"provider_chain":["kimi_k2_6_cloud","codex","llama8b","deepseek14b"],"provider_selected":"kimi_k2_6_cloud","provider_status":"FAST_SUCCESS","latency_ms":4656,"content_non_empty":true,"fallback_used":false},
+    {"seq":2,"provider_chain":["kimi_k2_6_cloud","codex","llama8b","deepseek14b"],"provider_selected":"kimi_k2_6_cloud","provider_status":"FAST_SUCCESS","latency_ms":2719,"content_non_empty":true,"fallback_used":false},
+    {"seq":3,"provider_chain":["kimi_k2_6_cloud","codex","llama8b","deepseek14b"],"provider_selected":"kimi_k2_6_cloud","provider_status":"FAST_SUCCESS","latency_ms":3219,"content_non_empty":true,"fallback_used":false},
+    {"seq":4,"provider_chain":["kimi_k2_6_cloud","codex","llama8b","deepseek14b"],"provider_selected":"kimi_k2_6_cloud","provider_status":"FAST_SUCCESS","latency_ms":7937,"content_non_empty":true,"fallback_used":false},
+    {"seq":5,"provider_chain":["kimi_k2_6_cloud","codex","llama8b","deepseek14b"],"provider_selected":"kimi_k2_6_cloud","provider_status":"FAST_SUCCESS","latency_ms":5750,"content_non_empty":true,"fallback_used":false},
+    {"seq":6,"provider_chain":["kimi_k2_6_cloud","codex","llama8b","deepseek14b"],"provider_selected":"kimi_k2_6_cloud","provider_status":"FAST_SUCCESS","latency_ms":2140,"content_non_empty":true,"fallback_used":false}
+  ],
+  "kimi_selected_count": 6,
+  "kimi_selection_rate": 1.0,
+  "provider_selected_present_rate": 1.0,
+  "empty_response_rate": 0.0,
+  "budget_exhaustion_rate": 0.0,
+  "fallback_rate": 0.0,
+  "timeout_count": 0,
+  "dry_run_count": 0,
+  "route_regression_detected": false,
+  "avg_latency_ms": 4404,
+  "chain_order_stable": true,
+  "verdict": "POST_PATCH_VALIDATION_PASS"
+}

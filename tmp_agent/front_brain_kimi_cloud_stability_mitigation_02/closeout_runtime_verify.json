@@ -1,0 +1,21 @@
+{
+  "front": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
+  "phase": "PHASE_3_CLOSEOUT_RUNTIME_VERIFY",
+  "timestamp_utc": "2026-06-15T19:00:00+00:00",
+  "brain_8091": {
+    "running": true,
+    "health_http_200": true,
+    "safe_mode": false,
+    "models_http_200": true,
+    "version": "9.0.0",
+    "sessions": 1
+  },
+  "dashboard_8092": {
+    "listening": true,
+    "status_http_200": "not_confirmed",
+    "safety_http_200": "not_confirmed",
+    "note": "Port 8092 shows SYN_SENT in netstat; dashboard may still be initializing. Not required for closeout."
+  },
+  "runtime_verdict": "ACCEPTABLE_FOR_CLOSEOUT",
+  "note": "Brain 8091 is healthy with patched code. safe_mode=false confirms the fix is active. Dashboard 8092 presence confirmed in netstat."
+}

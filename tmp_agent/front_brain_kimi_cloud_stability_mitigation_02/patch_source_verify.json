@@ -1,0 +1,18 @@
+{
+  "front": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
+  "phase": "PHASE_1_PATCH_SOURCE_VERIFY",
+  "timestamp_utc": "2026-06-15T19:00:00+00:00",
+  "patch_file": "tmp_agent/brain_v9/core/llm.py",
+  "patch_lines": "379-386",
+  "patch_present": true,
+  "patch_logic": "After forced reorder, if primary provider (kimi_k2_6_cloud) was displaced, rebuild new_chain with primary at position 0.",
+  "patch_conditions": "Only activates during _force_reorder=True (chain cooldown).",
+  "touches_trading": false,
+  "touches_b8": false,
+  "touches_semantic": false,
+  "touches_faiss": false,
+  "touches_strategies": false,
+  "bypasses_governance": false,
+  "exposes_raw_cot": false,
+  "verdict": "PATCH_VERIFIED_PRESENT_AND_SAFE"
+}

@@ -1,0 +1,20 @@
+{
+  "front": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
+  "phase": "PHASE_5_PATCH_DECISION",
+  "timestamp_utc": "2026-06-15T18:45:00+00:00",
+  "patch_applied": true,
+  "patch_type": "deterministic_kimi_first_chain",
+  "files_changed": ["tmp_agent/brain_v9/core/llm.py"],
+  "lines_changed": "379-386",
+  "deterministic_kimi_first": true,
+  "same_provider_retry": false,
+  "timeout_budget_policy_changed": false,
+  "metadata_improved": true,
+  "patch_description": "After chain cooldown forces reorder, check if primary provider (kimi_k2_6_cloud) was displaced from position 0. If so, rebuild new_chain with primary first, preserving all other providers in their reordered positions. This ensures budget is spent on the primary provider first, and fallback only occurs if primary genuinely fails.",
+  "patch_justification": "Evidence showed that forced reorder moved codex to position 0 and kimi to position 3. With 90s total budget, codex (120s timeout) consumed the budget before kimi was ever attempted. By preserving kimi at position 0, all 6 post-patch probes selected kimi with FAST_SUCCESS and stable latency 2-8s.",
+  "risk_assessment": "Minimal. Patch only affects behavior during _force_reorder=True (chain cooldown). Does not change normal chain order. Does not affect trading, B8, tools, or other routes. Primary provider remains configurable via PROVIDER_PRIORITY dict.",
+  "metadata_enhancements": {
+    "provider_chain_initial": "now logged by llm.py:380",
+    "provider_chain_final": "now logged by llm.py:380"
+  }
+}

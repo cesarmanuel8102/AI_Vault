@@ -1,0 +1,30 @@
+{
+  "front": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
+  "phase": "PHASE_2_CODE_PATH_AUDIT",
+  "timestamp_utc": "2026-06-15T18:30:00+00:00",
+  "files_audited": [
+    "tmp_agent/brain_v9/core/llm.py",
+    "tmp_agent/brain_v9/core/router_entrypoint.py",
+    "tmp_agent/brain_v9/core/session.py"
+  ],
+  "answers": {
+    "1_provider_chain_construction": "llm.py lines 46-67 define CHAINS dict; 'chat'/'ollama' chains = [kimi_k2_6_cloud, codex, llama8b, deepseek14b]",
+    "2_why_chain_order_changed": "llm.py lines 356-386: pre-flight ctx routing reorders chain when _force_reorder=true. _force_reorder comes from _chain_in_cooldown(model_priority) which triggers when chain failure rate > 5% over last 100 queries. During reorder, non-ollama providers (codex) are placed before ollama providers (kimi_k2_6_cloud).",
+    "3_chain_order_affected_by_prior_failures": "Yes. _chain_in_cooldown() checks _GLOBAL_CHAIN_HEALTH deque of last 100 outcomes. If failure_rate > 0.05, chain enters 600s cooldown and reorder is forced.",
+    "4_kimi_moved_to_end_after_timeout": "Yes. Because MODELS['kimi_k2_6_cloud']['type'] = 'ollama' and MODELS['codex']['type'] = 'codex_cli'. Reorder sorts non-ollama first, then ollama by ctx size. This puts codex at position 0 and kimi at the end.",
+    "5_budget_shared_across_providers": "Yes. max_time is passed to llm.query() from session.py (BRAIN_CHAT_LLM_TIMEOUT=90). Budget is consumed cumulatively across all providers in the chain.",
+    "6_per_provider_timeout": "Yes. MODELS defines per-provider timeout: kimi_k2_6_cloud=75, codex=120, llama8b=60, deepseek14b=90.",
+    "7_same_provider_retry": "No. The loop iterates each provider once. There is no retry logic for the same provider.",
+    "8_fallback_after_kimi_timeout": "Fallback happens by advancing to next provider in chain. But if chain is reordered, codex is tried first, not kimi. If codex times out, budget is exhausted before reaching kimi.",
+    "9_why_fallback_says_kimi_skipped_by_budget": "In probes 2/3, chain was [codex, llama8b, deepseek14b, kimi]. Codex attempted first and used budget. By the time the loop reached kimi, remaining budget < 8s (min_provider_budget), so kimi was skipped with 'budget exhausted'.",
+    "10_can_llm_grounded_cycle_force_kimi_first": "Currently NO. llm.py does not receive metadata flags (read_only, evaluation, llm_grounded_cycle). The chain reorder happens purely based on _chain_in_cooldown() and estimated input tokens. However, a patch can: (a) preserve kimi_k2_6_cloud at position 0 during reorder, or (b) pass metadata to llm.query() to suppress reorder for safe eval routes."
+  },
+  "critical_code_locations": {
+    "chain_definition": "llm.py:46-67",
+    "reorder_logic": "llm.py:356-386",
+    "budget_check": "llm.py:420-437",
+    "chain_cooldown": "llm.py:152-161",
+    "session_timeout": "session.py:~2596",
+    "router_eval_flag": "router_entrypoint.py:176-184"
+  }
+}
