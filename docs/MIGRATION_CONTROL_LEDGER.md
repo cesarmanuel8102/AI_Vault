@@ -8302,3 +8302,70 @@ No canonical promotion was performed. Candidates were safe but low-value/redunda
 
 ### Next Recommended Front
 FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01
+
+
+## FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01
+
+### Status
+FAILED_PROVIDER_STABILITY_GATE
+
+### Timestamp
+2026-06-15T15:14:11.506590+00:00
+
+### Branch
+codex/own-capital-sustainable-return
+
+### Start Head
+`669e2a1`
+
+### Execution
+- cycles_targeted: 30
+- cycles_completed: 10
+- batches_completed: 2
+- stop_reason: `fallback_rate_above_0_50_after_10_cycles`
+- provider_probe_required_for_llm_grounded_route: true
+- route_limitation: Normal 8091 route returned dry-run canonical router; provider_probe:true was required to reach real provider responses.
+
+### Provider
+- primary_provider: kimi_k2_6_cloud
+- kimi_used: true
+- provider_success_rate: 1.0
+- fallback_rate: 0.8
+- timeout_count: 0
+- empty_response_count: 0
+- avg_latency_ms: 16581.5
+- avg_quality_score: 0.944
+
+### Learning Writes
+- journal_count_before: 329
+- journal_count_after: 339
+- lessons_created: 10
+- mistakes_recorded: 0
+- promotion_candidates_created: 9
+- semantic_staging_count_after: 20
+- canonical_promotions: 0
+
+### Safety
+- semantic_lines_before: 1715
+- semantic_lines_after: 1715
+- faiss_ids_before: 1616
+- faiss_ids_after: 1616
+- faiss_ntotal_before: 1616
+- faiss_ntotal_after: 1616
+- canonical_semantic_mutated: false
+- faiss_mutated: false
+- trading_touched: false
+- b8_touched: false
+- strategies_touched: false
+- secrets_exposed: false
+- raw_cot_exposed: false
+
+### Validation
+- py_compile: PASS
+- focused smoke: 6 passed
+
+### Evidence
+`tmp_agent/front_brain_llm_grounded_autonomy_cycles_01`
+
+### Next Recommended Front
+FRONT-BRAIN-PROVIDER-RELIABILITY-ROOTCAUSE-01

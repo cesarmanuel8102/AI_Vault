@@ -1,9 +1,9 @@
 {
-  "current_head": "950778cf2d96730f8266d00f220863b58cf5bf7d",
-  "current_remote_head": "950778cf2d96730f8266d00f220863b58cf5bf7d",
+  "current_head": "669e2a1119cda2a2481a809a22538eca96cf7f05",
+  "current_remote_head": "669e2a1119cda2a2481a809a22538eca96cf7f05",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "brain_canonical_memory_promotion_scaleup_no_promotion_needed",
-  "last_applied_checkpoint": "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-SCALEUP-01",
+  "migration_status": "brain_llm_grounded_autonomy_cycles_failed_provider_stability_gate",
+  "last_applied_checkpoint": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -166,7 +166,8 @@
     "FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01",
     "FRONT-LEGACY-LOCK-HANDLE-TOOL-INSTALL-OR-SAFE-MODE-PLAN-01",
     "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
-    "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-01"
+    "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-01",
+    "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01"
   ],
   "protected_out_of_scope": [
     "memory/semantic",
@@ -174,12 +175,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
+    "name": "FRONT-BRAIN-PROVIDER-RELIABILITY-ROOTCAUSE-01",
     "status": "recommended_next",
-    "reason": "No canonical promotion was needed because deterministic-cycle candidates were generic/redundant; next step is LLM-grounded governed cycles to create more specific evidence-backed candidates."
+    "reason": "LLM-grounded cycles reached real provider responses only through provider_probe; Kimi succeeded initially but fallback rate was 0.8 after 10 cycles, exceeding governance gate."
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-06-13T19:37:06.002440+00:00",
+  "last_updated": "2026-06-15T15:14:11.506590+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -3835,5 +3836,57 @@
     "evidence_path": "tmp_agent/front_brain_canonical_memory_promotion_scaleup_01",
     "next_front_locked": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
     "updated_at_utc": "2026-06-13T19:37:06.002440+00:00"
+  },
+  "front_brain_llm_grounded_autonomy_cycles_01": {
+    "front": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
+    "status": "FAILED_PROVIDER_STABILITY_GATE",
+    "start_head": "669e2a1",
+    "provider_probe_required_for_llm_grounded_route": true,
+    "route_limitation": "Normal 8091 route returned dry-run canonical router; provider_probe:true was required to reach real provider responses.",
+    "cycles_targeted": 30,
+    "cycles_completed": 10,
+    "batches_completed": 2,
+    "stop_reason": "fallback_rate_above_0_50_after_10_cycles",
+    "provider": {
+      "primary_provider": "kimi_k2_6_cloud",
+      "kimi_used": true,
+      "provider_success_rate": 1.0,
+      "fallback_rate": 0.8,
+      "timeout_count": 0,
+      "empty_response_count": 0,
+      "avg_latency_ms": 16581.5,
+      "avg_quality_score": 0.944
+    },
+    "learning": {
+      "lessons_created": 10,
+      "mistakes_recorded": 0,
+      "promotion_candidates_created": 9,
+      "journal_count_before": 329,
+      "journal_count_after": 339,
+      "semantic_staging_count": 20,
+      "canonical_promotions": 0
+    },
+    "immutability": {
+      "semantic_memory_lines_before": 1715,
+      "semantic_memory_lines_after": 1715,
+      "faiss_ids_before": 1616,
+      "faiss_ids_after": 1616,
+      "faiss_ntotal_before": 1616,
+      "faiss_ntotal_after": 1616,
+      "canonical_semantic_mutated": false,
+      "faiss_mutated": false,
+      "trading_touched": false,
+      "b8_touched": false,
+      "strategies_touched": false,
+      "secrets_exposed": false,
+      "raw_cot_exposed": false
+    },
+    "tests": {
+      "py_compile": "PASS",
+      "focused_smoke": "6 passed"
+    },
+    "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_01",
+    "next_front_locked": "FRONT-BRAIN-PROVIDER-RELIABILITY-ROOTCAUSE-01",
+    "updated_at_utc": "2026-06-15T15:14:11.506590+00:00"
   }
 }
