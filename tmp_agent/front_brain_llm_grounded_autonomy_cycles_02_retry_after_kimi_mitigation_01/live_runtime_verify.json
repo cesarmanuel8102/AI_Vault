@@ -1,0 +1,60 @@
+{
+  "front": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01",
+  "phase": "PHASE_2_LIVE_RUNTIME_VERIFY",
+  "timestamp_utc": "2026-06-15T17:52:00+00:00",
+  "brain_port": 8091,
+  "dashboard_port": 8092,
+  "brain_health": {
+    "url": "http://127.0.0.1:8091/health",
+    "status_code": 200,
+    "safe_mode": false,
+    "version": "9.0.0",
+    "sessions": 1
+  },
+  "brain_models": {
+    "url": "http://127.0.0.1:8091/v1/models",
+    "status_code": 200
+  },
+  "dashboard_status": {
+    "url": "http://127.0.0.1:8092/brain-dashboard/status",
+    "status_code": 200,
+    "degraded": false,
+    "brain_ok": true,
+    "kimi_available": true,
+    "scheduler_enabled": false,
+    "scheduler_state": "cached_ready",
+    "autonomy_state": "idle",
+    "autonomy_paused": false,
+    "autonomy_stopped": false,
+    "memory": {
+      "journal_count": 352,
+      "promotion_queue_count": 33,
+      "semantic_staging_count": 5,
+      "canonical_promotion_performed": false
+    },
+    "safety": {
+      "semantic_memory_lines": 1715,
+      "faiss_ids": 1616,
+      "faiss_ntotal": 1616,
+      "canonical_semantic_mutated": false,
+      "faiss_mutated": false,
+      "trading_touched": false,
+      "b8_touched": false,
+      "secrets_exposed": false
+    }
+  },
+  "dashboard_safety": {
+    "url": "http://127.0.0.1:8092/brain-dashboard/safety",
+    "status_code": 200,
+    "semantic_memory_lines": 1715,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "canonical_semantic_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "b8_touched": false,
+    "secrets_exposed": false
+  },
+  "verdict": "ALL_CHECKS_PASS",
+  "proceed": true
+}

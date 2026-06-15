@@ -8549,4 +8549,4 @@ codex/own-capital-sustainable-return
 - raw CoT exposed: `false`
 
 ### Next Recommended
-FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01
+FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02 (provider chain budget exhaustion after timeout)

@@ -1,0 +1,79 @@
+{
+  "front": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01",
+  "phase": "PHASE_3_KIMI_ROUTE_PREFLIGHT",
+  "timestamp_utc": "2026-06-15T17:55:00+00:00",
+  "probes": [
+    {
+      "seq": 1,
+      "prompt": "Return exactly KIMI_MITIGATION_ROUTE_OK.",
+      "status_code": 200,
+      "route": "llm_grounded_provider_eval",
+      "dry_run": false,
+      "provider_selected": null,
+      "model_selected": null,
+      "provider_status": "FAILED",
+      "latency_ms": 45062,
+      "empty_response": true,
+      "content_non_empty": false,
+      "fallback_used": false,
+      "fallback_reason": "deepseek14b: skipped (budget exhausted, -0s left)",
+      "provider_probe": true
+    },
+    {
+      "seq": 2,
+      "prompt": "In one sentence, explain why safe_mode=false matters for provider testing.",
+      "status_code": 200,
+      "route": "llm_grounded_provider_eval",
+      "dry_run": false,
+      "provider_selected": null,
+      "model_selected": null,
+      "provider_status": "FAILED",
+      "latency_ms": 45047,
+      "empty_response": true,
+      "content_non_empty": false,
+      "fallback_used": false,
+      "fallback_reason": "deepseek14b: skipped (budget exhausted, -0s left)",
+      "provider_probe": true
+    },
+    {
+      "seq": 3,
+      "prompt": "Return exactly KIMI_FAST_SUCCESS_CHECK.",
+      "status_code": 200,
+      "route": "llm_grounded_provider_eval",
+      "dry_run": false,
+      "provider_selected": "kimi_k2_6_cloud",
+      "model_selected": "kimi-k2.6:cloud",
+      "provider_status": "FAST_SUCCESS",
+      "latency_ms": 2469,
+      "empty_response": false,
+      "content_non_empty": true,
+      "fallback_used": false,
+      "fallback_reason": null,
+      "provider_probe": true
+    }
+  ],
+  "kimi_selected_count": 1,
+  "kimi_selection_rate": 0.333,
+  "provider_selected_present_rate": 0.333,
+  "empty_response_rate": 0.667,
+  "avg_latency_ms": 30859,
+  "budget_exhaustion_observed": true,
+  "timeout_observed": true,
+  "verdict": "FAILED_KIMI_NOT_SELECTED_PREFLIGHT",
+  "analysis": {
+    "root_cause": "PROVIDER_CHAIN_BUDGET_EXHAUSTION_AFTER_TIMEOUT",
+    "observations": [
+      "Probes 1 and 2 experienced ~45s latency before failing — consistent with Kimi timeout (~45s threshold)",
+      "After Kimi timeout, chain advances through codex -> llama8b -> deepseek14b",
+      "By the time chain reaches deepseek14b, budget is exhausted (negative seconds left)",
+      "Probe 3 succeeded immediately (~2.5s) with Kimi FAST_SUCCESS, suggesting intermittent latency spikes rather than permanent Kimi unavailability",
+      "provider_probe flag was set true internally by Brain, not requested in metadata"
+    ],
+    "implications": [
+      "safe_mode=false patch is insufficient alone; provider chain budget exhaustion blocks reliable Kimi usage when intermittent timeouts occur",
+      "Same-provider retry is absent; a single timeout exhausts the entire chain budget",
+      "Cannot proceed to 30-cycle autonomy until provider chain budget/timeout policy is tuned or retry logic added"
+    ]
+  },
+  "stop_reason": "Phase 3 preflight failed: provider_selected missing in 2/3 probes (kimi_selection_rate=0.333 < 1.0). Budget exhaustion after timeout."
+}

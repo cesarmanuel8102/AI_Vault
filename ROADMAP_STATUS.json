@@ -1,9 +1,9 @@
 {
-  "current_head": "3d165de1a89dc3ac4846b04647f28901cdccb65e",
-  "current_remote_head": "3d165de1a89dc3ac4846b04647f28901cdccb65e",
+  "current_head": "4f742e5",
+  "current_remote_head": "43222d3",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "brain_llm_grounded_autonomy_cycles_02_retry_failed_provider_stability_gate",
-  "last_applied_checkpoint": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-8091-RELOAD",
+  "migration_status": "failed_kimi_not_selected_preflight_after_kimi_mitigation_closeout",
+  "last_applied_checkpoint": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -178,9 +178,10 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01",
+    "name": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
     "status": "recommended_next",
-    "reason": "Patched normal route held with dry_run_count=0, but repeated Kimi/provider calls degraded below provider success gate."
+    "reason": "Provider chain budget exhaustion after timeout blocks reliable Kimi usage. Need same-provider retry or budget increase.",
+    "unblock_dependency": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01"
   },
   "ready_for_next_front": true,
   "last_updated": "2026-06-15T16:39:36.843283+00:00",
@@ -4069,7 +4070,7 @@
       "staged": []
     },
     "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02_retry_after_8091_reload",
-    "next_front_locked": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01",
+    "next_front_locked": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
     "updated_at_utc": "2026-06-15T16:39:36.843283+00:00"
   }
 }

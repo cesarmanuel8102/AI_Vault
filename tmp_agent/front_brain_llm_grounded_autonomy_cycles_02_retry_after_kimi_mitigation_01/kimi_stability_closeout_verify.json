@@ -1,0 +1,44 @@
+{
+  "front": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01",
+  "closeout_phase": "PHASE_1_CLOSEOUT",
+  "closeout_verified": true,
+  "timestamp_utc": "2026-06-15T17:50:00+00:00",
+  "evidence_files_present": [
+    "tmp_agent/front_brain_kimi_cloud_stability_mitigation_01/preflight.json",
+    "tmp_agent/front_brain_kimi_cloud_stability_mitigation_01/prior_failure_summary.json",
+    "tmp_agent/front_brain_kimi_cloud_stability_mitigation_01/code_path_audit.json",
+    "tmp_agent/front_brain_kimi_cloud_stability_mitigation_01/kimi_probe_matrix.json",
+    "tmp_agent/front_brain_kimi_cloud_stability_mitigation_01/root_cause_classification.json",
+    "tmp_agent/front_brain_kimi_cloud_stability_mitigation_01/patch_decision.json",
+    "tmp_agent/front_brain_kimi_cloud_stability_mitigation_01/final_report.md",
+    "tmp_agent/front_brain_kimi_cloud_stability_mitigation_01/final_safety_verify.json",
+    "tmp_agent/front_brain_kimi_cloud_stability_mitigation_01/cesar_review_report.md",
+    "tmp_agent/front_brain_kimi_cloud_stability_mitigation_01/NEXT_PROMPT_RECOMMENDATION.md"
+  ],
+  "smoke_test_result": "15_passed_0_failed",
+  "smoke_test_file": "tests/smoke/smoke_front_brain_kimi_cloud_stability_mitigation_01.py",
+  "smoke_assertions_fixed": true,
+  "committed": true,
+  "commit_hash": "4f742e5",
+  "root_cause": "SAFE_MODE_PROVIDER_POLICY_EFFECT",
+  "patch_applied": "start_safe_server.py BRAIN_SAFE_MODE default true -> false",
+  "checkpoint_commit": "43222d3",
+  "post_patch_probe_results": {
+    "total": 5,
+    "provider_selected": "kimi_k2_6_cloud (100%)",
+    "provider_status": "FAST_SUCCESS (100%)",
+    "empty_responses": 0,
+    "fallback_used": 0,
+    "avg_latency_ms": 3888
+  },
+  "baseline_held": {
+    "semantic_lines": 1715,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "canonical_semantic_mutated": false,
+    "faiss_mutated": false
+  },
+  "ledger_updated": false,
+  "roadmap_updated": false,
+  "next_step": "PHASE_2_LIVE_RUNTIME_VERIFY"
+}
