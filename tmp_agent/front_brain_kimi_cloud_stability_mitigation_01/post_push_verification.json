@@ -1,0 +1,20 @@
+{
+  "front": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01",
+  "phase": "PHASE_8_POST_PUSH_VERIFICATION",
+  "timestamp_utc": "2026-06-15T18:15:00+00:00",
+  "local_head": "b230d71",
+  "remote_head": "b230d71",
+  "local_equals_remote": true,
+  "staged_empty": true,
+  "tracked_dirty": [],
+  "semantic_lines": 1715,
+  "faiss_ids": 1616,
+  "faiss_ntotal": 1616,
+  "canonical_semantic_mutated": false,
+  "faiss_mutated": false,
+  "trading_touched": false,
+  "b8_touched": false,
+  "secrets_exposed": false,
+  "raw_cot_exposed": false,
+  "verdict": "CLEAN"
+}
