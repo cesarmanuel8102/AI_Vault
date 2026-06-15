@@ -75,7 +75,28 @@
     "py_compile": "PASS",
     "focused_smoke": "6 passed"
   },
-  "commits": [],
+  "commits": [
+    {
+      "hash": "5a07fda",
+      "message": "ledger: record LLM grounded autonomy cycles 02 retry"
+    },
+    {
+      "hash": "04d7859",
+      "message": "docs: add LLM grounded autonomy cycles 02 retry reports"
+    },
+    {
+      "hash": "b4589f4",
+      "message": "test: add LLM grounded autonomy cycles 02 retry smoke"
+    },
+    {
+      "hash": "19ba62a",
+      "message": "feat: run LLM grounded autonomy cycles 02 retry"
+    },
+    {
+      "hash": "3d165de",
+      "message": "memory: record governed autonomy background journal events"
+    }
+  ],
   "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02_retry_after_8091_reload",
   "recommended_next_action": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01"
 }
