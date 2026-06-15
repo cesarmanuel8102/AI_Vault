@@ -1,0 +1,13 @@
+{
+  "candidate_id": "cycle02_retry_candidate_005",
+  "created_utc": "2026-06-15T16:31:11.598463+00:00",
+  "status": "queued_for_operator_review",
+  "source": "llm_grounded_autonomy_cycles_02_retry",
+  "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02_retry_after_8091_reload/batches/batch_01.json",
+  "quality_score": 0.95,
+  "text": "Use out-of-process integration or smoke tests against live endpoints to verify hardcoded routes; in-process tests alone cannot validate real network boundaries.",
+  "canonical_promotion": false,
+  "real_write_allowed": false,
+  "faiss_write_allowed": false,
+  "staging_only": true
+}

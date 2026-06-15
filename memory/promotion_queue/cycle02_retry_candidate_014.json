@@ -1,0 +1,12 @@
+{
+  "candidate_id": "cycle02_retry_candidate_014",
+  "created_utc": "2026-06-15T16:37:17.753753+00:00",
+  "status": "queued_for_operator_review",
+  "source": "llm_grounded_autonomy_cycles_02_retry",
+  "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02_retry_after_8091_reload/batches/batch_03.json",
+  "quality_score": 0.95,
+  "text": "It must be novel, situation-specific information that a future reasoning step would plausibly retrieve to maintain task coherence, excluding transient execution artifacts.",
+  "canonical_promotion": false,
+  "real_write_allowed": false,
+  "faiss_write_allowed": false
+}

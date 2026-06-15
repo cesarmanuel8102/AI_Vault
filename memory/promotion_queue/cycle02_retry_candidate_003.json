@@ -1,0 +1,12 @@
+{
+  "candidate_id": "cycle02_retry_candidate_003",
+  "created_utc": "2026-06-15T16:31:11.596458+00:00",
+  "status": "queued_for_operator_review",
+  "source": "llm_grounded_autonomy_cycles_02_retry",
+  "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02_retry_after_8091_reload/batches/batch_01.json",
+  "quality_score": 0.95,
+  "text": "Enforce immutable per-cycle autonomy boundaries with mandatory supervised checkpoints between tasks, and require explicit human authorization for any execution-scope expansion.",
+  "canonical_promotion": false,
+  "real_write_allowed": false,
+  "faiss_write_allowed": false
+}

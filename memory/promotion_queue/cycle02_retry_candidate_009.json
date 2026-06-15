@@ -1,0 +1,12 @@
+{
+  "candidate_id": "cycle02_retry_candidate_009",
+  "created_utc": "2026-06-15T16:33:21.725699+00:00",
+  "status": "queued_for_operator_review",
+  "source": "llm_grounded_autonomy_cycles_02_retry",
+  "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02_retry_after_8091_reload/batches/batch_02.json",
+  "quality_score": 0.95,
+  "text": "A cryptographically signed, immutable snapshot of the current canonical semantic memory and FAISS state must be successfully persisted and integrity-validated before any write operation is authorized.",
+  "canonical_promotion": false,
+  "real_write_allowed": false,
+  "faiss_write_allowed": false
+}

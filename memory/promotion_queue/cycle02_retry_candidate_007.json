@@ -1,0 +1,12 @@
+{
+  "candidate_id": "cycle02_retry_candidate_007",
+  "created_utc": "2026-06-15T16:33:21.723518+00:00",
+  "status": "queued_for_operator_review",
+  "source": "llm_grounded_autonomy_cycles_02_retry",
+  "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02_retry_after_8091_reload/batches/batch_02.json",
+  "quality_score": 0.95,
+  "text": "Show a persistent, co-located icon-plus-text badge on every knowledge item: a gray eye for \u201cRead-only,\u201d an amber clock for \u201cStaged,\u201d and a green checkmark for \u201cCanonical\u201d; never rely on color alone.",
+  "canonical_promotion": false,
+  "real_write_allowed": false,
+  "faiss_write_allowed": false
+}
