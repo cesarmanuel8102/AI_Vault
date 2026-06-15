@@ -1,0 +1,14 @@
+{
+  "semantic_hash_unchanged": true,
+  "faiss_index_hash_unchanged": true,
+  "faiss_ids_hash_unchanged": true,
+  "semantic_lines": 1715,
+  "faiss_ids": 1616,
+  "staged": [],
+  "tracked_status": [
+    " M ROADMAP_STATUS.json",
+    " M docs/MIGRATION_CONTROL_LEDGER.md",
+    " M tmp_agent/brain_v9/api/openai_compat.py",
+    " M tmp_agent/brain_v9/core/router_entrypoint.py"
+  ]
+}
