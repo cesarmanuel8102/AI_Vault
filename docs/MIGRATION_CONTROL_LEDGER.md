@@ -8490,3 +8490,63 @@ codex/own-capital-sustainable-return
 
 ### Next Recommended
 FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-8091-RELOAD
+
+
+## FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-8091-RELOAD
+
+### Status
+FAILED_PROVIDER_STABILITY_GATE
+
+### Timestamp
+2026-06-15T16:39:36.843283+00:00
+
+### Branch
+codex/own-capital-sustainable-return
+
+### Runtime Route
+- normal_route_used: `true`
+- provider_probe_used_for_cycles: `false`
+- route: `llm_grounded_provider_eval`
+- dry_run_count: `0`
+- route_regression_detected: `False`
+
+### Cycles
+- targeted: `30`
+- completed: `15`
+- batches_completed: `3`
+- stop_reason: `provider_success_rate_below_0_60_after_10_cycles`
+
+### Provider
+- primary_provider: `kimi_k2_6_cloud`
+- kimi_used: `True`
+- provider_success_rate: `0.533`
+- kimi_success_rate: `0.533`
+- fallback_rate: `0.067`
+- timeout_count: `0`
+- empty_response_count: `7`
+- avg_latency_ms: `28598.3`
+- avg_quality_score: `0.65`
+
+### Learning Writes
+- journal_count_before: `342`
+- journal_count_after: `349`
+- lessons_created: `7`
+- mistakes_recorded: `7`
+- promotion_candidates_created: `7`
+- semantic_staging_count: `7`
+- canonical_promotions: `0`
+
+### Safety
+- semantic lines: `1715 -> 1715`
+- FAISS ids: `1616 -> 1616`
+- FAISS ntotal: `1616 -> 1616`
+- canonical semantic mutated: `false`
+- FAISS mutated: `false`
+- trading touched: `false`
+- B8 touched: `false`
+- strategies touched: `false`
+- secrets exposed: `false`
+- raw CoT exposed: `false`
+
+### Next Recommended
+FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01

@@ -1,9 +1,9 @@
 {
-  "current_head": "addcd29721af120fa2864172d079c355d3d80554",
-  "current_remote_head": "addcd29721af120fa2864172d079c355d3d80554",
+  "current_head": "3d165de1a89dc3ac4846b04647f28901cdccb65e",
+  "current_remote_head": "3d165de1a89dc3ac4846b04647f28901cdccb65e",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "brain_8091_patched_provider_route_reload_completed",
-  "last_applied_checkpoint": "RESTART-BRAIN-8091-LOAD-PATCHED-PROVIDER-ROUTE-01",
+  "migration_status": "brain_llm_grounded_autonomy_cycles_02_retry_failed_provider_stability_gate",
+  "last_applied_checkpoint": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-8091-RELOAD",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -169,7 +169,8 @@
     "FRONT-LEGACY-LOCK-HANDLE-TOOL-INSTALL-OR-SAFE-MODE-PLAN-01",
     "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
     "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-01",
-    "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01"
+    "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
+    "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-8091-RELOAD"
   ],
   "protected_out_of_scope": [
     "memory/semantic",
@@ -177,12 +178,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-8091-RELOAD",
+    "name": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01",
     "status": "recommended_next",
-    "reason": "Live 8091 now serves llm_grounded_provider_eval with dry_run=false from the normal llm_grounded_cycle route."
+    "reason": "Patched normal route held with dry_run_count=0, but repeated Kimi/provider calls degraded below provider success gate."
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-06-15T16:04:33.268191+00:00",
+  "last_updated": "2026-06-15T16:39:36.843283+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -3997,5 +3998,78 @@
     "evidence_path": "tmp_agent/restart_brain_8091_load_patched_provider_route_01",
     "updated_at_utc": "2026-06-15T16:04:33.268191+00:00",
     "next_front_locked": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-8091-RELOAD"
+  },
+  "front_brain_llm_grounded_autonomy_cycles_02_retry_after_8091_reload": {
+    "front": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-8091-RELOAD",
+    "status": "FAILED_PROVIDER_STABILITY_GATE",
+    "cycles_targeted": 30,
+    "cycles_completed": 15,
+    "batches_completed": 3,
+    "stop_reason": "provider_success_rate_below_0_60_after_10_cycles",
+    "route": {
+      "normal_route_used": true,
+      "provider_probe_used_for_cycles": false,
+      "dry_run_count": 0,
+      "route_regression_detected": false
+    },
+    "provider": {
+      "primary_provider": "kimi_k2_6_cloud",
+      "kimi_used": true,
+      "provider_success_rate": 0.533,
+      "kimi_success_rate": 0.533,
+      "fallback_rate": 0.067,
+      "timeout_count": 0,
+      "empty_response_count": 7,
+      "empty_response_rate": 0.467,
+      "avg_latency_ms": 28598.3,
+      "avg_quality_score": 0.65
+    },
+    "learning": {
+      "lessons_created": 7,
+      "mistakes_recorded": 7,
+      "promotion_candidates_created": 7,
+      "journal_count_before": 342,
+      "journal_count_after": 349,
+      "semantic_staging_count": 7,
+      "canonical_promotions": 0
+    },
+    "dashboard": {
+      "status_final_ok": true,
+      "status_latency_ms": 20,
+      "scheduler_ok": true,
+      "safety_ok": true
+    },
+    "safety": {
+      "timestamp": "2026-06-15T16:38:39.088956+00:00",
+      "semantic_lines_before": 1715,
+      "semantic_lines_after": 1715,
+      "faiss_ids_before": 1616,
+      "faiss_ids_after": 1616,
+      "faiss_ntotal_before": 1616,
+      "faiss_ntotal_after": 1616,
+      "semantic_hash_unchanged": true,
+      "faiss_index_hash_unchanged": true,
+      "faiss_ids_hash_unchanged": true,
+      "canonical_semantic_mutated": false,
+      "faiss_mutated": false,
+      "env_touched": false,
+      "trading_touched": false,
+      "b8_touched": false,
+      "strategies_touched": false,
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "dashboard_status_final_ok": true,
+      "dashboard_status_latency_ms": 20,
+      "scheduler_ok": true,
+      "safety_ok": true,
+      "normal_route_dry_run_count": 0,
+      "tracked_status": [
+        " M memory/autonomous_journal.jsonl"
+      ],
+      "staged": []
+    },
+    "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02_retry_after_8091_reload",
+    "next_front_locked": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01",
+    "updated_at_utc": "2026-06-15T16:39:36.843283+00:00"
   }
 }
