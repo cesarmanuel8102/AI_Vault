@@ -1,6 +1,6 @@
 {
-  "current_head": "4f742e5",
-  "current_remote_head": "43222d3",
+  "current_head": "a8e9e73",
+  "current_remote_head": "a8e9e73",
   "branch": "codex/own-capital-sustainable-return",
   "migration_status": "failed_kimi_not_selected_preflight_after_kimi_mitigation_closeout",
   "last_applied_checkpoint": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01",
@@ -160,7 +160,8 @@
     "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-RERUN-01",
     "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-SCALEUP-01",
     "FRONT-BRAIN-PROVIDER-RELIABILITY-ROOTCAUSE-01",
-    "RESTART-BRAIN-8091-LOAD-PATCHED-PROVIDER-ROUTE-01"
+    "RESTART-BRAIN-8091-LOAD-PATCHED-PROVIDER-ROUTE-01",
+    "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -178,10 +179,10 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
+    "name": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01",
     "status": "recommended_next",
-    "reason": "Provider chain budget exhaustion after timeout blocks reliable Kimi usage. Need same-provider retry or budget increase.",
-    "unblock_dependency": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01"
+    "reason": "Kimi stability closeout completed. safe_mode=false confirmed. Ready to attempt 30 controlled LLM-grounded autonomy cycles.",
+    "unblock_dependency": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01"
   },
   "ready_for_next_front": true,
   "last_updated": "2026-06-15T16:39:36.843283+00:00",

@@ -8549,4 +8549,4 @@ codex/own-capital-sustainable-return
 - raw CoT exposed: `false`
 
 ### Next Recommended
-FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02 (provider chain budget exhaustion after timeout)
+FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01 (Kimi stability closeout completed; safe_mode=false confirmed)
