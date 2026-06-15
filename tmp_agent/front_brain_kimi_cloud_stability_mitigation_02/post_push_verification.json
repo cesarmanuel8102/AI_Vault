@@ -1,0 +1,34 @@
+{
+  "front": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
+  "phase": "PHASE_8_POST_PUSH_VERIFICATION",
+  "timestamp_utc": "2026-06-15T19:00:00+00:00",
+  "branch": "codex/own-capital-sustainable-return",
+  "final_head_local": "c2d529c",
+  "final_head_remote": "c2d529c",
+  "local_equals_remote": true,
+  "staged_empty": true,
+  "tracked_clean": true,
+  "remaining_dirty_files": [],
+  "untracked_no_stage": [
+    "dry_run",
+    "evaluation",
+    "read_only",
+    "stream",
+    "tmp_agent/brain_v9/start_8091_wrapper.py",
+    "tmp_agent/evolution_runs/",
+    "tmp_agent/front_brain_*/*"
+  ],
+  "commits_made": [
+    "f059cc5 fix: preserve primary provider order during chain cooldown reorder",
+    "5d9a720 test: add Kimi cloud stability mitigation 02 smoke",
+    "988c7da docs: add Kimi cloud stability mitigation 02 reports",
+    "02c951c ledger: record Kimi cloud stability mitigation 02",
+    "c2d529c safety: add Kimi mitigation 02 closeout safety verify and journal"
+  ],
+  "semantic_lines": 1715,
+  "faiss_ids": 1616,
+  "faiss_ntotal": 1616,
+  "semantic_unchanged": true,
+  "faiss_unchanged": true,
+  "closeout_complete": true
+}
