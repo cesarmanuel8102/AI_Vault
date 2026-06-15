@@ -8369,3 +8369,74 @@ codex/own-capital-sustainable-return
 
 ### Next Recommended Front
 FRONT-BRAIN-PROVIDER-RELIABILITY-ROOTCAUSE-01
+
+
+## FRONT-BRAIN-PROVIDER-RELIABILITY-ROOTCAUSE-01
+
+### Status
+BRAIN_PROVIDER_RELIABILITY_ROOTCAUSE_COMPLETED_WITH_PATCH
+
+### Timestamp
+2026-06-15T15:32:34.759912+00:00
+
+### Branch
+codex/own-capital-sustainable-return
+
+### Start Head
+`2cb4575`
+
+### Root Cause
+- classification: ROUTE_SEMANTICS_BUG, DRY_RUN_GUARD_OVERMATCH, KIMI_CLOUD_INSTABILITY
+- primary_cause: ROUTE_SEMANTICS_BUG / DRY_RUN_GUARD_OVERMATCH
+- secondary_cause: KIMI_CLOUD_INSTABILITY: direct Kimi had 1/3 empty response; Brain provider_probe had 1/5 fallback; post-patch had 1/5 fallback.
+- normal_route_behavior: Before patch: read_only/evaluation metadata forced dry_run in openai_compat, so normal llm_grounded_cycle returned canonical dry-run router, not LLM.
+- provider_probe_behavior: Reached real provider through BrainSession.provider_probe, with tools/memory/FAISS blocked.
+
+### Probe Metrics Before Patch
+- kimi_direct_success_rate: 0.667
+- brain_provider_probe_kimi_success_rate: 0.8
+- brain_provider_probe_fallback_rate: 0.2
+- normal_route_real_llm_rate: 0.0
+- normal_route_dry_run_rate: 1.0
+- timeout_count: 0
+- empty_response_count: 1
+
+### Patch
+- patch_applied: true
+- files_changed:
+  - tmp_agent/brain_v9/api/openai_compat.py
+  - tmp_agent/brain_v9/core/router_entrypoint.py
+- reason: Root cause was proven in code and probes: read_only/evaluation llm_grounded_cycle was forced into dry_run. Patch adds safe llm_grounded_provider_eval route that reuses LLM-only provider_probe mechanics without requiring provider_probe metadata from caller.
+
+### Probe Metrics After Patch
+- normal_llm_grounded_route_real_llm_rate: 1.0
+- normal_llm_grounded_route_dry_run_rate: 0.0
+- kimi_success_rate: 0.8
+- fallback_rate: 0.2
+- timeout_count: 0
+- empty_response_count: 0
+
+### Safety
+- semantic_lines_before: 1715
+- semantic_lines_after: 1715
+- faiss_ids_before: 1616
+- faiss_ids_after: 1616
+- faiss_ntotal_before: 1616
+- faiss_ntotal_after: 1616
+- canonical_semantic_mutated: false
+- faiss_mutated: false
+- trading_touched: false
+- b8_touched: false
+- strategies_touched: false
+- secrets_exposed: false
+- raw_cot_exposed: false
+
+### Validation
+- py_compile: PASS
+- focused smoke: 7 passed
+
+### Evidence
+`tmp_agent/front_brain_provider_reliability_rootcause_01`
+
+### Next Recommended Front
+FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02
