@@ -8580,5 +8580,49 @@ COMPLETED
 ### Next Recommended Front
 FRONT-BRAIN-LLM-GROUNDED-MEMORY-PROMOTION-AUDIT-01
 
-### Decision
-30 controlled LLM-grounded autonomy cycles completed successfully after Kimi Mitigation 02. All safety constraints held. Provider chain stable. Ready for next front.
+## LEDGER-ROADMAP-SSOT-MEMORY-PROMOTION-AUDIT-01 — LLM-Grounded Memory Promotion Audit Completed
+- **Date (UTC)**: 2026-06-15T23:45:00+00:00
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: 41d7cdb (will advance after push)
+- **Estado**: Memory promotion audit completado. Ninguna promoción canónica realizada. Read-only audit.
+
+### Scope
+- tmp_agent/front_brain_llm_grounded_memory_promotion_audit_01/
+- tests/smoke/smoke_front_brain_llm_grounded_memory_promotion_audit_01.py
+- ROADMAP_STATUS.json (updated)
+
+### Phases Executed
+- Phase 0: State Lock — verified clean git state, no canonical mutations
+- Phase 1: Prior Front Verify — confirmed 30/30 cycles, 0 canonical promotions, unchanged semantic/FAISS
+- Phase 2: Source Inventory — 5 sources scanned, 456 items, 84 candidates
+- Phase 3: Candidate Extraction — 53 candidates extracted from promotion_queue, semantic_staging, journal
+- Phase 4: Deduplication & Safety Screen — 37 unique, 16 duplicates, 16 unsafe-reject, 5 promote-later, 16 needs-human-review
+- Phase 5: Audit Report — audit_report.md and supporting JSON artifacts generated
+- Phase 6: Smoke Test — 17/17 passed
+- Phase 7: Ledger Update — ROADMAP_STATUS updated, audit registered as completed
+
+### Safety Checklist
+- [x] .env NOT modified
+- [x] trading/* NOT touched
+- [x] B8/* NOT touched
+- [x] tmp_agent/strategies/* NOT touched
+- [x] memory/semantic/* NOT mutated
+- [x] FAISS NOT written
+- [x] No additional autonomy cycles run
+- [x] No root junk staged
+- [x] No force push / reset / clean / stash used
+
+### Candidate Summary
+| Decision | Count |
+|---|---|
+| promote_later | 5 |
+| needs_human_review | 16 |
+| duplicate | 16 |
+| reject/unsafe_reject | 16 |
+
+### Canonical Promotion Allowed
+NO — this front is audit-only. All `canonical_promotion_allowed` flags remain False.
+
+### Next Recommended Front
+FRONT-BRAIN-LLM-GROUNDED-MEMORY-PROMOTION-EXECUTE-01 — requires explicit human approval after reviewing 16 flagged candidates.
+
