@@ -10,8 +10,8 @@ def test_state_lock_exists():
     assert (ROOT / "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02_retry_after_kimi_mitigation_01/state_lock.json").exists()
 
 
-def test_kimi_stability_closeout_exists():
-    assert (ROOT / "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02_retry_after_kimi_mitigation_01/kimi_stability_closeout_verify.json").exists()
+def test_kimi_closeout_verify_exists():
+    assert (ROOT / "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02_retry_after_kimi_mitigation_01/kimi_closeout_verify.json").exists()
 
 
 def test_live_runtime_verify_exists():

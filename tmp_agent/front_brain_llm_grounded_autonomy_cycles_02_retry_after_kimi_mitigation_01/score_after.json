@@ -1,6 +1,6 @@
 {
   "front": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01",
-  "timestamp_utc": "2026-06-15T17:55:00+00:00",
+  "timestamp_utc": "2026-06-15T18:25:00+00:00",
   "scores": {
     "provider_reliability": 0.33,
     "kimi_selection_reliability": 0.33,
@@ -17,5 +17,5 @@
     "operator_value": 0.5,
     "report_quality": 0.9
   },
-  "note": "No change — stopped at Phase 3 preflight before any cycles ran."
+  "note": "No change — stopped at Phase 3 preflight because provider chain budget exhaustion blocked reliable Kimi selection."
 }

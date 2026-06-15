@@ -8,13 +8,14 @@
 
 ## Dashboard 8092
 - Status: HTTP 200
+- Safety: HTTP 200
 - Degraded: false
 - Brain OK: true
 - Kimi available: true
+- Autonomy: idle
 - Scheduler: cached_ready (not actively running)
-- Autonomy: idle / paused=false / stopped=false
 
-## Safety Dashboard Snapshot
+## Safety Snapshot
 - semantic_memory_lines: 1715
 - faiss_ids: 1616
 - faiss_ntotal: 1616
@@ -25,6 +26,4 @@
 - secrets_exposed: false
 
 ## Verdict
-ALL_CHECKS_PASS ✅ — safe_mode remains false, baselines held, runtime healthy.
-
-Proceeding to Phase 3 (Kimi route preflight).
+ALL_RUNTIME_CHECKS_PASS ✅ — proceed to Phase 3 (Kimi route preflight).

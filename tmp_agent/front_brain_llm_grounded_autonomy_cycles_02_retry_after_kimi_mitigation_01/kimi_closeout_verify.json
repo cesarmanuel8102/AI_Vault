@@ -1,0 +1,29 @@
+{
+  "front": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01",
+  "phase": "PHASE_1_KIMI_CLOSEOUT_VERIFY",
+  "timestamp_utc": "2026-06-15T18:20:00+00:00",
+  "closeout_verified": true,
+  "files_exist": {
+    "final_report.json": true,
+    "final_report.md": true,
+    "cesar_review_report.md": true,
+    "NEXT_PROMPT_RECOMMENDATION.md": true,
+    "post_push_verification.json": true,
+    "smoke_test.py": true
+  },
+  "closeout_status_from_final_report": "BRAIN_KIMI_CLOUD_STABILITY_MITIGATION_COMPLETED_WITH_PATCH",
+  "safe_mode_false_recorded": true,
+  "semantic_lines": 1715,
+  "faiss_ids": 1616,
+  "faiss_ntotal": 1616,
+  "canonical_semantic_mutated": false,
+  "faiss_mutated": false,
+  "trading_touched": false,
+  "b8_touched": false,
+  "secrets_exposed": false,
+  "raw_cot_exposed": false,
+  "roadmap_includes_kimi": true,
+  "ledger_updated": true,
+  "recommended_next": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01",
+  "verdict": "KIMI_CLOSEOUT_VERIFIED"
+}

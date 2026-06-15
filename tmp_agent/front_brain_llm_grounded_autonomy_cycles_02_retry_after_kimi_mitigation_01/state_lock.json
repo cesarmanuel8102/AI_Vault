@@ -1,27 +1,18 @@
 {
   "front": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01",
   "phase": "PHASE_0_HARD_STATE_LOCK",
-  "timestamp_utc": "2026-06-15T17:10:00+00:00",
+  "timestamp_utc": "2026-06-15T18:20:00+00:00",
   "repo_root": "C:\\AI_VAULT_CANONICAL",
   "branch": "codex/own-capital-sustainable-return",
-  "local_head": "43222d3",
-  "remote_head": "43222d3",
+  "local_head": "5a801a1",
+  "remote_head": "5a801a1",
   "local_equals_remote": true,
-  "tracked_dirty": ["memory/autonomous_journal.jsonl"],
   "staged_changes": [],
-  "unstaged_changes": ["memory/autonomous_journal.jsonl"],
-  "dirty_verdict": {
-    "memory/autonomous_journal.jsonl": "append_only_safe"
-  },
-  "start_safe_server_safe_mode_default": "false",
-  "brain_8091_health": {"status": 200, "safe_mode": false},
-  "brain_8091_models": 200,
-  "dashboard_8092_status": 0,
-  "dashboard_8092_needs_start": true,
+  "tracked_dirty": [],
+  "untracked_roots_to_ignore": ["dry_run", "evaluation", "read_only", "stream"],
   "baseline_semantic_lines": 1715,
   "baseline_faiss_ids": 1616,
   "baseline_faiss_ntotal": 1616,
   "hard_prohibitions_acknowledged": true,
-  "allowed_scope_acknowledged": true,
   "status": "STATE_LOCKED"
 }

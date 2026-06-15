@@ -6,24 +6,19 @@ FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01
 ## Repo
 - Root: `C:\AI_VAULT_CANONICAL`
 - Branch: `codex/own-capital-sustainable-return`
-- Local HEAD: `43222d3`
-- Remote HEAD: `43222d3`
+- Local HEAD: `5a801a1`
+- Remote HEAD: `5a801a1`
 - Sync: yes
 
-## Dirty Files
-- `memory/autonomous_journal.jsonl`: append-only safe (scheduler autonomy lessons)
-- No staged changes
-- No unexpected tracked modifications
+## Changes
+- Tracked dirty: none
+- Staged: none
+- Untracked: many old front artifacts (ignored)
 
-## Baselines (immutable)
+## Baselines
 - semantic_memory.jsonl: 1715 lines
-- semantic_memory_faiss_ids.json: 1616 IDs
+- semantic_memory_faiss_ids.json: 1616
 - faiss_ntotal: 1616
 
-## Runtime
-- Brain 8091 health: 200, safe_mode=false
-- Brain 8091 models: 200
-- Dashboard 8092: not listening (needs start)
-
 ## Verdict
-STATE_LOCKED — proceed to Phase 1 (Kimi stability closeout).
+STATE_LOCKED ✅ — proceed to Phase 1.

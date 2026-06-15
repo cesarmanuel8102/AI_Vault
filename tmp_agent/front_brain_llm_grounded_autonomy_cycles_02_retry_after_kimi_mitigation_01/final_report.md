@@ -4,28 +4,32 @@
 **FAILED_KIMI_NOT_SELECTED_PREFLIGHT**
 
 ## Objective
-Run 30 controlled real LLM-grounded autonomy cycles through Brain 8091 after closing out the Kimi stability mitigation front.
+Run 30 controlled real LLM-grounded autonomy cycles through Brain 8091 after Kimi stability mitigation closeout.
 
 ## Phases Executed
 - Phase 0: Hard State Lock — PASSED
-- Phase 1: Kimi Stability Closeout — COMPLETED (committed `4f742e5`)
-- Phase 2: Live Runtime Verify — PASSED (safe_mode=false, 8091/8092 healthy)
+- Phase 1: Kimi Closeout Verify — VERIFIED
+- Phase 2: Live Runtime Verify — PASSED
 - Phase 3: Kimi Route Preflight — **FAILED** (2/3 probes missing provider_selected)
 
 ## Why It Failed
-Phase 3 requires Kimi to be selected in preflight probes without provider_probe:true. Actual results:
-- Probe 1: 45,062ms, provider=null, budget exhausted
-- Probe 2: 45,047ms, provider=null, budget exhausted
-- Probe 3: 2,469ms, provider=kimi_k2_6_cloud, FAST_SUCCESS
+Phase 3 requires Kimi to be selected in preflight probes. Actual results:
+- Probe 1: 8,484ms, provider=kimi_k2_6_cloud, FAST_SUCCESS, content correct
+- Probe 2: 45,281ms, provider=null, budget exhausted
+- Probe 3: 45,265ms, provider=null, budget exhausted
 
-Root cause: **Provider chain budget exhaustion after timeout.**
-When Kimi experiences intermittent latency spikes (~45s), the provider chain advances through codex → llama8b → deepseek14b. By the time it reaches the final fallback, the per-session cumulative budget is exhausted, yielding `provider_selected=null`.
+Root cause: **Provider chain budget exhaustion after intermittent Kimi timeout.**
 
-The `safe_mode=false` patch (commit `43222d3`) resolved cold-model/warmup issues, but a new blocker emerged: intermittent Kimi timeouts drain the chain budget.
+Additional finding: Provider chain ORDER reversed between probe 1 and probes 2/3:
+- Probe 1: `[kimi, codex, llama8b, deepseek14b]`
+- Probes 2/3: `[codex, llama8b, deepseek14b, kimi]`
+
+This suggests dynamic reordering based on prior state or budget.
 
 ## Stop Conditions Triggered
-- Kimi selection rate after 3 probes: 33.3% (< 80%)
+- Kimi selection rate after 3 probes: 33.3% (< required threshold)
 - Provider selected missing in 2 consecutive probes
+- Budget exhaustion observed
 
 ## Safety
 - Semantic memory: 1715 lines (unchanged)
@@ -35,13 +39,12 @@ The `safe_mode=false` patch (commit `43222d3`) resolved cold-model/warmup issues
 - No secrets/raw CoT exposed
 - Dry run count: 0
 
-## Commits
-- `4f742e5` feat: map Kimi cloud stability root cause and apply safe_mode fix
+## Conclusion
+safe_mode=false fixed warmup/cold-model issues (Kimi CAN be selected intermittently), but a deeper provider chain fragility remains. Intermittent Kimi timeouts drain chain budget, preventing reliable provider selection for sustained autonomy cycles.
 
-## Recommendations
-1. **FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02**
-   - Tune provider chain budget or timeout thresholds
-   - Add same-provider retry logic for transient timeouts
-   - Consider shorter timeout for Kimi (e.g., 15s) with immediate retry instead of advancing chain
-
-2. Once Kimi preflight reliably passes ≥ 80%, re-run this front.
+## Recommended Next Front
+**FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02**
+- Audit provider chain budget/timeout logic in llm.py/router_entrypoint.py
+- Investigate chain order reversal
+- Add same-provider retry for transient timeouts
+- Acceptance: 3/3 preflight probes select Kimi, latency < 15s, no budget exhaustion

@@ -1,6 +1,6 @@
 {
   "front": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01",
-  "timestamp_utc": "2026-06-15T17:10:00+00:00",
+  "timestamp_utc": "2026-06-15T18:25:00+00:00",
   "scores": {
     "provider_reliability": 0.33,
     "kimi_selection_reliability": 0.33,
@@ -16,5 +16,6 @@
     "financial_safety": 1.0,
     "operator_value": 0.5,
     "report_quality": 0.9
-  }
+  },
+  "note": "Scores reflect preflight probe results only (1 success / 3 attempts). Front stopped before any cycles ran."
 }

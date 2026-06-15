@@ -1,8 +1,8 @@
 {
-  "current_head": "a8e9e73",
-  "current_remote_head": "a8e9e73",
+  "current_head": "5a801a1",
+  "current_remote_head": "5a801a1",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "failed_kimi_not_selected_preflight_after_kimi_mitigation_closeout",
+  "migration_status": "failed_kimi_not_selected_preflight_provider_chain_budget_exhaustion",
   "last_applied_checkpoint": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01",
   "completed_fronts": [
     "BL-01",
@@ -171,7 +171,7 @@
     "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
     "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-01",
     "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
-    "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-8091-RELOAD"
+    "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01"
   ],
   "protected_out_of_scope": [
     "memory/semantic",
@@ -179,10 +179,10 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01",
+    "name": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
     "status": "recommended_next",
-    "reason": "Kimi stability closeout completed. safe_mode=false confirmed. Ready to attempt 30 controlled LLM-grounded autonomy cycles.",
-    "unblock_dependency": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01"
+    "reason": "Provider chain budget exhaustion after timeout blocks reliable Kimi usage. Need same-provider retry or budget increase.",
+    "unblock_dependency": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01"
   },
   "ready_for_next_front": true,
   "last_updated": "2026-06-15T16:39:36.843283+00:00",
