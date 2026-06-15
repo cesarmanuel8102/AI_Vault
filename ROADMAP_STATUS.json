@@ -161,7 +161,8 @@
     "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-SCALEUP-01",
     "FRONT-BRAIN-PROVIDER-RELIABILITY-ROOTCAUSE-01",
     "RESTART-BRAIN-8091-LOAD-PATCHED-PROVIDER-ROUTE-01",
-    "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01"
+    "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01",
+    "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -179,10 +180,10 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
+    "name": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-02",
     "status": "recommended_next",
-    "reason": "Provider chain budget exhaustion after timeout blocks reliable Kimi usage. Need same-provider retry or budget increase.",
-    "unblock_dependency": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01"
+    "reason": "Kimi cloud stability mitigation 02 completed with patch. Provider chain order reversal fixed. Kimi now reliably selected first with stable chain order. Ready to retry 30 controlled LLM-grounded autonomy cycles.",
+    "unblock_dependency": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02"
   },
   "ready_for_next_front": true,
   "last_updated": "2026-06-15T16:39:36.843283+00:00",

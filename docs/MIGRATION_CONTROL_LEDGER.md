@@ -8549,4 +8549,4 @@ codex/own-capital-sustainable-return
 - raw CoT exposed: `false`
 
 ### Next Recommended
-FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02 (provider chain budget/timeout and chain order determinism)
+FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-02 (Kimi chain order patch applied; Kimi reliably selected first)
