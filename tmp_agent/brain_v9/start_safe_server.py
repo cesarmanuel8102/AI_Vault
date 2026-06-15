@@ -29,7 +29,7 @@ os.environ.setdefault("BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS", "false")
 uvicorn.run(
     "brain_v9.main:app",
     host=os.getenv("BRAIN_HOST", "127.0.0.1"),
-    port=int(os.getenv("BRAIN_PORT", "8090")),
+    port=8091,
     log_level=os.getenv("BRAIN_LOG_LEVEL", "info"),
     reload=False,
 )

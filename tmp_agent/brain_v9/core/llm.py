@@ -377,6 +377,13 @@ class LLMManager:
                 others = [m for m in mutable_chain if MODELS.get(m, {}).get("type") != "ollama"]
                 ollamas_sorted = sorted(ollamas, key=_ctx_score, reverse=True)
                 new_chain = others + ollamas_sorted
+                # Preserve primary provider at position 0 during cooldown reorder.
+                # Prevents budget exhaustion by keeping kimi first so fallback
+                # happens only after kimi is attempted, not before it.
+                if _force_reorder and new_chain != list(chain):
+                    primary = PROVIDER_PRIORITY.get("primary_provider")
+                    if primary and primary in new_chain and primary not in others[:1]:
+                        new_chain = [primary] + [m for m in new_chain if m != primary]
                 if new_chain != list(chain):
                     log.info(
                         "Pre-flight ctx routing: prompt~%d tok, reordering "
