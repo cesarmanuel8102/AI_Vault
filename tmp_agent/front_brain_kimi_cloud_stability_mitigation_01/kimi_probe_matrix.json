@@ -1,0 +1,66 @@
+{
+  "probes": [
+    {
+      "seq": 0,
+      "provider_selected": "kimi_k2_6_cloud",
+      "provider_status": "FAST_SUCCESS",
+      "latency_ms": 3284.3,
+      "content_len": 5,
+      "content_preview": "S1_OK",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "dry_run": false,
+      "no_cot_leak": true
+    },
+    {
+      "seq": 1,
+      "provider_selected": "kimi_k2_6_cloud",
+      "provider_status": "FAST_SUCCESS",
+      "latency_ms": 2603.5,
+      "content_len": 5,
+      "content_preview": "S2_OK",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "dry_run": false,
+      "no_cot_leak": true
+    },
+    {
+      "seq": 2,
+      "provider_selected": "kimi_k2_6_cloud",
+      "provider_status": "FAST_SUCCESS",
+      "latency_ms": 3221.8,
+      "content_len": 5,
+      "content_preview": "S3_OK",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "dry_run": false,
+      "no_cot_leak": true
+    },
+    {
+      "seq": 3,
+      "provider_selected": "kimi_k2_6_cloud",
+      "provider_status": "FAST_SUCCESS",
+      "latency_ms": 3322.2,
+      "content_len": 5,
+      "content_preview": "S4_OK",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "dry_run": false,
+      "no_cot_leak": true
+    },
+    {
+      "seq": 4,
+      "provider_selected": "kimi_k2_6_cloud",
+      "provider_status": "FAST_SUCCESS",
+      "latency_ms": 7008.4,
+      "content_len": 171,
+      "content_preview": "Artificial intelligence enable",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "dry_run": false,
+      "no_cot_leak": true
+    }
+  ],
+  "total_calls": 5,
+  "timestamp": "2026-06-15T17:34:01Z"
+}

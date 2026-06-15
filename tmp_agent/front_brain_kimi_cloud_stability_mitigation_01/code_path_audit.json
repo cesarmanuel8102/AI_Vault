@@ -1,0 +1,66 @@
+{
+  "front": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01",
+  "phase": "2",
+  "files_audited": [
+    "tmp_agent/brain_v9/core/router_entrypoint.py",
+    "tmp_agent/brain_v9/core/llm.py",
+    "tmp_agent/brain_v9/api/openai_compat.py",
+    "tmp_agent/brain_v9/core/session.py"
+  ],
+  "key_findings": {
+    "safe_mode_effect_on_provider_chain": {
+      "conclusion": "safe_mode does NOT directly skip or gate Kimi provider in any of the 4 core files",
+      "actual_effect": "Only gates startup background tasks in main.py (autonomy, proactive, diagnostic, monitor, warmup)",
+      "chat_relevant_effect": "Model warmup is DISABLED when safe_mode=true, leaving local models cold on first use",
+      "indirect_effect": "Cold local models increase fallback latency and failure probability when Kimi returns empty"
+    },
+    "empty_response_detection": {
+      "location": "llm.py line 626, llm.py line 925",
+      "method": "if not str(content or '').strip(): raise RuntimeError(...)",
+      "behavior": "Triggers cross-provider chain fallback, NOT same-provider retry"
+    },
+    "same_provider_retry": {
+      "exists": false,
+      "location": "llm.py query() loop",
+      "behavior": "Each provider attempted exactly once; empty response advances to next provider after 0.5s sleep"
+    },
+    "cross_provider_fallback": {
+      "exists": true,
+      "location": "llm.py query() except block",
+      "behavior": "When RuntimeError raised (empty response), loop continues to next model in CHAINS"
+    },
+    "chain_budget_exhaustion": {
+      "exists": false,
+      "budget_limit": "No explicit budget; all models in chain are attempted",
+      "behavior": "Chain exhausts when all providers fail"
+    },
+    "max_tokens_handling": {
+      "configured": "8192 default in config.py, passed via payload",
+      "malformation_risk": "None detected; max_tokens forwarded to provider correctly"
+    },
+    "kimi_call_path": {
+      "method": "Ollama chat endpoint (/api/chat)",
+      "model_alias": "kimi-k2.6:cloud",
+      "timeout": "240 seconds (LLM_TIMEOUT env)"
+    },
+    "metadata_recording": {
+      "provider_status": "Recorded (FAST_SUCCESS/SLOW_SUCCESS/FAILED/EMPTY_RESPONSE/TIMEOUT)",
+      "fallback_reason": "Recorded (provider_chain_fallback)",
+      "provider_attempts": "Recorded as list of attempt dicts",
+      "retry_count": "NOT recorded (no retry exists)",
+      "empty_response_flag": "Recorded via provider_status=EMPTY_RESPONSE but not as standalone boolean"
+    },
+    "canonical_memory_faiss_writes": {
+      "router": "NONE",
+      "llm": "NONE",
+      "openai_compat": "NONE",
+      "session": "Memory writes via _save_turn(); FAISS writes only on explicit opt-in (faiss_mutated=false)"
+    }
+  },
+  "root_cause_assessment": {
+    "safe_mode_is_root_cause": false,
+    "safe_mode_is_accelerator": true,
+    "actual_root_cause": "MISSING_SAME_PROVIDER_RETRY_FOR_EMPTY_RESPONSES",
+    "evidence": "llm.py raises RuntimeError on empty content and immediately advances chain without retrying same provider"
+  }
+}

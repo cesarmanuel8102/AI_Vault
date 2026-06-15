@@ -1,0 +1,19 @@
+{
+  "front": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01",
+  "phase": "5",
+  "patch_applied": true,
+  "patch_via_checkpoint": true,
+  "files_changed": [
+    "tmp_agent/brain_v9/start_safe_server.py"
+  ],
+  "patch_summary": "Changed BRAIN_SAFE_MODE default from true to false in start_safe_server.py. This fixes the root cause: safe_mode=true was disabling model warmup, causing cold local fallback models and premature chain advancement that masqueraded as 'Kimi empty responses'.",
+  "evidence": "All 5 post-patch probes selected kimi_k2_6_cloud with FAST_SUCCESS, zero empty responses, zero fallbacks, latencies 2.6-7s vs previous 21+s.",
+  "ruled_out_changes": [
+    "No same-provider retry added (not needed: root cause is not random Kimi failure)",
+    "No fallback metadata improvement (not needed: provider metadata already correct)",
+    "No budget adjustment (not needed: chain exhaustion was not a factor)",
+    "No canonical memory or FAISS writes",
+    "No .env or trading changes"
+  ],
+  "conclusion": "Patch was applied via the prior RECOVER-SAFE-MODE-FALSE-CHECKPOINT-01 commit (43222d3). No additional code changes are required for the Kimi stability issue."
+}

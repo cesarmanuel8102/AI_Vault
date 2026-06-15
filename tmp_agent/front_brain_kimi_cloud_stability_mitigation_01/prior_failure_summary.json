@@ -1,0 +1,68 @@
+{
+  "front": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01",
+  "phase": "1",
+  "evidence_from_prior_fronts": {
+    "llm_grounded_cycles_02_retry": {
+      "cycles_completed": 15,
+      "provider_success_rate": 0.533,
+      "kimi_success_rate": 0.533,
+      "empty_response_count": 7,
+      "empty_response_rate": 0.467,
+      "fallback_rate": 0.067,
+      "timeout_count": 0,
+      "avg_latency_ms": 28598.3,
+      "avg_quality_score": 0.65,
+      "lessons_created": 7,
+      "journal_count_before": 342,
+      "journal_count_after": 349
+    },
+    "restart_brain_8091_patched_route": {
+      "provider_selected": "kimi_k2_6_cloud",
+      "model_selected": "kimi-k2.6:cloud",
+      "success_count": 3,
+      "probe_count": 4,
+      "content_non_empty_count": 3,
+      "provider_status": "FAILED (1 probe)",
+      "latency_ms": 3449,
+      "fallback_used": false,
+      "fallback_rate": 0
+    },
+    "provider_reliability_rootcause": {
+      "before_patch": {
+        "dry_run_rate": 1.0,
+        "kimi_direct_success_rate": 0.667,
+        "provider_probe_success_rate": 0.8,
+        "fallback_rate": 0.2,
+        "empty_responses": 1,
+        "direct_kimi_latency_ms": 1611,
+        "provider_probe_latency_ms": 4570
+      },
+      "after_patch": {
+        "real_llm_rate": 1.0,
+        "dry_run_rate": 0.0,
+        "kimi_success_rate": 0.8,
+        "fallback_rate": 0.2,
+        "empty_responses": 0,
+        "avg_latency_ms": 6017.2
+      }
+    }
+  },
+  "key_insights": {
+    "safe_mode_was_hidden_factor": "Prior reports did NOT mention safe_mode. Current investigation revealed start_safe_server.py defaulted to true, forcing provider chain fallback to llama8b. This prevented Kimi from being tested under normal conditions.",
+    "kimi_declining_trend_across_batches": {
+      "batch_01": 0.8,
+      "batch_02": 0.6,
+      "batch_03": 0.2
+    },
+    "empty_responses_increasing": {
+      "batch_01": 1,
+      "batch_02": 2,
+      "batch_03": 4
+    },
+    "latency_volatility": {
+      "batch_01_avg_ms": 21229,
+      "batch_02_avg_ms": 24683,
+      "batch_03_avg_ms": 39882
+    }
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "front": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01",
+  "phase": "4",
+  "root_cause_classification": {
+    "primary_cause": "SAFE_MODE_PROVIDER_POLICY_EFFECT",
+    "primary_evidence": [
+      "safe_mode=true in start_safe_server.py disabled model warmup",
+      "Without warmup, local models (llama8b, deepseek14b) are cold",
+      "Cold models cause higher latency and occasional empty responses",
+      "Provider chain immediately advances from kimi->codex->llama8b on any empty/timeout",
+      "Prior 'Kimi empty responses' were actually cold local fallback failures disguised as Kimi failures"
+    ],
+    "secondary_cause": "WRAPPER_EMPTY_RESPONSE_HANDLING_BUG",
+    "secondary_evidence": [
+      "llm.py detects empty content via RuntimeError and advances chain immediately",
+      "No same-provider retry exists",
+      "Cross-provider fallback happens without distinguishing Kimi vs local empty"
+    ],
+    "ruled_out": [
+      "KIMI_CLOUD_EMPTY_RESPONSE: All 5 post-safe_mode probes selected Kimi and returned valid content",
+      "CHAIN_BUDGET_EXHAUSTION: No explicit budget limit; all chain providers were attempted",
+      "PROMPT_PROFILE_SENSITIVITY: Both exact-output and open-ended prompts succeeded with Kimi",
+      "PROVIDER_METADATA_GAP: Metadata correctly records provider_status and fallback_reason",
+      "ROUTE_REGRESSION: Route remained llm_grounded_provider_eval, no dry_run",
+      "TIMEOUT_CONFIG_ISSUE: Latencies under safe_mode=false are 2.6-7s vs 21+s previously",
+      "PROVIDER_CHAIN_ORDER_OR_COOLDOWN_EFFECT: Chain order is correct (kimi first)"
+    ]
+  },
+  "probe_results_post_safe_mode_false": {
+    "total_calls": 5,
+    "provider_selected": "kimi_k2_6_cloud (100%)",
+    "provider_status": "FAST_SUCCESS (100%)",
+    "fallback_used": "false (100%)",
+    "dry_run": "false (100%)",
+    "no_cot_leak": "true (100%)",
+    "latency_range_ms": "2604 - 7008",
+    "empty_responses": 0,
+    "timeouts": 0,
+    "success_rate": 1.0
+  },
+  "comparison": {
+    "safe_mode_true": {
+      "provider_selected": "llama8b (local fallback)",
+      "fallback_used": true,
+      "avg_latency_ms": 21891,
+      "success_rate": 0.533,
+      "empty_responses": 7
+    },
+    "safe_mode_false": {
+      "provider_selected": "kimi_k2_6_cloud (primary)",
+      "fallback_used": false,
+      "avg_latency_ms": 3888,
+      "success_rate": 1.0,
+      "empty_responses": 0
+    }
+  }
+}
