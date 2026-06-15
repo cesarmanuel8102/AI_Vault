@@ -1,0 +1,522 @@
+{
+  "probes": [
+    {
+      "group": "A_tags",
+      "route": "ollama_tags",
+      "result": {
+        "ok": true,
+        "status": 200,
+        "latency_ms": 74,
+        "body": {
+          "models": [
+            {
+              "name": "kimi-k2.6:cloud",
+              "model": "kimi-k2.6:cloud",
+              "remote_model": "kimi-k2.6",
+              "remote_host": "https://ollama.com:443",
+              "modified_at": "2026-06-12T15:36:28.5843405-04:00",
+              "size": 384,
+              "digest": "a90cd0d1590c53b9f9f4e0f66218e4c514d190652b8bed2842528e2530e34dc6",
+              "details": {
+                "parent_model": "",
+                "format": "",
+                "family": "kimi-k2",
+                "families": [
+                  "kimi-k2"
+                ],
+                "parameter_size": "1T",
+                "quantization_level": "int4"
+              }
+            },
+            {
+              "name": "nomic-embed-text:latest",
+              "model": "nomic-embed-text:latest",
+              "modified_at": "2026-04-30T04:40:03.1163313-04:00",
+              "size": 274302450,
+              "digest": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+              "details": {
+                "parent_model": "",
+                "format": "gguf",
+                "family": "nomic-bert",
+                "families": [
+                  "nomic-bert"
+                ],
+                "parameter_size": "137M",
+                "quantization_level": "F16"
+              }
+            },
+            {
+              "name": "deepseek-v4-pro:cloud",
+              "model": "deepseek-v4-pro:cloud",
+              "remote_model": "deepseek-v4-pro",
+              "remote_host": "https://ollama.com:443",
+              "modified_at": "2026-04-28T09:22:48.7539969-04:00",
+              "size": 344,
+              "digest": "22bfd5026abd64524341f1f90c4885c91a879767c39e3e39a4a3f000b3d0815f",
+              "details": {
+                "parent_model": "",
+                "format": "",
+                "family": "",
+                "families": null,
+                "parameter_size": "",
+                "quantization_level": ""
+              }
+            },
+            {
+              "name": "kimi-k2.5:cloud",
+              "model": "kimi-k2.5:cloud",
+              "remote_model": "kimi-k2.5",
+              "remote_host": "https://ollama.com:443",
+              "modified_at": "2026-03-20T11:41:52.7186304-04:00",
+              "size": 340,
+              "digest": "6d1c3246c6080b61c87b543323760b8f36cb68cf4473080b9429d09e2a73ddb7",
+              "details": {
+                "parent_model": "",
+                "format": "",
+                "family": "",
+                "families": null,
+                "parameter_size": "",
+                "quantization_level": ""
+              }
+            },
+            {
+              "name": "gpt-oss:120b-cloud",
+              "model": "gpt-oss:120b-cloud",
+              "remote_model": "gpt-oss:120b",
+              "remote_host": "https://ollama.com:443",
+              "modified_at": "2026-03-20T03:49:49.768819-04:00",
+              "size": 384,
+              "digest": "569662207105c69bb0eca2f79a3fdf8691ad6301def477a5ec66f8e8bae237e3",
+              "details": {
+                "parent_model": "",
+                "format": "",
+                "family": "gptoss",
+                "families": [
+                  "gptoss"
+                ],
+                "parameter_size": "116.8B",
+                "quantization_level": "MXFP4"
+              }
+            },
+            {
+              "name": "qwen3-coder:480b-cloud",
+              "model": "qwen3-coder:480b-cloud",
+              "remote_model": "qwen3-coder:480b",
+              "remote_host": "https://ollama.com:443",
+              "modified_at": "2026-03-20T02:33:33.8614315-04:00",
+              "size": 382,
+              "digest": "e30e45586389a1eb8d7616d16c7b692c89b903b58456ec5f20219cd4c9737f7e",
+              "details": {
+                "parent_model": "",
+                "format": "",
+                "family": "qwen3moe",
+                "families": [
+                  "qwen3moe"
+                ],
+                "parameter_size": "480B",
+                "quantization_level": "BF16"
+              }
+            },
+            {
+              "name": "qwen2.5-coder:14b",
+              "model": "qwen2.5-coder:14b",
+              "modified_at": "2026-03-18T17:09:40.0946412-04:00",
+              "size": 8988124298,
+              "digest": "9ec8897f747e246e970bc5cfdda85d22f1123dc2e3d34978a010a75968716849",
+              "details": {
+                "parent_model": "",
+                "format": "gguf",
+                "family": "qwen2",
+                "families": [
+                  "qwen2"
+                ],
+                "parameter_size": "14.8B",
+                "quantization_level": "Q4_K_M"
+              }
+            },
+            {
+              "name": "gpt-oss:20b-cloud",
+              "model": "gpt-oss:20b-cloud",
+              "remote_model": "gpt-oss:20b",
+              "remote_host": "https://ollama.com:443",
+              "modified_at": "2026-03-13T20:30:04.461857-04:00",
+              "size": 381,
+              "digest": "875e8e3a629ad3c2e66f1f1c461e3d140474212f44a34f4687ae1d927db41690",
+              "details": {
+                "parent_model": "",
+                "format": "",
+                "family": "gptoss",
+                "families": [
+                  "gptoss"
+                ],
+                "parameter_size": "20.9B",
+                "quantization_level": "MXFP4"
+              }
+            },
+            {
+              "name": "deepseek-r1:14b",
+              "model": "deepseek-r1:14b",
+              "modified_at": "2026-03-10T13:31:05.094314-04:00",
+              "size": 8988112209,
+              "digest": "c333b7232bdb521236694ffbb5f5a6b11cc45d98e9142c73123b670fca400b09",
+              "details": {
+                "parent_model": "",
+                "format": "gguf",
+                "family": "qwen2",
+                "families": [
+                  "qwen2"
+                ],
+                "parameter_size": "14.8B",
+                "quantization_level": "Q4_K_M"
+              }
+            },
+            {
+              "name": "deepseek-v3.1:671b-cloud",
+              "model": "deepseek-v3.1:671b-cloud",
+              "remote_model": "deepseek-v3.1:671b",
+              "remote_host": "https://ollama.com:443",
+              "modified_at": "2026-03-10T10:02:39.8538852-04:00",
+              "size": 405,
+              "digest": "d3749919e45f955731da7a7e76849e20f7ed310725d3b8b52822e811f55d0a90",
+              "details": {
+                "parent_model": "",
+                "format": "",
+                "family": "deepseek2",
+                "families": [
+                  "deepseek2"
+                ],
+                "parameter_size": "671.0B",
+                "quantization_level": "FP8_E4M3"
+              }
+            },
+            {
+              "name": "qwen3-vl:235b-cloud",
+              "model": "qwen3-vl:235b-cloud",
+              "remote_model": "qwen3-vl:235b",
+              "remote_host": "https://ollama.com:443",
+              "modified_at": "2026-03-10T09:35:35.1174397-04:00",
+              "size": 393,
+              "digest": "86b3322ec200a5d4c450b758fe56a3c172e3e712a87b3ef4917417ab7499042a",
+              "details": {
+                "parent_model": "",
+                "format": "",
+                "family": "qwen3vl",
+                "families": [
+                  "qwen3vl"
+                ],
+                "parameter_size": "235B",
+                "quantization_level": "FP8"
+              }
+            },
+            {
+              "name": "llama3.1:8b",
+              "model": "llama3.1:8b",
+              "modified_at": "2026-02-18T13:50:21.7779353-05:00",
+              "size": 4920753328,
+              "digest": "46e0c10c039e019119339687c3c1757cc81b9da49709a3b3924863ba87ca666e",
+              "details": {
+                "parent_model": "",
+                "format": "gguf",
+                "family": "llama",
+                "families": [
+                  "llama"
+                ],
+                "parameter_size": "8.0B",
+                "quantization_level": "Q4_K_M"
+              }
+            }
+          ]
+        }
+      },
+      "models": [
+        "kimi-k2.6:cloud",
+        "nomic-embed-text:latest",
+        "deepseek-v4-pro:cloud",
+        "kimi-k2.5:cloud",
+        "gpt-oss:120b-cloud",
+        "qwen3-coder:480b-cloud",
+        "qwen2.5-coder:14b",
+        "gpt-oss:20b-cloud",
+        "deepseek-r1:14b",
+        "deepseek-v3.1:671b-cloud",
+        "qwen3-vl:235b-cloud",
+        "llama3.1:8b"
+      ],
+      "kimi_visible": true
+    },
+    {
+      "group": "A_direct_kimi",
+      "probe_id": 1,
+      "route": "ollama_api_chat",
+      "latency_ms": 2010,
+      "http_status": 200,
+      "ok": true,
+      "content_preview": "KIMI_DIRECT_OK",
+      "content_non_empty": true,
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "error": null
+    },
+    {
+      "group": "A_direct_kimi",
+      "probe_id": 2,
+      "route": "ollama_api_chat",
+      "latency_ms": 1749,
+      "http_status": 200,
+      "ok": true,
+      "content_preview": "",
+      "content_non_empty": false,
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "error": null
+    },
+    {
+      "group": "A_direct_kimi",
+      "probe_id": 3,
+      "route": "ollama_api_chat",
+      "latency_ms": 1075,
+      "http_status": 200,
+      "ok": true,
+      "content_preview": "KIMI_DIRECT_OK_3",
+      "content_non_empty": true,
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "error": null
+    },
+    {
+      "group": "B_brain_provider_probe",
+      "probe_id": 1,
+      "route": "8091_provider_probe",
+      "latency_ms": 1797,
+      "http_status": 200,
+      "ok": true,
+      "content_preview": "BRAIN_PROVIDER_PROBE_OK_1",
+      "content_non_empty": true,
+      "provider_selected": "kimi_k2_6_cloud",
+      "model_selected": "kimi-k2.6:cloud",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "provider_status": "FAST_SUCCESS",
+      "provider_latency_ms": 1653.442,
+      "provider_attempts": null,
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "error": null
+    },
+    {
+      "group": "B_brain_provider_probe",
+      "probe_id": 2,
+      "route": "8091_provider_probe",
+      "latency_ms": 1716,
+      "http_status": 200,
+      "ok": true,
+      "content_preview": "BRAIN_PROVIDER_PROBE_OK_2",
+      "content_non_empty": true,
+      "provider_selected": "kimi_k2_6_cloud",
+      "model_selected": "kimi-k2.6:cloud",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "provider_status": "FAST_SUCCESS",
+      "provider_latency_ms": 1711.852,
+      "provider_attempts": null,
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "error": null
+    },
+    {
+      "group": "B_brain_provider_probe",
+      "probe_id": 3,
+      "route": "8091_provider_probe",
+      "latency_ms": 2267,
+      "http_status": 200,
+      "ok": true,
+      "content_preview": "Safe fallback metadata is default descriptive information that systems automatically use when primary metadata is missing, invalid, or incomplete to prevent failures and maintain basic functionality.",
+      "content_non_empty": true,
+      "provider_selected": "kimi_k2_6_cloud",
+      "model_selected": "kimi-k2.6:cloud",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "provider_status": "FAST_SUCCESS",
+      "provider_latency_ms": 2243.87,
+      "provider_attempts": null,
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "error": null
+    },
+    {
+      "group": "B_brain_provider_probe",
+      "probe_id": 4,
+      "route": "8091_provider_probe",
+      "latency_ms": 1436,
+      "http_status": 200,
+      "ok": true,
+      "content_preview": "BRAIN_PROVIDER_PROBE_OK_4",
+      "content_non_empty": true,
+      "provider_selected": "kimi_k2_6_cloud",
+      "model_selected": "kimi-k2.6:cloud",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "provider_status": "FAST_SUCCESS",
+      "provider_latency_ms": 1410.25,
+      "provider_attempts": null,
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "error": null
+    },
+    {
+      "group": "B_brain_provider_probe",
+      "probe_id": 5,
+      "route": "8091_provider_probe",
+      "latency_ms": 15635,
+      "http_status": 200,
+      "ok": true,
+      "content_preview": "Kimi fallback is acceptable only when the primary local LLM is unavailable, degraded, or insufficient for the task, and the request does not require private canonical data that cannot be safely exposed.",
+      "content_non_empty": true,
+      "provider_selected": "codex",
+      "model_selected": "gpt-5.5",
+      "fallback_used": true,
+      "fallback_reason": "provider_chain_fallback",
+      "provider_status": "FAST_SUCCESS",
+      "provider_latency_ms": 11227.08,
+      "provider_attempts": null,
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "error": null
+    },
+    {
+      "group": "C_brain_normal_route",
+      "probe_id": 1,
+      "route": "8091_normal_readonly_eval",
+      "latency_ms": 11,
+      "http_status": 200,
+      "ok": true,
+      "content_preview": "Dry-run canonical router entrypoint validated. No LLM, tools, memory, or FAISS writes executed.",
+      "content_non_empty": true,
+      "is_dry_run_router": true,
+      "provider_selected": null,
+      "model_selected": null,
+      "fallback_used": false,
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "error": null
+    },
+    {
+      "group": "C_brain_normal_route",
+      "probe_id": 2,
+      "route": "8091_normal_readonly_eval",
+      "latency_ms": 21,
+      "http_status": 200,
+      "ok": true,
+      "content_preview": "Dry-run canonical router entrypoint validated. No LLM, tools, memory, or FAISS writes executed.",
+      "content_non_empty": true,
+      "is_dry_run_router": true,
+      "provider_selected": null,
+      "model_selected": null,
+      "fallback_used": false,
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "error": null
+    },
+    {
+      "group": "C_brain_normal_route",
+      "probe_id": 3,
+      "route": "8091_normal_readonly_eval",
+      "latency_ms": 14,
+      "http_status": 200,
+      "ok": true,
+      "content_preview": "Dry-run canonical router entrypoint validated. No LLM, tools, memory, or FAISS writes executed.",
+      "content_non_empty": true,
+      "is_dry_run_router": true,
+      "provider_selected": null,
+      "model_selected": null,
+      "fallback_used": false,
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "error": null
+    },
+    {
+      "group": "C_brain_normal_route",
+      "probe_id": 4,
+      "route": "8091_normal_readonly_eval",
+      "latency_ms": 14,
+      "http_status": 200,
+      "ok": true,
+      "content_preview": "Dry-run canonical router entrypoint validated. No LLM, tools, memory, or FAISS writes executed.",
+      "content_non_empty": true,
+      "is_dry_run_router": true,
+      "provider_selected": null,
+      "model_selected": null,
+      "fallback_used": false,
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "error": null
+    },
+    {
+      "group": "C_brain_normal_route",
+      "probe_id": 5,
+      "route": "8091_normal_readonly_eval",
+      "latency_ms": 13,
+      "http_status": 200,
+      "ok": true,
+      "content_preview": "Dry-run canonical router entrypoint validated. No LLM, tools, memory, or FAISS writes executed.",
+      "content_non_empty": true,
+      "is_dry_run_router": true,
+      "provider_selected": null,
+      "model_selected": null,
+      "fallback_used": false,
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "error": null
+    },
+    {
+      "group": "E_dashboard_chat",
+      "probe_id": 1,
+      "route": "8092_dashboard_chat",
+      "latency_ms": 2117,
+      "http_status": 200,
+      "ok": true,
+      "body_preview": "{\"ok\": true, \"content\": \"DASHBOARD_PROVIDER_OK_1\", \"provider_selected\": \"kimi_k2_6_cloud\", \"model_selected\": \"kimi-k2.6:cloud\", \"fallback_used\": false, \"no_cot_leak\": true}",
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "error": null
+    },
+    {
+      "group": "E_dashboard_chat",
+      "probe_id": 2,
+      "route": "8092_dashboard_chat",
+      "latency_ms": 1937,
+      "http_status": 200,
+      "ok": true,
+      "body_preview": "{\"ok\": true, \"content\": \"Provider fallback is active and operating within safe parameters.\", \"provider_selected\": \"kimi_k2_6_cloud\", \"model_selected\": \"kimi-k2.6:cloud\", \"fallback_used\": false, \"no_cot_leak\": true}",
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "error": null
+    }
+  ],
+  "metrics": {
+    "total_calls_excluding_tags": 15,
+    "kimi_direct_success_rate": 0.667,
+    "brain_provider_probe_kimi_success_rate": 0.8,
+    "brain_provider_probe_fallback_rate": 0.2,
+    "brain_normal_route_real_llm_rate": 0.0,
+    "brain_normal_route_dry_run_rate": 1.0,
+    "avg_latency_by_route": {
+      "direct_kimi": 1611.3,
+      "provider_probe": 4570.2,
+      "normal_route": 14.6,
+      "dashboard_chat": 2027.0
+    },
+    "timeout_count": 0,
+    "empty_response_count": 1,
+    "fallback_count": 1,
+    "error_types": [],
+    "kimi_tag_visible": true
+  },
+  "safety": {
+    "semantic_hash_unchanged": true,
+    "faiss_index_hash_unchanged": true,
+    "faiss_ids_hash_unchanged": true,
+    "raw_cot_exposed": false,
+    "secrets_exposed": false
+  }
+}

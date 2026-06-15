@@ -1,0 +1,32 @@
+{
+  "branch": "codex/own-capital-sustainable-return",
+  "head": "2cb4575dad74b4023ad93acf5431f08c5bc30a47",
+  "head_short": "2cb4575",
+  "remote": "2cb4575dad74b4023ad93acf5431f08c5bc30a47",
+  "remote_short": "2cb4575",
+  "status_tracked": [],
+  "staged": [],
+  "semantic_lines_before": 1715,
+  "faiss_ids_before": 1616,
+  "faiss_ntotal_before": 1616,
+  "faiss_ntotal_error": null,
+  "hashes_before": {
+    "semantic": "ce81fbe1f97e257e2b124d7a929f0b2af86ce61e9ff1d8d832fdb5da1f69e64e",
+    "faiss_index": "adbb6051f79ecbeab0223d631a6013939c00bcc13216fbae437efe83047efa21",
+    "faiss_ids": "43736047db548caf9b26dfa61cdffe40e179c738bc8e8c295891f29cedd69102"
+  },
+  "dashboard_status": {
+    "ok": true,
+    "status": 200,
+    "latency_ms": 21,
+    "body_preview": "{\"ok\":true,\"degraded\":false,\"brain\":{\"ok\":true,\"status\":\"healthy\",\"api\":\"http://127.0.0.1:8091\"},\"kimi\":{\"ok\":true,\"status\":\"available_via_provider_probe\"},\"dashboard\":{\"ok\":true,\"status\":\"online\",\"status_latency_ms\":7.405},\"scheduler\":{\"exists\":true,\"enabled\":false,\"state\":\"cached_ready\",\"last_run_time\":null,\"next_run_time\":null,\"last_task_result\":null,\"action\":\"powershell -ExecutionPolicy Bypass -File tools/brain_autonomy_run_once.ps1\",\"degraded\":false,\"source\":\"cache_file\"},\"autonomy\":{\"state\":\"idle\",\"cycle\":\"complete\",\"last_run_time\":\"2026-06-15T15:07:25.099617+00:00\",\"last_run_result\":\"idle\",\"paused\":false,\"stopped\":false},\"memory\":{\"journal_count\":339,\"promotion_queue_count\":26,\"semantic_staging_count\":5,\"promotion_audit_count\":1,\"canonical_promotion_performed\":false},\"safety\":{\"semantic_memory_lines\":1715,\"faiss_ids\":1616,\"faiss_ntotal\":1616,\"canonical_semantic_mutated\":false,\"faiss_mutated\":false,\"trading_touched\":false,\"b8_touched\":false,\"secrets_exposed\":false},\"watchdog\":{\"checked_utc\":\"2026-06-15T15:26:11.042624+00:00\",\"stopped\":false,\"paused\":false,\"heartbeat_present\":true,\"heartbeat\":{\"updated_utc\":\"2026-06-15T15:07:25.099617+00:00\",\"status\":\"idle\",\"cycle\":\"complete\"}},\"alerts\":[{\"severity\":\"LOW\",\"code\":\"promotion_queue_pending\",\"message\":\"Memory items are waiting for human review before semantic promotion.\",\"action\":\"operator_review\"}],\"errors\":[],\"recommendation\":\"continue_monitoring\"}"
+  },
+  "dashboard_safety": {
+    "ok": true,
+    "status": 200,
+    "latency_ms": 10,
+    "body_preview": "{\"ok\":true,\"semantic_memory_lines\":1715,\"faiss_ids\":1616,\"faiss_ntotal\":1616,\"canonical_semantic_mutated\":false,\"faiss_mutated\":false,\"trading_touched\":false,\"b8_touched\":false,\"secrets_exposed\":false}"
+  },
+  "local_equals_remote": true,
+  "hard_gate_pass": true
+}
