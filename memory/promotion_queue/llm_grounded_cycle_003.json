@@ -1,0 +1,15 @@
+{
+  "candidate_id": "llm_grounded_cycle_003",
+  "created_utc": "2026-06-15T15:09:52.542455+00:00",
+  "source": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
+  "source_cycle": "cycle_003",
+  "category": "scheduler/autonomy governance",
+  "summary": "scheduler/autonomy governance: A governed autonomy scheduler should record each bounded cycle as an operational execution trace, not as persistent canonical knowledge. It should store: cycle ID, start/end time, trigger, scope, allowed actions, observations, decisions, actions taken, errors, outputs, and confidence or uncertainty notes. Any findings should be marked as provisional unless separately validated by the learning loop, post-trade analysis, edge validation, or another canonical promotion process. The scheduler may emit candidates for review, such as \u201cpossible issue detected\u201d or \u201chypothesis generated,\u201d but must not label them as accepted memory, promoted edge, or canonical truth. Canonical promotion should remain ",
+  "quality_score": 0.95,
+  "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_01/batches/batch_01.json",
+  "canonical_promotion": false,
+  "review_required": true,
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false
+}

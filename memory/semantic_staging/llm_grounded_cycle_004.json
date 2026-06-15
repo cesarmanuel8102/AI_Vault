@@ -1,0 +1,16 @@
+{
+  "candidate_id": "llm_grounded_cycle_004",
+  "created_utc": "2026-06-15T15:10:13.331792+00:00",
+  "source": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
+  "source_cycle": "cycle_004",
+  "category": "memory promotion quality",
+  "summary": "memory promotion quality: An autonomy lesson is worthy of promotion review when it is: 1. Evidence-backed: supported by repeated real outcomes, not a single anecdote or assumed pattern. 2. Context-specific: clearly tied to conditions where it applies, including known limits and failure cases. 3. Actionable and testable: specific enough to guide future behavior and measurable enough to validate before promotion.",
+  "quality_score": 0.97,
+  "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_01/batches/batch_01.json",
+  "canonical_promotion": false,
+  "review_required": true,
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "staging_status": "llm_grounded_review_candidate"
+}

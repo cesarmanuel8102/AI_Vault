@@ -1,0 +1,16 @@
+{
+  "candidate_id": "llm_grounded_cycle_002",
+  "created_utc": "2026-06-15T15:09:23.720327+00:00",
+  "source": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
+  "source_cycle": "cycle_002",
+  "category": "dashboard/status reliability",
+  "summary": "dashboard/status reliability: - HTTP 200 with a valid, expected JSON schema. - Top-level `status` field reads `healthy`/`ready` (not `degraded`, `down`, or `error`). - `timestamp`/`last_updated` is fresh (within the last 1\u20132 minutes and after the rerun completed). - All critical downstream dependencies report `up`/`ok`. - Rerun job status is `success`/`completed` with zero fatal errors. - No active alerts or elevated error counts in the payload. - Response latency is within the defined SLA.",
+  "quality_score": 0.97,
+  "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_01/batches/batch_01.json",
+  "canonical_promotion": false,
+  "review_required": true,
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "staging_status": "llm_grounded_review_candidate"
+}

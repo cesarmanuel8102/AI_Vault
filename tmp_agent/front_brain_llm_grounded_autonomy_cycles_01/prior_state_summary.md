@@ -1,0 +1,13 @@
+# Prior State Summary
+
+- actual_canonical_semantic_line_count: 1715
+- actual_faiss_ids: 1616
+- actual_faiss_ntotal: 1616
+- canonical_memory_promotion_already_happened: False
+- promoted_items: []
+- current_journal_count: 326
+- current_promotion_queue_count: 17
+- current_semantic_staging_count: 11
+- previous_scaleup_status: BRAIN_CANONICAL_MEMORY_PROMOTION_SCALEUP_NO_PROMOTION_NEEDED
+- previous_rerun_status: BRAIN_AUTONOMY_STABILITY_STATUS_FIX_AND_VERIFIABLE_CYCLES_RERUN_COMPLETED
+- why_llm_grounded: Previous 120 cycles were deterministic governed cycles; this front verifies real provider response quality, fallback behavior, latency, and memory-worthiness under governance.

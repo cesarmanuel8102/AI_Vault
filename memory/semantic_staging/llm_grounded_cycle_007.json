@@ -1,0 +1,16 @@
+{
+  "candidate_id": "llm_grounded_cycle_007",
+  "created_utc": "2026-06-15T15:11:04.225926+00:00",
+  "source": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
+  "source_cycle": "cycle_007",
+  "category": "operator UX clarity",
+  "summary": "operator UX clarity: Auditor\u00eda de memoria completada en modo solo lectura. No se modificaron archivos, \u00edndices, FAISS ni memoria persistente. Se verific\u00f3 el estado disponible y no se ejecutaron acciones destructivas ni escrituras.",
+  "quality_score": 0.95,
+  "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_01/batches/batch_02.json",
+  "canonical_promotion": false,
+  "review_required": true,
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "staging_status": "llm_grounded_review_candidate"
+}

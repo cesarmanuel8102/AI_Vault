@@ -1,0 +1,15 @@
+{
+  "candidate_id": "llm_grounded_cycle_001",
+  "created_utc": "2026-06-15T15:09:17.170320+00:00",
+  "source": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
+  "source_cycle": "cycle_001",
+  "category": "CEI/FDOT practical reasoning",
+  "summary": "CEI/FDOT practical reasoning: No. A repaired concrete slab shall not be reopened to service loads without evidence that adequate strength has been achieved. **Caveats:** Opening may be permitted only if the Engineer of Record provides written approval based on a validated elapsed-time/strength correlation (e.g., maturity method), the anticipated loads are demonstrably lower than the design capacity, and curing has been continuously controlled and documented. **Evidence requirements:** - Compressive strength verification per ASTM C39 (field-cured cylinders) or ASTM C42 (cores), meeting or exceeding the specified design strength. - Alternative: maturity-index data per ASTM C1074 correlated to lab-calibrated strength. - Cur",
+  "quality_score": 0.97,
+  "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_01/batches/batch_01.json",
+  "canonical_promotion": false,
+  "review_required": true,
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false
+}

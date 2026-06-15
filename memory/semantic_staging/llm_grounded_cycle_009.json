@@ -1,0 +1,16 @@
+{
+  "candidate_id": "llm_grounded_cycle_009",
+  "created_utc": "2026-06-15T15:11:40.165324+00:00",
+  "source": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
+  "source_cycle": "cycle_009",
+  "category": "rollback/snapshot governance",
+  "summary": "rollback/snapshot governance: Antes de escribir memoria sem\u00e1ntica can\u00f3nica, se requiere prueba de rollback verificable: snapshot/backup previo identificado, operaci\u00f3n reversible documentada, ruta exacta del artefacto afectado y validaci\u00f3n de que puede restaurarse el estado anterior sin p\u00e9rdida.",
+  "quality_score": 0.97,
+  "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_01/batches/batch_02.json",
+  "canonical_promotion": false,
+  "review_required": true,
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "staging_status": "llm_grounded_review_candidate"
+}

@@ -1,0 +1,16 @@
+{
+  "candidate_id": "llm_grounded_cycle_006",
+  "created_utc": "2026-06-15T15:10:49.497783+00:00",
+  "source": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
+  "source_cycle": "cycle_006",
+  "category": "financial safety without execution",
+  "summary": "financial safety without execution: Present it as analytical validation, not advice: describe the strategy, assumptions, dataset, market regime, metrics reviewed, and limitations. Use neutral language like \u201cthe backtest indicates,\u201d \u201cthe sample suggests,\u201d or \u201crisk observed was,\u201d avoiding \u201cbuy,\u201d \u201csell,\u201d \u201center,\u201d or \u201cyou should.\u201d Include uncertainty, scenario sensitivity, drawdowns, liquidity/slippage assumptions, and whether results are statistically robust. End with a clear boundary: \u201cThis is for research and risk analysis only, not a trade recommendation or execution instruction.\u201d",
+  "quality_score": 0.95,
+  "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_01/batches/batch_02.json",
+  "canonical_promotion": false,
+  "review_required": true,
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "staging_status": "llm_grounded_review_candidate"
+}

@@ -1,0 +1,15 @@
+{
+  "candidate_id": "llm_grounded_cycle_008",
+  "created_utc": "2026-06-15T15:11:19.897350+00:00",
+  "source": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
+  "source_cycle": "cycle_008",
+  "category": "fallback/timeout self-diagnosis",
+  "summary": "fallback/timeout self-diagnosis: Record the route as degraded but successful: note the initial provider timeout, the fallback provider used, final success status, latency impact, and any error details for the failed route.",
+  "quality_score": 0.95,
+  "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_01/batches/batch_02.json",
+  "canonical_promotion": false,
+  "review_required": true,
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false
+}

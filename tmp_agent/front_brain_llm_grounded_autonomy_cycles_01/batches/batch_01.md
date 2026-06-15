@@ -1,0 +1,25 @@
+# batch_01
+
+- batch_id: batch_01
+- cycles_run: 5
+- provider_success_rate: 1.0
+- kimi_success_rate: 0.4
+- fallback_rate: 0.6
+- timeout_count: 0
+- empty_response_count: 0
+- avg_latency_ms: 16617.6
+- avg_quality_score: 0.95
+- lessons_created: 5
+- mistakes_recorded: 0
+- promotion_candidates_created: 5
+- dashboard_status_ok: True
+- safety_ok: True
+- semantic_lines: 1715
+- faiss_ids: 1616
+- faiss_ntotal: 1616
+- canonical_semantic_mutated: False
+- faiss_mutated: False
+- anomalies: []
+- stop_reason_if_any: None
+- recommended_next_correction: continue
+- journal_count: 334
