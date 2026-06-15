@@ -1,0 +1,26 @@
+{
+  "checkpoint": "RECOVER-SAFE-MODE-FALSE-CHECKPOINT-01",
+  "branch": "codex/own-capital-sustainable-return",
+  "head": "51a8c9c976af6728bb98236fa6a6e1e19c2e4aae",
+  "remote_head": "51a8c9c976af6728bb98236fa6a6e1e19c2e4aae",
+  "local_equals_remote": true,
+  "tracked_modified": [
+    "memory/autonomous_journal.jsonl",
+    "tmp_agent/brain_v9/start_safe_server.py"
+  ],
+  "staged_changes": [],
+  "untracked": [
+    "tmp_agent/front_brain_kimi_cloud_stability_mitigation_01/",
+    "tmp_agent/recover_safe_mode_false_checkpoint_01/"
+  ],
+  "ledger_modified": true,
+  "ledger_dirty_reason": "MERGED_LEDGER_FROM_OTHER_BRANCH",
+  "autonomous_journal_append_only": true,
+  "journal_count": 349,
+  "safe_mode_source_change": {
+    "file": "tmp_agent/brain_v9/start_safe_server.py",
+    "line_21_before": "os.environ.setdefault(\"BRAIN_SAFE_MODE\", \"true\")",
+    "line_21_after": "os.environ.setdefault(\"BRAIN_SAFE_MODE\", \"false\")",
+    "other_defaults_preserved": true
+  }
+}

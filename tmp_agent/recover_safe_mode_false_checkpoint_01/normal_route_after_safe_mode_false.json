@@ -1,0 +1,28 @@
+{
+  "checkpoint": "RECOVER-SAFE-MODE-FALSE-CHECKPOINT-01",
+  "phase": "D",
+  "normal_route_probe": {
+    "http_200": true,
+    "content": "SAFE_MODE_FALSE_ROUTE_OK",
+    "route": "llm_grounded_provider_eval",
+    "dry_run": false,
+    "provider_selected": "kimi_k2_6_cloud",
+    "model_selected": "kimi-k2.6:cloud",
+    "fallback_used": false,
+    "fallback_reason": null,
+    "provider_status": "FAST_SUCCESS",
+    "latency_ms": 6860.0,
+    "no_cot_leak": true,
+    "safe_mode": false
+  },
+  "observation": "With safe_mode=false, Brain successfully routes to kimi_k2_6_cloud as primary provider instead of falling back to llama8b. Provider chain now functions as designed.",
+  "comparison_with_safe_mode_true": {
+    "previous_provider": "llama8b (local fallback)",
+    "current_provider": "kimi_k2_6_cloud (primary)",
+    "previous_latency_ms": 21891,
+    "current_latency_ms": 6860,
+    "previous_fallback_used": true,
+    "current_fallback_used": false,
+    "improvement": "Latency reduced 68.5%, primary provider accessible, no fallback needed"
+  }
+}

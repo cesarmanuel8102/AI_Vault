@@ -1,0 +1,20 @@
+{
+  "checkpoint": "RECOVER-SAFE-MODE-FALSE-CHECKPOINT-01",
+  "phase": "B",
+  "file": "tmp_agent/brain_v9/start_safe_server.py",
+  "verification": {
+    "line_21": "os.environ.setdefault(\"BRAIN_SAFE_MODE\", \"false\")",
+    "previous_value": "true",
+    "current_value": "false",
+    "change_type": "default_env_var_value",
+    "other_defaults_preserved": true,
+    "BRAIN_START_AUTONOMY": "false",
+    "BRAIN_START_PROACTIVE": "false",
+    "BRAIN_START_SELF_DIAGNOSTIC": "false",
+    "BRAIN_START_QC_LIVE_MONITOR": "false",
+    "BRAIN_WARMUP_MODEL": "false",
+    "BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS": "false"
+  },
+  "safety_impact": "LOW",
+  "reason": "Only changes default safe_mode from true to false. All other safety defaults preserved. Does not enable autonomy, proactive, or unsafe endpoints by default."
+}

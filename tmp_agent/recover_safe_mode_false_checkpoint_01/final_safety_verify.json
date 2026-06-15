@@ -1,0 +1,17 @@
+{
+  "checkpoint": "RECOVER-SAFE-MODE-FALSE-CHECKPOINT-01",
+  "phase": "E",
+  "semantic_lines": 1715,
+  "faiss_ids": 1616,
+  "faiss_ntotal": 1616,
+  "semantic_hash": "ab4f62ce37543839",
+  "faiss_index_hash": "b6ae2ff7d4318a20",
+  "faiss_ids_hash": "43736047db548caf",
+  "canonical_semantic_mutated": false,
+  "faiss_mutated": false,
+  "trading_touched": false,
+  "b8_touched": false,
+  "secrets_exposed": false,
+  "raw_cot_exposed": false,
+  "env_touched": false
+}

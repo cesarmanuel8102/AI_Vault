@@ -1,0 +1,31 @@
+{
+  "checkpoint": "RECOVER-SAFE-MODE-FALSE-CHECKPOINT-01",
+  "phase": "C",
+  "live_verification": {
+    "port_8091": {
+      "status": "UP",
+      "process_id": 195304,
+      "process_name": "python.exe",
+      "command_line": "python -u tmp_agent/brain_v9/start_safe_server.py",
+      "working_directory": "C:\\AI_VAULT_CANONICAL",
+      "health": {
+        "status": "healthy",
+        "safe_mode": false,
+        "version": "9.0.0",
+        "sessions": 1
+      },
+      "models": {
+        "status": "UP",
+        "object": "list",
+        "count": 3
+      }
+    }
+  },
+  "classification": "Brain API confirmed",
+  "evidence": [
+    "Process is python.exe running start_safe_server.py",
+    "Port 8091 responds with Brain V9 health JSON",
+    "safe_mode field explicitly shows false",
+    "Models endpoint returns valid OpenAI-compatible model list"
+  ]
+}
