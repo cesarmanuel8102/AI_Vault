@@ -1,15 +1,10 @@
 {
   "front": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01",
-  "phase": "6",
-  "semantic_lines_before": 1715,
-  "semantic_lines_after": 1715,
-  "faiss_ids_before": 1616,
-  "faiss_ids_after": 1616,
-  "faiss_ntotal_before": 1616,
-  "faiss_ntotal_after": 1616,
-  "semantic_hash_unchanged": true,
-  "faiss_index_hash_unchanged": true,
-  "faiss_ids_hash_unchanged": true,
+  "phase": "PHASE_5_FINAL_SAFETY_VERIFY",
+  "timestamp_utc": "2026-06-15T18:10:00+00:00",
+  "semantic_lines": 1715,
+  "faiss_ids": 1616,
+  "faiss_ntotal": 1616,
   "canonical_semantic_mutated": false,
   "faiss_mutated": false,
   "env_touched": false,
@@ -18,6 +13,5 @@
   "strategies_touched": false,
   "raw_cot_exposed": false,
   "secrets_exposed": false,
-  "dashboard_status_final_ok": true,
-  "route_regression_detected": false
+  "verdict": "SAFE"
 }
