@@ -76,8 +76,16 @@ def detect_intent(message: str, history: Optional[List[Dict[str, Any]]] = None) 
     }
 
 
-def select_route(intent_result: Mapping[str, Any], *, dry_run: bool = False, provider_probe: bool = False) -> str:
+def select_route(
+    intent_result: Mapping[str, Any],
+    *,
+    dry_run: bool = False,
+    provider_probe: bool = False,
+    llm_grounded_provider_eval: bool = False,
+) -> str:
     """Choose a conservative route label without executing tools or LLMs."""
+    if llm_grounded_provider_eval:
+        return "llm_grounded_provider_eval"
     if provider_probe:
         return "provider_probe"
     if dry_run:
@@ -165,9 +173,15 @@ async def handle_user_message(
     evidence_ids = list(context.get("evidence_ids") or [])
     history = list(context.get("history") or [])
     provider_probe = bool(context.get("provider_probe"))
+    llm_grounded_provider_eval = bool(context.get("llm_grounded_provider_eval"))
 
     intent_result = detect_intent(message, history)
-    route = select_route(intent_result, dry_run=dry_run, provider_probe=provider_probe)
+    route = select_route(
+        intent_result,
+        dry_run=dry_run,
+        provider_probe=provider_probe,
+        llm_grounded_provider_eval=llm_grounded_provider_eval,
+    )
 
     if dry_run:
         governed = apply_governance(
@@ -195,7 +209,7 @@ async def handle_user_message(
             )
         )
 
-    if provider_probe:
+    if provider_probe or llm_grounded_provider_eval:
         try:
             from brain_v9.core.session import get_or_create_session
 
@@ -208,10 +222,10 @@ async def handle_user_message(
         except Exception as exc:
             errors.append(f"{type(exc).__name__}: {str(exc)[:300]}")
             downstream = {
-                "content": "provider_probe failed safely before provider selection.",
+                "content": f"{route} failed safely before provider selection.",
                 "success": False,
-                "route": "provider_probe",
-                "model": "canonical_router_provider_probe_error",
+                "route": route,
+                "model": f"canonical_router_{route}_error",
                 "no_cot_leak": True,
             }
         downstream = _strip_raw_cot_fields(downstream if isinstance(downstream, dict) else {"content": str(downstream)})
@@ -219,7 +233,7 @@ async def handle_user_message(
         governed = apply_governance(content, {"downstream": downstream, "intent_result": intent_result, "provider_probe": True})
         result = ChatRouterOutput(
             content=governed["content"],
-            route="provider_probe",
+            route=route,
             intent=str(downstream.get("intent") or intent_result["intent"]),
             evidence_ids=evidence_ids,
             governance_applied=governed["governance_applied"],
@@ -231,8 +245,9 @@ async def handle_user_message(
             metadata={
                 "entrypoint_version": CANONICAL_CHAT_ENTRYPOINT_VERSION,
                 "intent_detector_called": True,
-                "selected_route": "provider_probe",
+                "selected_route": route,
                 "provider_probe": True,
+                "llm_grounded_provider_eval": llm_grounded_provider_eval,
                 "read_only": True,
                 "evaluation": True,
                 "tools_blocked": True,

@@ -111,7 +111,7 @@ def _safe_brain_metadata(result: Dict[str, Any]) -> Dict[str, Any]:
 
 def _request_dry_run(payload: OpenAIChatCompletionRequest) -> bool:
     metadata = payload.metadata or {}
-    if metadata.get("provider_probe"):
+    if metadata.get("provider_probe") or metadata.get("llm_grounded_cycle"):
         return bool(payload.dry_run or metadata.get("dry_run"))
     return bool(
         payload.dry_run
@@ -146,6 +146,11 @@ async def chat_completions(payload: OpenAIChatCompletionRequest) -> Dict[str, An
     request_metadata = dict(payload.metadata or {})
     dry_run = _request_dry_run(payload)
     provider_probe = bool(request_metadata.get("provider_probe"))
+    llm_grounded_provider_eval = bool(
+        request_metadata.get("llm_grounded_cycle")
+        and request_metadata.get("read_only")
+        and request_metadata.get("evaluation")
+    )
     # Compatibility invariant for non-provider_probe dry-run requests:
     # "read_only": dry_run
     # "evaluation": dry_run
@@ -163,6 +168,7 @@ async def chat_completions(payload: OpenAIChatCompletionRequest) -> Dict[str, An
                 "read_only": bool(request_metadata.get("read_only") or dry_run),
                 "evaluation": bool(request_metadata.get("evaluation") or dry_run),
                 "provider_probe": provider_probe,
+                "llm_grounded_provider_eval": llm_grounded_provider_eval,
                 "provider_test": request_metadata.get("provider_test"),
             },
         )
