@@ -8818,3 +8818,24 @@ FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01 -- requires explicit 
 - semantic_faiss_unchanged: True
 - autonomous_journal_append_included: True append_only_verified=True
 - next: RESTART-BRAIN-8091-LOAD-AGENT-V2-ROUTES-01
+
+## BRAIN-AGENT-V2-TOTAL-OPERATIONAL-EXCELLENCE-CLOSEOUT-01 — Agent V2 Total Operational Excellence Closeout
+
+- timestamp_utc: 2026-06-16T23:31:51.603391Z
+- branch: codex/own-capital-sustainable-return
+- start_head: 0fdb74c
+- Agent V2 canonical: true
+- backend: langgraph
+- Kimi finalizer: kimi-k2.6:cloud via Ollama /api/chat with think:false
+- provider metadata: provider_attempted, provider_used, model_used, provider_degraded, fallback_reason, latency_ms
+- chat-agent route: POST /v2/chat/agent
+- legacy status: /v1/agent/status compatibility-only and points to V2
+- benchmark: 20/20 passed, 20 non-template answers, 17 Kimi-finalized answers
+- live 8091: health, status, capabilities, runs, plan, execute, trace, /v2/chat/agent verified
+- live 8092: / and /brain-dashboard/status ok; /brain-dashboard/agent-v2/status blocked by old/reload issue returning 404
+- semantic/FAISS: unchanged, rollback not used
+- unauthorized writes: 0
+- raw CoT exposure: 0
+- secrets exposure: 0
+- autonomous_journal append: append-only operational autonomy_lesson entries validated and included
+- next: controlled real use of Agent V2 after optional 8092 reload cleanup
