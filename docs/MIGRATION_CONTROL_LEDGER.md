@@ -204,6 +204,14 @@
   - Tests: smoke test passing (18/18)
   - Próximo: FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01
 
+## 9. Canonical memory promotion execution front
+- **FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01**: en progreso, primera ejecución de promoción canónica controlada
+  - Archivos: tmp_agent/front_brain_canonical_memory_promotion_execute_approved_01/*, tests/smoke/smoke_front_brain_canonical_memory_promotion_execute_approved_01.py
+  - Estado: 5 candidatos aprobados promovidos a memoria semántica canónica, backup creado, shadow validado, smoke test passing
+  - Seguridad: snapshot y rollback preparado, FAISS consistente, sin trading/B8 touch, sin secretos/expuestos
+  - Tests: smoke test passing (18/18)
+  - Próximo: commit y push de cambios canónicos, auditoría post-promoción, rollback disponible si se necesita
+
 ## 7. Próximo paso autorizado
 - Crear preflight/scope/smoke scripts.
 - No runtime refactor.

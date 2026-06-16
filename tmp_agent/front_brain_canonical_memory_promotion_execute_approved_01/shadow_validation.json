@@ -1,0 +1,30 @@
+{
+  "front": "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01",
+  "phase": "PHASE_5_SHADOW_VALIDATION",
+  "timestamp_utc": "2026-06-16T01:19:00+00:00",
+  "shadow_root": "tmp_agent/front_brain_canonical_memory_promotion_execute_approved_01/shadow",
+  "records_before": 1715,
+  "records_after": 1720,
+  "records_added": 5,
+  "faiss_ntotal_before": 1616,
+  "faiss_ntotal_after": 1621,
+  "faiss_ids_before": 1616,
+  "faiss_ids_after": 1621,
+  "new_ids_present": true,
+  "retrieval_by_summary": "RETRIEVAL_OK",
+  "new_record_ids": [
+    "promo_can_cand_387aa13574f5",
+    "promo_can_cand_59dc34785e50",
+    "promo_can_cand_5e0081aeaf4d",
+    "promo_can_cand_9d63233fad75",
+    "promo_can_cand_c6f627550fe1"
+  ],
+  "generated_canonical_ids": [
+    "13792dba579afd64b72195fa",
+    "8480c034d7c754e54f10d6a8",
+    "cefdf682c3559f04ee571102",
+    "5eb050fcc96b08da864ec66f",
+    "62bed9a5eb0db6ea71afa604"
+  ],
+  "verdict": "SHADOW_VALIDATED"
+}

@@ -1,0 +1,12 @@
+{
+  "front": "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01",
+  "phase": "PHASE_0_HARD_STATE_LOCK",
+  "timestamp_utc": "2026-06-16T00:38:30+00:00",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_HEAD": "7fa5155",
+  "remote_HEAD": "7fa5155",
+  "heads_match": true,
+  "staged_changes": false,
+  "unexpected_tracked_dirty": false,
+  "lock_verdict": "STATE_LOCKED"
+}

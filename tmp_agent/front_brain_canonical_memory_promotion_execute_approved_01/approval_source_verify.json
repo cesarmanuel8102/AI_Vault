@@ -1,0 +1,27 @@
+{
+  "front": "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01",
+  "phase": "APPROVAL_SOURCE_VERIFY",
+  "timestamp_utc": "2026-06-16T01:25:00+00:00",
+  "source_front": "FRONT-BRAIN-MEMORY-PROMOTION-REVIEW-AND-APPROVE-ALL-PASSING-01",
+  "approval_manifest_path": "tmp_agent/front_brain_memory_promotion_review_and_approve_all_passing_01/APPROVED_FOR_FUTURE_CANONICAL_PROMOTION.json",
+  "approved_count": 5,
+  "candidates_verified": [
+    {"candidate_id": "audit_0017", "domain": "coding_debugging", "source_path": "memory/promotion_queue/sem_cand_387aa13574f5.json", "summary": "Fallback must remain visible in reports and dashboard instead of being hidden as provider success.", "quality_score": 0.9, "safety_flags": [], "canonical_promotion_performed": false},
+    {"candidate_id": "audit_0018", "domain": "coding_debugging", "source_path": "memory/promotion_queue/sem_cand_59dc34785e50.json", "summary": "Canonical semantic promotion requires snapshot, shadow index, rollback verification, and small batch gate.", "quality_score": 0.89, "safety_flags": [], "canonical_promotion_performed": false},
+    {"candidate_id": "audit_0019", "domain": "dashboard_reliability", "source_path": "memory/promotion_queue/sem_cand_5e0081aeaf4d.json", "summary": "Dashboard recovery should use safe port 8092 to avoid touching 8090 or destabilizing 8091.", "quality_score": 0.86, "safety_flags": [], "canonical_promotion_performed": false},
+    {"candidate_id": "audit_0020", "domain": "provider_reliability", "source_path": "memory/promotion_queue/sem_cand_9d63233fad75.json", "summary": "Kimi K2.6 provider_probe on 8091 is available and returns fast governed metadata.", "quality_score": 0.91, "safety_flags": [], "canonical_promotion_performed": false},
+    {"candidate_id": "audit_0021", "domain": "governance", "source_path": "memory/promotion_queue/sem_cand_c6f627550fe1.json", "summary": "Persistent autonomy must run bounded cycles with STOP and PAUSE controls before any scheduler escalation.", "quality_score": 0.88, "safety_flags": [], "canonical_promotion_performed": false}
+  ],
+  "no_duplicate_approved": true,
+  "no_rejected_approved": true,
+  "no_held_approved": true,
+  "no_unsafe_flags": true,
+  "prior_canonical_promotions": 0,
+  "prior_semantic_lines": 1715,
+  "prior_faiss_ids": 1616,
+  "prior_faiss_ntotal": 1616,
+  "post_push_final_HEAD": "7fa5155",
+  "post_push_clean": true,
+  "prior_safety_unchanged": true,
+  "verdict": "APPROVAL_SOURCE_VERIFIED"
+}
