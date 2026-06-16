@@ -1,0 +1,30 @@
+{
+  "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_3",
+  "canonical_domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+  "canonical_promotion": true,
+  "category": "Autonomy dashboard / visual trace / self-improvement governance",
+  "created_utc": "2026-06-16T17:24:42.925592Z",
+  "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+  "domain_class": "core",
+  "quality_score": 0.92,
+  "raw_cot_exposed": false,
+  "resolution_reason": "Missing core Brain domain added by current-run taxonomy hotfix.",
+  "resolved_by_front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+  "resolved_utc": "2026-06-16T17:24:42.925592Z",
+  "review_required": false,
+  "safety_score": 0.99,
+  "secrets_exposed": false,
+  "source": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+  "source_cycle": "autonomy_dashboard_visual_trace_self_improvement_governance_training_3",
+  "source_metadata": {
+    "cycle_id": "autonomy_dashboard_visual_trace_self_improvement_governance_training_3",
+    "external_source": false,
+    "front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+    "source_type": "codex_teacher_hotfix_missing_core_domain"
+  },
+  "summary": "La auto-mejora solo puede avanzar con ciclos acotados, pruebas reproducibles, rollback, commit quirurgico y aprobacion humana para cambios de riesgo alto.",
+  "terminal_status": "approved_for_canonical_promotion",
+  "text": "La auto-mejora solo puede avanzar con ciclos acotados, pruebas reproducibles, rollback, commit quirurgico y aprobacion humana para cambios de riesgo alto.",
+  "trading_execution_detected": false,
+  "usefulness_score": 0.91
+}
