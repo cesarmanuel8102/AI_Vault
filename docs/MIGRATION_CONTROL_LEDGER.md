@@ -8710,3 +8710,21 @@ FRONT-BRAIN-LLM-GROUNDED-MEMORY-PROMOTION-EXECUTE-01 — requires explicit human
 
 ### Next Recommended Front
 FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01 -- requires explicit human approval, backup, dry-run plan, and rollback criteria before executing canonical promotion.
+
+
+## FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01 — Codex Pure Brain Autonomous Training and Pending Drain
+
+- timestamp_utc: 2026-06-16T17:00:51.839384Z
+- branch: codex/own-capital-sustainable-return
+- start_head: 39bdb8b
+- interactions_completed: 18
+- domains_trained: 6
+- pending_found: 93
+- approved_count: 18
+- promoted_count: 6
+- semantic_lines_delta: 6
+- faiss_ids_delta: 6
+- faiss_ntotal_delta: 6
+- safety_regression: false
+- rollback_snapshot: memory/rollback_snapshots/codex_pure_brain_training_and_pending_drain_01_20260616_163155
+- next: FRONT-BRAIN-CODEX-PURE-BRAIN-TRAINING-EXPANSION-02

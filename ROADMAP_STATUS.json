@@ -1,9 +1,9 @@
 {
-  "current_head": "5a801a1",
-  "current_remote_head": "5a801a1",
+  "current_head": "39bdb8b",
+  "current_remote_head": "39bdb8b",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "failed_kimi_not_selected_preflight_provider_chain_budget_exhaustion",
-  "last_applied_checkpoint": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01",
+  "migration_status": "codex_pure_brain_training_pending_drain_completed",
+  "last_applied_checkpoint": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -167,7 +167,8 @@
     "FRONT-BRAIN-LLM-GROUNDED-MEMORY-PROMOTION-AUDIT-01",
     "FRONT-BRAIN-MEMORY-PROMOTION-REVIEW-AND-APPROVE-ALL-PASSING-01",
     "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01",
-    "FRONT-BRAIN-CANONICAL-MEMORY-POST-PROMOTION-QUALITY-EVAL-01"
+    "FRONT-BRAIN-CANONICAL-MEMORY-POST-PROMOTION-QUALITY-EVAL-01",
+    "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -185,10 +186,9 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-CANONICAL-MEMORY-RETRIEVAL-BENEFIT-EVAL-01",
+    "name": "FRONT-BRAIN-CODEX-PURE-BRAIN-TRAINING-EXPANSION-02",
     "status": "recommended_next",
-    "reason": "Post-promotion quality evaluation completed. All 5 promoted memories verified, retrieval validated, rollback ready. Next step: measure whether promoted memories improve Brain responses in controlled Q/A tests.",
-    "unblock_dependency": "FRONT-BRAIN-CANONICAL-MEMORY-POST-PROMOTION-QUALITY-EVAL-01"
+    "reason": "Codex-to-Brain autonomous training completed with pending drain and canonical promotion metrics."
   },
   "ready_for_next_front": true,
   "last_updated": "2026-06-16T00:01:39.703+00:00",
@@ -4079,5 +4079,29 @@
     "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02_retry_after_8091_reload",
     "next_front_locked": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
     "updated_at_utc": "2026-06-15T16:39:36.843283+00:00"
+  },
+  "codex_pure_brain_training_pending_drain": {
+    "status": "done",
+    "started_utc": "2026-06-16T15:57:33.420302Z",
+    "completed_utc": "2026-06-16T17:00:51.829118Z",
+    "interactions_completed": 18,
+    "domains_trained": [
+      "cei_fdot",
+      "brain_architecture",
+      "memory_faiss_governance",
+      "finance_trading_research",
+      "flatbed_trucking",
+      "english_career"
+    ],
+    "pending_found": 93,
+    "unresolved_pending_after_review": 0,
+    "candidate_lessons_extracted": 18,
+    "candidates_approved": 6,
+    "candidates_promoted": 6,
+    "semantic_lines_delta": 6,
+    "faiss_ids_delta": 6,
+    "faiss_ntotal_delta": 6,
+    "safety_regression": false,
+    "rollback_snapshot": "memory/rollback_snapshots/codex_pure_brain_training_and_pending_drain_01_20260616_163155"
   }
 }
