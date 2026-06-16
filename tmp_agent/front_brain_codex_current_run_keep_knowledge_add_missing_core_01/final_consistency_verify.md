@@ -1,0 +1,48 @@
+# Final Consistency Verify
+
+```json
+{
+  "append_only_verified": true,
+  "b8_touched": false,
+  "faiss_ids_delta_from_start": 6,
+  "faiss_ntotal_delta_from_start": 6,
+  "journal_append_authorization": {
+    "added_event_ids": [
+      "auto_mem_f76061a5051f",
+      "auto_mem_db3110c4cee7",
+      "auto_mem_2e6bd57c1200"
+    ],
+    "added_lines": 3,
+    "append_only_verified": true,
+    "autonomous_journal_append_included": true,
+    "jsonl_valid": true,
+    "keyword_hits": [],
+    "no_raw_chain_of_thought": true,
+    "no_secrets": true,
+    "no_trading_execution": true,
+    "reason": "required to achieve clean post-push lock without deleting valid operational journal events",
+    "removed_json_lines": 0,
+    "semantic_faiss_effect": false
+  },
+  "semantic_after_front": {
+    "faiss_ids": 1633,
+    "faiss_ids_sha256": "96c93ae79301f7434615fad73a34a2af452bec04f578894f25faa211ad9664ca",
+    "faiss_index_sha256": "3fd44c7f45096fd2c37d523f7e6b24a9b73c23f17468f7ed6c666525a6977e21",
+    "faiss_ntotal": 1633,
+    "semantic_lines": 1732,
+    "semantic_sha256": "5a3180593cb1ddff57861f0976033bb187ae995c9942a83ad8bf01ce9d7c7e7f"
+  },
+  "semantic_before_front": {
+    "faiss_ids": 1627,
+    "faiss_ids_sha256": "e5f6f3cfed0450e76d5277aac3795d3b2666c4ad8caa79922ebe47c7c0aa60b9",
+    "faiss_index_sha256": "bced4b8e39c2fe681b0b26eba89422944d8f692cf7515ebc9a56eabb7cde4f24",
+    "faiss_ntotal": 1627,
+    "semantic_lines": 1726,
+    "semantic_sha256": "2b0f7f07e1872a97115990c0226bdf5bc65d25a80e27a2c2eb16a8486ac4fdf2"
+  },
+  "semantic_faiss_effect_from_journal_append": false,
+  "semantic_lines_delta_from_start": 6,
+  "strategies_touched": false,
+  "trading_touched": false
+}
+```

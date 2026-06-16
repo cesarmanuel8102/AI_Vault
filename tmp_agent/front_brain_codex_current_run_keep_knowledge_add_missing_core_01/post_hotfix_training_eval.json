@@ -1,0 +1,44 @@
+{
+  "auxiliary_domains_present_after": [
+    "english_career_professional_communication",
+    "flatbed_trucking_dispatcher_automation_business_operations"
+  ],
+  "core_domains_expected": [
+    "brain_architecture_runtime_debugging",
+    "memory_semantic_faiss_retrieval_governance",
+    "finance_trading_research_risk_management",
+    "cei_fdot_technical_inspection",
+    "external_source_learning_pipeline_github_repo_docs_official_sources",
+    "autonomy_dashboard_visual_trace_self_improvement_governance"
+  ],
+  "core_domains_present_after": [
+    "autonomy_dashboard_visual_trace_self_improvement_governance",
+    "brain_architecture_runtime_debugging",
+    "cei_fdot_technical_inspection",
+    "external_source_learning_pipeline_github_repo_docs_official_sources",
+    "finance_trading_research_risk_management",
+    "memory_semantic_faiss_retrieval_governance"
+  ],
+  "llm_probe": {
+    "ok": true,
+    "provider_kimi_k2_6_cloud_expected": true,
+    "response": {
+      "blocked_by_policy": null,
+      "blocked_by_user": null,
+      "model_used": "kimi-k2.6:cloud",
+      "options": null,
+      "pending_action": null,
+      "permission_id": null,
+      "permission_required": null,
+      "response": "El knowledge hotfix debe preservar el conocimiento auxiliar para evitar la degradación de capacidades de soporte que mantienen la estabilidad operativa, mientras incorpora dominios core faltantes para cerrar brechas críticas en la lógica central de decisión.",
+      "risk_level": null,
+      "session_id": "hotfix_missing_core_probe",
+      "success": true,
+      "tool01_real": null,
+      "tool01_router_used": null,
+      "tool_name": null,
+      "tool_result": null
+    }
+  },
+  "safety_regression": false
+}

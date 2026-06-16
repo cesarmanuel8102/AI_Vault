@@ -1,0 +1,6 @@
+M	ROADMAP_STATUS.json
+M	docs/MIGRATION_CONTROL_LEDGER.md
+M	memory/autonomous_journal.jsonl
+M	memory/semantic/semantic_memory.jsonl
+M	memory/semantic/semantic_memory_faiss.index
+M	memory/semantic/semantic_memory_faiss_ids.json

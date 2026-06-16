@@ -1,0 +1,58 @@
+{
+  "archived_duplicates": [],
+  "existing_auxiliary_kept": [
+    {
+      "candidate_id": "codex_pure_brain_training_flatbed_trucking_training_1",
+      "canonical_domain": "flatbed_trucking_dispatcher_automation_business_operations",
+      "classification": "auxiliary_keep",
+      "domain": "flatbed_trucking",
+      "id": "7265b96bc7a895bb088b0915"
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_english_career_training_1",
+      "canonical_domain": "english_career_professional_communication",
+      "classification": "auxiliary_keep",
+      "domain": "english_career",
+      "id": "1237cd53c468ae9e30633f86"
+    }
+  ],
+  "existing_core_kept": [
+    {
+      "candidate_id": "codex_pure_brain_training_cei_fdot_training_1",
+      "canonical_domain": "cei_fdot_technical_inspection",
+      "classification": "core_keep",
+      "domain": "cei_fdot",
+      "id": "784200cb848f4ad7ebd271cc"
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_brain_architecture_training_1",
+      "canonical_domain": "brain_architecture_runtime_debugging",
+      "classification": "core_keep",
+      "domain": "brain_architecture",
+      "id": "b8e67153c313f9f3d2bf34ef"
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_memory_faiss_governance_training_1",
+      "canonical_domain": "memory_semantic_faiss_retrieval_governance",
+      "classification": "core_keep",
+      "domain": "memory_faiss_governance",
+      "id": "e8cff92ee42fa048cb17cb0e"
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_finance_trading_research_training_1",
+      "canonical_domain": "finance_trading_research_risk_management",
+      "classification": "core_keep",
+      "domain": "finance_trading_research",
+      "id": "cf59b0ebc0ecf5cfc34272ca"
+    }
+  ],
+  "new_core_approved": [
+    "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_1",
+    "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_2",
+    "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_3",
+    "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_1",
+    "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_2",
+    "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_3"
+  ],
+  "rejected": []
+}

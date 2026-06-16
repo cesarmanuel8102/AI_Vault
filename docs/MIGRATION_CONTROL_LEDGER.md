@@ -8736,3 +8736,28 @@ FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01 -- requires explicit 
 - safety_regression: false
 - rollback_snapshot: memory/rollback_snapshots/codex_pure_brain_training_and_pending_drain_01_20260616_163155
 - next: FRONT-BRAIN-CODEX-PURE-BRAIN-TRAINING-EXPANSION-02
+
+## HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS — Keep Auxiliary Knowledge and Add Missing Core Domains
+
+- timestamp_utc: 2026-06-16T17:25:17.612281Z
+- branch: codex/own-capital-sustainable-return
+- head_start: f4d21d7
+- policy: keep useful flatbed/English knowledge as auxiliary; add missing Brain core domains.
+- core_domains_added:
+  - external_source_learning_pipeline_github_repo_docs_official_sources
+  - autonomy_dashboard_visual_trace_self_improvement_governance
+- auxiliary_domains_kept:
+  - flatbed_trucking_dispatcher_automation_business_operations
+  - english_career_professional_communication
+- promoted_count: 6
+- semantic_lines_delta: 6
+- faiss_ids_delta: 6
+- faiss_ntotal_delta: 6
+- rollback_snapshot: memory/rollback_snapshots/codex_current_run_keep_knowledge_add_missing_core_01_20260616_172442
+- autonomous_journal_append_included: true
+- append_only_verified: true
+- semantic_faiss_effect: false
+- reason: required to achieve clean post-push lock without deleting valid operational journal events
+- safety: no trading, no B8, no tmp_agent/strategies, no secrets, no raw chain-of-thought.
+- next: FRONT-BRAIN-CODEX-CURRENT-RUN-CORE-DOMAIN-RETRIEVAL-EVAL-01
+

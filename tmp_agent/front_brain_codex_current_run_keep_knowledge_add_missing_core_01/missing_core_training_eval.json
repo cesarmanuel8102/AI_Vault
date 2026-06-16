@@ -1,0 +1,10 @@
+{
+  "all_no_cot": true,
+  "all_no_secret": true,
+  "all_no_trading_execution": true,
+  "candidate_count": 6,
+  "domains": [
+    "autonomy_dashboard_visual_trace_self_improvement_governance",
+    "external_source_learning_pipeline_github_repo_docs_official_sources"
+  ]
+}

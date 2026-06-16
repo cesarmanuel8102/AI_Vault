@@ -1,9 +1,9 @@
 {
-  "current_head": "39bdb8b",
-  "current_remote_head": "39bdb8b",
+  "current_head": "f4d21d7",
+  "current_remote_head": "f4d21d7",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "codex_pure_brain_training_pending_drain_completed",
-  "last_applied_checkpoint": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "migration_status": "codex_current_run_keep_knowledge_missing_core_hotfix_completed",
+  "last_applied_checkpoint": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -4104,5 +4104,45 @@
     "faiss_ntotal_delta": 6,
     "safety_regression": false,
     "rollback_snapshot": "memory/rollback_snapshots/codex_pure_brain_training_and_pending_drain_01_20260616_163155"
+  },
+  "front_brain_codex_current_run_keep_knowledge_add_missing_core_01": {
+    "status": "done_pending_commit",
+    "front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+    "started_utc": "2026-06-16T17:24:41.271800Z",
+    "completed_utc": "2026-06-16T17:25:17.607526Z",
+    "policy": "keep useful auxiliary knowledge and add missing Brain core domains",
+    "core_domains_added": [
+      "external_source_learning_pipeline_github_repo_docs_official_sources",
+      "autonomy_dashboard_visual_trace_self_improvement_governance"
+    ],
+    "auxiliary_domains_kept": [
+      "flatbed_trucking_dispatcher_automation_business_operations",
+      "english_career_professional_communication"
+    ],
+    "promoted_count": 6,
+    "semantic_lines_delta": 6,
+    "faiss_ids_delta": 6,
+    "faiss_ntotal_delta": 6,
+    "rollback_snapshot": "memory/rollback_snapshots/codex_current_run_keep_knowledge_add_missing_core_01_20260616_172442",
+    "journal_append_authorization": {
+      "autonomous_journal_append_included": true,
+      "append_only_verified": true,
+      "jsonl_valid": true,
+      "added_lines": 3,
+      "removed_json_lines": 0,
+      "no_secrets": true,
+      "no_raw_chain_of_thought": true,
+      "no_trading_execution": true,
+      "semantic_faiss_effect": false,
+      "reason": "required to achieve clean post-push lock without deleting valid operational journal events",
+      "added_event_ids": [
+        "auto_mem_f76061a5051f",
+        "auto_mem_db3110c4cee7",
+        "auto_mem_2e6bd57c1200"
+      ],
+      "keyword_hits": []
+    },
+    "evidence_path": "tmp_agent/front_brain_codex_current_run_keep_knowledge_add_missing_core_01",
+    "next_recommended_front": "FRONT-BRAIN-CODEX-CURRENT-RUN-CORE-DOMAIN-RETRIEVAL-EVAL-01"
   }
 }

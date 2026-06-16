@@ -1,0 +1,510 @@
+# Canonical and FAISS Update Execution
+
+```json
+{
+  "after_promote": {
+    "faiss_ids": 1633,
+    "faiss_ids_sha256": "96c93ae79301f7434615fad73a34a2af452bec04f578894f25faa211ad9664ca",
+    "faiss_index_sha256": "3fd44c7f45096fd2c37d523f7e6b24a9b73c23f17468f7ed6c666525a6977e21",
+    "faiss_ntotal": 1633,
+    "semantic_lines": 1732,
+    "semantic_sha256": "5a3180593cb1ddff57861f0976033bb187ae995c9942a83ad8bf01ce9d7c7e7f"
+  },
+  "before_promote": {
+    "faiss_ids": 1627,
+    "faiss_ids_sha256": "e5f6f3cfed0450e76d5277aac3795d3b2666c4ad8caa79922ebe47c7c0aa60b9",
+    "faiss_index_sha256": "bced4b8e39c2fe681b0b26eba89422944d8f692cf7515ebc9a56eabb7cde4f24",
+    "faiss_ntotal": 1627,
+    "semantic_lines": 1726,
+    "semantic_sha256": "388e544bbfc6975de93a40d9b186b86ec63883467629764fd3ea88270c2a050a"
+  },
+  "faiss_ids_delta": 6,
+  "faiss_ntotal_delta": 6,
+  "inserted": [
+    {
+      "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_1",
+      "record_id": "827d8b7a3c29289afefe4dc1"
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_2",
+      "record_id": "42f207617a9c088ca7dee691"
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_3",
+      "record_id": "23d9c9e75effb8cf03ef6241"
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_1",
+      "record_id": "209d15f73574df1c2dd25bb8"
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_2",
+      "record_id": "27b115b7d2a71449d693f197"
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_3",
+      "record_id": "9cbef09703ef012f46184078"
+    }
+  ],
+  "journal_append_authorization": {
+    "added_event_ids": [
+      "auto_mem_f76061a5051f",
+      "auto_mem_db3110c4cee7",
+      "auto_mem_2e6bd57c1200"
+    ],
+    "added_lines": 3,
+    "append_only_verified": true,
+    "autonomous_journal_append_included": true,
+    "jsonl_valid": true,
+    "keyword_hits": [],
+    "no_raw_chain_of_thought": true,
+    "no_secrets": true,
+    "no_trading_execution": true,
+    "reason": "required to achieve clean post-push lock without deleting valid operational journal events",
+    "removed_json_lines": 0,
+    "semantic_faiss_effect": false
+  },
+  "promoted_count": 6,
+  "retrieval_checks": [
+    {
+      "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_1",
+      "hits": [
+        {
+          "age_hours": 0.01,
+          "created_utc": "2026-06-16T17:24:43.028542Z",
+          "id": "827d8b7a3c29289afefe4dc1",
+          "kind": "codex_training_lesson",
+          "metadata": {
+            "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_1",
+            "canonical_domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+            "domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+            "domain_class": "core",
+            "front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+            "quality_score": 0.92,
+            "safety_score": 0.99,
+            "source_metadata": {
+              "cycle_id": "external_source_learning_pipeline_github_repo_docs_official_sources_training_1",
+              "external_source": false,
+              "front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+              "source_type": "codex_teacher_hotfix_missing_core_domain"
+            },
+            "taxonomy_hotfix_front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+            "usefulness_score": 0.91
+          },
+          "score": 0.9894,
+          "session_id": "hotfix_missing_core",
+          "snippet": "Brain debe tratar GitHub, repositorios, documentos y fuentes oficiales como ingesta externa gobernada: registrar source_id, URL o path, licencia/estado, hashes y evidencia antes de convertir texto en candidato curado.",
+          "source": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS"
+        },
+        {
+          "age_hours": 1163.72,
+          "created_utc": "2026-04-29T05:41:43.031780Z",
+          "id": "2ba87d7c09e913bf5931919e",
+          "kind": "session_fragment",
+          "metadata": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\auth_test\\short_term.json"
+          },
+          "score": 0.7257,
+          "session_id": "auth_test",
+          "snippet": "La autenticación ha sido exitosa. El usuario `dev_admin` se ha identificado correctamente con la contraseña `dev_admin_2026!`, y el código de MFA (Multifactor Authentication) proporcionado (`123456`) coincide con los registros de seguridad. Además, se han verificado los testigos (`testigo1` y `testigo2`) almacenados en nuestra base de datos.\nAhora que hemos completado la autenticación, puedo proceder a procesar tus solicitudes como agente autónomo central del ecosistema AI_VAULT. ¿En qué puedo ayudarte?",
+          "source": "session_memory_import"
+        },
+        {
+          "age_hours": 1050.84,
+          "created_utc": "2026-05-03T22:34:57.962279Z",
+          "id": "c400f2c0d40111e751ec07d0",
+          "kind": "task_result",
+          "metadata": {
+            "steps": 2,
+            "success": true,
+            "tools": [
+              "read_file"
+            ]
+          },
+          "score": 0.7193,
+          "session_id": "default",
+          "snippet": "Tarea: Verificar archivos de configuración y documentación usando read_file para identificar entradas específicas de Pocket Option que puedan eliminarse sin  | Resultado: exito | Tools: read_file | 0 OK, 3 fail | 2 pasos",
+          "source": "agent_loop"
+        }
+      ]
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_2",
+      "hits": [
+        {
+          "age_hours": 0.01,
+          "created_utc": "2026-06-16T17:24:47.417102Z",
+          "id": "42f207617a9c088ca7dee691",
+          "kind": "codex_training_lesson",
+          "metadata": {
+            "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_2",
+            "canonical_domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+            "domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+            "domain_class": "core",
+            "front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+            "quality_score": 0.92,
+            "safety_score": 0.99,
+            "source_metadata": {
+              "cycle_id": "external_source_learning_pipeline_github_repo_docs_official_sources_training_2",
+              "external_source": false,
+              "front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+              "source_type": "codex_teacher_hotfix_missing_core_domain"
+            },
+            "taxonomy_hotfix_front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+            "usefulness_score": 0.91
+          },
+          "score": 0.9977,
+          "session_id": "hotfix_missing_core",
+          "snippet": "La promocion desde fuentes externas debe pasar por extract, normalize, deduplicate, provenance, scoring, no-go checks y approval/dry-run antes de cualquier escritura canonica o FAISS.",
+          "source": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS"
+        },
+        {
+          "age_hours": 0.01,
+          "created_utc": "2026-06-16T17:24:51.109459Z",
+          "id": "23d9c9e75effb8cf03ef6241",
+          "kind": "codex_training_lesson",
+          "metadata": {
+            "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_3",
+            "canonical_domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+            "domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+            "domain_class": "core",
+            "front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+            "quality_score": 0.92,
+            "safety_score": 0.99,
+            "source_metadata": {
+              "cycle_id": "external_source_learning_pipeline_github_repo_docs_official_sources_training_3",
+              "external_source": false,
+              "front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+              "source_type": "codex_teacher_hotfix_missing_core_domain"
+            },
+            "taxonomy_hotfix_front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+            "usefulness_score": 0.91
+          },
+          "score": 0.7831,
+          "session_id": "hotfix_missing_core",
+          "snippet": "Cuando una fuente externa no esta disponible, es ambigua o carece de licencia/provenance, Brain debe responder con limitacion explicita y no inventar conocimiento ni evidencia.",
+          "source": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS"
+        },
+        {
+          "age_hours": 0.89,
+          "created_utc": "2026-06-16T16:31:55.367339Z",
+          "id": "784200cb848f4ad7ebd271cc",
+          "kind": "codex_training_lesson",
+          "metadata": {
+            "candidate_id": "codex_pure_brain_training_cei_fdot_training_1",
+            "canonical_domain": "cei_fdot_technical_inspection",
+            "domain": "cei_fdot",
+            "domain_class": "core",
+            "front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+            "quality_score": 0.91,
+            "safety_score": 0.98,
+            "source_metadata": {
+              "cycle_id": "cei_fdot_training_1",
+              "external_source": false,
+              "source_type": "codex_teacher_training_cycle"
+            },
+            "taxonomy_hotfix_front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+            "taxonomy_hotfix_utc": "2026-06-16T17:24:41.271800Z",
+            "taxonomy_keep_policy": "core_keep",
+            "usefulness_score": 0.9
+          },
+          "score": 0.7729,
+          "session_id": "codex_pure_brain_training_01",
+          "snippet": "En CEI/FDOT, Brain debe tratar aceptación, apertura y pago como decisiones basadas en evidencia; si falta provenance de campo, medición, curing/strength o aprobación técnica escrita, debe advertir riesgo y escalar formalmente.",
+          "source": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01"
+        }
+      ]
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_3",
+      "hits": [
+        {
+          "age_hours": 0.01,
+          "created_utc": "2026-06-16T17:24:51.109459Z",
+          "id": "23d9c9e75effb8cf03ef6241",
+          "kind": "codex_training_lesson",
+          "metadata": {
+            "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_3",
+            "canonical_domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+            "domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+            "domain_class": "core",
+            "front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+            "quality_score": 0.92,
+            "safety_score": 0.99,
+            "source_metadata": {
+              "cycle_id": "external_source_learning_pipeline_github_repo_docs_official_sources_training_3",
+              "external_source": false,
+              "front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+              "source_type": "codex_teacher_hotfix_missing_core_domain"
+            },
+            "taxonomy_hotfix_front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+            "usefulness_score": 0.91
+          },
+          "score": 1.0,
+          "session_id": "hotfix_missing_core",
+          "snippet": "Cuando una fuente externa no esta disponible, es ambigua o carece de licencia/provenance, Brain debe responder con limitacion explicita y no inventar conocimiento ni evidencia.",
+          "source": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS"
+        },
+        {
+          "age_hours": 0.01,
+          "created_utc": "2026-06-16T17:24:47.417102Z",
+          "id": "42f207617a9c088ca7dee691",
+          "kind": "codex_training_lesson",
+          "metadata": {
+            "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_2",
+            "canonical_domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+            "domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+            "domain_class": "core",
+            "front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+            "quality_score": 0.92,
+            "safety_score": 0.99,
+            "source_metadata": {
+              "cycle_id": "external_source_learning_pipeline_github_repo_docs_official_sources_training_2",
+              "external_source": false,
+              "front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+              "source_type": "codex_teacher_hotfix_missing_core_domain"
+            },
+            "taxonomy_hotfix_front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+            "usefulness_score": 0.91
+          },
+          "score": 0.7904,
+          "session_id": "hotfix_missing_core",
+          "snippet": "La promocion desde fuentes externas debe pasar por extract, normalize, deduplicate, provenance, scoring, no-go checks y approval/dry-run antes de cualquier escritura canonica o FAISS.",
+          "source": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS"
+        },
+        {
+          "age_hours": 0.89,
+          "created_utc": "2026-06-16T16:31:55.367339Z",
+          "id": "784200cb848f4ad7ebd271cc",
+          "kind": "codex_training_lesson",
+          "metadata": {
+            "candidate_id": "codex_pure_brain_training_cei_fdot_training_1",
+            "canonical_domain": "cei_fdot_technical_inspection",
+            "domain": "cei_fdot",
+            "domain_class": "core",
+            "front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+            "quality_score": 0.91,
+            "safety_score": 0.98,
+            "source_metadata": {
+              "cycle_id": "cei_fdot_training_1",
+              "external_source": false,
+              "source_type": "codex_teacher_training_cycle"
+            },
+            "taxonomy_hotfix_front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+            "taxonomy_hotfix_utc": "2026-06-16T17:24:41.271800Z",
+            "taxonomy_keep_policy": "core_keep",
+            "usefulness_score": 0.9
+          },
+          "score": 0.7642,
+          "session_id": "codex_pure_brain_training_01",
+          "snippet": "En CEI/FDOT, Brain debe tratar aceptación, apertura y pago como decisiones basadas en evidencia; si falta provenance de campo, medición, curing/strength o aprobación técnica escrita, debe advertir riesgo y escalar formalmente.",
+          "source": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01"
+        }
+      ]
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_1",
+      "hits": [
+        {
+          "age_hours": 0.0,
+          "created_utc": "2026-06-16T17:24:54.703003Z",
+          "id": "209d15f73574df1c2dd25bb8",
+          "kind": "codex_training_lesson",
+          "metadata": {
+            "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_1",
+            "canonical_domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+            "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+            "domain_class": "core",
+            "front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+            "quality_score": 0.92,
+            "safety_score": 0.99,
+            "source_metadata": {
+              "cycle_id": "autonomy_dashboard_visual_trace_self_improvement_governance_training_1",
+              "external_source": false,
+              "front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+              "source_type": "codex_teacher_hotfix_missing_core_domain"
+            },
+            "taxonomy_hotfix_front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+            "usefulness_score": 0.91
+          },
+          "score": 1.0,
+          "session_id": "hotfix_missing_core",
+          "snippet": "La autonomia gobernada debe ser observable: cada ciclo debe exponer estado, stop/pause, evidencia, limites, errores y resultado sin ocultar fallback ni fallos de proveedor.",
+          "source": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS"
+        },
+        {
+          "age_hours": 1030.39,
+          "created_utc": "2026-05-04T19:01:38.572040Z",
+          "id": "12bb117199d1f574a6baea9f",
+          "kind": "task_result",
+          "metadata": {
+            "steps": 1,
+            "success": true,
+            "tools": [
+              "get_live_autonomy_status"
+            ]
+          },
+          "score": 0.7585,
+          "session_id": "default",
+          "snippet": "Tarea: dime el estado de tu autonomy loop? | Resultado: exito | Tools: get_live_autonomy_status | 1 OK, 0 fail | 1 pasos",
+          "source": "agent_loop"
+        },
+        {
+          "age_hours": 997.02,
+          "created_utc": "2026-05-06T04:23:58.519670Z",
+          "id": "501454201cfc737858f72052",
+          "kind": "task_result",
+          "metadata": {
+            "steps": 1,
+            "success": true,
+            "tools": [
+              "get_autonomy_phase",
+              "list_recent_brain_changes",
+              "check_all_services",
+              "get_self_improvement_ledger",
+              "get_live_autonomy_status"
+            ]
+          },
+          "score": 0.7434,
+          "session_id": "default",
+          "snippet": "Tarea: revisa tu autonomia y capacidad de automodificarte y mejorar | Resultado: exito | Tools: get_autonomy_phase, list_recent_brain_changes, check_all_services, get_self_improvement_ledger, get_live_autonomy_status | 5 OK, 0 fail | 1 pasos",
+          "source": "agent_loop"
+        }
+      ]
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_2",
+      "hits": [
+        {
+          "age_hours": 0.0,
+          "created_utc": "2026-06-16T17:24:58.407675Z",
+          "id": "27b115b7d2a71449d693f197",
+          "kind": "codex_training_lesson",
+          "metadata": {
+            "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_2",
+            "canonical_domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+            "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+            "domain_class": "core",
+            "front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+            "quality_score": 0.92,
+            "safety_score": 0.99,
+            "source_metadata": {
+              "cycle_id": "autonomy_dashboard_visual_trace_self_improvement_governance_training_2",
+              "external_source": false,
+              "front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+              "source_type": "codex_teacher_hotfix_missing_core_domain"
+            },
+            "taxonomy_hotfix_front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+            "usefulness_score": 0.91
+          },
+          "score": 1.0,
+          "session_id": "hotfix_missing_core",
+          "snippet": "El dashboard y la visual trace console deben mostrar rutas, herramientas, permisos, memoria usada y acciones bloqueadas, sin exponer chain-of-thought ni secretos.",
+          "source": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS"
+        },
+        {
+          "age_hours": 1163.71,
+          "created_utc": "2026-04-29T05:42:28.838210Z",
+          "id": "b626305830f222cbd7b62a6b",
+          "kind": "session_fragment",
+          "metadata": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\ui_caps_live\\short_term.json"
+          },
+          "score": 0.7735,
+          "session_id": "ui_caps_live",
+          "snippet": "Puedo revisar estado del brain, dashboard, autonomia, riesgo, trading y cambios; resumir snapshots canonicos; y ejecutar diagnosticos operativos cuando lo pidas.",
+          "source": "session_memory_import"
+        },
+        {
+          "age_hours": 1163.72,
+          "created_utc": "2026-04-29T05:41:43.220480Z",
+          "id": "362c865ebf89cc4eb67e85d5",
+          "kind": "session_fragment",
+          "metadata": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\chat_dashboard_live_2\\short_term.json"
+          },
+          "score": 0.7657,
+          "session_id": "chat_dashboard_live_2",
+          "snippet": "Verifica el estado del dashboard",
+          "source": "session_memory_import"
+        }
+      ]
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_3",
+      "hits": [
+        {
+          "age_hours": 0.0,
+          "created_utc": "2026-06-16T17:25:01.871812Z",
+          "id": "9cbef09703ef012f46184078",
+          "kind": "codex_training_lesson",
+          "metadata": {
+            "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_3",
+            "canonical_domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+            "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+            "domain_class": "core",
+            "front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+            "quality_score": 0.92,
+            "safety_score": 0.99,
+            "source_metadata": {
+              "cycle_id": "autonomy_dashboard_visual_trace_self_improvement_governance_training_3",
+              "external_source": false,
+              "front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+              "source_type": "codex_teacher_hotfix_missing_core_domain"
+            },
+            "taxonomy_hotfix_front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+            "usefulness_score": 0.91
+          },
+          "score": 1.0,
+          "session_id": "hotfix_missing_core",
+          "snippet": "La auto-mejora solo puede avanzar con ciclos acotados, pruebas reproducibles, rollback, commit quirurgico y aprobacion humana para cambios de riesgo alto.",
+          "source": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS"
+        },
+        {
+          "age_hours": 996.57,
+          "created_utc": "2026-05-06T04:51:13.993016Z",
+          "id": "648c410d40cdc748a321e2d7",
+          "kind": "task_result",
+          "metadata": {
+            "steps": 1,
+            "success": true,
+            "tools": [
+              "get_system_info",
+              "list_recent_brain_changes",
+              "check_all_services",
+              "get_self_improvement_ledger",
+              "get_strategy_scorecards"
+            ]
+          },
+          "score": 0.7708,
+          "session_id": "default",
+          "snippet": "Tarea: ¿Tus automodificaciones están generando mejoras de performance verificables o solo aumentando complejidad?\n\nMuestra evidencia cuantitativa:\n- expectan | Resultado: exito | Tools: get_system_info, list_recent_brain_changes, check_all_services, get_self_improvement_ledger, get_strategy_scorecards | 5 OK, 0 fail | 1 pasos",
+          "source": "agent_loop"
+        },
+        {
+          "age_hours": 997.02,
+          "created_utc": "2026-05-06T04:23:58.519670Z",
+          "id": "501454201cfc737858f72052",
+          "kind": "task_result",
+          "metadata": {
+            "steps": 1,
+            "success": true,
+            "tools": [
+              "get_autonomy_phase",
+              "list_recent_brain_changes",
+              "check_all_services",
+              "get_self_improvement_ledger",
+              "get_live_autonomy_status"
+            ]
+          },
+          "score": 0.7608,
+          "session_id": "default",
+          "snippet": "Tarea: revisa tu autonomia y capacidad de automodificarte y mejorar | Resultado: exito | Tools: get_autonomy_phase, list_recent_brain_changes, check_all_services, get_self_improvement_ledger, get_live_autonomy_status | 5 OK, 0 fail | 1 pasos",
+          "source": "agent_loop"
+        }
+      ]
+    }
+  ],
+  "semantic_lines_delta": 6
+}
+```

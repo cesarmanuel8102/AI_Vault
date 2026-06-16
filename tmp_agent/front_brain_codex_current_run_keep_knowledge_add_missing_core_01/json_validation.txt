@@ -1,0 +1,3 @@
+memory/semantic/semantic_memory.jsonl 1732 JSONL_OK
+memory/autonomous_journal.jsonl 422 JSONL_OK
+ROADMAP_STATUS.json JSON_OK
