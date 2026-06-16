@@ -4,6 +4,8 @@ from pathlib import Path
 from typing import Any, Dict, List
 from .checkpoints import CheckpointStore
 from .memory_gateway import MemoryGatewayV2
+from .finalizer import finalize_agent_run
+from .planner import build_plan
 from .schemas import AgentRun, AgentTraceEvent, ToolCallRequest, to_dict, utc_now
 from .state import RUN_ROOT, CANONICAL_AGENT_VERSION
 from .tool_gateway import ToolGatewayV2
@@ -50,22 +52,12 @@ class NativeAgentRuntimeV2:
 
     def plan_run(self, run_id: str) -> Dict[str, Any]:
         run = self._load_run(run_id)
-        goal = run["goal"].lower()
-        plan = [{"step_id": "plan", "kind": "plan", "title": "Create operational plan", "status": "planned"}]
-        plan.append({"step_id": "retrieve", "kind": "memory", "title": "Read-only memory retrieval", "status": "planned", "tool_name": "semantic_retrieve", "input": {"query": run["goal"], "top_k": 3}})
-        if "git" in goal or "status" in goal:
-            plan.append({"step_id": "repo_status", "kind": "tool", "title": "Read repository status", "status": "planned", "tool_name": "repo_status_read", "input": {}})
-        if "/chat" in goal or "route" in goal:
-            plan.append({"step_id": "grep_chat", "kind": "tool", "title": "Find route implementation", "status": "planned", "tool_name": "grep_search", "input": {"pattern": "/chat|def chat|@app.post", "glob": "*.py"}})
-        if "8091" in goal or "8092" in goal or "probe" in goal:
-            url = "http://127.0.0.1:8092/health" if "8092" in goal else "http://127.0.0.1:8091/health"
-            plan.append({"step_id": "route_probe", "kind": "tool", "title": "Probe local route", "status": "planned", "tool_name": "route_probe", "input": {"url": url}})
-        if "blocked write" in goal or "write tool" in goal:
-            plan.append({"step_id": "blocked_write", "kind": "tool", "title": "Verify write tool gate", "status": "planned", "tool_name": "file_patch_apply_approval_required", "input": {"path": "README.md", "patch": "dry-run"}})
+        classification, plan = build_plan(run["goal"], run.get("mode", "read_only"))
+        run["classification"] = classification
         run["plan"] = plan
         run["status"] = "planned"
         self._save_run(run)
-        self._trace(run_id, "plan_created", "Plan created", {"step_count": len(plan)})
+        self._trace(run_id, "plan_created", "Plan created", {"step_count": len(plan), "classification": classification})
         return run
 
     def execute_run(self, run_id: str) -> Dict[str, Any]:
@@ -98,24 +90,19 @@ class NativeAgentRuntimeV2:
                 self._trace(run_id, "approval_required", "Write tool blocked pending approval", {"tool": tool})
             else:
                 self._trace(run_id, "tool_call_completed", f"Tool {tool} completed", {"tool": tool, "ok": res.ok, "blocked": res.blocked})
-        final = self._final_answer(run, memory_hits, results)
+        final, provider_metadata = finalize_agent_run(run, memory_hits, results)
         run["final_answer"] = final
+        run["provider_metadata"] = provider_metadata
+        run["provider"] = provider_metadata.get("provider_used", run.get("provider"))
+        run["model_used"] = provider_metadata.get("model_used")
+        run["provider_degraded"] = provider_metadata.get("provider_degraded")
+        run["fallback_reason"] = provider_metadata.get("fallback_reason")
         run["status"] = "completed"
         run["plan"] = run.get("plan", [])
         self._save_run(run)
-        self._trace(run_id, "final_answer_created", "Final answer created", {"provider": run.get("provider")})
+        self._trace(run_id, "final_answer_created", "Final answer created", {"provider_metadata": provider_metadata})
         self._trace(run_id, "run_completed", "Run completed", {"status": "completed"})
         return run
-
-    def _final_answer(self, run: Dict[str, Any], hits: List[Dict[str, Any]], results: List[Dict[str, Any]]) -> str:
-        lines = ["Agent V2 operational result.", f"Goal: {run['goal']}", f"Mode: {run.get('mode', 'read_only')}."]
-        if hits:
-            lines.append(f"Memory retrieval: {len(hits)} hit(s), read-only.")
-        blocked = [r for r in results if r.get("blocked") or r.get("approval_required")]
-        if blocked:
-            lines.append(f"Governance: {len(blocked)} tool request(s) blocked or approval-gated.")
-        lines.append("No semantic/FAISS write or trading action was performed.")
-        return "\n".join(lines)
 
     def pause_run(self, run_id: str) -> Dict[str, Any]:
         run = self._load_run(run_id); run["status"] = "paused"; self._save_run(run); self._trace(run_id, "run_paused", "Run paused"); return run

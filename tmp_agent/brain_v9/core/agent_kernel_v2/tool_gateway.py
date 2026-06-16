@@ -6,6 +6,12 @@ from .governance import path_is_blocked, validate_mode, write_allowed
 from .schemas import AgentCapability, ToolCallRequest, ToolCallResult, to_dict
 
 ROOT = Path(__file__).resolve().parents[4]
+MAX_FILE_READ_BYTES = 128_000
+SAFE_POST_PATHS = {"/v2/agent/runs", "/v2/chat/agent"}
+SMOKE_ALLOWLIST = {
+    "tests/smoke/smoke_front_brain_agent_full_rebuild_langgraph_recursive_closeout_01.py",
+    "tests/smoke/smoke_front_brain_agent_v2_total_operational_excellence_closeout_01.py",
+}
 
 
 class ToolGatewayV2:
@@ -61,27 +67,50 @@ class ToolGatewayV2:
         p = (ROOT / path).resolve()
         if not str(p).startswith(str(ROOT)) or not p.exists() or p.is_dir():
             return ToolCallResult(name, ok=False, error="not_found_or_outside_repo")
+        if p.stat().st_size > MAX_FILE_READ_BYTES:
+            return ToolCallResult(name, ok=False, blocked=True, error="file_too_large")
+        sample = p.read_bytes()[:2048]
+        if b"\x00" in sample:
+            return ToolCallResult(name, ok=False, blocked=True, error="binary_file_blocked")
         return ToolCallResult(name, ok=True, result={"path": path, "text": p.read_text(encoding="utf-8", errors="replace")[:4000]})
 
     def _grep(self, name, args):
         pattern = str(args.get("pattern", "agent"))
         glob = str(args.get("glob", "*.py"))
-        p = subprocess.run(["rg", "-n", pattern, "-g", glob], cwd=ROOT, text=True, capture_output=True, encoding="utf-8", errors="replace", timeout=10)
+        cmd = [
+            "rg", "-n", pattern, "-g", glob,
+            "-g", "!memory/semantic/**", "-g", "!tmp_agent/strategies/**",
+            "-g", "!.git/**", "-g", "!node_modules/**", "-g", "!**/__pycache__/**",
+        ]
+        p = subprocess.run(cmd, cwd=ROOT, text=True, capture_output=True, encoding="utf-8", errors="replace", timeout=10)
         return ToolCallResult(name, ok=True, result={"returncode": p.returncode, "matches": p.stdout.splitlines()[:50]})
 
     def _route_probe(self, name, args):
         url = str(args.get("url", "http://127.0.0.1:8091/health"))
+        method = str(args.get("method", "GET")).upper()
         if not (url.startswith("http://127.0.0.1") or url.startswith("http://localhost")):
             return ToolCallResult(name, ok=False, blocked=True, error="only_local_routes_allowed")
+        if method not in {"GET", "POST"}:
+            return ToolCallResult(name, ok=False, blocked=True, error="method_blocked")
+        if method == "POST":
+            from urllib.parse import urlparse
+            parsed = urlparse(url)
+            if parsed.path not in SAFE_POST_PATHS:
+                return ToolCallResult(name, ok=False, blocked=True, error="post_path_not_allowlisted")
         try:
-            with urllib.request.urlopen(url, timeout=5) as resp:
+            if method == "POST":
+                data = json.dumps(args.get("json") or {"goal": "Agent V2 safe route probe", "mode": "read_only"}).encode("utf-8")
+                req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"}, method="POST")
+            else:
+                req = urllib.request.Request(url, method="GET")
+            with urllib.request.urlopen(req, timeout=5) as resp:
                 return ToolCallResult(name, ok=True, result={"url": url, "status": resp.status, "body": resp.read(800).decode("utf-8", "replace")})
         except Exception as exc:
             return ToolCallResult(name, ok=False, result={"url": url}, error=str(exc)[:200])
 
     def _smoke(self, name, args):
         target = str(args.get("target", "tests/smoke/smoke_front_brain_agent_full_rebuild_langgraph_recursive_closeout_01.py"))
-        if path_is_blocked(target):
+        if path_is_blocked(target) or target not in SMOKE_ALLOWLIST:
             return ToolCallResult(name, ok=False, blocked=True, error="target_blocked")
         p = subprocess.run(["python", "-m", "pytest", target, "-q"], cwd=ROOT, text=True, capture_output=True, encoding="utf-8", errors="replace", timeout=60)
         return ToolCallResult(name, ok=p.returncode == 0, result={"returncode": p.returncode, "stdout": p.stdout[-2000:], "stderr": p.stderr[-1000:]})
