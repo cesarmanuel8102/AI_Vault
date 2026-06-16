@@ -196,6 +196,14 @@
 - python -m pytest tests/unit/test_curation_validation_adapter.py -q (11 passed)
 - python tests/smoke/smoke_curation_validation_adapter.py (SMOKE_CURATION_VALIDATION_ADAPTER_OK)
 
+## 8. Memory promotion review front
+- **FRONT-BRAIN-MEMORY-PROMOTION-REVIEW-AND-APPROVE-ALL-PASSING-01**: completado y pusheado, hash acdbda1
+  - Archivos: tmp_agent/front_brain_memory_promotion_review_and_approve_all_passing_01/*, tests/smoke/smoke_front_brain_memory_promotion_review_and_approve_all_passing_01.py
+  - Estado: 53 candidates reviewed, 5 approved for future canonical promotion, 15 held, 17 rejected, 16 duplicates; 0 canonical promotions performed
+  - Seguridad: no semantic/FAISS mutation, no trading/B8 touch, no secrets/raw CoT exposed
+  - Tests: smoke test passing (18/18)
+  - Próximo: FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01
+
 ## 7. Próximo paso autorizado
 - Crear preflight/scope/smoke scripts.
 - No runtime refactor.
