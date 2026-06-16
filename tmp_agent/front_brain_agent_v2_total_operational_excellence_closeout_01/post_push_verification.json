@@ -1,0 +1,28 @@
+{
+  "status": "POST_PUSH_VERIFIED",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_local": "00081ad",
+  "head_remote": "00081ad",
+  "local_equals_remote": true,
+  "tracked_clean": true,
+  "staged_empty": true,
+  "pushed": true,
+  "main_push_head": "00081ad",
+  "benchmark": "20/20",
+  "smoke": "30 passed",
+  "kimi_used": true,
+  "live_8091_ok": true,
+  "live_8092_agent_route": "hard_blocked_404",
+  "semantic_faiss_unchanged": true,
+  "recommended_decision": "Agent V2 is operationally ready for controlled real use through 8091 API/chat-agent.",
+  "latest_commits": [
+    "00081ad ledger: record Agent V2 total operational closeout",
+    "3f6fc8d test: add Agent V2 excellence benchmark and smoke",
+    "d6ed01c feat: route chat and dashboard to canonical Agent V2",
+    "30c2b66 feat: add Agent V2 Kimi finalizer and multitool runtime",
+    "0fdb74c docs: add Agent V2 post-push verification",
+    "8f9d804 ledger: record Agent V2 full rebuild closeout",
+    "cb83de6 docs: add Agent V2 runtime documentation",
+    "c9d574d test: add Agent V2 benchmark and smoke"
+  ]
+}
