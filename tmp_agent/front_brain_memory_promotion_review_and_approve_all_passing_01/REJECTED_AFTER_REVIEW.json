@@ -1,0 +1,534 @@
+{
+  "front": "FRONT-BRAIN-MEMORY-PROMOTION-REVIEW-AND-APPROVE-ALL-PASSING-01",
+  "phase": "PHASE_4_REJECTED_MANIFEST",
+  "timestamp_utc": "2026-06-15T23:58:52+00:00",
+  "rejected_after_review": [
+    {
+      "candidate_id": "audit_0003",
+      "source_path": "memory/promotion_queue/cycle02_retry_candidate_004.json",
+      "domain": "coding_debugging",
+      "summary": "A useful memory-promotion candidate encodes non-reconstructible context that measurably improves future interactions when recalled; generic operational noise consists of transient execution traces regenerable on demand.",
+      "quality_score": 0.5,
+      "original_audit_decision": "needs_human_review",
+      "final_review_decision": "rejected",
+      "approval_reason": "",
+      "rejection_reason": "Low quality and useless summary",
+      "safety_flags": [],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "useful_summary",
+        "not_duplicate",
+        "no_raw_cot",
+        "no_secrets",
+        "no_trading",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain"
+      ],
+      "gates_failed": [
+        "quality_too_low",
+        "useless_summary"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0022",
+      "source_path": "memory/promotion_queue/stability_rerun_cycle_010.json",
+      "domain": "coding_debugging",
+      "summary": "Governed stability cycle 10 checked operator UX clarity; no canonical memory/FAISS write and no trading execution.",
+      "quality_score": 0.5,
+      "original_audit_decision": "unsafe_reject",
+      "final_review_decision": "rejected",
+      "approval_reason": "",
+      "rejection_reason": "Critical failures: trading_detected",
+      "safety_flags": [
+        "trading"
+      ],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "not_duplicate",
+        "no_raw_cot",
+        "no_secrets",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "summary_too_short_or_generic",
+        "trading_detected",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0023",
+      "source_path": "memory/promotion_queue/stability_rerun_cycle_020.json",
+      "domain": "coding_debugging",
+      "summary": "Governed stability cycle 20 checked coding reliability; no canonical memory/FAISS write and no trading execution.",
+      "quality_score": 0.5,
+      "original_audit_decision": "unsafe_reject",
+      "final_review_decision": "rejected",
+      "approval_reason": "",
+      "rejection_reason": "Critical failures: trading_detected",
+      "safety_flags": [
+        "trading"
+      ],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "not_duplicate",
+        "no_raw_cot",
+        "no_secrets",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "summary_too_short_or_generic",
+        "trading_detected",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0024",
+      "source_path": "memory/promotion_queue/stability_rerun_cycle_030.json",
+      "domain": "coding_debugging",
+      "summary": "Governed stability cycle 30 checked memory queue quality; no canonical memory/FAISS write and no trading execution.",
+      "quality_score": 0.5,
+      "original_audit_decision": "unsafe_reject",
+      "final_review_decision": "rejected",
+      "approval_reason": "",
+      "rejection_reason": "Critical failures: trading_detected",
+      "safety_flags": [
+        "trading"
+      ],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "not_duplicate",
+        "no_raw_cot",
+        "no_secrets",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "summary_too_short_or_generic",
+        "trading_detected",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0025",
+      "source_path": "memory/promotion_queue/stability_rerun_cycle_040.json",
+      "domain": "coding_debugging",
+      "summary": "Governed stability cycle 40 checked timeout/fallback quality; no canonical memory/FAISS write and no trading execution.",
+      "quality_score": 0.5,
+      "original_audit_decision": "unsafe_reject",
+      "final_review_decision": "rejected",
+      "approval_reason": "",
+      "rejection_reason": "Critical failures: trading_detected",
+      "safety_flags": [
+        "trading"
+      ],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "not_duplicate",
+        "no_raw_cot",
+        "no_secrets",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "summary_too_short_or_generic",
+        "trading_detected",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0026",
+      "source_path": "memory/promotion_queue/stability_rerun_cycle_050.json",
+      "domain": "coding_debugging",
+      "summary": "Governed stability cycle 50 checked scheduler stability; no canonical memory/FAISS write and no trading execution.",
+      "quality_score": 0.5,
+      "original_audit_decision": "unsafe_reject",
+      "final_review_decision": "rejected",
+      "approval_reason": "",
+      "rejection_reason": "Critical failures: trading_detected",
+      "safety_flags": [
+        "trading"
+      ],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "not_duplicate",
+        "no_raw_cot",
+        "no_secrets",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "summary_too_short_or_generic",
+        "trading_detected",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0027",
+      "source_path": "memory/promotion_queue/stability_rerun_cycle_060.json",
+      "domain": "coding_debugging",
+      "summary": "Governed stability cycle 60 checked governance/rollback readiness; no canonical memory/FAISS write and no trading execution.",
+      "quality_score": 0.5,
+      "original_audit_decision": "unsafe_reject",
+      "final_review_decision": "rejected",
+      "approval_reason": "",
+      "rejection_reason": "Critical failures: trading_detected",
+      "safety_flags": [
+        "trading"
+      ],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "not_duplicate",
+        "no_raw_cot",
+        "no_secrets",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "summary_too_short_or_generic",
+        "trading_detected",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0028",
+      "source_path": "memory/promotion_queue/stability_rerun_cycle_070.json",
+      "domain": "coding_debugging",
+      "summary": "Governed stability cycle 70 checked operator UX clarity; no canonical memory/FAISS write and no trading execution.",
+      "quality_score": 0.5,
+      "original_audit_decision": "unsafe_reject",
+      "final_review_decision": "rejected",
+      "approval_reason": "",
+      "rejection_reason": "Critical failures: trading_detected",
+      "safety_flags": [
+        "trading"
+      ],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "not_duplicate",
+        "no_raw_cot",
+        "no_secrets",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "summary_too_short_or_generic",
+        "trading_detected",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0029",
+      "source_path": "memory/promotion_queue/stability_rerun_cycle_080.json",
+      "domain": "coding_debugging",
+      "summary": "Governed stability cycle 80 checked coding reliability; no canonical memory/FAISS write and no trading execution.",
+      "quality_score": 0.5,
+      "original_audit_decision": "unsafe_reject",
+      "final_review_decision": "rejected",
+      "approval_reason": "",
+      "rejection_reason": "Critical failures: trading_detected",
+      "safety_flags": [
+        "trading"
+      ],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "not_duplicate",
+        "no_raw_cot",
+        "no_secrets",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "summary_too_short_or_generic",
+        "trading_detected",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0030",
+      "source_path": "memory/promotion_queue/stability_rerun_cycle_090.json",
+      "domain": "coding_debugging",
+      "summary": "Governed stability cycle 90 checked memory queue quality; no canonical memory/FAISS write and no trading execution.",
+      "quality_score": 0.5,
+      "original_audit_decision": "unsafe_reject",
+      "final_review_decision": "rejected",
+      "approval_reason": "",
+      "rejection_reason": "Critical failures: trading_detected",
+      "safety_flags": [
+        "trading"
+      ],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "not_duplicate",
+        "no_raw_cot",
+        "no_secrets",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "summary_too_short_or_generic",
+        "trading_detected",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0031",
+      "source_path": "memory/promotion_queue/stability_rerun_cycle_100.json",
+      "domain": "coding_debugging",
+      "summary": "Governed stability cycle 100 checked timeout/fallback quality; no canonical memory/FAISS write and no trading execution.",
+      "quality_score": 0.5,
+      "original_audit_decision": "unsafe_reject",
+      "final_review_decision": "rejected",
+      "approval_reason": "",
+      "rejection_reason": "Critical failures: trading_detected",
+      "safety_flags": [
+        "trading"
+      ],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "not_duplicate",
+        "no_raw_cot",
+        "no_secrets",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "summary_too_short_or_generic",
+        "trading_detected",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0032",
+      "source_path": "memory/promotion_queue/stability_rerun_cycle_110.json",
+      "domain": "coding_debugging",
+      "summary": "Governed stability cycle 110 checked scheduler stability; no canonical memory/FAISS write and no trading execution.",
+      "quality_score": 0.5,
+      "original_audit_decision": "unsafe_reject",
+      "final_review_decision": "rejected",
+      "approval_reason": "",
+      "rejection_reason": "Critical failures: trading_detected",
+      "safety_flags": [
+        "trading"
+      ],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "not_duplicate",
+        "no_raw_cot",
+        "no_secrets",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "summary_too_short_or_generic",
+        "trading_detected",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0033",
+      "source_path": "memory/promotion_queue/stability_rerun_cycle_120.json",
+      "domain": "coding_debugging",
+      "summary": "Governed stability cycle 120 checked governance/rollback readiness; no canonical memory/FAISS write and no trading execution.",
+      "quality_score": 0.5,
+      "original_audit_decision": "unsafe_reject",
+      "final_review_decision": "rejected",
+      "approval_reason": "",
+      "rejection_reason": "Critical failures: trading_detected",
+      "safety_flags": [
+        "trading"
+      ],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "not_duplicate",
+        "no_raw_cot",
+        "no_secrets",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "summary_too_short_or_generic",
+        "trading_detected",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0050",
+      "source_path": "memory/semantic_staging/stability_rerun_cycle_015.json",
+      "domain": "coding_debugging",
+      "summary": "Governed stability cycle 15 checked provider behavior; no canonical memory/FAISS write and no trading execution.",
+      "quality_score": 0.5,
+      "original_audit_decision": "unsafe_reject",
+      "final_review_decision": "rejected",
+      "approval_reason": "",
+      "rejection_reason": "Critical failures: trading_detected",
+      "safety_flags": [
+        "trading"
+      ],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "not_duplicate",
+        "no_raw_cot",
+        "no_secrets",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "summary_too_short_or_generic",
+        "trading_detected",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0051",
+      "source_path": "memory/semantic_staging/stability_rerun_cycle_045.json",
+      "domain": "coding_debugging",
+      "summary": "Governed stability cycle 45 checked financial safety without execution; no canonical memory/FAISS write and no trading execution.",
+      "quality_score": 0.5,
+      "original_audit_decision": "unsafe_reject",
+      "final_review_decision": "rejected",
+      "approval_reason": "",
+      "rejection_reason": "Critical failures: trading_detected",
+      "safety_flags": [
+        "trading"
+      ],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "not_duplicate",
+        "no_raw_cot",
+        "no_secrets",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "summary_too_short_or_generic",
+        "trading_detected",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0052",
+      "source_path": "memory/semantic_staging/stability_rerun_cycle_075.json",
+      "domain": "coding_debugging",
+      "summary": "Governed stability cycle 75 checked provider behavior; no canonical memory/FAISS write and no trading execution.",
+      "quality_score": 0.5,
+      "original_audit_decision": "unsafe_reject",
+      "final_review_decision": "rejected",
+      "approval_reason": "",
+      "rejection_reason": "Critical failures: trading_detected",
+      "safety_flags": [
+        "trading"
+      ],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "not_duplicate",
+        "no_raw_cot",
+        "no_secrets",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "summary_too_short_or_generic",
+        "trading_detected",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0053",
+      "source_path": "memory/semantic_staging/stability_rerun_cycle_105.json",
+      "domain": "coding_debugging",
+      "summary": "Governed stability cycle 105 checked financial safety without execution; no canonical memory/FAISS write and no trading execution.",
+      "quality_score": 0.5,
+      "original_audit_decision": "unsafe_reject",
+      "final_review_decision": "rejected",
+      "approval_reason": "",
+      "rejection_reason": "Critical failures: trading_detected",
+      "safety_flags": [
+        "trading"
+      ],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "not_duplicate",
+        "no_raw_cot",
+        "no_secrets",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "summary_too_short_or_generic",
+        "trading_detected",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    }
+  ],
+  "count": 17,
+  "reason": "Failed critical safety, quality, or usefulness gates"
+}

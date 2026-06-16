@@ -1,0 +1,473 @@
+{
+  "front": "FRONT-BRAIN-MEMORY-PROMOTION-REVIEW-AND-APPROVE-ALL-PASSING-01",
+  "phase": "PHASE_4_DUPLICATE_MANIFEST",
+  "timestamp_utc": "2026-06-15T23:58:52+00:00",
+  "duplicates_after_review": [
+    {
+      "candidate_id": "audit_0034",
+      "source_path": "memory/semantic_staging/cycle02_retry_candidate_002.json",
+      "domain": "coding_debugging",
+      "summary": "The `/status` endpoint must return HTTP 200 with a parseable JSON payload where the `status` field is `healthy`, the `timestamp` is within 30 seconds of wall-clock time, and total round-trip latency is under 500 ms.",
+      "quality_score": 0.5,
+      "original_audit_decision": "duplicate",
+      "final_review_decision": "duplicate",
+      "approval_reason": "",
+      "rejection_reason": "Marked as duplicate in audit",
+      "safety_flags": [],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "useful_summary",
+        "no_raw_cot",
+        "no_secrets",
+        "no_trading",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "marked_duplicate",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0035",
+      "source_path": "memory/semantic_staging/cycle02_retry_candidate_003.json",
+      "domain": "coding_debugging",
+      "summary": "Enforce immutable per-cycle autonomy boundaries with mandatory supervised checkpoints between tasks, and require explicit human authorization for any execution-scope expansion.",
+      "quality_score": 0.5,
+      "original_audit_decision": "duplicate",
+      "final_review_decision": "duplicate",
+      "approval_reason": "",
+      "rejection_reason": "Marked as duplicate in audit",
+      "safety_flags": [],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "useful_summary",
+        "no_raw_cot",
+        "no_secrets",
+        "no_trading",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "marked_duplicate",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0036",
+      "source_path": "memory/semantic_staging/cycle02_retry_candidate_004.json",
+      "domain": "coding_debugging",
+      "summary": "A useful memory-promotion candidate encodes non-reconstructible context that measurably improves future interactions when recalled; generic operational noise consists of transient execution traces regenerable on demand.",
+      "quality_score": 0.5,
+      "original_audit_decision": "duplicate",
+      "final_review_decision": "duplicate",
+      "approval_reason": "",
+      "rejection_reason": "Marked as duplicate in audit",
+      "safety_flags": [],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "useful_summary",
+        "no_raw_cot",
+        "no_secrets",
+        "no_trading",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain"
+      ],
+      "gates_failed": [
+        "marked_duplicate",
+        "quality_too_low",
+        "useless_summary"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0037",
+      "source_path": "memory/semantic_staging/cycle02_retry_candidate_005.json",
+      "domain": "coding_debugging",
+      "summary": "Use out-of-process integration or smoke tests against live endpoints to verify hardcoded routes; in-process tests alone cannot validate real network boundaries.",
+      "quality_score": 0.5,
+      "original_audit_decision": "duplicate",
+      "final_review_decision": "duplicate",
+      "approval_reason": "",
+      "rejection_reason": "Marked as duplicate in audit",
+      "safety_flags": [],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "useful_summary",
+        "no_raw_cot",
+        "no_secrets",
+        "no_trading",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "marked_duplicate",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0038",
+      "source_path": "memory/semantic_staging/cycle02_retry_candidate_007.json",
+      "domain": "coding_debugging",
+      "summary": "Show a persistent, co-located icon-plus-text badge on every knowledge item: a gray eye for \u201cRead-only,\u201d an amber clock for \u201cStaged,\u201d and a green checkmark for \u201cCanonical\u201d; never rely on color alone.",
+      "quality_score": 0.5,
+      "original_audit_decision": "duplicate",
+      "final_review_decision": "duplicate",
+      "approval_reason": "",
+      "rejection_reason": "Marked as duplicate in audit",
+      "safety_flags": [],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "useful_summary",
+        "no_raw_cot",
+        "no_secrets",
+        "no_trading",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "marked_duplicate",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0039",
+      "source_path": "memory/semantic_staging/cycle02_retry_candidate_009.json",
+      "domain": "coding_debugging",
+      "summary": "A cryptographically signed, immutable snapshot of the current canonical semantic memory and FAISS state must be successfully persisted and integrity-validated before any write operation is authorized.",
+      "quality_score": 0.5,
+      "original_audit_decision": "duplicate",
+      "final_review_decision": "duplicate",
+      "approval_reason": "",
+      "rejection_reason": "Marked as duplicate in audit",
+      "safety_flags": [],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "useful_summary",
+        "no_raw_cot",
+        "no_secrets",
+        "no_trading",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "marked_duplicate",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0040",
+      "source_path": "memory/semantic_staging/cycle02_retry_candidate_014.json",
+      "domain": "coding_debugging",
+      "summary": "It must be novel, situation-specific information that a future reasoning step would plausibly retrieve to maintain task coherence, excluding transient execution artifacts.",
+      "quality_score": 0.5,
+      "original_audit_decision": "duplicate",
+      "final_review_decision": "duplicate",
+      "approval_reason": "",
+      "rejection_reason": "Marked as duplicate in audit",
+      "safety_flags": [],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "useful_summary",
+        "no_raw_cot",
+        "no_secrets",
+        "no_trading",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "marked_duplicate",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0041",
+      "source_path": "memory/semantic_staging/llm_grounded_cycle_001.json",
+      "domain": "CEI_FDOT",
+      "summary": "CEI/FDOT practical reasoning: No. A repaired concrete slab shall not be reopened to service loads without evidence that adequate strength has been achieved. **Caveats:** Opening may be permitted only if the Engineer of Record provides written approval based on a validated elapsed-time/strength corre",
+      "quality_score": 0.5,
+      "original_audit_decision": "duplicate",
+      "final_review_decision": "duplicate",
+      "approval_reason": "",
+      "rejection_reason": "Marked as duplicate in audit",
+      "safety_flags": [],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "useful_summary",
+        "no_raw_cot",
+        "no_secrets",
+        "no_trading",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "marked_duplicate",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0042",
+      "source_path": "memory/semantic_staging/llm_grounded_cycle_002.json",
+      "domain": "provider_reliability",
+      "summary": "dashboard/status reliability: - HTTP 200 with a valid, expected JSON schema. - Top-level `status` field reads `healthy`/`ready` (not `degraded`, `down`, or `error`). - `timestamp`/`last_updated` is fresh (within the last 1\u20132 minutes and after the rerun completed). - All critical downstream dependenc",
+      "quality_score": 0.5,
+      "original_audit_decision": "duplicate",
+      "final_review_decision": "duplicate",
+      "approval_reason": "",
+      "rejection_reason": "Marked as duplicate in audit",
+      "safety_flags": [],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "useful_summary",
+        "no_raw_cot",
+        "no_secrets",
+        "no_trading",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "marked_duplicate",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0043",
+      "source_path": "memory/semantic_staging/llm_grounded_cycle_003.json",
+      "domain": "governance",
+      "summary": "scheduler/autonomy governance: A governed autonomy scheduler should record each bounded cycle as an operational execution trace, not as persistent canonical knowledge. It should store: cycle ID, start/end time, trigger, scope, allowed actions, observations, decisions, actions taken, errors, outputs,",
+      "quality_score": 0.5,
+      "original_audit_decision": "duplicate",
+      "final_review_decision": "duplicate",
+      "approval_reason": "",
+      "rejection_reason": "Marked as duplicate in audit",
+      "safety_flags": [],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "useful_summary",
+        "no_raw_cot",
+        "no_secrets",
+        "no_trading",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "marked_duplicate",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0044",
+      "source_path": "memory/semantic_staging/llm_grounded_cycle_004.json",
+      "domain": "memory_quality",
+      "summary": "memory promotion quality: An autonomy lesson is worthy of promotion review when it is: 1. Evidence-backed: supported by repeated real outcomes, not a single anecdote or assumed pattern. 2. Context-specific: clearly tied to conditions where it applies, including known limits and failure cases. 3. Act",
+      "quality_score": 0.5,
+      "original_audit_decision": "duplicate",
+      "final_review_decision": "duplicate",
+      "approval_reason": "",
+      "rejection_reason": "Marked as duplicate in audit",
+      "safety_flags": [],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "useful_summary",
+        "no_raw_cot",
+        "no_secrets",
+        "no_trading",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "marked_duplicate",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0045",
+      "source_path": "memory/semantic_staging/llm_grounded_cycle_005.json",
+      "domain": "provider_reliability",
+      "summary": "coding/debugging reliability: Fix the test isolation bug, not the order. Make the smoke test pass from a clean process by explicitly importing/initializing its dependencies and removing reliance on prior import side effects. If module global state or import-time registration is involved, move it beh",
+      "quality_score": 0.5,
+      "original_audit_decision": "duplicate",
+      "final_review_decision": "duplicate",
+      "approval_reason": "",
+      "rejection_reason": "Marked as duplicate in audit",
+      "safety_flags": [],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "useful_summary",
+        "no_raw_cot",
+        "no_secrets",
+        "no_trading",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "marked_duplicate",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0046",
+      "source_path": "memory/semantic_staging/llm_grounded_cycle_006.json",
+      "domain": "financial_safety",
+      "summary": "financial safety without execution: Present it as analytical validation, not advice: describe the strategy, assumptions, dataset, market regime, metrics reviewed, and limitations. Use neutral language like \u201cthe backtest indicates,\u201d \u201cthe sample suggests,\u201d or \u201crisk observed was,\u201d avoiding \u201cbuy,\u201d \u201csell",
+      "quality_score": 0.5,
+      "original_audit_decision": "duplicate",
+      "final_review_decision": "duplicate",
+      "approval_reason": "",
+      "rejection_reason": "Marked as duplicate in audit",
+      "safety_flags": [],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "useful_summary",
+        "no_raw_cot",
+        "no_secrets",
+        "no_trading",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "marked_duplicate",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0047",
+      "source_path": "memory/semantic_staging/llm_grounded_cycle_007.json",
+      "domain": "operator_ux",
+      "summary": "operator UX clarity: Auditor\u00eda de memoria completada en modo solo lectura. No se modificaron archivos, \u00edndices, FAISS ni memoria persistente. Se verific\u00f3 el estado disponible y no se ejecutaron acciones destructivas ni escrituras.",
+      "quality_score": 0.5,
+      "original_audit_decision": "duplicate",
+      "final_review_decision": "duplicate",
+      "approval_reason": "",
+      "rejection_reason": "Marked as duplicate in audit",
+      "safety_flags": [],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "useful_summary",
+        "no_raw_cot",
+        "no_secrets",
+        "no_trading",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "marked_duplicate",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0048",
+      "source_path": "memory/semantic_staging/llm_grounded_cycle_008.json",
+      "domain": "coding_debugging",
+      "summary": "fallback/timeout self-diagnosis: Record the route as degraded but successful: note the initial provider timeout, the fallback provider used, final success status, latency impact, and any error details for the failed route.",
+      "quality_score": 0.5,
+      "original_audit_decision": "duplicate",
+      "final_review_decision": "duplicate",
+      "approval_reason": "",
+      "rejection_reason": "Marked as duplicate in audit",
+      "safety_flags": [],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "useful_summary",
+        "no_raw_cot",
+        "no_secrets",
+        "no_trading",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "marked_duplicate",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    },
+    {
+      "candidate_id": "audit_0049",
+      "source_path": "memory/semantic_staging/llm_grounded_cycle_009.json",
+      "domain": "governance",
+      "summary": "rollback/snapshot governance: Antes de escribir memoria sem\u00e1ntica can\u00f3nica, se requiere prueba de rollback verificable: snapshot/backup previo identificado, operaci\u00f3n reversible documentada, ruta exacta del artefacto afectado y validaci\u00f3n de que puede restaurarse el estado anterior sin p\u00e9rdida.",
+      "quality_score": 0.5,
+      "original_audit_decision": "duplicate",
+      "final_review_decision": "duplicate",
+      "approval_reason": "",
+      "rejection_reason": "Marked as duplicate in audit",
+      "safety_flags": [],
+      "gates_passed": [
+        "clear_source_path",
+        "clear_candidate_id",
+        "useful_summary",
+        "no_raw_cot",
+        "no_secrets",
+        "no_trading",
+        "no_unsafe_financial",
+        "no_bypass_governance",
+        "allowed_domain",
+        "not_useless"
+      ],
+      "gates_failed": [
+        "marked_duplicate",
+        "quality_too_low"
+      ],
+      "canonical_promotion_performed": false
+    }
+  ],
+  "count": 16,
+  "reason": "Identified as duplicate during audit; not unique enough for promotion"
+}
