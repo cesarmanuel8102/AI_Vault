@@ -1,0 +1,22 @@
+{
+  "front": "FRONT-BRAIN-CANONICAL-MEMORY-POST-PROMOTION-QUALITY-EVAL-01",
+  "phase": "PHASE_6_FINAL_SAFETY_VERIFY",
+  "timestamp_utc": "2026-06-16T14:43:00+00:00",
+  "semantic_lines": 1720,
+  "faiss_ids": 1621,
+  "faiss_ntotal": 1621,
+  "canonical_promotions_verified": 5,
+  "additional_promotions_performed": 0,
+  "canonical_semantic_mutated_this_front": false,
+  "faiss_mutated_this_front": false,
+  "rejected_promoted": 0,
+  "duplicate_promoted": 0,
+  "held_promoted": 0,
+  "env_touched": false,
+  "trading_touched": false,
+  "b8_touched": false,
+  "strategies_touched": false,
+  "secrets_exposed": false,
+  "raw_cot_exposed": false,
+  "verdict": "SAFETY_HELD"
+}

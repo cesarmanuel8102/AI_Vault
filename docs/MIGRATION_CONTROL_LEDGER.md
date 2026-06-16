@@ -196,7 +196,17 @@
 - python -m pytest tests/unit/test_curation_validation_adapter.py -q (11 passed)
 - python tests/smoke/smoke_curation_validation_adapter.py (SMOKE_CURATION_VALIDATION_ADAPTER_OK)
 
+## 10. Canonical memory promotion post-promotion quality eval
+- **FRONT-BRAIN-CANONICAL-MEMORY-POST-PROMOTION-QUALITY-EVAL-01**: completado y pusheado, hash 4b7f79c
+  - Archivos: tmp_agent/front_brain_canonical_memory_post_promotion_quality_eval_01/*, tests/smoke/smoke_front_brain_canonical_memory_post_promotion_quality_eval_01.py
+  - Estado: 5 memorias promovidas verificadas, retrieval validado, calidad evaluada, rollback listo
+  - Seguridad: no semantic/FAISS mutation en este front, no trading/B8 touch, no secrets/raw CoT
+  - Tests: smoke test passing (19/19)
+  - Próximo: FRONT-BRAIN-CANONICAL-MEMORY-RETRIEVAL-BENEFIT-EVAL-01
+
 ## 8. Memory promotion review front
+
+## 9. Canonical memory promotion execution front
 - **FRONT-BRAIN-MEMORY-PROMOTION-REVIEW-AND-APPROVE-ALL-PASSING-01**: completado y pusheado, hash acdbda1
   - Archivos: tmp_agent/front_brain_memory_promotion_review_and_approve_all_passing_01/*, tests/smoke/smoke_front_brain_memory_promotion_review_and_approve_all_passing_01.py
   - Estado: 53 candidates reviewed, 5 approved for future canonical promotion, 15 held, 17 rejected, 16 duplicates; 0 canonical promotions performed

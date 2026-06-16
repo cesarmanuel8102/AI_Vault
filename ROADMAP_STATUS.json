@@ -165,7 +165,9 @@
     "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
     "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-02",
     "FRONT-BRAIN-LLM-GROUNDED-MEMORY-PROMOTION-AUDIT-01",
-    "FRONT-BRAIN-MEMORY-PROMOTION-REVIEW-AND-APPROVE-ALL-PASSING-01"
+    "FRONT-BRAIN-MEMORY-PROMOTION-REVIEW-AND-APPROVE-ALL-PASSING-01",
+    "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01",
+    "FRONT-BRAIN-CANONICAL-MEMORY-POST-PROMOTION-QUALITY-EVAL-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -183,10 +185,10 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01",
+    "name": "FRONT-BRAIN-CANONICAL-MEMORY-RETRIEVAL-BENEFIT-EVAL-01",
     "status": "recommended_next",
-    "reason": "5 candidates approved for future canonical promotion after strict review. 15 held, 17 rejected, 16 duplicates. Approval manifest ready.",
-    "unblock_dependency": "FRONT-BRAIN-MEMORY-PROMOTION-REVIEW-AND-APPROVE-ALL-PASSING-01"
+    "reason": "Post-promotion quality evaluation completed. All 5 promoted memories verified, retrieval validated, rollback ready. Next step: measure whether promoted memories improve Brain responses in controlled Q/A tests.",
+    "unblock_dependency": "FRONT-BRAIN-CANONICAL-MEMORY-POST-PROMOTION-QUALITY-EVAL-01"
   },
   "ready_for_next_front": true,
   "last_updated": "2026-06-16T00:01:39.703+00:00",

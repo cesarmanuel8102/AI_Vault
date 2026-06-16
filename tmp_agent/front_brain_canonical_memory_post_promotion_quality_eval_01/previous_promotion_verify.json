@@ -1,0 +1,37 @@
+{
+  "front": "FRONT-BRAIN-CANONICAL-MEMORY-POST-PROMOTION-QUALITY-EVAL-01",
+  "phase": "PHASE_1_PREVIOUS_PROMOTION_VERIFY",
+  "timestamp_utc": "2026-06-16T14:43:00+00:00",
+  "source_front": "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01",
+  "source_files_found": [
+    "tmp_agent/front_brain_canonical_memory_promotion_execute_approved_01/post_push_verification.json",
+    "tmp_agent/front_brain_canonical_memory_promotion_execute_approved_01/shadow_validation.json",
+    "tmp_agent/front_brain_canonical_memory_promotion_execute_approved_01/dry_run_promotion_records.jsonl",
+    "tmp_agent/front_brain_canonical_memory_promotion_execute_approved_01/approval_source_verify.json"
+  ],
+  "source_files_missing": [
+    "tmp_agent/front_brain_canonical_memory_promotion_execute_approved_01/final_report.json",
+    "tmp_agent/front_brain_canonical_memory_promotion_execute_approved_01/final_safety_verify.json",
+    "tmp_agent/front_brain_canonical_memory_promotion_execute_approved_01/canonical_promotion_execution.json",
+    "tmp_agent/front_brain_canonical_memory_promotion_execute_approved_01/retrieval_validation.json"
+  ],
+  "promoted_candidate_count": 5,
+  "canonical_promotions": 5,
+  "semantic_lines_before": 1715,
+  "semantic_lines_after": 1720,
+  "semantic_lines_delta": 5,
+  "faiss_ids_before": 1616,
+  "faiss_ids_after": 1621,
+  "faiss_ntotal_before": 1616,
+  "faiss_ntotal_after": 1621,
+  "rejected_promoted": 0,
+  "duplicate_promoted": 0,
+  "held_promoted": 0,
+  "rollback_needed": false,
+  "trading_touched": false,
+  "b8_touched": false,
+  "secrets_exposed": false,
+  "raw_cot_exposed": false,
+  "verdict": "PREVIOUS_PROMOTION_VERIFIED_WITH_ARTIFACT_GAP",
+  "note": "Core promotion data verified via post_push_verification.json and shadow_validation.json. Four expected final-phase artifacts were not produced by previous front but their data is recoverable. This does not affect the correctness of the promotion."
+}

@@ -1,0 +1,61 @@
+{
+  "front": "FRONT-BRAIN-CANONICAL-MEMORY-POST-PROMOTION-QUALITY-EVAL-01",
+  "phase": "PHASE_2_CANONICAL_STATE_VERIFY",
+  "timestamp_utc": "2026-06-16T14:43:00+00:00",
+  "semantic_lines": 1720,
+  "faiss_ids": 1621,
+  "faiss_ntotal": 1621,
+  "faiss_ids_unique": 1621,
+  "promoted_records_in_canonical": 5,
+  "promoted_record_details": [
+    {
+      "canonical_id": "13792dba579afd64b72195fa",
+      "original_candidate_id": "audit_0017",
+      "kind": "canonical_promoted",
+      "domain": "coding_debugging",
+      "summary_present": true,
+      "source_front_present": true,
+      "promotion_front_present": true
+    },
+    {
+      "canonical_id": "8480c034d7c754e54f10d6a8",
+      "original_candidate_id": "audit_0018",
+      "kind": "canonical_promoted",
+      "domain": "coding_debugging",
+      "summary_present": true,
+      "source_front_present": true,
+      "promotion_front_present": true
+    },
+    {
+      "canonical_id": "cefdf682c3559f04ee571102",
+      "original_candidate_id": "audit_0019",
+      "kind": "canonical_promoted",
+      "domain": "dashboard_reliability",
+      "summary_present": true,
+      "source_front_present": true,
+      "promotion_front_present": true
+    },
+    {
+      "canonical_id": "5eb050fcc96b08da864ec66f",
+      "original_candidate_id": "audit_0020",
+      "kind": "canonical_promoted",
+      "domain": "provider_reliability",
+      "summary_present": true,
+      "source_front_present": true,
+      "promotion_front_present": true
+    },
+    {
+      "canonical_id": "62bed9a5eb0db6ea71afa604",
+      "original_candidate_id": "audit_0021",
+      "kind": "canonical_promoted",
+      "domain": "governance",
+      "summary_present": true,
+      "source_front_present": true,
+      "promotion_front_present": true
+    }
+  ],
+  "rejected_promoted": 0,
+  "duplicate_promoted": 0,
+  "held_promoted": 0,
+  "verdict": "CANONICAL_STATE_VERIFIED"
+}

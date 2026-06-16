@@ -1,0 +1,16 @@
+{
+  "front": "FRONT-BRAIN-CANONICAL-MEMORY-POST-PROMOTION-QUALITY-EVAL-01",
+  "phase": "PHASE_5_ROLLBACK_READINESS_VERIFY",
+  "timestamp_utc": "2026-06-16T14:43:00+00:00",
+  "rollback_snapshot_path": "memory/rollback_snapshots/canonical_promotion_execute_approved_01_20260616_005142",
+  "rollback_snapshot_exists": true,
+  "semantic_backup_exists": true,
+  "faiss_index_backup_exists": true,
+  "faiss_ids_backup_exists": true,
+  "semantic_backup_hash": "ce81fbe1f97e257e2b124d7a929f0b2af86ce61e9ff1d8d832fdb5da1f69e64e",
+  "faiss_index_backup_hash": "adbb6051f79ecbeab0223d631a6013939c00bcc13216fbae437efe83047efa21",
+  "faiss_ids_backup_hash": "43736047db548caf9b26dfa61cdffe40e179c738bc8e8c295891f29cedd69102",
+  "rollback_needed": false,
+  "rollback_ready": true,
+  "verdict": "ROLLBACK_READY"
+}

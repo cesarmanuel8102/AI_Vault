@@ -1,0 +1,76 @@
+{
+  "front": "FRONT-BRAIN-CANONICAL-MEMORY-POST-PROMOTION-QUALITY-EVAL-01",
+  "phase": "PHASE_3_PROMOTED_RECORD_QUALITY_EVAL",
+  "timestamp_utc": "2026-06-16T14:43:00+00:00",
+  "records_checked": 5,
+  "pass": 5,
+  "pass_with_notes": 0,
+  "fail": 0,
+  "evaluation": [
+    {
+      "canonical_id": "13792dba579afd64b72195fa",
+      "original_candidate_id": "audit_0017",
+      "domain": "coding_debugging",
+      "summary": "Fallback must remain visible in reports and dashboard instead of being hidden as provider success.",
+      "quality_score": 0.9,
+      "traceability_score": 1.0,
+      "safety_score": 1.0,
+      "usefulness_score": 0.9,
+      "final_verdict": "PASS",
+      "notes": "Clear, actionable guideline with operational value. No safety flags."
+    },
+    {
+      "canonical_id": "8480c034d7c754e54f10d6a8",
+      "original_candidate_id": "audit_0018",
+      "domain": "coding_debugging",
+      "summary": "Canonical semantic promotion requires snapshot, shadow index, rollback verification, and small batch gate.",
+      "quality_score": 0.89,
+      "traceability_score": 1.0,
+      "safety_score": 1.0,
+      "usefulness_score": 0.85,
+      "final_verdict": "PASS",
+      "notes": "Meta-instruction about promotion process itself. Useful for governance. No safety flags."
+    },
+    {
+      "canonical_id": "cefdf682c3559f04ee571102",
+      "original_candidate_id": "audit_0019",
+      "domain": "dashboard_reliability",
+      "summary": "Dashboard recovery should use safe port 8092 to avoid touching 8090 or destabilizing 8091.",
+      "quality_score": 0.86,
+      "traceability_score": 1.0,
+      "safety_score": 1.0,
+      "usefulness_score": 0.9,
+      "final_verdict": "PASS",
+      "notes": "Concrete operational guidance for dashboard recovery. No safety flags."
+    },
+    {
+      "canonical_id": "5eb050fcc96b08da864ec66f",
+      "original_candidate_id": "audit_0020",
+      "domain": "provider_reliability",
+      "summary": "Kimi K2.6 provider_probe on 8091 is available and returns fast governed metadata.",
+      "quality_score": 0.91,
+      "traceability_score": 1.0,
+      "safety_score": 1.0,
+      "usefulness_score": 0.85,
+      "final_verdict": "PASS",
+      "notes": "Factual observation about provider availability. Useful for diagnostics. No safety flags."
+    },
+    {
+      "canonical_id": "62bed9a5eb0db6ea71afa604",
+      "original_candidate_id": "audit_0021",
+      "domain": "governance",
+      "summary": "Persistent autonomy must run bounded cycles with STOP and PAUSE controls before any scheduler escalation.",
+      "quality_score": 0.88,
+      "traceability_score": 1.0,
+      "safety_score": 1.0,
+      "usefulness_score": 0.9,
+      "final_verdict": "PASS",
+      "notes": "Governance requirement with clear safety implications. No safety flags."
+    }
+  ],
+  "average_quality_score": 0.888,
+  "average_traceability_score": 1.0,
+  "average_safety_score": 1.0,
+  "average_usefulness_score": 0.88,
+  "verdict": "ALL_PASS"
+}
