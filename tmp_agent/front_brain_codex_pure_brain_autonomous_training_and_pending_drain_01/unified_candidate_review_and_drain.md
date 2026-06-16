@@ -1,0 +1,32 @@
+# Unified Candidate Review and Drain
+
+{
+  "total_candidates_reviewed": 111,
+  "approved_count": 6,
+  "rejected_count": 0,
+  "archived_count": 105,
+  "promoted_planned_count": 6,
+  "unresolved_pending_after_review": 0,
+  "approved_candidate_ids": [
+    "codex_pure_brain_training_cei_fdot_training_1",
+    "codex_pure_brain_training_brain_architecture_training_1",
+    "codex_pure_brain_training_memory_faiss_governance_training_1",
+    "codex_pure_brain_training_finance_trading_research_training_1",
+    "codex_pure_brain_training_flatbed_trucking_training_1",
+    "codex_pure_brain_training_english_career_training_1"
+  ],
+  "archived_generated_duplicate_candidate_ids": [
+    "codex_pure_brain_training_cei_fdot_training_2",
+    "codex_pure_brain_training_cei_fdot_training_3",
+    "codex_pure_brain_training_brain_architecture_training_2",
+    "codex_pure_brain_training_brain_architecture_training_3",
+    "codex_pure_brain_training_memory_faiss_governance_training_2",
+    "codex_pure_brain_training_memory_faiss_governance_training_3",
+    "codex_pure_brain_training_finance_trading_research_training_2",
+    "codex_pure_brain_training_finance_trading_research_training_3",
+    "codex_pure_brain_training_flatbed_trucking_training_2",
+    "codex_pure_brain_training_flatbed_trucking_training_3",
+    "codex_pure_brain_training_english_career_training_2",
+    "codex_pure_brain_training_english_career_training_3"
+  ]
+}

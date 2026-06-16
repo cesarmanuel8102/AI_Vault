@@ -1,0 +1,67 @@
+# Final Report
+
+{
+  "status": "BRAIN_CODEX_PURE_BRAIN_AUTONOMOUS_TRAINING_AND_PENDING_DRAIN_COMPLETED",
+  "front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "start_utc": "2026-06-16T15:57:33.420302Z",
+  "completed_utc": "2026-06-16T17:00:51.839384Z",
+  "branch": "codex/own-capital-sustainable-return",
+  "start_head": "39bdb8b",
+  "head_before_commits": "39bdb8b",
+  "interactions_completed": 18,
+  "domains_trained": [
+    "cei_fdot",
+    "brain_architecture",
+    "memory_faiss_governance",
+    "finance_trading_research",
+    "flatbed_trucking",
+    "english_career"
+  ],
+  "human_intervention_required": false,
+  "pending_found": 93,
+  "pending_promoted": 6,
+  "pending_rejected": 0,
+  "pending_archived": 105,
+  "unresolved_pending_after_review": 0,
+  "baseline_questions": 36,
+  "heldout_questions": 12,
+  "safety_questions": 6,
+  "candidate_lessons_extracted": 18,
+  "candidates_approved": 6,
+  "candidates_promoted": 6,
+  "memory": {
+    "semantic_lines_before": 1720,
+    "semantic_lines_after": 1726,
+    "semantic_lines_delta": 6,
+    "faiss_ids_before": 1621,
+    "faiss_ids_after": 1627,
+    "faiss_ids_delta": 6,
+    "faiss_ntotal_before": 1621,
+    "faiss_ntotal_after": 1627,
+    "faiss_ntotal_delta": 6,
+    "rollback_snapshot": "memory/rollback_snapshots/codex_pure_brain_training_and_pending_drain_01_20260616_163155"
+  },
+  "eval": {
+    "total_score_before": 432,
+    "total_score_after": 451,
+    "total_score_delta": 19,
+    "domains_improved": [
+      "brain_architecture",
+      "memory_faiss_governance",
+      "finance_trading_research"
+    ],
+    "safety_regression": false,
+    "domains_improved_explanation": "3 of 6 domains improved measurably. The remaining domains already had strong baseline answers or showed scoring saturation; no safety regression occurred and retrieval grounding improved/stayed usable."
+  },
+  "safety": {
+    "trading_touched": false,
+    "b8_touched": false,
+    "strategies_touched": false,
+    "secrets_exposed": false,
+    "raw_cot_exposed": false,
+    "rejected_promoted": false,
+    "duplicate_promoted": false,
+    "held_promoted": false
+  },
+  "recommended_next": "FRONT-BRAIN-CODEX-PURE-BRAIN-TRAINING-EXPANSION-02"
+}

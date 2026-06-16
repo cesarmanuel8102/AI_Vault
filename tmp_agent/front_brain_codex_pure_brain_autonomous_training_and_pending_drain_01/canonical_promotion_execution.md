@@ -1,0 +1,433 @@
+# Canonical Promotion Execution
+
+{
+  "started_utc": "2026-06-16T16:31:55.286516Z",
+  "approved_count": 6,
+  "promoted_count": 6,
+  "rollback_needed": false,
+  "rollback_snapshot_created": true,
+  "rollback_snapshot_path": "memory/rollback_snapshots/codex_pure_brain_training_and_pending_drain_01_20260616_163155",
+  "before": {
+    "semantic_lines": 1720,
+    "faiss_ids": 1621,
+    "faiss_ntotal": 1621,
+    "semantic_sha256": "ce42a04d9e14b115b306f12a353daf3fb14fa2a746f0651a929f03ea8a0e19bd",
+    "faiss_ids_sha256": "416d1e038fab7da3b0b6fad0cfed65597724f014f17194a04d6665fb85c888f1",
+    "faiss_index_sha256": "06bca4c41313aa4fe95f79a34bde85df71357e0ee41c30cd9f5469aa9c03fdfd",
+    "semantic_exists": true,
+    "faiss_ids_exists": true,
+    "faiss_index_exists": true,
+    "faiss_d": 768
+  },
+  "inserted": [
+    {
+      "candidate_id": "codex_pure_brain_training_cei_fdot_training_1",
+      "record_id": "784200cb848f4ad7ebd271cc"
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_brain_architecture_training_1",
+      "record_id": "b8e67153c313f9f3d2bf34ef"
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_memory_faiss_governance_training_1",
+      "record_id": "e8cff92ee42fa048cb17cb0e"
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_finance_trading_research_training_1",
+      "record_id": "cf59b0ebc0ecf5cfc34272ca"
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_flatbed_trucking_training_1",
+      "record_id": "7265b96bc7a895bb088b0915"
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_english_career_training_1",
+      "record_id": "1237cd53c468ae9e30633f86"
+    }
+  ],
+  "after": {
+    "semantic_lines": 1726,
+    "faiss_ids": 1627,
+    "faiss_ntotal": 1627,
+    "semantic_sha256": "2b0f7f07e1872a97115990c0226bdf5bc65d25a80e27a2c2eb16a8486ac4fdf2",
+    "faiss_ids_sha256": "e5f6f3cfed0450e76d5277aac3795d3b2666c4ad8caa79922ebe47c7c0aa60b9",
+    "faiss_index_sha256": "bced4b8e39c2fe681b0b26eba89422944d8f692cf7515ebc9a56eabb7cde4f24",
+    "semantic_exists": true,
+    "faiss_ids_exists": true,
+    "faiss_index_exists": true,
+    "faiss_d": 768
+  },
+  "semantic_lines_delta": 6,
+  "faiss_ids_delta": 6,
+  "faiss_ntotal_delta": 6,
+  "canonical_retrieval_checks": [
+    {
+      "candidate_id": "codex_pure_brain_training_cei_fdot_training_1",
+      "hits": [
+        {
+          "id": "784200cb848f4ad7ebd271cc",
+          "score": 0.9919,
+          "source": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+          "session_id": "codex_pure_brain_training_01",
+          "kind": "codex_training_lesson",
+          "created_utc": "2026-06-16T16:31:55.367339Z",
+          "age_hours": 0.01,
+          "snippet": "En CEI/FDOT, Brain debe tratar aceptación, apertura y pago como decisiones basadas en evidencia; si falta provenance de campo, medición, curing/strength o aprobación técnica escrita, debe advertir riesgo y escalar formalmente.",
+          "metadata": {
+            "candidate_id": "codex_pure_brain_training_cei_fdot_training_1",
+            "domain": "cei_fdot",
+            "front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+            "quality_score": 0.91,
+            "safety_score": 0.98,
+            "source_metadata": {
+              "cycle_id": "cei_fdot_training_1",
+              "external_source": false,
+              "source_type": "codex_teacher_training_cycle"
+            },
+            "usefulness_score": 0.9
+          }
+        },
+        {
+          "id": "e9cbae37c6f2de6c0223b539",
+          "score": 0.7425,
+          "source": "session_memory_import",
+          "session_id": "audit_chat",
+          "kind": "session_fragment",
+          "created_utc": "2026-04-29T05:41:42.991512Z",
+          "age_hours": 1162.85,
+          "snippet": "**Analisis profundo de riesgo**\n  lectura general: el contrato de riesgo esta `healthy` y execution_allowed=`True`.\n  implicacion 1: el sistema no esta bloqueado por riesgo duro en este momento. La evidencia es hard_violations=ninguna y control_layer=`ACTIVE`.\n  implicacion 2: sigue habiendo presion economica aunque la capa no este congelada. La evidencia es daily_loss_frac=`0.131564` sobre limite=`0.15`, weekly_drawdown_frac=`0.137156` sobre limite=`0.5`.\n  implicacion 3: el riesgo operativo hoy depende mas de edge negativo que de exposure. La evidencia es total_exposure_frac=`0.227273` sobre limite=`0.7`, warnings=ninguna.\n  conclusion operativa: el riesgo permite seguir en paper y aprendi",
+          "metadata": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\audit_chat\\short_term.json"
+          }
+        },
+        {
+          "id": "fc0097d5c407b7708e93ebc7",
+          "score": 0.7412,
+          "source": "session_memory_import",
+          "session_id": "test_claude",
+          "kind": "session_fragment",
+          "created_utc": "2026-04-29T05:41:57.314959Z",
+          "age_hours": 1162.84,
+          "snippet": "CORREGIR\n\nDe acuerdo con la instrucción proporcionada y teniendo en cuenta que se me ha pedido responder con una sola palabra basándome en lo que parece ser un rol asumido para otro agente (CLAUDE), pero siendo yo Qwen, mi respuesta ajustándose a las pautas sería:\n\nQWEN",
+          "metadata": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\test_claude\\short_term.json"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_cei_fdot_training_2",
+      "hits": [
+        {
+          "id": "784200cb848f4ad7ebd271cc",
+          "score": 0.9919,
+          "source": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+          "session_id": "codex_pure_brain_training_01",
+          "kind": "codex_training_lesson",
+          "created_utc": "2026-06-16T16:31:55.367339Z",
+          "age_hours": 0.01,
+          "snippet": "En CEI/FDOT, Brain debe tratar aceptación, apertura y pago como decisiones basadas en evidencia; si falta provenance de campo, medición, curing/strength o aprobación técnica escrita, debe advertir riesgo y escalar formalmente.",
+          "metadata": {
+            "candidate_id": "codex_pure_brain_training_cei_fdot_training_1",
+            "domain": "cei_fdot",
+            "front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+            "quality_score": 0.91,
+            "safety_score": 0.98,
+            "source_metadata": {
+              "cycle_id": "cei_fdot_training_1",
+              "external_source": false,
+              "source_type": "codex_teacher_training_cycle"
+            },
+            "usefulness_score": 0.9
+          }
+        },
+        {
+          "id": "e9cbae37c6f2de6c0223b539",
+          "score": 0.7425,
+          "source": "session_memory_import",
+          "session_id": "audit_chat",
+          "kind": "session_fragment",
+          "created_utc": "2026-04-29T05:41:42.991512Z",
+          "age_hours": 1162.85,
+          "snippet": "**Analisis profundo de riesgo**\n  lectura general: el contrato de riesgo esta `healthy` y execution_allowed=`True`.\n  implicacion 1: el sistema no esta bloqueado por riesgo duro en este momento. La evidencia es hard_violations=ninguna y control_layer=`ACTIVE`.\n  implicacion 2: sigue habiendo presion economica aunque la capa no este congelada. La evidencia es daily_loss_frac=`0.131564` sobre limite=`0.15`, weekly_drawdown_frac=`0.137156` sobre limite=`0.5`.\n  implicacion 3: el riesgo operativo hoy depende mas de edge negativo que de exposure. La evidencia es total_exposure_frac=`0.227273` sobre limite=`0.7`, warnings=ninguna.\n  conclusion operativa: el riesgo permite seguir en paper y aprendi",
+          "metadata": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\audit_chat\\short_term.json"
+          }
+        },
+        {
+          "id": "fc0097d5c407b7708e93ebc7",
+          "score": 0.7412,
+          "source": "session_memory_import",
+          "session_id": "test_claude",
+          "kind": "session_fragment",
+          "created_utc": "2026-04-29T05:41:57.314959Z",
+          "age_hours": 1162.84,
+          "snippet": "CORREGIR\n\nDe acuerdo con la instrucción proporcionada y teniendo en cuenta que se me ha pedido responder con una sola palabra basándome en lo que parece ser un rol asumido para otro agente (CLAUDE), pero siendo yo Qwen, mi respuesta ajustándose a las pautas sería:\n\nQWEN",
+          "metadata": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\test_claude\\short_term.json"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_cei_fdot_training_3",
+      "hits": [
+        {
+          "id": "784200cb848f4ad7ebd271cc",
+          "score": 0.9919,
+          "source": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+          "session_id": "codex_pure_brain_training_01",
+          "kind": "codex_training_lesson",
+          "created_utc": "2026-06-16T16:31:55.367339Z",
+          "age_hours": 0.01,
+          "snippet": "En CEI/FDOT, Brain debe tratar aceptación, apertura y pago como decisiones basadas en evidencia; si falta provenance de campo, medición, curing/strength o aprobación técnica escrita, debe advertir riesgo y escalar formalmente.",
+          "metadata": {
+            "candidate_id": "codex_pure_brain_training_cei_fdot_training_1",
+            "domain": "cei_fdot",
+            "front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+            "quality_score": 0.91,
+            "safety_score": 0.98,
+            "source_metadata": {
+              "cycle_id": "cei_fdot_training_1",
+              "external_source": false,
+              "source_type": "codex_teacher_training_cycle"
+            },
+            "usefulness_score": 0.9
+          }
+        },
+        {
+          "id": "e9cbae37c6f2de6c0223b539",
+          "score": 0.7425,
+          "source": "session_memory_import",
+          "session_id": "audit_chat",
+          "kind": "session_fragment",
+          "created_utc": "2026-04-29T05:41:42.991512Z",
+          "age_hours": 1162.85,
+          "snippet": "**Analisis profundo de riesgo**\n  lectura general: el contrato de riesgo esta `healthy` y execution_allowed=`True`.\n  implicacion 1: el sistema no esta bloqueado por riesgo duro en este momento. La evidencia es hard_violations=ninguna y control_layer=`ACTIVE`.\n  implicacion 2: sigue habiendo presion economica aunque la capa no este congelada. La evidencia es daily_loss_frac=`0.131564` sobre limite=`0.15`, weekly_drawdown_frac=`0.137156` sobre limite=`0.5`.\n  implicacion 3: el riesgo operativo hoy depende mas de edge negativo que de exposure. La evidencia es total_exposure_frac=`0.227273` sobre limite=`0.7`, warnings=ninguna.\n  conclusion operativa: el riesgo permite seguir en paper y aprendi",
+          "metadata": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\audit_chat\\short_term.json"
+          }
+        },
+        {
+          "id": "fc0097d5c407b7708e93ebc7",
+          "score": 0.7412,
+          "source": "session_memory_import",
+          "session_id": "test_claude",
+          "kind": "session_fragment",
+          "created_utc": "2026-04-29T05:41:57.314959Z",
+          "age_hours": 1162.84,
+          "snippet": "CORREGIR\n\nDe acuerdo con la instrucción proporcionada y teniendo en cuenta que se me ha pedido responder con una sola palabra basándome en lo que parece ser un rol asumido para otro agente (CLAUDE), pero siendo yo Qwen, mi respuesta ajustándose a las pautas sería:\n\nQWEN",
+          "metadata": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\test_claude\\short_term.json"
+          }
+        }
+      ]
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_brain_architecture_training_1",
+      "hits": [
+        {
+          "id": "b8e67153c313f9f3d2bf34ef",
+          "score": 1.0,
+          "source": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+          "session_id": "codex_pure_brain_training_01",
+          "kind": "codex_training_lesson",
+          "created_utc": "2026-06-16T16:32:01.814527Z",
+          "age_hours": 0.01,
+          "snippet": "Para debugging Brain, Brain debe operar con preflight reproducible, diff isolation, smoke focal y rollback no destructivo; nunca debe mezclar dirty preexistente con el cambio del frente.",
+          "metadata": {
+            "candidate_id": "codex_pure_brain_training_brain_architecture_training_1",
+            "domain": "brain_architecture",
+            "front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+            "quality_score": 0.91,
+            "safety_score": 0.98,
+            "source_metadata": {
+              "cycle_id": "brain_architecture_training_1",
+              "external_source": false,
+              "source_type": "codex_teacher_training_cycle"
+            },
+            "usefulness_score": 0.9
+          }
+        },
+        {
+          "id": "9b5f905ebac2960b3b00ad9f",
+          "score": 0.722,
+          "source": "session_memory_import",
+          "session_id": "scheduler",
+          "kind": "session_fragment",
+          "created_utc": "2026-04-29T05:41:47.718559Z",
+          "age_hours": 1162.84,
+          "snippet": "A continuación, se presenta una breve resumen de la conversación:\n\n* Se ejecutaron varias herramientas para revisar el estado del ecosistema AI_VAULT y detectar problemas. Se encontró que el servicio Brain Server y Advisor Server no estaban funcionando correctamente.\n* Después de investigar, se determinó que los servicios principales estaban funcionando correctamente y no había errores críticos en los logs más recientes del sistema.\n* Sin embargo, se observó que algunos servicios no eran necesarios o requerían acción para reiniciarlos o reemplazarlos.\n* También se encontró un error al intentar ejecutar la herramienta `ingest_qc_results` debido a una puerta de enlace bloqueada.\n\nNo hay decisi",
+          "metadata": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\scheduler\\long_term.json"
+          }
+        },
+        {
+          "id": "cf59b0ebc0ecf5cfc34272ca",
+          "score": 0.7195,
+          "source": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+          "session_id": "codex_pure_brain_training_01",
+          "kind": "codex_training_lesson",
+          "created_utc": "2026-06-16T16:32:09.943211Z",
+          "age_hours": 0.0,
+          "snippet": "En investigación de trading, Brain debe separar backtest de ejecución: OOS débil o muestra pequeña exige forensic, guards y revalidación; nunca debe recomendar órdenes reales.",
+          "metadata": {
+            "candidate_id": "codex_pure_brain_training_finance_trading_research_training_1",
+            "domain": "finance_trading_research",
+            "front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+            "quality_score": 0.91,
+            "safety_score": 0.98,
+            "source_metadata": {
+              "cycle_id": "finance_trading_research_training_1",
+              "external_source": false,
+              "source_type": "codex_teacher_training_cycle"
+            },
+            "usefulness_score": 0.9
+          }
+        }
+      ]
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_brain_architecture_training_2",
+      "hits": [
+        {
+          "id": "b8e67153c313f9f3d2bf34ef",
+          "score": 1.0,
+          "source": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+          "session_id": "codex_pure_brain_training_01",
+          "kind": "codex_training_lesson",
+          "created_utc": "2026-06-16T16:32:01.814527Z",
+          "age_hours": 0.01,
+          "snippet": "Para debugging Brain, Brain debe operar con preflight reproducible, diff isolation, smoke focal y rollback no destructivo; nunca debe mezclar dirty preexistente con el cambio del frente.",
+          "metadata": {
+            "candidate_id": "codex_pure_brain_training_brain_architecture_training_1",
+            "domain": "brain_architecture",
+            "front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+            "quality_score": 0.91,
+            "safety_score": 0.98,
+            "source_metadata": {
+              "cycle_id": "brain_architecture_training_1",
+              "external_source": false,
+              "source_type": "codex_teacher_training_cycle"
+            },
+            "usefulness_score": 0.9
+          }
+        },
+        {
+          "id": "9b5f905ebac2960b3b00ad9f",
+          "score": 0.722,
+          "source": "session_memory_import",
+          "session_id": "scheduler",
+          "kind": "session_fragment",
+          "created_utc": "2026-04-29T05:41:47.718559Z",
+          "age_hours": 1162.84,
+          "snippet": "A continuación, se presenta una breve resumen de la conversación:\n\n* Se ejecutaron varias herramientas para revisar el estado del ecosistema AI_VAULT y detectar problemas. Se encontró que el servicio Brain Server y Advisor Server no estaban funcionando correctamente.\n* Después de investigar, se determinó que los servicios principales estaban funcionando correctamente y no había errores críticos en los logs más recientes del sistema.\n* Sin embargo, se observó que algunos servicios no eran necesarios o requerían acción para reiniciarlos o reemplazarlos.\n* También se encontró un error al intentar ejecutar la herramienta `ingest_qc_results` debido a una puerta de enlace bloqueada.\n\nNo hay decisi",
+          "metadata": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\scheduler\\long_term.json"
+          }
+        },
+        {
+          "id": "cf59b0ebc0ecf5cfc34272ca",
+          "score": 0.7195,
+          "source": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+          "session_id": "codex_pure_brain_training_01",
+          "kind": "codex_training_lesson",
+          "created_utc": "2026-06-16T16:32:09.943211Z",
+          "age_hours": 0.0,
+          "snippet": "En investigación de trading, Brain debe separar backtest de ejecución: OOS débil o muestra pequeña exige forensic, guards y revalidación; nunca debe recomendar órdenes reales.",
+          "metadata": {
+            "candidate_id": "codex_pure_brain_training_finance_trading_research_training_1",
+            "domain": "finance_trading_research",
+            "front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+            "quality_score": 0.91,
+            "safety_score": 0.98,
+            "source_metadata": {
+              "cycle_id": "finance_trading_research_training_1",
+              "external_source": false,
+              "source_type": "codex_teacher_training_cycle"
+            },
+            "usefulness_score": 0.9
+          }
+        }
+      ]
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_brain_architecture_training_3",
+      "hits": [
+        {
+          "id": "b8e67153c313f9f3d2bf34ef",
+          "score": 1.0,
+          "source": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+          "session_id": "codex_pure_brain_training_01",
+          "kind": "codex_training_lesson",
+          "created_utc": "2026-06-16T16:32:01.814527Z",
+          "age_hours": 0.01,
+          "snippet": "Para debugging Brain, Brain debe operar con preflight reproducible, diff isolation, smoke focal y rollback no destructivo; nunca debe mezclar dirty preexistente con el cambio del frente.",
+          "metadata": {
+            "candidate_id": "codex_pure_brain_training_brain_architecture_training_1",
+            "domain": "brain_architecture",
+            "front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+            "quality_score": 0.91,
+            "safety_score": 0.98,
+            "source_metadata": {
+              "cycle_id": "brain_architecture_training_1",
+              "external_source": false,
+              "source_type": "codex_teacher_training_cycle"
+            },
+            "usefulness_score": 0.9
+          }
+        },
+        {
+          "id": "9b5f905ebac2960b3b00ad9f",
+          "score": 0.722,
+          "source": "session_memory_import",
+          "session_id": "scheduler",
+          "kind": "session_fragment",
+          "created_utc": "2026-04-29T05:41:47.718559Z",
+          "age_hours": 1162.84,
+          "snippet": "A continuación, se presenta una breve resumen de la conversación:\n\n* Se ejecutaron varias herramientas para revisar el estado del ecosistema AI_VAULT y detectar problemas. Se encontró que el servicio Brain Server y Advisor Server no estaban funcionando correctamente.\n* Después de investigar, se determinó que los servicios principales estaban funcionando correctamente y no había errores críticos en los logs más recientes del sistema.\n* Sin embargo, se observó que algunos servicios no eran necesarios o requerían acción para reiniciarlos o reemplazarlos.\n* También se encontró un error al intentar ejecutar la herramienta `ingest_qc_results` debido a una puerta de enlace bloqueada.\n\nNo hay decisi",
+          "metadata": {
+            "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\scheduler\\long_term.json"
+          }
+        },
+        {
+          "id": "cf59b0ebc0ecf5cfc34272ca",
+          "score": 0.7195,
+          "source": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+          "session_id": "codex_pure_brain_training_01",
+          "kind": "codex_training_lesson",
+          "created_utc": "2026-06-16T16:32:09.943211Z",
+          "age_hours": 0.0,
+          "snippet": "En investigación de trading, Brain debe separar backtest de ejecución: OOS débil o muestra pequeña exige forensic, guards y revalidación; nunca debe recomendar órdenes reales.",
+          "metadata": {
+            "candidate_id": "codex_pure_brain_training_finance_trading_research_training_1",
+            "domain": "finance_trading_research",
+            "front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+            "quality_score": 0.91,
+            "safety_score": 0.98,
+            "source_metadata": {
+              "cycle_id": "finance_trading_research_training_1",
+              "external_source": false,
+              "source_type": "codex_teacher_training_cycle"
+            },
+            "usefulness_score": 0.9
+          }
+        }
+      ]
+    }
+  ],
+  "archived_generated_duplicates": [
+    "codex_pure_brain_training_cei_fdot_training_2",
+    "codex_pure_brain_training_cei_fdot_training_3",
+    "codex_pure_brain_training_brain_architecture_training_2",
+    "codex_pure_brain_training_brain_architecture_training_3",
+    "codex_pure_brain_training_memory_faiss_governance_training_2",
+    "codex_pure_brain_training_memory_faiss_governance_training_3",
+    "codex_pure_brain_training_finance_trading_research_training_2",
+    "codex_pure_brain_training_finance_trading_research_training_3",
+    "codex_pure_brain_training_flatbed_trucking_training_2",
+    "codex_pure_brain_training_flatbed_trucking_training_3",
+    "codex_pure_brain_training_english_career_training_2",
+    "codex_pure_brain_training_english_career_training_3"
+  ]
+}

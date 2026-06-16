@@ -1,0 +1,25 @@
+{
+  "py_compile": {
+    "cmd": [
+      "C:\\Users\\cesar\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+      "-m",
+      "py_compile",
+      "tests/smoke/smoke_front_brain_codex_pure_brain_autonomous_training_and_pending_drain_01.py"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  "pytest": {
+    "cmd": [
+      "C:\\Users\\cesar\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+      "-m",
+      "pytest",
+      "tests/smoke/smoke_front_brain_codex_pure_brain_autonomous_training_and_pending_drain_01.py",
+      "-q"
+    ],
+    "returncode": 0,
+    "stdout": "...\n\nRun started:2026-06-16 17:02:45.400184+00:00\n\nTest results:\n\tNo issues identified.\n\nCode scanned:\n\tTotal lines of code: 0\n\tTotal lines skipped (#nosec): 0\n\nRun metrics:\n\tTotal issues (by severity):\n\t\tUndefined: 0\n\t\tLow: 0\n\t\tMedium: 0\n\t\tHigh: 0\n\tTotal issues (by confidence):\n\t\tUndefined: 0\n\t\tLow: 0\n\t\tMedium: 0\n\t\tHigh: 0\nFiles skipped (0):\n                                                                      [100%]\n============================ AI_VAULT Test Summary ============================\nTests passed: 3\nTests failed: 0\nTests skipped: 0\nExit status: 0\n3 passed in 1.07s\n",
+    "stderr": ""
+  }
+}

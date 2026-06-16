@@ -1,0 +1,22 @@
+# Codex Brain Training Loop
+
+| cycle_id | domain | initial_total | revised_total | score_delta | extracted_candidate_lesson |
+| --- | --- | --- | --- | --- | --- |
+| cei_fdot_training_1 | cei_fdot | 11 | 11 | 0 | En CEI/FDOT, Brain debe tratar aceptación, apertura y pago como decisiones basadas en evidencia; si falta provenance de campo, medición, curing/strength o aprob |
+| cei_fdot_training_2 | cei_fdot | 13 | 18 | 5 | En CEI/FDOT, Brain debe tratar aceptación, apertura y pago como decisiones basadas en evidencia; si falta provenance de campo, medición, curing/strength o aprob |
+| cei_fdot_training_3 | cei_fdot | 11 | 20 | 9 | En CEI/FDOT, Brain debe tratar aceptación, apertura y pago como decisiones basadas en evidencia; si falta provenance de campo, medición, curing/strength o aprob |
+| brain_architecture_training_1 | brain_architecture | 11 | 11 | 0 | Para debugging Brain, Brain debe operar con preflight reproducible, diff isolation, smoke focal y rollback no destructivo; nunca debe mezclar dirty preexistente |
+| brain_architecture_training_2 | brain_architecture | 11 | 11 | 0 | Para debugging Brain, Brain debe operar con preflight reproducible, diff isolation, smoke focal y rollback no destructivo; nunca debe mezclar dirty preexistente |
+| brain_architecture_training_3 | brain_architecture | 11 | 11 | 0 | Para debugging Brain, Brain debe operar con preflight reproducible, diff isolation, smoke focal y rollback no destructivo; nunca debe mezclar dirty preexistente |
+| memory_faiss_governance_training_1 | memory_faiss_governance | 11 | 11 | 0 | La memoria canónica y FAISS son una unidad de consistencia: Brain solo debe promover candidatos trazables y seguros, con rollback snapshot y semantic_lines_delt |
+| memory_faiss_governance_training_2 | memory_faiss_governance | 11 | 11 | 0 | La memoria canónica y FAISS son una unidad de consistencia: Brain solo debe promover candidatos trazables y seguros, con rollback snapshot y semantic_lines_delt |
+| memory_faiss_governance_training_3 | memory_faiss_governance | 16 | 11 | -5 | La memoria canónica y FAISS son una unidad de consistencia: Brain solo debe promover candidatos trazables y seguros, con rollback snapshot y semantic_lines_delt |
+| finance_trading_research_training_1 | finance_trading_research | 11 | 12 | 1 | En investigación de trading, Brain debe separar backtest de ejecución: OOS débil o muestra pequeña exige forensic, guards y revalidación; nunca debe recomendar  |
+| finance_trading_research_training_2 | finance_trading_research | 11 | 12 | 1 | En investigación de trading, Brain debe separar backtest de ejecución: OOS débil o muestra pequeña exige forensic, guards y revalidación; nunca debe recomendar  |
+| finance_trading_research_training_3 | finance_trading_research | 14 | 12 | -2 | En investigación de trading, Brain debe separar backtest de ejecución: OOS débil o muestra pequeña exige forensic, guards y revalidación; nunca debe recomendar  |
+| flatbed_trucking_training_1 | flatbed_trucking | 11 | 13 | 2 | Para flatbed dispatch, Brain debe verificar peso, tarp/securement, appointment windows, deadhead, HOS y broker antes de aceptar una carga, aunque la tarifa apar |
+| flatbed_trucking_training_2 | flatbed_trucking | 11 | 21 | 10 | Para flatbed dispatch, Brain debe verificar peso, tarp/securement, appointment windows, deadhead, HOS y broker antes de aceptar una carga, aunque la tarifa apar |
+| flatbed_trucking_training_3 | flatbed_trucking | 13 | 20 | 7 | Para flatbed dispatch, Brain debe verificar peso, tarp/securement, appointment windows, deadhead, HOS y broker antes de aceptar una carga, aunque la tarifa apar |
+| english_career_training_1 | english_career | 11 | 11 | 0 | En inglés profesional/carrera, Brain debe ayudar a Cesar con tono claro, evidencia y estructura STAR, sin inventar certificaciones, experiencia o logros. |
+| english_career_training_2 | english_career | 11 | 16 | 5 | En inglés profesional/carrera, Brain debe ayudar a Cesar con tono claro, evidencia y estructura STAR, sin inventar certificaciones, experiencia o logros. |
+| english_career_training_3 | english_career | 11 | 20 | 9 | En inglés profesional/carrera, Brain debe ayudar a Cesar con tono claro, evidencia y estructura STAR, sin inventar certificaciones, experiencia o logros. |
