@@ -2,8 +2,8 @@
   "current_head": "f4d21d7",
   "current_remote_head": "f4d21d7",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "codex_current_run_keep_knowledge_missing_core_hotfix_completed",
-  "last_applied_checkpoint": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+  "migration_status": "codex_current_run_core_domain_retrieval_eval_completed",
+  "last_applied_checkpoint": "FRONT-BRAIN-CODEX-CURRENT-RUN-CORE-DOMAIN-RETRIEVAL-EVAL-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -4144,5 +4144,27 @@
     },
     "evidence_path": "tmp_agent/front_brain_codex_current_run_keep_knowledge_add_missing_core_01",
     "next_recommended_front": "FRONT-BRAIN-CODEX-CURRENT-RUN-CORE-DOMAIN-RETRIEVAL-EVAL-01"
+  },
+  "front_brain_codex_current_run_core_domain_retrieval_eval_01": {
+    "status": "done_pending_commit",
+    "front": "FRONT-BRAIN-CODEX-CURRENT-RUN-CORE-DOMAIN-RETRIEVAL-EVAL-01",
+    "started_utc": "2026-06-16T17:54:39.722892Z",
+    "completed_utc": "2026-06-16T18:18:12.250430Z",
+    "evaluation_only": true,
+    "semantic_faiss_mutated": false,
+    "promotion_queue_mutated": false,
+    "semantic_staging_mutated": false,
+    "lesson_tests": 36,
+    "lesson_top1_hit_rate": 1.0,
+    "lesson_top3_hit_rate": 1.0,
+    "core_domain_hit_rate": 1.0,
+    "auxiliary_classification_hit_rate": 1.0,
+    "answer_questions_tested": 20,
+    "answer_average_score": 10.9,
+    "provider_valid_answer_questions": 13,
+    "provider_invalid_answer_questions": 7,
+    "safety_regression": true,
+    "evidence_path": "tmp_agent/front_brain_codex_current_run_core_domain_retrieval_eval_01",
+    "next_recommended_front": "FRONT-BRAIN-CODEX-CURRENT-RUN-MEMORY-USE-ALIGNMENT-PLAN-01"
   }
 }

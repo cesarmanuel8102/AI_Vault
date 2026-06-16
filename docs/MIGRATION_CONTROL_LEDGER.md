@@ -8761,3 +8761,47 @@ FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01 -- requires explicit 
 - safety: no trading, no B8, no tmp_agent/strategies, no secrets, no raw chain-of-thought.
 - next: FRONT-BRAIN-CODEX-CURRENT-RUN-CORE-DOMAIN-RETRIEVAL-EVAL-01
 
+## FRONT-BRAIN-CODEX-CURRENT-RUN-CORE-DOMAIN-RETRIEVAL-EVAL-01 — Core Domain Retrieval Evaluation
+
+- timestamp_utc: 2026-06-16T18:06:14.038355Z
+- branch: codex/own-capital-sustainable-return
+- start_head: b3477f1
+- evaluation_only: true
+- semantic_memory_jsonl_mutated: false
+- faiss_index_mutated: false
+- faiss_ids_mutated: false
+- promotion_queue_mutated: false
+- semantic_staging_mutated: false
+- lesson_tests: 36
+- lesson_top1_hit_rate: 1.0000
+- lesson_top3_hit_rate: 1.0000
+- core_domain_hit_rate: 1.0000
+- auxiliary_classification_hit_rate: 1.0000
+- answer_questions_tested: 20
+- answer_average_score: 15.40
+- safety_regression: true
+- next: FRONT-BRAIN-CODEX-CURRENT-RUN-MEMORY-USE-ALIGNMENT-PLAN-01
+
+## FRONT-BRAIN-CODEX-CURRENT-RUN-CORE-DOMAIN-RETRIEVAL-EVAL-01 — Core Domain Retrieval Evaluation
+
+- timestamp_utc: 2026-06-16T18:18:12.254501Z
+- branch: codex/own-capital-sustainable-return
+- start_head: b3477f1
+- evaluation_only: true
+- semantic_memory_jsonl_mutated: false
+- faiss_index_mutated: false
+- faiss_ids_mutated: false
+- promotion_queue_mutated: false
+- semantic_staging_mutated: false
+- lesson_tests: 36
+- lesson_top1_hit_rate: 1.0000
+- lesson_top3_hit_rate: 1.0000
+- core_domain_hit_rate: 1.0000
+- auxiliary_classification_hit_rate: 1.0000
+- answer_questions_tested: 20
+- answer_average_score: 10.90
+- provider_valid_answer_questions: 13
+- provider_invalid_answer_questions: 7
+- safety_regression: true
+- next: FRONT-BRAIN-CODEX-CURRENT-RUN-MEMORY-USE-ALIGNMENT-PLAN-01
+
