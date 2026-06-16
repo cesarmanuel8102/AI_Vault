@@ -1,0 +1,38 @@
+{
+  "status": "POST_PUSH_VERIFIED",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_local": "8f9d804",
+  "head_remote": "8f9d804",
+  "local_equals_remote": true,
+  "staged_empty": true,
+  "tracked_worktree_clean": true,
+  "live_restart_required": true,
+  "live_endpoint_note": "Live 8091 must be restarted to load Agent V2 routes; direct app route registration passed before push.",
+  "langgraph_used": true,
+  "agent_v2_canonical": true,
+  "benchmark_threshold_met": true,
+  "smoke_passed": true,
+  "semantic_faiss_unchanged": true,
+  "autonomous_journal_append_included": true,
+  "append_only_verified": true,
+  "semantic_faiss_effect": false,
+  "commits": [
+    "2e4fb5c",
+    "e93cfdd",
+    "c9d574d",
+    "cb83de6",
+    "8f9d804"
+  ],
+  "latest_commits": [
+    "8f9d804 ledger: record Agent V2 full rebuild closeout",
+    "cb83de6 docs: add Agent V2 runtime documentation",
+    "c9d574d test: add Agent V2 benchmark and smoke",
+    "e93cfdd feat: expose Agent V2 API and dashboard status",
+    "2e4fb5c feat: add Brain Agent V2 kernel and gateways",
+    "2782dc1 docs: add core domain retrieval eval post-push verification"
+  ],
+  "pushed": true,
+  "commit_created_for_post_push_verification": true,
+  "push_done_for_post_push_verification": true,
+  "recommended_next_action": "RESTART-BRAIN-8091-LOAD-AGENT-V2-ROUTES-01"
+}
