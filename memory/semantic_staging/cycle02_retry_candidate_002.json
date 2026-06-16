@@ -9,5 +9,10 @@
   "canonical_promotion": false,
   "real_write_allowed": false,
   "faiss_write_allowed": false,
-  "staging_only": true
+  "staging_only": true,
+  "review_required": false,
+  "terminal_status": "archived_duplicate",
+  "resolved_by_front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "resolved_utc": "2026-06-16T16:31:55.212849Z",
+  "resolution_reason": "Autonomous pending drain terminal closure; not selected for canonical promotion in this front."
 }

@@ -1,0 +1,27 @@
+{
+  "candidate_id": "codex_pure_brain_training_flatbed_trucking_training_3",
+  "created_utc": "2026-06-16T16:27:03.735335Z",
+  "source": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "source_cycle": "flatbed_trucking_training_3",
+  "domain": "flatbed_trucking",
+  "category": "Flatbed trucking / dispatcher automation / business operations",
+  "summary": "Para flatbed dispatch, Brain debe verificar peso, tarp/securement, appointment windows, deadhead, HOS y broker antes de aceptar una carga, aunque la tarifa aparente sea alta.",
+  "text": "Para flatbed dispatch, Brain debe verificar peso, tarp/securement, appointment windows, deadhead, HOS y broker antes de aceptar una carga, aunque la tarifa aparente sea alta.",
+  "quality_score": 0.91,
+  "usefulness_score": 0.9,
+  "safety_score": 0.98,
+  "source_metadata": {
+    "source_type": "codex_teacher_training_cycle",
+    "cycle_id": "flatbed_trucking_training_3",
+    "external_source": false
+  },
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false,
+  "canonical_promotion": false,
+  "terminal_status": "archived_duplicate",
+  "resolved_by_front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "resolved_utc": "2026-06-16T17:02:18.107418Z",
+  "resolution_reason": "Duplicate lesson text within same domain; canonical promotion inserted one representative lesson for this domain."
+}

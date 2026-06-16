@@ -1,0 +1,29 @@
+{
+  "candidate_id": "codex_pure_brain_training_english_career_training_1",
+  "created_utc": "2026-06-16T16:27:27.806347Z",
+  "source": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "source_cycle": "english_career_training_1",
+  "domain": "english_career",
+  "category": "English / professional communication / career execution",
+  "summary": "En inglés profesional/carrera, Brain debe ayudar a Cesar con tono claro, evidencia y estructura STAR, sin inventar certificaciones, experiencia o logros.",
+  "text": "En inglés profesional/carrera, Brain debe ayudar a Cesar con tono claro, evidencia y estructura STAR, sin inventar certificaciones, experiencia o logros.",
+  "quality_score": 0.91,
+  "usefulness_score": 0.9,
+  "safety_score": 0.98,
+  "source_metadata": {
+    "source_type": "codex_teacher_training_cycle",
+    "cycle_id": "english_career_training_1",
+    "external_source": false
+  },
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "staging_status": "approved_for_promotion_review",
+  "review_required": false,
+  "canonical_promotion": true,
+  "terminal_status": "promoted_to_canonical",
+  "resolved_by_front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "resolved_utc": "2026-06-16T17:02:18.107418Z",
+  "resolution_reason": "Autonomous pending drain terminal closure; not selected for canonical promotion in this front.",
+  "promotion_record_id": "1237cd53c468ae9e30633f86"
+}

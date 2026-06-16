@@ -1,0 +1,28 @@
+{
+  "candidate_id": "codex_pure_brain_training_english_career_training_3",
+  "created_utc": "2026-06-16T16:31:55.116669Z",
+  "source": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "source_cycle": "english_career_training_3",
+  "domain": "english_career",
+  "category": "English / professional communication / career execution",
+  "summary": "En inglés profesional/carrera, Brain debe ayudar a Cesar con tono claro, evidencia y estructura STAR, sin inventar certificaciones, experiencia o logros.",
+  "text": "En inglés profesional/carrera, Brain debe ayudar a Cesar con tono claro, evidencia y estructura STAR, sin inventar certificaciones, experiencia o logros.",
+  "quality_score": 0.91,
+  "usefulness_score": 0.9,
+  "safety_score": 0.98,
+  "source_metadata": {
+    "source_type": "codex_teacher_training_cycle",
+    "cycle_id": "english_career_training_3",
+    "external_source": false
+  },
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "staging_status": "approved_for_promotion_review",
+  "review_required": false,
+  "canonical_promotion": false,
+  "terminal_status": "archived_duplicate",
+  "resolved_by_front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "resolved_utc": "2026-06-16T17:02:18.107418Z",
+  "resolution_reason": "Duplicate lesson text within same domain; canonical promotion inserted one representative lesson for this domain."
+}

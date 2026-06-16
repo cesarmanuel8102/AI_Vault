@@ -4,13 +4,17 @@
   "source": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
   "source_cycle": "cycle_003",
   "category": "scheduler/autonomy governance",
-  "summary": "scheduler/autonomy governance: A governed autonomy scheduler should record each bounded cycle as an operational execution trace, not as persistent canonical knowledge. It should store: cycle ID, start/end time, trigger, scope, allowed actions, observations, decisions, actions taken, errors, outputs, and confidence or uncertainty notes. Any findings should be marked as provisional unless separately validated by the learning loop, post-trade analysis, edge validation, or another canonical promotion process. The scheduler may emit candidates for review, such as \u201cpossible issue detected\u201d or \u201chypothesis generated,\u201d but must not label them as accepted memory, promoted edge, or canonical truth. Canonical promotion should remain ",
+  "summary": "scheduler/autonomy governance: A governed autonomy scheduler should record each bounded cycle as an operational execution trace, not as persistent canonical knowledge. It should store: cycle ID, start/end time, trigger, scope, allowed actions, observations, decisions, actions taken, errors, outputs, and confidence or uncertainty notes. Any findings should be marked as provisional unless separately validated by the learning loop, post-trade analysis, edge validation, or another canonical promotion process. The scheduler may emit candidates for review, such as “possible issue detected” or “hypothesis generated,” but must not label them as accepted memory, promoted edge, or canonical truth. Canonical promotion should remain ",
   "quality_score": 0.95,
   "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_01/batches/batch_01.json",
   "canonical_promotion": false,
-  "review_required": true,
+  "review_required": false,
   "raw_cot_exposed": false,
   "secrets_exposed": false,
   "trading_execution_detected": false,
-  "staging_status": "llm_grounded_review_candidate"
+  "staging_status": "llm_grounded_review_candidate",
+  "terminal_status": "archived_duplicate",
+  "resolved_by_front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "resolved_utc": "2026-06-16T16:31:55.233985Z",
+  "resolution_reason": "Autonomous pending drain terminal closure; not selected for canonical promotion in this front."
 }

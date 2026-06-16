@@ -8,5 +8,11 @@
   "candidate_id": "sem_cand_c6f627550fe1",
   "semantic_memory_allowed": false,
   "faiss_write_allowed": false,
-  "created_utc": "2026-06-12T23:41:48.228870+00:00"
+  "created_utc": "2026-06-12T23:41:48.228870+00:00",
+  "review_required": false,
+  "canonical_promotion": false,
+  "terminal_status": "archived_superseded",
+  "resolved_by_front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "resolved_utc": "2026-06-16T16:31:55.181890Z",
+  "resolution_reason": "Autonomous pending drain terminal closure; not selected for canonical promotion in this front."
 }

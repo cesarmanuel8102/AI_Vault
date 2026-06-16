@@ -1,0 +1,28 @@
+{
+  "candidate_id": "codex_pure_brain_training_memory_faiss_governance_training_2",
+  "created_utc": "2026-06-16T16:20:08.120408Z",
+  "source": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "source_cycle": "memory_faiss_governance_training_2",
+  "domain": "memory_faiss_governance",
+  "category": "Memory / FAISS / retrieval / governance",
+  "summary": "La memoria canónica y FAISS son una unidad de consistencia: Brain solo debe promover candidatos trazables y seguros, con rollback snapshot y semantic_lines_delta == faiss_ids_delta == faiss_ntotal_delta.",
+  "text": "La memoria canónica y FAISS son una unidad de consistencia: Brain solo debe promover candidatos trazables y seguros, con rollback snapshot y semantic_lines_delta == faiss_ids_delta == faiss_ntotal_delta.",
+  "quality_score": 0.91,
+  "usefulness_score": 0.9,
+  "safety_score": 0.98,
+  "source_metadata": {
+    "source_type": "codex_teacher_training_cycle",
+    "cycle_id": "memory_faiss_governance_training_2",
+    "external_source": false
+  },
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "staging_status": "approved_for_promotion_review",
+  "review_required": false,
+  "canonical_promotion": false,
+  "terminal_status": "archived_duplicate",
+  "resolved_by_front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "resolved_utc": "2026-06-16T17:02:18.107418Z",
+  "resolution_reason": "Duplicate lesson text within same domain; canonical promotion inserted one representative lesson for this domain."
+}

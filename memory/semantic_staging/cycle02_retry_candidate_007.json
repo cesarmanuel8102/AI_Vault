@@ -5,9 +5,14 @@
   "source": "llm_grounded_autonomy_cycles_02_retry",
   "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02_retry_after_8091_reload/batches/batch_02.json",
   "quality_score": 0.95,
-  "text": "Show a persistent, co-located icon-plus-text badge on every knowledge item: a gray eye for \u201cRead-only,\u201d an amber clock for \u201cStaged,\u201d and a green checkmark for \u201cCanonical\u201d; never rely on color alone.",
+  "text": "Show a persistent, co-located icon-plus-text badge on every knowledge item: a gray eye for “Read-only,” an amber clock for “Staged,” and a green checkmark for “Canonical”; never rely on color alone.",
   "canonical_promotion": false,
   "real_write_allowed": false,
   "faiss_write_allowed": false,
-  "staging_only": true
+  "staging_only": true,
+  "review_required": false,
+  "terminal_status": "archived_duplicate",
+  "resolved_by_front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "resolved_utc": "2026-06-16T16:31:55.221733Z",
+  "resolution_reason": "Autonomous pending drain terminal closure; not selected for canonical promotion in this front."
 }

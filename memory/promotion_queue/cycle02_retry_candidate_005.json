@@ -8,5 +8,10 @@
   "text": "Use out-of-process integration or smoke tests against live endpoints to verify hardcoded routes; in-process tests alone cannot validate real network boundaries.",
   "canonical_promotion": false,
   "real_write_allowed": false,
-  "faiss_write_allowed": false
+  "faiss_write_allowed": false,
+  "review_required": false,
+  "terminal_status": "archived_superseded",
+  "resolved_by_front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "resolved_utc": "2026-06-16T16:31:55.165213Z",
+  "resolution_reason": "Autonomous pending drain terminal closure; not selected for canonical promotion in this front."
 }

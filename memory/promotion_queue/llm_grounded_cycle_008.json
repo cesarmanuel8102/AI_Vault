@@ -8,8 +8,12 @@
   "quality_score": 0.95,
   "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_01/batches/batch_02.json",
   "canonical_promotion": false,
-  "review_required": true,
+  "review_required": false,
   "raw_cot_exposed": false,
   "secrets_exposed": false,
-  "trading_execution_detected": false
+  "trading_execution_detected": false,
+  "terminal_status": "archived_superseded",
+  "resolved_by_front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "resolved_utc": "2026-06-16T16:31:55.175005Z",
+  "resolution_reason": "Autonomous pending drain terminal closure; not selected for canonical promotion in this front."
 }

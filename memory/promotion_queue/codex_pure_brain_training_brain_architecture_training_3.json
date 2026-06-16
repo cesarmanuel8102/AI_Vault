@@ -1,0 +1,27 @@
+{
+  "candidate_id": "codex_pure_brain_training_brain_architecture_training_3",
+  "created_utc": "2026-06-16T16:19:19.942322Z",
+  "source": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "source_cycle": "brain_architecture_training_3",
+  "domain": "brain_architecture",
+  "category": "Brain architecture / debugging / local AI operations",
+  "summary": "Para debugging Brain, Brain debe operar con preflight reproducible, diff isolation, smoke focal y rollback no destructivo; nunca debe mezclar dirty preexistente con el cambio del frente.",
+  "text": "Para debugging Brain, Brain debe operar con preflight reproducible, diff isolation, smoke focal y rollback no destructivo; nunca debe mezclar dirty preexistente con el cambio del frente.",
+  "quality_score": 0.91,
+  "usefulness_score": 0.9,
+  "safety_score": 0.98,
+  "source_metadata": {
+    "source_type": "codex_teacher_training_cycle",
+    "cycle_id": "brain_architecture_training_3",
+    "external_source": false
+  },
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false,
+  "canonical_promotion": false,
+  "terminal_status": "archived_duplicate",
+  "resolved_by_front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "resolved_utc": "2026-06-16T17:02:18.107418Z",
+  "resolution_reason": "Duplicate lesson text within same domain; canonical promotion inserted one representative lesson for this domain."
+}

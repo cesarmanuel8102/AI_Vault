@@ -1,0 +1,28 @@
+{
+  "candidate_id": "codex_pure_brain_training_cei_fdot_training_1",
+  "created_utc": "2026-06-16T16:16:16.154515Z",
+  "source": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "source_cycle": "cei_fdot_training_1",
+  "domain": "cei_fdot",
+  "category": "CEI / FDOT field inspection",
+  "summary": "En CEI/FDOT, Brain debe tratar aceptación, apertura y pago como decisiones basadas en evidencia; si falta provenance de campo, medición, curing/strength o aprobación técnica escrita, debe advertir riesgo y escalar formalmente.",
+  "text": "En CEI/FDOT, Brain debe tratar aceptación, apertura y pago como decisiones basadas en evidencia; si falta provenance de campo, medición, curing/strength o aprobación técnica escrita, debe advertir riesgo y escalar formalmente.",
+  "quality_score": 0.91,
+  "usefulness_score": 0.9,
+  "safety_score": 0.98,
+  "source_metadata": {
+    "source_type": "codex_teacher_training_cycle",
+    "cycle_id": "cei_fdot_training_1",
+    "external_source": false
+  },
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false,
+  "canonical_promotion": true,
+  "terminal_status": "promoted_to_canonical",
+  "resolved_by_front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "resolved_utc": "2026-06-16T17:02:18.107418Z",
+  "resolution_reason": "Autonomous pending drain terminal closure; not selected for canonical promotion in this front.",
+  "promotion_record_id": "784200cb848f4ad7ebd271cc"
+}

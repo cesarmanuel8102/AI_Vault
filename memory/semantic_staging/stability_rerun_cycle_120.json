@@ -15,5 +15,10 @@
     "no_raw_cot": true,
     "no_secrets": true,
     "no_trading_execution": true
-  }
+  },
+  "review_required": false,
+  "terminal_status": "archived_superseded",
+  "resolved_by_front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "resolved_utc": "2026-06-16T16:31:55.247500Z",
+  "resolution_reason": "Autonomous pending drain terminal closure; not selected for canonical promotion in this front."
 }

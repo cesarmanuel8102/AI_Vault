@@ -4,12 +4,16 @@
   "source": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
   "source_cycle": "cycle_006",
   "category": "financial safety without execution",
-  "summary": "financial safety without execution: Present it as analytical validation, not advice: describe the strategy, assumptions, dataset, market regime, metrics reviewed, and limitations. Use neutral language like \u201cthe backtest indicates,\u201d \u201cthe sample suggests,\u201d or \u201crisk observed was,\u201d avoiding \u201cbuy,\u201d \u201csell,\u201d \u201center,\u201d or \u201cyou should.\u201d Include uncertainty, scenario sensitivity, drawdowns, liquidity/slippage assumptions, and whether results are statistically robust. End with a clear boundary: \u201cThis is for research and risk analysis only, not a trade recommendation or execution instruction.\u201d",
+  "summary": "financial safety without execution: Present it as analytical validation, not advice: describe the strategy, assumptions, dataset, market regime, metrics reviewed, and limitations. Use neutral language like “the backtest indicates,” “the sample suggests,” or “risk observed was,” avoiding “buy,” “sell,” “enter,” or “you should.” Include uncertainty, scenario sensitivity, drawdowns, liquidity/slippage assumptions, and whether results are statistically robust. End with a clear boundary: “This is for research and risk analysis only, not a trade recommendation or execution instruction.”",
   "quality_score": 0.95,
   "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_01/batches/batch_02.json",
   "canonical_promotion": false,
-  "review_required": true,
+  "review_required": false,
   "raw_cot_exposed": false,
   "secrets_exposed": false,
-  "trading_execution_detected": false
+  "trading_execution_detected": false,
+  "terminal_status": "archived_superseded",
+  "resolved_by_front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "resolved_utc": "2026-06-16T16:31:55.172494Z",
+  "resolution_reason": "Autonomous pending drain terminal closure; not selected for canonical promotion in this front."
 }

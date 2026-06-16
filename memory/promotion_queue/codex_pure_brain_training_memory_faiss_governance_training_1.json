@@ -1,0 +1,28 @@
+{
+  "candidate_id": "codex_pure_brain_training_memory_faiss_governance_training_1",
+  "created_utc": "2026-06-16T16:19:44.046025Z",
+  "source": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "source_cycle": "memory_faiss_governance_training_1",
+  "domain": "memory_faiss_governance",
+  "category": "Memory / FAISS / retrieval / governance",
+  "summary": "La memoria canónica y FAISS son una unidad de consistencia: Brain solo debe promover candidatos trazables y seguros, con rollback snapshot y semantic_lines_delta == faiss_ids_delta == faiss_ntotal_delta.",
+  "text": "La memoria canónica y FAISS son una unidad de consistencia: Brain solo debe promover candidatos trazables y seguros, con rollback snapshot y semantic_lines_delta == faiss_ids_delta == faiss_ntotal_delta.",
+  "quality_score": 0.91,
+  "usefulness_score": 0.9,
+  "safety_score": 0.98,
+  "source_metadata": {
+    "source_type": "codex_teacher_training_cycle",
+    "cycle_id": "memory_faiss_governance_training_1",
+    "external_source": false
+  },
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false,
+  "canonical_promotion": true,
+  "terminal_status": "promoted_to_canonical",
+  "resolved_by_front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "resolved_utc": "2026-06-16T17:02:18.107418Z",
+  "resolution_reason": "Autonomous pending drain terminal closure; not selected for canonical promotion in this front.",
+  "promotion_record_id": "e8cff92ee42fa048cb17cb0e"
+}

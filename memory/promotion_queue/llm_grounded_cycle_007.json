@@ -4,12 +4,16 @@
   "source": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
   "source_cycle": "cycle_007",
   "category": "operator UX clarity",
-  "summary": "operator UX clarity: Auditor\u00eda de memoria completada en modo solo lectura. No se modificaron archivos, \u00edndices, FAISS ni memoria persistente. Se verific\u00f3 el estado disponible y no se ejecutaron acciones destructivas ni escrituras.",
+  "summary": "operator UX clarity: Auditoría de memoria completada en modo solo lectura. No se modificaron archivos, índices, FAISS ni memoria persistente. Se verificó el estado disponible y no se ejecutaron acciones destructivas ni escrituras.",
   "quality_score": 0.95,
   "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_01/batches/batch_02.json",
   "canonical_promotion": false,
-  "review_required": true,
+  "review_required": false,
   "raw_cot_exposed": false,
   "secrets_exposed": false,
-  "trading_execution_detected": false
+  "trading_execution_detected": false,
+  "terminal_status": "archived_superseded",
+  "resolved_by_front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "resolved_utc": "2026-06-16T16:31:55.172494Z",
+  "resolution_reason": "Autonomous pending drain terminal closure; not selected for canonical promotion in this front."
 }

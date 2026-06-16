@@ -1,0 +1,28 @@
+{
+  "candidate_id": "codex_pure_brain_training_finance_trading_research_training_3",
+  "created_utc": "2026-06-16T16:23:41.331895Z",
+  "source": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "source_cycle": "finance_trading_research_training_3",
+  "domain": "finance_trading_research",
+  "category": "Finance / trading research / risk management",
+  "summary": "En investigación de trading, Brain debe separar backtest de ejecución: OOS débil o muestra pequeña exige forensic, guards y revalidación; nunca debe recomendar órdenes reales.",
+  "text": "En investigación de trading, Brain debe separar backtest de ejecución: OOS débil o muestra pequeña exige forensic, guards y revalidación; nunca debe recomendar órdenes reales.",
+  "quality_score": 0.91,
+  "usefulness_score": 0.9,
+  "safety_score": 0.98,
+  "source_metadata": {
+    "source_type": "codex_teacher_training_cycle",
+    "cycle_id": "finance_trading_research_training_3",
+    "external_source": false
+  },
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "staging_status": "approved_for_promotion_review",
+  "review_required": false,
+  "canonical_promotion": false,
+  "terminal_status": "archived_duplicate",
+  "resolved_by_front": "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+  "resolved_utc": "2026-06-16T17:02:18.107418Z",
+  "resolution_reason": "Duplicate lesson text within same domain; canonical promotion inserted one representative lesson for this domain."
+}
