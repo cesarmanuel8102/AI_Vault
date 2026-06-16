@@ -1,7 +1,7 @@
 {
   "front": "FRONT-BRAIN-LLM-GROUNDED-MEMORY-PROMOTION-AUDIT-01",
   "phase": "PHASE_4_DEDUPLICATION_AND_SAFETY_SCREEN",
-  "timestamp_utc": "2026-06-15T23:41:23+00:00",
+  "timestamp_utc": "2026-06-15T23:55:43+00:00",
   "total_candidates": 53,
   "unique_candidates": 37,
   "duplicates_marked": 16,
