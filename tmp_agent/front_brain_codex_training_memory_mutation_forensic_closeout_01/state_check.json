@@ -1,0 +1,19 @@
+{
+  "front": "FRONT-BRAIN-CODEX-TRAINING-MEMORY-MUTATION-FORENSIC-CLOSEOUT-01",
+  "phase": "PHASE_0_HARD_STATE_CHECK",
+  "timestamp_utc": "2026-06-16T17:15:00+00:00",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_HEAD": "39bdb8b",
+  "remote_HEAD": "39bdb8b",
+  "heads_match": true,
+  "staged_changes": false,
+  "canonical_files_dirty": true,
+  "dirty_canonical_files": [
+    "memory/semantic/semantic_memory.jsonl",
+    "memory/semantic/semantic_memory_faiss.index",
+    "memory/semantic/semantic_memory_faiss_ids.json"
+  ],
+  "worktree_dirty": true,
+  "expected_mutation": true,
+  "proceed": true
+}

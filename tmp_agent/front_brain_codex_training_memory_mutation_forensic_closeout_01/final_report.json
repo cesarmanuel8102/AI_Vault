@@ -1,0 +1,35 @@
+{
+  "front": "FRONT-BRAIN-CODEX-TRAINING-MEMORY-MUTATION-FORENSIC-CLOSEOUT-01",
+  "phase": "PHASE_10_FINAL_REPORT",
+  "timestamp_utc": "2026-06-16T17:07:00+00:00",
+  "status": "CODEX_TRAINING_MEMORY_MUTATION_FORENSIC_CLOSEOUT_COMPLETED",
+  "start_head": "39bdb8b",
+  "summary": {
+    "semantic_lines_before_expected": 1720,
+    "semantic_lines_current_before_correction": 1729,
+    "faiss_ids_current_before_correction": 1627,
+    "faiss_ntotal_current_before_correction": 1627,
+    "new_records_found": 9,
+    "codex_training_lesson_found": 6,
+    "task_result_found": 3,
+    "codex_training_lesson_kept": 6,
+    "task_result_removed": 3,
+    "records_rolled_back": 0,
+    "semantic_lines_final": 1726,
+    "faiss_ids_final": 1627,
+    "faiss_ntotal_final": 1627
+  },
+  "affected_candidates": 18,
+  "promoted_to_canonical": 6,
+  "archived": 12,
+  "rejected": 0,
+  "unresolved_affected_candidates": 0,
+  "safety": {
+    "trading_touched": false,
+    "b8_touched": false,
+    "secrets_exposed": false,
+    "raw_cot_exposed": false,
+    "rollback_snapshot": "memory/rollback_snapshots/codex_training_memory_mutation_forensic_closeout_01_20260616_170004"
+  },
+  "next_recommended_front": "FRONT-BRAIN-CANONICAL-MEMORY-RETRIEVAL-BENEFIT-EVAL-01"
+}

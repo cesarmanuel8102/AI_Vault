@@ -1,0 +1,32 @@
+{
+  "front": "FRONT-BRAIN-CODEX-TRAINING-MEMORY-MUTATION-FORENSIC-CLOSEOUT-01",
+  "phase": "PHASE_7_FINAL_CONSISTENCY_VERIFY",
+  "timestamp_utc": "2026-06-16T17:00:00+00:00",
+  "checks": {
+    "semantic_memory_jsonl_valid": true,
+    "faiss_ids_valid_json": true,
+    "faiss_index_readable": true,
+    "faiss_ids_count_equals_ntotal": true,
+    "kept_codex_training_lesson_retrievable": true,
+    "removed_task_result_absent": true,
+    "no_rejected_unsafe_retained": true,
+    "no_trading_touched": true,
+    "no_b8_touched": true,
+    "no_secrets_exposed": true,
+    "no_raw_cot_exposed": true
+  },
+  "retrieval_verification": {
+    "cei_fdot_lesson": "Retrievable (3 hits)",
+    "brain_architecture_lesson": "Retrievable (3 hits)",
+    "memory_faiss_governance_lesson": "Retrievable (3 hits)",
+    "finance_trading_research_lesson": "Retrievable (3 hits)",
+    "flatbed_trucking_lesson": "Retrievable (3 hits)",
+    "english_career_lesson": "Retrievable (3 hits)"
+  },
+  "final_counts": {
+    "semantic_lines": 1726,
+    "faiss_ids": 1627,
+    "faiss_ntotal": 1627
+  },
+  "verdict": "CONSISTENCY_VERIFIED"
+}

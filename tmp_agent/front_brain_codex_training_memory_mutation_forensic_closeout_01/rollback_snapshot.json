@@ -1,0 +1,16 @@
+{
+  "front": "FRONT-BRAIN-CODEX-TRAINING-MEMORY-MUTATION-FORENSIC-CLOSEOUT-01",
+  "phase": "PHASE_4_ROLLBACK_SNAPSHOT",
+  "timestamp_utc": "2026-06-16T17:00:00+00:00",
+  "snapshot_path": "memory/rollback_snapshots/codex_training_memory_mutation_forensic_closeout_01_20260616_170004",
+  "files_copied": [
+    "semantic_memory.jsonl",
+    "semantic_memory_faiss.index",
+    "semantic_memory_faiss_ids.json"
+  ],
+  "hashes_verified": true,
+  "semantic_sha256": "cc30c5a3c1eff2924309071e9953233da6c714bdbfb9f5bab3e9398ec39ebff6",
+  "faiss_ids_sha256": "e5f6f3cfed0450e76d5277aac3795d3b2666c4ad8caa79922ebe47c7c0aa60b9",
+  "faiss_index_sha256": "bced4b8e39c2fe681b0b26eba89422944d8f692cf7515ebc9a56eabb7cde4f24",
+  "snapshot_ready": true
+}

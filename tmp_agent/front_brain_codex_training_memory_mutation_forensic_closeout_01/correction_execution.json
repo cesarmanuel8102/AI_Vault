@@ -1,0 +1,48 @@
+{
+  "front": "FRONT-BRAIN-CODEX-TRAINING-MEMORY-MUTATION-FORENSIC-CLOSEOUT-01",
+  "phase": "PHASE_6_CORRECTION_EXECUTION",
+  "timestamp_utc": "2026-06-16T17:00:00+00:00",
+  "actions": [
+    {
+      "action": "Removed last 3 task_result records from semantic_memory.jsonl",
+      "records_removed": [
+        "3302776830d94fdd1d22f8ac",
+        "e5a0ddc4e3702cffde728f85",
+        "ff00e3576e9704bb02155691"
+      ],
+      "semantic_lines_before": 1729,
+      "semantic_lines_after": 1726
+    },
+    {
+      "action": "Kept 6 codex_training_lesson records in semantic_memory.jsonl",
+      "records_kept": [
+        "784200cb848f4ad7ebd271cc",
+        "b8e67153c313f9f3d2bf34ef",
+        "e8cff92ee42fa048cb17cb0e",
+        "cf59b0ebc0ecf5cfc34272ca",
+        "7265b96bc7a895bb088b0915",
+        "1237cd53c468ae9e30633f86"
+      ],
+      "reason": "High-quality training lessons with proper metadata, safe, unique, no secrets/raw CoT."
+    },
+    {
+      "action": "Rebuilt FAISS index from corrected semantic memory",
+      "faiss_ids_before": 1627,
+      "faiss_ids_after": 1627,
+      "faiss_ntotal_before": 1627,
+      "faiss_ntotal_after": 1627,
+      "reason": "FAISS rebuild regenerates vectors for all 1726 records. 1621 baseline + 6 codex_training_lesson = 1627 vectors."
+    }
+  ],
+  "correction_result": "CORRECTION_APPLIED_OK",
+  "final_state": {
+    "semantic_lines": 1726,
+    "faiss_ids": 1627,
+    "faiss_ntotal": 1627
+  },
+  "net_change_from_baseline": {
+    "semantic_lines": "+6 (1720 → 1726)",
+    "faiss_ids": "+6 (1621 → 1627)",
+    "faiss_ntotal": "+6 (1621 → 1627)"
+  }
+}

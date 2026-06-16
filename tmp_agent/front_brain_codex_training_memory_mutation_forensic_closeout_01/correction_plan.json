@@ -1,0 +1,60 @@
+{
+  "front": "FRONT-BRAIN-CODEX-TRAINING-MEMORY-MUTATION-FORENSIC-CLOSEOUT-01",
+  "phase": "PHASE_5_CORRECTION_PLAN",
+  "timestamp_utc": "2026-06-16T17:00:00+00:00",
+  "plan": [
+    {
+      "step": 1,
+      "action": "Create rollback snapshot of current canonical files",
+      "target": "memory/semantic/*",
+      "status": "completed",
+      "result": "Snapshot created at memory/rollback_snapshots/codex_training_memory_mutation_forensic_closeout_01_20260616_170004/"
+    },
+    {
+      "step": 2,
+      "action": "Remove 3 task_result records from semantic_memory.jsonl",
+      "target": "memory/semantic/semantic_memory.jsonl lines 1727-1729",
+      "reason": "task_result records are operational agent loop logs, not canonical semantic memory lessons. They lack quality metadata, candidate_id, and training value.",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "action": "Keep 6 codex_training_lesson records in semantic_memory.jsonl",
+      "target": "memory/semantic/semantic_memory.jsonl lines 1721-1726",
+      "reason": "High-quality training lessons with proper metadata (quality_score=0.91, safety_score=0.98), unique text, no secrets/raw CoT, from approved front.",
+      "status": "pending"
+    },
+    {
+      "step": 4,
+      "action": "Rebuild FAISS index from corrected semantic memory",
+      "target": "memory/semantic/semantic_memory_faiss.index + memory/semantic/semantic_memory_faiss_ids.json",
+      "reason": "Ensure FAISS consistency with corrected semantic memory. After removing 3 records, expected: 1627 vectors (1621 baseline + 6 lessons).",
+      "status": "pending"
+    },
+    {
+      "step": 5,
+      "action": "Verify consistency and retrieval",
+      "target": "all canonical files",
+      "reason": "Confirm semantic lines == 1726, faiss_ids == 1627, faiss_ntotal == 1627, all kept records retrievable.",
+      "status": "pending"
+    }
+  ],
+  "expected_final_state": {
+    "semantic_lines": 1726,
+    "faiss_ids": 1627,
+    "faiss_ntotal": 1627,
+    "kept_codex_training_lesson": 6,
+    "removed_task_result": 3,
+    "net_change_from_baseline": "+6 codex_training_lesson"
+  },
+  "alternative_rollback_plan": {
+    "trigger": "If FAISS rebuild fails or any kept record is not retrievable",
+    "action": "Restore from snapshot memory/rollback_snapshots/codex_training_memory_mutation_forensic_closeout_01_20260616_170004/",
+    "expected_final_state_after_rollback": {
+      "semantic_lines": 1729,
+      "faiss_ids": 1627,
+      "faiss_ntotal": 1627
+    },
+    "note": "Rollback restores to pre-correction state, then a separate front can decide on full rollback to 1720/1621/1621 baseline."
+  }
+}

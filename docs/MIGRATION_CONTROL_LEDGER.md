@@ -222,6 +222,14 @@
   - Tests: smoke test passing (18/18)
   - Próximo: commit y push de cambios canónicos, auditoría post-promoción, rollback disponible si se necesita
 
+## 11. Codex training memory mutation forensic closeout
+- **FRONT-BRAIN-CODEX-TRAINING-MEMORY-MUTATION-FORENSIC-CLOSEOUT-01**: completado y pusheado
+  - Archivos: tmp_agent/front_brain_codex_training_memory_mutation_forensic_closeout_01/*, tests/smoke/smoke_front_brain_codex_training_memory_mutation_forensic_closeout_01.py
+  - Estado: 9 registros nuevos detectados (6 codex_training_lesson + 3 task_result), 3 task_result removidos, 6 codex_training_lesson retenidos, FAISS rebuild exitoso
+  - Seguridad: snapshot de rollback creado, FAISS consistente (1726/1627/1627), sin trading/B8 touch, sin secrets/raw CoT
+  - Tests: smoke test passing (18/18)
+  - Próximo: FRONT-BRAIN-CANONICAL-MEMORY-RETRIEVAL-BENEFIT-EVAL-01
+
 ## 7. Próximo paso autorizado
 - Crear preflight/scope/smoke scripts.
 - No runtime refactor.
