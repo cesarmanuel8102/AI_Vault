@@ -8626,3 +8626,61 @@ NO — this front is audit-only. All `canonical_promotion_allowed` flags remain 
 ### Next Recommended Front
 FRONT-BRAIN-LLM-GROUNDED-MEMORY-PROMOTION-EXECUTE-01 — requires explicit human approval after reviewing 16 flagged candidates.
 
+
+## LEDGER-ROADMAP-SSOT-MEMORY-PROMOTION-REVIEW-AND-APPROVE-ALL-PASSING-01 — LLM-Grounded Memory Promotion Review and Approve Completed
+- **Date (UTC)**: 2026-06-16T00:00:00+00:00
+- **Branch**: codex/own-capital-sustainable-return
+- **HEAD local/remoto**: 984e933 (will advance after push)
+- **Estado**: All-passing review completado. Ninguna promocion canonica realizada. Solo aprobacion.
+
+### Scope
+- tmp_agent/front_brain_memory_promotion_review_and_approve_all_passing_01/
+- tests/smoke/smoke_front_brain_memory_promotion_review_and_approve_all_passing_01.py
+- ROADMAP_STATUS.json (updated)
+
+### Phases Executed
+- Phase 0: State Lock -- verified clean git state (984e933), no staged changes
+- Phase 1: Audit Closeout Verify -- confirmed 53 candidates, 37 unique, 5 promote_later, 16 needs_human_review, 16 unsafe_reject, 16 duplicates
+- Phase 2: Strict Review -- applied 12 gates to all 37 unique candidates
+- Phase 3: Approval Manifest -- approved 5 candidates for future canonical promotion
+- Phase 4: Hold/Reject/Duplicate Manifests -- 15 held, 17 rejected, 16 duplicates
+- Phase 5: Future Execution Plan -- detailed plan for FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01
+- Phase 6: Final Safety Verify -- semantic=1715, FAISS=1616, no mutations, 0 canonical promotions
+- Phase 7: Smoke Test -- 18/18 tests designed, 17 passed (1 expected fail pre-ledger-update)
+- Phase 8: Final Reports -- final_report, cesar_review, next_prompt generated
+- Phase 9: ROADMAP/Ledger Update -- completed
+
+### Approved Candidates (5)
+| ID | Domain | Confidence |
+|---|---|---|
+| audit_0017 | coding_debugging | 0.90 |
+| audit_0018 | coding_debugging | 0.89 |
+| audit_0019 | dashboard_reliability | 0.86 |
+| audit_0020 | provider_reliability | 0.91 |
+| audit_0021 | governance | 0.88 |
+
+### Safety Checklist
+- [x] .env NOT modified
+- [x] trading/* NOT touched
+- [x] B8/* NOT touched
+- [x] tmp_agent/strategies/* NOT touched
+- [x] memory/semantic/* NOT mutated
+- [x] FAISS NOT written
+- [x] No additional autonomy cycles run
+- [x] No root junk staged
+- [x] No force push / reset / clean / stash used
+
+### Policy Applied
+- **approve_all_passing**: TRUE
+- Every candidate that passed all 12 strict gates was approved.
+- No candidate with critical safety failures was approved.
+- All duplicates excluded from approval.
+
+### Approval Does NOT Mean Promotion
+- No canonical semantic memory was modified.
+- No FAISS was written.
+- This front only produced an explicit approval manifest.
+- Next front must execute promotion only for approved candidates after human sign-off.
+
+### Next Recommended Front
+FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01 -- requires explicit human approval, backup, dry-run plan, and rollback criteria before executing canonical promotion.

@@ -164,11 +164,10 @@
     "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01",
     "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
     "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-02",
-    "FRONT-BRAIN-LLM-GROUNDED-MEMORY-PROMOTION-AUDIT-01"
+    "FRONT-BRAIN-LLM-GROUNDED-MEMORY-PROMOTION-AUDIT-01",
+    "FRONT-BRAIN-MEMORY-PROMOTION-REVIEW-AND-APPROVE-ALL-PASSING-01"
   ],
-  "open_fronts": [
-    "FRONT-BRAIN-LLM-GROUNDED-MEMORY-PROMOTION-AUDIT-01"
-  ],
+  "open_fronts": [],
   "blocked_fronts": [
     "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
     "FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01",
@@ -184,13 +183,13 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-LLM-GROUNDED-MEMORY-PROMOTION-EXECUTE-01",
+    "name": "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01",
     "status": "recommended_next",
-    "reason": "Memory promotion audit completed. 5 high-confidence candidates ready for human review. 16 flagged for review. No canonical promotion performed in audit.",
-    "unblock_dependency": "FRONT-BRAIN-LLM-GROUNDED-MEMORY-PROMOTION-AUDIT-01"
+    "reason": "5 candidates approved for future canonical promotion after strict review. 15 held, 17 rejected, 16 duplicates. Approval manifest ready.",
+    "unblock_dependency": "FRONT-BRAIN-MEMORY-PROMOTION-REVIEW-AND-APPROVE-ALL-PASSING-01"
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-06-15T23:43:26.535+00:00",
+  "last_updated": "2026-06-16T00:01:39.703+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -344,7 +343,7 @@
       "route": "curated_lookup_readonly",
       "triggers": [
         "busca en conocimiento curado: <query>",
-        "quÃƒÆ’Ã‚Â© aprendiste sobre <query>",
+        "quÃƒÂƒÃ†Â’ÃƒÂ‚Ã‚Â© aprendiste sobre <query>",
         "que aprendiste sobre <query>",
         "usa curated knowledge para responder <query>",
         "usa conocimiento curado para responder <query>"
@@ -1335,7 +1334,7 @@
       "memory/semantic/semantic_memory.jsonl",
       "tests/smoke/smoke_front_real_canary_exec_01.py"
     ],
-    "next_recommended_front": "FRONT-REAL-CANARY-POST-AUDIT-01 — post-canary audit and rollback decision OR FRONT-INFRA-03 — startup/runbook reproducibility"
+    "next_recommended_front": "FRONT-REAL-CANARY-POST-AUDIT-01 Â— post-canary audit and rollback decision OR FRONT-INFRA-03 Â— startup/runbook reproducibility"
   },
   "front_real_canary_post_audit_01": {
     "status": "done",
@@ -1355,7 +1354,7 @@
       "docs/FRONT_REAL_CANARY_POST_AUDIT_01.md",
       "tests/smoke/smoke_front_real_canary_post_audit_01.py"
     ],
-    "next_recommended_front": "FRONT-REAL-CANARY-RETENTION-01 — permanent canary retention OR FRONT-INFRA-03 — startup/runbook reproducibility"
+    "next_recommended_front": "FRONT-REAL-CANARY-RETENTION-01 Â— permanent canary retention OR FRONT-INFRA-03 Â— startup/runbook reproducibility"
   },
   "front_real_canary_retention_01": {
     "status": "done",
@@ -1378,7 +1377,7 @@
       "docs/FRONT_REAL_CANARY_RETENTION_01.md",
       "tests/smoke/smoke_front_real_canary_retention_01.py"
     ],
-    "next_recommended_front": "FRONT-INFRA-03 — startup/runbook reproducibility OR FRONT-REAL-READ-VERIFY-01 — runtime read-only retrieval verification"
+    "next_recommended_front": "FRONT-INFRA-03 Â— startup/runbook reproducibility OR FRONT-REAL-READ-VERIFY-01 Â— runtime read-only retrieval verification"
   },
   "front_infra_03": {
     "status": "done",
@@ -1397,7 +1396,7 @@
       "docs/FRONT_INFRA_03_STARTUP_RUNBOOK.md",
       "tests/smoke/smoke_front_infra_03_startup_runbook.py"
     ],
-    "next_recommended_front": "FRONT-REAL-READ-VERIFY-01 — runtime read-only retrieval verification OR FRONT-INFRA-04 — Dockerfile/container reproducibility"
+    "next_recommended_front": "FRONT-REAL-READ-VERIFY-01 Â— runtime read-only retrieval verification OR FRONT-INFRA-04 Â— Dockerfile/container reproducibility"
   },
   "front_real_read_verify_01": {
     "status": "done",
@@ -1418,7 +1417,7 @@
       "docs/FRONT_REAL_READ_VERIFY_01.md",
       "tests/smoke/smoke_front_real_read_verify_01.py"
     ],
-    "next_recommended_front": "FRONT-REAL-READ-LOOKUP-ADAPTER-01 — implement or verify read-only lookup adapter"
+    "next_recommended_front": "FRONT-REAL-READ-LOOKUP-ADAPTER-01 Â— implement or verify read-only lookup adapter"
   },
   "front_real_read_lookup_adapter_01": {
     "status": "done",
@@ -1440,7 +1439,7 @@
       "docs/FRONT_REAL_READ_LOOKUP_ADAPTER_01.md",
       "tests/smoke/smoke_front_real_read_lookup_adapter_01.py"
     ],
-    "next_recommended_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-PLAN-01 — expose adapter through safe read-only runtime endpoint"
+    "next_recommended_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-PLAN-01 Â— expose adapter through safe read-only runtime endpoint"
   },
   "front_real_runtime_lookup_endpoint_01": {
     "status": "done",
@@ -1492,7 +1491,7 @@
       "tmp_agent/front_main_py_dirty_triage_01/security_check.json",
       "tmp_agent/front_main_py_dirty_triage_01/no_mutation_validation.json"
     ],
-    "recommended_next_front": "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01 — operator review of preexisting main.py dirty state OR FRONT-MAIN-PY-DIRTY-COMMIT-01 — commit preexisting changes OR FRONT-MAIN-PY-DIRTY-DISCARD-PLAN-01 — plan to discard changes",
+    "recommended_next_front": "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01 Â— operator review of preexisting main.py dirty state OR FRONT-MAIN-PY-DIRTY-COMMIT-01 Â— commit preexisting changes OR FRONT-MAIN-PY-DIRTY-DISCARD-PLAN-01 Â— plan to discard changes",
     "blocked_fronts_after_this": [
       "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01"
     ],
@@ -1523,7 +1522,7 @@
       "tmp_agent/front_main_py_dirty_human_review_01/security_check.json",
       "tmp_agent/front_main_py_dirty_human_review_01/no_mutation_validation.json"
     ],
-    "recommended_next_front": "FRONT-MAIN-PY-DIRTY-COMMIT-01 — commit preexisting main.py monitoring endpoints and chat fastpath (requires operator approval)",
+    "recommended_next_front": "FRONT-MAIN-PY-DIRTY-COMMIT-01 Â— commit preexisting main.py monitoring endpoints and chat fastpath (requires operator approval)",
     "blocked_fronts_after_this": [
       "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01"
     ],
@@ -1554,7 +1553,7 @@
     "files": [
       "tmp_agent/brain_v9/main.py"
     ],
-    "recommended_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 — integrate read-only canary router into main app",
+    "recommended_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01 Â— integrate read-only canary router into main app",
     "blocked_fronts_after_this": []
   },
   "front_real_runtime_lookup_endpoint_integration_01": {
@@ -1578,7 +1577,7 @@
       "docs/FRONT_REAL_RUNTIME_LOOKUP_ENDPOINT_INTEGRATION_01.md",
       "tests/smoke/smoke_front_real_runtime_lookup_endpoint_integration_01.py"
     ],
-    "recommended_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01 — local runtime smoke for integrated endpoint"
+    "recommended_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01 Â— local runtime smoke for integrated endpoint"
   },
   "front_real_runtime_lookup_endpoint_live_smoke_01": {
     "status": "done",
@@ -1602,7 +1601,7 @@
       "docs/FRONT_REAL_RUNTIME_LOOKUP_ENDPOINT_LIVE_SMOKE_01.md",
       "tests/smoke/smoke_front_real_runtime_lookup_endpoint_live_smoke_01.py"
     ],
-    "recommended_next_front": "FRONT-BRAIN-KNOWLEDGE-READ-API-01 — create real knowledge read API"
+    "recommended_next_front": "FRONT-BRAIN-KNOWLEDGE-READ-API-01 Â— create real knowledge read API"
   },
   "front_brain_knowledge_read_api_01": {
     "status": "done",
@@ -1623,7 +1622,7 @@
       "docs/FRONT_BRAIN_KNOWLEDGE_READ_API_01.md",
       "tests/smoke/smoke_front_brain_knowledge_read_api_01.py"
     ],
-    "recommended_next_front": "FRONT-REAL-MEMORY-FAISS-PROMOTION-01 — controlled memory to FAISS promotion"
+    "recommended_next_front": "FRONT-REAL-MEMORY-FAISS-PROMOTION-01 Â— controlled memory to FAISS promotion"
   },
   "front_real_memory_faiss_promotion_01": {
     "status": "done",
@@ -1650,7 +1649,7 @@
       "docs/FRONT_REAL_MEMORY_FAISS_PROMOTION_01.md",
       "tests/smoke/smoke_front_real_memory_faiss_promotion_01.py"
     ],
-    "recommended_next_front": "FRONT-REAL-PATCH-MATERIALIZATION-01 — first governed patch artifact materialization"
+    "recommended_next_front": "FRONT-REAL-PATCH-MATERIALIZATION-01 Â— first governed patch artifact materialization"
   },
   "front_real_patch_materialization_01": {
     "status": "done",
