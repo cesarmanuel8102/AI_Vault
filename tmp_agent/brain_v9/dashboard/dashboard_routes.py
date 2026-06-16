@@ -172,6 +172,42 @@ def _safety_status() -> dict[str, Any]:
     return result
 
 
+def _agent_v2_snapshot() -> dict[str, Any]:
+    try:
+        from tmp_agent.brain_v9.core.agent_kernel_v2.finalizer import PRIMARY_KIMI_MODEL
+        from tmp_agent.brain_v9.core.agent_kernel_v2.runtime import LANGGRAPH_BLOCKER, LANGGRAPH_USED, get_agent_runtime_v2
+        rt = get_agent_runtime_v2()
+        runs = rt.list_runs()
+        latest = runs[-1] if runs else {}
+        meta = latest.get("provider_metadata") or {}
+        return {
+            "ok": True,
+            "canonical_for_new_agent_runs": True,
+            "backend": rt.backend,
+            "langgraph_used": LANGGRAPH_USED,
+            "langgraph_blocker": LANGGRAPH_BLOCKER,
+            "primary_finalizer_model": PRIMARY_KIMI_MODEL,
+            "latest_provider_used": meta.get("provider_used"),
+            "latest_model_used": meta.get("model_used"),
+            "latest_provider_degraded": meta.get("provider_degraded"),
+            "runs": len(runs),
+            "latest_run_id": latest.get("run_id"),
+            "trace_available": True,
+            "chat_agent_route": "/v2/chat/agent",
+            "status_route": "/brain-dashboard/agent-v2/status",
+            "capabilities_route": "/v2/agent/capabilities",
+            "legacy_agent_status": "legacy_compatible_not_canonical",
+        }
+    except Exception as exc:
+        return {
+            "ok": False,
+            "degraded": True,
+            "error": _truncate_error(exc),
+            "canonical_for_new_agent_runs": True,
+            "status_route": "/brain-dashboard/agent-v2/status",
+        }
+
+
 class ChatRequest(BaseModel):
     message: str
 
@@ -202,6 +238,7 @@ def dashboard_status() -> dict[str, Any]:
     if errors:
         alerts.append({"severity": "WARNING", "code": "status_degraded", "message": "One or more status components degraded safely.", "action": "inspect_private_evidence"})
     elapsed_ms = round((datetime.now(timezone.utc) - started).total_seconds() * 1000, 3)
+    agent_v2 = safe_component("agent_v2", _agent_v2_snapshot, {"ok": False, "degraded": True})
     return {
         "ok": not errors,
         "degraded": bool(errors),
@@ -223,7 +260,7 @@ def dashboard_status() -> dict[str, Any]:
         "alerts": alerts,
         "errors": errors,
         "recommendation": "continue_monitoring" if not errors else "inspect_degraded_components",
-        "agent_v2": {"canonical_for_new_agent_runs": True, "status_route": "/brain-dashboard/agent-v2/status", "legacy_agent_status": "legacy_compatible_not_canonical"},
+        "agent_v2": agent_v2,
     }
 
 @router.get("/activity")
@@ -309,18 +346,4 @@ def chat(req: ChatRequest) -> dict[str, Any]:
 
 @router.get("/agent-v2/status")
 def agent_v2_dashboard_status() -> dict[str, Any]:
-    from tmp_agent.brain_v9.core.agent_kernel_v2.runtime import get_agent_runtime_v2, LANGGRAPH_USED, LANGGRAPH_BLOCKER
-    rt = get_agent_runtime_v2()
-    return {
-        "ok": True,
-        "agent_v2": {
-            "canonical_for_new_agent_runs": True,
-            "backend": rt.backend,
-            "langgraph_used": LANGGRAPH_USED,
-            "langgraph_blocker": LANGGRAPH_BLOCKER,
-            "runs": len(rt.list_runs()),
-            "trace_available": True,
-            "legacy_agent_status": "legacy_compatible_not_canonical",
-        },
-        "message": "Agent V2 is canonical for new agent operations; legacy agent remains compatible."
-    }
+    return {"ok": True, "agent_v2": _agent_v2_snapshot(), "message": "Agent V2 is canonical for new agent operations; legacy agent remains compatible."}

@@ -41,6 +41,7 @@ from brain.curated_runtime_lookup import (
 )
 from brain.curated_learning_chat_access import answer_chat_probe
 from brain_v9.api_security import require_operator_access, StrictOperatorAccess
+from brain_v9.core.agent_kernel_v2.api_adapter import chat_router as agent_v2_chat_router
 from brain_v9.core.agent_kernel_v2.api_adapter import router as agent_v2_router
 from brain_v9.core.router_entrypoint import handle_user_message
 from brain_v9.config import (
@@ -182,6 +183,7 @@ app.include_router(canary_lookup_read_only_router)
 app.include_router(knowledge_read_api_router)
 app.include_router(openai_compat_router)
 app.include_router(agent_v2_router)
+app.include_router(agent_v2_chat_router)
 
 # UPGRADE: AOS + L2 + Sandbox + EventBus + Settings
 try:
@@ -1113,21 +1115,34 @@ async def v1_agent_status(room_id: str | None = None):
         "status": "running",
         "room_id": room_id,
         "service": "brain_v9",
+        "legacy_agent_status": "legacy_compatible_not_canonical",
+        "canonical_agent_v2": "/v2/agent/status",
+        "canonical_chat_agent": "/v2/chat/agent",
         "ts": datetime.now(timezone.utc).isoformat(),
     }
 
 
 @app.get("/brain-dashboard/agent-v2/status")
 async def brain_dashboard_agent_v2_status():
+    from brain_v9.core.agent_kernel_v2.finalizer import PRIMARY_KIMI_MODEL
     from brain_v9.core.agent_kernel_v2.runtime import get_agent_runtime_v2, LANGGRAPH_USED, LANGGRAPH_BLOCKER
     rt = get_agent_runtime_v2()
+    runs = rt.list_runs()
+    latest = runs[-1] if runs else {}
+    meta = latest.get("provider_metadata") or {}
     return {
         "ok": True,
         "canonical_for_new_agent_runs": True,
         "backend": rt.backend,
         "langgraph_used": LANGGRAPH_USED,
         "langgraph_blocker": LANGGRAPH_BLOCKER,
-        "runs": len(rt.list_runs()),
+        "primary_finalizer_model": PRIMARY_KIMI_MODEL,
+        "latest_provider_used": meta.get("provider_used"),
+        "latest_model_used": meta.get("model_used"),
+        "latest_provider_degraded": meta.get("provider_degraded"),
+        "runs": len(runs),
+        "latest_run_id": latest.get("run_id"),
+        "chat_agent_route": "/v2/chat/agent",
         "legacy_agent_status": "legacy_compatible_not_canonical",
     }
 
