@@ -1,0 +1,21 @@
+{
+  "front": "FRONT-BRAIN-CANONICAL-MEMORY-POST-PROMOTION-QUALITY-EVAL-01",
+  "phase": "POST_PUSH_VERIFICATION",
+  "timestamp_utc": "2026-06-16T14:49:00+00:00",
+  "local_head": "3a2ab50",
+  "remote_head": "3a2ab50",
+  "local_equals_remote": true,
+  "tracked_clean": true,
+  "staged_empty": true,
+  "semantic_lines": 1720,
+  "faiss_ids": 1621,
+  "faiss_ntotal": 1621,
+  "canonical_promotions_verified": 5,
+  "additional_promotions_performed": 0,
+  "canonical_semantic_mutated_this_front": false,
+  "faiss_mutated_this_front": false,
+  "smoke_result": "PASS",
+  "tests_passed": 19,
+  "tests_failed": 0,
+  "verdict": "POST_PUSH_LOCK_VERIFIED"
+}
