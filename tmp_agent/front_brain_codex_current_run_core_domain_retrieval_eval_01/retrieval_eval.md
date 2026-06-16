@@ -1,0 +1,1203 @@
+# Retrieval Eval
+
+```json
+{
+  "auxiliary_classification_hit_rate": 1.0,
+  "auxiliary_tests": [
+    {
+      "domain": "flatbed_trucking_dispatcher_automation_business_operations",
+      "hit": true,
+      "hits": [
+        {
+          "id": "7265b96bc7a895bb088b0915",
+          "score": 0.8779,
+          "snippet": ""
+        },
+        {
+          "id": "37493a55700289dbfa272b09",
+          "score": 0.643,
+          "snippet": ""
+        },
+        {
+          "id": "cf59b0ebc0ecf5cfc34272ca",
+          "score": 0.6362,
+          "snippet": ""
+        }
+      ],
+      "query": "flatbed dispatch tarp securement HOS broker conocimiento auxiliar flatbed"
+    },
+    {
+      "domain": "english_career_professional_communication",
+      "hit": true,
+      "hits": [
+        {
+          "id": "1237cd53c468ae9e30633f86",
+          "score": 0.8424,
+          "snippet": ""
+        },
+        {
+          "id": "2ba87d7c09e913bf5931919e",
+          "score": 0.6931,
+          "snippet": ""
+        },
+        {
+          "id": "cf59b0ebc0ecf5cfc34272ca",
+          "score": 0.6885,
+          "snippet": ""
+        }
+      ],
+      "query": "ingles profesional STAR certificaciones logros conocimiento auxiliar carrera"
+    }
+  ],
+  "core_domain_hit_rate": 1.0,
+  "domain_tests": [
+    {
+      "domain": "brain_architecture_runtime_debugging",
+      "hit": true,
+      "hits": [
+        {
+          "id": "b8e67153c313f9f3d2bf34ef",
+          "score": 0.8139,
+          "snippet": ""
+        },
+        {
+          "id": "e8cff92ee42fa048cb17cb0e",
+          "score": 0.6082,
+          "snippet": ""
+        },
+        {
+          "id": "835b722a8cc9a27ca8e5514c",
+          "score": 0.6024,
+          "snippet": ""
+        }
+      ],
+      "query": "preflight reproducible diff isolation rollback no destructivo debugging Brain"
+    },
+    {
+      "domain": "memory_semantic_faiss_retrieval_governance",
+      "hit": true,
+      "hits": [
+        {
+          "id": "e8cff92ee42fa048cb17cb0e",
+          "score": 0.8127,
+          "snippet": ""
+        },
+        {
+          "id": "8480c034d7c754e54f10d6a8",
+          "score": 0.7184,
+          "snippet": ""
+        },
+        {
+          "id": "b46a0e581235ba55ef14850c",
+          "score": 0.6871,
+          "snippet": ""
+        }
+      ],
+      "query": "semantic_memory.jsonl faiss ids delta rollback snapshot promocion canonica"
+    },
+    {
+      "domain": "finance_trading_research_risk_management",
+      "hit": true,
+      "hits": [
+        {
+          "id": "9d80d429000d4dff10f9f7d8",
+          "score": 0.7916,
+          "snippet": ""
+        },
+        {
+          "id": "cf59b0ebc0ecf5cfc34272ca",
+          "score": 0.791,
+          "snippet": ""
+        },
+        {
+          "id": "bde3b90ee11a05a04cdc2d6b",
+          "score": 0.762,
+          "snippet": ""
+        }
+      ],
+      "query": "OOS debil backtest ejecucion guards revalidacion ordenes reales"
+    },
+    {
+      "domain": "cei_fdot_technical_inspection",
+      "hit": true,
+      "hits": [
+        {
+          "id": "784200cb848f4ad7ebd271cc",
+          "score": 0.8493,
+          "snippet": ""
+        },
+        {
+          "id": "e9cbae37c6f2de6c0223b539",
+          "score": 0.6771,
+          "snippet": ""
+        },
+        {
+          "id": "9cc071ceb7b5c8a57f576b9e",
+          "score": 0.6747,
+          "snippet": ""
+        }
+      ],
+      "query": "CEI FDOT curing strength evidencia aceptacion apertura pago evidencia campo"
+    },
+    {
+      "domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+      "hit": true,
+      "hits": [
+        {
+          "id": "827d8b7a3c29289afefe4dc1",
+          "score": 0.7814,
+          "snippet": ""
+        },
+        {
+          "id": "42f207617a9c088ca7dee691",
+          "score": 0.7643,
+          "snippet": ""
+        },
+        {
+          "id": "23d9c9e75effb8cf03ef6241",
+          "score": 0.7393,
+          "snippet": ""
+        }
+      ],
+      "query": "GitHub repos documentos fuentes oficiales source_id licencia hashes evidencia extract normalize deduplicate provenance scoring"
+    },
+    {
+      "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+      "hit": true,
+      "hits": [
+        {
+          "id": "209d15f73574df1c2dd25bb8",
+          "score": 0.7756,
+          "snippet": ""
+        },
+        {
+          "id": "27b115b7d2a71449d693f197",
+          "score": 0.7268,
+          "snippet": ""
+        },
+        {
+          "id": "890136f233ad9c22cfe53c89",
+          "score": 0.6885,
+          "snippet": ""
+        }
+      ],
+      "query": "autonomia gobernada dashboard visual trace stop pause evidencia errores fallback proveedor visible"
+    }
+  ],
+  "lesson_count": 12,
+  "lesson_tests": [
+    {
+      "candidate_id": "codex_pure_brain_training_cei_fdot_training_1",
+      "domain": "cei_fdot_technical_inspection",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "784200cb848f4ad7ebd271cc",
+          "score": 1.0,
+          "snippet": ""
+        },
+        {
+          "id": "42f207617a9c088ca7dee691",
+          "score": 0.7821,
+          "snippet": ""
+        },
+        {
+          "id": "23d9c9e75effb8cf03ef6241",
+          "score": 0.7642,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "En CEI/FDOT, Brain debe tratar aceptación, apertura y pago como decisiones basadas en evidencia; si falta provenance de campo, medición, curing/strength o aprobación técnica escrita, debe advertir riesgo y escalar formalmente.",
+      "rank": 1,
+      "record_id": "784200cb848f4ad7ebd271cc",
+      "top_hit_id": "784200cb848f4ad7ebd271cc",
+      "top_score": 1.0
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_cei_fdot_training_1",
+      "domain": "cei_fdot_technical_inspection",
+      "exact_hit": false,
+      "hits": [
+        {
+          "id": "318c6d0859213cf877fb9e5d",
+          "score": 0.6734,
+          "snippet": ""
+        },
+        {
+          "id": "5902c0be7390f5463c17fdc9",
+          "score": 0.6665,
+          "snippet": ""
+        },
+        {
+          "id": "56835f1bb5fcc0f630f2a763",
+          "score": 0.6613,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "codex_pure_brain_training_cei_fdot_training_1",
+      "rank": null,
+      "record_id": "784200cb848f4ad7ebd271cc",
+      "top_hit_id": "318c6d0859213cf877fb9e5d",
+      "top_score": 0.6734
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_cei_fdot_training_1",
+      "domain": "cei_fdot_technical_inspection",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "784200cb848f4ad7ebd271cc",
+          "score": 0.7717,
+          "snippet": ""
+        },
+        {
+          "id": "cbab66491455bfecf4a20c45",
+          "score": 0.6315,
+          "snippet": ""
+        },
+        {
+          "id": "a5a451693951a5ca0e7d999b",
+          "score": 0.6181,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "CEI FDOT curing strength evidencia",
+      "rank": 1,
+      "record_id": "784200cb848f4ad7ebd271cc",
+      "top_hit_id": "784200cb848f4ad7ebd271cc",
+      "top_score": 0.7717
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_brain_architecture_training_1",
+      "domain": "brain_architecture_runtime_debugging",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "b8e67153c313f9f3d2bf34ef",
+          "score": 1.0,
+          "snippet": ""
+        },
+        {
+          "id": "9b5f905ebac2960b3b00ad9f",
+          "score": 0.722,
+          "snippet": ""
+        },
+        {
+          "id": "cf59b0ebc0ecf5cfc34272ca",
+          "score": 0.7195,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "Para debugging Brain, Brain debe operar con preflight reproducible, diff isolation, smoke focal y rollback no destructivo; nunca debe mezclar dirty preexistente con el cambio del frente.",
+      "rank": 1,
+      "record_id": "b8e67153c313f9f3d2bf34ef",
+      "top_hit_id": "b8e67153c313f9f3d2bf34ef",
+      "top_score": 1.0
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_brain_architecture_training_1",
+      "domain": "brain_architecture_runtime_debugging",
+      "exact_hit": false,
+      "hits": [
+        {
+          "id": "318c6d0859213cf877fb9e5d",
+          "score": 0.691,
+          "snippet": ""
+        },
+        {
+          "id": "5902c0be7390f5463c17fdc9",
+          "score": 0.6888,
+          "snippet": ""
+        },
+        {
+          "id": "fc2be3598ec03f5086b477ea",
+          "score": 0.6819,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "codex_pure_brain_training_brain_architecture_training_1",
+      "rank": null,
+      "record_id": "b8e67153c313f9f3d2bf34ef",
+      "top_hit_id": "318c6d0859213cf877fb9e5d",
+      "top_score": 0.691
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_brain_architecture_training_1",
+      "domain": "brain_architecture_runtime_debugging",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "b8e67153c313f9f3d2bf34ef",
+          "score": 0.6361,
+          "snippet": ""
+        },
+        {
+          "id": "835b722a8cc9a27ca8e5514c",
+          "score": 0.5287,
+          "snippet": ""
+        },
+        {
+          "id": "ca9eac955e9f1f458c1f15ce",
+          "score": 0.4827,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "preflight reproducible diff isolation",
+      "rank": 1,
+      "record_id": "b8e67153c313f9f3d2bf34ef",
+      "top_hit_id": "b8e67153c313f9f3d2bf34ef",
+      "top_score": 0.6361
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_memory_faiss_governance_training_1",
+      "domain": "memory_semantic_faiss_retrieval_governance",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "e8cff92ee42fa048cb17cb0e",
+          "score": 1.0,
+          "snippet": ""
+        },
+        {
+          "id": "b46a0e581235ba55ef14850c",
+          "score": 0.7944,
+          "snippet": ""
+        },
+        {
+          "id": "512c9b5ef2f4011768be6d17",
+          "score": 0.7627,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "La memoria canónica y FAISS son una unidad de consistencia: Brain solo debe promover candidatos trazables y seguros, con rollback snapshot y semantic_lines_delta == faiss_ids_delta == faiss_ntotal_delta.",
+      "rank": 1,
+      "record_id": "e8cff92ee42fa048cb17cb0e",
+      "top_hit_id": "e8cff92ee42fa048cb17cb0e",
+      "top_score": 1.0
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_memory_faiss_governance_training_1",
+      "domain": "memory_semantic_faiss_retrieval_governance",
+      "exact_hit": false,
+      "hits": [
+        {
+          "id": "318c6d0859213cf877fb9e5d",
+          "score": 0.6853,
+          "snippet": ""
+        },
+        {
+          "id": "5902c0be7390f5463c17fdc9",
+          "score": 0.6725,
+          "snippet": ""
+        },
+        {
+          "id": "controlled_batch_01_memory_faiss_canary_doc",
+          "score": 0.671,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "codex_pure_brain_training_memory_faiss_governance_training_1",
+      "rank": null,
+      "record_id": "e8cff92ee42fa048cb17cb0e",
+      "top_hit_id": "318c6d0859213cf877fb9e5d",
+      "top_score": 0.6853
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_memory_faiss_governance_training_1",
+      "domain": "memory_semantic_faiss_retrieval_governance",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "e8cff92ee42fa048cb17cb0e",
+          "score": 0.6905,
+          "snippet": ""
+        },
+        {
+          "id": "controlled_batch_01_memory_faiss_canary_doc",
+          "score": 0.6251,
+          "snippet": ""
+        },
+        {
+          "id": "8480c034d7c754e54f10d6a8",
+          "score": 0.606,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "semantic_memory.jsonl faiss ids delta",
+      "rank": 1,
+      "record_id": "e8cff92ee42fa048cb17cb0e",
+      "top_hit_id": "e8cff92ee42fa048cb17cb0e",
+      "top_score": 0.6905
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_finance_trading_research_training_1",
+      "domain": "finance_trading_research_risk_management",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "cf59b0ebc0ecf5cfc34272ca",
+          "score": 1.0,
+          "snippet": ""
+        },
+        {
+          "id": "20afe16cd66a9426459b2f45",
+          "score": 0.8438,
+          "snippet": ""
+        },
+        {
+          "id": "bf3011357c8aaf0bfea201e0",
+          "score": 0.8082,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "En investigación de trading, Brain debe separar backtest de ejecución: OOS débil o muestra pequeña exige forensic, guards y revalidación; nunca debe recomendar órdenes reales.",
+      "rank": 1,
+      "record_id": "cf59b0ebc0ecf5cfc34272ca",
+      "top_hit_id": "cf59b0ebc0ecf5cfc34272ca",
+      "top_score": 1.0
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_finance_trading_research_training_1",
+      "domain": "finance_trading_research_risk_management",
+      "exact_hit": false,
+      "hits": [
+        {
+          "id": "318c6d0859213cf877fb9e5d",
+          "score": 0.6515,
+          "snippet": ""
+        },
+        {
+          "id": "5902c0be7390f5463c17fdc9",
+          "score": 0.6382,
+          "snippet": ""
+        },
+        {
+          "id": "fc2be3598ec03f5086b477ea",
+          "score": 0.63,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "codex_pure_brain_training_finance_trading_research_training_1",
+      "rank": null,
+      "record_id": "cf59b0ebc0ecf5cfc34272ca",
+      "top_hit_id": "318c6d0859213cf877fb9e5d",
+      "top_score": 0.6515
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_finance_trading_research_training_1",
+      "domain": "finance_trading_research_risk_management",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "9d80d429000d4dff10f9f7d8",
+          "score": 0.7882,
+          "snippet": ""
+        },
+        {
+          "id": "cf59b0ebc0ecf5cfc34272ca",
+          "score": 0.7582,
+          "snippet": ""
+        },
+        {
+          "id": "20afe16cd66a9426459b2f45",
+          "score": 0.7478,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "OOS debil backtest ejecucion",
+      "rank": 2,
+      "record_id": "cf59b0ebc0ecf5cfc34272ca",
+      "top_hit_id": "9d80d429000d4dff10f9f7d8",
+      "top_score": 0.7882
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_flatbed_trucking_training_1",
+      "domain": "flatbed_trucking_dispatcher_automation_business_operations",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "7265b96bc7a895bb088b0915",
+          "score": 1.0,
+          "snippet": ""
+        },
+        {
+          "id": "e77171819644a47fc55ac37f",
+          "score": 0.7178,
+          "snippet": ""
+        },
+        {
+          "id": "cf59b0ebc0ecf5cfc34272ca",
+          "score": 0.7138,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "Para flatbed dispatch, Brain debe verificar peso, tarp/securement, appointment windows, deadhead, HOS y broker antes de aceptar una carga, aunque la tarifa aparente sea alta.",
+      "rank": 1,
+      "record_id": "7265b96bc7a895bb088b0915",
+      "top_hit_id": "7265b96bc7a895bb088b0915",
+      "top_score": 1.0
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_flatbed_trucking_training_1",
+      "domain": "flatbed_trucking_dispatcher_automation_business_operations",
+      "exact_hit": false,
+      "hits": [
+        {
+          "id": "318c6d0859213cf877fb9e5d",
+          "score": 0.6732,
+          "snippet": ""
+        },
+        {
+          "id": "5902c0be7390f5463c17fdc9",
+          "score": 0.6697,
+          "snippet": ""
+        },
+        {
+          "id": "fc2be3598ec03f5086b477ea",
+          "score": 0.6626,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "codex_pure_brain_training_flatbed_trucking_training_1",
+      "rank": null,
+      "record_id": "7265b96bc7a895bb088b0915",
+      "top_hit_id": "318c6d0859213cf877fb9e5d",
+      "top_score": 0.6732
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_flatbed_trucking_training_1",
+      "domain": "flatbed_trucking_dispatcher_automation_business_operations",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "7265b96bc7a895bb088b0915",
+          "score": 0.8779,
+          "snippet": ""
+        },
+        {
+          "id": "37493a55700289dbfa272b09",
+          "score": 0.643,
+          "snippet": ""
+        },
+        {
+          "id": "cf59b0ebc0ecf5cfc34272ca",
+          "score": 0.6362,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "flatbed dispatch tarp securement HOS broker conocimiento auxiliar flatbed",
+      "rank": 1,
+      "record_id": "7265b96bc7a895bb088b0915",
+      "top_hit_id": "7265b96bc7a895bb088b0915",
+      "top_score": 0.8779
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_english_career_training_1",
+      "domain": "english_career_professional_communication",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "1237cd53c468ae9e30633f86",
+          "score": 1.0,
+          "snippet": ""
+        },
+        {
+          "id": "1788dcdaf8bf101b304a2cbe",
+          "score": 0.7463,
+          "snippet": ""
+        },
+        {
+          "id": "784200cb848f4ad7ebd271cc",
+          "score": 0.744,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "En inglés profesional/carrera, Brain debe ayudar a Cesar con tono claro, evidencia y estructura STAR, sin inventar certificaciones, experiencia o logros.",
+      "rank": 1,
+      "record_id": "1237cd53c468ae9e30633f86",
+      "top_hit_id": "1237cd53c468ae9e30633f86",
+      "top_score": 1.0
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_english_career_training_1",
+      "domain": "english_career_professional_communication",
+      "exact_hit": false,
+      "hits": [
+        {
+          "id": "5902c0be7390f5463c17fdc9",
+          "score": 0.6575,
+          "snippet": ""
+        },
+        {
+          "id": "318c6d0859213cf877fb9e5d",
+          "score": 0.6561,
+          "snippet": ""
+        },
+        {
+          "id": "fc2be3598ec03f5086b477ea",
+          "score": 0.6559,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "codex_pure_brain_training_english_career_training_1",
+      "rank": null,
+      "record_id": "1237cd53c468ae9e30633f86",
+      "top_hit_id": "5902c0be7390f5463c17fdc9",
+      "top_score": 0.6575
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_english_career_training_1",
+      "domain": "english_career_professional_communication",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "1237cd53c468ae9e30633f86",
+          "score": 0.8424,
+          "snippet": ""
+        },
+        {
+          "id": "2ba87d7c09e913bf5931919e",
+          "score": 0.6931,
+          "snippet": ""
+        },
+        {
+          "id": "cf59b0ebc0ecf5cfc34272ca",
+          "score": 0.6885,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "ingles profesional STAR certificaciones logros conocimiento auxiliar carrera",
+      "rank": 1,
+      "record_id": "1237cd53c468ae9e30633f86",
+      "top_hit_id": "1237cd53c468ae9e30633f86",
+      "top_score": 0.8424
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_1",
+      "domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "827d8b7a3c29289afefe4dc1",
+          "score": 1.0,
+          "snippet": ""
+        },
+        {
+          "id": "2ba87d7c09e913bf5931919e",
+          "score": 0.7384,
+          "snippet": ""
+        },
+        {
+          "id": "c400f2c0d40111e751ec07d0",
+          "score": 0.7328,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "Brain debe tratar GitHub, repositorios, documentos y fuentes oficiales como ingesta externa gobernada: registrar source_id, URL o path, licencia/estado, hashes y evidencia antes de convertir texto en candidato curado.",
+      "rank": 1,
+      "record_id": "827d8b7a3c29289afefe4dc1",
+      "top_hit_id": "827d8b7a3c29289afefe4dc1",
+      "top_score": 1.0
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_1",
+      "domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+      "exact_hit": false,
+      "hits": [
+        {
+          "id": "318c6d0859213cf877fb9e5d",
+          "score": 0.6853,
+          "snippet": ""
+        },
+        {
+          "id": "fc2be3598ec03f5086b477ea",
+          "score": 0.6767,
+          "snippet": ""
+        },
+        {
+          "id": "5902c0be7390f5463c17fdc9",
+          "score": 0.6747,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_1",
+      "rank": null,
+      "record_id": "827d8b7a3c29289afefe4dc1",
+      "top_hit_id": "318c6d0859213cf877fb9e5d",
+      "top_score": 0.6853
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_1",
+      "domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "827d8b7a3c29289afefe4dc1",
+          "score": 0.8281,
+          "snippet": ""
+        },
+        {
+          "id": "23d9c9e75effb8cf03ef6241",
+          "score": 0.7044,
+          "snippet": ""
+        },
+        {
+          "id": "784200cb848f4ad7ebd271cc",
+          "score": 0.6837,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "GitHub repos documentos fuentes oficiales source_id licencia hashes evidencia",
+      "rank": 1,
+      "record_id": "827d8b7a3c29289afefe4dc1",
+      "top_hit_id": "827d8b7a3c29289afefe4dc1",
+      "top_score": 0.8281
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_2",
+      "domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "42f207617a9c088ca7dee691",
+          "score": 1.0,
+          "snippet": ""
+        },
+        {
+          "id": "23d9c9e75effb8cf03ef6241",
+          "score": 0.7904,
+          "snippet": ""
+        },
+        {
+          "id": "784200cb848f4ad7ebd271cc",
+          "score": 0.7821,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "La promocion desde fuentes externas debe pasar por extract, normalize, deduplicate, provenance, scoring, no-go checks y approval/dry-run antes de cualquier escritura canonica o FAISS.",
+      "rank": 1,
+      "record_id": "42f207617a9c088ca7dee691",
+      "top_hit_id": "42f207617a9c088ca7dee691",
+      "top_score": 1.0
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_2",
+      "domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+      "exact_hit": false,
+      "hits": [
+        {
+          "id": "318c6d0859213cf877fb9e5d",
+          "score": 0.6818,
+          "snippet": ""
+        },
+        {
+          "id": "fc2be3598ec03f5086b477ea",
+          "score": 0.6743,
+          "snippet": ""
+        },
+        {
+          "id": "5902c0be7390f5463c17fdc9",
+          "score": 0.6708,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_2",
+      "rank": null,
+      "record_id": "42f207617a9c088ca7dee691",
+      "top_hit_id": "318c6d0859213cf877fb9e5d",
+      "top_score": 0.6818
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_2",
+      "domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+      "exact_hit": false,
+      "hits": [
+        {
+          "id": "827d8b7a3c29289afefe4dc1",
+          "score": 0.8281,
+          "snippet": ""
+        },
+        {
+          "id": "23d9c9e75effb8cf03ef6241",
+          "score": 0.7044,
+          "snippet": ""
+        },
+        {
+          "id": "784200cb848f4ad7ebd271cc",
+          "score": 0.6837,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": true,
+      "query": "GitHub repos documentos fuentes oficiales source_id licencia hashes evidencia",
+      "rank": null,
+      "record_id": "42f207617a9c088ca7dee691",
+      "top_hit_id": "827d8b7a3c29289afefe4dc1",
+      "top_score": 0.8281
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_3",
+      "domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "23d9c9e75effb8cf03ef6241",
+          "score": 1.0,
+          "snippet": ""
+        },
+        {
+          "id": "42f207617a9c088ca7dee691",
+          "score": 0.7904,
+          "snippet": ""
+        },
+        {
+          "id": "784200cb848f4ad7ebd271cc",
+          "score": 0.7642,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "Cuando una fuente externa no esta disponible, es ambigua o carece de licencia/provenance, Brain debe responder con limitacion explicita y no inventar conocimiento ni evidencia.",
+      "rank": 1,
+      "record_id": "23d9c9e75effb8cf03ef6241",
+      "top_hit_id": "23d9c9e75effb8cf03ef6241",
+      "top_score": 1.0
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_3",
+      "domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+      "exact_hit": false,
+      "hits": [
+        {
+          "id": "318c6d0859213cf877fb9e5d",
+          "score": 0.6803,
+          "snippet": ""
+        },
+        {
+          "id": "fc2be3598ec03f5086b477ea",
+          "score": 0.6743,
+          "snippet": ""
+        },
+        {
+          "id": "5902c0be7390f5463c17fdc9",
+          "score": 0.6714,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_3",
+      "rank": null,
+      "record_id": "23d9c9e75effb8cf03ef6241",
+      "top_hit_id": "318c6d0859213cf877fb9e5d",
+      "top_score": 0.6803
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_3",
+      "domain": "external_source_learning_pipeline_github_repo_docs_official_sources",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "827d8b7a3c29289afefe4dc1",
+          "score": 0.8281,
+          "snippet": ""
+        },
+        {
+          "id": "23d9c9e75effb8cf03ef6241",
+          "score": 0.7044,
+          "snippet": ""
+        },
+        {
+          "id": "784200cb848f4ad7ebd271cc",
+          "score": 0.6837,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": true,
+      "query": "GitHub repos documentos fuentes oficiales source_id licencia hashes evidencia",
+      "rank": 2,
+      "record_id": "23d9c9e75effb8cf03ef6241",
+      "top_hit_id": "827d8b7a3c29289afefe4dc1",
+      "top_score": 0.8281
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_1",
+      "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "209d15f73574df1c2dd25bb8",
+          "score": 1.0,
+          "snippet": ""
+        },
+        {
+          "id": "12bb117199d1f574a6baea9f",
+          "score": 0.7585,
+          "snippet": ""
+        },
+        {
+          "id": "501454201cfc737858f72052",
+          "score": 0.7434,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "La autonomia gobernada debe ser observable: cada ciclo debe exponer estado, stop/pause, evidencia, limites, errores y resultado sin ocultar fallback ni fallos de proveedor.",
+      "rank": 1,
+      "record_id": "209d15f73574df1c2dd25bb8",
+      "top_hit_id": "209d15f73574df1c2dd25bb8",
+      "top_score": 1.0
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_1",
+      "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+      "exact_hit": false,
+      "hits": [
+        {
+          "id": "318c6d0859213cf877fb9e5d",
+          "score": 0.6849,
+          "snippet": ""
+        },
+        {
+          "id": "cbab66491455bfecf4a20c45",
+          "score": 0.6658,
+          "snippet": ""
+        },
+        {
+          "id": "016f7d1cdcd61e0d2d8deb22",
+          "score": 0.6589,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_1",
+      "rank": null,
+      "record_id": "209d15f73574df1c2dd25bb8",
+      "top_hit_id": "318c6d0859213cf877fb9e5d",
+      "top_score": 0.6849
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_1",
+      "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "209d15f73574df1c2dd25bb8",
+          "score": 0.7403,
+          "snippet": ""
+        },
+        {
+          "id": "27b115b7d2a71449d693f197",
+          "score": 0.7214,
+          "snippet": ""
+        },
+        {
+          "id": "890136f233ad9c22cfe53c89",
+          "score": 0.6943,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "autonomia gobernada dashboard visual trace stop pause evidencia errores",
+      "rank": 1,
+      "record_id": "209d15f73574df1c2dd25bb8",
+      "top_hit_id": "209d15f73574df1c2dd25bb8",
+      "top_score": 0.7403
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_2",
+      "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "27b115b7d2a71449d693f197",
+          "score": 1.0,
+          "snippet": ""
+        },
+        {
+          "id": "b626305830f222cbd7b62a6b",
+          "score": 0.7735,
+          "snippet": ""
+        },
+        {
+          "id": "362c865ebf89cc4eb67e85d5",
+          "score": 0.7657,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "El dashboard y la visual trace console deben mostrar rutas, herramientas, permisos, memoria usada y acciones bloqueadas, sin exponer chain-of-thought ni secretos.",
+      "rank": 1,
+      "record_id": "27b115b7d2a71449d693f197",
+      "top_hit_id": "27b115b7d2a71449d693f197",
+      "top_score": 1.0
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_2",
+      "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+      "exact_hit": false,
+      "hits": [
+        {
+          "id": "318c6d0859213cf877fb9e5d",
+          "score": 0.6869,
+          "snippet": ""
+        },
+        {
+          "id": "016f7d1cdcd61e0d2d8deb22",
+          "score": 0.6654,
+          "snippet": ""
+        },
+        {
+          "id": "cbab66491455bfecf4a20c45",
+          "score": 0.6649,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_2",
+      "rank": null,
+      "record_id": "27b115b7d2a71449d693f197",
+      "top_hit_id": "318c6d0859213cf877fb9e5d",
+      "top_score": 0.6869
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_2",
+      "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "209d15f73574df1c2dd25bb8",
+          "score": 0.7403,
+          "snippet": ""
+        },
+        {
+          "id": "27b115b7d2a71449d693f197",
+          "score": 0.7214,
+          "snippet": ""
+        },
+        {
+          "id": "890136f233ad9c22cfe53c89",
+          "score": 0.6943,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": true,
+      "query": "autonomia gobernada dashboard visual trace stop pause evidencia errores",
+      "rank": 2,
+      "record_id": "27b115b7d2a71449d693f197",
+      "top_hit_id": "209d15f73574df1c2dd25bb8",
+      "top_score": 0.7403
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_3",
+      "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+      "exact_hit": true,
+      "hits": [
+        {
+          "id": "9cbef09703ef012f46184078",
+          "score": 1.0,
+          "snippet": ""
+        },
+        {
+          "id": "648c410d40cdc748a321e2d7",
+          "score": 0.7708,
+          "snippet": ""
+        },
+        {
+          "id": "501454201cfc737858f72052",
+          "score": 0.7608,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "La auto-mejora solo puede avanzar con ciclos acotados, pruebas reproducibles, rollback, commit quirurgico y aprobacion humana para cambios de riesgo alto.",
+      "rank": 1,
+      "record_id": "9cbef09703ef012f46184078",
+      "top_hit_id": "9cbef09703ef012f46184078",
+      "top_score": 1.0
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_3",
+      "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+      "exact_hit": false,
+      "hits": [
+        {
+          "id": "318c6d0859213cf877fb9e5d",
+          "score": 0.6821,
+          "snippet": ""
+        },
+        {
+          "id": "cbab66491455bfecf4a20c45",
+          "score": 0.6638,
+          "snippet": ""
+        },
+        {
+          "id": "016f7d1cdcd61e0d2d8deb22",
+          "score": 0.6633,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": false,
+      "query": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_3",
+      "rank": null,
+      "record_id": "9cbef09703ef012f46184078",
+      "top_hit_id": "318c6d0859213cf877fb9e5d",
+      "top_score": 0.6821
+    },
+    {
+      "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_3",
+      "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+      "exact_hit": false,
+      "hits": [
+        {
+          "id": "209d15f73574df1c2dd25bb8",
+          "score": 0.7403,
+          "snippet": ""
+        },
+        {
+          "id": "27b115b7d2a71449d693f197",
+          "score": 0.7214,
+          "snippet": ""
+        },
+        {
+          "id": "890136f233ad9c22cfe53c89",
+          "score": 0.6943,
+          "snippet": ""
+        }
+      ],
+      "partial_hit": true,
+      "query": "autonomia gobernada dashboard visual trace stop pause evidencia errores",
+      "rank": null,
+      "record_id": "9cbef09703ef012f46184078",
+      "top_hit_id": "209d15f73574df1c2dd25bb8",
+      "top_score": 0.7403
+    }
+  ],
+  "lesson_top1_hit_rate": 1.0,
+  "lesson_top3_hit_rate": 1.0,
+  "missed_records": [],
+  "weak_records": []
+}
+```

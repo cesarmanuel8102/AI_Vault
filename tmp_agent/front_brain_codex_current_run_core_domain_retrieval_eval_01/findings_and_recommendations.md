@@ -1,0 +1,23 @@
+# Findings and Recommendations
+
+```json
+{
+  "another_training_loop_justified": false,
+  "domains_need_more_training": [
+    "autonomy_dashboard_visual_trace_self_improvement_governance",
+    "brain_architecture_runtime_debugging",
+    "cei_fdot_technical_inspection",
+    "external_source_learning_pipeline_github_repo_docs_official_sources",
+    "finance_trading_research_risk_management",
+    "memory_semantic_faiss_retrieval_governance"
+  ],
+  "missed_records": [],
+  "next_loop_scope": "Do not run another training loop yet; first align/verify Kimi-only answer route and explicit memory-use path.",
+  "promoted_memory_revision_needed": [],
+  "recommended_next_front": "FRONT-BRAIN-CODEX-CURRENT-RUN-MEMORY-USE-ALIGNMENT-PLAN-01",
+  "retrievable_memories": 12,
+  "weak_records": [],
+  "what_did_not_improve": "Brain chat provider reliability is not fully stable under evaluation load; not all answer/safety questions confirmed Kimi K2.6 cloud. Direct chat does not prove automatic memory injection.",
+  "what_improved": "The 12 recent lessons are present and semantic retrieval is available. The two missing core domains are represented as core; flatbed and English remain auxiliary."
+}
+```
