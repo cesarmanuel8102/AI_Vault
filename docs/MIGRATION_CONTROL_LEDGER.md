@@ -8805,3 +8805,16 @@ FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01 -- requires explicit 
 - safety_regression: true
 - next: FRONT-BRAIN-CODEX-CURRENT-RUN-MEMORY-USE-ALIGNMENT-PLAN-01
 
+## BRAIN-AGENT-FULL-REBUILD-LANGGRAPH-RECURSIVE-CLOSEOUT-01 — Agent V2 Full Rebuild
+
+- timestamp_utc: 2026-06-16T21:59:54.843903Z
+- Agent V2 implemented: true
+- canonical_for_new_agent_runs: true
+- langgraph_used: true
+- legacy_agent_status: legacy_compatible_not_canonical
+- endpoints: /v2/agent/* plus /brain-dashboard/agent-v2/status
+- live_server_restart_required: true
+- benchmark: 12/12 threshold_met=True
+- semantic_faiss_unchanged: True
+- autonomous_journal_append_included: True append_only_verified=True
+- next: RESTART-BRAIN-8091-LOAD-AGENT-V2-ROUTES-01

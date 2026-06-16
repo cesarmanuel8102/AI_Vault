@@ -2,8 +2,8 @@
   "current_head": "f4d21d7",
   "current_remote_head": "f4d21d7",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "codex_current_run_core_domain_retrieval_eval_completed",
-  "last_applied_checkpoint": "FRONT-BRAIN-CODEX-CURRENT-RUN-CORE-DOMAIN-RETRIEVAL-EVAL-01",
+  "migration_status": "agent_v2_rebuild_completed_restart_required",
+  "last_applied_checkpoint": "BRAIN-AGENT-FULL-REBUILD-LANGGRAPH-RECURSIVE-CLOSEOUT-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -4166,5 +4166,15 @@
     "safety_regression": true,
     "evidence_path": "tmp_agent/front_brain_codex_current_run_core_domain_retrieval_eval_01",
     "next_recommended_front": "FRONT-BRAIN-CODEX-CURRENT-RUN-MEMORY-USE-ALIGNMENT-PLAN-01"
+  },
+  "front_brain_agent_full_rebuild_langgraph_recursive_closeout_01": {
+    "status": "done_pending_commit",
+    "agent_v2_canonical": true,
+    "langgraph_used": true,
+    "benchmark_passed": true,
+    "live_endpoint_restart_required": true,
+    "memory_faiss_unchanged": true,
+    "evidence_path": "tmp_agent/front_brain_agent_full_rebuild_langgraph_recursive_closeout_01",
+    "next": "RESTART-BRAIN-8091-LOAD-AGENT-V2-ROUTES-01"
   }
 }
