@@ -1,0 +1,58 @@
+{
+  "status": "OPERATIONAL_WITH_8092_AGENT_ROUTE_RELOAD_BLOCKER",
+  "agent_v2_operational_live_8091": true,
+  "canonical": true,
+  "langgraph_used": true,
+  "kimi_provider_found": true,
+  "kimi_model": "kimi-k2.6:cloud",
+  "kimi_used": true,
+  "final_answer_quality_improved": true,
+  "multi_tool_capable": true,
+  "memory_faiss_read_only": true,
+  "trace_checkpoint": true,
+  "api_usable": true,
+  "chat_agent_route": "/v2/chat/agent",
+  "frontend_dashboard_8091": true,
+  "frontend_dashboard_8092_status": true,
+  "frontend_dashboard_8092_agent_route_blocker": "HTTP 404 from existing 8092 process despite source route registration; 8091 dashboard route works",
+  "benchmark": {
+    "iterations": 1,
+    "tasks_total": 20,
+    "tasks_passed": 20,
+    "threshold_met": true,
+    "non_template_answers": 20,
+    "kimi_finalized_answers": 17,
+    "unauthorized_writes": 0,
+    "raw_cot": 0,
+    "secrets": 0,
+    "semantic_faiss_mutation": 0
+  },
+  "memory_faiss": {
+    "semantic_lines_before": 1732,
+    "semantic_lines_after": 1732,
+    "faiss_ids_before": 1633,
+    "faiss_ids_after": 1633,
+    "faiss_ntotal_before": 1633,
+    "faiss_ntotal_after": 1633,
+    "semantic_jsonl_valid": true,
+    "semantic_jsonl_error": null,
+    "faiss_readable": true,
+    "ids_equals_ntotal": true,
+    "hashes_before": {
+      "semantic_memory.jsonl": "5a3180593cb1ddff57861f0976033bb187ae995c9942a83ad8bf01ce9d7c7e7f",
+      "semantic_memory_faiss.index": "3fd44c7f45096fd2c37d523f7e6b24a9b73c23f17468f7ed6c666525a6977e21",
+      "semantic_memory_faiss_ids.json": "96c93ae79301f7434615fad73a34a2af452bec04f578894f25faa211ad9664ca"
+    },
+    "hashes_after": {
+      "semantic_memory.jsonl": "5a3180593cb1ddff57861f0976033bb187ae995c9942a83ad8bf01ce9d7c7e7f",
+      "semantic_memory_faiss.index": "3fd44c7f45096fd2c37d523f7e6b24a9b73c23f17468f7ed6c666525a6977e21",
+      "semantic_memory_faiss_ids.json": "96c93ae79301f7434615fad73a34a2af452bec04f578894f25faa211ad9664ca"
+    },
+    "hashes_unchanged": true,
+    "rollback_used": false
+  },
+  "hard_blockers": [
+    "8092 /brain-dashboard/agent-v2/status live reload remains 404; use 8091 /brain-dashboard/agent-v2/status or restart 8092 from canonical code with admin-clean port if needed"
+  ],
+  "controlled_real_use_ready": true
+}

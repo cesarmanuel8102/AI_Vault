@@ -1,0 +1,13 @@
+{
+  "implemented": true,
+  "primary_model": "kimi-k2.6:cloud",
+  "provider_path": "Ollama /api/chat think:false",
+  "metadata_returned": true,
+  "fallback_explicit": true,
+  "template_removed": true,
+  "raw_cot_blocked": true,
+  "files": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py"
+  ]
+}

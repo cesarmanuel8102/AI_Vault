@@ -1,0 +1,6 @@
+# Multitool Planner Upgrade
+
+- implemented: True
+- planner_classes: ['repo_audit', 'code_search', 'endpoint_probe', 'memory_question', 'dashboard_diagnosis', 'provider_diagnosis', 'frontend_diagnosis', 'smoke_test', 'documentation_task', 'safe_patch_dry_run', 'approval_required_write', 'general_reasoning']
+- multi_tool_execution: True
+- files: ['tmp_agent/brain_v9/core/agent_kernel_v2/planner.py', 'tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py']

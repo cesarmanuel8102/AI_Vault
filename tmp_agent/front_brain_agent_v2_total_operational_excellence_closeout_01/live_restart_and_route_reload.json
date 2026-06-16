@@ -1,0 +1,18 @@
+{
+  "stopped_listeners": [
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 8091,
+      "OwningProcess": 160360
+    }
+  ],
+  "started_process_id": 204856,
+  "health_ok": true,
+  "health": {
+    "status": "healthy",
+    "sessions": 1,
+    "version": "9.0.0",
+    "safe_mode": false
+  },
+  "log": "C:\\AI_VAULT_CANONICAL\\tmp_agent\\front_brain_agent_v2_total_operational_excellence_closeout_01\\server_8091.log"
+}

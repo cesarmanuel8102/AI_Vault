@@ -1,0 +1,170 @@
+{
+  "probes": {
+    "8091 /health": {
+      "ok": true,
+      "status": 200,
+      "body_preview": "{\"status\":\"healthy\",\"sessions\":1,\"version\":\"9.0.0\",\"safe_mode\":false}"
+    },
+    "8091 /v2/agent/status": {
+      "ok": true,
+      "status": 200,
+      "body_preview": "{\"ok\":true,\"canonical_for_new_agent_runs\":true,\"backend\":\"langgraph\",\"langgraph_used\":true,\"langgraph_blocker\":null,\"runs\":22,\"legacy_agent_status\":\"legacy_compatible_not_canonical\"}"
+    },
+    "8091 /v2/agent/capabilities": {
+      "ok": true,
+      "status": 200,
+      "body_preview": "{\"ok\":true,\"canonical\":true,\"version\":\"agent_kernel_v2.0-langgraph-compatible\",\"capabilities\":[{\"name\":\"repo_status_read\",\"description\":\"Read git status and HEAD\",\"risk_level\":\"low\",\"read_only\":true,\"requires_approval\":false,\"allowed_modes\":[\"read_only\",\"dry_run\",\"approval_required\",\"write_allowed\"]},{\"name\":\"file_read\",\"description\":\"Read a safe text file\",\"risk_level\":\"low\",\"read_only\":true,\"requires_approval\":false,\"allowed_modes\":[\"read_only\",\"dry_run\"]},{\"name\":\"grep_search\",\"description\":\"Search repository text with rg\",\"risk_level\":\"low\",\"read_only\":true,\"requires_approval\":false,\"allowed_modes\":[\"read_only\",\"dry_run\"]},{\"name\":\"route_probe\",\"description\":\"Probe a local HTTP route\",\"risk_level\":\"low\",\"read_only\":true,\"requires_approval\":false,\"allowed_modes\":[\"read_only\",\"dry_run\"]},{\"name\":\"semantic_retrieve\",\"description\":\"Read-only semantic retrieval\",\"risk_level\":\"low\",\"read_only\":true,\"requires_approval\":false,\"allowed_modes\":[\"read_only\",\"dry_run\"]},{\"name\":\"smoke_test_rea"
+    },
+    "8091 /brain-dashboard/agent-v2/status": {
+      "ok": true,
+      "status": 200,
+      "body_preview": "{\"ok\":true,\"canonical_for_new_agent_runs\":true,\"backend\":\"langgraph\",\"langgraph_used\":true,\"langgraph_blocker\":null,\"runs\":22,\"legacy_agent_status\":\"legacy_compatible_not_canonical\"}"
+    },
+    "8091 /ui/": {
+      "ok": true,
+      "status": 200,
+      "body_preview": "<!DOCTYPE html>\r\n<html lang=\"es\">\r\n<head>\r\n<meta charset=\"UTF-8\">\r\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n<title>Brain Chat V9</title>\r\n<style>\r\n  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }\r\n\r\n  :root {\r\n    --bg:       #0f1117;\r\n    --surface:  #1a1d27;\r\n    --surface2: #22263a;\r\n    --border:   #2e3350;\r\n    --accent:   #6c63ff;\r\n    --accent2:  #9d97ff;\r\n    --text:     #e4e6f0;\r\n    --text2:    #8b90b0;\r\n    --green:    #3ecf8e;\r\n    --red:      #f06060;\r\n    --amber:    #f5a623;\r\n    --radius:   12px;\r\n    --font:     -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;\r\n  }\r\n\r\n  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; height: 100vh; display: flex; flex-direction: column; }\r\n\r\n  /* Header */\r\n  header {\r\n    background: var(--surface);\r\n    border-bottom: 1px solid var(--border);\r\n    padding: 12px 20px;\r\n    display: flex;\r\n    align-items: center;\r\n    gap: "
+    },
+    "8091 /dashboard": {
+      "ok": true,
+      "status": 200,
+      "body_preview": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>AI_VAULT Command Center</title>\n<link rel=\"icon\" type=\"image/svg+xml\" href=\"/ui/favicon.svg\">\n<script src=\"/ui/chart.umd.min.js\"></script>\n<link rel=\"stylesheet\" href=\"/ui/dashboard_core.css\">\n<link rel=\"stylesheet\" href=\"/ui/dashboard_accessibility.css\">\n</head>\n<body>\n\n<!-- ═══ Sidebar ═══ -->\n<div class=\"sidebar\">\n  <div class=\"sidebar-brand\">\n    <h1>AI_VAULT</h1>\n    <div class=\"version\">Command Center v2.0</div>\n  </div>\n  <div class=\"sidebar-section\">\n    <div class=\"sidebar-section-label\">Monitor</div>\n    <a class=\"sidebar-link active\" onclick=\"showPanel('overview')\">\n      <span class=\"icon\">&#9632;</span> Overview\n    </a>\n    <a class=\"sidebar-link\" onclick=\"showPanel('platforms')\">\n      <span class=\"icon\">&#9670;</span> Platforms\n    </a>\n    <a class=\"sidebar-link\" onclick=\"showPanel('strategy')\">\n      <span class=\"icon\">&#9733;</s"
+    },
+    "8091 POST /v2/agent/runs": {
+      "ok": true,
+      "status": 200,
+      "body_preview": "{\"ok\":true,\"run\":{\"run_id\":\"agv2_f8c48e8e9f48b839\",\"goal\":\"Live baseline probe for Agent V2 route health and trace.\",\"mode\":\"read_only\",\"user_id\":\"codex_closeout\",\"status\":\"created\",\"created_utc\":\"2026-06-16T23:00:47.812325Z\",\"updated_utc\":\"2026-06-16T23:00:47.812325Z\",\"plan\":[],\"final_answer\":null,\"provider\":\"structured_operational_finalizer\",\"safety_flags\":[],\"canonical_agent\":true,\"agent_version\":\"agent_kernel_v2.0-langgraph-compatible\"}}",
+      "json": {
+        "ok": true,
+        "run": {
+          "run_id": "agv2_f8c48e8e9f48b839",
+          "goal": "Live baseline probe for Agent V2 route health and trace.",
+          "mode": "read_only",
+          "user_id": "codex_closeout",
+          "status": "created",
+          "created_utc": "2026-06-16T23:00:47.812325Z",
+          "updated_utc": "2026-06-16T23:00:47.812325Z",
+          "plan": [],
+          "final_answer": null,
+          "provider": "structured_operational_finalizer",
+          "safety_flags": [],
+          "canonical_agent": true,
+          "agent_version": "agent_kernel_v2.0-langgraph-compatible"
+        }
+      }
+    },
+    "8091 POST /plan": {
+      "ok": true,
+      "status": 200,
+      "body_preview": "{\"ok\":true,\"run\":{\"agent_version\":\"agent_kernel_v2.0-langgraph-compatible\",\"canonical_agent\":true,\"created_utc\":\"2026-06-16T23:00:47.812325Z\",\"final_answer\":null,\"goal\":\"Live baseline probe for Agent V2 route health and trace.\",\"mode\":\"read_only\",\"plan\":[{\"step_id\":\"plan\",\"kind\":\"plan\",\"title\":\"Create operational plan\",\"status\":\"planned\"},{\"step_id\":\"retrieve\",\"kind\":\"memory\",\"title\":\"Read-only memory retrieval\",\"status\":\"planned\",\"tool_name\":\"semantic_retrieve\",\"input\":{\"query\":\"Live baseline probe for Agent V2 route health and trace.\",\"top_k\":3}},{\"step_id\":\"grep_chat\",\"kind\":\"tool\",\"title\":\"Find route implementation\",\"status\":\"planned\",\"tool_name\":\"grep_search\",\"input\":{\"pattern\":\"/chat|def chat|@app.post\",\"glob\":\"*.py\"}},{\"step_id\":\"route_probe\",\"kind\":\"tool\",\"title\":\"Probe local route\",\"status\":\"planned\",\"tool_name\":\"route_probe\",\"input\":{\"url\":\"http://127.0.0.1:8091/health\"}}],\"provider\":\"structured_operational_finalizer\",\"run_id\":\"agv2_f8c48e8e9f48b839\",\"safety_flags\":[],\"status",
+      "json": {
+        "ok": true,
+        "run": {
+          "agent_version": "agent_kernel_v2.0-langgraph-compatible",
+          "canonical_agent": true,
+          "created_utc": "2026-06-16T23:00:47.812325Z",
+          "final_answer": null,
+          "goal": "Live baseline probe for Agent V2 route health and trace.",
+          "mode": "read_only",
+          "plan": [
+            {
+              "step_id": "plan",
+              "kind": "plan",
+              "title": "Create operational plan",
+              "status": "planned"
+            },
+            {
+              "step_id": "retrieve",
+              "kind": "memory",
+              "title": "Read-only memory retrieval",
+              "status": "planned",
+              "tool_name": "semantic_retrieve",
+              "input": {
+                "query": "Live baseline probe for Agent V2 route health and trace.",
+                "top_k": 3
+              }
+            },
+            {
+              "step_id": "grep_chat",
+              "kind": "tool",
+              "title": "Find route implementation",
+              "status": "planned",
+              "tool_name": "grep_search",
+              "input": {
+                "pattern": "/chat|def chat|@app.post",
+                "glob": "*.py"
+              }
+            },
+            {
+              "step_id": "route_probe",
+              "kind": "tool",
+              "title": "Probe local route",
+              "status": "planned",
+              "tool_name": "route_probe",
+              "input": {
+                "url": "http://127.0.0.1:8091/health"
+              }
+            }
+          ],
+          "provider": "structured_operational_finalizer",
+          "run_id": "agv2_f8c48e8e9f48b839",
+          "safety_flags": [],
+          "status": "planned",
+          "updated_utc": "2026-06-16T23:00:47.828503Z",
+          "user_id": "codex_closeout"
+        }
+      }
+    },
+    "8091 POST /execute": {
+      "ok": true,
+      "status": 200,
+      "body_preview": "{\"ok\":true,\"run\":{\"agent_version\":\"agent_kernel_v2.0-langgraph-compatible\",\"canonical_agent\":true,\"created_utc\":\"2026-06-16T23:00:47.812325Z\",\"final_answer\":\"Agent V2 operational result.\\nGoal: Live baseline probe for Agent V2 route health and trace.\\nMode: read_only.\\nMemory retrieval: 3 hit(s), read-only.\\nNo semantic/FAISS write or trading action was performed.\",\"goal\":\"Live baseline probe for Agent V2 route health and trace.\",\"mode\":\"read_only\",\"plan\":[{\"kind\":\"plan\",\"status\":\"completed\",\"step_id\":\"plan\",\"title\":\"Create operational plan\"},{\"input\":{\"query\":\"Live baseline probe for Agent V2 route health and trace.\",\"top_k\":3},\"kind\":\"memory\",\"status\":\"completed\",\"step_id\":\"retrieve\",\"title\":\"Read-only memory retrieval\",\"tool_name\":\"semantic_retrieve\",\"output\":{\"tool_name\":\"semantic_retrieve\",\"ok\":true,\"result\":{\"ok\":true,\"degraded\":false,\"backend\":\"faiss\",\"hits\":[{\"id\":\"5eb050fcc96b08da864ec66f\",\"score\":0.6449,\"source\":\"canonical_memory_promotion\",\"session_id\":\"FRONT-BRAIN-CANONICAL",
+      "json": null
+    },
+    "8091 GET /trace": {
+      "ok": true,
+      "status": 200,
+      "body_preview": "{\"ok\":true,\"run_id\":\"agv2_f8c48e8e9f48b839\",\"trace\":[{\"data\":{\"goal_preview\":\"Live baseline probe for Agent V2 route health and trace.\",\"mode\":\"read_only\"},\"event_type\":\"run_created\",\"message\":\"Agent V2 run created\",\"run_id\":\"agv2_f8c48e8e9f48b839\",\"step_id\":null,\"timestamp_utc\":\"2026-06-16T23:00:47.819324Z\"},{\"data\":{\"step_count\":4},\"event_type\":\"plan_created\",\"message\":\"Plan created\",\"run_id\":\"agv2_f8c48e8e9f48b839\",\"step_id\":null,\"timestamp_utc\":\"2026-06-16T23:00:47.840890Z\"},{\"data\":{\"query\":\"Live baseline probe for Agent V2 route health and trace.\"},\"event_type\":\"memory_retrieval_started\",\"message\":\"Memory retrieval started\",\"run_id\":\"agv2_f8c48e8e9f48b839\",\"step_id\":null,\"timestamp_utc\":\"2026-06-16T23:00:47.862601Z\"},{\"data\":{\"degraded\":false,\"hit_count\":3},\"event_type\":\"memory_retrieval_completed\",\"message\":\"Memory retrieval completed\",\"run_id\":\"agv2_f8c48e8e9f48b839\",\"step_id\":null,\"timestamp_utc\":\"2026-06-16T23:00:50.508523Z\"},{\"data\":{\"tool\":\"grep_search\"},\"event_type\":\"tool_"
+    },
+    "8092 /": {
+      "ok": true,
+      "status": 200,
+      "body_preview": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Brain Operator Dashboard</title>\n  <link rel=\"stylesheet\" href=\"/static/styles.css\">\n</head>\n<body>\n  <main>\n    <header class=\"header-bar\">\n      <h1>Brain Persistent Autonomy</h1>\n      <div id=\"header-meta\">\n        <span id=\"mode-badge\" class=\"badge\">Loading…</span>\n        <span id=\"scheduler-badge\" class=\"badge\">Scheduler: …</span>\n        <span id=\"heartbeat-badge\" class=\"badge\">Heartbeat: …</span>\n        <span id=\"next-run-badge\" class=\"badge\">Next run: …</span>\n      </div>\n    </header>\n\n    <section class=\"grid cols-3\" id=\"status-cards\">\n      <div class=\"card\"><h3>Brain API</h3><div id=\"brain-api-status\">Checking…</div></div>\n      <div class=\"card\"><h3>Kimi Provider</h3><div id=\"kimi-status\">Checking…</div></div>\n      <div class=\"card\"><h3>Dashboard</h3><div id=\"dashboard-status\">Checking…</div></div>\n      <div class=\"card\"><h3"
+    },
+    "8092 /brain-dashboard/status": {
+      "ok": true,
+      "status": 200,
+      "body_preview": "{\"ok\":true,\"degraded\":false,\"brain\":{\"ok\":true,\"status\":\"healthy\",\"api\":\"http://127.0.0.1:8091\"},\"kimi\":{\"ok\":true,\"status\":\"available_via_provider_probe\"},\"dashboard\":{\"ok\":true,\"status\":\"online\",\"status_latency_ms\":15.668},\"scheduler\":{\"exists\":true,\"enabled\":false,\"state\":\"cached_ready\",\"last_run_time\":null,\"next_run_time\":null,\"last_task_result\":null,\"action\":\"powershell -ExecutionPolicy Bypass -File tools/brain_autonomy_run_once.ps1\",\"degraded\":false,\"source\":\"cache_file\"},\"autonomy\":{\"state\":\"idle\",\"cycle\":\"complete\",\"last_run_time\":\"2026-06-16T22:07:24.950936+00:00\",\"last_run_result\":\"idle\",\"paused\":false,\"stopped\":false},\"memory\":{\"journal_count\":437,\"promotion_queue_count\":57,\"semantic_staging_count\":5,\"promotion_audit_count\":1,\"canonical_promotion_performed\":false},\"safety\":{\"semantic_memory_lines\":1732,\"faiss_ids\":1633,\"faiss_ntotal\":1633,\"canonical_semantic_mutated\":true,\"faiss_mutated\":true,\"trading_touched\":false,\"b8_touched\":false,\"secrets_exposed\":false},\"watchdog\":{\"ch"
+    },
+    "8092 /brain-dashboard/agent-v2/status": {
+      "ok": false,
+      "error": "HTTP Error 404: Not Found"
+    }
+  },
+  "run_id": "agv2_f8c48e8e9f48b839",
+  "direct_import": {
+    "ok": true,
+    "needed_registered": true,
+    "matched_routes": [
+      "/agent",
+      "/brain-dashboard/agent-v2/status",
+      "/brain/agent-trace/event",
+      "/brain/agent-trace/latest",
+      "/brain/agent-trace/stream",
+      "/dashboard",
+      "/dashboard-v2",
+      "/v1/agent/healthz",
+      "/v1/agent/status",
+      "/v2/agent/capabilities",
+      "/v2/agent/runs",
+      "/v2/agent/runs/{run_id}",
+      "/v2/agent/runs/{run_id}/cancel",
+      "/v2/agent/runs/{run_id}/execute",
+      "/v2/agent/runs/{run_id}/pause",
+      "/v2/agent/runs/{run_id}/plan",
+      "/v2/agent/runs/{run_id}/resume",
+      "/v2/agent/runs/{run_id}/trace",
+      "/v2/agent/status"
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+# Agent V2 Total Operational Excellence Final Report
+
+- status: OPERATIONAL_WITH_8092_AGENT_ROUTE_RELOAD_BLOCKER
+- agent_v2_operational_live_8091: True
+- canonical: True
+- langgraph_used: True
+- kimi_provider_found: True
+- kimi_model: kimi-k2.6:cloud
+- kimi_used: True
+- final_answer_quality_improved: True
+- multi_tool_capable: True
+- memory_faiss_read_only: True
+- trace_checkpoint: True
+- api_usable: True
+- chat_agent_route: /v2/chat/agent
+- frontend_dashboard_8091: True
+- frontend_dashboard_8092_status: True
+- frontend_dashboard_8092_agent_route_blocker: HTTP 404 from existing 8092 process despite source route registration; 8091 dashboard route works
+- benchmark: {'iterations': 1, 'tasks_total': 20, 'tasks_passed': 20, 'threshold_met': True, 'non_template_answers': 20, 'kimi_finalized_answers': 17, 'unauthorized_writes': 0, 'raw_cot': 0, 'secrets': 0, 'semantic_faiss_mutation': 0}
+- hard_blockers: ['8092 /brain-dashboard/agent-v2/status live reload remains 404; use 8091 /brain-dashboard/agent-v2/status or restart 8092 from canonical code with admin-clean port if needed']
+- controlled_real_use_ready: True

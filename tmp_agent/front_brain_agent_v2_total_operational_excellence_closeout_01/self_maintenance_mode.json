@@ -1,0 +1,12 @@
+{
+  "repo_maintenance_read_only": true,
+  "repo_maintenance_dry_run": true,
+  "repo_maintenance_approval_required": true,
+  "can_inspect_repo": true,
+  "can_run_allowlisted_smoke_tests": true,
+  "can_propose_patches_dry_run": true,
+  "patch_apply_requires_approval": true,
+  "commit_requires_approval": true,
+  "semantic_faiss_writes_blocked": true,
+  "trading_blocked": true
+}

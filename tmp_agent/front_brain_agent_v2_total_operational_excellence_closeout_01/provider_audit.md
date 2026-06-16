@@ -1,0 +1,14 @@
+# Provider Audit
+
+- kimi_provider_found: True
+- kimi_model_name: kimi-k2.6:cloud
+- callable_from_python: True
+- existing_adapter_path: Ollama local API http://127.0.0.1:11434/api/chat
+- fallback_providers: ['deepseek-v4-pro:cloud', 'gpt-oss:120b-cloud', 'kimi-k2.5:cloud']
+- secret_values_exposed: False
+- recommended_finalizer_path: tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py
+- available_relevant_models: ['kimi-k2.6:cloud', 'deepseek-v4-pro:cloud', 'kimi-k2.5:cloud', 'gpt-oss:120b-cloud', 'gpt-oss:20b-cloud', 'deepseek-r1:14b', 'deepseek-v3.1:671b-cloud']
+- probe_latency_ms: 4284
+- probe_response_preview: KIMI_OK
+- think_disabled: True
+- raw_thinking_ignored: True

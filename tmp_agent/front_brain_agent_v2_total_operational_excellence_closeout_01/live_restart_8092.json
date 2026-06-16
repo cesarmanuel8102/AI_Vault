@@ -1,0 +1,88 @@
+{
+  "stopped_listeners_8092": [
+    {
+      "LocalAddress": "127.0.0.1",
+      "LocalPort": 8092,
+      "OwningProcess": 183024
+    }
+  ],
+  "started_process_id": 15756,
+  "status_ok": false,
+  "status": {
+    "ok": true,
+    "degraded": false,
+    "brain": {
+      "ok": true,
+      "status": "healthy",
+      "api": "http://127.0.0.1:8091"
+    },
+    "kimi": {
+      "ok": true,
+      "status": "available_via_provider_probe"
+    },
+    "dashboard": {
+      "ok": true,
+      "status": "online",
+      "status_latency_ms": 14.864
+    },
+    "scheduler": {
+      "exists": true,
+      "enabled": false,
+      "state": "cached_ready",
+      "last_run_time": null,
+      "next_run_time": null,
+      "last_task_result": null,
+      "action": "powershell -ExecutionPolicy Bypass -File tools/brain_autonomy_run_once.ps1",
+      "degraded": false,
+      "source": "cache_file"
+    },
+    "autonomy": {
+      "state": "idle",
+      "cycle": "complete",
+      "last_run_time": "2026-06-16T19:07:25.029038-04:00",
+      "last_run_result": "idle",
+      "paused": false,
+      "stopped": false
+    },
+    "memory": {
+      "journal_count": 440,
+      "promotion_queue_count": 57,
+      "semantic_staging_count": 5,
+      "promotion_audit_count": 1,
+      "canonical_promotion_performed": false
+    },
+    "safety": {
+      "semantic_memory_lines": 1732,
+      "faiss_ids": 1633,
+      "faiss_ntotal": 1633,
+      "canonical_semantic_mutated": true,
+      "faiss_mutated": true,
+      "trading_touched": false,
+      "b8_touched": false,
+      "secrets_exposed": false
+    },
+    "watchdog": {
+      "checked_utc": "2026-06-16T19:23:38.033954-04:00",
+      "stopped": false,
+      "paused": false,
+      "heartbeat_present": true,
+      "heartbeat": {
+        "updated_utc": "2026-06-16T19:07:25.029038-04:00",
+        "status": "idle",
+        "cycle": "complete"
+      }
+    },
+    "alerts": [
+      {
+        "severity": "LOW",
+        "code": "promotion_queue_pending",
+        "message": "Memory items are waiting for human review before semantic promotion.",
+        "action": "operator_review"
+      }
+    ],
+    "errors": [],
+    "recommendation": "continue_monitoring"
+  },
+  "agent_v2": null,
+  "log": "C:\\AI_VAULT_CANONICAL\\tmp_agent\\front_brain_agent_v2_total_operational_excellence_closeout_01\\server_8092.log"
+}

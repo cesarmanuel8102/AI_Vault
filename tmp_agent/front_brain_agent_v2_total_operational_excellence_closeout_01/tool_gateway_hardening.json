@@ -1,0 +1,15 @@
+{
+  "implemented": true,
+  "structured_results": true,
+  "blocked_env_read": true,
+  "blocked_huge_binary": true,
+  "grep_exclusions": true,
+  "route_probe_local_only": true,
+  "safe_post_allowlist": true,
+  "semantic_retrieve_write_performed_false": true,
+  "write_tools_approval_gated": true,
+  "smoke_allowlist": true,
+  "files": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py"
+  ]
+}

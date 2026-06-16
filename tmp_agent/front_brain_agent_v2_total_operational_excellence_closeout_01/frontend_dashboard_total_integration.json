@@ -1,0 +1,13 @@
+{
+  "implemented": true,
+  "8091_dashboard_agent_v2_status": true,
+  "8092_status_contains_agent_v2_by_direct_code": true,
+  "8092_live_agent_v2_route": "hard_blocked_old_process_or_reload_issue",
+  "8092_live_status_ok": true,
+  "ui_preserved": true,
+  "dashboard_preserved": true,
+  "files": [
+    "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+    "tmp_agent/brain_v9/main.py"
+  ]
+}

@@ -1,3 +1,3 @@
 # Brain Agent Migration From Legacy
 
-Agent V2 is canonical for new agent runs via `/v2/agent/*`. Legacy `/v1/agent/*`, `/agent`, and `/chat` remain compatible. Chat remains conversational; agentic execution should create Agent V2 runs. 8092 dashboard exposes `/brain-dashboard/agent-v2/status`.
+Agent V2 is canonical via `/v2/agent/*` and `/v2/chat/agent`. Legacy `/chat` remains normal conversation. Legacy `/v1/agent/status` is compatibility-only and points operators to V2. Use Agent V2 for new development/audit/task cycles.

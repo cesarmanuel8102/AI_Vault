@@ -1,0 +1,80 @@
+{
+  "append_only_verified": true,
+  "jsonl_valid": true,
+  "jsonl_error": null,
+  "added_lines": 6,
+  "removed_lines": 0,
+  "operational_autonomy_lesson_only": true,
+  "secrets_found": false,
+  "raw_cot_found": false,
+  "trading_execution_found": false,
+  "semantic_faiss_effect": false,
+  "entries": [
+    {
+      "category": "autonomy_lesson",
+      "confidence": 0.82,
+      "created_utc": "2026-06-16T22:07:24.942160+00:00",
+      "event_id": "auto_mem_fc95c9b4418b",
+      "evidence_path": "tmp_agent/runtime/autonomy_last_run.json",
+      "promotion_status": "autonomous_journal_only",
+      "retention_class": "operational_long_term",
+      "source_cycle": "persistent_run_once_001",
+      "summary": "Run-once persistent autonomy cycle executed bounded supervised check without semantic or FAISS write."
+    },
+    {
+      "category": "autonomy_lesson",
+      "confidence": 0.82,
+      "created_utc": "2026-06-16T22:07:24.943942+00:00",
+      "event_id": "auto_mem_5bcca131c5e7",
+      "evidence_path": "tmp_agent/runtime/autonomy_last_run.json",
+      "promotion_status": "autonomous_journal_only",
+      "retention_class": "operational_long_term",
+      "source_cycle": "persistent_run_once_002",
+      "summary": "Run-once persistent autonomy cycle executed bounded supervised check without semantic or FAISS write."
+    },
+    {
+      "category": "autonomy_lesson",
+      "confidence": 0.82,
+      "created_utc": "2026-06-16T22:07:24.945815+00:00",
+      "event_id": "auto_mem_7303197cfc00",
+      "evidence_path": "tmp_agent/runtime/autonomy_last_run.json",
+      "promotion_status": "autonomous_journal_only",
+      "retention_class": "operational_long_term",
+      "source_cycle": "persistent_run_once_003",
+      "summary": "Run-once persistent autonomy cycle executed bounded supervised check without semantic or FAISS write."
+    },
+    {
+      "category": "autonomy_lesson",
+      "confidence": 0.82,
+      "created_utc": "2026-06-16T23:07:25.018870+00:00",
+      "event_id": "auto_mem_ac62c1ab4acb",
+      "evidence_path": "tmp_agent/runtime/autonomy_last_run.json",
+      "promotion_status": "autonomous_journal_only",
+      "retention_class": "operational_long_term",
+      "source_cycle": "persistent_run_once_001",
+      "summary": "Run-once persistent autonomy cycle executed bounded supervised check without semantic or FAISS write."
+    },
+    {
+      "category": "autonomy_lesson",
+      "confidence": 0.82,
+      "created_utc": "2026-06-16T23:07:25.020840+00:00",
+      "event_id": "auto_mem_77b176585374",
+      "evidence_path": "tmp_agent/runtime/autonomy_last_run.json",
+      "promotion_status": "autonomous_journal_only",
+      "retention_class": "operational_long_term",
+      "source_cycle": "persistent_run_once_002",
+      "summary": "Run-once persistent autonomy cycle executed bounded supervised check without semantic or FAISS write."
+    },
+    {
+      "category": "autonomy_lesson",
+      "confidence": 0.82,
+      "created_utc": "2026-06-16T23:07:25.022544+00:00",
+      "event_id": "auto_mem_c1cee13ba0bf",
+      "evidence_path": "tmp_agent/runtime/autonomy_last_run.json",
+      "promotion_status": "autonomous_journal_only",
+      "retention_class": "operational_long_term",
+      "source_cycle": "persistent_run_once_003",
+      "summary": "Run-once persistent autonomy cycle executed bounded supervised check without semantic or FAISS write."
+    }
+  ]
+}

@@ -1,0 +1,637 @@
+{
+  "probes": {
+    "8091 GET /health": {
+      "ok": true,
+      "status": 200,
+      "json": {
+        "status": "healthy",
+        "sessions": 1,
+        "version": "9.0.0",
+        "safe_mode": false
+      },
+      "body_preview": "{\"status\":\"healthy\",\"sessions\":1,\"version\":\"9.0.0\",\"safe_mode\":false}"
+    },
+    "8091 GET /v2/agent/status": {
+      "ok": true,
+      "status": 200,
+      "json": {
+        "ok": true,
+        "canonical_for_new_agent_runs": true,
+        "backend": "langgraph",
+        "langgraph_used": true,
+        "langgraph_blocker": null,
+        "runs": 25,
+        "primary_finalizer_model": "kimi-k2.6:cloud",
+        "latest_provider_used": null,
+        "latest_model_used": null,
+        "latest_provider_degraded": null,
+        "trace_available": true,
+        "checkpointed": true,
+        "legacy_agent_status": "legacy_compatible_not_canonical"
+      },
+      "body_preview": "{\"ok\":true,\"canonical_for_new_agent_runs\":true,\"backend\":\"langgraph\",\"langgraph_used\":true,\"langgraph_blocker\":null,\"runs\":25,\"primary_finalizer_model\":\"kimi-k2.6:cloud\",\"latest_provider_used\":null,\"latest_model_used\":null,\"latest_provider_degraded\":null,\"trace_available\":true,\"checkpointed\":true,\"legacy_agent_status\":\"legacy_compatible_not_canonical\"}"
+    },
+    "8091 GET /v2/agent/capabilities": {
+      "ok": true,
+      "status": 200,
+      "json": {
+        "ok": true,
+        "canonical": true,
+        "version": "agent_kernel_v2.0-langgraph-compatible",
+        "backend": "langgraph",
+        "langgraph_used": true,
+        "primary_finalizer_model": "kimi-k2.6:cloud",
+        "planner_classes": [
+          "repo_audit",
+          "code_search",
+          "endpoint_probe",
+          "memory_question",
+          "dashboard_diagnosis",
+          "provider_diagnosis",
+          "frontend_diagnosis",
+          "smoke_test",
+          "documentation_task",
+          "safe_patch_dry_run",
+          "approval_required_write",
+          "general_reasoning"
+        ],
+        "capabilities": [
+          {
+            "name": "repo_status_read",
+            "description": "Read git status and HEAD",
+            "risk_level": "low",
+            "read_only": true,
+            "requires_approval": false,
+            "allowed_modes": [
+              "read_only",
+              "dry_run",
+              "approval_required",
+              "write_allowed"
+            ]
+          },
+          {
+            "name": "file_read",
+            "description": "Read a safe text file",
+            "risk_level": "low",
+            "read_only": true,
+            "requires_approval": false,
+            "allowed_modes": [
+              "read_only",
+              "dry_run"
+            ]
+          },
+          {
+            "name": "grep_search",
+            "description": "Search repository text with rg",
+            "risk_level": "low",
+            "read_only": true,
+            "requires_approval": false,
+            "allowed_modes": [
+              "read_only",
+              "dry_run"
+            ]
+          },
+          {
+            "name": "route_probe",
+            "description": "Probe a local HTTP route",
+            "risk_level": "low",
+            "read_only": true,
+            "requires_approval": false,
+            "allowed_modes": [
+              "read_only",
+              "dry_run"
+            ]
+          },
+          {
+            "name": "semantic_retrieve",
+            "description": "Read-only semantic retrieval",
+            "risk_level": "low",
+            "read_only": true,
+            "requires_approval": false,
+            "allowed_modes": [
+              "read_only",
+              "dry_run"
+            ]
+          },
+          {
+            "name": "smoke_test_readonly",
+            "description": "Run a focused read-only smoke test",
+            "risk_level": "medium",
+            "read_only": true,
+            "requires_approval": false,
+            "allowed_modes": [
+              "read_only",
+              "dry_run"
+            ]
+          },
+          {
+            "name": "report_writer",
+            "description": "Write run-local artifacts only",
+            "risk_level": "medium",
+            "read_only": false,
+            "requires_approval": false,
+            "allowed_modes": [
+              "dry_run",
+              "approval_required",
+              "write_allowed"
+            ]
+          },
+          {
+            "name": "file_patch_dry_run",
+            "description": "Preview a file patch",
+            "risk_level": "medium",
+            "read_only": false,
+            "requires_approval": false,
+            "allowed_modes": [
+              "dry_run",
+              "approval_required"
+            ]
+          },
+          {
+            "name": "file_patch_apply_approval_required",
+            "description": "Apply a patch only with approval",
+            "risk_level": "high",
+            "read_only": false,
+            "requires_approval": true,
+            "allowed_modes": [
+              "approval_required",
+              "write_allowed"
+            ]
+          },
+          {
+            "name": "git_commit_approval_required",
+            "description": "Commit only with approval",
+            "risk_level": "high",
+            "read_only": false,
+            "requires_approval": true,
+            "allowed_modes": [
+              "approval_required",
+              "write_allowed"
+            ]
+          }
+        ]
+      },
+      "body_preview": "{\"ok\":true,\"canonical\":true,\"version\":\"agent_kernel_v2.0-langgraph-compatible\",\"backend\":\"langgraph\",\"langgraph_used\":true,\"primary_finalizer_model\":\"kimi-k2.6:cloud\",\"planner_classes\":[\"repo_audit\",\"code_search\",\"endpoint_probe\",\"memory_question\",\"dashboard_diagnosis\",\"provider_diagnosis\",\"frontend_diagnosis\",\"smoke_test\",\"documentation_task\",\"safe_patch_dry_run\",\"approval_required_write\",\"general_reasoning\"],\"capabilities\":[{\"name\":\"repo_status_read\",\"description\":\"Read git status and HEAD\",\"risk_level\":\"low\",\"read_only\":true,\"requires_approval\":false,\"allowed_modes\":[\"read_only\",\"dry_run\",\"approval_required\",\"write_allowed\"]},{\"name\":\"file_read\",\"description\":\"Read a safe text file\",\"risk_level\":\"low\",\"read_only\":true,\"requires_approval\":false,\"allowed_modes\":[\"read_only\",\"dry_run\"]},{\"name\":\"grep_search\",\"description\":\"Search repository text with rg\",\"risk_level\":\"low\",\"read_only\":true,\"requires_approval\":false,\"allowed_modes\":[\"read_only\",\"dry_run\"]},{\"name\":\"route_probe\",\"description\":\"Probe a local HTTP route\",\"risk_level\":\"low\",\"read_only\":true,\"requires_approval\":false,\"allowed_modes\":[\"read_only\",\"dry_run\"]},{\"name\":\"semantic_retrieve\",\"description\":\"Read-only semantic re"
+    },
+    "8091 GET /brain-dashboard/agent-v2/status": {
+      "ok": true,
+      "status": 200,
+      "json": {
+        "ok": true,
+        "canonical_for_new_agent_runs": true,
+        "backend": "langgraph",
+        "langgraph_used": true,
+        "langgraph_blocker": null,
+        "primary_finalizer_model": "kimi-k2.6:cloud",
+        "latest_provider_used": null,
+        "latest_model_used": null,
+        "latest_provider_degraded": null,
+        "runs": 25,
+        "latest_run_id": "agv2_fa6b9b01843dc59c",
+        "chat_agent_route": "/v2/chat/agent",
+        "legacy_agent_status": "legacy_compatible_not_canonical"
+      },
+      "body_preview": "{\"ok\":true,\"canonical_for_new_agent_runs\":true,\"backend\":\"langgraph\",\"langgraph_used\":true,\"langgraph_blocker\":null,\"primary_finalizer_model\":\"kimi-k2.6:cloud\",\"latest_provider_used\":null,\"latest_model_used\":null,\"latest_provider_degraded\":null,\"runs\":25,\"latest_run_id\":\"agv2_fa6b9b01843dc59c\",\"chat_agent_route\":\"/v2/chat/agent\",\"legacy_agent_status\":\"legacy_compatible_not_canonical\"}"
+    },
+    "8091 GET /v1/agent/status": {
+      "ok": true,
+      "status": 200,
+      "json": {
+        "ok": true,
+        "status": "running",
+        "room_id": null,
+        "service": "brain_v9",
+        "legacy_agent_status": "legacy_compatible_not_canonical",
+        "canonical_agent_v2": "/v2/agent/status",
+        "canonical_chat_agent": "/v2/chat/agent",
+        "ts": "2026-06-16T23:19:45.375030+00:00"
+      },
+      "body_preview": "{\"ok\":true,\"status\":\"running\",\"room_id\":null,\"service\":\"brain_v9\",\"legacy_agent_status\":\"legacy_compatible_not_canonical\",\"canonical_agent_v2\":\"/v2/agent/status\",\"canonical_chat_agent\":\"/v2/chat/agent\",\"ts\":\"2026-06-16T23:19:45.375030+00:00\"}"
+    },
+    "8091 GET /ui/": {
+      "ok": true,
+      "status": 200,
+      "json": null,
+      "body_preview": "<!DOCTYPE html>\r\n<html lang=\"es\">\r\n<head>\r\n<meta charset=\"UTF-8\">\r\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n<title>Brain Chat V9</title>\r\n<style>\r\n  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }\r\n\r\n  :root {\r\n    --bg:       #0f1117;\r\n    --surface:  #1a1d27;\r\n    --surface2: #22263a;\r\n    --border:   #2e3350;\r\n    --accent:   #6c63ff;\r\n    --accent2:  #9d97ff;\r\n    --text:     #e4e6f0;\r\n    --text2:    #8b90b0;\r\n    --green:    #3ecf8e;\r\n    --red:      #f06060;\r\n    --amber:    #f5a623;\r\n    --radius:   12px;\r\n    --font:     -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;\r\n  }\r\n\r\n  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; height: 100vh; display: flex; flex-direction: column; }\r\n\r\n  /* Header */\r\n  header {\r\n    background: var(--surface);\r\n    border-bottom: 1px solid var(--border);\r\n    padding: 12px 20px;\r\n    display: flex;\r\n    align-items: center;\r\n    gap: 12px;\r\n    flex-shrink: 0;\r\n  }\r\n  header .logo {\r\n    width: 32px; height: 32px; border-radius: 8px;\r\n    background: linear-gradient(135deg, var(--accent), var(--accent2));\r\n    display: flex; align"
+    },
+    "8091 GET /dashboard": {
+      "ok": true,
+      "status": 200,
+      "json": null,
+      "body_preview": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>AI_VAULT Command Center</title>\n<link rel=\"icon\" type=\"image/svg+xml\" href=\"/ui/favicon.svg\">\n<script src=\"/ui/chart.umd.min.js\"></script>\n<link rel=\"stylesheet\" href=\"/ui/dashboard_core.css\">\n<link rel=\"stylesheet\" href=\"/ui/dashboard_accessibility.css\">\n</head>\n<body>\n\n<!-- ═══ Sidebar ═══ -->\n<div class=\"sidebar\">\n  <div class=\"sidebar-brand\">\n    <h1>AI_VAULT</h1>\n    <div class=\"version\">Command Center v2.0</div>\n  </div>\n  <div class=\"sidebar-section\">\n    <div class=\"sidebar-section-label\">Monitor</div>\n    <a class=\"sidebar-link active\" onclick=\"showPanel('overview')\">\n      <span class=\"icon\">&#9632;</span> Overview\n    </a>\n    <a class=\"sidebar-link\" onclick=\"showPanel('platforms')\">\n      <span class=\"icon\">&#9670;</span> Platforms\n    </a>\n    <a class=\"sidebar-link\" onclick=\"showPanel('strategy')\">\n      <span class=\"icon\">&#9733;</span> Strategy Engine\n    </a>\n    <a class=\"sidebar-link\" onclick=\"showPanel('autonomy')\">\n      <span class=\"icon\">&#8634;</span> Autonomy Loop\n    </a>\n  </div>\n  <div class=\"sidebar-section\">\n    <"
+    },
+    "8091 POST /v2/agent/runs": {
+      "ok": true,
+      "status": 200,
+      "json": {
+        "ok": true,
+        "run": {
+          "run_id": "agv2_a2bb2ca883b264af",
+          "goal": "Full live verification: probe health, status, trace, and finalizer metadata.",
+          "mode": "read_only",
+          "user_id": "closeout_live",
+          "status": "created",
+          "created_utc": "2026-06-16T23:19:45.465412Z",
+          "updated_utc": "2026-06-16T23:19:45.465412Z",
+          "plan": [],
+          "final_answer": null,
+          "provider": "structured_operational_finalizer",
+          "safety_flags": [],
+          "canonical_agent": true,
+          "agent_version": "agent_kernel_v2.0-langgraph-compatible"
+        }
+      },
+      "body_preview": "{\"ok\":true,\"run\":{\"run_id\":\"agv2_a2bb2ca883b264af\",\"goal\":\"Full live verification: probe health, status, trace, and finalizer metadata.\",\"mode\":\"read_only\",\"user_id\":\"closeout_live\",\"status\":\"created\",\"created_utc\":\"2026-06-16T23:19:45.465412Z\",\"updated_utc\":\"2026-06-16T23:19:45.465412Z\",\"plan\":[],\"final_answer\":null,\"provider\":\"structured_operational_finalizer\",\"safety_flags\":[],\"canonical_agent\":true,\"agent_version\":\"agent_kernel_v2.0-langgraph-compatible\"}}"
+    },
+    "8091 POST /plan": {
+      "ok": true,
+      "status": 200,
+      "json": {
+        "ok": true,
+        "run": {
+          "agent_version": "agent_kernel_v2.0-langgraph-compatible",
+          "canonical_agent": true,
+          "created_utc": "2026-06-16T23:19:45.465412Z",
+          "final_answer": null,
+          "goal": "Full live verification: probe health, status, trace, and finalizer metadata.",
+          "mode": "read_only",
+          "plan": [
+            {
+              "step_id": "plan",
+              "kind": "plan",
+              "title": "Classify goal as endpoint_probe",
+              "status": "planned"
+            },
+            {
+              "step_id": "probe_8091_status",
+              "kind": "tool",
+              "title": "Probe Agent V2 status",
+              "status": "planned",
+              "tool_name": "route_probe",
+              "input": {
+                "url": "http://127.0.0.1:8091/v2/agent/status"
+              }
+            },
+            {
+              "step_id": "probe_8091_capabilities",
+              "kind": "tool",
+              "title": "Probe Agent V2 capabilities",
+              "status": "planned",
+              "tool_name": "route_probe",
+              "input": {
+                "url": "http://127.0.0.1:8091/v2/agent/capabilities"
+              }
+            }
+          ],
+          "provider": "structured_operational_finalizer",
+          "run_id": "agv2_a2bb2ca883b264af",
+          "safety_flags": [],
+          "status": "planned",
+          "updated_utc": "2026-06-16T23:19:45.496878Z",
+          "user_id": "closeout_live",
+          "classification": "endpoint_probe"
+        }
+      },
+      "body_preview": "{\"ok\":true,\"run\":{\"agent_version\":\"agent_kernel_v2.0-langgraph-compatible\",\"canonical_agent\":true,\"created_utc\":\"2026-06-16T23:19:45.465412Z\",\"final_answer\":null,\"goal\":\"Full live verification: probe health, status, trace, and finalizer metadata.\",\"mode\":\"read_only\",\"plan\":[{\"step_id\":\"plan\",\"kind\":\"plan\",\"title\":\"Classify goal as endpoint_probe\",\"status\":\"planned\"},{\"step_id\":\"probe_8091_status\",\"kind\":\"tool\",\"title\":\"Probe Agent V2 status\",\"status\":\"planned\",\"tool_name\":\"route_probe\",\"input\":{\"url\":\"http://127.0.0.1:8091/v2/agent/status\"}},{\"step_id\":\"probe_8091_capabilities\",\"kind\":\"tool\",\"title\":\"Probe Agent V2 capabilities\",\"status\":\"planned\",\"tool_name\":\"route_probe\",\"input\":{\"url\":\"http://127.0.0.1:8091/v2/agent/capabilities\"}}],\"provider\":\"structured_operational_finalizer\",\"run_id\":\"agv2_a2bb2ca883b264af\",\"safety_flags\":[],\"status\":\"planned\",\"updated_utc\":\"2026-06-16T23:19:45.496878Z\",\"user_id\":\"closeout_live\",\"classification\":\"endpoint_probe\"}}"
+    },
+    "8091 POST /execute": {
+      "ok": true,
+      "status": 200,
+      "json": {
+        "ok": true,
+        "run": {
+          "agent_version": "agent_kernel_v2.0-langgraph-compatible",
+          "canonical_agent": true,
+          "classification": "endpoint_probe",
+          "created_utc": "2026-06-16T23:19:45.465412Z",
+          "final_answer": "## Summary\nLive endpoint probe completed successfully against the local Agent V2 kernel (`127.0.0.1:8091`). Both status and capabilities endpoints returned HTTP 200 with healthy, canonical LangGraph backend responses. Run classification (`endpoint_probe`) matches available planner classes. No write operations attempted; mode is `read_only`.\n\n---\n\n## Evidence Used\n| ID | Endpoint | Key Finding |\n|---|---|---|\n| `tool_1` | `/v2/agent/status` | `ok:true`, canonical for new runs, backend=`langgraph`, `trace_available:true`, `checkpointed:true`, 26 runs recorded, primary finalizer=`kimi-k2.6:cloud` |\n| `tool_2` | `/v2/agent/capabilities` | `ok:true`, `canonical:true`, version=`agent_kernel_v2.0-langgraph-compatible`, confirms `endpoint_probe` as valid planner class, all queried capabilities are read-only/low-risk |\n\n---\n\n## Actions Performed\n- **Route probe** to `/v2/agent/status` — verified liveness, canonical status, trace availability, checkpointing, and finalizer model identity.\n- **Route probe** to `/v2/agent/capabilities` — verified kernel version, backend compatibility, and that current run classification exists in `planner_classes`.\n- Cross-validated that no approval or blocking flags were set (`blocked:false`, `approval_required:false` on both probes).\n\n---\n\n## Risks / Gates\n| Risk | Status | Mitigation |\n|---|---|---|\n| Backend degradation | None detected | `latest_provider_degraded:null` |\n| Non-canonical path | None | `canonical:true` / `canonical_for_new_agent_runs:true` |\n| Write exposure | N/A | Mode is `read_only`; no write-capable tools invoked |\n| Trace loss | Low | `trace_available:true`, `checkpointed:true` |\n| Approval gate bypass | None | All accessed endpoints are auto-approved for read |\n\n---\n\n## Next Safe Action\n**Archive this probe result and optionally execute a deeper trace retrieval** (e.g., `GET /v2/agent/trace/{run_id}`) if run-level telemetry is required. No state mutation or approval escalation needed.",
+          "goal": "Full live verification: probe health, status, trace, and finalizer metadata.",
+          "mode": "read_only",
+          "plan": [
+            {
+              "kind": "plan",
+              "status": "completed",
+              "step_id": "plan",
+              "title": "Classify goal as endpoint_probe"
+            },
+            {
+              "input": {
+                "url": "http://127.0.0.1:8091/v2/agent/status"
+              },
+              "kind": "tool",
+              "status": "completed",
+              "step_id": "probe_8091_status",
+              "title": "Probe Agent V2 status",
+              "tool_name": "route_probe",
+              "output": {
+                "tool_name": "route_probe",
+                "ok": true,
+                "result": {
+                  "url": "http://127.0.0.1:8091/v2/agent/status",
+                  "status": 200,
+                  "body": "{\"ok\":true,\"canonical_for_new_agent_runs\":true,\"backend\":\"langgraph\",\"langgraph_used\":true,\"langgraph_blocker\":null,\"runs\":26,\"primary_finalizer_model\":\"kimi-k2.6:cloud\",\"latest_provider_used\":null,\"latest_model_used\":null,\"latest_provider_degraded\":null,\"trace_available\":true,\"checkpointed\":true,\"legacy_agent_status\":\"legacy_compatible_not_canonical\"}"
+                },
+                "blocked": false,
+                "approval_required": false,
+                "error": null
+              }
+            },
+            {
+              "input": {
+                "url": "http://127.0.0.1:8091/v2/agent/capabilities"
+              },
+              "kind": "tool",
+              "status": "completed",
+              "step_id": "probe_8091_capabilities",
+              "title": "Probe Agent V2 capabilities",
+              "tool_name": "route_probe",
+              "output": {
+                "tool_name": "route_probe",
+                "ok": true,
+                "result": {
+                  "url": "http://127.0.0.1:8091/v2/agent/capabilities",
+                  "status": 200,
+                  "body": "{\"ok\":true,\"canonical\":true,\"version\":\"agent_kernel_v2.0-langgraph-compatible\",\"backend\":\"langgraph\",\"langgraph_used\":true,\"primary_finalizer_model\":\"kimi-k2.6:cloud\",\"planner_classes\":[\"repo_audit\",\"code_search\",\"endpoint_probe\",\"memory_question\",\"dashboard_diagnosis\",\"provider_diagnosis\",\"frontend_diagnosis\",\"smoke_test\",\"documentation_task\",\"safe_patch_dry_run\",\"approval_required_write\",\"general_reasoning\"],\"capabilities\":[{\"name\":\"repo_status_read\",\"description\":\"Read git status and HEAD\",\"risk_level\":\"low\",\"read_only\":true,\"requires_approval\":false,\"allowed_modes\":[\"read_only\",\"dry_run\",\"approval_required\",\"write_allowed\"]},{\"name\":\"file_read\",\"description\":\"Read a safe text file\",\"risk_level\":\"low\",\"read_only\":true,\"requires_approval\":false,\"allowed_modes\":[\"read_only\",\"dry_run\"]},{\""
+                },
+                "blocked": false,
+                "approval_required": false,
+                "error": null
+              }
+            }
+          ],
+          "provider": "ollama_cloud",
+          "run_id": "agv2_a2bb2ca883b264af",
+          "safety_flags": [],
+          "status": "completed",
+          "updated_utc": "2026-06-16T23:19:56.902529Z",
+          "user_id": "closeout_live",
+          "provider_metadata": {
+            "provider_attempted": [
+              "ollama:kimi-k2.6:cloud"
+            ],
+            "provider_used": "ollama_cloud",
+            "model_used": "kimi-k2.6:cloud",
+            "provider_degraded": false,
+            "fallback_reason": "none",
+            "latency_ms": 11354,
+            "kimi_available": true,
+            "raw_cot_exposed": false
+          },
+          "model_used": "kimi-k2.6:cloud",
+          "provider_degraded": false,
+          "fallback_reason": "none"
+        }
+      },
+      "body_preview": "{\"ok\":true,\"run\":{\"agent_version\":\"agent_kernel_v2.0-langgraph-compatible\",\"canonical_agent\":true,\"classification\":\"endpoint_probe\",\"created_utc\":\"2026-06-16T23:19:45.465412Z\",\"final_answer\":\"## Summary\\nLive endpoint probe completed successfully against the local Agent V2 kernel (`127.0.0.1:8091`). Both status and capabilities endpoints returned HTTP 200 with healthy, canonical LangGraph backend responses. Run classification (`endpoint_probe`) matches available planner classes. No write operations attempted; mode is `read_only`.\\n\\n---\\n\\n## Evidence Used\\n| ID | Endpoint | Key Finding |\\n|---|---|---|\\n| `tool_1` | `/v2/agent/status` | `ok:true`, canonical for new runs, backend=`langgraph`, `trace_available:true`, `checkpointed:true`, 26 runs recorded, primary finalizer=`kimi-k2.6:cloud` |\\n| `tool_2` | `/v2/agent/capabilities` | `ok:true`, `canonical:true`, version=`agent_kernel_v2.0-langgraph-compatible`, confirms `endpoint_probe` as valid planner class, all queried capabilities are read-only/low-risk |\\n\\n---\\n\\n## Actions Performed\\n- **Route probe** to `/v2/agent/status` — verified liveness, canonical status, trace availability, checkpointing, and finalizer model identity.\\n"
+    },
+    "8091 GET /trace": {
+      "ok": true,
+      "status": 200,
+      "json": {
+        "ok": true,
+        "run_id": "agv2_a2bb2ca883b264af",
+        "trace": [
+          {
+            "data": {
+              "goal_preview": "Full live verification: probe health, status, trace, and finalizer metadata.",
+              "mode": "read_only"
+            },
+            "event_type": "run_created",
+            "message": "Agent V2 run created",
+            "run_id": "agv2_a2bb2ca883b264af",
+            "step_id": null,
+            "timestamp_utc": "2026-06-16T23:19:45.472352Z"
+          },
+          {
+            "data": {
+              "classification": "endpoint_probe",
+              "step_count": 3
+            },
+            "event_type": "plan_created",
+            "message": "Plan created",
+            "run_id": "agv2_a2bb2ca883b264af",
+            "step_id": null,
+            "timestamp_utc": "2026-06-16T23:19:45.498885Z"
+          },
+          {
+            "data": {
+              "tool": "route_probe"
+            },
+            "event_type": "tool_call_started",
+            "message": "Tool route_probe started",
+            "run_id": "agv2_a2bb2ca883b264af",
+            "step_id": null,
+            "timestamp_utc": "2026-06-16T23:19:45.523054Z"
+          },
+          {
+            "data": {
+              "blocked": false,
+              "ok": true,
+              "tool": "route_probe"
+            },
+            "event_type": "tool_call_completed",
+            "message": "Tool route_probe completed",
+            "run_id": "agv2_a2bb2ca883b264af",
+            "step_id": null,
+            "timestamp_utc": "2026-06-16T23:19:45.538217Z"
+          },
+          {
+            "data": {
+              "tool": "route_probe"
+            },
+            "event_type": "tool_call_started",
+            "message": "Tool route_probe started",
+            "run_id": "agv2_a2bb2ca883b264af",
+            "step_id": null,
+            "timestamp_utc": "2026-06-16T23:19:45.538217Z"
+          },
+          {
+            "data": {
+              "blocked": false,
+              "ok": true,
+              "tool": "route_probe"
+            },
+            "event_type": "tool_call_completed",
+            "message": "Tool route_probe completed",
+            "run_id": "agv2_a2bb2ca883b264af",
+            "step_id": null,
+            "timestamp_utc": "2026-06-16T23:19:45.546355Z"
+          },
+          {
+            "data": {
+              "provider_metadata": {
+                "fallback_reason": "none",
+                "kimi_available": true,
+                "latency_ms": 11354,
+                "model_used": "kimi-k2.6:cloud",
+                "provider_attempted": [
+                  "ollama:kimi-k2.6:cloud"
+                ],
+                "provider_degraded": false,
+                "provider_used": "ollama_cloud",
+                "raw_cot_exposed": false
+              }
+            },
+            "event_type": "final_answer_created",
+            "message": "Final answer created",
+            "run_id": "agv2_a2bb2ca883b264af",
+            "step_id": null,
+            "timestamp_utc": "2026-06-16T23:19:56.902529Z"
+          },
+          {
+            "data": {
+              "status": "completed"
+            },
+            "event_type": "run_completed",
+            "message": "Run completed",
+            "run_id": "agv2_a2bb2ca883b264af",
+            "step_id": null,
+            "timestamp_utc": "2026-06-16T23:19:56.905441Z"
+          }
+        ]
+      },
+      "body_preview": "{\"ok\":true,\"run_id\":\"agv2_a2bb2ca883b264af\",\"trace\":[{\"data\":{\"goal_preview\":\"Full live verification: probe health, status, trace, and finalizer metadata.\",\"mode\":\"read_only\"},\"event_type\":\"run_created\",\"message\":\"Agent V2 run created\",\"run_id\":\"agv2_a2bb2ca883b264af\",\"step_id\":null,\"timestamp_utc\":\"2026-06-16T23:19:45.472352Z\"},{\"data\":{\"classification\":\"endpoint_probe\",\"step_count\":3},\"event_type\":\"plan_created\",\"message\":\"Plan created\",\"run_id\":\"agv2_a2bb2ca883b264af\",\"step_id\":null,\"timestamp_utc\":\"2026-06-16T23:19:45.498885Z\"},{\"data\":{\"tool\":\"route_probe\"},\"event_type\":\"tool_call_started\",\"message\":\"Tool route_probe started\",\"run_id\":\"agv2_a2bb2ca883b264af\",\"step_id\":null,\"timestamp_utc\":\"2026-06-16T23:19:45.523054Z\"},{\"data\":{\"blocked\":false,\"ok\":true,\"tool\":\"route_probe\"},\"event_type\":\"tool_call_completed\",\"message\":\"Tool route_probe completed\",\"run_id\":\"agv2_a2bb2ca883b264af\",\"step_id\":null,\"timestamp_utc\":\"2026-06-16T23:19:45.538217Z\"},{\"data\":{\"tool\":\"route_probe\"},\"event_type\":\"tool_call_started\",\"message\":\"Tool route_probe started\",\"run_id\":\"agv2_a2bb2ca883b264af\",\"step_id\":null,\"timestamp_utc\":\"2026-06-16T23:19:45.538217Z\"},{\"data\":{\"blocked\":false,\"ok\":true,\"tool\":\"r"
+    },
+    "8091 POST /v2/chat/agent": {
+      "ok": true,
+      "status": 200,
+      "json": {
+        "ok": true,
+        "canonical_agent_v2": true,
+        "route": "/v2/chat/agent",
+        "run_id": "agv2_6ddedf42613ec934",
+        "trace_url": "/v2/agent/runs/agv2_6ddedf42613ec934/trace",
+        "final_answer": "## Summary\n\nAgent V2 kernel is **healthy and canonical** on port 8091. The primary finalizer model is `kimi-k2.6:cloud` via langgraph backend. Provider probe confirms fast governed metadata availability. Repository shows 7 modified files in `brain_v9/` including core kernel modules, indicating active development. Canonical memory promotion is functioning with approved entries for provider reliability.\n\n---\n\n## Evidence Used\n\n| ID | Source | Key Finding |\n|---|---|---|\n| `tool_5` | `route_probe` `/v2/agent/status` | Status 200; `canonical_for_new_agent_runs=true`; 27 runs; checkpointed; trace available; legacy compatible but not canonical |\n| `tool_6` | `route_probe` `/v2/agent/capabilities` | Version `agent_kernel_v2.0-langgraph-compatible`; 12 planner classes including `provider_diagnosis`; all tools properly risk-leveled |\n| `tool_1` | `semantic_retrieve` | FAISS backend healthy; canonical promoted memory confirms Kimi K2.6 provider_probe availability |\n| `memory_1` | Canonical memory | Duplicate confirmation of `tool_1` finding; 22 hours old; domain `provider_reliability` |\n| `tool_2` | `repo_status_read` | HEAD `0fdb74c`; 7 uncommitted modifications in `brain_v9/core/agent_kernel_v2/` and dashboard |\n| `tool_4` | `file_read` | `native_runtime.py` imports confirm architecture: `ToolGatewayV2`, `MemoryGatewayV2`, `finalize_agent_run`, `build_plan` |\n| `memory_4` | Canonical memory | Governance rule: fallback visibility required in reports/dashboard |\n\n---\n\n## Actions Performed\n\n- **Probed** `/v2/agent/status` and `/v2/agent/capabilities` on 8091\n- **Retrieved** canonical memory for provider reliability validation\n- **Read** repository HEAD and native runtime source to verify kernel structure\n- **Audited** tool risk levels: all accessed tools are `read_only`, `risk_level: low`, `requires_approval: false`\n\n---\n\n## Risks/Gates\n\n| Risk | Status | Mitigation |\n|---|---|---|\n| Uncommitted changes in kernel v2 modules | ⚠️ Moderate | 7 modified files; no write operations performed; `mode: read_only` enforced |\n| Legacy agent status \"compatible_not_canonical\" | ℹ️ Informational | New runs correctly routed to canonical kernel per `canonical_for_new_agent_runs=true` |\n| Semantic memory age (22h for provider probe) | ✅ Acceptable | Within operational window; FAISS backend not degraded |\n| Fallback visibility requirement | ✅ Compliant | No fallback masking in this run; report explicitly notes legacy status |\n\n---\n\n## Next Safe Action\n\n**Commit the 7 pending kernel modifications** after:\n1. Running `smoke_test` planner class via capabilities endpoint\n2. Reviewing diff for `memory/autonomous_journal.jsonl` (untracked modification outside kernel)\n3. Obtaining approval-gated review if any diff contains `tool_gateway.py` or `native_runtime.py` signature changes\n\n*Alternative if commit blocked:* Execute `dashboard_diagnosis` planner to validate dashboard route consistency with modified `dashboard_routes.py`.",
+        "provider_metadata": {
+          "provider_attempted": [
+            "ollama:kimi-k2.6:cloud"
+          ],
+          "provider_used": "ollama_cloud",
+          "model_used": "kimi-k2.6:cloud",
+          "provider_degraded": false,
+          "fallback_reason": "none",
+          "latency_ms": 12140,
+          "kimi_available": true,
+          "raw_cot_exposed": false
+        },
+        "classification": "provider_diagnosis",
+        "status": "completed"
+      },
+      "body_preview": "{\"ok\":true,\"canonical_agent_v2\":true,\"route\":\"/v2/chat/agent\",\"run_id\":\"agv2_6ddedf42613ec934\",\"trace_url\":\"/v2/agent/runs/agv2_6ddedf42613ec934/trace\",\"final_answer\":\"## Summary\\n\\nAgent V2 kernel is **healthy and canonical** on port 8091. The primary finalizer model is `kimi-k2.6:cloud` via langgraph backend. Provider probe confirms fast governed metadata availability. Repository shows 7 modified files in `brain_v9/` including core kernel modules, indicating active development. Canonical memory promotion is functioning with approved entries for provider reliability.\\n\\n---\\n\\n## Evidence Used\\n\\n| ID | Source | Key Finding |\\n|---|---|---|\\n| `tool_5` | `route_probe` `/v2/agent/status` | Status 200; `canonical_for_new_agent_runs=true`; 27 runs; checkpointed; trace available; legacy compatible but not canonical |\\n| `tool_6` | `route_probe` `/v2/agent/capabilities` | Version `agent_kernel_v2.0-langgraph-compatible`; 12 planner classes including `provider_diagnosis`; all tools properly risk-leveled |\\n| `tool_1` | `semantic_retrieve` | FAISS backend healthy; canonical promoted memory confirms Kimi K2.6 provider_probe availability |\\n| `memory_1` | Canonical memory | Duplicate confi"
+    },
+    "8091 POST /chat legacy": {
+      "ok": true,
+      "status": 200,
+      "json": {
+        "response": "El modelo tardó demasiado en responder. El servidor sigue operativo; intenta de nuevo con una instrucción más concreta.",
+        "session_id": "closeout_legacy",
+        "model_used": null,
+        "success": false,
+        "pending_action": null,
+        "permission_required": null,
+        "permission_id": null,
+        "tool_name": null,
+        "risk_level": null,
+        "options": null,
+        "tool01_real": null,
+        "tool01_router_used": null,
+        "blocked_by_policy": null,
+        "blocked_by_user": null,
+        "tool_result": null
+      },
+      "body_preview": "{\"response\":\"El modelo tardó demasiado en responder. El servidor sigue operativo; intenta de nuevo con una instrucción más concreta.\",\"session_id\":\"closeout_legacy\",\"model_used\":null,\"success\":false,\"pending_action\":null,\"permission_required\":null,\"permission_id\":null,\"tool_name\":null,\"risk_level\":null,\"options\":null,\"tool01_real\":null,\"tool01_router_used\":null,\"blocked_by_policy\":null,\"blocked_by_user\":null,\"tool_result\":null}"
+    },
+    "8092 GET /": {
+      "ok": true,
+      "status": 200,
+      "json": null,
+      "body_preview": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Brain Operator Dashboard</title>\n  <link rel=\"stylesheet\" href=\"/static/styles.css\">\n</head>\n<body>\n  <main>\n    <header class=\"header-bar\">\n      <h1>Brain Persistent Autonomy</h1>\n      <div id=\"header-meta\">\n        <span id=\"mode-badge\" class=\"badge\">Loading…</span>\n        <span id=\"scheduler-badge\" class=\"badge\">Scheduler: …</span>\n        <span id=\"heartbeat-badge\" class=\"badge\">Heartbeat: …</span>\n        <span id=\"next-run-badge\" class=\"badge\">Next run: …</span>\n      </div>\n    </header>\n\n    <section class=\"grid cols-3\" id=\"status-cards\">\n      <div class=\"card\"><h3>Brain API</h3><div id=\"brain-api-status\">Checking…</div></div>\n      <div class=\"card\"><h3>Kimi Provider</h3><div id=\"kimi-status\">Checking…</div></div>\n      <div class=\"card\"><h3>Dashboard</h3><div id=\"dashboard-status\">Checking…</div></div>\n      <div class=\"card\"><h3>Scheduler</h3><div id=\"scheduler-status\">Checking…</div></div>\n      <div class=\"card\"><h3>Autonomy</h3><div id=\"autonomy-status\">Checking…</div></div>\n      <div class=\"card\"><h3>Memory</h3><div id="
+    },
+    "8092 GET /brain-dashboard/status": {
+      "ok": true,
+      "status": 200,
+      "json": {
+        "ok": true,
+        "degraded": false,
+        "brain": {
+          "ok": true,
+          "status": "healthy",
+          "api": "http://127.0.0.1:8091"
+        },
+        "kimi": {
+          "ok": true,
+          "status": "available_via_provider_probe"
+        },
+        "dashboard": {
+          "ok": true,
+          "status": "online",
+          "status_latency_ms": 15.998
+        },
+        "scheduler": {
+          "exists": true,
+          "enabled": false,
+          "state": "cached_ready",
+          "last_run_time": null,
+          "next_run_time": null,
+          "last_task_result": null,
+          "action": "powershell -ExecutionPolicy Bypass -File tools/brain_autonomy_run_once.ps1",
+          "degraded": false,
+          "source": "cache_file"
+        },
+        "autonomy": {
+          "state": "idle",
+          "cycle": "complete",
+          "last_run_time": "2026-06-16T23:07:25.029038+00:00",
+          "last_run_result": "idle",
+          "paused": false,
+          "stopped": false
+        },
+        "memory": {
+          "journal_count": 440,
+          "promotion_queue_count": 57,
+          "semantic_staging_count": 5,
+          "promotion_audit_count": 1,
+          "canonical_promotion_performed": false
+        },
+        "safety": {
+          "semantic_memory_lines": 1732,
+          "faiss_ids": 1633,
+          "faiss_ntotal": 1633,
+          "canonical_semantic_mutated": true,
+          "faiss_mutated": true,
+          "trading_touched": false,
+          "b8_touched": false,
+          "secrets_exposed": false
+        },
+        "watchdog": {
+          "checked_utc": "2026-06-16T23:20:42.234634+00:00",
+          "stopped": false,
+          "paused": false,
+          "heartbeat_present": true,
+          "heartbeat": {
+            "updated_utc": "2026-06-16T23:07:25.029038+00:00",
+            "status": "idle",
+            "cycle": "complete"
+          }
+        },
+        "alerts": [
+          {
+            "severity": "LOW",
+            "code": "promotion_queue_pending",
+            "message": "Memory items are waiting for human review before semantic promotion.",
+            "action": "operator_review"
+          }
+        ],
+        "errors": [],
+        "recommendation": "continue_monitoring"
+      },
+      "body_preview": "{\"ok\":true,\"degraded\":false,\"brain\":{\"ok\":true,\"status\":\"healthy\",\"api\":\"http://127.0.0.1:8091\"},\"kimi\":{\"ok\":true,\"status\":\"available_via_provider_probe\"},\"dashboard\":{\"ok\":true,\"status\":\"online\",\"status_latency_ms\":15.998},\"scheduler\":{\"exists\":true,\"enabled\":false,\"state\":\"cached_ready\",\"last_run_time\":null,\"next_run_time\":null,\"last_task_result\":null,\"action\":\"powershell -ExecutionPolicy Bypass -File tools/brain_autonomy_run_once.ps1\",\"degraded\":false,\"source\":\"cache_file\"},\"autonomy\":{\"state\":\"idle\",\"cycle\":\"complete\",\"last_run_time\":\"2026-06-16T23:07:25.029038+00:00\",\"last_run_result\":\"idle\",\"paused\":false,\"stopped\":false},\"memory\":{\"journal_count\":440,\"promotion_queue_count\":57,\"semantic_staging_count\":5,\"promotion_audit_count\":1,\"canonical_promotion_performed\":false},\"safety\":{\"semantic_memory_lines\":1732,\"faiss_ids\":1633,\"faiss_ntotal\":1633,\"canonical_semantic_mutated\":true,\"faiss_mutated\":true,\"trading_touched\":false,\"b8_touched\":false,\"secrets_exposed\":false},\"watchdog\":{\"checked_utc\":\"2026-06-16T23:20:42.234634+00:00\",\"stopped\":false,\"paused\":false,\"heartbeat_present\":true,\"heartbeat\":{\"updated_utc\":\"2026-06-16T23:07:25.029038+00:00\",\"status\":\"idle\",\"cycle\":\"complete\"}}"
+    },
+    "8092 GET /brain-dashboard/agent-v2/status": {
+      "ok": false,
+      "error": "HTTP Error 404: Not Found"
+    }
+  },
+  "run_id": "agv2_a2bb2ca883b264af",
+  "all_required_8091_ok": true
+}

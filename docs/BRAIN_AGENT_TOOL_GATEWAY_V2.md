@@ -1,3 +1,3 @@
 # Brain Agent Tool Gateway V2
 
-Tools are permissioned with risk metadata. Read-only tools: repo_status_read, file_read, grep_search, route_probe, semantic_retrieve, smoke_test_readonly. Write-like tools are dry-run or approval-gated. `.env`, trading, B8, strategies, and semantic/FAISS mutation paths are blocked by default.
+Tools return structured `{tool_name, ok, blocked, approval_required, error, result}` outcomes. Safe tools include repo status, file read, grep, route probe, semantic retrieve, and allowlisted smoke tests. Write tools are approval-gated and cannot mutate semantic/FAISS, trading, B8, or strategies by default.

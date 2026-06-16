@@ -1,0 +1,18 @@
+# Memory / FAISS Baseline
+
+- snapshot_path: C:\AI_VAULT_CANONICAL\memory\rollback_snapshots\agent_v2_total_operational_excellence_closeout_01_20260616_230025
+- semantic_path: C:\AI_VAULT_CANONICAL\memory\semantic\semantic_memory.jsonl
+- semantic_lines: 1732
+- semantic_jsonl_valid: True
+- semantic_jsonl_error: None
+- faiss_ids: 1633
+- faiss_ntotal: 1633
+- faiss_readable: True
+- faiss_error: None
+- ids_equals_ntotal: True
+
+## Hashes
+
+- semantic_memory.jsonl: 5a3180593cb1ddff57861f0976033bb187ae995c9942a83ad8bf01ce9d7c7e7f
+- semantic_memory_faiss.index: 3fd44c7f45096fd2c37d523f7e6b24a9b73c23f17468f7ed6c666525a6977e21
+- semantic_memory_faiss_ids.json: 96c93ae79301f7434615fad73a34a2af452bec04f578894f25faa211ad9664ca
