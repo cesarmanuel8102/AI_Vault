@@ -41,6 +41,7 @@ from brain.curated_runtime_lookup import (
 )
 from brain.curated_learning_chat_access import answer_chat_probe
 from brain_v9.api_security import require_operator_access, StrictOperatorAccess
+from brain_v9.core.agent_kernel_v2.api_adapter import router as agent_v2_router
 from brain_v9.core.router_entrypoint import handle_user_message
 from brain_v9.config import (
     BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS,
@@ -180,6 +181,7 @@ app.include_router(autonomy_router)
 app.include_router(canary_lookup_read_only_router)
 app.include_router(knowledge_read_api_router)
 app.include_router(openai_compat_router)
+app.include_router(agent_v2_router)
 
 # UPGRADE: AOS + L2 + Sandbox + EventBus + Settings
 try:
@@ -1114,6 +1116,20 @@ async def v1_agent_status(room_id: str | None = None):
         "ts": datetime.now(timezone.utc).isoformat(),
     }
 
+
+@app.get("/brain-dashboard/agent-v2/status")
+async def brain_dashboard_agent_v2_status():
+    from brain_v9.core.agent_kernel_v2.runtime import get_agent_runtime_v2, LANGGRAPH_USED, LANGGRAPH_BLOCKER
+    rt = get_agent_runtime_v2()
+    return {
+        "ok": True,
+        "canonical_for_new_agent_runs": True,
+        "backend": rt.backend,
+        "langgraph_used": LANGGRAPH_USED,
+        "langgraph_blocker": LANGGRAPH_BLOCKER,
+        "runs": len(rt.list_runs()),
+        "legacy_agent_status": "legacy_compatible_not_canonical",
+    }
 
 @app.get("/brain/operating-context")
 async def brain_operating_context():

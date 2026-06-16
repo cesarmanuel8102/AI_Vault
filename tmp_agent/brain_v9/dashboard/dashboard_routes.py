@@ -223,6 +223,7 @@ def dashboard_status() -> dict[str, Any]:
         "alerts": alerts,
         "errors": errors,
         "recommendation": "continue_monitoring" if not errors else "inspect_degraded_components",
+        "agent_v2": {"canonical_for_new_agent_runs": True, "status_route": "/brain-dashboard/agent-v2/status", "legacy_agent_status": "legacy_compatible_not_canonical"},
     }
 
 @router.get("/activity")
@@ -303,4 +304,23 @@ def chat(req: ChatRequest) -> dict[str, Any]:
         "model_selected": brain.get("model_selected"),
         "fallback_used": brain.get("fallback_used"),
         "no_cot_leak": brain.get("no_cot_leak"),
+    }
+
+
+@router.get("/agent-v2/status")
+def agent_v2_dashboard_status() -> dict[str, Any]:
+    from tmp_agent.brain_v9.core.agent_kernel_v2.runtime import get_agent_runtime_v2, LANGGRAPH_USED, LANGGRAPH_BLOCKER
+    rt = get_agent_runtime_v2()
+    return {
+        "ok": True,
+        "agent_v2": {
+            "canonical_for_new_agent_runs": True,
+            "backend": rt.backend,
+            "langgraph_used": LANGGRAPH_USED,
+            "langgraph_blocker": LANGGRAPH_BLOCKER,
+            "runs": len(rt.list_runs()),
+            "trace_available": True,
+            "legacy_agent_status": "legacy_compatible_not_canonical",
+        },
+        "message": "Agent V2 is canonical for new agent operations; legacy agent remains compatible."
     }
