@@ -1,0 +1,74 @@
+{
+  "direct_app_route_registration": {
+    "error": null,
+    "import_ok": true,
+    "new_routes_registered": true,
+    "routes": [
+      "/brain-dashboard/agent-v2/status",
+      "/v2/agent/capabilities",
+      "/v2/agent/runs",
+      "/v2/agent/runs",
+      "/v2/agent/runs/{run_id}",
+      "/v2/agent/runs/{run_id}/cancel",
+      "/v2/agent/runs/{run_id}/execute",
+      "/v2/agent/runs/{run_id}/pause",
+      "/v2/agent/runs/{run_id}/plan",
+      "/v2/agent/runs/{run_id}/resume",
+      "/v2/agent/runs/{run_id}/trace",
+      "/v2/agent/status"
+    ]
+  },
+  "existing_live": {
+    "http://127.0.0.1:8091/dashboard": {
+      "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n<title>AI_VAULT Command Center</title>\n<link rel=\"icon\" type=\"image/svg+xml\" href=\"/ui/favicon.svg\">\n<script src=\"/ui/chart.umd.min.js\"></script>\n<link rel=\"stylesheet\" href=\"/ui/dashboard_core.css\">\n<link rel=\"stylesheet\" href=\"/ui/dashboard_accessibility.css\">\n</head>\n<body>\n\n<!-- ═══ Sidebar ═══ -->\n<div class=\"sidebar\">\n  <div class=\"sidebar-brand\">\n    <h1>AI_VAULT</h1>\n    <div class=\"version\">Command Center v2.0</div>\n  </div>\n  <div class=\"sidebar-section\">\n    <div class=\"sidebar-section-label\">Monitor</div>\n    <a class=\"sidebar-link active\" onclick=\"showPanel('overview')\">\n      <span class=\"icon\">&#9632;</span> Overview\n    </a>\n    <a class=\"sidebar-link\" onclick=\"showPanel('platforms')\">\n      <span class=\"icon\">&#9670;</span> Platforms\n    </a>\n    <a class=\"sidebar-link\" onclick=\"showPanel('strategy')\">\n      <span class=\"icon",
+      "ok": true,
+      "status": 200
+    },
+    "http://127.0.0.1:8091/health": {
+      "body": "{\"status\":\"healthy\",\"sessions\":164,\"version\":\"9.0.0\",\"safe_mode\":false}",
+      "ok": true,
+      "status": 200
+    },
+    "http://127.0.0.1:8091/status": {
+      "body": "{\"sessions\":[\"default\",\"codex_training_probe\",\"codex_pure_brain_training_01_runtime_probe\",\"codex_pure_brain_training_01_baseline_cei_fdot_training_1\",\"codex_pure_brain_training_01_baseline_cei_fdot_training_2\",\"codex_pure_brain_training_01_baseline_cei_fdot_training_3\",\"codex_pure_brain_training_01_baseline_cei_fdot_heldout_4\",\"codex_pure_brain_training_01_baseline_cei_fdot_heldout_5\",\"codex_pure_brain_training_01_baseline_cei_fdot_safety_6\",\"provider_probe_kimi_chat\",\"provider_probe_kimi_explicit\",\"provider_probe_kimi_k26\",\"codex_pure_brain_training_01_baseline_brain_architecture_training_1\",\"codex_pure_brain_training_01_baseline_brain_architecture_training_2\",\"codex_pure_brain_training_01_baseline_brain_architecture_training_3\",\"provider_probe_direct_llm\",\"codex_pure_brain_training_01_baseline_brain_architecture_heldout_4\",\"codex_pure_brain_training_01_baseline_brain_architecture_heldout_5\",\"codex_pure_brain_training_01_baseline_brain_architecture_safety_6\",\"codex_pure_brain_trainin",
+      "ok": true,
+      "status": 200
+    },
+    "http://127.0.0.1:8091/ui/": {
+      "body": "<!DOCTYPE html>\r\n<html lang=\"es\">\r\n<head>\r\n<meta charset=\"UTF-8\">\r\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n<title>Brain Chat V9</title>\r\n<style>\r\n  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }\r\n\r\n  :root {\r\n    --bg:       #0f1117;\r\n    --surface:  #1a1d27;\r\n    --surface2: #22263a;\r\n    --border:   #2e3350;\r\n    --accent:   #6c63ff;\r\n    --accent2:  #9d97ff;\r\n    --text:     #e4e6f0;\r\n    --text2:    #8b90b0;\r\n    --green:    #3ecf8e;\r\n    --red:      #f06060;\r\n    --amber:    #f5a623;\r\n    --radius:   12px;\r\n    --font:     -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;\r\n  }\r\n\r\n  body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 15px; height: 100vh; display: flex; flex-direction: column; }\r\n\r\n  /* Header */\r\n  header {\r\n    background: var(--surface);\r\n    border-bottom: 1px solid var(--border);\r\n    padding: 12px 20px;\r\n    display: flex;\r\n    align-items: center;\r\n    gap: ",
+      "ok": true,
+      "status": 200
+    },
+    "http://127.0.0.1:8092/": {
+      "body": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Brain Operator Dashboard</title>\n  <link rel=\"stylesheet\" href=\"/static/styles.css\">\n</head>\n<body>\n  <main>\n    <header class=\"header-bar\">\n      <h1>Brain Persistent Autonomy</h1>\n      <div id=\"header-meta\">\n        <span id=\"mode-badge\" class=\"badge\">Loading…</span>\n        <span id=\"scheduler-badge\" class=\"badge\">Scheduler: …</span>\n        <span id=\"heartbeat-badge\" class=\"badge\">Heartbeat: …</span>\n        <span id=\"next-run-badge\" class=\"badge\">Next run: …</span>\n      </div>\n    </header>\n\n    <section class=\"grid cols-3\" id=\"status-cards\">\n      <div class=\"card\"><h3>Brain API</h3><div id=\"brain-api-status\">Checking…</div></div>\n      <div class=\"card\"><h3>Kimi Provider</h3><div id=\"kimi-status\">Checking…</div></div>\n      <div class=\"card\"><h3>Dashboard</h3><div id=\"dashboard-status\">Checking…</div></div>\n      <div cl",
+      "ok": true,
+      "status": 200
+    },
+    "http://127.0.0.1:8092/brain-dashboard/status": {
+      "body": "{\"ok\":true,\"degraded\":false,\"brain\":{\"ok\":true,\"status\":\"healthy\",\"api\":\"http://127.0.0.1:8091\"},\"kimi\":{\"ok\":true,\"status\":\"available_via_provider_probe\"},\"dashboard\":{\"ok\":true,\"status\":\"online\",\"status_latency_ms\":17.262},\"scheduler\":{\"exists\":true,\"enabled\":false,\"state\":\"cached_ready\",\"last_run_time\":null,\"next_run_time\":null,\"last_task_result\":null,\"action\":\"powershell -ExecutionPolicy Bypass -File tools/brain_autonomy_run_once.ps1\",\"degraded\":false,\"source\":\"cache_file\"},\"autonomy\":{\"state\":\"idle\",\"cycle\":\"complete\",\"last_run_time\":\"2026-06-16T21:07:24.711086+00:00\",\"last_run_result\":\"idle\",\"paused\":false,\"stopped\":false},\"memory\":{\"journal_count\":434,\"promotion_queue_count\":57,\"semantic_staging_count\":5,\"promotion_audit_count\":1,\"canonical_promotion_performed\":false},\"safety\":{\"semantic_memory_lines\":1732,\"faiss_ids\":1633,\"faiss_ntotal\":1633,\"canonical_semantic_mutated\":true,\"faiss_mutated\":true,\"trading_touched\":false,\"b8_touched\":false,\"secrets_exposed\":false},\"watchdog\":{\"ch",
+      "ok": true,
+      "status": 200
+    },
+    "http://127.0.0.1:8092/health": {
+      "body": "{\"ok\":true,\"dashboard\":\"brain_persistent_autonomy\",\"port\":8092}",
+      "ok": true,
+      "status": 200
+    }
+  },
+  "live_server_reload_required": true,
+  "new_live": {
+    "capabilities": {
+      "error": "<HTTPError 404: 'Not Found'>",
+      "ok": false
+    },
+    "create_run": {
+      "error": "<HTTPError 404: 'Not Found'>",
+      "ok": false
+    },
+    "status": {
+      "error": "<HTTPError 404: 'Not Found'>",
+      "ok": false
+    }
+  },
+  "restart_command": "cd C:/AI_VAULT_CANONICAL; python tmp_agent/brain_v9/main.py"
+}

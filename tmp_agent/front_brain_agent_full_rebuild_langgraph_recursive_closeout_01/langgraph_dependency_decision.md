@@ -1,0 +1,16 @@
+# LangGraph Dependency Decision
+
+```json
+{
+  "attempted_install": true,
+  "blocker_if_any": null,
+  "fallback_used": false,
+  "langchain_core_import": true,
+  "langchain_core_version": "1.4.7",
+  "langgraph_import": true,
+  "langgraph_version": "1.2.5",
+  "pip_install_log": "tmp_agent/front_brain_agent_full_rebuild_langgraph_recursive_closeout_01/langgraph_pip_install.txt",
+  "python_executable": "C:\\Users\\cesar\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+  "used_in_runtime": true
+}
+```

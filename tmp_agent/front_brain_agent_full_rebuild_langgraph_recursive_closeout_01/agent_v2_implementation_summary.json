@@ -1,0 +1,16 @@
+{
+  "backend": "langgraph",
+  "graph_probe": {
+    "backend": "langgraph",
+    "ok": true,
+    "out": {
+      "finalized": true,
+      "planned": true,
+      "probe": true,
+      "retrieved": true,
+      "tools_checked": true
+    }
+  },
+  "langgraph_blocker": null,
+  "langgraph_used": true
+}
