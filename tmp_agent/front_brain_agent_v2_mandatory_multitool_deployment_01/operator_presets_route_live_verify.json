@@ -1,0 +1,22 @@
+{
+  "phase": "operator_presets_route_live_verify",
+  "timestamp": "2026-06-17T01:44:00.580831Z",
+  "route_url": "http://127.0.0.1:8091/v2/agent/operator-presets",
+  "route_live": true,
+  "status_code": 200,
+  "presets_count": 8,
+  "preset_names": [
+    "operator_status_audit",
+    "repo_health_audit",
+    "memory_faiss_safety_audit",
+    "dashboard_health_audit",
+    "mandatory_multitool_selftest",
+    "trace_health_audit",
+    "governance_block_test",
+    "daily_operator_summary"
+  ],
+  "health_ok": true,
+  "agent_status_ok": true,
+  "8091_pid": 129184,
+  "verification_pass": true
+}

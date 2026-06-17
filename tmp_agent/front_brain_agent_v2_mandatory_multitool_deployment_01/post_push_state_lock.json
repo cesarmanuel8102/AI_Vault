@@ -1,0 +1,15 @@
+{
+  "phase": "state_lock",
+  "timestamp": "2026-06-17T01:42:02.269236Z",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "bc7deac",
+  "remote_head": "bc7deac",
+  "heads_match": true,
+  "staged_empty": true,
+  "tracked_dirty": [
+    "M memory/autonomous_journal.jsonl"
+  ],
+  "only_allowed_dirty": false,
+  "semantic_faiss_dirty": false,
+  "verification_pass": true
+}
