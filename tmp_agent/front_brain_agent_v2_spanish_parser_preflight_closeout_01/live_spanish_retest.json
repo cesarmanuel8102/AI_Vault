@@ -1,0 +1,37 @@
+{
+  "phase": "live_spanish_retest",
+  "timestamp": "2026-06-17T02:41:22.220043Z",
+  "run_id": "agv2_23df4ef07d0807e4",
+  "status_code": 200,
+  "canonical_agent_v2": true,
+  "classification": "mandatory_multitool",
+  "model_used": "kimi-k2.6:cloud",
+  "provider_degraded": false,
+  "raw_cot_exposed": false,
+  "trace_event_count": 12,
+  "checks_extracted": [
+    {
+      "check_id": "check_1",
+      "tool": "grep_search",
+      "pattern": "agent_kernel_v2"
+    },
+    {
+      "check_id": "check_2",
+      "tool": "grep_search",
+      "pattern": "NativeAgentRuntimeV2"
+    },
+    {
+      "check_id": "check_3",
+      "tool": "route_probe",
+      "url": "http://127.0.0.1:8091/v2/agent/status"
+    },
+    {
+      "check_id": "check_4",
+      "tool": "route_probe",
+      "url": "http://127.0.0.1:8091/v2/agent/capabilities"
+    }
+  ],
+  "final_answer_obligation": true,
+  "verification_pass": true,
+  "notes": "All Spanish checks correctly extracted. Quote stripping, endpoint normalization, and final answer obligation all working."
+}

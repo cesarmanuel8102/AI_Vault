@@ -22,9 +22,19 @@ MANDATORY_TRIGGERS = [
     "every one of these",
     "explicit tool request",
     "required checks",
+    # Spanish triggers
+    "debes hacer",
+    "debes hacer todos",
+    "hacer todos estos",
+    "ejecutar todos estos",
+    "realizar todos estos",
+    "prueba obligatoria",
+    "test obligatorio",
+    "checks obligatorios",
 ]
 
 CHECK_PATTERNS = [
+    # English patterns
     ("route_probe", r"probe\s+(https?://\S+)", {"url": 1}),
     ("route_probe", r"(?:check|test|verify)\s+(https?://\S+)", {"url": 1}),
     ("route_probe", r"probe\s+(?:port\s+)?(809[0-9])", {"url": 0}),
@@ -42,6 +52,16 @@ CHECK_PATTERNS = [
     ("smoke_test_readonly", r"(?:run|execute)\s+(?:a\s+)?smoke\s+test", {}),
     ("file_patch_dry_run", r"(?:dry[-\s]?run|preview)\s+(?:patch|change|fix)", {}),
     ("file_patch_apply_approval_required", r"(?:apply|commit|write|modify|patch)\s+(?:without|bypass|skip)\s+(?:approval|permission|gate)", {}),
+    # Spanish patterns
+    ("route_probe", r"(?:probar|verificar|consultar)\s+(https?://\S+)", {"url": 1}),
+    ("route_probe", r"(?:probar|verificar|consultar)\s+(?:el\s+)?(?:endpoint|url|servicio)\s+(https?://\S+)", {"url": 1}),
+    ("route_probe", r"(?:probar|verificar|consultar)\s+(?:el\s+)?(?:endpoint|ruta|servicio)\s+(/\S+)", {"url": 1}),
+    ("route_probe", r"(?:probar|verificar|consultar)\s+(/\S+)", {"url": 1}),
+    ("grep_search", r"(?:buscar|encontrar)\s+(?:en\s+)?(?:código|codigo|repo|archivos?)\s+(.+?)(?:\.|\n|$)", {"pattern": 1}),
+    ("grep_search", r"(?:buscar|encontrar)\s+(.+?)(?:\s+en\s+(?:código|codigo|repo|archivos?))", {"pattern": 1}),
+    ("file_read", r"(?:leer|inspeccionar)\s+(?:el\s+)?(?:archivo|fichero)\s+(.+?)(?:\.|\n|$)", {"path": 1}),
+    ("file_read", r"(?:leer|inspeccionar)\s+(.+?)(?:\.|\n|$)", {"path": 1}),
+    ("repo_status_read", r"(?:leer|consultar|verificar)\s+(?:el\s+)?(?:estado\s+del\s+repo|repo|repositorio)", {}),
 ]
 
 
@@ -64,6 +84,16 @@ FINAL_ANSWER_MARKERS = [
     r"say which",
     r"which checks passed",
     r"which tools were used",
+    # Spanish final answer markers
+    r"en (?:la )?respuesta final",
+    r"en (?:la )?respuesta",
+    r"lista de herramientas usadas",
+    r"lista de checks pasados",
+    r"lista de herramientas utilizadas",
+    r"lista de verificaciones realizadas",
+    r"decir el nombre exacto",
+    r"decir (?:cuáles|cuales)",
+    r"mencionar (?:cuáles|cuales)",
 ]
 
 
@@ -186,7 +216,19 @@ def _extract_checks(goal: str) -> List[Dict[str, Any]]:
                     val = m.group(group_idx).strip()
                     if val.endswith("."):
                         val = val[:-1]
+                    # Strip surrounding quotes from grep/file patterns
+                    if tool_name in ("grep_search", "file_read") and val:
+                        val = val.strip('"').strip("'")
+                    # Normalize endpoint paths starting with /v2/ to full URL
+                    if tool_name == "route_probe" and val and val.startswith("/v2/"):
+                        val = "http://127.0.0.1:8091" + val
+                    # Skip file_read if path contains spaces or looks like prose (indirect reference)
+                    if tool_name == "file_read" and (" " in val or len(val.split()) > 3):
+                        continue
                     inputs[key] = val
+                # If file_read was skipped due to indirect reference, skip this check entirely
+                if tool_name == "file_read" and not inputs:
+                    continue
                 checks.append({
                     "check_id": f"check_{idx}",
                     "description": segment.strip(),

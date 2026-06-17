@@ -1,0 +1,33 @@
+{
+  "phase": "direct_test_results",
+  "timestamp": "2026-06-17T02:42:13.331401Z",
+  "tests": [
+    {
+      "name": "spanish_mandatory_prompt_detected",
+      "status": "PASS"
+    },
+    {
+      "name": "quote_sanitization_grep",
+      "status": "PASS"
+    },
+    {
+      "name": "endpoint_path_normalization",
+      "status": "PASS"
+    },
+    {
+      "name": "indirect_file_reference_skipped",
+      "status": "PASS"
+    },
+    {
+      "name": "spanish_final_answer_obligation",
+      "status": "PASS"
+    },
+    {
+      "name": "inline_numbered_spanish_prompt",
+      "status": "PASS"
+    }
+  ],
+  "passed": 6,
+  "failed": 0,
+  "verification_pass": true
+}

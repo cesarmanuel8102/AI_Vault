@@ -1,0 +1,72 @@
+{
+  "phase": "spanish_parser_hotfix_audit",
+  "timestamp": "2026-06-17T02:37:00Z",
+  "front": "FRONT-BRAIN-AGENT-V2-SPANISH-PARSER-PREFLIGHT-CLOSEOUT-01",
+  "file_audited": "tmp_agent/brain_v9/core/agent_kernel_v2/mandatory_tools.py",
+  "spanish_additions": {
+    "mandatory_triggers": [
+      "debes hacer",
+      "debes hacer todos",
+      "hacer todos estos",
+      "ejecutar todos estos",
+      "realizar todos estos",
+      "prueba obligatoria",
+      "test obligatorio",
+      "checks obligatorios"
+    ],
+    "route_probe_patterns": [
+      "probar|verificar|consultar + URL",
+      "probar|verificar|consultar + endpoint|url|servicio + URL",
+      "probar|verificar|consultar + endpoint|ruta|servicio + /path"
+    ],
+    "grep_search_patterns": [
+      "buscar|encontrar + en + código|codigo|repo|archivo + pattern",
+      "buscar|encontrar + pattern + en + código|codigo|repo|archivo"
+    ],
+    "file_read_patterns": [
+      "leer|inspeccionar + el + archivo|fichero + path",
+      "leer|inspeccionar + path"
+    ],
+    "repo_status_read_patterns": [
+      "leer|consultar|verificar + estado del repo|repo|repositorio"
+    ]
+  },
+  "known_issues_remaining": {
+    "quote_sanitization": {
+      "severity": "high",
+      "description": "Grep patterns capture surrounding quotes literally. Buscar en código \"agent_kernel_v2\" -> pattern = \"agent_kernel_v2\" (with quotes). Need to strip quotes.",
+      "affected_patterns": [
+        "Spanish grep_search",
+        "English grep_search"
+      ]
+    },
+    "endpoint_path_normalization": {
+      "severity": "high",
+      "description": "Route probe captures /v2/agent/status as-is. Need to prepend http://127.0.0.1:8091 for paths starting with /v2/.",
+      "affected_patterns": [
+        "Spanish route_probe with /path"
+      ]
+    },
+    "indirect_file_reference": {
+      "severity": "medium",
+      "description": "'Leer el archivo donde esté NativeAgentRuntimeV2' captures literal path 'donde esté NativeAgentRuntimeV2'. Should be treated as indirect reference, not literal file_read.",
+      "decision": "For now, document as future enhancement. If file_read path contains spaces or Spanish words like 'donde', skip or treat as grep_search instead."
+    },
+    "spanish_final_answer_obligation": {
+      "severity": "medium",
+      "description": "FINAL_ANSWER_MARKERS only has English patterns. Spanish 'En la respuesta final...' not detected.",
+      "affected_markers": [
+        "en la respuesta final",
+        "en la respuesta",
+        "lista de herramientas usadas",
+        "lista de checks pasados"
+      ]
+    }
+  },
+  "fix_plan": [
+    "Strip surrounding quotes from all grep_search captured patterns",
+    "Normalize endpoint paths starting with /v2/ to http://127.0.0.1:8091 + path",
+    "Skip file_read if captured path contains spaces or looks like prose (indirect reference)",
+    "Add Spanish final answer obligation markers"
+  ]
+}

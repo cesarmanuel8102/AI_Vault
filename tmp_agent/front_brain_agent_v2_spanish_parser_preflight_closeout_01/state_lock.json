@@ -1,0 +1,31 @@
+{
+  "phase": "preflight_state_lock",
+  "timestamp": "2026-06-17T02:22:58Z",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "b90f752",
+  "remote_head": "b90f752",
+  "heads_match": true,
+  "staged_empty": true,
+  "tracked_dirty": [
+    "M memory/autonomous_journal.jsonl",
+    "M memory/semantic/semantic_memory.jsonl",
+    "M tmp_agent/brain_v9/core/agent_kernel_v2/mandatory_tools.py"
+  ],
+  "only_allowed_dirty": false,
+  "extra_dirty_files": [
+    "M memory/semantic/semantic_memory.jsonl",
+    "M tmp_agent/brain_v9/core/agent_kernel_v2/mandatory_tools.py"
+  ],
+  "preflight_blockers": [
+    "memory/semantic/semantic_memory.jsonl dirty (+1 line drift from prior sessions)",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/mandatory_tools.py dirty (Spanish hotfix uncommitted)"
+  ],
+  "resolution_plan": [
+    "Complete Spanish parser preflight closeout front",
+    "Do NOT stage semantic_memory.jsonl",
+    "Do NOT remove drifted line",
+    "Document drift as forensic",
+    "Commit only mandatory_tools.py + tests + evidence"
+  ],
+  "verification_pass": true
+}
