@@ -1,0 +1,16 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-8092-REBOOT-RECOVERY-DASHBOARD-CONSOLIDATION-01",
+  "timestamp_utc": "2026-06-17T01:15:00+00:00",
+  "pre_reboot_state": {
+    "port_8092": "FREE",
+    "zombie_resolved": true,
+    "zombie_resolution_reason": "socket_timeout_or_prior_reboot",
+    "pid_listening": null,
+    "pid_exists": null,
+    "probe_8092_root": "actively_refused",
+    "probe_8092_dashboard_status": "actively_refused",
+    "probe_8092_agent_v2_status": "actively_refused",
+    "reboot_required": false,
+    "reboot_performed": false
+  }
+}

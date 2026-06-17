@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-06-17T01:10:30Z",
+  "result": {
+    "run_id": "agv2_acbd7a116976f3a3",
+    "model_used": "kimi-k2.6:cloud",
+    "provider_degraded": false,
+    "trace_event_count": 16,
+    "classification": "provider_diagnosis"
+  }
+}
