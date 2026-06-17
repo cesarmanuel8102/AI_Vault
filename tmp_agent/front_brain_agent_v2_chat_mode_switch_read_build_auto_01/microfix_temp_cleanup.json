@@ -1,0 +1,7 @@
+{
+  "removed_files": ["launch_services.py", "restart_services_govfix.py", "start_8092_daemon.py", "test_nl_parser_unit.py"],
+  "files_not_found": [],
+  "no_git_clean_used": true,
+  "status": "CLEANED",
+  "date": "2026-06-17"
+}

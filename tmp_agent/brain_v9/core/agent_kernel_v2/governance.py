@@ -6,7 +6,7 @@ from .schemas import LEGACY_MODE_MAP
 
 MODE_COMMAND_PATTERNS = [
     # Spanish patterns
-    ("build", ["hazlo en build", "modo build", "eleva a build", "pon en build", "activa build", "switch a build", "cambia a build", "enable build mode"]),
+    ("build", ["hazlo en build", "modo build", "eleva a build", "pon en build", "activa build", "switch a build", "cambia a build", "enable build mode", "apruebo build"]),
     ("read_only", ["modo read", "modo lectura", "modo solo lectura", "read mode", "modo read only", "pon en read", "hazlo en read", "eleva a read", "cambia a read"]),
     ("auto", ["modo auto", "automatico", "modo automatico", "pon en auto", "hazlo en auto", "switch a auto", "cambia a auto", "enable auto mode"]),
 ]
@@ -45,17 +45,25 @@ def contains_raw_cot(text: str) -> bool:
 
 
 def parse_mode_from_message(message: str) -> str | None:
-    """Parse natural-language mode switch commands from user message."""
+    """Parse natural-language mode switch commands from user message.
+
+    Logic:
+    1. Explicit Spanish/English phrase patterns (modo build, hazlo en auto, etc.).
+    2. Whole-word 'read_only' keyword (safe because it is not a common English word).
+    3. Do NOT match standalone English words 'build' or 'auto' — these appear in normal
+       sentences ('build pipeline', 'autonomous promotion') and must NOT trigger mode
+       switches unless paired with an explicit command phrase.
+    """
+    import re
     m = (message or "").lower()
-    # Direct mode keywords first (shortest wins)
-    for keyword in ["read_only", "build", "auto"]:
-        if keyword in m:
-            return keyword
-    # Pattern matching
+    # 1. Explicit phrase patterns from MODE_COMMAND_PATTERNS
     for mode, patterns in MODE_COMMAND_PATTERNS:
         for pat in patterns:
             if pat in m:
                 return mode
+    # 2. Whole-word 'read_only' keyword (rare in normal text, safe to match standalone)
+    if re.search(r'\bread_only\b', m):
+        return "read_only"
     return None
 
 

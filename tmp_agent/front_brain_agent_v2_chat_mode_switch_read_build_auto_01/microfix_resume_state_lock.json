@@ -1,0 +1,29 @@
+{
+  "phase": "1",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "562c39f",
+  "remote_head": "562c39f",
+  "local_equals_remote": true,
+  "staged_empty": true,
+  "working_tree_dirty": [
+    "memory/autonomous_journal.jsonl (DO NOT STAGE)",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py (NL parser whole-word fix - already applied in working tree)"
+  ],
+  "temp_files_in_root": [
+    "restart_services_govfix.py",
+    "start_8092_daemon.py",
+    "test_nl_parser_unit.py"
+  ],
+  "evidence_files_untracked": [
+    "tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/microfix_8092_mode_forwarding_state_lock.json",
+    "tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/microfix_gov_nl_parser_state_lock.json",
+    "tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/visual_retest_8091.json",
+    "tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/visual_retest_8092.json",
+    "tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/visual_retest_nl_mode_commands.json",
+    "tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/visual_retest_restart_verify.json",
+    "tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/visual_retest_state_lock.json"
+  ],
+  "status": "LOCK_VERIFIED_MICROFIX_RESUME",
+  "note": "Prior run interrupted after applying NL parser fix. Need to: complete phases, test, restart services, validate, commit.",
+  "date": "2026-06-17"
+}

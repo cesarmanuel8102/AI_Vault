@@ -1,0 +1,14 @@
+{
+  "phase": "6",
+  "auto_build_test": {
+    "message": "modo auto. corrige un bug ficticio en un archivo de prueba, pero no apliques cambios sin confirmación.",
+    "mode_requested": "auto",
+    "mode_effective": "read_only",
+    "note": "AUTO with build-intent message: planner chose semantic_retrieve (read-only). No build escalation detected because no write tools were actually scheduled.",
+    "status": "NO_WRITE_TOOLS_SCHEDULED — escalation not triggered because planner did not schedule write tools"
+  },
+  "approval_phrase_test": {
+    "note": "Not applicable — no escalation was triggered, so no confirmation_id was generated."
+  },
+  "date": "2026-06-17"
+}

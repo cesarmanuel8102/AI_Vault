@@ -1,0 +1,20 @@
+{
+  "phase": "3",
+  "status": "PASS",
+  "cases_tested": 13,
+  "cases_passed": 13,
+  "cases_failed": 0,
+  "key_cases": [
+    {"msg": "Review promotion queue before autonomous promotion.", "expected": null, "result": "PASS", "note": "autonomous no longer triggers auto"},
+    {"msg": "Heartbeat is stale — verify autonomy process.", "expected": null, "result": "PASS", "note": "autonomy no longer triggers auto"},
+    {"msg": "auto_promote_strategies status", "expected": null, "result": "PASS", "note": "underscore compound ignored"},
+    {"msg": "auto-promote queue", "expected": null, "result": "PASS", "note": "hyphen compound ignored"},
+    {"msg": "modo auto. verifica ultimos cambios", "expected": "auto", "result": "PASS"},
+    {"msg": "modo build. revisa estado del repo", "expected": "build", "result": "PASS"},
+    {"msg": "hazlo en build y corrige el bug", "expected": "build", "result": "PASS"},
+    {"msg": "apruebo build", "expected": "build", "result": "PASS"},
+    {"msg": "modo read. revisa estado", "expected": "read_only", "result": "PASS"},
+    {"msg": "This is a read_only mode test", "expected": "read_only", "result": "PASS", "note": "standalone read_only is safe to match"}
+  ],
+  "date": "2026-06-17"
+}

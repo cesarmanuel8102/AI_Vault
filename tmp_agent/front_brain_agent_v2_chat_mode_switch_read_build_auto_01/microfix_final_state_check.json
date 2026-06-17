@@ -1,0 +1,21 @@
+{
+  "phase": "1",
+  "local_head": "562c39f",
+  "remote_head": "562c39f",
+  "local_equals_remote": true,
+  "staged_files": [
+    "tests/smoke/smoke_front_brain_agent_v2_nl_mode_parser_microfix_01.py (A)",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py (M)"
+  ],
+  "untracked_dirty": [
+    "memory/autonomous_journal.jsonl (DO NOT STAGE)",
+    "launch_services.py (TEMP)",
+    "restart_services_govfix.py (TEMP)",
+    "start_8092_daemon.py (TEMP)",
+    "test_nl_parser_unit.py (TEMP)",
+    "tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/*.json (EVIDENCE - TO STAGE)"
+  ],
+  "status": "READY_FOR_CLOSEOUT",
+  "note": "governance.py and smoke test already staged from prior add. Need to add evidence files and clean temp files.",
+  "date": "2026-06-17"
+}

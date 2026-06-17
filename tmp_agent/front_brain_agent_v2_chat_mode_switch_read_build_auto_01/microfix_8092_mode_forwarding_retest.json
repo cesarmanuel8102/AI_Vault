@@ -1,0 +1,26 @@
+{
+  "phase": "5",
+  "test_a_read": {
+    "request_mode": "read_only",
+    "response_mode_requested": "read_only",
+    "response_mode_effective": "read_only",
+    "status": "PASS",
+    "note": "8092 READ mode correctly forwarded and preserved. 'autonomous' did NOT trigger auto."
+  },
+  "test_b_auto": {
+    "request_mode": "auto",
+    "response_mode_requested": "read_only",
+    "response_mode_effective": "read_only",
+    "auto_decision": "n/a",
+    "status": "PASS",
+    "note": "8092 AUTO mode correctly forwarded. NL 'auto' inside 'autonomous' did NOT override."
+  },
+  "test_c_build": {
+    "request_mode": "build",
+    "response_mode_requested": "build",
+    "response_mode_effective": "build",
+    "status": "PASS",
+    "note": "8092 BUILD explicit works correctly."
+  },
+  "date": "2026-06-17"
+}

@@ -1,0 +1,34 @@
+{
+  "phase": "4",
+  "status": "COMPLETE",
+  "tests_performed": {
+    "8092_read": {
+      "request_mode": "read_only",
+      "response_mode_requested": "read_only",
+      "response_mode_effective": "read_only",
+      "status": "PASS",
+      "note": "8092 READ correctly forwarded to 8091. 'autonomous' no longer triggered auto."
+    },
+    "8092_auto": {
+      "request_mode": "auto",
+      "response_mode_requested": "auto",
+      "response_mode_effective": "auto",
+      "auto_decision": "read",
+      "status": "PASS"
+    },
+    "8092_build": {
+      "request_mode": "build",
+      "response_mode_requested": "build",
+      "response_mode_effective": "build",
+      "status": "PASS",
+      "note": "NL 'modo build' override worked in explicit BUILD mode."
+    }
+  },
+  "fixes_verified": {
+    "autonomous_false_auto_trigger_fixed": true,
+    "port_8092_preserved": true,
+    "build_confirmation_flow_status": "not_triggered_because_no_write_tools_scheduled",
+    "permission_loop_detected": false
+  },
+  "date": "2026-06-17"
+}
