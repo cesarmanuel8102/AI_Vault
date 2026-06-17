@@ -1,4 +1,5 @@
 from __future__ import annotations
+import re
 from typing import Any, Dict, List
 
 from .mandatory_tools import parse_mandatory_tool_requests
@@ -7,14 +8,157 @@ PLANNER_CLASSES = [
     "repo_audit", "code_search", "endpoint_probe", "memory_question", "dashboard_diagnosis",
     "provider_diagnosis", "frontend_diagnosis", "smoke_test", "documentation_task",
     "safe_patch_dry_run", "approval_required_write", "general_reasoning", "mandatory_multitool",
+    "explicit_tool_request", "autonomy_diagnosis", "recent_changes_diagnosis",
 ]
+
+# Explicit tool request patterns - if user names a tool, schedule it directly
+EXPLICIT_TOOL_PATTERNS = {
+    # Direct verb + tool name (highest priority)
+    r"(?:programa|solicita|solicitar|usa|usar|ejecuta|ejecutar|verifica|verificar|schedule|run|use|execute)\s+([a-z_][a-z0-9_]*)" : r"\1",
+    # Spanish explicit tool requests with scheduling verb
+    r"(?:programa|solicita|solicitar|usa|usar|ejecuta|ejecutar|verifica|verificar)\s+(?:al\s+)?(?:planner\s+)?(?:que\s+)?(?:programe|schedule)\s+([a-z_][a-z0-9_]*)" : r"\1",
+    # Tool main/complement patterns
+    r"(?:tool\s+principal|tool\s+main)\s*[:\-]?\s*([a-z_][a-z0-9_]*)" : r"\1",
+    r"(?:complementada\s+con|complemented\s+with)\s+([a-z_][a-z0-9_]*)" : r"\1",
+    # English explicit tool requests with action verb + tool type
+    r"(?:schedule|run|use|execute)\s+(?:the\s+)?([a-z_][a-z0-9_]*)\s+(?:tool|check|test)" : r"\1",
+}
+
+# Diagnostic phrase mappings - when user describes a symptom, map to diagnostic tools
+DIAGNOSTIC_PHRASES = {
+    # Autonomy heartbeat diagnostic
+    "autonomy_heartbeat": {
+        "triggers": [
+            r"heartbeat\s+(?:is\s+)?stale",
+            r"heartbeat\s+(?:is\s+)?old",
+            r"verify\s+autonomy\s+process",
+            r"autonomy\s+process",
+            r"autonomy\s+heartbeat",
+            r"heartbeat\s+stale",
+            r"heartbeat\s+is\s+stale",
+            r"verificar\s+(?:el\s+)?proceso\s+de\s+autonomia",
+            r"proceso\s+de\s+autonomia",
+            r"heartbeat\s+de\s+autonomia",
+            r"heartbeat\s+antiguo",
+            r"heartbeat\s+viejo",
+        ],
+        "tools": [
+            ("get_live_autonomy_status", {"check": "autonomy_heartbeat"}),
+            ("check_service_status", {"check": "autonomy_services"}),
+            ("get_autonomy_phase", {"check": "autonomy_phase"}),
+            ("repo_status_read", {}),
+        ],
+        "unavailable_notes": "get_live_autonomy_status, check_service_status, get_autonomy_phase are diagnostic endpoints that may not be available as direct tools",
+    },
+    # Recent brain/kernel changes
+    "recent_changes": {
+        "triggers": [
+            r"(?:ultimos|últimos|recent|last)\s+(?:cambios|changes)",
+            r"cambios\s+(?:en\s+)?(?:el\s+)?(?:kernel|agente|brain)",
+            r"recent\s+(?:brain|kernel|agent)\s+changes",
+            r"changes\s+in\s+(?:the\s+)?(?:brain|kernel|agent)",
+            r"ultimos\s+cambios\s+en\s+el\s+agente",
+            r"cambios\s+recientes",
+            r"recent\s+changes\s+in\s+agent",
+        ],
+        "tools": [
+            ("list_recent_brain_changes", {"limit": 10}),
+            ("repo_history_read", {"path": "tmp_agent/brain_v9", "limit": 10}),
+            ("repo_status_read", {}),
+            ("grep_search", {"pattern": "agent_kernel_v2|NativeAgentRuntimeV2|planner.py|tool_gateway.py", "glob": "*.py"}),
+        ],
+        "unavailable_notes": "list_recent_brain_changes may not exist as direct tool; falls back to repo_history_read + repo_status_read + grep_search",
+    },
+    # Git log/diff phrases
+    "git_history": {
+        "triggers": [
+            r"git\s+log",
+            r"git\s+history", 
+            r"git\s+diff",
+            r"historial\s+de\s+git",
+            r"diff\s+de\s+git",
+            r"log\s+de\s+git",
+            r"(?:ultimos|últimos|recent)\s+commits",
+            r"commits\s+recientes",
+            r"archivos\s+modificados",
+            r"modified\s+files",
+        ],
+        "tools": [
+            ("repo_history_read", {"path": "tmp_agent/brain_v9", "limit": 10}),
+            ("repo_diff_read", {"path": "tmp_agent/brain_v9"}),
+            ("repo_status_read", {}),
+        ],
+        "unavailable_notes": "repo_history_read and repo_diff_read provide safe read-only git log/diff equivalents",
+    },
+}
+
+
+def _detect_explicit_tool_requests(goal: str) -> List[Dict[str, Any]]:
+    """Detect if user explicitly names a tool. Returns list of tool requests."""
+    import re
+    requests = []
+    seen_tools = set()
+    for pattern, tool_name_group in EXPLICIT_TOOL_PATTERNS.items():
+        for match in re.finditer(pattern, goal, re.IGNORECASE):
+            tool_name = match.group(1).strip().lower()
+            if tool_name and len(tool_name) > 2 and tool_name not in seen_tools:
+                seen_tools.add(tool_name)
+                requests.append({
+                    "tool_name": tool_name,
+                    "confidence": "high",
+                    "source": "explicit_request",
+                    "matched_text": match.group(0),
+                })
+    return requests
+
+
+def _detect_diagnostic_phrases(goal: str) -> List[Dict[str, Any]]:
+    """Detect diagnostic phrases and map to recommended tools."""
+    import re
+    diagnostics = []
+    g = goal.lower()
+    
+    for diag_name, diag_config in DIAGNOSTIC_PHRASES.items():
+        triggered = False
+        for trigger in diag_config["triggers"]:
+            if re.search(trigger, g):
+                triggered = True
+                break
+        if triggered:
+            diagnostics.append({
+                "diagnosis": diag_name,
+                "tools": diag_config["tools"],
+                "unavailable_notes": diag_config.get("unavailable_notes", ""),
+            })
+    
+    return diagnostics
 
 
 def classify_goal(goal: str, mode: str = "read_only") -> str:
     g = (goal or "").lower()
+    
+    # Check for explicit tool requests first (highest priority)
+    explicit = _detect_explicit_tool_requests(goal)
+    if explicit:
+        return "explicit_tool_request"
+    
+    # Check diagnostic phrases before generic keyword classification
+    diagnostics = _detect_diagnostic_phrases(goal)
+    if diagnostics:
+        # Return specific diagnostic classification if exactly one
+        if len(diagnostics) == 1:
+            return diagnostics[0]["diagnosis"]
+        # If multiple, use explicit_tool_request to schedule all
+        return "explicit_tool_request"
+    
+    # Prevent "programa X tool" from being misclassified as safe_patch_dry_run
+    if re.search(r"(?:programa|solicita|solicitar|usa|ejecuta|verifica)\s+(?:al\s+)?(?:planner\s+)?(?:que\s+)?(?:programe|programe|schedule|run|use|execute)\s+([a-z_]+)", g):
+        return "explicit_tool_request"
+    
     if any(x in g for x in [".env", "apply patch", "commit", "push", "write tool", "blocked write"]):
         return "approval_required_write"
-    if any(x in g for x in ["patch", "diff", "dry-run", "dry run"]):
+    # Only classify as safe_patch_dry_run if actual patch/diff is requested, not tool scheduling
+    if any(x in g for x in ["patch", "diff", "dry-run", "dry run"]) and not any(x in g for x in ["schedule", "programa", "solicita", "tool principal"]):
         return "safe_patch_dry_run"
     if any(x in g for x in ["provider", "kimi", "ollama", "model"]):
         return "provider_diagnosis"
@@ -34,6 +178,15 @@ def classify_goal(goal: str, mode: str = "read_only") -> str:
         return "smoke_test"
     if any(x in g for x in ["doc", "runbook", "documentation"]):
         return "documentation_task"
+    
+    # Check for autonomy-related but not matched by explicit diagnostics
+    if any(x in g for x in ["autonomy", "heartbeat", "promotion queue", "scheduler"]):
+        return "autonomy_diagnosis"
+    
+    # Check for recent changes but not matched by explicit diagnostics
+    if any(x in g for x in ["changes", "cambios", "commits", "history", "log", "diff"]):
+        return "recent_changes_diagnosis"
+    
     return "general_reasoning"
 
 
@@ -82,6 +235,22 @@ def build_plan(goal: str, mode: str = "read_only") -> tuple[str, List[Dict[str, 
         add("mandatory_summary", "summary", "Consolidate mandatory multi-tool results", None, {})
         return classification, plan, metadata
 
+    # Check for explicit tool requests and diagnostic phrases
+    explicit_requests = _detect_explicit_tool_requests(goal)
+    diagnostics = _detect_diagnostic_phrases(goal)
+    
+    if explicit_requests or diagnostics:
+        classification = "explicit_tool_request" if explicit_requests else (diagnostics[0]["diagnosis"] if diagnostics else "general_reasoning")
+        add("plan", "plan", f"Classify goal as {classification} (explicit tool/diagnostic request)", None, {})
+        
+        # Build plan from explicit requests and diagnostics
+        explicit_plan = _build_explicit_tool_plan(goal, explicit_requests, diagnostics, metadata)
+        plan.extend(explicit_plan)
+        
+        # Add final summary
+        add("explicit_summary", "summary", "Consolidate explicit tool request results", None, {})
+        return classification, plan, metadata
+
     # Fallback to keyword-driven classification
     classification = classify_goal(goal, mode)
     add("plan", "plan", f"Classify goal as {classification}", None, {})
@@ -111,3 +280,163 @@ def build_plan(goal: str, mode: str = "read_only") -> tuple[str, List[Dict[str, 
         add("retrieve", "memory", "Read-only semantic retrieval", "semantic_retrieve", {"query": goal, "top_k": 3})
 
     return classification, plan, metadata
+
+
+def _resolve_tool(tool_name: str) -> tuple[str, Dict[str, Any], str]:
+    """Map requested tool name to available canonical tool. Returns (canonical_name, args, note)."""
+    import re
+    t = tool_name.strip().lower()
+    
+    # Direct mappings for tools that exist
+    direct_map = {
+        "repo_status_read": ("repo_status_read", {}, ""),
+        "grep_search": ("grep_search", {"pattern": "agent", "glob": "*.py"}, ""),
+        "file_read": ("file_read", {"path": "README.md"}, "path needs to be specified"),
+        "route_probe": ("route_probe", {"url": "http://127.0.0.1:8091/health"}, "url needs to be specified"),
+        "semantic_retrieve": ("semantic_retrieve", {"query": "agent", "top_k": 3}, "query needs to be specified"),
+        "smoke_test_readonly": ("smoke_test_readonly", {"target": "tests/smoke"}, "target needs to be specified"),
+        "file_patch_dry_run": ("file_patch_dry_run", {}, ""),
+        "file_patch_apply_approval_required": ("file_patch_apply_approval_required", {}, ""),
+        "git_commit_approval_required": ("git_commit_approval_required", {}, ""),
+    }
+    
+    if t in direct_map:
+        return direct_map[t]
+    
+    # Map missing diagnostic tools to safe equivalents
+    # list_recent_brain_changes -> repo_history_read + grep_search + repo_status_read
+    if t in ["list_recent_brain_changes", "recent_brain_changes", "brain_changes", "kernel_changes"]:
+        return ("repo_history_read", {"path": "tmp_agent/brain_v9", "limit": 10}, "list_recent_brain_changes not available; using repo_history_read as safe equivalent")
+    
+    # get_live_autonomy_status -> route_probe to autonomy endpoint + repo_status_read
+    if t in ["get_live_autonomy_status", "autonomy_status", "live_autonomy"]:
+        return ("route_probe", {"url": "http://127.0.0.1:8091/brain/autonomy/status"}, "get_live_autonomy_status not available; probing autonomy endpoint if exists")
+    
+    # check_service_status -> route_probe to health endpoint
+    if t in ["check_service_status", "service_status", "service_check"]:
+        return ("route_probe", {"url": "http://127.0.0.1:8091/health"}, "check_service_status not available; using route_probe to health endpoint")
+    
+    # get_autonomy_phase -> semantic_retrieve about autonomy phase
+    if t in ["get_autonomy_phase", "autonomy_phase", "phase"]:
+        return ("semantic_retrieve", {"query": "autonomy phase current state", "top_k": 3}, "get_autonomy_phase not available; using semantic_retrieve as fallback")
+    
+    # repo_history_read -> repo_status_read + grep_search (git log equivalent)
+    if t in ["repo_history_read", "git_log", "git_history", "history_read"]:
+        return ("repo_status_read", {}, "repo_history_read not available; using repo_status_read + manual git log via grep")
+    
+    # repo_diff_read -> repo_status_read (diff info from git status)
+    if t in ["repo_diff_read", "git_diff", "diff_read"]:
+        return ("repo_status_read", {}, "repo_diff_read not available; using repo_status_read for change summary")
+    
+    # git log --oneline equivalent
+    if re.search(r"git\s+log", t):
+        return ("repo_status_read", {}, "git log not available as direct tool; repo_status_read provides HEAD info")
+    
+    # git diff equivalent
+    if re.search(r"git\s+diff", t):
+        return ("repo_status_read", {}, "git diff not available as direct tool; repo_status_read provides change summary")
+    
+    # read_file equivalent
+    if t in ["read_file", "file_read", "leer_archivo", "readfile"]:
+        return ("file_read", {"path": "README.md"}, "file_read available; path needs to be specified")
+    
+    # Default: unknown tool
+    return ("", {}, f"Tool '{tool_name}' not found in registry and has no safe equivalent")
+
+
+def _build_explicit_tool_plan(goal: str, explicit_requests: List[Dict[str, Any]], diagnostics: List[Dict[str, Any]], metadata: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Build plan for explicit tool requests and diagnostic phrases."""
+    plan: List[Dict[str, Any]] = []
+    
+    def add(step_id, kind, title, tool, args, requested_by_user=False, note=""):
+        entry = {
+            "step_id": step_id,
+            "kind": kind,
+            "title": title,
+            "status": "planned",
+            "tool_name": tool,
+            "input": args,
+        }
+        if requested_by_user:
+            entry["requested_by_user"] = True
+            entry["expected"] = "ok"
+        if note:
+            entry["note"] = note
+        plan.append(entry)
+        if tool and tool not in metadata["scheduled_tools"]:
+            metadata["scheduled_tools"].append(tool)
+    
+    # Track all tool names requested
+    all_requested = set()
+    
+    # Process explicit tool requests
+    for req in explicit_requests:
+        tool_name = req["tool_name"]
+        all_requested.add(tool_name)
+        canonical, args, note = _resolve_tool(tool_name)
+        
+        if canonical:
+            add(
+                f"explicit_{tool_name}",
+                "tool",
+                f"Explicit request: {tool_name}" + (f" (resolved to {canonical})" if canonical != tool_name else ""),
+                canonical,
+                args,
+                requested_by_user=True,
+                note=note,
+            )
+            if note and "not available" in note.lower():
+                metadata.setdefault("requested_but_unavailable", []).append({
+                    "requested_tool": tool_name,
+                    "resolved_to": canonical,
+                    "note": note,
+                })
+        else:
+            metadata.setdefault("requested_but_unavailable", []).append({
+                "requested_tool": tool_name,
+                "resolved_to": None,
+                "note": note,
+            })
+            add(
+                f"explicit_{tool_name}_unavailable",
+                "summary",
+                f"Tool '{tool_name}' requested but unavailable",
+                None,
+                {},
+                requested_by_user=True,
+                note=note,
+            )
+    
+    # Process diagnostic phrases
+    for diag in diagnostics:
+        diag_name = diag["diagnosis"]
+        for tool_name, args in diag["tools"]:
+            all_requested.add(tool_name)
+            canonical, resolved_args, note = _resolve_tool(tool_name)
+            
+            if canonical:
+                add(
+                    f"diag_{diag_name}_{tool_name}",
+                    "tool",
+                    f"Diagnostic ({diag_name}): {tool_name}" + (f" (resolved to {canonical})" if canonical != tool_name else ""),
+                    canonical,
+                    {**args, **resolved_args},
+                    requested_by_user=False,
+                    note=note,
+                )
+            else:
+                metadata.setdefault("requested_but_unavailable", []).append({
+                    "requested_tool": tool_name,
+                    "diagnosis": diag_name,
+                    "note": note,
+                })
+    
+    # Add supporting evidence tools if not already scheduled
+    if "repo_status_read" not in metadata["scheduled_tools"]:
+        add("repo_status_support", "tool", "Supporting evidence: repository status", "repo_status_read", {})
+    
+    # Add grep_search for context if not already scheduled
+    if "grep_search" not in metadata["scheduled_tools"]:
+        add("grep_support", "tool", "Supporting evidence: code search", "grep_search", {"pattern": "agent|kernel|autonomy", "glob": "*.py"})
+    
+    return plan

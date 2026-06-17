@@ -8954,3 +8954,45 @@ FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01 -- requires explicit 
 - memory_faiss: unchanged (1732 lines, 1633 ids, 1633 ntotal)
 - next_recommended_front: FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - evidence_path: tmp_agent/front_brain_agent_v2_mandatory_inline_numbered_check_parser_fix_01
+
+---
+
+## FRONT-BRAIN-AGENT-V2-SPECIFIC-TOOL-SCHEDULING-FIX-01 (2026-06-17)
+
+### Problema
+- Planner V2 no detectaba nombres explícitos de herramientas en goals (ej: "programa list_recent_brain_changes")
+- Frases diagnósticas en español no estaban mapeadas (ej: "últimos cambios", "heartbeat antiguo")
+- Herramientas solicitadas no existían en ToolGatewayV2 (ej: list_recent_brain_changes, get_live_autonomy_status)
+- "programa X tool" se clasificaba erróneamente como `safe_patch_dry_run` si "patch" aparecía en el texto
+
+### Solución
+- Agregado `EXPLICIT_TOOL_PATTERNS` con regex para detectar solicitudes explícitas de herramientas (español e inglés)
+- Agregado `DIAGNOSTIC_PHRASES` con mapeo de frases diagnósticas a herramientas seguras
+- Agregado `_resolve_tool()` para mapear herramientas faltantes a equivalentes disponibles
+- Agregado `_build_explicit_tool_plan()` para construir planes determinísticos para requests explícitos
+- Modificado `classify_goal()` para verificar requests explícitos y diagnósticos antes de keyword matching
+- Modificado `build_plan()` para rutear requests explícitos/diagnósticos antes de fallback genérico
+- Prevenido que requests explícitas sean mal clasificadas como `safe_patch_dry_run`
+
+### Archivos modificados
+- `tmp_agent/brain_v9/core/agent_kernel_v2/planner.py`
+- `tests/smoke/smoke_front_brain_agent_v2_specific_tool_scheduling_fix_01.py` (nuevo)
+
+### Tests directos
+- 39 tests, 39 passed
+- Categorías: explicit_tool_detection, diagnostic_phrase_detection, tool_resolution, goal_classification, plan_building, determinism, read_only_safety
+
+### Live retests
+- A: `agv2_e20e7721f7c293c9` (recent_changes → repo_history_read + repo_status_read + grep_search) ✅
+- B: `agv2_a9869f65260f8d72` (explicit_tool_request → repo_history_read + repo_status_read + grep_search) ✅
+- C: `agv9_f9df1bd5b2250a27` (autonomy_heartbeat → route_probe + repo_status_read) ✅
+
+### Memory/FAISS
+- Sin cambios: 1733 líneas semantic, 1633 faiss_ids, 1633 ntotal
+- Sin archivos staged de memoria
+
+### Next recommended front
+FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
+
+### Evidence path
+`tmp_agent/front_brain_agent_v2_specific_tool_scheduling_fix_01/`
