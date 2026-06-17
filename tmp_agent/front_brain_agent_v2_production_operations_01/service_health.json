@@ -1,0 +1,17 @@
+{
+  "phase": "2",
+  "status": "HEALTHY",
+  "8091": {
+    "health": {"status":"healthy","version":"9.0.0","safe_mode":false},
+    "agent_status": {"ok":true,"canonical":true,"backend":"langgraph","runs":181,"model":"kimi-k2.6:cloud","provider":"ollama_cloud","trace_available":true},
+    "capabilities": {
+      "read_only_tools": ["repo_status_read","file_read","grep_search","route_probe","semantic_retrieve","repo_history_read","smoke_test_readonly"],
+      "write_tools": ["file_patch_apply_approval_required","git_commit_approval_required"],
+      "dry_run_tools": ["report_writer","file_patch_dry_run"]
+    }
+  },
+  "8092": {
+    "dashboard_status": {"ok":true,"agent_v2":{"ok":true,"canonical":true,"runs":181,"backend":"langgraph"}}
+  },
+  "date": "2026-06-17"
+}

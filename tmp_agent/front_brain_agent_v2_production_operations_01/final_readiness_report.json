@@ -1,0 +1,35 @@
+{
+  "phase": "5",
+  "front_id": "FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01",
+  "head": "3404cb9",
+  "remote": "3404cb9",
+  "local_equals_remote": true,
+  "staged_empty": true,
+  "tracked_dirty_remaining": ["memory/autonomous_journal.jsonl"],
+  "services": {
+    "8091_health": "healthy",
+    "8091_agent_status": "canonical (langgraph, 181 runs)",
+    "8091_capabilities": "10 tools registered (7 read-only, 2 approval-gated write, 2 dry-run)",
+    "8092_status": "connected (canonical, 181 runs)"
+  },
+  "mode_acceptance": {
+    "read_mode": "PASS (mode_effective=read_only, semantic_retrieve, no writes)",
+    "build_mode": "PASS (mode_effective=build, repo_status_read, no writes)",
+    "auto_mode": "PASS (mode_effective=auto, auto_decision=read, repo_history_read works, no unknown_tool)",
+    "repo_history_read": "PASS (new tool registered, returns 10 commits)",
+    "unknown_tool": "FIXED (repo_history_read no longer unknown)"
+  },
+  "governance": {
+    "write_approval_gate": true,
+    "semantic_faiss_blocked": true,
+    "trading_blocked": true,
+    "raw_cot_exposed": false,
+    "trace_available": true
+  },
+  "known_limitations": [
+    "Planner may schedule repo_status_read twice in recent_changes path (harmless read-only quirk)",
+    "memory/autonomous_journal.jsonl is runtime dirt (must remain unstaged)"
+  ],
+  "final_decision": "PRODUCTION-OPERATOR-READY",
+  "date": "2026-06-17"
+}

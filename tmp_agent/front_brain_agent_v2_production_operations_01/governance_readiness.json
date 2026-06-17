@@ -1,0 +1,38 @@
+{
+  "phase": "4",
+  "governance_checks": {
+    "write_tools_require_approval": {
+      "status": true,
+      "evidence": "capabilities endpoint shows file_patch_apply_approval_required and git_commit_approval_required both have 'requires_approval: true'"
+    },
+    "read_tools_execute_without_approval": {
+      "status": true,
+      "evidence": "All read_only tools (repo_status_read, repo_history_read, file_read, grep_search, route_probe, semantic_retrieve) show requires_approval: false"
+    },
+    "semantic_faiss_writes_blocked": {
+      "status": true,
+      "evidence": "semantic_retrieve is read-only only; no semantic/FAISS write tools in registry; no evidence of FAISS mutation in any acceptance test"
+    },
+    "trading_blocked": {
+      "status": true,
+      "evidence": "No trading-related tools in registry; no trading actions observed in acceptance tests"
+    },
+    "raw_cot_exposed": {
+      "status": false,
+      "evidence": "All acceptance tests returned raw_cot_exposed: false or not present; safety constraint enforced"
+    },
+    "provider_metadata_shown": {
+      "status": true,
+      "evidence": "All responses include provider_metadata with model_used, provider_used, provider_degraded fields"
+    },
+    "trace_url_present": {
+      "status": true,
+      "evidence": "All acceptance tests returned trace_url in response metadata"
+    },
+    "run_id_present": {
+      "status": true,
+      "evidence": "All acceptance tests returned run_id in response metadata"
+    }
+  },
+  "date": "2026-06-17"
+}

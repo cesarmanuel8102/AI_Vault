@@ -1,0 +1,37 @@
+{
+  "phase": "3",
+  "tests": {
+    "read_only": {
+      "request_mode": "read_only",
+      "effective_mode": "read_only",
+      "classification": "autonomy_diagnosis",
+      "tool_1": "semantic_retrieve",
+      "write_tools_scheduled": false,
+      "escalation_required": false,
+      "permission_loop": false,
+      "status": "PASS"
+    },
+    "build": {
+      "request_mode": "build",
+      "effective_mode": "build",
+      "classification": "repo_audit",
+      "tool_1": "repo_status_read",
+      "write_tools_scheduled": false,
+      "escalation_required": false,
+      "status": "PASS"
+    },
+    "auto": {
+      "request_mode": "auto",
+      "effective_mode": "auto",
+      "auto_decision": "read",
+      "classification": "explicit_tool_request",
+      "repo_history_read": "executed and passed (10 commits)",
+      "unknown_tool": false,
+      "duplicate_repo_status_read": "planner quirk (2x), but both pass",
+      "write_tools_scheduled": false,
+      "escalation_required": false,
+      "status": "PASS"
+    }
+  },
+  "date": "2026-06-17"
+}

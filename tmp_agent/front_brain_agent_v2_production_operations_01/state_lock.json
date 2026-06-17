@@ -1,0 +1,19 @@
+{
+  "phase": "1",
+  "front_id": "FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "3404cb9",
+  "remote_head": "3404cb9",
+  "local_equals_remote": true,
+  "staged_empty": true,
+  "working_tree_dirty": [
+    "memory/autonomous_journal.jsonl (runtime dirt - DO NOT STAGE)"
+  ],
+  "untracked_evidence_files": [
+    "tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/microfix_*",
+    "tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/visual_retest_*"
+  ],
+  "status": "LOCK_VERIFIED_PRODUCTION_READY",
+  "note": "Starting PRODUCTION-OPERATIONS-01 front.",
+  "date": "2026-06-17"
+}
