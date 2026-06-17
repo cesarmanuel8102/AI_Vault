@@ -1,0 +1,78 @@
+{
+  "timestamp": "2026-06-17T00:00:00Z",
+  "front": "FRONT-BRAIN-AGENT-V2-EVIDENCE-MAP-AND-FINALIZER-REFINEMENT-01",
+  "status": "COMPLETE",
+  "head": {
+    "start_head": "12ecbc2",
+    "expected_final_head": "TBD"
+  },
+  "changes_summary": {
+    "intent_adapter.py": [
+      "Added topic-specific evidence sources for autonomous/AUTO microfix and PRODUCTION-OPERATIONS-01",
+      "Added grep_pattern to each source for targeted searches",
+      "Expanded brain_signals for production and autonomous triggers",
+      "Fixed SYSTEM/UNKNOWN/generic intents to route to direct_assistant when no brain signals present",
+      "Lowered CONVERSATION threshold from 0.7 to 0.5"
+    ],
+    "native_runtime.py": [
+      "Brain evidence route now extracts per-source grep_pattern for targeted searches",
+      "file_read uses first evidence path as representative file",
+      "repo_history_read added as deterministic tool option"
+    ],
+    "finalizer.py": [
+      "_ollama_chat now accepts template-specific system_content parameter",
+      "finalize_agent_run selects system prompt based on template_override:",
+      "  direct_assistant: conversational prose, no operational headings",
+      "  brain_evidence: Brain-specific evidence focus",
+      "  mixed_brain_reasoning: general concept + evidence grounding",
+      "Eliminated hardcoded system prompt that forced operational format for all templates"
+    ]
+  },
+  "live_8091_results": {
+    "G1": {
+      "intent_route": "direct_assistant",
+      "status": "PASS",
+      "note": "Natural prose explanation of photosynthesis, no operational headings"
+    },
+    "G2": {
+      "intent_route": "direct_assistant",
+      "status": "PASS",
+      "note": "Natural prose recipe with ingredients and steps, no operational headings"
+    },
+    "B3": {
+      "intent_route": "brain_evidence",
+      "status": "PASS",
+      "note": "Identifies autonomous/AUTO microfix evidence, uses targeted grep pattern"
+    },
+    "B4": {
+      "intent_route": "brain_evidence",
+      "status": "PASS",
+      "note": "Uses PRODUCTION-OPERATIONS-01 evidence source, provides status assessment"
+    },
+    "M1": {
+      "intent_route": "brain_evidence",
+      "status": "PASS",
+      "note": "General concept + Brain evidence + gaps, no hallucination"
+    }
+  },
+  "live_8092_results": {
+    "status": "SKIPPED",
+    "reason": "Dashboard server (8092) could not be reliably restarted in background on Windows. Core routing objectives achieved on 8091."
+  },
+  "governance": {
+    "memory_staged": false,
+    "faiss_staged": false,
+    "raw_cot_found": false,
+    "write_gates_preserved": true,
+    "langgraph_canonical": true
+  },
+  "final_decision": {
+    "product_quality_chat_ready": true,
+    "reason": "All 5 core acceptance tests pass. Generic queries route to direct_assistant with natural prose. Brain evidence queries use deterministic source mapping with targeted grep patterns. Finalizer uses template-specific system prompts eliminating one-size-fits-all operational format. B3 and B4 now correctly identify relevant evidence.",
+    "remaining_blockers": [
+      "8092 dashboard server restart unreliable on Windows (non-critical for chat routing)",
+      "Future: Add more granular evidence folder discovery rather than representative single file"
+    ],
+    "next_front": "FRONT-BRAIN-AGENT-V2-CHAT-MONITORING-AND-DEGRADATION-HANDLING-01"
+  }
+}

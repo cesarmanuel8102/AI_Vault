@@ -1,0 +1,47 @@
+{
+  "G1": {
+    "status": 200,
+    "intent_route": "direct_assistant",
+    "classification": null,
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false,
+    "final_answer_preview": "Photosynthesis is basically how plants make their own food using sunlight. They take in carbon dioxide from the air through tiny openings in their leaves, absorb water through their roots, and use energy from sunlight to turn those ingredients into glucose\u2014a simple sugar that fuels their growth. As a byproduct, they release oxygen into the air, which is pretty great for the rest of us.\n\nIt's one of those beautifully circular processes: plants feed themselves, clean our air, and ultimately form t"
+  },
+  "G2": {
+    "status": 200,
+    "intent_route": "direct_assistant",
+    "classification": null,
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false,
+    "final_answer_preview": "Here's a simple arroz con pollo recipe:\n\n**Ingredients**\n- 4 chicken thighs (bone-in, skin-on)\n- 1\u00bd cups long-grain rice\n- 1 can (14 oz) diced tomatoes\n- 2\u00bd cups chicken broth\n- 1 medium onion, diced\n- 1 green bell pepper, diced\n- 3 cloves garlic, minced\n- 1 tsp cumin\n- 1 tsp turmeric (or a pinch of saffron)\n- \u00bd tsp oregano\n- \u00bd cup frozen peas\n- 2 tbsp olive oil\n- Salt and pepper\n\n**Steps**\n\nSeason the chicken with salt, pepper, and cumin. Heat olive oil in a large deep skillet or Dutch oven ove"
+  },
+  "B3": {
+    "status": 200,
+    "intent_route": "brain_evidence",
+    "classification": "brain_evidence",
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false,
+    "final_answer_preview": "## Summary\n\nThe goal is to identify what microfix was closed to prevent autonomous mode from triggering AUTO. From the deterministic evidence, **commit `2e9bad7`** contains the relevant microfix: `\"fix: prevent autonomous text from switching chat mode to AUTO\"`. This directly answers the question.\n\n---\n\n## Brain Evidence\n\n### Front Dirs / Traces / Ledgers\n\n| Source | Deterministic Data |\n|--------|-------------------|\n| **Repo HEAD** | `12ecbc2` on branch `codex/own-capital-sustainable-return` |"
+  },
+  "B4": {
+    "status": 200,
+    "intent_route": "brain_evidence",
+    "classification": "brain_evidence",
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false,
+    "final_answer_preview": "## Summary\n\n**PRODUCTION-OPERATIONS-01 status**: **UNSTABLE / NOT READY for autonomous operation**\n\nThe Brain V2 operator is **NOT ready** for production deployment. Critical evidence gaps exist, core runtime files show uncommitted modifications, and the file_read tool failed to execute despite being scheduled\u2014preventing verification of actual kernel state.\n\n---\n\n## Brain Evidence\n\n### Front Directories & Traces (Deterministic)\n\n| Evidence | Source | Finding |\n|----------|--------|---------|\n| *"
+  },
+  "M1": {
+    "status": 200,
+    "intent_route": "brain_evidence",
+    "classification": "brain_evidence",
+    "model_used": "deepseek-v4-pro:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false,
+    "final_answer_preview": "Based on the deterministic evidence provided, here is the finalized analysis:\n\n**Summary**\nThe Brain system is a multi-version, modular agent architecture currently in active development (v9). Evidence shows it is a deterministic, file-based system with autonomous execution capabilities, trading connectors, and strict operational modes. The current run was a read-only analysis that successfully executed two of three scheduled tools, with one tool failing due to a file path error. The system demo"
+  }
+}

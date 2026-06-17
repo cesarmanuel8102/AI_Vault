@@ -1,0 +1,11 @@
+{
+  "generic": {
+    "error": "HTTPConnectionPool(host='127.0.0.1', port=8092): Max retries exceeded with url: /brain-dashboard/chat (Caused by NewConnectionError(\"HTTPConnection(host='127.0.0.1', port=8092): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it\"))"
+  },
+  "autonomous": {
+    "error": "HTTPConnectionPool(host='127.0.0.1', port=8092): Max retries exceeded with url: /brain-dashboard/chat (Caused by NewConnectionError(\"HTTPConnection(host='127.0.0.1', port=8092): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it\"))"
+  },
+  "production": {
+    "error": "HTTPConnectionPool(host='127.0.0.1', port=8092): Max retries exceeded with url: /brain-dashboard/chat (Caused by NewConnectionError(\"HTTPConnection(host='127.0.0.1', port=8092): Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it\"))"
+  }
+}

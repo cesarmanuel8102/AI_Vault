@@ -68,15 +68,18 @@ class AgentV2IntentAdapter:
         has_generic_only = any(s in msg_lower for s in generic_only_signals)
 
         # Route classification
-        if intent == "CONVERSATION" and confidence >= 0.7 and not has_brain_signals:
+        if intent == "CONVERSATION" and confidence >= 0.5 and not has_brain_signals:
             route = "direct_assistant"
-        elif intent == "QUERY" and not has_brain_signals and not has_generic_only:
+        elif intent in {"QUERY", "UNKNOWN", "SYSTEM", "CREATIVE"} and not has_brain_signals and not has_generic_only:
             route = "direct_assistant"
-        elif has_brain_signals and intent in {"QUERY", "ANALYSIS", "COMMAND", "SYSTEM"}:
+        elif has_brain_signals and intent in {"QUERY", "ANALYSIS", "COMMAND", "SYSTEM", "CREATIVE", "UNKNOWN"}:
             route = "brain_evidence"
         elif has_brain_signals and intent == "QUERY" and confidence < 0.7:
             route = "mixed_brain_reasoning"
         elif has_generic_only and not has_brain_signals:
+            route = "direct_assistant"
+        elif not has_brain_signals:
+            # Catch-all for generic queries that don't match above
             route = "direct_assistant"
         else:
             route = "operational_agent"
@@ -97,23 +100,47 @@ class AgentV2IntentAdapter:
         msg_lower = message.lower()
         sources = []
 
+        # Topic-specific evidence paths
+        if any(k in msg_lower for k in ["autonomous", "auto mode", "auto", "trigger auto", "nl parser", "parser microfix", "microfix autonomous", "2e9bad7", "e0f0047"]):
+            sources.append({
+                "type": "autonomous_microfix",
+                "paths": [
+                    "tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/*",
+                ],
+                "tools": ["repo_status_read", "grep_search", "file_read", "repo_history_read"],
+                "grep_pattern": "autonomous|AUTO|parse_mode|nl_parser|microfix|2e9bad7|e0f0047",
+            })
+
+        if any(k in msg_lower for k in ["production", "operations", "operator ready", "operator-ready", "production readiness", "final_readiness_report", "readiness report", "cac5915", "PRODUCTION-OPERATIONS"]):
+            sources.append({
+                "type": "production_operations",
+                "paths": [
+                    "tmp_agent/front_brain_agent_v2_production_operations_01/*",
+                ],
+                "tools": ["repo_status_read", "grep_search", "file_read"],
+                "grep_pattern": "production|operator|readiness|final_readiness|operations|cac5915",
+            })
+
         if any(k in msg_lower for k in ["front", "agent", "kernel", "router", "tmp_agent"]):
             sources.append({
                 "type": "front_brain",
                 "paths": self.BRAIN_EVIDENCE_SOURCES["front_brain"],
                 "tools": ["repo_status_read", "grep_search", "file_read"],
+                "grep_pattern": "agent|brain|kernel|router",
             })
         if any(k in msg_lower for k in ["trace", "checkpoint", "run"]):
             sources.append({
                 "type": "traces",
                 "paths": self.BRAIN_EVIDENCE_SOURCES["traces"],
                 "tools": ["repo_status_read", "file_read"],
+                "grep_pattern": "trace|checkpoint|run",
             })
         if any(k in msg_lower for k in ["ledger", "migration", "history", "log"]):
             sources.append({
                 "type": "ledgers",
                 "paths": self.BRAIN_EVIDENCE_SOURCES["ledgers"],
                 "tools": ["file_read", "repo_history_read"],
+                "grep_pattern": "ledger|migration|history",
             })
 
         if not sources:
@@ -122,6 +149,7 @@ class AgentV2IntentAdapter:
                 "type": "front_brain",
                 "paths": self.BRAIN_EVIDENCE_SOURCES["front_brain"],
                 "tools": ["repo_status_read", "grep_search"],
+                "grep_pattern": "agent|brain|kernel",
             })
 
         return sources

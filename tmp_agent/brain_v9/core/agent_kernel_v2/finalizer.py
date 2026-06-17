@@ -30,13 +30,14 @@ def _safe_preview(value: Any, limit: int = 1800) -> str:
     return text[:limit]
 
 
-def _ollama_chat(model: str, prompt: str, timeout: int = 45) -> str:
+def _ollama_chat(model: str, prompt: str, timeout: int = 45, system_content: str|None = None) -> str:
+    default_system = "You are Brain Agent V2 finalizer. Produce concise operational answers grounded only in provided evidence. Do not reveal chain-of-thought or private reasoning. Include summary, evidence, actions, risks/gates, and next safe action."
     body = {
         "model": model,
         "stream": False,
         "think": False,
         "messages": [
-            {"role": "system", "content": "You are Brain Agent V2 finalizer. Produce concise operational answers grounded only in provided evidence. Do not reveal chain-of-thought or private reasoning. Include summary, evidence, actions, risks/gates, and next safe action."},
+            {"role": "system", "content": system_content or default_system},
             {"role": "user", "content": prompt},
         ],
         "options": {"temperature": 0.1, "num_predict": 900},
@@ -138,12 +139,22 @@ def finalize_agent_run(run: Dict[str, Any], memory_hits: List[Dict[str, Any]], t
     started = time.perf_counter()
     models = [PRIMARY_KIMI_MODEL] + FALLBACK_MODELS
     last_error = "not_attempted"
+    
+    # Select system prompt based on template
+    system_content = None
+    if template_override == "direct_assistant":
+        system_content = "You are a helpful assistant. Answer directly and naturally. Use conversational prose. Do NOT use structured sections like Summary, Evidence, Actions, Risks, or Next Safe Action unless the user explicitly asks for analysis."
+    elif template_override == "brain_evidence":
+        system_content = "You are Brain Agent V2 evidence analyst. Focus on Brain-specific evidence from front dirs, traces, and ledgers. Use deterministic source data. Do NOT hallucinate. Do NOT claim no evidence exists if evidence files were searched."
+    elif template_override == "mixed_brain_reasoning":
+        system_content = "You are Brain Agent V2 reasoning engine. Start with general concepts, then ground with Brain-specific evidence. Distinguish what you know from what the evidence shows."
+    
     for model in models:
         meta.provider_attempted.append(f"ollama:{model}")
         if model == PRIMARY_KIMI_MODEL:
             meta.kimi_available = True
         try:
-            answer = _ollama_chat(model, prompt)
+            answer = _ollama_chat(model, prompt, system_content=system_content)
             lower = answer.lower()
             meta.raw_cot_exposed = any(marker in lower for marker in FORBIDDEN_FINAL_MARKERS)
             if meta.raw_cot_exposed:

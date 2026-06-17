@@ -113,9 +113,13 @@ class NativeAgentRuntimeV2:
                     if tool == "repo_status_read":
                         plan.append({"step_id": f"repo_status_{src['type']}", "kind": "tool", "title": "Read repository status", "status": "planned", "tool_name": "repo_status_read", "input": {}})
                     elif tool == "grep_search":
-                        plan.append({"step_id": f"grep_{src['type']}", "kind": "tool", "title": "Search relevant files", "status": "planned", "tool_name": "grep_search", "input": {"pattern": "agent|brain|kernel", "glob": "*.py"}})
+                        pattern = src.get("grep_pattern", "agent|brain|kernel")
+                        plan.append({"step_id": f"grep_{src['type']}", "kind": "tool", "title": "Search relevant files", "status": "planned", "tool_name": "grep_search", "input": {"pattern": pattern, "glob": "*.py"}})
                     elif tool == "file_read":
-                        plan.append({"step_id": f"file_{src['type']}", "kind": "tool", "title": "Read evidence file", "status": "planned", "tool_name": "file_read", "input": {"path": "docs/MIGRATION_CONTROL_LEDGER.md"}})
+                        representative_path = src["paths"][0] if src.get("paths") else "docs/MIGRATION_CONTROL_LEDGER.md"
+                        plan.append({"step_id": f"file_{src['type']}", "kind": "tool", "title": "Read evidence file", "status": "planned", "tool_name": "file_read", "input": {"path": representative_path}})
+                    elif tool == "repo_history_read":
+                        plan.append({"step_id": f"repo_history_{src['type']}", "kind": "tool", "title": "Read repository history", "status": "planned", "tool_name": "repo_history_read", "input": {"path": "tmp_agent/brain_v9", "limit": 10}})
             
             run["plan"] = plan
             run["classification"] = "brain_evidence"
