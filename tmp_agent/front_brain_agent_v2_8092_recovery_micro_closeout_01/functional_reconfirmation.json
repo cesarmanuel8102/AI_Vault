@@ -1,0 +1,38 @@
+{
+  "timestamp": "2026-06-17T01:21:17Z",
+  "results": {
+    "/health": {
+      "ok": false,
+      "error": "timed out"
+    },
+    "/v2/agent/status": {
+      "status": 200,
+      "ok": true
+    },
+    "/v2/agent/capabilities": {
+      "status": 200,
+      "ok": true
+    },
+    "chat": {
+      "ok": true,
+      "run_id": "agv2_452e267c684355fb",
+      "model": "deepseek-v4-pro:cloud"
+    },
+    "trace": {
+      "ok": true,
+      "event_count": 6
+    },
+    "8092/": {
+      "status": 200,
+      "ok": true
+    },
+    "8092/brain-dashboard/status": {
+      "status": 200,
+      "ok": true
+    },
+    "8092/brain-dashboard/agent-v2/status": {
+      "status": 200,
+      "ok": true
+    }
+  }
+}

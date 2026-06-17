@@ -1,0 +1,12 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-8092-REBOOT-RECOVERY-DASHBOARD-CONSOLIDATION-01",
+  "timestamp_utc": "2026-06-17T01:15:00+00:00",
+  "reboot_required": false,
+  "reboot_performed": false,
+  "reboot_decision_reason": "Port 8092 was already free (no zombie process detected). No reboot necessary.",
+  "pre_reboot_state": {
+    "port_8092": "FREE",
+    "zombie_resolved": true,
+    "zombie_resolution_reason": "socket_timeout_or_prior_cleanup"
+  }
+}

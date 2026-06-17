@@ -1,0 +1,23 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-8092-REBOOT-RECOVERY-DASHBOARD-CONSOLIDATION-01",
+  "timestamp_utc": "2026-06-17T01:25:00+00:00",
+  "8091_endpoints": {
+    "health": "/health",
+    "agent_status": "/v2/agent/status",
+    "capabilities": "/v2/agent/capabilities",
+    "chat_agent": "/v2/chat/agent",
+    "trace": "/v2/agent/runs/{run_id}/trace"
+  },
+  "8092_endpoints": {
+    "root": "/",
+    "dashboard_status": "/brain-dashboard/status",
+    "agent_v2_status": "/brain-dashboard/agent-v2/status"
+  },
+  "consistency": {
+    "8092_agent_v2_status_returns_200": true,
+    "8092_shows_canonical_status": true,
+    "kimi_model_visible": true,
+    "trace_available": true,
+    "legacy_chat_preserved": true
+  }
+}

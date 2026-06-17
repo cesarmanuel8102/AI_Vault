@@ -1,0 +1,19 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-8092-RECOVERY-MICRO-CLOSEOUT-01",
+  "timestamp_utc": "2026-06-17T01:45:00+00:00",
+  "incident": {
+    "command_used": "git add -A",
+    "consequence": "Staged ~832 files including many old front artifacts, runtime logs, and unrelated evidence",
+    "detected_before_push": true,
+    "recovery_action": "git reset HEAD followed by selective explicit-path staging",
+    "final_commit_clean": true,
+    "old_bulk_artifacts_pushed": false
+  },
+  "rule_added": "Never use 'git add -A'. Always stage explicit reviewed file paths only.",
+  "verified": {
+    "commit_9f96cca_only_relevant_files": true,
+    "no_old_front_artifacts_in_commit": true,
+    "no_semantic_faiss_staged": true,
+    "no_autonomous_journal_staged": true
+  }
+}

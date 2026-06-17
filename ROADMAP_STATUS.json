@@ -4391,5 +4391,37 @@
     "next_recommended_front": "FRONT-BRAIN-AGENT-V2-MANDATORY-MULTITOOL-DEPLOYMENT-01",
     "evidence_path": "tmp_agent/front_brain_agent_v2_8092_reboot_recovery_dashboard_consolidation_01"
   },
+  "front_brain_agent_v2_8092_recovery_micro_closeout_01": {
+    "status": "done_pending_commit",
+    "front": "FRONT-BRAIN-AGENT-V2-8092-RECOVERY-MICRO-CLOSEOUT-01",
+    "start_head": "9f96cca",
+    "end_head": "PENDING_PUSH",
+    "purpose": "Complete missing evidence and document git add -A incident from previous front",
+    "previous_front": "FRONT-BRAIN-AGENT-V2-8092-REBOOT-RECOVERY-DASHBOARD-CONSOLIDATION-01",
+    "evidence_completed": {
+      "reboot_decision": true,
+      "post_reboot_stack_start": true,
+      "dashboard_consolidation_audit": true,
+      "memory_faiss_final": true,
+      "smoke_results": true,
+      "post_push_verification": true
+    },
+    "git_incident": {
+      "add_a_used": true,
+      "corrected_before_push": true,
+      "old_bulk_artifacts_pushed": false,
+      "rule_added": "Never use git add -A; always explicit-path stage only"
+    },
+    "8092_blocker_closed": true,
+    "8091_8092_operational": true,
+    "memory_faiss": {
+      "semantic_lines": 1732,
+      "faiss_ids": 1633,
+      "faiss_ntotal": 1633,
+      "unchanged": true
+    },
+    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-MANDATORY-MULTITOOL-DEPLOYMENT-01",
+    "evidence_path": "tmp_agent/front_brain_agent_v2_8092_recovery_micro_closeout_01"
+  },
   "last_functional_agent_v2_closeout_commit": "3f6fc8d"
 }

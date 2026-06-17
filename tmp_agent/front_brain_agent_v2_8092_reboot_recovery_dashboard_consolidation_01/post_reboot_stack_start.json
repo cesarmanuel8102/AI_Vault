@@ -1,0 +1,21 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-8092-REBOOT-RECOVERY-DASHBOARD-CONSOLIDATION-01",
+  "timestamp_utc": "2026-06-17T01:20:00+00:00",
+  "reboot_not_needed": true,
+  "stack_start": {
+    "8091_module": "tmp_agent.brain_v9.main:app",
+    "8091_pid": 175828,
+    "8092_module": "tmp_agent.brain_v9.dashboard.dashboard_app:app",
+    "8092_pid": 51556,
+    "verification": {
+      "8091_health": "200",
+      "8091_agent_status": "200",
+      "8091_capabilities": "200",
+      "8091_chat_agent": "200",
+      "8091_trace": "200",
+      "8092_root": "200",
+      "8092_dashboard_status": "200",
+      "8092_agent_v2_status": "200"
+    }
+  }
+}
