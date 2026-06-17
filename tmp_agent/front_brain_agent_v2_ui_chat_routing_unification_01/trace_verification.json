@@ -1,0 +1,28 @@
+{
+  "phase": "trace_verification",
+  "timestamp": "2026-06-17T03:40:00Z",
+  "runs_verified": [
+    {
+      "run_id": "agv2_bd91ced5ff66e089",
+      "source": "direct_api",
+      "event_count": 12,
+      "raw_cot_exposed": false,
+      "first_event": "run_created",
+      "last_event": "run_completed"
+    },
+    {
+      "run_id": "agv2_ed78e393da394685",
+      "source": "8092_dashboard_proxy",
+      "event_count": 6,
+      "raw_cot_exposed": false,
+      "first_event": "run_created",
+      "last_event": "run_completed"
+    }
+  ],
+  "trace_proxy_test": {
+    "url": "http://127.0.0.1:8092/brain-dashboard/agent-v2/runs/agv2_ed78e393da394685/trace",
+    "status": 200,
+    "ok": true,
+    "event_count": 6
+  }
+}

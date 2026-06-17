@@ -4584,5 +4584,43 @@
     },
     "evidence_path": "tmp_agent/front_brain_agent_v2_spanish_parser_preflight_closeout_01"
   },
+  "front_brain_agent_v2_ui_chat_routing_unification_01": {
+    "status": "done",
+    "front": "FRONT-BRAIN-AGENT-V2-UI-CHAT-ROUTING-UNIFICATION-01",
+    "start_head": "0615875",
+    "end_head": "TBD",
+    "routing_changes": {
+      "8091_ui": {
+        "endpoint_changed": "/v2/chat/agent (from /agent or /chat)",
+        "agent_orav_default_removed": true,
+        "canonical_display": true,
+        "execution_trace_panel": true
+      },
+      "8092_dashboard": {
+        "proxy_target_changed": "http://127.0.0.1:8091/v2/chat/agent (from /v1/chat/completions)",
+        "trace_proxy_added": "/brain-dashboard/agent-v2/runs/{run_id}/trace",
+        "brain_api_unreachable_resolved": true,
+        "canonical_display": true
+      }
+    },
+    "live_tests": {
+      "direct_api_baseline": "agv2_bd91ced5ff66e089 (mandatory_multitool, kimi-k2.6:cloud)",
+      "8092_dashboard_chat": "agv2_ed78e393da394685 (canonical=true, trace_url present)",
+      "8092_trace_proxy": "6 events, run_created→run_completed"
+    },
+    "memory_faiss": {
+      "semantic_lines": 1733,
+      "faiss_ntotal": 1633,
+      "unchanged": true,
+      "semantic_staged": false
+    },
+    "files_modified": [
+      "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+      "tmp_agent/brain_v9/dashboard/static/app.js",
+      "tmp_agent/brain_v9/ui/index.html"
+    ],
+    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01",
+    "evidence_path": "tmp_agent/front_brain_agent_v2_ui_chat_routing_unification_01"
+  },
   "last_functional_agent_v2_closeout_commit": "3f6fc8d"
 }

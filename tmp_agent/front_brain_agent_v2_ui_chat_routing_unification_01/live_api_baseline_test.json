@@ -1,0 +1,14 @@
+{
+  "phase": "live_api_baseline_test",
+  "timestamp": "2026-06-17T03:28:54.197950Z",
+  "status_code": 200,
+  "run_id": "agv2_bd91ced5ff66e089",
+  "canonical_agent_v2": true,
+  "classification": "mandatory_multitool",
+  "model_used": "kimi-k2.6:cloud",
+  "provider_degraded": false,
+  "raw_cot_exposed": false,
+  "trace_url": "/v2/agent/runs/agv2_bd91ced5ff66e089/trace",
+  "final_answer_present": true,
+  "verification_pass": true
+}

@@ -157,6 +157,27 @@
 
   /* Tool inline card */
   .tool-inline-card { margin: 8px 0; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); overflow: hidden; }
+  .tool-inline-header { display:flex; align-items:center; gap:6px; padding:8px 12px; background:rgba(0,0,0,.15); cursor:pointer; font-size:12px; }
+  .tool-inline-status { margin-left:auto; font-size:11px; }
+  .tool-inline-status.ok { color: var(--green); }
+  .tool-inline-status.err { color: var(--red); }
+  .tool-inline-open-btn { margin-left:6px; background:none; border:none; color:var(--accent); cursor:pointer; font-size:11px; }
+  .tool-inline-body { max-height:0; overflow:hidden; transition: max-height .3s ease; padding:0 12px; }
+  .tool-inline-body.open { max-height:400px; padding:8px 12px; }
+
+  /* ── Execution Trace Panel ── */
+  .trace-panel { margin: 8px 0; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); overflow: hidden; }
+  .trace-header { display:flex; align-items:center; gap:6px; padding:8px 12px; background:rgba(0,0,0,.15); cursor:pointer; font-size:12px; color: var(--text); }
+  .trace-body { max-height:2000px; overflow:auto; transition: max-height .4s ease; padding:8px 12px; }
+  .trace-body.collapsed { max-height:0; padding:0 12px; overflow:hidden; }
+  .trace-table { width:100%; border-collapse:collapse; font-size:11px; margin-bottom:8px; }
+  .trace-table td { padding:4px 6px; border-bottom:1px solid rgba(255,255,255,.05); }
+  .trace-table td:first-child { width:120px; color:var(--text2); font-weight:600; }
+  .trace-subsection { margin-top:6px; padding:6px 8px; background:rgba(0,0,0,.08); border-radius:6px; font-size:11px; }
+  .trace-subsection strong { display:block; margin-bottom:4px; font-size:12px; }
+  .trace-loading { color:var(--text2); font-style:italic; }
+  .trace-btn { display:inline-block; padding:4px 10px; background:var(--accent); color:#fff; border-radius:6px; text-decoration:none; font-size:11px; }
+  .trace-btn:hover { background:var(--accent2); }
   .tool-inline-header { display: flex; align-items: center; gap: 8px; padding: 8px 12px; font-size: 12px; color: var(--text2); cursor: pointer; background: rgba(255,255,255,.03); }
   .tool-inline-header:hover { background: rgba(255,255,255,.06); }
   .tool-inline-status { margin-left: auto; font-size: 11px; }
@@ -1139,6 +1160,105 @@ function openArtifact(title, subtitle, content, mode) {
   showArtifactPanel();
 }
 
+// ── Execution Trace Panel ──────────────────────────────────────────────────
+function renderExecutionTrace(data) {
+  const wrap = document.getElementById('messages');
+  const nearBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 120;
+  const panel = document.createElement('div');
+  panel.className = 'trace-panel';
+  const pm = data.provider_metadata || {};
+  const isDegraded = pm.provider_degraded || false;
+  const cotExposed = pm.raw_cot_exposed || false;
+  const runId = escapeHtml(data.run_id || '—');
+  const traceUrl = data.trace_url || '';
+  const fullTraceLink = traceUrl.startsWith('/') ? ('http://127.0.0.1:8091' + traceUrl) : traceUrl;
+
+  // Basic metadata table
+  let metaRows = '';
+  metaRows += `<tr><td>run_id</td><td>${runId}</td></tr>`;
+  metaRows += `<tr><td>classification</td><td>${escapeHtml(data.classification || '—')}</td></tr>`;
+  metaRows += `<tr><td>status</td><td>${escapeHtml(data.status || '—')}</td></tr>`;
+  metaRows += `<tr><td>model_used</td><td>${escapeHtml(pm.model_used || data.model_used || '—')}</td></tr>`;
+  metaRows += `<tr><td>provider_used</td><td>${escapeHtml(pm.provider_used || '—')}</td></tr>`;
+  metaRows += `<tr><td>provider_degraded</td><td style="color:${isDegraded?'#f5a623':'#3ecf8e'}">${isDegraded ? '⚠ YES' : '✓ No'}</td></tr>`;
+  if (pm.fallback_reason) {
+    metaRows += `<tr><td>fallback_reason</td><td style="color:#f5a623">${escapeHtml(pm.fallback_reason)}</td></tr>`;
+  }
+  metaRows += `<tr><td>raw_cot_exposed</td><td style="color:${cotExposed?'#f06060':'#3ecf8e'};font-weight:${cotExposed?'700':'normal'}">${cotExposed ? '🚨 YES' : '✓ No'}</td></tr>`;
+
+  panel.innerHTML = `
+    <div class="trace-header" onclick="this.nextElementSibling.classList.toggle('collapsed')">
+      <span>📊</span> <strong>Execution Trace</strong>
+      <span style="margin-left:auto;font-size:11px;color:var(--text2)">${runId}</span>
+    </div>
+    <div class="trace-body collapsed">
+      <table class="trace-table">${metaRows}</table>
+      <div class="trace-subsection" id="trace-plan-${runId.replace(/[^a-z0-9]/gi,'')}"><strong>Plan</strong><div class="trace-loading">Loading...</div></div>
+      <div class="trace-subsection" id="trace-tools-${runId.replace(/[^a-z0-9]/gi,'')}"><strong>Tools</strong><div class="trace-loading">Loading...</div></div>
+      <div class="trace-subsection" id="trace-evidence-${runId.replace(/[^a-z0-9]/gi,'')}"><strong>Evidence</strong><div class="trace-loading">Loading...</div></div>
+      <div class="trace-subsection" id="trace-provider-${runId.replace(/[^a-z0-9]/gi,'')}"><strong>Provider</strong><div class="trace-loading">Loading...</div></div>
+      <div style="margin-top:8px;">
+        <a href="${fullTraceLink}" target="_blank" class="trace-btn">🔍 Open Full Trace</a>
+      </div>
+    </div>`;
+  wrap.appendChild(panel);
+  if (nearBottom) { wrap.scrollTop = wrap.scrollHeight; hideScrollDownBtn(); }
+  else { showScrollDownBtn(); }
+  hideEmptyState();
+
+  // Async fetch trace events
+  if (traceUrl) {
+    fetch(fullTraceLink, { headers: { 'Accept': 'application/json' } })
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+      .then(traceData => {
+        const safeId = runId.replace(/[^a-z0-9]/gi,'');
+        const events = traceData.trace || [];
+        const eventCount = traceData.event_count || events.length;
+
+        // Plan section: show plan_created event
+        const planEvents = events.filter(e => e.event_type === 'plan_created');
+        document.getElementById('trace-plan-' + safeId).innerHTML = '<strong>Plan</strong>' +
+          (planEvents.length ? `<div>${planEvents.map(p => `<div>· ${escapeHtml(p.message || 'plan created')}</div>`).join('')}</div>` : '<div style="color:var(--text2)">No plan event</div>');
+
+        // Tools section: show tool_call_started/completed
+        const toolEvents = events.filter(e => e.event_type && e.event_type.startsWith('tool_call_'));
+        let toolsHtml = '';
+        if (toolEvents.length) {
+          const toolMap = {};
+          toolEvents.forEach(e => {
+            const name = e.data?.tool || e.message || 'tool';
+            if (!toolMap[name]) toolMap[name] = [];
+            toolMap[name].push(e);
+          });
+          Object.keys(toolMap).forEach(name => {
+            const evs = toolMap[name];
+            const started = evs.find(e => e.event_type === 'tool_call_started');
+            const completed = evs.find(e => e.event_type === 'tool_call_completed');
+            const status = completed ? (completed.data?.blocked ? '🚫 BLOCKED' : (completed.data?.ok ? '✓ passed' : '✗ failed')) : '⏳ pending';
+            toolsHtml += `<div>· <strong>${escapeHtml(name)}</strong> ${status}</div>`;
+          });
+        }
+        document.getElementById('trace-tools-' + safeId).innerHTML = '<strong>Tools</strong>' +
+          (toolsHtml ? `<div>${toolsHtml}</div>` : `<div style="color:var(--text2)">No tools executed</div>`);
+
+        // Evidence section
+        document.getElementById('trace-evidence-' + safeId).innerHTML = '<strong>Evidence</strong><div>' +
+          `Events: ${eventCount} · run_created · plan_created · final_answer_created · run_completed</div>`;
+
+        // Provider section
+        document.getElementById('trace-provider-' + safeId).innerHTML = '<strong>Provider</strong><div>' +
+          `model: ${escapeHtml(pm.model_used || '—')} · degraded: ${isDegraded ? 'YES' : 'No'} · cot_exposed: ${cotExposed ? 'YES' : 'No'}</div>`;
+      })
+      .catch(err => {
+        const safeId = runId.replace(/[^a-z0-9]/gi,'');
+        document.getElementById('trace-plan-' + safeId).innerHTML = '<strong>Plan</strong><div style="color:#f06060">Trace fetch failed: ' + escapeHtml(err.message) + '</div>';
+        document.getElementById('trace-tools-' + safeId).innerHTML = '<strong>Tools</strong><div style="color:#f06060">Unavailable</div>';
+        document.getElementById('trace-evidence-' + safeId).innerHTML = '<strong>Evidence</strong><div style="color:#f06060">Unavailable</div>';
+        document.getElementById('trace-provider-' + safeId).innerHTML = '<strong>Provider</strong><div style="color:#f06060">Unavailable</div>';
+      });
+  }
+}
+
 // ── Tool Inline Card ───────────────────────────────────────────────────────
 function renderToolCallInline(tool, output, status, duration) {
   const wrap = document.getElementById('messages');
@@ -1204,29 +1324,38 @@ async function sendMessage() {
   addTyping();
 
   try {
-    // Si agentMode está ON, ir directo a /agent
-    // Si está en Auto, el backend decide según la intención
-    const endpoint = agentMode ? '/agent' : '/chat';
-    const body = agentMode
-      ? JSON.stringify({ task: msg, session_id: sessionId, model_priority: model })
-      : JSON.stringify({ message: msg, session_id: sessionId, model_priority: model });
+    // Default to canonical Agent V2. Legacy modes only if explicitly selected.
+    const endpoint = '/v2/chat/agent';
+    const body = JSON.stringify({
+      message: msg,
+      mode: 'read_only',
+      user_id: 'operator_ui_' + sessionId,
+    });
 
     const data = await api(endpoint, {
       method: 'POST',
       body,
-      timeoutMs: agentMode ? 300000 : 180000,
+      timeoutMs: 180000,
       retryNetwork: 1,
     });
 
     removeTyping();
 
-    const route     = data.route || (agentMode ? 'agent' : 'llm');
-    const routeIcon = route === 'agent' ? '⚙' : '💬';
-    const modelUsed = data.model_used || data.model || (agentMode ? 'agent_orav' : '?');
-    const meta      = `${routeIcon} ${modelUsed} · ${ts()}`;
+    const isCanary = data.canonical_agent_v2 === true;
+    const routeIcon = isCanary ? '✓' : '⚠';
+    const pm = data.provider_metadata || {};
+    const modelUsed = pm.model_used || data.model_used || data.model || '?';
+    const classification = data.classification || '—';
+    const status = data.status || '—';
+    const meta = `${routeIcon} Agent V2 · ${modelUsed} · ${classification} · ${status} · ${ts()}`;
 
-    const responseText = data.response || data.result || data.content || data.error || '(sin respuesta)';
+    const responseText = data.final_answer || data.response || data.result || data.content || data.error || '(sin respuesta)';
     addMsg('agent', responseText, meta);
+
+    // Render Execution Trace panel for canonical Agent V2 responses
+    if (isCanary && data.trace_url) {
+      renderExecutionTrace(data);
+    }
 
     // Detect tool outputs and create inline cards + artifacts
     if (data.tool_result) {

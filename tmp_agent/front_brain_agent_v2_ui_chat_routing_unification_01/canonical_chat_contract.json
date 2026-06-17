@@ -1,0 +1,50 @@
+{
+  "phase": "canonical_chat_contract",
+  "timestamp": "2026-06-17T02:53:00Z",
+  "front": "FRONT-BRAIN-AGENT-V2-UI-CHAT-ROUTING-UNIFICATION-01",
+  "endpoint": "POST http://127.0.0.1:8091/v2/chat/agent",
+  "request_schema": {
+    "message": "string",
+    "mode": "read_only",
+    "user_id": "string"
+  },
+  "response_fields": {
+    "ok": "boolean",
+    "canonical_agent_v2": "boolean (must be true)",
+    "route": "string (must be '/v2/chat/agent')",
+    "run_id": "string (starts with 'agv2_')",
+    "trace_url": "string (/v2/agent/runs/{run_id}/trace)",
+    "final_answer": "string (sanitized, no raw CoT)",
+    "provider_metadata": {
+      "model_used": "string",
+      "provider_degraded": "boolean",
+      "fallback_reason": "string|null",
+      "raw_cot_exposed": "boolean (must be false)"
+    },
+    "classification": "string",
+    "status": "string (completed|failed)"
+  },
+  "required_ui_display": [
+    "final_answer",
+    "run_id",
+    "trace_url",
+    "classification",
+    "model_used",
+    "provider_used",
+    "provider_degraded",
+    "fallback_reason",
+    "raw_cot_exposed",
+    "status",
+    "canonical_agent_v2"
+  ],
+  "prohibited_display": [
+    "raw_chain_of_thought",
+    "private_reasoning",
+    "internal_deliberation",
+    "hidden_model_thinking",
+    "unfiltered_llm_output"
+  ],
+  "8091_ui_target": "POST /v2/chat/agent (same-origin via main.py)",
+  "8092_dashboard_target": "POST /brain-dashboard/agent-v2/chat (proxy to http://127.0.0.1:8091/v2/chat/agent)",
+  "8092_trace_proxy": "GET /brain-dashboard/agent-v2/runs/{run_id}/trace (proxy to http://127.0.0.1:8091/v2/agent/runs/{run_id}/trace)"
+}

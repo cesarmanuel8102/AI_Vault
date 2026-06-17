@@ -209,13 +209,49 @@ async function chat() {
       body: JSON.stringify({ message: msg })
     });
     const j = await r.json();
+    if (!j.ok) {
+      out.textContent = 'Error: ' + (j.content || j.error || 'Brain API unreachable.');
+      meta.innerHTML = '<span style="color:#f06060">❌ Backend unreachable. Ensure Agent V2 is running on 8091.</span>';
+      return;
+    }
+    
     out.textContent = j.content || '(no response)';
-    meta.innerHTML = 'Provider: ' + (j.provider_selected || '—') +
-      ' | Model: ' + (j.model_selected || '—') +
-      ' | Fallback: ' + (j.fallback_used ? 'Yes' : 'No') +
-      ' | CoT leak: ' + (j.no_cot_leak ? 'Blocked' : 'Risk');
+    
+    // Build metadata line for canonical Agent V2
+    let metaHtml = '';
+    const isCanary = j.canonical_agent_v2 === true;
+    metaHtml += isCanary ? '<span style="color:#3ecf8e;font-weight:700">✓ Canonical Agent V2</span>' : '<span style="color:#f5a623">⚠ Non-canonical</span>';
+    metaHtml += ' | Model: ' + (j.model_used || '—');
+    metaHtml += ' | Classification: ' + (j.classification || '—');
+    metaHtml += ' | Status: ' + (j.status || '—');
+    
+    if (j.provider_degraded) {
+      metaHtml += '<br/><span style="color:#f5a623">⚠ Provider degraded. Fallback: ' + (j.fallback_reason || 'unknown') + '</span>';
+    }
+    if (j.raw_cot_exposed) {
+      metaHtml += '<br/><span style="color:#f06060;font-weight:700">🚨 RAW CHAIN-OF-THOUGHT EXPOSED</span>';
+    }
+    
+    if (j.trace_url) {
+      const traceUrl = j.trace_url.startsWith('/') ? 'http://127.0.0.1:8091' + j.trace_url : j.trace_url;
+      metaHtml += '<br/><a href="' + traceUrl + '" target="_blank" style="color:#6c63ff">🔍 Open Full Trace</a> <small>(' + (j.run_id || '—') + ')</small>';
+    }
+    
+    meta.innerHTML = metaHtml;
+    
+    // Auto-append trace link after output
+    if (j.trace_url) {
+      const traceDiv = document.createElement('div');
+      traceDiv.style.marginTop = '8px';
+      traceDiv.style.fontSize = '12px';
+      traceDiv.style.color = '#8b90b0';
+      traceDiv.innerHTML = 'Trace: ' + j.trace_url + ' <button onclick="window.open(\'' + j.trace_url + '\',\'_blank\')">View</button>';
+      out.appendChild(document.createElement('hr'));
+      out.appendChild(traceDiv);
+    }
   } catch (e) {
     out.textContent = 'Error: ' + e.message;
+    meta.innerHTML = '<span style="color:#f06060">❌ Connection error: ' + e.message + '</span>';
   }
 }
 

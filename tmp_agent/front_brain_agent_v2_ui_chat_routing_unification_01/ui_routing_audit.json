@@ -1,0 +1,56 @@
+{
+  "phase": "routing_audit",
+  "timestamp": "2026-06-17T02:52:00Z",
+  "front": "FRONT-BRAIN-AGENT-V2-UI-CHAT-ROUTING-UNIFICATION-01",
+  "audit_findings": {
+    "8091_ui": {
+      "file_serving": "tmp_agent/brain_v9/ui/index.html (mounted via main.py:213 StaticFiles)",
+      "js_send_function": "sendMessage() at line 1193",
+      "endpoint_called": "agentMode ? '/agent' : '/chat'",
+      "agent_orav_hardcoded": "Line 1225: modelUsed = data.model_used || data.model || (agentMode ? 'agent_orav' : '?')",
+      "problem": "Defaults to legacy /agent or /chat endpoints. Never calls /v2/chat/agent.",
+      "solution": "Change sendMessage() to call /v2/chat/agent. Parse canonical_agent_v2, run_id, trace_url, provider_metadata. Add Execution Trace panel."
+    },
+    "8092_dashboard": {
+      "file_serving": "dashboard_app.py mounts dashboard/static/index.html",
+      "js_send_function": "chat() at line 198 of static/app.js",
+      "endpoint_called": "/brain-dashboard/chat (POST)",
+      "server_proxy": "dashboard_routes.py:313 @router.post('/chat')",
+      "proxy_target": "Line 325: http://127.0.0.1:8091/v1/chat/completions",
+      "problem": "Calls OLD /v1/chat/completions (doesn't exist). Should call /v2/chat/agent. Shows 'Brain API unreachable'.",
+      "solution": "Change proxy to http://127.0.0.1:8091/v2/chat/agent. Add /brain-dashboard/agent-v2/runs/{run_id}/trace proxy."
+    },
+    "direct_opencode_kimi": {
+      "endpoint": "Python requests.post('http://127.0.0.1:8091/v2/chat/agent', ...)",
+      "returns": "canonical_agent_v2: true",
+      "response_style": "Markdown with evidence tables and summary. This is correct operator synthesis.",
+      "issue": "UI surfaces do not call this endpoint. Only programmatic access works."
+    }
+  },
+  "agent_orav_status": {
+    "is_legacy": true,
+    "is_default_in_8091_ui": true,
+    "should_remove_as_default": true,
+    "should_label": "Legacy / non-canonical if kept"
+  },
+  "required_changes": {
+    "8091_ui_html_js": [
+      "Change sendMessage() endpoint from /agent,/chat to /v2/chat/agent",
+      "Display canonical_agent_v2, run_id, trace_url",
+      "Display provider_metadata (model_used, provider_degraded, raw_cot_exposed)",
+      "Add collapsible 'Execution Trace' panel",
+      "Label agent_orav as legacy if still accessible"
+    ],
+    "8092_dashboard_js": [
+      "Update chat() to call /brain-dashboard/agent-v2/chat or direct /v2/chat/agent",
+      "Display canonical_agent_v2, run_id, trace_url",
+      "Display provider_metadata",
+      "Add 'Execution Trace' panel"
+    ],
+    "8092_dashboard_py": [
+      "Change proxy target from /v1/chat/completions to /v2/chat/agent",
+      "Add @router.get('/agent-v2/runs/{run_id}/trace') proxy",
+      "Parse canonical response fields (run_id, trace_url, classification, provider_metadata)"
+    ]
+  }
+}

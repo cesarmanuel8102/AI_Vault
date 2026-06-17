@@ -1,0 +1,23 @@
+{
+  "phase": "visible_execution_trace_contract",
+  "timestamp": "2026-06-17T03:35:00Z",
+  "panel": "Execution Trace (collapsible under every Agent V2 answer)",
+  "displayed_fields": [
+    "run_id", "classification", "status", "model_used", "provider_used",
+    "provider_degraded", "fallback_reason", "raw_cot_exposed",
+    "trace_url", "event_count"
+  ],
+  "tool_display": {
+    "per_tool": ["name", "status", "sanitized_input", "summarized_output", "error"],
+    "aggregated": ["tools_requested", "tools_scheduled", "tools_executed", "tools_failed", "tools_blocked"]
+  },
+  "subsections": ["Plan", "Tools", "Evidence", "Governance", "Provider", "Trace Events"],
+  "full_trace_button": "Open Full Trace (links to /v2/agent/runs/{run_id}/trace)",
+  "raw_cot_policy": "NEVER expose raw_chain_of_thought, private_reasoning, internal_deliberation",
+  "warnings": {
+    "provider_degraded_true": "Yellow warning with fallback_reason",
+    "raw_cot_exposed_true": "Red CRITICAL warning",
+    "secrets_found_true": "Red CRITICAL warning",
+    "unauthorized_writes_gt_0": "Red CRITICAL warning"
+  }
+}

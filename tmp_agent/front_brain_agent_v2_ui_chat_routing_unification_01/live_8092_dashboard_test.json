@@ -1,0 +1,12 @@
+{
+  "phase": "live_8092_dashboard_test",
+  "timestamp": "2026-06-17T03:40:00Z",
+  "status_code": 200,
+  "canonical_agent_v2": true,
+  "run_id": "agv2_ed78e393da394685",
+  "model_used": "kimi-k2.6:cloud",
+  "trace_url": "/v2/agent/runs/agv2_ed78e393da394685/trace",
+  "provider_degraded": false,
+  "raw_cot_exposed": false,
+  "verification_pass": true
+}

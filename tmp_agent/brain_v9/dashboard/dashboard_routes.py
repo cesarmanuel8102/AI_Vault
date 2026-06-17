@@ -312,36 +312,52 @@ def control_stop() -> dict[str, object]:
 
 @router.post("/chat")
 def chat(req: ChatRequest) -> dict[str, Any]:
+    """Legacy dashboard chat endpoint — now proxies to canonical Agent V2."""
     if not req.message.strip():
         raise HTTPException(status_code=400, detail="message required")
     body = {
-        "model": "brain-v9",
-        "messages": [{"role": "user", "content": req.message}],
-        "temperature": 0,
-        "max_tokens": 256,
-        "metadata": {"provider_probe": True, "read_only": True, "evaluation": True},
+        "message": req.message.strip(),
+        "mode": "read_only",
+        "user_id": "dashboard_operator",
     }
     request = urllib.request.Request(
-        "http://127.0.0.1:8091/v1/chat/completions",
+        "http://127.0.0.1:8091/v2/chat/agent",
         data=json.dumps(body).encode("utf-8"),
         headers={"Content-Type": "application/json"},
         method="POST",
     )
     try:
-        with urllib.request.urlopen(request, timeout=45) as response:
+        with urllib.request.urlopen(request, timeout=120) as response:
             data = json.loads(response.read().decode("utf-8"))
     except Exception as e:
-        return {"ok": False, "error": str(e), "content": "Brain API unreachable."}
-    content = ((data.get("choices") or [{}])[0].get("message") or {}).get("content", "")
-    brain = data.get("brain", {})
+        return {"ok": False, "error": str(e), "content": "Brain API unreachable.", "note": "Ensure Agent V2 backend is running on 8091"}
+    
+    pm = data.get("provider_metadata", {})
     return {
         "ok": True,
-        "content": content,
-        "provider_selected": brain.get("provider_selected"),
-        "model_selected": brain.get("model_selected"),
-        "fallback_used": brain.get("fallback_used"),
-        "no_cot_leak": brain.get("no_cot_leak"),
+        "content": data.get("final_answer", ""),
+        "canonical_agent_v2": data.get("canonical_agent_v2", False),
+        "run_id": data.get("run_id", ""),
+        "trace_url": data.get("trace_url", ""),
+        "classification": data.get("classification", ""),
+        "status": data.get("status", ""),
+        "model_used": pm.get("model_used", ""),
+        "provider_used": pm.get("provider_used", ""),
+        "provider_degraded": pm.get("provider_degraded", False),
+        "fallback_reason": pm.get("fallback_reason", ""),
+        "raw_cot_exposed": pm.get("raw_cot_exposed", False),
     }
+
+
+@router.get("/agent-v2/runs/{run_id}/trace")
+def agent_v2_trace(run_id: str) -> dict[str, Any]:
+    """Proxy to canonical Agent V2 trace endpoint from 8092 (same-origin for dashboard)."""
+    url = f"http://127.0.0.1:8091/v2/agent/runs/{run_id}/trace"
+    try:
+        with urllib.request.urlopen(url, timeout=30) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except Exception as e:
+        return {"ok": False, "error": str(e), "message": f"Trace fetch failed for {run_id}"}
 
 
 @router.get("/agent-v2/status")

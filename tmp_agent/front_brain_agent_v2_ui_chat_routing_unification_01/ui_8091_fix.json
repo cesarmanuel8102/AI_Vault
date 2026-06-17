@@ -1,0 +1,32 @@
+{
+  "phase": "ui_8091_fix",
+  "timestamp": "2026-06-17T03:35:00Z",
+  "front": "FRONT-BRAIN-AGENT-V2-UI-CHAT-ROUTING-UNIFICATION-01",
+  "file_modified": "tmp_agent/brain_v9/ui/index.html",
+  "changes": {
+    "sendMessage_endpoint": {
+      "from": "agentMode ? '/agent' : '/chat'",
+      "to": "'/v2/chat/agent'"
+    },
+    "body_format": {
+      "from": "{task: msg, session_id, model_priority} or {message: msg, session_id, model_priority}",
+      "to": "{message: msg, mode: 'read_only', user_id: 'operator_ui_' + sessionId}"
+    },
+    "display_metadata": {
+      "from": "routeIcon + modelUsed + ts()",
+      "to": "Agent V2 icon + model_used + classification + status + ts()"
+    },
+    "agent_orav_default_removed": true,
+    "canonical_agent_v2_shown": true,
+    "execution_trace_panel_added": true,
+    "legacy_agent_mode_label": "Legacy mode toggle removed as default. If present, labeled as experimental."
+  },
+  "test_result": {
+    "endpoint_live": true,
+    "canonical_agent_v2_returned": true,
+    "run_id_format": "agv2_...",
+    "trace_url_present": true,
+    "provider_metadata_present": true,
+    "execution_trace_rendered": true
+  }
+}
