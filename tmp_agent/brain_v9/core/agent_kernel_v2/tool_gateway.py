@@ -22,6 +22,7 @@ class ToolGatewayV2:
             AgentCapability("grep_search", "Search repository text with rg", "low", True, False, ["read_only", "dry_run"]),
             AgentCapability("route_probe", "Probe a local HTTP route", "low", True, False, ["read_only", "dry_run"]),
             AgentCapability("semantic_retrieve", "Read-only semantic retrieval", "low", True, False, ["read_only", "dry_run"]),
+            AgentCapability("repo_history_read", "Read recent git commit history", "low", True, False, ["read_only", "dry_run"]),
             AgentCapability("smoke_test_readonly", "Run a focused read-only smoke test", "medium", True, False, ["read_only", "dry_run"]),
             AgentCapability("report_writer", "Write run-local artifacts only", "medium", False, False, ["dry_run", "approval_required", "write_allowed"]),
             AgentCapability("file_patch_dry_run", "Preview a file patch", "medium", False, False, ["dry_run", "approval_required"]),
@@ -54,6 +55,8 @@ class ToolGatewayV2:
 
         if name == "repo_status_read":
             return self._repo_status(name)
+        if name == "repo_history_read":
+            return self._repo_history(name, req.args)
         if name == "file_read":
             return self._file_read(name, req.args)
         if name == "grep_search":
@@ -68,6 +71,17 @@ class ToolGatewayV2:
         if name in {"report_writer", "file_patch_dry_run"}:
             return ToolCallResult(name, ok=True, result={"dry_run": mode != "build", "preview": req.args})
         return ToolCallResult(name, ok=False, error="unknown_tool")
+
+    def _repo_history(self, name, args):
+        def run(cmd):
+            p = subprocess.run(cmd, cwd=ROOT, text=True, capture_output=True, encoding="utf-8", errors="replace")
+            return p.stdout.strip().splitlines()
+        limit = int(args.get("limit", 10))
+        return ToolCallResult(name, ok=True, result={
+            "log": run(["git", "log", f"-{limit}", "--oneline"]),
+            "branch": run(["git", "rev-parse", "--abbrev-ref", "HEAD"]),
+            "head": run(["git", "rev-parse", "--short", "HEAD"]),
+        })
 
     def _repo_status(self, name):
         def run(cmd):

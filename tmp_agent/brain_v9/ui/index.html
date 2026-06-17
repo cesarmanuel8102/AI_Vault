@@ -1305,15 +1305,18 @@ function sendSuggestion(text) {
 
 let currentMode = 'read_only';
 
-function setMode(mode) {
+function setMode(mode, quiet = false) {
+  if (currentMode === mode) return;
   currentMode = mode;
   const btnIds = { read_only: 'mode-read', build: 'mode-build', auto: 'mode-auto' };
   ['read_only', 'build', 'auto'].forEach(m => {
     const btn = document.getElementById(btnIds[m]);
     if (btn) btn.classList.toggle('active', m === mode);
   });
-  const labels = { read_only: '📖 READ (solo lectura)', build: '🔨 BUILD (escritura controlada)', auto: '⚙ AUTO (decide automáticamente)' };
-  addMsg('system', 'Modo: ' + labels[mode], ts());
+  if (!quiet) {
+    const labels = { read_only: '📖 READ (solo lectura)', build: '🔨 BUILD (escritura controlada)', auto: '⚙ AUTO (decide automáticamente)' };
+    addMsg('system', 'Modo: ' + labels[mode], ts());
+  }
 }
 
 function detectModeInMessage(msg) {
