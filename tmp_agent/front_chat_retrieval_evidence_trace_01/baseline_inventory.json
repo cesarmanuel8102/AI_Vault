@@ -1,0 +1,28 @@
+{
+  "phase": "baseline",
+  "head": "f32557a",
+  "files": {
+    "semantic_memory.jsonl": {
+      "exists": true,
+      "sha256": "655d32381e38ada348c3f201c50484551e02d98ae0869fa53826912c6973ab54",
+      "line_count": 1710
+    },
+    "semantic_memory_faiss.index": {
+      "exists": true,
+      "sha256": "b7b755c753cd4017344fb18d51e2ff3d81766151ac3a3dbf753c1004f7d16484"
+    },
+    "semantic_memory_faiss_ids.json": {
+      "exists": true,
+      "sha256": "004362363f7a392fd15193392f7fac592e333355e6cc28ba665d3cfb5e9368c1",
+      "count": 1611
+    },
+    "ROADMAP_STATUS.json": {
+      "exists": true,
+      "sha256": "44ccf6ddba14dd2590bcc55203993ca4132412e7e5e81056c947413c67fd68a1"
+    },
+    "MIGRATION_CONTROL_LEDGER.md": {
+      "exists": true,
+      "sha256": "eb3da071027a2ba75ab43701df31f5a969e49061203f6704eb3c5e0dee75604a"
+    }
+  }
+}

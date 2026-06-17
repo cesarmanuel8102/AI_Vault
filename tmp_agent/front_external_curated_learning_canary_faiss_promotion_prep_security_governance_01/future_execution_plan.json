@@ -1,0 +1,30 @@
+{
+  "front_id": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-EXECUTE-SECURITY-GOVERNANCE-01",
+  "batch_id": "SEC_GOV_CANARY_001",
+  "precondition": "Exact user approval phrase: APPROVE_SECURITY_GOVERNANCE_CANARY_FAISS_PROMOTION_BATCH_SEC_GOV_CANARY_001",
+  "steps": [
+    "Create backups of FAISS index, FAISS ids, and semantic memory",
+    "Generate embeddings for all 5 candidate records",
+    "Add 5 embedding vectors to FAISS index",
+    "Append 5 new FAISS ids to semantic_memory_faiss_ids.json",
+    "Verify FAISS ids count: 1611 -> 1616",
+    "Verify semantic memory line count remains 1715",
+    "Run retrieval eval against FAISS",
+    "Run negative query contamination eval",
+    "Rollback if any mismatch or failure"
+  ],
+  "expected_counts": {
+    "semantic_memory_lines_before": 1715,
+    "semantic_memory_lines_after": 1715,
+    "faiss_ids_before": 1611,
+    "faiss_ids_after": 1616
+  },
+  "records_to_promote": [
+    "SEC_GOV_CANARY_001_nist_csf_001",
+    "SEC_GOV_CANARY_001_nist_ai_rmf_002",
+    "SEC_GOV_CANARY_001_opa_docs_003",
+    "SEC_GOV_CANARY_001_mitre_atlas_004",
+    "SEC_GOV_CANARY_001_gvisor_docs_005"
+  ],
+  "timestamp_utc": "2026-06-11T09:07:16.317878+00:00"
+}

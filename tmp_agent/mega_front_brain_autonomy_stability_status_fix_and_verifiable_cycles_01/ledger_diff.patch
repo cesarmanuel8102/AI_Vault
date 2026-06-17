@@ -1,0 +1,188 @@
+diff --git a/ROADMAP_STATUS.json b/ROADMAP_STATUS.json
+index 984c204..6cb380c 100644
+--- a/ROADMAP_STATUS.json
++++ b/ROADMAP_STATUS.json
+@@ -1,9 +1,9 @@
+ {
+-  "current_head": "6f399783b360f86843b974da84a3249c8caf86f6",
+-  "current_remote_head": "6f399783b360f86843b974da84a3249c8caf86f6",
++  "current_head": "8d55412f4005a2d1003fb0bc5145411d1658e070",
++  "current_remote_head": "4459870c1628e98b772af77dab48258d3b003f93",
+   "branch": "codex/own-capital-sustainable-return",
+-  "migration_status": "brain_persistent_autonomy_real_memory_partial_staging_only",
+-  "last_applied_checkpoint": "MEGA-FRONT-BRAIN-PERSISTENT-AUTONOMY-REAL-MEMORY-CHAT-DASHBOARD-01",
++  "migration_status": "brain_autonomy_stability_status_fix_partial_live_8092_blocked",
++  "last_applied_checkpoint": "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-01",
+   "completed_fronts": [
+     "BL-01",
+     "B3_fake_grounded_dashboard_runtime",
+@@ -154,14 +154,16 @@
+     "MEGA-FRONT-BRAIN-SELF-TRAINING-AUTONOMY-MAXIMIZATION-200CYCLES-01",
+     "MEGA-FRONT-BRAIN-PERSISTENT-AUTONOMY-REAL-MEMORY-CHAT-DASHBOARD-01",
+     "FRONT-BRAIN-SCHEDULER-ENABLEMENT-AND-CONTINUOUS-AUTONOMY-01",
+-    "FRONT-BRAIN-OPERATOR-DASHBOARD-UX-AND-AUTONOMY-VISIBILITY-01"
++    "FRONT-BRAIN-OPERATOR-DASHBOARD-UX-AND-AUTONOMY-VISIBILITY-01",
++    "FRONT-BRAIN-PREFLIGHT-JOURNAL-CLEANUP-THEN-RERUN-STABILITY-CYCLES-01"
+   ],
+   "open_fronts": [],
+   "blocked_fronts": [
+     "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
+     "FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01",
+     "FRONT-LEGACY-LOCK-HANDLE-TOOL-INSTALL-OR-SAFE-MODE-PLAN-01",
+-    "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01"
++    "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
++    "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-01"
+   ],
+   "protected_out_of_scope": [
+     "memory/semantic",
+@@ -169,12 +171,12 @@
+     "tmp_agent/reports"
+   ],
+   "recommended_next_front": {
+-    "name": "FRONT-BRAIN-SCHEDULER-ENABLEMENT-02",
++    "name": "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01",
+     "status": "recommended_next",
+-    "reason": "Persistent run_once, dashboard 8092, real autonomous journal, promotion queue, and semantic staging are complete; scheduler tooling exists but scheduled task was intentionally not installed/enabled pending operator review."
++    "reason": "Source status route is fixed, but live 8092 still serves old handler and could not be restarted due Access denied; broad autonomy cycles remain gated until live status returns HTTP 200 under 5 seconds."
+   },
+   "ready_for_next_front": true,
+-  "last_updated": "2026-06-12T23:49:30.075936+00:00",
++  "last_updated": "2026-06-13T18:08:20.741962+00:00",
+   "phase0_security": {
+     "status": "done",
+     "commits": [
+@@ -3571,5 +3573,71 @@
+       "dashboard": "brain_persistent_autonomy",
+       "port": 8092
+     }
++  },
++  "mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_01": {
++    "front": "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-01",
++    "status": "BRAIN_AUTONOMY_STABILITY_STATUS_FIX_AND_VERIFIABLE_CYCLES_PARTIAL",
++    "journal_cleanup_commit": "4459870",
++    "functional_commits": [
++      {
++        "hash": "a56419c",
++        "message": "fix: stabilize Brain dashboard status endpoint"
++      },
++      {
++        "hash": "cd304f2",
++        "message": "test: add autonomy stability status cycle smoke coverage"
++      },
++      {
++        "hash": "8d55412",
++        "message": "docs: add Brain autonomy stability cycle reports"
++      }
++    ],
++    "dashboard": {
++      "status_endpoint_fixed_source": true,
++      "status_endpoint_fixed_live": false,
++      "live_blocker": "8092 old dashboard process classified by HTTP root content; Stop-Process denied Access is denied; live /brain-dashboard/status still returned HTTP 500/timeout.",
++      "root_ok": true,
++      "no_window_verified": true
++    },
++    "autonomy": {
++      "scheduler_enabled": true,
++      "autonomy_stopped": false,
++      "autonomy_paused": false,
++      "cycles_targeted": 120,
++      "cycles_completed": 0,
++      "batches_completed": 0,
++      "cycles_skipped_reason": "Live status endpoint did not satisfy required HTTP 200 <5s gate."
++    },
++    "learning": {
++      "lessons_created": 0,
++      "mistakes_recorded": 0,
++      "promotion_candidates_created": 0,
++      "journal_count_before": 71,
++      "journal_count_after": 71
++    },
++    "score": {
++      "before": 0.94,
++      "after": 0.945,
++      "delta": 0.005
++    },
++    "immutability": {
++      "semantic_memory_lines": 1715,
++      "faiss_ids": 1616,
++      "faiss_ntotal": 1616,
++      "canonical_semantic_mutated": false,
++      "faiss_mutated": false,
++      "trading_touched": false,
++      "b8_touched": false,
++      "tmp_agent_strategies_touched": false,
++      "secrets_exposed": false,
++      "raw_cot_exposed": false
++    },
++    "tests": {
++      "py_compile": "PASS",
++      "focused_smoke": "6 passed"
++    },
++    "evidence_path": "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_01",
++    "next_front_locked": "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01",
++    "updated_at_utc": "2026-06-13T18:08:20.741962+00:00"
+   }
+ }
+diff --git a/docs/MIGRATION_CONTROL_LEDGER.md b/docs/MIGRATION_CONTROL_LEDGER.md
+index d11db3c..4980bd1 100644
+--- a/docs/MIGRATION_CONTROL_LEDGER.md
++++ b/docs/MIGRATION_CONTROL_LEDGER.md
+@@ -8004,3 +8004,58 @@ BRAIN_OPERATOR_DASHBOARD_UX_AND_AUTONOMY_VISIBILITY_COMPLETED
+ 
+ ### Next Recommended Front
+ FRONT-BRAIN-SCHEDULER-STABILITY-AUDIT-24H-01
++
++
++## FRONT-BRAIN-PREFLIGHT-JOURNAL-CLEANUP-THEN-RERUN-STABILITY-CYCLES-01 / MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-01
++
++### Status
++BRAIN_AUTONOMY_STABILITY_STATUS_FIX_AND_VERIFIABLE_CYCLES_PARTIAL
++
++### Timestamp
++2026-06-13T18:08:20.741962+00:00
++
++### Branch
++codex/own-capital-sustainable-return
++
++### Head At Ledger Update
++- local: `8d55412`
++- remote_before_push: `4459870`
++
++### Commits
++- `4459870` - memory: record governed autonomy reactivation journal events
++- `a56419c` - fix: stabilize Brain dashboard status endpoint
++- `cd304f2` - test: add autonomy stability status cycle smoke coverage
++- `8d55412` - docs: add Brain autonomy stability cycle reports
++
++### Result
++- Dirty `memory/autonomous_journal.jsonl` reviewed as append-only governed autonomy events and safely committed.
++- Source `/brain-dashboard/status` implementation fixed to avoid `write_status_snapshot()` and blocking scheduler subprocess.
++- Source-level status validation passed with complete payload and low latency.
++- Live 8092 status endpoint remains blocked because the old dashboard process could not be stopped: `Access is denied`.
++- Broad autonomy cycles were not run because the live status endpoint gate did not pass.
++
++### Validation
++- py_compile: PASS
++- focused smoke: 6 passed
++- source status fixed: true
++- live status fixed: false
++- no-window scheduler behavior: true
++
++### Safety
++- semantic_memory_lines: 1715
++- faiss_ids: 1616
++- faiss_ntotal: 1616
++- canonical_semantic_mutated: false
++- faiss_mutated: false
++- trading_touched: false
++- b8_touched: false
++- tmp_agent/strategies_touched: false
++- secrets_exposed: false
++- raw_cot_exposed: false
++
++### Evidence
++- `tmp_agent/front_brain_preflight_journal_cleanup_then_rerun_stability_cycles_01/`
++- `tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_01/`
++
++### Next Recommended Front
++FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01

@@ -1,0 +1,55 @@
+{
+  "MACRO_FRONT_BRAIN_FINAL_AUTONOMY_ACCELERATION_CYCLE_01_REPORT": {
+    "status": "PARTIAL_KIMI_K2_6_TAG_MISSING_BUT_AUTONOMY_STACK_ADVANCED",
+    "branch": "codex/own-capital-sustainable-return",
+    "head_local": "48736a2",
+    "head_remote": "48736a2",
+    "local_equals_remote": true,
+    "commits_created_and_pushed": [
+      {
+        "commit": "0b364d1",
+        "message": "feat: harden Brain provider health and routing"
+      },
+      {
+        "commit": "74e8796",
+        "message": "feat: add Brain autonomy training artifacts"
+      },
+      {
+        "commit": "2e2546d",
+        "message": "docs: add Brain final chat readiness"
+      },
+      {
+        "commit": "48736a2",
+        "message": "ledger: record Brain final autonomy acceleration cycle"
+      }
+    ],
+    "kimi_k2_6_cloud_present": false,
+    "kimi_k2_5_cloud_present": true,
+    "kimi_k2_5_probe_non_empty": false,
+    "provider_health_added": true,
+    "autonomy_walker_v2_cycles": 8,
+    "training_artifacts_added": true,
+    "chat_readiness_doc_added": true,
+    "eval_score": 1.0,
+    "eval_successful_responses": 8,
+    "eval_prompts_attempted": 8,
+    "metadata_full_rate": 1.0,
+    "no_cot_rate": 1.0,
+    "relevant_tests": {
+      "macro_suite": "58 passed, 2 warnings",
+      "provider_health_commit_tests": "14 passed",
+      "training_commit_tests": "8 passed",
+      "docs_commit_tests": "5 passed"
+    },
+    "memory_semantic_unchanged": true,
+    "real_writes": false,
+    "faiss_writes": false,
+    "trading_touched": false,
+    "b8_touched": false,
+    "secrets_exposed": false,
+    "env_file_written": false,
+    "staged_empty_after": true,
+    "tracked_unstaged_empty_after": true,
+    "recommended_next_action": "FRONT-KIMI-K2-6-OLLAMA-CLOUD-MODEL-ENABLEMENT-01"
+  }
+}

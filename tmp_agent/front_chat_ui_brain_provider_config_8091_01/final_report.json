@@ -1,0 +1,9 @@
+{
+  "status": "OPENWEBUI_BRAIN_PROVIDER_8091_RUNBOOK_CREATED",
+  "container_to_brain_passed": true,
+  "provider_base_url": "http://host.docker.internal:8091/v1",
+  "memory_mutated": false,
+  "faiss_mutated": false,
+  "trading_touched": false,
+  "legacy_touched": false
+}

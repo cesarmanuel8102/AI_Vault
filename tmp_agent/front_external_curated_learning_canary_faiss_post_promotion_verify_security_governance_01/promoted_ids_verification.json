@@ -1,0 +1,54 @@
+{
+  "front_id": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-POST-PROMOTION-VERIFY-SECURITY-GOVERNANCE-01",
+  "batch_id": "SEC_GOV_CANARY_001",
+  "records": [
+    {
+      "memory_id": "SEC_GOV_CANARY_001_nist_csf_001",
+      "present_in_faiss_ids": true,
+      "present_in_memory": true,
+      "domain": "security_governance_sandboxing",
+      "ingestion_status": "ingested_memory_only",
+      "source_id": "nist_csf"
+    },
+    {
+      "memory_id": "SEC_GOV_CANARY_001_nist_ai_rmf_002",
+      "present_in_faiss_ids": true,
+      "present_in_memory": true,
+      "domain": "security_governance_sandboxing",
+      "ingestion_status": "ingested_memory_only",
+      "source_id": "nist_ai_rmf"
+    },
+    {
+      "memory_id": "SEC_GOV_CANARY_001_opa_docs_003",
+      "present_in_faiss_ids": true,
+      "present_in_memory": true,
+      "domain": "security_governance_sandboxing",
+      "ingestion_status": "ingested_memory_only",
+      "source_id": "opa_docs"
+    },
+    {
+      "memory_id": "SEC_GOV_CANARY_001_mitre_atlas_004",
+      "present_in_faiss_ids": true,
+      "present_in_memory": true,
+      "domain": "security_governance_sandboxing",
+      "ingestion_status": "ingested_memory_only",
+      "source_id": "mitre_atlas"
+    },
+    {
+      "memory_id": "SEC_GOV_CANARY_001_gvisor_docs_005",
+      "present_in_faiss_ids": true,
+      "present_in_memory": true,
+      "domain": "security_governance_sandboxing",
+      "ingestion_status": "ingested_memory_only",
+      "source_id": "gvisor_docs"
+    }
+  ],
+  "checks": {
+    "all_present_in_faiss_ids": true,
+    "all_present_in_memory": true,
+    "all_domain_security_governance_sandboxing": true,
+    "all_status_ingested_memory_only": true,
+    "no_duplicate_ids": true
+  },
+  "verdict": "PASS"
+}

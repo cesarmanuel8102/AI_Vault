@@ -1,0 +1,11 @@
+{
+  "front_id": "FRONT-LEGACY-PATH-CLEANUP-RETRY-POST-REBOOT-01",
+  "previous_front": "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01",
+  "previous_status": "FAILED_QUARANTINE_RENAME_WINDOWS_FILE_LOCK_CANONICAL_UNCHANGED",
+  "previous_functional_commit": "c99b453",
+  "previous_ledger_commit": "ca21f52",
+  "previous_rename_success": false,
+  "previous_canonical_memory_mutated": false,
+  "previous_canonical_faiss_mutated": false,
+  "verdict": "PASS"
+}

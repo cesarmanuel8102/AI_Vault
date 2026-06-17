@@ -1,0 +1,162 @@
+diff --git a/ROADMAP_STATUS.json b/ROADMAP_STATUS.json
+index d97eb99..9918498 100644
+--- a/ROADMAP_STATUS.json
++++ b/ROADMAP_STATUS.json
+@@ -1,9 +1,9 @@
+ {
+-  "current_head": "228372e",
+-  "current_remote_head": "228372e",
++  "current_head": "2e2546d",
++  "current_remote_head": "2e2546d",
+   "branch": "codex/own-capital-sustainable-return",
+-  "migration_status": "kimi_k2_6_cloud_provider_config_runbook_completed",
+-  "last_applied_checkpoint": "FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01",
++  "migration_status": "brain_final_autonomy_acceleration_partial_kimi_k2_6_unavailable",
++  "last_applied_checkpoint": "MACRO-FRONT-BRAIN-FINAL-AUTONOMY-ACCELERATION-CYCLE-01",
+   "completed_fronts": [
+     "BL-01",
+     "B3_fake_grounded_dashboard_runtime",
+@@ -147,7 +147,8 @@
+     "FRONT-BRAIN-GOVERNED-AUTONOMY-WALKER-V1",
+     "FRONT-BRAIN-TIMEOUT-GENERATION-QUALITY-FIX-01",
+     "FRONT-BRAIN-LLM-PROVIDER-CHAIN-OPTIMIZATION-01",
+-    "FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01"
++    "FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01",
++    "MACRO-FRONT-BRAIN-FINAL-AUTONOMY-ACCELERATION-CYCLE-01"
+   ],
+   "open_fronts": [],
+   "blocked_fronts": [
+@@ -164,10 +165,10 @@
+   "recommended_next_front": {
+     "name": "FRONT-KIMI-K2-6-OLLAMA-CLOUD-MODEL-ENABLEMENT-01",
+     "status": "recommended_next",
+-    "reason": "Kimi provider is documented and wired for Ollama Cloud, but local Ollama exposes kimi-k2.5:cloud and not kimi-k2.6:cloud; next step is enabling/verifying K2.6 Ollama cloud tag or intentionally selecting K2.5 as temporary fallback."
++    "reason": "Final autonomy scaffolding, provider health, training artifacts, eval, and chat readiness are complete; Kimi K2.6 remains blocked only by missing Ollama Cloud model tag."
+   },
+-  "ready_for_next_front": "FRONT-KIMI-K2-6-OLLAMA-CLOUD-MODEL-ENABLEMENT-01",
+-  "last_updated": "2026-06-12T19:00:19.000875+00:00",
++  "ready_for_next_front": true,
++  "last_updated": "2026-06-12T19:14:52.740452+00:00",
+   "phase0_security": {
+     "status": "done",
+     "commits": [
+@@ -3237,5 +3238,56 @@
+     "evidence_path": "tmp_agent/front_kimi_k2_6_cloud_provider_config_runbook_01",
+     "next_front_locked": "FRONT-KIMI-K2-6-OLLAMA-CLOUD-MODEL-ENABLEMENT-01",
+     "updated_at_utc": "2026-06-12T19:00:19.000875+00:00"
++  },
++  "macro_front_brain_final_autonomy_acceleration_cycle_01": {
++    "status": "BRAIN_FINAL_AUTONOMY_ACCELERATION_PARTIAL_KIMI_K2_6_UNAVAILABLE",
++    "commits": {
++      "provider_health_and_routing": "0b364d1",
++      "training_artifacts": "74e8796",
++      "chat_readiness_docs": "2e2546d"
++    },
++    "provider_state": {
++      "kimi_k2_6_cloud_present": false,
++      "kimi_k2_5_cloud_present": true,
++      "kimi_k2_5_probe": "empty_response",
++      "codex_provider_available": true,
++      "local_llama_available": true
++    },
++    "artifacts": {
++      "provider_health_module": "tmp_agent/brain_v9/provider_health/provider_health.py",
++      "training_curriculum": "docs/BRAIN_TRAINING_CURRICULUM.md",
++      "chat_readiness": "docs/BRAIN_CHAT_READINESS_FINAL.md",
++      "macro_smoke": "tests/smoke/smoke_macro_front_brain_final_autonomy_acceleration_cycle_01.py"
++    },
++    "validation": {
++      "macro_smoke_and_relevant_suite": "58 passed, 2 warnings",
++      "provider_health_commit_tests": "14 passed",
++      "training_commit_tests": "8 passed",
++      "docs_commit_tests": "5 passed",
++      "eval_prompts_attempted": 8,
++      "eval_successful_responses": 8,
++      "eval_average_score": 1.0,
++      "metadata_full_rate": 1.0,
++      "no_cot_rate": 1.0
++    },
++    "immutability": {
++      "memory_semantic_unchanged": true,
++      "semantic_memory_lines": 1715,
++      "faiss_ids": 1616,
++      "faiss_ntotal": 1616,
++      "real_writes": false,
++      "faiss_writes": false
++    },
++    "runtime_decision": {
++      "port_8090": "not_listening_during_macro_check",
++      "port_8091": "healthy_200",
++      "decision": "KEEP_8090_UNTOUCHED_USE_8091_FOR_SAFE_RUNTIME"
++    },
++    "out_of_scope_preserved": {
++      "trading": true,
++      "b8": true,
++      "tmp_agent_strategies": true,
++      "secrets": true
++    }
+   }
+ }
+diff --git a/docs/MIGRATION_CONTROL_LEDGER.md b/docs/MIGRATION_CONTROL_LEDGER.md
+index 2d4fbca..49d57d5 100644
+--- a/docs/MIGRATION_CONTROL_LEDGER.md
++++ b/docs/MIGRATION_CONTROL_LEDGER.md
+@@ -7659,3 +7659,58 @@ The adapter/router/governance metadata layer is working, but answer-generation q
+ - test_count: `23`
+ - manual_user_action_if_needed: `make kimi-k2.6:cloud available in Ollama Cloud, then run tools/setup_kimi_k2_6_provider_user_env.ps1 -Mode User -ModelTag kimi-k2.6:cloud; for temporary K2.5 testing use -ModelTag kimi-k2.5:cloud explicitly`
+ - next_front_locked: `FRONT-KIMI-K2-6-OLLAMA-CLOUD-MODEL-ENABLEMENT-01`
++
++## LEDGER-ROADMAP-SSOT-MACRO-FRONT-BRAIN-FINAL-AUTONOMY-ACCELERATION-CYCLE-01 — Final Autonomy Acceleration Cycle
++
++- timestamp_utc: `2026-06-12T19:14:52.740452+00:00`
++- status: `BRAIN_FINAL_AUTONOMY_ACCELERATION_PARTIAL_KIMI_K2_6_UNAVAILABLE`
++- branch: `codex/own-capital-sustainable-return`
++- provider_health_commit: `0b364d1` — `feat: harden Brain provider health and routing`
++- training_artifacts_commit: `74e8796` — `feat: add Brain autonomy training artifacts`
++- chat_readiness_commit: `2e2546d` — `docs: add Brain final chat readiness`
++- kimi_route: `Ollama Cloud`
++- configured_kimi_tag: `kimi-k2.6:cloud`
++- kimi_k2_6_cloud_present: `false`
++- kimi_k2_5_cloud_present: `true`
++- kimi_k2_5_probe: `empty_response`
++- codex_provider_available: `true`
++- local_llama_available: `true`
++- provider_metadata_added:
++  - `cloud_provider_available`
++  - `codex_provider_available`
++- provider_health_module: `tmp_agent/brain_v9/provider_health/provider_health.py`
++- training_artifacts:
++  - `docs/BRAIN_TRAINING_CURRICULUM.md`
++  - `tmp_agent/brain_v9/training/candidate_lessons/*`
++  - `tmp_agent/brain_v9/training/promoted_operational_lessons.jsonl`
++  - `tmp_agent/brain_v9/training/mistake_registry.jsonl`
++  - `tmp_agent/brain_v9/training/promotion_gates.json`
++- chat_readiness_doc: `docs/BRAIN_CHAT_READINESS_FINAL.md`
++- autonomy_walker_v2_dry_run_cycles: `8`
++- dry_run_eval:
++  - prompts_attempted: `8`
++  - successful_responses: `8`
++  - average_score: `1.0`
++  - metadata_full_rate: `1.0`
++  - no_cot_rate: `1.0`
++  - raw_cot_count: `0`
++- tests:
++  - relevant_macro_suite: `58 passed, 2 warnings`
++  - provider_health_commit_tests: `14 passed`
++  - training_commit_tests: `8 passed`
++  - docs_commit_tests: `5 passed`
++- runtime_decision:
++  - port_8090: `not_listening_during_macro_check`
++  - port_8091: `healthy_200`
++  - decision: `KEEP_8090_UNTOUCHED_USE_8091_FOR_SAFE_RUNTIME`
++- memory_mutated: `false`
++- faiss_mutated: `false`
++- semantic_memory_lines: `1715`
++- faiss_ids: `1616`
++- faiss_ntotal: `1616`
++- trading_touched: `false`
++- b8_touched: `false`
++- secrets_exposed: `false`
++- env_file_written: `false`
++- next_front_locked: `FRONT-KIMI-K2-6-OLLAMA-CLOUD-MODEL-ENABLEMENT-01`
++

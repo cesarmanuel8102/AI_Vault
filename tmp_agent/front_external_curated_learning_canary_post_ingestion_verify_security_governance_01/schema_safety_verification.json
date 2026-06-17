@@ -1,0 +1,45 @@
+{
+  "batch_id": "SEC_GOV_CANARY_001",
+  "records_validated": 5,
+  "schema_valid": true,
+  "total_errors": 0,
+  "error_details": [],
+  "validation_results": [
+    {
+      "record_index": 1,
+      "memory_id": "SEC_GOV_CANARY_001_nist_csf_001",
+      "source_id": "nist_csf",
+      "errors": [],
+      "valid": true
+    },
+    {
+      "record_index": 2,
+      "memory_id": "SEC_GOV_CANARY_001_nist_ai_rmf_002",
+      "source_id": "nist_ai_rmf",
+      "errors": [],
+      "valid": true
+    },
+    {
+      "record_index": 3,
+      "memory_id": "SEC_GOV_CANARY_001_opa_docs_003",
+      "source_id": "opa_docs",
+      "errors": [],
+      "valid": true
+    },
+    {
+      "record_index": 4,
+      "memory_id": "SEC_GOV_CANARY_001_mitre_atlas_004",
+      "source_id": "mitre_atlas",
+      "errors": [],
+      "valid": true
+    },
+    {
+      "record_index": 5,
+      "memory_id": "SEC_GOV_CANARY_001_gvisor_docs_005",
+      "source_id": "gvisor_docs",
+      "errors": [],
+      "valid": true
+    }
+  ],
+  "timestamp_utc": "2026-06-11T08:22:43.782459+00:00"
+}

@@ -1,0 +1,7 @@
+{
+  "batch_id": "SEC_GOV_CANARY_001",
+  "records_checked": 5,
+  "contamination_detected": false,
+  "errors": [],
+  "timestamp_utc": "2026-06-11T08:25:03.788104+00:00"
+}

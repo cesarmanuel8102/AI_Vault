@@ -1,0 +1,282 @@
+[
+  {
+    "cycle_id": "mega_cycle_041",
+    "batch_id": 5,
+    "domain": "brain_autonomy_planning_self_correction",
+    "prompt_profile": "exact_output",
+    "provider_selected": "kimi_k2_6_cloud",
+    "model_selected": "kimi-k2.6:cloud",
+    "provider_status": "FAST_SUCCESS",
+    "fallback_used": false,
+    "content_non_empty": true,
+    "risk_level": "LOW",
+    "codex_critique": "domain=brain_autonomy_planning_self_correction; decision=implement; reason=use_kimi_for_constrained_open_dialogue",
+    "decision": "implemented",
+    "implemented": true,
+    "tests_run": [
+      "smoke_mega_front_brain_self_training_autonomy_maximization_200cycles_01.py"
+    ],
+    "lesson_created": true,
+    "mistake_created": false,
+    "promotion_candidate_created": false,
+    "score_before": 0.94,
+    "score_after": 0.94,
+    "evidence_paths": [
+      "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_005.json"
+    ],
+    "safety_status": "passed",
+    "created_utc": "2026-06-12T23:13:13.816331+00:00"
+  },
+  {
+    "cycle_id": "mega_cycle_042",
+    "batch_id": 5,
+    "domain": "brain_autonomy_planning_self_correction",
+    "prompt_profile": "json_only",
+    "provider_selected": "kimi_k2_6_cloud",
+    "model_selected": "kimi-k2.6:cloud",
+    "provider_status": "FAST_SUCCESS",
+    "fallback_used": false,
+    "content_non_empty": true,
+    "risk_level": "LOW",
+    "codex_critique": "domain=brain_autonomy_planning_self_correction; decision=implement; reason=use_kimi_for_constrained_open_dialogue",
+    "decision": "implemented",
+    "implemented": true,
+    "tests_run": [
+      "smoke_mega_front_brain_self_training_autonomy_maximization_200cycles_01.py"
+    ],
+    "lesson_created": true,
+    "mistake_created": false,
+    "promotion_candidate_created": false,
+    "score_before": 0.94,
+    "score_after": 0.94,
+    "evidence_paths": [
+      "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_005.json"
+    ],
+    "safety_status": "passed",
+    "created_utc": "2026-06-12T23:13:13.817853+00:00"
+  },
+  {
+    "cycle_id": "mega_cycle_043",
+    "batch_id": 5,
+    "domain": "brain_autonomy_planning_self_correction",
+    "prompt_profile": "score",
+    "provider_selected": "kimi_k2_6_cloud",
+    "model_selected": "kimi-k2.6:cloud",
+    "provider_status": "FAST_SUCCESS",
+    "fallback_used": false,
+    "content_non_empty": true,
+    "risk_level": "LOW",
+    "codex_critique": "domain=brain_autonomy_planning_self_correction; decision=implement; reason=use_kimi_for_constrained_open_dialogue",
+    "decision": "implemented",
+    "implemented": true,
+    "tests_run": [
+      "smoke_mega_front_brain_self_training_autonomy_maximization_200cycles_01.py"
+    ],
+    "lesson_created": true,
+    "mistake_created": false,
+    "promotion_candidate_created": false,
+    "score_before": 0.94,
+    "score_after": 0.94,
+    "evidence_paths": [
+      "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_005.json"
+    ],
+    "safety_status": "passed",
+    "created_utc": "2026-06-12T23:13:13.819877+00:00"
+  },
+  {
+    "cycle_id": "mega_cycle_044",
+    "batch_id": 5,
+    "domain": "brain_autonomy_planning_self_correction",
+    "prompt_profile": "bullet_only",
+    "provider_selected": "kimi_k2_6_cloud",
+    "model_selected": "kimi-k2.6:cloud",
+    "provider_status": "FAST_SUCCESS",
+    "fallback_used": false,
+    "content_non_empty": true,
+    "risk_level": "LOW",
+    "codex_critique": "domain=brain_autonomy_planning_self_correction; decision=implement; reason=use_kimi_for_constrained_open_dialogue",
+    "decision": "implemented",
+    "implemented": true,
+    "tests_run": [
+      "smoke_mega_front_brain_self_training_autonomy_maximization_200cycles_01.py"
+    ],
+    "lesson_created": true,
+    "mistake_created": false,
+    "promotion_candidate_created": false,
+    "score_before": 0.94,
+    "score_after": 0.94,
+    "evidence_paths": [
+      "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_005.json"
+    ],
+    "safety_status": "passed",
+    "created_utc": "2026-06-12T23:13:13.819877+00:00"
+  },
+  {
+    "cycle_id": "mega_cycle_045",
+    "batch_id": 5,
+    "domain": "brain_autonomy_planning_self_correction",
+    "prompt_profile": "one_sentence_proposal",
+    "provider_selected": "kimi_k2_6_cloud",
+    "model_selected": "kimi-k2.6:cloud",
+    "provider_status": "FAST_SUCCESS",
+    "fallback_used": false,
+    "content_non_empty": true,
+    "risk_level": "LOW",
+    "codex_critique": "domain=brain_autonomy_planning_self_correction; decision=implement; reason=use_kimi_for_constrained_open_dialogue",
+    "decision": "implemented",
+    "implemented": true,
+    "tests_run": [
+      "smoke_mega_front_brain_self_training_autonomy_maximization_200cycles_01.py"
+    ],
+    "lesson_created": true,
+    "mistake_created": false,
+    "promotion_candidate_created": false,
+    "score_before": 0.94,
+    "score_after": 0.94,
+    "evidence_paths": [
+      "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_005.json"
+    ],
+    "safety_status": "passed",
+    "created_utc": "2026-06-12T23:13:13.821885+00:00"
+  },
+  {
+    "cycle_id": "mega_cycle_046",
+    "batch_id": 5,
+    "domain": "brain_autonomy_planning_self_correction",
+    "prompt_profile": "critic",
+    "provider_selected": "kimi_k2_6_cloud",
+    "model_selected": "kimi-k2.6:cloud",
+    "provider_status": "FAST_SUCCESS",
+    "fallback_used": false,
+    "content_non_empty": true,
+    "risk_level": "LOW",
+    "codex_critique": "domain=brain_autonomy_planning_self_correction; decision=implement; reason=use_kimi_for_constrained_open_dialogue",
+    "decision": "implemented",
+    "implemented": true,
+    "tests_run": [
+      "smoke_mega_front_brain_self_training_autonomy_maximization_200cycles_01.py"
+    ],
+    "lesson_created": true,
+    "mistake_created": false,
+    "promotion_candidate_created": false,
+    "score_before": 0.94,
+    "score_after": 0.94,
+    "evidence_paths": [
+      "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_005.json"
+    ],
+    "safety_status": "passed",
+    "created_utc": "2026-06-12T23:13:13.823394+00:00"
+  },
+  {
+    "cycle_id": "mega_cycle_047",
+    "batch_id": 5,
+    "domain": "brain_autonomy_planning_self_correction",
+    "prompt_profile": "revise",
+    "provider_selected": "codex",
+    "model_selected": "gpt-5.5",
+    "provider_status": "FALLBACK_TRANSPARENT",
+    "fallback_used": true,
+    "content_non_empty": true,
+    "risk_level": "LOW",
+    "codex_critique": "domain=brain_autonomy_planning_self_correction; decision=implement; reason=use_kimi_for_constrained_open_dialogue",
+    "decision": "implemented",
+    "implemented": true,
+    "tests_run": [
+      "smoke_mega_front_brain_self_training_autonomy_maximization_200cycles_01.py"
+    ],
+    "lesson_created": true,
+    "mistake_created": false,
+    "promotion_candidate_created": false,
+    "score_before": 0.94,
+    "score_after": 0.94,
+    "evidence_paths": [
+      "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_005.json"
+    ],
+    "safety_status": "passed",
+    "created_utc": "2026-06-12T23:13:13.823969+00:00"
+  },
+  {
+    "cycle_id": "mega_cycle_048",
+    "batch_id": 5,
+    "domain": "brain_autonomy_planning_self_correction",
+    "prompt_profile": "role_compressed",
+    "provider_selected": "codex",
+    "model_selected": "gpt-5.5",
+    "provider_status": "FALLBACK_TRANSPARENT",
+    "fallback_used": true,
+    "content_non_empty": true,
+    "risk_level": "LOW",
+    "codex_critique": "domain=brain_autonomy_planning_self_correction; decision=implement; reason=use_kimi_for_constrained_open_dialogue",
+    "decision": "implemented",
+    "implemented": true,
+    "tests_run": [
+      "smoke_mega_front_brain_self_training_autonomy_maximization_200cycles_01.py"
+    ],
+    "lesson_created": true,
+    "mistake_created": false,
+    "promotion_candidate_created": false,
+    "score_before": 0.94,
+    "score_after": 0.94,
+    "evidence_paths": [
+      "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_005.json"
+    ],
+    "safety_status": "passed",
+    "created_utc": "2026-06-12T23:13:13.823969+00:00"
+  },
+  {
+    "cycle_id": "mega_cycle_049",
+    "batch_id": 5,
+    "domain": "brain_autonomy_planning_self_correction",
+    "prompt_profile": "exact_output",
+    "provider_selected": "kimi_k2_6_cloud",
+    "model_selected": "kimi-k2.6:cloud",
+    "provider_status": "FAST_SUCCESS",
+    "fallback_used": false,
+    "content_non_empty": true,
+    "risk_level": "LOW",
+    "codex_critique": "domain=brain_autonomy_planning_self_correction; decision=implement; reason=use_kimi_for_constrained_open_dialogue",
+    "decision": "implemented",
+    "implemented": true,
+    "tests_run": [
+      "smoke_mega_front_brain_self_training_autonomy_maximization_200cycles_01.py"
+    ],
+    "lesson_created": true,
+    "mistake_created": false,
+    "promotion_candidate_created": false,
+    "score_before": 0.94,
+    "score_after": 0.94,
+    "evidence_paths": [
+      "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_005.json"
+    ],
+    "safety_status": "passed",
+    "created_utc": "2026-06-12T23:13:13.826905+00:00"
+  },
+  {
+    "cycle_id": "mega_cycle_050",
+    "batch_id": 5,
+    "domain": "brain_autonomy_planning_self_correction",
+    "prompt_profile": "json_only",
+    "provider_selected": "kimi_k2_6_cloud",
+    "model_selected": "kimi-k2.6:cloud",
+    "provider_status": "FAST_SUCCESS",
+    "fallback_used": false,
+    "content_non_empty": true,
+    "risk_level": "LOW",
+    "codex_critique": "domain=brain_autonomy_planning_self_correction; decision=implement; reason=use_kimi_for_constrained_open_dialogue",
+    "decision": "implemented",
+    "implemented": true,
+    "tests_run": [
+      "smoke_mega_front_brain_self_training_autonomy_maximization_200cycles_01.py"
+    ],
+    "lesson_created": true,
+    "mistake_created": false,
+    "promotion_candidate_created": false,
+    "score_before": 0.94,
+    "score_after": 0.94,
+    "evidence_paths": [
+      "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_005.json"
+    ],
+    "safety_status": "passed",
+    "created_utc": "2026-06-12T23:13:13.826905+00:00"
+  }
+]

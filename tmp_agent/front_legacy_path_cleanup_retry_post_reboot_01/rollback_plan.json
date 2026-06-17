@@ -1,0 +1,20 @@
+{
+  "front_id": "FRONT-LEGACY-PATH-CLEANUP-RETRY-POST-REBOOT-01",
+  "rollback_possible": false,
+  "rollback_action": "Rename quarantine target back to C:\\AI_VAULT",
+  "rollback_preconditions": [
+    "Quarantine target must exist (meaning rename succeeded in a future attempt)",
+    "C:\\AI_VAULT must NOT exist (to avoid collision)",
+    "Canonical runtime must be stopped or not dependent on legacy path"
+  ],
+  "rollback_command_python": "Path('C:/AI_VAULT_LEGACY_QUARANTINE_YYYYMMDD_HHMMSS').rename(Path('C:/AI_VAULT'))",
+  "verify_after_rollback": [
+    "C:\\AI_VAULT exists",
+    "Quarantine target no longer exists",
+    "Canonical runtime still works"
+  ],
+  "when_rollback_needed": "If future quarantine rename breaks any runtime dependency or if user decides to restore legacy path.",
+  "current_rollback_required": false,
+  "current_status": "NO_ROLLBACK_NEEDED_RENAME_NEVER_SUCCEEDED",
+  "note": "Since rename failed (WinError 32, second attempt), no files were moved. C:\\AI_VAULT remains in place. No rollback is needed now. Future successful rename would make rollback possible by reversing the rename."
+}

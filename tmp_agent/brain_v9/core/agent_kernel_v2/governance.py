@@ -4,6 +4,13 @@ from .state import FORBIDDEN_PATH_PARTS, RAW_COT_MARKERS
 from .schemas import LEGACY_MODE_MAP
 
 
+MODE_COMMAND_PATTERNS = [
+    # Spanish patterns
+    ("build", ["hazlo en build", "modo build", "eleva a build", "pon en build", "activa build", "switch a build", "cambia a build", "enable build mode"]),
+    ("read_only", ["modo read", "modo lectura", "modo solo lectura", "read mode", "modo read only", "pon en read", "hazlo en read", "eleva a read", "cambia a read"]),
+    ("auto", ["modo auto", "automatico", "modo automatico", "pon en auto", "hazlo en auto", "switch a auto", "cambia a auto", "enable auto mode"]),
+]
+
 WRITE_INTENT_KEYWORDS = [
     "fix", "patch", "edit", "modify", "change", "update", "refactor",
     "rewrite", "create", "add", "remove", "delete", "rename", "move",
@@ -35,6 +42,21 @@ def path_is_blocked(path: str) -> bool:
 def contains_raw_cot(text: str) -> bool:
     t = (text or "").lower()
     return any(marker in t for marker in RAW_COT_MARKERS)
+
+
+def parse_mode_from_message(message: str) -> str | None:
+    """Parse natural-language mode switch commands from user message."""
+    m = (message or "").lower()
+    # Direct mode keywords first (shortest wins)
+    for keyword in ["read_only", "build", "auto"]:
+        if keyword in m:
+            return keyword
+    # Pattern matching
+    for mode, patterns in MODE_COMMAND_PATTERNS:
+        for pat in patterns:
+            if pat in m:
+                return mode
+    return None
 
 
 def validate_mode(mode: str) -> str:

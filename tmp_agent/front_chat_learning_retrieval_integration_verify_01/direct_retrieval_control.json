@@ -1,0 +1,63 @@
+{
+  "phase": "direct_retrieval_control",
+  "all_passed": true,
+  "results": [
+    {
+      "query": "what document defines limits on Brain real execution",
+      "expected_id": "controlled_batch_01_real_execution_policy",
+      "rank": 1,
+      "score": 0.7538,
+      "top_5_pass": true,
+      "top_10_ids": [
+        "controlled_batch_01_real_execution_policy",
+        "front_first_real_local_memory_faiss_canary_01",
+        "controlled_batch_01_runtime_recovery_runbook",
+        "bb1a9614c79f68d2a95bf9f5",
+        "e9cbae37c6f2de6c0223b539",
+        "ca9eac955e9f1f458c1f15ce",
+        "controlled_batch_01_memory_faiss_canary_doc",
+        "318c6d0859213cf877fb9e5d",
+        "fc2be3598ec03f5086b477ea",
+        "5902c0be7390f5463c17fdc9"
+      ]
+    },
+    {
+      "query": "runtime readiness troubleshooting document",
+      "expected_id": "controlled_batch_01_runtime_recovery_runbook",
+      "rank": 1,
+      "score": 0.7091,
+      "top_5_pass": true,
+      "top_10_ids": [
+        "controlled_batch_01_runtime_recovery_runbook",
+        "7cce033562d2ed029337a0c4",
+        "controlled_batch_01_real_execution_policy",
+        "2d98c2c5e11f2511b36f40d5",
+        "ca9eac955e9f1f458c1f15ce",
+        "387c1783c398208913681011",
+        "016f7d1cdcd61e0d2d8deb22",
+        "13a3b811f5a5e93289196590",
+        "3b6b43a472256d7b80e65a51",
+        "38772148ceefef500aa3f809"
+      ]
+    },
+    {
+      "query": "first memory FAISS canary document",
+      "expected_id": "controlled_batch_01_memory_faiss_canary_doc",
+      "rank": 1,
+      "score": 0.7243,
+      "top_5_pass": true,
+      "top_10_ids": [
+        "controlled_batch_01_memory_faiss_canary_doc",
+        "front_first_real_local_memory_faiss_canary_01",
+        "canary-00000000-0000-0000-0000-000000000001",
+        "b46a0e581235ba55ef14850c",
+        "c947f40f0eaf32c2b4380f32",
+        "e40c68969f005d340aa7deb5",
+        "a24def2d0db73f9a0874ac00",
+        "941a8bbfb1f8b266ad21deb6",
+        "55d1783dd004c1370b146748",
+        "b24503e4220a1c1ec2f6a415"
+      ]
+    }
+  ]
+}

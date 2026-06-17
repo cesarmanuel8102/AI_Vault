@@ -1,0 +1,41 @@
+{
+  "front_id": "FRONT-RUNTIME-PATH-ALIGNMENT-CANONICAL-VERIFY-01",
+  "path_references": [],
+  "BASE_PATH_definition": {
+    "file": "tmp_agent/brain_v9/config.py",
+    "line": "44-48",
+    "hardcoded_path": "C:/AI_VAULT",
+    "depends_on_env_var": "BRAIN_BASE_PATH",
+    "env_default_hardcoded": true,
+    "can_resolve_from_repo_root": true
+  },
+  "other_references": [
+    {
+      "file": "tmp_agent/brain_v9/config.py",
+      "line": 50,
+      "usage": "MEMORY_PATH = BASE_PATH / \"tmp_agent\" / \"state\" / \"memory\""
+    },
+    {
+      "file": "tmp_agent/brain_v9/config.py",
+      "line": 57,
+      "usage": "STATE_PATH = BASE_PATH / \"tmp_agent\" / \"state\""
+    },
+    {
+      "file": "tmp_agent/brain_v9/config.py",
+      "line": 67,
+      "usage": "LOG_ACCUMULATION_DIRS uses BASE_PATH"
+    },
+    {
+      "file": "tmp_agent/brain_v9/config.py",
+      "line": 151,
+      "usage": "_secrets_dir = BASE_PATH / \"tmp_agent\" / \"Secrets\""
+    }
+  ],
+  "patch_recommended": {
+    "file": "tmp_agent/brain_v9/config.py",
+    "change": "Replace hardcoded _default_base with resolution from __file__ parent.parent.parent",
+    "before": "\n_default_base = (\n    \"C:/AI_VAULT\" if platform.system() == \"Windows\"\n    else str(Path.home() / \"AI_VAULT\")\n)\n",
+    "after": "\n_default_base = str(Path(__file__).resolve().parent.parent.parent)\n",
+    "rationale": "config.py is at <repo_root>/tmp_agent/brain_v9/config.py. parent.parent.parent = repo root. This makes BASE_PATH resolve to C:/AI_VAULT_CANONICAL when config.py is inside it, regardless of platform."
+  }
+}

@@ -1,0 +1,115 @@
+{
+  "checked_at_utc": "2026-06-12T07:17:26.852979Z",
+  "base_url": "http://127.0.0.1:8091",
+  "selected_runtime_port": 8091,
+  "health": {
+    "ok": true,
+    "status_code": 200,
+    "body_excerpt": "{\"status\":\"healthy\",\"sessions\":1,\"version\":\"9.0.0\",\"safe_mode\":false}",
+    "json": {
+      "status": "healthy",
+      "sessions": 1,
+      "version": "9.0.0",
+      "safe_mode": false
+    },
+    "error": null
+  },
+  "models": {
+    "ok": true,
+    "status_code": 200,
+    "body_excerpt": "{\"object\":\"list\",\"data\":[{\"id\":\"brain-v9-local\",\"object\":\"model\",\"created\":0,\"owned_by\":\"local\"},{\"id\":\"brain\",\"object\":\"model\",\"created\":0,\"owned_by\":\"local\"},{\"id\":\"ai-vault-brain\",\"object\":\"model\",\"created\":0,\"owned_by\":\"local\"}]}",
+    "json": {
+      "object": "list",
+      "data": [
+        {
+          "id": "brain-v9-local",
+          "object": "model",
+          "created": 0,
+          "owned_by": "local"
+        },
+        {
+          "id": "brain",
+          "object": "model",
+          "created": 0,
+          "owned_by": "local"
+        },
+        {
+          "id": "ai-vault-brain",
+          "object": "model",
+          "created": 0,
+          "owned_by": "local"
+        }
+      ]
+    },
+    "error": null
+  },
+  "chat_completions": {
+    "ok": true,
+    "status_code": 200,
+    "body_excerpt": "{\"id\":\"chatcmpl-4d92b6b1a2874e3385db34a0\",\"object\":\"chat.completion\",\"created\":1781248692,\"model\":\"brain-v9-local\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"No pude ejecutar herramientas reales en este turno (agent_status=timeout). Respondo con el modelo LLM disponible.\\nVerificación recibida. Brain V9 operativo en modo respuesta directa; no se ejecutaron herramientas ni se consultaron archivos/logs en este ciclo.\"},\"finish_reason\":\"stop\"}],\"usage\":{\"prompt_tokens\":0,\"completion_tokens\":0,\"total_tokens\":0},\"brain\":{\"intent\":\"CODE\",\"route\":\"agent\",\"governance_applied\":true,\"no_cot_leak\":true,\"canonical_path\":\"C:\\\\AI_VAULT_CANONICAL\",\"latency_ms\":45734.0,\"errors\":[],\"adapter\":\"openai_compat\",\"adapter_latency_ms\":45734.0}}",
+    "json": {
+      "id": "chatcmpl-4d92b6b1a2874e3385db34a0",
+      "object": "chat.completion",
+      "created": 1781248692,
+      "model": "brain-v9-local",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": "No pude ejecutar herramientas reales en este turno (agent_status=timeout). Respondo con el modelo LLM disponible.\nVerificación recibida. Brain V9 operativo en modo respuesta directa; no se ejecutaron herramientas ni se consultaron archivos/logs en este ciclo."
+          },
+          "finish_reason": "stop"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 0,
+        "completion_tokens": 0,
+        "total_tokens": 0
+      },
+      "brain": {
+        "intent": "CODE",
+        "route": "agent",
+        "governance_applied": true,
+        "no_cot_leak": true,
+        "canonical_path": "C:\\AI_VAULT_CANONICAL",
+        "latency_ms": 45734.0,
+        "errors": [],
+        "adapter": "openai_compat",
+        "adapter_latency_ms": 45734.0
+      }
+    },
+    "error": null
+  },
+  "chat_stream_true": {
+    "ok": false,
+    "status_code": 501,
+    "body_excerpt": "{\"detail\":{\"error\":{\"message\":\"streaming_not_supported_yet\",\"type\":\"unsupported_feature\"}}}",
+    "json": {
+      "detail": {
+        "error": {
+          "message": "streaming_not_supported_yet",
+          "type": "unsupported_feature"
+        }
+      }
+    },
+    "error": "HTTPError"
+  },
+  "checks": {
+    "health_200": true,
+    "models_200": true,
+    "models_include_brain_v9_local": true,
+    "chat_200": true,
+    "chat_object_is_chat_completion": true,
+    "message_content_exists": true,
+    "brain_intent_exists": true,
+    "brain_route_exists": true,
+    "brain_governance_applied_true": true,
+    "brain_no_cot_leak_true": true,
+    "brain_canonical_path_ok": true,
+    "stream_safe_unsupported": true
+  },
+  "runtime_models_passed": true,
+  "runtime_chat_passed": true,
+  "passed": true
+}

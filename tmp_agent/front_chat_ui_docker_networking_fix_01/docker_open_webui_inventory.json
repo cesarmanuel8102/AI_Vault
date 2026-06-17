@@ -1,0 +1,357 @@
+{
+  "docker_version": {
+    "ok": true,
+    "returncode": 0,
+    "stdout": "{\"Client\":{\"Version\":\"29.2.1\",\"ApiVersion\":\"1.53\",\"DefaultAPIVersion\":\"1.53\",\"GitCommit\":\"a5c7197\",\"GoVersion\":\"go1.25.6\",\"Os\":\"windows\",\"Arch\":\"amd64\",\"BuildTime\":\"Mon Feb  2 17:20:16 2026\",\"Context\":\"desktop-linux\"},\"Server\":{\"Platform\":{\"Name\":\"Docker Desktop 4.61.0 (219004)\"},\"Version\":\"29.2.1\",\"ApiVersion\":\"1.53\",\"MinAPIVersion\":\"1.44\",\"Os\":\"linux\",\"Arch\":\"amd64\",\"Components\":[{\"Name\":\"Engine\",\"Version\":\"29.2.1\",\"Details\":{\"ApiVersion\":\"1.53\",\"Arch\":\"amd64\",\"BuildTime\":\"Mon Feb  2 17:17:24 2026\",\"Experimental\":\"false\",\"GitCommit\":\"6bc6209\",\"GoVersion\":\"go1.25.6\",\"KernelVersion\":\"6.6.87.2-microsoft-standard-WSL2\",\"MinAPIVersion\":\"1.44\",\"Os\":\"linux\"}},{\"Name\":\"containerd\",\"Version\":\"v2.2.1\",\"Details\":{\"GitCommit\":\"dea7da592f5d1d2b7755e3a161be07f43fad8f75\"}},{\"Name\":\"runc\",\"Version\":\"1.3.4\",\"Details\":{\"GitCommit\":\"v1.3.4-0-gd6d73eb8\"}},{\"Name\":\"docker-init\",\"Version\":\"0.19.0\",\"Details\":{\"GitCommit\":\"de40ad0\"}}],\"GitCommit\":\"6bc6209\",\"GoVersion\":\"go1.25.6\",\"KernelVersion\":\"6.6.87.2-microsoft-standard-WSL2\",\"BuildTime\":\"2026-02-02T17:17:24.000000000+00:00\"}}\n",
+    "stderr": "",
+    "cmd": "docker version --format {{json .}}"
+  },
+  "docker_info": {
+    "ok": true,
+    "returncode": 0,
+    "stdout": "{\"ID\":\"1ff77ad4-2b71-4e48-ba2a-aea8212433db\",\"Containers\":1,\"ContainersRunning\":0,\"ContainersPaused\":0,\"ContainersStopped\":1,\"Images\":2,\"Driver\":\"overlayfs\",\"DriverStatus\":[[\"driver-type\",\"io.containerd.snapshotter.v1\"]],\"Plugins\":{\"Volume\":[\"local\"],\"Network\":[\"bridge\",\"host\",\"ipvlan\",\"macvlan\",\"null\",\"overlay\"],\"Authorization\":null,\"Log\":[\"awslogs\",\"fluentd\",\"gcplogs\",\"gelf\",\"journald\",\"json-file\",\"local\",\"splunk\",\"syslog\"]},\"MemoryLimit\":true,\"SwapLimit\":true,\"CpuCfsPeriod\":true,\"CpuCfsQuota\":true,\"CPUShares\":true,\"CPUSet\":true,\"PidsLimit\":true,\"IPv4Forwarding\":true,\"Debug\":false,\"NFd\":44,\"OomKillDisable\":false,\"NGoroutines\":84,\"SystemTime\":\"2026-06-12T04:30:20.66484034Z\",\"LoggingDriver\":\"json-file\",\"CgroupDriver\":\"cgroupfs\",\"CgroupVersion\":\"2\",\"NEventsListener\":14,\"KernelVersion\":\"6.6.87.2-microsoft-standard-WSL2\",\"OperatingSystem\":\"Docker Desktop\",\"OSVersion\":\"\",\"OSType\":\"linux\",\"Architecture\":\"x86_64\",\"IndexServerAddress\":\"https://index.docker.io/v1/\",\"RegistryConfig\":{\"InsecureRegistryCIDRs\":[\"::1/128\",\"127.0.0.0/8\"],\"IndexConfigs\":{\"docker.io\":{\"Name\":\"docker.io\",\"Mirrors\":[],\"Secure\":true,\"Official\":true},\"hubproxy.docker.internal:5555\":{\"Name\":\"hubproxy.docker.internal:5555\",\"Mirrors\":[],\"Secure\":false,\"Official\":false}},\"Mirrors\":[]},\"NCPU\":12,\"MemTotal\":33457111040,\"GenericResources\":null,\"DockerRootDir\":\"/var/lib/docker\",\"HttpProxy\":\"http.docker.internal:3128\",\"HttpsProxy\":\"http.docker.internal:3128\",\"NoProxy\":\"hubproxy.docker.internal\",\"Name\":\"docker-desktop\",\"Labels\":[\"com.docker.desktop.address=npipe://\\\\\\\\.\\\\pipe\\\\docker_cli\"],\"ExperimentalBuild\":false,\"ServerVersion\":\"29.2.1\",\"Runtimes\":{\"io.containerd.runc.v2\":{\"path\":\"runc\",\"status\":{\"org.opencontainers.runtime-spec.features\":\"{\\\"ociVersionMin\\\":\\\"1.0.0\\\",\\\"ociVersionMax\\\":\\\"1.2.1\\\",\\\"hooks\\\":[\\\"prestart\\\",\\\"createRuntime\\\",\\\"createContainer\\\",\\\"startContainer\\\",\\\"poststart\\\",\\\"poststop\\\"],\\\"mountOptions\\\":[\\\"async\\\",\\\"atime\\\",\\\"bind\\\",\\\"defaults\\\",\\\"dev\\\",\\\"diratime\\\",\\\"dirsync\\\",\\\"exec\\\",\\\"iversion\\\",\\\"lazytime\\\",\\\"loud\\\",\\\"mand\\\",\\\"noatime\\\",\\\"nodev\\\",\\\"nodiratime\\\",\\\"noexec\\\",\\\"noiversion\\\",\\\"nolazytime\\\",\\\"nomand\\\",\\\"norelatime\\\",\\\"nostrictatime\\\",\\\"nosuid\\\",\\\"nosymfollow\\\",\\\"private\\\",\\\"ratime\\\",\\\"rbind\\\",\\\"rdev\\\",\\\"rdiratime\\\",\\\"relatime\\\",\\\"remount\\\",\\\"rexec\\\",\\\"rnoatime\\\",\\\"rnodev\\\",\\\"rnodiratime\\\",\\\"rnoexec\\\",\\\"rnorelatime\\\",\\\"rnostrictatime\\\",\\\"rnosuid\\\",\\\"rnosymfollow\\\",\\\"ro\\\",\\\"rprivate\\\",\\\"rrelatime\\\",\\\"rro\\\",\\\"rrw\\\",\\\"rshared\\\",\\\"rslave\\\",\\\"rstrictatime\\\",\\\"rsuid\\\",\\\"rsymfollow\\\",\\\"runbindable\\\",\\\"rw\\\",\\\"shared\\\",\\\"silent\\\",\\\"slave\\\",\\\"strictatime\\\",\\\"suid\\\",\\\"symfollow\\\",\\\"sync\\\",\\\"tmpcopyup\\\",\\\"unbindable\\\"],\\\"linux\\\":{\\\"namespaces\\\":[\\\"cgroup\\\",\\\"ipc\\\",\\\"mount\\\",\\\"network\\\",\\\"pid\\\",\\\"time\\\",\\\"user\\\",\\\"uts\\\"],\\\"capabilities\\\":[\\\"CAP_CHOWN\\\",\\\"CAP_DAC_OVERRIDE\\\",\\\"CAP_DAC_READ_SEARCH\\\",\\\"CAP_FOWNER\\\",\\\"CAP_FSETID\\\",\\\"CAP_KILL\\\",\\\"CAP_SETGID\\\",\\\"CAP_SETUID\\\",\\\"CAP_SETPCAP\\\",\\\"CAP_LINUX_IMMUTABLE\\\",\\\"CAP_NET_BIND_SERVICE\\\",\\\"CAP_NET_BROADCAST\\\",\\\"CAP_NET_ADMIN\\\",\\\"CAP_NET_RAW\\\",\\\"CAP_IPC_LOCK\\\",\\\"CAP_IPC_OWNER\\\",\\\"CAP_SYS_MODULE\\\",\\\"CAP_SYS_RAWIO\\\",\\\"CAP_SYS_CHROOT\\\",\\\"CAP_SYS_PTRACE\\\",\\\"CAP_SYS_PACCT\\\",\\\"CAP_SYS_ADMIN\\\",\\\"CAP_SYS_BOOT\\\",\\\"CAP_SYS_NICE\\\",\\\"CAP_SYS_RESOURCE\\\",\\\"CAP_SYS_TIME\\\",\\\"CAP_SYS_TTY_CONFIG\\\",\\\"CAP_MKNOD\\\",\\\"CAP_LEASE\\\",\\\"CAP_AUDIT_WRITE\\\",\\\"CAP_AUDIT_CONTROL\\\",\\\"CAP_SETFCAP\\\",\\\"CAP_MAC_OVERRIDE\\\",\\\"CAP_MAC_ADMIN\\\",\\\"CAP_SYSLOG\\\",\\\"CAP_WAKE_ALARM\\\",\\\"CAP_BLOCK_SUSPEND\\\",\\\"CAP_AUDIT_READ\\\",\\\"CAP_PERFMON\\\",\\\"CAP_BPF\\\",\\\"CAP_CHECKPOINT_RESTORE\\\"],\\\"cgroup\\\":{\\\"v1\\\":true,\\\"v2\\\":true,\\\"systemd\\\":true,\\\"systemdUser\\\":true,\\\"rdma\\\":true},\\\"seccomp\\\":{\\\"enabled\\\":true,\\\"actions\\\":[\\\"SCMP_ACT_ALLOW\\\",\\\"SCMP_ACT_ERRNO\\\",\\\"SCMP_ACT_KILL\\\",\\\"SCMP_ACT_KILL_PROCESS\\\",\\\"SCMP_ACT_KILL_THREAD\\\",\\\"SCMP_ACT_LOG\\\",\\\"SCMP_ACT_NOTIFY\\\",\\\"SCMP_ACT_TRACE\\\",\\\"SCMP_ACT_TRAP\\\"],\\\"operators\\\":[\\\"SCMP_CMP_EQ\\\",\\\"SCMP_CMP_GE\\\",\\\"SCMP_CMP_GT\\\",\\\"SCMP_CMP_LE\\\",\\\"SCMP_CMP_LT\\\",\\\"SCMP_CMP_MASKED_EQ\\\",\\\"SCMP_CMP_NE\\\"],\\\"archs\\\":[\\\"SCMP_ARCH_AARCH64\\\",\\\"SCMP_ARCH_ARM\\\",\\\"SCMP_ARCH_MIPS\\\",\\\"SCMP_ARCH_MIPS64\\\",\\\"SCMP_ARCH_MIPS64N32\\\",\\\"SCMP_ARCH_MIPSEL\\\",\\\"SCMP_ARCH_MIPSEL64\\\",\\\"SCMP_ARCH_MIPSEL64N32\\\",\\\"SCMP_ARCH_PPC\\\",\\\"SCMP_ARCH_PPC64\\\",\\\"SCMP_ARCH_PPC64LE\\\",\\\"SCMP_ARCH_RISCV64\\\",\\\"SCMP_ARCH_S390\\\",\\\"SCMP_ARCH_S390X\\\",\\\"SCMP_ARCH_X32\\\",\\\"SCMP_ARCH_X86\\\",\\\"SCMP_ARCH_X86_64\\\"],\\\"knownFlags\\\":[\\\"SECCOMP_FILTER_FLAG_TSYNC\\\",\\\"SECCOMP_FILTER_FLAG_SPEC_ALLOW\\\",\\\"SECCOMP_FILTER_FLAG_LOG\\\"],\\\"supportedFlags\\\":[\\\"SECCOMP_FILTER_FLAG_TSYNC\\\",\\\"SECCOMP_FILTER_FLAG_SPEC_ALLOW\\\",\\\"SECCOMP_FILTER_FLAG_LOG\\\"]},\\\"apparmor\\\":{\\\"enabled\\\":true},\\\"selinux\\\":{\\\"enabled\\\":true},\\\"intelRdt\\\":{\\\"enabled\\\":true},\\\"mountExtensions\\\":{\\\"idmap\\\":{\\\"enabled\\\":true}}},\\\"annotations\\\":{\\\"io.github.seccomp.libseccomp.version\\\":\\\"2.5.4\\\",\\\"org.opencontainers.runc.checkpoint.enabled\\\":\\\"true\\\",\\\"org.opencontainers.runc.commit\\\":\\\"v1.3.4-0-gd6d73eb8\\\",\\\"org.opencontainers.runc.version\\\":\\\"1.3.4\\\\n\\\"},\\\"potentiallyUnsafeConfigAnnotations\\\":[\\\"bundle\\\",\\\"org.systemd.property.\\\",\\\"org.criu.config\\\"]}\"}},\"nvidia\":{\"path\":\"nvidia-container-runtime\",\"status\":{\"org.opencontainers.runtime-spec.features\":\"{\\\"ociVersionMin\\\":\\\"1.0.0\\\",\\\"ociVersionMax\\\":\\\"1.2.1\\\",\\\"hooks\\\":[\\\"prestart\\\",\\\"createRuntime\\\",\\\"createContainer\\\",\\\"startContainer\\\",\\\"poststart\\\",\\\"poststop\\\"],\\\"mountOptions\\\":[\\\"async\\\",\\\"atime\\\",\\\"bind\\\",\\\"defaults\\\",\\\"dev\\\",\\\"diratime\\\",\\\"dirsync\\\",\\\"exec\\\",\\\"iversion\\\",\\\"lazytime\\\",\\\"loud\\\",\\\"mand\\\",\\\"noatime\\\",\\\"nodev\\\",\\\"nodiratime\\\",\\\"noexec\\\",\\\"noiversion\\\",\\\"nolazytime\\\",\\\"nomand\\\",\\\"norelatime\\\",\\\"nostrictatime\\\",\\\"nosuid\\\",\\\"nosymfollow\\\",\\\"private\\\",\\\"ratime\\\",\\\"rbind\\\",\\\"rdev\\\",\\\"rdiratime\\\",\\\"relatime\\\",\\\"remount\\\",\\\"rexec\\\",\\\"rnoatime\\\",\\\"rnodev\\\",\\\"rnodiratime\\\",\\\"rnoexec\\\",\\\"rnorelatime\\\",\\\"rnostrictatime\\\",\\\"rnosuid\\\",\\\"rnosymfollow\\\",\\\"ro\\\",\\\"rprivate\\\",\\\"rrelatime\\\",\\\"rro\\\",\\\"rrw\\\",\\\"rshared\\\",\\\"rslave\\\",\\\"rstrictatime\\\",\\\"rsuid\\\",\\\"rsymfollow\\\",\\\"runbindable\\\",\\\"rw\\\",\\\"shared\\\",\\\"silent\\\",\\\"slave\\\",\\\"strictatime\\\",\\\"suid\\\",\\\"symfollow\\\",\\\"sync\\\",\\\"tmpcopyup\\\",\\\"unbindable\\\"],\\\"linux\\\":{\\\"namespaces\\\":[\\\"cgroup\\\",\\\"ipc\\\",\\\"mount\\\",\\\"network\\\",\\\"pid\\\",\\\"time\\\",\\\"user\\\",\\\"uts\\\"],\\\"capabilities\\\":[\\\"CAP_CHOWN\\\",\\\"CAP_DAC_OVERRIDE\\\",\\\"CAP_DAC_READ_SEARCH\\\",\\\"CAP_FOWNER\\\",\\\"CAP_FSETID\\\",\\\"CAP_KILL\\\",\\\"CAP_SETGID\\\",\\\"CAP_SETUID\\\",\\\"CAP_SETPCAP\\\",\\\"CAP_LINUX_IMMUTABLE\\\",\\\"CAP_NET_BIND_SERVICE\\\",\\\"CAP_NET_BROADCAST\\\",\\\"CAP_NET_ADMIN\\\",\\\"CAP_NET_RAW\\\",\\\"CAP_IPC_LOCK\\\",\\\"CAP_IPC_OWNER\\\",\\\"CAP_SYS_MODULE\\\",\\\"CAP_SYS_RAWIO\\\",\\\"CAP_SYS_CHROOT\\\",\\\"CAP_SYS_PTRACE\\\",\\\"CAP_SYS_PACCT\\\",\\\"CAP_SYS_ADMIN\\\",\\\"CAP_SYS_BOOT\\\",\\\"CAP_SYS_NICE\\\",\\\"CAP_SYS_RESOURCE\\\",\\\"CAP_SYS_TIME\\\",\\\"CAP_SYS_TTY_CONFIG\\\",\\\"CAP_MKNOD\\\",\\\"CAP_LEASE\\\",\\\"CAP_AUDIT_WRITE\\\",\\\"CAP_AUDIT_CONTROL\\\",\\\"CAP_SETFCAP\\\",\\\"CAP_MAC_OVERRIDE\\\",\\\"CAP_MAC_ADMIN\\\",\\\"CAP_SYSLOG\\\",\\\"CAP_WAKE_ALARM\\\",\\\"CAP_BLOCK_SUSPEND\\\",\\\"CAP_AUDIT_READ\\\",\\\"CAP_PERFMON\\\",\\\"CAP_BPF\\\",\\\"CAP_CHECKPOINT_RESTORE\\\"],\\\"cgroup\\\":{\\\"v1\\\":true,\\\"v2\\\":true,\\\"systemd\\\":true,\\\"systemdUser\\\":true,\\\"rdma\\\":true},\\\"seccomp\\\":{\\\"enabled\\\":true,\\\"actions\\\":[\\\"SCMP_ACT_ALLOW\\\",\\\"SCMP_ACT_ERRNO\\\",\\\"SCMP_ACT_KILL\\\",\\\"SCMP_ACT_KILL_PROCESS\\\",\\\"SCMP_ACT_KILL_THREAD\\\",\\\"SCMP_ACT_LOG\\\",\\\"SCMP_ACT_NOTIFY\\\",\\\"SCMP_ACT_TRACE\\\",\\\"SCMP_ACT_TRAP\\\"],\\\"operators\\\":[\\\"SCMP_CMP_EQ\\\",\\\"SCMP_CMP_GE\\\",\\\"SCMP_CMP_GT\\\",\\\"SCMP_CMP_LE\\\",\\\"SCMP_CMP_LT\\\",\\\"SCMP_CMP_MASKED_EQ\\\",\\\"SCMP_CMP_NE\\\"],\\\"archs\\\":[\\\"SCMP_ARCH_AARCH64\\\",\\\"SCMP_ARCH_ARM\\\",\\\"SCMP_ARCH_MIPS\\\",\\\"SCMP_ARCH_MIPS64\\\",\\\"SCMP_ARCH_MIPS64N32\\\",\\\"SCMP_ARCH_MIPSEL\\\",\\\"SCMP_ARCH_MIPSEL64\\\",\\\"SCMP_ARCH_MIPSEL64N32\\\",\\\"SCMP_ARCH_PPC\\\",\\\"SCMP_ARCH_PPC64\\\",\\\"SCMP_ARCH_PPC64LE\\\",\\\"SCMP_ARCH_RISCV64\\\",\\\"SCMP_ARCH_S390\\\",\\\"SCMP_ARCH_S390X\\\",\\\"SCMP_ARCH_X32\\\",\\\"SCMP_ARCH_X86\\\",\\\"SCMP_ARCH_X86_64\\\"],\\\"knownFlags\\\":[\\\"SECCOMP_FILTER_FLAG_TSYNC\\\",\\\"SECCOMP_FILTER_FLAG_SPEC_ALLOW\\\",\\\"SECCOMP_FILTER_FLAG_LOG\\\"],\\\"supportedFlags\\\":[\\\"SECCOMP_FILTER_FLAG_TSYNC\\\",\\\"SECCOMP_FILTER_FLAG_SPEC_ALLOW\\\",\\\"SECCOMP_FILTER_FLAG_LOG\\\"]},\\\"apparmor\\\":{\\\"enabled\\\":true},\\\"selinux\\\":{\\\"enabled\\\":true},\\\"intelRdt\\\":{\\\"enabled\\\":true},\\\"mountExtensions\\\":{\\\"idmap\\\":{\\\"enabled\\\":true}}},\\\"annotations\\\":{\\\"io.github.seccomp.libseccomp.version\\\":\\\"2.5.4\\\",\\\"org.opencontainers.runc.checkpoint.enabled\\\":\\\"true\\\",\\\"org.opencontainers.runc.commit\\\":\\\"v1.3.4-0-gd6d73eb8\\\",\\\"org.opencontainers.runc.version\\\":\\\"1.3.4\\\\n\\\"},\\\"potentiallyUnsafeConfigAnnotations\\\":[\\\"bundle\\\",\\\"org.systemd.property.\\\",\\\"org.criu.config\\\"]}\"}},\"runc\":{\"path\":\"runc\",\"status\":{\"org.opencontainers.runtime-spec.features\":\"{\\\"ociVersionMin\\\":\\\"1.0.0\\\",\\\"ociVersionMax\\\":\\\"1.2.1\\\",\\\"hooks\\\":[\\\"prestart\\\",\\\"createRuntime\\\",\\\"createContainer\\\",\\\"startContainer\\\",\\\"poststart\\\",\\\"poststop\\\"],\\\"mountOptions\\\":[\\\"async\\\",\\\"atime\\\",\\\"bind\\\",\\\"defaults\\\",\\\"dev\\\",\\\"diratime\\\",\\\"dirsync\\\",\\\"exec\\\",\\\"iversion\\\",\\\"lazytime\\\",\\\"loud\\\",\\\"mand\\\",\\\"noatime\\\",\\\"nodev\\\",\\\"nodiratime\\\",\\\"noexec\\\",\\\"noiversion\\\",\\\"nolazytime\\\",\\\"nomand\\\",\\\"norelatime\\\",\\\"nostrictatime\\\",\\\"nosuid\\\",\\\"nosymfollow\\\",\\\"private\\\",\\\"ratime\\\",\\\"rbind\\\",\\\"rdev\\\",\\\"rdiratime\\\",\\\"relatime\\\",\\\"remount\\\",\\\"rexec\\\",\\\"rnoatime\\\",\\\"rnodev\\\",\\\"rnodiratime\\\",\\\"rnoexec\\\",\\\"rnorelatime\\\",\\\"rnostrictatime\\\",\\\"rnosuid\\\",\\\"rnosymfollow\\\",\\\"ro\\\",\\\"rprivate\\\",\\\"rrelatime\\\",\\\"rro\\\",\\\"rrw\\\",\\\"rshared\\\",\\\"rslave\\\",\\\"rstrictatime\\\",\\\"rsuid\\\",\\\"rsymfollow\\\",\\\"runbindable\\\",\\\"rw\\\",\\\"shared\\\",\\\"silent\\\",\\\"slave\\\",\\\"strictatime\\\",\\\"suid\\\",\\\"symfollow\\\",\\\"sync\\\",\\\"tmpcopyup\\\",\\\"unbindable\\\"],\\\"linux\\\":{\\\"namespaces\\\":[\\\"cgroup\\\",\\\"ipc\\\",\\\"mount\\\",\\\"network\\\",\\\"pid\\\",\\\"time\\\",\\\"user\\\",\\\"uts\\\"],\\\"capabilities\\\":[\\\"CAP_CHOWN\\\",\\\"CAP_DAC_OVERRIDE\\\",\\\"CAP_DAC_READ_SEARCH\\\",\\\"CAP_FOWNER\\\",\\\"CAP_FSETID\\\",\\\"CAP_KILL\\\",\\\"CAP_SETGID\\\",\\\"CAP_SETUID\\\",\\\"CAP_SETPCAP\\\",\\\"CAP_LINUX_IMMUTABLE\\\",\\\"CAP_NET_BIND_SERVICE\\\",\\\"CAP_NET_BROADCAST\\\",\\\"CAP_NET_ADMIN\\\",\\\"CAP_NET_RAW\\\",\\\"CAP_IPC_LOCK\\\",\\\"CAP_IPC_OWNER\\\",\\\"CAP_SYS_MODULE\\\",\\\"CAP_SYS_RAWIO\\\",\\\"CAP_SYS_CHROOT\\\",\\\"CAP_SYS_PTRACE\\\",\\\"CAP_SYS_PACCT\\\",\\\"CAP_SYS_ADMIN\\\",\\\"CAP_SYS_BOOT\\\",\\\"CAP_SYS_NICE\\\",\\\"CAP_SYS_RESOURCE\\\",\\\"CAP_SYS_TIME\\\",\\\"CAP_SYS_TTY_CONFIG\\\",\\\"CAP_MKNOD\\\",\\\"CAP_LEASE\\\",\\\"CAP_AUDIT_WRITE\\\",\\\"CAP_AUDIT_CONTROL\\\",\\\"CAP_SETFCAP\\\",\\\"CAP_MAC_OVERRIDE\\\",\\\"CAP_MAC_ADMIN\\\",\\\"CAP_SYSLOG\\\",\\\"CAP_WAKE_ALARM\\\",\\\"CAP_BLOCK_SUSPEND\\\",\\\"CAP_AUDIT_READ\\\",\\\"CAP_PERFMON\\\",\\\"CAP_BPF\\\",\\\"CAP_CHECKPOINT_RESTORE\\\"],\\\"cgroup\\\":{\\\"v1\\\":true,\\\"v2\\\":true,\\\"systemd\\\":true,\\\"systemdUser\\\":true,\\\"rdma\\\":true},\\\"seccomp\\\":{\\\"enabled\\\":true,\\\"actions\\\":[\\\"SCMP_ACT_ALLOW\\\",\\\"SCMP_ACT_ERRNO\\\",\\\"SCMP_ACT_KILL\\\",\\\"SCMP_ACT_KILL_PROCESS\\\",\\\"SCMP_ACT_KILL_THREAD\\\",\\\"SCMP_ACT_LOG\\\",\\\"SCMP_ACT_NOTIFY\\\",\\\"SCMP_ACT_TRACE\\\",\\\"SCMP_ACT_TRAP\\\"],\\\"operators\\\":[\\\"SCMP_CMP_EQ\\\",\\\"SCMP_CMP_GE\\\",\\\"SCMP_CMP_GT\\\",\\\"SCMP_CMP_LE\\\",\\\"SCMP_CMP_LT\\\",\\\"SCMP_CMP_MASKED_EQ\\\",\\\"SCMP_CMP_NE\\\"],\\\"archs\\\":[\\\"SCMP_ARCH_AARCH64\\\",\\\"SCMP_ARCH_ARM\\\",\\\"SCMP_ARCH_MIPS\\\",\\\"SCMP_ARCH_MIPS64\\\",\\\"SCMP_ARCH_MIPS64N32\\\",\\\"SCMP_ARCH_MIPSEL\\\",\\\"SCMP_ARCH_MIPSEL64\\\",\\\"SCMP_ARCH_MIPSEL64N32\\\",\\\"SCMP_ARCH_PPC\\\",\\\"SCMP_ARCH_PPC64\\\",\\\"SCMP_ARCH_PPC64LE\\\",\\\"SCMP_ARCH_RISCV64\\\",\\\"SCMP_ARCH_S390\\\",\\\"SCMP_ARCH_S390X\\\",\\\"SCMP_ARCH_X32\\\",\\\"SCMP_ARCH_X86\\\",\\\"SCMP_ARCH_X86_64\\\"],\\\"knownFlags\\\":[\\\"SECCOMP_FILTER_FLAG_TSYNC\\\",\\\"SECCOMP_FILTER_FLAG_SPEC_ALLOW\\\",\\\"SECCOMP_FILTER_FLAG_LOG\\\"],\\\"supportedFlags\\\":[\\\"SECCOMP_FILTER_FLAG_TSYNC\\\",\\\"SECCOMP_FILTER_FLAG_SPEC_ALLOW\\\",\\\"SECCOMP_FILTER_FLAG_LOG\\\"]},\\\"apparmor\\\":{\\\"enabled\\\":true},\\\"selinux\\\":{\\\"enabled\\\":true},\\\"intelRdt\\\":{\\\"enabled\\\":true},\\\"mountExtensions\\\":{\\\"idmap\\\":{\\\"enabled\\\":true}}},\\\"annotations\\\":{\\\"io.github.seccomp.libseccomp.version\\\":\\\"2.5.4\\\",\\\"org.opencontainers.runc.checkpoint.enabled\\\":\\\"true\\\",\\\"org.opencontainers.runc.commit\\\":\\\"v1.3.4-0-gd6d73eb8\\\",\\\"org.opencontainers.runc.version\\\":\\\"1.3.4\\\\n\\\"},\\\"potentiallyUnsafeConfigAnnotations\\\":[\\\"bundle\\\",\\\"org.systemd.property.\\\",\\\"org.criu.config\\\"]}\"}}},\"DefaultRuntime\":\"runc\",\"Swarm\":{\"NodeID\":\"\",\"NodeAddr\":\"\",\"LocalNodeState\":\"inactive\",\"ControlAvailable\":false,\"Error\":\"\",\"RemoteManagers\":null},\"LiveRestoreEnabled\":false,\"Isolation\":\"\",\"InitBinary\":\"docker-init\",\"ContainerdCommit\":{\"ID\":\"dea7da592f5d1d2b7755e3a161be07f43fad8f75\"},\"RuncCommit\":{\"ID\":\"v1.3.4-0-gd6d73eb8\"},\"InitCommit\":{\"ID\":\"de40ad0\"},\"SecurityOptions\":[\"name=seccomp,profile=builtin\",\"name=cgroupns\"],\"FirewallBackend\":{\"Driver\":\"iptables\"},\"CDISpecDirs\":[\"/etc/cdi\",\"/var/run/cdi\"],\"DiscoveredDevices\":[{\"Source\":\"cdi\",\"ID\":\"docker.com/gpu=webgpu\"}],\"Containerd\":{\"Address\":\"/run/containerd/containerd.sock\",\"Namespaces\":{\"Containers\":\"moby\",\"Plugins\":\"plugins.moby\"}},\"Warnings\":null,\"ClientInfo\":{\"Debug\":false,\"Version\":\"29.2.1\",\"DefaultAPIVersion\":\"1.53\",\"GitCommit\":\"a5c7197\",\"GoVersion\":\"go1.25.6\",\"Os\":\"windows\",\"Arch\":\"amd64\",\"BuildTime\":\"Mon Feb  2 17:20:16 2026\",\"Context\":\"desktop-linux\",\"Plugins\":[{\"SchemaVersion\":\"0.1.0\",\"Vendor\":\"Docker Inc.\",\"Version\":\"v1.18.0\",\"ShortDescription\":\"Docker AI Agent - Ask Gordon\",\"Name\":\"ai\",\"Path\":\"C:\\\\Program Files\\\\Docker\\\\cli-plugins\\\\docker-ai.exe\"},{\"SchemaVersion\":\"0.1.0\",\"Vendor\":\"Docker Inc.\",\"Version\":\"v0.31.1-desktop.1\",\"ShortDescription\":\"Docker Buildx\",\"Name\":\"buildx\",\"Path\":\"C:\\\\Program Files\\\\Docker\\\\cli-plugins\\\\docker-buildx.exe\"},{\"SchemaVersion\":\"0.1.0\",\"Vendor\":\"Docker Inc.\",\"Version\":\"v5.0.2\",\"ShortDescription\":\"Docker Compose\",\"Name\":\"compose\",\"Path\":\"C:\\\\Program Files\\\\Docker\\\\cli-plugins\\\\docker-compose.exe\"},{\"SchemaVersion\":\"0.1.0\",\"Vendor\":\"Docker Inc.\",\"Version\":\"0.0.47\",\"ShortDescription\":\"Get a shell into any image or container\",\"Name\":\"debug\",\"Path\":\"C:\\\\Program Files\\\\Docker\\\\cli-plugins\\\\docker-debug.exe\"},{\"SchemaVersion\":\"0.1.0\",\"Vendor\":\"Docker Inc.\",\"Version\":\"v0.3.0\",\"ShortDescription\":\"Docker Desktop commands\",\"Name\":\"desktop\",\"Path\":\"C:\\\\Program Files\\\\Docker\\\\cli-plugins\\\\docker-desktop.exe\"},{\"SchemaVersion\":\"0.1.0\",\"Vendor\":\"Docker Inc.\",\"Version\":\"v0.2.31\",\"ShortDescription\":\"Manages Docker extensions\",\"Name\":\"extension\",\"Path\":\"C:\\\\Program Files\\\\Docker\\\\cli-plugins\\\\docker-extension.exe\"},{\"SchemaVersion\":\"0.1.0\",\"Vendor\":\"Docker Inc.\",\"Version\":\"v1.4.0\",\"ShortDescription\":\"Creates Docker-related starter files for your project\",\"Name\":\"init\",\"Path\":\"C:\\\\Program Files\\\\Docker\\\\cli-plugins\\\\docker-init.exe\"},{\"SchemaVersion\":\"0.1.0\",\"Vendor\":\"Docker Inc.\",\"Version\":\"v0.39.1\",\"ShortDescription\":\"Docker MCP Plugin\",\"Name\":\"mcp\",\"Path\":\"C:\\\\Program Files\\\\Docker\\\\cli-plugins\\\\docker-mcp.exe\"},{\"SchemaVersion\":\"0.1.0\",\"Vendor\":\"Docker Inc.\",\"Version\":\"v1.0.8\",\"ShortDescription\":\"Docker Model Runner\",\"Name\":\"model\",\"Path\":\"C:\\\\Program Files\\\\Docker\\\\cli-plugins\\\\docker-model.exe\"},{\"SchemaVersion\":\"0.1.0\",\"Vendor\":\"Docker Inc.\",\"Version\":\"v0.5.45\",\"ShortDescription\":\"Docker Offload\",\"Name\":\"offload\",\"Path\":\"C:\\\\Program Files\\\\Docker\\\\cli-plugins\\\\docker-offload.exe\"},{\"SchemaVersion\":\"0.1.0\",\"Vendor\":\"Docker Inc.\",\"Version\":\"v0.0.24\",\"ShortDescription\":\"Docker Pass Secrets Manager Plugin (beta)\",\"Hidden\":true,\"Name\":\"pass\",\"Path\":\"C:\\\\Program Files\\\\Docker\\\\cli-plugins\\\\docker-pass.exe\"},{\"SchemaVersion\":\"0.1.0\",\"Vendor\":\"Docker Inc.\",\"Version\":\"v0.12.0\",\"ShortDescription\":\"Docker Sandbox\",\"Name\":\"sandbox\",\"Path\":\"C:\\\\Program Files\\\\Docker\\\\cli-plugins\\\\docker-sandbox.exe\"},{\"SchemaVersion\":\"0.1.0\",\"Vendor\":\"Anchore Inc.\",\"Version\":\"0.6.0\",\"ShortDescription\":\"View the packaged-based Software Bill Of Materials (SBOM) for an image\",\"URL\":\"https://github.com/docker/sbom-cli-plugin\",\"Name\":\"sbom\",\"Path\":\"C:\\\\Program Files\\\\Docker\\\\cli-plugins\\\\docker-sbom.exe\"},{\"SchemaVersion\":\"0.1.0\",\"Vendor\":\"Docker Inc.\",\"Version\":\"v1.19.0\",\"ShortDescription\":\"Docker Scout\",\"Name\":\"scout\",\"Path\":\"C:\\\\Program Files\\\\Docker\\\\cli-plugins\\\\docker-scout.exe\"}],\"Warnings\":null}}\n",
+    "stderr": "",
+    "cmd": "docker info --format {{json .}}"
+  },
+  "docker_ps_all": [
+    {
+      "Command": "\"bash start.sh\"",
+      "CreatedAt": "2026-02-18 20:13:47 -0500 EST",
+      "ID": "61edccb48634",
+      "Image": "ghcr.io/open-webui/open-webui:main",
+      "Labels": "desktop.docker.io/ports.scheme=v2,desktop.docker.io/ports/8080/tcp=:3000,org.opencontainers.image.created=2026-02-17T07:26:02.650Z,org.opencontainers.image.description=User-friendly AI Interface (Supports Ollama, OpenAI API, ...),org.opencontainers.image.licenses=NOASSERTION,org.opencontainers.image.revision=b8112d72b95e480f946f0688bed29321b61e65af,org.opencontainers.image.source=https://github.com/open-webui/open-webui,org.opencontainers.image.title=open-webui,org.opencontainers.image.url=https://github.com/open-webui/open-webui,org.opencontainers.image.version=main",
+      "LocalVolumes": "1",
+      "Mounts": "open-webui",
+      "Names": "open-webui",
+      "Networks": "bridge",
+      "Platform": {
+        "architecture": "amd64",
+        "os": "linux"
+      },
+      "Ports": "0.0.0.0:3000->8080/tcp",
+      "RunningFor": "3 months ago",
+      "Size": "53.6MB (virtual 4.91GB)",
+      "State": "exited",
+      "Status": "Exited (255) 3 months ago"
+    }
+  ],
+  "open_webui_candidates": [
+    {
+      "Command": "\"bash start.sh\"",
+      "CreatedAt": "2026-02-18 20:13:47 -0500 EST",
+      "ID": "61edccb48634",
+      "Image": "ghcr.io/open-webui/open-webui:main",
+      "Labels": "desktop.docker.io/ports.scheme=v2,desktop.docker.io/ports/8080/tcp=:3000,org.opencontainers.image.created=2026-02-17T07:26:02.650Z,org.opencontainers.image.description=User-friendly AI Interface (Supports Ollama, OpenAI API, ...),org.opencontainers.image.licenses=NOASSERTION,org.opencontainers.image.revision=b8112d72b95e480f946f0688bed29321b61e65af,org.opencontainers.image.source=https://github.com/open-webui/open-webui,org.opencontainers.image.title=open-webui,org.opencontainers.image.url=https://github.com/open-webui/open-webui,org.opencontainers.image.version=main",
+      "LocalVolumes": "1",
+      "Mounts": "open-webui",
+      "Names": "open-webui",
+      "Networks": "bridge",
+      "Platform": {
+        "architecture": "amd64",
+        "os": "linux"
+      },
+      "Ports": "0.0.0.0:3000->8080/tcp",
+      "RunningFor": "3 months ago",
+      "Size": "53.6MB (virtual 4.91GB)",
+      "State": "exited",
+      "Status": "Exited (255) 3 months ago"
+    }
+  ],
+  "open_webui_inspect": {
+    "open-webui": [
+      {
+        "Id": "61edccb486347567fbde38495b00d0845e76ea93359b6c9a41cdd860358789dc",
+        "Created": "2026-02-19T01:13:47.948983075Z",
+        "Path": "bash",
+        "Args": [
+          "start.sh"
+        ],
+        "State": {
+          "Status": "exited",
+          "Running": false,
+          "Paused": false,
+          "Restarting": false,
+          "OOMKilled": false,
+          "Dead": false,
+          "Pid": 0,
+          "ExitCode": 255,
+          "Error": "",
+          "StartedAt": "2026-02-19T01:13:48.067763632Z",
+          "FinishedAt": "2026-03-11T16:23:52.268143657Z",
+          "Health": {
+            "Status": "starting",
+            "FailingStreak": 0,
+            "Log": []
+          }
+        },
+        "Image": "sha256:2b9d2bec40ff30eb71216065f5244c2861d30b75b4e49c40e39973ee64218cde",
+        "ResolvConfPath": "/var/lib/docker/containers/61edccb486347567fbde38495b00d0845e76ea93359b6c9a41cdd860358789dc/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/61edccb486347567fbde38495b00d0845e76ea93359b6c9a41cdd860358789dc/hostname",
+        "HostsPath": "/var/lib/docker/containers/61edccb486347567fbde38495b00d0845e76ea93359b6c9a41cdd860358789dc/hosts",
+        "LogPath": "/var/lib/docker/containers/61edccb486347567fbde38495b00d0845e76ea93359b6c9a41cdd860358789dc/61edccb486347567fbde38495b00d0845e76ea93359b6c9a41cdd860358789dc-json.log",
+        "Name": "/open-webui",
+        "RestartCount": 0,
+        "Driver": "overlayfs",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "",
+        "ExecIDs": null,
+        "HostConfig": {
+          "Binds": [
+            "open-webui:/app/backend/data"
+          ],
+          "ContainerIDFile": "",
+          "LogConfig": {
+            "Type": "json-file",
+            "Config": {}
+          },
+          "NetworkMode": "bridge",
+          "PortBindings": {
+            "8080/tcp": [
+              {
+                "HostIp": "",
+                "HostPort": "3000"
+              }
+            ]
+          },
+          "RestartPolicy": {
+            "Name": "no",
+            "MaximumRetryCount": 0
+          },
+          "AutoRemove": false,
+          "VolumeDriver": "",
+          "VolumesFrom": null,
+          "ConsoleSize": [
+            27,
+            120
+          ],
+          "CapAdd": null,
+          "CapDrop": null,
+          "CgroupnsMode": "private",
+          "Dns": [],
+          "DnsOptions": [],
+          "DnsSearch": [],
+          "ExtraHosts": null,
+          "GroupAdd": null,
+          "IpcMode": "private",
+          "Cgroup": "",
+          "Links": null,
+          "OomScoreAdj": 0,
+          "PidMode": "",
+          "Privileged": false,
+          "PublishAllPorts": false,
+          "ReadonlyRootfs": false,
+          "SecurityOpt": null,
+          "UTSMode": "",
+          "UsernsMode": "",
+          "ShmSize": 67108864,
+          "Runtime": "runc",
+          "Isolation": "",
+          "CpuShares": 0,
+          "Memory": 0,
+          "NanoCpus": 0,
+          "CgroupParent": "",
+          "BlkioWeight": 0,
+          "BlkioWeightDevice": [],
+          "BlkioDeviceReadBps": [],
+          "BlkioDeviceWriteBps": [],
+          "BlkioDeviceReadIOps": [],
+          "BlkioDeviceWriteIOps": [],
+          "CpuPeriod": 0,
+          "CpuQuota": 0,
+          "CpuRealtimePeriod": 0,
+          "CpuRealtimeRuntime": 0,
+          "CpusetCpus": "",
+          "CpusetMems": "",
+          "Devices": [],
+          "DeviceCgroupRules": null,
+          "DeviceRequests": null,
+          "MemoryReservation": 0,
+          "MemorySwap": 0,
+          "MemorySwappiness": null,
+          "OomKillDisable": null,
+          "PidsLimit": null,
+          "Ulimits": [],
+          "CpuCount": 0,
+          "CpuPercent": 0,
+          "IOMaximumIOps": 0,
+          "IOMaximumBandwidth": 0,
+          "MaskedPaths": [
+            "/proc/acpi",
+            "/proc/asound",
+            "/proc/interrupts",
+            "/proc/kcore",
+            "/proc/keys",
+            "/proc/latency_stats",
+            "/proc/sched_debug",
+            "/proc/scsi",
+            "/proc/timer_list",
+            "/proc/timer_stats",
+            "/sys/devices/virtual/powercap",
+            "/sys/firmware"
+          ],
+          "ReadonlyPaths": [
+            "/proc/bus",
+            "/proc/fs",
+            "/proc/irq",
+            "/proc/sys",
+            "/proc/sysrq-trigger"
+          ]
+        },
+        "Storage": {
+          "RootFS": {
+            "Snapshot": {
+              "Name": "overlayfs"
+            }
+          }
+        },
+        "Mounts": [
+          {
+            "Type": "volume",
+            "Name": "open-webui",
+            "Source": "/var/lib/docker/volumes/open-webui/_data",
+            "Destination": "/app/backend/data",
+            "Driver": "local",
+            "Mode": "z",
+            "RW": true,
+            "Propagation": ""
+          }
+        ],
+        "Config": {
+          "Hostname": "61edccb48634",
+          "Domainname": "",
+          "User": "0:0",
+          "AttachStdin": false,
+          "AttachStdout": false,
+          "AttachStderr": false,
+          "ExposedPorts": {
+            "8080/tcp": {}
+          },
+          "Tty": false,
+          "OpenStdin": false,
+          "StdinOnce": false,
+          "Env": [
+            "OPENAI_API_KEY=<REDACTED>",
+            "OPENAI_API_BASE_URL=http://host.docker.internal:8000/v1",
+            "PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "LANG=C.UTF-8",
+            "GPG_KEY=A035C8C19219BA821ECEA86B64E628F8D684696D",
+            "PYTHON_VERSION=3.11.14",
+            "PYTHON_SHA256=8d3ed8ec5c88c1c95f5e558612a725450d2452813ddad5e58fdb1a53b1209b78",
+            "PYTHONUNBUFFERED=1",
+            "ENV=prod",
+            "PORT=8080",
+            "USE_OLLAMA_DOCKER=false",
+            "USE_CUDA_DOCKER=false",
+            "USE_SLIM_DOCKER=false",
+            "USE_CUDA_DOCKER_VER=cu128",
+            "USE_EMBEDDING_MODEL_DOCKER=sentence-transformers/all-MiniLM-L6-v2",
+            "USE_RERANKING_MODEL_DOCKER=",
+            "USE_AUXILIARY_EMBEDDING_MODEL_DOCKER=TaylorAI/bge-micro-v2",
+            "OLLAMA_BASE_URL=/ollama",
+            "WEBUI_SECRET_KEY=",
+            "SCARF_NO_ANALYTICS=true",
+            "DO_NOT_TRACK=true",
+            "ANONYMIZED_TELEMETRY=false",
+            "WHISPER_MODEL=base",
+            "WHISPER_MODEL_DIR=/app/backend/data/cache/whisper/models",
+            "RAG_EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2",
+            "RAG_RERANKING_MODEL=",
+            "AUXILIARY_EMBEDDING_MODEL=TaylorAI/bge-micro-v2",
+            "SENTENCE_TRANSFORMERS_HOME=/app/backend/data/cache/embedding/models",
+            "TIKTOKEN_ENCODING_NAME=cl100k_base",
+            "TIKTOKEN_CACHE_DIR=/app/backend/data/cache/tiktoken",
+            "HF_HOME=/app/backend/data/cache/embedding/models",
+            "HOME=/root",
+            "WEBUI_BUILD_VERSION=b8112d72b95e480f946f0688bed29321b61e65af",
+            "DOCKER=true"
+          ],
+          "Cmd": [
+            "bash",
+            "start.sh"
+          ],
+          "Healthcheck": {
+            "Test": [
+              "CMD-SHELL",
+              "curl --silent --fail http://localhost:${PORT:-8080}/health | jq -ne 'input.status == true' || exit 1"
+            ]
+          },
+          "Image": "ghcr.io/open-webui/open-webui:main",
+          "Volumes": null,
+          "WorkingDir": "/app/backend",
+          "Entrypoint": null,
+          "Labels": {
+            "org.opencontainers.image.created": "2026-02-17T07:26:02.650Z",
+            "org.opencontainers.image.description": "User-friendly AI Interface (Supports Ollama, OpenAI API, ...)",
+            "org.opencontainers.image.licenses": "NOASSERTION",
+            "org.opencontainers.image.revision": "b8112d72b95e480f946f0688bed29321b61e65af",
+            "org.opencontainers.image.source": "https://github.com/open-webui/open-webui",
+            "org.opencontainers.image.title": "open-webui",
+            "org.opencontainers.image.url": "https://github.com/open-webui/open-webui",
+            "org.opencontainers.image.version": "main"
+          },
+          "StopTimeout": 1
+        },
+        "NetworkSettings": {
+          "SandboxID": "",
+          "SandboxKey": "",
+          "Ports": {},
+          "Networks": {
+            "bridge": {
+              "IPAMConfig": null,
+              "Links": null,
+              "Aliases": null,
+              "DriverOpts": null,
+              "GwPriority": 0,
+              "NetworkID": "a503d7fd10c8e1b2c7339340c1cc3c616e68e299f0022503ee9e53cbad04c6f2",
+              "EndpointID": "",
+              "Gateway": "",
+              "IPAddress": "",
+              "MacAddress": "",
+              "IPPrefixLen": 0,
+              "IPv6Gateway": "",
+              "GlobalIPv6Address": "",
+              "GlobalIPv6PrefixLen": 0,
+              "DNSNames": null
+            }
+          }
+        },
+        "ImageManifestDescriptor": {
+          "mediaType": "application/vnd.oci.image.manifest.v1+json",
+          "digest": "sha256:78ca7ffae88119d1fa6c53ff51438329e3f421cddf8861d7d9c428a80c13c1b9",
+          "size": 3712,
+          "platform": {
+            "architecture": "amd64",
+            "os": "linux"
+          }
+        }
+      }
+    ]
+  },
+  "open_webui_logs_tail_redacted": {
+    "open-webui": {
+      "ok": true,
+      "returncode": 0,
+      "stdout": "2026-02-19 22:45:51.353 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37656 - \"GET /_app/immutable/chunks/BwfCUpy6.js HTTP/1.1\" 304\n2026-02-19 22:45:51.355 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37690 - \"GET /_app/immutable/chunks/D_lxlIc4.js HTTP/1.1\" 304\n2026-02-19 22:45:51.361 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37672 - \"GET /_app/immutable/chunks/vzXtSVoH.js HTTP/1.1\" 304\n2026-02-19 22:45:51.363 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37686 - \"GET /_app/immutable/chunks/Bx7J06Dc.js HTTP/1.1\" 304\n2026-02-19 22:45:51.367 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37640 - \"GET /_app/immutable/chunks/Ba8yucWM.js HTTP/1.1\" 304\n2026-02-19 22:45:51.367 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37702 - \"GET /_app/immutable/chunks/BMI9cWET.js HTTP/1.1\" 304\n2026-02-19 22:45:51.370 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37656 - \"GET /_app/immutable/chunks/CmnkfPoc.js HTTP/1.1\" 304\n2026-02-19 22:45:51.375 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37690 - \"GET /_app/immutable/chunks/DJJ1pyH0.js HTTP/1.1\" 304\n2026-02-19 22:45:51.381 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37672 - \"GET /_app/immutable/chunks/DQpQb0Zt.js HTTP/1.1\" 304\n2026-02-19 22:45:51.389 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37686 - \"GET /_app/immutable/chunks/CYrHMK50.js HTTP/1.1\" 304\n2026-02-19 22:45:51.389 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37690 - \"GET /_app/immutable/chunks/BkIq4suy.js HTTP/1.1\" 304\n2026-02-19 22:45:51.389 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37656 - \"GET /_app/immutable/chunks/Ds_mm-o5.js HTTP/1.1\" 304\n2026-02-19 22:45:51.390 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37702 - \"GET /_app/immutable/chunks/DPWE9gu7.js HTTP/1.1\" 304\n2026-02-19 22:45:51.390 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37640 - \"GET /_app/immutable/chunks/L-gCVoaR.js HTTP/1.1\" 304\n2026-02-19 22:45:51.390 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37672 - \"GET /_app/immutable/chunks/BQWQRICs.js HTTP/1.1\" 304\n2026-02-19 22:45:51.402 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37672 - \"GET /_app/immutable/chunks/hRvkU78O.js HTTP/1.1\" 304\n2026-02-19 22:45:51.403 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37702 - \"GET /_app/immutable/chunks/BSH6v-Yc.js HTTP/1.1\" 304\n2026-02-19 22:45:51.403 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37640 - \"GET /_app/immutable/chunks/wxGpfLiT.js HTTP/1.1\" 304\n2026-02-19 22:45:51.405 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37686 - \"GET /_app/immutable/chunks/C2KRPbgo.js HTTP/1.1\" 304\n2026-02-19 22:45:51.405 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37656 - \"GET /_app/immutable/chunks/GfCX8tN8.js HTTP/1.1\" 304\n2026-02-19 22:45:51.413 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37690 - \"GET /_app/immutable/chunks/nIdbzb2Z.js HTTP/1.1\" 304\n2026-02-19 22:45:51.419 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37702 - \"GET /_app/immutable/chunks/CY023Hkq.js HTTP/1.1\" 304\n2026-02-19 22:45:51.425 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37656 - \"GET /_app/immutable/chunks/4AvEjEw7.js HTTP/1.1\" 304\n2026-02-19 22:45:51.425 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37672 - \"GET /_app/immutable/chunks/B2EypdZ1.js HTTP/1.1\" 304\n2026-02-19 22:45:51.426 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37640 - \"GET /_app/immutable/chunks/CXkJ7ndI.js HTTP/1.1\" 304\n2026-02-19 22:45:51.426 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37690 - \"GET /_app/immutable/chunks/GEaVGd9b.js HTTP/1.1\" 304\n2026-02-19 22:45:51.432 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37686 - \"GET /_app/immutable/chunks/BIwThD-n.js HTTP/1.1\" 304\n2026-02-19 22:45:51.441 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37702 - \"GET /_app/immutable/chunks/CCCfg7Rb.js HTTP/1.1\" 304\n2026-02-19 22:45:51.442 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37656 - \"GET /_app/immutable/chunks/D-VVQXYf.js HTTP/1.1\" 304\n2026-02-19 22:45:51.442 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37672 - \"GET /_app/immutable/chunks/CU2r43ac.js HTTP/1.1\" 304\n2026-02-19 22:45:51.443 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37640 - \"GET /_app/immutable/chunks/Bzr0q9D9.js HTTP/1.1\" 304\n2026-02-19 22:45:51.443 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37686 - \"GET /_app/immutable/chunks/CblpNqam.js HTTP/1.1\" 304\n2026-02-19 22:45:51.452 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37690 - \"GET /_app/immutable/chunks/Dw4lTQkc.js HTTP/1.1\" 304\n2026-02-19 22:45:51.458 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37686 - \"GET /_app/immutable/chunks/v_f6LuVl.js HTTP/1.1\" 304\n2026-02-19 22:45:51.459 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37656 - \"GET /_app/immutable/chunks/CC4mjhFh.js HTTP/1.1\" 304\n2026-02-19 22:45:51.460 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37640 - \"GET /_app/immutable/chunks/nD0G_-i_.js HTTP/1.1\" 304\n2026-02-19 22:45:51.467 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37702 - \"GET /_app/immutable/chunks/DIwaCJNG.js HTTP/1.1\" 304\n2026-02-19 22:45:51.469 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37690 - \"GET /_app/immutable/chunks/0xPo7IFN.js HTTP/1.1\" 304\n2026-02-19 22:45:51.472 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37672 - \"GET /_app/immutable/chunks/CJAakkWb.js HTTP/1.1\" 304\n2026-02-19 22:45:51.481 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37656 - \"GET /_app/immutable/chunks/CYTT7-MF.js HTTP/1.1\" 304\n2026-02-19 22:45:51.481 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37702 - \"GET /_app/immutable/chunks/CgURhQlz.js HTTP/1.1\" 304\n2026-02-19 22:45:51.482 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37686 - \"GET /_app/immutable/chunks/CRl0X9lZ.js HTTP/1.1\" 304\n2026-02-19 22:45:51.482 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37640 - \"GET /_app/immutable/chunks/DysyYXlW.js HTTP/1.1\" 304\n2026-02-19 22:45:51.491 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37690 - \"GET /_app/immutable/chunks/rAJ0901I.js HTTP/1.1\" 304\n2026-02-19 22:45:51.501 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37672 - \"GET /_app/immutable/chunks/CwnpBzAa.js HTTP/1.1\" 304\n2026-02-19 22:45:51.501 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37702 - \"GET /_app/immutable/chunks/Bc6ajttp.js HTTP/1.1\" 304\n2026-02-19 22:45:51.503 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37656 - \"GET /_app/immutable/chunks/Bhn26VQE.js HTTP/1.1\" 304\n2026-02-19 22:45:51.515 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37686 - \"GET /_app/immutable/chunks/C83syoBY.js HTTP/1.1\" 304\n2026-02-19 22:45:51.515 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37640 - \"GET /_app/immutable/chunks/DNll7aTh.js HTTP/1.1\" 304\n2026-02-19 22:45:51.526 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37690 - \"GET /_app/immutable/chunks/DQfRr7yB.js HTTP/1.1\" 304\n2026-02-19 22:45:51.528 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37702 - \"GET /_app/immutable/chunks/Bhl84gDY.js HTTP/1.1\" 304\n2026-02-19 22:45:51.530 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37656 - \"GET /_app/immutable/chunks/DKMHA8Ow.js HTTP/1.1\" 304\n2026-02-19 22:45:51.539 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37672 - \"GET /_app/immutable/chunks/BEslf0EV.js HTTP/1.1\" 304\n2026-02-19 22:45:51.540 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37686 - \"GET /_app/immutable/chunks/DIxF6L6_.js HTTP/1.1\" 304\n2026-02-19 22:45:51.547 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37690 - \"GET /_app/immutable/chunks/0fmOtG56.js HTTP/1.1\" 304\n2026-02-19 22:45:51.557 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37640 - \"GET /_app/immutable/chunks/B5Bjau0D.js HTTP/1.1\" 304\n2026-02-19 22:45:51.568 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37656 - \"GET /_app/immutable/chunks/C0VsUr9d.js HTTP/1.1\" 304\n2026-02-19 22:45:51.569 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37686 - \"GET /_app/immutable/chunks/ByylcQmC.js HTTP/1.1\" 304\n2026-02-19 22:45:51.579 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37690 - \"GET /_app/immutable/chunks/DOQlC3E0.js HTTP/1.1\" 304\n2026-02-19 22:45:51.586 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37672 - \"GET /_app/immutable/chunks/DIw7qU1h.js HTTP/1.1\" 304\n2026-02-19 22:45:51.586 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37702 - \"GET /_app/immutable/chunks/TZRR-khs.js HTTP/1.1\" 304\n2026-02-19 22:45:51.588 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37640 - \"GET /_app/immutable/chunks/BBrg4sOn.js HTTP/1.1\" 304\n2026-02-19 22:45:51.602 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37656 - \"GET /_app/immutable/chunks/DWHmbXwR.js HTTP/1.1\" 304\n2026-02-19 22:45:51.603 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37686 - \"GET /_app/immutable/chunks/BQpmcEc3.js HTTP/1.1\" 304\n2026-02-19 22:45:51.604 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37690 - \"GET /_app/immutable/chunks/DiPWy50c.js HTTP/1.1\" 304\n2026-02-19 22:45:51.615 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37702 - \"GET /_app/immutable/chunks/C9Kya9Jd.js HTTP/1.1\" 304\n2026-02-19 22:45:51.622 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37640 - \"GET /_app/immutable/chunks/GGRuqUW7.js HTTP/1.1\" 304\n2026-02-19 22:45:51.623 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37672 - \"GET /_app/immutable/chunks/CMs6GkEJ.js HTTP/1.1\" 304\n2026-02-19 22:45:51.630 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37656 - \"GET /static/favicon.ico HTTP/1.1\" 304\n2026-02-19 22:45:51.633 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37690 - \"GET /static/logo.png HTTP/1.1\" 304\n2026-02-19 22:45:51.707 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37690 - \"GET /api/config HTTP/1.1\" 200\n2026-02-19 22:45:51.709 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37656 - \"GET /static/favicon.png HTTP/1.1\" 304\n2026-02-19 22:45:51.768 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37656 - \"GET /api/v1/auths/ HTTP/1.1\" 200\n2026-02-19 22:45:51.769 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37690 - \"GET /_app/immutable/chunks/D133plTP.js HTTP/1.1\" 304\n2026-02-19 22:45:51.789 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37656 - \"GET /api/version HTTP/1.1\" 200\n2026-02-19 22:45:51.790 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37672 - \"GET /api/config HTTP/1.1\" 200\n2026-02-19 22:45:51.803 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37690 - \"GET /api/v1/users/user/settings HTTP/1.1\" 200\n2026-02-19 22:45:51.910 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37690 - \"GET /api/v1/users/user/settings HTTP/1.1\" 200\n2026-02-19 22:45:51.910 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37656 - \"GET /api/v1/configs/banners HTTP/1.1\" 200\n2026-02-19 22:45:51.946 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37672 - \"GET /api/v1/tools/ HTTP/1.1\" 200\n2026-02-19 22:45:52.003 | INFO     | open_webui.routers.openai:get_all_models:490 - get_all_models()\n2026-02-19 22:45:52.034 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37702 - \"GET /api/v1/folders/ HTTP/1.1\" 200\n2026-02-19 22:45:52.034 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37690 - \"GET /assets/fonts/Archivo-Variable.ttf HTTP/1.1\" 304\n2026-02-19 22:45:52.035 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37640 - \"GET /api/v1/users/1ebd7bca-3bba-400c-9910-b0d8d179b1e6/profile/image HTTP/1.1\" 200\n2026-02-19 22:45:52.036 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37686 - \"GET /api/v1/chats/all/tags HTTP/1.1\" 200\n2026-02-19 22:45:52.038 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37656 - \"GET /assets/fonts/Inter-Variable.ttf HTTP/1.1\" 304\n2026-02-19 22:45:52.093 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37686 - \"GET /api/v1/chats/pinned HTTP/1.1\" 200\n2026-02-19 22:45:52.115 | ERROR    | open_webui.routers.openai:send_get_request:90 - Connection error: Cannot connect to host host.docker.internal:8000 ssl:default [Connect call failed ('192.168.65.254', 8000)]\n2026-02-19 22:45:52.130 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37672 - \"GET /api/models HTTP/1.1\" 200\n2026-02-19 22:45:52.206 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37686 - \"GET /api/v1/chats/?page=1 HTTP/1.1\" 200\n2026-02-19 22:45:52.211 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37702 - \"GET /api/v1/chats/b46984af-5f99-4d76-ab86-94bac7166082 HTTP/1.1\" 200\n2026-02-19 22:45:52.281 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37640 - \"POST /api/v1/tasks/active/chats HTTP/1.1\" 200\n2026-02-19 22:45:52.326 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37686 - \"GET /api/v1/chats/b46984af-5f99-4d76-ab86-94bac7166082/tags HTTP/1.1\" 200\n2026-02-19 22:45:52.327 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37702 - \"GET /assets/fonts/Vazirmatn-Variable.ttf HTTP/1.1\" 304\n2026-02-19 22:45:52.350 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37686 - \"GET /api/tasks/chat/b46984af-5f99-4d76-ab86-94bac7166082 HTTP/1.1\" 200\n2026-02-19 22:45:52.366 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37686 - \"GET /api/v1/chats/?page=2 HTTP/1.1\" 200\n2026-02-19 22:45:52.571 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37672 - \"GET /api/version/updates HTTP/1.1\" 200\n2026-02-19 22:45:52.575 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37686 - \"GET /api/v1/models/model/profile/image?id=undefined&lang=es-ES HTTP/1.1\" 200\n2026-02-19 22:45:52.580 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:37702 - \"GET /api/v1/tools/ HTTP/1.1\" 200\n2026-02-19 22:46:16.974 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:49684 - \"GET /api/v1/chats/13d29888-3159-4af4-8d06-5bdd3ea2532f HTTP/1.1\" 200\n2026-02-19 22:46:24.012 | INFO     | open_webui.routers.openai:get_all_models:490 - get_all_models()\n2026-02-19 22:46:24.019 | ERROR    | open_webui.routers.openai:send_get_request:90 - Connection error: Cannot connect to host host.docker.internal:8000 ssl:default [Connect call failed ('192.168.65.254', 8000)]\n2026-02-19 22:46:24.020 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:49698 - \"GET /api/models HTTP/1.1\" 200\n2026-02-19 22:46:34.234 | INFO     | open_webui.routers.openai:get_all_models:490 - get_all_models()\n2026-02-19 22:46:34.243 | ERROR    | open_webui.routers.openai:send_get_request:90 - Connection error: Cannot connect to host host.docker.internal:8000 ssl:default [Connect call failed ('192.168.65.254', 8000)]\n2026-02-19 22:46:34.245 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:49992 - \"GET /api/models HTTP/1.1\" 200\n2026-02-19 22:46:34.952 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:49992 - \"GET /api/models HTTP/1.1\" 200\n2026-02-19 22:46:35.234 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:49992 - \"GET /ollama/api/version HTTP/1.1\" 200\n2026-02-19 22:46:37.544 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:49992 - \"GET /c/b46984af-5f99-4d76-ab86-94bac7166082 HTTP/1.1\" 304\n2026-02-19 22:46:37.743 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:49992 - \"GET /manifest.json HTTP/1.1\" 200\n2026-02-19 22:46:37.897 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:49992 - \"GET /api/config HTTP/1.1\" 200\n2026-02-19 22:46:37.960 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:49992 - \"GET /api/v1/auths/ HTTP/1.1\" 200\n2026-02-19 22:46:38.000 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55804 - \"GET /api/config HTTP/1.1\" 200\n2026-02-19 22:46:38.002 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:49992 - \"GET /api/v1/users/user/settings HTTP/1.1\" 200\n2026-02-19 22:46:38.008 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55812 - \"GET /api/version HTTP/1.1\" 200\n2026-02-19 22:46:38.042 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55812 - \"GET /api/v1/users/1ebd7bca-3bba-400c-9910-b0d8d179b1e6/profile/image HTTP/1.1\" 200\n2026-02-19 22:46:38.093 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:49992 - \"GET /api/v1/configs/banners HTTP/1.1\" 200\n2026-02-19 22:46:38.111 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55804 - \"GET /api/v1/tools/ HTTP/1.1\" 200\n2026-02-19 22:46:38.113 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55820 - \"GET /api/v1/users/user/settings HTTP/1.1\" 200\n2026-02-19 22:46:38.116 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55834 - \"GET /api/v1/chats/all/tags HTTP/1.1\" 200\n2026-02-19 22:46:38.119 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55828 - \"GET /api/v1/folders/ HTTP/1.1\" 200\n2026-02-19 22:46:38.142 | INFO     | open_webui.routers.openai:get_all_models:490 - get_all_models()\n2026-02-19 22:46:38.152 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55834 - \"GET /api/v1/chats/pinned HTTP/1.1\" 200\n2026-02-19 22:46:38.185 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55834 - \"GET /api/v1/chats/?page=1 HTTP/1.1\" 200\n2026-02-19 22:46:38.229 | ERROR    | open_webui.routers.openai:send_get_request:90 - Connection error: Cannot connect to host host.docker.internal:8000 ssl:default [Connect call failed ('192.168.65.254', 8000)]\n2026-02-19 22:46:38.231 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55820 - \"GET /api/models HTTP/1.1\" 200\n2026-02-19 22:46:38.257 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55812 - \"GET /api/v1/chats/b46984af-5f99-4d76-ab86-94bac7166082 HTTP/1.1\" 200\n2026-02-19 22:46:38.276 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55834 - \"POST /api/v1/tasks/active/chats HTTP/1.1\" 200\n2026-02-19 22:46:38.291 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55812 - \"GET /api/v1/chats/b46984af-5f99-4d76-ab86-94bac7166082/tags HTTP/1.1\" 200\n2026-02-19 22:46:38.309 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55812 - \"GET /api/tasks/chat/b46984af-5f99-4d76-ab86-94bac7166082 HTTP/1.1\" 200\n2026-02-19 22:46:38.517 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55812 - \"GET /api/v1/auths/ HTTP/1.1\" 200\n2026-02-19 22:46:38.534 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55834 - \"GET /api/v1/tools/ HTTP/1.1\" 200\n2026-02-19 22:46:38.544 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55812 - \"GET /api/v1/chats/?page=2 HTTP/1.1\" 200\n2026-02-19 22:46:38.578 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55820 - \"GET /api/version/updates HTTP/1.1\" 200\n2026-02-19 22:46:38.936 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55820 - \"GET /api/models HTTP/1.1\" 200\n2026-02-19 22:46:40.500 | INFO     | open_webui.routers.openai:get_all_models:490 - get_all_models()\n2026-02-19 22:46:40.517 | ERROR    | open_webui.routers.openai:send_get_request:90 - Connection error: Cannot connect to host host.docker.internal:8000 ssl:default [Connect call failed ('192.168.65.254', 8000)]\n2026-02-19 22:46:40.521 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55820 - \"GET /api/models HTTP/1.1\" 200\n2026-02-19 22:46:41.576 | INFO     | open_webui.routers.openai:get_all_models:490 - get_all_models()\n2026-02-19 22:46:41.589 | ERROR    | open_webui.routers.openai:send_get_request:90 - Connection error: Cannot connect to host host.docker.internal:8000 ssl:default [Connect call failed ('192.168.65.254', 8000)]\n2026-02-19 22:46:41.591 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55820 - \"GET /api/models HTTP/1.1\" 200\n2026-02-19 22:46:42.082 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55820 - \"GET /ollama/api/version HTTP/1.1\" 200\n2026-02-19 22:46:44.559 | INFO     | open_webui.routers.openai:get_all_models:490 - get_all_models()\n2026-02-19 22:46:44.568 | ERROR    | open_webui.routers.openai:send_get_request:90 - Connection error: Cannot connect to host host.docker.internal:8000 ssl:default [Connect call failed ('192.168.65.254', 8000)]\n2026-02-19 22:46:44.571 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:55820 - \"GET /api/models HTTP/1.1\" 200\n2026-02-19 22:47:50.844 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56582 - \"GET / HTTP/1.1\" 304\n2026-02-19 22:47:50.913 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56582 - \"GET /manifest.json HTTP/1.1\" 200\n2026-02-19 22:47:51.169 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56582 - \"GET /_app/immutable/nodes/8.DSQK34AA.js HTTP/1.1\" 304\n2026-02-19 22:47:51.329 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56582 - \"GET /api/config HTTP/1.1\" 200\n2026-02-19 22:47:51.370 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56582 - \"GET /api/v1/auths/ HTTP/1.1\" 200\n2026-02-19 22:47:51.412 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56598 - \"GET /api/config HTTP/1.1\" 200\n2026-02-19 22:47:51.416 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56624 - \"GET /api/version HTTP/1.1\" 200\n2026-02-19 22:47:51.426 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56582 - \"GET /api/v1/users/user/settings HTTP/1.1\" 200\n2026-02-19 22:47:51.480 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56582 - \"GET /api/v1/configs/banners HTTP/1.1\" 200\n2026-02-19 22:47:51.500 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56624 - \"GET /api/v1/tools/ HTTP/1.1\" 200\n2026-02-19 22:47:51.504 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56598 - \"GET /api/v1/users/user/settings HTTP/1.1\" 200\n2026-02-19 22:47:51.602 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56582 - \"GET /api/v1/chats/all/tags HTTP/1.1\" 200\n2026-02-19 22:47:51.603 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56598 - \"GET /api/v1/folders/ HTTP/1.1\" 200\n2026-02-19 22:47:51.619 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56624 - \"GET /api/v1/users/1ebd7bca-3bba-400c-9910-b0d8d179b1e6/profile/image HTTP/1.1\" 200\n2026-02-19 22:47:51.622 | INFO     | open_webui.routers.openai:get_all_models:490 - get_all_models()\n2026-02-19 22:47:51.653 | ERROR    | open_webui.routers.openai:send_get_request:90 - Connection error: Cannot connect to host host.docker.internal:8000 ssl:default [Connect call failed ('192.168.65.254', 8000)]\n2026-02-19 22:47:51.658 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56582 - \"GET /api/v1/chats/pinned HTTP/1.1\" 200\n2026-02-19 22:47:51.660 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56632 - \"GET /api/models HTTP/1.1\" 200\n2026-02-19 22:47:51.722 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56582 - \"GET /api/v1/chats/?page=1 HTTP/1.1\" 200\n2026-02-19 22:47:51.821 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56582 - \"GET /api/v1/tools/ HTTP/1.1\" 200\n2026-02-19 22:47:51.905 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56582 - \"POST /api/v1/tasks/active/chats HTTP/1.1\" 200\n2026-02-19 22:47:52.011 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56582 - \"GET /api/v1/chats/?page=2 HTTP/1.1\" 200\n2026-02-19 22:47:52.687 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56632 - \"GET /api/version/updates HTTP/1.1\" 200\n2026-02-19 22:47:53.191 | INFO     | open_webui.routers.openai:get_all_models:490 - get_all_models()\n2026-02-19 22:47:53.207 | ERROR    | open_webui.routers.openai:send_get_request:90 - Connection error: Cannot connect to host host.docker.internal:8000 ssl:default [Connect call failed ('192.168.65.254', 8000)]\n2026-02-19 22:47:53.209 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56632 - \"GET /api/models HTTP/1.1\" 200\n2026-02-19 22:47:53.800 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56632 - \"GET /api/models HTTP/1.1\" 200\n2026-02-19 22:47:54.047 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56632 - \"GET /ollama/api/version HTTP/1.1\" 200\n2026-02-19 22:47:57.169 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56632 - \"GET /api/v1/chats/b46984af-5f99-4d76-ab86-94bac7166082 HTTP/1.1\" 200\n2026-02-19 22:47:57.215 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56636 - \"GET /api/v1/chats/421aeb00-be0b-4649-9014-ab477df7c755 HTTP/1.1\" 200\n2026-02-19 22:47:57.272 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56632 - \"GET /api/v1/chats/68e92bf8-5e9a-40d0-bef9-3ec10bef4539 HTTP/1.1\" 200\n2026-02-19 22:47:57.310 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56652 - \"GET /api/v1/chats/40ed3b4e-3161-424b-8b17-95ec6a5cb986 HTTP/1.1\" 200\n2026-02-19 22:47:57.344 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56666 - \"GET /api/v1/chats/f1445e23-1b4d-4f31-b496-3283a89b4c08 HTTP/1.1\" 200\n2026-02-19 22:47:57.347 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56636 - \"GET /api/v1/chats/97160071-506b-4c2b-ab26-137d210c5cbf HTTP/1.1\" 200\n2026-02-19 22:47:57.361 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56682 - \"GET /api/v1/chats/930c7d6a-edcd-4076-82ee-ec7030865ad8 HTTP/1.1\" 200\n2026-02-19 22:47:57.379 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56696 - \"GET /api/v1/chats/827faa5a-2556-471f-bac4-8065655f86f2 HTTP/1.1\" 200\n2026-02-19 22:47:57.382 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56632 - \"GET /api/v1/chats/13d29888-3159-4af4-8d06-5bdd3ea2532f HTTP/1.1\" 200\n2026-02-19 22:47:58.340 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56632 - \"GET /api/usage HTTP/1.1\" 200\n2026-02-19 22:48:01.947 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56632 - \"GET /api/v1/chats/d1ea0bf0-2092-4efc-8872-fac39934ae12 HTTP/1.1\" 200\n2026-02-19 22:48:02.186 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56632 - \"GET /_app/immutable/nodes/7.CL9zGEUc.js HTTP/1.1\" 304\n2026-02-19 22:48:02.190 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56696 - \"GET /_app/immutable/nodes/30.MX8R-Pva.js HTTP/1.1\" 304\n2026-02-19 22:48:02.686 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56696 - \"GET /_app/immutable/nodes/35.C8gfq9qG.js HTTP/1.1\" 304\n2026-02-19 22:48:02.743 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56682 - \"GET /_app/immutable/chunks/Cil_OYwn.js HTTP/1.1\" 304\n2026-02-19 22:48:02.744 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56666 - \"GET /_app/immutable/chunks/B-zt4jf0.js HTTP/1.1\" 304\n2026-02-19 22:48:02.745 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56632 - \"GET /_app/immutable/chunks/CRR-5h_Z.js HTTP/1.1\" 304\n2026-02-19 22:48:02.752 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56696 - \"GET /_app/immutable/chunks/BfC0aLT9.js HTTP/1.1\" 304\n2026-02-19 22:48:02.759 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56636 - \"GET /_app/immutable/chunks/hohV2m_u.js HTTP/1.1\" 304\n2026-02-19 22:48:02.765 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56652 - \"GET /_app/immutable/chunks/BXsrU3rP.js HTTP/1.1\" 304\n2026-02-19 22:48:02.860 | INFO     | open_webui.routers.openai:get_all_models:490 - get_all_models()\n2026-02-19 22:48:02.870 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56652 - \"GET /api/v1/groups/ HTTP/1.1\" 200\n2026-02-19 22:48:02.889 | ERROR    | open_webui.routers.openai:send_get_request:90 - Connection error: Cannot connect to host host.docker.internal:8000 ssl:default [Connect call failed ('192.168.65.254', 8000)]\n2026-02-19 22:48:02.891 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56636 - \"GET /api/models HTTP/1.1\" 200\n2026-02-19 22:48:02.992 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56652 - \"GET /api/v1/models/list?page=1 HTTP/1.1\" 200\n2026-02-19 22:48:03.032 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56652 - \"GET /api/v1/models/tags HTTP/1.1\" 200\n2026-02-19 22:48:03.047 | INFO     | uvicorn.protocols.http.httptools_impl:send:483 - 172.17.0.1:56636 - \"GET /api/v1/models/model/profile/image?id=ceifdot&lang=es-ES HTTP/1.1\" 200\n",
+      "stderr": "",
+      "cmd": "docker logs --tail 200 open-webui"
+    }
+  },
+  "port_3000_listener": {
+    "ok": false,
+    "returncode": 1,
+    "stdout": "",
+    "stderr": "",
+    "cmd": "powershell -NoProfile -Command Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue | Select-Object LocalAddress,LocalPort,OwningProcess,State | ConvertTo-Json -Compress"
+  },
+  "pre_127_0_0_1_3000_probe": {
+    "url": "http://127.0.0.1:3000/",
+    "ok": false,
+    "status_code": null,
+    "response_ms": 2048.9,
+    "error": "URLError",
+    "message": "<urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+    "excerpt": ""
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "front_id": "FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01",
+  "domain_id": "controlled_ingestion_authorization",
+  "authorization_status": "authorization_plan_created_no_mutation",
+  "first_canary_domain": "security_governance_sandboxing",
+  "first_canary_record_min": 3,
+  "first_canary_record_max": 5,
+  "actual_memory_mutation_authorized": false,
+  "actual_faiss_mutation_authorized": false,
+  "financial_domain_locked": true,
+  "autonomous_coding_domain_locked": true,
+  "requires_future_user_approval_for_mutation": true,
+  "memory_mutated": false,
+  "faiss_mutated": false
+}

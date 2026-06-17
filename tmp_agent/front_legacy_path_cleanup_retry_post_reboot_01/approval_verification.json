@@ -1,0 +1,6 @@
+{
+  "front_id": "FRONT-LEGACY-PATH-CLEANUP-RETRY-POST-REBOOT-01",
+  "approval_phrase_required": "APPROVE_LEGACY_PATH_CLEANUP_EXECUTE_AI_VAULT",
+  "approval_phrase_found_in_prompt": true,
+  "verdict": "PASS"
+}

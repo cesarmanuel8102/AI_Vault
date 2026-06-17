@@ -1,0 +1,37 @@
+{
+  "status": "FAISS_PROMOTION_PREP_PACKAGE_CREATED_NO_FAISS_MUTATION",
+  "branch": "codex/own-capital-sustainable-return",
+  "functional_commit": "ac8883b",
+  "ledger_commit": "b557e56",
+  "head_after": "b557e56",
+  "remote_branch_head": "b557e56",
+  "local_equals_remote_branch": true,
+  "batch_id": "SEC_GOV_CANARY_001",
+  "candidates_count": 5,
+  "memory_ids": [
+    "SEC_GOV_CANARY_001_nist_csf_001",
+    "SEC_GOV_CANARY_001_nist_ai_rmf_002",
+    "SEC_GOV_CANARY_001_opa_docs_003",
+    "SEC_GOV_CANARY_001_mitre_atlas_004",
+    "SEC_GOV_CANARY_001_gvisor_docs_005"
+  ],
+  "source_ids": [
+    "nist_csf",
+    "nist_ai_rmf",
+    "opa_docs",
+    "mitre_atlas",
+    "gvisor_docs"
+  ],
+  "memory_line_count": 1715,
+  "faiss_ids_count_before": 1611,
+  "expected_faiss_ids_after_if_approved": 1616,
+  "memory_mutated": false,
+  "faiss_mutated": false,
+  "embeddings_created": false,
+  "broker_api_used": false,
+  "trading_used": false,
+  "approval_phrase_required": "APPROVE_SECURITY_GOVERNANCE_CANARY_FAISS_PROMOTION_BATCH_SEC_GOV_CANARY_001",
+  "tests_passed": true,
+  "next_recommended_front": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-EXECUTE-SECURITY-GOVERNANCE-01",
+  "next_front_locked": true
+}

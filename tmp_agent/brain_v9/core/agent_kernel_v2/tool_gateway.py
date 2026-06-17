@@ -1,5 +1,5 @@
 from __future__ import annotations
-import json, subprocess, urllib.request
+import json, re, subprocess, urllib.request
 from pathlib import Path
 from typing import Any, Dict, List
 from .governance import path_is_blocked, validate_mode, write_allowed
@@ -101,8 +101,25 @@ class ToolGatewayV2:
         return ToolCallResult(name, ok=True, result={"returncode": p.returncode, "matches": p.stdout.splitlines()[:50]})
 
     def _route_probe(self, name, args):
-        url = str(args.get("url", "http://127.0.0.1:8091/health"))
+        raw_url = str(args.get("url", "http://127.0.0.1:8091/health"))
         method = str(args.get("method", "GET")).upper()
+
+        # Port-safe: preserve explicit user-provided URLs/ports.
+        # Only normalize bare relative paths to correct base URLs.
+        url = raw_url
+        if not (url.startswith("http://") or url.startswith("https://")):
+            if url.startswith("/v2/") or url.startswith("/agent/"):
+                url = "http://127.0.0.1:8091" + url
+            elif url.startswith("/brain-dashboard/"):
+                url = "http://127.0.0.1:8092" + url
+            elif url.startswith("/"):
+                url = "http://127.0.0.1:8091" + url
+            elif url.isdigit() or re.match(r'^\d{1,5}$', url):
+                # Bare port number preserved
+                url = f"http://127.0.0.1:{url}/health"
+            else:
+                return ToolCallResult(name, ok=False, blocked=True, error="invalid_route_probe_url")
+
         if not (url.startswith("http://127.0.0.1") or url.startswith("http://localhost")):
             return ToolCallResult(name, ok=False, blocked=True, error="only_local_routes_allowed")
         if method not in {"GET", "POST"}:

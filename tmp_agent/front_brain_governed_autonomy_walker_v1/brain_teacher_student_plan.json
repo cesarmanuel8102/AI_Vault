@@ -1,0 +1,36 @@
+{
+  "request": "You are Brain V9. You are the student. Codex is your teacher/executor. Your objective is to become independently useful to Cesar under governance. Propose a robust training plan that lets you improve through lessons, mistakes, tests, reports, promotion gates, and safe code changes. You must not request memory/FAISS mutation, trading execution, secrets, or chain-of-thought exposure. Return operational actions only. Include: top defects, top safe code improvements, top lesson cards needed, top mistake registry entries, top promotion gates, and metrics that prove autonomy improvement.",
+  "response": {
+    "id": "chatcmpl-609dabe29202495dab2745c8",
+    "object": "chat.completion",
+    "created": 1781284940,
+    "model": "brain-v9-local",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "Respuesta operacional gobernada (fallback deterministico por LLM lento/no disponible).\nPara Cesar debo optimizar utilidad verificable: CEI/FDOT, programacion, investigacion financiera en modo research-only, conocimiento canonico local y reportes auditables.\nLimites duros: no live trading, no paper trading, no broker/API, no secretos, no razonamiento privado, no mutacion de memory/FAISS sin autorizacion explicita y gates.\nComo ayudar: pedir evidencia cuando falte contexto, separar guia operacional de afirmacion oficial, reportar incertidumbre, proponer cambios como EvolutionProposal y exigir tests/rollback.\nPara Codex: evaluar mis respuestas por metadata, utilidad, seguridad, manejo de incertidumbre, respeto a memoria/FAISS y ausencia de razonamiento privado; cualquier cambio riesgoso debe pasar por ledger, smoke tests y aprobacion humana.\nSiguiente mejora recomendada: estabilizar proveedor LLM/timeout y mantener este fallback etiquetado como operacional, no como razonamiento privado ni conocimiento promovido.\nChecklist de reporte: front, objetivo, acciones, archivos, tests, evidencia, gates, mutaciones protegidas, riesgos, proximo frente y revision humana requerida.\nFinanzas: investigacion y analisis si; ejecucion, ordenes, broker/API y paper/live trading deben bloquearse o requerir aprobacion explicita separada."
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "total_tokens": 0
+    },
+    "brain": {
+      "intent": "QUERY",
+      "route": "governed_eval_fallback",
+      "governance_applied": true,
+      "no_cot_leak": true,
+      "canonical_path": "C:\\AI_VAULT_CANONICAL",
+      "latency_ms": 0.0,
+      "errors": [],
+      "adapter": "openai_compat",
+      "adapter_latency_ms": 0.0
+    }
+  },
+  "content_redacted": "Respuesta operacional gobernada (fallback deterministico por LLM lento/no disponible).\nPara Cesar debo optimizar utilidad verificable: CEI/FDOT, programacion, investigacion financiera en modo research-only, conocimiento canonico local y reportes auditables.\nLimites duros: no live trading, no paper trading, no broker/API, no secretos, no razonamiento privado, no mutacion de memory/FAISS sin autorizacion explicita y gates.\nComo ayudar: pedir evidencia cuando falte contexto, separar guia operacional de afirmacion oficial, reportar incertidumbre, proponer cambios como EvolutionProposal y exigir tests/rollback.\nPara Codex: evaluar mis respuestas por metadata, utilidad, seguridad, manejo de incertidumbre, respeto a memoria/FAISS y ausencia de razonamiento privado; cualquier cambio riesgoso debe pasar por ledger, smoke tests y aprobacion humana.\nSiguiente mejora recomendada: estabilizar proveedor LLM/timeout y mantener este fallback etiquetado como operacional, no como razonamiento privado ni conocimiento promovido.\nChecklist de reporte: front, objetivo, acciones, archivos, tests, evidencia, gates, mutaciones protegidas, riesgos, proximo frente y revision humana requerida.\nFinanzas: investigacion y analisis si; ejecucion, ordenes, broker/API y paper/live trading deben bloquearse o requerir aprobacion explicita separada."
+}

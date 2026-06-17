@@ -1,0 +1,88 @@
+{
+  "status": "BRAIN_SELF_TRAINING_AUTONOMY_MAXIMIZATION_COMPLETED",
+  "timestamp_utc": "2026-06-12T23:17:16.548949+00:00",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_local": "1116a87",
+  "head_remote": "1116a87",
+  "cycles": {
+    "targeted": 200,
+    "completed": 200,
+    "batches": 20,
+    "provider_success_rate": 0.75,
+    "fallback_rate": 0.25
+  },
+  "brain_kimi": {
+    "short_probe_status": "FAST_SUCCESS",
+    "open_dialogue_status": "KIMI_OPEN_AUTONOMY_DIALOGUE_STABLE",
+    "stable_prompt_profiles": [
+      "exact_output",
+      "bullet_only",
+      "json_only",
+      "role_compressed",
+      "one_sentence_proposal",
+      "critic"
+    ],
+    "blocking_gap": null
+  },
+  "learning": {
+    "tracked_lessons_created": 20,
+    "tracked_mistakes_recorded": 5,
+    "tracked_promotion_candidates_created": 5,
+    "evidence_lessons_created": 120,
+    "evidence_mistakes_recorded": 6,
+    "evidence_promotion_candidates_created": 12
+  },
+  "improvements": {
+    "implemented": 120,
+    "blocked": 0,
+    "commits": [
+      {
+        "hash": "c37f36c",
+        "message": "feat: add Kimi autonomy dialogue calibration"
+      },
+      {
+        "hash": "5394f1f",
+        "message": "feat: add Brain mega autonomy cycle runner"
+      },
+      {
+        "hash": "54e47ed",
+        "message": "feat: improve Brain operational learning and excellence scoring"
+      },
+      {
+        "hash": "9140eb6",
+        "message": "feat: add Brain daily autonomous dry-run tooling"
+      },
+      {
+        "hash": "f716bce",
+        "message": "test: add mega autonomy maximization smoke coverage"
+      },
+      {
+        "hash": "1116a87",
+        "message": "ledger: record Brain mega self-training autonomy maximization cycle"
+      }
+    ]
+  },
+  "score": {
+    "before": 0.869,
+    "after": 0.94,
+    "delta": 0.071
+  },
+  "tests": {
+    "required_suite": "57 passed, 2 warnings",
+    "py_compile": "PASS"
+  },
+  "daily_dryrun_ready": true,
+  "safety": {
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "b8_touched": false,
+    "secrets_exposed": false,
+    "semantic_memory_lines": 1715,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616
+  },
+  "recommended_next": "FRONT-BRAIN-DAILY-AUTONOMOUS-OPERATIONS-DRYRUN-01",
+  "resume_prompt": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/RESUME_PROMPT.md",
+  "evidence_path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01"
+}

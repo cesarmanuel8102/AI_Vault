@@ -1,0 +1,32 @@
+{
+  "status": "CANARY_POST_INGESTION_VERIFY_PASSED",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_before": "55695e0",
+  "functional_commit": "cdb7984",
+  "ledger_commit": "d4168de",
+  "head_after": "d4168de",
+  "remote_branch_head": "d4168de",
+  "local_equals_remote_branch": true,
+  "batch_id": "SEC_GOV_CANARY_001",
+  "records_found": 5,
+  "source_ids_found": [
+    "nist_csf",
+    "nist_ai_rmf",
+    "opa_docs",
+    "mitre_atlas",
+    "gvisor_docs"
+  ],
+  "memory_line_count": 1715,
+  "faiss_ids_count": 1611,
+  "faiss_mutated": false,
+  "schema_valid": true,
+  "contamination_detected": false,
+  "memory_access_valid": true,
+  "chat_ui_probe_status": "CHAT_UI_PROBE_SKIPPED_OR_FAILED_READONLY",
+  "tests_passed": true,
+  "staged_empty": true,
+  "unstaged_tracked_empty": true,
+  "roadmap_valid": true,
+  "next_recommended_front": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-RETRIEVAL-EVAL-SECURITY-GOVERNANCE-01",
+  "next_front_locked": true
+}

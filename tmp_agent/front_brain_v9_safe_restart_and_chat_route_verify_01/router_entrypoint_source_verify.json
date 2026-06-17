@@ -1,0 +1,7 @@
+{
+  "router_file_exists": true,
+  "has_handle_user_message": true,
+  "has_intent_detector": true,
+  "has_no_cot_guard": true,
+  "main_wired_to_handle_user_message": true
+}

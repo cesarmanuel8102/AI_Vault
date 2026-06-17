@@ -1,0 +1,28 @@
+{
+  "front_id": "FRONT-BRAIN-AGENT-V2-CHAT-MODE-SWITCH-READ-BUILD-AUTO-01",
+  "phase": "CORRECTIVE_PATCH",
+  "head_before_corrective": "2106578",
+  "head_after_corrective": "TO_BE_SET",
+  "corrective_date": "2026-06-17T06:06:00.117220+00:00",
+  "defects_fixed": [
+    "8091_UI_mode_selector_clarity",
+    "8092_dashboard_mode_selector_visibility_and_wiring",
+    "natural_language_mode_commands_parser",
+    "port_safe_route_probe_URL_preservation"
+  ],
+  "files_modified": [
+    "tmp_agent/brain_v9/ui/index.html",
+    "tmp_agent/brain_v9/dashboard/static/index.html",
+    "tmp_agent/brain_v9/dashboard/static/app.js",
+    "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py"
+  ],
+  "files_NOT_modified": [
+    "memory/autonomous_journal.jsonl",
+    "memory/semantic/semantic_memory.jsonl",
+    ".env",
+    "tmp_agent/strategies/"
+  ]
+}

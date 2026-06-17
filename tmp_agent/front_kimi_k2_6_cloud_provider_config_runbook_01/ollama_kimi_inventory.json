@@ -1,0 +1,20 @@
+{
+  "ollama_reachable": true,
+  "kimi_cloud_models": "kimi-k2.5:cloud",
+  "kimi_k2_5_cloud_present": true,
+  "kimi_k2_6_cloud_present": false,
+  "all_models": [
+    "nomic-embed-text:latest",
+    "deepseek-v4-pro:cloud",
+    "kimi-k2.5:cloud",
+    "gpt-oss:120b-cloud",
+    "qwen3-coder:480b-cloud",
+    "qwen2.5-coder:14b",
+    "gpt-oss:20b-cloud",
+    "deepseek-r1:14b",
+    "deepseek-v3.1:671b-cloud",
+    "qwen3-vl:235b-cloud",
+    "llama3.1:8b"
+  ],
+  "secrets_exposed": false
+}

@@ -1,0 +1,133 @@
+diff --git a/ROADMAP_STATUS.json b/ROADMAP_STATUS.json
+index b17cec1..32c5740 100644
+--- a/ROADMAP_STATUS.json
++++ b/ROADMAP_STATUS.json
+@@ -1,9 +1,9 @@
+ {
+-  "current_head": "d1332e2",
+-  "current_remote_head": "d1332e2",
++  "current_head": "1d192c9",
++  "current_remote_head": "1d192c9",
+   "branch": "codex/own-capital-sustainable-return",
+-  "migration_status": "chat_ui_e2e_failure_diagnostic_completed",
+-  "last_applied_checkpoint": "FRONT-CHAT-UI-E2E-FAILURE-DIAGNOSTIC-01",
++  "migration_status": "chat_ui_docker_networking_fix_applied_openai_adapter_pending",
++  "last_applied_checkpoint": "FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01",
+   "completed_fronts": [
+     "BL-01",
+     "B3_fake_grounded_dashboard_runtime",
+@@ -130,7 +130,8 @@
+     "FRONT-LEGACY-PATH-CLEANUP-RETRY-POST-REBOOT-01",
+     "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
+     "FRONT-LEGACY-LOCK-RELEASE-AND-QUARANTINE-RETRY-01",
+-    "FRONT-CHAT-UI-E2E-FAILURE-DIAGNOSTIC-01"
++    "FRONT-CHAT-UI-E2E-FAILURE-DIAGNOSTIC-01",
++    "FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01"
+   ],
+   "open_fronts": [],
+   "blocked_fronts": [
+@@ -144,12 +145,12 @@
+     "tmp_agent/reports"
+   ],
+   "recommended_next_front": {
+-    "name": "FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01",
++    "name": "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-01",
+     "status": "locked_next_fix",
+-    "reason": "chat/UI E2E still fails; diagnostic found UI port 3000 unreachable, backend 8090/Ollama reachable, no OpenAI-compatible chat route, and native chat timed out under diagnostic probe"
++    "reason": "Open WebUI is reachable and Ollama is available, but Brain provider is not ready because /v1/chat/completions is missing."
+   },
+-  "ready_for_next_front": "FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01",
+-  "last_updated": "2026-06-12T04:22:55.224150+00:00",
++  "ready_for_next_front": "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-01",
++  "last_updated": "2026-06-12T04:34:01.845383+00:00",
+   "phase0_security": {
+     "status": "done",
+     "commits": [
+@@ -2627,5 +2628,33 @@
+     "smoke_test": "tests/smoke/smoke_front_chat_ui_e2e_failure_diagnostic_01.py",
+     "next_front_locked": "FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01",
+     "updated_at_utc": "2026-06-12T04:22:55.224150+00:00"
++  },
++  "front_chat_ui_docker_networking_fix_01": {
++    "front": "FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01",
++    "status": "UI_RESTORED_BUT_BRAIN_OPENAI_COMPAT_MISSING",
++    "canonical_path": "C:\\AI_VAULT_CANONICAL",
++    "functional_commit": "1d192c9",
++    "open_webui_reachable_before": false,
++    "open_webui_reachable_after": true,
++    "ollama_reachable": true,
++    "ollama_reachable_from_container": true,
++    "brain_backend_reachable": true,
++    "ui_layer_restored": true,
++    "brain_provider_ready": false,
++    "needs_openai_compat_adapter": true,
++    "action_taken": "docker_start_existing",
++    "open_webui_container_id": "61edccb48634",
++    "open_webui_image": "ghcr.io/open-webui/open-webui:main",
++    "canonical_memory_mutated": false,
++    "canonical_faiss_mutated": false,
++    "semantic_memory_lines": 1715,
++    "faiss_ids": 1616,
++    "faiss_ntotal": 1616,
++    "tests_passed": true,
++    "test_count": 20,
++    "documentation": "docs/FRONT_CHAT_UI_DOCKER_NETWORKING_FIX_01.md",
++    "smoke_test": "tests/smoke/smoke_front_chat_ui_docker_networking_fix_01.py",
++    "next_front_locked": "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-01",
++    "updated_at_utc": "2026-06-12T04:34:01.845383+00:00"
+   }
+ }
+diff --git a/docs/MIGRATION_CONTROL_LEDGER.md b/docs/MIGRATION_CONTROL_LEDGER.md
+index 0464947..f40f7f6 100644
+--- a/docs/MIGRATION_CONTROL_LEDGER.md
++++ b/docs/MIGRATION_CONTROL_LEDGER.md
+@@ -7101,3 +7101,49 @@ APPROVE_LEGACY_PATH_CLEANUP_EXECUTE_AI_VAULT
+ 
+ ### Next Locked Fix Front
+ `FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01` remains `LOCKED`.
++
++
++## LEDGER-ROADMAP-SSOT-FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01 — Open WebUI Docker Networking Restored
++
++- timestamp_utc: `2026-06-12T04:34:01.934737+00:00`
++- branch: `codex/own-capital-sustainable-return`
++- front: `FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01`
++- status: `UI_RESTORED_BUT_BRAIN_OPENAI_COMPAT_MISSING`
++- canonical_path: `C:\AI_VAULT_CANONICAL`
++- functional_commit: `1d192c9`
++
++### UI / Docker Result
++- open_webui_reachable_before: `False`
++- open_webui_reachable_after: `True`
++- ui_layer_restored: `True`
++- action_taken: `docker_start_existing`
++- container_id: `61edccb48634`
++- image: `ghcr.io/open-webui/open-webui:main`
++
++### Provider Connectivity
++- ollama_reachable: `True`
++- ollama_reachable_from_container: `True`
++- brain_backend_reachable: `True`
++- brain_provider_ready: `False`
++- needs_openai_compat_adapter: `True`
++
++### Canonical Safety
++- canonical_memory_mutated: `false`
++- canonical_faiss_mutated: `false`
++- semantic_memory_lines: `1715`
++- faiss_ids: `1616`
++- faiss_ntotal: `1616`
++- runtime_base_path: `C:\AI_VAULT_CANONICAL`
++- broker_api_used: `false`
++- trading_used: `false`
++- process_killed: `false`
++- force_action_used: `false`
++
++### Validation
++- tests_passed: `true`
++- test_count: `20`
++- documentation: `docs/FRONT_CHAT_UI_DOCKER_NETWORKING_FIX_01.md`
++- smoke test: `tests/smoke/smoke_front_chat_ui_docker_networking_fix_01.py`
++
++### Next Locked Front
++`FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-01` remains `LOCKED`.

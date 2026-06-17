@@ -1,0 +1,59 @@
+{
+  "status": "BRAIN_LLM_PROVIDER_CHAIN_OPTIMIZATION_PARTIAL_KIMI_CONFIG_MISSING",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_before": "82620cb",
+  "functional_commit": "9367f8d",
+  "ledger_commit": "2541b11",
+  "final_head": "2541b11",
+  "remote_head": "2541b11",
+  "provider": {
+    "fastest_model": "kimi-k2.5:cloud legacy probe, 4.131s tiny, but demoted due empty autonomy response",
+    "primary_provider": "kimi_k2_6_cloud",
+    "primary_model": "kimi-k2.6",
+    "kimi_status": "CONFIG_MISSING",
+    "secondary_provider": "codex",
+    "codex_status": "EXECUTOR_AVAILABLE_NOT_SELF_BENCHMARKED",
+    "tertiary_provider": "local_ollama",
+    "local_fallback_model": "llama3.1:8b",
+    "reasoning_model": "kimi-k2.6 when configured; codex secondary; llama3.1:8b/deepseek fallback",
+    "demoted_or_disabled": [
+      "kimi-k2.5:cloud removed from primary chains because it returned empty on autonomy probe"
+    ],
+    "direct_latency_before": {
+      "llama3.1:8b_previous_probe_s": 52.917,
+      "fallback_from_kimi_cloud": true
+    },
+    "direct_latency_after": {
+      "llama3.1:8b_tiny_s": 29.523,
+      "llama3.1:8b_short_s": 21.389,
+      "llama3.1:8b_autonomy_s": 29.941,
+      "kimi-k2.5-cloud_tiny_s": 4.131,
+      "kimi-k2.5-cloud_autonomy_status": "kimi_cloud: Ollama devolvio respuesta vacia"
+    }
+  },
+  "quality": {
+    "dry_run_eval_score": 1.0,
+    "fallback_count": 0,
+    "successful_responses": 8,
+    "prompts_attempted": 8,
+    "provider_status": "PARTIAL_KIMI_CONFIG_MISSING_LOCAL_HARDWARE_LIMITED"
+  },
+  "safety": {
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "semantic_memory_lines": 1715,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "trading_touched": false,
+    "raw_cot_exposed": false,
+    "secrets_exposed": false,
+    "runtime_8090_touched": false,
+    "runtime_8091_restarted": true
+  },
+  "tests": {
+    "post_stage": "27 passed",
+    "py_compile": true
+  },
+  "recommended_next": "FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01",
+  "evidence_dir": "tmp_agent/front_brain_llm_provider_chain_optimization_01"
+}

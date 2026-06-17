@@ -1,0 +1,22 @@
+{
+  "primary_failure": "UI_NOT_REACHABLE",
+  "secondary_failures": [
+    "OPENAI_COMPATIBILITY_MISSING",
+    "TIMEOUT",
+    "STREAMING_SSE_MISMATCH",
+    "RETRIEVAL_INJECTION_FAILURE",
+    "CANONICAL_PATH_OK_BUT_UI_NOT_CONNECTED"
+  ],
+  "confidence": "HIGH",
+  "evidence": {
+    "open_webui_reachable": false,
+    "backend_reachable": true,
+    "ollama_reachable": true,
+    "openapi_available": true,
+    "openai_compatible_endpoint_exists": false,
+    "direct_backend_chat_passed": false,
+    "retrieval_injection_passed": false,
+    "streaming_compatible": false
+  },
+  "recommended_fix_front": "FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01"
+}

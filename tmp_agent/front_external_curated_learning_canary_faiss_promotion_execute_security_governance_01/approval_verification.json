@@ -1,0 +1,9 @@
+{
+  "front_id": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-EXECUTE-SECURITY-GOVERNANCE-01",
+  "approval_phrase_required": "APPROVE_SECURITY_GOVERNANCE_CANARY_FAISS_PROMOTION_BATCH_SEC_GOV_CANARY_001",
+  "approval_phrase_found_in_prompt": true,
+  "verification_method": "exact_string_match_in_user_prompt",
+  "prompt_contains_exact_approval": true,
+  "verified_at_utc": "2026-06-11T09:12:00Z",
+  "verdict": "PASS"
+}

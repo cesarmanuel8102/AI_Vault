@@ -1,0 +1,17 @@
+{
+  "open_webui_container": "open-webui",
+  "models_probe": {
+    "ok": true,
+    "returncode": 0,
+    "stdout": "{\"detail\":\"Not Found\"}",
+    "stderr": ""
+  },
+  "chat_probe": {
+    "ok": true,
+    "returncode": 0,
+    "stdout": "{\"detail\":\"Not Found\"}",
+    "stderr": ""
+  },
+  "container_to_brain_passed": false,
+  "expected_base_url": "http://host.docker.internal:8090/v1"
+}

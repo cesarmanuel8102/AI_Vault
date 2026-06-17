@@ -1,0 +1,5 @@
+{
+  "immutability_passed": true,
+  "memory_mutated": false,
+  "faiss_mutated": false
+}

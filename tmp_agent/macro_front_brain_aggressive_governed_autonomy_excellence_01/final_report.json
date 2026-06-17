@@ -1,0 +1,116 @@
+{
+  "status": "BRAIN_AGGRESSIVE_GOVERNED_AUTONOMY_EXCELLENCE_PARTIAL",
+  "timestamp_utc": "2026-06-12T22:54:22.135081+00:00",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_local": "88f727a",
+  "head_remote": "88f727a",
+  "provider_summary": {
+    "preflight_kimi_probe": {
+      "provider": "kimi_k2_6_cloud",
+      "model": "kimi-k2.6:cloud",
+      "status": "FAST_SUCCESS",
+      "content_preview": "OK",
+      "no_cot_leak": true
+    },
+    "open_autonomy_dialogue": {
+      "all_provider_kimi": false,
+      "kimi_status": "EMPTY_RESPONSE",
+      "fallback_provider": "codex",
+      "fallback_model": "gpt-5.5",
+      "closure": "partial"
+    }
+  },
+  "dialogue": {
+    "autonomy_cycles_run": 3,
+    "brain_codex_dialogues_run": 5,
+    "improvements_proposed": 3,
+    "cycle_improvements_implemented": 0,
+    "cycle_improvements_blocked": 3,
+    "all_no_cot": true,
+    "all_memory_faiss_unchanged": true
+  },
+  "learning": {
+    "lessons_created": 3,
+    "mistakes_recorded": 1,
+    "promotion_candidates_created": 2,
+    "semantic_memory_write": false,
+    "faiss_write": false
+  },
+  "excellence_score": {
+    "before": 0.804,
+    "after": 0.869,
+    "delta": 0.065
+  },
+  "codex_artifacts_implemented": [
+    "token conservation policy",
+    "teacher/student autonomy loop",
+    "operational non-semantic learning registries",
+    "excellence scoring and scorecard",
+    "domain excellence packs",
+    "governed operations status tooling",
+    "macro smoke coverage",
+    "autonomy excellence doctrine"
+  ],
+  "tests": {
+    "macro_smoke": "11 passed",
+    "kimi_live_probe_smoke": "11 passed",
+    "final_autonomy_macro_smoke": "3 passed",
+    "provider_chain_smoke": "11 passed",
+    "timeout_quality_smoke": "7 passed, 2 warnings",
+    "tests_passed": true
+  },
+  "safety": {
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "semantic_memory_lines": 1715,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "trading_touched": false,
+    "b8_touched": false,
+    "secrets_exposed": false,
+    "staged_empty": true,
+    "tracked_unstaged_empty": true,
+    "commit_push_done": true
+  },
+  "commits": [
+    {
+      "hash": "3a0627b",
+      "message": "feat: add Brain aggressive autonomy teaching loop"
+    },
+    {
+      "hash": "0998806",
+      "message": "feat: add Brain operational learning and excellence scoring"
+    },
+    {
+      "hash": "688c401",
+      "message": "feat: add governed operations status and domain excellence packs"
+    },
+    {
+      "hash": "741779d",
+      "message": "test: add aggressive autonomy excellence smoke coverage"
+    },
+    {
+      "hash": "b4046ed",
+      "message": "docs: add Brain autonomy excellence doctrine"
+    },
+    {
+      "hash": "88f727a",
+      "message": "ledger: record aggressive governed autonomy excellence cycle"
+    }
+  ],
+  "roadmap_ledger_updated": true,
+  "recommended_next_front": "FRONT-BRAIN-AUTONOMY-GAP-CLOSURE-01",
+  "evidence_files": [
+    "preflight.json",
+    "preflight.md",
+    "cycles/",
+    "brain_codex_dialogue/",
+    "test_results.txt",
+    "py_compile_new_modules.txt",
+    "post_action_immutability_verify.json",
+    "post_action_immutability_verify.md",
+    "final_report.json",
+    "final_report.md",
+    "cesar_review_report.md"
+  ]
+}

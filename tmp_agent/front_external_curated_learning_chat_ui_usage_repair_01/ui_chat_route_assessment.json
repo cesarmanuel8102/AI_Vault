@@ -1,0 +1,12 @@
+{
+  "direct_helper_working": true,
+  "direct_q01_q05_passed": true,
+  "current_chat_route_uses_helper": false,
+  "current_ui_can_answer_q01_without_pasted_context": false,
+  "runtime_patch_required": true,
+  "likely_runtime_file_required": "tmp_agent/brain_v9/core/session.py or equivalent chat route handler",
+  "exact_conceptual_patch": "Add read-only curated learning context injection or tool dispatch for questions matching curated learning probes. Import brain.curated_learning_chat_access and call answer_chat_probe() or build_chat_safe_context() when user asks inventory/governance/ingestion questions.",
+  "risk": "low if helper only returns static summaries; medium if modifying chat session runtime",
+  "rollback": "remove injected helper call / revert runtime patch",
+  "notes": "No chat route handler exists in this repository. Only external probe script found at tmp_agent/runtime_dashboard_chat_recovery_smoke_fix_01/probe.py which pings http://127.0.0.1:8090/chat. The brain_v9 directory does not exist. To make Chat/UI answer Q01-Q05, a chat route or session handler must be created or an external system must import this helper."
+}

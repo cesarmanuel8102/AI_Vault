@@ -1,0 +1,16 @@
+# Baseline Before Mutation
+
+`json
+{
+  "semantic_memory_jsonl_sha": "655d32381e38ada348c3f201c50484551e02d98ae0869fa53826912c6973ab54",
+  "semantic_memory_jsonl_lines": 1710,
+  "semantic_memory_faiss_index_sha": "b7b755c753cd4017344fb18d51e2ff3d81766151ac3a3dbf753c1004f7d16484",
+  "semantic_memory_faiss_ids_json_sha": "004362363f7a392fd15193392f7fac592e333355e6cc28ba665d3cfb5e9368c1",
+  "semantic_memory_faiss_ids_count": 1611,
+  "ROADMAP_STATUS_json_sha": "226dd808e2d8926a471f86c0b282976e697053e4089994395304ed71bbe16496",
+  "MIGRATION_CONTROL_LEDGER_md_sha": "b2b531d7fa822e86ef61dc817a6280091fa8ddd00b9aea863d7174cbb492f88c",
+  "current_head": "ef1c9a825446bc5806d193a3b80b70869254eb85",
+  "branch": "codex/own-capital-sustainable-return",
+  "timestamp_utc": "2026-06-11T08:12:36.280826+00:00"
+}
+`

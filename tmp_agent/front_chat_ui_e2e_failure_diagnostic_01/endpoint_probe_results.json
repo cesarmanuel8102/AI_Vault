@@ -1,0 +1,110 @@
+{
+  "probes": [
+    {
+      "url": "http://127.0.0.1:3000/",
+      "method": "GET",
+      "ok": false,
+      "status_code": null,
+      "response_ms": 2028.4,
+      "error": "URLError",
+      "message": "<urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+      "excerpt": ""
+    },
+    {
+      "url": "http://localhost:3000/",
+      "method": "GET",
+      "ok": false,
+      "status_code": null,
+      "response_ms": 4041.6,
+      "error": "URLError",
+      "message": "<urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+      "excerpt": ""
+    },
+    {
+      "url": "http://127.0.0.1:11434/api/tags",
+      "method": "GET",
+      "ok": true,
+      "status_code": 200,
+      "response_ms": 34.8,
+      "content_type": "application/json; charset=utf-8",
+      "excerpt": "{\"models\":[{\"name\":\"nomic-embed-text:latest\",\"model\":\"nomic-embed-text:latest\",\"modified_at\":\"2026-04-30T04:40:03.1163313-04:00\",\"size\":274302450,\"digest\":\"0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f\",\"details\":{\"parent_model\":\"\",\"format\":\"gguf\",\"family\":\"nomic-bert\",\"families\":[\"nomic-bert\"],\"parameter_size\":\"137M\",\"quantization_level\":\"F16\"}},{\"name\":\"deepseek-v4-pro:cloud\",\"model\":\"deepseek-v4-pro:cloud\",\"remote_model\":\"deepseek-v4-pro\",\"remote_host\":\"https://ollama.com:4"
+    },
+    {
+      "url": "http://127.0.0.1:8090/health",
+      "method": "GET",
+      "ok": true,
+      "status_code": 200,
+      "response_ms": 12.7,
+      "content_type": "application/json",
+      "excerpt": "{\"status\":\"healthy\",\"sessions\":3,\"version\":\"9.0.0\",\"safe_mode\":true}"
+    },
+    {
+      "url": "http://127.0.0.1:8090/docs",
+      "method": "GET",
+      "ok": true,
+      "status_code": 200,
+      "response_ms": 14.0,
+      "content_type": "text/html; charset=utf-8",
+      "excerpt": "\n    <!DOCTYPE html>\n    <html>\n    <head>\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <link type=\"text/css\" rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css\">\n    <link rel=\"shortcut icon\" href=\"https://fastapi.tiangolo.com/img/favicon.png\">\n    <title>Brain Chat V9 - Swagger UI</title>\n    </head>\n    <body>\n    <div id=\"swagger-ui\">\n    </div>\n    <script src=\"https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundl"
+    },
+    {
+      "url": "http://127.0.0.1:8090/openapi.json",
+      "method": "GET",
+      "ok": true,
+      "status_code": 200,
+      "response_ms": 588.4,
+      "content_type": "application/json",
+      "excerpt": "{\"openapi\":\"3.1.0\",\"info\":{\"title\":\"Brain Chat V9\",\"version\":\"9.0.0\"},\"paths\":{\"/trading/health\":{\"get\":{\"tags\":[\"trading\"],\"summary\":\"Trading Health\",\"operationId\":\"trading_health_trading_health_get\",\"responses\":{\"200\":{\"description\":\"Successful Response\",\"content\":{\"application/json\":{\"schema\":{\"additionalProperties\":true,\"type\":\"object\",\"title\":\"Response Trading Health Trading Health Get\"}}}}}}},\"/trading/policy\":{\"get\":{\"tags\":[\"trading\"],\"summary\":\"Trading Policy\",\"operationId\":\"trading_pol"
+    },
+    {
+      "url": "http://127.0.0.1:8010/health",
+      "method": "GET",
+      "ok": false,
+      "status_code": null,
+      "response_ms": 2027.3,
+      "error": "URLError",
+      "message": "<urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+      "excerpt": ""
+    },
+    {
+      "url": "http://127.0.0.1:8010/docs",
+      "method": "GET",
+      "ok": false,
+      "status_code": null,
+      "response_ms": 2040.4,
+      "error": "URLError",
+      "message": "<urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+      "excerpt": ""
+    },
+    {
+      "url": "http://127.0.0.1:8010/openapi.json",
+      "method": "GET",
+      "ok": false,
+      "status_code": null,
+      "response_ms": 2027.2,
+      "error": "URLError",
+      "message": "<urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+      "excerpt": ""
+    },
+    {
+      "url": "http://127.0.0.1:8000/health",
+      "method": "GET",
+      "ok": false,
+      "status_code": null,
+      "response_ms": 2067.8,
+      "error": "URLError",
+      "message": "<urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+      "excerpt": ""
+    },
+    {
+      "url": "http://127.0.0.1:8000/openapi.json",
+      "method": "GET",
+      "ok": false,
+      "status_code": null,
+      "response_ms": 2043.1,
+      "error": "URLError",
+      "message": "<urlopen error [WinError 10061] No connection could be made because the target machine actively refused it>",
+      "excerpt": ""
+    }
+  ]
+}

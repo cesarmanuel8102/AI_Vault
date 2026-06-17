@@ -1,0 +1,9 @@
+{
+  "output_path": "C:\\AI_VAULT_CANONICAL\\tmp_agent\\front_brain_v9_safe_restart_and_chat_route_verify_01\\direct_dry_run_check_output.json",
+  "has_content": true,
+  "has_intent": true,
+  "has_route": true,
+  "governance_applied": true,
+  "no_cot_leak": true,
+  "canonical_path": "C:\\AI_VAULT_CANONICAL"
+}

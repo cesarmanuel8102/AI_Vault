@@ -1,0 +1,19 @@
+{
+  "objective": "Make Brain more autonomous under governance through operational training infrastructure and measurable evaluation.",
+  "candidate_actions": [
+    {"name":"teacher_student_training_scaffold","risk":"LOW","apply_now":true},
+    {"name":"timeout_fallback_classification_in_harness","risk":"LOW","apply_now":true},
+    {"name":"domain_evaluation_run","risk":"LOW","apply_now":true},
+    {"name":"observer_report_helper","risk":"LOW","apply_now":true},
+    {"name":"openwebui_runbook_refresh","risk":"LOW","apply_now":true},
+    {"name":"runtime_session_timeout_source_patch","risk":"MEDIUM","apply_now":false,"reason":"existing runtime quality was recently patched; current cycle should measure first"},
+    {"name":"memory_faiss_learning_promotion","risk":"HIGH","apply_now":false,"reason":"Tier 3 prohibited without human approval"}
+  ],
+  "dependency_graph": {
+    "training_cycles": ["teacher_student_training_scaffold", "timeout_fallback_classification_in_harness"],
+    "domain_eval": ["codex_brain_eval_harness"],
+    "ledger": ["tests", "immutability_verify"]
+  },
+  "rollback_plan": "Remove newly added docs/tests/tmp_agent/brain_v9 training/evaluation/report modules before commit if tests or scope gates fail.",
+  "what_to_block": ["memory/semantic mutation", "FAISS writes", "trading execution", "broker/API", "legacy C:\\AI_VAULT"]
+}

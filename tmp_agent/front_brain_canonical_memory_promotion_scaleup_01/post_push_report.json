@@ -1,0 +1,33 @@
+{
+  "status": "PUSHED_AND_SYNCED",
+  "branch": "codex/own-capital-sustainable-return",
+  "start_head": "ef3a5c8",
+  "head_after": "02f1db4",
+  "remote_after": "02f1db4",
+  "local_equals_remote": true,
+  "commits_pushed": [
+    "950778c",
+    "dc85d5b",
+    "26f880c",
+    "811139d",
+    "02f1db4"
+  ],
+  "canonical_promotion_performed": false,
+  "promoted_count": 0,
+  "semantic_lines_before": 1715,
+  "semantic_lines_after": 1715,
+  "faiss_ids_before": 1616,
+  "faiss_ids_after": 1616,
+  "faiss_ntotal_before": 1616,
+  "faiss_ntotal_after": 1616,
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_touched": false,
+  "b8_touched": false,
+  "strategies_touched": false,
+  "staged_empty": true,
+  "tracked_clean": true,
+  "push_done": true,
+  "force_push_done": false,
+  "recommended_next_action": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01"
+}

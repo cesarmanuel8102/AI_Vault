@@ -1,0 +1,18 @@
+{
+  "front_id": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-EXECUTE-SECURITY-GOVERNANCE-01",
+  "baseline_timestamp_utc": "2026-06-11T09:12:00Z",
+  "semantic_memory_jsonl_sha": "ce81fbe1f97e257e2b124d7a929f0b2af86ce61e9ff1d8d832fdb5da1f69e64e",
+  "semantic_memory_jsonl_lines": 1715,
+  "semantic_memory_faiss_index_sha": "b7b755c753cd4017344fb18d51e2ff3d81766151ac3a3dbf753c1004f7d16484",
+  "semantic_memory_faiss_ids_json_sha": "004362363f7a392fd15193392f7fac592e333355e6cc28ba665d3cfb5e9368c1",
+  "semantic_memory_faiss_ids_count": 1611,
+  "ROADMAP_STATUS_json_sha": "332fc3ae8d1d55e515e3a2d89db4ab263c71637ada852e0164247867c6bf70a0",
+  "MIGRATION_CONTROL_LEDGER_md_sha": "51aa7d8b5db3a0690124dee0dd55d8e0b3a8d251f2566c1d3b3c09ae2dcb6322",
+  "current_head": "b557e56",
+  "branch": "codex/own-capital-sustainable-return",
+  "verdict": "PASS",
+  "checks": {
+    "semantic_memory_lines_1715": true,
+    "faiss_ids_count_1611": true
+  }
+}

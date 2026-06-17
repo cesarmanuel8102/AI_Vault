@@ -1,0 +1,80 @@
+{
+  "status": "BRAIN_PERSISTENT_AUTONOMY_REAL_MEMORY_PARTIAL",
+  "timestamp_utc": "2026-06-12T23:50:47.826028+00:00",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_local": "fe8a71a",
+  "head_remote": "fe8a71a",
+  "autonomy": {
+    "persistent_supervisor": true,
+    "scheduled_task_created": false,
+    "scheduled_task_enabled": false,
+    "run_once_verified": true,
+    "status_verified": true,
+    "cycles_run": 3,
+    "heartbeat_status": "idle"
+  },
+  "memory": {
+    "autonomous_events_written": 8,
+    "promotion_candidates": 5,
+    "semantic_staging": true,
+    "semantic_staging_count": 5,
+    "canonical_promotion": false,
+    "promoted_count": 0,
+    "rollback_available": true,
+    "old_semantic_lines": 1715,
+    "new_semantic_lines": 1715,
+    "old_faiss_ntotal": 1616,
+    "new_faiss_ntotal": 1616
+  },
+  "chat_dashboard": {
+    "8090_status": "free_no_listener_passive_check",
+    "dashboard_status": "running_on_8092",
+    "chat_status": "dashboard_chat_proxy_to_8091_provider_probe",
+    "dashboard_url": "http://127.0.0.1:8092/",
+    "dashboard_pid": 45172
+  },
+  "safety": {
+    "trading_touched": false,
+    "b8_touched": false,
+    "secrets_exposed": false,
+    "raw_cot_leak": false,
+    "canonical_semantic_mutated": false,
+    "faiss_mutated": false
+  },
+  "tests": {
+    "smoke_suite": "44 passed",
+    "py_compile": "PASS"
+  },
+  "commits": [
+    {
+      "hash": "523098b",
+      "message": "feat: add persistent Brain autonomy supervisor"
+    },
+    {
+      "hash": "a8baddb",
+      "message": "feat: add Brain real memory promotion pipeline"
+    },
+    {
+      "hash": "6722bf3",
+      "message": "feat: add Brain chat dashboard recovery"
+    },
+    {
+      "hash": "380b2cb",
+      "message": "feat: add Brain autonomy monitoring and correction queue"
+    },
+    {
+      "hash": "9a783d7",
+      "message": "test: add persistent autonomy memory dashboard smoke coverage"
+    },
+    {
+      "hash": "dad9f1b",
+      "message": "ledger: record persistent autonomy real memory dashboard cycle"
+    },
+    {
+      "hash": "fe8a71a",
+      "message": "ledger: record persistent autonomy dashboard live status"
+    }
+  ],
+  "recommended_next": "FRONT-BRAIN-SCHEDULER-ENABLEMENT-02",
+  "operator_commands": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01/OPERATOR_COMMANDS.md"
+}

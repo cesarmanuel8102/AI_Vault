@@ -1,0 +1,12 @@
+{
+  "dashboard_pid": 45172,
+  "process_name": "python",
+  "process_path": "C:\\Users\\cesar\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+  "dashboard_url": "http://127.0.0.1:8092/",
+  "health": {
+    "ok": true,
+    "dashboard": "brain_persistent_autonomy",
+    "port": 8092
+  },
+  "checked_utc": "2026-06-12T23:48:52.1733032Z"
+}

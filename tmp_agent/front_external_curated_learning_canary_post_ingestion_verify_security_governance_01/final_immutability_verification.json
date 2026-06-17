@@ -1,0 +1,14 @@
+{
+  "timestamp_utc": "2026-06-11T08:30:39.534542+00:00",
+  "memory_lines": 1715,
+  "expected_memory_lines": 1715,
+  "faiss_ids_count": 1611,
+  "expected_faiss_ids_count": 1611,
+  "faiss_index_sha_unchanged": true,
+  "faiss_ids_sha_unchanged": true,
+  "memory_staged": false,
+  "memory_unstaged": false,
+  "faiss_staged": false,
+  "faiss_unstaged": false,
+  "immutability_ok": true
+}

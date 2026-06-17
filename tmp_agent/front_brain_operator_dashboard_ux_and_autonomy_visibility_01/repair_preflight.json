@@ -1,0 +1,22 @@
+{
+  "front": "FRONT-BRAIN-OPERATOR-DASHBOARD-UX-AND-AUTONOMY-VISIBILITY-01",
+  "phase": "R0",
+  "status": "DIRTY_STATE_CAPTURED",
+  "head": "6f399783b360f86843b974da84a3249c8caf86f6",
+  "branch": "codex/own-capital-sustainable-return",
+  "remote_sync": "up_to_date",
+  "tracked_modified": [
+    "ROADMAP_STATUS.json",
+    "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+    "tmp_agent/brain_v9/dashboard/static/app.js",
+    "tmp_agent/brain_v9/dashboard/static/index.html",
+    "tmp_agent/brain_v9/dashboard/static/styles.css"
+  ],
+  "untracked": [
+    "tests/smoke/smoke_front_brain_operator_dashboard_ux_and_autonomy_visibility_01.py",
+    "tmp_agent/front_brain_operator_dashboard_ux_and_autonomy_visibility_01/"
+  ],
+  "dashboard_alive": true,
+  "brain_8091": "healthy",
+  "scheduler_exists": true
+}

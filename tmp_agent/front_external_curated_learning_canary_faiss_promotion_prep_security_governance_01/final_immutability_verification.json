@@ -1,0 +1,36 @@
+{
+  "front_id": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-PREP-SECURITY-GOVERNANCE-01",
+  "batch_id": "SEC_GOV_CANARY_001",
+  "check_time_utc": "2026-06-11T09:09:00Z",
+  "baseline_vs_current": {
+    "semantic_memory_jsonl_sha": {
+      "baseline": "ce81fbe1f97e257e2b124d7a929f0b2af86ce61e9ff1d8d832fdb5da1f69e64e",
+      "current": "ce81fbe1f97e257e2b124d7a929f0b2af86ce61e9ff1d8d832fdb5da1f69e64e",
+      "match": true
+    },
+    "semantic_memory_jsonl_lines": {
+      "baseline": 1715,
+      "current": 1715,
+      "match": true
+    },
+    "semantic_memory_faiss_index_sha": {
+      "baseline": "b7b755c753cd4017344fb18d51e2ff3d81766151ac3a3dbf753c1004f7d16484",
+      "current": "b7b755c753cd4017344fb18d51e2ff3d81766151ac3a3dbf753c1004f7d16484",
+      "match": true
+    },
+    "semantic_memory_faiss_ids_json_sha": {
+      "baseline": "004362363f7a392fd15193392f7fac592e333355e6cc28ba665d3cfb5e9368c1",
+      "current": "004362363f7a392fd15193392f7fac592e333355e6cc28ba665d3cfb5e9368c1",
+      "match": true
+    },
+    "semantic_memory_faiss_ids_count": {
+      "baseline": 1611,
+      "current": 1611,
+      "match": true
+    }
+  },
+  "git_staged_memory_faiss": false,
+  "git_unstaged_tracked_memory_faiss": false,
+  "verdict": "PASS",
+  "message": "All immutability checks passed. No memory or FAISS mutation detected between baseline and close."
+}

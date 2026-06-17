@@ -1,0 +1,4 @@
+{
+  "cycle_id": "cycle_02",
+  "prompt": "Current state: Brain has Kimi K2.6 provider_probe live, no semantic/FAISS writes, governed LOW/MEDIUM patch authorization.\nGoal: improve token efficiency. Propose one highest-value LOW/MEDIUM improvement. Return compact bullets: improvement, risk, test, evidence. No hidden reasoning."
+}

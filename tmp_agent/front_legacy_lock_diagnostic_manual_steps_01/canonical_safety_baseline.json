@@ -1,0 +1,23 @@
+{
+  "schema_version": "front_legacy_lock_diagnostic_manual_steps_01_canonical_safety_baseline_v1",
+  "generated_at_utc": "2026-06-12T03:39:09.433774+00:00",
+  "canonical_exists": true,
+  "canonical_path": "C:\\AI_VAULT_CANONICAL",
+  "semantic_memory_lines": 1715,
+  "semantic_memory_lines_expected": 1715,
+  "faiss_ids": 1616,
+  "faiss_ids_expected": 1616,
+  "faiss_ntotal": 1616,
+  "faiss_ntotal_expected": 1616,
+  "faiss_read_error": null,
+  "runtime_base_path": "C:\\AI_VAULT_CANONICAL",
+  "runtime_base_path_expected": "C:\\AI_VAULT_CANONICAL",
+  "config_error": null,
+  "semantic_memory_faiss_index_path": "C:\\AI_VAULT_CANONICAL\\memory\\semantic\\semantic_memory_faiss.index",
+  "semantic_memory_faiss_ids_path": "C:\\AI_VAULT_CANONICAL\\memory\\semantic\\semantic_memory_faiss_ids.json",
+  "faiss_paths_under_canonical": true,
+  "legacy_path_exists": true,
+  "canonical_memory_mutated": false,
+  "canonical_faiss_mutated": false,
+  "passed": true
+}

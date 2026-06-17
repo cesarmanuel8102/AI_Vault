@@ -135,8 +135,9 @@ def maintenance_modes():
 def chat_agent(req: AgentChatRequest):
     if not req.message.strip():
         raise HTTPException(status_code=400, detail="message required")
-    from .governance import validate_mode
-    validated_mode = validate_mode(req.mode)
+    from .governance import validate_mode, parse_mode_from_message
+    nl_mode = parse_mode_from_message(req.message.strip())
+    validated_mode = nl_mode or validate_mode(req.mode)
     rt = get_agent_runtime_v2()
     run = rt.create_run(req.message, validated_mode, req.user_id)
     run = rt.plan_run(run["run_id"])

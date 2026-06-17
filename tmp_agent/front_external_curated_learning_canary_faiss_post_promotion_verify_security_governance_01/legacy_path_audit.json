@@ -1,0 +1,16 @@
+{
+  "front_id": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-POST-PROMOTION-VERIFY-SECURITY-GOVERNANCE-01",
+  "legacy_path_exists": true,
+  "legacy_paths": {
+    "index": "C:/AI_VAULT\\memory/semantic/semantic_memory_faiss.index",
+    "ids": "C:/AI_VAULT\\memory/semantic/semantic_memory_faiss_ids.json",
+    "memory": "C:/AI_VAULT\\memory/semantic/semantic_memory.jsonl"
+  },
+  "legacy_faiss_ntotal": 1616,
+  "legacy_faiss_ids_count": 1616,
+  "legacy_canary_ids_present": true,
+  "legacy_appears_mutated": true,
+  "runtime_base_path": "C:\\AI_VAULT",
+  "runtime_points_to_legacy": true,
+  "recommendation": "DO NOT TOUCH automatically; recommend future cleanup front to align legacy and canonical paths. Runtime config points to legacy BASE_PATH; recommend FRONT-RUNTIME-PATH-ALIGNMENT-CANONICAL-VERIFY-01."
+}

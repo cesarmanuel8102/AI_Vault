@@ -1,0 +1,8 @@
+{
+  "stopped_process_id": 31900,
+  "stopped_command_line": "\"C:\\Users\\cesar\\AppData\\Local\\Programs\\Python\\Python311\\python.exe\" -m uvicorn tmp_agent.brain_v9.main:app --host 127.0.0.1 --port 8091",
+  "classified_brain_8091": true,
+  "started_process_id": null,
+  "new_listener_process_id": null,
+  "restart_success": false
+}

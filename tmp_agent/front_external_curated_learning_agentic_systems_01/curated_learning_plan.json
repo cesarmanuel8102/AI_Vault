@@ -1,0 +1,945 @@
+{
+  "front_id": "FRONT-EXTERNAL-CURATED-LEARNING-AGENTIC-SYSTEMS-01",
+  "domain": {
+    "id": "agentic_systems",
+    "display_name": "Agentic Systems",
+    "description": "Systems where autonomous agents observe, plan, act, use tools, communicate, and learn in loops, under governance boundaries.",
+    "macro_order": 1,
+    "target_brain_capabilities": [
+      "self-directed planning",
+      "tool use governance",
+      "multi-agent orchestration",
+      "failure recovery",
+      "human-in-the-loop control",
+      "reproducible execution graphs"
+    ]
+  },
+  "taxonomy": [
+    {
+      "id": "agent_loop_architecture",
+      "name": "Agent Loop Architecture",
+      "description": "Observe-plan-act loop structure and event-driven iteration."
+    },
+    {
+      "id": "planner_executor_separation",
+      "name": "Planner/Executor Separation",
+      "description": "Decoupling high-level planning from low-level execution."
+    },
+    {
+      "id": "tool_use_and_tool_governance",
+      "name": "Tool Use and Tool Governance",
+      "description": "Safe tool selection, invocation, schema validation, and limits."
+    },
+    {
+      "id": "supervisor_worker_patterns",
+      "name": "Supervisor-Worker Patterns",
+      "description": "Orchestrator delegates to sub-agents with oversight and aggregation."
+    },
+    {
+      "id": "debate_critique_refine",
+      "name": "Debate/Critique/Refine Patterns",
+      "description": "Self-critique, multi-perspective refinement, and adversarial review."
+    },
+    {
+      "id": "multi_agent_communication",
+      "name": "Multi-Agent Communication",
+      "description": "Inter-agent messaging protocols, shared state, and coordination."
+    },
+    {
+      "id": "memory_in_agentic_systems",
+      "name": "Memory in Agentic Systems",
+      "description": "Short-term context, long-term episodic/semantic memory, and retrieval."
+    },
+    {
+      "id": "evaluation_of_agent_behavior",
+      "name": "Evaluation of Agent Behavior",
+      "description": "Benchmarks, success criteria, drift detection, and trace scoring."
+    },
+    {
+      "id": "failure_modes",
+      "name": "Failure Modes",
+      "description": "Infinite loops, hallucinated actions, tool misuse, and deadlock."
+    },
+    {
+      "id": "safety_governance_boundaries",
+      "name": "Safety / Governance Boundaries",
+      "description": "Permission layers, sandboxes, rate limits, and kill switches."
+    },
+    {
+      "id": "human_in_the_loop_control",
+      "name": "Human-in-the-Loop Control",
+      "description": "Approval gates, overrides, feedback injection, and escalation."
+    },
+    {
+      "id": "stateful_graph_workflows",
+      "name": "Stateful Graph Workflows",
+      "description": "Persistent state machines, branching, checkpointing, and rollback."
+    },
+    {
+      "id": "coding_agent_workflows",
+      "name": "Coding-Agent Workflows",
+      "description": "Agents that write, test, review, and patch code under guardrails."
+    },
+    {
+      "id": "reproducibility_and_rollback",
+      "name": "Reproducibility and Rollback",
+      "description": "Deterministic replay, version pinning, state snapshots, and recovery."
+    }
+  ],
+  "acceptance_criteria": {
+    "description": "A source is accepted only if it is safe, attributable, technically relevant, and cross-checkable.",
+    "minimum_conditions": [
+      "Clear attribution (authors, org, or maintainers)",
+      "Publicly reachable URL or repo",
+      "Technical depth exceeds marketing/hype",
+      "License allows metadata/summary reference",
+      "Relevance to at least one taxonomy category",
+      "Not contradicted by a more authoritative source",
+      "No critical risk flagged by safety rubric"
+    ],
+    "accept_threshold": {
+      "score_min": 38,
+      "no_critical_risks": true
+    },
+    "hold_threshold": {
+      "score_range": [
+        28,
+        37
+      ],
+      "metadata_incomplete_ok": true
+    },
+    "decision_rule": "Accept if score >= 38 and no critical risks; hold if 28–37 or incomplete; reject if < 28 or any critical risk."
+  },
+  "rejection_criteria": {
+    "description": "Automatic rejection conditions regardless of popularity.",
+    "critical_risks": [
+      "Private or access-restricted content",
+      "No identifiable attribution",
+      "Illegal or copyright-violating distribution",
+      "Core claims are unverifiable",
+      "Requires copying full copyrighted text to be useful",
+      "Malware or suspicious repo activity",
+      "Abandoned and directly contradicted by a newer official source"
+    ],
+    "score_reject_threshold": 28
+  },
+  "safety_rubric": {
+    "dimensions": {
+      "attribution_quality": "Can the source be clearly attributed to known authors, orgs, or maintainers?",
+      "primary_source_quality": "Is this a primary source (paper, official repo, official docs) rather than repackaged blog?",
+      "technical_depth": "Does the source contain concrete architecture, algorithms, or implementation details?",
+      "license_clarity": "Is the license clearly stated and compatible with metadata reference?",
+      "maintenance_status": "Is the repo/docs actively maintained, or at least archived with clear status?",
+      "reproducibility": "Are there reproducible steps, examples, or tests?",
+      "test_or_example_presence": "Does the source include runnable examples, tests, or demos?",
+      "copyright_safety": "Can we reference it at metadata/summary level without copyright risk?",
+      "relevance_to_brain": "Does it map directly to a Brain capability target?",
+      "risk_of_hype_or_marketing": "Is the content free of exaggerated marketing claims? (5 = very safe, 0 = pure hype)",
+      "risk_of_obsolescence": "Is the source likely to remain relevant for 12+ months?",
+      "risk_of_unverifiable_claims": "Are core claims supported by evidence, code, or reproducible results?"
+    },
+    "scale": "0–5 per dimension",
+    "max_possible": 60,
+    "thresholds": {
+      "accept": {
+        "min_score": 38,
+        "condition": "no_critical_risks"
+      },
+      "hold": {
+        "min_score": 28,
+        "max_score": 37
+      },
+      "reject": {
+        "max_score": 27
+      }
+    }
+  },
+  "contrast_rubric": {
+    "description": "Each candidate source must be contrasted against at least two sources of different types when possible.",
+    "contrast_types": [
+      "paper vs official repo",
+      "official docs vs examples/tests",
+      "framework docs vs independent benchmark/eval",
+      "old repo vs release/changelog",
+      "claim vs implementation evidence"
+    ],
+    "per_source_fields": [
+      "confirms",
+      "contradicts",
+      "complements",
+      "unresolved_questions",
+      "confidence_level"
+    ],
+    "confidence_levels": [
+      "low",
+      "medium",
+      "high"
+    ]
+  },
+  "sources": [
+    {
+      "source_id": "react_yao_2022",
+      "source_group": "paper",
+      "title": "ReAct: Synergizing Reasoning and Acting in Language Models",
+      "authors_or_org": "Yao et al. / Google Research",
+      "year_or_first_release": "2022",
+      "url": "https://arxiv.org/abs/2210.03629",
+      "repo_url": null,
+      "docs_url": null,
+      "license": "arXiv preprint (open access metadata)",
+      "maintenance_status": "published",
+      "source_type": "research_paper",
+      "taxonomy_tags": [
+        "agent_loop_architecture",
+        "tool_use_and_tool_governance",
+        "failure_modes"
+      ],
+      "expected_learning_value": "Interleaving reasoning traces with actions improves planning and reduces hallucinated actions.",
+      "specific_brain_capability_target": "self-directed planning",
+      "cross_check_targets": [
+        "langgraph_docs",
+        "toolformer_schick_2023"
+      ],
+      "safety_score_estimate": 45,
+      "contrast_confidence": "medium",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Widely reproduced. No need to ingest full text; architecture is well-summarized."
+    },
+    {
+      "source_id": "reflexion_shinn_2023",
+      "source_group": "paper",
+      "title": "Reflexion: Self-Reflective Agents with Verbal Reinforcement Learning",
+      "authors_or_org": "Shinn et al. / Northeastern / MIT",
+      "year_or_first_release": "2023",
+      "url": "https://arxiv.org/abs/2303.11366",
+      "repo_url": null,
+      "docs_url": null,
+      "license": "arXiv preprint (open access metadata)",
+      "maintenance_status": "published",
+      "source_type": "research_paper",
+      "taxonomy_tags": [
+        "debate_critique_refine",
+        "memory_in_agentic_systems",
+        "evaluation_of_agent_behavior"
+      ],
+      "expected_learning_value": "Self-critique loops improve success rates in programming and decision tasks.",
+      "specific_brain_capability_target": "failure recovery",
+      "cross_check_targets": [
+        "swe_agent_repo",
+        "langgraph_docs"
+      ],
+      "safety_score_estimate": 44,
+      "contrast_confidence": "medium",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "High citation count. Core idea is compact and reproducible."
+    },
+    {
+      "source_id": "tree_of_thoughts_yao_2023",
+      "source_group": "paper",
+      "title": "Tree of Thoughts: Deliberate Problem Solving with Large Language Models",
+      "authors_or_org": "Yao et al. / Princeton / Google DeepMind",
+      "year_or_first_release": "2023",
+      "url": "https://arxiv.org/abs/2305.10601",
+      "repo_url": null,
+      "docs_url": null,
+      "license": "arXiv preprint (open access metadata)",
+      "maintenance_status": "published",
+      "source_type": "research_paper",
+      "taxonomy_tags": [
+        "planner_executor_separation",
+        "agent_loop_architecture",
+        "evaluation_of_agent_behavior"
+      ],
+      "expected_learning_value": "Search over reasoning paths outperforms simple chain-of-thought on complex tasks.",
+      "specific_brain_capability_target": "self-directed planning",
+      "cross_check_targets": [
+        "react_yao_2022",
+        "langgraph_docs"
+      ],
+      "safety_score_estimate": 45,
+      "contrast_confidence": "medium",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Well-cited. Conceptual framework is concise."
+    },
+    {
+      "source_id": "toolformer_schick_2023",
+      "source_group": "paper",
+      "title": "Toolformer: Language Models Can Teach Themselves to Use Tools",
+      "authors_or_org": "Schick et al. / Meta AI",
+      "year_or_first_release": "2023",
+      "url": "https://arxiv.org/abs/2302.04761",
+      "repo_url": null,
+      "docs_url": null,
+      "license": "arXiv preprint (open access metadata)",
+      "maintenance_status": "published",
+      "source_type": "research_paper",
+      "taxonomy_tags": [
+        "tool_use_and_tool_governance",
+        "agent_loop_architecture"
+      ],
+      "expected_learning_value": "Self-supervised tool-use learning via API call sampling and execution filtering.",
+      "specific_brain_capability_target": "tool use governance",
+      "cross_check_targets": [
+        "react_yao_2022",
+        "openai_agents_sdk_docs"
+      ],
+      "safety_score_estimate": 44,
+      "contrast_confidence": "medium",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Strong experimental protocol. Compact core idea."
+    },
+    {
+      "source_id": "generative_agents_park_2023",
+      "source_group": "paper",
+      "title": "Generative Agents: Interactive Simulacra of Human Behavior",
+      "authors_or_org": "Park et al. / Stanford",
+      "year_or_first_release": "2023",
+      "url": "https://arxiv.org/abs/2304.03442",
+      "repo_url": "https://github.com/joonspk-research/generative_agents",
+      "docs_url": null,
+      "license": "MIT (repo)",
+      "maintenance_status": "active",
+      "source_type": "research_paper",
+      "taxonomy_tags": [
+        "memory_in_agentic_systems",
+        "multi_agent_communication",
+        "stateful_graph_workflows"
+      ],
+      "expected_learning_value": "Memory stream + reflection + planning creates believable long-horizon agent behavior.",
+      "specific_brain_capability_target": "multi-agent orchestration",
+      "cross_check_targets": [
+        "reflexion_shinn_2023",
+        "camel_li_2023"
+      ],
+      "safety_score_estimate": 45,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Repo available and MIT-licensed. Good for cross-checking implementation."
+    },
+    {
+      "source_id": "camel_li_2023",
+      "source_group": "paper",
+      "title": "CAMEL: Communicative Agents for 'Mind' Exploration of Large Language Model Society",
+      "authors_or_org": "Li et al. / KAUST / others",
+      "year_or_first_release": "2023",
+      "url": "https://arxiv.org/abs/2303.17760",
+      "repo_url": "https://github.com/camel-ai/camel",
+      "docs_url": "https://docs.camel-ai.org/",
+      "license": "Apache-2.0",
+      "maintenance_status": "active",
+      "source_type": "research_paper",
+      "taxonomy_tags": [
+        "multi_agent_communication",
+        "debate_critique_refine",
+        "coding_agent_workflows"
+      ],
+      "expected_learning_value": "Role-playing agents autonomously collaborate to solve tasks and generate data.",
+      "specific_brain_capability_target": "multi-agent orchestration",
+      "cross_check_targets": [
+        "generative_agents_park_2023",
+        "metagpt_repo"
+      ],
+      "safety_score_estimate": 46,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Active community. Repo and docs well-maintained."
+    },
+    {
+      "source_id": "metagpt_hong_2023",
+      "source_group": "paper",
+      "title": "MetaGPT: Meta Programming for Multi-Agent Collaborative Framework",
+      "authors_or_org": "Hong et al. / DeepWisdom",
+      "year_or_first_release": "2023",
+      "url": "https://arxiv.org/abs/2308.00352",
+      "repo_url": "https://github.com/geekan/MetaGPT",
+      "docs_url": "https://docs.metagpt.im/",
+      "license": "MIT",
+      "maintenance_status": "active",
+      "source_type": "research_paper",
+      "taxonomy_tags": [
+        "supervisor_worker_patterns",
+        "coding_agent_workflows",
+        "planner_executor_separation"
+      ],
+      "expected_learning_value": "SOP-based multi-agent collaboration for software development with structured outputs.",
+      "specific_brain_capability_target": "coding-agent workflows",
+      "cross_check_targets": [
+        "camel_li_2023",
+        "swe_agent_repo"
+      ],
+      "safety_score_estimate": 46,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Very active repo. Strong implementation evidence for claims."
+    },
+    {
+      "source_id": "voyager_wang_2023",
+      "source_group": "paper",
+      "title": "Voyager: An Open-Ended Embodied Agent with Large Language Models",
+      "authors_or_org": "Wang et al. / NVIDIA / Caltech / Stanford / others",
+      "year_or_first_release": "2023",
+      "url": "https://arxiv.org/abs/2305.16291",
+      "repo_url": "https://github.com/MineDojo/Voyager",
+      "docs_url": null,
+      "license": "MIT",
+      "maintenance_status": "maintenance",
+      "source_type": "research_paper",
+      "taxonomy_tags": [
+        "agent_loop_architecture",
+        "memory_in_agentic_systems",
+        "tool_use_and_tool_governance"
+      ],
+      "expected_learning_value": "Lifelong learning agent with skill library and automatic curriculum in Minecraft.",
+      "specific_brain_capability_target": "self-directed planning",
+      "cross_check_targets": [
+        "generative_agents_park_2023",
+        "camel_li_2023"
+      ],
+      "safety_score_estimate": 43,
+      "contrast_confidence": "medium",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Requires Minecraft environment. Core ideas transferable to other domains."
+    },
+    {
+      "source_id": "swe_agent_yang_2024",
+      "source_group": "paper",
+      "title": "SWE-agent: Agent-Computer Interfaces Enable Automated Software Engineering",
+      "authors_or_org": "Yang et al. / Princeton / others",
+      "year_or_first_release": "2024",
+      "url": "https://arxiv.org/abs/2405.17165",
+      "repo_url": "https://github.com/princeton-nlp/SWE-agent",
+      "docs_url": "https://princeton-nlp.github.io/SWE-agent/",
+      "license": "MIT",
+      "maintenance_status": "active",
+      "source_type": "research_paper",
+      "taxonomy_tags": [
+        "coding_agent_workflows",
+        "tool_use_and_tool_governance",
+        "evaluation_of_agent_behavior"
+      ],
+      "expected_learning_value": "Specialized agent-computer interface design dramatically improves coding agent performance.",
+      "specific_brain_capability_target": "coding-agent workflows",
+      "cross_check_targets": [
+        "metagpt_hong_2023",
+        "reflexion_shinn_2023"
+      ],
+      "safety_score_estimate": 47,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Strong benchmark results. Active development. Well-documented."
+    },
+    {
+      "source_id": "agentbench_liu_2023",
+      "source_group": "paper",
+      "title": "AgentBench: Evaluating LLMs as Agents",
+      "authors_or_org": "Liu et al. / Tsinghua / others",
+      "year_or_first_release": "2023",
+      "url": "https://arxiv.org/abs/2308.03688",
+      "repo_url": "https://github.com/THUDM/AgentBench",
+      "docs_url": null,
+      "license": "Apache-2.0",
+      "maintenance_status": "active",
+      "source_type": "benchmark_paper",
+      "taxonomy_tags": [
+        "evaluation_of_agent_behavior",
+        "failure_modes",
+        "safety_governance_boundaries"
+      ],
+      "expected_learning_value": "Systematic multi-environment benchmark reveals failure modes across reasoning, coding, and gaming.",
+      "specific_brain_capability_target": "evaluation of agent behavior",
+      "cross_check_targets": [
+        "react_yao_2022",
+        "toolformer_schick_2023"
+      ],
+      "safety_score_estimate": 45,
+      "contrast_confidence": "medium",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Open-source benchmark suite. Good for reproducibility."
+    },
+    {
+      "source_id": "langgraph_docs",
+      "source_group": "repo",
+      "title": "LangGraph — Build Stateful, Multi-Agent Applications with LLMs",
+      "authors_or_org": "LangChain AI",
+      "year_or_first_release": "2024",
+      "url": "https://github.com/langchain-ai/langgraph",
+      "repo_url": "https://github.com/langchain-ai/langgraph",
+      "docs_url": "https://langchain-ai.github.io/langgraph/",
+      "license": "MIT",
+      "maintenance_status": "active",
+      "source_type": "framework_repo",
+      "taxonomy_tags": [
+        "stateful_graph_workflows",
+        "supervisor_worker_patterns",
+        "reproducibility_and_rollback"
+      ],
+      "expected_learning_value": "Production-grade stateful graph orchestration with checkpoints, interrupts, and human-in-the-loop.",
+      "specific_brain_capability_target": "reproducible execution graphs",
+      "cross_check_targets": [
+        "react_yao_2022",
+        "tree_of_thoughts_yao_2023"
+      ],
+      "safety_score_estimate": 48,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Very active. Extensive docs and examples. Strong governance primitives (interrupts, time travel)."
+    },
+    {
+      "source_id": "autogen_repo",
+      "source_group": "repo",
+      "title": "AutoGen — A Programming Framework for Agentic AI",
+      "authors_or_org": "Microsoft",
+      "year_or_first_release": "2023",
+      "url": "https://github.com/microsoft/autogen",
+      "repo_url": "https://github.com/microsoft/autogen",
+      "docs_url": "https://microsoft.github.io/autogen/",
+      "license": "MIT",
+      "maintenance_status": "active",
+      "source_type": "framework_repo",
+      "taxonomy_tags": [
+        "multi_agent_communication",
+        "supervisor_worker_patterns",
+        "human_in_the_loop_control"
+      ],
+      "expected_learning_value": "Conversational programming model for multi-agent systems with built-in human proxy.",
+      "specific_brain_capability_target": "multi-agent orchestration",
+      "cross_check_targets": [
+        "camel_li_2023",
+        "crewai_repo"
+      ],
+      "safety_score_estimate": 47,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Large Microsoft-backed ecosystem. Note: v0.2 refactor changed APIs; verify version alignment."
+    },
+    {
+      "source_id": "crewai_repo",
+      "source_group": "repo",
+      "title": "CrewAI — Framework for Orchestrating Role-Playing, Autonomous AI Agents",
+      "authors_or_org": "crewAI Inc / Joao Moura",
+      "year_or_first_release": "2023",
+      "url": "https://github.com/crewAIInc/crewAI",
+      "repo_url": "https://github.com/crewAIInc/crewAI",
+      "docs_url": "https://docs.crewai.com/",
+      "license": "MIT",
+      "maintenance_status": "active",
+      "source_type": "framework_repo",
+      "taxonomy_tags": [
+        "supervisor_worker_patterns",
+        "tool_use_and_tool_governance",
+        "planner_executor_separation"
+      ],
+      "expected_learning_value": "Role-based crew orchestration with task delegation, tool assignment, and process flows.",
+      "specific_brain_capability_target": "multi-agent orchestration",
+      "cross_check_targets": [
+        "autogen_repo",
+        "metagpt_hong_2023"
+      ],
+      "safety_score_estimate": 44,
+      "contrast_confidence": "medium",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Popular but some community concern about marketing vs. depth. Hold for deeper technical audit."
+    },
+    {
+      "source_id": "camel_repo",
+      "source_group": "repo",
+      "title": "CAMEL-AI — Communicative Agents for 'Mind' Exploration",
+      "authors_or_org": "camel-ai",
+      "year_or_first_release": "2023",
+      "url": "https://github.com/camel-ai/camel",
+      "repo_url": "https://github.com/camel-ai/camel",
+      "docs_url": "https://docs.camel-ai.org/",
+      "license": "Apache-2.0",
+      "maintenance_status": "active",
+      "source_type": "framework_repo",
+      "taxonomy_tags": [
+        "multi_agent_communication",
+        "coding_agent_workflows",
+        "debate_critique_refine"
+      ],
+      "expected_learning_value": "Role-playing agents, data generation, and tool-augmented workflows in a modular framework.",
+      "specific_brain_capability_target": "multi-agent orchestration",
+      "cross_check_targets": [
+        "camel_li_2023",
+        "autogen_repo"
+      ],
+      "safety_score_estimate": 46,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Active open-source community. Paper and repo are well-aligned."
+    },
+    {
+      "source_id": "metagpt_repo",
+      "source_group": "repo",
+      "title": "MetaGPT — The Multi-Agent Framework",
+      "authors_or_org": "DeepWisdom / geekan",
+      "year_or_first_release": "2023",
+      "url": "https://github.com/geekan/MetaGPT",
+      "repo_url": "https://github.com/geekan/MetaGPT",
+      "docs_url": "https://docs.metagpt.im/",
+      "license": "MIT",
+      "maintenance_status": "active",
+      "source_type": "framework_repo",
+      "taxonomy_tags": [
+        "supervisor_worker_patterns",
+        "coding_agent_workflows",
+        "planner_executor_separation"
+      ],
+      "expected_learning_value": "SOP-driven multi-agent software engineering with structured outputs and role definitions.",
+      "specific_brain_capability_target": "coding-agent workflows",
+      "cross_check_targets": [
+        "metagpt_hong_2023",
+        "swe_agent_repo"
+      ],
+      "safety_score_estimate": 46,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Very active. Strong paper + repo alignment. Good for cross-checking implementation claims."
+    },
+    {
+      "source_id": "openai_swarm_repo",
+      "source_group": "repo",
+      "title": "OpenAI Swarm — Educational Framework for Multi-Agent Orchestration",
+      "authors_or_org": "OpenAI",
+      "year_or_first_release": "2024",
+      "url": "https://github.com/openai/swarm",
+      "repo_url": "https://github.com/openai/swarm",
+      "docs_url": null,
+      "license": "MIT",
+      "maintenance_status": "archived",
+      "source_type": "educational_repo",
+      "taxonomy_tags": [
+        "multi_agent_communication",
+        "supervisor_worker_patterns"
+      ],
+      "expected_learning_value": "Lightweight multi-agent orchestration patterns (handoffs, routines) from OpenAI.",
+      "specific_brain_capability_target": "multi-agent orchestration",
+      "cross_check_targets": [
+        "autogen_repo",
+        "langgraph_docs"
+      ],
+      "safety_score_estimate": 40,
+      "contrast_confidence": "medium",
+      "acceptance_status": "hold",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Archived by OpenAI in favor of Agents SDK. Still useful as a lightweight pattern reference. Hold pending Agents SDK evaluation."
+    },
+    {
+      "source_id": "swe_agent_repo",
+      "source_group": "repo",
+      "title": "SWE-agent — Agent-Computer Interfaces for Software Engineering",
+      "authors_or_org": "Princeton NLP",
+      "year_or_first_release": "2024",
+      "url": "https://github.com/princeton-nlp/SWE-agent",
+      "repo_url": "https://github.com/princeton-nlp/SWE-agent",
+      "docs_url": "https://princeton-nlp.github.io/SWE-agent/",
+      "license": "MIT",
+      "maintenance_status": "active",
+      "source_type": "specialized_agent_repo",
+      "taxonomy_tags": [
+        "coding_agent_workflows",
+        "tool_use_and_tool_governance",
+        "evaluation_of_agent_behavior"
+      ],
+      "expected_learning_value": "Demonstrates that interface design (not just model size) drives coding agent success.",
+      "specific_brain_capability_target": "coding-agent workflows",
+      "cross_check_targets": [
+        "swe_agent_yang_2024",
+        "metagpt_repo"
+      ],
+      "safety_score_estimate": 47,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Strong paper + repo + benchmark alignment. Very active development."
+    },
+    {
+      "source_id": "model_context_protocol_docs",
+      "source_group": "docs",
+      "title": "Model Context Protocol (MCP) — Specification and SDK",
+      "authors_or_org": "Anthropic",
+      "year_or_first_release": "2024",
+      "url": "https://www.anthropic.com/news/model-context-protocol",
+      "repo_url": "https://github.com/modelcontextprotocol",
+      "docs_url": "https://modelcontextprotocol.io/",
+      "license": "MIT (SDK)",
+      "maintenance_status": "active",
+      "source_type": "protocol_docs",
+      "taxonomy_tags": [
+        "tool_use_and_tool_governance",
+        "safety_governance_boundaries",
+        "reproducibility_and_rollback"
+      ],
+      "expected_learning_value": "Standardized protocol for exposing tools/context to LLMs, enabling portable agent-tool integration.",
+      "specific_brain_capability_target": "tool use governance",
+      "cross_check_targets": [
+        "toolformer_schick_2023",
+        "langgraph_docs"
+      ],
+      "safety_score_estimate": 46,
+      "contrast_confidence": "medium",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Emerging standard. Multiple implementations (Python, TypeScript, Java). Good for governance layer design."
+    },
+    {
+      "source_id": "openai_agents_sdk_docs",
+      "source_group": "docs",
+      "title": "OpenAI Agents SDK — Build Agentic Applications",
+      "authors_or_org": "OpenAI",
+      "year_or_first_release": "2025",
+      "url": "https://openai.github.io/openai-agents-python/",
+      "repo_url": "https://github.com/openai/openai-agents-python",
+      "docs_url": "https://openai.github.io/openai-agents-python/",
+      "license": "MIT",
+      "maintenance_status": "active",
+      "source_type": "sdk_docs",
+      "taxonomy_tags": [
+        "agent_loop_architecture",
+        "tool_use_and_tool_governance",
+        "human_in_the_loop_control"
+      ],
+      "expected_learning_value": "Minimal but opinionated SDK for agents with tracing, guardrails, and handoffs.",
+      "specific_brain_capability_target": "tool use governance",
+      "cross_check_targets": [
+        "openai_swarm_repo",
+        "langgraph_docs"
+      ],
+      "safety_score_estimate": 44,
+      "contrast_confidence": "medium",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Replaces Swarm as OpenAI's recommended agent SDK. New; monitor for stability."
+    },
+    {
+      "source_id": "langchain_docs",
+      "source_group": "docs",
+      "title": "LangChain Documentation — Building Applications with LLMs through Composability",
+      "authors_or_org": "LangChain AI",
+      "year_or_first_release": "2022",
+      "url": "https://python.langchain.com/docs/introduction/",
+      "repo_url": "https://github.com/langchain-ai/langchain",
+      "docs_url": "https://python.langchain.com/docs/introduction/",
+      "license": "MIT",
+      "maintenance_status": "active",
+      "source_type": "framework_docs",
+      "taxonomy_tags": [
+        "tool_use_and_tool_governance",
+        "memory_in_agentic_systems",
+        "reproducibility_and_rollback"
+      ],
+      "expected_learning_value": "Composable chains, tools, memory integrations, and agent executors in Python/JS.",
+      "specific_brain_capability_target": "tool use governance",
+      "cross_check_targets": [
+        "langgraph_docs",
+        "react_yao_2022"
+      ],
+      "safety_score_estimate": 45,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Mature ecosystem. Note: some API churn across versions. Prefer LangGraph for new stateful workflows."
+    },
+    {
+      "source_id": "agentarena_benchmark",
+      "source_group": "benchmark",
+      "title": "AgentArena — Open Evaluation Framework for LLM Agents",
+      "authors_or_org": "Unknown / community",
+      "year_or_first_release": "unknown",
+      "url": "https://github.com/AgentArena",
+      "repo_url": null,
+      "docs_url": null,
+      "license": "unknown",
+      "maintenance_status": "unknown",
+      "source_type": "benchmark_repo",
+      "taxonomy_tags": [
+        "evaluation_of_agent_behavior",
+        "reproducibility_and_rollback"
+      ],
+      "expected_learning_value": "Community-driven agent evaluation framework. Depth uncertain.",
+      "specific_brain_capability_target": "evaluation of agent behavior",
+      "cross_check_targets": [
+        "agentbench_liu_2023"
+      ],
+      "safety_score_estimate": 22,
+      "contrast_confidence": "low",
+      "acceptance_status": "reject",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "notes": "Metadata too sparse. Unverifiable maintenance and authorship. Reject until better attribution found."
+    }
+  ],
+  "cross_source_contrast_matrix": [
+    {
+      "pair": [
+        "react_yao_2022",
+        "langgraph_docs"
+      ],
+      "contrast_type": "paper vs official repo",
+      "confirms": "Interleaved reasoning-action loops improve agent reliability.",
+      "contradicts": null,
+      "complements": "LangGraph provides production-grade state persistence and human-in-the-loop that ReAct paper does not address.",
+      "unresolved_questions": "How does ReAct scale to long-horizon multi-agent graphs?",
+      "confidence_level": "high"
+    },
+    {
+      "pair": [
+        "metagpt_hong_2023",
+        "metagpt_repo"
+      ],
+      "contrast_type": "paper vs official repo",
+      "confirms": "SOP-based multi-agent collaboration produces structured software artifacts.",
+      "contradicts": null,
+      "complements": "Repo adds CI/CD, Docker, and example projects not in the paper.",
+      "unresolved_questions": "How well does MetaGPT generalize outside software engineering?",
+      "confidence_level": "high"
+    },
+    {
+      "pair": [
+        "camel_li_2023",
+        "autogen_repo"
+      ],
+      "contrast_type": "paper vs framework docs",
+      "confirms": "Multi-agent conversation patterns improve task completion over single-agent baselines.",
+      "contradicts": null,
+      "complements": "AutoGen adds built-in human proxy and code execution; CAMEL adds role-playing data generation.",
+      "unresolved_questions": "Which conversation topology (star, mesh, hierarchy) is most robust?",
+      "confidence_level": "medium"
+    },
+    {
+      "pair": [
+        "swe_agent_yang_2024",
+        "swe_agent_repo"
+      ],
+      "contrast_type": "paper vs repo",
+      "confirms": "Agent-computer interface design is a stronger lever than model size for coding tasks.",
+      "contradicts": null,
+      "complements": "Repo provides the actual interface implementations and benchmark harness.",
+      "unresolved_questions": "Can SWE-agent interfaces generalize to non-Python codebases?",
+      "confidence_level": "high"
+    },
+    {
+      "pair": [
+        "toolformer_schick_2023",
+        "model_context_protocol_docs"
+      ],
+      "contrast_type": "paper vs protocol docs",
+      "confirms": "Standardized tool interfaces improve LLM-agent reliability.",
+      "contradicts": null,
+      "complements": "Toolformer is a self-supervised learning method; MCP is a runtime protocol. They solve different layers.",
+      "unresolved_questions": "Can MCP be combined with self-supervised tool-learning?",
+      "confidence_level": "medium"
+    },
+    {
+      "pair": [
+        "reflexion_shinn_2023",
+        "generative_agents_park_2023"
+      ],
+      "contrast_type": "paper vs paper",
+      "confirms": "Memory and reflection improve long-horizon agent performance.",
+      "contradicts": null,
+      "complements": "Reflexion focuses on task-level verbal reinforcement; Generative Agents focus on social simulation memory streams.",
+      "unresolved_questions": "Can Reflexion-style critique be integrated into Generative Agents' memory architecture?",
+      "confidence_level": "medium"
+    },
+    {
+      "pair": [
+        "openai_swarm_repo",
+        "openai_agents_sdk_docs"
+      ],
+      "contrast_type": "old repo vs new docs",
+      "confirms": "Handoff and routine patterns are core to OpenAI agent design.",
+      "contradicts": "Swarm was archived; Agents SDK replaces it with a different API.",
+      "complements": "Swarm is simpler and educational; Agents SDK adds tracing and guardrails.",
+      "unresolved_questions": "Will Agents SDK remain stable, or will it be superseded again?",
+      "confidence_level": "medium"
+    }
+  ],
+  "knowledge_record_schema": {
+    "description": "Schema for a future knowledge record if ingestion is ever authorized.",
+    "required_fields": [
+      "source_id",
+      "source_group",
+      "title",
+      "authors_or_org",
+      "url",
+      "taxonomy_tags",
+      "specific_brain_capability_target",
+      "safety_score",
+      "acceptance_status",
+      "ingestion_status",
+      "copyright_risk"
+    ],
+    "optional_fields": [
+      "repo_url",
+      "docs_url",
+      "license",
+      "maintenance_status",
+      "year_or_first_release",
+      "expected_learning_value",
+      "cross_check_targets",
+      "contrast_confidence",
+      "notes"
+    ],
+    "forbidden_fields": [
+      "full_text",
+      "raw_pdf_bytes",
+      "full_readme_text",
+      "proprietary_dataset",
+      "api_keys",
+      "credentials"
+    ],
+    "retention_policy": "Metadata and summary only. Full content must remain external."
+  },
+  "summary": {
+    "source_count": 21,
+    "taxonomy_count": 14,
+    "source_groups": [
+      "paper",
+      "benchmark",
+      "repo",
+      "docs"
+    ],
+    "accepted_count": 19,
+    "hold_count": 1,
+    "rejected_count": 1,
+    "ingestion_status": "dry_run_only",
+    "memory_mutated": false,
+    "faiss_mutated": false
+  }
+}

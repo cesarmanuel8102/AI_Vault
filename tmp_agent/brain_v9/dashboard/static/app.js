@@ -195,6 +195,18 @@ async function control(action) {
   }
 }
 
+let dashChatMode = 'read_only';
+
+function setChatMode(mode) {
+  dashChatMode = mode;
+  ['read_only', 'build', 'auto'].forEach(function(m) {
+    var btn = document.getElementById('dash-mode-' + m);
+    if (btn) btn.classList.toggle('active', m === mode);
+  });
+  var out = document.getElementById('chat-output');
+  out.textContent = 'Mode switched to ' + mode.toUpperCase();
+}
+
 async function chat() {
   const msg = document.getElementById('msg').value.trim();
   if (!msg) return;
@@ -206,7 +218,7 @@ async function chat() {
     const r = await fetch('/brain-dashboard/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: msg })
+      body: JSON.stringify({ message: msg, mode: dashChatMode, user_id: 'dashboard_operator' })
     });
     const j = await r.json();
     if (!j.ok) {
@@ -224,6 +236,10 @@ async function chat() {
     metaHtml += ' | Model: ' + (j.model_used || '—');
     metaHtml += ' | Classification: ' + (j.classification || '—');
     metaHtml += ' | Status: ' + (j.status || '—');
+    metaHtml += ' | Mode: ' + (j.mode_effective || dashChatMode || '—').toUpperCase();
+    if (j.auto_decision && j.auto_decision !== 'n/a') {
+      metaHtml += ' (auto=' + j.auto_decision + ')';
+    }
     
     if (j.provider_degraded) {
       metaHtml += '<br/><span style="color:#f5a623">⚠ Provider degraded. Fallback: ' + (j.fallback_reason || 'unknown') + '</span>';

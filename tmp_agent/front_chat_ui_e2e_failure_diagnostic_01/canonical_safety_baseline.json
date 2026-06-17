@@ -1,0 +1,18 @@
+{
+  "canonical_path_exists": true,
+  "branch": "codex/own-capital-sustainable-return",
+  "head": "278f5fa",
+  "remote": "278f5fa",
+  "semantic_memory_lines": 1715,
+  "faiss_ids": 1616,
+  "faiss_ntotal": 1616,
+  "faiss_ntotal_error": null,
+  "runtime_base_path_stdout": "C:\\AI_VAULT_CANONICAL",
+  "runtime_base_path_canonical": true,
+  "semantic_index_path": "C:\\AI_VAULT_CANONICAL\\memory\\semantic\\semantic_memory_faiss.index",
+  "semantic_ids_path": "C:\\AI_VAULT_CANONICAL\\memory\\semantic\\semantic_memory_faiss_ids.json",
+  "paths_under_canonical": true,
+  "roadmap_status_json_valid": true,
+  "canonical_memory_mutated": false,
+  "canonical_faiss_mutated": false
+}

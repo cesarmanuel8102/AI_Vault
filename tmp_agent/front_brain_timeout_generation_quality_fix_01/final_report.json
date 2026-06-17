@@ -1,0 +1,82 @@
+{
+  "status": "BRAIN_TIMEOUT_GENERATION_QUALITY_FIX_PARTIAL_PROVIDER_SLOW",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_before": "a49db0f",
+  "functional_commit": "fa51d51",
+  "ledger_commit": "82620cb",
+  "head_after": "82620cb",
+  "remote_after": "82620cb",
+  "cleanup": {
+    "performed": true,
+    "file": "memory/semantic/semantic_memory.jsonl",
+    "scope": "exactly one probe-added line restored from HEAD after validation",
+    "semantic_memory_lines_after": 1715,
+    "semantic_memory_sha256_after": "ce81fbe1f97e257e2b124d7a929f0b2af86ce61e9ff1d8d832fdb5da1f69e64e"
+  },
+  "fixes": {
+    "openai_compat_dry_run_guard": true,
+    "eval_harness_dry_run_default": true,
+    "eval_harness_live_opt_in": "--live",
+    "session_timeout_default_s": 90,
+    "timeout_fallback_metadata": true
+  },
+  "quality": {
+    "before_historical_timeout_fallback": "20/24",
+    "before_pre_fix_mini_timeout_fallback": "8/8",
+    "after_dry_run_mini_summary": {
+      "prompts_attempted": 8,
+      "successful_responses": 8,
+      "timeout_fallback_count": 0,
+      "metadata_full_rate": 1.0,
+      "no_cot_rate": 1.0,
+      "raw_cot_count": 0,
+      "average_score": 1.0,
+      "domain_scores": {
+        "autonomy": 1.0,
+        "cei_fdot": 1.0,
+        "financial_safety": 1.0,
+        "governance": 1.0,
+        "identity": 1.0,
+        "memory": 1.0,
+        "observer": 1.0,
+        "runtime_quality": 1.0
+      }
+    },
+    "direct_llm_probe_90s": {
+      "success": true,
+      "model_used": "llama3.1:8b",
+      "latency_s": 52.917,
+      "fallback_from_kimi_cloud": true
+    }
+  },
+  "tests": {
+    "py_compile": true,
+    "new_smoke": "7 passed",
+    "integrated_post_stage": "16 passed",
+    "harness_v2": "4 passed",
+    "training_scaffold": "5 passed"
+  },
+  "safety": {
+    "memory_mutated_after_fix": false,
+    "faiss_mutated_after_fix": false,
+    "faiss_index_sha256_after": "adbb6051f79ecbeab0223d631a6013939c00bcc13216fbae437efe83047efa21",
+    "faiss_ids_sha256_after": "43736047db548caf9b26dfa61cdffe40e179c738bc8e8c295891f29cedd69102",
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "runtime_8090_touched": false,
+    "runtime_8091_restarted": true
+  },
+  "files_committed_functional": [
+    "tmp_agent/brain_v9/api/openai_compat.py",
+    "tmp_agent/brain_v9/core/session.py",
+    "tmp_agent/brain_v9/evaluation/codex_brain_eval_harness.py",
+    "tests/smoke/smoke_front_brain_timeout_generation_quality_fix_01.py"
+  ],
+  "files_committed_ledger": [
+    "ROADMAP_STATUS.json",
+    "docs/MIGRATION_CONTROL_LEDGER.md"
+  ],
+  "recommended_next_action": "FRONT-BRAIN-LOCAL-LLM-PROVIDER-OPTIMIZATION-01"
+}

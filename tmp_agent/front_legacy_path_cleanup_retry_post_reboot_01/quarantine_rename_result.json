@@ -1,0 +1,14 @@
+{
+  "front_id": "FRONT-LEGACY-PATH-CLEANUP-RETRY-POST-REBOOT-01",
+  "source_before_exists": true,
+  "target_before_exists": false,
+  "rename_attempted": true,
+  "rename_success": false,
+  "source_after_exists": true,
+  "target_after_exists": false,
+  "target_path": "C:\\AI_VAULT_LEGACY_QUARANTINE_20260611_223045",
+  "deletion_performed": false,
+  "copy_performed": false,
+  "sync_performed": false,
+  "error": "[WinError 32] The process cannot access the file because it is being used by another process: 'C:\\\\AI_VAULT' -> 'C:\\\\AI_VAULT_LEGACY_QUARANTINE_20260611_223045'"
+}

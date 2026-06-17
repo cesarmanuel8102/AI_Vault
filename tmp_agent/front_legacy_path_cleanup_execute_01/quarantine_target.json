@@ -1,0 +1,12 @@
+{
+  "front_id": "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01",
+  "source": "C:\\AI_VAULT",
+  "target": "C:\\AI_VAULT_LEGACY_QUARANTINE_20260611_220646",
+  "source_exists": true,
+  "target_exists": false,
+  "parent_writable": true,
+  "planned_operation": "rename_only",
+  "deletion_authorized": false,
+  "copy_authorized": false,
+  "sync_authorized": false
+}

@@ -1,0 +1,87 @@
+{
+  "front_id": "FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-PATCH-01",
+  "timestamp": "2026-06-10T22:40:25Z",
+  "network_called": true,
+  "connector_called": false,
+  "trading_executed": false,
+  "b8_touched": false,
+  "memory_mutated": false,
+  "faiss_mutated": false,
+  "live_chat_probe": {
+    "url": "http://localhost:8090/chat",
+    "chat_route_ok": true,
+    "timeout_detected": false,
+    "probes": [
+      {
+        "url": "http://localhost:8090/chat",
+        "timeout_configured": 25,
+        "elapsed_ms": 14114,
+        "status_code": 200,
+        "response_snippet": "{\"response\":\"El modelo tardó demasiado en responder. El servidor sigue operativo; intenta de nuevo con una instrucción más concreta.\\n\\n---\\n[DEV] route=llm | intent=QUERY | model=? | success=False\",\"session_id\":\"default\",\"model_used\":null,\"success\":false,\"pending_action\":null,\"permission_required\":null,\"permission_id\":null,\"tool_name\":null,\"risk_level\":null,\"options\":null,\"tool01_real\":null,\"tool01_router_used\":null,\"blocked_by_policy\":null,\"blocked_by_user\":null,\"tool_result\":null}",
+        "error": null,
+        "expected_markers": [
+          "real execution policy",
+          "memory",
+          "FAISS",
+          "trading",
+          "connectors",
+          "B8"
+        ],
+        "matched_markers": [],
+        "match_count": 0,
+        "marker_pass": false,
+        "no_raw_cot_detected": true
+      },
+      {
+        "url": "http://localhost:8090/chat",
+        "timeout_configured": 25,
+        "elapsed_ms": 12152,
+        "status_code": 200,
+        "response_snippet": "{\"response\":\"The **P2-D RSI Specification** (`RSI_Execution_Limits.md`) defines the hard limits on Brain real execution, implementing the **RSI (Real Execution Safety Interface)** concept with mandatory permission gates, risk classification tiers, and autonomous action boundaries.\\nThe **Runtime Recovery Runbook** documents operational procedures for diagnosing and restoring failed Brain services, covering service restart sequences (Ollama → Brain Chat → trading bridges), log analysis, port conflict resolution, and escalation protocols when autonomous recovery fails.\\n\\n---\\n[DEV] route=llm | intent=QUERY | model=kimi-k2.5:cloud | success=True\",\"session_id\":\"default\",\"model_used\":\"kimi-k2.5:cloud\",\"success\":true,\"pending_action\":null,\"permission_required\":null,\"permission_id\":null,\"tool_na",
+        "error": null,
+        "expected_markers": [
+          "runtime",
+          "recovery",
+          "health check",
+          "Ollama",
+          "dashboard",
+          "execution gate"
+        ],
+        "matched_markers": [
+          "runtime",
+          "recovery",
+          "Ollama"
+        ],
+        "match_count": 3,
+        "marker_pass": true,
+        "no_raw_cot_detected": true
+      },
+      {
+        "url": "http://localhost:8090/chat",
+        "timeout_configured": 25,
+        "elapsed_ms": 2087,
+        "status_code": 200,
+        "response_snippet": "{\"response\":\"No. El adapter NO escribe en SemanticMemoryBridge ni FAISS. No hay promoción automática de registros validados a memoria semántica. P2-C/P2-D son adapter, documentación y smoke local; no son conectores automáticos a runtime.\\n\\n---\\n[DEV] route=policy_gate | intent=QUERY | model=? | success=True\",\"session_id\":\"default\",\"model_used\":null,\"success\":true,\"pending_action\":null,\"permission_required\":null,\"permission_id\":null,\"tool_name\":null,\"risk_level\":null,\"options\":null,\"tool01_real\":null,\"tool01_router_used\":null,\"blocked_by_policy\":null,\"blocked_by_user\":null,\"tool_result\":null}",
+        "error": null,
+        "expected_markers": [
+          "semantic memory",
+          "FAISS",
+          "canary",
+          "promotion",
+          "controlled"
+        ],
+        "matched_markers": [
+          "FAISS"
+        ],
+        "match_count": 1,
+        "marker_pass": false,
+        "no_raw_cot_detected": true
+      }
+    ]
+  },
+  "_baseline_shas": {
+    "semantic_memory.jsonl": "655d32381e38ada348c3f201c50484551e02d98ae0869fa53826912c6973ab54",
+    "semantic_memory_faiss.index": "b7b755c753cd4017344fb18d51e2ff3d81766151ac3a3dbf753c1004f7d16484",
+    "semantic_memory_faiss_ids.json": "004362363f7a392fd15193392f7fac592e333355e6cc28ba665d3cfb5e9368c1"
+  }
+}

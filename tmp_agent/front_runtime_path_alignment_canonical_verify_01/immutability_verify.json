@@ -1,0 +1,18 @@
+{
+  "front_id": "FRONT-RUNTIME-PATH-ALIGNMENT-CANONICAL-VERIFY-01",
+  "semantic_memory_jsonl_unchanged": true,
+  "semantic_memory_faiss_index_unchanged": true,
+  "semantic_memory_faiss_ids_unchanged": true,
+  "semantic_memory_lines": 1715,
+  "faiss_ids_count": 1616,
+  "faiss_ntotal": 1616,
+  "checks": {
+    "lines_1715": true,
+    "ids_1616": true,
+    "ntotal_1616": true,
+    "memory_sha_unchanged": true,
+    "index_sha_unchanged": true,
+    "ids_sha_unchanged": true
+  },
+  "verdict": "PASS"
+}

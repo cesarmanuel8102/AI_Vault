@@ -1,0 +1,78 @@
+{
+  "checked_utc": "2026-06-12T19:09:33.677809+00:00",
+  "configured_primary": "kimi_k2_6_cloud",
+  "configured_model_tag": "kimi-k2.6:cloud",
+  "cloud_provider_available": false,
+  "codex_provider_available": true,
+  "local_fallback_available": true,
+  "records": [
+    {
+      "provider_id": "kimi_k2_6_cloud",
+      "model_tag": "kimi-k2.6:cloud",
+      "status": "TAG_MISSING",
+      "last_latency_ms": null,
+      "last_error_type": "KIMI_K2_6_OLLAMA_TAG_MISSING",
+      "empty_response_count": 0,
+      "timeout_count": 0,
+      "success_count": 0,
+      "last_checked_utc": "2026-06-12T19:09:33.677809+00:00",
+      "usable_for_chat": false,
+      "usable_for_code": false,
+      "usable_for_autonomy": false,
+      "notes": [
+        "Configured primary cloud provider via Ollama Cloud."
+      ]
+    },
+    {
+      "provider_id": "kimi_k2_5_cloud",
+      "model_tag": "kimi-k2.5:cloud",
+      "status": "PARTIAL_UNRELIABLE",
+      "last_latency_ms": 1088,
+      "last_error_type": "EMPTY_RESPONSE",
+      "empty_response_count": 1,
+      "timeout_count": 0,
+      "success_count": 0,
+      "last_checked_utc": "2026-06-12T19:09:33.677809+00:00",
+      "usable_for_chat": false,
+      "usable_for_code": false,
+      "usable_for_autonomy": false,
+      "notes": [
+        "Temporary diagnostic fallback only; do not promote above configured K2.6 tag."
+      ]
+    },
+    {
+      "provider_id": "codex",
+      "model_tag": "codex",
+      "status": "EXECUTOR_AVAILABLE",
+      "last_latency_ms": null,
+      "last_error_type": null,
+      "empty_response_count": 0,
+      "timeout_count": 0,
+      "success_count": 1,
+      "last_checked_utc": "2026-06-12T19:09:33.677809+00:00",
+      "usable_for_chat": true,
+      "usable_for_code": true,
+      "usable_for_autonomy": true,
+      "notes": [
+        "Second provider in Brain chain; no secrets required."
+      ]
+    },
+    {
+      "provider_id": "llama8b",
+      "model_tag": "llama3.1:8b",
+      "status": "AVAILABLE_FALLBACK",
+      "last_latency_ms": null,
+      "last_error_type": null,
+      "empty_response_count": 0,
+      "timeout_count": 0,
+      "success_count": 1,
+      "last_checked_utc": "2026-06-12T19:09:33.677809+00:00",
+      "usable_for_chat": true,
+      "usable_for_code": false,
+      "usable_for_autonomy": false,
+      "notes": [
+        "Local fallback only; not preferred for final autonomy quality."
+      ]
+    }
+  ]
+}

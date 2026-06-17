@@ -1,0 +1,13 @@
+{
+  "os_getcwd": "C:\\AI_VAULT_CANONICAL",
+  "git_toplevel": "C:/AI_VAULT_CANONICAL",
+  "brain_v9_config_BASE_PATH": "C:\\AI_VAULT",
+  "brain_v9_config_STATE_PATH": "C:\\AI_VAULT\\tmp_agent\\state",
+  "SemanticMemoryFAISS_root": "C:\\AI_VAULT\\memory\\semantic",
+  "SemanticMemoryFAISS_index_path": "C:\\AI_VAULT\\memory\\semantic\\semantic_memory_faiss.index",
+  "SemanticMemoryFAISS_ids_path": "C:\\AI_VAULT\\memory\\semantic\\semantic_memory_faiss_ids.json",
+  "SemanticMemoryFAISS_ntotal": 1616,
+  "SemanticMemoryFAISS_ids_count": 1616,
+  "C_AI_VAULT_exists": true,
+  "C_AI_VAULT_CANONICAL_exists": true
+}

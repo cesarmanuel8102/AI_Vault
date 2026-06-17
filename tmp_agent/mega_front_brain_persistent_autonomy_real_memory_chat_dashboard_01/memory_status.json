@@ -1,0 +1,17 @@
+{
+  "checked_utc": "2026-06-12T23:45:56.9470048Z",
+  "old_semantic_lines": 1715,
+  "new_semantic_lines": 1715,
+  "semantic_canonical_unchanged": true,
+  "old_faiss_ntotal": 1616,
+  "new_faiss_ntotal": 1616,
+  "faiss_canonical_unchanged": true,
+  "autonomous_journal_count": 8,
+  "promotion_queue_count": 5,
+  "semantic_staging_count": 5,
+  "canonical_semantic_promoted": false,
+  "promoted_count": 0,
+  "trading_touched": false,
+  "b8_touched": false,
+  "secrets_exposed": false
+}

@@ -1,0 +1,23 @@
+{
+  "checked_at_utc": "2026-06-12T07:15:03.094999Z",
+  "base_url": "http://127.0.0.1:8090",
+  "health": {
+    "ok": true,
+    "status_code": 200,
+    "body_excerpt": "{\"status\":\"healthy\",\"sessions\":2,\"version\":\"9.0.0\",\"safe_mode\":false}",
+    "error": null
+  },
+  "models": {
+    "ok": false,
+    "status_code": 404,
+    "body_excerpt": "{\"detail\":\"Not Found\"}",
+    "error": "HTTPError"
+  },
+  "chat_completions": {
+    "ok": false,
+    "status_code": 404,
+    "body_excerpt": "{\"detail\":\"Not Found\"}",
+    "error": "HTTPError"
+  },
+  "runtime_already_loaded_adapter": false
+}

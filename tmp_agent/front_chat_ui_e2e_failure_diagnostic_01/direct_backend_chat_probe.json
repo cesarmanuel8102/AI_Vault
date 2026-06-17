@@ -1,0 +1,68 @@
+{
+  "probes": [
+    {
+      "base": "http://127.0.0.1:8090",
+      "route": "/chat",
+      "description": "Brain native chat",
+      "payload_used": {
+        "message": "ping diagnostic only",
+        "session_id": "diagnostic_e2e_failure",
+        "model_priority": "chat"
+      },
+      "url": "http://127.0.0.1:8090/chat",
+      "method": "POST",
+      "ok": false,
+      "status_code": null,
+      "response_ms": 12017.9,
+      "error": "TimeoutError",
+      "message": "timed out",
+      "excerpt": "",
+      "chat_compatible": false,
+      "retrieval_evidence_appears": false,
+      "raw_chain_of_thought_leaked": false
+    },
+    {
+      "base": "http://127.0.0.1:8090",
+      "route": "/chat/introspectivo",
+      "description": "dev introspective chat",
+      "payload_used": {
+        "message": "ping diagnostic only",
+        "session_id": "diagnostic_e2e_failure",
+        "model_priority": "chat"
+      },
+      "url": "http://127.0.0.1:8090/chat/introspectivo",
+      "method": "POST",
+      "ok": false,
+      "status_code": 403,
+      "response_ms": 38.8,
+      "content_type": "application/json",
+      "error": "HTTPError",
+      "excerpt": "{\"detail\":\"strict operator token not configured\"}",
+      "chat_compatible": false,
+      "retrieval_evidence_appears": false,
+      "raw_chain_of_thought_leaked": false
+    },
+    {
+      "base": "http://127.0.0.1:8090",
+      "route": "/agent",
+      "description": "agent endpoint",
+      "payload_used": {
+        "task": "ping diagnostic only",
+        "session_id": "diagnostic_e2e_failure",
+        "model_priority": "ollama",
+        "max_steps": 1
+      },
+      "url": "http://127.0.0.1:8090/agent",
+      "method": "POST",
+      "ok": false,
+      "status_code": 403,
+      "response_ms": 2.9,
+      "content_type": "application/json",
+      "error": "HTTPError",
+      "excerpt": "{\"detail\":\"strict operator token not configured\"}",
+      "chat_compatible": false,
+      "retrieval_evidence_appears": false,
+      "raw_chain_of_thought_leaked": false
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "status": "FRONT_CHAT_ROUTE_RETRIEVAL_INJECTION_PATCH_01_COMPLETE",
+  "branch": "codex/own-capital-sustainable-return",
+  "repo_path": "C:\\AI_VAULT_CANONICAL",
+  "head_before": "28aa843",
+  "functional_commit": "c77926d",
+  "ledger_commit": "2a462b2",
+  "head_after": "2a462b2",
+  "remote_after": "2a462b2",
+  "local_equals_remote": true,
+  "staged_empty": true,
+  "unstaged_tracked_empty": true,
+  "roadmap_valid": true,
+  "files_modified": [
+    "tmp_agent/brain_v9/core/session.py"
+  ],
+  "session_py_modified": true,
+  "llm_py_modified": false,
+  "main_py_modified": false,
+  "opt_in_only": true,
+  "retrieval_confirmed": false,
+  "marker_pass_count": 1,
+  "live_chat_probe_count": 3,
+  "timeout_detected": false,
+  "memory_mutated": false,
+  "faiss_mutated": false,
+  "memory_line_count": 1710,
+  "faiss_ids_count": 1611,
+  "protected_files_touched_only_authorized_scope": true,
+  "tests_passed": true,
+  "next_recommended_front": "FRONT-CHAT-RETRIEVAL-INJECTION-REPAIR-01",
+  "do_not_execute_next_without_user_approval": true
+}

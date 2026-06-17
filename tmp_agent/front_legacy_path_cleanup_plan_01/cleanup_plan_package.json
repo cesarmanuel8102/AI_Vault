@@ -1,0 +1,48 @@
+{
+  "front_id": "FRONT-LEGACY-PATH-CLEANUP-PLAN-01",
+  "objective": "Plan safe cleanup of legacy path C:\\AI_VAULT after runtime alignment to canonical C:\\AI_VAULT_CANONICAL",
+  "canonical_path": "C:\\AI_VAULT_CANONICAL",
+  "legacy_path": "C:\\AI_VAULT",
+  "why_cleanup_needed": "Legacy path was accidentally mutated during a previous FAISS promotion front (ntotal changed from 1611 to 1616). Legacy semantic_memory.jsonl has 1711 lines vs 1715 in canonical, and legacy FAISS index SHA differs. Legacy is deprecated but contains data that should not be lost without backup.",
+  "what_not_to_do": [
+    "Do NOT delete C:\\AI_VAULT now",
+    "Do NOT move files between legacy and canonical",
+    "Do NOT copy files to overwrite canonical",
+    "Do NOT create symlinks yet",
+    "Do NOT reindex FAISS",
+    "Do NOT modify memory/semantic/* in canonical",
+    "Do NOT modify memory/semantic/* in legacy"
+  ],
+  "proposed_future_front": "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01",
+  "preconditions_for_future_execution": [
+    "Runtime must not be using legacy path",
+    "Canonical FAISS must be verified as primary",
+    "Backup manifest of legacy must be created",
+    "User must provide exact approval phrase"
+  ],
+  "backup_plan": {
+    "step_1": "Create full backup manifest of C:\\AI_VAULT (SHA + counts)",
+    "step_2": "Store manifest in tmp_agent evidence dir",
+    "step_3": "Verify backup manifest completeness"
+  },
+  "rollback_plan": {
+    "description": "If quarantine rename breaks anything, rename back to C:\\AI_VAULT",
+    "condition": "Only if canonical runtime fails after quarantine",
+    "risk": "Low — rename is reversible"
+  },
+  "execution_steps": [
+    "Verify runtime not running or not using legacy",
+    "Create full backup manifest of legacy",
+    "Rename C:\\AI_VAULT to C:\\AI_VAULT_LEGACY_QUARANTINE_YYYYMMDD_HHMMSS",
+    "Create README marker in quarantine dir explaining deprecated status",
+    "Verify canonical runtime still works",
+    "Update any hardcoded references if found"
+  ],
+  "approval_phrase_required": "APPROVE_LEGACY_PATH_CLEANUP_EXECUTE_AI_VAULT",
+  "denial_phrase": "DENY_LEGACY_PATH_CLEANUP_EXECUTE_AI_VAULT",
+  "plan_only": true,
+  "deletion_authorized": false,
+  "move_authorized": false,
+  "copy_authorized": false,
+  "symlink_authorized": false
+}

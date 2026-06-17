@@ -1,0 +1,107 @@
+{
+  "created_at_utc": "2026-06-12T07:44:53.055777Z",
+  "completed": true,
+  "results": [
+    {
+      "assessment_id": "limitations",
+      "prompt": "Top 3 limitations right now for serving Cesar. Short bullets.",
+      "status_code": 200,
+      "latency_ms": 12048.53,
+      "error": null,
+      "response": "El modelo tardó demasiado en responder. El servidor sigue operativo; intenta de nuevo con una instrucción más concreta.",
+      "response_excerpt": "El modelo tardó demasiado en responder. El servidor sigue operativo; intenta de nuevo con una instrucción más concreta.",
+      "brain": {
+        "intent": "CONVERSATION",
+        "route": "llm",
+        "governance_applied": true,
+        "no_cot_leak": true,
+        "canonical_path": "C:\\AI_VAULT_CANONICAL",
+        "latency_ms": 12046.0,
+        "errors": [],
+        "adapter": "openai_compat",
+        "adapter_latency_ms": 12046.0
+      }
+    },
+    {
+      "assessment_id": "first_improvement",
+      "prompt": "What should Codex improve first to make Brain more useful? Short bullets.",
+      "status_code": 200,
+      "latency_ms": 11369.67,
+      "error": null,
+      "response": "- Make routing reliable and observable: clearly separate fast path, LLM, tools, FAISS, agent, and governance decisions.\n- Add hard gates for memory mutation, trading actions, and [REDACTED_COT_MARKER] exposure.\n- Improve grounded verification: answers should cite canonical files, live tool output, or explicitly say when no real data was checked.",
+      "response_excerpt": "- Make routing reliable and observable: clearly separate fast path, LLM, tools, FAISS, agent, and governance decisions.\n- Add hard gates for memory mutation, trading actions, and [REDACTED_COT_MARKER] exposure.\n- Improve grounded verification: answers should cite canonical files, live tool output, or explicitly say when no real data was checked.",
+      "brain": {
+        "intent": "QUERY",
+        "route": "llm",
+        "governance_applied": true,
+        "no_cot_leak": true,
+        "canonical_path": "C:\\AI_VAULT_CANONICAL",
+        "latency_ms": 11344.0,
+        "errors": [],
+        "adapter": "openai_compat",
+        "adapter_latency_ms": 11344.0
+      }
+    },
+    {
+      "assessment_id": "not_automated",
+      "prompt": "What should not be automated yet? Short bullets.",
+      "status_code": 200,
+      "latency_ms": 12072.35,
+      "error": null,
+      "response": "El modelo tardó demasiado en responder. El servidor sigue operativo; intenta de nuevo con una instrucción más concreta.",
+      "response_excerpt": "El modelo tardó demasiado en responder. El servidor sigue operativo; intenta de nuevo con una instrucción más concreta.",
+      "brain": {
+        "intent": "QUERY",
+        "route": "llm",
+        "governance_applied": true,
+        "no_cot_leak": true,
+        "canonical_path": "C:\\AI_VAULT_CANONICAL",
+        "latency_ms": 12047.0,
+        "errors": [],
+        "adapter": "openai_compat",
+        "adapter_latency_ms": 12047.0
+      }
+    },
+    {
+      "assessment_id": "cycle_reports",
+      "prompt": "What reports should Brain generate after each autonomous cycle? Short bullets.",
+      "status_code": 200,
+      "latency_ms": 12050.98,
+      "error": null,
+      "response": "El modelo tardó demasiado en responder. El servidor sigue operativo; intenta de nuevo con una instrucción más concreta.",
+      "response_excerpt": "El modelo tardó demasiado en responder. El servidor sigue operativo; intenta de nuevo con una instrucción más concreta.",
+      "brain": {
+        "intent": "QUERY",
+        "route": "llm",
+        "governance_applied": true,
+        "no_cot_leak": true,
+        "canonical_path": "C:\\AI_VAULT_CANONICAL",
+        "latency_ms": 12047.0,
+        "errors": [],
+        "adapter": "openai_compat",
+        "adapter_latency_ms": 12047.0
+      }
+    },
+    {
+      "assessment_id": "blocking_gates",
+      "prompt": "What gates should block Brain proposed changes? Short bullets.",
+      "status_code": 200,
+      "latency_ms": 12019.25,
+      "error": null,
+      "response": "El modelo tardó demasiado en responder. El servidor sigue operativo; intenta de nuevo con una instrucción más concreta.",
+      "response_excerpt": "El modelo tardó demasiado en responder. El servidor sigue operativo; intenta de nuevo con una instrucción más concreta.",
+      "brain": {
+        "intent": "QUERY",
+        "route": "llm",
+        "governance_applied": true,
+        "no_cot_leak": true,
+        "canonical_path": "C:\\AI_VAULT_CANONICAL",
+        "latency_ms": 12000.0,
+        "errors": [],
+        "adapter": "openai_compat",
+        "adapter_latency_ms": 12000.0
+      }
+    }
+  ],
+  "timeout_fallback_count": 4
+}

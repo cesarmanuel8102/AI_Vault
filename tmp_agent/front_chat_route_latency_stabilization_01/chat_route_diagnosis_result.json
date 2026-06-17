@@ -1,0 +1,35 @@
+{
+  "front_id": "FRONT-CHAT-ROUTE-LATENCY-STABILIZATION-01",
+  "timestamp": "2026-06-10T07:38:42Z",
+  "network_called": true,
+  "connector_called": false,
+  "trading_executed": false,
+  "b8_touched": false,
+  "memory_mutated": false,
+  "faiss_mutated": false,
+  "service_running": true,
+  "chat_route_found": true,
+  "chat_route_ok": true,
+  "timeout_detected": false,
+  "protected_runtime_change_required": false,
+  "endpoints": [
+    {
+      "url": "http://localhost:8090/chat",
+      "timeout_configured": 15,
+      "elapsed_ms": 2178,
+      "status_code": 200,
+      "response_snippet": "{\"response\":\"[DEV]\\nroute=tool01_router\\ntool01_router_used=true\\ntool01_real=false\\npermission_required=true\\npermission_id=tool01_perm_default_5\\ntool_name=runtime.health_check\\nrisk_level=low\\nscope=C:\\\\AI_VAULT\\noptions=['allow_once', 'allow_session', 'deny']\\n\\nPara ejecutar 'runtime.health_check' necesito tu permiso.\\n[Allow Once] | [Allow Session] | [Deny]\\n\\n---\\n[DEV] route=tool01_router | intent=COMMAND | model=tool01_router | success=True | steps=1 status=permission_pending\",\"session_",
+      "error": null,
+      "classification": "CHAT_ROUTE_OK"
+    },
+    {
+      "url": "http://127.0.0.1:8090/chat",
+      "timeout_configured": 15,
+      "elapsed_ms": 105,
+      "status_code": 200,
+      "response_snippet": "{\"response\":\"[DEV]\\nroute=tool01_router\\ntool01_router_used=true\\ntool01_real=false\\npermission_required=true\\npermission_id=tool01_perm_default_6\\ntool_name=runtime.health_check\\nrisk_level=low\\nscope=C:\\\\AI_VAULT\\noptions=['allow_once', 'allow_session', 'deny']\\n\\nPara ejecutar 'runtime.health_check' necesito tu permiso.\\n[Allow Once] | [Allow Session] | [Deny]\\n\\n---\\n[DEV] route=tool01_router | intent=COMMAND | model=tool01_router | success=True | steps=1 status=permission_pending\",\"session_",
+      "error": null,
+      "classification": "CHAT_ROUTE_OK"
+    }
+  ]
+}

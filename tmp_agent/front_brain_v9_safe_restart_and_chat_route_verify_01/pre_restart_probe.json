@@ -1,0 +1,33 @@
+{
+  "health": {
+    "url": "http://127.0.0.1:8090/health",
+    "method": "GET",
+    "ok": true,
+    "status_code": 200,
+    "response_ms": 91.2,
+    "content_type": [
+      "application/json"
+    ],
+    "excerpt": "{\"status\":\"healthy\",\"sessions\":6,\"version\":\"9.0.0\",\"safe_mode\":true}\r\n",
+    "error": null,
+    "message": null
+  },
+  "chat": {
+    "url": "http://127.0.0.1:8090/chat",
+    "method": "POST",
+    "ok": false,
+    "status_code": null,
+    "response_ms": 8033.3,
+    "content_type": null,
+    "excerpt": null,
+    "error": "TaskCanceledException",
+    "message": "The request was canceled due to the configured HttpClient.Timeout of 8 seconds elapsing."
+  },
+  "port_owner": {
+    "port": 8090,
+    "pid": 244420,
+    "name": "python.exe",
+    "executable_path": "C:\\Users\\cesar\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+    "command_line": "\"C:\\Users\\cesar\\AppData\\Local\\Programs\\Python\\Python311\\python.exe\" tmp_agent/brain_v9/start_safe_server.py "
+  }
+}

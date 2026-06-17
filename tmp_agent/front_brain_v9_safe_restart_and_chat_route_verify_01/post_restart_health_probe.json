@@ -1,0 +1,18 @@
+{
+  "health_ok": true,
+  "attempts": [
+    {
+      "url": "http://127.0.0.1:8090/health",
+      "method": "GET",
+      "ok": true,
+      "status_code": 200,
+      "response_ms": 4685.4,
+      "content_type": [
+        "application/json"
+      ],
+      "excerpt": "{\"status\":\"healthy\",\"sessions\":1,\"version\":\"9.0.0\",\"safe_mode\":false}\r\n",
+      "error": null,
+      "message": null
+    }
+  ]
+}

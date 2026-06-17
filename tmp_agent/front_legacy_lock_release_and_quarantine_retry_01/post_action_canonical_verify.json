@@ -1,0 +1,19 @@
+{
+  "schema_version": "front_legacy_lock_release_and_quarantine_retry_01_post_action_verify_v1",
+  "generated_at_utc": "2026-06-12T04:00:57.576219+00:00",
+  "canonical_exists": true,
+  "semantic_memory_lines": 1715,
+  "faiss_ids": 1616,
+  "faiss_ntotal": 1616,
+  "semantic_sha_unchanged": true,
+  "faiss_index_sha_unchanged": true,
+  "faiss_ids_sha_unchanged": true,
+  "runtime_base_path": "C:\\AI_VAULT_CANONICAL",
+  "semantic_memory_faiss_paths_still_canonical": true,
+  "rename_success": false,
+  "legacy_path_exists": true,
+  "quarantine_target_exists": false,
+  "canonical_memory_mutated": false,
+  "canonical_faiss_mutated": false,
+  "passed": true
+}

@@ -1,0 +1,11 @@
+{
+  "port_owner": {
+    "ProcessId": 193980,
+    "Name": "python.exe",
+    "ExecutablePath": null,
+    "CommandLine": null
+  },
+  "safe_to_restart": false,
+  "restart_performed": false,
+  "status": "RUNTIME_RESTART_SKIPPED_UNSAFE_PORT_OWNER"
+}

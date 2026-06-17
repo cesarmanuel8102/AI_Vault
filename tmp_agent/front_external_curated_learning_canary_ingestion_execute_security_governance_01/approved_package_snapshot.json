@@ -1,0 +1,380 @@
+{
+  "prep_front_id": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01",
+  "batch_id": "SEC_GOV_CANARY_001",
+  "approval_package": {
+    "domain": "security_governance_sandboxing",
+    "batch_id": "SEC_GOV_CANARY_001",
+    "source_ids": [
+      "nist_csf",
+      "nist_ai_rmf",
+      "opa_docs",
+      "mitre_atlas",
+      "gvisor_docs"
+    ],
+    "record_count": 5,
+    "faiss_eligible_count": 0,
+    "backup_required": true,
+    "backup_path_planned": "tmp_agent/front_external_curated_learning_canary_ingestion_prep_security_governance_01/backups/SEC_GOV_CANARY_001/",
+    "rollback_path_planned": "tmp_agent/front_external_curated_learning_canary_ingestion_prep_security_governance_01/backups/SEC_GOV_CANARY_001/rollback_manifest.json",
+    "expected_memory_line_count_before": 1710,
+    "expected_memory_line_count_after_if_approved": 1715,
+    "expected_faiss_ids_count_before": 1611,
+    "expected_faiss_ids_count_after_if_approved": 1611,
+    "memory_mutation_authorized_now": false,
+    "faiss_mutation_authorized_now": false,
+    "requires_user_approval_before_mutation": true,
+    "approval_phrase_required": "APPROVE_SECURITY_GOVERNANCE_CANARY_INGESTION_BATCH_SEC_GOV_CANARY_001",
+    "denial_phrase": "DENY_SECURITY_GOVERNANCE_CANARY_INGESTION_BATCH_SEC_GOV_CANARY_001",
+    "first_canary_scope": {
+      "recommended_first_domain": "security_governance_sandboxing",
+      "allowed_record_count_min": 3,
+      "allowed_record_count_max": 5,
+      "allowed_source_status": [
+        "accept"
+      ],
+      "forbidden_source_status": [
+        "hold",
+        "reject",
+        "candidate"
+      ],
+      "forbidden_domains_first_canary": [
+        "financial_motor_trading_intelligence",
+        "autonomous_coding_patch_generation"
+      ],
+      "allowed_content_type": {
+        "metadata_summary_only": true,
+        "non_executable_governance_knowledge": true,
+        "no_full_paper_text": true,
+        "no_full_readme": true,
+        "no_external_copyrighted_long_content": true
+      },
+      "required_fields": [
+        "memory_id",
+        "source_id",
+        "source_title",
+        "source_group",
+        "source_url",
+        "source_license_or_status",
+        "domain",
+        "taxonomy_tags",
+        "capability_target",
+        "source_provenance",
+        "safety_score_estimate",
+        "acceptance_status",
+        "ingestion_batch_id",
+        "created_at_utc",
+        "content_summary",
+        "retrieval_phrases",
+        "exclusion_notes",
+        "risk_flags"
+      ],
+      "forbidden_fields": [
+        "raw_full_text",
+        "copyrighted_full_content",
+        "credentials",
+        "broker_api_data",
+        "trading_signal",
+        "executable_code",
+        "chain_of_thought",
+        "private_user_data"
+      ]
+    },
+    "batch_limits": {
+      "min_records": 3,
+      "max_records": 5,
+      "one_domain_only": true,
+      "allowed_domain": "security_governance_sandboxing",
+      "requires_prior_approval": true,
+      "requires_backup": true,
+      "allows_faiss": false
+    },
+    "proposed_records_preview": [
+      {
+        "memory_id": "SEC_GOV_CANARY_001_nist_csf_001",
+        "source_id": "nist_csf",
+        "source_title": "NIST Cybersecurity Framework (CSF 2.0)",
+        "domain": "security_governance_sandboxing",
+        "ingestion_status": "proposed_only",
+        "faiss_eligible": false
+      },
+      {
+        "memory_id": "SEC_GOV_CANARY_001_nist_ai_rmf_002",
+        "source_id": "nist_ai_rmf",
+        "source_title": "NIST AI Risk Management Framework (AI RMF 1.0)",
+        "domain": "security_governance_sandboxing",
+        "ingestion_status": "proposed_only",
+        "faiss_eligible": false
+      },
+      {
+        "memory_id": "SEC_GOV_CANARY_001_opa_docs_003",
+        "source_id": "opa_docs",
+        "source_title": "Open Policy Agent (OPA) -- Policy-Based Control for Cloud-Native Environments",
+        "domain": "security_governance_sandboxing",
+        "ingestion_status": "proposed_only",
+        "faiss_eligible": false
+      },
+      {
+        "memory_id": "SEC_GOV_CANARY_001_mitre_atlas_004",
+        "source_id": "mitre_atlas",
+        "source_title": "MITRE ATLAS -- Adversarial Threat Landscape for Artificial-Intelligence Systems",
+        "domain": "security_governance_sandboxing",
+        "ingestion_status": "proposed_only",
+        "faiss_eligible": false
+      },
+      {
+        "memory_id": "SEC_GOV_CANARY_001_gvisor_docs_005",
+        "source_id": "gvisor_docs",
+        "source_title": "gVisor -- Application Kernel for Sandboxing",
+        "domain": "security_governance_sandboxing",
+        "ingestion_status": "proposed_only",
+        "faiss_eligible": false
+      }
+    ]
+  },
+  "proposed_records": [
+    {
+      "memory_id": "SEC_GOV_CANARY_001_nist_csf_001",
+      "schema_version": "controlled_ingestion_memory_record_v1",
+      "source_id": "nist_csf",
+      "source_title": "NIST Cybersecurity Framework (CSF 2.0)",
+      "source_group": "standard",
+      "source_url": "https://www.nist.gov/cyberframework",
+      "source_license_or_status": "Public Domain (U.S. Government)",
+      "domain": "security_governance_sandboxing",
+      "taxonomy_tags": [
+        "least_privilege",
+        "role_based_access_control",
+        "secrets_management",
+        "audit_logging",
+        "incident_response"
+      ],
+      "capability_target": "define_permission_model",
+      "source_provenance": {
+        "authors_or_org": "National Institute of Standards and Technology (NIST)",
+        "cross_check_targets": [
+          "nist_ai_rmf",
+          "owasp_llm_top10"
+        ],
+        "notes": "Updated to CSF 2.0 in 2024. Added governance function. Vendor-neutral."
+      },
+      "safety_score_estimate": 66,
+      "acceptance_status": "accept",
+      "ingestion_status": "proposed_only",
+      "ingestion_batch_id": "SEC_GOV_CANARY_001",
+      "created_at_utc": "2026-06-11T08:12:18.315693+00:00",
+      "content_summary": "[standard] NIST Cybersecurity Framework (CSF 2.0). Relevant taxonomy: least_privilege, role_based_access_control, secrets_management, audit_logging, incident_response. Brain capability target: define_permission_model. Notes: Updated to CSF 2.0 in 2024. Added governance function. Vendor-neutral.",
+      "retrieval_phrases": [
+        "nist_csf security governance",
+        "define_permission_model governance controls",
+        "least privilege governance",
+        "role based access control governance",
+        "secrets management governance",
+        "security governance sandboxing standard",
+        "nist_csf source reference"
+      ],
+      "evidence_type": "metadata_summary_only",
+      "risk_flags": [],
+      "exclusion_notes": "",
+      "faiss_eligible": false,
+      "faiss_embedding_text": ""
+    },
+    {
+      "memory_id": "SEC_GOV_CANARY_001_nist_ai_rmf_002",
+      "schema_version": "controlled_ingestion_memory_record_v1",
+      "source_id": "nist_ai_rmf",
+      "source_title": "NIST AI Risk Management Framework (AI RMF 1.0)",
+      "source_group": "standard",
+      "source_url": "https://www.nist.gov/itl/ai-risk-management-framework",
+      "source_license_or_status": "Public Domain (U.S. Government)",
+      "domain": "security_governance_sandboxing",
+      "taxonomy_tags": [
+        "safe_autonomy_levels",
+        "human_approval_gates",
+        "audit_logging",
+        "privacy_governance",
+        "financial_action_governance"
+      ],
+      "capability_target": "define_safe_autonomy",
+      "source_provenance": {
+        "authors_or_org": "National Institute of Standards and Technology (NIST)",
+        "cross_check_targets": [
+          "nist_csf",
+          "microsoft_responsible_ai"
+        ],
+        "notes": "Authoritative U.S. government standard. Widely adopted. No vendor bias."
+      },
+      "safety_score_estimate": 65,
+      "acceptance_status": "accept",
+      "ingestion_status": "proposed_only",
+      "ingestion_batch_id": "SEC_GOV_CANARY_001",
+      "created_at_utc": "2026-06-11T08:12:18.315693+00:00",
+      "content_summary": "[standard] NIST AI Risk Management Framework (AI RMF 1.0). Relevant taxonomy: safe_autonomy_levels, human_approval_gates, audit_logging, privacy_governance, financial_action_governance. Brain capability target: define_safe_autonomy. Notes: Authoritative U.S. government standard. Widely adopted. No vendor bias.",
+      "retrieval_phrases": [
+        "nist_ai_rmf security governance",
+        "define_safe_autonomy governance controls",
+        "safe autonomy levels governance",
+        "human approval gates governance",
+        "audit logging governance",
+        "security governance sandboxing standard",
+        "nist_ai_rmf source reference"
+      ],
+      "evidence_type": "metadata_summary_only",
+      "risk_flags": [],
+      "exclusion_notes": "",
+      "faiss_eligible": false,
+      "faiss_embedding_text": ""
+    },
+    {
+      "memory_id": "SEC_GOV_CANARY_001_opa_docs_003",
+      "schema_version": "controlled_ingestion_memory_record_v1",
+      "source_id": "opa_docs",
+      "source_title": "Open Policy Agent (OPA) -- Policy-Based Control for Cloud-Native Environments",
+      "source_group": "framework",
+      "source_url": "https://www.openpolicyagent.org/",
+      "source_license_or_status": "Apache-2.0",
+      "domain": "security_governance_sandboxing",
+      "taxonomy_tags": [
+        "policy_as_code",
+        "execution_gates",
+        "role_based_access_control"
+      ],
+      "capability_target": "evaluate_policy_compliance",
+      "source_provenance": {
+        "authors_or_org": "Open Policy Agent / CNCF",
+        "cross_check_targets": [
+          "nist_csf",
+          "owasp_llm_top10"
+        ],
+        "notes": "CNCF project. Very active. Good for policy-as-code implementation in Brain's execution gates."
+      },
+      "safety_score_estimate": 64,
+      "acceptance_status": "accept",
+      "ingestion_status": "proposed_only",
+      "ingestion_batch_id": "SEC_GOV_CANARY_001",
+      "created_at_utc": "2026-06-11T08:12:18.315693+00:00",
+      "content_summary": "[framework] Open Policy Agent (OPA) -- Policy-Based Control for Cloud-Native Environments. Relevant taxonomy: policy_as_code, execution_gates, role_based_access_control. Brain capability target: evaluate_policy_compliance. Notes: CNCF project. Very active. Good for policy-as-code implementation in Brain's execution gates.",
+      "retrieval_phrases": [
+        "opa_docs security governance",
+        "evaluate_policy_compliance governance controls",
+        "policy as code governance",
+        "execution gates governance",
+        "role based access control governance",
+        "security governance sandboxing framework",
+        "opa_docs source reference"
+      ],
+      "evidence_type": "metadata_summary_only",
+      "risk_flags": [],
+      "exclusion_notes": "",
+      "faiss_eligible": false,
+      "faiss_embedding_text": ""
+    },
+    {
+      "memory_id": "SEC_GOV_CANARY_001_mitre_atlas_004",
+      "schema_version": "controlled_ingestion_memory_record_v1",
+      "source_id": "mitre_atlas",
+      "source_title": "MITRE ATLAS -- Adversarial Threat Landscape for Artificial-Intelligence Systems",
+      "source_group": "standard",
+      "source_url": "https://atlas.mitre.org/",
+      "source_license_or_status": "Public Domain (MITRE)",
+      "domain": "security_governance_sandboxing",
+      "taxonomy_tags": [
+        "prompt_injection_defense",
+        "tool_use_governance",
+        "incident_response",
+        "supply_chain_security"
+      ],
+      "capability_target": "detect_prompt_injection",
+      "source_provenance": {
+        "authors_or_org": "MITRE Corporation",
+        "cross_check_targets": [
+          "owasp_llm_top10",
+          "nist_ai_rmf"
+        ],
+        "notes": "Defensive-focused threat intelligence. No offensive exploitation emphasis."
+      },
+      "safety_score_estimate": 63,
+      "acceptance_status": "accept",
+      "ingestion_status": "proposed_only",
+      "ingestion_batch_id": "SEC_GOV_CANARY_001",
+      "created_at_utc": "2026-06-11T08:12:18.315693+00:00",
+      "content_summary": "[standard] MITRE ATLAS -- Adversarial Threat Landscape for Artificial-Intelligence Systems. Relevant taxonomy: prompt_injection_defense, tool_use_governance, incident_response, supply_chain_security. Brain capability target: detect_prompt_injection. Notes: Defensive-focused threat intelligence. No offensive exploitation emphasis.",
+      "retrieval_phrases": [
+        "mitre_atlas security governance",
+        "detect_prompt_injection governance controls",
+        "prompt injection defense governance",
+        "tool use governance governance",
+        "incident response governance",
+        "security governance sandboxing standard",
+        "mitre_atlas source reference"
+      ],
+      "evidence_type": "metadata_summary_only",
+      "risk_flags": [],
+      "exclusion_notes": "",
+      "faiss_eligible": false,
+      "faiss_embedding_text": ""
+    },
+    {
+      "memory_id": "SEC_GOV_CANARY_001_gvisor_docs_005",
+      "schema_version": "controlled_ingestion_memory_record_v1",
+      "source_id": "gvisor_docs",
+      "source_title": "gVisor -- Application Kernel for Sandboxing",
+      "source_group": "framework",
+      "source_url": "https://gvisor.dev/",
+      "source_license_or_status": "Apache-2.0",
+      "domain": "security_governance_sandboxing",
+      "taxonomy_tags": [
+        "sandboxed_code_execution",
+        "filesystem_boundaries",
+        "network_egress_control"
+      ],
+      "capability_target": "design_filesystem_sandbox",
+      "source_provenance": {
+        "authors_or_org": "Google",
+        "cross_check_targets": [
+          "firecracker_docs",
+          "docker_security_docs"
+        ],
+        "notes": "Open-source. Good for understanding sandboxing architecture. Used in Google Cloud Run."
+      },
+      "safety_score_estimate": 63,
+      "acceptance_status": "accept",
+      "ingestion_status": "proposed_only",
+      "ingestion_batch_id": "SEC_GOV_CANARY_001",
+      "created_at_utc": "2026-06-11T08:12:18.315693+00:00",
+      "content_summary": "[framework] gVisor -- Application Kernel for Sandboxing. Relevant taxonomy: sandboxed_code_execution, filesystem_boundaries, network_egress_control. Brain capability target: design_filesystem_sandbox. Notes: Open-source. Good for understanding sandboxing architecture. Used in Google Cloud Run.",
+      "retrieval_phrases": [
+        "gvisor_docs security governance",
+        "design_filesystem_sandbox governance controls",
+        "sandboxed code execution governance",
+        "filesystem boundaries governance",
+        "network egress control governance",
+        "security governance sandboxing framework",
+        "gvisor_docs source reference"
+      ],
+      "evidence_type": "metadata_summary_only",
+      "risk_flags": [],
+      "exclusion_notes": "",
+      "faiss_eligible": false,
+      "faiss_embedding_text": ""
+    }
+  ],
+  "validation": {
+    "package_valid": true,
+    "record_count": 5,
+    "selected_count": 5,
+    "validation_errors": [],
+    "batch_limits": {
+      "min_records": 3,
+      "max_records": 5,
+      "one_domain_only": true,
+      "allowed_domain": "security_governance_sandboxing",
+      "requires_prior_approval": true,
+      "requires_backup": true,
+      "allows_faiss": false
+    },
+    "memory_mutation_authorized": false,
+    "faiss_mutation_authorized": false
+  },
+  "user_approval_phrase": "APPROVE_SECURITY_GOVERNANCE_CANARY_INGESTION_BATCH_SEC_GOV_CANARY_001",
+  "approved_at_utc": "2026-06-11T08:12:18.315693+00:00"
+}

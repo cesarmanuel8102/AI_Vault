@@ -1,0 +1,180 @@
+diff --git a/tmp_agent/brain_v9/api/openai_compat.py b/tmp_agent/brain_v9/api/openai_compat.py
+index 6603d0b..b1cd3a9 100644
+--- a/tmp_agent/brain_v9/api/openai_compat.py
++++ b/tmp_agent/brain_v9/api/openai_compat.py
+@@ -38,6 +38,8 @@ class OpenAIChatCompletionRequest(BaseModel):
+     temperature: Optional[float] = None
+     max_tokens: Optional[int] = None
+     user: Optional[str] = None
++    dry_run: bool = False
++    metadata: Optional[Dict[str, Any]] = None
+ 
+     class Config:
+         extra = "allow"
+@@ -91,6 +93,16 @@ def _safe_brain_metadata(result: Dict[str, Any]) -> Dict[str, Any]:
+     return {k: v for k, v in metadata.items() if k not in FORBIDDEN_DIAGNOSTIC_KEYS}
+ 
+ 
++def _request_dry_run(payload: OpenAIChatCompletionRequest) -> bool:
++    metadata = payload.metadata or {}
++    return bool(
++        payload.dry_run
++        or metadata.get("dry_run")
++        or metadata.get("read_only")
++        or metadata.get("evaluation")
++    )
++
++
+ @router.get("/models")
+ async def list_models() -> Dict[str, Any]:
+     return {
+@@ -113,15 +125,20 @@ async def chat_completions(payload: OpenAIChatCompletionRequest) -> Dict[str, An
+         model_id = payload.model
+ 
+     message = _latest_user_message(payload.messages)
++    dry_run = _request_dry_run(payload)
+     started = time.monotonic()
+     try:
+         result = await handle_user_message(
+             message,
+             room=payload.user or "openai_compat",
++            dry_run=dry_run,
+             context={
+                 "model_priority": "chat",
+                 "source": "openai_compat",
+                 "requested_model": payload.model,
++                "dry_run": dry_run,
++                "read_only": dry_run,
++                "evaluation": dry_run,
+             },
+         )
+     except HTTPException:
+@@ -151,5 +168,9 @@ async def chat_completions(payload: OpenAIChatCompletionRequest) -> Dict[str, An
+             **_safe_brain_metadata(result),
+             "adapter": "openai_compat",
+             "adapter_latency_ms": round((time.monotonic() - started) * 1000, 3),
++            "dry_run": dry_run,
++            "read_only": dry_run,
++            "fallback_used": bool(result.get("fallback_used") or result.get("llm_fallback_used")),
++            "fallback_reason": result.get("fallback_reason"),
+         },
+     }
+diff --git a/tmp_agent/brain_v9/core/session.py b/tmp_agent/brain_v9/core/session.py
+index e8449f0..815aa52 100644
+--- a/tmp_agent/brain_v9/core/session.py
++++ b/tmp_agent/brain_v9/core/session.py
+@@ -2489,7 +2489,7 @@ class BrainSession:
+         if governed_direct:
+             return self._system_reply(governed_direct, success=True)
+ 
+-        llm_timeout_s = float(os.getenv("BRAIN_CHAT_LLM_TIMEOUT", "30"))
++        llm_timeout_s = float(os.getenv("BRAIN_CHAT_LLM_TIMEOUT", "90"))
+         try:
+             result = await asyncio.wait_for(
+                 self.llm.query(messages, model_priority=chain, max_time=llm_timeout_s),
+@@ -2498,11 +2498,33 @@ class BrainSession:
+         except asyncio.TimeoutError:
+             governed_fallback = self._governed_self_improvement_eval_fallback(message)
+             if governed_fallback:
+-                return self._system_reply(governed_fallback, success=True)
+-            return self._system_reply(
++                reply = self._system_reply(governed_fallback, success=True)
++                reply.update(
++                    {
++                        "source": "llm_timeout_fallback",
++                        "fallback_used": True,
++                        "fallback_reason": "llm_timeout_governed_eval_fallback",
++                        "timeout_budget_s": llm_timeout_s,
++                        "model_attempted": chain,
++                        "recovery_suggestion": "Inspect local LLM health or rerun with a shorter prompt before treating the answer as model-generated.",
++                    }
++                )
++                return reply
++            reply = self._system_reply(
+                 f"El modelo tardó demasiado en responder tras {int(llm_timeout_s)}s. El servidor sigue operativo; intenta de nuevo con una instrucción más concreta.",
+                 success=False,
+             )
++            reply.update(
++                {
++                    "source": "llm_timeout_fallback",
++                    "fallback_used": True,
++                    "fallback_reason": "llm_timeout",
++                    "timeout_budget_s": llm_timeout_s,
++                    "model_attempted": chain,
++                    "recovery_suggestion": "Inspect local LLM health, reduce prompt scope, or raise BRAIN_CHAT_LLM_TIMEOUT only after provider latency is measured.",
++                }
++            )
++            return reply
+         if not result.get("success") or self._looks_like_canned_failure(result.get("content") or ""):
+             governed_fallback = self._governed_self_improvement_eval_fallback(message)
+             if governed_fallback:
+diff --git a/tmp_agent/brain_v9/evaluation/codex_brain_eval_harness.py b/tmp_agent/brain_v9/evaluation/codex_brain_eval_harness.py
+index bd4792f..8f80eb5 100644
+--- a/tmp_agent/brain_v9/evaluation/codex_brain_eval_harness.py
++++ b/tmp_agent/brain_v9/evaluation/codex_brain_eval_harness.py
+@@ -37,8 +37,14 @@ def extract_brain_metadata(response: Dict[str, Any]) -> Dict[str, Any]:
+     return response.get("brain") or response.get("brain_metadata") or response.get("metadata") or choice_meta or {}
+ 
+ 
+-def call_brain(base_url: str, model: str, prompt: str, timeout: int) -> Dict[str, Any]:
+-    payload = {"model": model, "messages": [{"role": "user", "content": prompt}], "stream": False}
++def call_brain(base_url: str, model: str, prompt: str, timeout: int, dry_run: bool = True) -> Dict[str, Any]:
++    payload = {
++        "model": model,
++        "messages": [{"role": "user", "content": prompt}],
++        "stream": False,
++        "dry_run": dry_run,
++        "metadata": {"dry_run": dry_run, "read_only": dry_run, "evaluation": True},
++    }
+     req = urllib.request.Request(
+         base_url.rstrip("/") + "/chat/completions",
+         data=json.dumps(payload).encode("utf-8"),
+@@ -55,13 +61,14 @@ def call_brain(base_url: str, model: str, prompt: str, timeout: int) -> Dict[str
+                 "latency_ms": round((time.perf_counter() - started) * 1000, 2),
+                 "content": content,
+                 "brain": extract_brain_metadata(parsed),
++                "dry_run": dry_run,
+                 "raw_object": parsed.get("object"),
+                 "error": None,
+             }
+     except urllib.error.HTTPError as exc:
+-        return {"status_code": exc.code, "latency_ms": round((time.perf_counter() - started) * 1000, 2), "content": exc.read().decode("utf-8", errors="replace")[:1000], "brain": {}, "error": "HTTPError"}
++        return {"status_code": exc.code, "latency_ms": round((time.perf_counter() - started) * 1000, 2), "content": exc.read().decode("utf-8", errors="replace")[:1000], "brain": {}, "dry_run": dry_run, "error": "HTTPError"}
+     except Exception as exc:
+-        return {"status_code": None, "latency_ms": round((time.perf_counter() - started) * 1000, 2), "content": "", "brain": {}, "error": repr(exc)}
++        return {"status_code": None, "latency_ms": round((time.perf_counter() - started) * 1000, 2), "content": "", "brain": {}, "dry_run": dry_run, "error": repr(exc)}
+ 
+ 
+ def classify_row(row: Dict[str, Any]) -> Dict[str, Any]:
+@@ -112,17 +119,17 @@ def score_results(results: Iterable[Dict[str, Any]]) -> Dict[str, Any]:
+     }
+ 
+ 
+-def run_harness(base_url: str, model: str, suite_path: str, out_dir: str, timeout: int = 45, max_prompts: Optional[int] = None, compact: bool = False) -> Dict[str, Any]:
++def run_harness(base_url: str, model: str, suite_path: str, out_dir: str, timeout: int = 45, max_prompts: Optional[int] = None, compact: bool = False, dry_run: bool = True) -> Dict[str, Any]:
+     out = Path(out_dir)
+     out.mkdir(parents=True, exist_ok=True)
+     prompts = load_suite(suite_path, max_prompts=max_prompts)
+     results = []
+     for item in prompts:
+-        result = call_brain(base_url, model, item["prompt"], timeout)
++        result = call_brain(base_url, model, item["prompt"], timeout, dry_run=dry_run)
+         result.update({"prompt_id": item["prompt_id"], "category": item["category"], "prompt": item["prompt"]})
+         results.append(classify_row(result))
+     summary = score_results(results)
+-    payload = {"base_url": base_url, "model": model, "suite_path": str(suite_path), "summary": summary, "results": results if not compact else []}
++    payload = {"base_url": base_url, "model": model, "suite_path": str(suite_path), "dry_run": dry_run, "summary": summary, "results": results if not compact else []}
+     (out / "eval_results.json").write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+     (out / "eval_summary.md").write_text("# Codex Brain Eval Summary\n\n" + "\n".join(f"- {k}: `{v}`" for k, v in summary.items()) + "\n", encoding="utf-8")
+     return payload
+@@ -137,8 +144,9 @@ def main() -> None:
+     parser.add_argument("--timeout", type=int, default=45)
+     parser.add_argument("--max-prompts", type=int, default=None)
+     parser.add_argument("--compact", action="store_true")
++    parser.add_argument("--live", action="store_true", help="Disable the default dry_run/read_only evaluation guard.")
+     args = parser.parse_args()
+-    print(json.dumps(run_harness(args.base_url, args.model, args.suite, args.out, args.timeout, args.max_prompts, args.compact)["summary"], indent=2))
++    print(json.dumps(run_harness(args.base_url, args.model, args.suite, args.out, args.timeout, args.max_prompts, args.compact, dry_run=not args.live)["summary"], indent=2))
+ 
+ 
+ if __name__ == "__main__":

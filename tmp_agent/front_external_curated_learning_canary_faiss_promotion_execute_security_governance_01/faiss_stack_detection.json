@@ -1,0 +1,24 @@
+{
+  "front_id": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-EXECUTE-SECURITY-GOVERNANCE-01",
+  "faiss_stack_detection": {
+    "index_path": "memory/semantic/semantic_memory_faiss.index",
+    "ids_path": "memory/semantic/semantic_memory_faiss_ids.json",
+    "embedding_method": "Ollama API localhost:11434/api/embeddings",
+    "embedding_model": "nomic-embed-text",
+    "vector_dimension": 768,
+    "faiss_index_type": "faiss.IndexFlatIP",
+    "faiss_index_ntotal_before": 1611,
+    "ids_count_before": 1611,
+    "promotion_method_selected": "SemanticMemoryFAISS._add_to_index() incremental add",
+    "source_file": "tmp_agent/brain_v9/core/semantic_memory_faiss.py",
+    "key_functions": [
+      "get_semantic_memory_faiss()",
+      "embed_text()",
+      "_ensure_index_loaded()",
+      "_add_to_index()",
+      "_save_index()"
+    ]
+  },
+  "verdict": "PASS",
+  "message": "FAISS stack detected safely. Existing canonical implementation can be reused."
+}

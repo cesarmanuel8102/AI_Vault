@@ -1,0 +1,46 @@
+{
+  "front_id": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-EXECUTE-SECURITY-GOVERNANCE-01",
+  "verdict": "PASS",
+  "checks": {
+    "semantic_memory_lines_1715": true,
+    "semantic_memory_sha_unchanged": true,
+    "faiss_ids_count_1616": true,
+    "faiss_ntotal_1616": true,
+    "all_5_new_ids_present": true,
+    "no_duplicate_faiss_ids": true,
+    "faiss_index_sha_changed": true,
+    "faiss_ids_sha_changed": true,
+    "ntotal_increased_by_5": true
+  },
+  "baseline_vs_current": {
+    "semantic_memory_jsonl": {
+      "baseline_sha": "ce81fbe1f97e257e2b124d7a929f0b2af86ce61e9ff1d8d832fdb5da1f69e64e",
+      "current_sha": "ce81fbe1f97e257e2b124d7a929f0b2af86ce61e9ff1d8d832fdb5da1f69e64e",
+      "unchanged": true
+    },
+    "semantic_memory_faiss_index": {
+      "baseline_sha": "b7b755c753cd4017344fb18d51e2ff3d81766151ac3a3dbf753c1004f7d16484",
+      "current_sha": "adbb6051f79ecbeab0223d631a6013939c00bcc13216fbae437efe83047efa21",
+      "changed": true
+    },
+    "semantic_memory_faiss_ids": {
+      "baseline_sha": "004362363f7a392fd15193392f7fac592e333355e6cc28ba665d3cfb5e9368c1",
+      "current_sha": "43736047db548caf9b26dfa61cdffe40e179c738bc8e8c295891f29cedd69102",
+      "changed": true
+    }
+  },
+  "counts": {
+    "semantic_memory_lines": 1715,
+    "faiss_ids_count": 1616,
+    "faiss_ntotal": 1616,
+    "new_ids_count": 5
+  },
+  "new_ids_present": {
+    "SEC_GOV_CANARY_001_nist_csf_001": true,
+    "SEC_GOV_CANARY_001_nist_ai_rmf_002": true,
+    "SEC_GOV_CANARY_001_opa_docs_003": true,
+    "SEC_GOV_CANARY_001_mitre_atlas_004": true,
+    "SEC_GOV_CANARY_001_gvisor_docs_005": true
+  },
+  "duplicate_ids_detected": false
+}

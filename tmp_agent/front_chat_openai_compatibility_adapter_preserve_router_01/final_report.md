@@ -1,0 +1,41 @@
+# FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01 Final Report
+
+- status: `CHAT_OPENAI_COMPATIBILITY_ADAPTER_PRESERVE_ROUTER_APPLIED_PARTIAL_RUNTIME_LOAD_PENDING`
+- branch: `codex/own-capital-sustainable-return`
+- head_local: `72fb2aa`
+- head_remote: `72fb2aa`
+- functional_commit: `2c11a37`
+- ledger_commit: `72fb2aa`
+- source `/v1/models`: `true`
+- source `/v1/chat/completions`: `true`
+- TestClient models/chat: `true`
+- adapter_calls_handle_user_message: `true`
+- adapter_direct_llm_query: `false`
+- direct_client_created: `true`
+- dialogue_probe_created: `true`
+- dialogue_probe_ran: `false`
+- dialogue_probe_skip_reason: `SERVER_RESTART_REQUIRED_FOR_ADAPTER`
+- dialogue_probe_preliminary_score: `0.0`
+- runtime_restart_performed: `false`
+- runtime_load_pending: `true`
+- runtime_models_passed: `false`
+- runtime_chat_passed: `false`
+- container_to_brain_passed: `false`
+- unexpected_import_side_effect_detected: `true`
+- unexpected_import_side_effect_reverted: `true`
+- unexpected_side_effect_path: `tmp_agent/knowledge/external/github`
+- unexpected_side_effect_evidence: `tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/unexpected_github_knowledge_side_effect.diff`
+- memory_mutated: `false`
+- faiss_mutated: `false`
+- trading_touched: `false`
+- legacy_touched: `false`
+- semantic_memory_lines: `1715`
+- faiss_ids: `1616`
+- faiss_ntotal: `1616`
+- tests_passed: `true`
+- test_count: `34`
+- staged_empty_after: `true`
+- tracked_unstaged_empty_after: `true`
+- local_remote_synced: `true`
+- recommended_side_effect_front: `FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01`
+- recommended_next_action: `FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01`

@@ -325,6 +325,18 @@
   .input-bar button:disabled { background: var(--surface2); cursor: not-allowed; }
   .input-bar button svg { width: 18px; height: 18px; fill: #fff; }
 
+  /* Mode segment buttons */
+  .mode-segment { display: flex; gap: 2px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 3px; flex-shrink: 0; }
+  .mode-btn {
+    background: transparent; border: none; border-radius: 6px;
+    padding: 0 12px; height: 36px; cursor: pointer;
+    font-size: 12px; font-weight: 600; color: var(--text2);
+    transition: all .2s; white-space: nowrap;
+  }
+  .mode-btn:hover { background: rgba(255,255,255,.06); color: var(--text); }
+  .mode-btn.active { background: var(--accent); color: #fff; }
+  .mode-btn.active:hover { background: var(--accent2); }
+
   #send-btn { transform: translateX(-20px); }
 
   /* ── Status / Metrics ── */
@@ -715,15 +727,11 @@
       <option value="claude">🤖 Claude</option>
       <option value="gpt4">✨ GPT-4</option>
     </select>
-    <select id="mode-select" title="Modo de operacion">
-      <option value="read_only">📖 READ</option>
-      <option value="build">🔨 BUILD</option>
-      <option value="auto">⚙ AUTO</option>
-    </select>
-    <button id="agent-toggle" title="Activar modo agente ORAV" onclick="toggleAgentMode()"
-      style="background:var(--surface2);border:1px solid var(--border);color:var(--text2);border-radius:8px;padding:0 12px;height:44px;cursor:pointer;font-size:13px;transition:all .2s;white-space:nowrap;">
-      ⚙ Auto
-    </button>
+    <div id="mode-selector" class="mode-segment" title="Modo de operacion" style="display:flex;gap:2px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px;flex-shrink:0;">
+      <button id="mode-read" class="mode-btn active" onclick="setMode('read_only')" title="Solo lectura (seguro)">📖 READ</button>
+      <button id="mode-build" class="mode-btn" onclick="setMode('build')" title="Permite escritura (requiere aprobacion)">🔨 BUILD</button>
+      <button id="mode-auto" class="mode-btn" onclick="setMode('auto')" title="Decide automaticamente">⚙ AUTO</button>
+    </div>
     <textarea id="input" placeholder="Escribe a Brain..."
               rows="1" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
     <button id="send-btn" onclick="sendMessage()" title="Enviar">
@@ -1295,30 +1303,39 @@ function sendSuggestion(text) {
   sendMessage();
 }
 
-let agentMode = false;
+let currentMode = 'read_only';
 
-function toggleAgentMode() {
-  agentMode = !agentMode;
-  const btn = document.getElementById('agent-toggle');
-  if (agentMode) {
-    btn.style.background = 'var(--accent)';
-    btn.style.color = '#fff';
-    btn.style.borderColor = 'var(--accent)';
-    btn.textContent = '⚙ Agente ON';
-    addMsg('system', 'Modo agente activado — el chat usará herramientas reales para acciones (revisar, analizar, ejecutar).', ts());
-  } else {
-    btn.style.background = 'var(--surface2)';
-    btn.style.color = 'var(--text2)';
-    btn.style.borderColor = 'var(--border)';
-    btn.textContent = '⚙ Auto';
-    addMsg('system', 'Modo automático — el sistema decide si usar LLM o agente según el mensaje.', ts());
-  }
+function setMode(mode) {
+  currentMode = mode;
+  const btnIds = { read_only: 'mode-read', build: 'mode-build', auto: 'mode-auto' };
+  ['read_only', 'build', 'auto'].forEach(m => {
+    const btn = document.getElementById(btnIds[m]);
+    if (btn) btn.classList.toggle('active', m === mode);
+  });
+  const labels = { read_only: '📖 READ (solo lectura)', build: '🔨 BUILD (escritura controlada)', auto: '⚙ AUTO (decide automáticamente)' };
+  addMsg('system', 'Modo: ' + labels[mode], ts());
+}
+
+function detectModeInMessage(msg) {
+  const m = msg.toLowerCase();
+  // Direct keywords
+  if (/\bread_only\b|\bmodo read\b|\bmodo lectura\b/i.test(m)) return 'read_only';
+  if (/\bmodo build\b|\beleva a build\b|\bhazlo en build\b|\bpon en build\b|\bactiva build\b|\bswitch a build\b|\bcambia a build\b|\benable build mode\b/i.test(m)) return 'build';
+  if (/\bmodo auto\b|\bmodo automatico\b|\bhazlo en auto\b|\bpon en auto\b|\bswitch a auto\b|\bcambia a auto\b|\benable auto mode\b/i.test(m)) return 'auto';
+  return null;
 }
 
 async function sendMessage() {
   const inp   = document.getElementById('input');
   const msg   = inp.value.trim();
   if (!msg) return;
+
+  // Parse natural-language mode commands inline
+  const detectedMode = detectModeInMessage(msg);
+  if (detectedMode) {
+    setMode(detectedMode);
+  }
+
   const model = document.getElementById('model-select').value;
 
   inp.value = '';
@@ -1329,11 +1346,10 @@ async function sendMessage() {
   addTyping();
 
   try {
-    // Default to canonical Agent V2. Legacy modes only if explicitly selected.
     const endpoint = '/v2/chat/agent';
     const body = JSON.stringify({
       message: msg,
-      mode: 'read_only',
+      mode: currentMode,
       user_id: 'operator_ui_' + sessionId,
     });
 
@@ -1352,10 +1368,18 @@ async function sendMessage() {
     const modelUsed = pm.model_used || data.model_used || data.model || '?';
     const classification = data.classification || '—';
     const status = data.status || '—';
-    const meta = `${routeIcon} Agent V2 · ${modelUsed} · ${classification} · ${status} · ${ts()}`;
+    const modeEffective = data.mode_effective || currentMode;
+    const modeReq = data.mode_requested || currentMode;
+    const autoDecision = data.auto_decision || 'n/a';
+    const meta = `${routeIcon} Agent V2 · ${modelUsed} · ${classification} · ${status} · Mode: ${modeEffective.toUpperCase()}${autoDecision !== 'n/a' ? ' (auto=' + autoDecision + ')' : ''} · ${ts()}`;
 
     const responseText = data.final_answer || data.response || data.result || data.content || data.error || '(sin respuesta)';
     addMsg('agent', responseText, meta);
+
+    // Render mode escalation panel if required
+    if (data.mode_escalation_required === true) {
+      renderEscalationPanel(data.confirmation_id || 'esc_' + data.run_id, data.expected_write_scope || [], data.required_permission || 'build');
+    }
 
     // Render Execution Trace panel for canonical Agent V2 responses
     if (isCanary && data.trace_url) {
@@ -1523,6 +1547,37 @@ async function handleTool01PermissionAction(decision, permissionId, btn) {
   } finally {
     if (btn) btn.textContent = decision.replace(/_/g, ' ');
   }
+}
+
+// ── Mode Escalation Panel ──────────────────────────────────────────────────
+function renderEscalationPanel(confirmId, writeScope, requiredPermission) {
+  const wrap = document.getElementById('messages');
+  const card = document.createElement('div');
+  card.className = 'approval-card';
+  card.id = 'escalation-' + confirmId;
+  const scopeList = writeScope.length ? writeScope.map(s => '· ' + escapeHtml(s)).join('<br>') : 'Ninguna herramienta específica listada.';
+  card.innerHTML = `
+    <div class="approval-header">
+      <span>⚡</span> Escalación requerida: BUILD necesario
+    </div>
+    <div class="approval-desc">
+      El plan detectó intención de escritura pero el modo actual no permite cambios.
+      Para continuar, cambia el selector a <strong>BUILD</strong> y envía el mensaje de nuevo.
+    </div>
+    <div class="approval-meta">
+      Permiso: <strong>${escapeHtml(requiredPermission)}</strong> &nbsp;|&nbsp; ID: ${escapeHtml(confirmId)}
+    </div>
+    <div class="approval-buttons">
+      <button class="btn-approve" onclick="setMode('build');addMsg('system','Modo BUILD activado manualmente.',ts());document.getElementById('escalation-${confirmId}').remove();">Cambiar a BUILD</button>
+      <button class="btn-reject" onclick="document.getElementById('escalation-${confirmId}').remove();">Descartar</button>
+    </div>
+    <div class="approval-result" id="esc-result-${confirmId}"></div>
+  `;
+  const nearBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 120;
+  wrap.appendChild(card);
+  if (nearBottom) { wrap.scrollTop = wrap.scrollHeight; hideScrollDownBtn(); }
+  else { showScrollDownBtn(); }
+  hideEmptyState();
 }
 
 // ── Platforms ──────────────────────────────────────────────────────────────

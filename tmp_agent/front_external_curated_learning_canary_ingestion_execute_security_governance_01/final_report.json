@@ -1,0 +1,42 @@
+{
+  "status": "CANARY_INGESTION_EXECUTED_MEMORY_ONLY_NO_FAISS",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_before": "ef1c9a8",
+  "functional_commit": "36f6dc2",
+  "ledger_commit": "55695e0",
+  "head_after": "55695e0",
+  "remote_branch_head": "55695e0",
+  "local_equals_remote_branch": true,
+  "batch_id": "SEC_GOV_CANARY_001",
+  "approval_phrase_used": "APPROVE_SECURITY_GOVERNANCE_CANARY_INGESTION_BATCH_SEC_GOV_CANARY_001",
+  "appended_count": 5,
+  "appended_memory_ids": [
+    "SEC_GOV_CANARY_001_nist_csf_001",
+    "SEC_GOV_CANARY_001_nist_ai_rmf_002",
+    "SEC_GOV_CANARY_001_opa_docs_003",
+    "SEC_GOV_CANARY_001_mitre_atlas_004",
+    "SEC_GOV_CANARY_001_gvisor_docs_005"
+  ],
+  "source_ids": [
+    "nist_csf",
+    "nist_ai_rmf",
+    "opa_docs",
+    "mitre_atlas",
+    "gvisor_docs"
+  ],
+  "before_memory_line_count": 1710,
+  "after_memory_line_count": 1715,
+  "before_faiss_ids_count": 1611,
+  "after_faiss_ids_count": 1611,
+  "faiss_mutated": false,
+  "embeddings_created": false,
+  "broker_api_used": false,
+  "trading_used": false,
+  "rollback_available": true,
+  "tests_passed": true,
+  "staged_empty": true,
+  "unstaged_tracked_empty": true,
+  "roadmap_valid": true,
+  "next_recommended_front": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-POST-INGESTION-VERIFY-SECURITY-GOVERNANCE-01",
+  "next_front_locked": true
+}

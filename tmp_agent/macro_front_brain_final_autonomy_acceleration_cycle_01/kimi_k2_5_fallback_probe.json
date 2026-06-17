@@ -1,0 +1,10 @@
+{
+  "checked_utc": "2026-06-12T19:07:43.8472449Z",
+  "model": "kimi-k2.5:cloud",
+  "status": "SUCCESS",
+  "latency_ms": 1088,
+  "response_length": 0,
+  "non_empty": false,
+  "response_preview": "",
+  "error": null
+}

@@ -1,0 +1,27 @@
+{
+  "checked_utc": "2026-06-12T22:36:48.9187481Z",
+  "top_level": "C:/AI_VAULT_CANONICAL",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_local": "4c7ba09",
+  "head_remote": "4c7ba09",
+  "local_equals_remote": true,
+  "staged_empty": true,
+  "tracked_unstaged_empty": true,
+  "roadmap_valid": true,
+  "ledger_exists": true,
+  "semantic_memory_lines": 1715,
+  "faiss_ids": 1616,
+  "faiss_ntotal": 1616,
+  "ollama_tags_include_kimi_k2_6": true,
+  "runtime_8091_health": "healthy",
+  "provider_probe": {
+    "elapsed_ms": 1690.59,
+    "content": "OK",
+    "provider_selected": "kimi_k2_6_cloud",
+    "model_selected": "kimi-k2.6:cloud",
+    "provider_status": "FAST_SUCCESS",
+    "no_cot_leak": true,
+    "memory_faiss_unchanged": true
+  },
+  "hard_gate_passed": true
+}

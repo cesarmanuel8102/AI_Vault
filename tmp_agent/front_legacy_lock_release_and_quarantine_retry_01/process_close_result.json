@@ -1,0 +1,11 @@
+{
+  "schema_version": "front_legacy_lock_release_and_quarantine_retry_01_process_close_v1",
+  "generated_at_utc": "2026-06-12T04:00:57.300837+00:00",
+  "status": "NO_SAFE_LOCK_PROCESS_CANDIDATE_FOUND",
+  "safe_candidates_count": 0,
+  "processes_closed": [],
+  "process_killed_count": 0,
+  "safe_close_used": false,
+  "force_action_used": false,
+  "note": "No processes were closed because no candidate met strict high-confidence criteria."
+}

@@ -1,0 +1,12 @@
+{
+  "schema_version": "front_legacy_lock_release_and_quarantine_retry_01_post_close_lock_check_v1",
+  "generated_at_utc": "2026-06-12T04:00:57.301838+00:00",
+  "closed_candidate_pids_no_longer_running": true,
+  "clear_process_still_references_legacy_path": "unknown",
+  "legacy_path_exists": true,
+  "canonical_exists": true,
+  "canonical_baseline_still_valid": true,
+  "rename_allowed": false,
+  "status": "NO_SAFE_LOCK_PROCESS_CANDIDATE_FOUND_NO_RENAME",
+  "reason": "No high-confidence safe process was closed; exact handle owner remains unknown because handle.exe is unavailable."
+}

@@ -1,0 +1,30 @@
+# FRONT-BRAIN-GOVERNED-AUTONOMY-WALKER-V1 Final Report
+
+- status: `BRAIN_8091_RECOVERED_AND_AUTONOMY_WALKER_V1_COMPLETED_WITH_TIMEOUT_QUALITY_CAVEAT`
+- selected_port: `8091`
+- recovered: `True`
+- training_cycles_run: `3`
+- lesson_cards_created: `3`
+- mistake_entries_created: `3`
+- promotion_gates_created: `9`
+- timeout_fallback_before: `20/24`
+- timeout_fallback_after: `8`
+- score_before: `0.583`
+- score_after: `0.667`
+- metadata_full_rate_after: `1.0`
+- no_cot_rate_after: `1.0`
+- functional_commits: `['027e5a7', 'd28196b', 'fad74d6']`
+- ledger_commit: `a49db0f`
+- final_head: `a49db0f`
+- remote_head: `a49db0f`
+- local_equals_remote: `True`
+- staged_empty: `True`
+- tracked_unstaged_empty: `True`
+- roadmap_valid: `True`
+- memory_mutated: `False`
+- faiss_mutated: `False`
+- trading_touched: `False`
+- legacy_touched: `False`
+- raw_cot_exposed: `False`
+- secrets_exposed: `False`
+- next_recommended_front: `FRONT-BRAIN-TIMEOUT-GENERATION-QUALITY-ROOT-CAUSE-01`

@@ -1,0 +1,43 @@
+{
+    "status":  "OK",
+    "mode":  "Status",
+    "variables":  [
+                      {
+                          "name":  "KIMI_OLLAMA_MODEL",
+                          "present":  false,
+                          "length":  0,
+                          "source_scope":  "Unknown",
+                          "value_redacted":  true
+                      },
+                      {
+                          "name":  "KIMI_API_KEY",
+                          "present":  false,
+                          "length":  0,
+                          "source_scope":  "Unknown",
+                          "value_redacted":  true
+                      },
+                      {
+                          "name":  "MOONSHOT_API_KEY",
+                          "present":  false,
+                          "length":  0,
+                          "source_scope":  "Unknown",
+                          "value_redacted":  true
+                      },
+                      {
+                          "name":  "KIMI_BASE_URL",
+                          "present":  false,
+                          "length":  0,
+                          "source_scope":  "Unknown",
+                          "value_redacted":  true
+                      },
+                      {
+                          "name":  "MOONSHOT_BASE_URL",
+                          "present":  false,
+                          "length":  0,
+                          "source_scope":  "Unknown",
+                          "value_redacted":  true
+                      }
+                  ],
+    "secrets_exposed":  false,
+    "env_file_written":  false
+}

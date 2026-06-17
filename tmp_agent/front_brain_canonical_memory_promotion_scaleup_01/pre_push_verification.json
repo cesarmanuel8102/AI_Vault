@@ -1,0 +1,18 @@
+{
+  "branch": "codex/own-capital-sustainable-return",
+  "head_local": "02f1db4",
+  "head_remote": "950778c",
+  "staged": [],
+  "status_tracked": [],
+  "log": [
+    "02f1db4 ledger: record canonical memory promotion scaleup",
+    "811139d docs: add canonical memory promotion scaleup reports",
+    "26f880c test: add canonical memory promotion scaleup smoke",
+    "dc85d5b audit: review governed autonomy memory promotion candidates",
+    "950778c memory: record governed autonomy background journal events",
+    "ef3a5c8 ledger: record governed autonomy stability rerun",
+    "3761579 docs: add governed autonomy stability rerun reports"
+  ],
+  "staged_empty": true,
+  "tracked_clean": true
+}

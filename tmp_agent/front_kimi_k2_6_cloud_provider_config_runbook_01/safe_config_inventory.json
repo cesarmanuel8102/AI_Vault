@@ -1,0 +1,35 @@
+{
+  "environment": {
+    "KIMI_API_KEY": {
+      "present": false,
+      "length": 0,
+      "source_scope": "Unknown",
+      "value_redacted": true
+    },
+    "MOONSHOT_API_KEY": {
+      "present": false,
+      "length": 0,
+      "source_scope": "Unknown",
+      "value_redacted": true
+    },
+    "KIMI_BASE_URL": {
+      "present": false,
+      "length": 0,
+      "source_scope": "Unknown",
+      "value_redacted": true
+    },
+    "MOONSHOT_BASE_URL": {
+      "present": false,
+      "length": 0,
+      "source_scope": "Unknown",
+      "value_redacted": true
+    }
+  },
+  "code_refs": {
+    "llm_py": "contains kimi_k2_6_cloud/kimi-k2.6 provider slot and env-safe KIMI/MOONSHOT detection",
+    "openai_compat_py": "delegates to handle_user_message and exposes provider metadata; dry_run guard preserved",
+    "session_py": "uses LLMManager through governed session route; no direct Kimi secret handling"
+  },
+  "secrets_exposed": false,
+  "kimi_status": "KIMI_CONFIG_MISSING"
+}

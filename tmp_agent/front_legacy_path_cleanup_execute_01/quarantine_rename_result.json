@@ -1,0 +1,16 @@
+{
+  "front_id": "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01",
+  "source_before_exists": true,
+  "target_before_exists": false,
+  "rename_attempted": true,
+  "rename_success": false,
+  "source_after_exists": true,
+  "target_after_exists": false,
+  "target_path": "C:\\AI_VAULT_LEGACY_QUARANTINE_20260611_220646",
+  "error": "[WinError 32] The process cannot access the file because it is being used by another process. Legacy path is locked by an active process and cannot be renamed.",
+  "failure_reason": "WINDOWS_FILE_LOCK_ACTIVE_PROCESS",
+  "recommendation": "Requires manual intervention: identify and stop the process holding the lock on C:\\AI_VAULT, then retry rename, or reboot and retry.",
+  "deletion_authorized": false,
+  "copy_authorized": false,
+  "sync_authorized": false
+}

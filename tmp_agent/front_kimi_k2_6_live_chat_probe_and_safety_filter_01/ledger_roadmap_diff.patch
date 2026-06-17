@@ -1,0 +1,134 @@
+diff --git a/ROADMAP_STATUS.json b/ROADMAP_STATUS.json
+index 9918498..8724842 100644
+--- a/ROADMAP_STATUS.json
++++ b/ROADMAP_STATUS.json
+@@ -1,9 +1,9 @@
+ {
+-  "current_head": "2e2546d",
+-  "current_remote_head": "2e2546d",
++  "current_head": "a046b94",
++  "current_remote_head": "a046b94",
+   "branch": "codex/own-capital-sustainable-return",
+-  "migration_status": "brain_final_autonomy_acceleration_partial_kimi_k2_6_unavailable",
+-  "last_applied_checkpoint": "MACRO-FRONT-BRAIN-FINAL-AUTONOMY-ACCELERATION-CYCLE-01",
++  "migration_status": "kimi_k2_6_live_chat_probe_and_safety_filter_completed",
++  "last_applied_checkpoint": "FRONT-KIMI-K2-6-LIVE-CHAT-PROBE-AND-SAFETY-FILTER-01",
+   "completed_fronts": [
+     "BL-01",
+     "B3_fake_grounded_dashboard_runtime",
+@@ -148,7 +148,8 @@
+     "FRONT-BRAIN-TIMEOUT-GENERATION-QUALITY-FIX-01",
+     "FRONT-BRAIN-LLM-PROVIDER-CHAIN-OPTIMIZATION-01",
+     "FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01",
+-    "MACRO-FRONT-BRAIN-FINAL-AUTONOMY-ACCELERATION-CYCLE-01"
++    "MACRO-FRONT-BRAIN-FINAL-AUTONOMY-ACCELERATION-CYCLE-01",
++    "FRONT-KIMI-K2-6-LIVE-CHAT-PROBE-AND-SAFETY-FILTER-01"
+   ],
+   "open_fronts": [],
+   "blocked_fronts": [
+@@ -163,12 +164,12 @@
+     "tmp_agent/reports"
+   ],
+   "recommended_next_front": {
+-    "name": "FRONT-KIMI-K2-6-OLLAMA-CLOUD-MODEL-ENABLEMENT-01",
++    "name": "FRONT-BRAIN-GOVERNED-AUTONOMY-OPERATIONS-MODE-01",
+     "status": "recommended_next",
+-    "reason": "Final autonomy scaffolding, provider health, training artifacts, eval, and chat readiness are complete; Kimi K2.6 remains blocked only by missing Ollama Cloud model tag."
++    "reason": "Kimi K2.6 is verified through the safe live chat provider_probe route with no CoT leak and memory/FAISS unchanged."
+   },
+   "ready_for_next_front": true,
+-  "last_updated": "2026-06-12T19:14:52.740452+00:00",
++  "last_updated": "2026-06-12T22:24:47.199456+00:00",
+   "phase0_security": {
+     "status": "done",
+     "commits": [
+@@ -3289,5 +3290,42 @@
+       "tmp_agent_strategies": true,
+       "secrets": true
+     }
++  },
++  "front_kimi_k2_6_live_chat_probe_and_safety_filter_01": {
++    "status": "KIMI_K2_6_LIVE_CHAT_PROBE_AND_SAFETY_FILTER_COMPLETED",
++    "functional_commit": "a046b94",
++    "kimi_k2_6_core_verified": true,
++    "kimi_k2_6_chat_endpoint_verified": true,
++    "route": "provider_probe",
++    "provider_selected": "kimi_k2_6_cloud",
++    "model_selected": "kimi-k2.6:cloud",
++    "provider_status": "FAST_SUCCESS",
++    "latency_ms": 1236.04,
++    "provider_latency_ms": 1060.738,
++    "content_preview": "OK",
++    "thinking_stripped": false,
++    "no_cot_leak": true,
++    "local_fallback_used": false,
++    "fallback_used": false,
++    "safety": {
++      "tools_blocked": true,
++      "memory_writes_blocked": true,
++      "faiss_writes_blocked": true,
++      "external_side_effects_blocked": true,
++      "memory_mutated": false,
++      "faiss_mutated": false,
++      "semantic_memory_lines": 1715,
++      "faiss_ids": 1616,
++      "faiss_ntotal": 1616,
++      "trading_touched": false,
++      "secrets_exposed": false
++    },
++    "tests": {
++      "front_smoke": "11 passed",
++      "macro_smoke": "3 passed",
++      "provider_chain_smoke": "11 passed",
++      "timeout_quality_smoke": "7 passed, 2 warnings"
++    },
++    "next_front_locked": "FRONT-BRAIN-GOVERNED-AUTONOMY-OPERATIONS-MODE-01"
+   }
+ }
+diff --git a/docs/MIGRATION_CONTROL_LEDGER.md b/docs/MIGRATION_CONTROL_LEDGER.md
+index 49d57d5..1c30d75 100644
+--- a/docs/MIGRATION_CONTROL_LEDGER.md
++++ b/docs/MIGRATION_CONTROL_LEDGER.md
+@@ -7714,3 +7714,42 @@ The adapter/router/governance metadata layer is working, but answer-generation q
+ - env_file_written: `false`
+ - next_front_locked: `FRONT-KIMI-K2-6-OLLAMA-CLOUD-MODEL-ENABLEMENT-01`
+ 
++## LEDGER-ROADMAP-SSOT-FRONT-KIMI-K2-6-LIVE-CHAT-PROBE-AND-SAFETY-FILTER-01 — Kimi K2.6 Live Chat Probe and Safety Filter
++
++- timestamp_utc: `2026-06-12T22:24:47.199456+00:00`
++- status: `KIMI_K2_6_LIVE_CHAT_PROBE_AND_SAFETY_FILTER_COMPLETED`
++- branch: `codex/own-capital-sustainable-return`
++- functional_commit: `a046b94` — `feat: enable safe Kimi K2.6 live provider probe`
++- kimi_k2_6_core_verified: `true`
++- kimi_k2_6_chat_endpoint_verified: `true`
++- route: `provider_probe`
++- provider_selected: `kimi_k2_6_cloud`
++- model_selected: `kimi-k2.6:cloud`
++- provider_status: `FAST_SUCCESS`
++- latency_ms: `1236.04`
++- provider_latency_ms: `1060.738`
++- content_preview: `OK`
++- thinking_stripped: `False`
++- no_cot_leak: `True`
++- local_fallback_used: `False`
++- fallback_used: `False`
++- safety:
++  - tools_blocked: `true`
++  - memory_writes_blocked: `true`
++  - faiss_writes_blocked: `true`
++  - external_side_effects_blocked: `true`
++  - memory_mutated: `false`
++  - faiss_mutated: `false`
++  - semantic_memory_lines: `1715`
++  - faiss_ids: `1616`
++  - faiss_ntotal: `1616`
++  - trading_touched: `false`
++  - secrets_exposed: `false`
++- tests:
++  - front_smoke: `11 passed`
++  - macro_smoke: `3 passed`
++  - provider_chain_smoke: `11 passed`
++  - timeout_quality_smoke: `7 passed, 2 warnings`
++- aiohttp_cleanup: `provider_probe closes LLM aiohttp session after probe path`
++- next_front_locked: `FRONT-BRAIN-GOVERNED-AUTONOMY-OPERATIONS-MODE-01`
++

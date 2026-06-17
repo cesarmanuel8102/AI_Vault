@@ -1,0 +1,35 @@
+{
+  "batch_id": "SEC_GOV_CANARY_001",
+  "front_id": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-PREP-SECURITY-GOVERNANCE-01",
+  "files_to_backup_before_future_execution": [
+    "memory/semantic/semantic_memory_faiss.index",
+    "memory/semantic/semantic_memory_faiss_ids.json",
+    "memory/semantic/semantic_memory.jsonl"
+  ],
+  "backup_directory_planned": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_execute_security_governance_01/backups/SEC_GOV_CANARY_001/",
+  "rollback_method": [
+    "Restore exact FAISS index backup from backup directory",
+    "Restore exact FAISS ids backup from backup directory",
+    "Verify FAISS ids count back to 1611",
+    "Verify semantic memory line count stays 1715",
+    "Verify SHA256 matches baseline"
+  ],
+  "rollback_triggers": [
+    "Embedding generation failure",
+    "FAISS add failure",
+    "FAISS ids count mismatch",
+    "Duplicate FAISS id",
+    "Retrieval eval regression",
+    "Contaminated retrieval",
+    "Schema mismatch",
+    "py_compile or test failure",
+    "User denial"
+  ],
+  "validation_after_rollback": {
+    "faiss_ids_count": 1611,
+    "semantic_memory_lines": 1715,
+    "faiss_index_sha_matches_baseline": true,
+    "faiss_ids_sha_matches_baseline": true
+  },
+  "timestamp_utc": "2026-06-11T09:07:16.317878+00:00"
+}

@@ -1,0 +1,9 @@
+{
+  "selected_runtime_port": 8091,
+  "process_id": 31900,
+  "started": true,
+  "health_ok": true,
+  "last_error": null,
+  "stdout": "C:\\AI_VAULT_CANONICAL\\tmp_agent\\recover_brain_8091_and_rerun_autonomy_walker_v1\\brain_8091_stdout.log",
+  "stderr": "C:\\AI_VAULT_CANONICAL\\tmp_agent\\recover_brain_8091_and_rerun_autonomy_walker_v1\\brain_8091_stderr.log"
+}

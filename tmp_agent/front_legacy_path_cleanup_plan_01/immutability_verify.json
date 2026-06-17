@@ -1,0 +1,14 @@
+{
+  "front_id": "FRONT-LEGACY-PATH-CLEANUP-PLAN-01",
+  "canonical_checks": {
+    "semantic_memory_jsonl_unchanged": true,
+    "semantic_memory_faiss_index_unchanged": true,
+    "semantic_memory_faiss_ids_unchanged": true,
+    "semantic_memory_lines_1715": true,
+    "faiss_ids_count_1616": true,
+    "faiss_ntotal_1616": true
+  },
+  "legacy_not_modified": true,
+  "no_staged_memory": true,
+  "verdict": "PASS"
+}

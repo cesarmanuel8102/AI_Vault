@@ -1,0 +1,11 @@
+{
+  "semantic_memory_jsonl_sha": "655d32381e38ada348c3f201c50484551e02d98ae0869fa53826912c6973ab54",
+  "semantic_memory_jsonl_lines": 1710,
+  "semantic_memory_faiss_index_sha": "b7b755c753cd4017344fb18d51e2ff3d81766151ac3a3dbf753c1004f7d16484",
+  "semantic_memory_faiss_ids_json_sha": "004362363f7a392fd15193392f7fac592e333355e6cc28ba665d3cfb5e9368c1",
+  "semantic_memory_faiss_ids_count": 1611,
+  "ROADMAP_STATUS_json_sha": "05bc8e41eb54418c34f593df565ec8672ba971877cb1d13610d9562b7805aa50",
+  "MIGRATION_CONTROL_LEDGER_md_sha": "21527159cae1f692e3bad919311db7a081316d79d37fdc7142e4be4e7b462841",
+  "current_head": "f3d1cbdac75798e498fd7a6bc41297a7a54bf23b",
+  "branch": "codex/own-capital-sustainable-return"
+}

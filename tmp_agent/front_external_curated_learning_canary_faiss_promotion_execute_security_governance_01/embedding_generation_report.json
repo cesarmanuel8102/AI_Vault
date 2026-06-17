@@ -1,0 +1,93 @@
+{
+  "front_id": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-EXECUTE-SECURITY-GOVERNANCE-01",
+  "batch_id": "SEC_GOV_CANARY_001",
+  "records": [
+    {
+      "memory_id": "SEC_GOV_CANARY_001_nist_csf_001",
+      "embedding_text_length": 804,
+      "vector_shape": [
+        768
+      ],
+      "has_nan": false,
+      "has_inf": false,
+      "dim_ok": true,
+      "embed_time_sec": 7.619
+    },
+    {
+      "memory_id": "SEC_GOV_CANARY_001_nist_ai_rmf_002",
+      "embedding_text_length": 836,
+      "vector_shape": [
+        768
+      ],
+      "has_nan": false,
+      "has_inf": false,
+      "dim_ok": true,
+      "embed_time_sec": 6.601
+    },
+    {
+      "memory_id": "SEC_GOV_CANARY_001_opa_docs_003",
+      "embedding_text_length": 836,
+      "vector_shape": [
+        768
+      ],
+      "has_nan": false,
+      "has_inf": false,
+      "dim_ok": true,
+      "embed_time_sec": 5.902
+    },
+    {
+      "memory_id": "SEC_GOV_CANARY_001_mitre_atlas_004",
+      "embedding_text_length": 883,
+      "vector_shape": [
+        768
+      ],
+      "has_nan": false,
+      "has_inf": false,
+      "dim_ok": true,
+      "embed_time_sec": 5.74
+    },
+    {
+      "memory_id": "SEC_GOV_CANARY_001_gvisor_docs_005",
+      "embedding_text_length": 806,
+      "vector_shape": [
+        768
+      ],
+      "has_nan": false,
+      "has_inf": false,
+      "dim_ok": true,
+      "embed_time_sec": 6.996
+    }
+  ],
+  "mutation_log": [
+    {
+      "memory_id": "SEC_GOV_CANARY_001_nist_csf_001",
+      "action": "added_to_faiss",
+      "ntotal_after": 1612,
+      "ids_count_after": 1612
+    },
+    {
+      "memory_id": "SEC_GOV_CANARY_001_nist_ai_rmf_002",
+      "action": "added_to_faiss",
+      "ntotal_after": 1613,
+      "ids_count_after": 1613
+    },
+    {
+      "memory_id": "SEC_GOV_CANARY_001_opa_docs_003",
+      "action": "added_to_faiss",
+      "ntotal_after": 1614,
+      "ids_count_after": 1614
+    },
+    {
+      "memory_id": "SEC_GOV_CANARY_001_mitre_atlas_004",
+      "action": "added_to_faiss",
+      "ntotal_after": 1615,
+      "ids_count_after": 1615
+    },
+    {
+      "memory_id": "SEC_GOV_CANARY_001_gvisor_docs_005",
+      "action": "added_to_faiss",
+      "ntotal_after": 1616,
+      "ids_count_after": 1616
+    }
+  ]
+}

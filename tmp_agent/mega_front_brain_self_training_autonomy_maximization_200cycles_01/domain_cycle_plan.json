@@ -1,0 +1,1617 @@
+{
+  "target_cycles": 200,
+  "distribution": {
+    "kimi_provider_dialogue_stability": 30,
+    "brain_autonomy_planning_self_correction": 30,
+    "brain_architecture_code_quality": 25,
+    "token_conservation_prompt_compression": 20,
+    "operational_learning_promotion_gates": 20,
+    "cei_fdot_field_reasoning": 20,
+    "financial_research_safety": 20,
+    "chat_ux_operator_clarity": 15,
+    "governance_no_cot_safety": 10,
+    "daily_operations_readiness": 10
+  },
+  "cycles": [
+    {
+      "cycle_id": "mega_cycle_001",
+      "batch_id": 1,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "exact_output",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_002",
+      "batch_id": 1,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "json_only",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_003",
+      "batch_id": 1,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "score",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_004",
+      "batch_id": 1,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_005",
+      "batch_id": 1,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_006",
+      "batch_id": 1,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "critic",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_007",
+      "batch_id": 1,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "revise",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_008",
+      "batch_id": 1,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_009",
+      "batch_id": 1,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "exact_output",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_010",
+      "batch_id": 1,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "json_only",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_011",
+      "batch_id": 2,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "score",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_012",
+      "batch_id": 2,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_013",
+      "batch_id": 2,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_014",
+      "batch_id": 2,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "critic",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_015",
+      "batch_id": 2,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "revise",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_016",
+      "batch_id": 2,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_017",
+      "batch_id": 2,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "exact_output",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_018",
+      "batch_id": 2,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "json_only",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_019",
+      "batch_id": 2,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "score",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_020",
+      "batch_id": 2,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_021",
+      "batch_id": 3,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_022",
+      "batch_id": 3,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "critic",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_023",
+      "batch_id": 3,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "revise",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_024",
+      "batch_id": 3,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_025",
+      "batch_id": 3,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "exact_output",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_026",
+      "batch_id": 3,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "json_only",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_027",
+      "batch_id": 3,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "score",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_028",
+      "batch_id": 3,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_029",
+      "batch_id": 3,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_030",
+      "batch_id": 3,
+      "domain": "kimi_provider_dialogue_stability",
+      "prompt_profile": "critic",
+      "objective": "Improve kimi provider dialogue stability with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_031",
+      "batch_id": 4,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "revise",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_032",
+      "batch_id": 4,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_033",
+      "batch_id": 4,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "exact_output",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_034",
+      "batch_id": 4,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "json_only",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_035",
+      "batch_id": 4,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "score",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_036",
+      "batch_id": 4,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_037",
+      "batch_id": 4,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_038",
+      "batch_id": 4,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "critic",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_039",
+      "batch_id": 4,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "revise",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_040",
+      "batch_id": 4,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_041",
+      "batch_id": 5,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "exact_output",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_042",
+      "batch_id": 5,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "json_only",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_043",
+      "batch_id": 5,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "score",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_044",
+      "batch_id": 5,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_045",
+      "batch_id": 5,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_046",
+      "batch_id": 5,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "critic",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_047",
+      "batch_id": 5,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "revise",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_048",
+      "batch_id": 5,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_049",
+      "batch_id": 5,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "exact_output",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_050",
+      "batch_id": 5,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "json_only",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_051",
+      "batch_id": 6,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "score",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_052",
+      "batch_id": 6,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_053",
+      "batch_id": 6,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_054",
+      "batch_id": 6,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "critic",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_055",
+      "batch_id": 6,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "revise",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_056",
+      "batch_id": 6,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_057",
+      "batch_id": 6,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "exact_output",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_058",
+      "batch_id": 6,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "json_only",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_059",
+      "batch_id": 6,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "score",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_060",
+      "batch_id": 6,
+      "domain": "brain_autonomy_planning_self_correction",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve brain autonomy planning self correction with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_061",
+      "batch_id": 7,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_062",
+      "batch_id": 7,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "critic",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_063",
+      "batch_id": 7,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "revise",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_064",
+      "batch_id": 7,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_065",
+      "batch_id": 7,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "exact_output",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_066",
+      "batch_id": 7,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "json_only",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_067",
+      "batch_id": 7,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "score",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_068",
+      "batch_id": 7,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_069",
+      "batch_id": 7,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_070",
+      "batch_id": 7,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "critic",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_071",
+      "batch_id": 8,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "revise",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_072",
+      "batch_id": 8,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_073",
+      "batch_id": 8,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "exact_output",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_074",
+      "batch_id": 8,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "json_only",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_075",
+      "batch_id": 8,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "score",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_076",
+      "batch_id": 8,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_077",
+      "batch_id": 8,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_078",
+      "batch_id": 8,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "critic",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_079",
+      "batch_id": 8,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "revise",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_080",
+      "batch_id": 8,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_081",
+      "batch_id": 9,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "exact_output",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_082",
+      "batch_id": 9,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "json_only",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_083",
+      "batch_id": 9,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "score",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_084",
+      "batch_id": 9,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_085",
+      "batch_id": 9,
+      "domain": "brain_architecture_code_quality",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve brain architecture code quality with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_086",
+      "batch_id": 9,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "critic",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_087",
+      "batch_id": 9,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "revise",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_088",
+      "batch_id": 9,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_089",
+      "batch_id": 9,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "exact_output",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_090",
+      "batch_id": 9,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "json_only",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_091",
+      "batch_id": 10,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "score",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_092",
+      "batch_id": 10,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_093",
+      "batch_id": 10,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_094",
+      "batch_id": 10,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "critic",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_095",
+      "batch_id": 10,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "revise",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_096",
+      "batch_id": 10,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_097",
+      "batch_id": 10,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "exact_output",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_098",
+      "batch_id": 10,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "json_only",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_099",
+      "batch_id": 10,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "score",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_100",
+      "batch_id": 10,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_101",
+      "batch_id": 11,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_102",
+      "batch_id": 11,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "critic",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_103",
+      "batch_id": 11,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "revise",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_104",
+      "batch_id": 11,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_105",
+      "batch_id": 11,
+      "domain": "token_conservation_prompt_compression",
+      "prompt_profile": "exact_output",
+      "objective": "Improve token conservation prompt compression with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_106",
+      "batch_id": 11,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "json_only",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_107",
+      "batch_id": 11,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "score",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_108",
+      "batch_id": 11,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_109",
+      "batch_id": 11,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_110",
+      "batch_id": 11,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "critic",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_111",
+      "batch_id": 12,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "revise",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_112",
+      "batch_id": 12,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_113",
+      "batch_id": 12,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "exact_output",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_114",
+      "batch_id": 12,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "json_only",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_115",
+      "batch_id": 12,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "score",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_116",
+      "batch_id": 12,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_117",
+      "batch_id": 12,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_118",
+      "batch_id": 12,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "critic",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_119",
+      "batch_id": 12,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "revise",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_120",
+      "batch_id": 12,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_121",
+      "batch_id": 13,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "exact_output",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_122",
+      "batch_id": 13,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "json_only",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_123",
+      "batch_id": 13,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "score",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_124",
+      "batch_id": 13,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_125",
+      "batch_id": 13,
+      "domain": "operational_learning_promotion_gates",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve operational learning promotion gates with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_126",
+      "batch_id": 13,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "critic",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_127",
+      "batch_id": 13,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "revise",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_128",
+      "batch_id": 13,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_129",
+      "batch_id": 13,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "exact_output",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_130",
+      "batch_id": 13,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "json_only",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_131",
+      "batch_id": 14,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "score",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_132",
+      "batch_id": 14,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_133",
+      "batch_id": 14,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_134",
+      "batch_id": 14,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "critic",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_135",
+      "batch_id": 14,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "revise",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_136",
+      "batch_id": 14,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_137",
+      "batch_id": 14,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "exact_output",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_138",
+      "batch_id": 14,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "json_only",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_139",
+      "batch_id": 14,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "score",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_140",
+      "batch_id": 14,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_141",
+      "batch_id": 15,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_142",
+      "batch_id": 15,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "critic",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_143",
+      "batch_id": 15,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "revise",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_144",
+      "batch_id": 15,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_145",
+      "batch_id": 15,
+      "domain": "cei_fdot_field_reasoning",
+      "prompt_profile": "exact_output",
+      "objective": "Improve cei fdot field reasoning with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_146",
+      "batch_id": 15,
+      "domain": "financial_research_safety",
+      "prompt_profile": "json_only",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_147",
+      "batch_id": 15,
+      "domain": "financial_research_safety",
+      "prompt_profile": "score",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_148",
+      "batch_id": 15,
+      "domain": "financial_research_safety",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_149",
+      "batch_id": 15,
+      "domain": "financial_research_safety",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_150",
+      "batch_id": 15,
+      "domain": "financial_research_safety",
+      "prompt_profile": "critic",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_151",
+      "batch_id": 16,
+      "domain": "financial_research_safety",
+      "prompt_profile": "revise",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_152",
+      "batch_id": 16,
+      "domain": "financial_research_safety",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_153",
+      "batch_id": 16,
+      "domain": "financial_research_safety",
+      "prompt_profile": "exact_output",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_154",
+      "batch_id": 16,
+      "domain": "financial_research_safety",
+      "prompt_profile": "json_only",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_155",
+      "batch_id": 16,
+      "domain": "financial_research_safety",
+      "prompt_profile": "score",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_156",
+      "batch_id": 16,
+      "domain": "financial_research_safety",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_157",
+      "batch_id": 16,
+      "domain": "financial_research_safety",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_158",
+      "batch_id": 16,
+      "domain": "financial_research_safety",
+      "prompt_profile": "critic",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_159",
+      "batch_id": 16,
+      "domain": "financial_research_safety",
+      "prompt_profile": "revise",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_160",
+      "batch_id": 16,
+      "domain": "financial_research_safety",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_161",
+      "batch_id": 17,
+      "domain": "financial_research_safety",
+      "prompt_profile": "exact_output",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_162",
+      "batch_id": 17,
+      "domain": "financial_research_safety",
+      "prompt_profile": "json_only",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_163",
+      "batch_id": 17,
+      "domain": "financial_research_safety",
+      "prompt_profile": "score",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_164",
+      "batch_id": 17,
+      "domain": "financial_research_safety",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_165",
+      "batch_id": 17,
+      "domain": "financial_research_safety",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve financial research safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_166",
+      "batch_id": 17,
+      "domain": "chat_ux_operator_clarity",
+      "prompt_profile": "critic",
+      "objective": "Improve chat ux operator clarity with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_167",
+      "batch_id": 17,
+      "domain": "chat_ux_operator_clarity",
+      "prompt_profile": "revise",
+      "objective": "Improve chat ux operator clarity with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_168",
+      "batch_id": 17,
+      "domain": "chat_ux_operator_clarity",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve chat ux operator clarity with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_169",
+      "batch_id": 17,
+      "domain": "chat_ux_operator_clarity",
+      "prompt_profile": "exact_output",
+      "objective": "Improve chat ux operator clarity with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_170",
+      "batch_id": 17,
+      "domain": "chat_ux_operator_clarity",
+      "prompt_profile": "json_only",
+      "objective": "Improve chat ux operator clarity with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_171",
+      "batch_id": 18,
+      "domain": "chat_ux_operator_clarity",
+      "prompt_profile": "score",
+      "objective": "Improve chat ux operator clarity with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_172",
+      "batch_id": 18,
+      "domain": "chat_ux_operator_clarity",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve chat ux operator clarity with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_173",
+      "batch_id": 18,
+      "domain": "chat_ux_operator_clarity",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve chat ux operator clarity with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_174",
+      "batch_id": 18,
+      "domain": "chat_ux_operator_clarity",
+      "prompt_profile": "critic",
+      "objective": "Improve chat ux operator clarity with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_175",
+      "batch_id": 18,
+      "domain": "chat_ux_operator_clarity",
+      "prompt_profile": "revise",
+      "objective": "Improve chat ux operator clarity with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_176",
+      "batch_id": 18,
+      "domain": "chat_ux_operator_clarity",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve chat ux operator clarity with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_177",
+      "batch_id": 18,
+      "domain": "chat_ux_operator_clarity",
+      "prompt_profile": "exact_output",
+      "objective": "Improve chat ux operator clarity with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_178",
+      "batch_id": 18,
+      "domain": "chat_ux_operator_clarity",
+      "prompt_profile": "json_only",
+      "objective": "Improve chat ux operator clarity with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_179",
+      "batch_id": 18,
+      "domain": "chat_ux_operator_clarity",
+      "prompt_profile": "score",
+      "objective": "Improve chat ux operator clarity with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_180",
+      "batch_id": 18,
+      "domain": "chat_ux_operator_clarity",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve chat ux operator clarity with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_181",
+      "batch_id": 19,
+      "domain": "governance_no_cot_safety",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve governance no cot safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_182",
+      "batch_id": 19,
+      "domain": "governance_no_cot_safety",
+      "prompt_profile": "critic",
+      "objective": "Improve governance no cot safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_183",
+      "batch_id": 19,
+      "domain": "governance_no_cot_safety",
+      "prompt_profile": "revise",
+      "objective": "Improve governance no cot safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_184",
+      "batch_id": 19,
+      "domain": "governance_no_cot_safety",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve governance no cot safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_185",
+      "batch_id": 19,
+      "domain": "governance_no_cot_safety",
+      "prompt_profile": "exact_output",
+      "objective": "Improve governance no cot safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_186",
+      "batch_id": 19,
+      "domain": "governance_no_cot_safety",
+      "prompt_profile": "json_only",
+      "objective": "Improve governance no cot safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_187",
+      "batch_id": 19,
+      "domain": "governance_no_cot_safety",
+      "prompt_profile": "score",
+      "objective": "Improve governance no cot safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_188",
+      "batch_id": 19,
+      "domain": "governance_no_cot_safety",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve governance no cot safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_189",
+      "batch_id": 19,
+      "domain": "governance_no_cot_safety",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve governance no cot safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_190",
+      "batch_id": 19,
+      "domain": "governance_no_cot_safety",
+      "prompt_profile": "critic",
+      "objective": "Improve governance no cot safety with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_191",
+      "batch_id": 20,
+      "domain": "daily_operations_readiness",
+      "prompt_profile": "revise",
+      "objective": "Improve daily operations readiness with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_192",
+      "batch_id": 20,
+      "domain": "daily_operations_readiness",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve daily operations readiness with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_193",
+      "batch_id": 20,
+      "domain": "daily_operations_readiness",
+      "prompt_profile": "exact_output",
+      "objective": "Improve daily operations readiness with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_194",
+      "batch_id": 20,
+      "domain": "daily_operations_readiness",
+      "prompt_profile": "json_only",
+      "objective": "Improve daily operations readiness with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_195",
+      "batch_id": 20,
+      "domain": "daily_operations_readiness",
+      "prompt_profile": "score",
+      "objective": "Improve daily operations readiness with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_196",
+      "batch_id": 20,
+      "domain": "daily_operations_readiness",
+      "prompt_profile": "bullet_only",
+      "objective": "Improve daily operations readiness with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_197",
+      "batch_id": 20,
+      "domain": "daily_operations_readiness",
+      "prompt_profile": "one_sentence_proposal",
+      "objective": "Improve daily operations readiness with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_198",
+      "batch_id": 20,
+      "domain": "daily_operations_readiness",
+      "prompt_profile": "critic",
+      "objective": "Improve daily operations readiness with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_199",
+      "batch_id": 20,
+      "domain": "daily_operations_readiness",
+      "prompt_profile": "revise",
+      "objective": "Improve daily operations readiness with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    },
+    {
+      "cycle_id": "mega_cycle_200",
+      "batch_id": 20,
+      "domain": "daily_operations_readiness",
+      "prompt_profile": "role_compressed",
+      "objective": "Improve daily operations readiness with governed low/medium action or block safely.",
+      "expected_artifact": "lesson_or_gate_or_test_or_checkpoint"
+    }
+  ]
+}

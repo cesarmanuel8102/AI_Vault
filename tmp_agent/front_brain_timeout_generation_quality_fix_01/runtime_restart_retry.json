@@ -1,0 +1,8 @@
+{
+  "started_process_id": 27924,
+  "listener_process_id": 27924,
+  "restart_success": true,
+  "command_line": "\"C:\\Users\\cesar\\AppData\\Local\\Programs\\Python\\Python311\\python.exe\" -m uvicorn tmp_agent.brain_v9.main:app --host 127.0.0.1 --port 8091",
+  "stdout": "C:\\AI_VAULT_CANONICAL\\tmp_agent\\front_brain_timeout_generation_quality_fix_01\\uvicorn_8091_stdout.log",
+  "stderr": "C:\\AI_VAULT_CANONICAL\\tmp_agent\\front_brain_timeout_generation_quality_fix_01\\uvicorn_8091_stderr.log"
+}

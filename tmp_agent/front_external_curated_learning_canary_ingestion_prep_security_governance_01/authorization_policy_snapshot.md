@@ -1,0 +1,1090 @@
+# Authorization Policy Snapshot
+
+## authorized_first_canary_scope
+
+```json
+{
+  "recommended_first_domain": "security_governance_sandboxing",
+  "allowed_record_count_min": 3,
+  "allowed_record_count_max": 5,
+  "allowed_source_status": [
+    "accept"
+  ],
+  "forbidden_source_status": [
+    "hold",
+    "reject",
+    "candidate"
+  ],
+  "forbidden_domains_first_canary": [
+    "financial_motor_trading_intelligence",
+    "autonomous_coding_patch_generation"
+  ],
+  "allowed_content_type": {
+    "metadata_summary_only": true,
+    "non_executable_governance_knowledge": true,
+    "no_full_paper_text": true,
+    "no_full_readme": true,
+    "no_external_copyrighted_long_content": true
+  },
+  "required_fields": [
+    "memory_id",
+    "source_id",
+    "source_title",
+    "source_group",
+    "source_url",
+    "source_license_or_status",
+    "domain",
+    "taxonomy_tags",
+    "capability_target",
+    "source_provenance",
+    "safety_score_estimate",
+    "acceptance_status",
+    "ingestion_batch_id",
+    "created_at_utc",
+    "content_summary",
+    "retrieval_phrases",
+    "exclusion_notes",
+    "risk_flags"
+  ],
+  "forbidden_fields": [
+    "raw_full_text",
+    "copyrighted_full_content",
+    "credentials",
+    "broker_api_data",
+    "trading_signal",
+    "executable_code",
+    "chain_of_thought",
+    "private_user_data"
+  ]
+}
+```
+
+## authorized_batch_limits
+
+```json
+{
+  "canary_batch": {
+    "min_records": 3,
+    "max_records": 5,
+    "one_domain_only": true,
+    "allowed_domain": "security_governance_sandboxing",
+    "requires_prior_approval": true,
+    "requires_backup": true,
+    "allows_faiss": false
+  },
+  "controlled_batch_01": {
+    "min_records": 10,
+    "max_records": 20,
+    "allowed_domains": [
+      "security_governance_sandboxing",
+      "memory_rag_knowledge_architecture"
+    ],
+    "requires_canary_pass": true,
+    "requires_prior_approval": true,
+    "requires_backup": true,
+    "allows_faiss": true
+  },
+  "controlled_batch_02": {
+    "min_records": 20,
+    "max_records": 40,
+    "allowed_domains": [
+      "security_governance_sandboxing",
+      "memory_rag_knowledge_architecture",
+      "evaluation_benchmarking"
+    ],
+    "requires_batch_01_pass": true,
+    "requires_prior_approval": true,
+    "requires_backup": true,
+    "allows_faiss": true
+  },
+  "agentic_batch": {
+    "status": "locked",
+    "reason": "agentic systems knowledge requires proven governance ingestion first",
+    "requires_separate_authorization": true,
+    "min_records": 0,
+    "max_records": 0
+  },
+  "coding_batch": {
+    "status": "locked",
+    "reason": "coding sources may influence self-modification; locked until proven safe",
+    "requires_separate_authorization": true,
+    "min_records": 0,
+    "max_records": 0
+  },
+  "financial_batch": {
+    "status": "locked",
+    "reason": "financial knowledge requires additional no-advice and no-signal controls",
+    "requires_separate_authorization": true,
+    "min_records": 0,
+    "max_records": 0
+  }
+}
+```
+
+## read_authorized_domain_order
+
+```json
+[
+  {
+    "domain": "security_governance_sandboxing",
+    "order": 1,
+    "authorization_status": "authorized_for_future_canary",
+    "reason": "Security/Governance sources teach constraints and protective controls, not autonomous actions. Lowest risk of contamination.",
+    "max_canary_records": 5,
+    "max_batch_records_after_canary": 20,
+    "financial_or_execution_risk": "low",
+    "requires_human_approval": true
+  },
+  {
+    "domain": "memory_rag_knowledge_architecture",
+    "order": 2,
+    "authorization_status": "authorized_for_future_canary",
+    "reason": "Memory/RAG sources improve the brain's own knowledge architecture. No external action risk. Purely infrastructural.",
+    "max_canary_records": 5,
+    "max_batch_records_after_canary": 20,
+    "financial_or_execution_risk": "low",
+    "requires_human_approval": true
+  },
+  {
+    "domain": "evaluation_benchmarking",
+    "order": 3,
+    "authorization_status": "authorized_for_future_canary",
+    "reason": "Evaluation sources teach measurement and validation. Useful for assessing all subsequent domains.",
+    "max_canary_records": 5,
+    "max_batch_records_after_canary": 20,
+    "financial_or_execution_risk": "low",
+    "requires_human_approval": true
+  },
+  {
+    "domain": "agentic_systems",
+    "order": 4,
+    "authorization_status": "authorized_for_future_canary",
+    "reason": "Agentic sources expand reasoning and planning capabilities. Moderate risk because they teach autonomous action patterns.",
+    "max_canary_records": 5,
+    "max_batch_records_after_canary": 20,
+    "financial_or_execution_risk": "medium",
+    "requires_human_approval": true
+  },
+  {
+    "domain": "autonomous_coding_patch_generation",
+    "order": 5,
+    "authorization_status": "locked_until_later",
+    "reason": "Coding sources teach code modification. High risk because they could influence self-modification behavior. Locked until security and governance are proven in memory.",
+    "max_canary_records": 0,
+    "max_batch_records_after_canary": 0,
+    "financial_or_execution_risk": "high",
+    "requires_human_approval": true
+  },
+  {
+    "domain": "financial_motor_trading_intelligence",
+    "order": 6,
+    "authorization_status": "locked_until_later",
+    "reason": "Financial sources have risk of advice contamination, signal contamination, and trading-action suggestion. Locked until all other domains are proven safe in memory and explicit financial-action governance is in place.",
+    "max_canary_records": 0,
+    "max_batch_records_after_canary": 0,
+    "financial_or_execution_risk": "high",
+    "requires_human_approval": true
+  }
+]
+```
+
+## domain_authorization_matrix
+
+```json
+[
+  {
+    "domain": "security_governance_sandboxing",
+    "canary_authorized": true,
+    "batch_01_authorized": true,
+    "batch_02_authorized": true,
+    "faiss_authorized": true,
+    "financial_risk": "low",
+    "execution_risk": "low",
+    "advice_risk": "low",
+    "signal_risk": "low"
+  },
+  {
+    "domain": "memory_rag_knowledge_architecture",
+    "canary_authorized": true,
+    "batch_01_authorized": true,
+    "batch_02_authorized": true,
+    "faiss_authorized": true,
+    "financial_risk": "low",
+    "execution_risk": "low",
+    "advice_risk": "low",
+    "signal_risk": "low"
+  },
+  {
+    "domain": "evaluation_benchmarking",
+    "canary_authorized": false,
+    "batch_01_authorized": false,
+    "batch_02_authorized": true,
+    "faiss_authorized": true,
+    "financial_risk": "low",
+    "execution_risk": "low",
+    "advice_risk": "low",
+    "signal_risk": "low"
+  },
+  {
+    "domain": "agentic_systems",
+    "canary_authorized": false,
+    "batch_01_authorized": false,
+    "batch_02_authorized": false,
+    "faiss_authorized": true,
+    "financial_risk": "low",
+    "execution_risk": "medium",
+    "advice_risk": "low",
+    "signal_risk": "low"
+  },
+  {
+    "domain": "autonomous_coding_patch_generation",
+    "canary_authorized": false,
+    "batch_01_authorized": false,
+    "batch_02_authorized": false,
+    "faiss_authorized": false,
+    "financial_risk": "low",
+    "execution_risk": "high",
+    "advice_risk": "low",
+    "signal_risk": "low"
+  },
+  {
+    "domain": "financial_motor_trading_intelligence",
+    "canary_authorized": false,
+    "batch_01_authorized": false,
+    "batch_02_authorized": false,
+    "faiss_authorized": false,
+    "financial_risk": "high",
+    "execution_risk": "high",
+    "advice_risk": "high",
+    "signal_risk": "medium"
+  }
+]
+```
+
+## source_exclusion_policy
+
+```json
+{
+  "automatic_exclusion_criteria": [
+    "rejected sources",
+    "hold sources in canary",
+    "candidate sources",
+    "unknown attribution",
+    "no URL",
+    "no license or legal status",
+    "guaranteed return claims",
+    "signal-selling claims",
+    "broker or API credential requirements",
+    "executable strategy code",
+    "untrusted external code execution",
+    "offensive security content not governance-framed",
+    "copyrighted full books or papers",
+    "private connector material",
+    "user-private material",
+    "chain-of-thought content",
+    "trading/* or B8/* content"
+  ],
+  "exclusion_rationale": "Only safe, attributable, governance-oriented metadata may enter memory. All executable, personalized, credential-bearing, or copyrighted content is excluded."
+}
+```
+
+## pre_ingestion_validation_rules
+
+```json
+{
+  "repo_clean_check": true,
+  "memory_faiss_baseline_snapshot": true,
+  "backup_requirements": {
+    "copy_semantic_memory_jsonl": true,
+    "copy_semantic_memory_faiss_index": true,
+    "copy_semantic_memory_faiss_ids_json": true,
+    "verify_backup_integrity": true
+  },
+  "schema_validation": true,
+  "source_acceptance_validation": true,
+  "duplicate_memory_id_check": true,
+  "duplicate_source_id_within_batch_check": true,
+  "content_length_check": true,
+  "forbidden_content_check": true,
+  "domain_authorization_check": true,
+  "financial_domain_lock_check": true,
+  "coding_domain_lock_check": true,
+  "faiss_id_uniqueness_check": true,
+  "dry_run_preview_required": true,
+  "human_approval_required_before_mutation": true
+}
+```
+
+## post_ingestion_validation_rules
+
+```json
+{
+  "memory_line_count_increase_exact": true,
+  "faiss_ids_count_increase_exact": true,
+  "every_new_memory_id_in_semantic_memory_jsonl": true,
+  "every_faiss_id_maps_to_valid_memory_record": true,
+  "no_orphan_memory_records": true,
+  "no_orphan_faiss_ids": true,
+  "no_duplicate_memory_id": true,
+  "no_duplicate_faiss_id": true,
+  "retrieval_smoke_tests_pass": true,
+  "top_k_eval_before_after": true,
+  "rollback_script_available": true,
+  "final_git_diff_inspected_before_commit": true
+}
+```
+
+## human_approval_requirements
+
+```json
+{
+  "this_front_does_not_grant_actual_mutation_permission": true,
+  "future_canary_ingestion_requires_explicit_user_approval": true,
+  "approval_must_include": [
+    "domain",
+    "batch_id",
+    "source_ids",
+    "record_count",
+    "faiss_eligible_count",
+    "backup_path",
+    "rollback_path",
+    "expected_memory_line_count_after",
+    "expected_faiss_ids_count_after"
+  ],
+  "without_approval": {
+    "no_memory_mutation": true,
+    "no_faiss_mutation": true
+  }
+}
+```
+
+## rollback_requirements
+
+```json
+{
+  "pre_mutation_backup_required": true,
+  "restore_semantic_memory_jsonl": true,
+  "restore_semantic_memory_faiss_index": true,
+  "restore_semantic_memory_faiss_ids_json": true,
+  "verify_sha_returns_to_baseline": true,
+  "verify_line_counts_return_to_baseline": true,
+  "verify_faiss_ids_count_returns_to_baseline": true,
+  "auto_rollback_triggers": [
+    "schema validation fails",
+    "line count mismatch",
+    "FAISS id mismatch",
+    "retrieval regression",
+    "duplicate ids",
+    "forbidden content detected",
+    "wrong domain ingested",
+    "financial source ingested accidentally",
+    "coding source ingested accidentally",
+    "runtime smoke fails"
+  ]
+}
+```
+
+## retrieval_quality_eval_requirements
+
+```json
+{
+  "pre_ingestion_baseline_queries": [
+    "What are the security governance controls?",
+    "How does the brain evaluate sources?",
+    "What is the memory architecture?"
+  ],
+  "post_ingestion_same_queries": true,
+  "canary_domain_target_queries": [
+    "What are the NIST AI RMF controls?",
+    "What is the OWASP LLM top 10?",
+    "How does gVisor sandboxing work?"
+  ],
+  "required_metrics": {
+    "top_1_hit": "boolean",
+    "top_3_hit": "boolean",
+    "top_5_hit": "boolean",
+    "top_10_hit": "boolean",
+    "MRR": "float",
+    "domain_precision": "float",
+    "contamination_check": "boolean",
+    "duplicate_retrieval_check": "boolean"
+  },
+  "pass_criteria": [
+    "No regression on existing baseline queries",
+    "Canary records retrievable in top_5",
+    "No financial source retrieved for governance query",
+    "No coding source retrieved for governance query",
+    "No rejected source retrievable",
+    "No hold source retrievable"
+  ]
+}
+```
+
+## source_to_memory_record_policy
+
+```json
+{
+  "accept_only_policy": true,
+  "excluded_statuses": [
+    "hold",
+    "reject",
+    "candidate"
+  ],
+  "content_scope": "metadata_summary_only",
+  "one_record_per_source_per_domain_in_canary": true,
+  "no_chunking": true,
+  "no_recursive_web_crawling": true,
+  "no_full_readme_ingestion": true,
+  "no_full_paper_ingestion": true,
+  "no_book_content_ingestion": true,
+  "no_broker_api_docs_in_first_canary": true,
+  "no_financial_source_in_first_canary": true,
+  "no_coding_source_in_first_canary": true,
+  "memory_id_convention": "extlearn::{domain}::{source_id}::{schema_version}",
+  "source_provenance_required": true,
+  "risk_flags_preserved": true,
+  "required_source_fields_for_memory_record": [
+    "source_id",
+    "title",
+    "source_group",
+    "url",
+    "license",
+    "domain",
+    "taxonomy_tags",
+    "specific_brain_capability_target",
+    "authors_or_org",
+    "year_or_first_release",
+    "maintenance_status",
+    "safety_score_estimate",
+    "acceptance_status"
+  ]
+}
+```
+
+## build_controlled_ingestion_authorization_plan
+
+```json
+{
+  "front_id": "FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01",
+  "domain": {
+    "id": "controlled_ingestion_authorization",
+    "name": "Controlled Ingestion Authorization",
+    "description": "Authorizes a future safe, controlled, human-approved canary/batch ingestion of curated external sources into semantic memory and FAISS. This module does not perform actual ingestion.",
+    "scope": "authorization_plan_only_no_mutation",
+    "actual_memory_mutation_authorized": false,
+    "actual_faiss_mutation_authorized": false,
+    "requires_future_user_approval_for_mutation": true
+  },
+  "authorized_domain_order": [
+    {
+      "domain": "security_governance_sandboxing",
+      "order": 1,
+      "authorization_status": "authorized_for_future_canary",
+      "reason": "Security/Governance sources teach constraints and protective controls, not autonomous actions. Lowest risk of contamination.",
+      "max_canary_records": 5,
+      "max_batch_records_after_canary": 20,
+      "financial_or_execution_risk": "low",
+      "requires_human_approval": true
+    },
+    {
+      "domain": "memory_rag_knowledge_architecture",
+      "order": 2,
+      "authorization_status": "authorized_for_future_canary",
+      "reason": "Memory/RAG sources improve the brain's own knowledge architecture. No external action risk. Purely infrastructural.",
+      "max_canary_records": 5,
+      "max_batch_records_after_canary": 20,
+      "financial_or_execution_risk": "low",
+      "requires_human_approval": true
+    },
+    {
+      "domain": "evaluation_benchmarking",
+      "order": 3,
+      "authorization_status": "authorized_for_future_canary",
+      "reason": "Evaluation sources teach measurement and validation. Useful for assessing all subsequent domains.",
+      "max_canary_records": 5,
+      "max_batch_records_after_canary": 20,
+      "financial_or_execution_risk": "low",
+      "requires_human_approval": true
+    },
+    {
+      "domain": "agentic_systems",
+      "order": 4,
+      "authorization_status": "authorized_for_future_canary",
+      "reason": "Agentic sources expand reasoning and planning capabilities. Moderate risk because they teach autonomous action patterns.",
+      "max_canary_records": 5,
+      "max_batch_records_after_canary": 20,
+      "financial_or_execution_risk": "medium",
+      "requires_human_approval": true
+    },
+    {
+      "domain": "autonomous_coding_patch_generation",
+      "order": 5,
+      "authorization_status": "locked_until_later",
+      "reason": "Coding sources teach code modification. High risk because they could influence self-modification behavior. Locked until security and governance are proven in memory.",
+      "max_canary_records": 0,
+      "max_batch_records_after_canary": 0,
+      "financial_or_execution_risk": "high",
+      "requires_human_approval": true
+    },
+    {
+      "domain": "financial_motor_trading_intelligence",
+      "order": 6,
+      "authorization_status": "locked_until_later",
+      "reason": "Financial sources have risk of advice contamination, signal contamination, and trading-action suggestion. Locked until all other domains are proven safe in memory and explicit financial-action governance is in place.",
+      "max_canary_records": 0,
+      "max_batch_records_after_canary": 0,
+      "financial_or_execution_risk": "high",
+      "requires_human_approval": true
+    }
+  ],
+  "first_canary_scope": {
+    "recommended_first_domain": "security_governance_sandboxing",
+    "allowed_record_count_min": 3,
+    "allowed_record_count_max": 5,
+    "allowed_source_status": [
+      "accept"
+    ],
+    "forbidden_source_status": [
+      "hold",
+      "reject",
+      "candidate"
+    ],
+    "forbidden_domains_first_canary": [
+      "financial_motor_trading_intelligence",
+      "autonomous_coding_patch_generation"
+    ],
+    "allowed_content_type": {
+      "metadata_summary_only": true,
+      "non_executable_governance_knowledge": true,
+      "no_full_paper_text": true,
+      "no_full_readme": true,
+      "no_external_copyrighted_long_content": true
+    },
+    "required_fields": [
+      "memory_id",
+      "source_id",
+      "source_title",
+      "source_group",
+      "source_url",
+      "source_license_or_status",
+      "domain",
+      "taxonomy_tags",
+      "capability_target",
+      "source_provenance",
+      "safety_score_estimate",
+      "acceptance_status",
+      "ingestion_batch_id",
+      "created_at_utc",
+      "content_summary",
+      "retrieval_phrases",
+      "exclusion_notes",
+      "risk_flags"
+    ],
+    "forbidden_fields": [
+      "raw_full_text",
+      "copyrighted_full_content",
+      "credentials",
+      "broker_api_data",
+      "trading_signal",
+      "executable_code",
+      "chain_of_thought",
+      "private_user_data"
+    ]
+  },
+  "batch_limits": {
+    "canary_batch": {
+      "min_records": 3,
+      "max_records": 5,
+      "one_domain_only": true,
+      "allowed_domain": "security_governance_sandboxing",
+      "requires_prior_approval": true,
+      "requires_backup": true,
+      "allows_faiss": false
+    },
+    "controlled_batch_01": {
+      "min_records": 10,
+      "max_records": 20,
+      "allowed_domains": [
+        "security_governance_sandboxing",
+        "memory_rag_knowledge_architecture"
+      ],
+      "requires_canary_pass": true,
+      "requires_prior_approval": true,
+      "requires_backup": true,
+      "allows_faiss": true
+    },
+    "controlled_batch_02": {
+      "min_records": 20,
+      "max_records": 40,
+      "allowed_domains": [
+        "security_governance_sandboxing",
+        "memory_rag_knowledge_architecture",
+        "evaluation_benchmarking"
+      ],
+      "requires_batch_01_pass": true,
+      "requires_prior_approval": true,
+      "requires_backup": true,
+      "allows_faiss": true
+    },
+    "agentic_batch": {
+      "status": "locked",
+      "reason": "agentic systems knowledge requires proven governance ingestion first",
+      "requires_separate_authorization": true,
+      "min_records": 0,
+      "max_records": 0
+    },
+    "coding_batch": {
+      "status": "locked",
+      "reason": "coding sources may influence self-modification; locked until proven safe",
+      "requires_separate_authorization": true,
+      "min_records": 0,
+      "max_records": 0
+    },
+    "financial_batch": {
+      "status": "locked",
+      "reason": "financial knowledge requires additional no-advice and no-signal controls",
+      "requires_separate_authorization": true,
+      "min_records": 0,
+      "max_records": 0
+    }
+  },
+  "memory_record_schema": {
+    "schema_version": "controlled_ingestion_memory_record_v1",
+    "required_fields": [
+      {
+        "name": "memory_id",
+        "type": "string",
+        "description": "Deterministic ID: extlearn::{domain}::{source_id}::{schema_version}"
+      },
+      {
+        "name": "schema_version",
+        "type": "string",
+        "description": "Must be controlled_ingestion_memory_record_v1"
+      },
+      {
+        "name": "source_id",
+        "type": "string",
+        "description": "Source identifier from curation module"
+      },
+      {
+        "name": "source_title",
+        "type": "string",
+        "description": "Human-readable title"
+      },
+      {
+        "name": "source_group",
+        "type": "string",
+        "description": "paper, repo, docs, regulatory, etc."
+      },
+      {
+        "name": "source_url",
+        "type": "string",
+        "description": "Public URL or docs URL"
+      },
+      {
+        "name": "source_license_or_status",
+        "type": "string",
+        "description": "License or legal status"
+      },
+      {
+        "name": "domain",
+        "type": "string",
+        "description": "Curated learning domain"
+      },
+      {
+        "name": "taxonomy_tags",
+        "type": "list[str]",
+        "description": "At least 1 tag from canonical taxonomy"
+      },
+      {
+        "name": "capability_target",
+        "type": "string",
+        "description": "Brain capability this source targets"
+      },
+      {
+        "name": "source_provenance",
+        "type": "string",
+        "description": "Authors, org, year, maintenance status"
+      },
+      {
+        "name": "safety_score_estimate",
+        "type": "integer",
+        "description": "0-125 safety score"
+      },
+      {
+        "name": "acceptance_status",
+        "type": "string",
+        "description": "Must be accept"
+      },
+      {
+        "name": "ingestion_status",
+        "type": "string",
+        "description": "Begins as proposed"
+      },
+      {
+        "name": "ingestion_batch_id",
+        "type": "string",
+        "description": "Batch identifier for tracking"
+      },
+      {
+        "name": "created_at_utc",
+        "type": "string",
+        "description": "ISO timestamp"
+      },
+      {
+        "name": "content_summary",
+        "type": "string",
+        "description": "Max 1200 chars"
+      },
+      {
+        "name": "retrieval_phrases",
+        "type": "list[str]",
+        "description": "3-8 strings for retrieval"
+      },
+      {
+        "name": "evidence_type",
+        "type": "string",
+        "description": "paper_summary, repo_metadata, docs_reference, etc."
+      },
+      {
+        "name": "risk_flags",
+        "type": "list[str]",
+        "description": "Must exist even if empty"
+      },
+      {
+        "name": "exclusion_notes",
+        "type": "string",
+        "description": "Why any content was excluded"
+      },
+      {
+        "name": "faiss_eligible",
+        "type": "boolean",
+        "description": "Whether this record may be embedded"
+      },
+      {
+        "name": "faiss_embedding_text",
+        "type": "string",
+        "description": "Max 1600 chars for embedding"
+      }
+    ],
+    "validation_rules": [
+      {
+        "rule": "schema_version == 'controlled_ingestion_memory_record_v1'",
+        "severity": "fatal"
+      },
+      {
+        "rule": "acceptance_status == 'accept'",
+        "severity": "fatal"
+      },
+      {
+        "rule": "ingestion_status in ['proposed', 'approved', 'ingested']",
+        "severity": "fatal"
+      },
+      {
+        "rule": "source_url is not empty",
+        "severity": "fatal"
+      },
+      {
+        "rule": "len(content_summary) <= 1200",
+        "severity": "error"
+      },
+      {
+        "rule": "len(faiss_embedding_text) <= 1600",
+        "severity": "error"
+      },
+      {
+        "rule": "len(retrieval_phrases) between 3 and 8",
+        "severity": "error"
+      },
+      {
+        "rule": "len(taxonomy_tags) >= 1",
+        "severity": "error"
+      },
+      {
+        "rule": "risk_flags is not None",
+        "severity": "error"
+      },
+      {
+        "rule": "faiss_eligible is boolean",
+        "severity": "error"
+      },
+      {
+        "rule": "no chain-of-thought in any field",
+        "severity": "fatal"
+      },
+      {
+        "rule": "no credentials in any field",
+        "severity": "fatal"
+      },
+      {
+        "rule": "no broker/API credentials in any field",
+        "severity": "fatal"
+      },
+      {
+        "rule": "no trading signal in any field",
+        "severity": "fatal"
+      },
+      {
+        "rule": "no executable code in any field",
+        "severity": "fatal"
+      }
+    ],
+    "forbidden_field_names": [
+      "raw_full_text",
+      "copyrighted_full_content",
+      "credentials",
+      "broker_api_data",
+      "trading_signal",
+      "executable_code",
+      "chain_of_thought",
+      "private_user_data"
+    ]
+  },
+  "source_to_memory_policy": {
+    "accept_only_policy": true,
+    "excluded_statuses": [
+      "hold",
+      "reject",
+      "candidate"
+    ],
+    "content_scope": "metadata_summary_only",
+    "one_record_per_source_per_domain_in_canary": true,
+    "no_chunking": true,
+    "no_recursive_web_crawling": true,
+    "no_full_readme_ingestion": true,
+    "no_full_paper_ingestion": true,
+    "no_book_content_ingestion": true,
+    "no_broker_api_docs_in_first_canary": true,
+    "no_financial_source_in_first_canary": true,
+    "no_coding_source_in_first_canary": true,
+    "memory_id_convention": "extlearn::{domain}::{source_id}::{schema_version}",
+    "source_provenance_required": true,
+    "risk_flags_preserved": true,
+    "required_source_fields_for_memory_record": [
+      "source_id",
+      "title",
+      "source_group",
+      "url",
+      "license",
+      "domain",
+      "taxonomy_tags",
+      "specific_brain_capability_target",
+      "authors_or_org",
+      "year_or_first_release",
+      "maintenance_status",
+      "safety_score_estimate",
+      "acceptance_status"
+    ]
+  },
+  "source_exclusion_policy": {
+    "automatic_exclusion_criteria": [
+      "rejected sources",
+      "hold sources in canary",
+      "candidate sources",
+      "unknown attribution",
+      "no URL",
+      "no license or legal status",
+      "guaranteed return claims",
+      "signal-selling claims",
+      "broker or API credential requirements",
+      "executable strategy code",
+      "untrusted external code execution",
+      "offensive security content not governance-framed",
+      "copyrighted full books or papers",
+      "private connector material",
+      "user-private material",
+      "chain-of-thought content",
+      "trading/* or B8/* content"
+    ],
+    "exclusion_rationale": "Only safe, attributable, governance-oriented metadata may enter memory. All executable, personalized, credential-bearing, or copyrighted content is excluded."
+  },
+  "domain_authorization_matrix": [
+    {
+      "domain": "security_governance_sandboxing",
+      "canary_authorized": true,
+      "batch_01_authorized": true,
+      "batch_02_authorized": true,
+      "faiss_authorized": true,
+      "financial_risk": "low",
+      "execution_risk": "low",
+      "advice_risk": "low",
+      "signal_risk": "low"
+    },
+    {
+      "domain": "memory_rag_knowledge_architecture",
+      "canary_authorized": true,
+      "batch_01_authorized": true,
+      "batch_02_authorized": true,
+      "faiss_authorized": true,
+      "financial_risk": "low",
+      "execution_risk": "low",
+      "advice_risk": "low",
+      "signal_risk": "low"
+    },
+    {
+      "domain": "evaluation_benchmarking",
+      "canary_authorized": false,
+      "batch_01_authorized": false,
+      "batch_02_authorized": true,
+      "faiss_authorized": true,
+      "financial_risk": "low",
+      "execution_risk": "low",
+      "advice_risk": "low",
+      "signal_risk": "low"
+    },
+    {
+      "domain": "agentic_systems",
+      "canary_authorized": false,
+      "batch_01_authorized": false,
+      "batch_02_authorized": false,
+      "faiss_authorized": true,
+      "financial_risk": "low",
+      "execution_risk": "medium",
+      "advice_risk": "low",
+      "signal_risk": "low"
+    },
+    {
+      "domain": "autonomous_coding_patch_generation",
+      "canary_authorized": false,
+      "batch_01_authorized": false,
+      "batch_02_authorized": false,
+      "faiss_authorized": false,
+      "financial_risk": "low",
+      "execution_risk": "high",
+      "advice_risk": "low",
+      "signal_risk": "low"
+    },
+    {
+      "domain": "financial_motor_trading_intelligence",
+      "canary_authorized": false,
+      "batch_01_authorized": false,
+      "batch_02_authorized": false,
+      "faiss_authorized": false,
+      "financial_risk": "high",
+      "execution_risk": "high",
+      "advice_risk": "high",
+      "signal_risk": "medium"
+    }
+  ],
+  "pre_ingestion_validation": {
+    "repo_clean_check": true,
+    "memory_faiss_baseline_snapshot": true,
+    "backup_requirements": {
+      "copy_semantic_memory_jsonl": true,
+      "copy_semantic_memory_faiss_index": true,
+      "copy_semantic_memory_faiss_ids_json": true,
+      "verify_backup_integrity": true
+    },
+    "schema_validation": true,
+    "source_acceptance_validation": true,
+    "duplicate_memory_id_check": true,
+    "duplicate_source_id_within_batch_check": true,
+    "content_length_check": true,
+    "forbidden_content_check": true,
+    "domain_authorization_check": true,
+    "financial_domain_lock_check": true,
+    "coding_domain_lock_check": true,
+    "faiss_id_uniqueness_check": true,
+    "dry_run_preview_required": true,
+    "human_approval_required_before_mutation": true
+  },
+  "post_ingestion_validation": {
+    "memory_line_count_increase_exact": true,
+    "faiss_ids_count_increase_exact": true,
+    "every_new_memory_id_in_semantic_memory_jsonl": true,
+    "every_faiss_id_maps_to_valid_memory_record": true,
+    "no_orphan_memory_records": true,
+    "no_orphan_faiss_ids": true,
+    "no_duplicate_memory_id": true,
+    "no_duplicate_faiss_id": true,
+    "retrieval_smoke_tests_pass": true,
+    "top_k_eval_before_after": true,
+    "rollback_script_available": true,
+    "final_git_diff_inspected_before_commit": true
+  },
+  "retrieval_quality_eval": {
+    "pre_ingestion_baseline_queries": [
+      "What are the security governance controls?",
+      "How does the brain evaluate sources?",
+      "What is the memory architecture?"
+    ],
+    "post_ingestion_same_queries": true,
+    "canary_domain_target_queries": [
+      "What are the NIST AI RMF controls?",
+      "What is the OWASP LLM top 10?",
+      "How does gVisor sandboxing work?"
+    ],
+    "required_metrics": {
+      "top_1_hit": "boolean",
+      "top_3_hit": "boolean",
+      "top_5_hit": "boolean",
+      "top_10_hit": "boolean",
+      "MRR": "float",
+      "domain_precision": "float",
+      "contamination_check": "boolean",
+      "duplicate_retrieval_check": "boolean"
+    },
+    "pass_criteria": [
+      "No regression on existing baseline queries",
+      "Canary records retrievable in top_5",
+      "No financial source retrieved for governance query",
+      "No coding source retrieved for governance query",
+      "No rejected source retrievable",
+      "No hold source retrievable"
+    ]
+  },
+  "rollback": {
+    "pre_mutation_backup_required": true,
+    "restore_semantic_memory_jsonl": true,
+    "restore_semantic_memory_faiss_index": true,
+    "restore_semantic_memory_faiss_ids_json": true,
+    "verify_sha_returns_to_baseline": true,
+    "verify_line_counts_return_to_baseline": true,
+    "verify_faiss_ids_count_returns_to_baseline": true,
+    "auto_rollback_triggers": [
+      "schema validation fails",
+      "line count mismatch",
+      "FAISS id mismatch",
+      "retrieval regression",
+      "duplicate ids",
+      "forbidden content detected",
+      "wrong domain ingested",
+      "financial source ingested accidentally",
+      "coding source ingested accidentally",
+      "runtime smoke fails"
+    ]
+  },
+  "human_approval": {
+    "this_front_does_not_grant_actual_mutation_permission": true,
+    "future_canary_ingestion_requires_explicit_user_approval": true,
+    "approval_must_include": [
+      "domain",
+      "batch_id",
+      "source_ids",
+      "record_count",
+      "faiss_eligible_count",
+      "backup_path",
+      "rollback_path",
+      "expected_memory_line_count_after",
+      "expected_faiss_ids_count_after"
+    ],
+    "without_approval": {
+      "no_memory_mutation": true,
+      "no_faiss_mutation": true
+    }
+  },
+  "summary": {
+    "authorization_status": "authorization_plan_created_no_mutation",
+    "first_canary_domain": "security_governance_sandboxing",
+    "first_canary_record_min": 3,
+    "first_canary_record_max": 5,
+    "actual_memory_mutation_authorized": false,
+    "actual_faiss_mutation_authorized": false,
+    "financial_domain_locked": true,
+    "autonomous_coding_domain_locked": true,
+    "requires_future_user_approval_for_mutation": true,
+    "memory_mutated": false,
+    "faiss_mutated": false
+  }
+}
+```

@@ -1,0 +1,21 @@
+{
+  "status": "LEGACY_PATH_CLEANUP_EXECUTED_QUARANTINE_RENAME_BLOCKED",
+  "branch": "codex/own-capital-sustainable-return",
+  "functional_commit": "c99b453",
+  "ledger_commit": "ca21f52",
+  "head_after": "ca21f52",
+  "remote_branch_head": "ca21f52",
+  "local_equals_remote_branch": true,
+  "canonical_path": "C:\\AI_VAULT_CANONICAL",
+  "original_legacy_path": "C:\\AI_VAULT",
+  "quarantine_target": "C:\\AI_VAULT_LEGACY_QUARANTINE_20260611_220646",
+  "rename_performed": false,
+  "deletion_performed": false,
+  "rollback_possible": true,
+  "canonical_memory_mutated": false,
+  "canonical_faiss_mutated": false,
+  "broker_api_used": false,
+  "trading_used": false,
+  "tests_passed": true,
+  "next_recommended_front": "FRONT-CANONICAL-RUNTIME-SMOKE-VERIFY-01"
+}

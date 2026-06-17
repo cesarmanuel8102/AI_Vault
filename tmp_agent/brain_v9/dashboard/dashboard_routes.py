@@ -348,6 +348,15 @@ def chat(req: ChatRequest) -> dict[str, Any]:
         "provider_degraded": pm.get("provider_degraded", False),
         "fallback_reason": pm.get("fallback_reason", ""),
         "raw_cot_exposed": pm.get("raw_cot_exposed", False),
+        "mode_requested": data.get("mode_requested", ""),
+        "mode_effective": data.get("mode_effective", ""),
+        "auto_decision": data.get("auto_decision", ""),
+        "mode_escalation_required": data.get("mode_escalation_required", False),
+        "mode_escalation_reason": data.get("mode_escalation_reason", ""),
+        "required_permission": data.get("required_permission", ""),
+        "expected_write_scope": data.get("expected_write_scope", []),
+        "confirmation_id": data.get("confirmation_id", ""),
+        "blocked_tools": data.get("blocked_tools", []),
     }
 
 

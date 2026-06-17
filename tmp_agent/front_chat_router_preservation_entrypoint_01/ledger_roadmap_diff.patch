@@ -1,0 +1,137 @@
+diff --git a/ROADMAP_STATUS.json b/ROADMAP_STATUS.json
+index 32c5740..4d098cc 100644
+--- a/ROADMAP_STATUS.json
++++ b/ROADMAP_STATUS.json
+@@ -1,9 +1,9 @@
+ {
+-  "current_head": "1d192c9",
+-  "current_remote_head": "1d192c9",
++  "current_head": "dc62119",
++  "current_remote_head": "dc62119",
+   "branch": "codex/own-capital-sustainable-return",
+-  "migration_status": "chat_ui_docker_networking_fix_applied_openai_adapter_pending",
+-  "last_applied_checkpoint": "FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01",
++  "migration_status": "chat_router_preservation_entrypoint_created",
++  "last_applied_checkpoint": "FRONT-CHAT-ROUTER-PRESERVATION-ENTRYPOINT-01",
+   "completed_fronts": [
+     "BL-01",
+     "B3_fake_grounded_dashboard_runtime",
+@@ -131,7 +131,8 @@
+     "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
+     "FRONT-LEGACY-LOCK-RELEASE-AND-QUARANTINE-RETRY-01",
+     "FRONT-CHAT-UI-E2E-FAILURE-DIAGNOSTIC-01",
+-    "FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01"
++    "FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01",
++    "FRONT-CHAT-ROUTER-PRESERVATION-ENTRYPOINT-01"
+   ],
+   "open_fronts": [],
+   "blocked_fronts": [
+@@ -145,12 +146,12 @@
+     "tmp_agent/reports"
+   ],
+   "recommended_next_front": {
+-    "name": "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-01",
++    "name": "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01",
+     "status": "locked_next_fix",
+-    "reason": "Open WebUI is reachable and Ollama is available, but Brain provider is not ready because /v1/chat/completions is missing."
++    "reason": "canonical chat entrypoint now exists; OpenAI-compatible adapter must call handle_user_message and must not call LLMManager.query directly"
+   },
+-  "ready_for_next_front": "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-01",
+-  "last_updated": "2026-06-12T04:34:01.845383+00:00",
++  "ready_for_next_front": "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01",
++  "last_updated": "2026-06-12T06:34:00.711778+00:00",
+   "phase0_security": {
+     "status": "done",
+     "commits": [
+@@ -2656,5 +2657,36 @@
+     "smoke_test": "tests/smoke/smoke_front_chat_ui_docker_networking_fix_01.py",
+     "next_front_locked": "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-01",
+     "updated_at_utc": "2026-06-12T04:34:01.845383+00:00"
++  },
++  "front_chat_router_preservation_entrypoint_01": {
++    "front": "FRONT-CHAT-ROUTER-PRESERVATION-ENTRYPOINT-01",
++    "status": "CHAT_ROUTER_PRESERVATION_ENTRYPOINT_CREATED",
++    "canonical_path": "C:\\AI_VAULT_CANONICAL",
++    "functional_commit": "dc62119",
++    "intent_detector_called": true,
++    "canonical_entrypoint_created": true,
++    "entrypoint_file": "tmp_agent/brain_v9/core/router_entrypoint.py",
++    "native_chat_wired": true,
++    "router_bypass_risk_reduced": true,
++    "naive_adapter_blocked": true,
++    "openai_adapter_next": true,
++    "runtime_probe": "SERVER_RESTART_REQUIRED",
++    "memory_mutated": false,
++    "faiss_mutated": false,
++    "trading_touched": false,
++    "legacy_touched": false,
++    "raw_cot_exposed": false,
++    "semantic_memory_lines": 1715,
++    "faiss_ids": 1616,
++    "faiss_ntotal": 1616,
++    "semantic_memory_sha256": "ce81fbe1f97e257e2b124d7a929f0b2af86ce61e9ff1d8d832fdb5da1f69e64e",
++    "faiss_index_sha256": "adbb6051f79ecbeab0223d631a6013939c00bcc13216fbae437efe83047efa21",
++    "faiss_ids_sha256": "43736047db548caf9b26dfa61cdffe40e179c738bc8e8c295891f29cedd69102",
++    "tests_passed": true,
++    "test_count": 23,
++    "documentation": "docs/FRONT_CHAT_ROUTER_PRESERVATION_ENTRYPOINT_01.md",
++    "smoke_test": "tests/smoke/smoke_front_chat_router_preservation_entrypoint_01.py",
++    "next_front_locked": "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01",
++    "updated_at_utc": "2026-06-12T06:34:00.711778+00:00"
+   }
+ }
+diff --git a/docs/MIGRATION_CONTROL_LEDGER.md b/docs/MIGRATION_CONTROL_LEDGER.md
+index f40f7f6..56f129a 100644
+--- a/docs/MIGRATION_CONTROL_LEDGER.md
++++ b/docs/MIGRATION_CONTROL_LEDGER.md
+@@ -7147,3 +7147,50 @@ APPROVE_LEGACY_PATH_CLEANUP_EXECUTE_AI_VAULT
+ 
+ ### Next Locked Front
+ `FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-01` remains `LOCKED`.
++
++
++## LEDGER-ROADMAP-SSOT-FRONT-CHAT-ROUTER-PRESERVATION-ENTRYPOINT-01 — Canonical Chat Router Entrypoint Created
++
++- timestamp_utc: `2026-06-12T06:34:00.711778+00:00`
++- branch: `codex/own-capital-sustainable-return`
++- front: `FRONT-CHAT-ROUTER-PRESERVATION-ENTRYPOINT-01`
++- status: `CHAT_ROUTER_PRESERVATION_ENTRYPOINT_CREATED`
++- canonical_path: `C:\AI_VAULT_CANONICAL`
++- functional_commit: `dc62119`
++
++### Router Preservation
++- canonical_entrypoint_created: `true`
++- entrypoint_file: `tmp_agent/brain_v9/core/router_entrypoint.py`
++- intent_detector_called: `true`
++- governance_applied: `true`
++- native_chat_wired: `true`
++- router_bypass_risk_reduced: `true`
++- naive_adapter_blocked: `true`
++- openai_adapter_next: `true`
++- future adapter rule: `/v1/chat/completions` must call `handle_user_message()` and must not call `LLMManager.query()` directly.
++
++### Runtime Probe
++- backend_8090_healthy: `true`
++- runtime_has_loaded_new_entrypoint: `false`
++- server_restart_required: `true`
++- server_restart_performed: `false`
++
++### Canonical Safety
++- memory_mutated: `false`
++- faiss_mutated: `false`
++- trading_touched: `false`
++- legacy_touched: `false`
++- raw_cot_exposed: `false`
++- semantic_memory_lines: `1715`
++- faiss_ids: `1616`
++- faiss_ntotal: `1616`
++- runtime_base_path: `C:\AI_VAULT_CANONICAL`
++
++### Validation
++- tests_passed: `true`
++- test_count: `23`
++- documentation: `docs/FRONT_CHAT_ROUTER_PRESERVATION_ENTRYPOINT_01.md`
++- smoke test: `tests/smoke/smoke_front_chat_router_preservation_entrypoint_01.py`
++
++### Next Locked Front
++`FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01` remains `LOCKED`.

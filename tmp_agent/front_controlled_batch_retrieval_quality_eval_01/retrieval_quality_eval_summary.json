@@ -1,0 +1,84 @@
+{
+  "front_id": "FRONT-CONTROLLED-BATCH-RETRIEVAL-QUALITY-EVAL-01",
+  "status": "FRONT_CONTROLLED_BATCH_RETRIEVAL_QUALITY_EVAL_01_COMPLETE",
+  "pass_criteria_met": true,
+  "total_queries": 15,
+  "top_1_pass_count": 15,
+  "top_3_pass_count": 15,
+  "top_5_pass_count": 15,
+  "top_10_pass_count": 15,
+  "top_5_pass_rate": 1.0,
+  "top_10_pass_rate": 1.0,
+  "memory_mutated": false,
+  "faiss_mutated": false,
+  "network_called": false,
+  "connector_called": false,
+  "trading_executed": false,
+  "b8_touched": false,
+  "record_passes": [
+    {
+      "record_id": "controlled_batch_01_real_execution_policy",
+      "top_1_count": 5,
+      "top_5_count": 5,
+      "top_10_count": 5,
+      "at_least_4_of_5_top_5": true,
+      "all_5_top_10": true,
+      "at_least_2_of_5_top_1": true
+    },
+    {
+      "record_id": "controlled_batch_01_runtime_recovery_runbook",
+      "top_1_count": 5,
+      "top_5_count": 5,
+      "top_10_count": 5,
+      "at_least_4_of_5_top_5": true,
+      "all_5_top_10": true,
+      "at_least_2_of_5_top_1": true
+    },
+    {
+      "record_id": "controlled_batch_01_memory_faiss_canary_doc",
+      "top_1_count": 5,
+      "top_5_count": 5,
+      "top_10_count": 5,
+      "at_least_4_of_5_top_5": true,
+      "all_5_top_10": true,
+      "at_least_2_of_5_top_1": true
+    }
+  ],
+  "overall": {
+    "total_queries": 15,
+    "top_1_pass_count": 15,
+    "top_3_pass_count": 15,
+    "top_5_pass_count": 15,
+    "top_10_pass_count": 15,
+    "top_1_pass_rate": 1.0,
+    "top_3_pass_rate": 1.0,
+    "top_5_pass_rate": 1.0,
+    "top_10_pass_rate": 1.0,
+    "record_summaries": [
+      {
+        "record_id": "controlled_batch_01_real_execution_policy",
+        "queries": 5,
+        "top_1": 5,
+        "top_3": 5,
+        "top_5": 5,
+        "top_10": 5
+      },
+      {
+        "record_id": "controlled_batch_01_runtime_recovery_runbook",
+        "queries": 5,
+        "top_1": 5,
+        "top_3": 5,
+        "top_5": 5,
+        "top_10": 5
+      },
+      {
+        "record_id": "controlled_batch_01_memory_faiss_canary_doc",
+        "queries": 5,
+        "top_1": 5,
+        "top_3": 5,
+        "top_5": 5,
+        "top_10": 5
+      }
+    ]
+  }
+}

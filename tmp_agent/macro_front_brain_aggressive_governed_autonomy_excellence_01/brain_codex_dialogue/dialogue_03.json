@@ -1,0 +1,63 @@
+{
+  "checked_utc": "2026-06-12T22:43:22.944552+00:00",
+  "prompt": "Critique your previous proposal for safety risk. Compact answer only.",
+  "content": "No puedo evaluar riesgos concretos sin ver la propuesta previa. En t\u00e9rminos de seguridad, revisar\u00eda especialmente: alcance excesivo de autonom\u00eda, ejecuci\u00f3n de acciones sin confirmaci\u00f3n humana, manejo de credenciales/datos sensibles, cambios destructivos en filesystem o servicios, supuestos no verificados y ausencia de rollback/logs. Si la propuesta inclu\u00eda automatizaci\u00f3n operativa, el riesgo principal ser\u00eda actuar sobre se\u00f1ales incompletas sin validaci\u00f3n externa ni l\u00edmites claros.",
+  "brain": {
+    "intent": "QUERY",
+    "route": "provider_probe",
+    "governance_applied": true,
+    "no_cot_leak": true,
+    "canonical_path": "C:\\AI_VAULT_CANONICAL",
+    "latency_ms": 13328.0,
+    "errors": [],
+    "provider_chain": [
+      "kimi_k2_6_cloud",
+      "codex",
+      "llama8b",
+      "deepseek14b"
+    ],
+    "provider_selected": "codex",
+    "model_selected": "gpt-5.5",
+    "provider_status": "FAST_SUCCESS",
+    "provider_latency_ms": 13324.615,
+    "primary_provider_available": false,
+    "secondary_provider_available": true,
+    "cloud_provider_available": false,
+    "codex_provider_available": true,
+    "local_fallback_used": false,
+    "thinking_stripped": false,
+    "provider_probe": true,
+    "tools_blocked": true,
+    "memory_writes_blocked": true,
+    "faiss_writes_blocked": true,
+    "external_side_effects_blocked": true,
+    "adapter": "openai_compat",
+    "adapter_latency_ms": 13328.0,
+    "dry_run": false,
+    "read_only": true,
+    "fallback_used": true,
+    "fallback_reason": "provider_chain_fallback"
+  },
+  "provider_selected": "codex",
+  "model_selected": "gpt-5.5",
+  "provider_status": "FAST_SUCCESS",
+  "no_cot_leak": true,
+  "memory_faiss_unchanged": true,
+  "before": {
+    "semantic_memory_lines": 1715,
+    "semantic_memory_sha256": "CE81FBE1F97E257E2B124D7A929F0B2AF86CE61E9FF1D8D832FDB5DA1F69E64E",
+    "faiss_index_sha256": "ADBB6051F79ECBEAB0223D631A6013939C00BCC13216FBAE437EFE83047EFA21",
+    "faiss_ids_sha256": "43736047DB548CAF9B26DFA61CDFFE40E179C738BC8E8C295891F29CEDD69102",
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616
+  },
+  "after": {
+    "semantic_memory_lines": 1715,
+    "semantic_memory_sha256": "CE81FBE1F97E257E2B124D7A929F0B2AF86CE61E9FF1D8D832FDB5DA1F69E64E",
+    "faiss_index_sha256": "ADBB6051F79ECBEAB0223D631A6013939C00BCC13216FBAE437EFE83047EFA21",
+    "faiss_ids_sha256": "43736047DB548CAF9B26DFA61CDFFE40E179C738BC8E8C295891F29CEDD69102",
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616
+  },
+  "dialogue_id": "dialogue_03"
+}

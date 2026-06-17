@@ -1,0 +1,366 @@
+diff --git a/tmp_agent/brain_v9/api/openai_compat.py b/tmp_agent/brain_v9/api/openai_compat.py
+index b1cd3a9..60a9bdb 100644
+--- a/tmp_agent/brain_v9/api/openai_compat.py
++++ b/tmp_agent/brain_v9/api/openai_compat.py
+@@ -89,6 +89,14 @@ def _safe_brain_metadata(result: Dict[str, Any]) -> Dict[str, Any]:
+         "canonical_path": result.get("canonical_path"),
+         "latency_ms": result.get("latency_ms"),
+         "errors": result.get("errors") or [],
++        "provider_chain": result.get("provider_chain"),
++        "provider_selected": result.get("provider_selected"),
++        "model_selected": result.get("model_selected"),
++        "provider_status": result.get("provider_status"),
++        "provider_latency_ms": result.get("provider_latency_ms"),
++        "primary_provider_available": result.get("primary_provider_available"),
++        "secondary_provider_available": result.get("secondary_provider_available"),
++        "local_fallback_used": result.get("local_fallback_used"),
+     }
+     return {k: v for k, v in metadata.items() if k not in FORBIDDEN_DIAGNOSTIC_KEYS}
+ 
+diff --git a/tmp_agent/brain_v9/core/llm.py b/tmp_agent/brain_v9/core/llm.py
+index 51233a0..d74d543 100644
+--- a/tmp_agent/brain_v9/core/llm.py
++++ b/tmp_agent/brain_v9/core/llm.py
+@@ -30,42 +30,50 @@ log = logging.getLogger("LLMManager")
+ 
+ 
+ # ── Cadenas de fallback por tipo de tarea ─────────────────────────────────────
+-# Estrategia (post-restructure 2026-04): CALIDAD primero usando solo recursos
+-# disponibles sin coste extra. Orden: cloud-libre → mejor local → liviano.
+-#  - kimi_cloud (Ollama Cloud, calidad alta, sin API key)
+-#  - deepseek-r1:14b (mejor local, razonamiento fuerte)
+-#  - llama3.1:8b (rapido pero modesto, ultimo recurso)
+-# Circuit breaker (2 fallos -> cooldown 180s) absorbe latencia de modelos caidos.
++# Provider policy 2026-06:
++#   1. Kimi K2.6 cloud, only when configured safely through env.
++#   2. Codex, as engineering/reasoning provider when available.
++#   3. Local Ollama models as fallback/offline/degraded mode.
++# Circuit breaker absorbs empty/timeout/auth failures without accepting them as success.
++PROVIDER_PRIORITY = {
++    "primary_provider": "kimi_k2_6_cloud",
++    "secondary_provider": "codex",
++    "tertiary_provider": "local_ollama",
++    "kimi_model_id": "kimi-k2.6",
++    "local_fallback_models": ["llama3.1:8b", "deepseek-r1:14b", "qwen2.5-coder:14b"],
++}
++
+ CHAINS = {
+-    # Agente / razonamiento — cloud calidad primero, local 14B segundo
+-"agent":    ["kimi_cloud", "codex", "deepseek14b", "llama8b"],
+-    # Frontier — anteriormente Anthropic primero. R3.1: usuario prohibe Anthropic/OpenAI por coste.
+-    # Ahora kimi_cloud (Ollama Cloud, calidad alta, sin API key) lidera.
+-    # sonnet4 queda al final como fallback de emergencia (solo si kimi+local todos fallan).
+-    "agent_frontier": ["kimi_cloud", "codex", "deepseek14b", "llama8b", "sonnet4"],
+-    # Analisis no operativo: Codex primero para explicaciones tecnicas/causales,
+-    # sin meterlo en todo el carril agente general.
+-    "analysis_frontier": ["codex", "kimi_cloud", "deepseek14b", "llama8b"],
+-    # Codigo — coder especializado, fallback a razonadores generales
+-    "code":     ["codex", "coder14b", "deepseek14b", "kimi_cloud", "llama8b"],
+-    # Conversacion — calidad primero
+-    "chat":     ["kimi_cloud", "codex", "deepseek14b", "llama8b"],
++    # Agente / razonamiento — Kimi K2.6 -> Codex -> local fallback
++    "agent":    ["kimi_k2_6_cloud", "codex", "llama8b", "deepseek14b"],
++    "agent_frontier": ["kimi_k2_6_cloud", "codex", "llama8b", "deepseek14b", "sonnet4"],
++    "analysis_frontier": ["kimi_k2_6_cloud", "codex", "llama8b", "deepseek14b"],
++    # Codigo — Kimi/Codex primero; coder local solo fallback.
++    "code":     ["kimi_k2_6_cloud", "codex", "coder14b", "llama8b", "deepseek14b"],
++    # Conversacion — provider chain first, local only fallback.
++    "chat":     ["kimi_k2_6_cloud", "codex", "llama8b", "deepseek14b"],
+     # Sin internet — solo locales
+     "offline":  ["deepseek14b",  "llama8b"],
+     # Por nombre explicito (legacy "ollama") — igual que chat/cloud, NO bloquear con local
+-    "ollama":   ["kimi_cloud", "codex", "deepseek14b", "llama8b"],
+-    "codex":    ["codex", "kimi_cloud", "deepseek14b", "llama8b"],
++    "ollama":   ["kimi_k2_6_cloud", "codex", "llama8b", "deepseek14b"],
++    "codex":    ["kimi_k2_6_cloud", "codex", "llama8b", "deepseek14b"],
+     "agent_legacy": ["kimi_cloud", "deepseek14b", "llama8b"],
+     "agent_frontier_legacy": ["kimi_cloud", "deepseek14b", "llama8b", "sonnet4"],
+     "analysis_frontier_legacy": ["kimi_cloud", "deepseek14b", "llama8b"],
+     "code_legacy": ["coder14b", "deepseek14b", "kimi_cloud", "llama8b"],
+     "chat_legacy": ["kimi_cloud", "deepseek14b", "llama8b"],
+-    "gpt4":     ["gpt4",         "kimi_cloud",  "llama8b"],
+-    "claude":   ["claude",       "kimi_cloud",  "llama8b"],
++    "gpt4":     ["kimi_k2_6_cloud", "codex", "gpt4", "llama8b"],
++    "claude":   ["kimi_k2_6_cloud", "codex", "claude", "llama8b"],
+ }
+ 
+ # ── Definicion de modelos ──────────────────────────────────────────────────────
+ MODELS = {
++    "kimi_k2_6_cloud": {
++        "type":    "kimi_openai_compat",
++        "model":   "kimi-k2.6",
++        "timeout": 60,
++        "local":   False,
++    },
+     "deepseek14b": {
+         "type":    "ollama",
+         "model":   OLLAMA_AGENT_MODEL,
+@@ -353,12 +361,11 @@ class LLMManager:
+             ])
+             _force_reorder = self._chain_in_cooldown(model_priority)
+             if (_est > 4500 or _force_reorder) and len(chain) > 1:
+-                # Build a sortable chain: ollama models sorted by max_num_ctx desc,
+-                # then non-ollama in original order. Only reorder if it changes.
+-                pinned_prefix: List[str] = []
++                # Build a sortable chain: preserve non-Ollama provider priority
++                # (Kimi K2.6 -> Codex), and sort only local/Ollama fallbacks by
++                # max context. Do not let ctx routing invert strategic provider
++                # priority.
+                 mutable_chain = list(chain)
+-                if mutable_chain and MODELS.get(mutable_chain[0], {}).get("type") == "codex_cli":
+-                    pinned_prefix = [mutable_chain.pop(0)]
+                 def _ctx_score(mk: str) -> int:
+                     c = MODELS.get(mk, {})
+                     if c.get("type") != "ollama":
+@@ -369,7 +376,7 @@ class LLMManager:
+                 ollamas = [m for m in mutable_chain if MODELS.get(m, {}).get("type") == "ollama"]
+                 others = [m for m in mutable_chain if MODELS.get(m, {}).get("type") != "ollama"]
+                 ollamas_sorted = sorted(ollamas, key=_ctx_score, reverse=True)
+-                new_chain = pinned_prefix + ollamas_sorted + others
++                new_chain = others + ollamas_sorted
+                 if new_chain != list(chain):
+                     log.info(
+                         "Pre-flight ctx routing: prompt~%d tok, reordering "
+@@ -388,6 +395,7 @@ class LLMManager:
+         has_net = await self._has_internet()
+ 
+         last_error = None
++        attempts: List[Dict[str, Any]] = []
+         for idx, model_key in enumerate(chain):
+             cfg = MODELS.get(model_key)
+             if cfg is None:
+@@ -400,12 +408,19 @@ class LLMManager:
+             if cfg["type"] in {"openai", "openai_responses"} and not API_KEYS.get("openai"):
+                 log.debug("Sin OPENAI_API_KEY — saltando %s", model_key)
+                 last_error = f"{model_key}: OPENAI_API_KEY no configurada"
++                attempts.append({"model_key": model_key, "status": "CONFIG_MISSING", "reason": "OPENAI_API_KEY missing"})
++                continue
++            if cfg["type"] == "kimi_openai_compat" and not self._kimi_configured():
++                log.debug("Sin KIMI/MOONSHOT config — saltando %s", model_key)
++                last_error = f"{model_key}: KIMI_CONFIG_MISSING"
++                attempts.append({"model_key": model_key, "status": "CONFIG_MISSING", "reason": "KIMI/MOONSHOT env missing"})
+                 continue
+ 
+             # Circuit breaker: saltar modelos en cooldown
+             if self._cb_is_open(model_key):
+                 log.info("CB-skip %s (cooldown activo)", model_key)
+                 last_error = f"{model_key}: circuit_open"
++                attempts.append({"model_key": model_key, "status": "DISABLED_BY_POLICY", "reason": "circuit_open"})
+                 continue
+ 
+             # P-OP58: Budget-aware chain — skip models that can't finish
+@@ -413,15 +428,18 @@ class LLMManager:
+             if max_time is not None:
+                 elapsed = time.time() - start
+                 remaining = max_time - elapsed
+-                model_timeout = cfg["timeout"]
+-                # Need at least model_timeout + 2s margin for the model to
+-                # actually complete (not just start).
+-                if remaining < model_timeout + 2:
++                # The effective timeout is capped below, so do not reject a
++                # provider solely because its nominal timeout is larger than
++                # the remaining request budget. Only skip if there is no useful
++                # window left to attempt the provider at all.
++                min_provider_budget = 8
++                if remaining < min_provider_budget:
+                     log.info(
+-                        "Budget-skip %s: remaining=%.1fs < needed=%ds",
+-                        model_key, remaining, model_timeout + 2,
++                        "Budget-skip %s: remaining=%.1fs < min_provider_budget=%ds",
++                        model_key, remaining, min_provider_budget,
+                     )
+                     last_error = f"{model_key}: skipped (budget exhausted, {remaining:.0f}s left)"
++                    attempts.append({"model_key": model_key, "status": "TIMEOUT", "reason": "budget_exhausted"})
+                     continue
+ 
+             # R6.1: Skip ollama models when their context budget is too tight
+@@ -457,6 +475,7 @@ class LLMManager:
+                         f"{model_key}: ctx_too_tight "
+                         f"(prompt~{est_input}, room={room_for_predict})"
+                     )
++                    attempts.append({"model_key": model_key, "status": "DISABLED_BY_POLICY", "reason": "ctx_too_tight"})
+                     continue
+ 
+             try:
+@@ -470,9 +489,11 @@ class LLMManager:
+                     remaining = max_time - (time.time() - start)
+                     effective_timeout = min(cfg["timeout"], max(5, remaining - 1))
+ 
++                provider_start = time.time()
+                 result = await self._query_model(
+                     {**cfg, "timeout": effective_timeout}, messages, tools_context
+                 )
++                provider_latency = time.time() - provider_start
+                 latency = time.time() - start
+                 self._update_latency(latency)
+                 self.metrics["success"] += 1
+@@ -482,9 +503,33 @@ class LLMManager:
+                 self._record_chain_outcome(model_priority, True)
+                 if self.metrics["total"] % self._PERSIST_EVERY == 0:
+                     self._persist_metrics()
++                provider_status = "FAST_SUCCESS" if provider_latency < 20 else "SLOW_SUCCESS"
++                attempts.append({
++                    "model_key": model_key,
++                    "model": cfg.get("model"),
++                    "status": provider_status,
++                    "latency_ms": round(provider_latency * 1000, 3),
++                })
+                 result["model_key"] = model_key
+                 result["latency"]   = latency
+                 result["fallback"]  = idx > 0
++                result["provider_chain"] = list(chain)
++                result["provider_attempts"] = attempts
++                result["provider_selected"] = model_key
++                result["model_selected"] = result.get("model_used") or result.get("model") or cfg.get("model")
++                result["provider_latency_ms"] = round(provider_latency * 1000, 3)
++                result["provider_status"] = provider_status
++                result["fallback_used"] = idx > 0
++                result["fallback_reason"] = "provider_chain_fallback" if idx > 0 else None
++                result["primary_provider_available"] = any(
++                    a.get("model_key") == "kimi_k2_6_cloud" and a.get("status") in {"FAST_SUCCESS", "SLOW_SUCCESS"}
++                    for a in attempts
++                )
++                result["secondary_provider_available"] = any(
++                    a.get("model_key") == "codex" and a.get("status") in {"FAST_SUCCESS", "SLOW_SUCCESS"}
++                    for a in attempts
++                )
++                result["local_fallback_used"] = bool(cfg.get("local"))
+                 log.info("LLM query OK: model_key=%s latency=%.2fs fallback=%s",
+                          model_key, latency, idx > 0)
+                 return result
+@@ -492,15 +537,26 @@ class LLMManager:
+             except asyncio.TimeoutError:
+                 last_error = f"{model_key}: timeout ({cfg['timeout']}s)"
+                 log.warning("Timeout en %s", model_key)
++                attempts.append({"model_key": model_key, "model": cfg.get("model"), "status": "TIMEOUT"})
+                 self._cb_record_failure(model_key)
+             except ClientConnectorError:
+                 last_error = f"{model_key}: no se puede conectar"
+                 log.warning("Sin conexion a %s", model_key)
++                attempts.append({"model_key": model_key, "model": cfg.get("model"), "status": "TIMEOUT", "reason": "connector_error"})
+                 self._cb_record_failure(model_key)
+             except Exception as e:
+                 last_error = f"{model_key}: {e}"
+                 log.warning("Error en %s: %s", model_key, e)
+                 err_l = str(e).lower()
++                if "vacia" in err_l or "empty" in err_l:
++                    status = "EMPTY_RESPONSE"
++                elif "auth" in err_l or "401" in err_l or "403" in err_l:
++                    status = "AUTH_FAILED"
++                elif "config" in err_l or "api_key" in err_l:
++                    status = "CONFIG_MISSING"
++                else:
++                    status = "UNKNOWN"
++                attempts.append({"model_key": model_key, "model": cfg.get("model"), "status": status, "reason": str(e)[:200]})
+                 if any(token in err_l for token in ("insufficient_quota", "billing", "429")):
+                     self._cb_open_immediately(model_key)
+                 else:
+@@ -522,6 +578,16 @@ class LLMManager:
+             # R7.1: surface the full attempted chain so the caller can give
+             # the user an honest, actionable message instead of "(sin respuesta)".
+             "models_tried": list(chain),
++            "provider_chain": list(chain),
++            "provider_attempts": attempts,
++            "provider_status": "FAILED",
++            "provider_selected": None,
++            "model_selected": None,
++            "fallback_used": False,
++            "fallback_reason": last_error or "all_providers_failed",
++            "primary_provider_available": False,
++            "secondary_provider_available": False,
++            "local_fallback_used": any(a.get("status") in {"FAST_SUCCESS", "SLOW_SUCCESS"} and MODELS.get(a.get("model_key"), {}).get("local") for a in attempts),
+         }
+ 
+     # ── Dispatcher de backends ────────────────────────────────────────────────
+@@ -543,6 +609,13 @@ class LLMManager:
+                 model=cfg.get("model", OPENAI_CODEX_MODEL),
+                 timeout=cfg.get("timeout", 120),
+             )
++        elif t == "kimi_openai_compat":
++            content = await self._kimi_openai_compat(
++                messages,
++                tools_context,
++                model=cfg.get("model", "kimi-k2.6"),
++                timeout=cfg.get("timeout", 60),
++            )
+         elif t == "codex_cli":
+             content = await self._codex_cli(
+                 messages,
+@@ -559,14 +632,75 @@ class LLMManager:
+         else:
+             raise ValueError(f"Tipo desconocido: {t}")
+ 
++        if not str(content or "").strip():
++            raise RuntimeError(f"{t} devolvio respuesta vacia")
++
+         return {
+             "success":  True,
+-            "content":  content,
+-            "response": content,
++            "content":  str(content).strip(),
++            "response": str(content).strip(),
+             "model":    cfg.get("model", t),
+             "model_used": cfg.get("model", t),
+         }
+ 
++    @staticmethod
++    def _kimi_api_key() -> str:
++        return os.getenv("KIMI_API_KEY") or os.getenv("MOONSHOT_API_KEY") or ""
++
++    @staticmethod
++    def _kimi_base_url() -> str:
++        return (
++            os.getenv("KIMI_BASE_URL")
++            or os.getenv("MOONSHOT_BASE_URL")
++            or "https://api.moonshot.ai/v1/chat/completions"
++        )
++
++    @classmethod
++    def _kimi_configured(cls) -> bool:
++        return bool(cls._kimi_api_key())
++
++    async def _kimi_openai_compat(
++        self,
++        messages: List[Dict],
++        tools_context: Optional[Dict],
++        model: str = "kimi-k2.6",
++        timeout: int = 60,
++    ) -> str:
++        key = self._kimi_api_key()
++        if not key:
++            raise ValueError("KIMI_CONFIG_MISSING")
++        system = SYSTEM_IDENTITY + self._fmt_tools(tools_context)
++        msgs = [{"role": "system", "content": system}] + [
++            {"role": m.get("role"), "content": m.get("content", "")}
++            for m in messages
++            if m.get("role") in ("user", "assistant")
++        ]
++        s = await self._get_session(timeout)
++        async with s.post(
++            self._kimi_base_url(),
++            headers={
++                "Authorization": f"Bearer {key}",
++                "Content-Type": "application/json",
++            },
++            json={
++                "model": model,
++                "messages": msgs,
++                "temperature": LLM_CONFIG["temperature"],
++                "max_tokens": min(int(LLM_CONFIG["max_tokens"]), 4096),
++            },
++            timeout=ClientTimeout(total=timeout),
++        ) as r:
++            if r.status in {401, 403}:
++                raise RuntimeError(f"KIMI_AUTH_FAILED HTTP {r.status}")
++            if r.status != 200:
++                body = (await r.text())[:500]
++                raise RuntimeError(f"Kimi HTTP {r.status}: {body}")
++            data = json.loads(await r.read())
++            try:
++                return data["choices"][0]["message"]["content"].strip()
++            except Exception as exc:
++                raise RuntimeError(f"Kimi devolvio payload sin texto util: keys={list(data.keys())}") from exc
++
+     @staticmethod
+     def _build_codex_cli_prompt(messages: List[Dict], tools_context: Optional[Dict]) -> str:
+         system = SYSTEM_IDENTITY

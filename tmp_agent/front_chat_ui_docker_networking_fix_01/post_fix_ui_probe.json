@@ -1,0 +1,255 @@
+{
+  "reachable": true,
+  "retries": [
+    {
+      "attempt": 1,
+      "probe_127": {
+        "url": "http://127.0.0.1:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 12.8,
+        "error": "RemoteDisconnected",
+        "message": "Remote end closed connection without response",
+        "excerpt": ""
+      },
+      "probe_localhost": {
+        "url": "http://localhost:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 5.5,
+        "error": "RemoteDisconnected",
+        "message": "Remote end closed connection without response",
+        "excerpt": ""
+      }
+    },
+    {
+      "attempt": 2,
+      "probe_127": {
+        "url": "http://127.0.0.1:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 2.5,
+        "error": "RemoteDisconnected",
+        "message": "Remote end closed connection without response",
+        "excerpt": ""
+      },
+      "probe_localhost": {
+        "url": "http://localhost:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 19.7,
+        "error": "ConnectionAbortedError",
+        "message": "[WinError 10053] An established connection was aborted by the software in your host machine",
+        "excerpt": ""
+      }
+    },
+    {
+      "attempt": 3,
+      "probe_127": {
+        "url": "http://127.0.0.1:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 12.3,
+        "error": "RemoteDisconnected",
+        "message": "Remote end closed connection without response",
+        "excerpt": ""
+      },
+      "probe_localhost": {
+        "url": "http://localhost:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 20.7,
+        "error": "ConnectionAbortedError",
+        "message": "[WinError 10053] An established connection was aborted by the software in your host machine",
+        "excerpt": ""
+      }
+    },
+    {
+      "attempt": 4,
+      "probe_127": {
+        "url": "http://127.0.0.1:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 20.3,
+        "error": "RemoteDisconnected",
+        "message": "Remote end closed connection without response",
+        "excerpt": ""
+      },
+      "probe_localhost": {
+        "url": "http://localhost:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 15.0,
+        "error": "ConnectionAbortedError",
+        "message": "[WinError 10053] An established connection was aborted by the software in your host machine",
+        "excerpt": ""
+      }
+    },
+    {
+      "attempt": 5,
+      "probe_127": {
+        "url": "http://127.0.0.1:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 1.8,
+        "error": "RemoteDisconnected",
+        "message": "Remote end closed connection without response",
+        "excerpt": ""
+      },
+      "probe_localhost": {
+        "url": "http://localhost:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 6.8,
+        "error": "RemoteDisconnected",
+        "message": "Remote end closed connection without response",
+        "excerpt": ""
+      }
+    },
+    {
+      "attempt": 6,
+      "probe_127": {
+        "url": "http://127.0.0.1:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 16.1,
+        "error": "RemoteDisconnected",
+        "message": "Remote end closed connection without response",
+        "excerpt": ""
+      },
+      "probe_localhost": {
+        "url": "http://localhost:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 20.5,
+        "error": "ConnectionAbortedError",
+        "message": "[WinError 10053] An established connection was aborted by the software in your host machine",
+        "excerpt": ""
+      }
+    },
+    {
+      "attempt": 7,
+      "probe_127": {
+        "url": "http://127.0.0.1:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 13.9,
+        "error": "RemoteDisconnected",
+        "message": "Remote end closed connection without response",
+        "excerpt": ""
+      },
+      "probe_localhost": {
+        "url": "http://localhost:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 5.0,
+        "error": "RemoteDisconnected",
+        "message": "Remote end closed connection without response",
+        "excerpt": ""
+      }
+    },
+    {
+      "attempt": 8,
+      "probe_127": {
+        "url": "http://127.0.0.1:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 2.5,
+        "error": "RemoteDisconnected",
+        "message": "Remote end closed connection without response",
+        "excerpt": ""
+      },
+      "probe_localhost": {
+        "url": "http://localhost:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 6.4,
+        "error": "RemoteDisconnected",
+        "message": "Remote end closed connection without response",
+        "excerpt": ""
+      }
+    },
+    {
+      "attempt": 9,
+      "probe_127": {
+        "url": "http://127.0.0.1:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 3.5,
+        "error": "RemoteDisconnected",
+        "message": "Remote end closed connection without response",
+        "excerpt": ""
+      },
+      "probe_localhost": {
+        "url": "http://localhost:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 7.8,
+        "error": "RemoteDisconnected",
+        "message": "Remote end closed connection without response",
+        "excerpt": ""
+      }
+    },
+    {
+      "attempt": 10,
+      "probe_127": {
+        "url": "http://127.0.0.1:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 17.5,
+        "error": "RemoteDisconnected",
+        "message": "Remote end closed connection without response",
+        "excerpt": ""
+      },
+      "probe_localhost": {
+        "url": "http://localhost:3000/",
+        "ok": false,
+        "status_code": null,
+        "response_ms": 13.0,
+        "error": "ConnectionAbortedError",
+        "message": "[WinError 10053] An established connection was aborted by the software in your host machine",
+        "excerpt": ""
+      }
+    },
+    {
+      "attempt": 11,
+      "probe_127": {
+        "url": "http://127.0.0.1:3000/",
+        "ok": true,
+        "status_code": 200,
+        "response_ms": 28.1,
+        "content_type": "text/html; charset=utf-8",
+        "excerpt": "<!doctype html>\n<html lang=\"en\">\n\t<head>\n\t\t<meta charset=\"utf-8\" />\n\t\t<link rel=\"icon\" type=\"image/png\" href=\"/static/favicon.png\" crossorigin=\"use-credentials\" />\n\t\t<link\n\t\t\trel=\"icon\"\n\t\t\ttype=\"image/png\"\n\t\t\thref=\"/static/favicon-96x96.png\"\n\t\t\tsizes=\"96x96\"\n\t\t\tcrossorigin=\"use-credentials\"\n\t\t/>\n\t\t<link\n\t\t\trel=\"icon\"\n\t\t\ttype=\"image/svg+xml\"\n\t\t\thref=\"/static/favicon.svg\"\n\t\t\tcrossorigin=\"use-credentials\"\n\t\t/>\n\t\t<link rel=\"shortcut icon\" href=\"/static/favicon.ico\" crossorigin=\"use-credentials\" />\n\t"
+      },
+      "probe_localhost": {
+        "url": "http://localhost:3000/",
+        "ok": true,
+        "status_code": 200,
+        "response_ms": 22.4,
+        "content_type": "text/html; charset=utf-8",
+        "excerpt": "<!doctype html>\n<html lang=\"en\">\n\t<head>\n\t\t<meta charset=\"utf-8\" />\n\t\t<link rel=\"icon\" type=\"image/png\" href=\"/static/favicon.png\" crossorigin=\"use-credentials\" />\n\t\t<link\n\t\t\trel=\"icon\"\n\t\t\ttype=\"image/png\"\n\t\t\thref=\"/static/favicon-96x96.png\"\n\t\t\tsizes=\"96x96\"\n\t\t\tcrossorigin=\"use-credentials\"\n\t\t/>\n\t\t<link\n\t\t\trel=\"icon\"\n\t\t\ttype=\"image/svg+xml\"\n\t\t\thref=\"/static/favicon.svg\"\n\t\t\tcrossorigin=\"use-credentials\"\n\t\t/>\n\t\t<link rel=\"shortcut icon\" href=\"/static/favicon.ico\" crossorigin=\"use-credentials\" />\n\t"
+      }
+    }
+  ],
+  "docker_ps": {
+    "ok": true,
+    "returncode": 0,
+    "stdout": "{\"Command\":\"\\\"bash start.sh\\\"\",\"CreatedAt\":\"2026-02-18 20:13:47 -0500 EST\",\"ID\":\"61edccb48634\",\"Image\":\"ghcr.io/open-webui/open-webui:main\",\"Labels\":\"desktop.docker.io/ports.scheme=v2,desktop.docker.io/ports/8080/tcp=:3000,org.opencontainers.image.created=2026-02-17T07:26:02.650Z,org.opencontainers.image.description=User-friendly AI Interface (Supports Ollama, OpenAI API, ...),org.opencontainers.image.licenses=NOASSERTION,org.opencontainers.image.revision=b8112d72b95e480f946f0688bed29321b61e65af,org.opencontainers.image.source=https://github.com/open-webui/open-webui,org.opencontainers.image.title=open-webui,org.opencontainers.image.url=https://github.com/open-webui/open-webui,org.opencontainers.image.version=main\",\"LocalVolumes\":\"1\",\"Mounts\":\"open-webui\",\"Names\":\"open-webui\",\"Networks\":\"bridge\",\"Platform\":{\"architecture\":\"amd64\",\"os\":\"linux\"},\"Ports\":\"0.0.0.0:3000-\\u003e8080/tcp, [::]:3000-\\u003e8080/tcp\",\"RunningFor\":\"3 months ago\",\"Size\":\"53.6MB (virtual 4.91GB)\",\"State\":\"running\",\"Status\":\"Up 32 seconds (health: starting)\"}\n",
+    "stderr": "",
+    "cmd": "docker ps --format {{json .}}"
+  },
+  "port_3000_listener": {
+    "ok": true,
+    "returncode": 0,
+    "stdout": "[{\"LocalAddress\":\"::1\",\"LocalPort\":3000,\"OwningProcess\":262900,\"State\":2},{\"LocalAddress\":\"::\",\"LocalPort\":3000,\"OwningProcess\":257492,\"State\":2}]\n",
+    "stderr": "",
+    "cmd": "powershell -NoProfile -Command Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue | Select-Object LocalAddress,LocalPort,OwningProcess,State | ConvertTo-Json -Compress"
+  },
+  "open_webui_logs_tail": {
+    "ok": true,
+    "returncode": 0,
+    "stdout": null,
+    "stderr": null,
+    "cmd": "docker logs --tail 200 open-webui"
+  }
+}

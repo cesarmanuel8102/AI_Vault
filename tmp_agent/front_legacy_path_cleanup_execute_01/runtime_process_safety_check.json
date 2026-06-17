@@ -1,0 +1,17 @@
+{
+  "front_id": "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01",
+  "runtime_config": {
+    "imported_BASE_PATH": "C:\\AI_VAULT_CANONICAL",
+    "env_BRAIN_BASE_PATH": "(not set)",
+    "base_path_canonical": true
+  },
+  "active_processes": {
+    "legacy_path_references_found": 0,
+    "legacy_process_lines_sample": []
+  },
+  "runtime_server": {
+    "running": false,
+    "http_status": null
+  },
+  "verdict": "PASS"
+}

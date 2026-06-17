@@ -1,0 +1,26 @@
+{
+  "recommended_fix_front": "FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01",
+  "primary_failure": "UI_NOT_REACHABLE",
+  "files_likely_to_change": [
+    "Open WebUI/container/startup configuration if UI should run on 3000",
+    "tmp_agent/brain_v9/main.py only if OpenAI-compatible adapter is chosen after UI is reachable",
+    "tests/smoke/smoke_front_chat_ui_docker_networking_fix_01.py"
+  ],
+  "tests_to_add": [
+    "Open WebUI port 3000 reachable",
+    "provider points to canonical Brain backend 8090",
+    "native /chat responds within timeout",
+    "OpenAI-compatible route if Open WebUI provider requires it",
+    "canonical retrieval canary answer"
+  ],
+  "no_memory_mutation_rule": true,
+  "rollback_plan": "revert only provider/config/adapter commit; do not modify memory/semantic, FAISS, QC, trading, or legacy paths",
+  "expected_success_criteria": [
+    "direct backend chat passes",
+    "Open WebUI chat passes",
+    "canonical retrieval evidence appears",
+    "no raw CoT leakage",
+    "response latency acceptable",
+    "tests pass"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "status": "BRAIN_LLM_PROVIDER_CHAIN_OPTIMIZATION_PARTIAL_KIMI_CONFIG_MISSING",
+  "primary_provider": "kimi_k2_6_cloud",
+  "secondary_provider": "codex",
+  "tertiary_provider": "local_ollama",
+  "kimi_status": "CONFIG_MISSING",
+  "codex_status": "EXECUTOR_AVAILABLE_NOT_SELF_BENCHMARKED",
+  "local_status": "AVAILABLE",
+  "provider_selected_for_chat": "kimi_k2_6_cloud when configured, else codex, else llama8b/deepseek14b",
+  "provider_selected_for_coding": "kimi_k2_6_cloud when configured, else codex, else qwen2.5-coder:14b",
+  "provider_selected_for_autonomy": "kimi_k2_6_cloud when configured, else codex, else llama8b/deepseek14b",
+  "local_fallback_model": "llama3.1:8b",
+  "demoted_or_disabled": [
+    "kimi-k2.5:cloud removed from primary chains because it returned empty on autonomy probe"
+  ],
+  "budget_skip_fix": "nominal timeout no longer blocks provider attempt when remaining budget can be capped",
+  "empty_response_policy": "empty content raises failure and chain continues",
+  "metadata_fields": [
+    "provider_chain",
+    "provider_selected",
+    "model_selected",
+    "provider_status",
+    "provider_latency_ms",
+    "fallback_used",
+    "fallback_reason",
+    "primary_provider_available",
+    "secondary_provider_available",
+    "local_fallback_used"
+  ],
+  "secrets_exposed": false
+}

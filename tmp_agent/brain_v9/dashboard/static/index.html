@@ -90,6 +90,11 @@
     <section class="panel">
       <h2>Chat with Brain</h2>
       <div class="chat">
+        <div id="chat-mode-selector" class="mode-segment" style="display:flex;gap:2px;margin-bottom:8px;">
+          <button id="dash-mode-read" class="mode-btn active" onclick="setChatMode('read_only')">📖 READ</button>
+          <button id="dash-mode-build" class="mode-btn" onclick="setChatMode('build')">🔨 BUILD</button>
+          <button id="dash-mode-auto" class="mode-btn" onclick="setChatMode('auto')">⚙ AUTO</button>
+        </div>
         <textarea id="msg" placeholder="Ask Brain something…"></textarea>
         <div class="chat-meta" id="chat-meta"></div>
         <button onclick="chat()">Send</button>
@@ -103,6 +108,6 @@
       <div id="alerts" class="alerts"></div>
     </section>
   </main>
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=2"></script>
 </body>
 </html>

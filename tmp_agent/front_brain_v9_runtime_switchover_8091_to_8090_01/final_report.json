@@ -1,0 +1,10 @@
+{
+  "status": "SWITCHOVER_BLOCKED_UNSAFE_8090_OWNER",
+  "safe_to_stop_8090": false,
+  "switchover_performed": false,
+  "runtime_8091_remains_active": true,
+  "memory_mutated": false,
+  "faiss_mutated": false,
+  "trading_touched": false,
+  "legacy_touched": false
+}

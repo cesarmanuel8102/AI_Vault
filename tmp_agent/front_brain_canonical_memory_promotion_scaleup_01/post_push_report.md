@@ -1,0 +1,24 @@
+# FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-SCALEUP-01 Post-Push Report
+
+- status: PUSHED_AND_SYNCED
+- branch: codex/own-capital-sustainable-return
+- start_head: ef3a5c8
+- head_after: 02f1db4
+- remote_after: 02f1db4
+- local_equals_remote: True
+- commits_pushed: 950778c, dc85d5b, 26f880c, 811139d, 02f1db4
+- canonical_promotion_performed: false
+- promoted_count: 0
+- semantic_lines: 1715 -> 1715
+- faiss_ids: 1616 -> 1616
+- faiss_ntotal: 1616 -> 1616
+- raw_cot_exposed: false
+- secrets_exposed: false
+- trading_touched: false
+- b8_touched: false
+- strategies_touched: false
+- staged_empty: True
+- tracked_clean: True
+- push_done: true
+- force_push_done: false
+- recommended_next_action: FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01

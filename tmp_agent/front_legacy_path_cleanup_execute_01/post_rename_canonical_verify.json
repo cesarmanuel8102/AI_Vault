@@ -1,0 +1,17 @@
+{
+  "front_id": "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01",
+  "status": "RENAME_FAILED_CANONICAL_UNCHANGED",
+  "C_AI_VAULT_exists": true,
+  "quarantine_target_exists": false,
+  "C_AI_VAULT_CANONICAL_exists": true,
+  "semantic_memory_jsonl_unchanged": true,
+  "semantic_memory_faiss_index_unchanged": true,
+  "semantic_memory_faiss_ids_unchanged": true,
+  "semantic_memory_lines": 1715,
+  "faiss_ids_count": 1616,
+  "faiss_ntotal": 1616,
+  "BASE_PATH_canonical": true,
+  "FAISS_index_path_canonical": true,
+  "FAISS_ids_path_canonical": true,
+  "verdict": "PASS"
+}

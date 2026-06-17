@@ -1,0 +1,62 @@
+{
+  "checked_utc": "2026-06-12T22:42:08.043691+00:00",
+  "prompt": "Current state: Brain has Kimi K2.6 provider_probe live, no semantic/FAISS writes, governed LOW/MEDIUM patch authorization.\nGoal: strengthen CEI/FDOT usefulness. Propose one highest-value LOW/MEDIUM improvement. Return compact bullets: improvement, risk, test, evidence. No hidden reasoning.",
+  "content": "- Mejora: a\u00f1adir \u201cCEI/FDOT impact diff\u201d por patch candidato: antes/despu\u00e9s de cada cambio LOW/MEDIUM, calcular si mejora cobertura de evidencia, reduce ambig\u00fcedad de edge o aumenta trazabilidad contexto\u2192decisi\u00f3n, sin escribir FAISS.\n- Riesgo: sobreoptimizar m\u00e9tricas internas y aprobar patches que parecen \u00fatiles pero no mejoran decisiones reales de trading.\n- Test: ejecutar en modo shadow sobre 10-20 casos recientes de learning/posttrade/context-edge y comparar si el diff identifica correctamente cambios \u00fatiles, neutros y da\u00f1inos.\n- Evidencia: CEI/FDOT ya depende de utilidad contextual; medir delta expl\u00edcito por patch convierte la autorizaci\u00f3n LOW/MEDIUM en una decisi\u00f3n gobernada por evidencia, no solo por revisi\u00f3n estructural.",
+  "brain": {
+    "intent": "QUERY",
+    "route": "provider_probe",
+    "governance_applied": true,
+    "no_cot_leak": true,
+    "canonical_path": "C:\\AI_VAULT_CANONICAL",
+    "latency_ms": 11203.0,
+    "errors": [],
+    "provider_chain": [
+      "kimi_k2_6_cloud",
+      "codex",
+      "llama8b",
+      "deepseek14b"
+    ],
+    "provider_selected": "codex",
+    "model_selected": "gpt-5.5",
+    "provider_status": "FAST_SUCCESS",
+    "provider_latency_ms": 11193.573,
+    "primary_provider_available": false,
+    "secondary_provider_available": true,
+    "cloud_provider_available": false,
+    "codex_provider_available": true,
+    "local_fallback_used": false,
+    "thinking_stripped": false,
+    "provider_probe": true,
+    "tools_blocked": true,
+    "memory_writes_blocked": true,
+    "faiss_writes_blocked": true,
+    "external_side_effects_blocked": true,
+    "adapter": "openai_compat",
+    "adapter_latency_ms": 11203.0,
+    "dry_run": false,
+    "read_only": true,
+    "fallback_used": true,
+    "fallback_reason": "provider_chain_fallback"
+  },
+  "provider_selected": "codex",
+  "model_selected": "gpt-5.5",
+  "provider_status": "FAST_SUCCESS",
+  "no_cot_leak": true,
+  "memory_faiss_unchanged": true,
+  "before": {
+    "semantic_memory_lines": 1715,
+    "semantic_memory_sha256": "CE81FBE1F97E257E2B124D7A929F0B2AF86CE61E9FF1D8D832FDB5DA1F69E64E",
+    "faiss_index_sha256": "ADBB6051F79ECBEAB0223D631A6013939C00BCC13216FBAE437EFE83047EFA21",
+    "faiss_ids_sha256": "43736047DB548CAF9B26DFA61CDFFE40E179C738BC8E8C295891F29CEDD69102",
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616
+  },
+  "after": {
+    "semantic_memory_lines": 1715,
+    "semantic_memory_sha256": "CE81FBE1F97E257E2B124D7A929F0B2AF86CE61E9FF1D8D832FDB5DA1F69E64E",
+    "faiss_index_sha256": "ADBB6051F79ECBEAB0223D631A6013939C00BCC13216FBAE437EFE83047EFA21",
+    "faiss_ids_sha256": "43736047DB548CAF9B26DFA61CDFFE40E179C738BC8E8C295891F29CEDD69102",
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616
+  }
+}

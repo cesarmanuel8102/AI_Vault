@@ -1,0 +1,29 @@
+{
+  "variables": {
+    "KIMI_API_KEY": {
+      "present": false,
+      "length": 0,
+      "source_scope": "Unknown",
+      "value_redacted": true
+    },
+    "MOONSHOT_API_KEY": {
+      "present": false,
+      "length": 0,
+      "source_scope": "Unknown",
+      "value_redacted": true
+    },
+    "KIMI_BASE_URL": {
+      "present": false,
+      "length": 0,
+      "source_scope": "Unknown",
+      "value_redacted": true
+    },
+    "MOONSHOT_BASE_URL": {
+      "present": false,
+      "length": 0,
+      "source_scope": "Unknown",
+      "value_redacted": true
+    }
+  },
+  "secrets_exposed": false
+}

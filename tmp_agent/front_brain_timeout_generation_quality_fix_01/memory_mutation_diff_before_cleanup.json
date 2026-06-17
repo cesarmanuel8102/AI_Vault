@@ -1,0 +1,11 @@
+{
+  "changed_files": [
+    "memory/semantic/semantic_memory.jsonl"
+  ],
+  "added_line_count": 1,
+  "deleted_line_count": 0,
+  "added_lines_preview": [
+    "+{\"created_utc\": \"2026-06-12T17:39:23.501895Z\", \"id\": \"42ab1e2614c86e92038a5bf9\", \"kind\": \"task_result\", \"metadata\": {\"steps\": 1, \"success\": true, \"tools\": [\"check_all_services\"]}, \"session_id\": \"default\", \"source\": \"agent_loop\", \"text\": \"Tarea: Responde en una frase: estado operativo. | Resultado: exito | Tools: check_all_services | 1 OK, 0 fail | 1 pasos\"}"
+  ],
+  "scope_ok": true
+}

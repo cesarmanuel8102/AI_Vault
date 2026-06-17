@@ -1,0 +1,2015 @@
+{
+  "front_id": "FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01",
+  "domain": {
+    "id": "financial_motor_trading_intelligence",
+    "name": "Financial Motor / Trading Intelligence",
+    "description": "Curation of safe, attributable sources for Brain to learn market microstructure, risk management, portfolio construction, backtesting validity, transaction costs, slippage, overfitting, walk-forward validation, position sizing, drawdown control, factor investing, statistical arbitrage risks, options risk, market regimes, paper trading governance, broker/API governance, and financial action controls.",
+    "scope": "dry_run_curation_only",
+    "executable": false,
+    "trading_enabled": false,
+    "broker_connected": false
+  },
+  "taxonomy": [
+    {
+      "tag": "market_microstructure",
+      "name": "Market Microstructure",
+      "description": "Order books, liquidity, spreads, execution dynamics."
+    },
+    {
+      "tag": "asset_classes_and_instruments",
+      "name": "Asset Classes and Instruments",
+      "description": "Stocks, bonds, commodities, currencies, derivatives."
+    },
+    {
+      "tag": "equities_etfs",
+      "name": "Equities / ETFs",
+      "description": "Equity and exchange-traded fund characteristics."
+    },
+    {
+      "tag": "options_risk",
+      "name": "Options Risk",
+      "description": "Option Greeks, expiration risk, asymmetric payoffs."
+    },
+    {
+      "tag": "futures_leverage_risk",
+      "name": "Futures / Leverage Risk",
+      "description": "Margin, leverage, margin calls, futures contract risk."
+    },
+    {
+      "tag": "portfolio_construction",
+      "name": "Portfolio Construction",
+      "description": "Asset allocation, diversification, rebalancing."
+    },
+    {
+      "tag": "factor_investing",
+      "name": "Factor Investing",
+      "description": "Value, momentum, size, quality factors and risks."
+    },
+    {
+      "tag": "statistical_arbitrage_risk",
+      "name": "Statistical Arbitrage Risk",
+      "description": "Pairs trading, convergence risk, regime breakdown."
+    },
+    {
+      "tag": "mean_reversion_risk",
+      "name": "Mean Reversion Risk",
+      "description": "Ornstein-Uhlenbeck assumptions and tail events."
+    },
+    {
+      "tag": "momentum_risk",
+      "name": "Momentum Risk",
+      "description": "Momentum crashes, factor crowding, reversal risk."
+    },
+    {
+      "tag": "volatility_regimes",
+      "name": "Volatility Regimes",
+      "description": "VIX, GARCH, regime-switching volatility."
+    },
+    {
+      "tag": "market_regime_detection",
+      "name": "Market Regime Detection",
+      "description": "Identifying trending vs mean-reverting vs crisis regimes."
+    },
+    {
+      "tag": "backtesting_validity",
+      "name": "Backtesting Validity",
+      "description": "In-sample vs out-of-sample, simulation fidelity."
+    },
+    {
+      "tag": "walk_forward_validation",
+      "name": "Walk-Forward Validation",
+      "description": "Rolling window validation, embargo, purged k-fold."
+    },
+    {
+      "tag": "overfitting_data_snooping",
+      "name": "Overfitting / Data Snooping",
+      "description": "Multiple comparison, p-hacking, Sharpe ratio inflation."
+    },
+    {
+      "tag": "survivorship_bias",
+      "name": "Survivorship Bias",
+      "description": "Missing delisted assets, index reconstitution effects."
+    },
+    {
+      "tag": "look_ahead_bias",
+      "name": "Look-Ahead Bias",
+      "description": "Using future information in historical simulation."
+    },
+    {
+      "tag": "transaction_costs",
+      "name": "Transaction Costs",
+      "description": "Commissions, fees, market impact modeling."
+    },
+    {
+      "tag": "slippage",
+      "name": "Slippage",
+      "description": "Execution price deviation from signal price."
+    },
+    {
+      "tag": "liquidity_risk",
+      "name": "Liquidity Risk",
+      "description": "Inability to execute at quoted prices."
+    },
+    {
+      "tag": "position_sizing",
+      "name": "Position Sizing",
+      "description": "Kelly, fractional Kelly, risk-parity, volatility targeting."
+    },
+    {
+      "tag": "risk_management",
+      "name": "Risk Management",
+      "description": "VaR, CVaR, stress testing, tail risk."
+    },
+    {
+      "tag": "drawdown_control",
+      "name": "Drawdown Control",
+      "description": "Maximum drawdown limits, circuit breakers."
+    },
+    {
+      "tag": "stop_loss_risk_exits",
+      "name": "Stop-Loss / Risk Exits",
+      "description": "Exit rules, trailing stops, time stops."
+    },
+    {
+      "tag": "capital_allocation",
+      "name": "Capital Allocation",
+      "description": "Cross-strategy capital allocation, reserves."
+    },
+    {
+      "tag": "benchmark_comparison",
+      "name": "Benchmark Comparison",
+      "description": "Alpha, beta, tracking error, information ratio."
+    },
+    {
+      "tag": "paper_trading_governance",
+      "name": "Paper Trading Governance",
+      "description": "Rules for simulated-only trading with no real capital."
+    },
+    {
+      "tag": "broker_api_governance",
+      "name": "Broker/API Governance",
+      "description": "API access controls, credential isolation, rate limits."
+    },
+    {
+      "tag": "financial_data_quality",
+      "name": "Financial Data Quality",
+      "description": "Splits, dividends, corporate actions, survivorship, lookahead."
+    },
+    {
+      "tag": "financial_action_approval_gates",
+      "name": "Financial Action Approval Gates",
+      "description": "Human-in-the-loop for any financial decision."
+    },
+    {
+      "tag": "compliance_regulatory_awareness",
+      "name": "Compliance / Regulatory Awareness",
+      "description": "SEC, FINRA, CFTC, MiFID rules and investor protections."
+    },
+    {
+      "tag": "non_personalized_financial_education_boundary",
+      "name": "Non-Personalized Financial Education Boundary",
+      "description": "Strict separation between education and personalized advice."
+    }
+  ],
+  "sources": [
+    {
+      "source_id": "advances_ml_finance_lopez",
+      "source_group": "book_metadata",
+      "title": "Advances in Financial Machine Learning",
+      "authors_or_org": "Marcos Lopez de Prado",
+      "year_or_first_release": "2018",
+      "url": "https://www.wiley.com/en-us/Advances+in+Financial+Machine+Learning-p-9781119482086",
+      "repo_url": null,
+      "docs_url": null,
+      "license": "Copyrighted book (metadata only)",
+      "maintenance_status": "published",
+      "source_type": "academic_book_metadata",
+      "taxonomy_tags": [
+        "overfitting_data_snooping",
+        "walk_forward_validation",
+        "financial_data_quality",
+        "backtesting_validity",
+        "position_sizing"
+      ],
+      "expected_learning_value": "Overfitting controls, cross-validation for finance, sample weights, fractional differentiation, meta-labeling.",
+      "specific_brain_capability_target": "evaluate_walk_forward",
+      "cross_check_targets": [
+        "prob_backtest_overfitting_bailey",
+        "deflated_sharpe_lopez"
+      ],
+      "safety_score_estimate": 82,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "medium",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Widely cited. Provides rigorous bias controls. Metadata only; do not copy book content."
+    },
+    {
+      "source_id": "evidence_based_ta_aronson",
+      "source_group": "book_metadata",
+      "title": "Evidence-Based Technical Analysis",
+      "authors_or_org": "David Aronson",
+      "year_or_first_release": "2006",
+      "url": "https://www.wiley.com/en-us/Evidence+Based+Technical+Analysis%3A+Applying+the+Scientific+Method+and+Statistical+Inference+to+Trading+Signals-p-9780470008744",
+      "repo_url": null,
+      "docs_url": null,
+      "license": "Copyrighted book (metadata only)",
+      "maintenance_status": "published",
+      "source_type": "academic_book_metadata",
+      "taxonomy_tags": [
+        "backtesting_validity",
+        "overfitting_data_snooping",
+        "statistical_arbitrage_risk",
+        "benchmark_comparison"
+      ],
+      "expected_learning_value": "Statistical rigor for backtesting, hypothesis testing for trading signals, data mining bias controls.",
+      "specific_brain_capability_target": "identify_backtest_bias",
+      "cross_check_targets": [
+        "prob_backtest_overfitting_bailey",
+        "fama_french_papers"
+      ],
+      "safety_score_estimate": 80,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "medium",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Strong methodology focus. No return promises. Metadata only."
+    },
+    {
+      "source_id": "market_microstructure_theory_o_hara",
+      "source_group": "academic_paper",
+      "title": "Market Microstructure Theory",
+      "authors_or_org": "Maureen O'Hara",
+      "year_or_first_release": "1995",
+      "url": "https://www.wiley.com/en-us/Market+Microstructure+Theory-p-9780631207610",
+      "repo_url": null,
+      "docs_url": null,
+      "license": "Copyrighted book (metadata only)",
+      "maintenance_status": "published",
+      "source_type": "academic_paper",
+      "taxonomy_tags": [
+        "market_microstructure",
+        "liquidity_risk",
+        "transaction_costs",
+        "slippage"
+      ],
+      "expected_learning_value": "Foundational understanding of how markets work: order flow, price discovery, market impact.",
+      "specific_brain_capability_target": "evaluate_liquidity_risk",
+      "cross_check_targets": [
+        "trading_exchanges_harris",
+        "algorithmic_trading_dma"
+      ],
+      "safety_score_estimate": 85,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "medium",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Classic reference. No hype. No return promises. Metadata only."
+    },
+    {
+      "source_id": "trading_exchanges_harris",
+      "source_group": "book_metadata",
+      "title": "Trading and Exchanges: Market Microstructure for Practitioners",
+      "authors_or_org": "Larry Harris",
+      "year_or_first_release": "2002",
+      "url": "https://academic.oup.com/book/27943",
+      "repo_url": null,
+      "docs_url": null,
+      "license": "Copyrighted book (metadata only)",
+      "maintenance_status": "published",
+      "source_type": "academic_book_metadata",
+      "taxonomy_tags": [
+        "market_microstructure",
+        "transaction_costs",
+        "liquidity_risk",
+        "broker_api_governance"
+      ],
+      "expected_learning_value": "Practical market microstructure: order types, trading strategies, exchange design, transaction costs.",
+      "specific_brain_capability_target": "evaluate_transaction_costs",
+      "cross_check_targets": [
+        "market_microstructure_theory_o_hara",
+        "algorithmic_trading_dma"
+      ],
+      "safety_score_estimate": 83,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "medium",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Practitioner-oriented but academically rigorous. No return promises. Metadata only."
+    },
+    {
+      "source_id": "algorithmic_trading_dma",
+      "source_group": "book_metadata",
+      "title": "Algorithmic Trading and DMA",
+      "authors_or_org": "Barry Johnson",
+      "year_or_first_release": "2010",
+      "url": "https://www.amazon.com/Algorithmic-Trading-DMA-Introduction-Strategies/dp/0956399207",
+      "repo_url": null,
+      "docs_url": null,
+      "license": "Copyrighted book (metadata only)",
+      "maintenance_status": "published",
+      "source_type": "academic_book_metadata",
+      "taxonomy_tags": [
+        "market_microstructure",
+        "transaction_costs",
+        "slippage",
+        "liquidity_risk",
+        "broker_api_governance"
+      ],
+      "expected_learning_value": "Order types, execution algorithms, market impact, transaction cost analysis.",
+      "specific_brain_capability_target": "evaluate_transaction_costs",
+      "cross_check_targets": [
+        "trading_exchanges_harris",
+        "advances_ml_finance_lopez"
+      ],
+      "safety_score_estimate": 81,
+      "contrast_confidence": "medium",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "medium",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Technical depth on execution. No strategy recommendations. Metadata only."
+    },
+    {
+      "source_id": "fama_french_papers",
+      "source_group": "academic_paper",
+      "title": "The Cross-Section of Expected Stock Returns / Fama-French Factor Papers",
+      "authors_or_org": "Eugene Fama / Kenneth French / others",
+      "year_or_first_release": "1992",
+      "url": "https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1540-6261.1992.tb04398.x",
+      "repo_url": null,
+      "docs_url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/Data_Library/f-f_factors.html",
+      "license": "Academic journal (metadata only)",
+      "maintenance_status": "published",
+      "source_type": "academic_paper",
+      "taxonomy_tags": [
+        "factor_investing",
+        "portfolio_construction",
+        "benchmark_comparison",
+        "equities_etfs"
+      ],
+      "expected_learning_value": "Empirical foundation of factor investing: size, value, profitability, investment factors.",
+      "specific_brain_capability_target": "evaluate_factor_exposure",
+      "cross_check_targets": [
+        "jegadeesh_titman_momentum",
+        "empyrical_repo"
+      ],
+      "safety_score_estimate": 88,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Nobel-level empirical finance. Open data library available. No return promises."
+    },
+    {
+      "source_id": "jegadeesh_titman_momentum",
+      "source_group": "academic_paper",
+      "title": "Returns to Buying Winners and Selling Losers",
+      "authors_or_org": "Jegadeesh / Titman",
+      "year_or_first_release": "1993",
+      "url": "https://onlinelibrary.wiley.com/doi/abs/10.1111/j.1540-6261.1993.tb04702.x",
+      "repo_url": null,
+      "docs_url": null,
+      "license": "Academic journal (metadata only)",
+      "maintenance_status": "published",
+      "source_type": "academic_paper",
+      "taxonomy_tags": [
+        "momentum_risk",
+        "factor_investing",
+        "statistical_arbitrage_risk"
+      ],
+      "expected_learning_value": "Momentum factor evidence and risks: crashes, crowding, reversal.",
+      "specific_brain_capability_target": "evaluate_factor_exposure",
+      "cross_check_targets": [
+        "fama_french_papers",
+        "prob_backtest_overfitting_bailey"
+      ],
+      "safety_score_estimate": 86,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Widely replicated. Discusses momentum crashes. No hype. Metadata only."
+    },
+    {
+      "source_id": "prob_backtest_overfitting_bailey",
+      "source_group": "academic_paper",
+      "title": "The Probability of Backtest Overfitting",
+      "authors_or_org": "Bailey et al.",
+      "year_or_first_release": "2016",
+      "url": "https://arxiv.org/abs/1310.5792",
+      "repo_url": null,
+      "docs_url": null,
+      "license": "arXiv preprint (open access metadata)",
+      "maintenance_status": "published",
+      "source_type": "academic_paper",
+      "taxonomy_tags": [
+        "overfitting_data_snooping",
+        "backtesting_validity",
+        "walk_forward_validation"
+      ],
+      "expected_learning_value": "Mathematical framework for detecting backtest overfitting via combinatorial testing.",
+      "specific_brain_capability_target": "evaluate_overfitting",
+      "cross_check_targets": [
+        "deflated_sharpe_lopez",
+        "advances_ml_finance_lopez"
+      ],
+      "safety_score_estimate": 90,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Open access. Directly relevant to Brain's backtest validation capability."
+    },
+    {
+      "source_id": "deflated_sharpe_lopez",
+      "source_group": "academic_paper",
+      "title": "The Deflated Sharpe Ratio: Correcting for Selection Bias, Backtest Overfitting and Non-Normality",
+      "authors_or_org": "Lopez de Prado / Bailey",
+      "year_or_first_release": "2014",
+      "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2460551",
+      "repo_url": null,
+      "docs_url": null,
+      "license": "SSRN preprint (open access metadata)",
+      "maintenance_status": "published",
+      "source_type": "academic_paper",
+      "taxonomy_tags": [
+        "overfitting_data_snooping",
+        "backtesting_validity",
+        "benchmark_comparison"
+      ],
+      "expected_learning_value": "Correcting Sharpe ratio for multiple trials, selection bias, and non-normality.",
+      "specific_brain_capability_target": "evaluate_benchmark_relative",
+      "cross_check_targets": [
+        "prob_backtest_overfitting_bailey",
+        "fama_french_papers"
+      ],
+      "safety_score_estimate": 88,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Open access. Addresses central backtest evaluation problem."
+    },
+    {
+      "source_id": "sec_investor_gov",
+      "source_group": "regulatory",
+      "title": "SEC Investor.gov \u2014 Introduction to Investing",
+      "authors_or_org": "U.S. Securities and Exchange Commission",
+      "year_or_first_release": "ongoing",
+      "url": "https://www.investor.gov/introduction-investing",
+      "repo_url": null,
+      "docs_url": "https://www.investor.gov/introduction-investing",
+      "license": "Public domain (U.S. government)",
+      "maintenance_status": "active",
+      "source_type": "regulatory_education",
+      "taxonomy_tags": [
+        "non_personalized_financial_education_boundary",
+        "compliance_regulatory_awareness",
+        "risk_management"
+      ],
+      "expected_learning_value": "Official investor education: risk types, diversification, fraud warnings, no personalized advice.",
+      "specific_brain_capability_target": "distinguish_education_recommendation",
+      "cross_check_targets": [
+        "finra_alerts",
+        "brain_governance_front"
+      ],
+      "safety_score_estimate": 92,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Primary regulatory source. Explicitly non-personalized. Active and maintained."
+    },
+    {
+      "source_id": "finra_alerts",
+      "source_group": "regulatory",
+      "title": "FINRA Investor Alerts",
+      "authors_or_org": "FINRA",
+      "year_or_first_release": "ongoing",
+      "url": "https://www.finra.org/investors/insights",
+      "repo_url": null,
+      "docs_url": "https://www.finra.org/investors/insights",
+      "license": "Public domain (U.S. government)",
+      "maintenance_status": "active",
+      "source_type": "regulatory_education",
+      "taxonomy_tags": [
+        "compliance_regulatory_awareness",
+        "options_risk",
+        "futures_leverage_risk",
+        "non_personalized_financial_education_boundary"
+      ],
+      "expected_learning_value": "Margin risk, options risk, leverage warnings, fraud alerts. Non-personalized.",
+      "specific_brain_capability_target": "reject_guaranteed_returns",
+      "cross_check_targets": [
+        "sec_investor_gov",
+        "occ_options_risk"
+      ],
+      "safety_score_estimate": 90,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Active regulatory warnings. No return promises. Strong bias toward risk disclosure."
+    },
+    {
+      "source_id": "occ_options_risk",
+      "source_group": "regulatory",
+      "title": "OCC Options Disclosure Document \u2014 Characteristics and Risks of Standardized Options",
+      "authors_or_org": "Options Clearing Corporation",
+      "year_or_first_release": "ongoing",
+      "url": "https://www.theocc.com/about/publications/character-risks.jspx",
+      "repo_url": null,
+      "docs_url": "https://www.theocc.com/about/publications/character-risks.jspx",
+      "license": "Public domain (regulatory disclosure)",
+      "maintenance_status": "active",
+      "source_type": "regulatory_disclosure",
+      "taxonomy_tags": [
+        "options_risk",
+        "compliance_regulatory_awareness",
+        "risk_management"
+      ],
+      "expected_learning_value": "Standardized options risk disclosure: exercise, expiration, assignment, margin.",
+      "specific_brain_capability_target": "evaluate_options_leverage",
+      "cross_check_targets": [
+        "finra_alerts",
+        "sec_investor_gov"
+      ],
+      "safety_score_estimate": 91,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Mandatory disclosure document. Legally required risk information. Non-personalized."
+    },
+    {
+      "source_id": "cftc_futures_risk",
+      "source_group": "regulatory",
+      "title": "CFTC \u2014 Understanding the Risks of Futures Trading",
+      "authors_or_org": "U.S. Commodity Futures Trading Commission",
+      "year_or_first_release": "ongoing",
+      "url": "https://www.cftc.gov/LearnAndProtect/BeforeYouTrade/index.htm",
+      "repo_url": null,
+      "docs_url": "https://www.cftc.gov/LearnAndProtect/BeforeYouTrade/index.htm",
+      "license": "Public domain (U.S. government)",
+      "maintenance_status": "active",
+      "source_type": "regulatory_education",
+      "taxonomy_tags": [
+        "futures_leverage_risk",
+        "compliance_regulatory_awareness",
+        "risk_management"
+      ],
+      "expected_learning_value": "Leverage risk, margin calls, futures contract specifications, regulatory protections.",
+      "specific_brain_capability_target": "evaluate_options_leverage",
+      "cross_check_targets": [
+        "finra_alerts",
+        "sec_investor_gov"
+      ],
+      "safety_score_estimate": 89,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Government source. No hype. Strong risk emphasis. Non-personalized."
+    },
+    {
+      "source_id": "ib_api_docs",
+      "source_group": "docs",
+      "title": "Interactive Brokers API Documentation",
+      "authors_or_org": "Interactive Brokers",
+      "year_or_first_release": "ongoing",
+      "url": "https://interactivebrokers.github.io/tws-api/",
+      "repo_url": null,
+      "docs_url": "https://interactivebrokers.github.io/tws-api/",
+      "license": "Proprietary (public reference)",
+      "maintenance_status": "active",
+      "source_type": "broker_api_docs",
+      "taxonomy_tags": [
+        "broker_api_governance",
+        "financial_action_approval_gates",
+        "paper_trading_governance"
+      ],
+      "expected_learning_value": "API reference for connectivity governance: rate limits, paper trading mode, order types.",
+      "specific_brain_capability_target": "evaluate_broker_governance",
+      "cross_check_targets": [
+        "alpaca_api_docs",
+        "brain_governance_front"
+      ],
+      "safety_score_estimate": 72,
+      "contrast_confidence": "medium",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "medium",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "medium",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Broker-specific but API-neutral principles generalize. Marked as governance-only in this front. No live trading in this front."
+    },
+    {
+      "source_id": "alpaca_api_docs",
+      "source_group": "docs",
+      "title": "Alpaca API Documentation",
+      "authors_or_org": "Alpaca Markets",
+      "year_or_first_release": "ongoing",
+      "url": "https://alpaca.markets/docs/",
+      "repo_url": "https://github.com/alpacahq/alpaca-trade-api-python",
+      "docs_url": "https://alpaca.markets/docs/",
+      "license": "Apache-2.0",
+      "maintenance_status": "active",
+      "source_type": "broker_api_docs",
+      "taxonomy_tags": [
+        "broker_api_governance",
+        "financial_data_quality",
+        "paper_trading_governance"
+      ],
+      "expected_learning_value": "Commission-free API docs with paper trading support. Good for understanding API governance patterns.",
+      "specific_brain_capability_target": "evaluate_broker_governance",
+      "cross_check_targets": [
+        "ib_api_docs",
+        "brain_governance_front"
+      ],
+      "safety_score_estimate": 74,
+      "contrast_confidence": "medium",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "medium",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "medium",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Open-source client library. Paper trading available. Governance-only usage in this front."
+    },
+    {
+      "source_id": "backtrader_docs",
+      "source_group": "repo",
+      "title": "backtrader \u2014 Python Backtesting Library",
+      "authors_or_org": "backtrader community / Daniel Rodriguez",
+      "year_or_first_release": "2015",
+      "url": "https://www.backtrader.com/",
+      "repo_url": "https://github.com/mementum/backtrader",
+      "docs_url": "https://www.backtrader.com/docu/",
+      "license": "GPL-3.0",
+      "maintenance_status": "maintenance",
+      "source_type": "backtesting_framework",
+      "taxonomy_tags": [
+        "backtesting_validity",
+        "paper_trading_governance",
+        "financial_data_quality",
+        "transaction_costs"
+      ],
+      "expected_learning_value": "Backtesting framework with commission/slippage modeling, but known data quality pitfalls.",
+      "specific_brain_capability_target": "identify_backtest_bias",
+      "cross_check_targets": [
+        "zipline_reloaded_repo",
+        "vectorbt_repo"
+      ],
+      "safety_score_estimate": 70,
+      "contrast_confidence": "medium",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "medium",
+      "data_quality_risk": "medium",
+      "notes": "Useful for understanding backtesting pitfalls. Maintenance mode. Not a strategy recommendation."
+    },
+    {
+      "source_id": "zipline_reloaded_repo",
+      "source_group": "repo",
+      "title": "Zipline Reloaded \u2014 Algorithmic Trading Simulator",
+      "authors_or_org": "Stefan Jansen / Quantopian alumni",
+      "year_or_first_release": "2021",
+      "url": "https://github.com/stefan-jansen/zipline-reloaded",
+      "repo_url": "https://github.com/stefan-jansen/zipline-reloaded",
+      "docs_url": "https://zipline-reloaded.readthedocs.io/",
+      "license": "Apache-2.0",
+      "maintenance_status": "active",
+      "source_type": "backtesting_framework",
+      "taxonomy_tags": [
+        "backtesting_validity",
+        "financial_data_quality",
+        "transaction_costs",
+        "benchmark_comparison"
+      ],
+      "expected_learning_value": "Event-driven backtesting with pipeline API, commission models, and data bundle system.",
+      "specific_brain_capability_target": "identify_backtest_bias",
+      "cross_check_targets": [
+        "backtrader_docs",
+        "quantconnect_lean_repo"
+      ],
+      "safety_score_estimate": 76,
+      "contrast_confidence": "medium",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "medium",
+      "data_quality_risk": "medium",
+      "notes": "Active fork. Good for understanding pipeline-based backtesting. No live trading in this front."
+    },
+    {
+      "source_id": "quantconnect_lean_repo",
+      "source_group": "repo",
+      "title": "QuantConnect Lean \u2014 Algorithmic Trading Engine",
+      "authors_or_org": "QuantConnect",
+      "year_or_first_release": "2015",
+      "url": "https://github.com/QuantConnect/Lean",
+      "repo_url": "https://github.com/QuantConnect/Lean",
+      "docs_url": "https://www.quantconnect.com/docs/v2/",
+      "license": "Apache-2.0",
+      "maintenance_status": "active",
+      "source_type": "backtesting_framework",
+      "taxonomy_tags": [
+        "backtesting_validity",
+        "broker_api_governance",
+        "financial_data_quality",
+        "paper_trading_governance"
+      ],
+      "expected_learning_value": "Multi-asset backtesting engine with live trading support (governance reference only in this front).",
+      "specific_brain_capability_target": "evaluate_broker_governance",
+      "cross_check_targets": [
+        "zipline_reloaded_repo",
+        "backtrader_docs"
+      ],
+      "safety_score_estimate": 75,
+      "contrast_confidence": "medium",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "medium",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "medium",
+      "overfitting_risk": "medium",
+      "data_quality_risk": "medium",
+      "notes": "Active development. Paper trading supported. Governance-only usage in this front."
+    },
+    {
+      "source_id": "vectorbt_repo",
+      "source_group": "repo",
+      "title": "vectorbt \u2014 Vectorized Backtesting and Analytics",
+      "authors_or_org": "vectorbt community",
+      "year_or_first_release": "2020",
+      "url": "https://github.com/polakowo/vectorbt",
+      "repo_url": "https://github.com/polakowo/vectorbt",
+      "docs_url": "https://vectorbt.dev/",
+      "license": "MIT",
+      "maintenance_status": "active",
+      "source_type": "backtesting_framework",
+      "taxonomy_tags": [
+        "backtesting_validity",
+        "overfitting_data_snooping",
+        "portfolio_construction",
+        "benchmark_comparison"
+      ],
+      "expected_learning_value": "Fast vectorized backtesting with built-in overfitting diagnostics and parameter optimization controls.",
+      "specific_brain_capability_target": "evaluate_overfitting",
+      "cross_check_targets": [
+        "zipline_reloaded_repo",
+        "empyrical_repo"
+      ],
+      "safety_score_estimate": 78,
+      "contrast_confidence": "medium",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "medium",
+      "data_quality_risk": "medium",
+      "notes": "Active. Explicitly warns about overfitting. No live trading in this front."
+    },
+    {
+      "source_id": "pyportfolioopt_repo",
+      "source_group": "repo",
+      "title": "PyPortfolioOpt \u2014 Portfolio Optimization in Python",
+      "authors_or_org": "Robert Martin / PyPortfolioOpt",
+      "year_or_first_release": "2018",
+      "url": "https://github.com/robertmartin8/PyPortfolioOpt",
+      "repo_url": "https://github.com/robertmartin8/PyPortfolioOpt",
+      "docs_url": "https://pyportfolioopt.readthedocs.io/",
+      "license": "MIT",
+      "maintenance_status": "active",
+      "source_type": "portfolio_framework",
+      "taxonomy_tags": [
+        "portfolio_construction",
+        "factor_investing",
+        "risk_management",
+        "position_sizing"
+      ],
+      "expected_learning_value": "Mean-variance optimization, Black-Litterman, CVaR optimization with practical examples.",
+      "specific_brain_capability_target": "evaluate_position_sizing",
+      "cross_check_targets": [
+        "empyrical_repo",
+        "pyfolio_repo"
+      ],
+      "safety_score_estimate": 80,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Well-documented. MIT license. No strategy recommendations. Good for risk-first portfolio construction."
+    },
+    {
+      "source_id": "empyrical_repo",
+      "source_group": "repo",
+      "title": "empyrical \u2014 Common Financial Risk Metrics",
+      "authors_or_org": "Quantopian / QuantRocket",
+      "year_or_first_release": "2016",
+      "url": "https://github.com/quantrocket-llc/empyrical",
+      "repo_url": "https://github.com/quantrocket-llc/empyrical",
+      "docs_url": null,
+      "license": "Apache-2.0",
+      "maintenance_status": "maintenance",
+      "source_type": "risk_metrics_library",
+      "taxonomy_tags": [
+        "risk_management",
+        "drawdown_control",
+        "benchmark_comparison",
+        "overfitting_data_snooping"
+      ],
+      "expected_learning_value": "Sharpe, Sortino, Calmar, Omega, max drawdown, and other common risk metrics.",
+      "specific_brain_capability_target": "produce_risk_scorecards",
+      "cross_check_targets": [
+        "pyfolio_repo",
+        "pyportfolioopt_repo"
+      ],
+      "safety_score_estimate": 76,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Apache-2.0. Good for risk-first scorecards. Maintenance mode but stable."
+    },
+    {
+      "source_id": "pyfolio_repo",
+      "source_group": "repo",
+      "title": "pyfolio \u2014 Portfolio and Risk Analytics",
+      "authors_or_org": "Quantopian",
+      "year_or_first_release": "2015",
+      "url": "https://github.com/quantopian/pyfolio",
+      "repo_url": "https://github.com/quantopian/pyfolio",
+      "docs_url": null,
+      "license": "Apache-2.0",
+      "maintenance_status": "archived",
+      "source_type": "risk_analytics_library",
+      "taxonomy_tags": [
+        "risk_management",
+        "drawdown_control",
+        "benchmark_comparison",
+        "backtesting_validity"
+      ],
+      "expected_learning_value": "Tear sheets for risk, returns, drawdown, factor exposure. Archived but conceptually useful.",
+      "specific_brain_capability_target": "produce_risk_scorecards",
+      "cross_check_targets": [
+        "empyrical_repo",
+        "pyportfolioopt_repo"
+      ],
+      "safety_score_estimate": 70,
+      "contrast_confidence": "medium",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Archived by Quantopian. Useful for understanding risk tear sheets. Not for live use without update."
+    },
+    {
+      "source_id": "pandas_market_calendars",
+      "source_group": "repo",
+      "title": "pandas-market-calendars \u2014 Exchange Trading Calendars",
+      "authors_or_org": "pandas-market-calendars community",
+      "year_or_first_release": "2015",
+      "url": "https://github.com/rsheftel/pandas_market_calendars",
+      "repo_url": "https://github.com/rsheftel/pandas_market_calendars",
+      "docs_url": null,
+      "license": "MIT",
+      "maintenance_status": "active",
+      "source_type": "data_quality_tool",
+      "taxonomy_tags": [
+        "financial_data_quality",
+        "backtesting_validity",
+        "look_ahead_bias"
+      ],
+      "expected_learning_value": "Correct trading calendars prevent lookahead bias and weekend/holiday data errors.",
+      "specific_brain_capability_target": "evaluate_market_data_quality",
+      "cross_check_targets": [
+        "yfinance_repo",
+        "zipline_reloaded_repo"
+      ],
+      "safety_score_estimate": 78,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Essential for preventing look-ahead bias. Active maintenance. MIT license."
+    },
+    {
+      "source_id": "yfinance_repo",
+      "source_group": "repo",
+      "title": "yfinance \u2014 Yahoo Finance Market Data Downloader",
+      "authors_or_org": "Ran Aroussi / yfinance community",
+      "year_or_first_release": "2017",
+      "url": "https://github.com/ranaroussi/yfinance",
+      "repo_url": "https://github.com/ranaroussi/yfinance",
+      "docs_url": "https://ranaroussi.github.io/yfinance/",
+      "license": "MIT",
+      "maintenance_status": "active",
+      "source_type": "data_quality_tool",
+      "taxonomy_tags": [
+        "financial_data_quality",
+        "survivorship_bias",
+        "look_ahead_bias"
+      ],
+      "expected_learning_value": "Free market data with known caveats: survivorship, splits, dividends, delayed quotes.",
+      "specific_brain_capability_target": "evaluate_market_data_quality",
+      "cross_check_targets": [
+        "pandas_market_calendars",
+        "advances_ml_finance_lopez"
+      ],
+      "safety_score_estimate": 68,
+      "contrast_confidence": "medium",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "high",
+      "notes": "Convenient but has known data quality issues. Not suitable for rigorous backtesting without verification. Education-only in this front."
+    },
+    {
+      "source_id": "mlfinlab_repo",
+      "source_group": "framework",
+      "title": "mlfinlab \u2014 Machine Learning Financial Laboratory",
+      "authors_or_org": "Hudson and Thames",
+      "year_or_first_release": "2019",
+      "url": "https://github.com/hudson-and-thames/mlfinlab",
+      "repo_url": "https://github.com/hudson-and-thames/mlfinlab",
+      "docs_url": "https://mlfinlab.readthedocs.io/",
+      "license": "BSD-3-Clause",
+      "maintenance_status": "active",
+      "source_type": "ml_finance_library",
+      "taxonomy_tags": [
+        "overfitting_data_snooping",
+        "walk_forward_validation",
+        "backtesting_validity",
+        "financial_data_quality"
+      ],
+      "expected_learning_value": "Purged CV, embargo, sample weights, meta-labeling, fractional differentiation implementations.",
+      "specific_brain_capability_target": "evaluate_walk_forward",
+      "cross_check_targets": [
+        "advances_ml_finance_lopez",
+        "vectorbt_repo"
+      ],
+      "safety_score_estimate": 75,
+      "contrast_confidence": "medium",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "medium",
+      "notes": "Active. Implements rigorous cross-validation methods. Not a strategy library. BSD-3-Clause."
+    },
+    {
+      "source_id": "statsmodels_docs",
+      "source_group": "docs",
+      "title": "statsmodels \u2014 Statistical Models in Python",
+      "authors_or_org": "statsmodels community",
+      "year_or_first_release": "2009",
+      "url": "https://www.statsmodels.org/",
+      "repo_url": "https://github.com/statsmodels/statsmodels",
+      "docs_url": "https://www.statsmodels.org/",
+      "license": "BSD-3-Clause",
+      "maintenance_status": "active",
+      "source_type": "statistical_library_docs",
+      "taxonomy_tags": [
+        "backtesting_validity",
+        "overfitting_data_snooping",
+        "volatility_regimes"
+      ],
+      "expected_learning_value": "Time-series models, regression diagnostics, hypothesis testing for financial inference.",
+      "specific_brain_capability_target": "identify_backtest_bias",
+      "cross_check_targets": [
+        "empyrical_repo",
+        "vectorbt_repo"
+      ],
+      "safety_score_estimate": 82,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Mature statistical library. Essential for rigorous hypothesis testing. BSD-3-Clause."
+    },
+    {
+      "source_id": "arch_package_docs",
+      "source_group": "docs",
+      "title": "arch \u2014 Univariate Volatility Modeling",
+      "authors_or_org": "Kevin Sheppard / arch community",
+      "year_or_first_release": "2013",
+      "url": "https://bashtage.github.io/arch/",
+      "repo_url": "https://github.com/bashtage/arch",
+      "docs_url": "https://bashtage.github.io/arch/",
+      "license": "BSD-3-Clause",
+      "maintenance_status": "active",
+      "source_type": "volatility_modeling_docs",
+      "taxonomy_tags": [
+        "volatility_regimes",
+        "risk_management",
+        "backtesting_validity"
+      ],
+      "expected_learning_value": "GARCH, EGARCH, TARCH models for volatility forecasting and risk estimation.",
+      "specific_brain_capability_target": "evaluate_market_regime",
+      "cross_check_targets": [
+        "statsmodels_docs",
+        "empyrical_repo"
+      ],
+      "safety_score_estimate": 80,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Active. Standard for volatility modeling. BSD-3-Clause. Not a trading strategy."
+    },
+    {
+      "source_id": "brain_governance_front",
+      "source_group": "internal_reference",
+      "title": "Brain Security / Governance / Sandboxing Curated Learning Front",
+      "authors_or_org": "AI_Vault Brain",
+      "year_or_first_release": "2026",
+      "url": "docs/FRONT_EXTERNAL_CURATED_LEARNING_SECURITY_GOVERNANCE_SANDBOXING_01.md",
+      "repo_url": null,
+      "docs_url": "docs/FRONT_EXTERNAL_CURATED_LEARNING_SECURITY_GOVERNANCE_SANDBOXING_01.md",
+      "license": "Internal",
+      "maintenance_status": "active",
+      "source_type": "internal_reference",
+      "taxonomy_tags": [
+        "financial_action_approval_gates",
+        "compliance_regulatory_awareness",
+        "paper_trading_governance"
+      ],
+      "expected_learning_value": "Governance controls that apply to financial actions: approval gates, protected paths, sandboxing.",
+      "specific_brain_capability_target": "design_financial_approval",
+      "cross_check_targets": [
+        "sec_investor_gov",
+        "broker_api_governance"
+      ],
+      "safety_score_estimate": 95,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Internal governance cross-reference. Always current. No external dependency."
+    },
+    {
+      "source_id": "brain_evaluation_front",
+      "source_group": "internal_reference",
+      "title": "Brain Evaluation / Benchmarking Curated Learning Front",
+      "authors_or_org": "AI_Vault Brain",
+      "year_or_first_release": "2026",
+      "url": "docs/FRONT_EXTERNAL_CURATED_LEARNING_EVALUATION_BENCHMARKING_01.md",
+      "repo_url": null,
+      "docs_url": "docs/FRONT_EXTERNAL_CURATED_LEARNING_EVALUATION_BENCHMARKING_01.md",
+      "license": "Internal",
+      "maintenance_status": "active",
+      "source_type": "internal_reference",
+      "taxonomy_tags": [
+        "backtesting_validity",
+        "benchmark_comparison",
+        "overfitting_data_snooping"
+      ],
+      "expected_learning_value": "Evaluation frameworks applicable to financial backtests: metrics, statistical rigor, bias controls.",
+      "specific_brain_capability_target": "integrate_evaluation",
+      "cross_check_targets": [
+        "prob_backtest_overfitting_bailey",
+        "empyrical_repo"
+      ],
+      "safety_score_estimate": 95,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Internal evaluation cross-reference. Links general evaluation to financial domain."
+    },
+    {
+      "source_id": "brain_memory_front",
+      "source_group": "internal_reference",
+      "title": "Brain Memory / RAG / Knowledge Architecture Curated Learning Front",
+      "authors_or_org": "AI_Vault Brain",
+      "year_or_first_release": "2026",
+      "url": "docs/FRONT_EXTERNAL_CURATED_LEARNING_MEMORY_RAG_KNOWLEDGE_ARCHITECTURE_01.md",
+      "repo_url": null,
+      "docs_url": "docs/FRONT_EXTERNAL_CURATED_LEARNING_MEMORY_RAG_KNOWLEDGE_ARCHITECTURE_01.md",
+      "license": "Internal",
+      "maintenance_status": "active",
+      "source_type": "internal_reference",
+      "taxonomy_tags": [
+        "financial_data_quality",
+        "non_personalized_financial_education_boundary"
+      ],
+      "expected_learning_value": "Memory architecture for storing and retrieving financial knowledge safely without personalization.",
+      "specific_brain_capability_target": "integrate_memory",
+      "cross_check_targets": [
+        "brain_governance_front",
+        "advances_ml_finance_lopez"
+      ],
+      "safety_score_estimate": 95,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Internal memory cross-reference. Ensures financial knowledge is stored with governance boundaries."
+    },
+    {
+      "source_id": "nist_ai_rmf",
+      "source_group": "standard",
+      "title": "NIST AI Risk Management Framework",
+      "authors_or_org": "NIST",
+      "year_or_first_release": "2023",
+      "url": "https://www.nist.gov/itl/ai-risk-management-framework",
+      "repo_url": null,
+      "docs_url": "https://www.nist.gov/itl/ai-risk-management-framework",
+      "license": "Public domain (U.S. government)",
+      "maintenance_status": "active",
+      "source_type": "governance_standard",
+      "taxonomy_tags": [
+        "compliance_regulatory_awareness",
+        "financial_action_approval_gates",
+        "non_personalized_financial_education_boundary"
+      ],
+      "expected_learning_value": "Systematic AI risk governance applicable to financial autonomy and decision-making.",
+      "specific_brain_capability_target": "integrate_security",
+      "cross_check_targets": [
+        "brain_governance_front",
+        "sec_investor_gov"
+      ],
+      "safety_score_estimate": 88,
+      "contrast_confidence": "high",
+      "acceptance_status": "accept",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "low",
+      "trading_execution_risk": "low",
+      "personalized_advice_risk": "low",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "low",
+      "data_quality_risk": "low",
+      "notes": "Government standard. Cross-applicable to financial AI governance. No hype."
+    },
+    {
+      "source_id": "unknown_trading_blog",
+      "source_group": "docs",
+      "title": "10 Guaranteed Trading Strategies \u2014 Unattributed Blog",
+      "authors_or_org": "unknown",
+      "year_or_first_release": "unknown",
+      "url": "https://example-blog.com/guaranteed-trading",
+      "repo_url": null,
+      "docs_url": null,
+      "license": "unknown",
+      "maintenance_status": "unknown",
+      "source_type": "blog_post",
+      "taxonomy_tags": [
+        "overfitting_data_snooping"
+      ],
+      "expected_learning_value": "No verifiable methodology. Guaranteed return claims.",
+      "specific_brain_capability_target": "reject_guaranteed_returns",
+      "cross_check_targets": [
+        "sec_investor_gov"
+      ],
+      "safety_score_estimate": 18,
+      "contrast_confidence": "low",
+      "acceptance_status": "reject",
+      "ingestion_status": "not_ingested",
+      "copyright_risk": "medium",
+      "trading_execution_risk": "high",
+      "personalized_advice_risk": "high",
+      "vendor_lock_in_risk": "low",
+      "overfitting_risk": "high",
+      "data_quality_risk": "high",
+      "notes": "No attribution. Guaranteed returns. Signal selling. Auto-reject."
+    }
+  ],
+  "contrast_matrix": [
+    {
+      "pair": [
+        "advances_ml_finance_lopez",
+        "prob_backtest_overfitting_bailey"
+      ],
+      "contrast_type": "book vs academic paper",
+      "confirms": "Both emphasize that backtest overfitting is the primary danger in quantitative finance.",
+      "contradicts": null,
+      "complements": "Book provides implementation details; paper provides mathematical rigor.",
+      "unresolved_questions": "How to automatically detect overfitting in real-time without human review?",
+      "confidence_level": "high"
+    },
+    {
+      "pair": [
+        "market_microstructure_theory_o_hara",
+        "trading_exchanges_harris"
+      ],
+      "contrast_type": "theory vs practitioner",
+      "confirms": "Both agree that market impact and liquidity are central to execution cost.",
+      "contradicts": null,
+      "complements": "Theory source provides formal models; practitioner source provides trading floor perspective.",
+      "unresolved_questions": "How do modern HFT dynamics change the O'Hara models?",
+      "confidence_level": "high"
+    },
+    {
+      "pair": [
+        "backtrader_docs",
+        "zipline_reloaded_repo"
+      ],
+      "contrast_type": "backtesting framework vs backtesting framework",
+      "confirms": "Both provide event-driven backtesting with commission/slippage modeling.",
+      "contradicts": null,
+      "complements": "backtrader is simpler; Zipline has pipeline API and better data bundle system.",
+      "unresolved_questions": "Which framework has better data quality controls out of the box?",
+      "confidence_level": "medium"
+    },
+    {
+      "pair": [
+        "fama_french_papers",
+        "jegadeesh_titman_momentum"
+      ],
+      "contrast_type": "factor paper vs factor paper",
+      "confirms": "Both provide empirical evidence for factor premiums.",
+      "contradicts": "Fama-French emphasize value/size; Jegadeesh-Titman emphasize momentum which Fama initially skeptical of.",
+      "complements": "Together cover the major equity factor families.",
+      "unresolved_questions": "Are momentum crashes predictable enough to avoid?",
+      "confidence_level": "high"
+    },
+    {
+      "pair": [
+        "sec_investor_gov",
+        "finra_alerts"
+      ],
+      "contrast_type": "regulatory education vs regulatory warnings",
+      "confirms": "Both stress non-personalized education and risk disclosure.",
+      "contradicts": null,
+      "complements": "SEC provides broad education; FINRA provides specific product warnings.",
+      "unresolved_questions": "How should AI systems interpret and act on regulatory guidance?",
+      "confidence_level": "high"
+    },
+    {
+      "pair": [
+        "ib_api_docs",
+        "alpaca_api_docs"
+      ],
+      "contrast_type": "broker API vs broker API",
+      "confirms": "Both provide paper trading modes and rate limiting.",
+      "contradicts": null,
+      "complements": "IB has more asset classes; Alpaca has simpler API and no commissions.",
+      "unresolved_questions": "Which API governance patterns are most transferable to future broker integrations?",
+      "confidence_level": "medium"
+    },
+    {
+      "pair": [
+        "empyrical_repo",
+        "pyportfolioopt_repo"
+      ],
+      "contrast_type": "risk metrics vs portfolio construction",
+      "confirms": "Both assume risk must be quantified before portfolio optimization.",
+      "contradicts": null,
+      "complements": "empyrical measures risk; PyPortfolioOpt uses risk measures to construct portfolios.",
+      "unresolved_questions": "How do risk metrics change under non-normal return distributions?",
+      "confidence_level": "high"
+    },
+    {
+      "pair": [
+        "yfinance_repo",
+        "pandas_market_calendars"
+      ],
+      "contrast_type": "data source vs data quality tool",
+      "confirms": "Both are used in backtesting workflows.",
+      "contradicts": "yfinance has known data quality issues; pandas-market-calendars helps prevent some biases but not all.",
+      "complements": "yfinance provides data; pandas-market-calendars ensures calendar accuracy.",
+      "unresolved_questions": "What is the minimum data quality standard for acceptable backtesting?",
+      "confidence_level": "medium"
+    },
+    {
+      "pair": [
+        "vectorbt_repo",
+        "prob_backtest_overfitting_bailey"
+      ],
+      "contrast_type": "framework vs academic paper",
+      "confirms": "vectorbt explicitly warns about overfitting, consistent with Bailey et al.",
+      "contradicts": null,
+      "complements": "vectorbt provides tools; Bailey provides the mathematical framework to use them correctly.",
+      "unresolved_questions": "Can vectorbt's overfitting diagnostics be improved with Bailey's combinatorial approach?",
+      "confidence_level": "medium"
+    },
+    {
+      "pair": [
+        "brain_governance_front",
+        "nist_ai_rmf"
+      ],
+      "contrast_type": "internal governance vs external standard",
+      "confirms": "Both require approval gates and risk assessment before action.",
+      "contradicts": null,
+      "complements": "Internal governance implements NIST principles in the Brain context.",
+      "unresolved_questions": "How to map NIST AI RMF controls to specific financial trading decisions?",
+      "confidence_level": "high"
+    }
+  ],
+  "capability_map": [
+    {
+      "capability_id": "distinguish_education_recommendation",
+      "name": "Distinguish Education from Recommendation",
+      "description": "Know when content is educational vs actionable personalized advice.",
+      "relevant_taxonomy": [
+        "non_personalized_financial_education_boundary",
+        "compliance_regulatory_awareness"
+      ],
+      "example_sources": [
+        "sec_investor_gov",
+        "finra_alerts"
+      ]
+    },
+    {
+      "capability_id": "reject_guaranteed_returns",
+      "name": "Reject Guaranteed-Return Sources",
+      "description": "Automatically flag sources promising guaranteed profits.",
+      "relevant_taxonomy": [
+        "overfitting_data_snooping",
+        "risk_of_unverifiable_return_claims"
+      ],
+      "example_sources": [
+        "sec_investor_gov",
+        "prob_backtest_overfitting_bailey"
+      ]
+    },
+    {
+      "capability_id": "evaluate_market_data_quality",
+      "name": "Evaluate Market Data Quality",
+      "description": "Assess data for splits, dividends, survivorship, lookahead.",
+      "relevant_taxonomy": [
+        "financial_data_quality",
+        "survivorship_bias",
+        "look_ahead_bias"
+      ],
+      "example_sources": [
+        "pandas_market_calendars",
+        "empyrical_repo"
+      ]
+    },
+    {
+      "capability_id": "identify_backtest_bias",
+      "name": "Identify Backtest Bias Risks",
+      "description": "Detect overfitting, data snooping, survivorship, lookahead.",
+      "relevant_taxonomy": [
+        "backtesting_validity",
+        "overfitting_data_snooping",
+        "survivorship_bias",
+        "look_ahead_bias"
+      ],
+      "example_sources": [
+        "prob_backtest_overfitting_bailey",
+        "deflated_sharpe_lopez"
+      ]
+    },
+    {
+      "capability_id": "evaluate_transaction_costs",
+      "name": "Evaluate Transaction Costs and Slippage",
+      "description": "Model commissions, fees, market impact, execution deviation.",
+      "relevant_taxonomy": [
+        "transaction_costs",
+        "slippage",
+        "market_microstructure"
+      ],
+      "example_sources": [
+        "trading_exchanges_harris",
+        "advances_ml_finance_lopez"
+      ]
+    },
+    {
+      "capability_id": "evaluate_liquidity_risk",
+      "name": "Evaluate Liquidity Risk",
+      "description": "Assess ability to execute at quoted prices.",
+      "relevant_taxonomy": [
+        "liquidity_risk",
+        "market_microstructure"
+      ],
+      "example_sources": [
+        "trading_exchanges_harris",
+        "algorithmic_trading_dma"
+      ]
+    },
+    {
+      "capability_id": "evaluate_position_sizing",
+      "name": "Evaluate Position Sizing Rules",
+      "description": "Kelly, fractional Kelly, risk-parity, volatility targeting.",
+      "relevant_taxonomy": [
+        "position_sizing",
+        "risk_management",
+        "capital_allocation"
+      ],
+      "example_sources": [
+        "advances_ml_finance_lopez",
+        "pyportfolioopt_repo"
+      ]
+    },
+    {
+      "capability_id": "evaluate_drawdown_control",
+      "name": "Evaluate Drawdown Control",
+      "description": "Max drawdown limits, circuit breakers, recovery rules.",
+      "relevant_taxonomy": [
+        "drawdown_control",
+        "risk_management",
+        "stop_loss_risk_exits"
+      ],
+      "example_sources": [
+        "empyrical_repo",
+        "pyfolio_repo"
+      ]
+    },
+    {
+      "capability_id": "evaluate_benchmark_relative",
+      "name": "Evaluate Benchmark-Relative Performance",
+      "description": "Alpha, beta, tracking error, information ratio.",
+      "relevant_taxonomy": [
+        "benchmark_comparison",
+        "portfolio_construction"
+      ],
+      "example_sources": [
+        "fama_french_papers",
+        "empyrical_repo"
+      ]
+    },
+    {
+      "capability_id": "evaluate_overfitting",
+      "name": "Evaluate Overfitting / Data Snooping",
+      "description": "Multiple comparison, p-hacking, Sharpe ratio inflation.",
+      "relevant_taxonomy": [
+        "overfitting_data_snooping",
+        "backtesting_validity"
+      ],
+      "example_sources": [
+        "prob_backtest_overfitting_bailey",
+        "deflated_sharpe_lopez"
+      ]
+    },
+    {
+      "capability_id": "evaluate_walk_forward",
+      "name": "Evaluate Walk-Forward Validation",
+      "description": "Rolling window, embargo, purged k-fold CV.",
+      "relevant_taxonomy": [
+        "walk_forward_validation",
+        "backtesting_validity"
+      ],
+      "example_sources": [
+        "advances_ml_finance_lopez",
+        "mlfinlab_repo"
+      ]
+    },
+    {
+      "capability_id": "evaluate_market_regime",
+      "name": "Evaluate Market Regime Dependence",
+      "description": "Trending vs mean-reverting vs crisis regime behavior.",
+      "relevant_taxonomy": [
+        "market_regime_detection",
+        "volatility_regimes"
+      ],
+      "example_sources": [
+        "market_microstructure_theory_o_hara",
+        "advances_ml_finance_lopez"
+      ]
+    },
+    {
+      "capability_id": "evaluate_factor_exposure",
+      "name": "Evaluate Factor Exposure",
+      "description": "Value, momentum, size, quality factor risks.",
+      "relevant_taxonomy": [
+        "factor_investing",
+        "momentum_risk",
+        "mean_reversion_risk"
+      ],
+      "example_sources": [
+        "fama_french_papers",
+        "jegadeesh_titman_momentum"
+      ]
+    },
+    {
+      "capability_id": "evaluate_options_leverage",
+      "name": "Evaluate Options / Leverage Risk",
+      "description": "Greeks, expiration, margin, tail risk.",
+      "relevant_taxonomy": [
+        "options_risk",
+        "futures_leverage_risk",
+        "risk_management"
+      ],
+      "example_sources": [
+        "occ_options_risk",
+        "finra_margin_alerts"
+      ]
+    },
+    {
+      "capability_id": "evaluate_broker_governance",
+      "name": "Evaluate Broker / API Governance",
+      "description": "API access controls, credential isolation, rate limits.",
+      "relevant_taxonomy": [
+        "broker_api_governance",
+        "financial_action_approval_gates"
+      ],
+      "example_sources": [
+        "ib_api_docs",
+        "alpaca_api_docs"
+      ]
+    },
+    {
+      "capability_id": "design_paper_trading",
+      "name": "Design Paper-Trading-Only Governance",
+      "description": "Rules ensuring simulation never connects to real capital.",
+      "relevant_taxonomy": [
+        "paper_trading_governance",
+        "financial_action_approval_gates"
+      ],
+      "example_sources": [
+        "brain_governance_front",
+        "broker_api_governance"
+      ]
+    },
+    {
+      "capability_id": "design_financial_approval",
+      "name": "Design Financial Action Approval Gates",
+      "description": "Human-in-the-loop for any financial decision.",
+      "relevant_taxonomy": [
+        "financial_action_approval_gates",
+        "compliance_regulatory_awareness"
+      ],
+      "example_sources": [
+        "brain_governance_front",
+        "sec_investor_gov"
+      ]
+    },
+    {
+      "capability_id": "prevent_real_orders",
+      "name": "Prevent Real Order Execution",
+      "description": "Blocks that prevent any real order from being sent.",
+      "relevant_taxonomy": [
+        "financial_action_approval_gates",
+        "paper_trading_governance"
+      ],
+      "example_sources": [
+        "brain_governance_front",
+        "broker_api_governance"
+      ]
+    },
+    {
+      "capability_id": "produce_risk_scorecards",
+      "name": "Produce Risk-First Scorecards",
+      "description": "Generate risk summary before any performance summary.",
+      "relevant_taxonomy": [
+        "risk_management",
+        "drawdown_control",
+        "benchmark_comparison"
+      ],
+      "example_sources": [
+        "pyfolio_repo",
+        "empyrical_repo"
+      ]
+    },
+    {
+      "capability_id": "prepare_sandbox",
+      "name": "Prepare Future Strategy Sandbox",
+      "description": "Design isolated environment for future strategy testing.",
+      "relevant_taxonomy": [
+        "paper_trading_governance",
+        "backtesting_validity",
+        "financial_data_quality"
+      ],
+      "example_sources": [
+        "brain_governance_front",
+        "backtrader_docs"
+      ]
+    },
+    {
+      "capability_id": "decide_hypothesis",
+      "name": "Decide Promote / Reject / Rollback of Financial Hypotheses",
+      "description": "Go/no-go decisions on financial strategy hypotheses.",
+      "relevant_taxonomy": [
+        "financial_action_approval_gates",
+        "backtesting_validity"
+      ],
+      "example_sources": [
+        "brain_governance_front",
+        "prob_backtest_overfitting_bailey"
+      ]
+    },
+    {
+      "capability_id": "integrate_security",
+      "name": "Integrate with Security / Governance Fronts",
+      "description": "Ensure financial actions respect security constraints.",
+      "relevant_taxonomy": [
+        "compliance_regulatory_awareness",
+        "financial_action_approval_gates"
+      ],
+      "example_sources": [
+        "brain_governance_front",
+        "nist_ai_rmf"
+      ]
+    },
+    {
+      "capability_id": "integrate_evaluation",
+      "name": "Integrate with Evaluation / Benchmarking Fronts",
+      "description": "Use evaluation framework to validate financial claims.",
+      "relevant_taxonomy": [
+        "benchmark_comparison",
+        "backtesting_validity"
+      ],
+      "example_sources": [
+        "brain_evaluation_front",
+        "empyrical_repo"
+      ]
+    },
+    {
+      "capability_id": "integrate_memory",
+      "name": "Integrate with Memory / RAG Fronts",
+      "description": "Store and retrieve financial knowledge safely.",
+      "relevant_taxonomy": [
+        "financial_data_quality",
+        "non_personalized_financial_education_boundary"
+      ],
+      "example_sources": [
+        "brain_memory_front",
+        "advances_ml_finance_lopez"
+      ]
+    }
+  ],
+  "knowledge_schema": {
+    "required_fields": [
+      "source_id",
+      "source_group",
+      "title",
+      "authors_or_org",
+      "year_or_first_release",
+      "url",
+      "license",
+      "maintenance_status",
+      "source_type",
+      "taxonomy_tags",
+      "expected_learning_value",
+      "specific_brain_capability_target",
+      "cross_check_targets",
+      "safety_score_estimate",
+      "contrast_confidence",
+      "acceptance_status",
+      "ingestion_status",
+      "copyright_risk",
+      "trading_execution_risk",
+      "personalized_advice_risk",
+      "vendor_lock_in_risk",
+      "overfitting_risk",
+      "data_quality_risk",
+      "notes"
+    ],
+    "optional_fields": [
+      "repo_url",
+      "docs_url",
+      "related_sources",
+      "risk_score_details",
+      "test_or_example_presence"
+    ],
+    "forbidden_fields": [
+      "guaranteed_return_claim",
+      "unverifiable_pnl",
+      "signal_selling",
+      "personalized_recommendation",
+      "broker_credentials",
+      "executable_strategy"
+    ]
+  },
+  "acceptance_criteria": {
+    "must_have": [
+      "attribution (authors or organization)",
+      "title",
+      "public URL or documentation URL",
+      "license or legal status known",
+      "expected_learning_value description",
+      "specific_brain_capability_target",
+      "safety_score_estimate >= 78",
+      "no critical risk flags",
+      "not a guaranteed-return claim",
+      "not a signal-selling service",
+      "not a paid alpha newsletter",
+      "not a Telegram/Discord group",
+      "not unverifiable PnL claims"
+    ],
+    "preferred": [
+      "active maintenance or recent publication",
+      "open license (MIT, Apache, public domain)",
+      "cross-checkable with at least 2 other sources",
+      "code examples or test suite visible",
+      "peer-reviewed or widely cited",
+      "risk methodology explicitly described",
+      "bias controls explicitly described",
+      "data quality methodology described",
+      "broker/API governance controls described"
+    ]
+  },
+  "rejection_criteria": {
+    "automatic_reject": [
+      "no attribution",
+      "private/protected content inaccessible without payment",
+      "illegal or copyright-violating",
+      "promises guaranteed returns",
+      "signal-selling or paid alpha claims",
+      "unverifiable PnL screenshots or claims",
+      "strategy with no risk methodology",
+      "backtest with no bias controls",
+      "encourages leverage without risk controls",
+      "requires broker credentials or API access in this front",
+      "requires executing external code in this front",
+      "personalized financial advice to individuals",
+      "contradicted by newer official source with no rebuttal",
+      "abandoned with known security vulnerabilities"
+    ],
+    "auto_reject_score_threshold": 55
+  },
+  "safety_rubric": {
+    "dimensions": [
+      {
+        "name": "attribution_quality",
+        "max": 5
+      },
+      {
+        "name": "primary_source_quality",
+        "max": 5
+      },
+      {
+        "name": "technical_depth",
+        "max": 5
+      },
+      {
+        "name": "financial_method_clarity",
+        "max": 5
+      },
+      {
+        "name": "risk_method_clarity",
+        "max": 5
+      },
+      {
+        "name": "backtest_method_clarity",
+        "max": 5
+      },
+      {
+        "name": "data_quality_clarity",
+        "max": 5
+      },
+      {
+        "name": "reproducibility",
+        "max": 5
+      },
+      {
+        "name": "license_clarity",
+        "max": 5
+      },
+      {
+        "name": "maintenance_status",
+        "max": 5
+      },
+      {
+        "name": "test_or_example_presence",
+        "max": 5
+      },
+      {
+        "name": "copyright_safety",
+        "max": 5
+      },
+      {
+        "name": "relevance_to_brain",
+        "max": 5
+      },
+      {
+        "name": "risk_of_hype_or_marketing",
+        "max": 5
+      },
+      {
+        "name": "risk_of_unverifiable_return_claims",
+        "max": 5
+      },
+      {
+        "name": "risk_of_overfitting",
+        "max": 5
+      },
+      {
+        "name": "risk_of_data_snooping",
+        "max": 5
+      },
+      {
+        "name": "risk_of_survivorship_bias",
+        "max": 5
+      },
+      {
+        "name": "risk_of_lookahead_bias",
+        "max": 5
+      },
+      {
+        "name": "risk_of_broker_or_execution_risk",
+        "max": 5
+      },
+      {
+        "name": "risk_of_regulatory_or_compliance_issue",
+        "max": 5
+      },
+      {
+        "name": "risk_of_personalized_financial_advice",
+        "max": 5
+      },
+      {
+        "name": "risk_of_unsafe_autonomy",
+        "max": 5
+      },
+      {
+        "name": "risk_of_vendor_lock_in",
+        "max": 5
+      },
+      {
+        "name": "risk_of_obsolescence",
+        "max": 5
+      }
+    ],
+    "max_total": 125,
+    "accept_threshold": 78,
+    "hold_threshold": 55,
+    "critical_risks": [
+      "no_attribution",
+      "private_or_protected_content",
+      "illegal_or_copyright_issue",
+      "guaranteed_returns",
+      "signal_selling",
+      "unverifiable_pnl",
+      "no_risk_methodology",
+      "no_bias_controls",
+      "encourages_leverage_without_risk_controls",
+      "requires_broker_credentials_in_this_front",
+      "requires_executing_external_code_in_this_front",
+      "personalized_financial_advice",
+      "contradicted_without_rebuttal"
+    ]
+  },
+  "contrast_rubric": {
+    "required_fields": [
+      "confirms",
+      "contradicts",
+      "complements",
+      "unresolved_questions",
+      "confidence_level"
+    ],
+    "confidence_levels": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "minimum_cross_checks_per_source": 2,
+    "contrast_types": [
+      "paper vs implementation",
+      "academic vs regulatory",
+      "theory vs backtesting framework",
+      "risk source vs execution source",
+      "factor paper vs factor library",
+      "broker docs vs governance controls",
+      "market microstructure vs data quality",
+      "portfolio construction vs drawdown control"
+    ]
+  },
+  "summary": {
+    "source_count": 32,
+    "taxonomy_count": 32,
+    "capability_map_count": 24,
+    "accepted_count": 31,
+    "hold_count": 0,
+    "rejected_count": 1,
+    "source_groups": [
+      "academic_paper",
+      "book_metadata",
+      "docs",
+      "framework",
+      "internal_reference",
+      "regulatory",
+      "repo",
+      "standard"
+    ],
+    "ingestion_status": "dry_run_only",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_enabled": false,
+    "broker_connected": false
+  }
+}

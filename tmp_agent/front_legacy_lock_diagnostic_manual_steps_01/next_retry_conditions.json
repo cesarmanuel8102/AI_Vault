@@ -1,0 +1,14 @@
+{
+  "schema_version": "front_legacy_lock_diagnostic_manual_steps_01_next_retry_conditions_v1",
+  "generated_at_utc": "2026-06-12T03:41:51.746308+00:00",
+  "required_before_retry": [
+    "user confirms lock source was identified",
+    "user confirms locking app/process is closed",
+    "C:\\AI_VAULT still exists",
+    "no process appears to hold AI_VAULT",
+    "canonical baseline passes",
+    "exact approval phrase required again: APPROVE_LEGACY_PATH_CLEANUP_EXECUTE_AI_VAULT"
+  ],
+  "recommended_next_front": "FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01",
+  "locked": true
+}

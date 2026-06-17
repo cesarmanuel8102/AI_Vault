@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-06-11T04:36:43.291573+00:00Z",
+  "head": "8369f026daacf84501685d87cd74cfcc92eb6e56",
+  "semantic_memory_jsonl": {
+    "sha256": "655d32381e38ada348c3f201c50484551e02d98ae0869fa53826912c6973ab54",
+    "line_count": 1710
+  },
+  "semantic_memory_faiss_index": {
+    "sha256": "b7b755c753cd4017344fb18d51e2ff3d81766151ac3a3dbf753c1004f7d16484"
+  },
+  "semantic_memory_faiss_ids": {
+    "sha256": "004362363f7a392fd15193392f7fac592e333355e6cc28ba665d3cfb5e9368c1",
+    "id_count": 1611
+  },
+  "ROADMAP_STATUS_json": {
+    "sha256": "b8c2551fda50d89cb5fa8ed2dcebb4b76e0a14a5884cef00bd909ea8b8fa152e"
+  },
+  "MIGRATION_CONTROL_LEDGER_md": {
+    "sha256": "03dc20f852406e7cc978b8676dd9512f4dd4dd682419f0969c52d3f152ebd88b"
+  }
+}

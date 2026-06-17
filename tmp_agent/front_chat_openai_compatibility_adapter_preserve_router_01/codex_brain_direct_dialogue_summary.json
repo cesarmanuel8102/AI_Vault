@@ -1,0 +1,16 @@
+{
+  "status": "SERVER_RESTART_REQUIRED_FOR_ADAPTER",
+  "dialogue_probe_ran": false,
+  "prompt_count": 5,
+  "successful_responses": 0,
+  "intent_metadata_present": false,
+  "route_metadata_present": false,
+  "governance_metadata_present": false,
+  "no_cot_metadata_present": false,
+  "canonical_path_present": false,
+  "preliminary_score": 0.0,
+  "defects_observed": [
+    "Runtime /v1/chat/completions is not loaded; restart skipped due unsafe port owner classification."
+  ],
+  "next_recommended_improvement": "FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01"
+}
