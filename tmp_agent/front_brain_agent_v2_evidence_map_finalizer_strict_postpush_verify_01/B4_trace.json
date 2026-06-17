@@ -1,0 +1,198 @@
+{
+  "ok": true,
+  "run_id": "agv2_c2119a094c68bc06",
+  "trace": [
+    {
+      "data": {
+        "goal_preview": "Summarize PRODUCTION-OPERATIONS-01 status and is Agent V2 operator ready?",
+        "mode": "read_only",
+        "mode_effective": "read_only",
+        "mode_requested": "read_only"
+      },
+      "event_type": "run_created",
+      "message": "Agent V2 run created",
+      "run_id": "agv2_c2119a094c68bc06",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:46.099963Z"
+    },
+    {
+      "data": {
+        "confidence": 0.99,
+        "has_brain_signals": true,
+        "has_generic_only": false,
+        "intent": "SYSTEM",
+        "meta": {
+          "matches": [
+            "status",
+            "\\b(status|configure|configuration|settings|system)\\b"
+          ],
+          "method": "keywords"
+        },
+        "route": "brain_evidence"
+      },
+      "event_type": "intent_route",
+      "message": "Brain evidence route selected",
+      "run_id": "agv2_c2119a094c68bc06",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:46.101473Z"
+    },
+    {
+      "data": {
+        "tool": "repo_status_read"
+      },
+      "event_type": "tool_call_started",
+      "message": "Tool repo_status_read started",
+      "run_id": "agv2_c2119a094c68bc06",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:46.101473Z"
+    },
+    {
+      "data": {
+        "ok": true,
+        "tool": "repo_status_read"
+      },
+      "event_type": "tool_call_completed",
+      "message": "Tool repo_status_read completed",
+      "run_id": "agv2_c2119a094c68bc06",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:46.207485Z"
+    },
+    {
+      "data": {
+        "tool": "grep_search"
+      },
+      "event_type": "tool_call_started",
+      "message": "Tool grep_search started",
+      "run_id": "agv2_c2119a094c68bc06",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:46.207485Z"
+    },
+    {
+      "data": {
+        "ok": true,
+        "tool": "grep_search"
+      },
+      "event_type": "tool_call_completed",
+      "message": "Tool grep_search completed",
+      "run_id": "agv2_c2119a094c68bc06",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:46.313594Z"
+    },
+    {
+      "data": {
+        "tool": "file_read"
+      },
+      "event_type": "tool_call_started",
+      "message": "Tool file_read started",
+      "run_id": "agv2_c2119a094c68bc06",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:46.313594Z"
+    },
+    {
+      "data": {
+        "ok": false,
+        "tool": "file_read"
+      },
+      "event_type": "tool_call_completed",
+      "message": "Tool file_read completed",
+      "run_id": "agv2_c2119a094c68bc06",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:46.313594Z"
+    },
+    {
+      "data": {
+        "tool": "repo_status_read"
+      },
+      "event_type": "tool_call_started",
+      "message": "Tool repo_status_read started",
+      "run_id": "agv2_c2119a094c68bc06",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:46.313594Z"
+    },
+    {
+      "data": {
+        "ok": true,
+        "tool": "repo_status_read"
+      },
+      "event_type": "tool_call_completed",
+      "message": "Tool repo_status_read completed",
+      "run_id": "agv2_c2119a094c68bc06",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:46.406331Z"
+    },
+    {
+      "data": {
+        "tool": "grep_search"
+      },
+      "event_type": "tool_call_started",
+      "message": "Tool grep_search started",
+      "run_id": "agv2_c2119a094c68bc06",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:46.406331Z"
+    },
+    {
+      "data": {
+        "ok": true,
+        "tool": "grep_search"
+      },
+      "event_type": "tool_call_completed",
+      "message": "Tool grep_search completed",
+      "run_id": "agv2_c2119a094c68bc06",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:46.524248Z"
+    },
+    {
+      "data": {
+        "tool": "file_read"
+      },
+      "event_type": "tool_call_started",
+      "message": "Tool file_read started",
+      "run_id": "agv2_c2119a094c68bc06",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:46.525256Z"
+    },
+    {
+      "data": {
+        "ok": false,
+        "tool": "file_read"
+      },
+      "event_type": "tool_call_completed",
+      "message": "Tool file_read completed",
+      "run_id": "agv2_c2119a094c68bc06",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:46.525645Z"
+    },
+    {
+      "data": {
+        "provider_metadata": {
+          "fallback_reason": "none",
+          "kimi_available": true,
+          "latency_ms": 21013,
+          "model_used": "kimi-k2.6:cloud",
+          "provider_attempted": [
+            "ollama:kimi-k2.6:cloud"
+          ],
+          "provider_degraded": false,
+          "provider_used": "ollama_cloud",
+          "raw_cot_exposed": false
+        }
+      },
+      "event_type": "final_answer_created",
+      "message": "Final answer created (brain evidence)",
+      "run_id": "agv2_c2119a094c68bc06",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:48:07.544860Z"
+    },
+    {
+      "data": {
+        "status": "completed"
+      },
+      "event_type": "run_completed",
+      "message": "Run completed",
+      "run_id": "agv2_c2119a094c68bc06",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:48:07.544860Z"
+    }
+  ],
+  "event_count": 16
+}

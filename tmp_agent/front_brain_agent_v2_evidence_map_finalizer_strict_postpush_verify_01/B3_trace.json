@@ -1,0 +1,156 @@
+{
+  "ok": true,
+  "run_id": "agv2_42760be33d2df9ed",
+  "trace": [
+    {
+      "data": {
+        "goal_preview": "What microfix did we close so autonomous does not trigger AUTO?",
+        "mode": "read_only",
+        "mode_effective": "read_only",
+        "mode_requested": "read_only"
+      },
+      "event_type": "run_created",
+      "message": "Agent V2 run created",
+      "run_id": "agv2_42760be33d2df9ed",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:17.871520Z"
+    },
+    {
+      "data": {
+        "confidence": 0.99,
+        "has_brain_signals": true,
+        "has_generic_only": false,
+        "intent": "QUERY",
+        "meta": {
+          "matches": [
+            "what",
+            "^what\\b"
+          ],
+          "method": "keywords"
+        },
+        "route": "brain_evidence"
+      },
+      "event_type": "intent_route",
+      "message": "Brain evidence route selected",
+      "run_id": "agv2_42760be33d2df9ed",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:17.873758Z"
+    },
+    {
+      "data": {
+        "tool": "repo_status_read"
+      },
+      "event_type": "tool_call_started",
+      "message": "Tool repo_status_read started",
+      "run_id": "agv2_42760be33d2df9ed",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:17.874893Z"
+    },
+    {
+      "data": {
+        "ok": true,
+        "tool": "repo_status_read"
+      },
+      "event_type": "tool_call_completed",
+      "message": "Tool repo_status_read completed",
+      "run_id": "agv2_42760be33d2df9ed",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:17.984881Z"
+    },
+    {
+      "data": {
+        "tool": "grep_search"
+      },
+      "event_type": "tool_call_started",
+      "message": "Tool grep_search started",
+      "run_id": "agv2_42760be33d2df9ed",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:17.985593Z"
+    },
+    {
+      "data": {
+        "ok": true,
+        "tool": "grep_search"
+      },
+      "event_type": "tool_call_completed",
+      "message": "Tool grep_search completed",
+      "run_id": "agv2_42760be33d2df9ed",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:18.115379Z"
+    },
+    {
+      "data": {
+        "tool": "file_read"
+      },
+      "event_type": "tool_call_started",
+      "message": "Tool file_read started",
+      "run_id": "agv2_42760be33d2df9ed",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:18.115379Z"
+    },
+    {
+      "data": {
+        "ok": false,
+        "tool": "file_read"
+      },
+      "event_type": "tool_call_completed",
+      "message": "Tool file_read completed",
+      "run_id": "agv2_42760be33d2df9ed",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:18.118636Z"
+    },
+    {
+      "data": {
+        "tool": "repo_history_read"
+      },
+      "event_type": "tool_call_started",
+      "message": "Tool repo_history_read started",
+      "run_id": "agv2_42760be33d2df9ed",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:18.118636Z"
+    },
+    {
+      "data": {
+        "ok": true,
+        "tool": "repo_history_read"
+      },
+      "event_type": "tool_call_completed",
+      "message": "Tool repo_history_read completed",
+      "run_id": "agv2_42760be33d2df9ed",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:18.218813Z"
+    },
+    {
+      "data": {
+        "provider_metadata": {
+          "fallback_reason": "none",
+          "kimi_available": true,
+          "latency_ms": 26789,
+          "model_used": "kimi-k2.6:cloud",
+          "provider_attempted": [
+            "ollama:kimi-k2.6:cloud"
+          ],
+          "provider_degraded": false,
+          "provider_used": "ollama_cloud",
+          "raw_cot_exposed": false
+        }
+      },
+      "event_type": "final_answer_created",
+      "message": "Final answer created (brain evidence)",
+      "run_id": "agv2_42760be33d2df9ed",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:45.015517Z"
+    },
+    {
+      "data": {
+        "status": "completed"
+      },
+      "event_type": "run_completed",
+      "message": "Run completed",
+      "run_id": "agv2_42760be33d2df9ed",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:45.016556Z"
+    }
+  ],
+  "event_count": 12
+}

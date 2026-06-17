@@ -1,0 +1,23 @@
+{
+  "ok": true,
+  "content": "Photosynthesis is how plants, algae, and some bacteria turn sunlight into food. They absorb light through chlorophyll\u2014the green pigment in their leaves\u2014take in carbon dioxide from the air, and pull up water through their roots. In the chloroplasts of their cells, these ingredients get converted into glucose (a sugar that fuels the plant) and oxygen, which gets released as a byproduct. It's basically nature's way of solar-powered cooking, and it's the foundation of most life on Earth since it produces both the energy and oxygen that other organisms need.\n\nNo tools were requested, scheduled, or executed for this run.",
+  "canonical_agent_v2": true,
+  "run_id": "agv2_429f962df6693e89",
+  "trace_url": "/v2/agent/runs/agv2_429f962df6693e89/trace",
+  "classification": null,
+  "status": "completed",
+  "model_used": "kimi-k2.6:cloud",
+  "provider_used": "ollama_cloud",
+  "provider_degraded": false,
+  "fallback_reason": "none",
+  "raw_cot_exposed": false,
+  "mode_requested": "read_only",
+  "mode_effective": "read_only",
+  "auto_decision": "n/a",
+  "mode_escalation_required": null,
+  "mode_escalation_reason": null,
+  "required_permission": null,
+  "expected_write_scope": null,
+  "confirmation_id": null,
+  "blocked_tools": null
+}

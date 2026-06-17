@@ -1,0 +1,112 @@
+{
+  "timestamp": "2026-06-17T00:00:00Z",
+  "front": "FRONT-BRAIN-AGENT-V2-EVIDENCE-MAP-FINALIZER-STRICT-POSTPUSH-VERIFY-01",
+  "status": "STRICT_VERIFY_COMPLETE",
+  "lock": {
+    "local_head": "2bb6d36",
+    "remote_head": "2bb6d36",
+    "local_equals_remote": true,
+    "staged_empty": true,
+    "memory_autonomous_journal_dirty": true,
+    "memory_staged": false,
+    "faiss_staged": false
+  },
+  "static_validation": {
+    "py_compile": "ALL OK (intent_adapter.py, native_runtime.py, finalizer.py, api_adapter.py)",
+    "direct_router_smoke": "15/15 PASS",
+    "nl_parser_smoke": "1/1 PASS",
+    "read_build_auto_smoke": "20/20 PASS"
+  },
+  "service_health": {
+    "8091": "healthy ( restarted cleanly )",
+    "8092": "healthy ( restarted cleanly )"
+  },
+  "live_8091": {
+    "G1_photosynthesis": {
+      "intent_route": "direct_assistant",
+      "tools_scheduled": 0,
+      "tools_executed": 0,
+      "has_operational_headings": false,
+      "pass": true,
+      "note": "Natural prose, no tools, no headings"
+    },
+    "G2_recipe": {
+      "intent_route": "direct_assistant",
+      "tools_scheduled": 0,
+      "tools_executed": 0,
+      "has_operational_headings": false,
+      "pass": true,
+      "note": "Natural prose recipe, no tools, no headings ( FIX CONFIRMED )"
+    },
+    "B3_autonomous_auto_microfix": {
+      "intent_route": "brain_evidence",
+      "tools_scheduled": 4,
+      "tools_executed": 4,
+      "has_operational_headings": true,
+      "pass": true,
+      "note": "Identifies autonomous/AUTO microfix, uses chat_mode_switch evidence folder, 4 tools scheduled"
+    },
+    "B4_production_operations": {
+      "intent_route": "brain_evidence",
+      "tools_scheduled": 6,
+      "tools_executed": 6,
+      "has_operational_headings": true,
+      "pass": true,
+      "note": "Uses PRODUCTION-OPERATIONS-01 evidence source, reads production evidence folder, 6 tools scheduled"
+    },
+    "M1_modern_agent_comparison": {
+      "intent_route": "brain_evidence",
+      "tools_scheduled": 3,
+      "tools_executed": 3,
+      "has_operational_headings": false,
+      "pass": true,
+      "note": "General concept + Brain evidence + gaps, 3 tools scheduled"
+    }
+  },
+  "live_8092": {
+    "generic_proxy": {
+      "status": 200,
+      "ok": true,
+      "canonical_agent_v2": true,
+      "has_operational_headings": false,
+      "pass": true
+    },
+    "recipe_proxy": {
+      "status": 200,
+      "ok": true,
+      "canonical_agent_v2": true,
+      "has_operational_headings": false,
+      "pass": true
+    },
+    "autonomous_proxy": {
+      "status": 200,
+      "ok": true,
+      "canonical_agent_v2": true,
+      "has_operational_headings": true,
+      "pass": true
+    },
+    "production_operations_proxy": {
+      "status": 200,
+      "ok": true,
+      "canonical_agent_v2": true,
+      "has_operational_headings": true,
+      "pass": true
+    }
+  },
+  "governance": {
+    "memory_staged": false,
+    "faiss_staged": false,
+    "raw_cot_found": false,
+    "write_gates_preserved": true
+  },
+  "final_decision": {
+    "product_quality_chat_ready": true,
+    "acceptance_reason": "All 5 strict 8091 tests pass with verified intent routing. G2 recipe now correctly routes to direct_assistant with natural prose (fix confirmed). B3 and B4 use deterministic evidence mapping with targeted grep patterns. 8092 proxy preserves metadata for all 4 tests with no mode corruption.",
+    "remaining_blockers": [
+      "direct_assistant responses still occasionally contain mild bold text (e.g., **Ingredients**) from LLM creative formatting, not from operational template",
+      "B3/B4 still produce structured headings (expected for brain_evidence route)",
+      "Future: Further tighten finalizer direct_assistant prompt to discourage any markdown bold in casual answers"
+    ],
+    "next_front": "FRONT-BRAIN-AGENT-V2-FINALIZER-PROMPT-HARDENING-01"
+  }
+}

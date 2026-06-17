@@ -1,0 +1,37 @@
+{
+  "ok": true,
+  "canonical_agent_v2": true,
+  "route": "/v2/chat/agent",
+  "run_id": "agv2_3199bec7ed9eba88",
+  "trace_url": "/v2/agent/runs/agv2_3199bec7ed9eba88/trace",
+  "final_answer": "Photosynthesis is how plants make their own food using sunlight. They take in carbon dioxide from the air through tiny openings in their leaves, absorb water through their roots, and use energy from sunlight to convert these ingredients into glucose\u2014a type of sugar that fuels their growth. As a bonus, they release oxygen as a byproduct, which is pretty great for the rest of us.",
+  "provider_metadata": {
+    "provider_attempted": [
+      "ollama:kimi-k2.6:cloud",
+      "ollama:deepseek-v4-pro:cloud",
+      "ollama:gpt-oss:120b-cloud",
+      "ollama:kimi-k2.5:cloud"
+    ],
+    "provider_used": "ollama_cloud",
+    "model_used": "kimi-k2.5:cloud",
+    "provider_degraded": true,
+    "fallback_reason": "primary_failed:HTTP Error 502: Bad Gateway",
+    "latency_ms": 32386,
+    "kimi_available": true,
+    "raw_cot_exposed": false
+  },
+  "classification": null,
+  "status": "completed",
+  "mode_requested": "read_only",
+  "mode_effective": "read_only",
+  "auto_decision": "n/a",
+  "mode_escalation_required": null,
+  "mode_escalation_reason": null,
+  "required_permission": null,
+  "expected_write_scope": null,
+  "confirmation_id": null,
+  "blocked_tools": null,
+  "intent_route": "direct_assistant",
+  "intent_detected": "QUERY",
+  "intent_confidence": 0.99
+}

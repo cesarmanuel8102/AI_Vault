@@ -1,0 +1,94 @@
+{
+  "G1": {
+    "status": 200,
+    "intent_route": "direct_assistant",
+    "classification": null,
+    "provider_used": "ollama_cloud",
+    "model_used": "kimi-k2.5:cloud",
+    "raw_cot_exposed": false,
+    "tools_scheduled": [],
+    "tools_executed": [],
+    "has_operational_headings": false,
+    "final_answer_preview": "Photosynthesis is how plants make their own food using sunlight. They take in carbon dioxide from the air through tiny openings in their leaves, absorb water through their roots, and use energy from sunlight to convert these ingredients into glucose\u2014a type of sugar that fuels their growth. As a bonu"
+  },
+  "G2": {
+    "status": 200,
+    "intent_route": "direct_assistant",
+    "classification": null,
+    "provider_used": "ollama_cloud",
+    "model_used": "kimi-k2.6:cloud",
+    "raw_cot_exposed": false,
+    "tools_scheduled": [],
+    "tools_executed": [],
+    "has_operational_headings": false,
+    "final_answer_preview": "Here's a simple arroz con pollo recipe:\n\n**Arroz con Pollo**\n\nYou'll need about 2 pounds of bone-in chicken thighs seasoned with salt, pepper, and paprika. Brown them well in a large pot with olive oil, then set aside. In that same pot, saut\u00e9 a diced onion, a chopped green bell pepper, and three min"
+  },
+  "B3": {
+    "status": 200,
+    "intent_route": "brain_evidence",
+    "classification": "brain_evidence",
+    "provider_used": "ollama_cloud",
+    "model_used": "kimi-k2.6:cloud",
+    "raw_cot_exposed": false,
+    "tools_scheduled": [
+      "repo_status_read",
+      "grep_search",
+      "file_read",
+      "repo_history_read"
+    ],
+    "tools_executed": [
+      "repo_status_read",
+      "grep_search",
+      "file_read",
+      "repo_history_read"
+    ],
+    "has_operational_headings": true,
+    "final_answer_preview": "## Summary\n\nThe goal is to identify which microfix closed an issue where autonomous functionality would incorrectly trigger AUTO mode. From deterministic Brain evidence (repo history, grep traces), the specific microfix is **commit `2e9bad7`** with message `\"fix: prevent autonomous text from switchi"
+  },
+  "B4": {
+    "status": 200,
+    "intent_route": "brain_evidence",
+    "classification": "brain_evidence",
+    "provider_used": "ollama_cloud",
+    "model_used": "kimi-k2.6:cloud",
+    "raw_cot_exposed": false,
+    "tools_scheduled": [
+      "repo_status_read",
+      "grep_search",
+      "file_read",
+      "repo_status_read",
+      "grep_search",
+      "file_read"
+    ],
+    "tools_executed": [
+      "repo_status_read",
+      "grep_search",
+      "file_read",
+      "repo_status_read",
+      "grep_search",
+      "file_read"
+    ],
+    "has_operational_headings": true,
+    "final_answer_preview": "## Summary\n\n**PRODUCTION-OPERATIONS-01 status**: **NOT READY for autonomous operation**. The Brain environment shows critical gaps in runtime readiness verification, with retrieval quality evaluation scripts referencing expected runbooks that cannot be confirmed as present. The repository has uncomm"
+  },
+  "M1": {
+    "status": 200,
+    "intent_route": "brain_evidence",
+    "classification": "brain_evidence",
+    "provider_used": "ollama_cloud",
+    "model_used": "deepseek-v4-pro:cloud",
+    "raw_cot_exposed": false,
+    "tools_scheduled": [
+      "repo_status_read",
+      "grep_search",
+      "file_read"
+    ],
+    "tools_executed": [
+      "repo_status_read",
+      "grep_search",
+      "file_read"
+    ],
+    "has_operational_headings": false,
+    "final_answer_preview": "{\n  \"summary\": \"This read-only run examined the Brain repository to explain what a modern agent is and compare it with this Brain. Evidence was gathered from the repository status, a grep search for Brain-specific API references, and an attempted file read that failed. The Brain shows signs of being"
+  }
+}

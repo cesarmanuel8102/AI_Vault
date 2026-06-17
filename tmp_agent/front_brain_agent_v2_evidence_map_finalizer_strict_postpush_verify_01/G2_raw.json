@@ -1,0 +1,34 @@
+{
+  "ok": true,
+  "canonical_agent_v2": true,
+  "route": "/v2/chat/agent",
+  "run_id": "agv2_60995ed34f2da4bc",
+  "trace_url": "/v2/agent/runs/agv2_60995ed34f2da4bc/trace",
+  "final_answer": "Here's a simple arroz con pollo recipe:\n\n**Arroz con Pollo**\n\nYou'll need about 2 pounds of bone-in chicken thighs seasoned with salt, pepper, and paprika. Brown them well in a large pot with olive oil, then set aside. In that same pot, saut\u00e9 a diced onion, a chopped green bell pepper, and three minced garlic cloves until soft. Stir in a cup and a half of long-grain rice to toast it briefly, then add a can of diced tomatoes, two cups of chicken broth, a teaspoon of cumin, half a teaspoon of turmeric (or a pinch of saffron if you have it), and a bay leaf. Nestle the chicken back in, bring to a simmer, cover, and cook on low for about 25 minutes until the rice is tender and the chicken is cooked through. Toss in some frozen peas and sliced olives in the last five minutes if you like. Let it rest off the heat for ten minutes before fluffing and serving with lemon wedges.\n\nIt's a forgiving one-pot meal\u2014the kind that tastes even better the next day.",
+  "provider_metadata": {
+    "provider_attempted": [
+      "ollama:kimi-k2.6:cloud"
+    ],
+    "provider_used": "ollama_cloud",
+    "model_used": "kimi-k2.6:cloud",
+    "provider_degraded": false,
+    "fallback_reason": "none",
+    "latency_ms": 6629,
+    "kimi_available": true,
+    "raw_cot_exposed": false
+  },
+  "classification": null,
+  "status": "completed",
+  "mode_requested": "read_only",
+  "mode_effective": "read_only",
+  "auto_decision": "n/a",
+  "mode_escalation_required": null,
+  "mode_escalation_reason": null,
+  "required_permission": null,
+  "expected_write_scope": null,
+  "confirmation_id": null,
+  "blocked_tools": null,
+  "intent_route": "direct_assistant",
+  "intent_detected": "CONVERSATION",
+  "intent_confidence": 0.5
+}

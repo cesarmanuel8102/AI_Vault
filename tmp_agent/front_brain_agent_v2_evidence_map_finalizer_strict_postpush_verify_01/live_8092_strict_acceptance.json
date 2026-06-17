@@ -1,0 +1,50 @@
+{
+  "generic": {
+    "status": 200,
+    "ok": true,
+    "canonical_agent_v2": true,
+    "run_id": "agv2_429f962df6693e89",
+    "trace_url": "/v2/agent/runs/agv2_429f962df6693e89/trace",
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false,
+    "has_operational_headings": false,
+    "content_preview": "Photosynthesis is how plants, algae, and some bacteria turn sunlight into food. They absorb light through chlorophyll\u2014the green pigment in their leaves\u2014take in carbon dioxide from the air, and pull up water through their roots. In the chloroplasts of their cells, these ingredients get converted into"
+  },
+  "recipe": {
+    "status": 200,
+    "ok": true,
+    "canonical_agent_v2": true,
+    "run_id": "agv2_2fb2a384483aa236",
+    "trace_url": "/v2/agent/runs/agv2_2fb2a384483aa236/trace",
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false,
+    "has_operational_headings": false,
+    "content_preview": "Here's a simple arroz con pollo recipe:\n\n**Ingredients**\n- 4 chicken thighs (bone-in, skin-on)\n- 1\u00bd cups long-grain rice\n- 1 can (14 oz) diced tomatoes\n- 2\u00bd cups chicken broth\n- 1 medium onion, diced\n- 1 bell pepper, diced\n- 3 cloves garlic, minced\n- 1 tsp cumin\n- 1 tsp turmeric (or achiote for colo"
+  },
+  "autonomous": {
+    "status": 200,
+    "ok": true,
+    "canonical_agent_v2": true,
+    "run_id": "agv2_8af83dab017bfe41",
+    "trace_url": "/v2/agent/runs/agv2_8af83dab017bfe41/trace",
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false,
+    "has_operational_headings": true,
+    "content_preview": "## Summary\n\nThe goal is to identify which microfix closed an issue where autonomous behavior triggered unwanted AUTO mode. From the deterministic evidence, **commit `2e9bad7`** contains the fix: **\"prevent autonomous text from switching chat mode to AUTO\"**. This directly addresses the stated goal.\n"
+  },
+  "production": {
+    "status": 200,
+    "ok": true,
+    "canonical_agent_v2": true,
+    "run_id": "agv2_0d8cf0cf51d87209",
+    "trace_url": "/v2/agent/runs/agv2_0d8cf0cf51d87209/trace",
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false,
+    "has_operational_headings": true,
+    "content_preview": "## Summary\n\nPRODUCTION-OPERATIONS-01 status: **PARTIALLY VERIFIABLE** \u2014 Brain infrastructure references exist in codebase, but direct ledger/trace inspection was blocked by file path resolution failures. Operator readiness cannot be fully confirmed without access to actual runtime state files.\n\n---\n"
+  }
+}

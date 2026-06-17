@@ -1,0 +1,75 @@
+{
+  "ok": true,
+  "run_id": "agv2_3199bec7ed9eba88",
+  "trace": [
+    {
+      "data": {
+        "goal_preview": "What is photosynthesis in simple terms?",
+        "mode": "read_only",
+        "mode_effective": "read_only",
+        "mode_requested": "read_only"
+      },
+      "event_type": "run_created",
+      "message": "Agent V2 run created",
+      "run_id": "agv2_3199bec7ed9eba88",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:46:36.742119Z"
+    },
+    {
+      "data": {
+        "confidence": 0.99,
+        "has_brain_signals": false,
+        "has_generic_only": false,
+        "intent": "QUERY",
+        "meta": {
+          "matches": [
+            "what",
+            "^what\\b"
+          ],
+          "method": "keywords"
+        },
+        "route": "direct_assistant"
+      },
+      "event_type": "intent_route",
+      "message": "Direct assistant route selected",
+      "run_id": "agv2_3199bec7ed9eba88",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:46:36.742119Z"
+    },
+    {
+      "data": {
+        "provider_metadata": {
+          "fallback_reason": "primary_failed:HTTP Error 502: Bad Gateway",
+          "kimi_available": true,
+          "latency_ms": 32386,
+          "model_used": "kimi-k2.5:cloud",
+          "provider_attempted": [
+            "ollama:kimi-k2.6:cloud",
+            "ollama:deepseek-v4-pro:cloud",
+            "ollama:gpt-oss:120b-cloud",
+            "ollama:kimi-k2.5:cloud"
+          ],
+          "provider_degraded": true,
+          "provider_used": "ollama_cloud",
+          "raw_cot_exposed": false
+        }
+      },
+      "event_type": "final_answer_created",
+      "message": "Final answer created (direct assistant)",
+      "run_id": "agv2_3199bec7ed9eba88",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:09.138245Z"
+    },
+    {
+      "data": {
+        "status": "completed"
+      },
+      "event_type": "run_completed",
+      "message": "Run completed",
+      "run_id": "agv2_3199bec7ed9eba88",
+      "step_id": null,
+      "timestamp_utc": "2026-06-17T18:47:09.138245Z"
+    }
+  ],
+  "event_count": 4
+}

@@ -1,0 +1,23 @@
+{
+  "ok": true,
+  "content": "Here's a simple arroz con pollo recipe:\n\n**Ingredients**\n- 4 chicken thighs (bone-in, skin-on)\n- 1\u00bd cups long-grain rice\n- 1 can (14 oz) diced tomatoes\n- 2\u00bd cups chicken broth\n- 1 medium onion, diced\n- 1 bell pepper, diced\n- 3 cloves garlic, minced\n- 1 tsp cumin\n- 1 tsp turmeric (or achiote for color)\n- \u00bd tsp oregano\n- 1 cup frozen peas\n- 2 tbsp olive oil\n- Salt and pepper\n\n**Instructions**\n\nSeason the chicken with salt, pepper, and cumin. Heat olive oil in a large deep skillet or Dutch oven over medium-high heat and brown the chicken well on both sides, about 5 minutes per side. Remove and set aside.\n\nIn the same pot, saut\u00e9 the onion and bell pepper until soft, about 5 minutes. Add the garlic and cook for another minute. Stir in the rice and toast it for 2 minutes, then add the turmeric, oregano, tomatoes, and broth. Nestle the chicken back in, bring to a boil, then reduce to low, cover, and simmer for 20 minutes.\n\nUncover, scatter the peas over the top, and cook another 10 minutes without stirring until the rice is tender and liquid absorbed. Let it rest off the heat for 5 minutes, then fluff gently and serve.\n\nThe chicken should be fall-off-the-bone tender and the rice fragrant with the sofrito base. A little hot sauce on the side doesn't hurt.",
+  "canonical_agent_v2": true,
+  "run_id": "agv2_2fb2a384483aa236",
+  "trace_url": "/v2/agent/runs/agv2_2fb2a384483aa236/trace",
+  "classification": null,
+  "status": "completed",
+  "model_used": "kimi-k2.6:cloud",
+  "provider_used": "ollama_cloud",
+  "provider_degraded": false,
+  "fallback_reason": "none",
+  "raw_cot_exposed": false,
+  "mode_requested": "read_only",
+  "mode_effective": "read_only",
+  "auto_decision": "n/a",
+  "mode_escalation_required": null,
+  "mode_escalation_reason": null,
+  "required_permission": null,
+  "expected_write_scope": null,
+  "confirmation_id": null,
+  "blocked_tools": null
+}

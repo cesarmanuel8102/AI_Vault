@@ -1,0 +1,23 @@
+{
+  "ok": true,
+  "content": "## Summary\n\nPRODUCTION-OPERATIONS-01 status: **PARTIALLY VERIFIABLE** \u2014 Brain infrastructure references exist in codebase, but direct ledger/trace inspection was blocked by file path resolution failures. Operator readiness cannot be fully confirmed without access to actual runtime state files.\n\n---\n\n## Brain Evidence\n\n| Source | Deterministic Finding |\n|--------|----------------------|\n| `repo_status_read` (tool_1, tool_4) | HEAD at `2bb6d36`; single working tree modification: `M memory/autonomous_journal.jsonl` \u2014 **journal has uncommitted changes** |\n| `grep_search` (tool_2) | Brain-specific retrieval quality evaluators present: `controlled_batch_retrieval_quality_eval.py`, `chat_learning_retrieval_integration_verify.py`, `chat_route_latency_stabilization.py`. Contains markers: \"real execution policy controlled Brain operations memory FAISS trading connectors\", \"controlled operations gating expectations for real execution\", \"Brain V9 recovery runbook for local runtime readiness\" |\n| `grep_search` (tool_5) | Identity/advisor server references `BRAIN_API`, `BRAIN_ROADMAP_PATH`, `BRAIN_ROOMS_DIR`, `_brain_plan_publish()` \u2014 **Brain API integration layer exists** |\n| `file_read` (tool_3, tool_6) | **FAILED**: `not_found_or_outside_repo` \u2014 attempted reads did not resolve to accessible paths |\n\n**Critical gap**: No direct evidence from `front_dirs/`, trace logs, or ledgers was successfully retrieved. All Brain evidence is **indirect** (code references, environment variables, module names).\n\n---\n\n## Actions Performed\n\n| Tool | Requested | Scheduled | Executed | Outcome |\n|------|-----------|-----------|----------|---------|\n| `repo_status_read` | \u274c NO | \u2705 YES | \u2705 YES | Success \u00d72 (redundant execution) |\n| `grep_search` | \u274c NO | \u2705 YES | \u2705 YES | Success \u00d72; returned Brain-relevant code matches |\n| `file_read` | \u274c NO | \u2705 YES | \u274c NO | Failed both attempts (`not_found_or_outside_repo`) |\n\n**Note**: No tools were explicitly requested by the user/goal. All executions were scheduler-initiated. `file_read` was scheduled but failed to execute successfully \u2014 **not unavailable, just failed to resolve paths**.\n\n---\n\n## Risks/Gates\n\n| Risk | Severity | Evidence |\n|------|----------|----------|\n| **Uncommitted journal changes** | MEDIUM | `memory/autonomous_journal.jsonl` modified but not committed \u2014 potential drift between persisted and runtime state |\n| **No direct ledger/trace read** | HIGH | Cannot verify actual operational status without `file_read` success on state files |\n| **FAISS/trading connector references in code** | HIGH | grep finds \"real execution policy controlled Brain operations memory FAISS trading connectors\" \u2014 **safety constraint violation risk if these are active**; mode is `read_only` so no write/trade execution occurred |\n| **Approval gating bypass risk** | LOW | `write tools approval-gated` constraint noted; no write tools were executed |\n\n---\n\n## Next Safe Action\n\n1. **Resolve `file_read` path resolution**: Determine correct relative paths for target ledger/trace files (likely need `brain/` prefix or different base directory)\n2. **Inspect `memory/autonomous_journal.jsonl`**: Read the uncommitted changes to assess runtime state drift\n3. **Verify `BRAIN_API` reachability**: If operator readiness requires live Brain API, a non-mutating health check against the endpoint referenced in `00_identity/advisor_server_fixed.py` would provide deterministic evidence\n4. **Confirm FAISS/trading connectors are inactive**: Code references exist; need runtime confirmation these are not loaded in current process\n\n**Operator readiness: CONDITIONALLY NOT CONFIRMED** \u2014 Infrastructure code present, but runtime state verification blocked by file access failures.",
+  "canonical_agent_v2": true,
+  "run_id": "agv2_0d8cf0cf51d87209",
+  "trace_url": "/v2/agent/runs/agv2_0d8cf0cf51d87209/trace",
+  "classification": "brain_evidence",
+  "status": "completed",
+  "model_used": "kimi-k2.6:cloud",
+  "provider_used": "ollama_cloud",
+  "provider_degraded": false,
+  "fallback_reason": "none",
+  "raw_cot_exposed": false,
+  "mode_requested": "read_only",
+  "mode_effective": "read_only",
+  "auto_decision": "n/a",
+  "mode_escalation_required": null,
+  "mode_escalation_reason": null,
+  "required_permission": null,
+  "expected_write_scope": null,
+  "confirmation_id": null,
+  "blocked_tools": null
+}

@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-06-17T00:00:00Z",
+  "phase": "staging_safety",
+  "staged_files_count": 22,
+  "staged_evidence_files": [
+    "tmp_agent/front_brain_agent_v2_evidence_map_finalizer_strict_postpush_verify_01/B3_raw.json",
+    "tmp_agent/front_brain_agent_v2_evidence_map_finalizer_strict_postpush_verify_01/B3_trace.json",
+    "tmp_agent/front_brain_agent_v2_evidence_map_finalizer_strict_postpush_verify_01/B4_raw.json",
+    "tmp_agent/front_brain_agent_v2_evidence_map_finalizer_strict_postpush_verify_01/B4_trace.json",
+    "tmp_agent/front_brain_agent_v2_evidence_map_finalizer_strict_postpush_verify_01/G1_raw.json",
+    "tmp_agent/front_brain_agent_v2_evidence_map_finalizer_strict_postpush_verify_01/G1_trace.json",
+    "tmp_agent/front_brain_agent_v2_evidence_map_finalizer_strict_postpush_verify_01/G2_raw.json",
+    "tmp_agent/front_brain_agent_v2_evidence_map_finalizer_strict_postpush_verify_01/G2_trace.json",
+    "tmp_agent/front_brain_agent_v2_evidence_map_finalizer_strict_postpush_verify_01/M1_raw.json",
+    "tmp_agent/front_brain_agent_v2_evidence_map_finalizer_strict_postpush_verify_01/M1_trace.json",
+    "tmp_agent/front_brain_agent_v2_evidence_map_finalizer_strict_postpush_verify_01/autonomous_8092_raw.json",
+    "tmp_agent/front_brain_agent_v2_evidence_map_finalizer_strict_postpush_verify_01/final_strict_verification_report.json",
+    "tmp_agent/front_brain_agent_v2_evidence_map_finalizer_strict_postpush_verify_01/final_strict_verification_report.md",
+    "tmp_agent/front_brain_agent_v2_evidence_map_finalizer_strict_postpush_verify_01/generic_8092_raw.json",
+    "tmp_agent/front_brain_agent_v2_evidence_map_finalizer_strict_postpush_verify_01/live_8091_strict_acceptance.json",
+    "tmp_agent/front_brain_agent_v2_evidence_map_finalizer_strict_postpush_verify_01/live_8092_strict_acceptance.json",
+    "tmp_agent/front_brain_agent_v2_evidence_map_finalizer_strict_postpush_verify_01/production_8092_raw.json",
+    "tmp_agent/front_brain_agent_v2_evidence_map_finalizer_strict_postpush_verify_01/recipe_8092_raw.json",
+    "tmp_agent/front_brain_agent_v2_evidence_map_finalizer_strict_postpush_verify_01/state_lock.json",
+    "tmp_agent/front_brain_agent_v2_strict_verify_evidence_commit_02/state_lock.json"
+  ],
+  "code_files_staged": false,
+  "memory_staged": false,
+  "faiss_staged": false,
+  "secrets_staged": false,
+  "unrelated_fronts_staged": false,
+  "staging_pass": true
+}
