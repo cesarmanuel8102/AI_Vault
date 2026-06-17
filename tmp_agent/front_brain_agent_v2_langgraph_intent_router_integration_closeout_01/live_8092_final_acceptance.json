@@ -1,0 +1,29 @@
+{
+  "generic": {
+    "status": 200,
+    "ok": true,
+    "content_preview": "Photosynthesis is the process plants, algae, and some bacteria use to convert sunlight, water, and carbon dioxide into glucose and oxygen. Essentially, they capture light energy through chlorophyll\u2014the green pigment in their leaves\u2014and use it to power a chemical reaction that turns CO\u2082 and H\u2082O into ",
+    "canonical_agent_v2": true,
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false
+  },
+  "production": {
+    "status": 200,
+    "ok": true,
+    "content_preview": "## Summary\n\nPRODUCTION-OPERATIONS-01 status: **Partially assessed**. Agent V2 operator readiness cannot be fully confirmed due to blocked file access. Repository shows active development with uncommitted changes in core brain components.\n\n---\n\n## Brain Evidence\n\n| Source | Deterministic Data |\n|----",
+    "canonical_agent_v2": true,
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false
+  },
+  "mixed": {
+    "status": 200,
+    "ok": true,
+    "content_preview": "## Summary\nThis read-only Brain evidence run aimed to explain what a modern agent is and compare it with this Brain architecture. Two of three scheduled tools executed successfully; one was blocked due to file size limits. No tools were explicitly requested by the user\u2014all were auto-scheduled by the",
+    "canonical_agent_v2": true,
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false
+  }
+}

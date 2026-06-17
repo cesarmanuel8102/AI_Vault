@@ -1,0 +1,47 @@
+{
+  "G1": {
+    "status": 200,
+    "intent_route": "direct_assistant",
+    "classification": null,
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false,
+    "final_answer_preview": "Photosynthesis is how plants make their own food using sunlight. They take in water through their roots and carbon dioxide from the air, then use energy from the sun to turn those ingredients into glucose\u2014a type of sugar that fuels their growth. As a bonus, they release oxygen into the air, which is why plants are so important for life on Earth.\n\n---\n\n**Tool Distinction:**\n- **Requested tools:** N"
+  },
+  "B1": {
+    "status": 200,
+    "intent_route": "brain_evidence",
+    "classification": "brain_evidence",
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false,
+    "final_answer_preview": "## Summary\n\n| Item | Value |\n|------|-------|\n| **Current HEAD** | `3bcb79c` |\n| **Dirty memory** | `memory/autonomous_journal.jsonl` has uncommitted modifications (staged or unstaged) |\n| **Mode** | read_only \u2014 no writes performed |\n\n---\n\n## Brain Evidence\n\n| Source | Deterministic Data |\n|--------|------------------|\n| `repo_status_read` (tool_1) | HEAD at commit `3bcb79c`; working tree dirty du"
+  },
+  "B3": {
+    "status": 200,
+    "intent_route": "brain_evidence",
+    "classification": "brain_evidence",
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false,
+    "final_answer_preview": "## Summary\nNo microfix related to preventing autonomous from triggering AUTO was found in the available evidence. The grep search returned environment variable paths and brain API publishing functions in `advisor_server_fixed.py`, but no matches for \"AUTO\", \"autonomous\", \"microfix\", or related terms.\n\n## Brain Evidence\n- **repo_status_read**: Head at `3bcb79c`; one modified file: `memory/autonomou"
+  },
+  "B4": {
+    "status": 200,
+    "intent_route": "operational_agent",
+    "classification": "general_reasoning",
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false,
+    "final_answer_preview": "## Summary\n\nPRODUCTION-OPERATIONS-01 status cannot be directly determined from available evidence. No tool specifically queried current production operations status. Retrieved memory fragments show historical task successes (ping checks, dashboard endpoint verification) from ~1071\u20131189 hours ago (~44\u201349 days), and one session indicating \"Brain V9 operativo\" with \"status: healthy\" from ~1188 hours "
+  },
+  "M1": {
+    "status": 200,
+    "intent_route": "brain_evidence",
+    "classification": "brain_evidence",
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false,
+    "final_answer_preview": "## Summary\n\nThis read-only Brain evidence run aimed to explain what a modern agent is and compare it with this Brain system. Two of three scheduled tools executed successfully; one was blocked due to file size limits. No tools were explicitly requested by the user.\n\n---\n\n## Brain Evidence\n\n| Source | Deterministic Data |\n|--------|------------------|\n| **Repository state** (`repo_status_read`) | H"
+  }
+}

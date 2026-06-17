@@ -1,0 +1,47 @@
+{
+  "G1": {
+    "status": 200,
+    "intent_route": "direct_assistant",
+    "classification": null,
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false,
+    "final_answer_preview": "Photosynthesis is how plants make their own food using sunlight. They take in water through their roots and carbon dioxide from the air, then use energy from sunlight to turn those ingredients into glucose\u2014a type of sugar that fuels their growth. As a bonus, they release oxygen into the air, which is why plants are so important for life on Earth. It's basically nature's way of turning solar energy"
+  },
+  "B1": {
+    "status": 200,
+    "intent_route": "brain_evidence",
+    "classification": "brain_evidence",
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false,
+    "final_answer_preview": "## Summary\n\nThe repo HEAD is commit `3bcb79c` with a dirty working tree containing uncommitted modifications to two tracked files. The term \"dirty memory\" is not explicitly defined in the provided evidence; it appears as a filesystem path component (`memory/autonomous_journal.jsonl`) within the repo status output, not as a technical concept with a documented meaning here.\n\n---\n\n## Brain Evidence\n\n"
+  },
+  "B3": {
+    "status": 200,
+    "intent_route": "brain_evidence",
+    "classification": "brain_evidence",
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false,
+    "final_answer_preview": "## Summary\nNo microfix related to preventing autonomous from triggering AUTO was found in the available evidence. The grep search returned brain agent startup/legacy server code, not autonomous trigger logic. The repo status shows modifications to `autonomous_journal.jsonl` and `intent_adapter.py`, but their contents were not read.\n\n## Brain Evidence\n- **Repo status**: HEAD at `3bcb79c`; working t"
+  },
+  "B4": {
+    "status": 200,
+    "intent_route": "brain_evidence",
+    "classification": "brain_evidence",
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false,
+    "final_answer_preview": "## Summary\n\nPRODUCTION-OPERATIONS-01 status: **Partially assessed**. Agent V2 operator readiness cannot be fully confirmed due to blocked file access. The repository shows active development with uncommitted changes in core brain components.\n\n---\n\n## Brain Evidence\n\n| Source | Deterministic Finding |\n|--------|----------------------|\n| `repo_status_read` (scheduled & executed) | HEAD at `3bcb79c`;"
+  },
+  "M1": {
+    "status": 200,
+    "intent_route": "brain_evidence",
+    "classification": "brain_evidence",
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "raw_cot_exposed": false,
+    "final_answer_preview": "## Summary\nThis read-only Brain evidence run aimed to explain what a modern agent is and compare it with this Brain architecture. Two of three scheduled tools executed successfully; one was blocked due to file size limits. No tools were explicitly requested by the user.\n\n---\n\n## Brain Evidence\n\n### Deterministic Source Data\n| Source | Finding |\n|--------|---------|\n| `repo_status_read` (tool_1) | "
+  }
+}

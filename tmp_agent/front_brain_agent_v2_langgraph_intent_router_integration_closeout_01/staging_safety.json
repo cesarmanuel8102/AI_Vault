@@ -1,0 +1,19 @@
+{
+  "timestamp": "2026-06-17T00:00:00Z",
+  "phase": "staging_safety",
+  "staged_files": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/intent_adapter.py",
+    "tmp_agent/front_brain_agent_v2_langgraph_intent_router_integration_closeout_01/final_acceptance_report.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_intent_router_integration_closeout_01/final_acceptance_report.md",
+    "tmp_agent/front_brain_agent_v2_langgraph_intent_router_integration_closeout_01/live_8091_before_or_after_microfix.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_intent_router_integration_closeout_01/live_8091_final_acceptance.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_intent_router_integration_closeout_01/live_8092_final_acceptance.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_intent_router_integration_closeout_01/state_lock.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_intent_router_integration_01/post_push_verification.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_intent_router_integration_01/staging_safety.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_intent_router_integration_01/state_lock.json"
+  ],
+  "memory_staged": false,
+  "faiss_staged": false,
+  "staging_pass": true
+}

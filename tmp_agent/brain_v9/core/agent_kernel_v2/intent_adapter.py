@@ -52,6 +52,11 @@ class AgentV2IntentAdapter:
             "autonomous", "auto mode", "AUTO",
             "production", "operations", "operator",
             "capabilities", "tools available", "approval",
+            "production-operations", "production operations",
+            "operator ready", "operator-ready", "production readiness",
+            "front_brain_agent_v2_production_operations",
+            "front_brain_agent_v2_production_operations_01",
+            "readiness report", "final_readiness_report",
         ]
         has_brain_signals = any(s in msg_lower for s in brain_signals)
 
@@ -67,7 +72,7 @@ class AgentV2IntentAdapter:
             route = "direct_assistant"
         elif intent == "QUERY" and not has_brain_signals and not has_generic_only:
             route = "direct_assistant"
-        elif has_brain_signals and intent in {"QUERY", "ANALYSIS", "COMMAND"}:
+        elif has_brain_signals and intent in {"QUERY", "ANALYSIS", "COMMAND", "SYSTEM"}:
             route = "brain_evidence"
         elif has_brain_signals and intent == "QUERY" and confidence < 0.7:
             route = "mixed_brain_reasoning"
