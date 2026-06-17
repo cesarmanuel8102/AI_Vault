@@ -1,0 +1,3377 @@
+{
+  "intended_keep": [
+    {
+      "status": "M",
+      "path": "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py"
+    },
+    {
+      "status": "M",
+      "path": "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py"
+    },
+    {
+      "status": "M",
+      "path": "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py"
+    },
+    {
+      "status": "M",
+      "path": "tmp_agent/brain_v9/dashboard/dashboard_routes.py"
+    },
+    {
+      "status": "M",
+      "path": "tmp_agent/brain_v9/dashboard/static/app.js"
+    },
+    {
+      "status": "M",
+      "path": "tmp_agent/brain_v9/dashboard/static/index.html"
+    },
+    {
+      "status": "M",
+      "path": "tmp_agent/brain_v9/ui/index.html"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/corrective_memory_faiss_final.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/corrective_smoke_results.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/corrective_state_lock.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/corrective_visual_surface_audit.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/post_push_verification.json"
+    }
+  ],
+  "suspect_remove": [
+    {
+      "status": "A",
+      "path": "tmp_agent/control/RUN_ONCE"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_agent_v2_spanish_parser_preflight_closeout_01/post_push_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_autonomous_observer_reports_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_autonomous_observer_reports_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_autonomous_observer_reports_01/post_action_immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_autonomous_observer_reports_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_canonical_memory_promotion_execute_approved_01/post_push_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_canonical_memory_promotion_scaleup_01/post_push_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_canonical_memory_promotion_scaleup_01/post_push_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_canonical_memory_promotion_scaleup_01/post_push_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_canonical_memory_promotion_scaleup_01/pre_push_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_codex_training_memory_mutation_forensic_closeout_01/post_push_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_dashboard_status_endpoint_rootcause_repair_01/post_push_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_dashboard_status_endpoint_rootcause_repair_01_retry_after_admin_stop/post_push_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_frontend_dashboard_chat_unification_01/runtime_route_audit.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_frontend_dashboard_chat_unification_01/state_lock.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/action_3_domain_eval_run/domain_eval_results.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/action_3_domain_eval_run/domain_eval_results.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/action_3_domain_eval_run/eval_results.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/action_3_domain_eval_run/eval_summary.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/brain_teacher_student_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/brain_teacher_student_plan.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/cesar_review_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/codex_independent_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/codex_independent_plan.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/post_action_immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/post_action_immutability_verify.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/selected_actions.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/selected_actions.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/source_scan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/training_cycle_1.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/training_cycle_1.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/training_cycle_2.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/training_cycle_2.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/training_cycle_3.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/training_cycle_3.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/training_score_before_after.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_governed_autonomy_walker_v1/training_score_before_after.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_01/post_push_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02/NEXT_PROMPT_RECOMMENDATION.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02/cesar_review_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02/final_safety_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02/preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02_retry_after_8091_reload/post_push_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/cesar_review_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/functional_diff.patch"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/patch_notes.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/post_action_immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/post_action_immutability_verify.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/post_provider_eval/eval_results.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/post_provider_eval/eval_summary.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/post_provider_quality.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/post_provider_quality.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/provider_benchmark_results.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/provider_benchmark_results.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/provider_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/provider_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/provider_raw_inventory_safe.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/provider_strategy.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/provider_strategy.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/rollback_plan.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_llm_provider_chain_optimization_01/runtime_restart.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_operator_dashboard_ux_and_autonomy_visibility_01/OPERATOR_UI_GUIDE.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_operator_dashboard_ux_and_autonomy_visibility_01/cesar_review_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_operator_dashboard_ux_and_autonomy_visibility_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_operator_dashboard_ux_and_autonomy_visibility_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_operator_dashboard_ux_and_autonomy_visibility_01/preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_operator_dashboard_ux_and_autonomy_visibility_01/repair_preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_operator_dashboard_ux_and_autonomy_visibility_01/repair_preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_provider_reliability_rootcause_01/post_push_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_scheduler_enablement_and_continuous_autonomy_01/OPERATOR_COMMANDS.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_scheduler_enablement_and_continuous_autonomy_01/cesar_review_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_scheduler_enablement_and_continuous_autonomy_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_fix_01/cesar_review_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_fix_01/direct_llm_probe_90s.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_fix_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_fix_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_fix_01/functional_diff.patch"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_fix_01/ledger_diff.patch"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_fix_01/memory_cleanup_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_fix_01/memory_cleanup_result.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_fix_01/memory_mutation_diff_before_cleanup.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_fix_01/memory_mutation_diff_before_cleanup.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_fix_01/memory_mutation_diff_before_cleanup.patch"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_fix_01/post_patch_eval/eval_results.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_fix_01/post_patch_eval/eval_summary.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_fix_01/post_patch_immutability.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_fix_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_fix_01/preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_fix_01/runtime_restart.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_fix_01/runtime_restart_retry.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_root_cause_01/cesar_summary.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_root_cause_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_root_cause_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_root_cause_01/llm_config_snapshot.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_root_cause_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_root_cause_01/preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_root_cause_01/runtime_generation_probes.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_timeout_generation_quality_root_cause_01/runtime_generation_probes.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/canonical_safety_baseline.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/canonical_safety_baseline.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/codex_brain_direct_dialogue_summary.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/codex_brain_direct_dialogue_summary.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/container_to_brain_probe.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/container_to_brain_probe.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/final_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/port_owner_classification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/port_owner_classification.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/post_action_immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/post_action_immutability_verify.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/pre_runtime_probe.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/pre_runtime_probe.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/runtime_health_wait.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/runtime_openai_probe.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/runtime_openai_probe.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/runtime_restart_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/runtime_restart_result.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/runtime_start_8091.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/source_contract_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/source_contract_verify.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_import_side_effects_hardening_01/baseline_safety.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_import_side_effects_hardening_01/baseline_safety.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_import_side_effects_hardening_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_import_side_effects_hardening_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_import_side_effects_hardening_01/post_action_immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_import_side_effects_hardening_01/post_action_immutability_verify.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_import_side_effects_hardening_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_import_side_effects_hardening_01/preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/baseline_safety.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/baseline_safety.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/mini_quality_suite_results.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/mini_quality_suite_results.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/mini_quality_suite_results_after_patch.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/mini_quality_suite_results_after_patch.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/mini_quality_suite_results_final.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/mini_quality_suite_results_final.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/mini_quality_suite_results_passed.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/mini_quality_suite_results_passed.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/post_action_immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/post_action_immutability_verify.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/runtime_restart_8091.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/runtime_restart_8091_fourth.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/runtime_restart_8091_second.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_llm_timeout_quality_stabilization_01/runtime_restart_8091_third.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_runtime_switchover_8091_to_8090_01/baseline_safety.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_runtime_switchover_8091_to_8090_01/baseline_safety.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_runtime_switchover_8091_to_8090_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_runtime_switchover_8091_to_8090_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_runtime_switchover_8091_to_8090_01/port_owner_classification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_runtime_switchover_8091_to_8090_01/port_owner_classification.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_runtime_switchover_8091_to_8090_01/post_action_immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_runtime_switchover_8091_to_8090_01/post_action_immutability_verify.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_runtime_switchover_8091_to_8090_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_runtime_switchover_8091_to_8090_01/preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_safe_restart_and_chat_route_verify_01/canonical_baseline_after_restart.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_safe_restart_and_chat_route_verify_01/canonical_baseline_before_restart.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_safe_restart_and_chat_route_verify_01/direct_dry_run_check.py"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_safe_restart_and_chat_route_verify_01/direct_dry_run_check_output.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_safe_restart_and_chat_route_verify_01/direct_dry_run_check_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_safe_restart_and_chat_route_verify_01/final_git_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_safe_restart_and_chat_route_verify_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_safe_restart_and_chat_route_verify_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_safe_restart_and_chat_route_verify_01/git_preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_safe_restart_and_chat_route_verify_01/post_restart_chat_probe.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_safe_restart_and_chat_route_verify_01/post_restart_health_probe.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_safe_restart_and_chat_route_verify_01/pre_restart_probe.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_safe_restart_and_chat_route_verify_01/router_entrypoint_source_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_safe_restart_and_chat_route_verify_01/safe_stop_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_brain_v9_safe_restart_and_chat_route_verify_01/start_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_cei_fdot_evaluation_pack_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_cei_fdot_evaluation_pack_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_cei_fdot_evaluation_pack_01/post_action_immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_cei_fdot_evaluation_pack_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_learning_retrieval_integration_verify_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_learning_retrieval_integration_verify_01/baseline_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_learning_retrieval_integration_verify_01/direct_retrieval_control.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_learning_retrieval_integration_verify_01/direct_retrieval_control.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_learning_retrieval_integration_verify_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_learning_retrieval_integration_verify_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_learning_retrieval_integration_verify_01/integration_verify_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_learning_retrieval_integration_verify_01/integration_verify_summary.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_learning_retrieval_integration_verify_01/post_run_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_learning_retrieval_integration_verify_01/post_run_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/canonical_safety_baseline.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/canonical_safety_baseline.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/codex_brain_direct_dialogue_summary.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/codex_brain_direct_dialogue_summary.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/container_to_brain_probe.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/container_to_brain_probe.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/final_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/openai_adapter_design.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/openai_adapter_design.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/post_action_immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/post_action_immutability_verify.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/post_cleanup_immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/post_cleanup_immutability_verify.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/router_entrypoint_contract_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/router_entrypoint_contract_verify.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/runtime_http_probe.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/runtime_http_probe.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/runtime_restart_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/runtime_restart_result.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/unexpected_github_knowledge_side_effect.diff"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/unexpected_github_knowledge_side_effect.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/unexpected_github_knowledge_side_effect.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_evidence_trace_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_evidence_trace_01/baseline_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_evidence_trace_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_evidence_trace_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_evidence_trace_01/post_run_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_evidence_trace_01/post_run_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_evidence_trace_01/trace_probe_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_evidence_trace_01/trace_probe_summary.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_authorization_01/authorization_summary.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_authorization_01/authorization_summary.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_authorization_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_authorization_01/baseline_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_authorization_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_authorization_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_authorization_01/post_run_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_authorization_01/post_run_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_patch_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_patch_01/baseline_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_patch_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_patch_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_patch_01/patch_validation_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_patch_01/patch_validation_summary.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_patch_01/post_run_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_patch_01/post_run_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_repair_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_repair_01/baseline_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_repair_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_repair_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_repair_01/post_run_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_repair_01/post_run_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_repair_01/repair_validation_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_retrieval_injection_repair_01/repair_validation_summary.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_route_latency_stabilization_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_route_latency_stabilization_01/baseline_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_route_latency_stabilization_01/chat_route_diagnosis_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_route_latency_stabilization_01/chat_route_diagnosis_summary.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_route_latency_stabilization_01/chat_route_discovery.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_route_latency_stabilization_01/chat_route_discovery.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_route_latency_stabilization_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_route_latency_stabilization_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_route_latency_stabilization_01/post_run_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_route_latency_stabilization_01/post_run_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_router_preservation_entrypoint_01/canonical_safety_baseline.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_router_preservation_entrypoint_01/canonical_safety_baseline.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_router_preservation_entrypoint_01/entrypoint_design.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_router_preservation_entrypoint_01/entrypoint_design.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_router_preservation_entrypoint_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_router_preservation_entrypoint_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_router_preservation_entrypoint_01/ledger_roadmap_diff.patch"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_router_preservation_entrypoint_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_router_preservation_entrypoint_01/router_source_mapping.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_router_preservation_entrypoint_01/router_source_mapping.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_router_preservation_entrypoint_01/runtime_probe.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_router_preservation_entrypoint_01/runtime_probe.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_brain_provider_config_8091_01/baseline_safety.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_brain_provider_config_8091_01/baseline_safety.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_brain_provider_config_8091_01/container_provider_probe.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_brain_provider_config_8091_01/container_provider_probe.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_brain_provider_config_8091_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_brain_provider_config_8091_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_brain_provider_config_8091_01/post_action_immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_brain_provider_config_8091_01/post_action_immutability_verify.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_brain_provider_config_8091_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_brain_provider_config_8091_01/preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/backend_connectivity_baseline.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/backend_connectivity_baseline.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/canonical_safety_baseline.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/canonical_safety_baseline.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/docker_open_webui_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/docker_open_webui_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/fix_classification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/fix_classification.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/ledger_roadmap_diff.patch"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/minimal_chat_ui_compatibility_check.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/minimal_chat_ui_compatibility_check.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/ollama_container_network_check.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/ollama_container_network_check.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/open_webui_apply_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/open_webui_apply_result.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/open_webui_start_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/open_webui_start_plan.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/post_fix_ui_probe.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_docker_networking_fix_01/post_fix_ui_probe.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/canonical_safety_baseline.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/canonical_safety_baseline.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/direct_backend_chat_probe.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/direct_backend_chat_probe.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/endpoint_probe_results.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/endpoint_probe_results.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/failure_classification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/failure_classification.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/fix_plan_package.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/fix_plan_package.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/ledger_roadmap_diff.patch"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/open_webui_provider_diagnostic.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/open_webui_provider_diagnostic.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/openapi_route_discovery.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/openapi_route_discovery.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/service_port_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/service_port_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/session_retrieval_diagnostic.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/session_retrieval_diagnostic.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/streaming_sse_compatibility.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01/streaming_sse_compatibility.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_live_runtime_source_recovery_and_curated_wiring_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_live_runtime_source_recovery_and_curated_wiring_01/baseline_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_live_runtime_source_recovery_and_curated_wiring_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_live_runtime_source_recovery_and_curated_wiring_01/live_q01_q05_probe_results.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_live_runtime_source_recovery_and_curated_wiring_01/live_q01_q05_probe_results.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_chat_ui_live_runtime_source_recovery_and_curated_wiring_01/post_run_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_evaluation_harness_v2_01/baseline_safety.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_evaluation_harness_v2_01/baseline_safety.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_evaluation_harness_v2_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_evaluation_harness_v2_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_evaluation_harness_v2_01/implementation_notes.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_evaluation_harness_v2_01/post_action_immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_evaluation_harness_v2_01/post_action_immutability_verify.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_evaluation_harness_v2_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_evaluation_harness_v2_01/preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/baseline_safety.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/baseline_safety.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/brain_self_assessment.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/brain_self_assessment.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/cesar_review_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/dialogue_results.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/dialogue_results.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/dialogue_results_checkpoint.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/dialogue_suite.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/evaluation_scorecard.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/evaluation_scorecard.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/evolution_proposals.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/evolution_proposals.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/final_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/post_action_immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/post_action_immutability_verify.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_codex_to_brain_governed_self_improvement_cycle_01/preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_controlled_batch_retrieval_quality_eval_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_controlled_batch_retrieval_quality_eval_01/baseline_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_controlled_batch_retrieval_quality_eval_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_controlled_batch_retrieval_quality_eval_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_controlled_batch_retrieval_quality_eval_01/post_run_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_controlled_batch_retrieval_quality_eval_01/post_run_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_controlled_batch_retrieval_quality_eval_01/retrieval_quality_eval_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_controlled_batch_retrieval_quality_eval_01/retrieval_quality_eval_summary.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_agentic_systems_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_agentic_systems_01/baseline_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_agentic_systems_01/curated_learning_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_agentic_systems_01/curated_learning_summary.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_agentic_systems_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_agentic_systems_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_agentic_systems_01/post_run_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_agentic_systems_01/post_run_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_agentic_systems_01/source_metadata_check.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_autonomous_coding_patch_generation_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_autonomous_coding_patch_generation_01/canonical_curated_learning_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_post_promotion_verify_security_governance_01/canonical_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_post_promotion_verify_security_governance_01/canonical_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_post_promotion_verify_security_governance_01/faiss_retrieval_reeval.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_post_promotion_verify_security_governance_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_post_promotion_verify_security_governance_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_post_promotion_verify_security_governance_01/legacy_path_audit.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_post_promotion_verify_security_governance_01/negative_contamination_reeval.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_post_promotion_verify_security_governance_01/promoted_ids_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_execute_security_governance_01/approval_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_execute_security_governance_01/approval_verification.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_execute_security_governance_01/baseline_before_mutation.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_execute_security_governance_01/baseline_before_mutation.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_execute_security_governance_01/candidate_validation.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_execute_security_governance_01/embedding_generation_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_execute_security_governance_01/faiss_retrieval_eval.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_execute_security_governance_01/faiss_stack_detection.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_execute_security_governance_01/faiss_stack_detection.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_execute_security_governance_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_execute_security_governance_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_execute_security_governance_01/negative_query_contamination_eval.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_execute_security_governance_01/post_mutation_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/backup_rollback_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/backup_rollback_plan.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/baseline_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/candidate_records_snapshot.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/candidate_records_snapshot.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/embedding_text_preview.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/embedding_text_preview.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/faiss_promotion_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/faiss_promotion_plan.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/final_immutability_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/final_immutability_verification.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/future_execution_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/future_execution_plan.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/human_approval_package.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/human_approval_package.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/validation_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01/validation_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_execute_security_governance_01/append_manifest.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_execute_security_governance_01/approved_package_snapshot.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_execute_security_governance_01/approved_package_snapshot.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_execute_security_governance_01/baseline_before_mutation.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_execute_security_governance_01/baseline_before_mutation.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_execute_security_governance_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_execute_security_governance_01/final_schema_validation.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_execute_security_governance_01/final_schema_validation.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_execute_security_governance_01/post_append_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_execute_security_governance_01/post_append_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_prep_security_governance_01/authorization_policy_snapshot.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_prep_security_governance_01/authorization_policy_snapshot.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_prep_security_governance_01/backup_rollback_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_prep_security_governance_01/backup_rollback_plan.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_prep_security_governance_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_prep_security_governance_01/baseline_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_prep_security_governance_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_prep_security_governance_01/human_approval_package.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_prep_security_governance_01/human_approval_package.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_prep_security_governance_01/post_run_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_prep_security_governance_01/retrieval_eval_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_prep_security_governance_01/retrieval_eval_plan.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_prep_security_governance_01/selected_canary_sources.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_ingestion_prep_security_governance_01/selected_canary_sources.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_post_ingestion_verify_security_governance_01/baseline_post_execute_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_post_ingestion_verify_security_governance_01/baseline_post_execute_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_post_ingestion_verify_security_governance_01/canary_records_found.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_post_ingestion_verify_security_governance_01/canary_records_found.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_post_ingestion_verify_security_governance_01/chat_ui_readonly_probe_results.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_post_ingestion_verify_security_governance_01/chat_ui_readonly_probe_results.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_post_ingestion_verify_security_governance_01/contamination_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_post_ingestion_verify_security_governance_01/contamination_verification.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_post_ingestion_verify_security_governance_01/final_immutability_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_post_ingestion_verify_security_governance_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_post_ingestion_verify_security_governance_01/memory_access_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_post_ingestion_verify_security_governance_01/memory_access_verification.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_post_ingestion_verify_security_governance_01/schema_safety_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_post_ingestion_verify_security_governance_01/schema_safety_verification.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_retrieval_eval_security_governance_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_retrieval_eval_security_governance_01/baseline_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_retrieval_eval_security_governance_01/chat_ui_readonly_probe_results.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_retrieval_eval_security_governance_01/chat_ui_readonly_probe_results.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_retrieval_eval_security_governance_01/direct_memory_retrieval_eval.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_retrieval_eval_security_governance_01/direct_memory_retrieval_eval.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_retrieval_eval_security_governance_01/final_immutability_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_retrieval_eval_security_governance_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_retrieval_eval_security_governance_01/negative_query_contamination_eval.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_canary_retrieval_eval_security_governance_01/negative_query_contamination_eval.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_chat_ui_runtime_patch_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_chat_ui_usage_repair_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_chat_ui_usage_repair_01/canonical_count_audit.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_chat_ui_usage_repair_01/direct_q01_q05_probe_results.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_chat_ui_usage_repair_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_chat_ui_usage_repair_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_chat_ui_usage_repair_01/post_run_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_chat_ui_usage_repair_01/ui_chat_route_assessment.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_controlled_ingestion_authorization_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_controlled_ingestion_authorization_01/controlled_ingestion_authorization_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_controlled_ingestion_authorization_01/controlled_ingestion_authorization_summary.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_controlled_ingestion_authorization_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_controlled_ingestion_authorization_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_controlled_ingestion_authorization_01/post_run_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_controlled_ingestion_authorization_01/prior_curation_summary.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_evaluation_benchmarking_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_evaluation_benchmarking_01/baseline_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_evaluation_benchmarking_01/curated_learning_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_evaluation_benchmarking_01/curated_learning_summary.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_evaluation_benchmarking_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_evaluation_benchmarking_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_evaluation_benchmarking_01/post_run_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_evaluation_benchmarking_01/post_run_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_financial_motor_trading_intelligence_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_financial_motor_trading_intelligence_01/baseline_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_financial_motor_trading_intelligence_01/canonical_curated_learning_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_financial_motor_trading_intelligence_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_financial_motor_trading_intelligence_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_financial_motor_trading_intelligence_01/post_run_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_financial_motor_trading_intelligence_01/post_run_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_memory_rag_knowledge_architecture_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_memory_rag_knowledge_architecture_01/curated_learning_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_memory_rag_knowledge_architecture_01/curated_learning_summary.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_memory_rag_knowledge_architecture_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_memory_rag_knowledge_architecture_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_memory_rag_knowledge_architecture_01/post_run_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_memory_rag_knowledge_architecture_01/post_run_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_security_governance_sandboxing_01/baseline_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_security_governance_sandboxing_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_security_governance_sandboxing_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_security_governance_sandboxing_01/post_run_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_external_curated_learning_security_governance_sandboxing_01/post_run_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_financial_research_safety_pack_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_financial_research_safety_pack_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_financial_research_safety_pack_01/post_action_immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_financial_research_safety_pack_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_cloud_provider_config_runbook_01/cesar_review_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_cloud_provider_config_runbook_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_cloud_provider_config_runbook_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_cloud_provider_config_runbook_01/ollama_kimi_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_cloud_provider_config_runbook_01/post_action_immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_cloud_provider_config_runbook_01/post_action_immutability_verify.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_cloud_provider_config_runbook_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_cloud_provider_config_runbook_01/preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_cloud_provider_config_runbook_01/provider_config_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_cloud_provider_config_runbook_01/provider_config_verify.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_cloud_provider_config_runbook_01/safe_config_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_cloud_provider_config_runbook_01/safe_config_inventory.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_cloud_provider_config_runbook_01/safe_config_inventory_env.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_cloud_provider_config_runbook_01/setup_status_output.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_cloud_provider_config_runbook_01/verify_script_output.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/cesar_review_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/final_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/ledger_roadmap_diff.patch"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/live_chat_provider_probe_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/live_chat_provider_probe_result.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/live_probe_memory_before.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/live_probe_memory_before_after_restart.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/live_probe_memory_before_final.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/live_probe_memory_before_final_code.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/manual_core_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/manual_core_verification.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/post_action_immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/post_action_immutability_verify.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/runtime_8091_health_before_restart.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/runtime_8091_process_before_restart.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/runtime_8091_restart.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/runtime_8091_restart_after_fix.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/runtime_8091_restart_final_code.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_kimi_k2_6_live_chat_probe_and_safety_filter_01/runtime_8091_restart_fixed.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_diagnostic_manual_steps_01/canonical_safety_baseline.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_diagnostic_manual_steps_01/canonical_safety_baseline.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_diagnostic_manual_steps_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_diagnostic_manual_steps_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_diagnostic_manual_steps_01/lock_diagnostic_results.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_diagnostic_manual_steps_01/lock_diagnostic_results.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_diagnostic_manual_steps_01/lock_source_classification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_diagnostic_manual_steps_01/lock_source_classification.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_diagnostic_manual_steps_01/manual_lock_release_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_diagnostic_manual_steps_01/manual_lock_release_plan.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_diagnostic_manual_steps_01/next_retry_conditions.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_diagnostic_manual_steps_01/next_retry_conditions.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/approval_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/approval_verification.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/canonical_baseline_before_action.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/canonical_baseline_before_action.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/lock_process_discovery.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/lock_process_discovery.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/post_action_canonical_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/post_action_canonical_verify.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/post_close_lock_check.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/post_close_lock_check.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/process_close_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/process_close_result.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/process_kill_candidate_classification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/process_kill_candidate_classification.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/quarantine_rename_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/quarantine_rename_result.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/quarantine_target.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/quarantine_target.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/rollback_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_lock_release_and_quarantine_retry_01/rollback_plan.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_execute_01/approval_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_execute_01/approval_verification.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_execute_01/canonical_baseline_before_cleanup.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_execute_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_execute_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_execute_01/legacy_pre_cleanup_manifest.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_execute_01/post_rename_canonical_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_execute_01/quarantine_rename_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_execute_01/quarantine_rename_result.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_execute_01/quarantine_target.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_execute_01/rollback_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_execute_01/rollback_plan.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_execute_01/runtime_process_safety_check.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_plan_01/canonical_baseline.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_plan_01/cleanup_plan_package.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_plan_01/cleanup_plan_package.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_plan_01/directory_diff_inventory.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_plan_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_plan_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_plan_01/immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_plan_01/legacy_baseline.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_plan_01/legacy_risk_classification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_plan_01/runtime_dependency_audit.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_retry_post_reboot_01/approval_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_retry_post_reboot_01/canonical_baseline_before_retry.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_retry_post_reboot_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_retry_post_reboot_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_retry_post_reboot_01/legacy_current_state.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_retry_post_reboot_01/post_rename_canonical_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_retry_post_reboot_01/prior_failure_state.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_retry_post_reboot_01/quarantine_rename_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_retry_post_reboot_01/quarantine_rename_result.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_retry_post_reboot_01/quarantine_target.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_retry_post_reboot_01/rollback_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_retry_post_reboot_01/rollback_plan.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_legacy_path_cleanup_retry_post_reboot_01/runtime_lock_safety_check.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_memory_faiss_retrieval_quality_pack_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_memory_faiss_retrieval_quality_pack_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_memory_faiss_retrieval_quality_pack_01/post_action_immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_memory_faiss_retrieval_quality_pack_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_runtime_path_alignment_canonical_verify_01/canonical_memory_faiss_baseline.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_runtime_path_alignment_canonical_verify_01/chat_runtime_readonly_probe.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_runtime_path_alignment_canonical_verify_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_runtime_path_alignment_canonical_verify_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_runtime_path_alignment_canonical_verify_01/immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_runtime_path_alignment_canonical_verify_01/legacy_path_readonly_audit.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_runtime_path_alignment_canonical_verify_01/path_baseline_audit.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_runtime_path_alignment_canonical_verify_01/path_definition_scan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/front_runtime_path_alignment_canonical_verify_01/post_patch_path_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/brain_codex_dialogue/dialogue_01.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/brain_codex_dialogue/dialogue_01.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/brain_codex_dialogue/dialogue_02.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/brain_codex_dialogue/dialogue_02.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/brain_codex_dialogue/dialogue_03.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/brain_codex_dialogue/dialogue_03.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/brain_codex_dialogue/dialogue_04.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/brain_codex_dialogue/dialogue_04.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/brain_codex_dialogue/dialogue_05.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/brain_codex_dialogue/dialogue_05.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/brain_codex_dialogue/dialogue_summary.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/brain_codex_dialogue/dialogue_summary.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cesar_review_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_01_brain_response.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_01_codex_critique.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_01_decision.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_01_prompt.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_01_result.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_01_revised_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_02_brain_response.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_02_codex_critique.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_02_decision.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_02_prompt.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_02_result.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_02_revised_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_03_brain_response.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_03_codex_critique.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_03_decision.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_03_prompt.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_03_result.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_03_revised_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_summary.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/cycles/cycle_summary.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/excellence_score_after.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/excellence_score_before.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/post_action_immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/post_action_immutability_verify.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01/preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/autonomy_walker_v2/cycle_01.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/autonomy_walker_v2/cycle_01.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/autonomy_walker_v2/cycle_02.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/autonomy_walker_v2/cycle_02.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/autonomy_walker_v2/cycle_03.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/autonomy_walker_v2/cycle_03.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/autonomy_walker_v2/cycle_04.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/autonomy_walker_v2/cycle_04.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/autonomy_walker_v2/cycle_05.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/autonomy_walker_v2/cycle_05.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/autonomy_walker_v2/cycle_06.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/autonomy_walker_v2/cycle_06.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/autonomy_walker_v2/cycle_07.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/autonomy_walker_v2/cycle_07.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/autonomy_walker_v2/cycle_08.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/autonomy_walker_v2/cycle_08.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/autonomy_walker_v2/cycle_summary.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/autonomy_walker_v2/cycle_summary.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/cesar_review_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/final_eval_default/eval_results.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/final_eval_default/eval_summary.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/final_eval_scorecard.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/final_eval_scorecard.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/final_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/immutability_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/kimi_k2_5_fallback_probe.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/kimi_ollama_enablement_diagnosis.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/kimi_ollama_enablement_diagnosis.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/protected_memory_hash_after_validation.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/protected_memory_hash_before_validation.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/provider_chain_hardening_notes.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/provider_health_snapshot.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/provider_health_snapshot.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/runtime_8090_decision.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/runtime_8090_decision.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/score_before_after.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/score_before_after.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_final_autonomy_acceleration_cycle_01/ssot_diff.patch"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_governed_autonomous_advance_batch_01/compact_console_summary.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_governed_autonomous_advance_batch_01/legacy_cleanup_precheck.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_governed_autonomous_advance_batch_01/legacy_cleanup_precheck.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_governed_autonomous_advance_batch_01/legacy_cleanup_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_governed_autonomous_advance_batch_01/legacy_cleanup_result.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_governed_autonomous_advance_batch_01/macro_final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_governed_autonomous_advance_batch_01/macro_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_governed_autonomous_advance_batch_01/macro_plan.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_governed_autonomous_advance_batch_01/macro_preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_governed_autonomous_advance_batch_01/macro_preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/macro_front_brain_governed_autonomous_advance_batch_01/macro_progress_ledger.jsonl"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_01/ledger_diff.patch"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_01/post_push_journal_diff_review.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_01/post_push_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01/post_push_verification.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01/OPERATOR_COMMANDS.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01/_faiss_ntotal.py"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01/cesar_review_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01/chat_dashboard_diagnosis.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01/chat_dashboard_diagnosis.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01/dashboard_start_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01/first_real_memory_write.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01/memory_status.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01/preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/HANDOFF_FOR_NEXT_CODEX.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/RESUME_PROMPT.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/RESUME_STATE.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/_faiss_ntotal.py"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_001.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_001.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_002.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_002.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_003.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_003.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_004.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_004.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_005.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_005.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_006.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_006.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_007.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_007.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_008.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_008.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_009.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_009.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_010.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_010.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_011.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_011.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_012.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_012.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_013.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_013.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_014.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_014.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_015.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_015.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_016.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_016.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_017.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_017.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_018.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_018.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_019.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_019.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_020.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/batches/batch_020.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/cesar_review_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/cycles.jsonl"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/domain_cycle_plan.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/domain_cycle_plan.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/excellence_score_after.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/excellence_score_before.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/excellence_score_progression.jsonl"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/final_report.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/final_report.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/kimi_dialogue_calibration.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/kimi_dialogue_calibration.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/learning_update_summary.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/lessons_created.jsonl"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/mega_cycle_summary.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/mistakes_created.jsonl"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/post_action_immutability_verify.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/post_action_immutability_verify.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01/promotion_candidates_created.jsonl"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/recover_brain_8091_and_rerun_autonomy_walker_v1/openai_adapter_probe.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/recover_brain_8091_and_rerun_autonomy_walker_v1/openai_adapter_probe.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/recover_brain_8091_and_rerun_autonomy_walker_v1/port_8091_check.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/recover_brain_8091_and_rerun_autonomy_walker_v1/port_8091_check.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/recover_brain_8091_and_rerun_autonomy_walker_v1/preflight.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/recover_brain_8091_and_rerun_autonomy_walker_v1/preflight.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/recover_brain_8091_and_rerun_autonomy_walker_v1/runtime_start_result.json"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/recover_brain_8091_and_rerun_autonomy_walker_v1/runtime_start_result.md"
+    },
+    {
+      "status": "A",
+      "path": "tmp_agent/restart_brain_8091_load_patched_provider_route_01/post_push_verification.json"
+    }
+  ],
+  "protected_stop": [
+    {
+      "status": "M",
+      "path": "memory/autonomous_journal.jsonl"
+    },
+    {
+      "status": "M",
+      "path": "memory/semantic/semantic_memory.jsonl"
+    }
+  ],
+  "counts": {
+    "intended": 12,
+    "suspect": 827,
+    "protected": 2
+  }
+}

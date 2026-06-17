@@ -1,0 +1,12 @@
+{
+  "phase": "7",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "52e83ec",
+  "remote_head": "52e83ec",
+  "local_equals_remote": true,
+  "staged_empty": true,
+  "working_tree_clean": true,
+  "status": "LOCK_VERIFIED_POST_AUDIT",
+  "note": "Audit complete. Protected files detected in bad commit 52e83ec. Cleanup stopped. Evidence files created and ready to commit.",
+  "date": "2026-06-17T06:XX:XX+00:00"
+}

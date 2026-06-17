@@ -1,0 +1,29 @@
+{
+  "status": "STOPPED_PROTECTED_FILE_CONTAMINATION",
+  "bad_commit": "52e83ec",
+  "bad_commit_message": "fix(agent-v2-chat-mode): corrective patch for 8091/8092 UI clarity + port-safe probe + NL parser",
+  "parent_commit": "2106578",
+  "protected_files_committed": [
+    {
+      "path": "memory/autonomous_journal.jsonl",
+      "change_type": "M",
+      "lines_added": 18,
+      "lines_deleted": 0,
+      "note": "Appended 18 autonomous_journal entries from persistent_run_once cycles. These are memory mutations that should never be committed via a corrective UI patch."
+    },
+    {
+      "path": "memory/semantic/semantic_memory.jsonl",
+      "change_type": "M",
+      "lines_added": 1,
+      "lines_deleted": 0,
+      "note": "Appended 1 semantic_memory entry (task_result kind) from agent_loop. This is a FAISS-adjacent mutation that should never be committed via a corrective UI patch."
+    }
+  ],
+  "reason": "Correcting protected memory/FAISS files requires explicit operator approval because it would require a new commit that reverts protected files. The contaminated commit 52e83ec bundled 827 unrelated suspect files and 2 protected memory files alongside the 12 intended corrective files. Per governance rules, any cleanup that touches memory/autonomous_journal.jsonl or memory/semantic/semantic_memory.jsonl requires human operator authorization.",
+  "intended_files_in_commit": 12,
+  "suspect_files_in_commit": 827,
+  "protected_files_in_commit": 2,
+  "recommendation": "Operator must decide: (1) Accept the memory mutations as harmless operational logs and proceed with suspect-only cleanup in a new commit, OR (2) Require a revert of memory files via a dedicated MEMORY governance front with full rollback plan, OR (3) Force-push exclusion of this commit and reapply only intended files cleanly. Do NOT proceed with automated cleanup.",
+  "date": "2026-06-17T06:XX:XX+00:00",
+  "auditor": "codex_audit_phase_3"
+}

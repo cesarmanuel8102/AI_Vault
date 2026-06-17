@@ -1,0 +1,12 @@
+{
+  "phase": "1",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "52e83ec",
+  "remote_head": "52e83ec",
+  "local_equals_remote": true,
+  "staged_empty": true,
+  "dirty_tracked": [],
+  "date": "2026-06-17T06:XX:XX+00:00",
+  "status": "LOCK_VERIFIED",
+  "note": "Working tree clean. Proceed to Phase 2."
+}

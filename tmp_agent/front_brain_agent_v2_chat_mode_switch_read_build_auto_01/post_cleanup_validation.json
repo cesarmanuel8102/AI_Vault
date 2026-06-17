@@ -1,0 +1,15 @@
+{
+  "py_compile": {
+    "governance.py": "OK",
+    "api_adapter.py": "OK",
+    "tool_gateway.py": "OK"
+  },
+  "smoke_tests": {
+    "file": "tests/smoke/smoke_front_brain_agent_v2_chat_mode_switch_read_build_auto_01.py",
+    "passed": 20,
+    "failed": 0,
+    "skipped": 0,
+    "status": "PASS"
+  },
+  "note": "Functional code is syntactically valid and passes existing smoke suite. However, the bad commit 52e83ec remains on the branch because cleanup was stopped due to protected memory file contamination."
+}

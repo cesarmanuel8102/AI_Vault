@@ -1,0 +1,23 @@
+{
+  "all_pass": true,
+  "checks": {
+    "8091_selector_visible": true,
+    "8091_segmented_buttons": true,
+    "8091_sendMessage_uses_currentMode": true,
+    "8091_detectModeInMessage": true,
+    "8091_renderEscalationPanel": true,
+    "8091_response_shows_mode": true,
+    "8092_selector_visible": true,
+    "8092_cache_bust": true,
+    "8092_js_dashChatMode_var": true,
+    "8092_js_transmits_mode": true,
+    "8092_js_shows_mode": true,
+    "8092_js_setChatMode": true,
+    "proxy_accepts_mode": true,
+    "proxy_returns_mode_fields": true,
+    "backend_nl_parser": true,
+    "backend_applies_nl_mode": true,
+    "backend_port_safe": true,
+    "backend_8092_route": true
+  }
+}
