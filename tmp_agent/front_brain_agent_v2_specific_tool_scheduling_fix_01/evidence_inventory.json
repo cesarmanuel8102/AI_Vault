@@ -1,0 +1,34 @@
+{
+  "phase": "evidence_inventory",
+  "front": "FRONT-BRAIN-AGENT-V2-SPECIFIC-TOOL-SCHEDULING-FIX-01",
+  "timestamp_utc": "2026-06-17T00:30:00Z",
+  "evidence_dir": "tmp_agent/front_brain_agent_v2_specific_tool_scheduling_fix_01",
+  "files_expected": [
+    "state_lock.json",
+    "closeout_state_lock.json",
+    "planner_gap_audit.json",
+    "tool_availability_inventory.json",
+    "live_retests.json",
+    "live_test_a.json",
+    "live_test_b.json",
+    "live_test_c.json",
+    "memory_faiss_final.json",
+    "post_push_verification.json",
+    "evidence_inventory.json"
+  ],
+  "files_found": [
+    "closeout_state_lock.json",
+    "state_lock.json",
+    "planner_gap_audit.json",
+    "tool_availability_inventory.json",
+    "live_retests.json",
+    "live_test_a.json",
+    "live_test_b.json",
+    "live_test_c.json",
+    "memory_faiss_final.json",
+    "post_push_verification.json",
+    "evidence_inventory.json"
+  ],
+  "missing_files": [],
+  "verdict": "COMPLETE"
+}

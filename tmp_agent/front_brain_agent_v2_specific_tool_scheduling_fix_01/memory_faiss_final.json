@@ -1,0 +1,29 @@
+{
+  "phase": 9,
+  "timestamp_utc": "2026-06-17T04:28:15Z",
+  "front_id": "FRONT-BRAIN-AGENT-V2-SPECIFIC-TOOL-SCHEDULING-FIX-01",
+  "files_modified": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py"
+  ],
+  "files_created": [
+    "tests/smoke/smoke_front_brain_agent_v2_specific_tool_scheduling_fix_01.py",
+    "tmp_agent/front_brain_agent_v2_specific_tool_scheduling_fix_01/"
+  ],
+  "memory_touched": false,
+  "faiss_touched": false,
+  "semantic_memory_lines_before": 1733,
+  "semantic_memory_lines_after": 1733,
+  "faiss_ntotal_before": 1633,
+  "faiss_ntotal_after": 1633,
+  "verification_method": "No memory/FAISS write APIs invoked during this front. Planner.py edits contain no calls to semantic memory or FAISS indexing.",
+  "safety_assertion": "PASS: Only planner logic and read-only smoke tests were modified. No memory or FAISS mutations occurred.",
+  "staged_for_commit": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+    "tests/smoke/smoke_front_brain_agent_v2_specific_tool_scheduling_fix_01.py"
+  ],
+  "excluded_from_commit": [
+    "memory/autonomous_journal.jsonl",
+    "memory/semantic/semantic_memory.jsonl",
+    "tmp_agent/front_brain_agent_v2_specific_tool_scheduling_fix_01/"
+  ]
+}

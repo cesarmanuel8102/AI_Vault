@@ -1,0 +1,61 @@
+{
+  "phase": "planner_gap_audit",
+  "timestamp": "2026-06-17T04:45:00Z",
+  "front": "FRONT-BRAIN-AGENT-V2-SPECIFIC-TOOL-SCHEDULING-FIX-01",
+  "gaps_found": {
+    "A_explicit_tool_not_scheduled": {
+      "severity": "high",
+      "description": "User explicitly named list_recent_brain_changes but planner did not detect or schedule it. Instead fell back to semantic_retrieve + repo_status_read.",
+      "root_cause": "planner.py classify_goal() had no explicit tool name detection. Only keyword-based classification (e.g., 'patch', 'diff', 'memory'). Tool names like 'list_recent_brain_changes' were invisible to the planner.",
+      "files_affected": ["tmp_agent/brain_v9/core/agent_kernel_v2/planner.py"],
+      "fix": "Added EXPLICIT_TOOL_PATTERNS regex mapping and _detect_explicit_tool_requests() function. Added _build_explicit_tool_plan() to schedule named tools directly."
+    },
+    "B_autonomy_diagnostic_not_scheduled": {
+      "severity": "high", 
+      "description": "User described autonomy symptoms (heartbeat stale, verify process) but planner fell back to semantic_retrieve + repo_status_read without scheduling diagnostic tools.",
+      "root_cause": "No diagnostic phrase mapping in planner. Phrases like 'heartbeat stale', 'verify autonomy' were invisible to keyword-based classification.",
+      "files_affected": ["tmp_agent/brain_v9/core/agent_kernel_v2/planner.py"],
+      "fix": "Added DIAGNOSTIC_PHRASES mapping with autonomy_heartbeat, recent_changes, git_history triggers. Mapped to safe tool equivalents."
+    },
+    "C_kernel_changes_not_scheduled": {
+      "severity": "medium",
+      "description": "User asked about recent kernel changes in Spanish ('cuales fueron los ultimos cambios en el kernel del agente?'). Planner classified as general_reasoning and only scheduled semantic_retrieve.",
+      "root_cause": "Spanish phrases 'ultimos cambios', 'cambios en el kernel' not matched by English-only keyword classification. No recent-changes classification existed.",
+      "files_affected": ["tmp_agent/brain_v9/core/agent_kernel_v2/planner.py"],
+      "fix": "Added recent_changes_diagnosis classification. Added Spanish triggers to DIAGNOSTIC_PHRASES."
+    },
+    "D_safe_patch_dry_run_misclassification": {
+      "severity": "medium",
+      "description": "Prompt 'Solicitar al planner que programe list_recent_brain_changes...' was classified as safe_patch_dry_run because 'patch' appeared in the goal text.",
+      "root_cause": "classify_goal() checked for 'patch'/'diff' before checking for explicit tool scheduling intent.",
+      "files_affected": ["tmp_agent/brain_v9/core/agent_kernel_v2/planner.py"],
+      "fix": "Added guard: only classify as safe_patch_dry_run if patch/diff keywords exist AND no explicit tool scheduling words (programa, solicita, schedule, tool principal)."
+    }
+  },
+  "missing_tools": {
+    "list_recent_brain_changes": {
+      "exists_in_tool_gateway": false,
+      "resolution": "Mapped to repo_history_read + repo_status_read + grep_search as safe equivalent"
+    },
+    "get_live_autonomy_status": {
+      "exists_in_tool_gateway": false,
+      "resolution": "Mapped to route_probe probing autonomy endpoint"
+    },
+    "check_service_status": {
+      "exists_in_tool_gateway": false,
+      "resolution": "Mapped to route_probe to health endpoint"
+    },
+    "get_autonomy_phase": {
+      "exists_in_tool_gateway": false,
+      "resolution": "Mapped to semantic_retrieve about autonomy phase"
+    },
+    "repo_history_read": {
+      "exists_in_tool_gateway": false,
+      "resolution": "Mapped to repo_status_read + grep_search"
+    },
+    "repo_diff_read": {
+      "exists_in_tool_gateway": false,
+      "resolution": "Mapped to repo_status_read"
+    }
+  }
+}

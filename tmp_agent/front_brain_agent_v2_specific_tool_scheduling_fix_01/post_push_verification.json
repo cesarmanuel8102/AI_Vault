@@ -1,0 +1,35 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-SPECIFIC-TOOL-SCHEDULING-FIX-01",
+  "phase": 12,
+  "timestamp_utc": "2026-06-17T04:29:55Z",
+  "local_head": "ab5dc0e",
+  "remote_head": "ab5dc0e",
+  "branch": "codex/own-capital-sustainable-return",
+  "push_status": "success",
+  "files_in_commit": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+    "tests/smoke/smoke_front_brain_agent_v2_specific_tool_scheduling_fix_01.py",
+    "docs/MIGRATION_CONTROL_LEDGER.md",
+    "ROADMAP_STATUS.json"
+  ],
+  "excluded_from_commit": [
+    "memory/autonomous_journal.jsonl",
+    "memory/semantic/semantic_memory.jsonl",
+    "tmp_agent/front_brain_agent_v2_specific_tool_scheduling_fix_01/"
+  ],
+  "smoke_tests_post_push": {
+    "file": "tests/smoke/smoke_front_brain_agent_v2_specific_tool_scheduling_fix_01.py",
+    "total": 39,
+    "passed": 39,
+    "failed": 0,
+    "exit_status": 0
+  },
+  "memory_faiss_post_push": {
+    "semantic_lines": 1733,
+    "faiss_ntotal": 1633,
+    "unchanged": true
+  },
+  "8092_dashboard_status": "online",
+  "agent_v2_status": "canonical_for_new_agent_runs=true",
+  "verification_verdict": "PASS"
+}

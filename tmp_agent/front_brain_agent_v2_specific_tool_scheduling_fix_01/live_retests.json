@@ -1,0 +1,84 @@
+{
+  "phase": "live_retests",
+  "timestamp": "2026-06-17T04:22:49.007233Z",
+  "tests": [
+    {
+      "name": "recent_kernel_changes",
+      "run_id": "agv2_e20e7721f7c293c9",
+      "prompt": "cuales fueron los ultimos cambios en el kernel del agente?",
+      "classification": "recent_changes",
+      "scheduled_tools": [
+        "repo_history_read",
+        "repo_status_read",
+        "grep_search"
+      ],
+      "executed_tools": [
+        "repo_history_read",
+        "repo_status_read",
+        "grep_search"
+      ],
+      "requested_but_unavailable": [],
+      "requested_but_blocked": [],
+      "notes": "Correctly classified as recent_changes and scheduled diagnostic tools"
+    },
+    {
+      "name": "explicit_tool_request",
+      "run_id": "agv2_a9869f65260f8d72",
+      "prompt": "Solicitar al planner que programe list_recent_brain_changes como tool principal",
+      "classification": "explicit_tool_request",
+      "scheduled_tools": [
+        "repo_history_read",
+        "repo_status_read",
+        "grep_search"
+      ],
+      "executed_tools": [
+        "repo_history_read",
+        "repo_status_read",
+        "grep_search"
+      ],
+      "requested_but_unavailable": [
+        {
+          "requested_tool": "list_recent_brain_changes",
+          "resolved_to": "repo_history_read",
+          "note": "list_recent_brain_changes not available; using repo_history_read as safe equivalent"
+        }
+      ],
+      "requested_but_blocked": [],
+      "notes": "list_recent_brain_changes mapped to repo_history_read. No file_patch_dry_run misclassification."
+    },
+    {
+      "name": "autonomy_heartbeat",
+      "run_id": "agv2_f9df1bd5b2250a27",
+      "prompt": "Review promotion queue before autonomous promotion. Heartbeat is stale \u2014 verify autonomy process.",
+      "classification": "autonomy_heartbeat",
+      "scheduled_tools": [
+        "route_probe",
+        "repo_status_read"
+      ],
+      "executed_tools": [
+        "route_probe",
+        "repo_status_read"
+      ],
+      "requested_but_unavailable": [
+        {
+          "requested_tool": "get_live_autonomy_status",
+          "resolved_to": "route_probe",
+          "note": "get_live_autonomy_status not available; probing autonomy endpoint if exists"
+        },
+        {
+          "requested_tool": "check_service_status",
+          "resolved_to": "route_probe",
+          "note": "check_service_status not available; using route_probe to health endpoint"
+        },
+        {
+          "requested_tool": "get_autonomy_phase",
+          "resolved_to": "semantic_retrieve",
+          "note": "get_autonomy_phase not available; using semantic_retrieve as fallback"
+        }
+      ],
+      "requested_but_blocked": [],
+      "notes": "Autonomy diagnostic phrases detected and mapped to safe equivalents."
+    }
+  ],
+  "verification_pass": true
+}

@@ -1,0 +1,117 @@
+{
+  "phase": "tool_availability_inventory",
+  "timestamp": "2026-06-17T04:45:00Z",
+  "front": "FRONT-BRAIN-AGENT-V2-SPECIFIC-TOOL-SCHEDULING-FIX-01",
+  "tools": {
+    "list_recent_brain_changes": {
+      "available": false,
+      "canonical_name": "repo_history_read",
+      "read_only": true,
+      "approval_required": false,
+      "safe_in_read_only": true,
+      "input_schema": {"path": "string", "limit": "int"},
+      "fallback_equivalent": "repo_history_read + repo_status_read + grep_search",
+      "note": "Mapped to repo_history_read as safe equivalent"
+    },
+    "get_live_autonomy_status": {
+      "available": false,
+      "canonical_name": "route_probe",
+      "read_only": true,
+      "approval_required": false,
+      "safe_in_read_only": true,
+      "input_schema": {"url": "string"},
+      "fallback_equivalent": "route_probe to http://127.0.0.1:8091/brain/autonomy/status",
+      "note": "Probes autonomy endpoint if available"
+    },
+    "check_service_status": {
+      "available": false,
+      "canonical_name": "route_probe",
+      "read_only": true,
+      "approval_required": false,
+      "safe_in_read_only": true,
+      "input_schema": {"url": "string"},
+      "fallback_equivalent": "route_probe to http://127.0.0.1:8091/health",
+      "note": "Probes health endpoint"
+    },
+    "get_autonomy_phase": {
+      "available": false,
+      "canonical_name": "semantic_retrieve",
+      "read_only": true,
+      "approval_required": false,
+      "safe_in_read_only": true,
+      "input_schema": {"query": "string", "top_k": "int"},
+      "fallback_equivalent": "semantic_retrieve about autonomy phase",
+      "note": "Falls back to semantic memory retrieval"
+    },
+    "repo_status_read": {
+      "available": true,
+      "canonical_name": "repo_status_read",
+      "read_only": true,
+      "approval_required": false,
+      "safe_in_read_only": true,
+      "input_schema": {},
+      "fallback_equivalent": null,
+      "note": "Directly available"
+    },
+    "repo_diff_read": {
+      "available": false,
+      "canonical_name": "repo_status_read",
+      "read_only": true,
+      "approval_required": false,
+      "safe_in_read_only": true,
+      "input_schema": {},
+      "fallback_equivalent": "repo_status_read provides change summary",
+      "note": "Not available; repo_status_read covers similar info"
+    },
+    "repo_history_read": {
+      "available": false,
+      "canonical_name": "repo_status_read",
+      "read_only": true,
+      "approval_required": false,
+      "safe_in_read_only": true,
+      "input_schema": {"path": "string", "limit": "int"},
+      "fallback_equivalent": "repo_status_read + grep_search",
+      "note": "Not available as direct tool; mapped to repo_status_read"
+    },
+    "grep_search": {
+      "available": true,
+      "canonical_name": "grep_search",
+      "read_only": true,
+      "approval_required": false,
+      "safe_in_read_only": true,
+      "input_schema": {"pattern": "string", "glob": "string"},
+      "fallback_equivalent": null,
+      "note": "Directly available"
+    },
+    "file_read": {
+      "available": true,
+      "canonical_name": "file_read",
+      "read_only": true,
+      "approval_required": false,
+      "safe_in_read_only": true,
+      "input_schema": {"path": "string"},
+      "fallback_equivalent": null,
+      "note": "Directly available with path governance"
+    },
+    "route_probe": {
+      "available": true,
+      "canonical_name": "route_probe",
+      "read_only": true,
+      "approval_required": false,
+      "safe_in_read_only": true,
+      "input_schema": {"url": "string", "method": "string"},
+      "fallback_equivalent": null,
+      "note": "Directly available for local routes only"
+    },
+    "semantic_retrieve": {
+      "available": true,
+      "canonical_name": "semantic_retrieve",
+      "read_only": true,
+      "approval_required": false,
+      "safe_in_read_only": true,
+      "input_schema": {"query": "string", "top_k": "int"},
+      "fallback_equivalent": null,
+      "note": "Directly available"
+    }
+  }
+}
