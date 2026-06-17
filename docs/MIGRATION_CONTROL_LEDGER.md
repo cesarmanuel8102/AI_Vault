@@ -8839,3 +8839,40 @@ FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01 -- requires explicit 
 - secrets exposure: 0
 - autonomous_journal append: append-only operational autonomy_lesson entries validated and included
 - next: controlled real use of Agent V2 after optional 8092 reload cleanup
+
+## FRONT-BRAIN-AGENT-V2-8092-DASHBOARD-DOGFOOD-CLOSEOUT-01 — Agent V2 8092 Dashboard Zombie Blocker Analysis
+
+- timestamp_utc: 2026-06-17T00:15:00Z
+- branch: codex/own-capital-sustainable-return
+- start_head: 2ab84d0
+- status: COMPLETED_WITH_KNOWN_BLOCKER
+- blocker_closed: false
+- blocker_documented: true
+- blocker_type: windows_tcp_socket_zombie
+- blocker_details:
+  - port: 8092
+  - pid: 183024 (dead/zombie, Get-Process cannot find it)
+  - socket_status: LISTENING but process not found
+  - code_has_route: true (tmp_agent/brain_v9/dashboard/dashboard_routes.py:347 GET /brain-dashboard/agent-v2/status)
+  - process_executes_old_code: true
+  - solution: windows_reboot_or_netsh_reset_required
+- canonical_for_agent_v2: 8091 (until 8092 zombie resolved)
+- 8091_status: health=200, v2_agent_status=200, v2_agent_capabilities=200, v2_chat_agent=200, brain_dashboard_agent_v2_status=200
+- 8092_status: health=200, brain_dashboard_status=200, brain_dashboard_agent_v2_status=404_zombie
+- dogfood_test: run_id=agv2_4e81f46dc2022b4b / agv2_437724e3f34dc5b8, model=kimi-k2.6:cloud, provider_degraded=false, success=true
+- memory_faiss: semantic_lines=1732, faiss_ids=1633, faiss_ntotal=1633, unchanged=true
+- semantic_memory_reverted: 2 unauthorized agent_loop task_result entries reverted before front start
+- scripts_created:
+  - scripts/brain/restart_brain_8091_agent_v2.ps1
+  - scripts/brain/restart_dashboard_8092_agent_v2.ps1
+  - scripts/brain/probe_agent_v2_live.ps1
+  - scripts/brain/probe_dashboard_8092_agent_v2.ps1
+  - scripts/brain/start_brain_stack_agent_v2.ps1
+- docs_created:
+  - docs/BRAIN_AGENT_8092_DASHBOARD_CLOSEOUT.md
+  - docs/BRAIN_AGENT_FRONTEND_DASHBOARD_USAGE.md (updated)
+  - docs/BRAIN_AGENT_OPERATIONAL_RUNBOOK.md (updated)
+- smoke_tests: 22/22 passed
+- evidence_path: tmp_agent/front_brain_agent_v2_8092_dashboard_dogfood_closeout_01
+- recommendation: Reiniciar Windows para liberar socket TCP fantasma en 8092, luego ejecutar scripts/restart_dashboard_8092_agent_v2.ps1
+- next: WINDOWS_REBOOT_THEN_8092_DASHBOARD_RESTART

@@ -1,0 +1,18 @@
+{
+  "netstat": [
+    "TCP    127.0.0.1:8092         0.0.0.0:0              LISTENING       183024",
+    "  TCP    127.0.0.1:8092         127.0.0.1:54875        TIME_WAIT       0",
+    "  TCP    127.0.0.1:8092         127.0.0.1:55827        TIME_WAIT       0",
+    "  TCP    127.0.0.1:8092         127.0.0.1:56750        TIME_WAIT       0",
+    "  TCP    127.0.0.1:8092         127.0.0.1:58247        TIME_WAIT       0",
+    "  TCP    127.0.0.1:8092         127.0.0.1:59665        TIME_WAIT       0",
+    "  TCP    127.0.0.1:8092         127.0.0.1:60250        TIME_WAIT       0",
+    "  TCP    127.0.0.1:8092         127.0.0.1:62237        TIME_WAIT       0",
+    "  TCP    127.0.0.1:8092         127.0.0.1:62552        TIME_WAIT       0",
+    "  TCP    127.0.0.1:8092         127.0.0.1:64222        TIME_WAIT       0",
+    "  TCP    127.0.0.1:8092         127.0.0.1:65508        TIME_WAIT       0"
+  ],
+  "pid": "183024",
+  "wmic_error": "Command '['wmic', 'process', 'where', 'ProcessId=183024', 'get', 'CommandLine,ProcessId,ParentProcessId']' returned non-zero exit status 1.",
+  "timestamp": "2026-06-17T00:00:53Z"
+}

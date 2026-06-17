@@ -1,0 +1,21 @@
+{
+  "ok": true,
+  "run_id": "agv2_4e81f46dc2022b4b",
+  "final_answer": "## Summary\nAgent V2 is **live and canonical**. The repository is clean with a single HEAD commit (`2ab84d0`) and no working tree modifications. No route probes or memory retrieval were executed—only repo status was checked.\n\n## Evidence used\n| ID | Source | Key finding |\n|---|---|---|\n| `tool_1` | `",
+  "provider_metadata": {
+    "provider_attempted": [
+      "ollama:kimi-k2.6:cloud"
+    ],
+    "provider_used": "ollama_cloud",
+    "model_used": "kimi-k2.6:cloud",
+    "provider_degraded": false,
+    "fallback_reason": "none",
+    "latency_ms": 3589,
+    "kimi_available": true,
+    "raw_cot_exposed": false
+  },
+  "model_used": "kimi-k2.6:cloud",
+  "provider_degraded": false,
+  "trace_url": "/v2/agent/runs/agv2_4e81f46dc2022b4b/trace",
+  "status": 200
+}

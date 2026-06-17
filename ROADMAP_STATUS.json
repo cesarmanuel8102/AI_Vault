@@ -4194,5 +4194,59 @@
     "updated_utc": "2026-06-16T23:31:51.603391Z",
     "functional_commit": "3f6fc8d"
   },
+  "front_brain_agent_v2_8092_dashboard_dogfood_closeout_01": {
+    "status": "done_pending_commit",
+    "front": "FRONT-BRAIN-AGENT-V2-8092-DASHBOARD-DOGFOOD-CLOSEOUT-01",
+    "blocker_closed": false,
+    "blocker_documented": true,
+    "blocker_type": "windows_tcp_socket_zombie",
+    "blocker_details": {
+      "port": 8092,
+      "pid": 183024,
+      "pid_exists": false,
+      "socket_status": "LISTENING",
+      "code_has_route": true,
+      "process_executes_old_code": true,
+      "solution": "windows_reboot_or_netsh_reset_required"
+    },
+    "canonical_for_agent_v2": "8091",
+    "8091_status": {
+      "health": "200",
+      "v2_agent_status": "200",
+      "v2_agent_capabilities": "200",
+      "v2_chat_agent": "200",
+      "brain_dashboard_agent_v2_status": "200"
+    },
+    "8092_status": {
+      "health": "200",
+      "brain_dashboard_status": "200",
+      "brain_dashboard_agent_v2_status": "404_zombie"
+    },
+    "dogfood_test": {
+      "run_id": "agv2_4e81f46dc2022b4b",
+      "model": "kimi-k2.6:cloud",
+      "provider_degraded": false,
+      "success": true
+    },
+    "memory_faiss": {
+      "semantic_lines_before": 1732,
+      "semantic_lines_after": 1732,
+      "faiss_ntotal_before": 1633,
+      "faiss_ntotal_after": 1633,
+      "hashes_unchanged": true
+    },
+    "scripts_created": [
+      "scripts/brain/restart_brain_8091_agent_v2.ps1",
+      "scripts/brain/restart_dashboard_8092_agent_v2.ps1",
+      "scripts/brain/probe_agent_v2_live.ps1",
+      "scripts/brain/probe_dashboard_8092_agent_v2.ps1",
+      "scripts/brain/start_brain_stack_agent_v2.ps1"
+    ],
+    "docs_created": [
+      "docs/BRAIN_AGENT_8092_DASHBOARD_CLOSEOUT.md"
+    ],
+    "recommendation": "Reiniciar Windows para liberar socket TCP fantasma en 8092, luego ejecutar scripts/restart_dashboard_8092_agent_v2.ps1",
+    "evidence_path": "tmp_agent/front_brain_agent_v2_8092_dashboard_dogfood_closeout_01"
+  },
   "last_functional_agent_v2_closeout_commit": "3f6fc8d"
 }

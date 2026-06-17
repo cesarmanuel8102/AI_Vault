@@ -1,0 +1,27 @@
+{
+  "import_ok": true,
+  "total_routes": 17,
+  "agent_v2_routes": [
+    "GET /brain-dashboard/agent-v2/status"
+  ],
+  "has_agent_v2_status": true,
+  "sample_routes": [
+    "GET /openapi.json",
+    "GET /docs",
+    "GET /docs/oauth2-redirect",
+    "GET /redoc",
+    "GET /brain-dashboard/status",
+    "GET /brain-dashboard/activity",
+    "GET /brain-dashboard/promotion-queue",
+    "GET /brain-dashboard/scheduler",
+    "GET /brain-dashboard/safety",
+    "POST /brain-dashboard/control/run-once",
+    "POST /brain-dashboard/control/pause",
+    "POST /brain-dashboard/control/resume",
+    "POST /brain-dashboard/control/stop",
+    "POST /brain-dashboard/chat",
+    "GET /brain-dashboard/agent-v2/status",
+    "GET /",
+    "GET /health"
+  ]
+}

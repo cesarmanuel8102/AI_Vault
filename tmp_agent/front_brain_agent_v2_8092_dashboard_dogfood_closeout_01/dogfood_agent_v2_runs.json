@@ -1,0 +1,37 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-8092-DASHBOARD-DOGFOOD-CLOSEOUT-01",
+  "timestamp_utc": "2026-06-17T00:15:00+00:00",
+  "runs": [
+    {
+      "run_id": "agv2_4e81f46dc2022b4b",
+      "message": "Audit whether Agent V2 is live and canonical. Use repo status, route probes, and memory retrieval if useful.",
+      "model_used": "kimi-k2.6:cloud",
+      "provider": "ollama_cloud",
+      "provider_degraded": false,
+      "latency_ms": 3589,
+      "status": 200,
+      "raw_cot_exposed": false,
+      "unauthorized_writes": 0,
+      "success": true
+    },
+    {
+      "run_id": "agv2_437724e3f34dc5b8",
+      "message": "Verify Brain Agent V2 is alive and canonical.",
+      "model_used": "kimi-k2.6:cloud",
+      "provider": "ollama_cloud",
+      "provider_degraded": false,
+      "status": 200,
+      "raw_cot_exposed": false,
+      "unauthorized_writes": 0,
+      "success": true
+    }
+  ],
+  "summary": {
+    "total_runs": 2,
+    "successful": 2,
+    "kimi_finalized": 2,
+    "provider_degraded": 0,
+    "raw_cot": 0,
+    "unauthorized_writes": 0
+  }
+}

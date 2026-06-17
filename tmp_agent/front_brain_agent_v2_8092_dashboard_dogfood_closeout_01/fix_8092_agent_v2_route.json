@@ -1,0 +1,29 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-8092-DASHBOARD-DOGFOOD-CLOSEOUT-01",
+  "phase": "PHASE_5_FIX_8092_ROUTE",
+  "timestamp_utc": "2026-06-17T00:15:00+00:00",
+  "blocker_closed": false,
+  "blocker_documented": true,
+  "blocker_type": "windows_tcp_socket_zombie",
+  "blocker_details": {
+    "port": 8092,
+    "pid": 183024,
+    "pid_exists": false,
+    "socket_status": "LISTENING",
+    "code_has_route": true,
+    "route_in_code": "tmp_agent/brain_v9/dashboard/dashboard_routes.py:347 GET /brain-dashboard/agent-v2/status",
+    "process_executes_old_code": true,
+    "direct_import_verified": true,
+    "direct_import_routes": ["GET /brain-dashboard/agent-v2/status"],
+    "solution": "windows_reboot_or_netsh_reset_required",
+    "attempted_fixes": [
+      "taskkill /F /PID 183024 - failed (command parsing)",
+      "Python ctypes OpenProcess+TerminateProcess - succeeded but socket remained",
+      "netstat still shows LISTENING with nonexistent PID"
+    ]
+  },
+  "canonical_for_agent_v2": "8091",
+  "8091_brain_dashboard_agent_v2_status": "200",
+  "8092_brain_dashboard_agent_v2_status": "404_zombie",
+  "recommendation": "Reiniciar Windows para liberar socket TCP fantasma en 8092, luego ejecutar scripts/restart_dashboard_8092_agent_v2.ps1"
+}

@@ -1,0 +1,14 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-8092-DASHBOARD-DOGFOOD-CLOSEOUT-01",
+  "phase": "PHASE_1_STATE_LOCK",
+  "timestamp_utc": "2026-06-17T00:00:00+00:00",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_HEAD": "2ab84d0",
+  "remote_HEAD": "2ab84d0",
+  "heads_match": true,
+  "staged_empty": true,
+  "dirty_tracked_files": [],
+  "dirty_note": "semantic_memory.jsonl was dirty with 2 unauthorized lines (agent_loop autonomous entries). Reverted to clean. Now clean.",
+  "semantic_memory_lines": 1732,
+  "lock_verdict": "STATE_LOCKED_CLEAN"
+}

@@ -1,0 +1,172 @@
+{
+  "timestamp": "2026-06-17T00:00:40Z",
+  "results": {
+    "/health": {
+      "status": 200,
+      "json": {
+        "status": "healthy",
+        "sessions": 3,
+        "version": "9.0.0",
+        "safe_mode": false
+      }
+    },
+    "/v2/agent/status": {
+      "status": 200,
+      "json": {
+        "ok": true,
+        "canonical_for_new_agent_runs": true,
+        "backend": "langgraph",
+        "langgraph_used": true,
+        "langgraph_blocker": null,
+        "runs": 57,
+        "primary_finalizer_model": "kimi-k2.6:cloud",
+        "latest_provider_used": "ollama_cloud",
+        "latest_model_used": "kimi-k2.6:cloud",
+        "latest_provider_degraded": false,
+        "trace_available": true,
+        "checkpointed": true,
+        "legacy_agent_status": "legacy_compatible_not_canonical"
+      }
+    },
+    "/v2/agent/capabilities": {
+      "status": 200,
+      "json": {
+        "ok": true,
+        "canonical": true,
+        "version": "agent_kernel_v2.0-langgraph-compatible",
+        "backend": "langgraph",
+        "langgraph_used": true,
+        "primary_finalizer_model": "kimi-k2.6:cloud",
+        "planner_classes": [
+          "repo_audit",
+          "code_search",
+          "endpoint_probe",
+          "memory_question",
+          "dashboard_diagnosis",
+          "provider_diagnosis",
+          "frontend_diagnosis",
+          "smoke_test",
+          "documentation_task",
+          "safe_patch_dry_run",
+          "approval_required_write",
+          "general_reasoning"
+        ],
+        "capabilities": [
+          {
+            "name": "repo_status_read",
+            "description": "Read git status and HEAD",
+            "risk_level": "low",
+            "read_only": true,
+            "requires_approval": false,
+            "allowed_modes": [
+              "read_only",
+              "dry_run",
+              "approval_required",
+              "write_allowed"
+            ]
+          },
+          {
+            "name": "file_read",
+            "description": "Read a safe text file",
+            "risk_level": "low",
+            "read_only": true,
+            "requires_approval": false,
+            "allowed_modes": [
+              "read_only",
+              "dry_run"
+            ]
+          },
+          {
+            "name": "grep_search",
+            "description": "Search repository text with rg",
+            "risk_level": "low",
+            "read_only": true,
+            "requires_approval": false,
+            "allowed_modes": [
+              "read_only",
+              "dry_run"
+            ]
+          },
+          {
+            "name": "route_probe",
+            "description": "Probe a local HTTP route",
+            "risk_level": "low",
+            "read_only": true,
+            "requires_approval": false,
+            "allowed_modes": [
+              "read_only",
+              "dry_run"
+            ]
+          },
+          {
+            "name": "semantic_retrieve",
+            "description": "Read-only semantic retrieval",
+            "risk_level": "low",
+            "read_only": true,
+            "requires_approval": false,
+            "allowed_modes": [
+              "read_only",
+              "dry_run"
+            ]
+          },
+          {
+            "name": "smoke_test_readonly",
+            "description": "Run a focused read-only smoke test",
+            "risk_level": "medium",
+            "read_only": true,
+            "requires_approval": false,
+            "allowed_modes": [
+              "read_only",
+              "dry_run"
+            ]
+          },
+          {
+            "name": "report_writer",
+            "description": "Write run-local artifacts only",
+            "risk_level": "medium",
+            "read_only": false,
+            "requires_approval": false,
+            "allowed_modes": [
+              "dry_run",
+              "approval_required",
+              "write_allowed"
+            ]
+          },
+          {
+            "name": "file_patch_dry_run",
+            "description": "Preview a file patch",
+            "risk_level": "medium",
+            "read_only": false,
+            "requires_approval": false,
+            "allowed_modes": [
+              "dry_run",
+              "approval_required"
+            ]
+          },
+          {
+            "name": "file_patch_apply_approval_required",
+            "description": "Apply a patch only with approval",
+            "risk_level": "high",
+            "read_only": false,
+            "requires_approval": true,
+            "allowed_modes": [
+              "approval_required",
+              "write_allowed"
+            ]
+          },
+          {
+            "name": "git_commit_approval_required",
+            "description": "Commit only with approval",
+            "risk_level": "high",
+            "read_only": false,
+            "requires_approval": true,
+            "allowed_modes": [
+              "approval_required",
+              "write_allowed"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

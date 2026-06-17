@@ -1,0 +1,291 @@
+{
+  "timestamp": "2026-06-17T00:15:38Z",
+  "8091": {
+    "/health": {
+      "status": 200,
+      "ok": true,
+      "json": {
+        "status": "healthy",
+        "sessions": 3,
+        "version": "9.0.0",
+        "safe_mode": false
+      }
+    },
+    "/v2/agent/status": {
+      "status": 200,
+      "ok": true,
+      "json": {
+        "ok": true,
+        "canonical_for_new_agent_runs": true,
+        "backend": "langgraph",
+        "langgraph_used": true,
+        "langgraph_blocker": null,
+        "runs": 59,
+        "primary_finalizer_model": "kimi-k2.6:cloud",
+        "latest_provider_used": "ollama_cloud",
+        "latest_model_used": "kimi-k2.6:cloud",
+        "latest_provider_degraded": false,
+        "trace_available": true,
+        "checkpointed": true,
+        "legacy_agent_status": "legacy_compatible_not_canonical"
+      }
+    },
+    "/v2/agent/capabilities": {
+      "status": 200,
+      "ok": true,
+      "json": {
+        "ok": true,
+        "canonical": true,
+        "version": "agent_kernel_v2.0-langgraph-compatible",
+        "backend": "langgraph",
+        "langgraph_used": true,
+        "primary_finalizer_model": "kimi-k2.6:cloud",
+        "planner_classes": [
+          "repo_audit",
+          "code_search",
+          "endpoint_probe",
+          "memory_question",
+          "dashboard_diagnosis",
+          "provider_diagnosis",
+          "frontend_diagnosis",
+          "smoke_test",
+          "documentation_task",
+          "safe_patch_dry_run",
+          "approval_required_write",
+          "general_reasoning"
+        ],
+        "capabilities": [
+          {
+            "name": "repo_status_read",
+            "description": "Read git status and HEAD",
+            "risk_level": "low",
+            "read_only": true,
+            "requires_approval": false,
+            "allowed_modes": [
+              "read_only",
+              "dry_run",
+              "approval_required",
+              "write_allowed"
+            ]
+          },
+          {
+            "name": "file_read",
+            "description": "Read a safe text file",
+            "risk_level": "low",
+            "read_only": true,
+            "requires_approval": false,
+            "allowed_modes": [
+              "read_only",
+              "dry_run"
+            ]
+          },
+          {
+            "name": "grep_search",
+            "description": "Search repository text with rg",
+            "risk_level": "low",
+            "read_only": true,
+            "requires_approval": false,
+            "allowed_modes": [
+              "read_only",
+              "dry_run"
+            ]
+          },
+          {
+            "name": "route_probe",
+            "description": "Probe a local HTTP route",
+            "risk_level": "low",
+            "read_only": true,
+            "requires_approval": false,
+            "allowed_modes": [
+              "read_only",
+              "dry_run"
+            ]
+          },
+          {
+            "name": "semantic_retrieve",
+            "description": "Read-only semantic retrieval",
+            "risk_level": "low",
+            "read_only": true,
+            "requires_approval": false,
+            "allowed_modes": [
+              "read_only",
+              "dry_run"
+            ]
+          },
+          {
+            "name": "smoke_test_readonly",
+            "description": "Run a focused read-only smoke test",
+            "risk_level": "medium",
+            "read_only": true,
+            "requires_approval": false,
+            "allowed_modes": [
+              "read_only",
+              "dry_run"
+            ]
+          },
+          {
+            "name": "report_writer",
+            "description": "Write run-local artifacts only",
+            "risk_level": "medium",
+            "read_only": false,
+            "requires_approval": false,
+            "allowed_modes": [
+              "dry_run",
+              "approval_required",
+              "write_allowed"
+            ]
+          },
+          {
+            "name": "file_patch_dry_run",
+            "description": "Preview a file patch",
+            "risk_level": "medium",
+            "read_only": false,
+            "requires_approval": false,
+            "allowed_modes": [
+              "dry_run",
+              "approval_required"
+            ]
+          },
+          {
+            "name": "file_patch_apply_approval_required",
+            "description": "Apply a patch only with approval",
+            "risk_level": "high",
+            "read_only": false,
+            "requires_approval": true,
+            "allowed_modes": [
+              "approval_required",
+              "write_allowed"
+            ]
+          },
+          {
+            "name": "git_commit_approval_required",
+            "description": "Commit only with approval",
+            "risk_level": "high",
+            "read_only": false,
+            "requires_approval": true,
+            "allowed_modes": [
+              "approval_required",
+              "write_allowed"
+            ]
+          }
+        ]
+      }
+    },
+    "/brain-dashboard/agent-v2/status": {
+      "status": 200,
+      "ok": true,
+      "json": {
+        "ok": true,
+        "canonical_for_new_agent_runs": true,
+        "backend": "langgraph",
+        "langgraph_used": true,
+        "langgraph_blocker": null,
+        "primary_finalizer_model": "kimi-k2.6:cloud",
+        "latest_provider_used": "ollama_cloud",
+        "latest_model_used": "kimi-k2.6:cloud",
+        "latest_provider_degraded": false,
+        "runs": 59,
+        "latest_run_id": "agv2_fc2c354443688f24",
+        "chat_agent_route": "/v2/chat/agent",
+        "legacy_agent_status": "legacy_compatible_not_canonical"
+      }
+    },
+    "/v2/chat/agent": {
+      "status": 200,
+      "ok": true,
+      "model_used": "kimi-k2.6:cloud",
+      "provider_degraded": false,
+      "run_id": "agv2_437724e3f34dc5b8"
+    }
+  },
+  "8092": {
+    "/": {
+      "status": 200,
+      "ok": true,
+      "json": "<!doctype html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"utf-8\">\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n  <title>Brain Operator Dashboard</title>\n  <link rel=\"stylesheet\" href=\"/static/styles.css\">\n</head>\n<body>\n  <main>\n    <header class=\"header-bar\">\n      <h1>Brai"
+    },
+    "/brain-dashboard/status": {
+      "status": 200,
+      "ok": true,
+      "json": {
+        "ok": true,
+        "degraded": false,
+        "brain": {
+          "ok": true,
+          "status": "healthy",
+          "api": "http://127.0.0.1:8091"
+        },
+        "kimi": {
+          "ok": true,
+          "status": "available_via_provider_probe"
+        },
+        "dashboard": {
+          "ok": true,
+          "status": "online",
+          "status_latency_ms": 15.091
+        },
+        "scheduler": {
+          "exists": true,
+          "enabled": false,
+          "state": "cached_ready",
+          "last_run_time": null,
+          "next_run_time": null,
+          "last_task_result": null,
+          "action": "powershell -ExecutionPolicy Bypass -File tools/brain_autonomy_run_once.ps1",
+          "degraded": false,
+          "source": "cache_file"
+        },
+        "autonomy": {
+          "state": "idle",
+          "cycle": "complete",
+          "last_run_time": "2026-06-17T00:07:24.747946+00:00",
+          "last_run_result": "idle",
+          "paused": false,
+          "stopped": false
+        },
+        "memory": {
+          "journal_count": 443,
+          "promotion_queue_count": 57,
+          "semantic_staging_count": 5,
+          "promotion_audit_count": 1,
+          "canonical_promotion_performed": false
+        },
+        "safety": {
+          "semantic_memory_lines": 1732,
+          "faiss_ids": 1633,
+          "faiss_ntotal": 1633,
+          "canonical_semantic_mutated": true,
+          "faiss_mutated": true,
+          "trading_touched": false,
+          "b8_touched": false,
+          "secrets_exposed": false
+        },
+        "watchdog": {
+          "checked_utc": "2026-06-17T00:15:38.810821+00:00",
+          "stopped": false,
+          "paused": false,
+          "heartbeat_present": true,
+          "heartbeat": {
+            "updated_utc": "2026-06-17T00:07:24.747946+00:00",
+            "status": "idle",
+            "cycle": "complete"
+          }
+        },
+        "alerts": [
+          {
+            "severity": "LOW",
+            "code": "promotion_queue_pending",
+            "message": "Memory items are waiting for human review before semantic promotion.",
+            "action": "operator_review"
+          }
+        ],
+        "errors": [],
+        "recommendation": "continue_monitoring"
+      }
+    },
+    "/brain-dashboard/agent-v2/status": {
+      "ok": false,
+      "error": "HTTP Error 404: Not Found"
+    }
+  }
+}
