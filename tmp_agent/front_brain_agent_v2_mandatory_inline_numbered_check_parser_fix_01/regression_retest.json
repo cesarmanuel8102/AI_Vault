@@ -1,0 +1,23 @@
+{
+  "phase": "regression_retest",
+  "timestamp": "2026-06-17T01:52:45.039688Z",
+  "run_id": "agv2_4ebb5301be119d46",
+  "classification": "mandatory_multitool",
+  "requested_checks": 7,
+  "scheduled_tool_checks": 7,
+  "executed_tool_checks": 7,
+  "tools_executed": [
+    "route_probe",
+    "route_probe",
+    "repo_status_read",
+    "grep_search",
+    "grep_search",
+    "semantic_retrieve",
+    "grep_search"
+  ],
+  "model_used": "deepseek-v4-pro:cloud",
+  "provider_degraded": true,
+  "fallback_reason": "primary_failed:provider_output_raw_cot_marker_blocked",
+  "verification_pass": true,
+  "notes": "Regression passed. All 7 checks from older prompt executed correctly. Parser handles both old and new formats."
+}

@@ -8920,3 +8920,37 @@ FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01 -- requires explicit 
 - known_blocker_remaining: 8092 Windows TCP zombie requires OS reboot
 - next_recommended_front: FRONT-BRAIN-AGENT-V2-TRACE-EVENT-PERSISTENCE-01
 - evidence_path: tmp_agent/front_brain_worktree_hygiene_untracked_forensic_cleanup_01
+
+## FRONT-BRAIN-AGENT-V2-MANDATORY-INLINE-NUMBERED-CHECK-PARSER-FIX-01 — Mandatory Multi-Tool Inline Numbered Check Parser Fix
+
+- timestamp_utc: 2026-06-17T01:48:00Z
+- branch: codex/own-capital-sustainable-return
+- start_head: 406866a
+- end_head: TBD
+- bug: mandatory_tools._extract_checks split by newlines only; single-line input created single segment; re.search matched first pattern only; break exited after first match
+- failing_format: inline compact numbered list "1. Check A 2. Check B 3. Check C" all on one line
+- files_modified:
+  - tmp_agent/brain_v9/core/agent_kernel_v2/mandatory_tools.py (added _split_inline_checks, _reassemble_numbered_parts, _is_final_answer_obligation, FINAL_ANSWER_MARKERS, CHECK_PATTERNS expanded with port-based route_probe)
+  - tmp_agent/brain_v9/core/agent_kernel_v2/planner.py (skip final_answer_obligation checks in plan scheduling, add final_answer_obligations to metadata)
+- formats_now_supported:
+  - newline_numbered_list
+  - inline_dot_numbered (1. 2. 3.)
+  - inline_paren_numbered (1) 2) 3))
+  - semicolon_separated (1) Check A; 2) Check B)
+  - dash_bullet_list
+- final_answer_obligation_handled: true (extracted as requested check but not scheduled as tool)
+- direct_tests: 10/10 passed
+- live_exact_retest:
+  - run_id: agv2_aa74216da33bc4cd
+  - requested_checks: 4 (3 tools + 1 final answer obligation)
+  - scheduled_tool_checks: 3
+  - executed_tool_checks: 3
+  - trace_event_count: 10
+- regression_retest:
+  - older_prompt_passed: true
+  - requested_checks: 7
+  - scheduled_tool_checks: 7
+  - executed_tool_checks: 7
+- memory_faiss: unchanged (1732 lines, 1633 ids, 1633 ntotal)
+- next_recommended_front: FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
+- evidence_path: tmp_agent/front_brain_agent_v2_mandatory_inline_numbered_check_parser_fix_01

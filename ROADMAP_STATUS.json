@@ -4458,8 +4458,77 @@
       "faiss_ntotal": 1633,
       "unchanged": true
     },
-    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01",
+    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-MANDATORY-INLINE-NUMBERED-CHECK-PARSER-FIX-01",
     "evidence_path": "tmp_agent/front_brain_agent_v2_mandatory_multitool_deployment_01"
+  },
+  "front_brain_agent_v2_mandatory_inline_numbered_check_parser_fix_01": {
+    "status": "done",
+    "front": "FRONT-BRAIN-AGENT-V2-MANDATORY-INLINE-NUMBERED-CHECK-PARSER-FIX-01",
+    "start_head": "406866a",
+    "end_head": "TBD",
+    "parser_fix": {
+      "bug": "Inline compact numbered lists parsed as single check instead of multiple",
+      "root_cause": "_extract_checks split by newlines only; single-line input created single segment; re.search matched first pattern only; break exited after first match",
+      "files_modified": [
+        "tmp_agent/brain_v9/core/agent_kernel_v2/mandatory_tools.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py"
+      ],
+      "formats_now_supported": [
+        "newline_numbered_list",
+        "inline_dot_numbered",
+        "inline_paren_numbered",
+        "semicolon_separated",
+        "dash_bullet_list"
+      ],
+      "final_answer_obligation_handled": true
+    },
+    "direct_tests": {
+      "total": 10,
+      "passed": 10,
+      "formats_tested": [
+        "multiline_numbered_list",
+        "inline_dot_numbered",
+        "inline_paren_numbered",
+        "semicolon_separated",
+        "dash_bullet_list",
+        "url_preservation",
+        "two_route_probe_extracted",
+        "repo_status_extracted",
+        "final_answer_obligation",
+        "parser_metadata"
+      ]
+    },
+    "live_exact_retest": {
+      "run_id": "agv2_aa74216da33bc4cd",
+      "classification": "mandatory_multitool",
+      "requested_checks": 4,
+      "scheduled_tool_checks": 3,
+      "executed_tool_checks": 3,
+      "trace_event_count": 10,
+      "route_probe_8091": true,
+      "route_probe_8092": true,
+      "repo_status_read": true,
+      "final_answer_obligation": true,
+      "model_used": "deepseek-v4-pro:cloud",
+      "provider_degraded": true,
+      "fallback_reason": "primary_failed:provider_output_raw_cot_marker_blocked"
+    },
+    "regression_retest": {
+      "older_prompt_passed": true,
+      "requested_checks": 7,
+      "scheduled_tool_checks": 7,
+      "executed_tool_checks": 7,
+      "model_used": "deepseek-v4-pro:cloud",
+      "provider_degraded": true
+    },
+    "memory_faiss": {
+      "semantic_lines": 1732,
+      "faiss_ids": 1633,
+      "faiss_ntotal": 1633,
+      "unchanged": true
+    },
+    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01",
+    "evidence_path": "tmp_agent/front_brain_agent_v2_mandatory_inline_numbered_check_parser_fix_01"
   },
   "last_functional_agent_v2_closeout_commit": "3f6fc8d"
 }

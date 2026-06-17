@@ -65,11 +65,15 @@ def build_plan(goal: str, mode: str = "read_only") -> tuple[str, List[Dict[str, 
         add("plan", "plan", f"Classify goal as {classification} (mandatory multi-tool)", None, {})
         # Add each requested check as a dedicated step
         for check in mandatory["requested_checks"]:
+            # Skip final answer obligations - they're not tool calls
+            if check.get("is_final_answer_requirement"):
+                metadata.setdefault("final_answer_obligations", []).append(check)
+                continue
             add(
                 check.get("check_id", f"mandatory_{len(plan)}"),
                 "tool",
-                check.get("description", f"Run {check['tool_name']}"),
-                check["tool_name"],
+                check.get("description", f"Run {check.get('tool_name', 'unknown')}"),
+                check.get("tool_name"),
                 check.get("input", {}),
                 requested_by_user=True,
             )

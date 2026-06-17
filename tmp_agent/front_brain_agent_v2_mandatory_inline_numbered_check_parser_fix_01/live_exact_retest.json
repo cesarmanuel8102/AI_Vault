@@ -1,0 +1,19 @@
+{
+  "phase": "live_exact_retest",
+  "timestamp": "2026-06-17T01:52:02.241875Z",
+  "run_id": "agv2_aa74216da33bc4cd",
+  "classification": "mandatory_multitool",
+  "requested_checks": 4,
+  "scheduled_tool_checks": 3,
+  "executed_tool_checks": 3,
+  "route_probe_8091": true,
+  "route_probe_8092": true,
+  "repo_status_read": true,
+  "final_answer_obligation": true,
+  "trace_event_count": 10,
+  "model_used": "deepseek-v4-pro:cloud",
+  "provider_degraded": true,
+  "fallback_reason": "primary_failed:provider_output_raw_cot_marker_blocked",
+  "verification_pass": true,
+  "notes": "Parser fix successful. Inline numbered checks now correctly split. Kimi had CoT marker issue (existing known issue), fell back to deepseek-v4-pro:cloud. All 3 tools executed correctly."
+}

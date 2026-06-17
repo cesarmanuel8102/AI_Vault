@@ -1,0 +1,23 @@
+{
+  "phase": "root_cause_audit",
+  "timestamp": "2026-06-17T01:49:10.286261Z",
+  "bug_description": "mandatory_tools._extract_checks splits goal by newlines and processes each line independently. For inline compact numbered lists where all checks are on a single line, only the first matching pattern is extracted due to break after first match.",
+  "failing_format": "inline compact numbered list: \"1. Probe URL 2. Probe URL 3. Read repo status 4. In final answer...\" all on one line",
+  "why_only_one_check": [
+    "goal.splitlines() creates single element for single-line input",
+    "re.search finds first pattern match only",
+    "break statement exits after first match per line",
+    "No inline splitting by numbered markers (1., 2., 3., 4.)",
+    "No URL-safe split logic to preserve URLs while separating checks"
+  ],
+  "tested_formats": {
+    "A_multiline": "Works: each check on separate line with newline",
+    "B_inline_dot": "FAILS: single line with 1. 2. 3. 4. markers",
+    "C_inline_paren": "FAILS: single line with 1) 2) 3) 4) markers",
+    "D_semicolon": "FAILS: semicolon separated list",
+    "E_dash_bullet": "Partial: may work if each on separate line, fails if inline"
+  },
+  "file_affected": "tmp_agent/brain_v9/core/agent_kernel_v2/mandatory_tools.py",
+  "function_affected": "_extract_checks()",
+  "line_numbers": "62-87"
+}

@@ -1,0 +1,13 @@
+{
+  "phase": "memory_faiss_baseline",
+  "timestamp": "2026-06-17T01:48:57.585319Z",
+  "semantic_path": "memory/semantic/semantic_memory.jsonl",
+  "semantic_lines": 1732,
+  "semantic_sha256_prefix": "44d065054f1ed572",
+  "faiss_ids_path": "memory/semantic/faiss_ids.json",
+  "faiss_ids_count": 0,
+  "faiss_ids_sha256_prefix": "",
+  "faiss_index_path": "memory/semantic/semantic_memory_faiss.index",
+  "faiss_ntotal": 1633,
+  "faiss_index_sha256_prefix": "e62e4120ce246492"
+}

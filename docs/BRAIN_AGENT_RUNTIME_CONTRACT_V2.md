@@ -10,9 +10,10 @@
 ### Planner Override
 - When `mandatory_detected=true`, classification = `mandatory_multitool`
 - Plan includes one step per requested check
+- Final answer obligations (e.g. "In final answer, list...") are extracted as requested checks but are NOT scheduled as tool calls
 - Order preserved
 - Deduplication of exact duplicates only
-- Each step includes `requested_by_user: true`, `expected: "ok"`
+- Each tool step includes `requested_by_user: true`, `expected: "ok"`
 
 ### Finalizer Evidence Contract
 - Prompt includes `tool_distinction` field

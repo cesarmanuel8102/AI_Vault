@@ -27,6 +27,8 @@ MANDATORY_TRIGGERS = [
 CHECK_PATTERNS = [
     ("route_probe", r"probe\s+(https?://\S+)", {"url": 1}),
     ("route_probe", r"(?:check|test|verify)\s+(https?://\S+)", {"url": 1}),
+    ("route_probe", r"probe\s+(?:port\s+)?(809[0-9])", {"url": 0}),
+    ("route_probe", r"probe\s+(?:http://)?127\.0\.0\.1:(809[0-9])", {"url": 0}),
     ("repo_status_read", r"(?:read|check|get)\s+(?:repo\s+)?(?:git\s+)?(?:status|state|head|clean|dirty)", {}),
     ("grep_search", r"search\s+(?:code|repo|files?)\s+for\s+(.+?)(?:\.|\n|$)", {"pattern": 1}),
     ("grep_search", r"find\s+(?:where|in)\s+(.+?)(?:\s+(?:is|are|implemented|defined|found|located))", {"pattern": 1}),
@@ -52,23 +54,132 @@ GOAL_HINTS = {
 }
 
 
+# Final answer markers - these indicate a requirement but not a tool call
+FINAL_ANSWER_MARKERS = [
+    r"in final answer",
+    r"list tools used",
+    r"list checks passed",
+    r"report which",
+    r"mention which",
+    r"say which",
+    r"which checks passed",
+    r"which tools were used",
+]
+
+
 def _detect_mandatory(goal: str) -> bool:
     g = (goal or "").lower()
     return any(trigger in g for trigger in MANDATORY_TRIGGERS)
 
 
+def _split_inline_checks(goal: str) -> List[str]:
+    """Split goal into individual check segments, handling inline formats."""
+    segments = []
+    
+    # Pattern A: Numbered with dots "1. Check 2. Check 3. Check"
+    # Use URL-safe split: look for digit-dot-space or digit-dot-non-URL patterns
+    dot_pattern = re.compile(r'(?:^|\s)(\d+)\.\s+(?![^\s]*://)')
+    paren_pattern = re.compile(r'(?:^|\s)(\d+)\)\s+(?![^\s]*://)')
+    
+    # Try dot-numbered split first
+    parts = dot_pattern.split(goal)
+    if len(parts) > 1:
+        # parts = ['prefix', '1', ' Probe URL 2. Probe URL ...']
+        # Reassemble: prefix + "1. " + remainder, then split remainder
+        # Actually simpler: just split on the pattern
+        segments = _reassemble_numbered_parts(parts)
+        if segments:
+            return segments
+    
+    # Try paren-numbered split
+    parts = paren_pattern.split(goal)
+    if len(parts) > 1:
+        segments = _reassemble_numbered_parts(parts)
+        if segments:
+            return segments
+    
+    # Pattern B: Semicolon-separated with numbered markers
+    semicolon_parts = re.split(r';\s*(\d+)[\.\)]\s*', goal)
+    if len(semicolon_parts) > 1:
+        segments = _reassemble_numbered_parts(semicolon_parts)
+        if segments:
+            return segments
+    
+    # Pattern C: Dash bullets inline or multiline
+    if re.search(r'(?:^|\n)\s*[-*]\s+', goal):
+        dash_parts = re.split(r'(?:^|\n)\s*[-*]\s+', goal)
+        segments = [p.strip() for p in dash_parts if p.strip() and len(p.strip()) > 5]
+        if segments:
+            return segments
+    
+    # Pattern D: Fallback to line-based split for multiline
+    lines = goal.splitlines()
+    for line in lines:
+        stripped = line.strip()
+        if stripped and len(stripped) > 5:
+            segments.append(stripped)
+    
+    return segments
+
+
+def _reassemble_numbered_parts(parts: List[str]) -> List[str]:
+    """Reassemble split parts into numbered segments."""
+    segments = []
+    # parts alternates: text, number, text, number, text...
+    # First part might be preamble
+    if parts[0].strip():
+        # Only include preamble if it's short, otherwise it's a check
+        preamble = parts[0].strip()
+        if len(preamble) > 10 and not preamble.lower().startswith("mandatory"):
+            segments.append(preamble)
+    
+    i = 1
+    while i < len(parts):
+        if i + 1 < len(parts):
+            # parts[i] is the number, parts[i+1] is the text after the number
+            text = parts[i + 1].strip()
+            # Remove trailing period
+            if text.endswith('.'):
+                text = text[:-1]
+            if text:
+                segments.append(text)
+            i += 2
+        else:
+            break
+    
+    return segments
+
+
+def _is_final_answer_obligation(text: str) -> bool:
+    """Check if text is a final answer requirement, not a tool call."""
+    t = text.lower()
+    return any(re.search(marker, t) for marker in FINAL_ANSWER_MARKERS)
+
+
 def _extract_checks(goal: str) -> List[Dict[str, Any]]:
     checks = []
-    lines = goal.splitlines()
-    line_idx = 0
-    for line in lines:
-        line_idx += 1
-        stripped = line.strip().lower()
-        # Skip empty lines and intro sentences
+    segments = _split_inline_checks(goal)
+    
+    for idx, segment in enumerate(segments, start=1):
+        stripped = segment.strip().lower()
         if not stripped or len(stripped) < 10:
             continue
+        
+        # Skip final answer obligations (they're not tool calls)
+        if _is_final_answer_obligation(segment):
+            checks.append({
+                "check_id": f"check_{idx}",
+                "description": segment.strip(),
+                "tool_name": None,
+                "input": {},
+                "expected": "final_answer_obligation",
+                "requested_by_user": True,
+                "is_final_answer_requirement": True,
+            })
+            continue
+        
         for tool_name, pattern, arg_map in CHECK_PATTERNS:
-            m = re.search(pattern, line, re.IGNORECASE)
+            m = re.search(pattern, segment, re.IGNORECASE)
             if m:
                 inputs = {}
                 for key, group_idx in arg_map.items():
@@ -77,19 +188,24 @@ def _extract_checks(goal: str) -> List[Dict[str, Any]]:
                         val = val[:-1]
                     inputs[key] = val
                 checks.append({
-                    "check_id": f"check_{line_idx}",
-                    "description": line.strip(),
+                    "check_id": f"check_{idx}",
+                    "description": segment.strip(),
                     "tool_name": tool_name,
                     "input": inputs,
                     "expected": "ok",
                     "requested_by_user": True,
                 })
                 break
-    # Add goal hints for known topics even if no explicit line matched
+    
+    # Add goal hints for known topics even if no explicit segment matched
     for hint_key, hint in GOAL_HINTS.items():
         if hint_key.lower() in goal.lower():
             # Check if already added
-            already = any(c["tool_name"] == hint["tool"] and c["input"].get("pattern", "") == hint.get("pattern", "") for c in checks)
+            already = any(
+                c.get("tool_name") == hint["tool"] and 
+                c.get("input", {}).get("pattern", "") == hint.get("pattern", "") 
+                for c in checks if c.get("tool_name")
+            )
             if not already:
                 checks.append({
                     "check_id": f"check_hint_{hint_key.replace('/', '_').replace(' ', '_')}",
@@ -99,6 +215,7 @@ def _extract_checks(goal: str) -> List[Dict[str, Any]]:
                     "expected": "ok",
                     "requested_by_user": True,
                 })
+    
     return checks
 
 

@@ -1,0 +1,38 @@
+{
+  "phase": "parser_fix_implementation",
+  "timestamp": "2026-06-17T01:53:39.224404Z",
+  "front": "FRONT-BRAIN-AGENT-V2-MANDATORY-INLINE-NUMBERED-CHECK-PARSER-FIX-01",
+  "files_modified": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/mandatory_tools.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py"
+  ],
+  "changes": {
+    "mandatory_tools.py": [
+      "Added _split_inline_checks() function with URL-safe splitting by numbered markers",
+      "Added _reassemble_numbered_parts() to reassemble split segments",
+      "Added _is_final_answer_obligation() to detect final-answer requirements",
+      "Added FINAL_ANSWER_MARKERS list for obligation detection",
+      "Expanded CHECK_PATTERNS with port-based route_probe patterns (809[0-9])",
+      "Modified _extract_checks() to use inline splitting before pattern matching"
+    ],
+    "planner.py": [
+      "Modified mandatory_multitool plan building to skip is_final_answer_requirement checks",
+      "Added final_answer_obligations to metadata for finalizer awareness"
+    ]
+  },
+  "formats_supported": [
+    "newline_numbered_list",
+    "inline_dot_numbered",
+    "inline_paren_numbered",
+    "semicolon_separated",
+    "dash_bullet_list"
+  ],
+  "final_answer_obligation_handled": true,
+  "url_preservation": true,
+  "governance": {
+    "no_raw_cot": true,
+    "no_secrets": true,
+    "no_unauthorized_writes": true,
+    "memory_faiss_unchanged": true
+  }
+}
