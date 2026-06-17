@@ -8902,3 +8902,21 @@ FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01 -- requires explicit 
 - docs_created: docs/BRAIN_AGENT_RUNTIME_CONTRACT_V2.md
 - evidence_path: tmp_agent/front_brain_agent_v2_mandatory_multitool_planner_hotfix_01
 - next: FRONT-BRAIN-AGENT-V2-TRACE-EVENT-PERSISTENCE-01
+
+## FRONT-BRAIN-WORKTREE-HYGIENE-UNTRACKED-FORENSIC-CLEANUP-01 — Worktree Hygiene Cleanup
+
+- timestamp_utc: 2026-06-17T00:50:00Z
+- branch: codex/own-capital-sustainable-return
+- start_head: 291d8ab
+- end_head: PENDING_PUSH
+- actions:
+  - root_junk_quarantined: dry_run, evaluation, read_only, stream (moved to tmp_agent/quarantine/worktree_hygiene_untracked_forensic_cleanup_01/)
+  - logfile_note: $LogFile is Windows system file (0 bytes), cannot move, documented only
+  - post_push_verification_committed: tmp_agent/front_brain_agent_v2_mandatory_multitool_planner_hotfix_01/post_push_verification.json
+  - runtime_artifacts_excluded: tmp_agent/agent_kernel_v2/runs/, tmp_agent/evolution_runs/, tmp_agent/brain_v9/start_8091_wrapper.py via .git/info/exclude
+  - old_front_policy: LEAVE_UNTRACKED_DOCUMENTED (all tmp_agent/front_* dirs are historical evidence, not to be blindly deleted)
+  - memory_autonomous_journal_decision: LEAVE_UNSTAGED_DOCUMENTED (3 append-only autonomy_lesson entries, safe, no secrets)
+  - memory_faiss_status: unchanged (1732 lines, 1633 ids, 1633 ntotal)
+- known_blocker_remaining: 8092 Windows TCP zombie requires OS reboot
+- next_recommended_front: FRONT-BRAIN-AGENT-V2-TRACE-EVENT-PERSISTENCE-01
+- evidence_path: tmp_agent/front_brain_worktree_hygiene_untracked_forensic_cleanup_01

@@ -4288,5 +4288,23 @@
     "evidence_path": "tmp_agent/front_brain_agent_v2_mandatory_multitool_planner_hotfix_01",
     "next_recommended_front": "FRONT-BRAIN-AGENT-V2-TRACE-EVENT-PERSISTENCE-01"
   },
+  "front_brain_worktree_hygiene_untracked_forensic_cleanup_01": {
+    "status": "done_pending_commit",
+    "front": "FRONT-BRAIN-WORKTREE-HYGIENE-UNTRACKED-FORENSIC-CLEANUP-01",
+    "start_head": "291d8ab",
+    "end_head": "PENDING_PUSH",
+    "actions": {
+      "root_junk_quarantined": ["dry_run", "evaluation", "read_only", "stream"],
+      "logfile_note": "$LogFile is Windows system file (0 bytes), documented only",
+      "post_push_verification_committed": "tmp_agent/front_brain_agent_v2_mandatory_multitool_planner_hotfix_01/post_push_verification.json",
+      "runtime_artifacts_excluded": ["tmp_agent/agent_kernel_v2/runs/", "tmp_agent/evolution_runs/", "tmp_agent/brain_v9/start_8091_wrapper.py"],
+      "old_front_policy": "LEAVE_UNTRACKED_DOCUMENTED",
+      "memory_autonomous_journal_decision": "LEAVE_UNSTAGED_DOCUMENTED",
+      "memory_faiss_status": "unchanged_1732_1633_1633"
+    },
+    "known_blocker_remaining": "8092 Windows TCP zombie requires OS reboot",
+    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-TRACE-EVENT-PERSISTENCE-01",
+    "evidence_path": "tmp_agent/front_brain_worktree_hygiene_untracked_forensic_cleanup_01"
+  },
   "last_functional_agent_v2_closeout_commit": "3f6fc8d"
 }
