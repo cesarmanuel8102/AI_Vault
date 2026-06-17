@@ -1,0 +1,41 @@
+{
+  "timestamp": "2026-06-17T00:58:16Z",
+  "result": {
+    "run_id": "agv2_0ed236dfce903e82",
+    "classification": "mandatory_multitool",
+    "model_used": "kimi-k2.6:cloud",
+    "trace_ok": true,
+    "event_count": 20,
+    "event_types": [
+      "run_created",
+      "plan_created",
+      "tool_call_started",
+      "tool_call_completed",
+      "tool_call_started",
+      "tool_call_completed",
+      "tool_call_started",
+      "tool_call_completed",
+      "tool_call_started",
+      "tool_call_completed",
+      "tool_call_started",
+      "tool_call_completed",
+      "memory_retrieval_started",
+      "memory_retrieval_completed",
+      "tool_call_started",
+      "tool_call_completed",
+      "tool_call_started",
+      "tool_call_completed",
+      "final_answer_created",
+      "run_completed"
+    ],
+    "tools_started": [
+      "route_probe",
+      "route_probe",
+      "repo_status_read",
+      "grep_search",
+      "grep_search",
+      "grep_search",
+      "grep_search"
+    ]
+  }
+}

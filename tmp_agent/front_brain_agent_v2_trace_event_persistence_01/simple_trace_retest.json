@@ -1,0 +1,16 @@
+{
+  "timestamp": "2026-06-17T00:58:01Z",
+  "result": {
+    "run_id": "agv2_04e37c38fc218689",
+    "trace_ok": true,
+    "event_count": 6,
+    "event_types": [
+      "run_created",
+      "plan_created",
+      "tool_call_started",
+      "tool_call_completed",
+      "final_answer_created",
+      "run_completed"
+    ]
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-TRACE-EVENT-PERSISTENCE-01",
+  "timestamp_utc": "2026-06-17T01:05:00+00:00",
+  "root_cause": "CLIENT_KEY_MISTMATCH_NOT_PERSISTENCE_FAILURE",
+  "findings": {
+    "trace_write_path": "tmp_agent/agent_kernel_v2/runs/{run_id}/trace.jsonl",
+    "trace_read_path": "tmp_agent/agent_kernel_v2/runs/{run_id}/trace.jsonl",
+    "trace_jsonl_exists": true,
+    "trace_jsonl_lines": 20,
+    "trace_jsonl_size": 6674,
+    "events_in_trace": [
+      "run_created",
+      "plan_created",
+      "tool_call_started (route_probe)",
+      "tool_call_completed (route_probe)",
+      "tool_call_started (route_probe)",
+      "tool_call_completed (route_probe)",
+      "tool_call_started (repo_status_read)",
+      "tool_call_completed (repo_status_read)",
+      "tool_call_started (grep_search)",
+      "tool_call_completed (grep_search)",
+      "tool_call_started (grep_search)",
+      "tool_call_completed (grep_search)",
+      "memory_retrieval_started",
+      "memory_retrieval_completed",
+      "tool_call_started (semantic_retrieve)",
+      "tool_call_completed (semantic_retrieve)",
+      "final_answer_created",
+      "run_completed"
+    ],
+    "api_endpoint": "GET /v2/agent/runs/{run_id}/trace",
+    "api_response_key": "trace",
+    "api_old_response_key": "events (not used)",
+    "client_error": "Client test used 'events' key instead of 'trace' key",
+    "persistence_issue": false,
+    "endpoint_schema_issue": false,
+    "runtime_restart_persistence": true,
+    "trace_sanitization": "sanitize_payload checks RAW_COT_MARKERS"
+  },
+  "fix_needed": "Add event_count to response for clarity; document correct key for trace inspection"
+}

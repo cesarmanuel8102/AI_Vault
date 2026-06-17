@@ -101,7 +101,13 @@ def cancel_run(run_id: str):
 
 @router.get("/runs/{run_id}/trace")
 def get_trace(run_id: str):
-    return {"ok": True, "run_id": run_id, "trace": get_agent_runtime_v2().get_trace(run_id)}
+    trace = get_agent_runtime_v2().get_trace(run_id)
+    return {
+        "ok": True,
+        "run_id": run_id,
+        "trace": trace,
+        "event_count": len(trace),
+    }
 
 @router.get("/maintenance/modes")
 def maintenance_modes():
