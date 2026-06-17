@@ -1,0 +1,36 @@
+{
+  "phase": "mode_handling_audit",
+  "front": "FRONT-BRAIN-AGENT-V2-CHAT-MODE-SWITCH-READ-BUILD-AUTO-01",
+  "timestamp_utc": "2026-06-17T05:00:00Z",
+  "current_mode_values": ["read_only", "dry_run", "approval_required", "write_allowed"],
+  "findings": {
+    "mode_is_enforced": false,
+    "read_only_interpretation": "ToolGatewayV2 uses capability.allowed_modes to block write tools, but native_runtime.py does NOT check mode before calling tools",
+    "build_write_tools_blocked": "Blocked only by ToolGatewayV2 for high-risk tools; no global READ mode enforcement",
+    "ui_mode_selector": false,
+    "8091_ui_hardcodes_read_only": true,
+    "8092_hardcodes_read_only": true,
+    "trace_records_mode": "Trace stores mode at run creation but does not log mode escalation events",
+    "final_answer_reports_mode": false,
+    "mode_escalation": "Not implemented; if user asks for build in read mode, planner may schedule write tools and they may be blocked by ToolGatewayV2 without explanation"
+  },
+  "files_audited": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/schemas.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+    "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+    "tmp_agent/brain_v9/ui/index.html",
+    "tmp_agent/brain_v9/dashboard/static/app.js"
+  ],
+  "gaps": {
+    "A": "No mode escalation mechanism. Read requests that require build silently fail or produce confusing tool blocks.",
+    "B": "UI has no mode selector. Both 8091/ui and 8092 hardcode mode='read_only'.",
+    "C": "No distinction between dry_run and read_only semantics for UX clarity.",
+    "D": "Auto mode not implemented. No automatic inference of build requirement from goal text.",
+    "E": "Trace does not capture mode_requested, mode_effective, mode_escalation_required."
+  },
+  "verdict": "PASS_AUDIT_COMPLETE"
+}

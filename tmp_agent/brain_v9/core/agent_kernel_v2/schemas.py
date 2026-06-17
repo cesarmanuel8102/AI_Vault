@@ -9,7 +9,8 @@ def utc_now() -> str:
 
 
 STATUSES = {"created", "planned", "running", "waiting_approval", "paused", "failed", "completed", "cancelled"}
-MODES = {"read_only", "dry_run", "approval_required", "write_allowed"}
+MODES = {"read_only", "build", "auto"}
+LEGACY_MODE_MAP = {"dry_run": "read_only", "approval_required": "build", "write_allowed": "build"}
 
 
 @dataclass

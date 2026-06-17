@@ -42,12 +42,17 @@ class NativeAgentRuntimeV2:
         TraceStore(self._run_dir(run_id)).append(AgentTraceEvent(event_type=event_type, run_id=run_id, step_id=step_id, message=message, data=data or {}))
 
     def create_run(self, goal: str, mode: str = "read_only", user_id: str = "local") -> Dict[str, Any]:
+        from .governance import validate_mode, infer_auto_decision
+        normalized_mode = validate_mode(mode)
         seed = f"{goal}|{utc_now()}|{user_id}".encode("utf-8")
-        run = to_dict(AgentRun(run_id="agv2_" + hashlib.sha256(seed).hexdigest()[:16], goal=goal, mode=mode or "read_only", user_id=user_id))
+        run = to_dict(AgentRun(run_id="agv2_" + hashlib.sha256(seed).hexdigest()[:16], goal=goal, mode=normalized_mode or "read_only", user_id=user_id))
         run["canonical_agent"] = True
         run["agent_version"] = CANONICAL_AGENT_VERSION
+        run["mode_requested"] = mode
+        run["mode_effective"] = normalized_mode
+        run["auto_decision"] = infer_auto_decision(goal) if normalized_mode == "auto" else "n/a"
         self._save_run(run)
-        self._trace(run["run_id"], "run_created", "Agent V2 run created", {"mode": run["mode"], "goal_preview": goal[:180]})
+        self._trace(run["run_id"], "run_created", "Agent V2 run created", {"mode": run["mode"], "goal_preview": goal[:180], "mode_requested": mode, "mode_effective": normalized_mode})
         return run
 
     def plan_run(self, run_id: str) -> Dict[str, Any]:
@@ -68,8 +73,27 @@ class NativeAgentRuntimeV2:
         if run["status"] == "paused":
             return run
         run["status"] = "running"
+
+        # Check mode escalation before executing
+        from .governance import mode_requires_escalation, WRITE_TOOL_NAMES
+        scheduled_tools = [s.get("tool_name") for s in run.get("plan", []) if s.get("tool_name")]
+        mode_esc = mode_requires_escalation(run.get("goal", ""), run.get("mode", "read_only"), scheduled_tools)
+        run["mode_escalation_required"] = mode_esc
+        if mode_esc:
+            run["required_permission"] = "build"
+            run["expected_write_scope"] = [t for t in scheduled_tools if t in WRITE_TOOL_NAMES]
+            run["confirmation_id"] = f"confirm_{run['run_id']}"
+            self._trace(run_id, "mode_escalation_detected", "Build intent detected but current mode does not allow writes", {
+                "mode": run.get("mode"),
+                "required_permission": "build",
+                "expected_write_scope": run["expected_write_scope"],
+                "confirmation_id": run["confirmation_id"],
+            })
+            # Still continue to execute read-only tools, block write tools
+
         results = []
         memory_hits = []
+        blocked_tools = []
         for step in run.get("plan", []):
             tool = step.get("tool_name")
             if not tool:
@@ -89,9 +113,13 @@ class NativeAgentRuntimeV2:
                 self._trace(run_id, "memory_retrieval_completed", "Memory retrieval completed", {"hit_count": len(memory_hits), "degraded": (rd.get("result") or {}).get("degraded")})
             elif res.approval_required:
                 self._trace(run_id, "approval_required", "Write tool blocked pending approval", {"tool": tool})
+            elif res.blocked:
+                blocked_tools.append(tool)
+                self._trace(run_id, "tool_call_completed", f"Tool {tool} blocked", {"tool": tool, "ok": res.ok, "blocked": res.blocked})
             else:
                 self._trace(run_id, "tool_call_completed", f"Tool {tool} completed", {"tool": tool, "ok": res.ok, "blocked": res.blocked})
         metadata = run.get("metadata", {})
+        run["blocked_tools"] = blocked_tools
         final, provider_metadata = finalize_agent_run(
             run, memory_hits, results,
             requested_checks=metadata.get("requested_checks", []),

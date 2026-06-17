@@ -1,0 +1,1 @@
+{"mode_requested": "auto", "mode_effective": "auto", "auto_decision": "build_required", "mode_escalation_required": true, "expected_write_scope": ["file_patch_apply_approval_required"], "confirmation_id": "confirm_agv2_8f1e0c3d2035447b", "status": 200}

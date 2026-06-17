@@ -210,6 +210,8 @@ def _agent_v2_snapshot() -> dict[str, Any]:
 
 class ChatRequest(BaseModel):
     message: str
+    mode: str = "read_only"
+    user_id: str = "dashboard_operator"
 
 
 @router.get("/status")
@@ -317,8 +319,8 @@ def chat(req: ChatRequest) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail="message required")
     body = {
         "message": req.message.strip(),
-        "mode": "read_only",
-        "user_id": "dashboard_operator",
+        "mode": req.mode,
+        "user_id": req.user_id,
     }
     request = urllib.request.Request(
         "http://127.0.0.1:8091/v2/chat/agent",

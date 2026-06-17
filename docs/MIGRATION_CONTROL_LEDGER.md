@@ -8996,3 +8996,50 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 
 ### Evidence path
 `tmp_agent/front_brain_agent_v2_specific_tool_scheduling_fix_01/`
+
+---
+
+## FRONT-BRAIN-AGENT-V2-CHAT-MODE-SWITCH-READ-BUILD-AUTO-01 (2026-06-17)
+
+### Problem Statement
+- Agent V2 had no explicit operator-selectable chat modes (READ/BUILD/AUTO)
+- Mode was hardcoded to read_only in both 8091/ui and 8092 dashboard
+- Build/write intent in read_only mode silently failed with confusing tool blocks
+- No mode escalation mechanism to inform operator that BUILD is needed
+- Trace did not record mode_requested, mode_effective, or escalation events
+
+### Solution
+- Defined canonical modes: read_only, build, auto with backward-compat mapping from legacy modes
+- Implemented mode escalation detection in NativeAgentRuntimeV2
+- ToolGatewayV2 blocks write tools in read_only and auto modes
+- UI mode selector added to 8091 (READ/BUILD/AUTO dropdown)
+- Dashboard chat proxy passes mode from UI to Agent V2
+- Trace records mode_requested, mode_effective, auto_decision, mode_escalation_required, confirmation_id
+
+### Modified Files
+- `tmp_agent/brain_v9/core/agent_kernel_v2/schemas.py`
+- `tmp_agent/brain_v9/core/agent_kernel_v2/governance.py`
+- `tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py`
+- `tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py`
+- `tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py`
+- `tmp_agent/brain_v9/ui/index.html`
+- `tmp_agent/brain_v9/dashboard/dashboard_routes.py`
+- `tests/smoke/smoke_front_brain_agent_v2_chat_mode_switch_read_build_auto_01.py` (new)
+
+### Tests
+- Smoke: 20/20 passed
+- Live READ mode: no escalation for read tasks
+- Live READ blocks build: escalation detected, write tools blocked
+- Live AUTO read: auto_decision=read, no escalation
+- Live AUTO build: auto_decision=build_required, escalation true
+- Live BUILD controlled: build effective, no escalation
+
+### Memory/FAISS
+- Unchanged: 1733 lines semantic, 1633 ntotal
+- No memory files staged
+
+### Next Recommended Front
+FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
+
+### Evidence Path
+`tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/`

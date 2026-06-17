@@ -33,10 +33,25 @@ class ToolGatewayV2:
         return [to_dict(c) for c in self.capabilities]
 
     def call(self, req: ToolCallRequest) -> ToolCallResult:
+        from .governance import validate_mode, READ_ONLY_TOOL_NAMES, WRITE_TOOL_NAMES
         mode = validate_mode(req.mode)
         name = req.tool_name
-        if name in {"file_patch_apply_approval_required", "git_commit_approval_required"} and not write_allowed(mode, req.approval_token):
-            return ToolCallResult(name, ok=False, blocked=True, approval_required=True, error="approval_required")
+
+        # Block write tools in read_only mode
+        if mode == "read_only" and name in WRITE_TOOL_NAMES:
+            return ToolCallResult(name, ok=False, blocked=True, error="write_tool_blocked_in_read_only_mode")
+
+        # Block write tools in auto mode without explicit approval
+        if mode == "auto" and name in WRITE_TOOL_NAMES:
+            return ToolCallResult(name, ok=False, blocked=True, approval_required=True, error="build_requires_explicit_approval")
+
+        # Require approval for approval-required tools in build mode
+        if name in {"file_patch_apply_approval_required", "git_commit_approval_required"}:
+            if mode not in {"build", "write_allowed"}:
+                return ToolCallResult(name, ok=False, blocked=True, approval_required=True, error="build_mode_required")
+            if not write_allowed(mode, req.approval_token):
+                return ToolCallResult(name, ok=False, blocked=True, approval_required=True, error="approval_required")
+
         if name == "repo_status_read":
             return self._repo_status(name)
         if name == "file_read":
@@ -51,7 +66,7 @@ class ToolGatewayV2:
         if name == "smoke_test_readonly":
             return self._smoke(name, req.args)
         if name in {"report_writer", "file_patch_dry_run"}:
-            return ToolCallResult(name, ok=True, result={"dry_run": mode != "write_allowed", "preview": req.args})
+            return ToolCallResult(name, ok=True, result={"dry_run": mode != "build", "preview": req.args})
         return ToolCallResult(name, ok=False, error="unknown_tool")
 
     def _repo_status(self, name):

@@ -135,8 +135,10 @@ def maintenance_modes():
 def chat_agent(req: AgentChatRequest):
     if not req.message.strip():
         raise HTTPException(status_code=400, detail="message required")
+    from .governance import validate_mode
+    validated_mode = validate_mode(req.mode)
     rt = get_agent_runtime_v2()
-    run = rt.create_run(req.message, req.mode, req.user_id)
+    run = rt.create_run(req.message, validated_mode, req.user_id)
     run = rt.plan_run(run["run_id"])
     run = rt.execute_run(run["run_id"])
     return {
@@ -149,4 +151,13 @@ def chat_agent(req: AgentChatRequest):
         "provider_metadata": run.get("provider_metadata") or {},
         "classification": run.get("classification"),
         "status": run.get("status"),
+        "mode_requested": run.get("mode_requested"),
+        "mode_effective": run.get("mode_effective"),
+        "auto_decision": run.get("auto_decision"),
+        "mode_escalation_required": run.get("mode_escalation_required"),
+        "mode_escalation_reason": run.get("mode_escalation_reason"),
+        "required_permission": run.get("required_permission"),
+        "expected_write_scope": run.get("expected_write_scope"),
+        "confirmation_id": run.get("confirmation_id"),
+        "blocked_tools": run.get("blocked_tools"),
     }

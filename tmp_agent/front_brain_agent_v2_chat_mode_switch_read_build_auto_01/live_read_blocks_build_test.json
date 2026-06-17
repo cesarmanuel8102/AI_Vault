@@ -1,0 +1,1 @@
+{"mode_requested": "read_only", "mode_effective": "read_only", "mode_escalation_required": true, "expected_write_scope": ["file_patch_apply_approval_required"], "confirmation_id": "confirm_agv2_cef41cede4c07cd4", "status": 200}

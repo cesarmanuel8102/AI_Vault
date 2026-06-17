@@ -1,0 +1,90 @@
+{
+  "phase": "mode_contract",
+  "front": "FRONT-BRAIN-AGENT-V2-CHAT-MODE-SWITCH-READ-BUILD-AUTO-01",
+  "timestamp_utc": "2026-06-17T05:00:00Z",
+  "canonical_modes": ["read_only", "build", "auto"],
+  "backward_compat": {
+    "read_only": "read_only",
+    "dry_run": "read_only",
+    "approval_required": "build",
+    "write_allowed": "build"
+  },
+  "request_schema": {
+    "message": "string",
+    "mode": "read_only | build | auto",
+    "user_id": "string",
+    "confirmation_id": "optional string",
+    "auto_build_allowed": "boolean (default false)"
+  },
+  "response_schema": {
+    "mode_requested": "string",
+    "mode_effective": "string",
+    "auto_decision": "read | build_required | build_allowed | blocked",
+    "mode_escalation_required": "boolean",
+    "mode_escalation_reason": "string",
+    "required_permission": "build | none",
+    "expected_write_scope": ["string"],
+    "confirmation_id": "string",
+    "governance": {
+      "writes_allowed": "boolean",
+      "commit_allowed": "boolean",
+      "push_allowed": "boolean",
+      "memory_mutation_allowed": "boolean",
+      "faiss_mutation_allowed": "boolean"
+    }
+  },
+  "trace_fields": [
+    "mode_requested",
+    "mode_effective",
+    "auto_decision",
+    "mode_escalation_required",
+    "blocked_tools",
+    "permission_required",
+    "confirmation_id"
+  ],
+  "mode_definitions": {
+    "read_only": {
+      "description": "Default mode. Read-only only.",
+      "allowed_tools": [
+        "repo_status_read", "repo_history_read", "repo_diff_read",
+        "grep_search", "file_read", "route_probe", "semantic_retrieve",
+        "smoke_test_readonly"
+      ],
+      "forbidden_tools": [
+        "file_patch_apply_approval_required",
+        "git_commit_approval_required",
+        "file_patch_dry_run",
+        "report_writer"
+      ],
+      "escalation_behavior": "If build intent detected, return mode_escalation_required with expected_write_scope and confirmation_id"
+    },
+    "build": {
+      "description": "Explicit operator-selected mode. Allows code modification under governance.",
+      "requirements": [
+        "local == remote",
+        "staged empty",
+        "only expected dirty memory files allowed",
+        "semantic/FAISS not staged"
+      ],
+      "allowed": [
+        "edit code files", "create tests", "run py_compile/pytest",
+        "create evidence files", "explicit-path git add", "commit", "push"
+      ],
+      "forbidden": [
+        "git add -A", "git reset", "git clean", "git stash", "git amend",
+        "force push", "staging memory/autonomous_journal.jsonl",
+        "staging memory/semantic/semantic_memory.jsonl",
+        "semantic/FAISS mutation", "secrets/.env/trading/B8"
+      ]
+    },
+    "auto": {
+      "description": "Agent starts in READ. May infer BUILD is required.",
+      "behavior": {
+        "read_tasks": "Execute immediately in read_only mode",
+        "build_tasks": "Require confirmation unless auto_build_allowed == true",
+        "no_confirmation": "Stay in READ, return mode_escalation_required with confirmation_id"
+      }
+    }
+  },
+  "verdict": "CONTRACT_DEFINED"
+}

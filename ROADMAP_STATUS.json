@@ -4712,4 +4712,48 @@
     "next_recommended_front": "FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01"
   },
   "last_functional_agent_v2_closeout_commit": "3f6fc8d"
-}
+
+  ,
+  "front_brain_agent_v2_chat_mode_switch_read_build_auto_01": {
+    "status": "done",
+    "front": "FRONT-BRAIN-AGENT-V2-CHAT-MODE-SWITCH-READ-BUILD-AUTO-01",
+    "start_head": "c22838c",
+    "end_head": "TBD",
+    "fixes": {
+      "read_build_auto_modes": "Added explicit READ/BUILD/AUTO chat modes with mode escalation and governance",
+      "backend_mode_enforcement": "ToolGatewayV2 blocks write tools in read_only/auto modes",
+      "mode_escalation": "NativeAgentRuntimeV2 detects build intent and returns mode_escalation_required",
+      "ui_mode_selector": "8091 UI shows READ/BUILD/AUTO dropdown",
+      "dashboard_proxy_mode": "8092 dashboard passes mode through chat proxy",
+      "trace_mode_fields": "Trace records mode_requested, mode_effective, auto_decision, mode_escalation_required"
+    },
+    "direct_tests": {
+      "file": "tests/smoke/smoke_front_brain_agent_v2_chat_mode_switch_read_build_auto_01.py",
+      "total": 20,
+      "passed": 20
+    },
+    "live_tests": {
+      "read_mode": "mode_test_read - escalation false, read_only effective",
+      "read_blocks_build": "mode_test_read_blocks_build - escalation true, blocked file_patch_dry_run",
+      "auto_read": "mode_test_auto_read - auto_decision read, no escalation",
+      "auto_build_gate": "mode_test_auto_build_gate - auto_decision build_required, escalation true",
+      "controlled_build": "mode_test_build_controlled - build effective, no escalation, blocked_tools empty"
+    },
+    "memory_faiss": {
+      "semantic_lines": 1733,
+      "faiss_ntotal": 1633,
+      "unchanged": true
+    },
+    "files_modified": [
+      "tmp_agent/brain_v9/core/agent_kernel_v2/schemas.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+      "tmp_agent/brain_v9/ui/index.html",
+      "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+      "tests/smoke/smoke_front_brain_agent_v2_chat_mode_switch_read_build_auto_01.py"
+    ],
+    "evidence_path": "tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01",
+    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01"
+  }}
