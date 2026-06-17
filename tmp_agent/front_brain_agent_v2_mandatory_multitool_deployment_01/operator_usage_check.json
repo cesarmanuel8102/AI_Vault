@@ -1,0 +1,23 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-MANDATORY-MULTITOOL-DEPLOYMENT-01",
+  "timestamp_utc": "2026-06-17T02:00:00+00:00",
+  "operator_presets_route": {
+    "code_implemented": true,
+    "route": "GET /v2/agent/operator-presets",
+    "live_status": "requires_8091_restart_to_activate",
+    "presets_count": 8,
+    "verified_by_import": true
+  },
+  "8091_endpoints": {
+    "health": "200",
+    "agent_status": "200",
+    "capabilities": "200",
+    "chat_agent": "200",
+    "trace": "200"
+  },
+  "8092_endpoints": {
+    "root": "200",
+    "dashboard_status": "200",
+    "agent_v2_status": "200"
+  }
+}

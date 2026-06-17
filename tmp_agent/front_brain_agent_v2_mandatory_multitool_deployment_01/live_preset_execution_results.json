@@ -1,0 +1,173 @@
+{
+  "timestamp": "2026-06-17T01:32:38Z",
+  "results": [
+    {
+      "preset": "operator_status_audit",
+      "run_id": "agv2_8f574c20e25fb69c",
+      "classification": "mandatory_multitool",
+      "model_used": "kimi-k2.6:cloud",
+      "provider_degraded": false,
+      "trace_event_count": 14,
+      "event_types": [
+        "run_created",
+        "plan_created",
+        "tool_call_started",
+        "tool_call_completed",
+        "tool_call_started",
+        "tool_call_completed",
+        "tool_call_started",
+        "tool_call_completed",
+        "tool_call_started",
+        "tool_call_completed",
+        "tool_call_started",
+        "tool_call_completed",
+        "final_answer_created",
+        "run_completed"
+      ],
+      "status": "passed"
+    },
+    {
+      "preset": "repo_health_audit",
+      "run_id": "agv2_fb06206ab72a6d70",
+      "classification": "mandatory_multitool",
+      "model_used": "kimi-k2.6:cloud",
+      "provider_degraded": false,
+      "trace_event_count": 6,
+      "event_types": [
+        "run_created",
+        "plan_created",
+        "tool_call_started",
+        "tool_call_completed",
+        "final_answer_created",
+        "run_completed"
+      ],
+      "status": "passed"
+    },
+    {
+      "preset": "memory_faiss_safety_audit",
+      "run_id": "agv2_63e171fafbe7d8c3",
+      "classification": "mandatory_multitool",
+      "model_used": "kimi-k2.6:cloud",
+      "provider_degraded": false,
+      "trace_event_count": 4,
+      "event_types": [
+        "run_created",
+        "plan_created",
+        "final_answer_created",
+        "run_completed"
+      ],
+      "status": "passed"
+    },
+    {
+      "preset": "dashboard_health_audit",
+      "run_id": "agv2_958ecadf1f3e13c4",
+      "classification": "mandatory_multitool",
+      "model_used": "kimi-k2.6:cloud",
+      "provider_degraded": false,
+      "trace_event_count": 10,
+      "event_types": [
+        "run_created",
+        "plan_created",
+        "tool_call_started",
+        "tool_call_completed",
+        "tool_call_started",
+        "tool_call_completed",
+        "tool_call_started",
+        "tool_call_completed",
+        "final_answer_created",
+        "run_completed"
+      ],
+      "status": "passed"
+    },
+    {
+      "preset": "mandatory_multitool_selftest",
+      "run_id": "agv2_a63ef93f7c28eccd",
+      "classification": "mandatory_multitool",
+      "model_used": "kimi-k2.6:cloud",
+      "provider_degraded": false,
+      "trace_event_count": 20,
+      "event_types": [
+        "run_created",
+        "plan_created",
+        "tool_call_started",
+        "tool_call_completed",
+        "tool_call_started",
+        "tool_call_completed",
+        "tool_call_started",
+        "tool_call_completed",
+        "tool_call_started",
+        "tool_call_completed",
+        "tool_call_started",
+        "tool_call_completed",
+        "memory_retrieval_started",
+        "memory_retrieval_completed",
+        "tool_call_started",
+        "tool_call_completed",
+        "tool_call_started",
+        "tool_call_completed",
+        "final_answer_created",
+        "run_completed"
+      ],
+      "status": "passed"
+    },
+    {
+      "preset": "trace_health_audit",
+      "run_id": "agv2_771dfa6c57bfe986",
+      "classification": "mandatory_multitool",
+      "model_used": "kimi-k2.6:cloud",
+      "provider_degraded": false,
+      "trace_event_count": 6,
+      "event_types": [
+        "run_created",
+        "plan_created",
+        "tool_call_started",
+        "tool_call_completed",
+        "final_answer_created",
+        "run_completed"
+      ],
+      "status": "passed"
+    },
+    {
+      "preset": "governance_block_test",
+      "run_id": "agv2_476f91377cefc74d",
+      "classification": "approval_required_write",
+      "model_used": "kimi-k2.6:cloud",
+      "provider_degraded": false,
+      "trace_event_count": 6,
+      "event_types": [
+        "run_created",
+        "plan_created",
+        "tool_call_started",
+        "approval_required",
+        "final_answer_created",
+        "run_completed"
+      ],
+      "status": "passed"
+    },
+    {
+      "preset": "daily_operator_summary",
+      "run_id": "agv2_9956f3144d886f3d",
+      "classification": "mandatory_multitool",
+      "model_used": "kimi-k2.6:cloud",
+      "provider_degraded": false,
+      "trace_event_count": 14,
+      "event_types": [
+        "run_created",
+        "plan_created",
+        "tool_call_started",
+        "tool_call_completed",
+        "tool_call_started",
+        "tool_call_completed",
+        "tool_call_started",
+        "tool_call_completed",
+        "memory_retrieval_started",
+        "memory_retrieval_completed",
+        "memory_retrieval_started",
+        "memory_retrieval_completed",
+        "final_answer_created",
+        "run_completed"
+      ],
+      "status": "passed"
+    }
+  ]
+}

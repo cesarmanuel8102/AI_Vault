@@ -1,0 +1,65 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-MANDATORY-MULTITOOL-DEPLOYMENT-01",
+  "timestamp_utc": "2026-06-17T01:45:00+00:00",
+  "presets_defined": 8,
+  "preset_registry_created": true,
+  "preset_route_created": true,
+  "presets": [
+    {
+      "name": "operator_status_audit",
+      "purpose": "Check overall Agent V2 system health across API and dashboard",
+      "expected_tools": ["route_probe", "route_probe", "route_probe", "repo_status_read"],
+      "allowed_modes": ["read_only", "dry_run"],
+      "forbidden_side_effects": ["file_write", "semantic_write", "faiss_write", "git_commit", "trading"]
+    },
+    {
+      "name": "repo_health_audit",
+      "purpose": "Audit git repository state",
+      "expected_tools": ["repo_status_read"],
+      "allowed_modes": ["read_only", "dry_run"],
+      "forbidden_side_effects": ["git_commit", "file_write"]
+    },
+    {
+      "name": "memory_faiss_safety_audit",
+      "purpose": "Verify semantic memory and FAISS index integrity",
+      "expected_tools": ["file_read", "semantic_retrieve"],
+      "allowed_modes": ["read_only", "dry_run"],
+      "forbidden_side_effects": ["semantic_write", "faiss_write"]
+    },
+    {
+      "name": "dashboard_health_audit",
+      "purpose": "Verify 8092 dashboard endpoints",
+      "expected_tools": ["route_probe", "route_probe", "route_probe"],
+      "allowed_modes": ["read_only", "dry_run"],
+      "forbidden_side_effects": ["file_write", "semantic_write"]
+    },
+    {
+      "name": "mandatory_multitool_selftest",
+      "purpose": "Verify mandatory multi-tool planner works",
+      "expected_tools": ["route_probe", "route_probe", "repo_status_read", "grep_search", "grep_search", "semantic_retrieve"],
+      "allowed_modes": ["read_only", "dry_run"],
+      "forbidden_side_effects": ["file_write", "semantic_write"]
+    },
+    {
+      "name": "trace_health_audit",
+      "purpose": "Verify trace persistence and completeness",
+      "expected_tools": ["route_probe", "route_probe"],
+      "allowed_modes": ["read_only", "dry_run"],
+      "forbidden_side_effects": ["file_write", "semantic_write"]
+    },
+    {
+      "name": "governance_block_test",
+      "purpose": "Verify write and secret access is blocked",
+      "expected_tools": ["file_read", "file_patch_apply_approval_required"],
+      "allowed_modes": ["read_only", "dry_run"],
+      "forbidden_side_effects": ["file_write_without_approval", "secret_exposure"]
+    },
+    {
+      "name": "daily_operator_summary",
+      "purpose": "Produce a concise daily status summary for the operator",
+      "expected_tools": ["route_probe", "route_probe", "repo_status_read", "semantic_retrieve"],
+      "allowed_modes": ["read_only", "dry_run"],
+      "forbidden_side_effects": ["file_write", "semantic_write", "faiss_write"]
+    }
+  ]
+}

@@ -109,6 +109,11 @@ def get_trace(run_id: str):
         "event_count": len(trace),
     }
 
+@router.get("/operator-presets")
+def operator_presets():
+    from .operator_presets import list_operator_presets
+    return {"ok": True, "presets": list_operator_presets()}
+
 @router.get("/maintenance/modes")
 def maintenance_modes():
     return {

@@ -1,0 +1,23 @@
+{
+  "semantic_jsonl": {
+    "path": "memory/semantic/semantic_memory.jsonl",
+    "sha256_prefix": "5a3180593cb1ddff",
+    "size": 805963,
+    "lines_or_bytes": 1732
+  },
+  "faiss_index": {
+    "path": "memory/semantic/semantic_memory_faiss.index",
+    "sha256_prefix": "3fd44c7f45096fd2",
+    "size": 5016621,
+    "lines_or_bytes": 5016621
+  },
+  "faiss_ids": {
+    "path": "memory/semantic/semantic_memory_faiss_ids.json",
+    "sha256_prefix": "96c93ae79301f743",
+    "size": 45864,
+    "lines_or_bytes": 45864
+  },
+  "faiss_ntotal": 1633,
+  "faiss_ids_count": 1633,
+  "timestamp": "2026-06-17T01:30:38Z"
+}
