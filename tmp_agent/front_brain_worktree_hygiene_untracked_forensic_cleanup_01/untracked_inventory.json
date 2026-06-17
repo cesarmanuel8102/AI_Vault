@@ -1,0 +1,20 @@
+{
+  "front": "FRONT-BRAIN-WORKTREE-HYGIENE-UNTRACKED-FORENSIC-CLEANUP-01",
+  "timestamp_utc": "2026-06-17T00:50:00+00:00",
+  "inventory": [
+    {"path": "$LogFile", "type": "file", "size": 0, "classification": "root_junk_quarantine", "action": "document_only_cannot_move", "reason": "Windows system log file, 0 bytes, cannot be moved without admin"},
+    {"path": "dry_run", "type": "file", "size": 0, "classification": "root_junk_quarantine", "action": "quarantine", "reason": "Empty generated artifact from prior runtime"},
+    {"path": "evaluation", "type": "file", "size": 0, "classification": "root_junk_quarantine", "action": "quarantine", "reason": "Empty generated artifact from prior runtime"},
+    {"path": "read_only", "type": "file", "size": 0, "classification": "root_junk_quarantine", "action": "quarantine", "reason": "Empty generated artifact from prior runtime"},
+    {"path": "stream", "type": "file", "size": 0, "classification": "root_junk_quarantine", "action": "quarantine", "reason": "Empty generated artifact from prior runtime"},
+    {"path": "tmp_agent/agent_kernel_v2/", "type": "dir", "file_count": 200, "classification": "runtime_artifact_ignore", "action": "git_info_exclude", "reason": "Agent V2 runtime run directories with run.json, trace.jsonl, checkpoint.json"},
+    {"path": "tmp_agent/brain_v9/start_8091_wrapper.py", "type": "file", "size": 0, "classification": "runtime_artifact_ignore", "action": "ignore", "reason": "Transient wrapper script for 8091 startup"},
+    {"path": "tmp_agent/evolution_runs/", "type": "dir", "file_count": 10, "classification": "runtime_artifact_ignore", "action": "git_info_exclude", "reason": "Evolution experiment runtime outputs"},
+    {"path": "tmp_agent/front_brain_agent_v2_mandatory_multitool_planner_hotfix_01/post_push_verification.json", "type": "file", "size": 500, "classification": "commit_candidate_evidence", "action": "commit", "reason": "Post-push verification for the hotfix front that was just closed"},
+    {"path": "tmp_agent/front_brain_worktree_hygiene_untracked_forensic_cleanup_01/", "type": "dir", "file_count": 10, "classification": "commit_candidate_evidence", "action": "commit", "reason": "Current front evidence directory"}
+  ],
+  "old_front_policy": {
+    "note": "All other tmp_agent/front_* directories are previous front evidence. They contain historical audit data and should NOT be blindly deleted. They can remain untracked as they are evidence-only and not part of the canonical build. If needed, they can be committed in bulk later or archived.",
+    "recommendation": "LEAVE_UNTRACKED_DOCUMENTED"
+  }
+}
