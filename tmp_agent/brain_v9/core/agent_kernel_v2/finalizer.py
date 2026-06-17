@@ -71,7 +71,7 @@ def _structured_fallback(goal: str, mode: str, memory_hits: List[Dict[str, Any]]
     ])
 
 
-def build_finalizer_prompt(run: Dict[str, Any], memory_hits: List[Dict[str, Any]], tool_results: List[Dict[str, Any]], requested_checks: List[Dict[str, Any]]|None = None, scheduled_tools: List[str]|None = None, executed_tools: List[str]|None = None) -> str:
+def build_finalizer_prompt(run: Dict[str, Any], memory_hits: List[Dict[str, Any]], tool_results: List[Dict[str, Any]], requested_checks: List[Dict[str, Any]]|None = None, scheduled_tools: List[str]|None = None, executed_tools: List[str]|None = None, template_override: str|None = None) -> str:
     safe_results = []
     for idx, item in enumerate(tool_results[:10], start=1):
         safe_results.append({
@@ -105,18 +105,35 @@ def build_finalizer_prompt(run: Dict[str, Any], memory_hits: List[Dict[str, Any]
         "goal": run.get("goal"),
         "mode": run.get("mode"),
         "classification": run.get("classification"),
-        "tool_evidence": safe_results,
-        "memory_evidence": safe_hits,
-        "tool_distinction": tool_distinction,
-        "safety_constraints": ["no raw chain-of-thought", "no semantic/FAISS writes", "no trading", "write tools approval-gated"],
-        "required_format": ["Summary", "Evidence used", "Actions performed", "Risks/gates", "Next safe action"],
-        "mandatory_instruction": "If tools were requested but not scheduled, say 'planner did not schedule requested tool'. If scheduled but failed, say 'tool scheduled but failed'. If executed and blocked, say 'executed and correctly blocked'. If executed and passed, say 'executed and passed'. Do NOT say tools are 'unavailable' unless the tool gateway explicitly lacks that capability.",
     }
+
+    # Template selection
+    if template_override == "direct_assistant":
+        payload["required_format"] = ["Direct answer", "Concise prose", "No operational summary"]
+        payload["mandatory_instruction"] = "Answer directly as a helpful assistant. Use natural, conversational prose. Do NOT use structured sections like Summary/Evidence/Actions/Risks unless the user explicitly asks for analysis."
+        payload["safety_constraints"] = ["no raw chain-of-thought", "no semantic/FAISS writes", "no trading"]
+    elif template_override == "brain_evidence":
+        payload["required_format"] = ["Summary", "Brain evidence", "Actions performed", "Risks/gates", "Next safe action"]
+        payload["mandatory_instruction"] = "Focus on Brain-specific evidence (front dirs, traces, ledgers). Use deterministic source data. Do NOT hallucinate tool results."
+        payload["safety_constraints"] = ["no raw chain-of-thought", "no semantic/FAISS writes", "no trading", "write tools approval-gated"]
+    elif template_override == "mixed_brain_reasoning":
+        payload["required_format"] = ["Reasoning", "Brain evidence", "Conclusion", "Risks/gates"]
+        payload["mandatory_instruction"] = "Start with generic reasoning, then ground with Brain evidence. Distinguish what you know vs what the evidence shows."
+        payload["safety_constraints"] = ["no raw chain-of-thought", "no semantic/FAISS writes", "no trading", "write tools approval-gated"]
+    else:
+        payload["required_format"] = ["Summary", "Evidence used", "Actions performed", "Risks/gates", "Next safe action"]
+        payload["mandatory_instruction"] = "If tools were requested but not scheduled, say 'planner did not schedule requested tool'. If scheduled but failed, say 'tool scheduled but failed'. If executed and blocked, say 'executed and correctly blocked'. If executed and passed, say 'executed and passed'. Do NOT say tools are 'unavailable' unless the tool gateway explicitly lacks that capability."
+        payload["safety_constraints"] = ["no raw chain-of-thought", "no semantic/FAISS writes", "no trading", "write tools approval-gated"]
+
+    payload["tool_evidence"] = safe_results
+    payload["memory_evidence"] = safe_hits
+    payload["tool_distinction"] = tool_distinction
+
     return "Finalize this Agent V2 run using only this evidence. Distinguish requested vs scheduled vs executed tools clearly. Do not claim tools are unavailable when they were simply not scheduled.\n" + json.dumps(payload, ensure_ascii=False, indent=2)
 
 
-def finalize_agent_run(run: Dict[str, Any], memory_hits: List[Dict[str, Any]], tool_results: List[Dict[str, Any]], requested_checks: List[Dict[str, Any]]|None = None, scheduled_tools: List[str]|None = None, executed_tools: List[str]|None = None) -> tuple[str, Dict[str, Any]]:
-    prompt = build_finalizer_prompt(run, memory_hits, tool_results, requested_checks, scheduled_tools, executed_tools)
+def finalize_agent_run(run: Dict[str, Any], memory_hits: List[Dict[str, Any]], tool_results: List[Dict[str, Any]], requested_checks: List[Dict[str, Any]]|None = None, scheduled_tools: List[str]|None = None, executed_tools: List[str]|None = None, template_override: str|None = None) -> tuple[str, Dict[str, Any]]:
+    prompt = build_finalizer_prompt(run, memory_hits, tool_results, requested_checks, scheduled_tools, executed_tools, template_override)
     meta = FinalizerMetadata(provider_attempted=[])
     started = time.perf_counter()
     models = [PRIMARY_KIMI_MODEL] + FALLBACK_MODELS

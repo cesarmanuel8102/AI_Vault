@@ -10,11 +10,11 @@ from .schemas import AgentRun, AgentTraceEvent, ToolCallRequest, to_dict, utc_no
 from .state import RUN_ROOT, CANONICAL_AGENT_VERSION
 from .tool_gateway import ToolGatewayV2
 from .trace import TraceStore
+from .intent_adapter import AgentV2IntentAdapter
 
+DIRECT_ASSISTANT_ROUTES = {"direct_assistant", "brain_evidence", "mixed_brain_reasoning"}
 
 class NativeAgentRuntimeV2:
-    backend = "native_graph_compatible"
-
     def __init__(self):
         self.tools = ToolGatewayV2()
         self.memory = MemoryGatewayV2()
@@ -68,6 +68,143 @@ class NativeAgentRuntimeV2:
 
     def execute_run(self, run_id: str) -> Dict[str, Any]:
         run = self._load_run(run_id)
+        
+        # Intent-based pre-planner gate
+        adapter = AgentV2IntentAdapter()
+        route_info = adapter.select_route(run["goal"])
+        run["intent_route"] = route_info["route"]
+        run["intent_detected"] = route_info["intent"]
+        run["intent_confidence"] = route_info["confidence"]
+        
+        # Direct assistant route — skip planner/tools, go straight to LLM
+        if route_info["route"] == "direct_assistant":
+            run["status"] = "running"
+            self._trace(run_id, "intent_route", "Direct assistant route selected", route_info)
+            final, provider_metadata = finalize_agent_run(
+                run, [], [],
+                requested_checks=[],
+                scheduled_tools=[],
+                executed_tools=[],
+                template_override="direct_assistant",
+            )
+            run["final_answer"] = final
+            run["provider_metadata"] = provider_metadata
+            run["provider"] = provider_metadata.get("provider_used", run.get("provider"))
+            run["model_used"] = provider_metadata.get("model_used")
+            run["provider_degraded"] = provider_metadata.get("provider_degraded")
+            run["fallback_reason"] = provider_metadata.get("fallback_reason")
+            run["status"] = "completed"
+            self._save_run(run)
+            self._trace(run_id, "final_answer_created", "Final answer created (direct assistant)", {"provider_metadata": provider_metadata})
+            self._trace(run_id, "run_completed", "Run completed", {"status": "completed"})
+            return run
+        
+        # Brain evidence route — deterministic source map, no semantic_retrieve
+        if route_info["route"] == "brain_evidence":
+            run["status"] = "running"
+            self._trace(run_id, "intent_route", "Brain evidence route selected", route_info)
+            evidence_sources = adapter.get_evidence_sources("brain_evidence", run["goal"])
+            run["evidence_sources"] = evidence_sources
+            
+            # Build minimal deterministic plan
+            plan = []
+            for src in evidence_sources:
+                for tool in src["tools"]:
+                    if tool == "repo_status_read":
+                        plan.append({"step_id": f"repo_status_{src['type']}", "kind": "tool", "title": "Read repository status", "status": "planned", "tool_name": "repo_status_read", "input": {}})
+                    elif tool == "grep_search":
+                        plan.append({"step_id": f"grep_{src['type']}", "kind": "tool", "title": "Search relevant files", "status": "planned", "tool_name": "grep_search", "input": {"pattern": "agent|brain|kernel", "glob": "*.py"}})
+                    elif tool == "file_read":
+                        plan.append({"step_id": f"file_{src['type']}", "kind": "tool", "title": "Read evidence file", "status": "planned", "tool_name": "file_read", "input": {"path": "docs/MIGRATION_CONTROL_LEDGER.md"}})
+            
+            run["plan"] = plan
+            run["classification"] = "brain_evidence"
+            
+            results = []
+            for step in plan:
+                tool = step.get("tool_name")
+                if not tool:
+                    step["status"] = "completed"
+                    continue
+                self._trace(run_id, "tool_call_started", f"Tool {tool} started", {"tool": tool})
+                res = self.tools.call(ToolCallRequest(tool_name=tool, args=step.get("input", {}), mode=run.get("mode", "read_only")))
+                rd = to_dict(res)
+                step["output"] = rd
+                step["status"] = "completed" if res.ok else "failed"
+                results.append(rd)
+                self._trace(run_id, "tool_call_completed", f"Tool {tool} completed", {"tool": tool, "ok": res.ok})
+            
+            final, provider_metadata = finalize_agent_run(
+                run, [], results,
+                requested_checks=[],
+                scheduled_tools=[s.get("tool_name") for s in plan if s.get("tool_name")],
+                executed_tools=[s.get("tool_name") for s in plan if s.get("status") == "completed"],
+                template_override="brain_evidence",
+            )
+            run["final_answer"] = final
+            run["provider_metadata"] = provider_metadata
+            run["provider"] = provider_metadata.get("provider_used", run.get("provider"))
+            run["model_used"] = provider_metadata.get("model_used")
+            run["provider_degraded"] = provider_metadata.get("provider_degraded")
+            run["fallback_reason"] = provider_metadata.get("fallback_reason")
+            run["status"] = "completed"
+            self._save_run(run)
+            self._trace(run_id, "final_answer_created", "Final answer created (brain evidence)", {"provider_metadata": provider_metadata})
+            self._trace(run_id, "run_completed", "Run completed", {"status": "completed"})
+            return run
+        
+        # Mixed brain reasoning — generic reasoning + Brain evidence
+        if route_info["route"] == "mixed_brain_reasoning":
+            run["status"] = "running"
+            self._trace(run_id, "intent_route", "Mixed brain reasoning route selected", route_info)
+            # Start with a direct LLM reasoning step, then add evidence
+            plan = [{"step_id": "direct_reasoning", "kind": "llm", "title": "Generic reasoning", "status": "planned", "tool_name": None, "input": {}}]
+            evidence_sources = adapter.get_evidence_sources("brain_evidence", run["goal"])
+            run["evidence_sources"] = evidence_sources
+            for src in evidence_sources:
+                for tool in src["tools"]:
+                    if tool == "repo_status_read":
+                        plan.append({"step_id": f"repo_status_{src['type']}", "kind": "tool", "title": "Read repository status", "status": "planned", "tool_name": "repo_status_read", "input": {}})
+                    elif tool == "grep_search":
+                        plan.append({"step_id": f"grep_{src['type']}", "kind": "tool", "title": "Search relevant files", "status": "planned", "tool_name": "grep_search", "input": {"pattern": "agent|brain|kernel", "glob": "*.py"}})
+            
+            run["plan"] = plan
+            run["classification"] = "mixed_brain_reasoning"
+            
+            results = []
+            for step in plan:
+                tool = step.get("tool_name")
+                if not tool:
+                    step["status"] = "completed"
+                    continue
+                self._trace(run_id, "tool_call_started", f"Tool {tool} started", {"tool": tool})
+                res = self.tools.call(ToolCallRequest(tool_name=tool, args=step.get("input", {}), mode=run.get("mode", "read_only")))
+                rd = to_dict(res)
+                step["output"] = rd
+                step["status"] = "completed" if res.ok else "failed"
+                results.append(rd)
+                self._trace(run_id, "tool_call_completed", f"Tool {tool} completed", {"tool": tool, "ok": res.ok})
+            
+            final, provider_metadata = finalize_agent_run(
+                run, [], results,
+                requested_checks=[],
+                scheduled_tools=[s.get("tool_name") for s in plan if s.get("tool_name")],
+                executed_tools=[s.get("tool_name") for s in plan if s.get("status") == "completed"],
+                template_override="mixed_brain_reasoning",
+            )
+            run["final_answer"] = final
+            run["provider_metadata"] = provider_metadata
+            run["provider"] = provider_metadata.get("provider_used", run.get("provider"))
+            run["model_used"] = provider_metadata.get("model_used")
+            run["provider_degraded"] = provider_metadata.get("provider_degraded")
+            run["fallback_reason"] = provider_metadata.get("fallback_reason")
+            run["status"] = "completed"
+            self._save_run(run)
+            self._trace(run_id, "final_answer_created", "Final answer created (mixed brain)", {"provider_metadata": provider_metadata})
+            self._trace(run_id, "run_completed", "Run completed", {"status": "completed"})
+            return run
+        
+        # Default operational_agent route — existing planner + tools + finalizer
         if not run.get("plan"):
             run = self.plan_run(run_id)
         if run["status"] == "paused":

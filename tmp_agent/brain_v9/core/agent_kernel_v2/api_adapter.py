@@ -136,11 +136,22 @@ def chat_agent(req: AgentChatRequest):
     if not req.message.strip():
         raise HTTPException(status_code=400, detail="message required")
     from .governance import validate_mode, parse_mode_from_message
+    from .intent_adapter import AgentV2IntentAdapter
     nl_mode = parse_mode_from_message(req.message.strip())
     validated_mode = nl_mode or validate_mode(req.mode)
+    
+    # Intent-based pre-planner gate
+    adapter = AgentV2IntentAdapter()
+    route_info = adapter.select_route(req.message.strip())
+    
     rt = get_agent_runtime_v2()
     run = rt.create_run(req.message, validated_mode, req.user_id)
-    run = rt.plan_run(run["run_id"])
+    
+    # For direct_assistant and brain_evidence routes, we already handle in execute_run
+    # For mixed_brain_reasoning and operational_agent, we need the planner
+    if route_info["route"] in {"mixed_brain_reasoning", "operational_agent"}:
+        run = rt.plan_run(run["run_id"])
+    
     run = rt.execute_run(run["run_id"])
     return {
         "ok": True,
@@ -161,4 +172,7 @@ def chat_agent(req: AgentChatRequest):
         "expected_write_scope": run.get("expected_write_scope"),
         "confirmation_id": run.get("confirmation_id"),
         "blocked_tools": run.get("blocked_tools"),
+        "intent_route": run.get("intent_route"),
+        "intent_detected": run.get("intent_detected"),
+        "intent_confidence": run.get("intent_confidence"),
     }
