@@ -3,7 +3,7 @@ Agent V2 Intent Adapter — Reuses legacy IntentDetector as pre-planner gate.
 Does NOT import full legacy router.
 """
 from __future__ import annotations
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Optional
 from pathlib import Path
 
 from ..intent import IntentDetector
@@ -33,10 +33,11 @@ class AgentV2IntentAdapter:
     def __init__(self):
         self.detector = IntentDetector()
 
-    def detect_intent(self, message: str, history: List[Dict] = None) -> Tuple[str, float, Dict]:
-        return self.detector.detect(message, history)
+    def detect_intent(self, message: str, history: Optional[List[Dict]] = None) -> Tuple[str, float, Dict]:
+        h: List[Dict] = history if history is not None else []
+        return self.detector.detect(message, h)
 
-    def select_route(self, message: str, history: List[Dict] = None) -> Dict[str, Any]:
+    def select_route(self, message: str, history: Optional[List[Dict]] = None) -> Dict[str, Any]:
         intent, confidence, meta = self.detect_intent(message, history)
 
         msg_lower = message.lower()
@@ -46,6 +47,11 @@ class AgentV2IntentAdapter:
             "brain", "agent v2", "agent_v2", "agent kernel", "router",
             "tmp_agent", "front_brain", "ledger", "trace",
             "semantic memory", "faiss", "checkpoint", "run_id",
+            "repo", "git", "head", "dirty", "commit",
+            "microfix", "patch", "fix",
+            "autonomous", "auto mode", "AUTO",
+            "production", "operations", "operator",
+            "capabilities", "tools available", "approval",
         ]
         has_brain_signals = any(s in msg_lower for s in brain_signals)
 
