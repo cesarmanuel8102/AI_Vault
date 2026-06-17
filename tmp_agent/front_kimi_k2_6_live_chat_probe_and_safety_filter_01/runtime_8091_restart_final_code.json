@@ -1,8 +1,0 @@
-{
-  "stopped_pid": 34808,
-  "started_pid": 46620,
-  "brain_port": "8091",
-  "kimi_ollama_model": "kimi-k2.6:cloud",
-  "pythonpath": "C:\\AI_VAULT_CANONICAL;C:\\AI_VAULT_CANONICAL\\tmp_agent",
-  "restarted_utc": "2026-06-12T22:22:05.1274278Z"
-}

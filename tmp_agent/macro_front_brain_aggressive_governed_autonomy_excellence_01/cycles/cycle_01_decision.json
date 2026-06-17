@@ -1,8 +1,0 @@
-{
-  "cycle_id": "cycle_01",
-  "decision": "block",
-  "risk_level": "LOW",
-  "implemented_as": "blocked",
-  "test_required": "smoke_macro_front_brain_aggressive_governed_autonomy_excellence_01.py",
-  "rollback_note": "Revert specific added module/doc/test commit only."
-}

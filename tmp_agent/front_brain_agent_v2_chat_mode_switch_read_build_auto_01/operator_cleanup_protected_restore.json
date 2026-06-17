@@ -1,0 +1,19 @@
+{
+  "before": {
+    "autonomous_journal": 461,
+    "semantic_memory": 1733
+  },
+  "after": {
+    "autonomous_journal": 443,
+    "semantic_memory": 1732
+  },
+  "restored_from_commit": "2106578",
+  "semantic_memory_lines_removed": 1,
+  "autonomous_journal_lines_removed": 18,
+  "faiss_untouched": true,
+  "faiss_files_checked": [
+    "memory/semantic/semantic_memory_faiss.index",
+    "memory/semantic/semantic_memory_faiss_ids.json"
+  ],
+  "date": "2026-06-17"
+}

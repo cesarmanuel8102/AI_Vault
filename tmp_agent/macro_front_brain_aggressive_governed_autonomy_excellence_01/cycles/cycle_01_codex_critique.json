@@ -1,7 +1,0 @@
-{
-  "cycle_id": "cycle_01",
-  "risk_level": "LOW",
-  "critique": "Keep smallest artifact, require tests, no protected paths, rollback note mandatory.",
-  "blocked_reasons": [],
-  "codex_decision_basis": "LOW/MEDIUM executable; HIGH/BLOCKED proposal-only or blocked."
-}

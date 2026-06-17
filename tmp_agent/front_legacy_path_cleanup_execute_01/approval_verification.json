@@ -1,9 +1,0 @@
-{
-  "front_id": "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01",
-  "approval_phrase_required": "APPROVE_LEGACY_PATH_CLEANUP_EXECUTE_AI_VAULT",
-  "approval_phrase_found_in_prompt": true,
-  "verification_method": "exact_string_match_in_user_prompt",
-  "prompt_contains_exact_approval": true,
-  "verified_at_utc": "2026-06-11T10:00:00Z",
-  "verdict": "PASS"
-}

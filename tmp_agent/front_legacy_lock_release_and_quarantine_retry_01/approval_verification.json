@@ -1,7 +1,0 @@
-{
-  "schema_version": "front_legacy_lock_release_and_quarantine_retry_01_approval_v1",
-  "generated_at_utc": "2026-06-12T03:56:11.900583+00:00",
-  "approval_phrase": "APPROVE_CODEX_SAFE_CLOSE_LEGACY_AI_VAULT_LOCK_PROCESSES_AND_RETRY_RENAME",
-  "approval_phrase_present": true,
-  "authorized_limited_safe_close": true
-}

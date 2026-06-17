@@ -1,9 +1,0 @@
-{
-  "overall": 0.94,
-  "source": "mega_cycle_runner",
-  "cycles_completed": 200,
-  "provider_success_rate": 0.75,
-  "fallback_rate": 0.25,
-  "daily_dryrun_ready": true,
-  "competency_matrix_overall": 0.888
-}

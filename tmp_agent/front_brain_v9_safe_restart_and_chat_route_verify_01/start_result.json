@@ -1,7 +1,0 @@
-{
-  "started": true,
-  "pid": 193980,
-  "command": "python -m uvicorn tmp_agent.brain_v9.main:app --host 127.0.0.1 --port 8090",
-  "stdout_log": "C:\\AI_VAULT_CANONICAL\\tmp_agent\\front_brain_v9_safe_restart_and_chat_route_verify_01\\brain_v9_stdout.log",
-  "stderr_log": "C:\\AI_VAULT_CANONICAL\\tmp_agent\\front_brain_v9_safe_restart_and_chat_route_verify_01\\brain_v9_stderr.log"
-}

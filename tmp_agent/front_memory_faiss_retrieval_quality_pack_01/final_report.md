@@ -1,8 +1,0 @@
-# FRONT-MEMORY-FAISS-RETRIEVAL-QUALITY-PACK-01 Report
-
-- status: `MEMORY_FAISS_RETRIEVAL_QUALITY_PACK_CREATED`
-- tests_passed: `true`
-- test_count: `4`
-- memory_mutated: `false`
-- faiss_mutated: `false`
-

@@ -1,0 +1,13 @@
+{
+  "staging_status": "SAFE",
+  "staged_deletions": 827,
+  "staged_modifications": 2,
+  "staged_additions": 6,
+  "memory_files_staged": ["memory/autonomous_journal.jsonl", "memory/semantic/semantic_memory.jsonl"],
+  "faiss_files_staged": [],
+  "env_staged": false,
+  "secrets_staged": false,
+  "trading_b8_strategies_staged": false,
+  "intended_files_deleted": false,
+  "note": "Staging contains exactly: 827 suspect file deletions, 2 memory restorations, 6 new evidence files. No protected paths outside memory were touched."
+}

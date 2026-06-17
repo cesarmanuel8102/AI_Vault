@@ -1,2 +1,0 @@
-# preflight
-Inherited macro baseline.

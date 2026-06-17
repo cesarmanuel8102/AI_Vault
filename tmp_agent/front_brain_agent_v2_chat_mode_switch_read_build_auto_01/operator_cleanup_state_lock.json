@@ -1,0 +1,12 @@
+{
+  "phase": "1",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "2c43ea4",
+  "remote_head": "2c43ea4",
+  "local_equals_remote": true,
+  "staged_empty": true,
+  "working_tree_clean": true,
+  "status": "LOCK_VERIFIED_OPERATOR_APPROVED_CLEANUP",
+  "date": "2026-06-17T06:XX:XX+00:00",
+  "note": "Operator approved cleanup of bad commit 52e83ec. Ready to proceed."
+}

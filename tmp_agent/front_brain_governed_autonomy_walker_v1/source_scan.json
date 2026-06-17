@@ -1,5 +1,0 @@
-{
-  "adapter_imports_handle_user_message": true,
-  "adapter_calls_handle_user_message": true,
-  "adapter_direct_llm_query": false
-}

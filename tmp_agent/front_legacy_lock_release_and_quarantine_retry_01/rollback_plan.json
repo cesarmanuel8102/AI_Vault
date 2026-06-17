@@ -1,9 +1,0 @@
-{
-  "schema_version": "front_legacy_lock_release_and_quarantine_retry_01_rollback_plan_v1",
-  "generated_at_utc": "2026-06-12T04:00:57.598410+00:00",
-  "rename_success": false,
-  "rollback_possible": false,
-  "current_rollback_required": false,
-  "reason": "rename never succeeded",
-  "rollback_action": null
-}

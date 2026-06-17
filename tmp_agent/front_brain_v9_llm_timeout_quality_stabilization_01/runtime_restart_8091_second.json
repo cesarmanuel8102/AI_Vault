@@ -1,8 +1,0 @@
-{
-  "stopped_pid": 241648,
-  "new_pid": 250484,
-  "stdout": "C:\\AI_VAULT_CANONICAL\\tmp_agent\\front_brain_v9_llm_timeout_quality_stabilization_01\\brain_v9_8091_stdout_2.log",
-  "checked_at_utc": "2026-06-12T08:20:47.0482689Z",
-  "port": 8091,
-  "stderr": "C:\\AI_VAULT_CANONICAL\\tmp_agent\\front_brain_v9_llm_timeout_quality_stabilization_01\\brain_v9_8091_stderr_2.log"
-}

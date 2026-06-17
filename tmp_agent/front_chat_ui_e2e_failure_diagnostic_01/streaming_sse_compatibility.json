@@ -1,9 +1,0 @@
-{
-  "results": [
-    {
-      "status": "NOT_TESTED_ROUTE_UNAVAILABLE",
-      "reason": "/v1/chat/completions not discovered"
-    }
-  ],
-  "streaming_compatible": false
-}

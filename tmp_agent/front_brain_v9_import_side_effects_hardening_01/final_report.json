@@ -1,9 +1,0 @@
-{
-  "status": "IMPORT_TESTCLIENT_SIDE_EFFECT_GUARD_CREATED",
-  "side_effect_reproduced": false,
-  "github_knowledge_diff_after_import": false,
-  "memory_mutated": false,
-  "faiss_mutated": false,
-  "trading_touched": false,
-  "legacy_touched": false
-}
