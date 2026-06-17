@@ -4248,5 +4248,45 @@
     "recommendation": "Reiniciar Windows para liberar socket TCP fantasma en 8092, luego ejecutar scripts/restart_dashboard_8092_agent_v2.ps1",
     "evidence_path": "tmp_agent/front_brain_agent_v2_8092_dashboard_dogfood_closeout_01"
   },
+  "front_brain_agent_v2_mandatory_multitool_planner_hotfix_01": {
+    "status": "done_pending_commit",
+    "front": "FRONT-BRAIN-AGENT-V2-MANDATORY-MULTITOOL-PLANNER-HOTFIX-01",
+    "root_cause": "planner_keyword_misclassification_no_mandatory_multitool_class",
+    "fix": {
+      "mandatory_parser": "tmp_agent/brain_v9/core/agent_kernel_v2/mandatory_tools.py - deterministic regex parser",
+      "planner_override": "mandatory_detected=true forces classification=mandatory_multitool and one step per requested check",
+      "finalizer_evidence_contract": "requested vs scheduled vs executed tool distinction added to prompt",
+      "tools_distinction": "Do NOT say unavailable unless gateway lacks capability"
+    },
+    "exact_retest": {
+      "run_id": "agv2_712d10fd65b3bfe5",
+      "classification": "mandatory_multitool",
+      "model_used": "kimi-k2.6:cloud",
+      "provider_degraded": false,
+      "tools_executed": 7,
+      "raw_cot": false,
+      "unauthorized_writes": 0
+    },
+    "regression": {
+      "tasks_total": 8,
+      "tasks_passed": 7,
+      "tasks_blocked": 1,
+      "threshold_met": true,
+      "kimi_used_count": 8,
+      "provider_degraded_count": 0
+    },
+    "memory_faiss": {
+      "semantic_lines": 1732,
+      "faiss_ids": 1633,
+      "faiss_ntotal": 1633,
+      "unchanged": true
+    },
+    "scripts_created": [],
+    "docs_created": [
+      "docs/BRAIN_AGENT_RUNTIME_CONTRACT_V2.md"
+    ],
+    "evidence_path": "tmp_agent/front_brain_agent_v2_mandatory_multitool_planner_hotfix_01",
+    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-TRACE-EVENT-PERSISTENCE-01"
+  },
   "last_functional_agent_v2_closeout_commit": "3f6fc8d"
 }

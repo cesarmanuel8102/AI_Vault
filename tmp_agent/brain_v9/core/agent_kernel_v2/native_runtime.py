@@ -52,12 +52,13 @@ class NativeAgentRuntimeV2:
 
     def plan_run(self, run_id: str) -> Dict[str, Any]:
         run = self._load_run(run_id)
-        classification, plan = build_plan(run["goal"], run.get("mode", "read_only"))
+        classification, plan, metadata = build_plan(run["goal"], run.get("mode", "read_only"))
         run["classification"] = classification
         run["plan"] = plan
+        run["metadata"] = metadata
         run["status"] = "planned"
         self._save_run(run)
-        self._trace(run_id, "plan_created", "Plan created", {"step_count": len(plan), "classification": classification})
+        self._trace(run_id, "plan_created", "Plan created", {"step_count": len(plan), "classification": classification, "mandatory": metadata.get("requested_checks", [])})
         return run
 
     def execute_run(self, run_id: str) -> Dict[str, Any]:
@@ -90,7 +91,13 @@ class NativeAgentRuntimeV2:
                 self._trace(run_id, "approval_required", "Write tool blocked pending approval", {"tool": tool})
             else:
                 self._trace(run_id, "tool_call_completed", f"Tool {tool} completed", {"tool": tool, "ok": res.ok, "blocked": res.blocked})
-        final, provider_metadata = finalize_agent_run(run, memory_hits, results)
+        metadata = run.get("metadata", {})
+        final, provider_metadata = finalize_agent_run(
+            run, memory_hits, results,
+            requested_checks=metadata.get("requested_checks", []),
+            scheduled_tools=metadata.get("scheduled_tools", []),
+            executed_tools=[s.get("tool_name") for s in run.get("plan", []) if s.get("status") in ("completed", "blocked") and s.get("tool_name")],
+        )
         run["final_answer"] = final
         run["provider_metadata"] = provider_metadata
         run["provider"] = provider_metadata.get("provider_used", run.get("provider"))

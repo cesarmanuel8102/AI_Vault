@@ -71,7 +71,7 @@ def _structured_fallback(goal: str, mode: str, memory_hits: List[Dict[str, Any]]
     ])
 
 
-def build_finalizer_prompt(run: Dict[str, Any], memory_hits: List[Dict[str, Any]], tool_results: List[Dict[str, Any]]) -> str:
+def build_finalizer_prompt(run: Dict[str, Any], memory_hits: List[Dict[str, Any]], tool_results: List[Dict[str, Any]], requested_checks: List[Dict[str, Any]]|None = None, scheduled_tools: List[str]|None = None, executed_tools: List[str]|None = None) -> str:
     safe_results = []
     for idx, item in enumerate(tool_results[:10], start=1):
         safe_results.append({
@@ -86,20 +86,37 @@ def build_finalizer_prompt(run: Dict[str, Any], memory_hits: List[Dict[str, Any]
     safe_hits = []
     for idx, hit in enumerate(memory_hits[:6], start=1):
         safe_hits.append({"evidence_id": f"memory_{idx}", "preview": _safe_preview(hit, 700)})
+    # Build requested/scheduled/executed distinction
+    tool_distinction = {}
+    if requested_checks:
+        for check in requested_checks:
+            tool_name = check.get("tool_name")
+            if tool_name:
+                tool_distinction[tool_name] = {
+                    "requested": True,
+                    "scheduled": tool_name in (scheduled_tools or []),
+                    "executed": tool_name in (executed_tools or []),
+                    "description": check.get("description", ""),
+                }
+    for tool_name in (scheduled_tools or []):
+        if tool_name not in tool_distinction:
+            tool_distinction[tool_name] = {"requested": False, "scheduled": True, "executed": tool_name in (executed_tools or [])}
     payload = {
         "goal": run.get("goal"),
         "mode": run.get("mode"),
         "classification": run.get("classification"),
         "tool_evidence": safe_results,
         "memory_evidence": safe_hits,
+        "tool_distinction": tool_distinction,
         "safety_constraints": ["no raw chain-of-thought", "no semantic/FAISS writes", "no trading", "write tools approval-gated"],
         "required_format": ["Summary", "Evidence used", "Actions performed", "Risks/gates", "Next safe action"],
+        "mandatory_instruction": "If tools were requested but not scheduled, say 'planner did not schedule requested tool'. If scheduled but failed, say 'tool scheduled but failed'. If executed and blocked, say 'executed and correctly blocked'. If executed and passed, say 'executed and passed'. Do NOT say tools are 'unavailable' unless the tool gateway explicitly lacks that capability.",
     }
-    return "Finalize this Agent V2 run using only this evidence. Cite evidence ids when useful.\n" + json.dumps(payload, ensure_ascii=False, indent=2)
+    return "Finalize this Agent V2 run using only this evidence. Distinguish requested vs scheduled vs executed tools clearly. Do not claim tools are unavailable when they were simply not scheduled.\n" + json.dumps(payload, ensure_ascii=False, indent=2)
 
 
-def finalize_agent_run(run: Dict[str, Any], memory_hits: List[Dict[str, Any]], tool_results: List[Dict[str, Any]]) -> tuple[str, Dict[str, Any]]:
-    prompt = build_finalizer_prompt(run, memory_hits, tool_results)
+def finalize_agent_run(run: Dict[str, Any], memory_hits: List[Dict[str, Any]], tool_results: List[Dict[str, Any]], requested_checks: List[Dict[str, Any]]|None = None, scheduled_tools: List[str]|None = None, executed_tools: List[str]|None = None) -> tuple[str, Dict[str, Any]]:
+    prompt = build_finalizer_prompt(run, memory_hits, tool_results, requested_checks, scheduled_tools, executed_tools)
     meta = FinalizerMetadata(provider_attempted=[])
     started = time.perf_counter()
     models = [PRIMARY_KIMI_MODEL] + FALLBACK_MODELS

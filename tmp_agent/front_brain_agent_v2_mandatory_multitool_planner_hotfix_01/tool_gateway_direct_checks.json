@@ -1,0 +1,13 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-MANDATORY-MULTITOOL-PLANNER-HOTFIX-01",
+  "timestamp_utc": "2026-06-17T01:00:00+00:00",
+  "checks": [
+    {"tool": "route_probe", "url": "http://127.0.0.1:8091/v2/agent/status", "status": "ok", "result": "200"},
+    {"tool": "route_probe", "url": "http://127.0.0.1:8091/v2/agent/capabilities", "status": "ok", "result": "200"},
+    {"tool": "grep_search", "pattern": "kimi-k2.6", "status": "ok", "matches_count": ">0"},
+    {"tool": "grep_search", "pattern": "/v2/chat/agent", "status": "ok", "matches_count": ">0"},
+    {"tool": "semantic_retrieve", "query": "FAISS governance", "status": "ok", "hits_count": ">0"},
+    {"tool": "file_read", "path": ".env", "status": "blocked", "reason": "path_blocked"},
+    {"tool": "file_patch_apply_approval_required", "path": "README.md", "status": "blocked", "reason": "approval_required"}
+  ]
+}

@@ -1,10 +1,12 @@
 from __future__ import annotations
 from typing import Any, Dict, List
 
+from .mandatory_tools import parse_mandatory_tool_requests
+
 PLANNER_CLASSES = [
     "repo_audit", "code_search", "endpoint_probe", "memory_question", "dashboard_diagnosis",
     "provider_diagnosis", "frontend_diagnosis", "smoke_test", "documentation_task",
-    "safe_patch_dry_run", "approval_required_write", "general_reasoning",
+    "safe_patch_dry_run", "approval_required_write", "general_reasoning", "mandatory_multitool",
 ]
 
 
@@ -35,11 +37,51 @@ def classify_goal(goal: str, mode: str = "read_only") -> str:
     return "general_reasoning"
 
 
-def build_plan(goal: str, mode: str = "read_only") -> tuple[str, List[Dict[str, Any]]]:
+def build_plan(goal: str, mode: str = "read_only") -> tuple[str, List[Dict[str, Any]], Dict[str, Any]]:
+    """Build plan. Returns (classification, plan_list, metadata_dict)."""
+    # Check for mandatory multi-tool requests first
+    mandatory = parse_mandatory_tool_requests(goal)
+    plan: List[Dict[str, Any]] = []
+    metadata: Dict[str, Any] = {"requested_checks": [], "scheduled_tools": [], "executed_tools": []}
+
+    def add(step_id, kind, title, tool, args, requested_by_user=False):
+        entry = {
+            "step_id": step_id,
+            "kind": kind,
+            "title": title,
+            "status": "planned",
+            "tool_name": tool,
+            "input": args,
+        }
+        if requested_by_user:
+            entry["requested_by_user"] = True
+            entry["expected"] = "ok"
+        plan.append(entry)
+        if tool and tool not in metadata["scheduled_tools"]:
+            metadata["scheduled_tools"].append(tool)
+
+    if mandatory["mandatory_detected"]:
+        classification = "mandatory_multitool"
+        add("plan", "plan", f"Classify goal as {classification} (mandatory multi-tool)", None, {})
+        # Add each requested check as a dedicated step
+        for check in mandatory["requested_checks"]:
+            add(
+                check.get("check_id", f"mandatory_{len(plan)}"),
+                "tool",
+                check.get("description", f"Run {check['tool_name']}"),
+                check["tool_name"],
+                check.get("input", {}),
+                requested_by_user=True,
+            )
+            metadata["requested_checks"].append(check)
+        # Always add a final consolidation step
+        add("mandatory_summary", "summary", "Consolidate mandatory multi-tool results", None, {})
+        return classification, plan, metadata
+
+    # Fallback to keyword-driven classification
     classification = classify_goal(goal, mode)
-    plan: List[Dict[str, Any]] = [{"step_id": "plan", "kind": "plan", "title": f"Classify goal as {classification}", "status": "planned"}]
-    def add(step_id, kind, title, tool, args):
-        plan.append({"step_id": step_id, "kind": kind, "title": title, "status": "planned", "tool_name": tool, "input": args})
+    add("plan", "plan", f"Classify goal as {classification}", None, {})
+
     if classification in {"memory_question", "provider_diagnosis", "dashboard_diagnosis", "general_reasoning"}:
         add("retrieve", "memory", "Read-only semantic retrieval", "semantic_retrieve", {"query": goal, "top_k": 4})
     if classification in {"repo_audit", "dashboard_diagnosis", "provider_diagnosis", "general_reasoning"}:
@@ -63,4 +105,5 @@ def build_plan(goal: str, mode: str = "read_only") -> tuple[str, List[Dict[str, 
         add("blocked_write", "tool", "Verify write gate", "file_patch_apply_approval_required", {"path": "README.md", "patch": "approval gate probe"})
     if len(plan) == 1:
         add("retrieve", "memory", "Read-only semantic retrieval", "semantic_retrieve", {"query": goal, "top_k": 3})
-    return classification, plan
+
+    return classification, plan, metadata

@@ -1,0 +1,26 @@
+{
+  "timestamp": "2026-06-17T00:35:35Z",
+  "result": {
+    "status": 200,
+    "ok": true,
+    "run_id": "agv2_712d10fd65b3bfe5",
+    "classification": "mandatory_multitool",
+    "model_used": "kimi-k2.6:cloud",
+    "provider_degraded": false,
+    "final_answer": "## Summary\n\nMandatory multitool test completed. All 7 requested checks were scheduled and executed. 6 passed; 1 returned low-relevance results due to memory content mismatch, not tool failure.\n\n---\n\n## Evidence Used\n\n| # | Check | Tool | Status | Key Result |\n|---|-------|------|--------|-----------|\n| 1 | Probe `/v2/agent/status` | `route_probe` | **Executed and passed** | HTTP 200; `ok:true`, `canonical_for_new_agent_runs:true`, `primary_finalizer_model:\"kimi-k2.6:cloud\"`, `langgraph_used:true`, `checkpointed:true` |\n| 2 | Probe `/v2/agent/capabilities` | `route_probe` | **Executed and passed** | HTTP 200; `canonical:true`, `backend:\"langgraph\"`, `primary_finalizer_model:\"kimi-k2.6:cloud\"`, 11 planner classes listed, `repo_status_read` and `file_read` confirmed as low-risk read-only capa",
+    "step_count": null,
+    "provider_metadata": {
+      "provider_attempted": [
+        "ollama:kimi-k2.6:cloud"
+      ],
+      "provider_used": "ollama_cloud",
+      "model_used": "kimi-k2.6:cloud",
+      "provider_degraded": false,
+      "fallback_reason": "none",
+      "latency_ms": 5876,
+      "kimi_available": true,
+      "raw_cot_exposed": false
+    }
+  },
+  "run_id": "agv2_712d10fd65b3bfe5"
+}

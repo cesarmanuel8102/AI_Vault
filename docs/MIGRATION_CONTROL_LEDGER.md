@@ -8876,3 +8876,29 @@ FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01 -- requires explicit 
 - evidence_path: tmp_agent/front_brain_agent_v2_8092_dashboard_dogfood_closeout_01
 - recommendation: Reiniciar Windows para liberar socket TCP fantasma en 8092, luego ejecutar scripts/restart_dashboard_8092_agent_v2.ps1
 - next: WINDOWS_REBOOT_THEN_8092_DASHBOARD_RESTART
+
+## FRONT-BRAIN-AGENT-V2-MANDATORY-MULTITOOL-PLANNER-HOTFIX-01 — Mandatory Multi-Tool Planner Fix
+
+- timestamp_utc: 2026-06-17T01:05:00Z
+- branch: codex/own-capital-sustainable-return
+- start_head: 0cebb6b
+- root_cause: planner_keyword_misclassification_no_mandatory_multitool_class
+- fix:
+  - mandatory_parser: tmp_agent/brain_v9/core/agent_kernel_v2/mandatory_tools.py - deterministic regex parser
+  - planner_override: mandatory_detected=true forces classification=mandatory_multitool and one step per requested check
+  - finalizer_evidence_contract: requested vs scheduled vs executed tool distinction added to prompt
+  - tools_distinction: Do NOT say unavailable unless gateway lacks capability
+- exact_retest:
+  - run_id: agv2_712d10fd65b3bfe5
+  - classification: mandatory_multitool (fixed from repo_audit)
+  - model: kimi-k2.6:cloud
+  - provider_degraded: false
+  - tools_executed: 7/7
+  - final_answer: detailed table with requested/scheduled/executed distinction
+  - raw_cot: false
+  - unauthorized_writes: 0
+- regression: 8 tasks, 7 passed, 1 correctly blocked, threshold_met=true
+- memory_faiss: unchanged (1732 lines, 1633 ids, 1633 ntotal)
+- docs_created: docs/BRAIN_AGENT_RUNTIME_CONTRACT_V2.md
+- evidence_path: tmp_agent/front_brain_agent_v2_mandatory_multitool_planner_hotfix_01
+- next: FRONT-BRAIN-AGENT-V2-TRACE-EVENT-PERSISTENCE-01
