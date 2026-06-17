@@ -60,3 +60,17 @@ tr:hover{background:#0e141a}
 .alert.yellow{background:#4d3b1a;color:#f0d07a}
 .alert.red{background:#4d1a1a;color:#f07a7a}
 .safety-msg{margin-top:12px;padding:10px 12px;border-radius:8px;background:#1a2d1a;color:#7af0a8;font-size:.9rem}
+
+/* ── Execution Trace Panel ── */
+.trace-panel{background:#0e141a;border:1px solid #31434f;border-radius:10px;margin-top:10px;overflow:hidden}
+.trace-header{display:flex;align-items:center;gap:6px;padding:8px 12px;background:#121820;cursor:pointer;font-size:.85rem;color:#e8f0f2;border-bottom:1px solid #31434f}
+.trace-body{max-height:1200px;overflow:auto;transition:max-height .4s ease;padding:10px 12px}
+.trace-body.collapsed{max-height:0;padding:0 12px;overflow:hidden}
+.trace-table{width:100%;border-collapse:collapse;font-size:.8rem;margin-bottom:8px}
+.trace-table td{padding:4px 6px;border-bottom:1px solid #1f2e38}
+.trace-table td:first-child{width:130px;color:#8a9aab;font-weight:700}
+.trace-subsection{margin-top:6px;padding:6px 8px;background:#141c24;border-radius:6px;font-size:.8rem;border:1px solid #1f2e38}
+.trace-subsection strong{display:block;margin-bottom:4px;font-size:.85rem;color:#8fd3ff}
+.trace-loading{color:#8a9aab;font-style:italic}
+.trace-btn{display:inline-block;padding:4px 10px;background:#8fd3ff;color:#071017;border-radius:6px;text-decoration:none;font-size:.8rem;font-weight:700}
+.trace-btn:hover{opacity:.92}

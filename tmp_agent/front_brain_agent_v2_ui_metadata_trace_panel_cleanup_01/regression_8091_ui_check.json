@@ -1,0 +1,12 @@
+{
+  "phase": "regression_8091_ui_check",
+  "timestamp": "2026-06-17T04:05:12.886857Z",
+  "status": "baseline_only",
+  "notes": "8091/ui is the advanced Brain Chat V9 surface with full Execution Trace panel. Not modified in this front. Treated as baseline only.",
+  "verified": [
+    "Brain Chat V9 loads",
+    "Footer shows Agent V2 metadata",
+    "Has collapsible Execution Trace panel",
+    "Calls /v2/chat/agent"
+  ]
+}

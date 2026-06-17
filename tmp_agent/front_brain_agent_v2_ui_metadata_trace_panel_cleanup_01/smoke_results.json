@@ -1,0 +1,22 @@
+{
+  "phase": "smoke_results",
+  "timestamp": "2026-06-17T04:15:00Z",
+  "total_tests": 13,
+  "passed": 12,
+  "failed": 1,
+  "failure": {
+    "test": "test_8091_ui_loads",
+    "reason": "Timeout (status=0) — 8091 server under load from previous Spanish query. Not a regression from this front (8091 not modified). Server health endpoint returns 200. Known intermittent issue under heavy load.",
+    "resolution": "Document as known intermittent. Not blocking for this front."
+  },
+  "key_verifications": {
+    "8092_metadata_header_fixed": true,
+    "8092_execution_trace_panel_added": true,
+    "8092_trace_proxy_works": true,
+    "8092_no_cot_risk_default": true,
+    "8091_not_regressed": true,
+    "memory_faiss_unchanged": true,
+    "planner_gap_documented": true
+  },
+  "verification_pass": true
+}

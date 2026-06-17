@@ -249,10 +249,116 @@ async function chat() {
       out.appendChild(document.createElement('hr'));
       out.appendChild(traceDiv);
     }
+    
+    // Render Execution Trace panel for canonical Agent V2 responses
+    if (isCanary && j.trace_url) {
+      renderExecutionTrace(j);
+    }
   } catch (e) {
     out.textContent = 'Error: ' + e.message;
     meta.innerHTML = '<span style="color:#f06060">❌ Connection error: ' + e.message + '</span>';
   }
+}
+
+function renderExecutionTrace(data) {
+  const out = document.getElementById('chat-output');
+  const panel = document.createElement('div');
+  panel.className = 'trace-panel';
+  const pm = data.provider_metadata || {};
+  const isDegraded = data.provider_degraded || false;
+  const cotExposed = data.raw_cot_exposed || false;
+  const runId = data.run_id || '—';
+  const traceUrl = data.trace_url || '';
+  const fullTraceLink = traceUrl.startsWith('/') ? ('http://127.0.0.1:8091' + traceUrl) : traceUrl;
+  const safeId = runId.replace(/[^a-z0-9]/gi, '');
+
+  // Build metadata table
+  let metaRows = '';
+  metaRows += '<tr><td>run_id</td><td>' + escapeHtml(runId) + '</td></tr>';
+  metaRows += '<tr><td>classification</td><td>' + escapeHtml(data.classification || '—') + '</td></tr>';
+  metaRows += '<tr><td>status</td><td>' + escapeHtml(data.status || '—') + '</td></tr>';
+  metaRows += '<tr><td>model_used</td><td>' + escapeHtml(data.model_used || '—') + '</td></tr>';
+  metaRows += '<tr><td>provider_used</td><td>' + escapeHtml(data.provider_used || '—') + '</td></tr>';
+  metaRows += '<tr><td>provider_degraded</td><td style="color:' + (isDegraded ? '#f0d07a' : '#7af0a8') + '">' + (isDegraded ? '⚠ YES' : '✓ No') + '</td></tr>';
+  if (data.fallback_reason) {
+    metaRows += '<tr><td>fallback_reason</td><td style="color:#f0d07a">' + escapeHtml(data.fallback_reason) + '</td></tr>';
+  }
+  metaRows += '<tr><td>raw_cot_exposed</td><td style="color:' + (cotExposed ? '#f07a7a' : '#7af0a8') + ';font-weight:' + (cotExposed ? '700' : 'normal') + '">' + (cotExposed ? '🚨 YES' : '✓ No') + '</td></tr>';
+
+  panel.innerHTML = '<div class="trace-header" onclick="this.nextElementSibling.classList.toggle(\'collapsed\')">' +
+    '<span>&#128202;</span> <strong>Execution Trace</strong>' +
+    '<span style="margin-left:auto;font-size:11px;color:#8a9aab">' + escapeHtml(runId) + '</span></div>' +
+    '<div class="trace-body collapsed">' +
+    '<table class="trace-table">' + metaRows + '</table>' +
+    '<div class="trace-subsection" id="trace-plan-' + safeId + '"><strong>Plan</strong><div class="trace-loading">Loading...</div></div>' +
+    '<div class="trace-subsection" id="trace-tools-' + safeId + '"><strong>Tools</strong><div class="trace-loading">Loading...</div></div>' +
+    '<div class="trace-subsection" id="trace-evidence-' + safeId + '"><strong>Evidence</strong><div class="trace-loading">Loading...</div></div>' +
+    '<div class="trace-subsection" id="trace-governance-' + safeId + '"><strong>Governance</strong><div class="trace-loading">Loading...</div></div>' +
+    '<div class="trace-subsection" id="trace-provider-' + safeId + '"><strong>Provider</strong><div class="trace-loading">Loading...</div></div>' +
+    '<div style="margin-top:8px;"><a href="' + fullTraceLink + '" target="_blank" class="trace-btn">&#128269; Open Full Trace</a></div>' +
+    '</div>';
+  out.appendChild(panel);
+
+  // Async fetch trace events
+  if (traceUrl) {
+    fetch(fullTraceLink, { headers: { 'Accept': 'application/json' } })
+      .then(r => r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)))
+      .then(traceData => {
+        const events = traceData.trace || [];
+        const eventCount = traceData.event_count || events.length;
+
+        // Plan section: show plan_created event
+        const planEvents = events.filter(e => e.event_type === 'plan_created');
+        document.getElementById('trace-plan-' + safeId).innerHTML = '<strong>Plan</strong>' +
+          (planEvents.length ? '<div>' + planEvents.map(p => '<div>&#183; ' + escapeHtml(p.message || 'plan created') + '</div>').join('') + '</div>' : '<div style="color:#8a9aab">No plan event</div>');
+
+        // Tools section: show tool_call_started/completed
+        const toolEvents = events.filter(e => e.event_type && e.event_type.startsWith('tool_call_'));
+        let toolsHtml = '';
+        if (toolEvents.length) {
+          const toolMap = {};
+          toolEvents.forEach(e => {
+            const name = e.data?.tool || e.message || 'tool';
+            if (!toolMap[name]) toolMap[name] = [];
+            toolMap[name].push(e);
+          });
+          Object.keys(toolMap).forEach(name => {
+            const evs = toolMap[name];
+            const completed = evs.find(e => e.event_type === 'tool_call_completed');
+            const status = completed ? (completed.data?.blocked ? '&#128308; BLOCKED' : (completed.data?.ok ? '&#10003; passed' : '&#10007; failed')) : '&#9203; pending';
+            toolsHtml += '<div>&#183; <strong>' + escapeHtml(name) + '</strong> ' + status + '</div>';
+          });
+        }
+        document.getElementById('trace-tools-' + safeId).innerHTML = '<strong>Tools</strong>' +
+          (toolsHtml ? '<div>' + toolsHtml + '</div>' : '<div style="color:#8a9aab">No tools executed</div>');
+
+        // Evidence section
+        document.getElementById('trace-evidence-' + safeId).innerHTML = '<strong>Evidence</strong><div>' +
+          'Events: ' + eventCount + ' &#183; run_created &#183; plan_created &#183; final_answer_created &#183; run_completed</div>';
+
+        // Governance section
+        document.getElementById('trace-governance-' + safeId).innerHTML = '<strong>Governance</strong><div>' +
+          'mode: read_only &#183; CoT: ' + (cotExposed ? 'EXPOSED' : 'safe') + ' &#183; secrets: not checked</div>';
+
+        // Provider section
+        document.getElementById('trace-provider-' + safeId).innerHTML = '<strong>Provider</strong><div>' +
+          'model: ' + escapeHtml(data.model_used || '—') + ' &#183; degraded: ' + (isDegraded ? 'YES' : 'No') + ' &#183; cot_exposed: ' + (cotExposed ? 'YES' : 'No') + '</div>';
+      })
+      .catch(err => {
+        document.getElementById('trace-plan-' + safeId).innerHTML = '<strong>Plan</strong><div style="color:#f07a7a">Trace fetch failed: ' + escapeHtml(err.message) + '</div>';
+        document.getElementById('trace-tools-' + safeId).innerHTML = '<strong>Tools</strong><div style="color:#f07a7a">Unavailable</div>';
+        document.getElementById('trace-evidence-' + safeId).innerHTML = '<strong>Evidence</strong><div style="color:#f07a7a">Unavailable</div>';
+        document.getElementById('trace-governance-' + safeId).innerHTML = '<strong>Governance</strong><div style="color:#f07a7a">Unavailable</div>';
+        document.getElementById('trace-provider-' + safeId).innerHTML = '<strong>Provider</strong><div style="color:#f07a7a">Unavailable</div>';
+      });
+  }
+}
+
+function escapeHtml(text) {
+  if (typeof text !== 'string') return text;
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 refresh();

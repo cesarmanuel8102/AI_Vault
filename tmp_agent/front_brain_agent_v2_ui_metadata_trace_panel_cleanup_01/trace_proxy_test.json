@@ -1,0 +1,13 @@
+{
+  "phase": "trace_proxy_test",
+  "timestamp": "2026-06-17T04:05:12.886857Z",
+  "8092_proxy_url": "http://127.0.0.1:8092/brain-dashboard/agent-v2/runs/agv2_ed78e393da394685/trace",
+  "8092_status": 200,
+  "8092_ok": true,
+  "8091_direct_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_ed78e393da394685/trace",
+  "8091_status": 200,
+  "event_count": 6,
+  "same_run_id": true,
+  "raw_cot_found": false,
+  "secrets_found": false
+}

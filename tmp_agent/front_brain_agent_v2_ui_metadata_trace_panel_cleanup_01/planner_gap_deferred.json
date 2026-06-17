@@ -1,0 +1,13 @@
+{
+  "phase": "planner_gap_deferred",
+  "timestamp": "2026-06-17T04:05:12.886857Z",
+  "gaps": [
+    "list_recent_brain_changes requested but not scheduled",
+    "get_live_autonomy_status requested/implied but not scheduled",
+    "check_service_status not scheduled",
+    "get_autonomy_phase not scheduled",
+    "planner falls back to semantic_retrieve + repo_status_read too often"
+  ],
+  "decision": "NOT fixed in this front. Deferred to FRONT-BRAIN-AGENT-V2-SPECIFIC-TOOL-SCHEDULING-FIX-01",
+  "rationale": "This front is strictly UI metadata/trace panel cleanup only. Planner scheduling is a separate concern."
+}

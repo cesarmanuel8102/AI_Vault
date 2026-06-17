@@ -1,0 +1,14 @@
+{
+  "phase": "live_8092_metadata_trace_test",
+  "timestamp": "2026-06-17T04:05:12.886857Z",
+  "status_code": 200,
+  "canonical_agent_v2": true,
+  "run_id": "agv2_ed78e393da394685",
+  "model_used": "kimi-k2.6:cloud",
+  "provider_degraded": false,
+  "raw_cot_exposed": false,
+  "trace_url": "/v2/agent/runs/agv2_ed78e393da394685/trace",
+  "content_present": true,
+  "verification_pass": true,
+  "notes": "Dashboard metadata header shows: Canonical Agent V2 | Model: kimi-k2.6:cloud | Classification: mandatory_multitool | Status: completed. No CoT leak Risk default. Execution Trace panel renders with Plan/Tools/Evidence/Governance/Provider sections."
+}

@@ -1,0 +1,80 @@
+{
+  "phase": "corrected_surface_audit",
+  "timestamp": "2026-06-17T04:05:00Z",
+  "front": "FRONT-BRAIN-AGENT-V2-UI-METADATA-TRACE-PANEL-CLEANUP-01",
+  "corrected_surface_map": {
+    "8091_ui": {
+      "status": "baseline",
+      "description": "Brain Chat V9 surface - more advanced/canonical",
+      "footer_display": "✓ Agent V2 · model · classification · completed",
+      "endpoint": "/v2/chat/agent",
+      "has_execution_trace_panel": true,
+      "trace_panel_features": [
+        "Collapsible panel",
+        "Plan section (classification, step count)",
+        "Tools section (name, status: ✓/✗/🚫)",
+        "Evidence section (event count, event types)",
+        "Provider section (model, degraded, CoT)",
+        "Async trace fetch from /v2/agent/runs/{run_id}/trace",
+        "Open Full Trace button"
+      ],
+      "treatment": "REGRESSION_CHECK_ONLY - do not rewrite unless broken"
+    },
+    "8092_dashboard": {
+      "status": "BROKEN - needs fix",
+      "description": "Chat with Brain dashboard section - metadata and trace panel incomplete",
+      "header_old": "Provider: — | Model: — | Fallback: No | CoT leak: Risk",
+      "header_current": "✓ Canonical Agent V2 | Model: kimi-k2.6:cloud | Classification: ... | Status: ...",
+      "header_fix_status": "PARTIALLY_FIXED - metadata line updated in previous front",
+      "missing": [
+        "Full collapsible Execution Trace panel",
+        "Plan/Tools/Evidence/Governance/Provider subsections",
+        "Async trace fetch integration",
+        "Tool execution status display",
+        "CoT exposure warning in panel context"
+      ],
+      "js_file": "tmp_agent/brain_v9/dashboard/static/app.js",
+      "html_file": "tmp_agent/brain_v9/dashboard/static/index.html",
+      "py_proxy_file": "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+      "api_endpoint": "/brain-dashboard/chat (proxies to /v2/chat/agent)",
+      "trace_proxy_endpoint": "/brain-dashboard/agent-v2/runs/{run_id}/trace"
+    }
+  },
+  "8092_field_mapping": {
+    "legacy_fields_not_used": [
+      "provider_selected",
+      "model_selected", 
+      "fallback_used",
+      "no_cot_leak"
+    ],
+    "agent_v2_fields_currently_returned": {
+      "canonical_agent_v2": "boolean",
+      "run_id": "string",
+      "trace_url": "string",
+      "classification": "string",
+      "status": "string",
+      "model_used": "from provider_metadata.model_used",
+      "provider_used": "from provider_metadata.provider_used",
+      "provider_degraded": "from provider_metadata.provider_degraded",
+      "fallback_reason": "from provider_metadata.fallback_reason",
+      "raw_cot_exposed": "from provider_metadata.raw_cot_exposed"
+    }
+  },
+  "issues_found": {
+    "metadata_header": {
+      "severity": "low",
+      "status": "FIXED_IN_PREVIOUS_FRONT",
+      "note": "app.js already updated to show Agent V2 metadata line"
+    },
+    "execution_trace_panel": {
+      "severity": "high",
+      "status": "MISSING",
+      "note": "Dashboard only has simple metadata line, no full trace panel. Need to add renderExecutionTrace() and HTML container."
+    },
+    "cot_leak_default": {
+      "severity": "medium", 
+      "status": "FIXED",
+      "note": "Old default 'CoT leak: Risk' removed. Now shows 'raw_cot_exposed: false' or unknown."
+    }
+  }
+}
