@@ -132,6 +132,11 @@ BRAIN_CHAT_DEV_MODE = os.getenv("BRAIN_CHAT_DEV_MODE", "false").lower() == "true
 BRAIN_ENABLE_FINANCIAL_AUTOCYCLE = (
     os.getenv("BRAIN_ENABLE_FINANCIAL_AUTOCYCLE", "false").lower() == "true"
 )
+# REDISEÑO-2026-06-17: Feature flag para clasificación de evidence sources vía LLM
+# Cuando está activo, get_evidence_sources() consulta al LLM en lugar de hacer keyword matching.
+BRAIN_USE_LLM_INTENT_CLASSIFIER = (
+    os.getenv("BRAIN_USE_LLM_INTENT_CLASSIFIER", "false").lower() == "true"
+)
 
 # ─── Carga segura de secrets desde archivos JSON ──────────────────────────────
 def _load_secret(path: Path, key: str = "token") -> str:

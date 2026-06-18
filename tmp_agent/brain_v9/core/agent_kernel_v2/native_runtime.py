@@ -8,7 +8,7 @@ from .finalizer import finalize_agent_run
 from .planner import build_plan
 from .schemas import AgentRun, AgentTraceEvent, ToolCallRequest, to_dict, utc_now
 from .state import RUN_ROOT, CANONICAL_AGENT_VERSION
-from .tool_gateway import ToolGatewayV2
+from .tool_gateway import ToolGatewayV2, ROOT as REPO_ROOT
 from .trace import TraceStore
 from .intent_adapter import AgentV2IntentAdapter
 
@@ -107,8 +107,24 @@ class NativeAgentRuntimeV2:
             run["evidence_sources"] = evidence_sources
             
             # Build minimal deterministic plan
+            def _resolve_evidence_paths(src_paths: List[str], src_type: str) -> List[str]:
+                """Resolve evidence source paths, expanding globs to real files."""
+                resolved = []
+                for raw_path in (src_paths or []):
+                    if "*" in raw_path or "?" in raw_path:
+                        matches = sorted(
+                            [p for p in REPO_ROOT.glob(raw_path) if p.is_file()],
+                            key=lambda p: p.stat().st_mtime,
+                            reverse=True,
+                        )
+                        resolved.extend(str(m) for m in matches[:3])
+                    else:
+                        resolved.append(raw_path)
+                return resolved
+
             plan = []
             for src in evidence_sources:
+                resolved_paths = _resolve_evidence_paths(src.get("paths"), src["type"])
                 for tool in src["tools"]:
                     if tool == "repo_status_read":
                         plan.append({"step_id": f"repo_status_{src['type']}", "kind": "tool", "title": "Read repository status", "status": "planned", "tool_name": "repo_status_read", "input": {}})
@@ -116,8 +132,11 @@ class NativeAgentRuntimeV2:
                         pattern = src.get("grep_pattern", "agent|brain|kernel")
                         plan.append({"step_id": f"grep_{src['type']}", "kind": "tool", "title": "Search relevant files", "status": "planned", "tool_name": "grep_search", "input": {"pattern": pattern, "glob": "*.py"}})
                     elif tool == "file_read":
-                        representative_path = src["paths"][0] if src.get("paths") else "docs/MIGRATION_CONTROL_LEDGER.md"
-                        plan.append({"step_id": f"file_{src['type']}", "kind": "tool", "title": "Read evidence file", "status": "planned", "tool_name": "file_read", "input": {"path": representative_path}})
+                        if not resolved_paths:
+                            plan.append({"step_id": f"file_{src['type']}_unresolved", "kind": "note", "title": f"No files matched pattern for {src['type']}", "status": "completed", "tool_name": None, "input": {}, "output": {"matches": 0, "pattern": src.get("paths", [])}})
+                        else:
+                            for idx, path in enumerate(resolved_paths):
+                                plan.append({"step_id": f"file_{src['type']}_match_{idx}", "kind": "tool", "title": f"Read evidence file ({src['type']}) — match {idx+1}/{len(resolved_paths)}", "status": "planned", "tool_name": "file_read", "input": {"path": path}})
                     elif tool == "repo_history_read":
                         plan.append({"step_id": f"repo_history_{src['type']}", "kind": "tool", "title": "Read repository history", "status": "planned", "tool_name": "repo_history_read", "input": {"path": "tmp_agent/brain_v9", "limit": 10}})
             
