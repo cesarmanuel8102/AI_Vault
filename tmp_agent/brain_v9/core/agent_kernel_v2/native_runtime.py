@@ -156,6 +156,12 @@ class NativeAgentRuntimeV2:
                         else:
                             for idx, path in enumerate(resolved_paths):
                                 plan.append({"step_id": f"file_{src['type']}_match_{idx}", "kind": "tool", "title": f"Read evidence file ({src['type']}) — match {idx+1}/{len(resolved_paths)}", "status": "planned", "tool_name": "file_read", "input": {"path": path}})
+                    elif tool == "semantic_retrieve":
+                        # Build query from goal + recent context if available
+                        base_q = run["goal"]
+                        if recent_ctx and recent_ctx.get("prev_goal"):
+                            base_q += " " + str(recent_ctx["prev_goal"])[:120]
+                        plan.append({"step_id": f"semantic_{src['type']}", "kind": "tool", "title": "Retrieve semantic memory", "status": "planned", "tool_name": "semantic_retrieve", "input": {"query": base_q[:200], "top_k": 5}})
                     elif tool == "repo_history_read":
                         plan.append({"step_id": f"repo_history_{src['type']}", "kind": "tool", "title": "Read repository history", "status": "planned", "tool_name": "repo_history_read", "input": {"path": "tmp_agent/brain_v9", "limit": 10}})
             
@@ -210,6 +216,11 @@ class NativeAgentRuntimeV2:
                         plan.append({"step_id": f"repo_status_{src['type']}", "kind": "tool", "title": "Read repository status", "status": "planned", "tool_name": "repo_status_read", "input": {}})
                     elif tool == "grep_search":
                         plan.append({"step_id": f"grep_{src['type']}", "kind": "tool", "title": "Search relevant files", "status": "planned", "tool_name": "grep_search", "input": {"pattern": "agent|brain|kernel", "glob": "*.py"}})
+                    elif tool == "semantic_retrieve":
+                        base_q = run["goal"]
+                        if recent_ctx and recent_ctx.get("prev_goal"):
+                            base_q += " " + str(recent_ctx["prev_goal"])[:120]
+                        plan.append({"step_id": f"semantic_{src['type']}", "kind": "tool", "title": "Retrieve semantic memory", "status": "planned", "tool_name": "semantic_retrieve", "input": {"query": base_q[:200], "top_k": 5}})
             
             run["plan"] = plan
             run["classification"] = "mixed_brain_reasoning"
