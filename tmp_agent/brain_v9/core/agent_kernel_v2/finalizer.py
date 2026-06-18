@@ -72,7 +72,7 @@ def _structured_fallback(goal: str, mode: str, memory_hits: List[Dict[str, Any]]
     ])
 
 
-def build_finalizer_prompt(run: Dict[str, Any], memory_hits: List[Dict[str, Any]], tool_results: List[Dict[str, Any]], requested_checks: List[Dict[str, Any]]|None = None, scheduled_tools: List[str]|None = None, executed_tools: List[str]|None = None, template_override: str|None = None) -> str:
+def build_finalizer_prompt(run: Dict[str, Any], memory_hits: List[Dict[str, Any]], tool_results: List[Dict[str, Any]], requested_checks: List[Dict[str, Any]]|None = None, scheduled_tools: List[str]|None = None, executed_tools: List[str]|None = None, template_override: str|None = None, recent_context: Dict[str, Any]|None = None) -> str:
     safe_results = []
     for idx, item in enumerate(tool_results[:10], start=1):
         safe_results.append({
@@ -130,11 +130,37 @@ def build_finalizer_prompt(run: Dict[str, Any], memory_hits: List[Dict[str, Any]
     payload["memory_evidence"] = safe_hits
     payload["tool_distinction"] = tool_distinction
 
-    return "Finalize this Agent V2 run using only this evidence. Distinguish requested vs scheduled vs executed tools clearly. Do not claim tools are unavailable when they were simply not scheduled.\n" + json.dumps(payload, ensure_ascii=False, indent=2)
+    # Inject session context summary if available
+    if recent_context:
+        ctx = recent_context
+        ctx_lines = ["RECENT SESSION CONTEXT:"]
+        if ctx.get("prev_goal"):
+            ctx_lines.append(f"- Previous user asked: {ctx['prev_goal'][:120]}")
+        if ctx.get("prev_route"):
+            ctx_lines.append(f"- Previous route: {ctx['prev_route']}")
+        if ctx.get("prev_sources"):
+            ctx_lines.append(f"- Previous sources: {', '.join(ctx['prev_sources'][:5])}")
+        if ctx.get("prev_answer"):
+            ctx_lines.append(f"- Previous answer summary: {ctx['prev_answer'][:200]}")
+        if ctx.get("is_follow_up"):
+            ctx_lines.append("- Current message appears to be a FOLLOW-UP. Keep the prior topic unless the user explicitly switches subject.")
+        payload["session_context"] = "\n".join(ctx_lines)
+    else:
+        payload["session_context"] = ""
+
+    prompt_header = (
+        "Finalize this Agent V2 run using only this evidence. "
+        "Distinguish requested vs scheduled vs executed tools clearly. "
+        "Do not claim tools are unavailable when they were simply not scheduled."
+    )
+    if payload.get("session_context"):
+        prompt_header += "\nUse the recent session context below to understand references, but still distinguish current evidence from previous context."
+
+    return prompt_header + "\n" + json.dumps(payload, ensure_ascii=False, indent=2)
 
 
-def finalize_agent_run(run: Dict[str, Any], memory_hits: List[Dict[str, Any]], tool_results: List[Dict[str, Any]], requested_checks: List[Dict[str, Any]]|None = None, scheduled_tools: List[str]|None = None, executed_tools: List[str]|None = None, template_override: str|None = None) -> tuple[str, Dict[str, Any]]:
-    prompt = build_finalizer_prompt(run, memory_hits, tool_results, requested_checks, scheduled_tools, executed_tools, template_override)
+def finalize_agent_run(run: Dict[str, Any], memory_hits: List[Dict[str, Any]], tool_results: List[Dict[str, Any]], requested_checks: List[Dict[str, Any]]|None = None, scheduled_tools: List[str]|None = None, executed_tools: List[str]|None = None, template_override: str|None = None, recent_context: Dict[str, Any]|None = None) -> tuple[str, Dict[str, Any]]:
+    prompt = build_finalizer_prompt(run, memory_hits, tool_results, requested_checks, scheduled_tools, executed_tools, template_override, recent_context)
     meta = FinalizerMetadata(provider_attempted=[])
     started = time.perf_counter()
     models = [PRIMARY_KIMI_MODEL] + FALLBACK_MODELS

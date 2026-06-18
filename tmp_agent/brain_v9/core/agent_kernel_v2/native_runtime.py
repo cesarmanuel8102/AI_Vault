@@ -69,9 +69,27 @@ class NativeAgentRuntimeV2:
     def execute_run(self, run_id: str) -> Dict[str, Any]:
         run = self._load_run(run_id)
         
-        # Intent-based pre-planner gate
+        # Load recent session context for this user
+        from .context_assembler import assemble_recent_context
+        recent_ctx = assemble_recent_context(
+            user_id=run.get("user_id", "local"),
+            current_goal=run["goal"],
+            current_run_id=run_id,
+            max_turns=5,
+            max_chars=3000,
+        )
+        run["session_context"] = {
+            "is_follow_up": recent_ctx.get("is_follow_up", False),
+            "prev_route": recent_ctx.get("prev_route"),
+            "prev_classification": recent_ctx.get("prev_classification"),
+            "prev_sources": recent_ctx.get("prev_sources"),
+            "prev_goal": recent_ctx.get("prev_goal"),
+            "context_summary": recent_ctx.get("summary", "")[:800],
+        }
+        
+        # Intent-based pre-planner gate with context
         adapter = AgentV2IntentAdapter()
-        route_info = adapter.select_route(run["goal"])
+        route_info = adapter.select_route(run["goal"], recent_context=recent_ctx)
         run["intent_route"] = route_info["route"]
         run["intent_detected"] = route_info["intent"]
         run["intent_confidence"] = route_info["confidence"]
@@ -86,6 +104,7 @@ class NativeAgentRuntimeV2:
                 scheduled_tools=[],
                 executed_tools=[],
                 template_override="direct_assistant",
+                recent_context=recent_ctx,
             )
             run["final_answer"] = final
             run["provider_metadata"] = provider_metadata
@@ -163,6 +182,7 @@ class NativeAgentRuntimeV2:
                 scheduled_tools=[s.get("tool_name") for s in plan if s.get("tool_name")],
                 executed_tools=[s.get("tool_name") for s in plan if s.get("status") == "completed"],
                 template_override="brain_evidence",
+                recent_context=recent_ctx,
             )
             run["final_answer"] = final
             run["provider_metadata"] = provider_metadata
@@ -214,6 +234,7 @@ class NativeAgentRuntimeV2:
                 scheduled_tools=[s.get("tool_name") for s in plan if s.get("tool_name")],
                 executed_tools=[s.get("tool_name") for s in plan if s.get("status") == "completed"],
                 template_override="mixed_brain_reasoning",
+                recent_context=recent_ctx,
             )
             run["final_answer"] = final
             run["provider_metadata"] = provider_metadata
@@ -285,6 +306,7 @@ class NativeAgentRuntimeV2:
             requested_checks=metadata.get("requested_checks", []),
             scheduled_tools=metadata.get("scheduled_tools", []),
             executed_tools=[s.get("tool_name") for s in run.get("plan", []) if s.get("status") in ("completed", "blocked") and s.get("tool_name")],
+            recent_context=recent_ctx,
         )
         run["final_answer"] = final
         run["provider_metadata"] = provider_metadata

@@ -266,21 +266,49 @@ class AgentV2IntentAdapter:
         h: List[Dict] = history if history is not None else []
         return self.detector.detect(message, h)
 
-    def select_route(self, message: str, history: Optional[List[Dict]] = None) -> Dict[str, Any]:
+    def select_route(self, message: str, history: Optional[List[Dict]] = None, recent_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         intent, confidence, meta = self.detect_intent(message, history)
         msg_lower = message.lower()
+        route_info = {
+            "intent": intent,
+            "confidence": confidence,
+            "meta": meta,
+        }
 
-        # Brain-specific signals — union of all evidence source contract terms,
-        # tool names, and domain entities. Anything about Brain-local code/evidence
-        # should route here; evidence source selection handles granularity later.
+        # Context-aware routing: follow-up questions inherit prior topic
+        if recent_context and recent_context.get("is_follow_up"):
+            prev_route = recent_context.get("prev_route")
+            prev_sources = recent_context.get("prev_sources")
+            
+            # If previous was Brain-specific and current looks like follow-up,
+            # prefer same route unless user explicitly switches topic
+            if prev_route in {"brain_evidence", "mixed_brain_reasoning", "operational_agent"}:
+                # Check for generic override signals first
+                from .context_assembler import _has_generic_override
+                if not _has_generic_override(message):
+                    route_info["route"] = prev_route
+                    route_info["has_brain_signals"] = True
+                    route_info["has_generic_only"] = False
+                    route_info["context_inherited"] = True
+                    route_info["prev_sources"] = prev_sources
+                    return route_info
+
+        # Fallback to original routing logic
+        result = self._determine_route(message, intent, confidence, meta)
+        route_info.update(result)
+        return route_info
+
+    def _determine_route(self, message: str, intent: str, confidence: float, meta: Dict[str, Any]) -> Dict[str, Any]:
+        """Original route determination logic, extracted for reuse."""
+        msg_lower = message.lower()
+
+        # Check for Brain-specific signals
         brain_signals = [
-            # Core identifiers
             "brain", "agent v2", "agent_v2", "agent kernel", "router",
             "tmp_agent", "front_brain", "ledger", "trace",
             "semantic memory", "faiss", "checkpoint", "run_id",
             "repo", "git", "head", "dirty", "commit",
             "microfix", "patch", "fix",
-            # Domains (EN)
             "autonomous", "auto mode", "AUTO",
             "production", "operations", "operator",
             "capabilities", "tools available", "approval",
@@ -294,13 +322,13 @@ class AgentV2IntentAdapter:
             "source_registry", "source registry", "registry",
             "learning sources", "github sources", "repositories",
             "restart", "server", "process", "port", "health", "status",
+            "scheduler", "task queue", "queue", "cron", "periodic task",
             "runtime", "cwd", "module path", "sys.path",
             "tools", "permissions", "gates",
             "file_read", "grep_search", "repo_status_read",
             "tool gateway", "allowed tools", "available tools",
             "trace", "traces", "execution trace", "tool evidence",
             "events", "executed tools", "actions performed",
-            # Domains (ES)
             "ingesta", "ingestión", "fuentes", "curada", "curado",
             "repositorios", "repositorio", "aprendizaje", "aprende",
             "conocimiento externo", "github", "git hub",
@@ -320,11 +348,9 @@ class AgentV2IntentAdapter:
             "estado productivo", "calidad productiva",
             "autónomo", "autonomía", "modo auto", "disparar auto",
             "activar auto", "auto se activó",
-            # UI / infra (ES)
             "agente", "interfaz", "pantalla", "dashboard", "chat", "ui",
             "langgraph", "grafo", "endpoint", "estructura", "cómo funciona",
             "componentes", "cómo está hecho", "cómo está construido",
-            # Generic brain mention in non-generic contexts
             "brain_", "brainv", "brain v", "brain-",
         ]
         has_brain_signals = any(s in msg_lower for s in brain_signals)

@@ -137,12 +137,21 @@ def chat_agent(req: AgentChatRequest):
         raise HTTPException(status_code=400, detail="message required")
     from .governance import validate_mode, parse_mode_from_message
     from .intent_adapter import AgentV2IntentAdapter
+    from .context_assembler import assemble_recent_context, _is_follow_up
     nl_mode = parse_mode_from_message(req.message.strip())
     validated_mode = nl_mode or validate_mode(req.mode)
     
-    # Intent-based pre-planner gate
+    # Load recent context for this user_id
+    recent_ctx = assemble_recent_context(
+        user_id=req.user_id or "local",
+        current_goal=req.message.strip(),
+        max_turns=5,
+        max_chars=3000,
+    )
+    
+    # Intent-based pre-planner gate with context awareness
     adapter = AgentV2IntentAdapter()
-    route_info = adapter.select_route(req.message.strip())
+    route_info = adapter.select_route(req.message.strip(), recent_context=recent_ctx)
     
     rt = get_agent_runtime_v2()
     run = rt.create_run(req.message, validated_mode, req.user_id)
