@@ -15,13 +15,15 @@ RUN_ROOT = Path(__file__).resolve().parents[4] / "tmp_agent" / "agent_kernel_v2"
 _FOLLOW_UP_SIGNALS = frozenset({
     # Spanish
     "haz lo mismo", "igual", "continúa", "continua", "sigue",
-    "amplía", "amplia", "más profundo", "mas profundo",
+    "amplía", "amplia", "amplio", "más amplio", "mas amplio", "revisa más", "revisa mas",
+    "más profundo", "mas profundo",
     "y cómo", "y como", "entonces", "eso",
     "lo anterior", "esa búsqueda", "esa respuesta", "esa busqueda",
     "más detalle", "mas detalle", "cuéntame más", "cuentame mas",
     "explica mejor", "detalla", "aprofundiza", "enfócate", "enfocate",
     "regresa", "vuelve", "además", "ademas", "también", "tambien",
     "por qué", "porque", "sigue con", "continua con",
+    "intenta otra", "otra forma", "otra manera", "de otra forma", "de otra manera",
     # English
     "what about that", "continue", "do the same", "expand",
     "go deeper", "previous", "above", "more detail", "tell me more",
@@ -29,6 +31,8 @@ _FOLLOW_UP_SIGNALS = frozenset({
     "what happened next", "furthermore", "moreover", "how about",
     "what about", "regarding that", "about that", "more on",
     "details on", "regarding", "focus on", "keep going",
+    "try another", "another way", "another form", "wider", "broader",
+    "review more", "wider review",
 })
 
 _GENERIC_OVERRIDES = frozenset({

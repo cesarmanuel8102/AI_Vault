@@ -180,7 +180,8 @@ def classify_goal(goal: str, mode: str = "read_only") -> str:
         return "documentation_task"
     
     # Check for autonomy-related but not matched by explicit diagnostics
-    if any(x in g for x in ["autonomy", "heartbeat", "promotion queue", "scheduler"]):
+    # NOTE: kept for backward compat but demoted; primary routing is now evidence-driven
+    if any(x in g for x in ["autonomy", "heartbeat", "promotion queue"]):
         return "autonomy_diagnosis"
     
     # Check for recent changes but not matched by explicit diagnostics

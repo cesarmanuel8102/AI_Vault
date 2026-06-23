@@ -234,9 +234,13 @@ class NativeAgentRuntimeV2:
                     existing_tools.add(step["tool_name"])
             run["evidence_sources"] = evidence_sources
         else:
-            # Fallback for Brain-specific classifications with no evidence sources
-            brain_specific = {"autonomy_diagnosis", "code_search", "recent_changes_diagnosis", "memory_question", "provider_diagnosis", "endpoint_probe"}
-            if run.get("classification") in brain_specific:
+            # Fallback: if route/classification indicates Brain/code evidence needed
+            # but no evidence_sources matched, add a generic fallback evidence search
+            needs_evidence = (
+                run.get("intent_route") in {"brain_evidence", "mixed_brain_reasoning", "operational_agent"}
+                or run.get("classification") in {"brain_evidence", "mixed_brain_reasoning", "operational_agent"}
+            )
+            if needs_evidence:
                 existing_tools = {s.get("tool_name") for s in run.get("plan", [])}
                 fallback = [{
                     "type": "fallback_search",
