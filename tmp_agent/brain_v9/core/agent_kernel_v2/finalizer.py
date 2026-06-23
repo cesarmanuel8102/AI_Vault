@@ -54,14 +54,11 @@ def _ollama_chat(model: str, prompt: str, timeout: int = 45, system_content: str
 def _structured_fallback(goal: str, mode: str, memory_hits: List[Dict[str, Any]], tool_results: List[Dict[str, Any]], reason: str) -> str:
     evidence = []
     for item in tool_results[:6]:
-        tn = item.get('tool_name') or 'unknown_tool'
-        evidence.append(f"- {tn}: ok={item.get('ok')} blocked={item.get('blocked')} approval_required={item.get('approval_required')} error={item.get('error')}")
+        evidence.append(f"- {item.get('tool_name')}: ok={item.get('ok')} blocked={item.get('blocked')} approval_required={item.get('approval_required')} error={item.get('error')}")
     if memory_hits:
         evidence.append(f"- semantic_retrieve: {len(memory_hits)} read-only memory hit(s)")
-    if not tool_results and not memory_hits:
-        evidence.append("- No tool evidence produced; no tools executed and no memory hits.")
-    elif not evidence:
-        evidence.append("- Tool results present but could not be summarized.")
+    if not evidence:
+        evidence.append("- No tool evidence produced beyond run metadata.")
     return "\n".join([
         "Summary: Brain Agent V2 completed the run with an explicit degraded finalizer fallback.",
         f"Goal: {goal}",
