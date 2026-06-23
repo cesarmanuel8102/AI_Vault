@@ -136,7 +136,7 @@ class NativeAgentRuntimeV2:
                     if is_semantic:
                         memory_hits.extend((rd.get("result") or {}).get("hits", []))
             # Adaptive expansion
-            plan = self._run_adaptive_expansion(run, plan, recent_ctx, run_id)
+            plan, extra_results = self._run_adaptive_expansion(run, plan, recent_ctx, run_id)
             for step in plan:
                 if step.get("status") == "planned" and step.get("tool_name"):
                     rd, is_semantic = self._execute_step(step, run_id, run)
@@ -144,6 +144,8 @@ class NativeAgentRuntimeV2:
                         results.append(rd)
                         if is_semantic:
                             memory_hits.extend((rd.get("result") or {}).get("hits", []))
+            for rd in extra_results:
+                results.append(rd)
             final, provider_metadata = finalize_agent_run(
                 run, memory_hits, results,
                 requested_checks=[],
@@ -183,7 +185,7 @@ class NativeAgentRuntimeV2:
                     results.append(rd)
                     if is_semantic:
                         memory_hits.extend((rd.get("result") or {}).get("hits", []))
-            plan = self._run_adaptive_expansion(run, plan, recent_ctx, run_id)
+            plan, extra_results = self._run_adaptive_expansion(run, plan, recent_ctx, run_id)
             for step in plan:
                 if step.get("status") == "planned" and step.get("tool_name"):
                     rd, is_semantic = self._execute_step(step, run_id, run)
@@ -191,6 +193,8 @@ class NativeAgentRuntimeV2:
                         results.append(rd)
                         if is_semantic:
                             memory_hits.extend((rd.get("result") or {}).get("hits", []))
+            for rd in extra_results:
+                results.append(rd)
             final, provider_metadata = finalize_agent_run(
                 run, memory_hits, results,
                 requested_checks=[],
@@ -367,6 +371,19 @@ class NativeAgentRuntimeV2:
             self._trace(run_id, "tool_call_completed", "Tool " + tool + " completed", {"tool": tool, "ok": res.ok, "blocked": res.blocked})
         return rd, tool == "semantic_retrieve"
 
+    def _is_expansion_intent(self, msg: str) -> bool:
+        """Domain-general expansion-intent detector."""
+        if not msg:
+            return False
+        expansion_verbs = ["amplía", "amplia", "expand", "expande", "extend",
+                           "deep", "deeper", "profundo", "más profundo", "mas profundo",
+                           "busca más", "busca mas", "search more", "widen",
+                           "intenta", "intenta otra", "retry", "try again",
+                           "revisa", "revisa más", "check further", "broader",
+                           "más amplio", "mas amplio", "wider", "widen",
+                           "continuar", "continue", "keep looking", "dig deeper"]
+        return any(v in msg.lower() for v in expansion_verbs)
+
     def _run_adaptive_expansion(self, run, plan, recent_ctx, run_id):
         adaptive_expanded = False
         for step in plan:
@@ -395,8 +412,7 @@ class NativeAgentRuntimeV2:
             plan.append({"step_id": "semantic_adaptive_repo_fallback", "kind": "tool", "title": "Repo fallback after zero semantic hits", "status": "planned", "tool_name": "repo_status_read", "input": {}, "note": "No relevant semantic memory hits; falling back to repo status"})
             adaptive_expanded = True
         if recent_ctx and recent_ctx.get("is_follow_up"):
-            msg = run["goal"].lower()
-            if any(t in msg for t in ["amplia", "amplia", "expand", "deeper", "mas profundo", "busca mas"]):
+            if self._is_expansion_intent(run.get("goal", "")):
                 prev = recent_ctx.get("prev_goal", "")
                 if prev:
                     plan.append({"step_id": "followup_adaptive_grep", "kind": "tool", "title": "Expanded grep from follow-up context", "status": "planned", "tool_name": "grep_search", "input": {"pattern": prev[:80].replace(" ", "|"), "glob": "*.py"}, "note": "Expanded from follow-up context"})
