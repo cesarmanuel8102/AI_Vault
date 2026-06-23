@@ -69,27 +69,9 @@ class NativeAgentRuntimeV2:
     def execute_run(self, run_id: str) -> Dict[str, Any]:
         run = self._load_run(run_id)
         
-        # Load recent session context for this user
-        from .context_assembler import assemble_recent_context
-        recent_ctx = assemble_recent_context(
-            user_id=run.get("user_id", "local"),
-            current_goal=run["goal"],
-            current_run_id=run_id,
-            max_turns=5,
-            max_chars=3000,
-        )
-        run["session_context"] = {
-            "is_follow_up": recent_ctx.get("is_follow_up", False),
-            "prev_route": recent_ctx.get("prev_route"),
-            "prev_classification": recent_ctx.get("prev_classification"),
-            "prev_sources": recent_ctx.get("prev_sources"),
-            "prev_goal": recent_ctx.get("prev_goal"),
-            "context_summary": recent_ctx.get("summary", "")[:800],
-        }
-        
-        # Intent-based pre-planner gate with context
+        # Intent-based pre-planner gate
         adapter = AgentV2IntentAdapter()
-        route_info = adapter.select_route(run["goal"], recent_context=recent_ctx)
+        route_info = adapter.select_route(run["goal"])
         run["intent_route"] = route_info["route"]
         run["intent_detected"] = route_info["intent"]
         run["intent_confidence"] = route_info["confidence"]
@@ -104,7 +86,6 @@ class NativeAgentRuntimeV2:
                 scheduled_tools=[],
                 executed_tools=[],
                 template_override="direct_assistant",
-                recent_context=recent_ctx,
             )
             run["final_answer"] = final
             run["provider_metadata"] = provider_metadata
@@ -118,41 +99,70 @@ class NativeAgentRuntimeV2:
             self._trace(run_id, "run_completed", "Run completed", {"status": "completed"})
             return run
         
-        # Brain evidence route — deterministic source map
+        # Brain evidence route — deterministic source map, no semantic_retrieve
         if route_info["route"] == "brain_evidence":
             run["status"] = "running"
             self._trace(run_id, "intent_route", "Brain evidence route selected", route_info)
             evidence_sources = adapter.get_evidence_sources("brain_evidence", run["goal"])
             run["evidence_sources"] = evidence_sources
-            plan = self._build_evidence_plan(evidence_sources, run, recent_ctx)
+            
+            # Build minimal deterministic plan
+            def _resolve_evidence_paths(src_paths: List[str], src_type: str) -> List[str]:
+                """Resolve evidence source paths, expanding globs to real files."""
+                resolved = []
+                for raw_path in (src_paths or []):
+                    if "*" in raw_path or "?" in raw_path:
+                        matches = sorted(
+                            [p for p in REPO_ROOT.glob(raw_path) if p.is_file()],
+                            key=lambda p: p.stat().st_mtime,
+                            reverse=True,
+                        )
+                        resolved.extend(str(m) for m in matches[:3])
+                    else:
+                        resolved.append(raw_path)
+                return resolved
+
+            plan = []
+            for src in evidence_sources:
+                resolved_paths = _resolve_evidence_paths(src.get("paths"), src["type"])
+                for tool in src["tools"]:
+                    if tool == "repo_status_read":
+                        plan.append({"step_id": f"repo_status_{src['type']}", "kind": "tool", "title": "Read repository status", "status": "planned", "tool_name": "repo_status_read", "input": {}})
+                    elif tool == "grep_search":
+                        pattern = src.get("grep_pattern", "agent|brain|kernel")
+                        plan.append({"step_id": f"grep_{src['type']}", "kind": "tool", "title": "Search relevant files", "status": "planned", "tool_name": "grep_search", "input": {"pattern": pattern, "glob": "*.py"}})
+                    elif tool == "file_read":
+                        if not resolved_paths:
+                            plan.append({"step_id": f"file_{src['type']}_unresolved", "kind": "note", "title": f"No files matched pattern for {src['type']}", "status": "completed", "tool_name": None, "input": {}, "output": {"matches": 0, "pattern": src.get("paths", [])}})
+                        else:
+                            for idx, path in enumerate(resolved_paths):
+                                plan.append({"step_id": f"file_{src['type']}_match_{idx}", "kind": "tool", "title": f"Read evidence file ({src['type']}) — match {idx+1}/{len(resolved_paths)}", "status": "planned", "tool_name": "file_read", "input": {"path": path}})
+                    elif tool == "repo_history_read":
+                        plan.append({"step_id": f"repo_history_{src['type']}", "kind": "tool", "title": "Read repository history", "status": "planned", "tool_name": "repo_history_read", "input": {"path": "tmp_agent/brain_v9", "limit": 10}})
+            
             run["plan"] = plan
             run["classification"] = "brain_evidence"
+            
             results = []
-            memory_hits = []
             for step in plan:
-                rd, is_semantic = self._execute_step(step, run_id, run)
-                if rd is not None:
-                    results.append(rd)
-                    if is_semantic:
-                        memory_hits.extend((rd.get("result") or {}).get("hits", []))
-            # Adaptive expansion
-            plan, extra_results = self._run_adaptive_expansion(run, plan, recent_ctx, run_id)
-            for step in plan:
-                if step.get("status") == "planned" and step.get("tool_name"):
-                    rd, is_semantic = self._execute_step(step, run_id, run)
-                    if rd is not None:
-                        results.append(rd)
-                        if is_semantic:
-                            memory_hits.extend((rd.get("result") or {}).get("hits", []))
-            for rd in extra_results:
+                tool = step.get("tool_name")
+                if not tool:
+                    step["status"] = "completed"
+                    continue
+                self._trace(run_id, "tool_call_started", f"Tool {tool} started", {"tool": tool})
+                res = self.tools.call(ToolCallRequest(tool_name=tool, args=step.get("input", {}), mode=run.get("mode", "read_only")))
+                rd = to_dict(res)
+                step["output"] = rd
+                step["status"] = "completed" if res.ok else "failed"
                 results.append(rd)
+                self._trace(run_id, "tool_call_completed", f"Tool {tool} completed", {"tool": tool, "ok": res.ok})
+            
             final, provider_metadata = finalize_agent_run(
-                run, memory_hits, results,
+                run, [], results,
                 requested_checks=[],
                 scheduled_tools=[s.get("tool_name") for s in plan if s.get("tool_name")],
                 executed_tools=[s.get("tool_name") for s in plan if s.get("status") == "completed"],
                 template_override="brain_evidence",
-                recent_context=recent_ctx,
             )
             run["final_answer"] = final
             run["provider_metadata"] = provider_metadata
@@ -161,7 +171,6 @@ class NativeAgentRuntimeV2:
             run["provider_degraded"] = provider_metadata.get("provider_degraded")
             run["fallback_reason"] = provider_metadata.get("fallback_reason")
             run["status"] = "completed"
-            run["plan"] = plan
             self._save_run(run)
             self._trace(run_id, "final_answer_created", "Final answer created (brain evidence)", {"provider_metadata": provider_metadata})
             self._trace(run_id, "run_completed", "Run completed", {"status": "completed"})
@@ -171,37 +180,40 @@ class NativeAgentRuntimeV2:
         if route_info["route"] == "mixed_brain_reasoning":
             run["status"] = "running"
             self._trace(run_id, "intent_route", "Mixed brain reasoning route selected", route_info)
+            # Start with a direct LLM reasoning step, then add evidence
             plan = [{"step_id": "direct_reasoning", "kind": "llm", "title": "Generic reasoning", "status": "planned", "tool_name": None, "input": {}}]
             evidence_sources = adapter.get_evidence_sources("brain_evidence", run["goal"])
             run["evidence_sources"] = evidence_sources
-            plan.extend(self._build_evidence_plan(evidence_sources, run, recent_ctx))
+            for src in evidence_sources:
+                for tool in src["tools"]:
+                    if tool == "repo_status_read":
+                        plan.append({"step_id": f"repo_status_{src['type']}", "kind": "tool", "title": "Read repository status", "status": "planned", "tool_name": "repo_status_read", "input": {}})
+                    elif tool == "grep_search":
+                        plan.append({"step_id": f"grep_{src['type']}", "kind": "tool", "title": "Search relevant files", "status": "planned", "tool_name": "grep_search", "input": {"pattern": "agent|brain|kernel", "glob": "*.py"}})
+            
             run["plan"] = plan
             run["classification"] = "mixed_brain_reasoning"
+            
             results = []
-            memory_hits = []
             for step in plan:
-                rd, is_semantic = self._execute_step(step, run_id, run)
-                if rd is not None:
-                    results.append(rd)
-                    if is_semantic:
-                        memory_hits.extend((rd.get("result") or {}).get("hits", []))
-            plan, extra_results = self._run_adaptive_expansion(run, plan, recent_ctx, run_id)
-            for step in plan:
-                if step.get("status") == "planned" and step.get("tool_name"):
-                    rd, is_semantic = self._execute_step(step, run_id, run)
-                    if rd is not None:
-                        results.append(rd)
-                        if is_semantic:
-                            memory_hits.extend((rd.get("result") or {}).get("hits", []))
-            for rd in extra_results:
+                tool = step.get("tool_name")
+                if not tool:
+                    step["status"] = "completed"
+                    continue
+                self._trace(run_id, "tool_call_started", f"Tool {tool} started", {"tool": tool})
+                res = self.tools.call(ToolCallRequest(tool_name=tool, args=step.get("input", {}), mode=run.get("mode", "read_only")))
+                rd = to_dict(res)
+                step["output"] = rd
+                step["status"] = "completed" if res.ok else "failed"
                 results.append(rd)
+                self._trace(run_id, "tool_call_completed", f"Tool {tool} completed", {"tool": tool, "ok": res.ok})
+            
             final, provider_metadata = finalize_agent_run(
-                run, memory_hits, results,
+                run, [], results,
                 requested_checks=[],
                 scheduled_tools=[s.get("tool_name") for s in plan if s.get("tool_name")],
                 executed_tools=[s.get("tool_name") for s in plan if s.get("status") == "completed"],
                 template_override="mixed_brain_reasoning",
-                recent_context=recent_ctx,
             )
             run["final_answer"] = final
             run["provider_metadata"] = provider_metadata
@@ -210,50 +222,17 @@ class NativeAgentRuntimeV2:
             run["provider_degraded"] = provider_metadata.get("provider_degraded")
             run["fallback_reason"] = provider_metadata.get("fallback_reason")
             run["status"] = "completed"
-            run["plan"] = plan
             self._save_run(run)
             self._trace(run_id, "final_answer_created", "Final answer created (mixed brain)", {"provider_metadata": provider_metadata})
             self._trace(run_id, "run_completed", "Run completed", {"status": "completed"})
             return run
         
-        # Default operational_agent route — existing planner + tools + finalizer + evidence bridge
+        # Default operational_agent route — existing planner + tools + finalizer
         if not run.get("plan"):
             run = self.plan_run(run_id)
         if run["status"] == "paused":
             return run
         run["status"] = "running"
-
-        # Evidence bridge: enrich operational_agent plan with evidence_sources if Brain-specific
-        evidence_sources = adapter.get_evidence_sources("brain_evidence", run["goal"])
-        if evidence_sources:
-            existing_tools = {s.get("tool_name") for s in run.get("plan", [])}
-            extra_plan = self._build_evidence_plan(evidence_sources, run, recent_ctx)
-            for step in extra_plan:
-                if step.get("tool_name") and step["tool_name"] not in existing_tools:
-                    run["plan"].append(step)
-                    existing_tools.add(step["tool_name"])
-            run["evidence_sources"] = evidence_sources
-        else:
-            # Fallback: if route/classification indicates Brain/code evidence needed
-            # but no evidence_sources matched, add a generic fallback evidence search
-            needs_evidence = (
-                run.get("intent_route") in {"brain_evidence", "mixed_brain_reasoning", "operational_agent"}
-                or run.get("classification") in {"brain_evidence", "mixed_brain_reasoning", "operational_agent"}
-            )
-            if needs_evidence:
-                existing_tools = {s.get("tool_name") for s in run.get("plan", [])}
-                fallback = [{
-                    "type": "fallback_search",
-                    "paths": [],
-                    "tools": ["repo_status_read", "grep_search"],
-                    "grep_pattern": run["goal"][:60].replace(" ", "|"),
-                    "priority": 1,
-                }]
-                extra_plan = self._build_evidence_plan(fallback, run, recent_ctx)
-                for step in extra_plan:
-                    if step.get("tool_name") and step["tool_name"] not in existing_tools:
-                        run["plan"].append(step)
-                        existing_tools.add(step["tool_name"])
 
         # Check mode escalation before executing
         from .governance import mode_requires_escalation, WRITE_TOOL_NAMES
@@ -275,29 +254,37 @@ class NativeAgentRuntimeV2:
         results = []
         memory_hits = []
         blocked_tools = []
-        plan = run.get("plan", [])
-        for step in plan:
-            rd, is_semantic = self._execute_step(step, run_id, run)
-            if rd is not None:
-                results.append(rd)
-                if is_semantic:
-                    memory_hits.extend((rd.get("result") or {}).get("hits", []))
-                if step.get("status") == "blocked":
-                    blocked_tools.append(step.get("tool_name"))
-
-        # Adaptive expansion pass
-        plan, extra_results = self._run_adaptive_expansion(run, plan, recent_ctx, run_id)
-        for rd in extra_results:
+        for step in run.get("plan", []):
+            tool = step.get("tool_name")
+            if not tool:
+                step["status"] = "completed"
+                continue
+            if tool == "semantic_retrieve":
+                self._trace(run_id, "memory_retrieval_started", "Memory retrieval started", {"query": step.get("input", {}).get("query", "")})
+            else:
+                self._trace(run_id, "tool_call_started", f"Tool {tool} started", {"tool": tool})
+            res = self.tools.call(ToolCallRequest(tool_name=tool, args=step.get("input", {}), mode=run.get("mode", "read_only")))
+            rd = to_dict(res)
+            step["output"] = rd
+            step["status"] = "blocked" if res.blocked else ("completed" if res.ok else "failed")
             results.append(rd)
-
+            if tool == "semantic_retrieve":
+                memory_hits.extend((rd.get("result") or {}).get("hits", []))
+                self._trace(run_id, "memory_retrieval_completed", "Memory retrieval completed", {"hit_count": len(memory_hits), "degraded": (rd.get("result") or {}).get("degraded")})
+            elif res.approval_required:
+                self._trace(run_id, "approval_required", "Write tool blocked pending approval", {"tool": tool})
+            elif res.blocked:
+                blocked_tools.append(tool)
+                self._trace(run_id, "tool_call_completed", f"Tool {tool} blocked", {"tool": tool, "ok": res.ok, "blocked": res.blocked})
+            else:
+                self._trace(run_id, "tool_call_completed", f"Tool {tool} completed", {"tool": tool, "ok": res.ok, "blocked": res.blocked})
         metadata = run.get("metadata", {})
         run["blocked_tools"] = blocked_tools
         final, provider_metadata = finalize_agent_run(
             run, memory_hits, results,
             requested_checks=metadata.get("requested_checks", []),
             scheduled_tools=metadata.get("scheduled_tools", []),
-            executed_tools=[s.get("tool_name") for s in plan if s.get("status") in ("completed", "blocked") and s.get("tool_name")],
-            recent_context=recent_ctx,
+            executed_tools=[s.get("tool_name") for s in run.get("plan", []) if s.get("status") in ("completed", "blocked") and s.get("tool_name")],
         )
         run["final_answer"] = final
         run["provider_metadata"] = provider_metadata
@@ -306,129 +293,11 @@ class NativeAgentRuntimeV2:
         run["provider_degraded"] = provider_metadata.get("provider_degraded")
         run["fallback_reason"] = provider_metadata.get("fallback_reason")
         run["status"] = "completed"
-        run["plan"] = plan
+        run["plan"] = run.get("plan", [])
         self._save_run(run)
         self._trace(run_id, "final_answer_created", "Final answer created", {"provider_metadata": provider_metadata})
         self._trace(run_id, "run_completed", "Run completed", {"status": "completed"})
         return run
-
-    def _resolve_evidence_paths(self, src_paths, src_type):
-        resolved = []
-        for raw_path in (src_paths or []):
-            if "*" in raw_path or "?" in raw_path:
-                matches = sorted(
-                    [p for p in REPO_ROOT.glob(raw_path) if p.is_file()],
-                    key=lambda p: p.stat().st_mtime,
-                    reverse=True,
-                )
-                resolved.extend(str(m) for m in matches[:3])
-            else:
-                resolved.append(raw_path)
-        return resolved
-
-    def _build_evidence_plan(self, evidence_sources, run, recent_ctx):
-        plan = []
-        for src in evidence_sources:
-            resolved_paths = self._resolve_evidence_paths(src.get("paths"), src["type"])
-            for tool in src["tools"]:
-                if tool == "repo_status_read":
-                    plan.append({"step_id": "repo_status_" + src["type"], "kind": "tool", "title": "Read repository status", "status": "planned", "tool_name": "repo_status_read", "input": {}})
-                elif tool == "grep_search":
-                    pattern = src.get("grep_pattern", "agent|brain|kernel")
-                    plan.append({"step_id": "grep_" + src["type"], "kind": "tool", "title": "Search relevant files", "status": "planned", "tool_name": "grep_search", "input": {"pattern": pattern, "glob": "*.py"}})
-                elif tool == "file_read":
-                    if not resolved_paths:
-                        plan.append({"step_id": "file_" + src["type"] + "_unresolved", "kind": "note", "title": "No files matched pattern for " + src["type"], "status": "completed", "tool_name": None, "input": {}, "output": {"matches": 0, "pattern": src.get("paths", [])}})
-                    else:
-                        for idx, path in enumerate(resolved_paths):
-                            plan.append({"step_id": "file_" + src["type"] + "_match_" + str(idx), "kind": "tool", "title": "Read evidence file (" + src["type"] + ") — match " + str(idx+1) + "/" + str(len(resolved_paths)), "status": "planned", "tool_name": "file_read", "input": {"path": path}})
-                elif tool == "semantic_retrieve":
-                    base_q = run["goal"]
-                    if recent_ctx and recent_ctx.get("prev_goal"):
-                        base_q += " " + str(recent_ctx["prev_goal"])[:120]
-                    plan.append({"step_id": "semantic_" + src["type"], "kind": "tool", "title": "Retrieve semantic memory", "status": "planned", "tool_name": "semantic_retrieve", "input": {"query": base_q[:200], "top_k": 5}})
-                elif tool == "repo_history_read":
-                    plan.append({"step_id": "repo_history_" + src["type"], "kind": "tool", "title": "Read repository history", "status": "planned", "tool_name": "repo_history_read", "input": {"path": "tmp_agent/brain_v9", "limit": 10}})
-        return plan
-
-    def _execute_step(self, step, run_id, run):
-        tool = step.get("tool_name")
-        if not tool:
-            step["status"] = "completed"
-            return None, False
-        if tool == "semantic_retrieve":
-            self._trace(run_id, "memory_retrieval_started", "Memory retrieval started", {"query": step.get("input", {}).get("query", "")})
-        else:
-            self._trace(run_id, "tool_call_started", "Tool " + tool + " started", {"tool": tool})
-        res = self.tools.call(ToolCallRequest(tool_name=tool, args=step.get("input", {}), mode=run.get("mode", "read_only")))
-        rd = to_dict(res)
-        step["output"] = rd
-        step["status"] = "blocked" if res.blocked else ("completed" if res.ok else "failed")
-        if tool == "semantic_retrieve":
-            hits = (rd.get("result") or {}).get("hits", [])
-            self._trace(run_id, "memory_retrieval_completed", "Memory retrieval completed", {"hit_count": len(hits), "degraded": (rd.get("result") or {}).get("degraded")})
-        elif res.approval_required:
-            self._trace(run_id, "approval_required", "Write tool blocked pending approval", {"tool": tool})
-        elif res.blocked:
-            self._trace(run_id, "tool_call_completed", "Tool " + tool + " blocked", {"tool": tool, "ok": res.ok, "blocked": res.blocked})
-        else:
-            self._trace(run_id, "tool_call_completed", "Tool " + tool + " completed", {"tool": tool, "ok": res.ok, "blocked": res.blocked})
-        return rd, tool == "semantic_retrieve"
-
-    def _is_expansion_intent(self, msg: str) -> bool:
-        """Domain-general expansion-intent detector."""
-        if not msg:
-            return False
-        expansion_verbs = ["amplía", "amplia", "expand", "expande", "extend",
-                           "deep", "deeper", "profundo", "más profundo", "mas profundo",
-                           "busca más", "busca mas", "search more", "widen",
-                           "intenta", "intenta otra", "retry", "try again",
-                           "revisa", "revisa más", "check further", "broader",
-                           "más amplio", "mas amplio", "wider", "widen",
-                           "continuar", "continue", "keep looking", "dig deeper"]
-        return any(v in msg.lower() for v in expansion_verbs)
-
-    def _run_adaptive_expansion(self, run, plan, recent_ctx, run_id):
-        adaptive_expanded = False
-        for step in plan:
-            if step.get("tool_name") == "grep_search" and step.get("status") == "completed":
-                out = step.get("output", {}).get("result", {})
-                matches = out.get("matches", [])
-                if len(matches) == 0:
-                    alt_pat = step.get("input", {}).get("pattern", "")
-                    if not alt_pat:
-                        alt_pat = run["goal"][:60].replace(" ", "|")
-                    plan.append({"step_id": "grep_adaptive_expansion", "kind": "tool", "title": "Adaptive grep with broader pattern", "status": "planned", "tool_name": "grep_search", "input": {"pattern": alt_pat or "agent", "glob": "*.py"}, "note": "Expanded after zero grep matches"})
-                    adaptive_expanded = True
-                    break
-        for step in plan:
-            if step.get("step_id", "").endswith("_unresolved"):
-                plan.append({"step_id": "grep_adaptive_file_fallback", "kind": "tool", "title": "Fallback grep for unresolved file paths", "status": "planned", "tool_name": "grep_search", "input": {"pattern": run["goal"][:60].replace(" ", "|"), "glob": "*.py"}, "note": "Fallback after unresolved file paths"})
-                adaptive_expanded = True
-                break
-        semantic_had_zero = any(s.get("tool_name") == "semantic_retrieve" and s.get("status") == "completed" for s in plan)
-        memory_hits_count = 0
-        for s in plan:
-            if s.get("tool_name") == "semantic_retrieve":
-                out = s.get("output", {}).get("result", {})
-                memory_hits_count += len(out.get("hits", []))
-        if semantic_had_zero and memory_hits_count == 0:
-            plan.append({"step_id": "semantic_adaptive_repo_fallback", "kind": "tool", "title": "Repo fallback after zero semantic hits", "status": "planned", "tool_name": "repo_status_read", "input": {}, "note": "No relevant semantic memory hits; falling back to repo status"})
-            adaptive_expanded = True
-        if recent_ctx and recent_ctx.get("is_follow_up"):
-            if self._is_expansion_intent(run.get("goal", "")):
-                prev = recent_ctx.get("prev_goal", "")
-                if prev:
-                    plan.append({"step_id": "followup_adaptive_grep", "kind": "tool", "title": "Expanded grep from follow-up context", "status": "planned", "tool_name": "grep_search", "input": {"pattern": prev[:80].replace(" ", "|"), "glob": "*.py"}, "note": "Expanded from follow-up context"})
-                    adaptive_expanded = True
-        extra_results = []
-        if adaptive_expanded:
-            for step in plan:
-                if step.get("status") == "planned" and step.get("tool_name"):
-                    rd, is_semantic = self._execute_step(step, run_id, run)
-                    if rd is not None:
-                        extra_results.append(rd)
-        return plan, extra_results
 
     def pause_run(self, run_id: str) -> Dict[str, Any]:
         run = self._load_run(run_id); run["status"] = "paused"; self._save_run(run); self._trace(run_id, "run_paused", "Run paused"); return run
