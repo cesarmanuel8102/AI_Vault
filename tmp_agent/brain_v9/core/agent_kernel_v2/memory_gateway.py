@@ -21,14 +21,14 @@ class MemoryGatewayV2:
         usable = []
         filtered_empty = 0
         for h in hits:
-            text = h.get("text", "") or ""
+            text = h.get("text", "") or h.get("snippet", "") or ""
             if text and text.strip():
                 usable.append(h)
             else:
                 filtered_empty += 1
         return usable, filtered_empty
 
-    def semantic_retrieve(self, query: str, top_k: int = 5, domain_gate: str = None) -> Dict[str, Any]:
+    def semantic_retrieve(self, query: str, top_k: int = 5, domain_gate: Optional[str] = None) -> Dict[str, Any]:
         try:
             import sys
             sys.path.insert(0, str(ROOT / "tmp_agent"))
