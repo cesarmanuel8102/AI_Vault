@@ -90,6 +90,7 @@ def _structured_fallback(goal: str, mode: str, memory_hits: List[Dict[str, Any]]
         "Actions performed: planned and executed governed read-only/approval-gated tools available for this goal.",
         "Risks/gates: no semantic/FAISS write, no trading action, write tools remain approval-gated.",
         f"Provider status: degraded fallback because {reason}.",
+        "Inference boundary: Conclusions beyond the above evidence are inference, not verified fact.",
         "Next safe action: inspect trace and tool outputs; restart/check Ollama Kimi provider if Kimi synthesis is required.",
     ])
 
@@ -133,19 +134,19 @@ def build_finalizer_prompt(run: Dict[str, Any], memory_hits: List[Dict[str, Any]
     # Template selection
     if template_override == "direct_assistant":
         payload["required_format"] = ["Direct answer", "Concise prose", "No operational summary"]
-        payload["mandatory_instruction"] = "Answer directly as a helpful assistant. Use natural, conversational prose. Do NOT use structured sections like Summary/Evidence/Actions/Risks unless the user explicitly asks for analysis."
-        payload["safety_constraints"] = ["no raw chain-of-thought", "no semantic/FAISS writes", "no trading"]
+        payload["mandatory_instruction"] = "Answer directly as a helpful assistant. Use natural, conversational prose. Do NOT use structured sections like Summary/Evidence/Actions/Risks unless the user explicitly asks for analysis. Do NOT claim tool evidence, memory evidence, or any operational tool usage."
+        payload["safety_constraints"] = ["no raw chain-of-thought", "no semantic/FAISS writes", "no trading", "no tool evidence claims"]
     elif template_override == "brain_evidence":
         payload["required_format"] = ["Summary", "Brain evidence", "Actions performed", "Risks/gates", "Next safe action"]
-        payload["mandatory_instruction"] = "Focus on Brain-specific evidence (front dirs, traces, ledgers). Use deterministic source data. Do NOT hallucinate tool results."
-        payload["safety_constraints"] = ["no raw chain-of-thought", "no semantic/FAISS writes", "no trading", "write tools approval-gated"]
+        payload["mandatory_instruction"] = "Focus on Brain-specific evidence (front dirs, traces, ledgers). Use deterministic source data. Do NOT hallucinate tool results. Distinguish MEMORY EVIDENCE (persistent context) from LIVE TOOL EVIDENCE (current run). Label inference clearly as inference, not fact."
+        payload["safety_constraints"] = ["no raw chain-of-thought", "no semantic/FAISS writes", "no trading", "write tools approval-gated", "no hallucinated tool results"]
     elif template_override == "mixed_brain_reasoning":
         payload["required_format"] = ["Reasoning", "Brain evidence", "Conclusion", "Risks/gates"]
-        payload["mandatory_instruction"] = "Start with generic reasoning, then ground with Brain evidence. Distinguish what you know vs what the evidence shows."
+        payload["mandatory_instruction"] = "Start with generic reasoning, then ground with Brain evidence. Distinguish what you know vs what the evidence shows. Distinguish MEMORY EVIDENCE (persistent context) from LIVE TOOL EVIDENCE (current run). Label inference clearly as inference."
         payload["safety_constraints"] = ["no raw chain-of-thought", "no semantic/FAISS writes", "no trading", "write tools approval-gated"]
     else:
         payload["required_format"] = ["Summary", "Evidence used", "Actions performed", "Risks/gates", "Next safe action"]
-        payload["mandatory_instruction"] = "If tools were requested but not scheduled, say 'planner did not schedule requested tool'. If scheduled but failed, say 'tool scheduled but failed'. If executed and blocked, say 'executed and correctly blocked'. If executed and passed, say 'executed and passed'. Do NOT say tools are 'unavailable' unless the tool gateway explicitly lacks that capability."
+        payload["mandatory_instruction"] = "If tools were requested but not scheduled, say 'planner did not schedule requested tool'. If scheduled but failed, say 'tool scheduled but failed'. If executed and blocked, say 'executed and correctly blocked'. If executed and passed, say 'executed and passed'. Do NOT say tools are 'unavailable' unless the tool gateway explicitly lacks that capability. Distinguish MEMORY EVIDENCE from LIVE TOOL EVIDENCE. Label inference as inference."
         payload["safety_constraints"] = ["no raw chain-of-thought", "no semantic/FAISS writes", "no trading", "write tools approval-gated"]
 
     payload["tool_evidence"] = safe_results
