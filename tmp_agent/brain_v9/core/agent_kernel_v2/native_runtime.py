@@ -67,251 +67,265 @@ class NativeAgentRuntimeV2:
         return run
 
     def execute_run(self, run_id: str) -> Dict[str, Any]:
-        run = self._load_run(run_id)
-        
-        # Load recent session context for this user
-        from .context_assembler import assemble_recent_context
-        recent_ctx = assemble_recent_context(
-            user_id=run.get("user_id", "local"),
-            current_goal=run["goal"],
-            current_run_id=run_id,
-            max_turns=5,
-            max_chars=3000,
-        )
-        run["session_context"] = {
-            "is_follow_up": recent_ctx.get("is_follow_up", False),
-            "prev_route": recent_ctx.get("prev_route"),
-            "prev_classification": recent_ctx.get("prev_classification"),
-            "prev_sources": recent_ctx.get("prev_sources"),
-            "prev_goal": recent_ctx.get("prev_goal"),
-            "context_summary": recent_ctx.get("summary", "")[:800],
-        }
-        
-        # Intent-based pre-planner gate with context
-        adapter = AgentV2IntentAdapter()
-        route_info = adapter.select_route(run["goal"], recent_context=recent_ctx)
-        run["intent_route"] = route_info["route"]
-        run["intent_detected"] = route_info["intent"]
-        run["intent_confidence"] = route_info["confidence"]
-        
-        # Direct assistant route — skip planner/tools, go straight to LLM
-        if route_info["route"] == "direct_assistant":
-            run["status"] = "running"
-            self._trace(run_id, "intent_route", "Direct assistant route selected", route_info)
-            final, provider_metadata = finalize_agent_run(
-                run, [], [],
-                requested_checks=[],
-                scheduled_tools=[],
-                executed_tools=[],
-                template_override="direct_assistant",
-                recent_context=recent_ctx,
+        run = None
+        try:
+            run = self._load_run(run_id)
+            
+            # Load recent session context for this user
+            from .context_assembler import assemble_recent_context
+            recent_ctx = assemble_recent_context(
+                user_id=run.get("user_id", "local"),
+                current_goal=run["goal"],
+                current_run_id=run_id,
+                max_turns=5,
+                max_chars=3000,
             )
-            run["final_answer"] = final
-            run["provider_metadata"] = provider_metadata
-            run["provider"] = provider_metadata.get("provider_used", run.get("provider"))
-            run["model_used"] = provider_metadata.get("model_used")
-            run["provider_degraded"] = provider_metadata.get("provider_degraded")
-            run["fallback_reason"] = provider_metadata.get("fallback_reason")
-            run["status"] = "completed"
-            self._save_run(run)
-            self._trace(run_id, "final_answer_created", "Final answer created (direct assistant)", {"provider_metadata": provider_metadata})
-            self._trace(run_id, "run_completed", "Run completed", {"status": "completed"})
-            return run
+            run["session_context"] = {
+                "is_follow_up": recent_ctx.get("is_follow_up", False),
+                "prev_route": recent_ctx.get("prev_route"),
+                "prev_classification": recent_ctx.get("prev_classification"),
+                "prev_sources": recent_ctx.get("prev_sources"),
+                "prev_goal": recent_ctx.get("prev_goal"),
+                "context_summary": recent_ctx.get("summary", "")[:800],
+            }
         
-        # Brain evidence route — deterministic source map
-        if route_info["route"] == "brain_evidence":
-            run["status"] = "running"
-            self._trace(run_id, "intent_route", "Brain evidence route selected", route_info)
-            evidence_sources = adapter.get_evidence_sources("brain_evidence", run["goal"])
-            run["evidence_sources"] = evidence_sources
-            plan = self._build_evidence_plan(evidence_sources, run, recent_ctx)
-            run["plan"] = plan
-            run["classification"] = "brain_evidence"
-            results = []
-            memory_hits = []
-            for step in plan:
-                rd, is_semantic = self._execute_step(step, run_id, run)
-                if rd is not None:
-                    results.append(rd)
-                    if is_semantic:
-                        memory_hits.extend((rd.get("result") or {}).get("hits", []))
-            # Adaptive expansion
-            plan, extra_results = self._run_adaptive_expansion(run, plan, recent_ctx, run_id)
-            for step in plan:
-                if step.get("status") == "planned" and step.get("tool_name"):
+            # Intent-based pre-planner gate with context
+            adapter = AgentV2IntentAdapter()
+            route_info = adapter.select_route(run["goal"], recent_context=recent_ctx)
+            run["intent_route"] = route_info["route"]
+            run["intent_detected"] = route_info["intent"]
+            run["intent_confidence"] = route_info["confidence"]
+        
+            # Direct assistant route — skip planner/tools, go straight to LLM
+            if route_info["route"] == "direct_assistant":
+                run["status"] = "running"
+                self._trace(run_id, "intent_route", "Direct assistant route selected", route_info)
+                final, provider_metadata = finalize_agent_run(
+                    run, [], [],
+                    requested_checks=[],
+                    scheduled_tools=[],
+                    executed_tools=[],
+                    template_override="direct_assistant",
+                    recent_context=recent_ctx,
+                )
+                run["final_answer"] = final
+                run["provider_metadata"] = provider_metadata
+                run["provider"] = provider_metadata.get("provider_used", run.get("provider"))
+                run["model_used"] = provider_metadata.get("model_used")
+                run["provider_degraded"] = provider_metadata.get("provider_degraded")
+                run["fallback_reason"] = provider_metadata.get("fallback_reason")
+                run["status"] = "completed"
+                self._save_run(run)
+                self._trace(run_id, "final_answer_created", "Final answer created (direct assistant)", {"provider_metadata": provider_metadata})
+                self._trace(run_id, "run_completed", "Run completed", {"status": "completed"})
+                return run
+        
+            # Brain evidence route — deterministic source map
+            if route_info["route"] == "brain_evidence":
+                run["status"] = "running"
+                self._trace(run_id, "intent_route", "Brain evidence route selected", route_info)
+                evidence_sources = adapter.get_evidence_sources("brain_evidence", run["goal"])
+                run["evidence_sources"] = evidence_sources
+                plan = self._build_evidence_plan(evidence_sources, run, recent_ctx)
+                run["plan"] = plan
+                run["classification"] = "brain_evidence"
+                results = []
+                memory_hits = []
+                for step in plan:
                     rd, is_semantic = self._execute_step(step, run_id, run)
                     if rd is not None:
                         results.append(rd)
                         if is_semantic:
                             memory_hits.extend((rd.get("result") or {}).get("hits", []))
-            for rd in extra_results:
-                results.append(rd)
-            final, provider_metadata = finalize_agent_run(
-                run, memory_hits, results,
-                requested_checks=[],
-                scheduled_tools=[s.get("tool_name") for s in plan if s.get("tool_name")],
-                executed_tools=[s.get("tool_name") for s in plan if s.get("status") == "completed"],
-                template_override="brain_evidence",
-                recent_context=recent_ctx,
-            )
-            run["final_answer"] = final
-            run["provider_metadata"] = provider_metadata
-            run["provider"] = provider_metadata.get("provider_used", run.get("provider"))
-            run["model_used"] = provider_metadata.get("model_used")
-            run["provider_degraded"] = provider_metadata.get("provider_degraded")
-            run["fallback_reason"] = provider_metadata.get("fallback_reason")
-            run["status"] = "completed"
-            run["plan"] = plan
-            self._save_run(run)
-            self._trace(run_id, "final_answer_created", "Final answer created (brain evidence)", {"provider_metadata": provider_metadata})
-            self._trace(run_id, "run_completed", "Run completed", {"status": "completed"})
-            return run
-        
-        # Mixed brain reasoning — generic reasoning + Brain evidence
-        if route_info["route"] == "mixed_brain_reasoning":
-            run["status"] = "running"
-            self._trace(run_id, "intent_route", "Mixed brain reasoning route selected", route_info)
-            plan = [{"step_id": "direct_reasoning", "kind": "llm", "title": "Generic reasoning", "status": "planned", "tool_name": None, "input": {}}]
-            evidence_sources = adapter.get_evidence_sources("brain_evidence", run["goal"])
-            run["evidence_sources"] = evidence_sources
-            plan.extend(self._build_evidence_plan(evidence_sources, run, recent_ctx))
-            run["plan"] = plan
-            run["classification"] = "mixed_brain_reasoning"
-            results = []
-            memory_hits = []
-            for step in plan:
-                rd, is_semantic = self._execute_step(step, run_id, run)
-                if rd is not None:
+                # Adaptive expansion
+                plan, extra_results = self._run_adaptive_expansion(run, plan, recent_ctx, run_id)
+                for step in plan:
+                    if step.get("status") == "planned" and step.get("tool_name"):
+                        rd, is_semantic = self._execute_step(step, run_id, run)
+                        if rd is not None:
+                            results.append(rd)
+                            if is_semantic:
+                                memory_hits.extend((rd.get("result") or {}).get("hits", []))
+                for rd in extra_results:
                     results.append(rd)
-                    if is_semantic:
-                        memory_hits.extend((rd.get("result") or {}).get("hits", []))
-            plan, extra_results = self._run_adaptive_expansion(run, plan, recent_ctx, run_id)
-            for step in plan:
-                if step.get("status") == "planned" and step.get("tool_name"):
+                final, provider_metadata = finalize_agent_run(
+                    run, memory_hits, results,
+                    requested_checks=[],
+                    scheduled_tools=[s.get("tool_name") for s in plan if s.get("tool_name")],
+                    executed_tools=[s.get("tool_name") for s in plan if s.get("status") == "completed"],
+                    template_override="brain_evidence",
+                    recent_context=recent_ctx,
+                )
+                run["final_answer"] = final
+                run["provider_metadata"] = provider_metadata
+                run["provider"] = provider_metadata.get("provider_used", run.get("provider"))
+                run["model_used"] = provider_metadata.get("model_used")
+                run["provider_degraded"] = provider_metadata.get("provider_degraded")
+                run["fallback_reason"] = provider_metadata.get("fallback_reason")
+                run["status"] = "completed"
+                run["plan"] = plan
+                self._save_run(run)
+                self._trace(run_id, "final_answer_created", "Final answer created (brain evidence)", {"provider_metadata": provider_metadata})
+                self._trace(run_id, "run_completed", "Run completed", {"status": "completed"})
+                return run
+        
+            # Mixed brain reasoning — generic reasoning + Brain evidence
+            if route_info["route"] == "mixed_brain_reasoning":
+                run["status"] = "running"
+                self._trace(run_id, "intent_route", "Mixed brain reasoning route selected", route_info)
+                plan = [{"step_id": "direct_reasoning", "kind": "llm", "title": "Generic reasoning", "status": "planned", "tool_name": None, "input": {}}]
+                evidence_sources = adapter.get_evidence_sources("brain_evidence", run["goal"])
+                run["evidence_sources"] = evidence_sources
+                plan.extend(self._build_evidence_plan(evidence_sources, run, recent_ctx))
+                run["plan"] = plan
+                run["classification"] = "mixed_brain_reasoning"
+                results = []
+                memory_hits = []
+                for step in plan:
                     rd, is_semantic = self._execute_step(step, run_id, run)
                     if rd is not None:
                         results.append(rd)
                         if is_semantic:
                             memory_hits.extend((rd.get("result") or {}).get("hits", []))
-            for rd in extra_results:
-                results.append(rd)
-            final, provider_metadata = finalize_agent_run(
-                run, memory_hits, results,
-                requested_checks=[],
-                scheduled_tools=[s.get("tool_name") for s in plan if s.get("tool_name")],
-                executed_tools=[s.get("tool_name") for s in plan if s.get("status") == "completed"],
-                template_override="mixed_brain_reasoning",
-                recent_context=recent_ctx,
-            )
-            run["final_answer"] = final
-            run["provider_metadata"] = provider_metadata
-            run["provider"] = provider_metadata.get("provider_used", run.get("provider"))
-            run["model_used"] = provider_metadata.get("model_used")
-            run["provider_degraded"] = provider_metadata.get("provider_degraded")
-            run["fallback_reason"] = provider_metadata.get("fallback_reason")
-            run["status"] = "completed"
-            run["plan"] = plan
-            self._save_run(run)
-            self._trace(run_id, "final_answer_created", "Final answer created (mixed brain)", {"provider_metadata": provider_metadata})
-            self._trace(run_id, "run_completed", "Run completed", {"status": "completed"})
-            return run
+                plan, extra_results = self._run_adaptive_expansion(run, plan, recent_ctx, run_id)
+                for step in plan:
+                    if step.get("status") == "planned" and step.get("tool_name"):
+                        rd, is_semantic = self._execute_step(step, run_id, run)
+                        if rd is not None:
+                            results.append(rd)
+                            if is_semantic:
+                                memory_hits.extend((rd.get("result") or {}).get("hits", []))
+                for rd in extra_results:
+                    results.append(rd)
+                final, provider_metadata = finalize_agent_run(
+                    run, memory_hits, results,
+                    requested_checks=[],
+                    scheduled_tools=[s.get("tool_name") for s in plan if s.get("tool_name")],
+                    executed_tools=[s.get("tool_name") for s in plan if s.get("status") == "completed"],
+                    template_override="mixed_brain_reasoning",
+                    recent_context=recent_ctx,
+                )
+                run["final_answer"] = final
+                run["provider_metadata"] = provider_metadata
+                run["provider"] = provider_metadata.get("provider_used", run.get("provider"))
+                run["model_used"] = provider_metadata.get("model_used")
+                run["provider_degraded"] = provider_metadata.get("provider_degraded")
+                run["fallback_reason"] = provider_metadata.get("fallback_reason")
+                run["status"] = "completed"
+                run["plan"] = plan
+                self._save_run(run)
+                self._trace(run_id, "final_answer_created", "Final answer created (mixed brain)", {"provider_metadata": provider_metadata})
+                self._trace(run_id, "run_completed", "Run completed", {"status": "completed"})
+                return run
         
-        # Default operational_agent route — existing planner + tools + finalizer + evidence bridge
-        if not run.get("plan"):
-            run = self.plan_run(run_id)
-        if run["status"] == "paused":
-            return run
-        run["status"] = "running"
+            # Default operational_agent route — existing planner + tools + finalizer + evidence bridge
+            if not run.get("plan"):
+                run = self.plan_run(run_id)
+            if run["status"] == "paused":
+                return run
+            run["status"] = "running"
 
-        # Evidence bridge: enrich operational_agent plan with evidence_sources if Brain-specific
-        evidence_sources = adapter.get_evidence_sources("brain_evidence", run["goal"])
-        if evidence_sources:
-            existing_tools = {s.get("tool_name") for s in run.get("plan", [])}
-            extra_plan = self._build_evidence_plan(evidence_sources, run, recent_ctx)
-            for step in extra_plan:
-                if step.get("tool_name") and step["tool_name"] not in existing_tools:
-                    run["plan"].append(step)
-                    existing_tools.add(step["tool_name"])
-            run["evidence_sources"] = evidence_sources
-        else:
-            # Fallback: if route/classification indicates Brain/code evidence needed
-            # but no evidence_sources matched, add a generic fallback evidence search
-            needs_evidence = (
-                run.get("intent_route") in {"brain_evidence", "mixed_brain_reasoning", "operational_agent"}
-                or run.get("classification") in {"brain_evidence", "mixed_brain_reasoning", "operational_agent"}
-            )
-            if needs_evidence:
+            # Evidence bridge: enrich operational_agent plan with evidence_sources if Brain-specific
+            evidence_sources = adapter.get_evidence_sources("brain_evidence", run["goal"])
+            if evidence_sources:
                 existing_tools = {s.get("tool_name") for s in run.get("plan", [])}
-                fallback = [{
-                    "type": "fallback_search",
-                    "paths": [],
-                    "tools": ["repo_status_read", "grep_search"],
-                    "grep_pattern": run["goal"][:60].replace(" ", "|"),
-                    "priority": 1,
-                }]
-                extra_plan = self._build_evidence_plan(fallback, run, recent_ctx)
+                extra_plan = self._build_evidence_plan(evidence_sources, run, recent_ctx)
                 for step in extra_plan:
                     if step.get("tool_name") and step["tool_name"] not in existing_tools:
                         run["plan"].append(step)
                         existing_tools.add(step["tool_name"])
+                run["evidence_sources"] = evidence_sources
+            else:
+                # Fallback: if route/classification indicates Brain/code evidence needed
+                # but no evidence_sources matched, add a generic fallback evidence search
+                needs_evidence = (
+                    run.get("intent_route") in {"brain_evidence", "mixed_brain_reasoning", "operational_agent"}
+                    or run.get("classification") in {"brain_evidence", "mixed_brain_reasoning", "operational_agent"}
+                )
+                if needs_evidence:
+                    existing_tools = {s.get("tool_name") for s in run.get("plan", [])}
+                    fallback = [{
+                        "type": "fallback_search",
+                        "paths": [],
+                        "tools": ["repo_status_read", "grep_search"],
+                        "grep_pattern": run["goal"][:60].replace(" ", "|"),
+                        "priority": 1,
+                    }]
+                    extra_plan = self._build_evidence_plan(fallback, run, recent_ctx)
+                    for step in extra_plan:
+                        if step.get("tool_name") and step["tool_name"] not in existing_tools:
+                            run["plan"].append(step)
+                            existing_tools.add(step["tool_name"])
 
-        # Check mode escalation before executing
-        from .governance import mode_requires_escalation, WRITE_TOOL_NAMES
-        scheduled_tools = [s.get("tool_name") for s in run.get("plan", []) if s.get("tool_name")]
-        mode_esc = mode_requires_escalation(run.get("goal", ""), run.get("mode", "read_only"), scheduled_tools)
-        run["mode_escalation_required"] = mode_esc
-        if mode_esc:
-            run["required_permission"] = "build"
-            run["expected_write_scope"] = [t for t in scheduled_tools if t in WRITE_TOOL_NAMES]
-            run["confirmation_id"] = f"confirm_{run['run_id']}"
-            self._trace(run_id, "mode_escalation_detected", "Build intent detected but current mode does not allow writes", {
-                "mode": run.get("mode"),
-                "required_permission": "build",
-                "expected_write_scope": run["expected_write_scope"],
-                "confirmation_id": run["confirmation_id"],
-            })
-            # Still continue to execute read-only tools, block write tools
+            # Check mode escalation before executing
+            from .governance import mode_requires_escalation, WRITE_TOOL_NAMES
+            scheduled_tools = [s.get("tool_name") for s in run.get("plan", []) if s.get("tool_name")]
+            mode_esc = mode_requires_escalation(run.get("goal", ""), run.get("mode", "read_only"), scheduled_tools)
+            run["mode_escalation_required"] = mode_esc
+            if mode_esc:
+                run["required_permission"] = "build"
+                run["expected_write_scope"] = [t for t in scheduled_tools if t in WRITE_TOOL_NAMES]
+                run["confirmation_id"] = f"confirm_{run['run_id']}"
+                self._trace(run_id, "mode_escalation_detected", "Build intent detected but current mode does not allow writes", {
+                    "mode": run.get("mode"),
+                    "required_permission": "build",
+                    "expected_write_scope": run["expected_write_scope"],
+                    "confirmation_id": run["confirmation_id"],
+                })
+                # Still continue to execute read-only tools, block write tools
 
-        results = []
-        memory_hits = []
-        blocked_tools = []
-        plan = run.get("plan", [])
-        for step in plan:
-            rd, is_semantic = self._execute_step(step, run_id, run)
-            if rd is not None:
+            results = []
+            memory_hits = []
+            blocked_tools = []
+            plan = run.get("plan", [])
+            for step in plan:
+                rd, is_semantic = self._execute_step(step, run_id, run)
+                if rd is not None:
+                    results.append(rd)
+                    if is_semantic:
+                        memory_hits.extend((rd.get("result") or {}).get("hits", []))
+                    if step.get("status") == "blocked":
+                        blocked_tools.append(step.get("tool_name"))
+
+            # Adaptive expansion pass
+            plan, extra_results = self._run_adaptive_expansion(run, plan, recent_ctx, run_id)
+            for rd in extra_results:
                 results.append(rd)
-                if is_semantic:
-                    memory_hits.extend((rd.get("result") or {}).get("hits", []))
-                if step.get("status") == "blocked":
-                    blocked_tools.append(step.get("tool_name"))
 
-        # Adaptive expansion pass
-        plan, extra_results = self._run_adaptive_expansion(run, plan, recent_ctx, run_id)
-        for rd in extra_results:
-            results.append(rd)
+            metadata = run.get("metadata", {})
+            run["blocked_tools"] = blocked_tools
+            final, provider_metadata = finalize_agent_run(
+                run, memory_hits, results,
+                requested_checks=metadata.get("requested_checks", []),
+                scheduled_tools=metadata.get("scheduled_tools", []),
+                executed_tools=[s.get("tool_name") for s in plan if s.get("status") in ("completed", "blocked") and s.get("tool_name")],
+                recent_context=recent_ctx,
+            )
+            run["final_answer"] = final
+            run["provider_metadata"] = provider_metadata
+            run["provider"] = provider_metadata.get("provider_used", run.get("provider"))
+            run["model_used"] = provider_metadata.get("model_used")
+            run["provider_degraded"] = provider_metadata.get("provider_degraded")
+            run["fallback_reason"] = provider_metadata.get("fallback_reason")
+            run["status"] = "completed"
+            run["plan"] = plan
+            self._save_run(run)
+            self._trace(run_id, "final_answer_created", "Final answer created", {"provider_metadata": provider_metadata})
+            self._trace(run_id, "run_completed", "Run completed", {"status": "completed"})
+            return run
 
-        metadata = run.get("metadata", {})
-        run["blocked_tools"] = blocked_tools
-        final, provider_metadata = finalize_agent_run(
-            run, memory_hits, results,
-            requested_checks=metadata.get("requested_checks", []),
-            scheduled_tools=metadata.get("scheduled_tools", []),
-            executed_tools=[s.get("tool_name") for s in plan if s.get("status") in ("completed", "blocked") and s.get("tool_name")],
-            recent_context=recent_ctx,
-        )
-        run["final_answer"] = final
-        run["provider_metadata"] = provider_metadata
-        run["provider"] = provider_metadata.get("provider_used", run.get("provider"))
-        run["model_used"] = provider_metadata.get("model_used")
-        run["provider_degraded"] = provider_metadata.get("provider_degraded")
-        run["fallback_reason"] = provider_metadata.get("fallback_reason")
-        run["status"] = "completed"
-        run["plan"] = plan
-        self._save_run(run)
-        self._trace(run_id, "final_answer_created", "Final answer created", {"provider_metadata": provider_metadata})
-        self._trace(run_id, "run_completed", "Run completed", {"status": "completed"})
-        return run
-
+        except Exception as exc:
+            # Ensure run reaches terminal status on any exception
+            # If _load_run failed, run may be None
+            if run is not None:
+                run["status"] = "failed"
+                run["error"] = str(exc)[:500]
+                self._trace(run_id, "run_failed", "Run failed", {"error": str(exc)[:500]})
+                self._save_run(run)
+                return run
+            else:
+                # _load_run failed, cannot save run
+                raise
     def _resolve_evidence_paths(self, src_paths, src_type):
         resolved = []
         for raw_path in (src_paths or []):
