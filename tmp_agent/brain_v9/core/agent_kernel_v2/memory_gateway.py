@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 ROOT = Path(__file__).resolve().parents[4]
 SEM = ROOT / "memory" / "semantic" / "semantic_memory.jsonl"
@@ -21,9 +21,12 @@ class MemoryGatewayV2:
         usable = []
         filtered_empty = 0
         for h in hits:
-            text = h.get("text", "") or h.get("snippet", "") or ""
-            if text and text.strip():
-                usable.append(h)
+            raw_text = h.get("text") or h.get("snippet") or ""
+            if raw_text and raw_text.strip():
+                normalized = dict(h)
+                normalized["text"] = normalized.get("text") or raw_text
+                normalized["snippet"] = normalized.get("snippet") or raw_text
+                usable.append(normalized)
             else:
                 filtered_empty += 1
         return usable, filtered_empty
