@@ -22,6 +22,8 @@ class ToolGatewayV2:
             AgentCapability("grep_search", "Search repository text with rg", "low", True, False, ["read_only", "dry_run"]),
             AgentCapability("route_probe", "Probe a local HTTP route", "low", True, False, ["read_only", "dry_run"]),
             AgentCapability("semantic_retrieve", "Read-only semantic retrieval", "low", True, False, ["read_only", "dry_run"]),
+            AgentCapability("promotion_candidate_validate", "Validate a promotion candidate in dry-run mode", "low", True, False, ["read_only", "dry_run"]),
+
             AgentCapability("repo_history_read", "Read recent git commit history", "low", True, False, ["read_only", "dry_run"]),
             AgentCapability("smoke_test_readonly", "Run a focused read-only smoke test", "medium", True, False, ["read_only", "dry_run"]),
             AgentCapability("report_writer", "Write run-local artifacts only", "medium", False, False, ["dry_run", "approval_required", "write_allowed"]),
@@ -66,6 +68,15 @@ class ToolGatewayV2:
         if name == "semantic_retrieve":
             from .memory_gateway import MemoryGatewayV2
             return ToolCallResult(name, ok=True, result=MemoryGatewayV2().semantic_retrieve(req.args.get("query", ""), int(req.args.get("top_k", 3))))
+        if name == "promotion_candidate_validate":
+            from ...memory.promotion_pipeline_adapter import PromotionPipelineAdapter
+            adapter = PromotionPipelineAdapter()
+            candidate_id = str(req.args.get("candidate_id", ""))
+            source = str(req.args.get("source", "all"))
+            if not candidate_id:
+                candidates = adapter.load_candidates(source)
+                return ToolCallResult(name, ok=True, result={"candidate_count": len(candidates), "source": source, "candidates": candidates[:5]})
+            return ToolCallResult(name, ok=True, result=adapter.dry_run_promotion(candidate_id))
         if name == "smoke_test_readonly":
             return self._smoke(name, req.args)
         if name in {"report_writer", "file_patch_dry_run"}:
