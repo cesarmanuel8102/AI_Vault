@@ -1,0 +1,290 @@
+[
+  {
+    "candidate_id": "llm_grounded_cycle_001",
+    "source": "promotion_queue",
+    "domain": "governance",
+    "category": "CEI/FDOT practical reasoning",
+    "text_length": 730,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "llm_grounded_cycle_002",
+    "source": "promotion_queue",
+    "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+    "category": "dashboard/status reliability",
+    "text_length": 495,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "llm_grounded_cycle_003",
+    "source": "promotion_queue",
+    "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+    "category": "scheduler/autonomy governance",
+    "text_length": 730,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "llm_grounded_cycle_004",
+    "source": "promotion_queue",
+    "domain": "semantic_memory",
+    "category": "memory promotion quality",
+    "text_length": 414,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "llm_grounded_cycle_005",
+    "source": "promotion_queue",
+    "domain": "brain_architecture",
+    "category": "coding/debugging reliability",
+    "text_length": 453,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "llm_grounded_cycle_007",
+    "source": "promotion_queue",
+    "domain": "operator_readiness",
+    "category": "operator UX clarity",
+    "text_length": 230,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "llm_grounded_cycle_008",
+    "source": "promotion_queue",
+    "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+    "category": "fallback/timeout self-diagnosis",
+    "text_length": 222,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "llm_grounded_cycle_009",
+    "source": "promotion_queue",
+    "domain": "semantic_memory",
+    "category": "rollback/snapshot governance",
+    "text_length": 295,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_54cd7348d79bf340",
+    "source": "promotion_queue",
+    "domain": "operator_readiness",
+    "category": "unknown",
+    "text_length": 114,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_e559f1f75e450485",
+    "source": "promotion_queue",
+    "domain": "semantic_memory",
+    "category": "unknown",
+    "text_length": 113,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_94a6475097ee7027",
+    "source": "promotion_queue",
+    "domain": "semantic_memory",
+    "category": "unknown",
+    "text_length": 115,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_18ea5df9ccd1ff41",
+    "source": "promotion_queue",
+    "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+    "category": "unknown",
+    "text_length": 119,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_60c1ae3f1bb123f9",
+    "source": "promotion_queue",
+    "domain": "semantic_memory",
+    "category": "unknown",
+    "text_length": 114,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_4d452ca8c91c7b4d",
+    "source": "promotion_queue",
+    "domain": "semantic_memory",
+    "category": "unknown",
+    "text_length": 124,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_48cac3ab27360620",
+    "source": "promotion_queue",
+    "domain": "operator_readiness",
+    "category": "unknown",
+    "text_length": 114,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_983ce0933121ad0f",
+    "source": "promotion_queue",
+    "domain": "semantic_memory",
+    "category": "unknown",
+    "text_length": 113,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_0384a50ebea61e4e",
+    "source": "promotion_queue",
+    "domain": "semantic_memory",
+    "category": "unknown",
+    "text_length": 115,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_2d63c9a8beceb8a4",
+    "source": "promotion_queue",
+    "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+    "category": "unknown",
+    "text_length": 120,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_86cf121e7301bfa6",
+    "source": "promotion_queue",
+    "domain": "semantic_memory",
+    "category": "unknown",
+    "text_length": 115,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_91f4483d427d2fab",
+    "source": "promotion_queue",
+    "domain": "semantic_memory",
+    "category": "unknown",
+    "text_length": 125,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "llm_grounded_cycle_001",
+    "source": "semantic_staging",
+    "domain": "governance",
+    "category": "CEI/FDOT practical reasoning",
+    "text_length": 730,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "llm_grounded_cycle_002",
+    "source": "semantic_staging",
+    "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+    "category": "dashboard/status reliability",
+    "text_length": 495,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "llm_grounded_cycle_003",
+    "source": "semantic_staging",
+    "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+    "category": "scheduler/autonomy governance",
+    "text_length": 730,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "llm_grounded_cycle_004",
+    "source": "semantic_staging",
+    "domain": "semantic_memory",
+    "category": "memory promotion quality",
+    "text_length": 414,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "llm_grounded_cycle_005",
+    "source": "semantic_staging",
+    "domain": "brain_architecture",
+    "category": "coding/debugging reliability",
+    "text_length": 453,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "llm_grounded_cycle_007",
+    "source": "semantic_staging",
+    "domain": "operator_readiness",
+    "category": "operator UX clarity",
+    "text_length": 230,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "llm_grounded_cycle_008",
+    "source": "semantic_staging",
+    "domain": "autonomy_dashboard_visual_trace_self_improvement_governance",
+    "category": "fallback/timeout self-diagnosis",
+    "text_length": 222,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "llm_grounded_cycle_009",
+    "source": "semantic_staging",
+    "domain": "semantic_memory",
+    "category": "rollback/snapshot governance",
+    "text_length": 295,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_273384888c60aa67",
+    "source": "semantic_staging",
+    "domain": "semantic_memory",
+    "category": "unknown",
+    "text_length": 112,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_d353671754f61353",
+    "source": "semantic_staging",
+    "domain": "semantic_memory",
+    "category": "unknown",
+    "text_length": 115,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_0f62a1416a352542",
+    "source": "semantic_staging",
+    "domain": "semantic_memory",
+    "category": "unknown",
+    "text_length": 129,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_7a4d755ae174404c",
+    "source": "semantic_staging",
+    "domain": "semantic_memory",
+    "category": "unknown",
+    "text_length": 124,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_777e3f96672a5d43",
+    "source": "semantic_staging",
+    "domain": "semantic_memory",
+    "category": "unknown",
+    "text_length": 112,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_c1efaa1f7f201266",
+    "source": "semantic_staging",
+    "domain": "semantic_memory",
+    "category": "unknown",
+    "text_length": 115,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_74008516f0ba149f",
+    "source": "semantic_staging",
+    "domain": "semantic_memory",
+    "category": "unknown",
+    "text_length": 130,
+    "decision": "promotable_candidate"
+  },
+  {
+    "candidate_id": "cand_6d3c028b927f4caf",
+    "source": "semantic_staging",
+    "domain": "semantic_memory",
+    "category": "unknown",
+    "text_length": 125,
+    "decision": "promotable_candidate"
+  }
+]
