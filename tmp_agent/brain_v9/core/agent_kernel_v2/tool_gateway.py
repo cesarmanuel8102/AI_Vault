@@ -23,6 +23,7 @@ class ToolGatewayV2:
             AgentCapability("route_probe", "Probe a local HTTP route", "low", True, False, ["read_only", "dry_run"]),
             AgentCapability("semantic_retrieve", "Read-only semantic retrieval", "low", True, False, ["read_only", "dry_run"]),
             AgentCapability("promotion_candidate_validate", "Validate a promotion candidate in dry-run mode", "low", True, False, ["read_only", "dry_run"]),
+            AgentCapability("promotion_candidate_promote", "Promote one validated candidate to canonical semantic memory (approval required)", "high", False, True, ["approval_required", "write_allowed"]),
 
             AgentCapability("repo_history_read", "Read recent git commit history", "low", True, False, ["read_only", "dry_run"]),
             AgentCapability("smoke_test_readonly", "Run a focused read-only smoke test", "medium", True, False, ["read_only", "dry_run"]),
@@ -77,6 +78,34 @@ class ToolGatewayV2:
                 candidates = adapter.load_candidates(source)
                 return ToolCallResult(name, ok=True, result={"candidate_count": len(candidates), "source": source, "candidates": candidates[:5]})
             return ToolCallResult(name, ok=True, result=adapter.dry_run_promotion(candidate_id))
+        if name in {"file_patch_apply_approval_required", "git_commit_approval_required", "promotion_candidate_promote"}:
+            effective_token = req.approval_token or str(req.args.get("approval_token", ""))
+            if mode not in {"build", "write_allowed", "promotion"}:
+                from ...memory.promotion_candidate_promoter import _rejected_report
+                result = _rejected_report(str(req.args.get("candidate_id", "")), ["read_only_mode_blocked"], [])
+                return ToolCallResult(name, ok=False, blocked=True, approval_required=True, result=result, error="build_mode_required")
+            if not write_allowed(mode, effective_token):
+                from ...memory.promotion_candidate_promoter import _rejected_report
+                result = _rejected_report(str(req.args.get("candidate_id", "")), ["approval_token_invalid"], [])
+                return ToolCallResult(name, ok=False, blocked=True, approval_required=True, result=result, error="approval_required")
+        if name == "promotion_candidate_promote":
+            from ...memory.promotion_candidate_promoter import promote_candidate
+            from pathlib import Path
+            qd = req.args.get("queue_dir")
+            sd = req.args.get("staging_dir")
+            sj = req.args.get("staging_jsonl")
+            result = promote_candidate(
+                candidate_id=str(req.args.get("candidate_id", "")),
+                source=str(req.args.get("source", "promotion_queue")),
+                mode=req.mode,
+                approval_token=str(req.args.get("approval_token", "")),
+                operator_id=str(req.args.get("operator_id", "")),
+                confirm_phrase=str(req.args.get("confirm_phrase", "")),
+                queue_dir=Path(qd) if qd else None,
+                staging_dir=Path(sd) if sd else None,
+                staging_jsonl=Path(sj) if sj else None,
+            )
+            return ToolCallResult(name, ok=result.get("ok", False), blocked=not result.get("ok", False), approval_required=not result.get("ok", False), result=result)
         if name == "smoke_test_readonly":
             return self._smoke(name, req.args)
         if name in {"report_writer", "file_patch_dry_run"}:

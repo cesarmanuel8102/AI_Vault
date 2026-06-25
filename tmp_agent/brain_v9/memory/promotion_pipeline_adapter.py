@@ -31,19 +31,26 @@ class PromotionPipelineAdapter:
     This adapter never writes to canonical semantic memory or FAISS.
     """
 
-    def load_candidates(self, source: str = "all") -> List[Dict[str, Any]]:
+    def load_candidates(
+        self,
+        source: str = "all",
+        queue_dir: Optional[Path] = None,
+        staging_dir: Optional[Path] = None,
+        staging_jsonl: Optional[Path] = None,
+    ) -> List[Dict[str, Any]]:
         candidates: List[Dict[str, Any]] = []
         if source in ("promotion_queue", "all"):
-            candidates.extend(self._load_queue_candidates())
+            candidates.extend(self._load_queue_candidates(queue_dir=queue_dir))
         if source in ("semantic_staging", "all"):
-            candidates.extend(self._load_staging_candidates())
+            candidates.extend(self._load_staging_candidates(staging_dir=staging_dir, staging_jsonl=staging_jsonl))
         return candidates
 
-    def _load_queue_candidates(self) -> List[Dict[str, Any]]:
-        if not QUEUE_DIR.exists():
+    def _load_queue_candidates(self, queue_dir: Optional[Path] = None) -> List[Dict[str, Any]]:
+        qdir = queue_dir or QUEUE_DIR
+        if not qdir.exists():
             return []
         out: List[Dict[str, Any]] = []
-        for path in sorted(QUEUE_DIR.glob("*.json")):
+        for path in sorted(qdir.glob("*.json")):
             try:
                 data = json.loads(path.read_text(encoding="utf-8"))
                 if isinstance(data, list):
@@ -55,18 +62,24 @@ class PromotionPipelineAdapter:
                 continue
         return out
 
-    def _load_staging_candidates(self) -> List[Dict[str, Any]]:
+    def _load_staging_candidates(
+        self,
+        staging_dir: Optional[Path] = None,
+        staging_jsonl: Optional[Path] = None,
+    ) -> List[Dict[str, Any]]:
+        sdir = staging_dir or STAGING_DIR
+        sjsonl = staging_jsonl or STAGING_JSONL
         out: List[Dict[str, Any]] = []
-        if STAGING_JSONL.exists():
-            for line in STAGING_JSONL.read_text(encoding="utf-8").splitlines():
+        if sjsonl.exists():
+            for line in sjsonl.read_text(encoding="utf-8").splitlines():
                 if not line.strip():
                     continue
                 try:
                     item = json.loads(line)
-                    out.append(self.normalize_candidate(item, str(STAGING_JSONL), "semantic_staging"))
+                    out.append(self.normalize_candidate(item, str(sjsonl), "semantic_staging"))
                 except Exception:
                     continue
-        for path in sorted(STAGING_DIR.glob("*.json")):
+        for path in sorted(sdir.glob("*.json")):
             if path.name == "semantic_memory_candidate.jsonl":
                 continue
             try:
