@@ -1,0 +1,13 @@
+{
+  "promotion_queue_candidate_count": 57,
+  "semantic_staging_candidate_count": 53,
+  "total_candidate_count": 110,
+  "generated_candidate_id_count": 20,
+  "missing_candidate_id_count": 0,
+  "unknown_domain_count": 16,
+  "mapped_domain_count": 82,
+  "source_bucket_distribution": {
+    "promotion_queue": 57,
+    "semantic_staging": 53
+  }
+}

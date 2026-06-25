@@ -1,0 +1,63 @@
+[
+  {
+    "label": "generated",
+    "candidate_id": "cand_54cd7348d79bf340",
+    "decision": "promotable_candidate",
+    "tool_name": "promotion_candidate_validate",
+    "ok": true,
+    "blocked": false,
+    "write_performed": false,
+    "would_write_jsonl": false,
+    "would_write_faiss": false,
+    "candidate_valid": true,
+    "duplicate_exact": false,
+    "validation_errors": []
+  },
+  {
+    "label": "promotable",
+    "candidate_id": "llm_grounded_cycle_001",
+    "decision": "promotable_candidate",
+    "tool_name": "promotion_candidate_validate",
+    "ok": true,
+    "blocked": false,
+    "write_performed": false,
+    "would_write_jsonl": false,
+    "would_write_faiss": false,
+    "candidate_valid": true,
+    "duplicate_exact": false,
+    "validation_errors": []
+  },
+  {
+    "label": "unknown_domain",
+    "candidate_id": "cycle02_retry_candidate_002",
+    "decision": "unknown_domain_needs_review",
+    "tool_name": "promotion_candidate_validate",
+    "ok": true,
+    "blocked": false,
+    "write_performed": false,
+    "would_write_jsonl": false,
+    "would_write_faiss": false,
+    "candidate_valid": false,
+    "duplicate_exact": false,
+    "validation_errors": [
+      "domain_unknown",
+      "source_cycle_unknown"
+    ]
+  },
+  {
+    "label": "duplicate",
+    "candidate_id": "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_1",
+    "decision": "duplicate_exact",
+    "tool_name": "promotion_candidate_validate",
+    "ok": true,
+    "blocked": false,
+    "write_performed": false,
+    "would_write_jsonl": false,
+    "would_write_faiss": false,
+    "candidate_valid": false,
+    "duplicate_exact": true,
+    "validation_errors": [
+      "duplicate_exact_text_in_canonical_memory"
+    ]
+  }
+]

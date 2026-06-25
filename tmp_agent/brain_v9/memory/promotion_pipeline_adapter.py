@@ -22,6 +22,46 @@ ALLOWED_TERMINAL_STATUSES: Set[str] = {
     "staging_only",
 }
 
+# High-confidence keyword-based domain mapping for unknown-domain candidates.
+DOMAIN_KEYWORD_MAP = {
+    "autonomy_dashboard_visual_trace_self_improvement_governance": [
+        "autonomy", "dashboard", "visual", "trace", "self-improvement", "governance",
+        "scheduler", "self-diagnosis", "fallback", "timeout", "operator ux", "status reliability",
+    ],
+    "brain_architecture": [
+        "brain", "architecture", "debugging", "local ai", "coding", "developer", "intent router",
+        "generalization", "router", "runtime", "native runtime",
+    ],
+    "semantic_memory": [
+        "memory", "faiss", "retrieval", "semantic", "promotion quality", "promotion queue", "snapshot",
+        "rollback", "jsonl", "embedding", "index",
+    ],
+    "learning_external": [
+        "external source", "github", "repo", "official sources", "learning pipeline", "documentation",
+        "api", "sdk",
+    ],
+    "governance": [
+        "governance", "audit", "approval", "operator readiness", "safety", "evidence", "discipline",
+        "rollback/snapshot",
+    ],
+    "production_operations": [
+        "production", "operations", "deployment", "runtime operations", "trucking", "dispatcher",
+        "business operations", "field inspection", "cei", "fdot", "finance", "risk management",
+        "flatbed",
+    ],
+    "operator_readiness": [
+        "operator", "ux", "clarity", "career", "professional communication", "english", "readiness",
+    ],
+    "tools_capabilities": [
+        "tool", "capability", "file patch", "git commit", "smoke test", "promotion candidate", "gateway",
+    ],
+}
+
+KNOWN_DOMAINS = set(DOMAIN_KEYWORD_MAP.keys()) | {
+    "runtime_operations",
+    "general",
+}
+
 
 class PromotionPipelineAdapter:
     """
@@ -103,9 +143,17 @@ class PromotionPipelineAdapter:
         summary = str(candidate.get("summary") or candidate.get("text") or "").strip()
         if len(summary) > 300:
             summary = summary[:300] + "..."
-        record_id = str(candidate.get("candidate_id") or candidate.get("event_id") or "")
+        original_id = str(candidate.get("candidate_id") or candidate.get("event_id") or "").strip()
+        candidate_id_generated = False
+        record_id = original_id
+        if not record_id:
+            record_id = self._generate_candidate_id(source_bucket, source_path, text)
+            candidate_id_generated = True
         raw = {
             "candidate_id": record_id,
+            "original_candidate_id": original_id,
+            "candidate_id_generated": candidate_id_generated,
+            "candidate_id_generation_method": "sha256_source_path_text" if candidate_id_generated else "source_field",
             "source_path": source_path,
             "source_bucket": source_bucket,
             "text": text,
@@ -131,6 +179,13 @@ class PromotionPipelineAdapter:
             "hash": self._hash(text, record_id),
         }
         raw["adapter_status"] = "normalized"
+        # Apply deterministic domain normalization only if currently unknown.
+        domain_info = self._normalize_domain(raw)
+        raw["domain"] = domain_info["domain"]
+        raw["canonical_domain"] = domain_info["canonical_domain"]
+        raw["domain_review_required"] = domain_info["domain_review_required"]
+        raw["domain_mapping_confidence"] = domain_info["domain_mapping_confidence"]
+        raw["normalization_notes"] = domain_info["normalization_notes"]
         return raw
 
     def validate_candidate(self, candidate: Dict[str, Any]) -> Dict[str, Any]:
@@ -232,6 +287,63 @@ class PromotionPipelineAdapter:
                 "safety_score": candidate.get("safety_score"),
                 "terminal_status": candidate.get("terminal_status"),
             },
+        }
+
+    def _generate_candidate_id(self, source_bucket: str, source_path: str, text: str) -> str:
+        payload = json.dumps({"bucket": source_bucket, "path": source_path, "text": text}, sort_keys=True, ensure_ascii=False)
+        return "cand_" + hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]
+
+    def _normalize_domain(self, candidate: Dict[str, Any]) -> Dict[str, Any]:
+        domain = str(candidate.get("domain") or "unknown").lower()
+        canonical_domain = str(candidate.get("canonical_domain") or domain).lower()
+        if domain in KNOWN_DOMAINS or canonical_domain in KNOWN_DOMAINS:
+            return {
+                "domain": domain if domain in KNOWN_DOMAINS else canonical_domain,
+                "canonical_domain": canonical_domain if canonical_domain in KNOWN_DOMAINS else domain,
+                "domain_review_required": False,
+                "domain_mapping_confidence": "existing",
+                "normalization_notes": "domain already known",
+            }
+
+        # Collect evidence text for keyword matching.
+        evidence_parts = [
+            candidate.get("category", ""),
+            candidate.get("source_cycle", ""),
+            str(candidate.get("source_metadata") or {}),
+            Path(candidate.get("source_path", "")).name,
+            candidate.get("text", ""),
+            candidate.get("summary", ""),
+        ]
+        evidence_text = " ".join(str(p).lower() for p in evidence_parts if p)
+
+        scores: Dict[str, int] = {}
+        for known_domain, keywords in DOMAIN_KEYWORD_MAP.items():
+            score = 0
+            for keyword in keywords:
+                if keyword.lower() in evidence_text:
+                    score += 1
+            if score > 0:
+                scores[known_domain] = score
+
+        if scores:
+            best_domain = max(scores, key=lambda d: scores[d])
+            best_score = scores[best_domain]
+            # Require at least 2 keyword hits to avoid low-confidence guessing.
+            if best_score >= 2:
+                return {
+                    "domain": best_domain,
+                    "canonical_domain": best_domain,
+                    "domain_review_required": False,
+                    "domain_mapping_confidence": "high",
+                    "normalization_notes": f"mapped from keywords (score={best_score})",
+                }
+
+        return {
+            "domain": domain,
+            "canonical_domain": canonical_domain,
+            "domain_review_required": True,
+            "domain_mapping_confidence": "low",
+            "normalization_notes": "no high-confidence domain mapping found",
         }
 
     def _is_duplicate_text(self, text: str) -> bool:
