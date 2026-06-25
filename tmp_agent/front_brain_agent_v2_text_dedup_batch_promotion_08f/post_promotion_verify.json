@@ -1,0 +1,30 @@
+{
+  "jsonl_records_before": 1732,
+  "jsonl_records_after": 1756,
+  "jsonl_increment": 24,
+  "faiss_ids_before": 1723,
+  "faiss_ids_after": 1747,
+  "faiss_ids_increment": 24,
+  "faiss_ntotal_before": 1723,
+  "faiss_ntotal_after": 1747,
+  "faiss_ntotal_increment": 24,
+  "all_promoted_in_jsonl": true,
+  "all_promoted_in_faiss_ids": true,
+  "all_text_hashes_unique": true,
+  "no_blank_text_records": true,
+  "no_none_ids": true,
+  "no_duplicate_texts_added": true,
+  "retrieval_sample_passed": true,
+  "retrieval_sample": {
+    "llm_grounded_cycle_001": true,
+    "llm_grounded_cycle_002": true,
+    "llm_grounded_cycle_003": true,
+    "llm_grounded_cycle_004": true,
+    "llm_grounded_cycle_005": true,
+    "llm_grounded_cycle_007": true,
+    "llm_grounded_cycle_008": true,
+    "llm_grounded_cycle_009": true,
+    "cand_54cd7348d79bf340": true,
+    "cand_e559f1f75e450485": true
+  }
+}

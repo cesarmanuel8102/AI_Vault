@@ -1,0 +1,111 @@
+{
+  "original_promotable_entries": 36,
+  "unique_candidate_id_count": 65,
+  "unique_text_count": 32,
+  "dropped_duplicate_id_entries": -29,
+  "dropped_duplicate_text_entries": 33,
+  "duplicate_text_groups": {
+    "12fdaec9a5f8b4f8": [
+      "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_1"
+    ],
+    "7854d8c9df3cfed2": [
+      "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_2"
+    ],
+    "da48b8c7e7363c24": [
+      "codex_pure_brain_training_autonomy_dashboard_visual_trace_self_improvement_governance_training_3"
+    ],
+    "3a44b6d1c1baa9ac": [
+      "codex_pure_brain_training_brain_architecture_training_1",
+      "codex_pure_brain_training_brain_architecture_training_2",
+      "codex_pure_brain_training_brain_architecture_training_3"
+    ],
+    "6e01de0777ae30e1": [
+      "codex_pure_brain_training_cei_fdot_training_1",
+      "codex_pure_brain_training_cei_fdot_training_2",
+      "codex_pure_brain_training_cei_fdot_training_3"
+    ],
+    "c537c68461abd9a3": [
+      "codex_pure_brain_training_english_career_training_1",
+      "codex_pure_brain_training_english_career_training_2",
+      "codex_pure_brain_training_english_career_training_3"
+    ],
+    "38dec64c2f1bc1fd": [
+      "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_1"
+    ],
+    "81459930d8ab5012": [
+      "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_2"
+    ],
+    "22d01b2ca94e6b75": [
+      "codex_pure_brain_training_external_source_learning_pipeline_github_repo_docs_official_sources_training_3"
+    ],
+    "dbf729f47e376ecb": [
+      "codex_pure_brain_training_finance_trading_research_training_1",
+      "codex_pure_brain_training_finance_trading_research_training_2",
+      "codex_pure_brain_training_finance_trading_research_training_3"
+    ],
+    "88e291b10eaec56e": [
+      "codex_pure_brain_training_flatbed_trucking_training_1",
+      "codex_pure_brain_training_flatbed_trucking_training_2",
+      "codex_pure_brain_training_flatbed_trucking_training_3"
+    ],
+    "8383942f2c8386e9": [
+      "codex_pure_brain_training_memory_faiss_governance_training_1",
+      "codex_pure_brain_training_memory_faiss_governance_training_2",
+      "codex_pure_brain_training_memory_faiss_governance_training_3"
+    ],
+    "9d6c616fbd6917a2": [
+      "sem_cand_387aa13574f5"
+    ],
+    "205b767ebde70ae5": [
+      "sem_cand_59dc34785e50"
+    ],
+    "bdf658428c48f8c4": [
+      "sem_cand_5e0081aeaf4d"
+    ],
+    "e11e13423d6d1572": [
+      "sem_cand_9d63233fad75"
+    ],
+    "d046a00691669d24": [
+      "sem_cand_c6f627550fe1"
+    ],
+    "9da3cb713df88c8f": [
+      "cand_d353671754f61353"
+    ],
+    "82c1de6f1192fac3": [
+      "cand_7a4d755ae174404c"
+    ],
+    "e179d79cba6f608a": [
+      "cand_c1efaa1f7f201266"
+    ],
+    "c88cf5dd017bccd8": [
+      "cand_6d3c028b927f4caf"
+    ]
+  },
+  "final_manifest_count": 24,
+  "final_candidate_ids": [
+    "llm_grounded_cycle_001",
+    "llm_grounded_cycle_002",
+    "llm_grounded_cycle_003",
+    "llm_grounded_cycle_004",
+    "llm_grounded_cycle_005",
+    "llm_grounded_cycle_007",
+    "llm_grounded_cycle_008",
+    "llm_grounded_cycle_009",
+    "cand_54cd7348d79bf340",
+    "cand_e559f1f75e450485",
+    "cand_94a6475097ee7027",
+    "cand_18ea5df9ccd1ff41",
+    "cand_60c1ae3f1bb123f9",
+    "cand_4d452ca8c91c7b4d",
+    "cand_48cac3ab27360620",
+    "cand_983ce0933121ad0f",
+    "cand_0384a50ebea61e4e",
+    "cand_2d63c9a8beceb8a4",
+    "cand_86cf121e7301bfa6",
+    "cand_91f4483d427d2fab",
+    "cand_273384888c60aa67",
+    "cand_0f62a1416a352542",
+    "cand_777e3f96672a5d43",
+    "cand_74008516f0ba149f"
+  ]
+}
