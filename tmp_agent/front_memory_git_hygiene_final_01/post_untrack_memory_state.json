@@ -1,0 +1,21 @@
+{
+  "timestamp": "2026-06-25T09:03:38.148882+00:00",
+  "semantic_memory_exists": true,
+  "semantic_memory_sha256": "43e00f1e3ce8509979ccdb8f3101ae91990feae975c9b9330875b1754d3e3b09",
+  "semantic_memory_records": 1756,
+  "semantic_memory_tracked": false,
+  "faiss_index_exists": true,
+  "faiss_index_sha256": "4a0fb56aa7dfeaab0040780a00891c720ee714cba5506507e7aa5399c07e3099",
+  "faiss_index_tracked": false,
+  "faiss_ids_exists": true,
+  "faiss_ids_sha256": "908e915e79f25129103431135d4115aa9ae24a793cc7cd10b26cde634d276a07",
+  "faiss_ids_count": 1747,
+  "faiss_ids_tracked": false,
+  "faiss_ntotal": 1747,
+  "promotion_audit_exists": true,
+  "promotion_audit_tracked": false,
+  "promoted_08f_ids_in_jsonl": true,
+  "promoted_08f_ids_in_faiss_ids": true,
+  "memory_physical_files_present": true,
+  "files_no_longer_tracked": true
+}

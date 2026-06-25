@@ -1,0 +1,56 @@
+{
+  "timestamp": "2026-06-25T09:02:27.512749+00:00",
+  "backup_path": "C:\\AI_VAULT_RUNTIME_BACKUPS\\memory_git_hygiene_final_01_20260625T090227+0000",
+  "copied_files": [
+    {
+      "source": "C:\\AI_VAULT_CANONICAL\\memory\\semantic\\semantic_memory.jsonl",
+      "backup": "C:\\AI_VAULT_RUNTIME_BACKUPS\\memory_git_hygiene_final_01_20260625T090227+0000\\semantic_memory.jsonl",
+      "source_sha256": "43e00f1e3ce8509979ccdb8f3101ae91990feae975c9b9330875b1754d3e3b09",
+      "backup_sha256": "43e00f1e3ce8509979ccdb8f3101ae91990feae975c9b9330875b1754d3e3b09",
+      "hash_match": true
+    },
+    {
+      "source": "C:\\AI_VAULT_CANONICAL\\memory\\semantic\\semantic_memory_faiss.index",
+      "backup": "C:\\AI_VAULT_RUNTIME_BACKUPS\\memory_git_hygiene_final_01_20260625T090227+0000\\semantic_memory_faiss.index",
+      "source_sha256": "4a0fb56aa7dfeaab0040780a00891c720ee714cba5506507e7aa5399c07e3099",
+      "backup_sha256": "4a0fb56aa7dfeaab0040780a00891c720ee714cba5506507e7aa5399c07e3099",
+      "hash_match": true
+    },
+    {
+      "source": "C:\\AI_VAULT_CANONICAL\\memory\\semantic\\semantic_memory_faiss_ids.json",
+      "backup": "C:\\AI_VAULT_RUNTIME_BACKUPS\\memory_git_hygiene_final_01_20260625T090227+0000\\semantic_memory_faiss_ids.json",
+      "source_sha256": "908e915e79f25129103431135d4115aa9ae24a793cc7cd10b26cde634d276a07",
+      "backup_sha256": "908e915e79f25129103431135d4115aa9ae24a793cc7cd10b26cde634d276a07",
+      "hash_match": true
+    },
+    {
+      "source": "C:\\AI_VAULT_CANONICAL\\memory\\semantic\\promotion_audit.jsonl",
+      "backup": "C:\\AI_VAULT_RUNTIME_BACKUPS\\memory_git_hygiene_final_01_20260625T090227+0000\\promotion_audit.jsonl",
+      "source_sha256": "dd1adebd8ba7aba94aceeab881aaf7adc8ab939755cbf828c6471ad4950c096d",
+      "backup_sha256": "dd1adebd8ba7aba94aceeab881aaf7adc8ab939755cbf828c6471ad4950c096d",
+      "hash_match": true
+    },
+    {
+      "source": "C:\\AI_VAULT_CANONICAL\\tmp_agent\\front_brain_agent_v2_text_dedup_batch_promotion_08f\\promotion_manifest_24_text_unique.json",
+      "backup": "C:\\AI_VAULT_RUNTIME_BACKUPS\\memory_git_hygiene_final_01_20260625T090227+0000\\promotion_manifest_24_text_unique.json",
+      "source_sha256": "b3b840a5fb9453143a0a8fef92e656790ec0d9e86b788c6d9feaf26e94945b50",
+      "backup_sha256": "b3b840a5fb9453143a0a8fef92e656790ec0d9e86b788c6d9feaf26e94945b50",
+      "hash_match": true
+    },
+    {
+      "source": "C:\\AI_VAULT_CANONICAL\\tmp_agent\\front_brain_agent_v2_text_dedup_batch_promotion_08f\\post_promotion_verify.json",
+      "backup": "C:\\AI_VAULT_RUNTIME_BACKUPS\\memory_git_hygiene_final_01_20260625T090227+0000\\post_promotion_verify.json",
+      "source_sha256": "1668035b7189f2d61c0089907939c77a00e2da1c4ac3222dc26d0defd53a8c8c",
+      "backup_sha256": "1668035b7189f2d61c0089907939c77a00e2da1c4ac3222dc26d0defd53a8c8c",
+      "hash_match": true
+    },
+    {
+      "source": "C:\\AI_VAULT_CANONICAL\\tmp_agent\\front_brain_agent_v2_text_dedup_batch_promotion_08f\\batch_promotion_summary.md",
+      "backup": "C:\\AI_VAULT_RUNTIME_BACKUPS\\memory_git_hygiene_final_01_20260625T090227+0000\\batch_promotion_summary.md",
+      "source_sha256": "188b9e656e7964d97559aeacee7c04f644c2a5a346a28b60f2f152afbedb8071",
+      "backup_sha256": "188b9e656e7964d97559aeacee7c04f644c2a5a346a28b60f2f152afbedb8071",
+      "hash_match": true
+    }
+  ],
+  "all_hashes_match": true
+}

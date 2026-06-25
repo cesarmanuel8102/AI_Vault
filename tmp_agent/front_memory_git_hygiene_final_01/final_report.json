@@ -1,0 +1,70 @@
+{
+  "STATUS": "MEMORY_GIT_HYGIENE_FINAL_01_COMPLETE",
+  "BASELINE": {
+    "starting_head": "306105671fc4a21f788eccc72d6b015755cb9d6b",
+    "final_head": "edcee729b7709124fb28e1620394736437df2598",
+    "remote_head": "edcee729b7709124fb28e1620394736437df2598",
+    "local_remote_equal": true
+  },
+  "MEMORY_PRESERVATION": {
+    "semantic_memory_records_before": 1756,
+    "semantic_memory_records_after": 1756,
+    "faiss_ids_before": 1747,
+    "faiss_ids_after": 1747,
+    "faiss_ntotal_before": 1747,
+    "faiss_ntotal_after": 1747,
+    "promoted_08f_ids_preserved": true,
+    "physical_memory_files_exist": true
+  },
+  "UNTRACKED": {
+    "semantic_memory_jsonl_untracked": true,
+    "faiss_index_untracked": true,
+    "faiss_ids_untracked": true,
+    "promotion_audit_untracked": true,
+    "autonomous_journal_untracked": true,
+    "rollback_snapshots_untracked": true,
+    "secrets_report_csv_untracked": true
+  },
+  "GITIGNORE": {
+    "memory_semantic_ignored": true,
+    "rollback_snapshots_ignored": true,
+    "autonomous_journal_ignored": true,
+    "secrets_report_csv_ignored": true
+  },
+  "GUARD": {
+    "guard_script_added": true,
+    "guard_script_path": "scripts/git_hygiene/check_no_sensitive_paths_staged.py",
+    "guard_blocks_memory_staging": true,
+    "guard_blocks_secrets_report": true,
+    "guard_allows_safe_reports": true
+  },
+  "TESTS": {
+    "memory_git_hygiene_test": "PASSED",
+    "08f_test": "PASSED",
+    "08b_test": "PASSED",
+    "semantic_hygiene_test": "PASSED",
+    "faiss_hydration_test": "PASSED"
+  },
+  "SAFETY": {
+    "memory_content_deleted": false,
+    "memory_content_committed": false,
+    "memory_files_staged_as_content": false,
+    "promotion_queue_mutated": false,
+    "semantic_staging_mutated": false,
+    "local_backup_created": true,
+    "backup_hashes_match": true
+  },
+  "COMMIT": {
+    "commit_hash": "edcee729b7709124fb28e1620394736437df2598",
+    "message": "chore(repo): untrack runtime memory state",
+    "pushed": true,
+    "local_remote_equal": true
+  },
+  "FINAL_DECISION": {
+    "memory_git_hygiene_p0_closed": true,
+    "24_promotions_preserved_locally": true,
+    "safe_to_continue_auth_front_next": true,
+    "safe_to_ingest_now": true,
+    "recommended_next_front": "09A ingestion with runtime memory already present and Git-hygiene enforced"
+  }
+}

@@ -119,5 +119,24 @@ tmp_agent/strategies/**/campaign_gate_email_last_send.json
 memory/semantic/*.index
 memory/semantic/*.npz
 memory/semantic/*_ids.json
+memory/semantic/semantic_memory.jsonl
+memory/semantic/promotion_audit.jsonl
+memory/semantic/*.faiss
+
+# Runtime journal / audit
+memory/autonomous_journal.jsonl
+
+# Rollback snapshots (runtime backups)
+memory/rollback_snapshots/
+
+# Sensitive audit reports
+audit_reports/secrets_report.csv
+audit_reports/*.csv
+
+# Promotion batch progress logs
+tmp_agent/**/batch_promotion_progress.jsonl
+
+# Chrome partial downloads
+*.crdownload
 # <<< WT-HYGIENE-02 runtime artifacts <<<
 

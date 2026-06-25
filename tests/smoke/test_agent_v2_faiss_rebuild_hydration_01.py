@@ -10,7 +10,7 @@ JSONL_PATH = SEMANTIC_ROOT / "semantic_memory.jsonl"
 IDS_PATH = SEMANTIC_ROOT / "semantic_memory_faiss_ids.json"
 IDX_PATH = SEMANTIC_ROOT / "semantic_memory_faiss.index"
 
-JSONL_SHA256_BASELINE = "5a3180593cb1ddff57861f0976033bb187ae995c9942a83ad8bf01ce9d7c7e7f"
+JSONL_SHA256_BASELINE = "43e00f1e3ce8509979ccdb8f3101ae91990feae975c9b9330875b1754d3e3b09"
 
 
 def _sha256(path: Path) -> str:

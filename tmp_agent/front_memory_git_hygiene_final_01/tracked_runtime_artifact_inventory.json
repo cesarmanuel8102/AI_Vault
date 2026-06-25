@@ -1,0 +1,116 @@
+{
+  "tracked_paths": [
+    {
+      "path": "audit_reports/secrets_report.csv",
+      "classification": "SECRETS_AUDIT_REPORT"
+    },
+    {
+      "path": "memory/autonomous_journal.jsonl",
+      "classification": "RUNTIME_JOURNAL"
+    },
+    {
+      "path": "memory/rollback_snapshots/README.md",
+      "classification": "SAFE_TO_KEEP_TRACKED"
+    },
+    {
+      "path": "memory/rollback_snapshots/agent_full_rebuild_langgraph_recursive_closeout_01_20260616_215645/semantic_memory.jsonl",
+      "classification": "ROLLBACK_SNAPSHOT"
+    },
+    {
+      "path": "memory/rollback_snapshots/agent_full_rebuild_langgraph_recursive_closeout_01_20260616_215645/semantic_memory_faiss.index",
+      "classification": "ROLLBACK_SNAPSHOT"
+    },
+    {
+      "path": "memory/rollback_snapshots/agent_full_rebuild_langgraph_recursive_closeout_01_20260616_215645/semantic_memory_faiss_ids.json",
+      "classification": "ROLLBACK_SNAPSHOT"
+    },
+    {
+      "path": "memory/rollback_snapshots/agent_v2_total_operational_excellence_closeout_01_20260616_230025/semantic_memory.jsonl",
+      "classification": "ROLLBACK_SNAPSHOT"
+    },
+    {
+      "path": "memory/rollback_snapshots/agent_v2_total_operational_excellence_closeout_01_20260616_230025/semantic_memory_faiss.index",
+      "classification": "ROLLBACK_SNAPSHOT"
+    },
+    {
+      "path": "memory/rollback_snapshots/agent_v2_total_operational_excellence_closeout_01_20260616_230025/semantic_memory_faiss_ids.json",
+      "classification": "ROLLBACK_SNAPSHOT"
+    },
+    {
+      "path": "memory/rollback_snapshots/canonical_promotion_execute_approved_01_20260616_005142/semantic_memory.jsonl",
+      "classification": "ROLLBACK_SNAPSHOT"
+    },
+    {
+      "path": "memory/rollback_snapshots/canonical_promotion_execute_approved_01_20260616_005142/semantic_memory_faiss.index",
+      "classification": "ROLLBACK_SNAPSHOT"
+    },
+    {
+      "path": "memory/rollback_snapshots/canonical_promotion_execute_approved_01_20260616_005142/semantic_memory_faiss_ids.json",
+      "classification": "ROLLBACK_SNAPSHOT"
+    },
+    {
+      "path": "memory/rollback_snapshots/codex_current_run_keep_knowledge_add_missing_core_01_20260616_172442/autonomous_journal.jsonl",
+      "classification": "ROLLBACK_SNAPSHOT"
+    },
+    {
+      "path": "memory/rollback_snapshots/codex_current_run_keep_knowledge_add_missing_core_01_20260616_172442/semantic_memory.jsonl",
+      "classification": "ROLLBACK_SNAPSHOT"
+    },
+    {
+      "path": "memory/rollback_snapshots/codex_current_run_keep_knowledge_add_missing_core_01_20260616_172442/semantic_memory_faiss.index",
+      "classification": "ROLLBACK_SNAPSHOT"
+    },
+    {
+      "path": "memory/rollback_snapshots/codex_current_run_keep_knowledge_add_missing_core_01_20260616_172442/semantic_memory_faiss_ids.json",
+      "classification": "ROLLBACK_SNAPSHOT"
+    },
+    {
+      "path": "memory/rollback_snapshots/codex_pure_brain_training_and_pending_drain_01_20260616_163155/semantic_memory.jsonl",
+      "classification": "ROLLBACK_SNAPSHOT"
+    },
+    {
+      "path": "memory/rollback_snapshots/codex_pure_brain_training_and_pending_drain_01_20260616_163155/semantic_memory_faiss.index",
+      "classification": "ROLLBACK_SNAPSHOT"
+    },
+    {
+      "path": "memory/rollback_snapshots/codex_pure_brain_training_and_pending_drain_01_20260616_163155/semantic_memory_faiss_ids.json",
+      "classification": "ROLLBACK_SNAPSHOT"
+    },
+    {
+      "path": "memory/rollback_snapshots/codex_training_memory_mutation_forensic_closeout_01_20260616_170004/semantic_memory.jsonl",
+      "classification": "ROLLBACK_SNAPSHOT"
+    },
+    {
+      "path": "memory/rollback_snapshots/codex_training_memory_mutation_forensic_closeout_01_20260616_170004/semantic_memory_faiss.index",
+      "classification": "ROLLBACK_SNAPSHOT"
+    },
+    {
+      "path": "memory/rollback_snapshots/codex_training_memory_mutation_forensic_closeout_01_20260616_170004/semantic_memory_faiss_ids.json",
+      "classification": "ROLLBACK_SNAPSHOT"
+    },
+    {
+      "path": "memory/semantic/migration_progress.json",
+      "classification": "SAFE_TO_KEEP_TRACKED"
+    },
+    {
+      "path": "memory/semantic/promotion_audit.jsonl",
+      "classification": "RUNTIME_AUDIT"
+    },
+    {
+      "path": "memory/semantic/semantic_memory.jsonl",
+      "classification": "RUNTIME_MEMORY"
+    },
+    {
+      "path": "memory/semantic/semantic_memory_faiss.index",
+      "classification": "RUNTIME_INDEX"
+    },
+    {
+      "path": "memory/semantic/semantic_memory_faiss_ids.json",
+      "classification": "RUNTIME_INDEX"
+    },
+    {
+      "path": "memory/semantic/smart_migration_progress.json",
+      "classification": "SAFE_TO_KEEP_TRACKED"
+    }
+  ]
+}
