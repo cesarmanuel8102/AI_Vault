@@ -126,13 +126,17 @@ class NativeAgentRuntimeV2:
                 self._trace(run_id, "intent_route", "Promotion adapter dry-run route selected", route_info)
                 meta = route_info.get("promotion_adapter_meta", {})
                 source = meta.get("source", "all")
+                tool_input: Dict[str, Any] = {"source": source, "dry_run": True}
+                candidate_id = meta.get("candidate_id")
+                if candidate_id:
+                    tool_input["candidate_id"] = candidate_id
                 step = {
                     "step_id": "promotion_candidate_validate",
                     "kind": "tool",
                     "title": "Validate promotion candidate (dry-run)",
                     "status": "planned",
                     "tool_name": "promotion_candidate_validate",
-                    "input": {"source": source, "dry_run": True},
+                    "input": tool_input,
                 }
                 run["plan"] = [step]
                 run["classification"] = "promotion_adapter_dry_run"

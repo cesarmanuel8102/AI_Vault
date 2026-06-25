@@ -8,6 +8,7 @@ Backwards compatible: LLM classifier path untouched.
 """
 from __future__ import annotations
 import json
+import re
 import time
 import urllib.request
 from typing import Any, Dict, List, Tuple, Optional
@@ -366,7 +367,22 @@ class AgentV2IntentAdapter:
             source = "promotion_queue"
         elif "semantic_staging" in msg_lower:
             source = "semantic_staging"
-        return {"source": source, "dry_run": "true"}
+        meta: Dict[str, str] = {"source": source, "dry_run": "true"}
+        candidate_id = self._extract_candidate_id(message)
+        if candidate_id:
+            meta["candidate_id"] = candidate_id
+        return meta
+
+    def _extract_candidate_id(self, message: str) -> Optional[str]:
+        # Prefer a token immediately after "candidato" / "candidate" if it looks like a safe ID.
+        match = re.search(r"(?:candidato|candidate)\s+([A-Za-z0-9_-]{8,160})", message, re.IGNORECASE)
+        if match:
+            return match.group(1)
+        # Fallback: any token matching the safe ID pattern (but not common stop words).
+        for token in re.findall(r"[A-Za-z0-9_-]{8,160}", message):
+            if token.lower() not in {"promotion_queue", "semantic_staging", "candidate", "candidato"}:
+                return token
+        return None
 
     def _determine_route(self, message: str, intent: str, confidence: float, meta: Dict[str, Any]) -> Dict[str, Any]:
         """Original route determination logic, extracted for reuse."""
