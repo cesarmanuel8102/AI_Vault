@@ -309,6 +309,17 @@ class AgentV2IntentAdapter:
         return self.detector.detect(message, h)
 
     def select_route(self, message: str, history: Optional[List[Dict]] = None, recent_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        # Promotion/dry-run adapter path: explicit, before detector
+        promo = self._detect_promotion_adapter_intent(message)
+        if promo:
+            return {
+                "intent": "PROMOTION_ADAPTER_DRY_RUN",
+                "confidence": 0.95,
+                "route": "promotion_adapter_dry_run",
+                "has_brain_signals": True,
+                "has_generic_only": False,
+                "promotion_adapter_meta": promo,
+            }
         intent, confidence, meta = self.detect_intent(message, history)
         msg_lower = message.lower()
         route_info = {
@@ -339,6 +350,23 @@ class AgentV2IntentAdapter:
         result = self._determine_route(message, intent, confidence, meta)
         route_info.update(result)
         return route_info
+
+    def _detect_promotion_adapter_intent(self, message: str) -> Optional[Dict[str, str]]:
+        msg_lower = message.lower()
+        promo_signals = [
+            "validar candidato", "valida candidato", "valida un candidato",
+            "dry-run candidato", "dry run candidato", "dry-run candidate",
+            "promotion_queue", "semantic_staging", "sin promover", "no promoverlo",
+            "candidate validation", "promotion dry-run", "promotion dry run",
+        ]
+        if not any(s in msg_lower for s in promo_signals):
+            return None
+        source = "all"
+        if "promotion_queue" in msg_lower:
+            source = "promotion_queue"
+        elif "semantic_staging" in msg_lower:
+            source = "semantic_staging"
+        return {"source": source, "dry_run": "true"}
 
     def _determine_route(self, message: str, intent: str, confidence: float, meta: Dict[str, Any]) -> Dict[str, Any]:
         """Original route determination logic, extracted for reuse."""

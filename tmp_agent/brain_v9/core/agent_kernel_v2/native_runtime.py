@@ -119,6 +119,44 @@ class NativeAgentRuntimeV2:
                 self._trace(run_id, "final_answer_created", "Final answer created (direct assistant)", {"provider_metadata": provider_metadata})
                 self._trace(run_id, "run_completed", "Run completed", {"status": "completed"})
                 return run
+
+            # Promotion adapter dry-run route — execute read-only validation tool directly
+            if route_info["route"] == "promotion_adapter_dry_run":
+                run["status"] = "running"
+                self._trace(run_id, "intent_route", "Promotion adapter dry-run route selected", route_info)
+                meta = route_info.get("promotion_adapter_meta", {})
+                source = meta.get("source", "all")
+                step = {
+                    "step_id": "promotion_candidate_validate",
+                    "kind": "tool",
+                    "title": "Validate promotion candidate (dry-run)",
+                    "status": "planned",
+                    "tool_name": "promotion_candidate_validate",
+                    "input": {"source": source, "dry_run": True},
+                }
+                run["plan"] = [step]
+                run["classification"] = "promotion_adapter_dry_run"
+                rd, is_semantic = self._execute_step(step, run_id, run)
+                results = [rd] if rd is not None else []
+                final, provider_metadata = finalize_agent_run(
+                    run, [], results,
+                    requested_checks=[],
+                    scheduled_tools=["promotion_candidate_validate"],
+                    executed_tools=["promotion_candidate_validate"] if (rd and rd.get("ok")) else [],
+                    template_override="promotion_adapter_dry_run",
+                    recent_context=recent_ctx,
+                )
+                run["final_answer"] = final
+                run["provider_metadata"] = provider_metadata
+                run["provider"] = provider_metadata.get("provider_used", run.get("provider"))
+                run["model_used"] = provider_metadata.get("model_used")
+                run["provider_degraded"] = provider_metadata.get("provider_degraded")
+                run["fallback_reason"] = provider_metadata.get("fallback_reason")
+                run["status"] = "completed"
+                self._save_run(run)
+                self._trace(run_id, "final_answer_created", "Final answer created (promotion adapter dry-run)", {"provider_metadata": provider_metadata})
+                self._trace(run_id, "run_completed", "Run completed", {"status": "completed"})
+                return run
         
             # Brain evidence route — deterministic source map
             if route_info["route"] == "brain_evidence":
