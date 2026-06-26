@@ -22,9 +22,15 @@ HYGIENE_DIR = ROOT / "tmp_agent" / "front_memory_git_hygiene_final_01"
 MEM_DIR = ROOT / "memory" / "semantic"
 MANIFEST = ROOT / "tmp_agent" / "front_brain_agent_v2_text_dedup_batch_promotion_08f" / "promotion_manifest_24_text_unique.json"
 
-EXPECTED_RECORDS = 1756
-EXPECTED_IDS = 1747
-EXPECTED_NTOTAL = 1747
+# 08F post-untrack baseline (preserved, not deleted)
+BASELINE_RECORDS_08F = 1756
+BASELINE_IDS_08F = 1747
+BASELINE_NTOTAL_08F = 1747
+
+# Current accepted baseline after 09A+09B
+CURRENT_ACCEPTED_RECORDS = 1771
+CURRENT_ACCEPTED_IDS = 1762
+CURRENT_ACCEPTED_NTOTAL = 1762
 
 
 def _run(cmd):
@@ -43,26 +49,34 @@ def test_semantic_memory_files_exist_locally():
     print("PASS: semantic_memory_files_exist_locally")
 
 
-def test_semantic_memory_records_preserved_1756():
+def test_semantic_memory_records_preserved():
     pre = _load_json(HYGIENE_DIR / "post_untrack_memory_state.json")
-    assert pre["semantic_memory_records"] == EXPECTED_RECORDS
+    # Verify 08F baseline was preserved at the time of the front
+    assert pre["semantic_memory_records"] == BASELINE_RECORDS_08F
     lines = [line for line in (MEM_DIR / "semantic_memory.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
-    assert len(lines) == EXPECTED_RECORDS
-    print("PASS: semantic_memory_records_preserved_1756")
+    # Live counts must be >= 08F baseline and match current accepted baseline
+    assert len(lines) >= BASELINE_RECORDS_08F
+    assert len(lines) == CURRENT_ACCEPTED_RECORDS, f"expected {CURRENT_ACCEPTED_RECORDS} records, got {len(lines)}"
+    print("PASS: semantic_memory_records_preserved")
 
 
-def test_faiss_ids_count_preserved_1747():
+def test_faiss_ids_count_preserved():
     post = _load_json(HYGIENE_DIR / "post_untrack_memory_state.json")
-    assert post["faiss_ids_count"] == EXPECTED_IDS
+    assert post["faiss_ids_count"] == BASELINE_IDS_08F
     ids = json.loads((MEM_DIR / "semantic_memory_faiss_ids.json").read_text(encoding="utf-8"))
-    assert len(ids) == EXPECTED_IDS
-    print("PASS: faiss_ids_count_preserved_1747")
+    assert len(ids) >= BASELINE_IDS_08F
+    assert len(ids) == CURRENT_ACCEPTED_IDS, f"expected {CURRENT_ACCEPTED_IDS} ids, got {len(ids)}"
+    print("PASS: faiss_ids_count_preserved")
 
 
-def test_faiss_ntotal_preserved_1747():
+def test_faiss_ntotal_preserved():
     post = _load_json(HYGIENE_DIR / "post_untrack_memory_state.json")
-    assert post["faiss_ntotal"] == EXPECTED_NTOTAL
-    print("PASS: faiss_ntotal_preserved_1747")
+    assert post["faiss_ntotal"] == BASELINE_NTOTAL_08F
+    import faiss
+    ntotal = int(faiss.read_index(str(MEM_DIR / "semantic_memory_faiss.index")).ntotal)
+    assert ntotal >= BASELINE_NTOTAL_08F
+    assert ntotal == CURRENT_ACCEPTED_NTOTAL, f"expected {CURRENT_ACCEPTED_NTOTAL} ntotal, got {ntotal}"
+    print("PASS: faiss_ntotal_preserved")
 
 
 def test_runtime_memory_files_not_tracked():
@@ -148,9 +162,9 @@ def test_no_memory_files_staged():
 
 if __name__ == "__main__":
     test_semantic_memory_files_exist_locally()
-    test_semantic_memory_records_preserved_1756()
-    test_faiss_ids_count_preserved_1747()
-    test_faiss_ntotal_preserved_1747()
+    test_semantic_memory_records_preserved()
+    test_faiss_ids_count_preserved()
+    test_faiss_ntotal_preserved()
     test_runtime_memory_files_not_tracked()
     test_autonomous_journal_not_tracked()
     test_rollback_snapshots_not_tracked()

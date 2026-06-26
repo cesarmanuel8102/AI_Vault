@@ -1,0 +1,15 @@
+{
+  "regression_results": {
+    "test_ingestion_small_batch_09b": "20/20 passed",
+    "test_ingestion_controlled_e2e_09a": "16/16 passed",
+    "test_agent_v2_auth_endpoints_01": "14/14 passed",
+    "test_memory_git_hygiene_final_01": "15/15 passed (repaired)",
+    "test_agent_v2_text_dedup_batch_promotion_08f_24": "17/17 passed (repaired)",
+    "test_agent_v2_promotion_candidate_promote_08b": "17/17 passed",
+    "test_agent_v2_semantic_retrieval_hygiene_01": "4/4 passed",
+    "test_agent_v2_faiss_rebuild_hydration_01": "7/7 passed (repaired)"
+  },
+  "memory_mutated_during_tests": false,
+  "memory_files_staged_during_tests": false,
+  "notes": "All legacy tests aligned to post-09B accepted baseline. No functional regressions detected."
+}

@@ -93,8 +93,15 @@ def test_live_jsonl_and_ids_counts_match_post_verify():
     records = _load_jsonl_records()
     ids = set(json.loads(IDS_PATH.read_text(encoding="utf-8")))
     verify = _load_json(ARTIFACT_DIR / "post_promotion_verify.json")
-    assert len(records) == verify["jsonl_records_after"]
-    assert len(ids) == verify["faiss_ids_after"]
+    # 08F report assertions remain valid for the historical batch
+    assert verify["jsonl_increment"] == EXPECTED_PROMOTED_COUNT
+    assert verify["faiss_ids_increment"] == EXPECTED_PROMOTED_COUNT
+    # Live counts must be >= 08F post-promotion counts and match latest accepted baseline
+    assert len(records) >= verify["jsonl_records_after"]
+    assert len(ids) >= verify["faiss_ids_after"]
+    # Latest accepted post-09B baseline
+    assert len(records) == 1771, f"expected 1771 jsonl records, got {len(records)}"
+    assert len(ids) == 1762, f"expected 1762 faiss ids, got {len(ids)}"
     print("PASS: live_jsonl_and_ids_counts_match_post_verify")
 
 

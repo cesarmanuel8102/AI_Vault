@@ -1,0 +1,23 @@
+[
+  {
+    "test_file": "tests/smoke/test_agent_v2_text_dedup_batch_promotion_08f_24.py",
+    "line": 96,
+    "failure": "AssertionError: len(records) == verify['jsonl_records_after']",
+    "classification": "FIXED_OLD_COUNT_ASSUMPTION",
+    "details": "08F post-promotion verify recorded jsonl_records_after=1780 (pre-09A/09B). Live memory is 1771. 08F manifest and report artifacts are correct. Only live count assertion is outdated."
+  },
+  {
+    "test_file": "tests/smoke/test_memory_git_hygiene_final_01.py",
+    "line": 50,
+    "failure": "AssertionError: len(lines) == EXPECTED_RECORDS",
+    "classification": "FIXED_OLD_COUNT_ASSUMPTION",
+    "details": "Test expects 1756 records (pre-09A baseline). Live memory is 1771 after 09A+09B promotions. Files exist, are untracked, and guard passes. Only fixed count is outdated."
+  },
+  {
+    "test_file": "tests/smoke/test_agent_v2_faiss_rebuild_hydration_01.py",
+    "line": 34,
+    "failure": "AssertionError: _sha256(JSONL_PATH) == JSONL_SHA256_BASELINE",
+    "classification": "FIXED_OLD_SHA_ASSUMPTION",
+    "details": "Test hardcodes JSONL_SHA256_BASELINE from an old baseline. After 09A+09B promotions, SHA changed. Should use dynamic before/after comparison."
+  }
+]

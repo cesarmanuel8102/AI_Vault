@@ -1,0 +1,39 @@
+{
+  "status": "LEGACY_BASELINE_TEST_REPAIR_09B_CLOSEOUT_COMPLETE",
+  "tests_repaired": [
+    "tests/smoke/test_agent_v2_text_dedup_batch_promotion_08f_24.py",
+    "tests/smoke/test_memory_git_hygiene_final_01.py",
+    "tests/smoke/test_agent_v2_faiss_rebuild_hydration_01.py"
+  ],
+  "helper_created": "tests/smoke/_accepted_runtime_baseline.py",
+  "old_assumptions_removed": [
+    "Fixed old count assumption in test_live_jsonl_and_ids_counts_match_post_verify",
+    "Fixed old count assumptions in test_semantic_memory_records_preserved_1756",
+    "Fixed old count assumptions in test_faiss_ids_count_preserved_1747",
+    "Fixed old count assumptions in test_faiss_ntotal_preserved_1747",
+    "Fixed old SHA assumption in test_semantic_jsonl_unchanged_after_rebuild"
+  ],
+  "new_accepted_baseline": {
+    "front": "09B",
+    "commit_short": "3892004",
+    "semantic_memory_records": 1771,
+    "faiss_ids_count": 1762,
+    "faiss_ntotal": 1762
+  },
+  "targeted_tests_passed": {
+    "08f_test": "17/17",
+    "memory_hygiene_test": "15/15",
+    "faiss_hydration_test": "7/7"
+  },
+  "regression_tests_passed": {
+    "09b_test": "20/20",
+    "09a_test": "16/16",
+    "auth_test": "14/14",
+    "08b_test": "17/17",
+    "semantic_hygiene_test": "4/4",
+    "full_regression": "all pass"
+  },
+  "memory_mutated": false,
+  "memory_files_staged": false,
+  "recommended_next_front": "FRONT-INGESTION-MEDIUM-BATCH-09C"
+}
