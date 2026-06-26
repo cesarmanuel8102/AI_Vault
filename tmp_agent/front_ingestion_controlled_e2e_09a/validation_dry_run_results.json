@@ -1,0 +1,29 @@
+[
+  {
+    "candidate_id": "ingest09a_auth_hardening_critical_endpoints",
+    "ok": true,
+    "candidate_valid": false,
+    "validation_errors": [
+      "candidate_not_found"
+    ],
+    "duplicate_exact": false
+  },
+  {
+    "candidate_id": "ingest09a_memory_hygiene_runtime_state",
+    "ok": true,
+    "candidate_valid": false,
+    "validation_errors": [
+      "candidate_not_found"
+    ],
+    "duplicate_exact": false
+  },
+  {
+    "candidate_id": "ingest09a_text_dedup_promotion_batches",
+    "ok": true,
+    "candidate_valid": false,
+    "validation_errors": [
+      "candidate_not_found"
+    ],
+    "duplicate_exact": false
+  }
+]

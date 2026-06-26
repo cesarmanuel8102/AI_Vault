@@ -1,0 +1,35 @@
+[
+  {
+    "index": 1,
+    "candidate_id": "ingest09a_auth_hardening_critical_endpoints",
+    "ok": true,
+    "promotion_performed": true,
+    "write_performed": true,
+    "validation_errors": [],
+    "safety_flags": [],
+    "faiss_ids_after_count": 1748,
+    "faiss_ntotal_after": 1748
+  },
+  {
+    "index": 2,
+    "candidate_id": "ingest09a_memory_hygiene_runtime_state",
+    "ok": true,
+    "promotion_performed": true,
+    "write_performed": true,
+    "validation_errors": [],
+    "safety_flags": [],
+    "faiss_ids_after_count": 1749,
+    "faiss_ntotal_after": 1749
+  },
+  {
+    "index": 3,
+    "candidate_id": "ingest09a_text_dedup_promotion_batches",
+    "ok": true,
+    "promotion_performed": true,
+    "write_performed": true,
+    "validation_errors": [],
+    "safety_flags": [],
+    "faiss_ids_after_count": 1750,
+    "faiss_ntotal_after": 1750
+  }
+]

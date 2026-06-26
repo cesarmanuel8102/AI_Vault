@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09a_auth_hardening_critical_endpoints",
+  "source_front": "front_security_auth_on_all_endpoints_01",
+  "source_path": "tmp_agent/front_security_auth_on_all_endpoints_01/auth_patch_report.md",
+  "domain": "governance",
+  "category": "controlled_ingestion_e2e_09a",
+  "text": "Critical agent endpoints that create, plan, execute, pause, resume, cancel agent runs, or handle chat completions must require strict token authentication via the require_strict_operator_access dependency. The 01 auth front hardened seven critical endpoints: POST /v2/chat/agent, POST /v2/agent/runs, POST /v2/agent/runs/{run_id}/plan, execute, pause, resume, cancel, and POST /v1/chat/completions. Unauthenticated requests receive 403 Forbidden with no localhost bypass allowed. Valid BRAIN_ADMIN_TOKEN requests return 200 OK. Read-only mode gates remain active and block write tools even for authenticated requests. Fourteen auth endpoint tests passed, alongside memory hygiene, 08F batch promotion, 08B promotion tool, semantic retrieval hygiene, and FAISS rebuild hydration tests. Operator access now requires explicit token validation on every protected call.",
+  "summary": "Auth hardening requires strict token auth on critical agent endpoints",
+  "created_by": "front_ingestion_controlled_e2e_09a",
+  "source_cycle": "09a_controlled_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

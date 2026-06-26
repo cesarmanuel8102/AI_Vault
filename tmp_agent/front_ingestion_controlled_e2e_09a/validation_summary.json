@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-06-26T01:33:58.193848+00:00",
+  "total_candidates": 3,
+  "valid_candidates": 0,
+  "promotable_candidates": 0,
+  "no_writes_performed": true,
+  "validation_dry_run_passed": false,
+  "summary": "0 valid of 3",
+  "all_errors": [
+    "text_length_not_80_to_220",
+    "text_length_not_80_to_220",
+    "text_length_not_80_to_220"
+  ]
+}

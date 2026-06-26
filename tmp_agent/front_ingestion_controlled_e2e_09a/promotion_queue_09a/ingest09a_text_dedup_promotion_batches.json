@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09a_text_dedup_promotion_batches",
+  "source_front": "front_brain_agent_v2_text_dedup_batch_promotion_08f",
+  "source_path": "tmp_agent/front_brain_agent_v2_text_dedup_batch_promotion_08f/batch_promotion_summary.md",
+  "domain": "tools_capabilities",
+  "category": "controlled_ingestion_e2e_09a",
+  "text": "Promotion batches must deduplicate by exact normalized text content, not only by candidate_id, because unique identifiers can still represent duplicate semantic content. The 08F front demonstrated that thirty-six submitted entries reduced to only twenty-eight unique candidate IDs and further to twenty-four unique normalized texts after deduplication. Failing to deduplicate by text allows redundant canonical memory entries that bloat the index, increase retrieval noise, and degrade semantic integrity. The deduplication pipeline normalizes whitespace and case before comparing text bodies, ensuring truly unique lessons are promoted while duplicates are silently skipped. All twenty-four promoted IDs were verified present in both JSONL and FAISS indexes, text hashes were confirmed unique, and retrieval samples passed. This practice preserves vector index quality and prevents semantic drift from repeated near-identical entries.",
+  "summary": "Promotion batches must deduplicate by normalized text, not just candidate ID",
+  "created_by": "front_ingestion_controlled_e2e_09a",
+  "source_cycle": "09a_controlled_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}
