@@ -1,0 +1,12 @@
+{
+  "live_probe_status": "not_run",
+  "reason": "Live server restart not safe during controlled hygiene front. FastAPI TestClient used instead to validate endpoint auth behavior.",
+  "testclient_results": {
+    "v2_chat_agent_without_token": "403 Forbidden",
+    "v2_chat_agent_with_token": "200 OK",
+    "v2_agent_runs_without_token": "403 Forbidden",
+    "v2_agent_runs_with_token": "200 OK",
+    "v1_chat_completions_without_token": "403 Forbidden",
+    "v1_chat_completions_with_token": "200 OK"
+  }
+}

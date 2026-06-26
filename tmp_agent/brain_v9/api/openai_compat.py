@@ -11,12 +11,13 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from brain_v9.core.router_entrypoint import handle_user_message
+from brain_v9.api_security import require_strict_operator_access
 
-router = APIRouter(prefix="/v1", tags=["openai-compatible"])
+router = APIRouter(prefix="/v1", tags=["openai-compatible"], dependencies=[Depends(require_strict_operator_access)])
 
 MODEL_IDS = ("brain-v9-local", "brain", "ai-vault-brain")
 DEFAULT_MODEL = "brain-v9-local"

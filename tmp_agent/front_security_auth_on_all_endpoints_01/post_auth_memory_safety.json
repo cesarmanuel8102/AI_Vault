@@ -1,0 +1,10 @@
+{
+  "timestamp": "2026-06-26T00:34:18.809686+00:00",
+  "semantic_memory_records": 1756,
+  "faiss_ids_count": 1747,
+  "faiss_ntotal": 1747,
+  "promoted_08f_ids_in_jsonl": true,
+  "promoted_08f_ids_in_faiss_ids": true,
+  "memory_files_exist": true,
+  "memory_mutated": false
+}

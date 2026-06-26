@@ -1,13 +1,14 @@
 from __future__ import annotations
 from typing import Any, Dict
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from .finalizer import PRIMARY_KIMI_MODEL
 from .runtime import get_agent_runtime_v2, LANGGRAPH_USED, LANGGRAPH_BLOCKER
 from .state import CANONICAL_AGENT_VERSION
+from brain_v9.api_security import require_strict_operator_access
 
-router = APIRouter(prefix="/v2/agent", tags=["Agent V2"])
-chat_router = APIRouter(prefix="/v2/chat", tags=["Agent V2 Chat"])
+router = APIRouter(prefix="/v2/agent", tags=["Agent V2"], dependencies=[Depends(require_strict_operator_access)])
+chat_router = APIRouter(prefix="/v2/chat", tags=["Agent V2 Chat"], dependencies=[Depends(require_strict_operator_access)])
 
 class CreateRunRequest(BaseModel):
     goal: str
