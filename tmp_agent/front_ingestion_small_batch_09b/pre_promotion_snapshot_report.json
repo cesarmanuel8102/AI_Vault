@@ -1,0 +1,26 @@
+{
+  "snapshot_dir": "C:\\AI_VAULT_CANONICAL\\memory\\rollback_snapshots\\20260626T021348_953734_ingestion_small_batch_09b_12",
+  "timestamp": "2026-06-26T02:13:48.953734+00:00",
+  "candidates_included": [
+    "ingest09b_auth_test_separation",
+    "ingest09b_strict_auth_no_localhost_bypass",
+    "ingest09b_memory_untracked_runtime_boundary",
+    "ingest09b_guard_blocks_memory_staging",
+    "ingest09b_promotion_requires_text_dedup",
+    "ingest09b_rollback_before_batch_write",
+    "ingest09b_retrieval_query_by_text_not_id",
+    "ingest09b_agent_probe_read_only_auth",
+    "ingest09b_validation_before_promotion",
+    "ingest09b_no_memory_commit_after_promotion",
+    "ingest09b_source_loader_boundary",
+    "ingest09b_small_batch_scaling_rule"
+  ],
+  "files_copied": [
+    "semantic_memory.jsonl",
+    "semantic_memory_faiss.index",
+    "semantic_memory_faiss_ids.json",
+    "promotion_audit.jsonl",
+    "curated_candidates_09b.json",
+    "validation_summary.json"
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "agent_use_probe_status": "passed",
+  "auth_required": true,
+  "write_tools_used": false,
+  "memory_mutated": false,
+  "probes": [
+    {
+      "query": "Why should endpoint auth tests be separate from ToolGateway governance tests?",
+      "status": 200,
+      "ok": true,
+      "mode_effective": "read_only",
+      "answer_preview": "## Agent V2 Evidence Analysis \u2014 Finalization\n\n---\n\n### Summary\n\nThis read-only brain evidence run examined why **endpoint authentication tests** should remain **separate** from **ToolGateway governance tests**. The evidence reveals architectural separation between API-layer security (`require_strict",
+      "has_relevant_keywords": true
+    },
+    {
+      "query": "How should runtime semantic memory be handled in Git?",
+      "status": 200,
+      "ok": true,
+      "mode_effective": "read_only",
+      "answer_preview": "## Agent V2 Finalization \u2014 Brain Evidence Analysis\n\n### Summary\nThe current run investigated **how runtime semantic memory should be handled in Git**, using Brain-specific evidence from front directories, traces, and ledgers. The evidence conclusively supports a strict separation: **Git tracks code ",
+      "has_relevant_keywords": true
+    },
+    {
+      "query": "Why must promotion batches deduplicate by normalized text?",
+      "status": 200,
+      "ok": true,
+      "mode_effective": "read_only",
+      "answer_preview": "Promotion batches deduplicate by normalized text because the same promotional content often gets submitted multiple times with trivial variations\u2014different casing, extra whitespace, punctuation differences, or minor formatting changes. Without normalization, you'd treat \"Summer Sale!\", \"summer sale\"",
+      "has_relevant_keywords": true
+    },
+    {
+      "query": "Why should semantic retrieval be tested by text phrase rather than candidate_id?",
+      "status": 200,
+      "ok": true,
+      "mode_effective": "read_only",
+      "answer_preview": "Semantic retrieval should be tested by text phrase rather than candidate_id because the whole point of semantic search is to find meaningfully related content that might not share surface-level identifiers. A candidate_id is just an arbitrary label\u2014it tells you nothing about whether two items are co",
+      "has_relevant_keywords": true
+    },
+    {
+      "query": "What is the safe scaling rule after a 3-record ingestion E2E?",
+      "status": 200,
+      "ok": true,
+      "mode_effective": "read_only",
+      "answer_preview": "## Agent V2 Evidence Analysis \u2014 Finalized Run\n\n---\n\n### Summary\n\n**Goal:** Determine the safe scaling rule after a 3-record ingestion E2E.\n\n**Finding:** The repository contains evidence of a **controlled E2E ingestion pipeline** (`feat(ingestion): controlled E2E 09A - promote 3 curated candidates to",
+      "has_relevant_keywords": true
+    }
+  ]
+}

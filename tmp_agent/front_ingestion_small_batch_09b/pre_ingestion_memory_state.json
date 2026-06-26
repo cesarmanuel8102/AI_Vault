@@ -1,0 +1,13 @@
+{
+  "phase": "baseline_memory_safety_09b",
+  "timestamp_utc": "2026-06-26T02:00:00Z",
+  "starting_head": "dd8ffd2808d7bb81cdfbaecb7bed7e1fb2eadf7a",
+  "jsonl_records": 1759,
+  "faiss_ids_count": 1750,
+  "faiss_ntotal": 1750,
+  "08f_ids_present": true,
+  "09a_ids_present": true,
+  "memory_files_tracked": false,
+  "memory_files_staged": false,
+  "status": "PASS"
+}
