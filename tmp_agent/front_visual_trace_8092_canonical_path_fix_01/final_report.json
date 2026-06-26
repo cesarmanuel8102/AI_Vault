@@ -1,0 +1,46 @@
+{
+  "status": "VISUAL_TRACE_8092_CANONICAL_PATH_FIXED",
+  "starting_head": "46f344a290c6974665ae6303f6889233ee221b3b",
+  "8092_running": true,
+  "8092_pid_before": 194576,
+  "8092_pid_after": 180476,
+  "8091_running": true,
+  "8091_role": "secondary_api_canonical",
+  "hardcoded_8091_removed": true,
+  "same_origin_trace_proxy_used": true,
+  "dashboard_chat_verified": true,
+  "dashboard_trace_proxy_verified": true,
+  "v2_trace_alias_added": false,
+  "live_run_id": "agv2_923c1491bbc9826c",
+  "live_trace_event_count": 40,
+  "provider_model_present": true,
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "tests_passed": {
+    "new_8092_path_test": "8/8 PASSED",
+    "visual_trace_regression": "12/12 PASSED",
+    "langgraph_regression": "11/11 PASSED",
+    "auth_regression": "15/15 PASSED",
+    "governance_regression": "8/8 PASSED",
+    "09c_regression": "24/24 PASSED",
+    "faiss_regression": "7/7 PASSED",
+    "total": "85/85 PASSED"
+  },
+  "memory": {
+    "records_before": 1795,
+    "records_after": 1795,
+    "faiss_ids_before": 1786,
+    "faiss_ids_after": 1786,
+    "faiss_ntotal_before": 1786,
+    "faiss_ntotal_after": 1786,
+    "memory_mutated": false
+  },
+  "files_changed": ["tmp_agent/brain_v9/dashboard/static/app.js"],
+  "real_completion_rule_compliance": true,
+  "final_decision": {
+    "accept_visual_trace_as_complete": true,
+    "safe_to_start_09d_large_controlled_batch": false,
+    "safe_to_mass_ingest_now": false,
+    "recommended_next_front": "09D large controlled batch ingestion (requires explicit authorization)"
+  }
+}

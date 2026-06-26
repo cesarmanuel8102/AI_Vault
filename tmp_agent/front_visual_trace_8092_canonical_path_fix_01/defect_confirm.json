@@ -1,0 +1,13 @@
+{
+  "defect_confirmed": true,
+  "hardcoded_8091_in_ui": true,
+  "same_origin_trace_proxy_exists": true,
+  "trace_url_from_chat_is_relative": true,
+  "8092_direct_v2_trace_available_before_fix": false,
+  "dashboard_proxy_trace_available_before_fix": true,
+  "files_with_hardcoded_8091": [
+    "tmp_agent/brain_v9/dashboard/static/app.js"
+  ],
+  "lines_affected": [252, 264, 288],
+  "fix_applied": "Replaced 8091 prefix with same-origin dashboard proxy URL conversion"
+}

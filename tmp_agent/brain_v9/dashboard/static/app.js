@@ -249,8 +249,8 @@ async function chat() {
     }
     
     if (j.trace_url) {
-      const traceUrl = j.trace_url.startsWith('/') ? 'http://127.0.0.1:8091' + j.trace_url : j.trace_url;
-      metaHtml += '<br/><a href="' + traceUrl + '" target="_blank" style="color:#6c63ff">🔍 Open Full Trace</a> <small>(' + (j.run_id || '—') + ')</small>';
+      const traceUrl = j.trace_url.replace('/v2/agent/runs/', '/brain-dashboard/agent-v2/runs/');
+      metaHtml += '<br/><a href="' + traceUrl + '" target="_blank" style="color:#6c63ff">&#128269; Open Full Trace</a> <small>(' + (j.run_id || '&#8212;') + ')</small>';
     }
     
     meta.innerHTML = metaHtml;
@@ -261,7 +261,7 @@ async function chat() {
       traceDiv.style.marginTop = '8px';
       traceDiv.style.fontSize = '12px';
       traceDiv.style.color = '#8b90b0';
-      traceDiv.innerHTML = 'Trace: ' + j.trace_url + ' <button onclick="window.open(\'' + j.trace_url + '\',\'_blank\')">View</button>';
+      traceDiv.innerHTML = 'Trace: ' + j.trace_url.replace('/v2/agent/runs/', '/brain-dashboard/agent-v2/runs/') + ' <button onclick="window.open(\'' + j.trace_url.replace('/v2/agent/runs/', '/brain-dashboard/agent-v2/runs/') + '\',\'_blank\')">View</button>';
       out.appendChild(document.createElement('hr'));
       out.appendChild(traceDiv);
     }
@@ -285,7 +285,8 @@ function renderExecutionTrace(data) {
   const cotExposed = data.raw_cot_exposed || false;
   const runId = data.run_id || '—';
   const traceUrl = data.trace_url || '';
-  const fullTraceLink = traceUrl.startsWith('/') ? ('http://127.0.0.1:8091' + traceUrl) : traceUrl;
+  const proxyTraceUrl = traceUrl.replace('/v2/agent/runs/', '/brain-dashboard/agent-v2/runs/');
+  const fullTraceLink = proxyTraceUrl;
   const safeId = runId.replace(/[^a-z0-9]/gi, '');
 
   // Build metadata table
