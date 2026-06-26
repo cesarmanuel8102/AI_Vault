@@ -1,0 +1,67 @@
+{
+  "STATUS": "SECURITY_AUTH_ON_ALL_ENDPOINTS_01_COMPLETE",
+  "BASELINE": {
+    "starting_head": "e8fdee3c069ff8d3b7aa175cb05120d1d9a6e57f",
+    "final_head": "74f1f7f7334487ab0bac95a901f0ad52fcae1d22",
+    "remote_head": "74f1f7f7334487ab0bac95a901f0ad52fcae1d22",
+    "local_remote_equal": true
+  },
+  "AUTH_PATCH": {
+    "v2_chat_agent_auth_required": true,
+    "v2_agent_create_run_auth_required": true,
+    "v2_agent_plan_auth_required": true,
+    "v2_agent_execute_auth_required": true,
+    "v2_agent_pause_resume_cancel_auth_required": true,
+    "v1_chat_completions_auth_required": true,
+    "strict_token_auth_enforced": true,
+    "localhost_bypass_remaining_on_protected_endpoints": false
+  },
+  "LIVE_PROBES": {
+    "v2_chat_agent_without_token": "403 Forbidden",
+    "v2_chat_agent_with_token": "200 OK",
+    "v2_agent_runs_without_token": "403 Forbidden",
+    "v2_agent_runs_with_token": "200 OK",
+    "v1_chat_completions_without_token": "403 Forbidden",
+    "v1_chat_completions_with_token": "200 OK",
+    "live_probe_status": "not_run (TestClient used)"
+  },
+  "TESTS": {
+    "auth_test": "PASSED",
+    "memory_git_hygiene_test": "PASSED",
+    "08f_test": "PASSED",
+    "08b_test": "PASSED",
+    "semantic_hygiene_test": "PASSED",
+    "faiss_hydration_test": "PASSED"
+  },
+  "MEMORY_SAFETY": {
+    "semantic_memory_records_before": 1756,
+    "semantic_memory_records_after": 1756,
+    "faiss_ids_before": 1747,
+    "faiss_ids_after": 1747,
+    "faiss_ntotal_before": 1747,
+    "faiss_ntotal_after": 1747,
+    "memory_mutated": false,
+    "memory_files_staged": false,
+    "memory_files_tracked": false
+  },
+  "SAFETY": {
+    "promotion_queue_mutated": false,
+    "semantic_staging_mutated": false,
+    "autonomous_journal_staged": false,
+    "guard_passed": true,
+    "secrets_staged": false,
+    "runtime_artifacts_staged": false
+  },
+  "COMMIT": {
+    "commit_hash": "74f1f7f7334487ab0bac95a901f0ad52fcae1d22",
+    "pushed": true,
+    "local_remote_equal": true
+  },
+  "FINAL_DECISION": {
+    "endpoint_security_p0_closed": true,
+    "memory_git_hygiene_still_closed": true,
+    "safe_to_continue_financial_engine_work": true,
+    "safe_to_ingest_now": true,
+    "recommended_next_front": "09A ingestion with auth enforced and memory Git-hygiene active"
+  }
+}
