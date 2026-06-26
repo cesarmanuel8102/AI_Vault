@@ -2,7 +2,7 @@ from __future__ import annotations
 import json, re, subprocess, urllib.request
 from pathlib import Path
 from typing import Any, Dict, List
-from .governance import path_is_blocked, validate_mode, write_allowed
+from .governance import path_is_blocked, validate_mode, write_allowed, selfdev_governance_blocked
 from .schemas import AgentCapability, ToolCallRequest, ToolCallResult, to_dict
 
 ROOT = Path(__file__).resolve().parents[4]
@@ -88,6 +88,14 @@ class ToolGatewayV2:
                 from ...memory.promotion_candidate_promoter import _rejected_report
                 result = _rejected_report(str(req.args.get("candidate_id", "")), ["approval_token_invalid"], [])
                 return ToolCallResult(name, ok=False, blocked=True, approval_required=True, result=result, error="approval_required")
+        # CONTRACT D: Self-dev governance file protection
+        if name in {"file_patch_apply_approval_required", "file_patch_dry_run", "report_writer"}:
+            target_path = str(req.args.get("path", ""))
+            if selfdev_governance_blocked(target_path):
+                gov_token = str(req.args.get("governance_token", ""))
+                gov_confirm = str(req.args.get("confirm_phrase", ""))
+                if gov_token != "AGENTV2_APPROVED_GOVERNANCE_CHANGE" or gov_confirm != "APPROVE_GOVERNANCE_SECURITY_CHANGE":
+                    return ToolCallResult(name, ok=False, blocked=True, error="governance_file_modification_denied_by_default")
         if name == "promotion_candidate_promote":
             from ...memory.promotion_candidate_promoter import promote_candidate
             from pathlib import Path

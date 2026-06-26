@@ -136,6 +136,10 @@ def maintenance_modes():
 def chat_agent(req: AgentChatRequest):
     if not req.message.strip():
         raise HTTPException(status_code=400, detail="message required")
+    # CONTRACT B: Reject requests containing forbidden bypass/override fields in the message
+    from .governance import contains_forbidden_request_fields
+    if contains_forbidden_request_fields({"message": req.message}):
+        raise HTTPException(status_code=403, detail="forbidden bypass/override fields detected in request")
     from .governance import validate_mode, parse_mode_from_message
     from .intent_adapter import AgentV2IntentAdapter
     from .context_assembler import assemble_recent_context, _is_follow_up

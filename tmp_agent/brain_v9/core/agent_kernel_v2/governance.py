@@ -29,6 +29,23 @@ READ_ONLY_TOOL_NAMES = {
     "smoke_test_readonly",
 }
 
+# Governance-critical files that self-dev tools must not modify without explicit governance approval
+GOVERNANCE_PROTECTED_PATHS = {
+    "tmp_agent/brain_v9/api_security.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+    "scripts/git_hygiene/check_no_sensitive_paths_staged.py",
+    "tests/smoke/_accepted_runtime_baseline.py",
+    "tests/smoke/test_agent_v2_auth_endpoints_01.py",
+    "tests/smoke/test_governance_rbac_dev_god_hardening_01.py",
+    ".gitignore",
+}
+
+FORBIDDEN_REQUEST_FIELDS = {
+    "god", "god_mode", "safe_mode", "override_governance",
+    "bypass_auth", "bypass_rbac", "mode",  # mode values god/build/execute blocked in specific validators
+}
+
 
 def normalize_path(path: str) -> str:
     return str(path or "").replace("\\", "/")
@@ -67,19 +84,23 @@ def parse_mode_from_message(message: str) -> str | None:
     return None
 
 
-def validate_mode(mode: str) -> str:
-    """Normalize mode to one of read_only, build, auto."""
-    if mode in {"read_only", "build", "auto"}:
-        return mode
-    return LEGACY_MODE_MAP.get(mode, "read_only")
-
-
 def infer_auto_decision(goal: str) -> str:
     """Infer whether an auto-mode goal requires build or is read-only."""
     g = (goal or "").lower()
     if any(kw in g for kw in WRITE_INTENT_KEYWORDS):
         return "build_required"
     return "read"
+
+
+def validate_mode(mode: str) -> str:
+    """Normalize mode to one of read_only, build, auto. Reject dangerous modes like god."""
+    if mode in {"read_only", "build", "auto"}:
+        return mode
+    # Reject dangerous modes regardless of token
+    lower = str(mode).lower().strip()
+    if lower in {"god", "god_mode", "execute", "unsafe", "superuser"}:
+        return "read_only"  # Fallback to safe default
+    return LEGACY_MODE_MAP.get(mode, "read_only")
 
 
 def mode_requires_escalation(goal: str, mode: str, scheduled_tools: list[str]) -> bool:
@@ -107,3 +128,18 @@ def mode_requires_escalation(goal: str, mode: str, scheduled_tools: list[str]) -
 def write_allowed(mode: str, approval_token: str | None = None) -> bool:
     """Check if write is allowed with valid approval token."""
     return mode == "build" and bool(approval_token and approval_token.startswith("AGENTV2_APPROVED_"))
+
+
+def selfdev_governance_blocked(path: str) -> bool:
+    """Check if a self-dev path targets governance-critical files."""
+    p = normalize_path(path)
+    return any(protected in p for protected in GOVERNANCE_PROTECTED_PATHS)
+
+
+def contains_forbidden_request_fields(args: dict) -> bool:
+    """Check if request args contain forbidden bypass/override fields."""
+    if not args:
+        return False
+    lower_keys = {str(k).lower().strip() for k in args.keys()}
+    forbidden = {"god", "god_mode", "safe_mode", "override_governance", "bypass_auth", "bypass_rbac"}
+    return bool(lower_keys & forbidden)
