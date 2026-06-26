@@ -1,0 +1,46 @@
+{
+  "front": "FRONT-GOVERNANCE-HARDENING-A118B7F-AUDIT-AND-GAP-CLOSEOUT-01",
+  "commit_audited": "a118b7f26899849152b5001b445247234e7d8d07",
+  "memory_baseline": {"jsonl_records": 1795, "faiss_ids_count": 1786, "faiss_ntotal": 1786},
+  "memory_post_audit": {"jsonl_records": 1795, "faiss_ids_count": 1786, "faiss_ntotal": 1786},
+  "patches_applied": [
+    {
+      "gap": "GAP-A",
+      "description": "AgentChatRequest and CreateRunRequest silently dropped extra JSON fields (Pydantic default extra='ignore')",
+      "files": [
+        "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py"
+      ],
+      "change": "Added ConfigDict(extra='forbid') to AgentChatRequest and CreateRunRequest"
+    },
+    {
+      "gap": "GAP-B",
+      "description": "/godmode/status leaked session metadata without authentication",
+      "files": [
+        "tmp_agent/brain_v9/main.py"
+      ],
+      "change": "Added dependencies=[Depends(require_strict_operator_access)] to /godmode/status GET"
+    },
+    {
+      "gap": "GAP-C",
+      "description": "/dev and /godmode POST endpoints relied only on PAD session auth, not strict operator access",
+      "files": [
+        "tmp_agent/brain_v9/main.py"
+      ],
+      "change": "Added dependencies=[Depends(require_strict_operator_access)] to /dev POST and /godmode POST; added ConfigDict(extra='forbid') to DevModeRequest and GodModeRequest"
+    }
+  ],
+  "tests_added": [
+    "tests/smoke/test_governance_hardening_a118b7f_audit_closeout_01.py (8 tests)"
+  ],
+  "claim_reclassifications": {
+    "CLAIM_1": "PARTIAL -> TRUE (after patch: extra fields now rejected with 422)",
+    "CLAIM_6": "NOT_PROVEN -> TRUE (after patch: /godmode/status now requires strict operator access)",
+    "CLAIM_7": "FALSE -> TRUE (after patch: valid token + extra forbidden fields correctly rejected)"
+  },
+  "regression_test_results": {
+    "existing_tests": "15/15 PASSED",
+    "new_tests": "8/8 PASSED",
+    "total": "23/23 PASSED"
+  },
+  "status": "CLOSEOUT_COMPLETE"
+}

@@ -1,0 +1,12 @@
+{
+  "semantic_memory_records": 1795,
+  "faiss_ids_count": 1786,
+  "faiss_ntotal": 1786,
+  "memory_mutated": false,
+  "memory_files_tracked": false,
+  "memory_files_staged": false,
+  "promotion_queue_mutated": false,
+  "semantic_staging_mutated": false,
+  "guard_passed": true,
+  "status": "PASS"
+}

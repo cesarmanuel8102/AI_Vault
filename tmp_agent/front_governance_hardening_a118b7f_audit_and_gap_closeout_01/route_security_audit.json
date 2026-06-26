@@ -1,0 +1,2038 @@
+[
+  {
+    "path": "/openapi.json",
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "name": "openapi",
+    "dependencies": []
+  },
+  {
+    "path": "/docs",
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "name": "swagger_ui_html",
+    "dependencies": []
+  },
+  {
+    "path": "/docs/oauth2-redirect",
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "name": "swagger_ui_redirect",
+    "dependencies": []
+  },
+  {
+    "path": "/redoc",
+    "methods": [
+      "HEAD",
+      "GET"
+    ],
+    "name": "redoc_html",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/health",
+    "methods": [
+      "GET"
+    ],
+    "name": "trading_health",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/policy",
+    "methods": [
+      "GET"
+    ],
+    "name": "trading_policy",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/ibkr/health",
+    "methods": [
+      "GET"
+    ],
+    "name": "ibkr_health",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/ibkr/paper-order-check",
+    "methods": [
+      "POST"
+    ],
+    "name": "ibkr_paper_order_check",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/market/{symbol}",
+    "methods": [
+      "GET"
+    ],
+    "name": "market_data",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/balance",
+    "methods": [
+      "GET"
+    ],
+    "name": "balance",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/trades/open",
+    "methods": [
+      "GET"
+    ],
+    "name": "open_trades",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/trades/history",
+    "methods": [
+      "GET"
+    ],
+    "name": "trade_history",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/trade",
+    "methods": [
+      "POST"
+    ],
+    "name": "place_trade",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/pocket-option/demo-order-check",
+    "methods": [
+      "POST"
+    ],
+    "name": "pocket_option_demo_order_check",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/platforms/summary",
+    "methods": [
+      "GET"
+    ],
+    "name": "platforms_summary",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/platforms/{platform_name}/summary",
+    "methods": [
+      "GET"
+    ],
+    "name": "platform_summary",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/platforms/{platform_name}/u-history",
+    "methods": [
+      "GET"
+    ],
+    "name": "platform_u_history",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/platforms/{platform_name}/trades",
+    "methods": [
+      "GET"
+    ],
+    "name": "platform_trades",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/platforms/compare",
+    "methods": [
+      "GET"
+    ],
+    "name": "platforms_compare",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/platforms/{platform_name}/signals",
+    "methods": [
+      "GET"
+    ],
+    "name": "platform_signals",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/closed-loop/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "closed_loop_status",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/closed-loop/strategies",
+    "methods": [
+      "GET"
+    ],
+    "name": "closed_loop_strategies",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/closed-loop/signals",
+    "methods": [
+      "GET"
+    ],
+    "name": "closed_loop_signals",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/closed-loop/positions",
+    "methods": [
+      "GET"
+    ],
+    "name": "closed_loop_positions",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/closed-loop/iterations",
+    "methods": [
+      "GET"
+    ],
+    "name": "closed_loop_iterations",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/qc-live/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "qc_live_status",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/qc-live/performance",
+    "methods": [
+      "GET"
+    ],
+    "name": "qc_live_performance",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/qc-live/positions",
+    "methods": [
+      "GET"
+    ],
+    "name": "qc_live_positions",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/qc-live/trades",
+    "methods": [
+      "GET"
+    ],
+    "name": "qc_live_trades",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/qc-live/alerts",
+    "methods": [
+      "GET"
+    ],
+    "name": "qc_live_alerts_endpoint",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/qc-live/brain-actions",
+    "methods": [
+      "GET"
+    ],
+    "name": "qc_live_brain_actions",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/qc-live/refresh",
+    "methods": [
+      "POST"
+    ],
+    "name": "qc_live_refresh",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/qc-live/deploy",
+    "methods": [
+      "POST"
+    ],
+    "name": "qc_live_deploy",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/qc-live/register",
+    "methods": [
+      "POST"
+    ],
+    "name": "qc_live_register",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/qc-live/stop",
+    "methods": [
+      "POST"
+    ],
+    "name": "qc_live_stop",
+    "dependencies": []
+  },
+  {
+    "path": "/trading/qc-live/liquidate",
+    "methods": [
+      "POST"
+    ],
+    "name": "qc_live_liquidate",
+    "dependencies": []
+  },
+  {
+    "path": "/autonomy/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "status",
+    "dependencies": []
+  },
+  {
+    "path": "/autonomy/cycle",
+    "methods": [
+      "GET"
+    ],
+    "name": "cycle",
+    "dependencies": []
+  },
+  {
+    "path": "/autonomy/reports",
+    "methods": [
+      "GET"
+    ],
+    "name": "reports",
+    "dependencies": []
+  },
+  {
+    "path": "/autonomy/start",
+    "methods": [
+      "POST"
+    ],
+    "name": "start",
+    "dependencies": []
+  },
+  {
+    "path": "/autonomy/stop",
+    "methods": [
+      "POST"
+    ],
+    "name": "stop",
+    "dependencies": []
+  },
+  {
+    "path": "/autonomy/reports",
+    "methods": [
+      "DELETE"
+    ],
+    "name": "clear_reports",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/read-only/canary",
+    "methods": [
+      "GET"
+    ],
+    "name": "get_canary_lookup",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/knowledge/read",
+    "methods": [
+      "GET"
+    ],
+    "name": "get_knowledge_read",
+    "dependencies": []
+  },
+  {
+    "path": "/v1/models",
+    "methods": [
+      "GET"
+    ],
+    "name": "list_models",
+    "dependencies": [
+      "<function require_strict_operator_access at 0x0000021C476ABA60>"
+    ]
+  },
+  {
+    "path": "/v1/chat/completions",
+    "methods": [
+      "POST"
+    ],
+    "name": "chat_completions",
+    "dependencies": [
+      "<function require_strict_operator_access at 0x0000021C476ABA60>"
+    ]
+  },
+  {
+    "path": "/v2/agent/capabilities",
+    "methods": [
+      "GET"
+    ],
+    "name": "capabilities",
+    "dependencies": [
+      "<function require_strict_operator_access at 0x0000021C476ABA60>"
+    ]
+  },
+  {
+    "path": "/v2/agent/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "status",
+    "dependencies": [
+      "<function require_strict_operator_access at 0x0000021C476ABA60>"
+    ]
+  },
+  {
+    "path": "/v2/agent/runs",
+    "methods": [
+      "GET"
+    ],
+    "name": "list_runs",
+    "dependencies": [
+      "<function require_strict_operator_access at 0x0000021C476ABA60>"
+    ]
+  },
+  {
+    "path": "/v2/agent/runs",
+    "methods": [
+      "POST"
+    ],
+    "name": "create_run",
+    "dependencies": [
+      "<function require_strict_operator_access at 0x0000021C476ABA60>"
+    ]
+  },
+  {
+    "path": "/v2/agent/runs/{run_id}",
+    "methods": [
+      "GET"
+    ],
+    "name": "get_run",
+    "dependencies": [
+      "<function require_strict_operator_access at 0x0000021C476ABA60>"
+    ]
+  },
+  {
+    "path": "/v2/agent/runs/{run_id}/plan",
+    "methods": [
+      "POST"
+    ],
+    "name": "plan_run",
+    "dependencies": [
+      "<function require_strict_operator_access at 0x0000021C476ABA60>"
+    ]
+  },
+  {
+    "path": "/v2/agent/runs/{run_id}/execute",
+    "methods": [
+      "POST"
+    ],
+    "name": "execute_run",
+    "dependencies": [
+      "<function require_strict_operator_access at 0x0000021C476ABA60>"
+    ]
+  },
+  {
+    "path": "/v2/agent/runs/{run_id}/pause",
+    "methods": [
+      "POST"
+    ],
+    "name": "pause_run",
+    "dependencies": [
+      "<function require_strict_operator_access at 0x0000021C476ABA60>"
+    ]
+  },
+  {
+    "path": "/v2/agent/runs/{run_id}/resume",
+    "methods": [
+      "POST"
+    ],
+    "name": "resume_run",
+    "dependencies": [
+      "<function require_strict_operator_access at 0x0000021C476ABA60>"
+    ]
+  },
+  {
+    "path": "/v2/agent/runs/{run_id}/cancel",
+    "methods": [
+      "POST"
+    ],
+    "name": "cancel_run",
+    "dependencies": [
+      "<function require_strict_operator_access at 0x0000021C476ABA60>"
+    ]
+  },
+  {
+    "path": "/v2/agent/runs/{run_id}/trace",
+    "methods": [
+      "GET"
+    ],
+    "name": "get_trace",
+    "dependencies": [
+      "<function require_strict_operator_access at 0x0000021C476ABA60>"
+    ]
+  },
+  {
+    "path": "/v2/agent/operator-presets",
+    "methods": [
+      "GET"
+    ],
+    "name": "operator_presets",
+    "dependencies": [
+      "<function require_strict_operator_access at 0x0000021C476ABA60>"
+    ]
+  },
+  {
+    "path": "/v2/agent/maintenance/modes",
+    "methods": [
+      "GET"
+    ],
+    "name": "maintenance_modes",
+    "dependencies": [
+      "<function require_strict_operator_access at 0x0000021C476ABA60>"
+    ]
+  },
+  {
+    "path": "/v2/chat/agent",
+    "methods": [
+      "POST"
+    ],
+    "name": "chat_agent",
+    "dependencies": [
+      "<function require_strict_operator_access at 0x0000021C476ABA60>"
+    ]
+  },
+  {
+    "path": "/upgrade/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "upgrade_status",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/tick",
+    "methods": [
+      "POST"
+    ],
+    "name": "upgrade_tick",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/aos/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "aos_status",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/aos/goal",
+    "methods": [
+      "POST"
+    ],
+    "name": "aos_add_goal",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/aos/execute",
+    "methods": [
+      "POST"
+    ],
+    "name": "aos_execute",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/l2/report",
+    "methods": [
+      "GET"
+    ],
+    "name": "l2_report",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/l2/calibrate",
+    "methods": [
+      "POST"
+    ],
+    "name": "l2_calibrate",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/sandbox/propose",
+    "methods": [
+      "POST"
+    ],
+    "name": "sandbox_propose",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/sandbox/test/{pid}",
+    "methods": [
+      "POST"
+    ],
+    "name": "sandbox_test",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/sandbox/apply/{pid}",
+    "methods": [
+      "POST"
+    ],
+    "name": "sandbox_apply",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/sandbox/revert/{pid}",
+    "methods": [
+      "POST"
+    ],
+    "name": "sandbox_revert",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/sandbox/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "sandbox_status",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/events/replay",
+    "methods": [
+      "GET"
+    ],
+    "name": "events_replay",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/events/publish",
+    "methods": [
+      "POST"
+    ],
+    "name": "events_publish",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/settings",
+    "methods": [
+      "GET"
+    ],
+    "name": "settings_get",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/settings/reload",
+    "methods": [
+      "POST"
+    ],
+    "name": "settings_reload",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/capabilities/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "capabilities_status",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/capabilities/diagnose",
+    "methods": [
+      "GET"
+    ],
+    "name": "capabilities_diagnose",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/capabilities/remediate",
+    "methods": [
+      "POST"
+    ],
+    "name": "capabilities_remediate",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/memory/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "memory_status",
+    "dependencies": []
+  },
+  {
+    "path": "/upgrade/memory/compact",
+    "methods": [
+      "POST"
+    ],
+    "name": "memory_compact",
+    "dependencies": []
+  },
+  {
+    "path": "/dashboard",
+    "methods": [
+      "GET"
+    ],
+    "name": "serve_dashboard",
+    "dependencies": []
+  },
+  {
+    "path": "/dashboard-v2",
+    "methods": [
+      "GET"
+    ],
+    "name": "serve_dashboard_v2",
+    "dependencies": []
+  },
+  {
+    "path": "/health",
+    "methods": [
+      "GET"
+    ],
+    "name": "health",
+    "dependencies": []
+  },
+  {
+    "path": "/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "status",
+    "dependencies": []
+  },
+  {
+    "path": "/healthz",
+    "methods": [
+      "GET"
+    ],
+    "name": "healthz",
+    "dependencies": []
+  },
+  {
+    "path": "/v1/agent/healthz",
+    "methods": [
+      "GET"
+    ],
+    "name": "v1_agent_healthz",
+    "dependencies": []
+  },
+  {
+    "path": "/v1/agent/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "v1_agent_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain-dashboard/agent-v2/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_dashboard_agent_v2_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/operating-context",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_operating_context",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/maintenance/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_maintenance_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/maintenance/action",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_maintenance_action",
+    "dependencies": []
+  },
+  {
+    "path": "/chat/introspectivo/debug",
+    "methods": [
+      "GET"
+    ],
+    "name": "chat_introspectivo_debug",
+    "dependencies": []
+  },
+  {
+    "path": "/chat/introspectivo",
+    "methods": [
+      "POST"
+    ],
+    "name": "chat_introspectivo",
+    "dependencies": []
+  },
+  {
+    "path": "/chat",
+    "methods": [
+      "POST"
+    ],
+    "name": "chat",
+    "dependencies": []
+  },
+  {
+    "path": "/sessions/{session_id}",
+    "methods": [
+      "DELETE"
+    ],
+    "name": "delete_session",
+    "dependencies": []
+  },
+  {
+    "path": "/gate/approve/{pending_id}",
+    "methods": [
+      "POST"
+    ],
+    "name": "gate_approve",
+    "dependencies": []
+  },
+  {
+    "path": "/gate/reject/{pending_id}",
+    "methods": [
+      "POST"
+    ],
+    "name": "gate_reject",
+    "dependencies": []
+  },
+  {
+    "path": "/tool01/permission/approve",
+    "methods": [
+      "POST"
+    ],
+    "name": "tool01_permission_approve",
+    "dependencies": []
+  },
+  {
+    "path": "/tool01/permission/pending/{session_id}",
+    "methods": [
+      "GET"
+    ],
+    "name": "tool01_permission_pending",
+    "dependencies": []
+  },
+  {
+    "path": "/tool01/permission/grants/{session_id}",
+    "methods": [
+      "GET"
+    ],
+    "name": "tool01_permission_grants",
+    "dependencies": []
+  },
+  {
+    "path": "/sessions/{session_id}/memory",
+    "methods": [
+      "DELETE"
+    ],
+    "name": "clear_memory",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/rsi",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_rsi",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/health",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_health",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/security/posture",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_security_posture",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/risk/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_risk_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/governance/health",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_governance_health",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/metrics",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_metrics",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/validators",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_validators",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/learned/patterns",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_learned_patterns",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/learned/patterns/{pattern_id}",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_learned_pattern_detail",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/learned/patterns/{pattern_id}/disable",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_learned_pattern_disable",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/learned/patterns/{pattern_id}",
+    "methods": [
+      "DELETE"
+    ],
+    "name": "brain_learned_pattern_delete",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/learned/test_simulate",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_learned_test_simulate",
+    "dependencies": []
+  },
+  {
+    "path": "/tools/coverage",
+    "methods": [
+      "GET"
+    ],
+    "name": "tools_coverage",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/mutations",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_mutations",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/mutations/{mutation_id}",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_mutation_detail",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/mutations/{mutation_id}/rollback",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_mutation_rollback",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/health_gate/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_health_gate_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/reasoning/history",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_reasoning_history",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/mutations/test_apply",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_mutations_test_apply",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/proactive/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_proactive_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/chat_excellence/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_chat_excellence_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/scheduler/alerts/ack",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_scheduler_alerts_ack",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/proactive/run/{task_id}",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_proactive_run_task",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/llm/circuit_breaker",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_llm_circuit_breaker",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/llm/circuit_breaker/reset",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_llm_cb_reset",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/chat_excellence/proposals",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_ce_proposals",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/learning/proposals",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_learning_proposals",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/chat_excellence/proposals/{proposal_id}",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_ce_proposal_get",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/chat_excellence/proposals/{proposal_id}/reject",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_ce_proposal_reject",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/chat_excellence/proposals/{proposal_id}/dry_run",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_ce_proposal_dry_run",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/chat_excellence/proposals/{proposal_id}/apply",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_ce_proposal_apply",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/chat_excellence/proposals/{proposal_id}/rollback",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_ce_proposal_rollback",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/chat_excellence/proposals/{proposal_id}/health_gate_log",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_ce_proposal_health_gate_log",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/chat_excellence/proposals/apply_batch",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_ce_proposals_apply_batch",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/chat_excellence/proposals/evaluate",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_ce_proposals_evaluate",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/chat_excellence/proposals/{proposal_id}/evaluation_status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_ce_proposal_eval_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/utility",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_utility",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/utility/v2",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_utility_v2",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/utility/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_utility_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/utility/refresh",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_utility_refresh",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/utility/v2/refresh",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_utility_v2_refresh",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/autonomy/next-actions",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_autonomy_next_actions",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/autonomy/sample-accumulator",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_sample_accumulator_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/autonomy/execute-top-action",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_autonomy_execute_top_action",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/autonomy/ibkr-ingester",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_ibkr_ingester_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/autonomy/ibkr-snapshot",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_ibkr_trigger_snapshot",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/operations",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_operations",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/pipeline-health",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_pipeline_health",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/roadmap/governance",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_roadmap_governance",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/roadmap/development-status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_roadmap_development_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/post-bl-roadmap/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_post_bl_roadmap_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/post-bl-roadmap/refresh",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_post_bl_roadmap_refresh",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/meta-improvement/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_meta_improvement_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/meta-improvement/refresh",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_meta_improvement_refresh",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/chat-product/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_chat_product_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/chat-product/refresh",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_chat_product_refresh",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/autonomous-governance-eval/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_autonomous_governance_eval_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/autonomous-governance-eval/refresh",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_autonomous_governance_eval_refresh",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/utility-governance/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_utility_governance_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/utility-governance/refresh",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_utility_governance_refresh",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/meta-governance/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_meta_governance_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/session-memory",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_session_memory",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/roadmap/governance/refresh",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_roadmap_governance_refresh",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/research/summary",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_research_summary",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/research/knowledge",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_research_knowledge",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/research/indicators",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_research_indicators",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/research/strategies",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_research_strategies",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/research/hypotheses",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_research_hypotheses",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/research/candidates",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_research_candidates",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/learning/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_learning_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/learning/refresh",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_learning_refresh",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/learning/proposals/{proposal_id}/transition",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_learning_proposal_transition",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/learning/proposals/{proposal_id}/sandbox-run",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_learning_proposal_sandbox_run",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/learning/proposals/{proposal_id}/evaluate",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_learning_proposal_evaluate",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/summary",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_summary",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/candidates",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_candidates",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/scorecards",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_scorecards",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/ranking",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_ranking",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/ranking-v2",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_ranking_v2",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/features",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_features",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/history",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_history",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/signals",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_signals",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/archive",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_archive",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/expectancy",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_expectancy",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/expectancy/by-strategy",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_expectancy_by_strategy",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/expectancy/by-venue",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_expectancy_by_venue",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/expectancy/by-symbol",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_expectancy_by_symbol",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/expectancy/by-context",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_expectancy_by_context",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/edge-validation",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_edge_validation",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/context-edge-validation",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_context_edge_validation",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/active-catalog",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_active_catalog",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/pipeline-integrity",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_pipeline_integrity",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/post-trade-analysis",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_post_trade_analysis",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/post-trade-hypotheses",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_post_trade_hypotheses",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/learning-loop",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_learning_loop",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/hypotheses",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_hypotheses",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/execution-audit",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_execution_audit",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/simulation-gate/{strategy_id}",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_strategy_engine_simulation_gate",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/adaptation-state",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_adaptation_state",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/session-performance",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_strategy_engine_session_performance",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/ops/log-cleanup",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_ops_log_cleanup",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/ops/log-status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_ops_log_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/ops/adn-quality",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_ops_adn_quality",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/ops/upgrade-check",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_ops_upgrade_check",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/ops/pre-upgrade",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_ops_pre_upgrade",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/ops/post-upgrade",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_ops_post_upgrade",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/ops/ethics",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_ops_ethics",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/refresh",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_strategy_engine_refresh",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/execute-top-candidate",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_strategy_engine_execute_top_candidate",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/execute-candidate/{strategy_id}",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_strategy_engine_execute_candidate",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/execute-batch/{strategy_id}",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_strategy_engine_execute_batch",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/strategy-engine/execute-comparison-cycle",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_strategy_engine_execute_comparison_cycle",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/self-improvement/ledger",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_self_improvement_ledger",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/change-control/scorecard",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_change_control_scorecard",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/control-layer/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_control_layer_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/purpose/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_purpose_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/consciousness/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_consciousness_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/purpose/refresh",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_purpose_refresh",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/control-layer/freeze",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_control_layer_freeze",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/control-layer/unfreeze",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_control_layer_unfreeze",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/self-improvement/change/{change_id}/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_self_improvement_change_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/self-improvement/change",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_self_improvement_create",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/self-improvement/change/{change_id}/validate",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_self_improvement_validate",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/self-improvement/change/{change_id}/promote",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_self_improvement_promote",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/self-improvement/change/{change_id}/rollback",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_self_improvement_rollback",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/validate",
+    "methods": [
+      "POST"
+    ],
+    "name": "validate_action",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/auto-surgeon/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_auto_surgeon_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/auto-surgeon/diagnostics",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_auto_surgeon_diagnostics",
+    "dependencies": []
+  },
+  {
+    "path": "/self-diagnostic",
+    "methods": [
+      "GET"
+    ],
+    "name": "self_diagnostic",
+    "dependencies": []
+  },
+  {
+    "path": "/self-diagnostic/run",
+    "methods": [
+      "POST"
+    ],
+    "name": "run_self_diagnostic",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/semantic-memory/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_semantic_memory_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/curated-knowledge/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_curated_knowledge_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/curated-knowledge/search",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_curated_knowledge_search",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/curated-knowledge/demo-search",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_curated_knowledge_demo_search",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/semantic-memory/search",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_semantic_memory_search",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/semantic-memory/ingest",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_semantic_memory_ingest",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/semantic-memory/ingest-session",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_semantic_memory_ingest_session",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/metacognition/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_metacognition_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/metacognition/audit",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_metacognition_audit",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/introspection/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_introspection_status",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/introspection/gpu",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_introspection_gpu",
+    "dependencies": []
+  },
+  {
+    "path": "/agent",
+    "methods": [
+      "POST"
+    ],
+    "name": "run_agent",
+    "dependencies": []
+  },
+  {
+    "path": "/dev",
+    "methods": [
+      "POST"
+    ],
+    "name": "dev_mode_endpoint",
+    "dependencies": []
+  },
+  {
+    "path": "/godmode/status",
+    "methods": [
+      "GET"
+    ],
+    "name": "godmode_status",
+    "dependencies": []
+  },
+  {
+    "path": "/godmode",
+    "methods": [
+      "POST"
+    ],
+    "name": "godmode_endpoint",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/agent-trace/event",
+    "methods": [
+      "POST"
+    ],
+    "name": "brain_agent_trace_event",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/agent-trace/latest",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_agent_trace_latest",
+    "dependencies": []
+  },
+  {
+    "path": "/brain/agent-trace/stream",
+    "methods": [
+      "GET"
+    ],
+    "name": "brain_agent_trace_stream",
+    "dependencies": []
+  }
+]

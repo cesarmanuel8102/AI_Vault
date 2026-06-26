@@ -25,7 +25,7 @@ import uvicorn
 from fastapi import Body, Depends, FastAPI, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from brain.curated_runtime_lookup import (
     ALLOWED_STATES_FOR_LOOKUP,
@@ -40,7 +40,7 @@ from brain.curated_runtime_lookup import (
     search_curated_candidates,
 )
 from brain.curated_learning_chat_access import answer_chat_probe
-from brain_v9.api_security import require_operator_access, StrictOperatorAccess
+from brain_v9.api_security import require_operator_access, require_strict_operator_access, StrictOperatorAccess
 from brain_v9.core.agent_kernel_v2.api_adapter import chat_router as agent_v2_chat_router
 from brain_v9.core.agent_kernel_v2.api_adapter import router as agent_v2_router
 from brain_v9.core.router_entrypoint import handle_user_message
@@ -4267,10 +4267,11 @@ async def _shutdown():
 # ── Modo Desarrollador - Endpoint sin restricciones ───────────────────────────
 
 class DevModeRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
     task: str
     auth_token: Optional[str] = None
 
-@app.post("/dev")
+@app.post("/dev", dependencies=[Depends(require_strict_operator_access)])
 async def dev_mode_endpoint(req: DevModeRequest):
     """
     Endpoint de Modo Desarrollador - Ejecuta tareas sin restricciones del ORAV
@@ -4327,10 +4328,11 @@ async def dev_mode_endpoint(req: DevModeRequest):
 # ── Modo GOD - Endpoint sin restricciones ───────────────────────────
 
 class GodModeRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
     task: str
     session_id: str
 
-@app.get("/godmode/status")
+@app.get("/godmode/status", dependencies=[Depends(require_strict_operator_access)])
 async def godmode_status(session_id: Optional[str] = None):
     """Inspecciona estado god mode. Si session_id provisto, devuelve si esa sesion es god."""
     out = {
@@ -4352,7 +4354,7 @@ async def godmode_status(session_id: Optional[str] = None):
         out["gate_error"] = str(e)
     return out
 
-@app.post("/godmode")
+@app.post("/godmode", dependencies=[Depends(require_strict_operator_access)])
 async def godmode_endpoint(req: GodModeRequest):
     """
     Endpoint MODO GOD - Ejecuta tareas reales sin restricciones

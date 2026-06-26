@@ -1,0 +1,65 @@
+{
+  "commit": "a118b7f26899849152b5001b445247234e7d8d07",
+  "files_changed": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+    "tests/smoke/test_governance_rbac_dev_god_hardening_01.py"
+  ],
+  "claims": {
+    "CLAIM_1": {
+      "text": "CONTRACT B: Reject requests containing forbidden bypass/override fields in the message",
+      "file": "api_adapter.py:139-142",
+      "classification": "PARTIAL",
+      "reason": "contains_forbidden_request_fields only checks the message string dict keys, not the actual JSON body. Since AgentChatRequest(BaseModel) has no extra='forbid', extra fields in JSON body are silently dropped by Pydantic and never inspected."
+    },
+    "CLAIM_2": {
+      "text": "validate_mode rejects dangerous modes (god, god_mode, execute, unsafe, superuser)",
+      "file": "governance.py:95-103",
+      "classification": "TRUE",
+      "reason": "Code correctly falls back to read_only for all dangerous mode strings."
+    },
+    "CLAIM_3": {
+      "text": "GOVERNANCE_PROTECTED_PATHS blocks self-dev modification of governance-critical files",
+      "file": "governance.py:32-42",
+      "classification": "TRUE",
+      "reason": "Path list includes api_security.py, tool_gateway.py, governance.py, git hygiene script, and accepted baselines."
+    },
+    "CLAIM_4": {
+      "text": "CONTRACT D: Self-dev governance file protection in tool_gateway",
+      "file": "tool_gateway.py:91-98",
+      "classification": "TRUE",
+      "reason": "Blocks file_patch_apply_approval_required, file_patch_dry_run, and report_writer against GOVERNANCE_PROTECTED_PATHS without explicit token+confirm_phrase."
+    },
+    "CLAIM_5": {
+      "text": "Dev endpoints disabled by default (BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS=false)",
+      "file": "main.py:4273-4284, 4355-4366",
+      "classification": "TRUE",
+      "reason": "Both /dev and /godmode raise HTTPException(403) when flag is false."
+    },
+    "CLAIM_6": {
+      "text": "/godmode/status is safe (informational only)",
+      "file": "main.py:4333-4353",
+      "classification": "NOT_PROVEN",
+      "reason": "Endpoint has NO auth dependency. It leaks active PAD session IDs, god session list, and session expiration times. While it does not execute tasks, it is an information disclosure surface. Needs hardening."
+    },
+    "CLAIM_7": {
+      "text": "test_god_flags_do_not_bypass_auth proves extra fields are rejected",
+      "file": "test_governance_rbac_dev_god_hardening_01.py:54-66",
+      "classification": "FALSE",
+      "reason": "Test only sends payloads WITHOUT valid token, so all requests are rejected by require_strict_operator_access (401/403). It does NOT prove that a valid-token request with extra bypass fields would be rejected."
+    },
+    "CLAIM_8": {
+      "text": "FORBIDDEN_REQUEST_FIELDS includes 'mode' but validate_mode already rejects dangerous mode values",
+      "file": "governance.py:44-47",
+      "classification": "TRUE",
+      "reason": "Defense in depth. 'mode' is listed as forbidden in request fields, and validate_mode also rejects god/execute/unsafe/superuser."
+    },
+    "CLAIM_9": {
+      "text": "write_allowed requires mode==build AND approval_token starting with AGENTV2_APPROVED_",
+      "file": "governance.py:128-130",
+      "classification": "TRUE",
+      "reason": "Correct dual-check."
+    }
+  }
+}

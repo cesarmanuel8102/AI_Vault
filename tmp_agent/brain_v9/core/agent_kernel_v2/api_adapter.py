@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Any, Dict
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from .finalizer import PRIMARY_KIMI_MODEL
 from .runtime import get_agent_runtime_v2, LANGGRAPH_USED, LANGGRAPH_BLOCKER
 from .state import CANONICAL_AGENT_VERSION
@@ -11,11 +11,13 @@ router = APIRouter(prefix="/v2/agent", tags=["Agent V2"], dependencies=[Depends(
 chat_router = APIRouter(prefix="/v2/chat", tags=["Agent V2 Chat"], dependencies=[Depends(require_strict_operator_access)])
 
 class CreateRunRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
     goal: str
     mode: str = "read_only"
     user_id: str = "local"
 
 class AgentChatRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
     message: str
     mode: str = "read_only"
     user_id: str = "local"
