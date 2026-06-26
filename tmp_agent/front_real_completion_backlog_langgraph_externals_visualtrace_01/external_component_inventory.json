@@ -1,0 +1,23 @@
+{
+  "recon_version": "1.0",
+  "components_evaluated": 7,
+  "build_internal": ["visual_trace_console", "dashboards_ui"],
+  "adapt_external": [],
+  "wrap_external": [],
+  "reject": ["langgraph_real_integration", "langfuse", "opa", "langsmith", "streamlit", "gradio"],
+  "defer": ["pycasbin", "opentelemetry", "promptfoo"],
+  "decision_gates": {
+    "should_install_external_dependencies_now": false,
+    "should_keep_langgraph": false,
+    "should_integrate_langgraph_deeper": false,
+    "should_demote_langgraph_to_wrapper": true,
+    "should_use_opentelemetry_schema": false,
+    "should_use_langfuse_now": false,
+    "should_build_visual_trace_local_v1": true,
+    "should_adapt_external_visual_trace_component": false,
+    "should_start_09d_before_visualtrace_closeout": false,
+    "should_mass_ingest_now": false,
+    "should_touch_trading_code_now": false
+  },
+  "rationale": "No external component is clearly better than current internal implementations for V1. LangGraph is facade-only and was removed. PyCasbin and OpenTelemetry are good future candidates but add unnecessary complexity now. Visual trace should be built locally using existing endpoint."
+}

@@ -1125,7 +1125,7 @@ async def v1_agent_status(room_id: str | None = None):
 @app.get("/brain-dashboard/agent-v2/status")
 async def brain_dashboard_agent_v2_status():
     from brain_v9.core.agent_kernel_v2.finalizer import PRIMARY_KIMI_MODEL
-    from brain_v9.core.agent_kernel_v2.runtime import get_agent_runtime_v2, LANGGRAPH_USED, LANGGRAPH_BLOCKER
+    from brain_v9.core.agent_kernel_v2.runtime import get_agent_runtime_v2
     rt = get_agent_runtime_v2()
     runs = rt.list_runs()
     latest = runs[-1] if runs else {}
@@ -1134,8 +1134,6 @@ async def brain_dashboard_agent_v2_status():
         "ok": True,
         "canonical_for_new_agent_runs": True,
         "backend": rt.backend,
-        "langgraph_used": LANGGRAPH_USED,
-        "langgraph_blocker": LANGGRAPH_BLOCKER,
         "primary_finalizer_model": PRIMARY_KIMI_MODEL,
         "latest_provider_used": meta.get("provider_used"),
         "latest_model_used": meta.get("model_used"),

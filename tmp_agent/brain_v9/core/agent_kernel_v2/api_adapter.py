@@ -3,7 +3,7 @@ from typing import Any, Dict
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 from .finalizer import PRIMARY_KIMI_MODEL
-from .runtime import get_agent_runtime_v2, LANGGRAPH_USED, LANGGRAPH_BLOCKER
+from .runtime import get_agent_runtime_v2
 from .state import CANONICAL_AGENT_VERSION
 from brain_v9.api_security import require_strict_operator_access
 
@@ -30,7 +30,6 @@ def capabilities():
         "canonical": True,
         "version": CANONICAL_AGENT_VERSION,
         "backend": rt.backend,
-        "langgraph_used": LANGGRAPH_USED,
         "primary_finalizer_model": PRIMARY_KIMI_MODEL,
         "planner_classes": [
             "repo_audit", "code_search", "endpoint_probe", "memory_question", "dashboard_diagnosis",
@@ -50,8 +49,6 @@ def status():
         "ok": True,
         "canonical_for_new_agent_runs": True,
         "backend": rt.backend,
-        "langgraph_used": LANGGRAPH_USED,
-        "langgraph_blocker": LANGGRAPH_BLOCKER,
         "runs": len(runs),
         "primary_finalizer_model": PRIMARY_KIMI_MODEL,
         "latest_provider_used": latest_meta.get("provider_used"),

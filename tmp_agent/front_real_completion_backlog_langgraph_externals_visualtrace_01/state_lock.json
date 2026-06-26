@@ -1,0 +1,14 @@
+{
+  "front": "FRONT-REAL-COMPLETION-BACKLOG-LANGGRAPH-EXTERNALS-VISUALTRACE-01",
+  "branch": "codex/own-capital-sustainable-return",
+  "head": "67e9f33be5f02463cd86225ee909808c57e07e6d",
+  "short_head": "67e9f33",
+  "remote_head": "67e9f33be5f02463cd86225ee909808c57e07e6d",
+  "local_remote_equal": true,
+  "staged_empty": true,
+  "working_tree_clean": true,
+  "memory_files_staged": false,
+  "memory_files_tracked": false,
+  "guard_passed": true,
+  "status": "PASS"
+}

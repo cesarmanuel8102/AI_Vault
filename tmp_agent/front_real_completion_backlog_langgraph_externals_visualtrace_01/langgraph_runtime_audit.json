@@ -1,0 +1,27 @@
+{
+  "audit_version": "1.0",
+  "classification": "LANGGRAPH_FACADE_ONLY",
+  "chosen_path": "PATH_C_REMOVE_FROM_CRITICAL_PATH",
+  "evidence": {
+    "langgraph_runtime_inherits_native": true,
+    "langgraph_nodes_are_noop": true,
+    "langgraph_never_invoked_in_canonical_path": true,
+    "native_runtime_owns_execute_run": true,
+    "native_runtime_owns_plan_run": true,
+    "native_runtime_owns_tool_execution": true,
+    "native_runtime_owns_memory_retrieval": true,
+    "native_runtime_owns_finalization": true,
+    "native_runtime_owns_trace_events": true,
+    "false_backend_reporting_present": true
+  },
+  "files_to_modify": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/__init__.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "tmp_agent/brain_v9/main.py",
+    "tmp_agent/brain_v9/dashboard/dashboard_routes.py"
+  ],
+  "tests_to_create": [
+    "tests/smoke/test_agent_v2_langgraph_real_completion_01.py"
+  ]
+}

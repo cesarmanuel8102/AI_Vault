@@ -1,0 +1,26 @@
+{
+  "status": "CLOSED",
+  "chosen_path": "PATH_C_REMOVE_FROM_CRITICAL_PATH",
+  "starting_classification": "LANGGRAPH_FACADE_ONLY",
+  "final_classification": "NATIVE_RUNTIME_ONLY",
+  "rationale": "LangGraphAgentRuntimeV2 was facade extending NativeAgentRuntimeV2 with toy no-op graph never invoked in canonical path. Reporting falsely claimed langgraph backend.",
+  "changes_applied": [
+    "runtime.py: unconditional NativeAgentRuntimeV2 instantiation",
+    "__init__.py: removed LANGGRAPH_USED and LANGGRAPH_BLOCKER exports",
+    "api_adapter.py: removed false langgraph fields from status/capabilities",
+    "main.py: removed false langgraph fields from dashboard status",
+    "dashboard_routes.py: same cleanup",
+    "native_runtime.py: added backend='native_runtime' class attribute"
+  ],
+  "tests_created": ["tests/smoke/test_agent_v2_langgraph_real_completion_01.py"],
+  "tests_passed": 11,
+  "files_modified": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/__init__.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+    "tmp_agent/brain_v9/main.py",
+    "tmp_agent/brain_v9/dashboard/dashboard_routes.py"
+  ],
+  "real_completion_rule_compliance": true
+}

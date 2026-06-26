@@ -15,6 +15,8 @@ from .intent_adapter import AgentV2IntentAdapter
 DIRECT_ASSISTANT_ROUTES = {"direct_assistant", "brain_evidence", "mixed_brain_reasoning"}
 
 class NativeAgentRuntimeV2:
+    backend = "native_runtime"
+
     def __init__(self):
         self.tools = ToolGatewayV2()
         self.memory = MemoryGatewayV2()
