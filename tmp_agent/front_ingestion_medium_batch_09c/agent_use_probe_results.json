@@ -1,0 +1,72 @@
+{
+  "agent_use_probe_status": "passed",
+  "auth_required": true,
+  "write_tools_used": false,
+  "memory_mutated": false,
+  "probes": [
+    {
+      "query": "Why should accepted runtime baselines be centralized in a helper?",
+      "status": 200,
+      "ok": true,
+      "mode_effective": "read_only",
+      "answer_preview": "## Agent V2 Evidence Analysis \u2014 Finalized Run\n\n### Summary\n**Goal:** Why should accepted runtime baselines be centralized in a helper?\n\n**Finding:** The evidence shows a **Brain V9 runtime** with centralized configuration (`config.py`) and distributed operational logs, but **no direct evidence of \"a",
+      "has_relevant_keywords": true
+    },
+    {
+      "query": "Why should read-only tests avoid hardcoded old SHA baselines?",
+      "status": 200,
+      "ok": true,
+      "mode_effective": "read_only",
+      "answer_preview": "Hardcoded old SHA baselines in read-only tests create a subtle but serious maintenance trap. When you pin a specific commit hash directly in test code, you're essentially freezing a point-in-time expectation that becomes invisible technical debt. The test passes, everyone forgets it exists, and mont",
+      "has_relevant_keywords": true
+    },
+    {
+      "query": "Why does medium-batch ingestion require previous 3-record and 12-record stages?",
+      "status": 200,
+      "ok": true,
+      "mode_effective": "read_only",
+      "answer_preview": "## Agent V2 Evidence Analysis \u2014 Finalized Run\n\n---\n\n### Summary\n\nThe current evidence does **not directly answer** why medium-batch ingestion requires previous 3-record and 12-record stages. No tool in this run was **requested** by the user; all four tool types (`repo_status_read`, `grep_search`, `f",
+      "has_relevant_keywords": true
+    },
+    {
+      "query": "Why must controlled ingestion avoid arbitrary internet or raw logs?",
+      "status": 200,
+      "ok": true,
+      "mode_effective": "read_only",
+      "answer_preview": "## Summary\n\nControlled ingestion must avoid arbitrary internet or raw logs because the Brain's architecture enforces **curated-source gating**, **audit-trail provenance**, and **regression-guarded memory promotion** \u2014 not due to missing capability, but because ungated ingestion would bypass the safe",
+      "has_relevant_keywords": true
+    },
+    {
+      "query": "Why should a temporary queue_dir be used for front-local candidates?",
+      "status": 200,
+      "ok": true,
+      "mode_effective": "read_only",
+      "answer_preview": "## Agent V2 Run Finalization \u2014 Brain Evidence Analysis\n\n---\n\n### Summary\n\n**Goal:** Why should a temporary `queue_dir` be used for front-local candidates?\n\n**Finding:** The current tool evidence does **not** contain any direct mention of `queue_dir`, temporary directories, or front-local candidate q",
+      "has_relevant_keywords": true
+    },
+    {
+      "query": "What should happen if one candidate fails during batch promotion?",
+      "status": 200,
+      "ok": true,
+      "mode_effective": "read_only",
+      "answer_preview": "If one candidate fails during a batch promotion, the typical behavior depends on the system's design, but there are a few common patterns.\n\nIn many distributed or batch-processing systems, the failure of a single candidate doesn't automatically roll back the entire batch. Instead, the system usually",
+      "has_relevant_keywords": true
+    },
+    {
+      "query": "Why should retrieval E2E query by text phrase rather than candidate_id?",
+      "status": 200,
+      "ok": true,
+      "mode_effective": "read_only",
+      "answer_preview": "Querying by text phrase rather than candidate_id makes your retrieval system more resilient and user-aligned. Candidate IDs are internal, unstable references\u2014they can change with data reprocessing, get orphaned during merges, or mean nothing to human operators who think in terms of actual content. A",
+      "has_relevant_keywords": true
+    },
+    {
+      "query": "Does a successful 24-record medium batch authorize mass ingestion?",
+      "status": 200,
+      "ok": true,
+      "mode_effective": "read_only",
+      "answer_preview": "## Summary\n\nA successful 24-record medium batch ingestion **does not authorize mass ingestion**. The governance ladder requires explicit progression through validated stages: single record \u2192 3-record controlled E2E \u2192 12-record small batch \u2192 24-record medium batch \u2192 **then** large controlled batch. E",
+      "has_relevant_keywords": true
+    }
+  ]
+}

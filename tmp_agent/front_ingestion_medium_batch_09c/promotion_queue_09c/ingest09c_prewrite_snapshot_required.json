@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_prewrite_snapshot_required",
+  "source_front": "front_ingestion_small_batch_09b",
+  "source_path": "tmp_agent/front_ingestion_small_batch_09b/final_report.md",
+  "domain": "production_operations",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "A pre-write rollback snapshot is mandatory before the first batch promotion write. The snapshot must copy semantic_memory.jsonl, semantic_memory_faiss.index, semantic_memory_faiss_ids.json, and promotion_audit.jsonl into a timestamped directory under memory/rollback_snapshots/. It should also include the curated candidate manifest and validation summary. If any candidate fails during the batch, the system restores from this snapshot to ensure canonical memory returns to exactly the pre-promotion state. Without a snapshot, a partial batch failure would leave the index in an inconsistent state that is difficult to diagnose and repair. Snapshots should include a SNAPSHOT_REASON.txt explaining the batch context and expected increments. The 09B front created such a snapshot before promoting twelve candidates, demonstrating the pattern at small batch scale.",
+  "summary": "Pre-write rollback snapshot is mandatory before first batch promotion write",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

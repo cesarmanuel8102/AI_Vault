@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_postpromotion_count_contract",
+  "source_front": "front_ingestion_small_batch_09b",
+  "source_path": "tmp_agent/front_ingestion_small_batch_09b/post_promotion_verify.json",
+  "domain": "semantic_memory",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "Post-promotion verification must prove exact JSONL, FAISS ids, and FAISS ntotal increments equal to the number of promoted candidates. For a twenty-four candidate batch starting from a baseline of seventeen seventy-one JSONL records, the expected post-promotion count is seventeen ninety-five. Similarly, FAISS ids and ntotal should increase from seventeen sixty-two to seventeen eighty-six. Assertions that check only approximate or greater-than increments are insufficient because they could mask silent failures or duplicate writes. The verify artifact should report before and after counts, the increment, and whether each matches the batch size. This contract was established in the 09A and 09B fronts and scales directly to medium batches. Exact count verification is the strongest signal that the promotion pipeline is functioning correctly.",
+  "summary": "Post-promotion must prove exact JSONL, FAISS ids, and ntotal increments",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

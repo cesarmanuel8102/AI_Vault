@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_agent_probe_uses_auth_and_readonly",
+  "source_front": "front_ingestion_small_batch_09b",
+  "source_path": "tmp_agent/front_ingestion_small_batch_09b/agent_use_probe_results.json",
+  "domain": "operator_readiness",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "Agent-use probes after ingestion must use strict token authentication and read_only mode. The 09B front probed Agent V2 by posting to the chat endpoint with a valid brain token and mode set to read_only. Each probe returned HTTP two hundred with coherent answers reflecting newly promoted lessons. Using read_only mode ensures that even if the agent attempts to invoke a write tool, the ToolGateway blocks it. This is a critical safety boundary: verification should never mutate canonical memory, trigger promotions, or execute trading. Auth headers must be present on every probe because the hardened endpoints require them. The 09C front should expand agent-use probes to eight questions covering medium batch lessons, baseline helpers, and scaling boundaries. Probes should verify that the agent can retrieve and articulate lessons without executing any side effects.",
+  "summary": "Agent probes must use strict token auth and read_only mode",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

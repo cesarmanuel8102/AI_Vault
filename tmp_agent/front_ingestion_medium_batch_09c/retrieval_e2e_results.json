@@ -1,0 +1,174 @@
+{
+  "retrieval_passed_count": 24,
+  "retrieval_failed_count": 0,
+  "results": [
+    {
+      "candidate_id": "ingest09c_accepted_baseline_helper",
+      "query_phrase": "Accepted runtime baselines should be centralized in a small helper module to avo",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.8569
+    },
+    {
+      "candidate_id": "ingest09c_legacy_tests_preserve_historical_artifacts",
+      "query_phrase": "Legacy tests should preserve historical report artifact assertions while checkin",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.8708
+    },
+    {
+      "candidate_id": "ingest09c_dynamic_sha_for_readonly_tests",
+      "query_phrase": "Read-only tests should use dynamic before-and-after SHA comparison instead of ha",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.8236
+    },
+    {
+      "candidate_id": "ingest09c_full_regression_after_baseline_shift",
+      "query_phrase": "After accepted memory growth shifts baselines, full regression must confirm no f",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.8401
+    },
+    {
+      "candidate_id": "ingest09c_medium_batch_requires_previous_small_batch",
+      "query_phrase": "Medium-batch ingestion is authorized only after three-record and twelve-record e",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.8614
+    },
+    {
+      "candidate_id": "ingest09c_exact_candidate_count_gate",
+      "query_phrase": "Batch ingestion fronts must enforce exact candidate counts before validation and",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.9119
+    },
+    {
+      "candidate_id": "ingest09c_no_arbitrary_source_ingestion",
+      "query_phrase": "Controlled ingestion must use safe local reports only and must not ingest arbitr",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.8592
+    },
+    {
+      "candidate_id": "ingest09c_candidate_text_word_count_gate",
+      "query_phrase": "Candidate text length must be measured in words rather than characters, with a s",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.819
+    },
+    {
+      "candidate_id": "ingest09c_candidate_safety_flags_required",
+      "query_phrase": "Each candidate must explicitly declare safety flags for raw chain-of-thought exp",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.8816
+    },
+    {
+      "candidate_id": "ingest09c_cross_batch_duplicate_check",
+      "query_phrase": "Validation must check for duplicate exact text against canonical memory and agai",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.8987
+    },
+    {
+      "candidate_id": "ingest09c_normalized_text_hash_uniqueness",
+      "query_phrase": "Normalized text hashes must be unique within the batch before promotion. The 08F",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.7917
+    },
+    {
+      "candidate_id": "ingest09c_temporary_queue_dir_boundary",
+      "query_phrase": "Temporary queue_dir promotion avoids mutating the permanent promotion_queue or s",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.8895
+    },
+    {
+      "candidate_id": "ingest09c_supported_loader_path_required",
+      "query_phrase": "Promotion must use a supported loader path because the PromotionPipelineAdapter ",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.7355
+    },
+    {
+      "candidate_id": "ingest09c_prewrite_snapshot_required",
+      "query_phrase": "A pre-write rollback snapshot is mandatory before the first batch promotion writ",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.8774
+    },
+    {
+      "candidate_id": "ingest09c_partial_failure_rolls_back",
+      "query_phrase": "If any candidate fails during batch promotion, the entire batch must roll back t",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.8796
+    },
+    {
+      "candidate_id": "ingest09c_postpromotion_count_contract",
+      "query_phrase": "Post-promotion verification must prove exact JSONL, FAISS ids, and FAISS ntotal ",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.8671
+    },
+    {
+      "candidate_id": "ingest09c_promoted_ids_in_jsonl_and_faiss",
+      "query_phrase": "Every promoted candidate identifier must exist in both JSONL and FAISS ids after",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.8903
+    },
+    {
+      "candidate_id": "ingest09c_no_blank_or_duplicate_new_text",
+      "query_phrase": "Newly promoted records must have nonblank text and no duplicate exact text withi",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.8583
+    },
+    {
+      "candidate_id": "ingest09c_retrieval_topk_contract",
+      "query_phrase": "Retrieval end-to-end should query by meaningful text phrases and require promote",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.7919
+    },
+    {
+      "candidate_id": "ingest09c_retrieval_failure_policy",
+      "query_phrase": "Retrieval failures should be reported precisely and should block completion if t",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.7799
+    },
+    {
+      "candidate_id": "ingest09c_agent_probe_uses_auth_and_readonly",
+      "query_phrase": "Agent-use probes after ingestion must use strict token authentication and read_o",
+      "retrieved_in_top_10": true,
+      "rank": 2,
+      "score": 0.8957
+    },
+    {
+      "candidate_id": "ingest09c_agent_probe_no_write_tools",
+      "query_phrase": "Agent-use probes must confirm that no write tools, promotions, ingestion, or tra",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.8517
+    },
+    {
+      "candidate_id": "ingest09c_git_safety_after_runtime_mutation",
+      "query_phrase": "Promotion mutates local runtime memory, but Git safety must prove that no memory",
+      "retrieved_in_top_10": true,
+      "rank": 2,
+      "score": 0.7332
+    },
+    {
+      "candidate_id": "ingest09c_medium_to_large_scaling_boundary",
+      "query_phrase": "Successful twenty-four record medium batch ingestion still does not authorize ma",
+      "retrieved_in_top_10": true,
+      "rank": 1,
+      "score": 0.8592
+    }
+  ]
+}

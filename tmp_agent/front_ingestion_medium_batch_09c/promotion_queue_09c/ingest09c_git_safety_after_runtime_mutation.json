@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_git_safety_after_runtime_mutation",
+  "source_front": "front_ingestion_small_batch_09b",
+  "source_path": "tmp_agent/front_ingestion_small_batch_09b/final_report.md",
+  "domain": "production_operations",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "Promotion mutates local runtime memory, but Git safety must prove that no memory files are staged or tracked. After every batch promotion, the operator must run git status and verify that memory files appear as untracked or ignored rather than staged or modified. The guard script provides automated enforcement by inspecting staged files and failing if any sensitive path is added, modified, or copied. For medium batches of twenty-four candidates, the risk of accidental staging increases because more files may be created during promotion artifacts and snapshots. The 09C front should add a dedicated Git safety phase that runs after promotion, retrieval, and agent probes. This phase checks staged files, tracked files, promotion_queue mutation, and semantic_staging mutation. Only after Git safety passes should the operator stage test and report artifacts for commit.",
+  "summary": "Git safety must prove no memory files staged after runtime mutation",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

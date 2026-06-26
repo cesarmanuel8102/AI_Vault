@@ -1,0 +1,6 @@
+{
+  "method": "temporary_queue_dir",
+  "queue_dir": "C:\\AI_VAULT_CANONICAL\\tmp_agent\\front_ingestion_medium_batch_09c\\promotion_queue_09c",
+  "candidate_count": 24,
+  "notes": "Reuses 09A/09B narrow validated path. Does not mutate memory/promotion_queue or memory/semantic_staging."
+}

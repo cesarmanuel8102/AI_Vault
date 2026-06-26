@@ -1,0 +1,11 @@
+{
+  "jsonl_records": 1771,
+  "faiss_ids_count": 1762,
+  "faiss_ntotal": 1762,
+  "08f_ids_present": true,
+  "09a_ids_present": true,
+  "09b_ids_present": true,
+  "memory_files_tracked": false,
+  "memory_files_staged": false,
+  "status": "PASS"
+}

@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_agent_probe_no_write_tools",
+  "source_front": "front_ingestion_small_batch_09b",
+  "source_path": "tmp_agent/front_ingestion_small_batch_09b/agent_use_probe_results.json",
+  "domain": "operator_readiness",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "Agent-use probes must confirm that no write tools, promotions, ingestion, or trading actions were executed during verification. The 09B front explicitly probed this by invoking promotion_candidate_promote in read_only mode and asserting that the ToolGateway blocked it. This test should be repeated in 09C with the same expectation. Additionally, the agent probe should verify that chat responses do not contain instructions to write files, promote candidates, or execute trades. The probe artifact records whether write tools were used, whether memory was mutated, and whether auth was required. If any probe triggers a write action, the front must halt and investigate because read_only mode should be absolute. The combination of auth and read_only mode gates provides defense in depth against accidental or malicious mutation during routine verification.",
+  "summary": "Agent probes must confirm no write tools or promotions executed",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

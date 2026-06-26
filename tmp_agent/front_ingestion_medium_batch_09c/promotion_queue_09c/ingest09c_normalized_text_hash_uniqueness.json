@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_normalized_text_hash_uniqueness",
+  "source_front": "front_brain_agent_v2_text_dedup_batch_promotion_08f",
+  "source_path": "tmp_agent/front_brain_agent_v2_text_dedup_batch_promotion_08f/batch_promotion_summary.md",
+  "domain": "retrieval_quality",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "Normalized text hashes must be unique within the batch before promotion. The 08F front demonstrated that thirty-six submitted entries reduced to twenty-four unique normalized texts after deduplication. Unique identifier-based deduplication alone is insufficient because different IDs can represent the same semantic content. Normalizing whitespace and case before computing SHA-256 hashes ensures consistent comparison. The validation script should compute a normalized hash for each candidate and assert that all hashes are distinct. If duplicates exist, the validation must report which candidate IDs share the same hash. This gate prevents redundant entries from entering canonical memory and degrading retrieval. The normalized text hash is also useful for future deduplication pipelines that need to compare new candidates against canonical memory without loading full text bodies into memory.",
+  "summary": "Normalized text hashes must be unique within the batch before promotion",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

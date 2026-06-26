@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_candidate_text_word_count_gate",
+  "source_front": "front_ingestion_small_batch_09b",
+  "source_path": "tmp_agent/front_ingestion_small_batch_09b/final_report.md",
+  "domain": "governance",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "Candidate text length must be measured in words rather than characters, with a strict eighty to two hundred twenty word range per lesson. Character-based limits are misleading because dense technical prose can convey meaning in fewer characters than verbose natural language. Word counts correlate better with semantic content density. The 09A and 09B fronts enforced this rule and the 09C front continues it. Each candidate must contain enough text to be retrievable and meaningful but not so much that it overwhelms the embedding model or retrieval results. The validation script splits the text on whitespace and asserts the word count falls within the range. Candidates that are too short risk being generic or lacking operational value. Candidates that are too long may be truncated or may dilute retrieval precision.",
+  "summary": "Candidate text must be 80-220 words, measured by word count not characters",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

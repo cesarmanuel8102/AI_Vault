@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_retrieval_topk_contract",
+  "source_front": "front_ingestion_small_batch_09b",
+  "source_path": "tmp_agent/front_ingestion_small_batch_09b/retrieval_e2e_results.json",
+  "domain": "retrieval_quality",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "Retrieval end-to-end should query by meaningful text phrases and require promoted candidates to appear in the top-k results. The 09B front achieved twelve out of twelve retrievals in the top five, with eleven ranking first. For a twenty-four candidate medium batch, the retrieval contract should require all twenty-four candidates to appear in the top ten results. Querying by candidate identifier tests only structural presence, not embedding quality. Meaningful phrases extracted from candidate text confirm that the embedding model captured semantic content. The retrieval artifact should report each candidate's rank, score, and whether it passed. Scores above zero point seven indicate strong semantic alignment. Retrieval failure for even one candidate should block front completion because it indicates an embedding or indexing defect that could affect agent behavior.",
+  "summary": "Retrieval E2E must query by text phrase and require top-k presence",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

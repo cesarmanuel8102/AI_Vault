@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_candidate_safety_flags_required",
+  "source_front": "front_ingestion_small_batch_09b",
+  "source_path": "tmp_agent/front_ingestion_small_batch_09b/curated_candidates_09b.json",
+  "domain": "governance",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "Each candidate must explicitly declare safety flags for raw chain-of-thought exposure, secrets exposure, trading execution detection, and review requirement status. The candidate schema includes boolean fields for each of these dimensions. Validation rejects any candidate that sets raw_cot_exposed, secrets_exposed, or trading_execution_detected to true. These flags make safety decisions explicit and auditable rather than implicit. The 08B promotion tool tests specifically verify that candidates with these flags set to true are rejected. The 09B front required all twelve candidates to declare false for every flag. The 09C front extends this requirement to twenty-four candidates. Safety flags are also written to the promotion audit trail, creating a permanent record that each promoted candidate was explicitly cleared of these risks before entering canonical memory.",
+  "summary": "Candidates must declare safety flags for CoT, secrets, trading, and review",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

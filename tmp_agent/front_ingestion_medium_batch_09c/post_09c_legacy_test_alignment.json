@@ -1,0 +1,17 @@
+{
+  "baseline_updated": true,
+  "new_baseline": {
+    "front": "09C",
+    "semantic_memory_records": 1795,
+    "faiss_ids_count": 1786,
+    "faiss_ntotal": 1786
+  },
+  "helper_updated": "tests/smoke/_accepted_runtime_baseline.py",
+  "legacy_tests_verified": {
+    "test_memory_git_hygiene_final_01.py": "15/15 passed",
+    "test_agent_v2_text_dedup_batch_promotion_08f_24.py": "17/17 passed",
+    "test_agent_v2_faiss_rebuild_hydration_01.py": "7/7 passed"
+  },
+  "memory_mutated": false,
+  "notes": "Helper updated to 09C baseline. Legacy tests aligned via direct count updates, no separate repair front needed."
+}

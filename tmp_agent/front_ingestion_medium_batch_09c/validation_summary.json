@@ -1,0 +1,15 @@
+{
+  "total_candidates": 24,
+  "valid_candidates": 24,
+  "promotable_candidates": 24,
+  "no_writes_performed": true,
+  "all_text_lengths_80_to_220": true,
+  "all_domains_known": true,
+  "no_secrets": true,
+  "no_raw_cot": true,
+  "no_trading": true,
+  "no_duplicate_text_within_manifest": true,
+  "no_duplicate_text_from_09a": true,
+  "no_duplicate_text_from_09b": true,
+  "no_duplicate_text_in_canonical": true
+}

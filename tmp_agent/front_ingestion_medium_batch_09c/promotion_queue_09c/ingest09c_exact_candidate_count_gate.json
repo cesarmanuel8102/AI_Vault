@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_exact_candidate_count_gate",
+  "source_front": "front_ingestion_small_batch_09b",
+  "source_path": "tmp_agent/front_ingestion_small_batch_09b/final_report.md",
+  "domain": "governance",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "Batch ingestion fronts must enforce exact candidate counts before validation and promotion. The 09B front specified exactly twelve candidates with explicit candidate IDs, topics, and word-count constraints. The 09C front scales to exactly twenty-four candidates. Count enforcement prevents scope creep during front execution and ensures the validation gate checks the intended batch size. If the actual candidate count deviates from the specification, the front must halt with a validation failure. This gate is checked by asserting total_candidates equals the planned count and that valid_candidates and promotable_candidates match. Exact counts also simplify post-promotion verification because the expected JSONL and FAISS increments are known in advance. Operators should not approve promotion tokens until the candidate manifest has been manually reviewed and locked.",
+  "summary": "Batch fronts must enforce exact candidate counts before validation",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_supported_loader_path_required",
+  "source_front": "front_ingestion_small_batch_09b",
+  "source_path": "tmp_agent/front_ingestion_small_batch_09b/final_report.md",
+  "domain": "brain_architecture",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "Promotion must use a supported loader path because the PromotionPipelineAdapter only recognizes standard sources such as promotion_queue directories and semantic_staging JSONL files. Front-local artifacts like curated_candidates_09b.json are not natively supported. Attempting to load them directly results in candidate_not_found errors. The correct approach is to write each candidate into a temporary queue directory that the existing loader can consume. This preserves the boundary between front artifacts and canonical pipeline state. Extending the adapter to support arbitrary JSON files would increase complexity and risk unintended loaders. The temporary queue_dir method was proven safe in 09A and 09B without any adapter modifications. Operators should verify that the loader can find candidates before requesting promotion approval tokens.",
+  "summary": "Promotion must use supported loader paths; front artifacts need narrow queue_dir",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

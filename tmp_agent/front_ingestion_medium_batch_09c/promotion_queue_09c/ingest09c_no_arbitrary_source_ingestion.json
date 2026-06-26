@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_no_arbitrary_source_ingestion",
+  "source_front": "front_ingestion_small_batch_09b",
+  "source_path": "tmp_agent/front_ingestion_small_batch_09b/final_report.md",
+  "domain": "governance",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "Controlled ingestion must use safe local reports only and must not ingest arbitrary internet content or raw runtime logs. The allowed source pool for 09B and 09C consists of front final reports, batch summaries, validation artifacts, and test files already produced by the system. These sources are known, bounded, and contain concise operational lessons rather than bulk data. Ingesting arbitrary internet pages would introduce unvetted content, unknown domains, and potential secrets. Ingesting raw stdout or stderr would bloat the index with transient log lines that have no semantic value. The front specification explicitly lists permitted sources and instructs operators to skip missing files rather than search the internet. This boundary preserves the quality of canonical memory and prevents contamination from external or ephemeral data.",
+  "summary": "Controlled ingestion must use safe local reports only, not internet or raw logs",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

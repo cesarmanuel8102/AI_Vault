@@ -14,9 +14,9 @@ JSONL_SHA256_BASELINE = "43e00f1e3ce8509979ccdb8f3101ae91990feae975c9b9330875b17
 # ^ Pre-09A baseline SHA kept for reference; test uses dynamic before/after check.
 
 # Current accepted baseline after 09A+09B
-CURRENT_JSONL_RECORDS = 1771
-CURRENT_FAISS_IDS = 1762
-CURRENT_FAISS_NTOTAL = 1762
+CURRENT_JSONL_RECORDS = 1795
+CURRENT_FAISS_IDS = 1786
+CURRENT_FAISS_NTOTAL = 1786
 
 
 def _sha256(path: Path) -> str:

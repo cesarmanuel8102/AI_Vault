@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_accepted_baseline_helper",
+  "source_front": "front_legacy_baseline_test_repair_09b_closeout_01",
+  "source_path": "tmp_agent/front_legacy_baseline_test_repair_09b_closeout_01/final_report.md",
+  "domain": "test_infrastructure",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "Accepted runtime baselines should be centralized in a small helper module to avoid scattered fixed-count assumptions across the test suite. When each smoke test hardcodes its own expected JSONL record counts and FAISS id totals, accepted memory growth forces redundant repairs in multiple files. A single helper such as tests/smoke/_accepted_runtime_baseline.py stores the current front identifier, commit short hash, and canonical counts. Tests import this helper and assert against its values rather than embedding stale numbers. When a new ingestion front advances memory, updating one helper propagates the baseline to all consumers. This pattern was validated in the 09B closeout where three legacy tests were aligned by referencing a shared baseline, proving maintainability and reducing future repair burden.",
+  "summary": "Centralize accepted baselines in a single helper to avoid scattered assumptions",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

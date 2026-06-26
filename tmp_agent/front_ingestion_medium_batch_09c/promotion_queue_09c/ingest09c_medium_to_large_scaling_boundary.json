@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_medium_to_large_scaling_boundary",
+  "source_front": "front_ingestion_small_batch_09b",
+  "source_path": "tmp_agent/front_ingestion_small_batch_09b/final_report.md",
+  "domain": "governance",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "Successful twenty-four record medium batch ingestion still does not authorize mass ingestion. Large batch ingestion requires a separate front with enhanced validation, deduplication, and compaction procedures. The governance ladder is: single record, three record controlled E2E, twelve record small batch, twenty-four record medium batch, and then large controlled batch. Each stage must pass promotion, retrieval, and agent-use probes before the next stage is authorized. Jumping directly from medium to mass ingestion risks exceeding validation capacity, corrupting the index, and losing rollback granularity. The 09C front should document this boundary explicitly in its final report and recommend the next front as large controlled batch rather than mass ingestion. Operators must treat each stage as a gate that refines pipeline stability before increasing load.",
+  "summary": "Successful 24-record medium batch does not authorize mass ingestion",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

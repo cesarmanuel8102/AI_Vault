@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_dynamic_sha_for_readonly_tests",
+  "source_front": "front_legacy_baseline_test_repair_09b_closeout_01",
+  "source_path": "tmp_agent/front_legacy_baseline_test_repair_09b_closeout_01/final_report.md",
+  "domain": "test_infrastructure",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "Read-only tests should use dynamic before-and-after SHA comparison instead of hardcoded old SHA values. The FAISS rebuild hydration test originally compared semantic_memory.jsonl against a SHA from a pre-09A baseline. Any subsequent promotion mutated the file and invalidated the hardcoded SHA, causing false failures. The repair computes the SHA immediately before the read-only inspection, runs the inspection, then recomputes the SHA and asserts equality. This proves the test action did not mutate JSONL without requiring knowledge of future file contents. Dynamic SHA invariants are future-proof because they depend only on local file state, not on external baselines that change with every ingestion cycle. The same pattern applies to any read-only integrity check on mutable runtime files.",
+  "summary": "Use dynamic before/after SHA instead of hardcoded old SHA in read-only tests",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

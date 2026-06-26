@@ -1,0 +1,15 @@
+{
+  "jsonl_before": 1771,
+  "jsonl_after": 1795,
+  "jsonl_increment": 24,
+  "faiss_ids_before": 1762,
+  "faiss_ids_after": 1786,
+  "faiss_ids_increment": 24,
+  "faiss_ntotal_before": 1762,
+  "faiss_ntotal_after": 1786,
+  "faiss_ntotal_increment": 24,
+  "all_promoted_in_jsonl": true,
+  "all_promoted_in_faiss_ids": true,
+  "no_blank_text_among_09c": true,
+  "no_duplicate_text_among_09c": true
+}

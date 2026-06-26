@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_full_regression_after_baseline_shift",
+  "source_front": "front_legacy_baseline_test_repair_09b_closeout_01",
+  "source_path": "tmp_agent/front_legacy_baseline_test_repair_09b_closeout_01/final_report.md",
+  "domain": "production_operations",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "After accepted memory growth shifts baselines, full regression must confirm no functional regressions and no unintended memory mutation. The 09B closeout repaired three legacy tests and then executed the complete regression suite spanning auth endpoints, memory hygiene, 08F batch promotion, 08B promotion tool, semantic retrieval, and the new 09B tests. All tests passed, proving that the baseline shift was purely additive with no degradation of existing functionality. Running the full suite after any ingestion front is mandatory because promotion tools, retrieval paths, and agent behavior are interconnected. A failure in auth tests after an ingestion front would indicate a cross-cutting regression even if memory counts appear correct. Regression results should be recorded in a JSON artifact for traceability.",
+  "summary": "Full regression after baseline shift confirms no functional regressions",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

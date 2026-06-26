@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_partial_failure_rolls_back",
+  "source_front": "front_ingestion_small_batch_09b",
+  "source_path": "tmp_agent/front_ingestion_small_batch_09b/final_report.md",
+  "domain": "production_operations",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "If any candidate fails during batch promotion, the entire batch must roll back to the pre-promotion snapshot. Partial promotion leaves canonical memory in an inconsistent state where some candidates are ingested and others are not. The rollback copies snapshot files back to the canonical directory, restoring JSONL records, FAISS index, FAISS ids, and audit trail. After rollback, the system must verify that counts match the pre-promotion baseline. The 09B front used sequential promotion with per-candidate verification, breaking immediately on the first failure. This approach is safer than continuing with a partial batch because it prevents cascading errors and simplifies diagnosis. Operators should examine the failed candidate's validation errors before retrying. The promotion progress artifact records which candidates succeeded before failure, providing a complete audit trail even after rollback.",
+  "summary": "Any candidate failure during batch promotion triggers full rollback",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

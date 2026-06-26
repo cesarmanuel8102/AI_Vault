@@ -100,8 +100,8 @@ def test_live_jsonl_and_ids_counts_match_post_verify():
     assert len(records) >= verify["jsonl_records_after"]
     assert len(ids) >= verify["faiss_ids_after"]
     # Latest accepted post-09B baseline
-    assert len(records) == 1771, f"expected 1771 jsonl records, got {len(records)}"
-    assert len(ids) == 1762, f"expected 1762 faiss ids, got {len(ids)}"
+    assert len(records) == 1795, f"expected 1795 jsonl records, got {len(records)}"
+    assert len(ids) == 1786, f"expected 1786 faiss ids, got {len(ids)}"
     print("PASS: live_jsonl_and_ids_counts_match_post_verify")
 
 

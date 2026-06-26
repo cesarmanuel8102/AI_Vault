@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_medium_batch_requires_previous_small_batch",
+  "source_front": "front_ingestion_small_batch_09b",
+  "source_path": "tmp_agent/front_ingestion_small_batch_09b/final_report.md",
+  "domain": "governance",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "Medium-batch ingestion is authorized only after three-record and twelve-record end-to-end stages have been proven successful. The ingestion scaling ladder requires each stage to validate promotion, retrieval, agent-use probes, rollback safety, and Git hygiene before advancing to the next size. The 09A front proved three curated candidates could be promoted and retrieved. The 09B front proved twelve candidates with the same safety invariants. A twenty-four candidate medium batch is the logical next increment. Skipping stages risks overwhelming validation pipelines, exceeding snapshot storage, and making failure diagnosis difficult. Each stage also refines quality thresholds and embedding behavior under realistic but limited load. Governance must enforce this ladder because the approval token itself should only be issued after the previous stage is complete.",
+  "summary": "Medium-batch ingestion requires prior 3-record and 12-record E2E success",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

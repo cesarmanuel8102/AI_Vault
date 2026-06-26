@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_promoted_ids_in_jsonl_and_faiss",
+  "source_front": "front_ingestion_small_batch_09b",
+  "source_path": "tmp_agent/front_ingestion_small_batch_09b/post_promotion_verify.json",
+  "domain": "semantic_memory",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "Every promoted candidate identifier must exist in both JSONL and FAISS ids after promotion. Presence in JSONL confirms the semantic record was written to canonical memory. Presence in FAISS ids confirms the embedding was indexed. The post-promotion verification scans all JSONL records and the FAISS ids list for each candidate ID. If an ID is missing from either, the promotion pipeline has a bug that must be investigated before the front is considered complete. This check is especially important for medium batches because sequential promotion increases the chance of intermittent failures. The 09B front verified all twelve IDs in both stores. The 09C front scales this to twenty-four. Missing IDs should be reported with exact candidate identifiers and the promotion progress record for that index.",
+  "summary": "Every promoted candidate ID must exist in both JSONL and FAISS ids",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_no_blank_or_duplicate_new_text",
+  "source_front": "front_ingestion_small_batch_09b",
+  "source_path": "tmp_agent/front_ingestion_small_batch_09b/post_promotion_verify.json",
+  "domain": "semantic_memory",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "Newly promoted records must have nonblank text and no duplicate exact text within the batch. The post-promotion verification filters records to the candidate IDs promoted in this front and checks that every text field is non-empty after stripping whitespace. It then asserts that the number of unique texts equals the number of promoted records. Pre-existing blank records from older historical fronts should not cause a failure because they were introduced before the current front's governance rules. The 09B front found nine pre-existing blank records in canonical memory but confirmed that all twelve new candidates had clean text. The 09C front must apply the same policy: report pre-existing blanks as warnings but fail only if the current batch introduced them. This distinction preserves backward compatibility while maintaining quality gates.",
+  "summary": "Newly promoted records must have nonblank text and no batch duplicates",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}

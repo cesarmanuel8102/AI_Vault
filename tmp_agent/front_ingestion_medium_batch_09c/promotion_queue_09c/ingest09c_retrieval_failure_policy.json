@@ -1,0 +1,15 @@
+{
+  "candidate_id": "ingest09c_retrieval_failure_policy",
+  "source_front": "front_ingestion_small_batch_09b",
+  "source_path": "tmp_agent/front_ingestion_small_batch_09b/retrieval_e2e_results.json",
+  "domain": "retrieval_quality",
+  "category": "controlled_ingestion_medium_batch_09c",
+  "text": "Retrieval failures should be reported precisely and should block completion if the required pass count is not met. The retrieval policy distinguishes between two failure modes. If a candidate is present in JSONL and FAISS ids but not retrievable by text phrase, the embedding or indexing pipeline has a defect. This is a hard failure that prevents front completion. If retrieval is partial due to low semantic similarity, the exact candidate ID, query phrase, and top-k results should be recorded for operator review. The 09B front required twelve out of twelve retrievals to pass. The 09C front maintains the same strict policy at twenty-four. Operators should not bypass retrieval failures by lowering thresholds or accepting partial results because this would allow defective embeddings into canonical memory where they degrade agent responses.",
+  "summary": "Retrieval failures block completion and must report exact candidate and query",
+  "created_by": "front_ingestion_medium_batch_09c",
+  "source_cycle": "09c_medium_batch_ingestion",
+  "raw_cot_exposed": false,
+  "secrets_exposed": false,
+  "trading_execution_detected": false,
+  "review_required": false
+}
