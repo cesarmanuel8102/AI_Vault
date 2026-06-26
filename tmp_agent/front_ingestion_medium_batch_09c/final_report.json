@@ -1,0 +1,57 @@
+{
+  "STATUS": "INGESTION_MEDIUM_BATCH_09C_COMPLETE",
+  "functional_commit": "8133c56",
+  "memory": {
+    "records_before": 1771,
+    "records_after": 1795,
+    "records_increment": 24,
+    "faiss_ids_before": 1762,
+    "faiss_ids_after": 1786,
+    "faiss_ids_increment": 24,
+    "faiss_ntotal_before": 1762,
+    "faiss_ntotal_after": 1786,
+    "faiss_ntotal_increment": 24
+  },
+  "ingestion": {
+    "candidates_created": 24,
+    "candidates_validated": 24,
+    "candidates_promoted": 24
+  },
+  "retrieval": {
+    "retrieval_passed_count": 24,
+    "retrieval_failed_count": 0
+  },
+  "agent_use": {
+    "agent_use_probe_status": "passed",
+    "auth_required": true,
+    "write_tools_used": false,
+    "memory_mutated": false
+  },
+  "tests": {
+    "09c_test": "24/24 passed",
+    "09b_test": "20/20 passed",
+    "09a_test": "16/16 passed",
+    "auth_test": "14/14 passed",
+    "memory_hygiene_test": "15/15 passed",
+    "08f_test": "17/17 passed",
+    "08b_test": "17/17 passed",
+    "semantic_hygiene_test": "4/4 passed",
+    "faiss_hydration_test": "7/7 passed"
+  },
+  "safety": {
+    "guard_passed": true,
+    "memory_files_staged": false,
+    "memory_files_tracked": false,
+    "promotion_queue_mutated": false,
+    "semantic_staging_mutated": false,
+    "secrets_staged": false,
+    "mass_ingestion_performed": false,
+    "internet_ingestion_performed": false
+  },
+  "final_decision": {
+    "medium_batch_ingestion_e2e_proven": true,
+    "safe_to_scale_to_09D_large_controlled_batch": true,
+    "safe_to_mass_ingest_now": false,
+    "recommended_next_front": "FRONT-INGESTION-LARGE-CONTROLLED-BATCH-09D"
+  }
+}
