@@ -8,13 +8,14 @@ import json
 import os
 import sys
 import subprocess
+from tests._repo_root import REPO_ROOT
 
-sys.path.insert(0, r"C:\AI_VAULT_CANONICAL")
+sys.path.insert(0, str(REPO_ROOT))
 
-JSONL_PATH = r"C:\AI_VAULT_CANONICAL\memory\semantic\semantic_memory.jsonl"
-FAISS_IDS_PATH = r"C:\AI_VAULT_CANONICAL\memory\semantic\semantic_memory_faiss_ids.json"
-FAISS_INDEX_PATH = r"C:\AI_VAULT_CANONICAL\memory\semantic\semantic_memory_faiss.index"
-SNAPSHOT_DIR = r"C:\AI_VAULT_CANONICAL\memory\rollback_snapshots\20260627T003901_historical_debt_cleanup_01"
+JSONL_PATH = str(REPO_ROOT / "memory/semantic/semantic_memory.jsonl")
+FAISS_IDS_PATH = str(REPO_ROOT / "memory/semantic/semantic_memory_faiss_ids.json")
+FAISS_INDEX_PATH = str(REPO_ROOT / "memory/semantic/semantic_memory_faiss.index")
+SNAPSHOT_DIR = str(REPO_ROOT / "memory/rollback_snapshots/20260627T003901_historical_debt_cleanup_01")
 
 PROMOTED_IDS = [
     "4da11a6bf9d56d895193c93b",
@@ -146,7 +147,7 @@ def test_retrieval_for_09d_promoted_ids():
 
 def test_guard_passes():
     result = subprocess.run(
-        [sys.executable, r"C:\AI_VAULT_CANONICAL\scripts\git_hygiene\check_no_sensitive_paths_staged.py"],
+        [sys.executable, str(REPO_ROOT / "scripts/git_hygiene/check_no_sensitive_paths_staged.py")],
         capture_output=True,
         text=True,
     )
@@ -159,7 +160,7 @@ def test_no_memory_files_staged():
         ["git", "diff", "--cached", "--name-status"],
         capture_output=True,
         text=True,
-        cwd=r"C:\AI_VAULT_CANONICAL",
+        cwd=str(REPO_ROOT),
     )
     staged = result.stdout.strip()
     for line in staged.splitlines() if staged else []:

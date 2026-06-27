@@ -15,8 +15,8 @@ Rules:
 import os
 import sys
 
-sys.path.insert(0, "C:/AI_VAULT_CANONICAL")
-sys.path.insert(0, "C:/AI_VAULT_CANONICAL/tmp_agent")
+sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(REPO_ROOT / "tmp_agent"))
 
 from fastapi.testclient import TestClient
 
@@ -25,6 +25,7 @@ os.environ.setdefault("BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS", "false")
 
 from tmp_agent.brain_v9.main import app
 from tmp_agent.brain_v9.config import BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS
+from tests._repo_root import REPO_ROOT
 
 client = TestClient(app)
 VALID_TOKEN = "AGENTV2_TEST_ADMIN_TOKEN"

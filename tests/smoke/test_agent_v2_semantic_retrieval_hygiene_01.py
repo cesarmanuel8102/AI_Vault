@@ -1,6 +1,7 @@
 # Semantic Retrieval Hygiene Smoke Tests for Agent V2
 import sys
-sys.path.insert(0, "C:/AI_VAULT_CANONICAL")
+from tests._repo_root import REPO_ROOT
+sys.path.insert(0, str(REPO_ROOT))
 
 from tmp_agent.brain_v9.core.agent_kernel_v2.memory_gateway import MemoryGatewayV2
 from tmp_agent.brain_v9.core.agent_kernel_v2.native_runtime import NativeAgentRuntimeV2

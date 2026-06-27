@@ -30,8 +30,9 @@ import subprocess
 import sys
 import yaml
 from pathlib import Path
+from tests._repo_root import REPO_ROOT
 
-_ROOT = Path(r"C:\AI_VAULT_CANONICAL")
+_ROOT = REPO_ROOT
 _MEMORY_SEMANTIC = _ROOT / "memory/semantic"
 _JSONL = _MEMORY_SEMANTIC / "semantic_memory.jsonl"
 _IDS = _MEMORY_SEMANTIC / "semantic_memory_faiss_ids.json"

@@ -24,7 +24,7 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 # ── constants ──
-ROOT = Path(r"C:\AI_VAULT_CANONICAL")
+ROOT = REPO_ROOT
 FIXTURE_DIR = ROOT / "tmp_agent/front_e2e_self_learning_loop_nontrading_01/fixtures"
 MEMORY_JSONL = ROOT / "memory/semantic/semantic_memory.jsonl"
 MEMORY_IDS = ROOT / "memory/semantic/semantic_memory_faiss_ids.json"
@@ -158,6 +158,7 @@ def stage_c_validate(candidates: list) -> dict:
 
 
 import re
+from tests._repo_root import REPO_ROOT
 
 
 STOP_WORDS = {"the", "a", "an", "is", "are", "was", "were", "be", "been", "being", "have", "has", "had", "do", "does", "did", "will", "would", "could", "should", "may", "might", "must", "shall", "can", "need", "dare", "ought", "used", "to", "of", "in", "for", "on", "with", "at", "by", "from", "as", "into", "through", "during", "before", "after", "above", "below", "between", "under", "again", "further", "then", "once", "here", "there", "when", "where", "why", "how", "all", "each", "few", "more", "most", "other", "some", "such", "no", "nor", "not", "only", "own", "same", "so", "than", "too", "very", "just", "and", "but", "if", "or", "because", "until", "while", "what", "which", "who", "whom", "this", "that", "these", "those", "am", "it", "its", "i", "me", "my", "we", "our", "you", "your", "he", "him", "his", "she", "her", "they", "them", "their"}

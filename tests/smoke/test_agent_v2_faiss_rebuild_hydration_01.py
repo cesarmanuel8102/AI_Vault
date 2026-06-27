@@ -2,10 +2,11 @@
 import sys
 import hashlib
 from pathlib import Path
+from tests._repo_root import REPO_ROOT
 
-sys.path.insert(0, "C:/AI_VAULT_CANONICAL")
+sys.path.insert(0, str(REPO_ROOT))
 
-SEMANTIC_ROOT = Path("C:/AI_VAULT_CANONICAL/memory/semantic")
+SEMANTIC_ROOT = REPO_ROOT / "memory/semantic"
 JSONL_PATH = SEMANTIC_ROOT / "semantic_memory.jsonl"
 IDS_PATH = SEMANTIC_ROOT / "semantic_memory_faiss_ids.json"
 IDX_PATH = SEMANTIC_ROOT / "semantic_memory_faiss.index"

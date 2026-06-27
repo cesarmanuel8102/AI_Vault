@@ -9,8 +9,8 @@ Rules:
 import os
 import sys
 
-sys.path.insert(0, "C:/AI_VAULT_CANONICAL")
-sys.path.insert(0, "C:/AI_VAULT_CANONICAL/tmp_agent")
+sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(REPO_ROOT / "tmp_agent"))
 
 from fastapi.testclient import TestClient
 
@@ -18,6 +18,7 @@ os.environ.setdefault("BRAIN_ADMIN_TOKEN", "AGENTV2_TEST_ADMIN_TOKEN")
 os.environ.setdefault("BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS", "false")
 
 from tmp_agent.brain_v9.dashboard.dashboard_app import app
+from tests._repo_root import REPO_ROOT
 
 client = TestClient(app)
 VALID_TOKEN = "AGENTV2_TEST_ADMIN_TOKEN"
@@ -29,7 +30,7 @@ def test_dashboard_app_js_has_no_hardcoded_8091_trace_url():
     in trace link builders.
     """
     from pathlib import Path
-    js_path = Path("C:/AI_VAULT_CANONICAL/tmp_agent/brain_v9/dashboard/static/app.js")
+    js_path = REPO_ROOT / "tmp_agent/brain_v9/dashboard/static/app.js"
     content = js_path.read_text(encoding="utf-8")
     # 8091 may appear in error messages ("Ensure Agent V2 is running on 8091") but NOT in trace URLs
     trace_url_lines = [line for line in content.splitlines() if "trace_url" in line.lower() or "traceUrl" in line]
@@ -43,7 +44,7 @@ def test_dashboard_app_js_uses_same_origin_trace_proxy():
     Verify app.js remaps /v2/agent/runs/ to /brain-dashboard/agent-v2/runs/
     """
     from pathlib import Path
-    js_path = Path("C:/AI_VAULT_CANONICAL/tmp_agent/brain_v9/dashboard/static/app.js")
+    js_path = REPO_ROOT / "tmp_agent/brain_v9/dashboard/static/app.js"
     content = js_path.read_text(encoding="utf-8")
     assert "/brain-dashboard/agent-v2/runs/" in content, "app.js should use same-origin dashboard proxy"
     # Make sure it replaces the old v2 path
@@ -158,7 +159,7 @@ def test_secrets_not_exposed_in_dashboard_trace_rendering():
 def test_no_memory_mutation():
     import json, faiss
     from pathlib import Path
-    SEMANTIC_ROOT = Path("C:/AI_VAULT_CANONICAL/memory/semantic")
+    SEMANTIC_ROOT = REPO_ROOT / "memory/semantic"
     records = [line for line in (SEMANTIC_ROOT / "semantic_memory.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
     ids = json.loads((SEMANTIC_ROOT / "semantic_memory_faiss_ids.json").read_text(encoding="utf-8"))
     ntotal = int(faiss.read_index(str(SEMANTIC_ROOT / "semantic_memory_faiss.index")).ntotal)

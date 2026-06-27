@@ -8,19 +8,20 @@ import json
 import os
 import sys
 import subprocess
+from tests._repo_root import REPO_ROOT
 
 # Ensure imports resolve from project root
-sys.path.insert(0, r"C:\AI_VAULT_CANONICAL")
+sys.path.insert(0, str(REPO_ROOT))
 
 # Constants
-SNAPSHOT_DIR = r"C:\AI_VAULT_CANONICAL\memory\rollback_snapshots\20260626T094552_806821_09d_batch_8"
+SNAPSHOT_DIR = str(REPO_ROOT / "memory/rollback_snapshots/20260626T094552_806821_09d_batch_8")
 PRE_JSONL = os.path.join(SNAPSHOT_DIR, "semantic_memory.jsonl")
 PRE_FAISS_IDS = os.path.join(SNAPSHOT_DIR, "semantic_memory_faiss_ids.json")
 PRE_FAISS_INDEX = os.path.join(SNAPSHOT_DIR, "semantic_memory_faiss.index")
 
-CUR_JSONL = r"C:\AI_VAULT_CANONICAL\memory\semantic\semantic_memory.jsonl"
-CUR_FAISS_IDS = r"C:\AI_VAULT_CANONICAL\memory\semantic\semantic_memory_faiss_ids.json"
-CUR_FAISS_INDEX = r"C:\AI_VAULT_CANONICAL\memory\semantic\semantic_memory_faiss.index"
+CUR_JSONL = str(REPO_ROOT / "memory/semantic/semantic_memory.jsonl")
+CUR_FAISS_IDS = str(REPO_ROOT / "memory/semantic/semantic_memory_faiss_ids.json")
+CUR_FAISS_INDEX = str(REPO_ROOT / "memory/semantic/semantic_memory_faiss.index")
 
 PROMOTED_IDS = [
     "4da11a6bf9d56d895193c93b",
@@ -235,7 +236,7 @@ def test_delta_clean():
 
 def test_guard_no_sensitive_files_staged():
     result = subprocess.run(
-        [sys.executable, r"C:\AI_VAULT_CANONICAL\scripts\git_hygiene\check_no_sensitive_paths_staged.py"],
+        [sys.executable, str(REPO_ROOT / "scripts/git_hygiene/check_no_sensitive_paths_staged.py")],
         capture_output=True,
         text=True,
     )

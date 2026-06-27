@@ -7,17 +7,18 @@ import json
 import os
 import sys
 import subprocess
+from tests._repo_root import REPO_ROOT
 
-sys.path.insert(0, r"C:\AI_VAULT_CANONICAL")
+sys.path.insert(0, str(REPO_ROOT))
 
-ROADMAP_DIR = r"C:\AI_VAULT_CANONICAL\tmp_agent\front_post_09e_nontrading_roadmap_rebase_01"
+ROADMAP_DIR = str(REPO_ROOT / "tmp_agent/front_post_09e_nontrading_roadmap_rebase_01")
 
 
 def test_memory_baseline_1794():
     import faiss
-    records = [json.loads(line) for line in open(r"C:\AI_VAULT_CANONICAL\memory\semantic\semantic_memory.jsonl", "r", encoding="utf-8") if line.strip()]
-    faiss_ids = json.load(open(r"C:\AI_VAULT_CANONICAL\memory\semantic\semantic_memory_faiss_ids.json"))
-    idx = faiss.read_index(r"C:\AI_VAULT_CANONICAL\memory\semantic\semantic_memory_faiss.index")
+    records = [json.loads(line) for line in open(str(REPO_ROOT / "memory/semantic/semantic_memory.jsonl"), "r", encoding="utf-8") if line.strip()]
+    faiss_ids = json.load(open(str(REPO_ROOT / "memory/semantic/semantic_memory_faiss_ids.json")))
+    idx = faiss.read_index(str(REPO_ROOT / "memory/semantic/semantic_memory_faiss.index"))
     assert len(records) == 1794
     assert len(faiss_ids) == 1794
     assert idx.ntotal == 1794
@@ -25,7 +26,7 @@ def test_memory_baseline_1794():
 
 
 def test_blank_and_duplicate_zero():
-    records = [json.loads(line) for line in open(r"C:\AI_VAULT_CANONICAL\memory\semantic\semantic_memory.jsonl", "r", encoding="utf-8") if line.strip()]
+    records = [json.loads(line) for line in open(str(REPO_ROOT / "memory/semantic/semantic_memory.jsonl"), "r", encoding="utf-8") if line.strip()]
     blank = sum(1 for r in records if not (r.get("text", "") or "").strip())
     dup = len([r.get("id") for r in records]) - len({r.get("id") for r in records})
     assert blank == 0
@@ -68,7 +69,7 @@ def test_no_memory_mutation():
         ["git", "diff", "--name-status"],
         capture_output=True,
         text=True,
-        cwd=r"C:\AI_VAULT_CANONICAL",
+        cwd=str(REPO_ROOT),
     )
     for line in result.stdout.strip().splitlines():
         assert "memory/semantic" not in line, f"Memory mutated: {line}"
@@ -77,7 +78,7 @@ def test_no_memory_mutation():
 
 def test_guard_passes():
     result = subprocess.run(
-        [sys.executable, r"C:\AI_VAULT_CANONICAL\scripts\git_hygiene\check_no_sensitive_paths_staged.py"],
+        [sys.executable, str(REPO_ROOT / "scripts/git_hygiene/check_no_sensitive_paths_staged.py")],
         capture_output=True,
         text=True,
     )
@@ -90,7 +91,7 @@ def test_no_memory_files_staged():
         ["git", "diff", "--cached", "--name-status"],
         capture_output=True,
         text=True,
-        cwd=r"C:\AI_VAULT_CANONICAL",
+        cwd=str(REPO_ROOT),
     )
     staged = result.stdout.strip()
     for line in staged.splitlines() if staged else []:
@@ -105,7 +106,7 @@ def test_trading_files_not_touched():
         ["git", "diff", "--name-status"],
         capture_output=True,
         text=True,
-        cwd=r"C:\AI_VAULT_CANONICAL",
+        cwd=str(REPO_ROOT),
     )
     for line in result.stdout.strip().splitlines():
         assert "tmp_agent/strategies" not in line
