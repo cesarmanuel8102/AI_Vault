@@ -8,6 +8,7 @@ Rules:
 """
 import os
 import sys
+from tests._repo_root import REPO_ROOT
 
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "tmp_agent"))
@@ -18,7 +19,6 @@ os.environ.setdefault("BRAIN_ADMIN_TOKEN", "AGENTV2_TEST_ADMIN_TOKEN")
 os.environ.setdefault("BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS", "false")
 
 from tmp_agent.brain_v9.dashboard.dashboard_app import app
-from tests._repo_root import REPO_ROOT
 
 client = TestClient(app)
 VALID_TOKEN = "AGENTV2_TEST_ADMIN_TOKEN"
