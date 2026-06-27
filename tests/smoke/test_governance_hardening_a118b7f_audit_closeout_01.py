@@ -8,9 +8,10 @@ Rules:
 """
 import os
 import sys
+from tests._repo_root import REPO_ROOT
 
-sys.path.insert(0, "C:/AI_VAULT_CANONICAL")
-sys.path.insert(0, "C:/AI_VAULT_CANONICAL/tmp_agent")
+sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(REPO_ROOT / "tmp_agent"))
 
 from fastapi.testclient import TestClient
 

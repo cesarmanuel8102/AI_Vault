@@ -18,10 +18,11 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import os
 from pathlib import Path
 from typing import List, Tuple
 
-ROOT = Path("C:/AI_VAULT_CANONICAL")
+ROOT = Path(os.environ.get("GITHUB_WORKSPACE", Path(__file__).resolve().parent.parent.parent))
 
 # (status_letter, path) status from git diff --cached --name-status
 StagedFile = Tuple[str, str]

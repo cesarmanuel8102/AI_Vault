@@ -12,9 +12,10 @@ import json
 import subprocess
 import faiss
 from pathlib import Path
+from tests._repo_root import REPO_ROOT
 
-sys.path.insert(0, "C:/AI_VAULT_CANONICAL")
-sys.path.insert(0, "C:/AI_VAULT_CANONICAL/tmp_agent")
+sys.path.insert(0, str(REPO_ROOT))
+sys.path.insert(0, str(REPO_ROOT / "tmp_agent"))
 
 from fastapi.testclient import TestClient
 
@@ -28,7 +29,7 @@ from tmp_agent.brain_v9.core.agent_kernel_v2.tool_gateway import ToolGatewayV2
 from tmp_agent.brain_v9.core.agent_kernel_v2.schemas import ToolCallRequest
 from tmp_agent.brain_v9.core.agent_kernel_v2 import governance
 
-SEMANTIC_ROOT = Path("C:/AI_VAULT_CANONICAL/memory/semantic")
+SEMANTIC_ROOT = REPO_ROOT / "memory/semantic"
 JSONL_PATH = SEMANTIC_ROOT / "semantic_memory.jsonl"
 IDS_PATH = SEMANTIC_ROOT / "semantic_memory_faiss_ids.json"
 IDX_PATH = SEMANTIC_ROOT / "semantic_memory_faiss.index"
@@ -172,7 +173,7 @@ def test_contains_forbidden_request_fields_detects_bypass():
 def test_guard_still_blocks_sensitive_paths():
     result = subprocess.run(
         ["python", "scripts/git_hygiene/check_no_sensitive_paths_staged.py"],
-        cwd="C:/AI_VAULT_CANONICAL",
+        cwd=str(REPO_ROOT),
         capture_output=True, text=True, encoding="utf-8", errors="replace"
     )
     assert result.returncode == 0, f"guard failed: {result.stdout} {result.stderr}"
@@ -180,7 +181,7 @@ def test_guard_still_blocks_sensitive_paths():
 
 
 def test_no_memory_files_tracked_or_staged():
-    result = subprocess.run(["git", "ls-files"], cwd="C:/AI_VAULT_CANONICAL", capture_output=True, text=True, encoding="utf-8", errors="replace")
+    result = subprocess.run(["git", "ls-files"], cwd=str(REPO_ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace")
     tracked = result.stdout.splitlines()
     forbidden = [
         "memory/semantic/semantic_memory.jsonl",
@@ -194,7 +195,7 @@ def test_no_memory_files_tracked_or_staged():
 
 
 def test_promotion_queue_and_semantic_staging_not_mutated():
-    result = subprocess.run(["git", "status", "--short", "--", "memory/promotion_queue", "memory/semantic_staging"], cwd="C:/AI_VAULT_CANONICAL", capture_output=True, text=True, encoding="utf-8", errors="replace")
+    result = subprocess.run(["git", "status", "--short", "--", "memory/promotion_queue", "memory/semantic_staging"], cwd=str(REPO_ROOT), capture_output=True, text=True, encoding="utf-8", errors="replace")
     staged = [line for line in result.stdout.splitlines() if line.strip().startswith(("A", "M", "D"))]
     assert len(staged) == 0, f"promotion_queue or semantic_staging mutated: {staged}"
     print("PASS: promotion_queue_and_semantic_staging_not_mutated")
