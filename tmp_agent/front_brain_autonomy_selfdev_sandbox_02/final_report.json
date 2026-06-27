@@ -1,0 +1,69 @@
+{
+  "front_id": "FRONT-BRAIN-AUTONOMY-SELFDEV-SANDBOX-02",
+  "status": "SELFDEV_SANDBOX_PUSHED",
+  "previous_commit": "31aa6fe",
+  "commit_message": "security(agent): add selfdev autonomy sandbox gate",
+  "files_created": [
+    "tmp_agent/brain_v9/governance/selfdev_sandbox.py",
+    "tests/smoke/test_brain_autonomy_selfdev_sandbox_02.py"
+  ],
+  "files_referenced": [
+    "tmp_agent/front_brain_autonomy_selfdev_sandbox_02/runtime_integration_inventory.json"
+  ],
+  "runtime_integration_done": false,
+  "integration_note": "SelfDevSandbox module created with full API. Runtime integration point identified (ExecutionGate check() or tool wrappers) but not yet wired to avoid breaking CI. Module is ready for adapter-level integration in next front.",
+  "capability_policy_integration": "Uses capability_policy.py for all decisions",
+  "denied_paths": [
+    "governance/* (execution_gate, ethics_kernel, protected_paths, capability_policy, selfdev_sandbox)",
+    "security/* (rbac, api_security, trace_redactor)",
+    "core/agent_kernel_v2/governance.py",
+    ".github/workflows/*",
+    "memory/semantic/*",
+    "memory/rollback_snapshots/*",
+    "memory/autonomous_journal.jsonl",
+    "memory/promotion_queue/*",
+    "memory/semantic_staging/*",
+    "trading/*",
+    "broker/*",
+    "ibkr/*",
+    "quantconnect/*",
+    ".env",
+    ".dev_auth/*",
+    "secrets/*"
+  ],
+  "allowed_paths": [
+    "Non-protected source files (docs, tests, tmp_agent/brain_v9/main.py, etc.)"
+  ],
+  "god_mode_bypass_result": "BLOCKED - GOD mode cannot bypass deny-list for governance/security/trading paths",
+  "write_performed_false_proof": "All 21 sandbox tests verify write_performed=False on deny",
+  "audit_event_example": {
+    "event_type": "capability_decision",
+    "actor": "selfdev",
+    "requested_capability": "governance_edit",
+    "target_path": "tmp_agent/brain_v9/governance/execution_gate.py",
+    "decision": "deny",
+    "reason": "Self-dev is not permitted to perform governance_edit.",
+    "write_performed": false,
+    "policy_version": "FRONT-BRAIN-AUTONOMY-GOVERNANCE-HARDENING-01",
+    "timestamp_utc": "ISO8601"
+  },
+  "tests_run": {
+    "new_sandbox_tests": "21/21 PASSED",
+    "previous_governance_tests": "18/18 PASSED",
+    "ci_verification_tests": "36/36 PASSED",
+    "guard": "SAFE",
+    "memory_baseline": "1794/1794/1794",
+    "blank_count": 0,
+    "duplicate_count": 0,
+    "no_memory_files_staged": true
+  },
+  "audit_roadmap_progress": "85%",
+  "remaining_gaps": [
+    "Runtime integration of SelfDevSandbox into ExecutionGate or tool wrappers",
+    "Cryptographic approval signatures for approvals",
+    "RBAC persistence layer",
+    "Autonomy kill-switch / circuit breaker module",
+    "Unified audit service with structured schema"
+  ],
+  "next_recommended_front": "FRONT-BRAIN-AUTONOMY-RUNTIME-INTEGRATION-03 (wire SelfDevSandbox into ExecutionGate.check() and tool execution paths)"
+}
