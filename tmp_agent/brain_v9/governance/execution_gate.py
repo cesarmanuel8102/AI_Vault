@@ -42,6 +42,10 @@ from brain_v9.config import BASE_PATH
 # (.env, memory/semantic/, trading/, strategies/, B8/, session.py, etc.)
 from brain_v9.governance.protected_paths import is_protected_path
 
+# FRONT-BRAIN-AUTONOMY-SELFDEV-SANDBOX-02
+# Runtime sandbox for self-dev autonomy constraints
+from brain_v9.governance.selfdev_sandbox import evaluate_selfdev_action
+
 log = logging.getLogger("governance.execution_gate")
 
 _STATE_PATH = BASE_PATH / "tmp_agent" / "state" / "execution_gate_state.json"
@@ -518,9 +522,54 @@ class ExecutionGate:
         """
         risk, reason = classify_tool_risk(tool_name, args)
 
+        # GOD MODE: explicit session_id O contexto async (PAD session)
+        active_session = session_id or _active_chat_session.get()
+        active_god = session_id or _active_god_session.get()
+
+        # FRONT-BRAIN-AUTONOMY-RUNTIME-INTEGRATION-03: SelfDevSandbox evaluation
+        # Runs FIRST for filesystem write tools - provides structured deny with audit_event.
+        try:
+            if tool_name in _FS_WRITE_TOOLS:
+                # Determine actor: selfdev if session is self-dev, otherwise generic agent
+                actor = "selfdev" if (active_session and "selfdev" in str(active_session).lower()) else "agent"
+                # Extract target path for evaluation
+                candidate_paths = _extract_candidate_paths(tool_name, args or {})
+                target_path = candidate_paths[0] if candidate_paths else "unknown"
+                # Check if we're in GOD mode context (will be evaluated inside sandbox)
+                is_god = False
+                if active_god and active_god in self._god_sessions:
+                    is_god = True
+                sandbox_result = evaluate_selfdev_action(
+                    actor=actor,
+                    capability="auto",
+                    target_path=target_path,
+                    is_god_mode=is_god,
+                    role="operator",  # Self-dev actions evaluated as operator role
+                )
+                if sandbox_result["decision"] == "deny":
+                    # Convert sandbox result to gate response format
+                    self._audit_log(
+                        tool_name, risk, "selfdev_sandbox_denied",
+                        f"path={target_path} denied by SelfDevSandbox: {sandbox_result['reason']}",
+                    )
+                    return {
+                        "allowed": False,
+                        "risk": f"P{risk}",
+                        "reason": sandbox_result["reason"],
+                        "action": "blocked",
+                        "pending_id": None,
+                        "write_performed": False,
+                        "audit_event": sandbox_result.get("audit_event"),
+                        "protected_path": target_path,
+                        "sandbox_denied": True,
+                    }
+        except Exception as _ex:
+            log.warning("SelfDevSandbox evaluation failed: %s", _ex)
+
         # FASE-0-SEGURIDAD / Patch 0D: denylist self-dev sobre paths
         # gobernanza/seguridad. Aplica ANTES de GOD mode y ANTES de selfdev_bypass.
         # No se puede levantar con GOD ni con settings.self_dev_*.
+        # This runs AFTER sandbox as an additional safety layer for shell commands.
         try:
             if tool_name in _FS_WRITE_TOOLS or "command" in (args or {}):
                 for _candidate in _extract_candidate_paths(tool_name, args or {}):
@@ -541,9 +590,6 @@ class ExecutionGate:
         except Exception as _ex:
             log.warning("selfdev protected path check failed: %s", _ex)
 
-        # GOD MODE: explicit session_id O contexto async (PAD session)
-        active_session = session_id or _active_chat_session.get()
-        active_god = session_id or _active_god_session.get()
         if active_god and active_god in self._god_sessions:
             # FASE-0-SEGURIDAD / Patch 0B: GOD mode NO puede auto-aprobar P3 (destructivo).
             # P3 SIEMPRE requiere aprobacion humana explicita, incluso con GOD activo.

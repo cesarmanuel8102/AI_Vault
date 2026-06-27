@@ -1,0 +1,76 @@
+{
+  "front_id": "FRONT-BRAIN-AUTONOMY-RUNTIME-INTEGRATION-03",
+  "phase": "Phase 1 Runtime Integration Inventory",
+  "inspection_date": "2026-06-27",
+  "starting_head": "4f17d9c",
+  "scope": "Runtime wiring of SelfDevSandbox into Brain/Agent mutation paths",
+  "files_inspected": [
+    "tmp_agent/brain_v9/governance/execution_gate.py",
+    "tmp_agent/brain_v9/agent/tools.py",
+    "tmp_agent/brain_v9/governance/selfdev_sandbox.py",
+    "tmp_agent/brain_v9/governance/capability_policy.py",
+    "tmp_agent/brain_v9/brain/self_improvement.py",
+    "tmp_agent/brain_v9/governance/protected_paths.py"
+  ],
+  "summary": {
+    "execution_gate_check_method": "Found at line 507-677 in execution_gate.py",
+    "file_write_tools": ["edit_file", "write_file", "backup_file"],
+    "staged_change_tools": ["promote_staged_change", "rollback_staged_change"],
+    "gate_checked_tools": ["run_command", "kill_process", "install_package", "run_python_script", "freeze_strategy", "unfreeze_strategy", "trigger_autonomy_action", "place_paper_order", "cancel_paper_order", "auto_promote_strategies", "scan_ibkr_signals", "iterate_strategy"],
+    "gate_unchecked_tools": ["edit_file", "write_file", "backup_file", "promote_staged_change", "rollback_staged_change"],
+    "bypass_points": [
+      "_bypass_gate kwarg in tools (lines 2351, 2380, 2416, 2480, 2539, 2632, 2720, 2767, 2829, 2857, 2899)",
+      "R27 self-dev auto-approve in ExecutionGate (lines 625-656)",
+      "GOD mode ContextVar bypass in _god_active() (tools.py line 113-122)",
+      "god_override parameter in capability_governor",
+      "_god_active() bypasses _safe_path() and _assert_write_allowed()"
+    ],
+    "protected_path_checks": [
+      "ExecutionGate._is_protected_selfdev_path() (lines 105-121)",
+      "protected_paths.is_protected_path() fallback (line 121)",
+      "_assert_write_allowed() in tools.py (lines 146-155)",
+      "_is_tool01_protected_path() in tools.py (lines 100-109)"
+    ],
+    "best_integration_point": "ExecutionGate.check() - single gate for all tool invocations, already handles GOD mode, self-dev bypass, protected paths, risk classification"
+  },
+  "runtime_write_entrypoints": {
+    "file_edits": {
+      "tools": ["edit_file", "write_file", "backup_file"],
+      "current_check": "_safe_path() + _assert_write_allowed()",
+      "missing": "No ExecutionGate.check() call, no SelfDevSandbox evaluation"
+    },
+    "staged_changes": {
+      "tools": ["promote_staged_change", "rollback_staged_change"],
+      "current_check": "Delegated to self_improvement module with internal promotion_gate",
+      "missing": "No ExecutionGate.check() call, no SelfDevSandbox evaluation"
+    },
+    "git_actions": {
+      "tools": ["git commit", "git push"],
+      "current_check": "None found in tools.py",
+      "missing": "Not implemented as tools"
+    },
+    "memory_writes": {
+      "tools": ["semantic_memory_ingest", "semantic_memory_ingest_session"],
+      "current_check": "None found",
+      "missing": "Not gated"
+    }
+  },
+  "bypass_mechanisms": {
+    "_bypass_gate": "Accepted by ~10 tools via kwargs, skips ExecutionGate.check() entirely",
+    "R27_selfdev": "Auto-approves P2 self-dev tools if settings allow (lines 625-656)",
+    "GOD_mode": "ContextVar _active_god_session bypasses _safe_path and _assert_write_allowed",
+    "god_override": "capability_governor.remediate_tool_gap passes _bypass_gate=True",
+    "_god_active": "Returns True if _active_god_session ContextVar has session in _god_sessions set"
+  },
+  "files_to_modify": [
+    "tmp_agent/brain_v9/governance/execution_gate.py"  // Primary: add SelfDevSandbox evaluation
+  ],
+  "files_not_to_touch": [
+    "tmp_agent/brain_v9/agent/tools.py"  // Too many changes, high risk
+    "tmp_agent/brain_v9/core/session.py"  // Out of scope
+    "tmp_agent/brain_v9/brain/self_improvement.py"  // Internal logic, leave as-is
+    "memory/*"  // Forbidden
+    "trading/*"  // Forbidden
+  ],
+  "integration_approach": "Add SelfDevSandbox evaluation inside ExecutionGate.check() for _FS_WRITE_TOOLS before GOD mode and R27 bypass checks, returning structured deny with write_performed=false and audit_event"
+}

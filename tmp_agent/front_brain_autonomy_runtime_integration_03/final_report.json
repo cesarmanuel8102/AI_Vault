@@ -1,0 +1,74 @@
+{
+  "front_id": "FRONT-BRAIN-AUTONOMY-RUNTIME-INTEGRATION-03",
+  "status": "RUNTIME_INTEGRATION_PUSHED",
+  "starting_head": "4f17d9c",
+  "commit_message": "security(agent): wire selfdev sandbox into runtime gate",
+  "files_modified": [
+    "tmp_agent/brain_v9/governance/execution_gate.py"
+  ],
+  "files_created": [
+    "tests/smoke/test_brain_autonomy_runtime_integration_03.py",
+    "tmp_agent/front_brain_autonomy_runtime_integration_03/runtime_wiring_inventory.json",
+    "tmp_agent/front_brain_autonomy_runtime_integration_03/runtime_wiring_inventory.md",
+    "tmp_agent/front_brain_autonomy_runtime_integration_03/final_report.json",
+    "tmp_agent/front_brain_autonomy_runtime_integration_03/final_report.md"
+  ],
+  "selected_integration_point": "ExecutionGate.check()",
+  "runtime_integration_done": true,
+  "integration_approach": "SelfDevSandbox evaluation runs FIRST in ExecutionGate.check() for _FS_WRITE_TOOLS, returning structured deny with write_performed=false and audit_event. Protected path denylist runs after as additional safety layer for shell commands.",
+  "denied_runtime_paths": [
+    "governance/* (execution_gate, ethics_kernel, protected_paths, capability_policy, selfdev_sandbox)",
+    "security/* (rbac, api_security, trace_redactor)",
+    "core/agent_kernel_v2/governance.py",
+    ".github/workflows/*",
+    "memory/semantic/*",
+    "memory/rollback_snapshots/*",
+    "memory/autonomous_journal.jsonl",
+    "memory/promotion_queue/*",
+    "memory/semantic_staging/*",
+    "trading/*",
+    "broker/*",
+    "ibkr/*",
+    "quantconnect/*",
+    ".env",
+    ".dev_auth/*",
+    "secrets/*"
+  ],
+  "bypass_tests": {
+    "god_mode_bypass": "BLOCKED - GOD mode denied by capability policy GOD denylist",
+    "bypass_gate_kwarg": "BLOCKED at gate level - gate itself enforces sandbox",
+    "god_override": "BLOCKED - capability policy GOD denylist applies",
+    "r27_selfdev_autoapprove": "BLOCKED - sandbox evaluates before R27 check"
+  },
+  "write_performed_false_proof": "All 17 runtime integration tests verify write_performed=False on deny",
+  "audit_event_example": {
+    "event_type": "capability_decision",
+    "actor": "selfdev",
+    "requested_capability": "governance_edit",
+    "target_path": "tmp_agent/brain_v9/governance/execution_gate.py",
+    "decision": "deny",
+    "reason": "Self-dev is not permitted to perform governance_edit.",
+    "write_performed": false,
+    "policy_version": "FRONT-BRAIN-AUTONOMY-GOVERNANCE-HARDENING-01",
+    "timestamp_utc": "ISO8601"
+  },
+  "test_results": {
+    "new_runtime_tests": "17/17 PASSED",
+    "selfdev_sandbox_tests": "21/21 PASSED",
+    "governance_hardening_tests": "18/18 PASSED",
+    "ci_verification_tests": "36/36 PASSED",
+    "guard": "SAFE",
+    "memory_baseline": "1794/1794/1794",
+    "blank_count": 0,
+    "duplicate_count": 0,
+    "no_memory_files_staged": true
+  },
+  "audit_roadmap_progress": "95%",
+  "remaining_gaps": [
+    "Cryptographic approval signatures for approvals",
+    "RBAC persistence layer",
+    "Autonomy kill-switch / circuit breaker module",
+    "Unified audit service with structured schema and persistence"
+  ],
+  "next_recommended_front": "FRONT-BRAIN-AUTONOMY-CRYPTO-APPROVALS-04 (add HMAC/JWT signatures for approval tokens)"
+}
