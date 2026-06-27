@@ -1,0 +1,19 @@
+{
+  "phase": "phase5",
+  "recommended_next_front": "FRONT-P0-NONTRADING-SECURITY-REALITY-CHECK-AND-FIX-01",
+  "reason": "Auth/security gap identified: BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS env var is NOT_SET in current session. While Phase0 security was previously applied (commit 35fc676c), the current runtime state must be revalidated to ensure God mode still requires token, dev endpoints default OFF, and no localhost bypass exists. Security is foundational and must be verified before CI expansion or E2E loops.",
+  "why_not_trading_now": "Trading/QC/IBKR/backtester/portfolio/live trading are intentionally deferred to the final integration phase. Codex is separately developing a QC/IBKR model that is not ready yet.",
+  "why_not_mass_ingestion_now": "Mass ingestion remains blocked. Only controlled batch ingestion with full validation, rollback snapshots, and reconciliation is allowed. Current memory is clean (1794/1794/1794) and must stay that way.",
+  "why_not_modular_split_yet": "session.py (6296 lines) and main.py (4589 lines) are large monoliths, but splitting them is risky without CI coverage of all smoke tests and E2E loops. Modular monolith split is deferred until after CI expansion and E2E self-learning loop are proven.",
+  "exact_next_prompt_path": "tmp_agent/front_post_09e_nontrading_roadmap_rebase_01/recommended_next_front.md",
+  "expected_commit_message": "fix(security): revalidate and harden auth gates after memory closeout",
+  "blocked_by": null,
+  "blocks": [
+    "FRONT-CI-SMOKE-REGRESSION-EXPANSION-01",
+    "FRONT-E2E-SELF-LEARNING-LOOP-NONTRADING-01",
+    "FRONT-INGESTION-SOURCE-CONNECTIVITY-E2E-READONLY-01"
+  ],
+  "trading_related": false,
+  "status": "PASS",
+  "timestamp": "2026-06-26T10:15:00Z"
+}
