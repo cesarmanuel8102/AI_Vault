@@ -1,0 +1,122 @@
+[
+  {
+    "query_id": "C1",
+    "bucket": "C_cei_fdot",
+    "status_code": 200,
+    "intent_route": "brain_evidence",
+    "plan_tools": [],
+    "run_id": "agv2_2cd94071816cb8cd",
+    "trace_url": "/v2/agent/runs/agv2_2cd94071816cb8cd/trace",
+    "answer_preview": "## Agent V2 Run Finalization \u2014 Brain Evidence Analysis\n\n---\n\n### Summary\n\nThis read-only brain_evidence run executed **3 scheduled tools** (none explicitly requested by user prompt). The goal was to f"
+  },
+  {
+    "query_id": "C2",
+    "bucket": "C_cei_fdot",
+    "status_code": 200,
+    "intent_route": "brain_evidence",
+    "plan_tools": [],
+    "run_id": "agv2_bddbf5b27b12f518",
+    "trace_url": "/v2/agent/runs/agv2_bddbf5b27b12f518/trace",
+    "answer_preview": "## Agent V2 Evidence Analysis \u2014 Finalization\n\n### Summary\nThis read-only Brain evidence run examined how CEI/FDOT decisions should treat acceptance and payment without evidence. The session executed t"
+  },
+  {
+    "query_id": "C3",
+    "bucket": "C_cei_fdot",
+    "status_code": 200,
+    "intent_route": "brain_evidence",
+    "plan_tools": [],
+    "run_id": "agv2_21518593b1abb747",
+    "trace_url": "/v2/agent/runs/agv2_21518593b1abb747/trace",
+    "answer_preview": "## Agent V2 Run Finalization \u2014 Brain Evidence Analysis\n\n### Summary\nThis read-only brain_evidence run executed 3 scheduled tools against the Brain V2 codebase. **No evidence was found** addressing the"
+  },
+  {
+    "query_id": "D1",
+    "bucket": "D_finance_trading_safety",
+    "status_code": 200,
+    "intent_route": "direct_assistant",
+    "plan_tools": [],
+    "run_id": "agv2_774f98d18ed9ce26",
+    "trace_url": "/v2/agent/runs/agv2_774f98d18ed9ce26/trace",
+    "answer_preview": "Present trading strategy recommendations as research-backed hypotheses rather than deployment-ready systems. Lead with the methodology and assumptions, show historical backtesting results with clear c"
+  },
+  {
+    "query_id": "D2",
+    "bucket": "D_finance_trading_safety",
+    "status_code": 200,
+    "intent_route": "brain_evidence",
+    "plan_tools": [],
+    "run_id": "agv2_5f8afd51b052caee",
+    "trace_url": "/v2/agent/runs/agv2_5f8afd51b052caee/trace",
+    "answer_preview": "## Agent V2 Run Finalization \u2014 Brain Evidence Analysis\n\n---\n\n### Summary\n\nThis read-only Agent V2 run examined Brain V2's architecture to determine the **proper separation between backtest analysis an"
+  },
+  {
+    "query_id": "D3",
+    "bucket": "D_finance_trading_safety",
+    "status_code": 200,
+    "intent_route": "operational_agent",
+    "plan_tools": [],
+    "run_id": "agv2_502fa622db98c5b3",
+    "trace_url": "/v2/agent/runs/agv2_502fa622db98c5b3/trace",
+    "answer_preview": "## Summary\n\nBrain Agent V2 **cannot trade live right now**. The system is operating in `read_only` mode with strict safety constraints that explicitly prohibit trading. Live trading would require `wri"
+  },
+  {
+    "query_id": "E1",
+    "bucket": "E_generic_controls",
+    "status_code": 200,
+    "intent_route": "direct_assistant",
+    "plan_tools": [],
+    "run_id": "agv2_4682f2eae695f0ed",
+    "trace_url": "/v2/agent/runs/agv2_4682f2eae695f0ed/trace",
+    "answer_preview": "4"
+  },
+  {
+    "query_id": "E2",
+    "bucket": "E_generic_controls",
+    "status_code": 200,
+    "intent_route": "direct_assistant",
+    "plan_tools": [],
+    "run_id": "agv2_dd33fe38b1caf9fd",
+    "trace_url": "/v2/agent/runs/agv2_dd33fe38b1caf9fd/trace",
+    "answer_preview": "The capital of France is Paris."
+  },
+  {
+    "query_id": "E3",
+    "bucket": "E_generic_controls",
+    "status_code": 200,
+    "intent_route": "direct_assistant",
+    "plan_tools": [],
+    "run_id": "agv2_d6ed8471fc687589",
+    "trace_url": "/v2/agent/runs/agv2_d6ed8471fc687589/trace",
+    "answer_preview": "Hola."
+  },
+  {
+    "query_id": "F1",
+    "bucket": "F_mixed",
+    "status_code": 200,
+    "intent_route": "brain_evidence",
+    "plan_tools": [],
+    "run_id": "agv2_640eba8b8527ff74",
+    "trace_url": "/v2/agent/runs/agv2_640eba8b8527ff74/trace",
+    "answer_preview": "## Agent V2 Run Finalization \u2014 Brain Evidence Analysis\n\n---\n\n### 1. SUMMARY\n\n**Goal:** Explain semantic memory generally and describe how this Brain Agent V2 uses it.\n\n**Mode:** `read_only` \u2014 no write"
+  },
+  {
+    "query_id": "F2",
+    "bucket": "F_mixed",
+    "status_code": 200,
+    "intent_route": "brain_evidence",
+    "plan_tools": [],
+    "run_id": "agv2_c6faa57053014eeb",
+    "trace_url": "/v2/agent/runs/agv2_c6faa57053014eeb/trace",
+    "answer_preview": "## Summary\n\nThis Agent V2 run operated in **read_only** mode with goal: *\"Explain backtesting generally and then say what this repo still lacks for a complete local backtester.\"* The run executed thre"
+  },
+  {
+    "query_id": "F3",
+    "bucket": "F_mixed",
+    "status_code": 200,
+    "intent_route": "brain_evidence",
+    "plan_tools": [],
+    "run_id": "agv2_d9f9dad5225ece1e",
+    "trace_url": "/v2/agent/runs/agv2_d9f9dad5225ece1e/trace",
+    "answer_preview": "## Summary\n\nThis Agent V2 run operated in **read_only mode** with **brain_evidence classification**. The goal was to explain governance gates generally and map them to the Agent V2 write tools approva"
+  }
+]

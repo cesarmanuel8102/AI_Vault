@@ -1,0 +1,131 @@
+{
+  "promoted_ids_checked": 8,
+  "promoted_ids_present_jsonl": 8,
+  "promoted_ids_present_faiss": 8,
+  "promoted_ids_retrievable": 8,
+  "promoted_ids_useful_in_answers": 8,
+  "harmful_records_detected": 0,
+  "details": [
+    {
+      "promoted_id": "4da11a6bf9d56d895193c93b",
+      "jsonl_present": true,
+      "faiss_present": true,
+      "retrievable": true,
+      "queries_matched": [
+        "A1"
+      ],
+      "top1_count": 1,
+      "top3_count": 1,
+      "retrieval_rank_min": 0,
+      "useful_in_answer": true,
+      "notes": "Matched 1 queries, top-1 in 1"
+    },
+    {
+      "promoted_id": "0a585014ab31d166d7fa07e2",
+      "jsonl_present": true,
+      "faiss_present": true,
+      "retrievable": true,
+      "queries_matched": [
+        "A2"
+      ],
+      "top1_count": 1,
+      "top3_count": 1,
+      "retrieval_rank_min": 0,
+      "useful_in_answer": true,
+      "notes": "Matched 1 queries, top-1 in 1"
+    },
+    {
+      "promoted_id": "5251e2a66aa705c6c2f1a5ef",
+      "jsonl_present": true,
+      "faiss_present": true,
+      "retrievable": true,
+      "queries_matched": [
+        "A3",
+        "A7",
+        "B1",
+        "F1"
+      ],
+      "top1_count": 2,
+      "top3_count": 3,
+      "retrieval_rank_min": 0,
+      "useful_in_answer": true,
+      "notes": "Matched 4 queries, top-1 in 2"
+    },
+    {
+      "promoted_id": "d3804be5dd651e841f84f366",
+      "jsonl_present": true,
+      "faiss_present": true,
+      "retrievable": true,
+      "queries_matched": [
+        "A4"
+      ],
+      "top1_count": 1,
+      "top3_count": 1,
+      "retrieval_rank_min": 0,
+      "useful_in_answer": true,
+      "notes": "Matched 1 queries, top-1 in 1"
+    },
+    {
+      "promoted_id": "6470b144fc6d87d8f6419d6d",
+      "jsonl_present": true,
+      "faiss_present": true,
+      "retrievable": true,
+      "queries_matched": [
+        "A5"
+      ],
+      "top1_count": 1,
+      "top3_count": 1,
+      "retrieval_rank_min": 0,
+      "useful_in_answer": true,
+      "notes": "Matched 1 queries, top-1 in 1"
+    },
+    {
+      "promoted_id": "2254d5b420821c03a79a9a2d",
+      "jsonl_present": true,
+      "faiss_present": true,
+      "retrievable": true,
+      "queries_matched": [
+        "A6"
+      ],
+      "top1_count": 1,
+      "top3_count": 1,
+      "retrieval_rank_min": 0,
+      "useful_in_answer": true,
+      "notes": "Matched 1 queries, top-1 in 1"
+    },
+    {
+      "promoted_id": "ee7b607ad696bfc4d594e21d",
+      "jsonl_present": true,
+      "faiss_present": true,
+      "retrievable": true,
+      "queries_matched": [
+        "A7",
+        "A8",
+        "D1"
+      ],
+      "top1_count": 1,
+      "top3_count": 3,
+      "retrieval_rank_min": 0,
+      "useful_in_answer": true,
+      "notes": "Matched 3 queries, top-1 in 1"
+    },
+    {
+      "promoted_id": "9ba53b29cebef8e697eb3172",
+      "jsonl_present": true,
+      "faiss_present": true,
+      "retrievable": true,
+      "queries_matched": [
+        "A8",
+        "C2",
+        "D1",
+        "D2",
+        "D3"
+      ],
+      "top1_count": 4,
+      "top3_count": 4,
+      "retrieval_rank_min": 0,
+      "useful_in_answer": true,
+      "notes": "Matched 5 queries, top-1 in 4"
+    }
+  ]
+}

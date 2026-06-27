@@ -1,0 +1,122 @@
+[
+  {
+    "query_id": "A1",
+    "bucket": "A_09d_promoted",
+    "status_code": 200,
+    "intent_route": "brain_evidence",
+    "plan_tools": [],
+    "run_id": "agv2_6866aedf520bca94",
+    "trace_url": "/v2/agent/runs/agv2_6866aedf520bca94/trace",
+    "answer_preview": "## Agent V2 Evidence Analysis \u2014 Brain Agent V2 /status Endpoint\n\n---\n\n### Summary\n\n**Goal:** Determine what the `/status` endpoint should return for Brain Agent V2 health checks.\n\n**Finding:** The cur"
+  },
+  {
+    "query_id": "A2",
+    "bucket": "A_09d_promoted",
+    "status_code": 200,
+    "intent_route": "brain_evidence",
+    "plan_tools": [],
+    "run_id": "agv2_bb5a546cf97bf9dd",
+    "trace_url": "/v2/agent/runs/agv2_bb5a546cf97bf9dd/trace",
+    "answer_preview": "## Agent V2 Run Finalization \u2014 Brain Evidence Analysis\n\n**Goal:** What are the per-cycle autonomy boundaries and supervised checkpoints required for Brain V2?\n\n**Mode:** `read_only` | **Classification"
+  },
+  {
+    "query_id": "A3",
+    "bucket": "A_09d_promoted",
+    "status_code": 200,
+    "intent_route": "brain_evidence",
+    "plan_tools": [],
+    "run_id": "agv2_bef18221aae8a51f",
+    "trace_url": "/v2/agent/runs/agv2_bef18221aae8a51f/trace",
+    "answer_preview": "## Agent V2 Evidence Analysis \u2014 Finalization\n\n### Summary\nThis read-only Brain Agent V2 run executed **3 scheduled tools** (0 requested by user) to investigate what makes a useful memory-promotion can"
+  },
+  {
+    "query_id": "A4",
+    "bucket": "A_09d_promoted",
+    "status_code": 200,
+    "intent_route": "brain_evidence",
+    "plan_tools": [],
+    "run_id": "agv2_b5a53492ab34a02a",
+    "trace_url": "/v2/agent/runs/agv2_b5a53492ab34a02a/trace",
+    "answer_preview": "## Agent V2 Evidence Analysis \u2014 Finalized Run\n\n---\n\n### Summary\n\nThis read-only Brain evidence run examined the Brain Agent V2 hardcoded routes to determine what tests should verify them. Three tools "
+  },
+  {
+    "query_id": "A5",
+    "bucket": "A_09d_promoted",
+    "status_code": 200,
+    "intent_route": "brain_evidence",
+    "plan_tools": [],
+    "run_id": "agv2_ca3f475e74e8031a",
+    "trace_url": "/v2/agent/runs/agv2_ca3f475e74e8031a/trace",
+    "answer_preview": "## Agent V2 Run Finalization\n\n### Summary\nGoal: Determine how Brain Agent V2 displays knowledge-item badges for read-only and pending-review states.\n\n**Finding:** The executed tools did not locate evi"
+  },
+  {
+    "query_id": "A6",
+    "bucket": "A_09d_promoted",
+    "status_code": 200,
+    "intent_route": "brain_evidence",
+    "plan_tools": [],
+    "run_id": "agv2_9a87b09169d5d28d",
+    "trace_url": "/v2/agent/runs/agv2_9a87b09169d5d28d/trace",
+    "answer_preview": "## Agent V2 Evidence Analysis \u2014 Finalized Run\n\n---\n\n### Summary\n\n**Goal:** Determine what is required for a cryptographically signed rollback snapshot in Brain V2 memory governance.\n\n**Finding:** The "
+  },
+  {
+    "query_id": "A7",
+    "bucket": "A_09d_promoted",
+    "status_code": 200,
+    "intent_route": "brain_evidence",
+    "plan_tools": [],
+    "run_id": "agv2_b23fecfd992e98ea",
+    "trace_url": "/v2/agent/runs/agv2_b23fecfd992e98ea/trace",
+    "answer_preview": "## Agent V2 Run Finalization \u2014 Brain Evidence Analysis\n\n---\n\n### Summary\n\nThis read-only Brain evidence run aimed to identify criteria determining whether a memory record is \"novel and situation-speci"
+  },
+  {
+    "query_id": "A8",
+    "bucket": "A_09d_promoted",
+    "status_code": 200,
+    "intent_route": "brain_evidence",
+    "plan_tools": [],
+    "run_id": "agv2_136ceb8a3cbae130",
+    "trace_url": "/v2/agent/runs/agv2_136ceb8a3cbae130/trace",
+    "answer_preview": "## Summary\n\nBrain Agent V2 is operating in **read_only mode** with a goal of determining how to present financial strategy recommendations without claiming live trading readiness. The current evidence"
+  },
+  {
+    "query_id": "B1",
+    "bucket": "B_brain_architecture",
+    "status_code": 200,
+    "intent_route": "brain_evidence",
+    "plan_tools": [],
+    "run_id": "agv2_43b234748d9ccb25",
+    "trace_url": "/v2/agent/runs/agv2_43b234748d9ccb25/trace",
+    "answer_preview": "## Agent V2 Finalization \u2014 Brain Evidence Analysis\n\n---\n\n### Summary\n\nThis read-only Brain Agent V2 run examined the runtime memory architecture of Brain V9, specifically semantic memory and FAISS vec"
+  },
+  {
+    "query_id": "B2",
+    "bucket": "B_brain_architecture",
+    "status_code": 200,
+    "intent_route": "brain_evidence",
+    "plan_tools": [],
+    "run_id": "agv2_d8ae889e7a888ff0",
+    "trace_url": "/v2/agent/runs/agv2_d8ae889e7a888ff0/trace",
+    "answer_preview": "**Summary**  \nThe Visual Trace\u202f8092 canonical\u2011path fix in Brain\u202fV2 works by routing trace requests through the 8092 dashboard proxy (`http://127.0.0.1:8092/brain-dashboard/agent\u2011v2/...`) and internall"
+  },
+  {
+    "query_id": "B3",
+    "bucket": "B_brain_architecture",
+    "status_code": 200,
+    "intent_route": "brain_evidence",
+    "plan_tools": [],
+    "run_id": "agv2_7a0839ee9977917a",
+    "trace_url": "/v2/agent/runs/agv2_7a0839ee9977917a/trace",
+    "answer_preview": "Based solely on the provided evidence, here is the finalized analysis.\n\n### Summary\nThe evidence confirms that Brain Agent V2 has a structured governance system for tool execution, distinguishing betw"
+  },
+  {
+    "query_id": "B4",
+    "bucket": "B_brain_architecture",
+    "status_code": 200,
+    "intent_route": "brain_evidence",
+    "plan_tools": [],
+    "run_id": "agv2_e08b247badb41879",
+    "trace_url": "/v2/agent/runs/agv2_e08b247badb41879/trace",
+    "answer_preview": "## Agent V2 Finalization \u2014 Brain Evidence Analysis\n\n---\n\n### Summary\n\nThis read-only Brain V2 evidence analysis explains the **semantic memory promotion pipeline** and **rollback snapshot process** ba"
+  }
+]

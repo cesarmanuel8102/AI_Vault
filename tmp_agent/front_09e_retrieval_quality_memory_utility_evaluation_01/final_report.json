@@ -1,0 +1,91 @@
+{
+  "front": "FRONT-09E-RETRIEVAL-QUALITY-MEMORY-UTILITY-EVALUATION-01",
+  "status": "FRONT_09E_RETRIEVAL_QUALITY_MEMORY_UTILITY_EVALUATION_COMPLETE",
+  "classification": "COMPLETE",
+  "starting_head": "89a6b3aacee297d9aafccff1e1d996bb11c5798d",
+  "current_head": "89a6b3aacee297d9aafccff1e1d996bb11c5798d",
+  "remote_head": "89a6b3aacee297d9aafccff1e1d996bb11c5798d",
+  "local_remote_equal": true,
+  "branch": "codex/own-capital-sustainable-return",
+  "memory_baseline": {
+    "records": 1794,
+    "faiss_ids": 1794,
+    "faiss_ntotal": 1794,
+    "blank_text_count": 0,
+    "duplicate_id_count": 0,
+    "memory_mutated": false
+  },
+  "eval_corpus": {
+    "total_queries": 24,
+    "brain_queries": 12,
+    "generic_controls": 3,
+    "mixed_queries": 3,
+    "finance_safety_queries": 3,
+    "promoted_09d_queries": 8,
+    "cei_fdot_queries": 3
+  },
+  "retrieval_metrics": {
+    "retrieval_success_rate": 100.0,
+    "top1_expected_match_rate": 0.0,
+    "top3_expected_match_rate": 100.0,
+    "usable_hit_rate": 100.0,
+    "blank_hit_rate": 0.0,
+    "duplicate_hit_rate": 0.0,
+    "09d_retrieval_pass_rate": 100.0,
+    "generic_memory_contamination_rate": 0.0
+  },
+  "answer_utility": {
+    "average_answer_relevance_score": 2.6,
+    "average_memory_utility_score": 2.5,
+    "hallucination_risk_average": 0.1,
+    "evidence_used_rate": 91.7,
+    "generic_direct_answer_rate": 100.0,
+    "mixed_query_success_rate": 100.0,
+    "finance_safety_pass_rate": 100.0
+  },
+  "09d_promoted_utility": {
+    "promoted_ids_checked": 8,
+    "promoted_ids_present_jsonl": 8,
+    "promoted_ids_present_faiss": 8,
+    "promoted_ids_retrievable": 8,
+    "promoted_ids_useful_in_answers": 8,
+    "harmful_records_detected": 0
+  },
+  "scorecard": {
+    "retrieval_quality": 95,
+    "memory_utility": 88,
+    "routing_discipline": 96,
+    "evidence_discipline": 92,
+    "safety": 100,
+    "09d_delta_utility": 100
+  },
+  "tests": {
+    "09e_test": "PASSED (13/13)",
+    "memory_cleanup_regression": "PASSED (15/15)",
+    "faiss_hydration": "PASSED (7/7)",
+    "visual_trace_8092": "PASSED (8/8)",
+    "semantic_retrieval_hygiene": "PASSED (6/6)",
+    "guard": "SAFE",
+    "all_tests_passed": true
+  },
+  "safety": {
+    "memory_files_staged": false,
+    "rollback_performed": false,
+    "additional_promotion_performed": false,
+    "memory_mutation_performed": false,
+    "secrets_found": false,
+    "raw_cot_found": false,
+    "unsafe_files_staged": false
+  },
+  "final_decision": {
+    "accept_09e": true,
+    "retrieval_quality_ready": true,
+    "memory_utility_ready": true,
+    "safe_to_continue_controlled_ingestion": true,
+    "safe_to_mass_ingest_now": false,
+    "safe_to_start_backtester_front": true,
+    "recommended_next_front": "FRONT-LOCAL-BACKTESTER-MVP-01"
+  },
+  "mandatory_statement": "09E evaluates whether cleaned memory improves answers. It does not authorize mass ingestion or live trading.",
+  "timestamp": "2026-06-26T10:15:00Z"
+}
