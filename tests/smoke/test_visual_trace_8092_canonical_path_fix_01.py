@@ -162,7 +162,7 @@ def test_no_memory_mutation():
     records = [line for line in (SEMANTIC_ROOT / "semantic_memory.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
     ids = json.loads((SEMANTIC_ROOT / "semantic_memory_faiss_ids.json").read_text(encoding="utf-8"))
     ntotal = int(faiss.read_index(str(SEMANTIC_ROOT / "semantic_memory_faiss.index")).ntotal)
-    assert len(records) == 1803
+    assert len(records) == 1794
     assert len(ids) == 1794
     assert ntotal == 1794
     print("PASS: no_memory_mutation")

@@ -1,0 +1,17 @@
+{
+  "phase": "phase0",
+  "front": "FRONT-MEMORY-HISTORICAL-DEBT-CLEANUP-01",
+  "workdir": "C:\\AI_VAULT_CANONICAL",
+  "branch": "codex/own-capital-sustainable-return",
+  "current_head": "d05dba173dcab4fc67324d8156d3ee25832fd7b8",
+  "current_short_head": "d05dba1",
+  "remote_head": "d05dba173dcab4fc67324d8156d3ee25832fd7b8",
+  "local_remote_equal": true,
+  "staged_changes": false,
+  "unstaged_changes": false,
+  "memory_files_modified_since_baseline": null,
+  "memory_files_in_git_status": false,
+  "guard_passed": true,
+  "status": "PASS",
+  "timestamp": "2026-06-26T10:15:00Z"
+}

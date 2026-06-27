@@ -1,0 +1,21 @@
+{
+  "phase": "phase4",
+  "action": "removed 9 blank/malformed historical records from semantic_memory.jsonl",
+  "removed_count": 9,
+  "removed_line_numbers": [1707, 1708, 1709, 1710, 1711, 1712, 1713, 1714, 1715],
+  "removed_ids": [
+    "front_first_real_local_memory_faiss_canary_01",
+    "controlled_batch_01_real_execution_policy",
+    "controlled_batch_01_runtime_recovery_runbook",
+    "controlled_batch_01_memory_faiss_canary_doc",
+    null,
+    null,
+    null,
+    null,
+    null
+  ],
+  "faiss_rebuild": false,
+  "faiss_rebuild_reason": "All removed records were already excluded from FAISS. No rebuild needed.",
+  "status": "PASS",
+  "timestamp": "2026-06-26T10:15:00Z"
+}

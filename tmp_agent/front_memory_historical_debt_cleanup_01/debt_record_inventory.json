@@ -1,0 +1,95 @@
+{
+  "phase": "phase1",
+  "blank_text_count": 9,
+  "duplicate_id_count": 4,
+  "duplicate_id_value": "",
+  "duplicate_explanation": "The 5 records with id=None serialize as empty string in ID comparison, contributing to 4 duplicates when counted against other empty-string IDs",
+  "debt_records": [
+    {
+      "line_number": 1707,
+      "id": "front_first_real_local_memory_faiss_canary_01",
+      "text_length": 0,
+      "in_faiss": false,
+      "is_09d_promoted": false,
+      "classification": "historical_blank_text"
+    },
+    {
+      "line_number": 1708,
+      "id": "controlled_batch_01_real_execution_policy",
+      "text_length": 0,
+      "in_faiss": false,
+      "is_09d_promoted": false,
+      "classification": "historical_blank_text"
+    },
+    {
+      "line_number": 1709,
+      "id": "controlled_batch_01_runtime_recovery_runbook",
+      "text_length": 0,
+      "in_faiss": false,
+      "is_09d_promoted": false,
+      "classification": "historical_blank_text"
+    },
+    {
+      "line_number": 1710,
+      "id": "controlled_batch_01_memory_faiss_canary_doc",
+      "text_length": 0,
+      "in_faiss": false,
+      "is_09d_promoted": false,
+      "classification": "historical_blank_text"
+    },
+    {
+      "line_number": 1711,
+      "id": null,
+      "text_length": 0,
+      "in_faiss": false,
+      "is_09d_promoted": false,
+      "classification": "historical_none_id_and_blank_text"
+    },
+    {
+      "line_number": 1712,
+      "id": null,
+      "text_length": 0,
+      "in_faiss": false,
+      "is_09d_promoted": false,
+      "classification": "historical_none_id_and_blank_text"
+    },
+    {
+      "line_number": 1713,
+      "id": null,
+      "text_length": 0,
+      "in_faiss": false,
+      "is_09d_promoted": false,
+      "classification": "historical_none_id_and_blank_text"
+    },
+    {
+      "line_number": 1714,
+      "id": null,
+      "text_length": 0,
+      "in_faiss": false,
+      "is_09d_promoted": false,
+      "classification": "historical_none_id_and_blank_text"
+    },
+    {
+      "line_number": 1715,
+      "id": null,
+      "text_length": 0,
+      "in_faiss": false,
+      "is_09d_promoted": false,
+      "classification": "historical_none_id_and_blank_text"
+    }
+  ],
+  "09d_promoted_ids": [
+    "4da11a6bf9d56d895193c93b",
+    "0a585014ab31d166d7fa07e2",
+    "5251e2a66aa705c6c2f1a5ef",
+    "d3804be5dd651e841f84f366",
+    "6470b144fc6d87d8f6419d6d",
+    "2254d5b420821c03a79a9a2d",
+    "ee7b607ad696bfc4d594e21d",
+    "9ba53b29cebef8e697eb3172"
+  ],
+  "debt_overlaps_with_09d": false,
+  "safe_to_remove": true,
+  "status": "PASS",
+  "timestamp": "2026-06-26T10:15:00Z"
+}

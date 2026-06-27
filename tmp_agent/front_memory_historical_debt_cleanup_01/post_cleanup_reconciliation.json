@@ -1,0 +1,31 @@
+{
+  "phase": "phase5",
+  "post_cleanup_counts": {
+    "records": 1794,
+    "faiss_ids": 1794,
+    "faiss_ntotal": 1794,
+    "blank_text": 0,
+    "duplicate_id": 0,
+    "none_id": 0,
+    "empty_id": 0,
+    "malformed": 0
+  },
+  "expected_counts": {
+    "records": 1794,
+    "faiss_ids": 1794,
+    "faiss_ntotal": 1794,
+    "blank_text": 0,
+    "duplicate_id": 0,
+    "none_id": 0,
+    "empty_id": 0
+  },
+  "09d_promoted_ids_preserved": true,
+  "all_09d_in_jsonl": true,
+  "all_09d_in_faiss": true,
+  "faiss_ids_subset_of_jsonl": true,
+  "no_new_unexpected_ids": true,
+  "no_removed_valid_ids": true,
+  "counts_match": true,
+  "status": "PASS",
+  "timestamp": "2026-06-26T10:15:00Z"
+}

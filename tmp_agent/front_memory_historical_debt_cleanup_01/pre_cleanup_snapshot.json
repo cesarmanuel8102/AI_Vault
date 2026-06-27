@@ -1,0 +1,12 @@
+{
+  "phase": "phase2",
+  "snapshot_path": "memory/rollback_snapshots/20260627T003901_historical_debt_cleanup_01",
+  "snapshot_files": [
+    "semantic_memory.jsonl",
+    "semantic_memory_faiss_ids.json",
+    "semantic_memory_faiss.index",
+    "snapshot_meta.json"
+  ],
+  "status": "PASS",
+  "timestamp": "2026-06-26T10:15:00Z"
+}

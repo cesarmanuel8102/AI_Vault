@@ -1,0 +1,22 @@
+{
+  "phase": "phase3",
+  "dry_run_plan": {
+    "records_to_remove": 9,
+    "removal_criteria": [
+      "text is blank or empty",
+      "id is None (5 records)",
+      "historical pre-existing debt, not 09D promoted"
+    ],
+    "records_expected_after": 1794,
+    "faiss_ids_expected_after": 1794,
+    "faiss_ntotal_expected_after": 1794,
+    "duplicate_ids_expected_after": 0,
+    "blank_text_expected_after": 0,
+    "none_id_expected_after": 0,
+    "empty_id_expected_after": 0,
+    "faiss_rebuild_required": false,
+    "faiss_rebuild_reason": "All 9 blank records are already excluded from FAISS (in_faiss=0). JSONL cleanup alone will align counts."
+  },
+  "status": "PASS",
+  "timestamp": "2026-06-26T10:15:00Z"
+}

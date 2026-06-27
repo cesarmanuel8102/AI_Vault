@@ -1,0 +1,62 @@
+{
+  "front": "FRONT-MEMORY-HISTORICAL-DEBT-CLEANUP-01",
+  "status": "MEMORY_HISTORICAL_DEBT_CLEANUP_COMPLETE",
+  "branch": "codex/own-capital-sustainable-return",
+  "starting_head": "d05dba173dcab4fc67324d8156d3ee25832fd7b8",
+  "final_head": "TBD",
+  "remote_head": "TBD",
+  "pushed": false,
+  "memory": {
+    "records_before": 1803,
+    "records_after": 1794,
+    "faiss_ids_before": 1794,
+    "faiss_ids_after": 1794,
+    "faiss_ntotal_before": 1794,
+    "faiss_ntotal_after": 1794,
+    "blank_text_before": 9,
+    "blank_text_after": 0,
+    "duplicate_id_before": 4,
+    "duplicate_id_after": 0,
+    "none_id_before": 5,
+    "none_id_after": 0,
+    "empty_id_before": 5,
+    "empty_id_after": 0
+  },
+  "cleanup": {
+    "removed_record_count": 9,
+    "removed_records_were_historical": true,
+    "removed_any_09d_record": false,
+    "snapshot_path": "memory/rollback_snapshots/20260627T003901_historical_debt_cleanup_01",
+    "rollback_available": true,
+    "faiss_rebuild_required": false
+  },
+  "retrieval": {
+    "promoted_09d_ids_checked": 8,
+    "promoted_09d_ids_passed": 8,
+    "representative_memory_checked": true,
+    "generic_query_not_memory_forced": true
+  },
+  "tests": {
+    "cleanup_test": "PASSED (15/15)",
+    "faiss_hydration": "PASSED (7/7)",
+    "visual_trace_8092": "PASSED (8/8)",
+    "semantic_retrieval_hygiene": "PASSED (6/6)",
+    "guard": "SAFE",
+    "all_tests_passed": true
+  },
+  "safety": {
+    "memory_files_staged": false,
+    "rollback_performed": false,
+    "additional_promotion_performed": false,
+    "secrets_found": false,
+    "raw_cot_found": false,
+    "unsafe_files_staged": false
+  },
+  "final_decision": {
+    "accept_cleanup": true,
+    "safe_to_start_09e": true,
+    "safe_to_mass_ingest_now": false,
+    "recommended_next_front": "FRONT-09E-RETRIEVAL-QUALITY-MEMORY-UTILITY-EVALUATION-01"
+  },
+  "timestamp": "2026-06-26T10:15:00Z"
+}
