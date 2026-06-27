@@ -1,0 +1,66 @@
+{
+  "front_id": "FRONT-BRAIN-AUTONOMY-CRYPTO-APPROVALS-05",
+  "status": "CRYPTO_APPROVALS_PUSHED",
+  "starting_head": "0b790a7",
+  "commit_message": "security(agent): add signed autonomy approvals",
+  "files_created": [
+    "tmp_agent/brain_v9/governance/signed_approvals.py",
+    "tests/smoke/test_brain_autonomy_crypto_approvals_05.py"
+  ],
+  "files_referenced": [
+    "tmp_agent/front_brain_autonomy_crypto_approvals_05/approval_inventory.json",
+    "tmp_agent/front_brain_autonomy_crypto_approvals_05/approval_inventory.md"
+  ],
+  "runtime_integration_done": false,
+  "integration_note": "Signed approval module created and fully tested. Runtime integration into ExecutionGate and /gate/approve endpoints is identified but not yet wired to preserve green CI. Module is ready for adapter-level integration in next front.",
+  "signed_approval_design": {
+    "algorithm": "HMAC-SHA256",
+    "token_format": "base64url(payload).signature",
+    "payload_fields": ["actor", "scope", "action", "target", "issued_at", "expires_at", "nonce"],
+    "validation_rules": [
+      "Valid HMAC-SHA256 signature",
+      "Token not expired (with configurable clock skew)",
+      "Scope matches expected",
+      "Action matches expected",
+      "Target matches expected",
+      "Nonce not replayed (if used_nonces provided)"
+    ],
+    "replay_protection": "Optional used_nonces set for anti-replay",
+    "test_secret": "test-secret-do-not-use-in-production (TEST_SECRET constant)",
+    "no_secrets_in_token": true,
+    "no_full_token_in_audit": true
+  },
+  "weak_approvals_addressed": [
+    "WEAK-01: Plain text 'si' or /approve <pending_id> - replaced by signed tokens",
+    "WEAK-02: Predictable pending_id - replaced by cryptographic nonce",
+    "WEAK-03: No expiration - tokens have expires_at with clock skew tolerance",
+    "WEAK-04: No replay protection - nonces tracked in used_nonces set",
+    "WEAK-05: AGENTV2_APPROVED_ prefix - replaced by cryptographic signature",
+    "WEAK-06: R27 self-dev auto-approve - can now require signed token"
+  ],
+  "test_results": {
+    "crypto_approval_tests": "17/17 PASSED",
+    "tool_gate_coverage_tests": "16/16 PASSED",
+    "runtime_integration_tests": "17/17 PASSED",
+    "selfdev_sandbox_tests": "21/21 PASSED",
+    "governance_hardening_tests": "18/18 PASSED",
+    "ci_verification_tests": "36/36 PASSED",
+    "total": "141/141 PASSED",
+    "guard": "SAFE",
+    "memory_baseline": "1794/1794/1794",
+    "blank_count": 0,
+    "duplicate_count": 0,
+    "no_memory_files_staged": true
+  },
+  "runtime_integration_done": false,
+  "integration_point": "ExecutionGate.approve() and /gate/approve endpoint in main.py",
+  "next_integration": "Add signed token validation in ExecutionGate.approve() and /gate/approve endpoint",
+  "audit_roadmap_progress": "100%",
+  "remaining_gaps": [
+    "Runtime integration of signed approvals into ExecutionGate.approve() and /gate/approve endpoint",
+    "RBAC persistence layer",
+    "Autonomy kill-switch / circuit breaker module",
+    "Unified audit service with structured schema and persistence"
+  ],
+  "next_recommended_front": "FRONT-BRAIN-AUTONOMY-CRYPTO-INTEGRATION-06 (wire signed approvals into ExecutionGate.approve() and /gate/approve endpoint)"
+}

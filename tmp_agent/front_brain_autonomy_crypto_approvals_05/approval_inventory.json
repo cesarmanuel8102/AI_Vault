@@ -1,0 +1,127 @@
+{
+  "front_id": "FRONT-BRAIN-AUTONOMY-CRYPTO-APPROVALS-05",
+  "phase": "Phase 1 Approval Inventory",
+  "inspection_date": "2026-06-27",
+  "starting_head": "0b790a7",
+  "summary": {
+    "total_approval_mechanisms": 4,
+    "weak_approvals": 3,
+    "high_risk_paths": 5,
+    "files_to_modify": 2,
+    "files_not_to_touch": 8
+  },
+  "existing_approval_mechanisms": [
+    {
+      "name": "ExecutionGate pending_approval",
+      "file": "tmp_agent/brain_v9/governance/execution_gate.py",
+      "type": "pending_id + plain text confirmation",
+      "weakness": "No cryptographic validation, plain text 'si' or /approve <pending_id> accepted, no expiration, no nonce, no replay protection",
+      "locations": [
+        "approve() method (line 726)",
+        "approve_latest() method (line 738)",
+        "reject() method (line 749)"
+      ]
+    },
+    {
+      "name": "HTTP /gate/approve endpoint",
+      "file": "tmp_agent/brain_v9/main.py",
+      "type": "pending_id + operator access",
+      "weakness": "Only checks operator access via require_operator_access, passes _bypass_gate=True, no signed token validation",
+      "locations": [
+        "/gate/approve/{pending_id} (line 1930)",
+        "/gate/reject/{pending_id} (line 1957)"
+      ]
+    },
+    {
+      "name": "R27 self-dev auto-approve",
+      "file": "tmp_agent/brain_v9/governance/execution_gate.py",
+      "type": "settings-based bypass",
+      "weakness": "Auto-approves P2 tools if self_dev_enabled=true, require_approval=false, max_risk>=0.4, no token, no audit trail beyond log",
+      "locations": [
+        "lines 669-697"
+      ]
+    },
+    {
+      "name": "AGENTV2_APPROVED_ prefix check",
+      "file": "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+      "type": "prefix string check",
+      "weakness": "Only checks if approval_token starts with 'AGENTV2_APPROVED_', no signature validation, no expiration, no scope/action/target binding",
+      "locations": [
+        "write_allowed() function (line 128-130)"
+      ]
+    }
+  ],
+  "weak_approvals": [
+    {
+      "id": "WEAK-01",
+      "description": "Plain text 'si' or /approve <pending_id> accepted without cryptographic validation",
+      "severity": "HIGH"
+    },
+    {
+      "id": "WEAK-02",
+      "description": "pending_id is just timestamp + tool name, predictable, no nonce",
+      "severity": "HIGH"
+    },
+    {
+      "id": "WEAK-03",
+      "description": "No expiration on pending approvals (except TTL cleanup at 24h)",
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "WEAK-04",
+      "description": "No replay protection - same pending_id can be approved multiple times",
+      "severity": "HIGH"
+    },
+    {
+      "id": "WEAK-05",
+      "description": "AGENTV2_APPROVED_ prefix check has no signature validation",
+      "severity": "HIGH"
+    },
+    {
+      "id": "WEAK-06",
+      "description": "R27 self-dev auto-approve bypasses approval entirely for P2 tools",
+      "severity": "HIGH"
+    }
+  ],
+  "high_risk_approval_paths": [
+    {
+      "path": "edit_file/write_file/backup_file on governance/security files",
+      "current": "ExecutionGate.check() -> SelfDevSandbox (denied)",
+      "risk": "If gate bypassed, plain /approve would allow mutation"
+    },
+    {
+      "path": "promote_staged_change/rollback_staged_change",
+      "current": "ExecutionGate.check() -> SelfDevSandbox (denied)",
+      "risk": "Same as above"
+    },
+    {
+      "path": "semantic_memory_ingest",
+      "current": "evaluate_selfdev_action() direct (denied)",
+      "risk": "If gate bypassed, plain approval would allow memory mutation"
+    },
+    {
+      "path": "GOD mode P3 actions",
+      "current": "Blocked, requires /approve <pending_id>",
+      "risk": "Plain /approve would bypass"
+    },
+    {
+      "path": "R27 self-dev auto-approve",
+      "current": "Auto-approves P2 if settings allow",
+      "risk": "No token, no audit, no scope binding"
+    }
+  ],
+  "files_to_modify": [
+    "tmp_agent/brain_v9/governance/signed_approvals.py (NEW)",
+    "tmp_agent/brain_v9/governance/execution_gate.py (minimal integration)",
+    "tmp_agent/brain_v9/main.py (minimal integration for /gate/approve)"
+  ],
+  "files_not_to_touch": [
+    "memory/*",
+    "trading/*",
+    "broker/*",
+    ".env",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py (write_allowed - out of scope for this front)",
+    "tmp_agent/brain_v9/brain/self_improvement.py",
+    "tmp_agent/brain_v9/agent/loop.py"
+  ]
+}
