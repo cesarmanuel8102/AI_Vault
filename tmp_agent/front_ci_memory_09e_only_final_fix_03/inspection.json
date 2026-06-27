@@ -1,0 +1,44 @@
+{
+  "front_id": "FRONT-CI-MEMORY-09E-ONLY-FINAL-FIX-03",
+  "phase": "inspection",
+  "file": "tests/smoke/test_09e_retrieval_quality_memory_utility_evaluation_01.py",
+  "total_functions": 13,
+  "functions_in_main": [
+    "test_memory_baseline_1794",
+    "test_blank_and_duplicate_zero",
+    "test_all_09d_promoted_ids_present",
+    "test_all_09d_promoted_ids_in_faiss",
+    "test_retrieval_write_performed_false",
+    "test_no_blank_hits_returned",
+    "test_at_least_6_8_promoted_retrievable",
+    "test_generic_query_routes_direct_assistant",
+    "test_finance_safety_no_live_trading_claims",
+    "test_raw_cot_not_exposed",
+    "test_no_secrets_exposed",
+    "test_guard_passes",
+    "test_no_memory_files_staged"
+  ],
+  "classification": {
+    "guarded_by_memory_artifact": [
+      "test_memory_baseline_1794",
+      "test_blank_and_duplicate_zero",
+      "test_all_09d_promoted_ids_present",
+      "test_all_09d_promoted_ids_in_faiss",
+      "test_retrieval_write_performed_false",
+      "test_no_blank_hits_returned",
+      "test_at_least_6_8_promoted_retrievable"
+    ],
+    "unguarded_backend_dependent": [
+      "test_generic_query_routes_direct_assistant",
+      "test_finance_safety_no_live_trading_claims",
+      "test_raw_cot_not_exposed",
+      "test_no_secrets_exposed"
+    ],
+    "ci_safe": [
+      "test_guard_passes",
+      "test_no_memory_files_staged"
+    ]
+  },
+  "root_cause": "Functions 8-11 import 'from tmp_agent.brain_v9.main import app' which triggers import-time initialization of the FastAPI app. The app imports memory-dependent modules (MemoryGatewayV2, NativeAgentRuntimeV2, etc.) at module level. In CI, where memory semantic files are gitignored and absent, this causes an import-time failure (FileNotFoundError or similar) before our runtime guards execute.",
+  "fix_required": "Add CI guards to the 4 unguarded backend-dependent functions. In CI, skip with CI_BACKEND_AGENT_V2_UNAVAILABLE. Locally, fail hard if backend initialization fails (which indicates actual local environment issues)."
+}
