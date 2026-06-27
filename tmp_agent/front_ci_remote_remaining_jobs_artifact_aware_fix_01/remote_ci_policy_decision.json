@@ -1,0 +1,42 @@
+{
+  "phase": "PHASE_3_REMOTE_CI_POLICY_DECISION",
+  "policy_version": "1.0",
+  "decisions": [
+    {
+      "test_file": "tests/smoke/test_memory_historical_debt_cleanup_01.py",
+      "policy": "LOCAL_RUNTIME_REGRESSION_ONLY",
+      "rationale": "All 15 tests require memory/semantic/* runtime artifacts which are intentionally gitignored and not available in CI. These are 1794-record FAISS baseline tests that verify local runtime state.",
+      "ci_behavior": "SKIP_WITH_EXPLICIT_REASON",
+      "skip_reason": "CI_RUNTIME_MEMORY_ARTIFACTS_UNAVAILABLE",
+      "local_behavior": "FULL_TEST_EXECUTION",
+      "never_fake_baseline": true,
+      "never_commit_runtime_artifacts": true
+    },
+    {
+      "test_file": "tests/smoke/test_post_09e_nontrading_roadmap_rebase_01.py",
+      "policy": "HYBRID_SPLIT",
+      "rationale": "Tests 1-2 (memory_baseline_1794, blank_and_duplicate_zero) require runtime memory artifacts. Tests 3-10 (roadmap reports, trading deferral, git hygiene) use tracked report files and git operations.",
+      "ci_behavior": "SKIP_MEMORY_TESTS_RUN_REPORT_TESTS",
+      "memory_skip_reason": "CI_RUNTIME_MEMORY_ARTIFACTS_UNAVAILABLE",
+      "report_tests_in_ci": true,
+      "local_behavior": "FULL_TEST_EXECUTION"
+    },
+    {
+      "test_file": "tests/smoke/test_visual_trace_8092_canonical_path_fix_01.py",
+      "policy": "HYBRID_SPLIT",
+      "rationale": "Tests 1-7 (static file analysis, dashboard routes, rendering) work in CI using tracked source files and app routes. Test 8 (no_memory_mutation) requires runtime memory artifacts.",
+      "ci_behavior": "SKIP_MEMORY_TEST_RUN_DASHBOARD_TESTS",
+      "memory_skip_reason": "CI_RUNTIME_MEMORY_ARTIFACTS_UNAVAILABLE",
+      "dashboard_tests_in_ci": true,
+      "local_behavior": "FULL_TEST_EXECUTION"
+    }
+  ],
+  "general_principles": {
+    "never_skip_silently": true,
+    "never_weaken_security_tests": true,
+    "never_commit_runtime_artifacts": true,
+    "never_fake_baselines": true,
+    "explicit_skip_messages": true,
+    "local_tests_must_still_pass": true
+  }
+}

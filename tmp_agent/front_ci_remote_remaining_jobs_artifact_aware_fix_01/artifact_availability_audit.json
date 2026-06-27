@@ -1,0 +1,81 @@
+{
+  "phase": "PHASE_2_ARTIFACT_AVAILABILITY_AUDIT",
+  "audit_date": "2026-06-27",
+  "files_audited": [
+    {
+      "file": "tests/smoke/test_memory_historical_debt_cleanup_01.py",
+      "tests_count": 15,
+      "requires_memory_files": true,
+      "required_files": [
+        "memory/semantic/semantic_memory.jsonl",
+        "memory/semantic/semantic_memory_faiss_ids.json",
+        "memory/semantic/semantic_memory_faiss.index",
+        "memory/rollback_snapshots/20260627T003901_historical_debt_cleanup_01"
+      ],
+      "files_tracked": false,
+      "files_gitignored": true,
+      "files_exist_locally": true,
+      "would_exist_in_ci": false,
+      "artifact_type": "runtime_memory",
+      "safe_to_require_in_ci": false
+    },
+    {
+      "file": "tests/smoke/test_post_09e_nontrading_roadmap_rebase_01.py",
+      "tests_count": 10,
+      "requires_memory_files": true,
+      "requires_report_files": true,
+      "memory_required_files": [
+        "memory/semantic/semantic_memory.jsonl",
+        "memory/semantic/semantic_memory_faiss_ids.json",
+        "memory/semantic/semantic_memory_faiss.index"
+      ],
+      "report_required_files": [
+        "tmp_agent/front_post_09e_nontrading_roadmap_rebase_01/nontrading_roadmap.json",
+        "tmp_agent/front_post_09e_nontrading_roadmap_rebase_01/recommended_next_front.json",
+        "tmp_agent/front_post_09e_nontrading_roadmap_rebase_01/remaining_work_classification.json"
+      ],
+      "memory_files_tracked": false,
+      "memory_files_gitignored": true,
+      "memory_files_exist_locally": true,
+      "memory_would_exist_in_ci": false,
+      "report_files_tracked": true,
+      "report_files_gitignored": false,
+      "report_files_exist_locally": true,
+      "report_would_exist_in_ci": true,
+      "memory_artifact_type": "runtime_memory",
+      "report_artifact_type": "report_artifact",
+      "memory_safe_to_require_in_ci": false,
+      "report_safe_to_require_in_ci": true
+    },
+    {
+      "file": "tests/smoke/test_visual_trace_8092_canonical_path_fix_01.py",
+      "tests_count": 8,
+      "requires_static_source": true,
+      "requires_dashboard_routes": true,
+      "static_required_files": [
+        "tmp_agent/brain_v9/dashboard/static/app.js"
+      ],
+      "static_files_tracked": true,
+      "static_files_gitignored": false,
+      "static_files_exist_locally": true,
+      "static_would_exist_in_ci": true,
+      "dashboard_route_tests": [
+        "test_dashboard_proxy_trace_route_exists",
+        "test_dashboard_chat_route_exists",
+        "test_trace_url_mapping_converts_v2_trace_to_dashboard_proxy",
+        "test_raw_cot_not_exposed_in_dashboard_trace_rendering",
+        "test_secrets_not_exposed_in_dashboard_trace_rendering",
+        "test_no_memory_mutation"
+      ],
+      "static_artifact_type": "source_file",
+      "static_safe_to_require_in_ci": true,
+      "dashboard_routes_safe_in_ci": true
+    }
+  ],
+  "memory_files_gitignore_lines": [
+    "memory/semantic/*.index",
+    "memory/semantic/*_ids.json",
+    "memory/semantic/semantic_memory.jsonl"
+  ],
+  "conclusion": "Memory files are intentionally gitignored runtime artifacts. Report files and static source files are tracked and available in CI. Dashboard route tests should work in CI if the app module loads correctly."
+}

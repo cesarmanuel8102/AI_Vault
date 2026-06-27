@@ -1,0 +1,21 @@
+{
+  "phase": "PHASE_0_STATE_LOCK",
+  "status": "PASSED",
+  "branch": "codex/own-capital-sustainable-return",
+  "local_head": "03264dc0ffb9193f36ceb81078361e3c139a76f9",
+  "local_head_short": "03264dc",
+  "remote_head": "03264dc0ffb9193f36ceb81078361e3c139a76f9",
+  "remote_head_short": "03264dc",
+  "local_remote_equal": true,
+  "staged_empty": true,
+  "tracked_dirty_empty": true,
+  "guard_passed": true,
+  "memory_files_staged": false,
+  "memory_baseline": {
+    "records": 1794,
+    "faiss_ids": 1794,
+    "faiss_ntotal": 1794,
+    "blank_text_count": 0,
+    "duplicate_id_count": 0
+  }
+}
