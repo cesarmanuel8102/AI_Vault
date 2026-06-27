@@ -1,0 +1,17 @@
+{
+  "phase": "phase0",
+  "workdir": "C:\\AI_VAULT_CANONICAL",
+  "branch": "codex/own-capital-sustainable-return",
+  "current_head": "47e847914be1b1338ed6c835429f762c9606d13f",
+  "current_short_head": "47e8479",
+  "remote_head": "47e847914be1b1338ed6c835429f762c9606d13f",
+  "local_remote_equal": true,
+  "staged_changes": false,
+  "unstaged_changes": false,
+  "memory_files_modified_since_baseline": null,
+  "memory_files_in_git_status": false,
+  "case": "CASE_A",
+  "case_description": "Current HEAD is still 47e8479 and memory is post-09D mutated but uncommitted.",
+  "guard_passed": true,
+  "timestamp": "2026-06-26T10:00:00Z"
+}

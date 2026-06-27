@@ -1,0 +1,95 @@
+{
+  "front": "FRONT-09D-POST-WRITE-RECONCILIATION-REPAIR-01",
+  "status": "FRONT_09D_RECONCILIATION_REPAIRED_HISTORICAL_DEBT_ONLY",
+  "branch": "codex/own-capital-sustainable-return",
+  "starting_head": "47e847914be1b1338ed6c835429f762c9606d13f",
+  "current_head": "47e847914be1b1338ed6c835429f762c9606d13f",
+  "remote_head": "47e847914be1b1338ed6c835429f762c9606d13f",
+  "local_remote_equal": true,
+  "09d_committed": false,
+  "09d_uncommitted_mutations": true,
+  "snapshot_path": "memory/rollback_snapshots/20260626T094552_806821_09d_batch_8",
+  "promoted_count": 8,
+  "promoted_ids": [
+    "4da11a6bf9d56d895193c93b",
+    "0a585014ab31d166d7fa07e2",
+    "5251e2a66aa705c6c2f1a5ef",
+    "d3804be5dd651e841f84f366",
+    "6470b144fc6d87d8f6419d6d",
+    "2254d5b420821c03a79a9a2d",
+    "ee7b607ad696bfc4d594e21d",
+    "9ba53b29cebef8e697eb3172"
+  ],
+  "pre_counts": {
+    "records": 1795,
+    "faiss_ids": 1786,
+    "faiss_ntotal": 1786,
+    "blank_text": 9,
+    "duplicate_ids": 4,
+    "duplicate_id_values": [""]
+  },
+  "current_counts": {
+    "records": 1803,
+    "faiss_ids": 1794,
+    "faiss_ntotal": 1794,
+    "blank_text": 9,
+    "duplicate_ids": 4,
+    "duplicate_id_values": [""]
+  },
+  "expected_delta": {
+    "records": 8,
+    "faiss_ids": 8,
+    "faiss_ntotal": 8
+  },
+  "actual_delta": {
+    "records": 8,
+    "faiss_ids": 8,
+    "faiss_ntotal": 8
+  },
+  "added_blank_text": 0,
+  "added_duplicate_ids": 0,
+  "added_malformed": 0,
+  "retrieval_results": {
+    "promoted_ids_retrieved": 8,
+    "found_in_top_5": 8,
+    "all_rank_1": true,
+    "all_score_1_0": true
+  },
+  "tests_run": [
+    "test_rollback_snapshot_exists",
+    "test_pre_counts_loadable",
+    "test_current_counts_loadable",
+    "test_promoted_id_list_has_eight",
+    "test_current_records_equals_pre_plus_eight",
+    "test_current_faiss_ids_equals_pre_plus_eight",
+    "test_current_faiss_ntotal_equals_pre_plus_eight",
+    "test_added_records_exactly_match_promoted_ids",
+    "test_added_records_no_blank_text",
+    "test_added_records_no_duplicate_ids",
+    "test_added_records_no_malformed_json",
+    "test_all_promoted_ids_in_current_jsonl",
+    "test_all_promoted_ids_in_current_faiss",
+    "test_retrieval_for_all_promoted_ids",
+    "test_historical_blank_text_count_did_not_increase",
+    "test_historical_duplicate_id_count_did_not_increase",
+    "test_historical_debt_count_known",
+    "test_delta_clean",
+    "test_guard_no_sensitive_files_staged",
+    "test_agent_v2_faiss_rebuild_hydration_01",
+    "test_visual_trace_8092_canonical_path_fix_01",
+    "test_agent_v2_semantic_retrieval_hygiene_01"
+  ],
+  "tests_passed": 23,
+  "tests_failed": 0,
+  "final_decision": {
+    "accept_09d_delta": true,
+    "accept_09d_as_complete": true,
+    "caveat": "09D global memory reconciliation failed because historical memory debt exists. This repair front accepts 09D only if the 09D delta is proven clean and the historical debt did not increase.",
+    "safe_to_start_09e": true,
+    "safe_to_mass_ingest_now": false,
+    "required_next_front": "MEMORY_HISTORICAL_DEBT_CLEANUP_01",
+    "recommended_next_front": "MEMORY_HISTORICAL_DEBT_CLEANUP_01"
+  },
+  "historical_debt_classification": "HISTORICAL_DEBT_ONLY",
+  "timestamp": "2026-06-26T10:00:00Z"
+}

@@ -1,0 +1,27 @@
+{
+  "status": "PASS",
+  "counts_match": true,
+  "records_expected": 1803,
+  "records_actual": 1803,
+  "ids_expected": 1794,
+  "ids_actual": 1794,
+  "ntotal_expected": 1794,
+  "ntotal_actual": 1794,
+  "promoted_ids_in_jsonl": true,
+  "promoted_ids_in_faiss": true,
+  "duplicate_count": 5,
+  "blank_text_count": 9,
+  "faiss_ids_subset_of_jsonl": true,
+  "note": "Duplicate IDs are 5 empty-string IDs from pre-existing blank text records (indices 1706-1714), NOT from 09D promotion. Blank text records are pre-existing historical debt. All 8 promoted records have unique IDs, non-blank text, and are present in both JSONL and FAISS.",
+  "promoted_records_clean": true,
+  "promoted_ids": [
+    "4da11a6bf9d56d895193c93b",
+    "0a585014ab31d166d7fa07e2",
+    "5251e2a66aa705c6c2f1a5ef",
+    "d3804be5dd651e841f84f366",
+    "6470b144fc6d87d8f6419d6d",
+    "2254d5b420821c03a79a9a2d",
+    "ee7b607ad696bfc4d594e21d",
+    "9ba53b29cebef8e697eb3172"
+  ]
+}

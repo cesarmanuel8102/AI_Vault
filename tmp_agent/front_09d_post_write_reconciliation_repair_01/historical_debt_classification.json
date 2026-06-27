@@ -1,0 +1,27 @@
+{
+  "phase": "phase3",
+  "classification": "HISTORICAL_DEBT_ONLY",
+  "classification_reason": "duplicate_count=4 (empty-string IDs) and blank_text_count=9 existed in the pre-09D snapshot and did not increase after 09D promotion. The 09D delta added exactly 8 clean promoted records with no blanks, no duplicates, no malformed JSON, and all promoted IDs are present in both JSONL and FAISS.",
+  "pre_debt": {
+    "blank_text_count": 9,
+    "duplicate_id_count": 4,
+    "duplicate_ids": [""],
+    "none_id_count": 5,
+    "empty_id_count": 5
+  },
+  "current_debt": {
+    "blank_text_count": 9,
+    "duplicate_id_count": 4,
+    "duplicate_ids": [""],
+    "none_id_count": 5,
+    "empty_id_count": 5
+  },
+  "delta_debt": {
+    "blank_text_increase": 0,
+    "duplicate_id_increase": 0,
+    "malformed_increase": 0
+  },
+  "09d_delta_clean": true,
+  "status": "PASS",
+  "timestamp": "2026-06-26T10:00:00Z"
+}

@@ -1,0 +1,13 @@
+{
+  "front": "FRONT-09D-LARGE-CONTROLLED-BATCH-INGESTION-01",
+  "branch": "codex/own-capital-sustainable-return",
+  "head": "47e847914be1b1338ed6c835429f762c9606d13f",
+  "short_head": "47e8479",
+  "remote_head": "47e847914be1b1338ed6c835429f762c9606d13f",
+  "local_remote_equal": true,
+  "staged_empty": true,
+  "tracked_clean": true,
+  "memory_files_staged": false,
+  "guard_passed": true,
+  "status": "PASS"
+}

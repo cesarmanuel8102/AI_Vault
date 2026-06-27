@@ -1,0 +1,71 @@
+{
+  "total_checked": 8,
+  "found_in_top_5": 8,
+  "not_found": 0,
+  "results": [
+    {
+      "candidate_id": "4da11a6bf9d56d895193c93b",
+      "text_preview": "The `/status` endpoint must return HTTP 200 with a parseable JSON payload where ",
+      "found_in_top_5": true,
+      "rank": 1,
+      "top_hit_id": "4da11a6bf9d56d895193c93b",
+      "top_hit_score": 1.0
+    },
+    {
+      "candidate_id": "0a585014ab31d166d7fa07e2",
+      "text_preview": "Enforce immutable per-cycle autonomy boundaries with mandatory supervised checkp",
+      "found_in_top_5": true,
+      "rank": 1,
+      "top_hit_id": "0a585014ab31d166d7fa07e2",
+      "top_hit_score": 1.0
+    },
+    {
+      "candidate_id": "5251e2a66aa705c6c2f1a5ef",
+      "text_preview": "A useful memory-promotion candidate encodes non-reconstructible context that mea",
+      "found_in_top_5": true,
+      "rank": 1,
+      "top_hit_id": "5251e2a66aa705c6c2f1a5ef",
+      "top_hit_score": 1.0
+    },
+    {
+      "candidate_id": "d3804be5dd651e841f84f366",
+      "text_preview": "Use out-of-process integration or smoke tests against live endpoints to verify h",
+      "found_in_top_5": true,
+      "rank": 1,
+      "top_hit_id": "d3804be5dd651e841f84f366",
+      "top_hit_score": 1.0
+    },
+    {
+      "candidate_id": "6470b144fc6d87d8f6419d6d",
+      "text_preview": "Show a persistent, co-located icon-plus-text badge on every knowledge item: a gr",
+      "found_in_top_5": true,
+      "rank": 1,
+      "top_hit_id": "6470b144fc6d87d8f6419d6d",
+      "top_hit_score": 1.0
+    },
+    {
+      "candidate_id": "2254d5b420821c03a79a9a2d",
+      "text_preview": "A cryptographically signed, immutable snapshot of the current canonical semantic",
+      "found_in_top_5": true,
+      "rank": 1,
+      "top_hit_id": "2254d5b420821c03a79a9a2d",
+      "top_hit_score": 1.0
+    },
+    {
+      "candidate_id": "ee7b607ad696bfc4d594e21d",
+      "text_preview": "It must be novel, situation-specific information that a future reasoning step wo",
+      "found_in_top_5": true,
+      "rank": 1,
+      "top_hit_id": "ee7b607ad696bfc4d594e21d",
+      "top_hit_score": 1.0
+    },
+    {
+      "candidate_id": "9ba53b29cebef8e697eb3172",
+      "text_preview": "financial safety without execution: Present it as analytical validation, not adv",
+      "found_in_top_5": true,
+      "rank": 1,
+      "top_hit_id": "9ba53b29cebef8e697eb3172",
+      "top_hit_score": 1.0
+    }
+  ]
+}

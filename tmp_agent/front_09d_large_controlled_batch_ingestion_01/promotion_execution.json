@@ -1,0 +1,61 @@
+{
+  "front": "FRONT-09D-LARGE-CONTROLLED-BATCH-INGESTION-01",
+  "attempted_count": 8,
+  "accepted_count": 8,
+  "promoted_count": 8,
+  "skipped_count": 0,
+  "failed_count": 0,
+  "duplicate_count": 0,
+  "memory_records_before": 1795,
+  "memory_records_after": 1803,
+  "faiss_ids_before": 1786,
+  "faiss_ids_after": 1794,
+  "faiss_ntotal_before": 1786,
+  "faiss_ntotal_after": 1794,
+  "promoted": [
+    {
+      "candidate_id": "cycle02_retry_candidate_002",
+      "record_id": "4da11a6bf9d56d895193c93b",
+      "text_length": 215
+    },
+    {
+      "candidate_id": "cycle02_retry_candidate_003",
+      "record_id": "0a585014ab31d166d7fa07e2",
+      "text_length": 176
+    },
+    {
+      "candidate_id": "cycle02_retry_candidate_004",
+      "record_id": "5251e2a66aa705c6c2f1a5ef",
+      "text_length": 219
+    },
+    {
+      "candidate_id": "cycle02_retry_candidate_005",
+      "record_id": "d3804be5dd651e841f84f366",
+      "text_length": 160
+    },
+    {
+      "candidate_id": "cycle02_retry_candidate_007",
+      "record_id": "6470b144fc6d87d8f6419d6d",
+      "text_length": 198
+    },
+    {
+      "candidate_id": "cycle02_retry_candidate_009",
+      "record_id": "2254d5b420821c03a79a9a2d",
+      "text_length": 200
+    },
+    {
+      "candidate_id": "cycle02_retry_candidate_014",
+      "record_id": "ee7b607ad696bfc4d594e21d",
+      "text_length": 171
+    },
+    {
+      "candidate_id": "llm_grounded_cycle_006",
+      "record_id": "9ba53b29cebef8e697eb3172",
+      "text_length": 587
+    }
+  ],
+  "skipped": [],
+  "failed": [],
+  "snapshot_id": "20260626T094552_806821_09d_batch_8",
+  "executed_utc": "2026-06-26T09:49:45.635266+00:00"
+}

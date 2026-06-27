@@ -1,0 +1,56 @@
+{
+  "phase": "phase1",
+  "artifact_path": "tmp_agent/front_09d_large_controlled_batch_ingestion_01",
+  "files_found": [
+    "state_lock.json",
+    "candidate_inventory.json",
+    "dry_run_validation.json",
+    "pre_ingestion_memory_state.json",
+    "promotion_execution.json",
+    "post_write_reconciliation.json",
+    "retrieval_quality_verify.json",
+    "run_09d_promotion.py"
+  ],
+  "files_missing": [
+    "pre_write_snapshot.json",
+    "final_report.json"
+  ],
+  "promoted_ids": [
+    "4da11a6bf9d56d895193c93b",
+    "0a585014ab31d166d7fa07e2",
+    "5251e2a66aa705c6c2f1a5ef",
+    "d3804be5dd651e841f84f366",
+    "6470b144fc6d87d8f6419d6d",
+    "2254d5b420821c03a79a9a2d",
+    "ee7b607ad696bfc4d594e21d",
+    "9ba53b29cebef8e697eb3172"
+  ],
+  "promoted_count": 8,
+  "records_before": 1795,
+  "faiss_ids_before": 1786,
+  "faiss_ntotal_before": 1786,
+  "records_after_expected": 1803,
+  "faiss_ids_after_expected": 1794,
+  "faiss_ntotal_after_expected": 1794,
+  "rollback_snapshot_path": "memory/rollback_snapshots/20260626T094552_806821_09d_batch_8",
+  "snapshot_files": [
+    "semantic_memory.jsonl",
+    "semantic_memory_faiss.index",
+    "semantic_memory_faiss_ids.json",
+    "snapshot_meta.json"
+  ],
+  "reconciliation_failure_fields": {
+    "duplicate_count": 5,
+    "blank_text_count": 9,
+    "promoted_records_clean": true,
+    "note": "Duplicate IDs are pre-existing empty-string IDs from blank text records, NOT from 09D promotion"
+  },
+  "retrieval_results": {
+    "total_checked": 8,
+    "found_in_top_5": 8,
+    "all_rank_1": true,
+    "all_score_1_0": true
+  },
+  "status": "PASS",
+  "timestamp": "2026-06-26T10:00:00Z"
+}

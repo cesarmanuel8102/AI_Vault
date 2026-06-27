@@ -1,0 +1,96 @@
+{
+  "total_candidates_available": 8,
+  "selected_for_09d": 8,
+  "selected_count": 8,
+  "candidates": [
+    {
+      "candidate_id": "cycle02_retry_candidate_002",
+      "source_path": "C:\\AI_VAULT_CANONICAL\\memory\\semantic_staging\\cycle02_retry_candidate_002.json",
+      "text_length": 215,
+      "domain": "unknown",
+      "category": "unknown",
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "trading_execution_detected": false,
+      "text_preview": "The `/status` endpoint must return HTTP 200 with a parseable JSON payload where the `status` field is `healthy`, the `ti"
+    },
+    {
+      "candidate_id": "cycle02_retry_candidate_003",
+      "source_path": "C:\\AI_VAULT_CANONICAL\\memory\\semantic_staging\\cycle02_retry_candidate_003.json",
+      "text_length": 176,
+      "domain": "unknown",
+      "category": "unknown",
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "trading_execution_detected": false,
+      "text_preview": "Enforce immutable per-cycle autonomy boundaries with mandatory supervised checkpoints between tasks, and require explici"
+    },
+    {
+      "candidate_id": "cycle02_retry_candidate_004",
+      "source_path": "C:\\AI_VAULT_CANONICAL\\memory\\semantic_staging\\cycle02_retry_candidate_004.json",
+      "text_length": 219,
+      "domain": "unknown",
+      "category": "unknown",
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "trading_execution_detected": false,
+      "text_preview": "A useful memory-promotion candidate encodes non-reconstructible context that measurably improves future interactions whe"
+    },
+    {
+      "candidate_id": "cycle02_retry_candidate_005",
+      "source_path": "C:\\AI_VAULT_CANONICAL\\memory\\semantic_staging\\cycle02_retry_candidate_005.json",
+      "text_length": 160,
+      "domain": "unknown",
+      "category": "unknown",
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "trading_execution_detected": false,
+      "text_preview": "Use out-of-process integration or smoke tests against live endpoints to verify hardcoded routes; in-process tests alone "
+    },
+    {
+      "candidate_id": "cycle02_retry_candidate_007",
+      "source_path": "C:\\AI_VAULT_CANONICAL\\memory\\semantic_staging\\cycle02_retry_candidate_007.json",
+      "text_length": 198,
+      "domain": "unknown",
+      "category": "unknown",
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "trading_execution_detected": false,
+      "text_preview": "Show a persistent, co-located icon-plus-text badge on every knowledge item: a gray eye for \u201cRead-only,\u201d an amber clock f"
+    },
+    {
+      "candidate_id": "cycle02_retry_candidate_009",
+      "source_path": "C:\\AI_VAULT_CANONICAL\\memory\\semantic_staging\\cycle02_retry_candidate_009.json",
+      "text_length": 200,
+      "domain": "unknown",
+      "category": "unknown",
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "trading_execution_detected": false,
+      "text_preview": "A cryptographically signed, immutable snapshot of the current canonical semantic memory and FAISS state must be successf"
+    },
+    {
+      "candidate_id": "cycle02_retry_candidate_014",
+      "source_path": "C:\\AI_VAULT_CANONICAL\\memory\\semantic_staging\\cycle02_retry_candidate_014.json",
+      "text_length": 171,
+      "domain": "unknown",
+      "category": "unknown",
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "trading_execution_detected": false,
+      "text_preview": "It must be novel, situation-specific information that a future reasoning step would plausibly retrieve to maintain task "
+    },
+    {
+      "candidate_id": "llm_grounded_cycle_006",
+      "source_path": "C:\\AI_VAULT_CANONICAL\\memory\\semantic_staging\\llm_grounded_cycle_006.json",
+      "text_length": 587,
+      "domain": "unknown",
+      "category": "financial safety without execution",
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "trading_execution_detected": false,
+      "text_preview": "financial safety without execution: Present it as analytical validation, not advice: describe the strategy, assumptions,"
+    }
+  ],
+  "batch_size_reason": "Only 8 unique non-duplicate candidates exist in semantic_staging after deduplication and already-promoted filtering. Previous 09C inventory of 24 was from an older count that included duplicates and already-promoted items."
+}

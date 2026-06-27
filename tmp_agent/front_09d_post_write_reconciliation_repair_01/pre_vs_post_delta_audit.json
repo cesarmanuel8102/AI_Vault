@@ -1,0 +1,61 @@
+{
+  "phase": "phase2",
+  "pre_snapshot": {
+    "path": "memory/rollback_snapshots/20260626T094552_806821_09d_batch_8/semantic_memory.jsonl",
+    "records_count": 1795,
+    "ids_count": 1795,
+    "blank_text_count": 9,
+    "none_id_count": 5,
+    "empty_id_count": 5,
+    "duplicate_id_count": 4,
+    "duplicate_ids": [""]
+  },
+  "current_memory": {
+    "records_count": 1803,
+    "ids_count": 1803,
+    "blank_text_count": 9,
+    "none_id_count": 5,
+    "empty_id_count": 5,
+    "duplicate_id_count": 4,
+    "duplicate_ids": [""],
+    "faiss_ids_count": 1794,
+    "faiss_ntotal": 1794
+  },
+  "delta": {
+    "added_records_count": 8,
+    "removed_records_count": 0,
+    "added_ids": [
+      "0a585014ab31d166d7fa07e2",
+      "2254d5b420821c03a79a9a2d",
+      "4da11a6bf9d56d895193c93b",
+      "5251e2a66aa705c6c2f1a5ef",
+      "6470b144fc6d87d8f6419d6d",
+      "9ba53b29cebef8e697eb3172",
+      "d3804be5dd651e841f84f366",
+      "ee7b607ad696bfc4d594e21d"
+    ],
+    "added_ids_match_promoted": true,
+    "added_blank_text_count": 0,
+    "added_duplicate_id_count": 0,
+    "added_malformed_count": 0,
+    "all_promoted_in_faiss": true,
+    "expected_records_delta": 8,
+    "actual_records_delta": 8,
+    "expected_faiss_ids_delta": 8,
+    "actual_faiss_ids_delta": 8,
+    "expected_faiss_ntotal_delta": 8,
+    "actual_faiss_ntotal_delta": 8
+  },
+  "hard_acceptance": {
+    "actual_added_count_equals_promoted_count": true,
+    "added_blank_text_zero": true,
+    "added_duplicate_id_zero": true,
+    "added_malformed_zero": true,
+    "all_promoted_in_jsonl": true,
+    "all_promoted_in_faiss": true,
+    "all_promoted_retrievable": true,
+    "counts_match": true
+  },
+  "status": "PASS",
+  "timestamp": "2026-06-26T10:00:00Z"
+}

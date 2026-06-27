@@ -13,10 +13,10 @@ IDX_PATH = SEMANTIC_ROOT / "semantic_memory_faiss.index"
 JSONL_SHA256_BASELINE = "43e00f1e3ce8509979ccdb8f3101ae91990feae975c9b9330875b1754d3e3b09"
 # ^ Pre-09A baseline SHA kept for reference; test uses dynamic before/after check.
 
-# Current accepted baseline after 09A+09B
-CURRENT_JSONL_RECORDS = 1795
-CURRENT_FAISS_IDS = 1786
-CURRENT_FAISS_NTOTAL = 1786
+# Current accepted baseline after 09A+09B+09D
+CURRENT_JSONL_RECORDS = 1803
+CURRENT_FAISS_IDS = 1794
+CURRENT_FAISS_NTOTAL = 1794
 
 
 def _sha256(path: Path) -> str:
