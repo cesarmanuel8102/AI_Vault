@@ -1,0 +1,13 @@
+{
+  "source_id": "e2e_source_1_governance_security",
+  "topic": "strict_operator_access_and_dev_endpoints_default_off",
+  "provider": "agent_governance_knowledge",
+  "retrieved_at": "2026-06-27T00:00:00Z",
+  "text": "The brain_v9 FastAPI backend uses two auth levels: OperatorAccess and StrictOperatorAccess. StrictOperatorAccess requires an exact X-Brain-Token match using compare_digest and does NOT allow localhost bypass. The BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS config variable defaults to false. The /dev and /godmode endpoints are gated by both the flag and StrictOperatorAccess. No mutative endpoint should be reachable without StrictOperatorAccess.",
+  "metadata": {
+    "trust_label": "verified",
+    "source_type": "governance_policy",
+    "author": "FRONT-P0-NONTRADING-SECURITY",
+    "canonical": true
+  }
+}

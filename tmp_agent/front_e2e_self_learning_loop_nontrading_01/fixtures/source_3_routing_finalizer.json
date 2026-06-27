@@ -1,0 +1,13 @@
+{
+  "source_id": "e2e_source_3_routing_finalizer",
+  "topic": "generic_queries_must_not_be_memory_contaminated_brain_queries_should_use_evidence",
+  "provider": "agent_governance_knowledge",
+  "retrieved_at": "2026-06-27T00:00:00Z",
+  "text": "The Agent V2 routing logic must not force generic user queries through the semantic-memory retrieval path. Only queries explicitly about Brain-specific governance, security, memory, or routing should trigger evidence-based finalization. For generic queries the finalizer should answer directly without injecting retrieval results, preventing memory contamination and hallucination drift.",
+  "metadata": {
+    "trust_label": "verified",
+    "source_type": "routing_policy",
+    "author": "FRONT-BRAIN-AGENT-V2-DIRECT-LLM",
+    "canonical": true
+  }
+}

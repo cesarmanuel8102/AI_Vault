@@ -1,0 +1,69 @@
+{
+  "front_id": "FRONT-E2E-SELF-LEARNING-LOOP-NONTRADING-01",
+  "phase": 6,
+  "title": "Final Report",
+  "generated_at": "2026-06-27T02:30:00Z",
+  "starting_head": "54f65e0a731f57644e47038afa6bb75c1988a7e7",
+  "current_head_before_commit": "54f65e0a731f57644e47038afa6bb75c1988a7e7",
+  "memory_baseline": {
+    "records": 1794,
+    "faiss_ids": 1794,
+    "faiss_ntotal": 1794,
+    "blank_text_count": 0,
+    "duplicate_id_count": 0
+  },
+  "pipeline_inventory": {
+    "components_found": {
+      "source_read": "brain/external_sources/learning_results_runtime_readonly.py",
+      "staging_candidate": "brain/external_sources/real_source_ingestion_dry_run.py",
+      "validation": "build_normalized_source_records + candidate scoring",
+      "retrieval_simulation": "In-memory keyword overlap (no FAISS)",
+      "finalizer_evidence": "Agent V2 routing logic (existing)",
+      "governance_decision": "DRY_RUN_ONLY with write_performed=false",
+      "rollback_guard": "Canonical memory baseline check before/after"
+    },
+    "missing": [],
+    "notes": "Existing pipeline supports dry-run staging; E2E harness adds test-only fixture loop."
+  },
+  "e2e_flow": {
+    "source_items": 3,
+    "staged_candidates": 3,
+    "validation_passed": true,
+    "retrieval_simulation_passed": true,
+    "finalizer_evidence_simulation_passed": true,
+    "generic_noncontamination_passed": true,
+    "governance_decision": "DRY_RUN_ONLY",
+    "write_performed": false,
+    "promotion_performed": false
+  },
+  "regression_results": {
+    "e2e_self_learning_test": {"passed": 27, "failed": 0, "status": "PASS"},
+    "ci_config_regression": {"passed": 16, "failed": 0, "status": "PASS"},
+    "p0_security_regression": {"passed": 19, "failed": 0, "status": "PASS"},
+    "roadmap_rebase_regression": {"passed": 10, "failed": 0, "status": "PASS"},
+    "09e_regression": {"passed": 13, "failed": 0, "status": "PASS"},
+    "memory_cleanup_regression": {"passed": 15, "failed": 0, "status": "PASS"},
+    "faiss_hydration": {"passed": 4, "failed": 0, "status": "PASS"},
+    "semantic_retrieval_hygiene": {"passed": 4, "failed": 0, "status": "PASS"},
+    "guard": {"passed": 1, "failed": 0, "status": "PASS"},
+    "all_tests_passed": true
+  },
+  "safety": {
+    "memory_files_staged": false,
+    "memory_mutation_performed": false,
+    "promotion_queue_mutated": false,
+    "semantic_staging_mutated": false,
+    "trading_files_touched": false,
+    "broker_files_touched": false,
+    "qc_files_touched": false,
+    "secrets_found": false,
+    "raw_cot_found": false,
+    "unsafe_files_staged": false
+  },
+  "final_status": "E2E_SELF_LEARNING_LOOP_NONTRADING_COMPLETE",
+  "accept_e2e_self_learning": true,
+  "safe_to_start_source_connectivity_e2e": true,
+  "safe_to_mass_ingest_now": false,
+  "trading_deferred_to_final": true,
+  "recommended_next_front": "FRONT-INGESTION-SOURCE-CONNECTIVITY-E2E-READONLY-01"
+}
