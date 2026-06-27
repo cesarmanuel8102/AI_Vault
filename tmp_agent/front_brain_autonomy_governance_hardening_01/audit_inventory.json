@@ -1,0 +1,150 @@
+{
+  "front_id": "FRONT-BRAIN-AUTONOMY-GOVERNANCE-HARDENING-01",
+  "phase": "Phase 1 Audit Inventory",
+  "inspection_date": "2026-06-27",
+  "scope": "Brain/Agent autonomy, governance, RBAC, capability, self-dev, GOD mode, dev endpoints, audit logging",
+  "files_inspected": 25,
+  "summary": {
+    "existing_governance_modules": 8,
+    "existing_rbac_modules": 2,
+    "existing_capability_modules": 2,
+    "existing_audit_modules": 5,
+    "existing_tests": 12,
+    "bypass_risks_found": 7,
+    "missing_items": 8
+  },
+  "findings": {
+    "rbac_status": {
+      "module": "tmp_agent/brain_v9/security/rbac.py",
+      "roles_defined": ["VIEWER", "OPERATOR", "ADMIN"],
+      "modify_governance_granted_to": "NO_ROLE",
+      "status": "EXISTS_MINIMAL",
+      "gaps": [
+        "No SELF_DEV role",
+        "No AUTONOMY_AGENT role",
+        "No capability-based permission mapping",
+        "No integration with CapabilityGovernor"
+      ]
+    },
+    "protected_paths_status": {
+      "module": "tmp_agent/brain_v9/governance/protected_paths.py",
+      "coverage": [
+        ".env",
+        "memory/semantic/",
+        "governance/",
+        "security/",
+        "session.py",
+        "api_security.py",
+        "execution_gate.py",
+        "ethics_kernel.py"
+      ],
+      "status": "EXISTS_COMPREHENSIVE",
+      "gaps": [
+        "No trading/ broker path protection (out of scope)",
+        "No capability-policy-file protection",
+        "No .github/workflows/ protection"
+      ]
+    },
+    "execution_gate_status": {
+      "module": "tmp_agent/brain_v9/governance/execution_gate.py",
+      "features": [
+        "P0-P3 risk classification",
+        "PLAN/BUILD mode enforcement",
+        "GOD mode session tracking",
+        "Self-dev bypass (R27)",
+        "Protected path denylist",
+        "Audit logging (200 entries max)"
+      ],
+      "status": "EXISTS_ADVANCED",
+      "bypass_risks": [
+        "R27 self-dev auto-approve when settings allow",
+        "_bypass_gate kwarg in filesystem tools",
+        "GOD mode bypasses general sandbox containment"
+      ]
+    },
+    "dev_endpoints_status": {
+      "config": "tmp_agent/brain_v9/config.py",
+      "default": "OFF",
+      "flag": "BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS",
+      "routes": ["/dev", "/godmode", "/godmode/status"],
+      "requirements": "strict_operator_access + PAD auth",
+      "status": "EXISTS_SECURE_BY_DEFAULT"
+    },
+    "capability_governor_status": {
+      "module": "brain/capability_governor.py",
+      "features": [
+        "Tool inventory",
+        "Alias resolution",
+        "Install candidate inference",
+        "god_override parameter"
+      ],
+      "status": "EXISTS_TOOL_INVENTORY",
+      "gaps": [
+        "No capability-permission mapping",
+        "No RBAC integration",
+        "No default-deny for mutative capabilities"
+      ]
+    },
+    "audit_logging_status": {
+      "modules": [
+        "execution_gate.py",
+        "main.py",
+        "memory_auditor.py",
+        "security_posture.py"
+      ],
+      "status": "FRAGMENTED",
+      "gaps": [
+        "No unified audit service",
+        "No structured capability decision events",
+        "No autonomy action audit schema"
+      ]
+    }
+  },
+  "bypass_risks": [
+    {
+      "id": "BYPASS-01",
+      "description": "_bypass_gate kwarg in filesystem tools",
+      "severity": "HIGH"
+    },
+    {
+      "id": "BYPASS-02",
+      "description": "R27 self-dev auto-approve when settings allow",
+      "severity": "HIGH"
+    },
+    {
+      "id": "BYPASS-03",
+      "description": "capability_governor god_override bypasses ExecutionGate",
+      "severity": "HIGH"
+    },
+    {
+      "id": "BYPASS-04",
+      "description": "GOD mode bypasses general sandbox containment",
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "BYPASS-05",
+      "description": "BRAIN_SAFE_MODE defaults to false",
+      "severity": "LOW"
+    },
+    {
+      "id": "BYPASS-06",
+      "description": "No rate limiting on GOD/dev endpoints",
+      "severity": "MEDIUM"
+    },
+    {
+      "id": "BYPASS-07",
+      "description": "Historical subprocess shell bypass in session.py",
+      "severity": "MEDIUM"
+    }
+  ],
+  "missing_critical_items": [
+    "Centralized tool_registry module",
+    "Standalone root governance orchestrator",
+    "Unified audit service",
+    "RBAC-capability integration layer",
+    "Autonomy kill-switch / circuit breaker",
+    "Capability-based permission mapping",
+    "Self-dev sandbox constraints module",
+    "Autonomy escalation approval workflow"
+  ]
+}

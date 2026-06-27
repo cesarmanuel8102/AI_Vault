@@ -1,0 +1,79 @@
+{
+  "front_id": "FRONT-BRAIN-AUTONOMY-GOVERNANCE-HARDENING-01",
+  "status": "COMPLETED",
+  "commit_message": "security(agent): harden autonomy capability governance",
+  "files_created": [
+    "tmp_agent/brain_v9/governance/capability_policy.py",
+    "tests/smoke/test_brain_autonomy_governance_hardening_01.py"
+  ],
+  "files_referenced": [
+    "tmp_agent/front_brain_autonomy_governance_hardening_01/audit_inventory.json"
+  ],
+  "audit_roadmap_items_addressed": [
+    "1. Self-dev must not be able to modify governance/security policy - ENFORCED",
+    "2. Dev endpoints must be OFF by default - ENFORCED",
+    "3. GOD mode / privileged mode must not bypass policy - ENFORCED",
+    "4. RBAC must be explicit and testable - EXISTS (minimal RBAC in rbac.py)",
+    "5. Capability permissions must be centralized - NEW (capability_policy.py)",
+    "6. All privileged/autonomy actions must be audit-logged - STRUCTURED EVENTS",
+    "7. Autonomy escalation must require explicit policy approval - ENFORCED",
+    "8. No mutation tools should be callable unless capability policy allows - ENFORCED",
+    "9. Unit/smoke tests must prove denied paths are blocked - 18 TESTS PASS"
+  ],
+  "capability_policy": {
+    "default_deny_unknown": true,
+    "default_deny_mutative": true,
+    "selfdev_denied": [
+      "governance_edit",
+      "security_edit",
+      "dev_endpoint_access",
+      "self_dev_action",
+      "broker_or_trading",
+      "memory_write",
+      "faiss_rebuild"
+    ],
+    "god_mode_denylist": [
+      "governance_edit",
+      "security_edit",
+      "broker_or_trading"
+    ],
+    "feature_flags": {
+      "memory_write": "disabled_by_default",
+      "faiss_rebuild": "disabled_by_default",
+      "dev_endpoints": "disabled_by_default"
+    },
+    "trading_broker": "permanently_disabled"
+  },
+  "audit_event_schema": {
+    "event_type": "capability_decision",
+    "actor": "string",
+    "requested_capability": "string",
+    "target_path": "string",
+    "decision": "allow|deny",
+    "reason": "string",
+    "write_performed": false,
+    "policy_version": "FRONT-BRAIN-AUTONOMY-GOVERNANCE-HARDENING-01",
+    "timestamp_utc": "ISO8601"
+  },
+  "test_results": {
+    "new_tests": "18/18 PASSED",
+    "existing_ci_tests": "36/36 PASSED",
+    "guard": "SAFE",
+    "memory_baseline": "1794/1794/1794",
+    "blank_count": 0,
+    "duplicate_count": 0,
+    "no_memory_files_staged": true
+  },
+  "bypass_risks_identified": 7,
+  "bypass_risks_mitigated_by_policy": [
+    "BYPASS-01: _bypass_gate kwarg - policy check before tool execution",
+    "BYPASS-02: R27 self-dev auto-approve - blocked by _SELFDEV_DENIED",
+    "BYPASS-03: god_override in capability_governor - blocked by _GOD_DENYLIST",
+    "BYPASS-04: GOD mode sandbox bypass - blocked by _GOD_DENYLIST",
+    "BYPASS-05: BRAIN_SAFE_MODE default - dev_endpoints denied by policy",
+    "BYPASS-06: No rate limiting - not in scope for this front",
+    "BYPASS-07: Historical subprocess bypass - not in scope for this front"
+  ],
+  "next_recommended_front": "FRONT-BRAIN-AUTONOMY-SELFDEV-SANDBOX-02 (implement self-dev sandbox constraints module with tool-level restrictions and circuit breaker)",
+  "audit_roadmap_progress": "75%"
+}
