@@ -1918,12 +1918,12 @@ Las restricciones se reactivaran en 60 minutos o al escribir:
     return ChatResponse(response=content_str, session_id=req.session_id, model_used=result.get("model"), success=result.get("success", False), pending_action=pending_action, permission_required=result.get("permission_required"), permission_id=result.get("permission_id"), tool_name=result.get("tool_name"), risk_level=result.get("risk_level"), options=result.get("options"), tool01_real=result.get("tool01_real"), tool01_router_used=result.get("tool01_router_used"), blocked_by_policy=result.get("blocked_by_policy"), blocked_by_user=result.get("blocked_by_user"), tool_result=result.get("tool_result"))
 
 @app.delete("/sessions/{session_id}")
-async def delete_session(session_id: str):
+async def delete_session(session_id: str, _operator: StrictOperatorAccess):
     if session_id in active_sessions:
         await active_sessions[session_id].close()
         del active_sessions[session_id]
         return {"ok": True}
-    return JSONResponse(404, {"error": "Sesión no encontrada"})
+    return JSONResponse(content={"error": "Sesión no encontrada"}, status_code=404)
 
 # ── Governance Gate API (for UI buttons) ───────────────────────────────────
 
@@ -1966,7 +1966,7 @@ async def gate_reject(pending_id: str, _operator: StrictOperatorAccess):
 # ── TOOL-01B Permission Gate API ───────────────────────────────────────────
 
 @app.post("/tool01/permission/approve")
-async def tool01_permission_approve(req: Tool01PermissionRequest):
+async def tool01_permission_approve(req: Tool01PermissionRequest, _operator: StrictOperatorAccess):
     """Approve a TOOL-01 permission request via API."""
     session = active_sessions.get(req.session_id)
     if not session:
@@ -2040,9 +2040,9 @@ async def tool01_permission_grants(session_id: str):
 
 
 @app.delete("/sessions/{session_id}/memory")
-async def clear_memory(session_id: str, memory_type: str = "short"):
+async def clear_memory(session_id: str, _operator: StrictOperatorAccess, memory_type: str = "short"):
     if session_id not in active_sessions:
-        return JSONResponse(404, {"error": "Sesión no encontrada"})
+        return JSONResponse(content={"error": "Sesión no encontrada"}, status_code=404)
     active_sessions[session_id].memory.clear(memory_type)
     return {"ok": True, "cleared": memory_type}
 
@@ -2165,7 +2165,7 @@ async def brain_learned_pattern_detail(pattern_id: str):
 
 
 @app.post("/brain/learned/patterns/{pattern_id}/disable")
-async def brain_learned_pattern_disable(pattern_id: str):
+async def brain_learned_pattern_disable(pattern_id: str, _operator: StrictOperatorAccess):
     try:
         from brain_v9.agent.failure_learner import FailureLearner
         learner = FailureLearner.get()
@@ -2180,7 +2180,7 @@ async def brain_learned_pattern_disable(pattern_id: str):
 
 
 @app.delete("/brain/learned/patterns/{pattern_id}")
-async def brain_learned_pattern_delete(pattern_id: str):
+async def brain_learned_pattern_delete(pattern_id: str, _operator: StrictOperatorAccess):
     try:
         from brain_v9.agent.failure_learner import FailureLearner
         learner = FailureLearner.get()
@@ -2195,7 +2195,7 @@ async def brain_learned_pattern_delete(pattern_id: str):
 
 
 @app.post("/brain/learned/test_simulate")
-async def brain_learned_test_simulate(payload: Dict[str, Any] = Body(...)):
+async def brain_learned_test_simulate(_operator: StrictOperatorAccess, payload: Dict[str, Any] = Body(...)):
     """B-Sprint deterministic E2E test endpoint.
 
     Body: {"tool": "<failing_tool>", "args": {...}, "error_text": "<error>"}
@@ -2334,7 +2334,7 @@ async def brain_mutation_detail(mutation_id: str):
 
 
 @app.post("/brain/mutations/{mutation_id}/rollback")
-async def brain_mutation_rollback(mutation_id: str, reason: str = "manual"):
+async def brain_mutation_rollback(mutation_id: str, _operator: StrictOperatorAccess, reason: str = "manual"):
     """Rollback a mutation to its backup."""
     try:
         from brain_v9.agent.code_mutator import CodeMutator
@@ -2615,7 +2615,7 @@ async def brain_llm_circuit_breaker():
 
 
 @app.post("/brain/llm/circuit_breaker/reset")
-async def brain_llm_cb_reset(model: Optional[str] = None):
+async def brain_llm_cb_reset(_operator: StrictOperatorAccess, model: Optional[str] = None):
     """Reset circuit breaker for a model or all models."""
     try:
         from brain_v9.core.llm import LLMManager

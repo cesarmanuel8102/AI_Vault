@@ -1,0 +1,123 @@
+{
+  "front_id": "FRONT-P0-NONTRADING-SECURITY-REALITY-CHECK-AND-FIX-01",
+  "phase": 2,
+  "title": "Read-Only Security Test Matrix",
+  "generated_at": "2026-06-27T02:00:00Z",
+  "security_surface_inventory_summary": {
+    "total_endpoints": 140,
+    "mutative_endpoints_total": 46,
+    "mutative_endpoints_with_auth": 38,
+    "mutative_endpoints_without_auth": 8,
+    "dev_god_endpoints_with_strict_access": 3,
+    "dev_god_endpoints_default_off": true
+  },
+  "verified_protections": {
+    "config_unsafe_dev_default_false": true,
+    "dev_post_strict_operator_access": true,
+    "godmode_post_strict_operator_access": true,
+    "godmode_status_strict_operator_access": true,
+    "dev_god_blocked_by_flag": true,
+    "require_strict_operator_access_no_localhost_bypass": true,
+    "pydantic_extra_forbid_on_critical_models": true,
+    "governance_mode_validation_rejects_dangerous": true,
+    "tool_gateway_write_blocked_in_read_only": true,
+    "approval_token_required_for_memory_promote": true,
+    "selfdev_governance_file_modification_denied": true,
+    "confirm_phrase_required_for_governance_modify": true,
+    "execution_gate_god_p3_protection_active": true
+  },
+  "identified_gaps": {
+    "unauthenticated_mutative_endpoints": [
+      {
+        "endpoint": "DELETE /sessions/{session_id}",
+        "line": 1920,
+        "severity": "HIGH",
+        "description": "Allows any client to delete active sessions without auth."
+      },
+      {
+        "endpoint": "DELETE /sessions/{session_id}/memory",
+        "line": 2042,
+        "severity": "HIGH",
+        "description": "Allows any client to clear session memory without auth."
+      },
+      {
+        "endpoint": "POST /tool01/permission/approve",
+        "line": 1968,
+        "severity": "CRITICAL",
+        "description": "Allows any client to approve TOOL-01 permissions without auth."
+      },
+      {
+        "endpoint": "POST /brain/learned/patterns/{pattern_id}/disable",
+        "line": 2167,
+        "severity": "MEDIUM",
+        "description": "Allows any client to disable learned failure patterns without auth."
+      },
+      {
+        "endpoint": "DELETE /brain/learned/patterns/{pattern_id}",
+        "line": 2182,
+        "severity": "MEDIUM",
+        "description": "Allows any client to delete learned failure patterns without auth."
+      },
+      {
+        "endpoint": "POST /brain/learned/test_simulate",
+        "line": 2197,
+        "severity": "MEDIUM",
+        "description": "Allows any client to trigger LLM-backed failure learning simulation without auth."
+      },
+      {
+        "endpoint": "POST /brain/mutations/{mutation_id}/rollback",
+        "line": 2336,
+        "severity": "HIGH",
+        "description": "Allows any client to rollback code mutations without auth."
+      },
+      {
+        "endpoint": "POST /brain/llm/circuit_breaker/reset",
+        "line": 2617,
+        "severity": "MEDIUM",
+        "description": "Allows any client to reset LLM circuit breaker without auth."
+      }
+    ],
+    "information_leakage_risks": [
+      {
+        "endpoint": "GET /chat/introspectivo/debug",
+        "line": 1187,
+        "severity": "LOW",
+        "description": "Read-only debug endpoint, but returns raw state. Already protected by StrictOperatorAccess."
+      },
+      {
+        "endpoint": "POST /brain/agent-trace/event",
+        "line": 4506,
+        "severity": "LOW",
+        "description": "Trace event emission protected by StrictOperatorAccess, but endpoint comment mentions 'Bypasses StrictOperatorAccess' for internal use."
+      }
+    ]
+  },
+  "test_matrix": {
+    "negative_tests": [
+      "POST /dev without token -> 403",
+      "POST /godmode without token -> 403",
+      "GET /godmode/status without token -> 403",
+      "POST /dev with valid token but flag off -> 403",
+      "POST /godmode with valid token but flag off -> 403",
+      "POST /v2/chat/agent with extra forbidden field -> 422",
+      "POST /v2/chat/agent with invalid token -> 403",
+      "POST /v2/chat/agent without token -> 403",
+      "POST /gate/approve/{id} without token -> 403",
+      "POST /gate/reject/{id} without token -> 403"
+    ],
+    "positive_tests": [
+      "POST /v2/chat/agent with valid token -> 200",
+      "GET /godmode/status with valid token -> 200"
+    ],
+    "new_gap_tests": [
+      "DELETE /sessions/{session_id} without token -> should be 403 (currently 200)",
+      "DELETE /sessions/{session_id}/memory without token -> should be 403 (currently 200)",
+      "POST /tool01/permission/approve without token -> should be 403 (currently 200)",
+      "POST /brain/learned/patterns/{id}/disable without token -> should be 403 (currently 200)",
+      "DELETE /brain/learned/patterns/{id} without token -> should be 403 (currently 200)",
+      "POST /brain/learned/test_simulate without token -> should be 403 (currently 200)",
+      "POST /brain/mutations/{id}/rollback without token -> should be 403 (currently 200)",
+      "POST /brain/llm/circuit_breaker/reset without token -> should be 403 (currently 200)"
+    ]
+  }
+}

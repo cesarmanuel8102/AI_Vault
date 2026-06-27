@@ -1,0 +1,111 @@
+{
+  "front_id": "FRONT-P0-NONTRADING-SECURITY-REALITY-CHECK-AND-FIX-01",
+  "phase": 10,
+  "title": "P0 Non-Trading Security Reality Check and Fix — Final Report",
+  "generated_at": "2026-06-27T02:04:00Z",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_commit": "5688e2f",
+  "state_lock": {
+    "memory_records": 1794,
+    "memory_ids": 1794,
+    "faiss_ntotal": 1794,
+    "blank_records": 0,
+    "duplicates": 0
+  },
+  "executed_phases": [
+    {"phase": 0, "name": "State lock confirmation", "status": "passed"},
+    {"phase": 1, "name": "Security surface inventory", "status": "passed"},
+    {"phase": 2, "name": "Read-only security test matrix", "status": "passed"},
+    {"phase": 3, "name": "Run existing security tests", "status": "passed"},
+    {"phase": 4, "name": "Create strong security smoke test", "status": "passed"},
+    {"phase": 5, "name": "Minimal fix (real gaps proven)", "status": "passed"},
+    {"phase": 6, "name": "Post-security verification", "status": "passed"},
+    {"phase": 7, "name": "Final report", "status": "passed"}
+  ],
+  "verified_protections": {
+    "config_unsafe_dev_default_false": true,
+    "dev_post_strict_operator_access": true,
+    "godmode_post_strict_operator_access": true,
+    "godmode_status_strict_operator_access": true,
+    "dev_god_blocked_by_flag": true,
+    "require_strict_operator_access_no_localhost_bypass": true,
+    "pydantic_extra_forbid_on_critical_models": true,
+    "governance_mode_validation_rejects_dangerous": true,
+    "tool_gateway_write_blocked_in_read_only": true,
+    "approval_token_required_for_memory_promote": true,
+    "selfdev_governance_file_modification_denied": true,
+    "confirm_phrase_required_for_governance_modify": true,
+    "execution_gate_god_p3_protection_active": true
+  },
+  "gaps_found_and_fixed": [
+    {
+      "endpoint": "DELETE /sessions/{session_id}",
+      "line": 1920,
+      "severity": "HIGH",
+      "fix": "Added StrictOperatorAccess dependency + fixed JSONResponse(status_code=404) call signature",
+      "test": "test_delete_session_requires_auth"
+    },
+    {
+      "endpoint": "DELETE /sessions/{session_id}/memory",
+      "line": 2042,
+      "severity": "HIGH",
+      "fix": "Added StrictOperatorAccess dependency + fixed JSONResponse(status_code=404) call signature",
+      "test": "test_delete_session_memory_requires_auth"
+    },
+    {
+      "endpoint": "POST /tool01/permission/approve",
+      "line": 1968,
+      "severity": "CRITICAL",
+      "fix": "Added StrictOperatorAccess dependency",
+      "test": "test_tool01_permission_approve_requires_auth"
+    },
+    {
+      "endpoint": "POST /brain/learned/patterns/{pattern_id}/disable",
+      "line": 2167,
+      "severity": "MEDIUM",
+      "fix": "Added StrictOperatorAccess dependency",
+      "test": "test_brain_learned_pattern_disable_requires_auth"
+    },
+    {
+      "endpoint": "DELETE /brain/learned/patterns/{pattern_id}",
+      "line": 2182,
+      "severity": "MEDIUM",
+      "fix": "Added StrictOperatorAccess dependency",
+      "test": "test_brain_learned_pattern_delete_requires_auth"
+    },
+    {
+      "endpoint": "POST /brain/learned/test_simulate",
+      "line": 2197,
+      "severity": "MEDIUM",
+      "fix": "Added StrictOperatorAccess dependency",
+      "test": "test_brain_learned_test_simulate_requires_auth"
+    },
+    {
+      "endpoint": "POST /brain/mutations/{mutation_id}/rollback",
+      "line": 2336,
+      "severity": "HIGH",
+      "fix": "Added StrictOperatorAccess dependency",
+      "test": "test_brain_mutation_rollback_requires_auth"
+    },
+    {
+      "endpoint": "POST /brain/llm/circuit_breaker/reset",
+      "line": 2617,
+      "severity": "MEDIUM",
+      "fix": "Added StrictOperatorAccess dependency",
+      "test": "test_brain_llm_circuit_breaker_reset_requires_auth"
+    }
+  ],
+  "test_results": {
+    "new_smoke_test": {"total": 19, "passed": 19, "failed": 0},
+    "existing_security_tests": {"total": 30, "passed": 30, "failed": 0, "deselected": 1}
+  },
+  "files_modified": [
+    "tmp_agent/brain_v9/main.py"
+  ],
+  "files_created": [
+    "tmp_agent/front_p0_nontrading_security_reality_check_and_fix_01/security_test_matrix.json",
+    "tests/smoke/test_p0_nontrading_security_reality_check_and_fix_01.py"
+  ],
+  "memory_mutation": false,
+  "commit_message": "fix(security): add StrictOperatorAccess to 8 unauthenticated mutative endpoints + fix JSONResponse call signatures (FRONT-P0-NONTRADING-SECURITY-REALITY-CHECK-AND-FIX-01)"
+}
