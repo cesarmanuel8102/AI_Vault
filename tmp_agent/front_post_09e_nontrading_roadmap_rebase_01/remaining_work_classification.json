@@ -1,0 +1,273 @@
+{
+  "phase": "phase2",
+  "classification_summary": {
+    "A_ALREADY_CLOSED": 4,
+    "B_NONTRADING_P0_NOW": 6,
+    "C_NONTRADING_P1_NEXT": 3,
+    "D_TRADING_DEFERRED_FINAL": 8,
+    "E_REQUIRES_REVALIDATION": 3
+  },
+  "items": [
+    {
+      "item_id": "A1",
+      "title": "FRONT-09D-LARGE-CONTROLLED-BATCH-INGESTION-01",
+      "category": "A_ALREADY_CLOSED",
+      "source": "tmp_agent/front_09d_large_controlled_batch_ingestion_01",
+      "status": "CLOSED",
+      "reason": "8 records promoted, reconciliation repaired, historical debt cleaned, retrieval evaluated.",
+      "risk": "none",
+      "trading_related": false
+    },
+    {
+      "item_id": "A2",
+      "title": "FRONT-09D-POST-WRITE-RECONCILIATION-REPAIR-01",
+      "category": "A_ALREADY_CLOSED",
+      "source": "tmp_agent/front_09d_post_write_reconciliation_repair_01",
+      "status": "CLOSED",
+      "reason": "Proven historical debt only; 09D delta clean.",
+      "risk": "none",
+      "trading_related": false
+    },
+    {
+      "item_id": "A3",
+      "title": "FRONT-MEMORY-HISTORICAL-DEBT-CLEANUP-01",
+      "category": "A_ALREADY_CLOSED",
+      "source": "tmp_agent/front_memory_historical_debt_cleanup_01",
+      "status": "CLOSED",
+      "reason": "9 blank records removed; counts reconciled.",
+      "risk": "none",
+      "trading_related": false
+    },
+    {
+      "item_id": "A4",
+      "title": "FRONT-09E-RETRIEVAL-QUALITY-MEMORY-UTILITY-EVALUATION-01",
+      "category": "A_ALREADY_CLOSED",
+      "source": "tmp_agent/front_09e_retrieval_quality_memory_utility_evaluation_01",
+      "status": "CLOSED",
+      "reason": "24-query evaluation passed; all metrics above threshold.",
+      "risk": "none",
+      "trading_related": false
+    },
+    {
+      "item_id": "B1",
+      "title": "FRONT-P0-NONTRADING-SECURITY-REALITY-CHECK-AND-FIX-01",
+      "category": "B_NONTRADING_P0_NOW",
+      "source": "ROADMAP_STATUS.json/phase0_security",
+      "status": "NEEDS_REVALIDATION",
+      "reason": "Phase0 security done at 35fc676c but God mode env var NOT_SET in current session. Need revalidation.",
+      "risk": "Security regression if God mode bypass still possible.",
+      "suggested_front": "FRONT-P0-NONTRADING-SECURITY-REALITY-CHECK-AND-FIX-01",
+      "trading_related": false,
+      "affects_security": true,
+      "affects_runtime": true
+    },
+    {
+      "item_id": "B2",
+      "title": "FRONT-CI-SMOKE-REGRESSION-EXPANSION-01",
+      "category": "B_NONTRADING_P0_NOW",
+      "source": "phase1-ci.yml",
+      "status": "OPEN",
+      "reason": "Only phase1-ci.yml found. No evidence 09D/09E/cleanup tests are in CI. Must expand.",
+      "risk": "Regressions in accepted tests won't be caught.",
+      "suggested_front": "FRONT-CI-SMOKE-REGRESSION-EXPANSION-01",
+      "trading_related": false,
+      "affects_runtime": false
+    },
+    {
+      "item_id": "B3",
+      "title": "FRONT-E2E-SELF-LEARNING-LOOP-NONTRADING-01",
+      "category": "B_NONTRADING_P0_NOW",
+      "source": "ROADMAP_STATUS.json/self_improvement_first_five_learning_fronts_dry_run",
+      "status": "DRY_RUN_DONE_LIVE_MISSING",
+      "reason": "Dry runs done (34-88 tests). Live self-improvement loop not executed.",
+      "risk": "Autonomy claims are unproven without live loop.",
+      "suggested_front": "FRONT-E2E-SELF-LEARNING-LOOP-NONTRADING-01",
+      "trading_related": false,
+      "affects_runtime": true
+    },
+    {
+      "item_id": "B4",
+      "title": "FRONT-INGESTION-SOURCE-CONNECTIVITY-E2E-READONLY-01",
+      "category": "B_NONTRADING_P0_NOW",
+      "source": "ROADMAP_STATUS.json/external_source_connectivity_smoke",
+      "status": "DRY_RUN_DONE_LIVE_PARTIAL",
+      "reason": "GitHub/SEC/Docs dry-run passed. FRED/OpenBB deferred. No E2E from source-to-staging-to-retrieval proven.",
+      "risk": "External learning pipeline unproven end-to-end.",
+      "suggested_front": "FRONT-INGESTION-SOURCE-CONNECTIVITY-E2E-READONLY-01",
+      "trading_related": false,
+      "affects_runtime": true
+    },
+    {
+      "item_id": "B5",
+      "title": "FRONT-ROUTING-GENERIC-NONCONTAMINATION-HARDENING-01",
+      "category": "B_NONTRADING_P0_NOW",
+      "source": "09E evaluation / semantic retrieval hygiene tests",
+      "status": "PASSING_BUT_NOT_HARDENED",
+      "reason": "Generic queries route direct_assistant in 09E. No explicit contamination guard in router code.",
+      "risk": "Future router changes may reintroduce contamination.",
+      "suggested_front": "FRONT-ROUTING-GENERIC-NONCONTAMINATION-HARDENING-01",
+      "trading_related": false,
+      "affects_runtime": true
+    },
+    {
+      "item_id": "B6",
+      "title": "FRONT-FINALIZER-EVIDENCE-USE-QUALITY-HARDENING-01",
+      "category": "B_NONTRADING_P0_NOW",
+      "source": "09E evaluation / agent answer utility",
+      "status": "PASSING_BUT_NOT_HARDENED",
+      "reason": "Evidence used in 91.7% of queries. No hardening of finalizer evidence-use contract.",
+      "risk": "Finalizer may ignore evidence in future changes.",
+      "suggested_front": "FRONT-FINALIZER-EVIDENCE-USE-QUALITY-HARDENING-01",
+      "trading_related": false,
+      "affects_runtime": true
+    },
+    {
+      "item_id": "C1",
+      "title": "FRONT-SELF-IMPROVEMENT-SANDBOX-DESIGN-AND-GATES-01",
+      "category": "C_NONTRADING_P1_NEXT",
+      "source": "ROADMAP_STATUS.json/self_improvement",
+      "status": "DESIGN_ONLY",
+      "reason": "Patch plans exist but execution blocked. Sandbox design needed before enabling.",
+      "risk": "Low if execution stays blocked.",
+      "suggested_front": "FRONT-SELF-IMPROVEMENT-SANDBOX-DESIGN-AND-GATES-01",
+      "trading_related": false
+    },
+    {
+      "item_id": "C2",
+      "title": "FRONT-REPO-HYGIENE-NONTRADING-CLEANUP-01",
+      "category": "C_NONTRADING_P1_NEXT",
+      "source": "repo root / orphan files",
+      "status": "NEEDS_ASSESSMENT",
+      "reason": "Multiple orphan/tmp files, backup files, adaptive scratch tests not tracked.",
+      "risk": "Medium: clutter obscures real issues.",
+      "suggested_front": "FRONT-REPO-HYGIENE-NONTRADING-CLEANUP-01",
+      "trading_related": false
+    },
+    {
+      "item_id": "C3",
+      "title": "FRONT-MODULAR-MONOLITH-SESSION-SPLIT-PLAN-01",
+      "category": "C_NONTRADING_P1_NEXT",
+      "source": "tmp_agent/brain_v9/core/session.py (6296 lines)",
+      "status": "DEFERRED_UNTIL_CI_E2E",
+      "reason": "session.py is 6296 lines, main.py is 4589 lines. Split is risky without CI/E2E coverage.",
+      "risk": "High if split breaks routing before CI covers it.",
+      "suggested_front": "FRONT-MODULAR-MONOLITH-SESSION-SPLIT-PLAN-01",
+      "trading_related": false
+    },
+    {
+      "item_id": "D1",
+      "title": "Trading Phase 299 / QC/IBKR integration",
+      "category": "D_TRADING_DEFERRED_FINAL",
+      "source": "ROADMAP_STATUS.json/trading_phase299",
+      "status": "DEFERRED_FINAL",
+      "reason": "Codex developing QC/IBKR model separately. Not ready for integration.",
+      "risk": "Blocked until external model ready.",
+      "trading_related": true
+    },
+    {
+      "item_id": "D2",
+      "title": "B8 trading module",
+      "category": "D_TRADING_DEFERRED_FINAL",
+      "source": "ROADMAP_STATUS.json/b8",
+      "status": "PAUSED_DEFERRED_FINAL",
+      "reason": "B8 explicitly paused. Resume only after final integration phase.",
+      "risk": "Blocked by policy.",
+      "trading_related": true
+    },
+    {
+      "item_id": "D3",
+      "title": "Local backtester MVP",
+      "category": "D_TRADING_DEFERRED_FINAL",
+      "source": "09E recommendation / memory mentions backtest",
+      "status": "DEFERRED_FINAL",
+      "reason": "Trading-related. No complete local backtester exists.",
+      "risk": "Medium: research safety requires separation from execution.",
+      "trading_related": true
+    },
+    {
+      "item_id": "D4",
+      "title": "PortfolioManager",
+      "category": "D_TRADING_DEFERRED_FINAL",
+      "source": "ROADMAP_STATUS.json / financial motor",
+      "status": "DEFERRED_FINAL",
+      "reason": "Trading-related capital allocation.",
+      "risk": "Blocked.",
+      "trading_related": true
+    },
+    {
+      "item_id": "D5",
+      "title": "IBKR paper/live executor",
+      "category": "D_TRADING_DEFERRED_FINAL",
+      "source": "ROADMAP_STATUS.json",
+      "status": "DEFERRED_FINAL",
+      "reason": "Trading-related broker execution.",
+      "risk": "Blocked.",
+      "trading_related": true
+    },
+    {
+      "item_id": "D6",
+      "title": "QuantConnect integration",
+      "category": "D_TRADING_DEFERRED_FINAL",
+      "source": "memory mentions QC port 8090",
+      "status": "DEFERRED_FINAL",
+      "reason": "Trading-related external platform.",
+      "risk": "Blocked.",
+      "trading_related": true
+    },
+    {
+      "item_id": "D7",
+      "title": "Financial autonomy rewrite",
+      "category": "D_TRADING_DEFERRED_FINAL",
+      "source": "ROADMAP_STATUS.json / legacy_financial",
+      "status": "DEFERRED_FINAL",
+      "reason": "Trading-related autonomous trading policy.",
+      "risk": "Blocked.",
+      "trading_related": true
+    },
+    {
+      "item_id": "D8",
+      "title": "Live trading gate / compliance layer",
+      "category": "D_TRADING_DEFERRED_FINAL",
+      "source": "ROADMAP_STATUS.json",
+      "status": "DEFERRED_FINAL",
+      "reason": "Trading-related safety gate.",
+      "risk": "Blocked until trading phase.",
+      "trading_related": true
+    },
+    {
+      "item_id": "E1",
+      "title": "Phase0 security revalidation",
+      "category": "E_REQUIRES_REVALIDATION",
+      "source": "ROADMAP_STATUS.json/phase0_security",
+      "status": "STALE",
+      "reason": "Done at 35fc676c but current session shows God env var NOT_SET. Needs recheck.",
+      "risk": "Security regression.",
+      "suggested_front": "FRONT-P0-NONTRADING-SECURITY-REALITY-CHECK-AND-FIX-01",
+      "trading_related": false
+    },
+    {
+      "item_id": "E2",
+      "title": "External source ingestion live validation",
+      "category": "E_REQUIRES_REVALIDATION",
+      "source": "ROADMAP_STATUS.json/external_source_ingestion_dry_run_real_source",
+      "status": "DRY_RUN_STALE",
+      "reason": "Dry run done but FRED/OpenBB deferred. Need live revalidation with current credentials.",
+      "risk": "Pipeline may be broken with current env.",
+      "suggested_front": "FRONT-INGESTION-SOURCE-CONNECTIVITY-E2E-READONLY-01",
+      "trading_related": false
+    },
+    {
+      "item_id": "E3",
+      "title": "Self-improvement patch execution readiness",
+      "category": "E_REQUIRES_REVALIDATION",
+      "source": "ROADMAP_STATUS.json/self_improvement_first_five_real_patch_generation_review_dry_run",
+      "status": "STALE",
+      "reason": "Reviews done but no execution. Needs revalidation before enabling.",
+      "risk": "Autonomy claims unproven.",
+      "suggested_front": "FRONT-E2E-SELF-LEARNING-LOOP-NONTRADING-01",
+      "trading_related": false
+    }
+  ],
+  "status": "PASS",
+  "timestamp": "2026-06-26T10:15:00Z"
+}
