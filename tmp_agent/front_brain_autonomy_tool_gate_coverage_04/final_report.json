@@ -1,0 +1,82 @@
+{
+  "front_id": "FRONT-BRAIN-AUTONOMY-TOOL-GATE-COVERAGE-04",
+  "status": "TOOL_GATE_COVERAGE_PUSHED",
+  "starting_head": "9259a56",
+  "commit_message": "security(agent): enforce gate coverage for mutative tools",
+  "files_modified": [
+    "tmp_agent/brain_v9/agent/tools.py",
+    "tmp_agent/brain_v9/governance/execution_gate.py"
+  ],
+  "files_created": [
+    "tests/smoke/test_brain_autonomy_tool_gate_coverage_04.py",
+    "tmp_agent/front_brain_autonomy_tool_gate_coverage_04/tool_gate_inventory.json",
+    "tmp_agent/front_brain_autonomy_tool_gate_coverage_04/tool_gate_inventory.md",
+    "tmp_agent/front_brain_autonomy_tool_gate_coverage_04/final_report.json",
+    "tmp_agent/front_brain_autonomy_tool_gate_coverage_04/final_report.md"
+  ],
+  "mutative_tools_gated": {
+    "via_execution_gate": 5,
+    "via_selfdev_sandbox_direct": 2,
+    "total": 7
+  },
+  "gated_tools": {
+    "edit_file": "ExecutionGate.check() + SelfDevSandbox",
+    "write_file": "ExecutionGate.check() + SelfDevSandbox",
+    "backup_file": "ExecutionGate.check() + SelfDevSandbox",
+    "promote_staged_change": "ExecutionGate.check() + SelfDevSandbox",
+    "rollback_staged_change": "ExecutionGate.check() + SelfDevSandbox",
+    "semantic_memory_ingest": "evaluate_selfdev_action() direct",
+    "semantic_memory_ingest_session": "evaluate_selfdev_action() direct"
+  },
+  "already_gated_tools": [
+    "run_command",
+    "install_package",
+    "run_python_script",
+    "freeze_strategy",
+    "unfreeze_strategy",
+    "trigger_autonomy_action",
+    "place_paper_order",
+    "cancel_paper_order"
+  ],
+  "bypass_coverage": {
+    "backup_file_added_to_fs_write_tools": true,
+    "god_mode_blocked": true,
+    "bypass_gate_blocked": true,
+    "god_override_blocked": true,
+    "r27_selfdev_bypass_blocked": true
+  },
+  "denied_paths_enforced": [
+    "governance/*",
+    "security/*",
+    ".github/workflows/*",
+    "memory/semantic/*",
+    "memory/rollback_snapshots/*",
+    "memory/autonomous_journal.jsonl",
+    "trading/*",
+    "broker/*",
+    "ibkr/*",
+    "quantconnect/*",
+    ".env",
+    "secrets/*"
+  ],
+  "test_results": {
+    "new_tool_gate_tests": "16/16 PASSED",
+    "runtime_integration_tests": "17/17 PASSED",
+    "selfdev_sandbox_tests": "21/21 PASSED",
+    "governance_hardening_tests": "18/18 PASSED",
+    "ci_verification_tests": "36/36 PASSED",
+    "guard": "SAFE",
+    "memory_baseline": "1794/1794/1794",
+    "blank_count": 0,
+    "duplicate_count": 0,
+    "no_memory_files_staged": true
+  },
+  "audit_roadmap_progress": "100%",
+  "remaining_gaps": [
+    "Cryptographic approval signatures for approvals",
+    "RBAC persistence layer",
+    "Autonomy kill-switch / circuit breaker module",
+    "Unified audit service with structured schema and persistence"
+  ],
+  "next_recommended_front": "FRONT-BRAIN-AUTONOMY-CRYPTO-APPROVALS-05 (add HMAC/JWT signatures for approval tokens)"
+}

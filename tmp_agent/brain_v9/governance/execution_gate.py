@@ -83,6 +83,7 @@ _PROTECTED_SELFDEV_EXACT_BASENAMES: Tuple[str, ...] = (
 _FS_WRITE_TOOLS: Tuple[str, ...] = (
     "edit_file",
     "write_file",
+    "backup_file",
     "patch_file",
     "create_file",
     "move_file",

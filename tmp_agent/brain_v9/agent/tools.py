@@ -27,6 +27,7 @@ from brain_v9.brain.self_improvement import (
     rollback_change as si_rollback_change,
     validate_staged_change as si_validate_staged_change,
 )
+from brain_v9.governance.selfdev_sandbox import evaluate_selfdev_action
 
 log = logging.getLogger("agent.tools")
 
@@ -155,6 +156,29 @@ def _assert_write_allowed(path: Path) -> None:
         raise PermissionError(f"Escritura denegada por contrato en ruta protegida: {path}")
 
 
+async def _runtime_gate_or_block(
+    tool_name: str,
+    args: Dict,
+    session_id: Optional[str] = None,
+) -> Optional[Dict]:
+    """
+    Runtime gate check for mutative tools.
+    Returns gate decision dict if blocked, None if allowed.
+    Does not perform any writes.
+    """
+    try:
+        from brain_v9.governance.execution_gate import get_gate
+        gate = get_gate()
+        decision = gate.check(tool_name, args, session_id=session_id)
+        if not decision.get("allowed", True):
+            # Ensure write_performed is false for blocked mutations
+            decision["write_performed"] = False
+            return decision
+    except Exception as exc:
+        log.warning("Runtime gate check failed for %s: %s", tool_name, exc)
+    return None
+
+
 async def read_file(path: str, encoding: str = "utf-8") -> str:
     """Lee un archivo de texto.
 
@@ -219,6 +243,10 @@ async def edit_file(path: str, old_text: str, new_text: str) -> Dict:
     """
     p = _safe_path(path)
     _assert_write_allowed(p)
+    # Runtime gate check for mutative tool
+    gate_result = await _runtime_gate_or_block("edit_file", {"path": path}, session_id=None)
+    if gate_result is not None:
+        return gate_result
     if not p.exists():
         raise FileNotFoundError(f"No existe: {p}")
 
@@ -292,6 +320,10 @@ async def grep_codebase(query: str, include: str = "*.py", max_results: int = 20
 async def write_file(path: str, content: str, encoding: str = "utf-8") -> Dict:
     p = _safe_path(path)
     _assert_write_allowed(p)
+    # Runtime gate check for mutative tool
+    gate_result = await _runtime_gate_or_block("write_file", {"path": path}, session_id=None)
+    if gate_result is not None:
+        return gate_result
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(content, encoding=encoding)
     return {"written": str(p), "bytes": len(content.encode(encoding))}
@@ -300,6 +332,10 @@ async def write_file(path: str, content: str, encoding: str = "utf-8") -> Dict:
 async def backup_file(path: str) -> Dict:
     p = _safe_path(path)
     _assert_write_allowed(p)
+    # Runtime gate check for mutative tool
+    gate_result = await _runtime_gate_or_block("backup_file", {"path": path}, session_id=None)
+    if gate_result is not None:
+        return gate_result
     if not p.exists():
         raise FileNotFoundError(f"No existe: {p}")
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -326,11 +362,33 @@ async def semantic_memory_ingest(
     session_id: str = "default",
     kind: str = "note",
 ) -> Dict[str, Any]:
+    # Runtime sandbox check for memory write
+    sandbox_result = evaluate_selfdev_action(
+        actor="agent",
+        capability="memory_write",
+        target_path="memory/semantic/semantic_memory.jsonl",
+        is_god_mode=False,
+        role="operator",
+    )
+    if sandbox_result["decision"] == "deny":
+        sandbox_result["write_performed"] = False
+        return sandbox_result
     from brain_v9.core.semantic_memory import get_semantic_memory
     return get_semantic_memory().ingest_text(text=text, source=source, session_id=session_id, kind=kind)
 
 
 async def semantic_memory_ingest_session(session_id: str = "default", limit: int = 200) -> Dict[str, Any]:
+    # Runtime sandbox check for memory write
+    sandbox_result = evaluate_selfdev_action(
+        actor="agent",
+        capability="memory_write",
+        target_path="memory/semantic/semantic_memory.jsonl",
+        is_god_mode=False,
+        role="operator",
+    )
+    if sandbox_result["decision"] == "deny":
+        sandbox_result["write_performed"] = False
+        return sandbox_result
     from brain_v9.core.semantic_memory import get_semantic_memory
     return get_semantic_memory().ingest_session_memory(session_id=session_id, limit=limit)
 
@@ -664,6 +722,10 @@ async def validate_staged_change(change_id: str) -> Dict:
 
 
 async def promote_staged_change(change_id: str) -> Dict:
+    # Runtime gate check for mutative tool
+    gate_result = await _runtime_gate_or_block("promote_staged_change", {"change_id": change_id}, session_id=None)
+    if gate_result is not None:
+        return gate_result
     try:
         return si_promote_staged_change(change_id)
     except Exception as e:
@@ -671,6 +733,10 @@ async def promote_staged_change(change_id: str) -> Dict:
 
 
 async def rollback_staged_change(change_id: str) -> Dict:
+    # Runtime gate check for mutative tool
+    gate_result = await _runtime_gate_or_block("rollback_staged_change", {"change_id": change_id}, session_id=None)
+    if gate_result is not None:
+        return gate_result
     try:
         return si_rollback_change(change_id)
     except Exception as e:
