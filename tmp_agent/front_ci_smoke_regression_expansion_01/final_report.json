@@ -1,0 +1,82 @@
+{
+  "front_id": "FRONT-CI-SMOKE-REGRESSION-EXPANSION-01",
+  "phase": "Phase 7",
+  "title": "Final Report",
+  "generated_at": "2026-06-27T02:23:00Z",
+  "starting_head": "2560443699cb1cf3cd4949d9092e33e5f3e4caee",
+  "final_local_head_before_commit": "2560443699cb1cf3cd4949d9092e33e5f3e4caee",
+  "memory_baseline": {
+    "records": 1794,
+    "faiss_ids": 1794,
+    "faiss_ntotal": 1794,
+    "blank_text_count": 0,
+    "duplicate_id_count": 0,
+    "memory_mutated": false
+  },
+  "ci_files_changed": [
+    ".github/workflows/nontrading-smoke-regression.yml",
+    "tests/smoke/test_ci_smoke_regression_expansion_01.py",
+    "tests/smoke/test_09d_post_write_reconciliation_repair_01.py"
+  ],
+  "accepted_test_suite_included": [
+    "tests/smoke/test_p0_nontrading_security_reality_check_and_fix_01.py",
+    "tests/unit/test_phase1_security_defaults.py",
+    "tests/unit/test_dev_endpoints_default_off.py",
+    "tests/smoke/test_governance_rbac_dev_god_hardening_01.py",
+    "tests/smoke/test_governance_hardening_a118b7f_audit_closeout_01.py",
+    "tests/smoke/test_memory_historical_debt_cleanup_01.py",
+    "tests/smoke/test_09e_retrieval_quality_memory_utility_evaluation_01.py",
+    "tests/smoke/test_agent_v2_faiss_rebuild_hydration_01.py",
+    "tests/smoke/test_agent_v2_semantic_retrieval_hygiene_01.py",
+    "tests/smoke/test_visual_trace_8092_canonical_path_fix_01.py",
+    "tests/smoke/test_post_09e_nontrading_roadmap_rebase_01.py",
+    "tests/smoke/test_09d_post_write_reconciliation_repair_01.py",
+    "scripts/git_hygiene/check_no_sensitive_paths_staged.py"
+  ],
+  "excluded_trading_patterns": [
+    "*/trading/*",
+    "*/broker/*",
+    "*/ibkr/*",
+    "*quantconnect*",
+    "*backtester*",
+    "*portfolio_manager*",
+    "*live_trading*",
+    "tmp_agent/strategies/*",
+    "financial_autonomy/*"
+  ],
+  "local_dry_run": {
+    "total_suites": 12,
+    "total_tests_passed": 129,
+    "total_tests_failed": 0,
+    "status": "PASS"
+  },
+  "workflow_design": {
+    "file": ".github/workflows/nontrading-smoke-regression.yml",
+    "runner": "windows-latest",
+    "python_version": "3.11",
+    "jobs": [
+      "security (4 suites)",
+      "memory-retrieval (4 suites)",
+      "dashboard-trace (1 suite)",
+      "roadmap-policy (2 suites)",
+      "hygiene-guard (1 suite)"
+    ],
+    "timeout_minutes": [10, 15, 10, 10, 5],
+    "total_estimated_duration": "~50 minutes max (parallel)"
+  },
+  "ci_config_test": {
+    "total": 16,
+    "passed": 16,
+    "failed": 0,
+    "status": "PASS"
+  },
+  "guard_result": "PASS",
+  "memory_mutated": false,
+  "trading_files_touched": false,
+  "final_status": "CI_SMOKE_REGRESSION_EXPANSION_COMPLETE",
+  "accept_ci_expansion": true,
+  "safe_to_start_e2e_self_learning": true,
+  "safe_to_mass_ingest_now": false,
+  "trading_deferred_to_final": true,
+  "recommended_next_front": "FRONT-E2E-SELF-LEARNING-LOOP-NONTRADING-01"
+}

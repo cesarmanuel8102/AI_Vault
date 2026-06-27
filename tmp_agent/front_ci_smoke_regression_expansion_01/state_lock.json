@@ -1,0 +1,23 @@
+{
+  "front_id": "FRONT-CI-SMOKE-REGRESSION-EXPANSION-01",
+  "phase": "Phase 0",
+  "title": "State Lock Verification",
+  "generated_at": "2026-06-27T02:15:00Z",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_commit": "2560443699cb1cf3cd4949d9092e33e5f3e4caee",
+  "short_head": "2560443",
+  "remote_head": "2560443699cb1cf3cd4949d9092e33e5f3e4caee",
+  "local_remote_equal": true,
+  "staged_empty": true,
+  "tracked_dirty_empty": true,
+  "memory_files_staged": false,
+  "guard_passed": true,
+  "memory_baseline": {
+    "records": 1794,
+    "faiss_ids": 1794,
+    "faiss_ntotal": 1794,
+    "blank_text_count": 0,
+    "duplicate_id_count": 0
+  },
+  "state_lock_status": "PASS"
+}

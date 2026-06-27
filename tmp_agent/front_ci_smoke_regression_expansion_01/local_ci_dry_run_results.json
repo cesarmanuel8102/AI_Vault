@@ -1,0 +1,31 @@
+{
+  "front_id": "FRONT-CI-SMOKE-REGRESSION-EXPANSION-01",
+  "phase": "Phase 3",
+  "title": "Local CI Dry Run Results",
+  "generated_at": "2026-06-27T02:22:00Z",
+  "results": [
+    {"suite": "P0 Security Reality Check", "file": "tests/smoke/test_p0_nontrading_security_reality_check_and_fix_01.py", "passed": 19, "failed": 0, "skipped": 0, "status": "PASS", "duration_sec": 11.2},
+    {"suite": "Unit Security Defaults", "file": "tests/unit/test_phase1_security_defaults.py + test_dev_endpoints_default_off.py", "passed": 8, "failed": 0, "skipped": 0, "status": "PASS", "duration_sec": 0.5},
+    {"suite": "Governance RBAC Hardening", "file": "tests/smoke/test_governance_rbac_dev_god_hardening_01.py", "passed": 14, "failed": 0, "skipped": 0, "deselected": 1, "status": "PASS", "duration_sec": 11.4},
+    {"suite": "Governance Audit Closeout", "file": "tests/smoke/test_governance_hardening_a118b7f_audit_closeout_01.py", "passed": 8, "failed": 0, "skipped": 0, "status": "PASS", "duration_sec": 10.9},
+    {"suite": "Memory Historical Debt Cleanup", "file": "tests/smoke/test_memory_historical_debt_cleanup_01.py", "passed": 15, "failed": 0, "status": "PASS", "duration_sec": 5.0},
+    {"suite": "09E Retrieval Quality", "file": "tests/smoke/test_09e_retrieval_quality_memory_utility_evaluation_01.py", "passed": 13, "failed": 0, "status": "PASS", "duration_sec": 20.0},
+    {"suite": "FAISS Rebuild Hydration", "file": "tests/smoke/test_agent_v2_faiss_rebuild_hydration_01.py", "passed": 4, "failed": 0, "status": "PASS", "duration_sec": 8.0},
+    {"suite": "Semantic Retrieval Hygiene", "file": "tests/smoke/test_agent_v2_semantic_retrieval_hygiene_01.py", "passed": 4, "failed": 0, "status": "PASS", "duration_sec": 5.0},
+    {"suite": "Visual Trace 8092", "file": "tests/smoke/test_visual_trace_8092_canonical_path_fix_01.py", "passed": 8, "failed": 0, "status": "PASS", "duration_sec": 5.0},
+    {"suite": "Roadmap Rebase", "file": "tests/smoke/test_post_09e_nontrading_roadmap_rebase_01.py", "passed": 10, "failed": 0, "status": "PASS", "duration_sec": 3.0},
+    {"suite": "09D Reconciliation Repair", "file": "tests/smoke/test_09d_post_write_reconciliation_repair_01.py", "passed": 20, "failed": 0, "status": "PASS", "duration_sec": 5.0, "note": "Baseline updated from 1803 to 1794 after cleanup"},
+    {"suite": "Git Hygiene Guard", "file": "scripts/git_hygiene/check_no_sensitive_paths_staged.py", "passed": 1, "failed": 0, "status": "PASS", "duration_sec": 0.5}
+  ],
+  "total_suites": 12,
+  "total_tests_passed": 129,
+  "total_tests_failed": 0,
+  "all_tests_passed": true,
+  "ci_blockers": [],
+  "notes": [
+    "09D reconciliation repair test had stale 1803 baseline (pre-cleanup); updated to 1794.",
+    "All accepted non-trading smoke tests pass locally.",
+    "No CI blockers identified.",
+    "Guard script passes."
+  ]
+}

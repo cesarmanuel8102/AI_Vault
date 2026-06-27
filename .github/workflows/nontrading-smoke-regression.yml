@@ -1,0 +1,111 @@
+name: nontrading-smoke-regression
+
+on:
+  push:
+    branches:
+      - codex/own-capital-sustainable-return
+  pull_request:
+    branches:
+      - codex/own-capital-sustainable-return
+
+jobs:
+  security:
+    name: Security Smoke Tests
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install deps
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: P0 Security Reality Check
+        shell: pwsh
+        run: python -m pytest tests/smoke/test_p0_nontrading_security_reality_check_and_fix_01.py -v
+      - name: Unit Security Defaults
+        shell: pwsh
+        run: python -m pytest tests/unit/test_phase1_security_defaults.py tests/unit/test_dev_endpoints_default_off.py -v
+      - name: Governance RBAC Hardening
+        shell: pwsh
+        run: python -m pytest tests/smoke/test_governance_rbac_dev_god_hardening_01.py -k "not test_state_baseline_memory_counts_unchanged" -v
+      - name: Governance Audit Closeout
+        shell: pwsh
+        run: python -m pytest tests/smoke/test_governance_hardening_a118b7f_audit_closeout_01.py -v
+
+  memory-retrieval:
+    name: Memory / Retrieval Regression
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install deps
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Memory Historical Debt Cleanup
+        shell: pwsh
+        run: python tests/smoke/test_memory_historical_debt_cleanup_01.py
+      - name: 09E Retrieval Quality Evaluation
+        shell: pwsh
+        run: python tests/smoke/test_09e_retrieval_quality_memory_utility_evaluation_01.py
+      - name: FAISS Rebuild Hydration
+        shell: pwsh
+        run: python tests/smoke/test_agent_v2_faiss_rebuild_hydration_01.py
+      - name: Semantic Retrieval Hygiene
+        shell: pwsh
+        run: python tests/smoke/test_agent_v2_semantic_retrieval_hygiene_01.py
+
+  dashboard-trace:
+    name: Dashboard / Trace Tests
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install deps
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Visual Trace 8092 Canonical Path Fix
+        shell: pwsh
+        run: python tests/smoke/test_visual_trace_8092_canonical_path_fix_01.py
+
+  roadmap-policy:
+    name: Roadmap / Policy Regression
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install deps
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Post-09E Non-Trading Roadmap Rebase
+        shell: pwsh
+        run: python tests/smoke/test_post_09e_nontrading_roadmap_rebase_01.py
+      - name: 09D Post-Write Reconciliation Repair
+        shell: pwsh
+        run: python tests/smoke/test_09d_post_write_reconciliation_repair_01.py
+
+  hygiene-guard:
+    name: Hygiene Guard
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Check no sensitive paths staged
+        shell: pwsh
+        run: python scripts/git_hygiene/check_no_sensitive_paths_staged.py

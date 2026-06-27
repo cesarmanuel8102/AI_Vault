@@ -1,0 +1,78 @@
+{
+  "front_id": "FRONT-CI-SMOKE-REGRESSION-EXPANSION-01",
+  "phase": "Phase 1",
+  "title": "CI Inventory",
+  "generated_at": "2026-06-27T02:15:00Z",
+  "existing_ci": {
+    "workflows": [
+      {
+        "file": ".github/workflows/phase1-ci.yml",
+        "name": "phase1-ci",
+        "runner": "windows-latest",
+        "python_version": "3.11",
+        "timeout_minutes": 15,
+        "triggers": ["push", "pull_request"],
+        "branches": ["codex/own-capital-sustainable-return"],
+        "jobs": [
+          "phase1-baseline"
+        ],
+        "includes": {
+          "py_compile": ["main.py", "config.py", "execution_gate.py", "api_security.py", "session.py"],
+          "unit_tests": [
+            "tests/unit/test_execution_gate_god_p3.py",
+            "tests/unit/test_dev_endpoints_default_off.py",
+            "tests/unit/test_selfdev_protected_paths.py",
+            "tests/unit/test_phase1_import_baseline.py",
+            "tests/unit/test_phase1_security_defaults.py"
+          ],
+          "import_smoke": true
+        },
+        "excludes": {
+          "trading_tests": true,
+          "broker_tests": true,
+          "qc_tests": true,
+          "live_trading_tests": true
+        }
+      }
+    ]
+  },
+  "dependencies": {
+    "requirements_txt": "requirements.txt",
+    "pyproject_toml": false,
+    "pytest_ini": false,
+    "setup_cfg": false,
+    "packages": [
+      "fastapi", "uvicorn", "pydantic", "httpx", "requests",
+      "aiohttp", "pandas", "numpy", "psutil", "faiss-cpu", "pytest"
+    ]
+  },
+  "test_infrastructure": {
+    "conftest_py": true,
+    "markers": ["slow", "integration", "unit"],
+    "fixtures": [
+      "vault_root", "test_data_dir", "mock_openai_response",
+      "mock_episode_data", "mock_financial_data", "mock_db_connection",
+      "api_client"
+    ],
+    "clean_environment_hook": true
+  },
+  "ci_gaps": {
+    "missing_accepted_smoke_tests": true,
+    "missing_security_smoke_tests": true,
+    "missing_memory_retrieval_tests": true,
+    "missing_guard_script_in_ci": false,
+    "missing_artifact_upload": true,
+    "missing_job_separation": true,
+    "missing_explicit_trading_exclusion": true,
+    "single_job_monolith": true
+  },
+  "notes": [
+    "Current phase1-ci.yml only runs 5 unit tests and import smoke.",
+    "Accepted non-trading smoke tests (19+ tests across 8+ suites) are NOT in CI.",
+    "FAISS is available (faiss-cpu in requirements).",
+    "Windows runner used, matching local dev environment.",
+    "No pyproject.toml or pytest.ini present.",
+    "Guard script exists but is not called in current workflow.",
+    "Need to expand CI to include accepted non-trading smoke/regression suite."
+  ]
+}

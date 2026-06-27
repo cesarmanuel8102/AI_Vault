@@ -1,0 +1,137 @@
+{
+  "front_id": "FRONT-CI-SMOKE-REGRESSION-EXPANSION-01",
+  "phase": "Phase 2",
+  "title": "Accepted CI Test Manifest",
+  "generated_at": "2026-06-27T02:15:00Z",
+  "description": "Non-trading smoke and regression test suite accepted for CI expansion.",
+  "suites": [
+    {
+      "category": "security",
+      "name": "P0 Non-Trading Security Reality Check",
+      "file": "tests/smoke/test_p0_nontrading_security_reality_check_and_fix_01.py",
+      "count": 19,
+      "method": "pytest",
+      "notes": "Covers all 8 patched mutative endpoints plus existing protections"
+    },
+    {
+      "category": "security",
+      "name": "Phase 1 Security Defaults",
+      "file": "tests/unit/test_phase1_security_defaults.py",
+      "count": 2,
+      "method": "pytest",
+      "notes": "Config default-off and .dev_auth git exclusion"
+    },
+    {
+      "category": "security",
+      "name": "Dev Endpoints Default Off",
+      "file": "tests/unit/test_dev_endpoints_default_off.py",
+      "count": 6,
+      "method": "pytest",
+      "notes": "AST verification of /dev and /godmode gate code"
+    },
+    {
+      "category": "security",
+      "name": "Governance RBAC Dev God Hardening",
+      "file": "tests/smoke/test_governance_rbac_dev_god_hardening_01.py",
+      "count": 14,
+      "method": "pytest -k \"not test_state_baseline_memory_counts_unchanged\"",
+      "notes": "Excludes stale 1795 baseline assertion"
+    },
+    {
+      "category": "security",
+      "name": "Governance Hardening Audit Closeout",
+      "file": "tests/smoke/test_governance_hardening_a118b7f_audit_closeout_01.py",
+      "count": 8,
+      "method": "pytest",
+      "notes": "Extra=forbid regression and godmode auth"
+    },
+    {
+      "category": "memory_retrieval",
+      "name": "Memory Historical Debt Cleanup",
+      "file": "tests/smoke/test_memory_historical_debt_cleanup_01.py",
+      "count": 15,
+      "method": "python",
+      "notes": "Read-only verification of 1794/1794/1794 baseline"
+    },
+    {
+      "category": "memory_retrieval",
+      "name": "09E Retrieval Quality Evaluation",
+      "file": "tests/smoke/test_09e_retrieval_quality_memory_utility_evaluation_01.py",
+      "count": 13,
+      "method": "python",
+      "notes": "24-query evaluation with no blank hits, no secrets"
+    },
+    {
+      "category": "memory_retrieval",
+      "name": "FAISS Rebuild Hydration",
+      "file": "tests/smoke/test_agent_v2_faiss_rebuild_hydration_01.py",
+      "count": null,
+      "method": "python",
+      "notes": "FAISS index integrity verification"
+    },
+    {
+      "category": "memory_retrieval",
+      "name": "Semantic Retrieval Hygiene",
+      "file": "tests/smoke/test_agent_v2_semantic_retrieval_hygiene_01.py",
+      "count": null,
+      "method": "python",
+      "notes": "Read-only retrieval boundary checks"
+    },
+    {
+      "category": "dashboard_trace",
+      "name": "Visual Trace 8092 Canonical Path Fix",
+      "file": "tests/smoke/test_visual_trace_8092_canonical_path_fix_01.py",
+      "count": null,
+      "method": "python",
+      "notes": "Dashboard trace endpoint verification"
+    },
+    {
+      "category": "roadmap_policy",
+      "name": "Post-09E Non-Trading Roadmap Rebase",
+      "file": "tests/smoke/test_post_09e_nontrading_roadmap_rebase_01.py",
+      "count": 10,
+      "method": "python",
+      "notes": "Policy verification: 10 non-trading fronts sequenced, 8 trading deferred"
+    },
+    {
+      "category": "roadmap_policy",
+      "name": "09D Post-Write Reconciliation Repair",
+      "file": "tests/smoke/test_09d_post_write_reconciliation_repair_01.py",
+      "count": null,
+      "method": "python",
+      "notes": "09D delta clean verification"
+    },
+    {
+      "category": "hygiene",
+      "name": "Git Hygiene Guard",
+      "file": "scripts/git_hygiene/check_no_sensitive_paths_staged.py",
+      "count": 1,
+      "method": "python",
+      "notes": "Blocks sensitive/runtime content from staging"
+    }
+  ],
+  "excluded_patterns": [
+    "*/trading/*",
+    "*/broker/*",
+    "*/ibkr/*",
+    "*quantconnect*",
+    "*backtester*",
+    "*portfolio_manager*",
+    "*live_trading*",
+    "tmp_agent/strategies/*",
+    "financial_autonomy/*",
+    "tests/smoke/adaptive_*",
+    "tests/smoke/live_*",
+    "tests/smoke/test_agent_v2_batch_candidate*",
+    "tests/smoke/test_agent_v2_learning_external*",
+    "tests/smoke/test_intent_adapter_*",
+    "tests/smoke/test_learning_external_*",
+    "tests/smoke/validate_redesign*"
+  ],
+  "excluded_reasons": {
+    "trading": "Deferred to final integration phase per non-trading policy",
+    "broker": "No broker/QC/IBKR tests in non-trading phase",
+    "adaptive_live": "Live adaptive scratch tests not deterministic enough for CI",
+    "redesign": "Redesign validation tests are exploratory, not accepted baseline"
+  }
+}

@@ -80,7 +80,9 @@ def test_pre_counts_loadable():
 def test_current_counts_loadable():
     cur_records = load_jsonl(CUR_JSONL)
     cur_stats = compute_stats(cur_records)
-    assert cur_stats["count"] == 1803, f"Expected 1803, got {cur_stats['count']}"
+    # FRONT-MEMORY-HISTORICAL-DEBT-CLEANUP-01 removed 9 blank records.
+    # Accepted baseline: 1794 (was 1795 pre-cleanup + 8 promoted - 9 removed = 1794).
+    assert cur_stats["count"] == 1794, f"Expected 1794, got {cur_stats['count']}"
     print("PASS: current_counts_loadable")
 
 
@@ -90,17 +92,25 @@ def test_promoted_id_list_has_eight():
     print("PASS: promoted_id_list_has_eight")
 
 
-def test_current_records_equals_pre_plus_eight():
+def test_current_records_equals_pre_plus_eight_minus_cleanup():
+    # FRONT-MEMORY-HISTORICAL-DEBT-CLEANUP-01 removed 9 blank records after 09D.
+    # Current: 1794 = pre (1795) + 8 promoted - 9 removed
     pre_records = load_jsonl(PRE_JSONL)
     cur_records = load_jsonl(CUR_JSONL)
-    assert len(cur_records) == len(pre_records) + 8
-    print("PASS: current_records_equals_pre_plus_eight")
+    assert len(cur_records) == len(pre_records) + 8 - 9, (
+        f"Expected {len(pre_records) + 8 - 9}, got {len(cur_records)}"
+    )
+    print("PASS: current_records_equals_pre_plus_eight_minus_cleanup")
 
 
 def test_current_faiss_ids_equals_pre_plus_eight():
+    # Pre-snapshot FAISS already excluded 9 blank records (index=1786 vs jsonl=1795).
+    # Cleanup rebuilt FAISS to match cleaned JSONL, so FAISS delta is simply +8 from 09D.
     pre_faiss_ids = json.load(open(PRE_FAISS_IDS))
     cur_faiss_ids = json.load(open(CUR_FAISS_IDS))
-    assert len(cur_faiss_ids) == len(pre_faiss_ids) + 8
+    assert len(cur_faiss_ids) == len(pre_faiss_ids) + 8, (
+        f"Expected {len(pre_faiss_ids) + 8}, got {len(cur_faiss_ids)}"
+    )
     print("PASS: current_faiss_ids_equals_pre_plus_eight")
 
 
@@ -108,7 +118,9 @@ def test_current_faiss_ntotal_equals_pre_plus_eight():
     import faiss
     pre_idx = faiss.read_index(PRE_FAISS_INDEX)
     cur_idx = faiss.read_index(CUR_FAISS_INDEX)
-    assert cur_idx.ntotal == pre_idx.ntotal + 8
+    assert cur_idx.ntotal == pre_idx.ntotal + 8, (
+        f"Expected {pre_idx.ntotal + 8}, got {cur_idx.ntotal}"
+    )
     print("PASS: current_faiss_ntotal_equals_pre_plus_eight")
 
 
@@ -185,7 +197,8 @@ def test_retrieval_for_all_promoted_ids():
 def test_historical_blank_text_count_did_not_increase():
     pre_stats = compute_stats(load_jsonl(PRE_JSONL))
     cur_stats = compute_stats(load_jsonl(CUR_JSONL))
-    assert cur_stats["blank"] == pre_stats["blank"], (
+    # FRONT-MEMORY-HISTORICAL-DEBT-CLEANUP-01 removed blanks, so count can decrease.
+    assert cur_stats["blank"] <= pre_stats["blank"], (
         f"Blank text increased: pre={pre_stats['blank']} cur={cur_stats['blank']}"
     )
     print("PASS: historical_blank_text_count_did_not_increase")
@@ -194,7 +207,8 @@ def test_historical_blank_text_count_did_not_increase():
 def test_historical_duplicate_id_count_did_not_increase():
     pre_stats = compute_stats(load_jsonl(PRE_JSONL))
     cur_stats = compute_stats(load_jsonl(CUR_JSONL))
-    assert cur_stats["dup_count"] == pre_stats["dup_count"], (
+    # FRONT-MEMORY-HISTORICAL-DEBT-CLEANUP-01 removed duplicates, so count can decrease.
+    assert cur_stats["dup_count"] <= pre_stats["dup_count"], (
         f"Duplicate count increased: pre={pre_stats['dup_count']} cur={cur_stats['dup_count']}"
     )
     print("PASS: historical_duplicate_id_count_did_not_increase")
@@ -234,7 +248,7 @@ if __name__ == "__main__":
     test_pre_counts_loadable()
     test_current_counts_loadable()
     test_promoted_id_list_has_eight()
-    test_current_records_equals_pre_plus_eight()
+    test_current_records_equals_pre_plus_eight_minus_cleanup()
     test_current_faiss_ids_equals_pre_plus_eight()
     test_current_faiss_ntotal_equals_pre_plus_eight()
     test_added_records_exactly_match_promoted_ids()
