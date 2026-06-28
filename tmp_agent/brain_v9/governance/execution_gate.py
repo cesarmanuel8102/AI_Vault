@@ -725,6 +725,9 @@ class ExecutionGate:
             "pending_id": pending_id,
         }
 
+    def _approval_secret_from_env(self) -> Optional[str]:
+        return os.environ.get("BRAIN_SIGNED_APPROVAL_SECRET")
+
     def _pending_candidate_paths(self, item: Dict) -> List[str]:
         args = item.get("args") if isinstance(item, dict) else {}
         tool = str(item.get("tool") or "") if isinstance(item, dict) else ""
@@ -739,7 +742,7 @@ class ExecutionGate:
         risk = str(item.get("risk") or "").upper()
         return risk == "P3" or self._pending_has_protected_path(item)
 
-    def _signed_approval_target(self, item: Dict) -> str:
+    def _approval_target_for_pending(self, item: Dict) -> str:
         paths = self._pending_candidate_paths(item)
         if paths:
             return paths[0]
@@ -751,7 +754,7 @@ class ExecutionGate:
                     return str(value)
         return str(item.get("tool") or item.get("id") or "")
 
-    def _signed_approval_scope(self, item: Dict) -> str:
+    def _approval_scope_for_pending(self, item: Dict) -> str:
         explicit = item.get("approval_scope") or item.get("scope")
         if explicit:
             return str(explicit)
@@ -770,15 +773,15 @@ class ExecutionGate:
         for item in self._pending:
             if item["id"] == pending_id and item["status"] in ("pending_approval", "awaiting_confirmation"):
                 if self._pending_requires_signed_approval(item):
-                    secret = approval_secret or os.environ.get("BRAIN_SIGNED_APPROVAL_SECRET")
+                    secret = approval_secret or self._approval_secret_from_env()
                     if not approval_token or not secret:
                         self._audit_log(item["tool"], RiskLevel.P3, "signed_approval_denied", pending_id)
                         return None
                     verification = verify_approval_token(
                         token=approval_token,
-                        expected_scope=self._signed_approval_scope(item),
+                        expected_scope=self._approval_scope_for_pending(item),
                         expected_action=str(item.get("tool") or ""),
-                        expected_target=self._signed_approval_target(item),
+                        expected_target=self._approval_target_for_pending(item),
                         secret=secret,
                     )
                     if not verification.get("valid"):
@@ -795,7 +798,12 @@ class ExecutionGate:
                 return item
         return None
 
-    def approve_latest(self, session_id: Optional[str] = None) -> Optional[Dict]:
+    def approve_latest(
+        self,
+        session_id: Optional[str] = None,
+        approval_token: Optional[str] = None,
+        approval_secret: Optional[str] = None,
+    ) -> Optional[Dict]:
         """Approve the most recent pending action."""
         self._expire_stale_pending()
         for item in reversed(self._pending):
@@ -803,7 +811,7 @@ class ExecutionGate:
                 item_session = item.get("session_id")
                 if session_id and item_session != session_id:
                     continue
-                return self.approve(item["id"])
+                return self.approve(item["id"], approval_token=approval_token, approval_secret=approval_secret)
         return None
 
     def reject(self, pending_id: str) -> bool:
