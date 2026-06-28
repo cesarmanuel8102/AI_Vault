@@ -1,0 +1,39 @@
+{
+  "front": "FRONT 06B",
+  "status": "IMPLEMENTED_VALIDATED_LOCAL",
+  "branch": "codex/own-capital-sustainable-return",
+  "baseline_head": "e464edb",
+  "implementation": {
+    "file": "tmp_agent/brain_v9/governance/execution_gate.py",
+    "approve_signature": "approve(self, pending_id: str, approval_token: Optional[str] = None, approval_secret: Optional[str] = None)",
+    "signed_approval_required_for": ["P3", "protected-path pending approvals"],
+    "secret_resolution_order": ["approval_secret parameter", "BRAIN_SIGNED_APPROVAL_SECRET env var"],
+    "legacy_non_p3_non_protected_compatible": true,
+    "token_logged_or_returned": false,
+    "secret_logged_or_returned": false
+  },
+  "tests": {
+    "py_compile_execution_gate": "PASS",
+    "py_compile_signed_approvals": "PASS",
+    "py_compile_smoke_06b": "PASS",
+    "smoke_06b": "15 passed",
+    "crypto_approvals_05": "17 passed",
+    "test_execution_gate_god_p3": "PASS",
+    "test_dev_endpoints_default_off": "PASS",
+    "test_selfdev_protected_paths": "PASS",
+    "check_no_sensitive_paths_staged": "PASS"
+  },
+  "scope": {
+    "memory_touched": false,
+    "faiss_touched": false,
+    "trading_touched": false,
+    "env_touched": false,
+    "broker_ibkr_quantconnect_touched": false,
+    "git_add_a_used": false
+  },
+  "commit": {
+    "message": "security(agent): require signed gate approvals",
+    "created": false,
+    "pushed": false
+  }
+}

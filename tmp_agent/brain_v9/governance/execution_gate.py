@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 from contextvars import ContextVar
 from datetime import datetime
@@ -41,6 +42,7 @@ from brain_v9.config import BASE_PATH
 # Delegate protected path checks to centralized module for extended coverage
 # (.env, memory/semantic/, trading/, strategies/, B8/, session.py, etc.)
 from brain_v9.governance.protected_paths import is_protected_path
+from brain_v9.governance.signed_approvals import verify_approval_token
 
 # FRONT-BRAIN-AUTONOMY-SELFDEV-SANDBOX-02
 # Runtime sandbox for self-dev autonomy constraints
@@ -723,11 +725,69 @@ class ExecutionGate:
             "pending_id": pending_id,
         }
 
-    def approve(self, pending_id: str) -> Optional[Dict]:
-        """Approve a pending action. Returns the action dict or None."""
+    def _pending_candidate_paths(self, item: Dict) -> List[str]:
+        args = item.get("args") if isinstance(item, dict) else {}
+        tool = str(item.get("tool") or "") if isinstance(item, dict) else ""
+        if not isinstance(args, dict):
+            return []
+        return _extract_candidate_paths(tool, args)
+
+    def _pending_has_protected_path(self, item: Dict) -> bool:
+        return any(_is_protected_selfdev_path(path) for path in self._pending_candidate_paths(item))
+
+    def _pending_requires_signed_approval(self, item: Dict) -> bool:
+        risk = str(item.get("risk") or "").upper()
+        return risk == "P3" or self._pending_has_protected_path(item)
+
+    def _signed_approval_target(self, item: Dict) -> str:
+        paths = self._pending_candidate_paths(item)
+        if paths:
+            return paths[0]
+        args = item.get("args") if isinstance(item, dict) else {}
+        if isinstance(args, dict):
+            for key in ("target", "service", "name", "path", "file"):
+                value = args.get(key)
+                if value:
+                    return str(value)
+        return str(item.get("tool") or item.get("id") or "")
+
+    def _signed_approval_scope(self, item: Dict) -> str:
+        explicit = item.get("approval_scope") or item.get("scope")
+        if explicit:
+            return str(explicit)
+        if self._pending_has_protected_path(item):
+            return "governance"
+        return "governance"
+
+    def approve(
+        self,
+        pending_id: str,
+        approval_token: Optional[str] = None,
+        approval_secret: Optional[str] = None,
+    ) -> Optional[Dict]:
+        """Approve a pending action. Signed approval is required for P3/protected targets."""
         self._expire_stale_pending()
         for item in self._pending:
             if item["id"] == pending_id and item["status"] in ("pending_approval", "awaiting_confirmation"):
+                if self._pending_requires_signed_approval(item):
+                    secret = approval_secret or os.environ.get("BRAIN_SIGNED_APPROVAL_SECRET")
+                    if not approval_token or not secret:
+                        self._audit_log(item["tool"], RiskLevel.P3, "signed_approval_denied", pending_id)
+                        return None
+                    verification = verify_approval_token(
+                        token=approval_token,
+                        expected_scope=self._signed_approval_scope(item),
+                        expected_action=str(item.get("tool") or ""),
+                        expected_target=self._signed_approval_target(item),
+                        secret=secret,
+                    )
+                    if not verification.get("valid"):
+                        self._audit_log(item["tool"], RiskLevel.P3, "signed_approval_denied", pending_id)
+                        return None
+                    item["signed_approval_validated"] = True
+                    item["signed_approval_actor"] = verification.get("actor", "")
+                    item["signed_approval_scope"] = verification.get("scope", "")
+                    item["signed_approval_target"] = verification.get("target", "")
                 item["status"] = "approved"
                 item["approved_at"] = datetime.now().isoformat()
                 self._save_state()
