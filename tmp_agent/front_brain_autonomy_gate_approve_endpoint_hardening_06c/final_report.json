@@ -1,0 +1,50 @@
+{
+  "task": "FRONT-BRAIN-AUTONOMY-GATE-APPROVE-ENDPOINT-HARDENING-06C",
+  "branch": "codex/own-capital-sustainable-return",
+  "baseline_sha": "f7d7d60409474bb13a86635f6ac960fb1a535151",
+  "head_sha": "522ddfc252143aa8e732f5835ab0573186cbd706",
+  "status": "completed",
+  "memory_touched": false,
+  "faiss_touched": false,
+  "trading_touched": false,
+  "env_touched": false,
+  "ibkr_touched": false,
+  "quantconnect_touched": false,
+  "git_add_a_used": false,
+  "changed_files": [
+    "tmp_agent/brain_v9/main.py",
+    "tests/smoke/test_brain_autonomy_gate_approve_endpoint_hardening_06c.py",
+    "tmp_agent/front_brain_autonomy_gate_approve_endpoint_hardening_06c/final_report.json",
+    "tmp_agent/front_brain_autonomy_gate_approve_endpoint_hardening_06c/final_report.md"
+  ],
+  "validations": {
+    "python_py_compile_main": true,
+    "python_py_compile_execution_gate": true,
+    "python_py_compile_signed_approvals": true,
+    "python_py_compile_06c_smoke_test": true,
+    "pytest_06c_smoke_test": true,
+    "pytest_06b_smoke_test": true,
+    "pytest_05_smoke_test": true,
+    "unit_test_execution_gate_god_p3": true,
+    "unit_test_dev_endpoints_default_off": true,
+    "unit_test_selfdev_protected_paths": true,
+    "check_no_sensitive_paths_staged": true
+  },
+  "scope": {
+    "endpoint": "POST /gate/approve/{pending_id}",
+    "hardening": {
+      "accepts_approval_token": true,
+      "calls_execution_gate_approve_with_token": true,
+      "fails_closed_on_none": true,
+      "fails_closed_on_missing_signed_validation": true,
+      "executes_with_bypass_gate_only_after_checks": true,
+      "no_token_or_secret_leak": true,
+      "backward_compatible_non_protected": true
+    }
+  },
+  "remaining_gaps": [
+    "AGENTV2_APPROVED_ weak prefix pending hardening for 06D",
+    "promote/rollback change_id path resolution pending for 06E"
+  ],
+  "notes": "Endpoint implementation already present in main.py; added explicit token/secret cleanup in response, created smoke tests, and ran required local validations."
+}

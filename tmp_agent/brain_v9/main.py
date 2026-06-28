@@ -1927,14 +1927,31 @@ async def delete_session(session_id: str, _operator: StrictOperatorAccess):
 
 # ── Governance Gate API (for UI buttons) ───────────────────────────────────
 
+class GateApproveRequest(BaseModel):
+    approval_token: Optional[str] = None
+
+
 @app.post("/gate/approve/{pending_id}")
-async def gate_approve(pending_id: str, _operator: StrictOperatorAccess):
+async def gate_approve(pending_id: str, req: GateApproveRequest, _operator: StrictOperatorAccess):
     """Approve a pending gated action via API (used by UI button)."""
     from brain_v9.governance.execution_gate import get_gate
     gate = get_gate()
-    item = gate.approve(pending_id)
+    approval_token = req.approval_token if req else None
+    item = gate.approve(pending_id, approval_token=approval_token)
     if not item:
-        return {"success": False, "error": f"No pending action found: {pending_id}"}
+        return JSONResponse(content={"success": False, "error": f"Approval failed or signed approval required: {pending_id}"}, status_code=403)
+
+    # Fail close if signed approval is required but not validated
+    if gate._pending_requires_signed_approval(item) and not item.get("signed_approval_validated"):
+        return JSONResponse(
+            content={"success": False, "error": "Signed approval required but not validated.", "signed_approval_validated": False},
+            status_code=403,
+        )
+
+    # Strip approval metadata from response so tokens/secrets are never leaked
+    item.pop("approval_token", None)
+    item.pop("approval_secret", None)
+
     tool_name = item.get("tool", "?")
     tool_args = item.get("args", {})
     try:
@@ -1942,7 +1959,7 @@ async def gate_approve(pending_id: str, _operator: StrictOperatorAccess):
         executor = build_standard_executor()
         fn = executor._tools.get(tool_name, {}).get("func")
         if fn is None:
-            return {"success": False, "error": f"Tool '{tool_name}' not found"}
+            return JSONResponse(content={"success": False, "error": f"Tool '{tool_name}' not found"}, status_code=404)
         import asyncio as _aio
         # Add _bypass_gate flag so the tool skips its internal gate check
         approved_args = {**tool_args, "_bypass_gate": True}
@@ -1950,9 +1967,9 @@ async def gate_approve(pending_id: str, _operator: StrictOperatorAccess):
             result = await fn(**approved_args)
         else:
             result = fn(**approved_args)
-        return {"success": True, "tool": tool_name, "result": str(result)[:500]}
+        return {"success": True, "tool": tool_name, "result": str(result)[:500], "signed_approval_validated": item.get("signed_approval_validated", False)}
     except Exception as exc:
-        return {"success": False, "tool": tool_name, "error": str(exc)}
+        return JSONResponse(content={"success": False, "tool": tool_name, "error": str(exc)[:500]}, status_code=500)
 
 @app.post("/gate/reject/{pending_id}")
 async def gate_reject(pending_id: str, _operator: StrictOperatorAccess):
