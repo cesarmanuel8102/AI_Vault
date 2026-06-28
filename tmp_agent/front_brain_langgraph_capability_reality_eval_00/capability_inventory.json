@@ -1,0 +1,293 @@
+{
+  "front": "FRONT-BRAIN-LANGGRAPH-CAPABILITY-REALITY-EVAL-00",
+  "baseline": "1fb1383e",
+  "inventory": [
+    {
+      "capability_name": "LangGraph graph/state orchestration",
+      "code_exists": true,
+      "files_found": [
+        "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_runtime.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/state.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/checkpoints.py"
+      ],
+      "runtime_entrypoints": [],
+      "callable_from_chat": false,
+      "callable_from_agent": false,
+      "evidence": "langgraph_runtime.py defines LangGraphAgentRuntimeV2 with StateGraph construction (lines 13-24) and graph.invoke probe (line 32). However runtime.py (line 7) returns NativeAgentRuntimeV2 singleton. api_adapter.py uses get_agent_runtime_v2() which returns NativeAgentRuntimeV2. LangGraphAgentRuntimeV2 is never instantiated in production routes.",
+      "risk_of_facade": "high",
+      "notes": "LangGraph code exists but is a dead/optional backend. The active runtime is NativeAgentRuntimeV2 which has zero LangGraph imports or graph invocations."
+    },
+    {
+      "capability_name": "durable execution/checkpointing",
+      "code_exists": true,
+      "files_found": [
+        "tmp_agent/brain_v9/core/agent_kernel_v2/checkpoints.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/state.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py"
+      ],
+      "runtime_entrypoints": [
+        "POST /v2/agent/run",
+        "POST /v2/agent/{run_id}/plan",
+        "POST /v2/agent/{run_id}/execute",
+        "POST /v2/chat/agent"
+      ],
+      "callable_from_chat": true,
+      "callable_from_agent": true,
+      "evidence": "NativeAgentRuntimeV2 creates per-run directories under tmp_agent/agent_kernel_v2/runs/<run_id>/ with run.json, checkpoint.json, trace.jsonl (native_runtime.py lines 24-44, checkpoints.py lines 7-14). CheckpointStore saves status/step_index/plan. TraceStore appends events. This is file-based durable execution, not LangGraph checkpointer.",
+      "risk_of_facade": "low",
+      "notes": "Durable execution exists at file-system level per run_id. No thread_id/configurable checkpointing like LangGraph. Each run is independent; no resume from arbitrary step."
+    },
+    {
+      "capability_name": "short-term conversation state",
+      "code_exists": true,
+      "files_found": [
+        "tmp_agent/brain_v9/core/session.py",
+        "tmp_agent/brain_v9/core/memory.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/context_assembler.py"
+      ],
+      "runtime_entrypoints": [
+        "POST /chat",
+        "POST /v2/chat/agent"
+      ],
+      "callable_from_chat": true,
+      "callable_from_agent": true,
+      "evidence": "BrainSession.memory (MemoryManager) tracks conversation context (session.py line 306). get_context() returns recent turns. V2 uses context_assembler.assemble_recent_context (native_runtime.py line 77, api_adapter.py line 144). Token-aware truncation in session.py _truncate_to_budget.",
+      "risk_of_facade": "low",
+      "notes": "Short-term state works in both legacy /chat and V2 /v2/chat/agent paths."
+    },
+    {
+      "capability_name": "long-term semantic memory",
+      "code_exists": true,
+      "files_found": [
+        "tmp_agent/brain_v9/core/semantic_memory.py",
+        "tmp_agent/brain_v9/core/semantic_memory_faiss.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/memory_gateway.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py"
+      ],
+      "runtime_entrypoints": [
+        "POST /v2/chat/agent (route: operational_agent, brain_evidence)",
+        "semantic_retrieve tool via ToolGatewayV2"
+      ],
+      "callable_from_chat": true,
+      "callable_from_agent": true,
+      "evidence": "SemanticMemory (semantic_memory.py) and SemanticMemoryFAISS (semantic_memory_faiss.py) provide FAISS-backed retrieval. MemoryGatewayV2.semantic_retrieve() calls get_semantic_memory_faiss().search() (memory_gateway.py line 41). ToolGatewayV2 exposes semantic_retrieve as read-only tool (tool_gateway.py lines 24, 69-71). V2 runtime uses it in operational_agent and brain_evidence routes (native_runtime.py lines 403-434). Legacy /chat has curated_lookup_readonly fastpath but no direct FAISS injection by default.",
+      "risk_of_facade": "medium",
+      "notes": "Long-term memory exists and is readable via V2 routes. Legacy /chat does NOT automatically inject FAISS context (opt-in only via curated lookup). Memory writes (promotion) are gated behind separate pipeline, not chat."
+    },
+    {
+      "capability_name": "FAISS retrieval",
+      "code_exists": true,
+      "files_found": [
+        "tmp_agent/brain_v9/core/semantic_memory_faiss.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/memory_gateway.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py"
+      ],
+      "runtime_entrypoints": [
+        "semantic_retrieve tool via ToolGatewayV2",
+        "MemoryGatewayV2.semantic_retrieve()"
+      ],
+      "callable_from_chat": true,
+      "callable_from_agent": true,
+      "evidence": "semantic_memory_faiss.py implements FAISS index + ID mapping with search() returning top-k. MemoryGatewayV2 wraps it. ToolGatewayV2 exposes semantic_retrieve tool. Called during V2 operational_agent/brain_evidence routes (native_runtime.py lines 403-434). Legacy /chat does NOT call FAISS by default (only curated lookup fastpath).",
+      "risk_of_facade": "medium",
+      "notes": "FAISS retrieval is real and callable via V2 tool gateway. Not activated for legacy chat unless user explicitly triggers curated lookup. No automatic semantic retrieval in chat path."
+    },
+    {
+      "capability_name": "evidence/source routing",
+      "code_exists": true,
+      "files_found": [
+        "tmp_agent/brain_v9/core/agent_kernel_v2/intent_adapter.py"
+      ],
+      "runtime_entrypoints": [
+        "POST /v2/chat/agent (route: brain_evidence, mixed_brain_reasoning)"
+      ],
+      "callable_from_chat": false,
+      "callable_from_agent": true,
+      "evidence": "AgentV2IntentAdapter.get_evidence_sources() (intent_adapter.py lines 478-489) returns typed evidence sources for routes. Used in native_runtime.py lines 168-214 (brain_evidence) and 217-263 (mixed_brain_reasoning). No separate EvidenceSourceRouter class; routing is inside intent adapter.",
+      "risk_of_facade": "low",
+      "notes": "Evidence routing exists in V2 intent adapter and is activated for brain_evidence/mixed_brain_reasoning routes. Not used in legacy /chat."
+    },
+    {
+      "capability_name": "planner/evaluator",
+      "code_exists": true,
+      "files_found": [
+        "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+        "tmp_agent/brain_v9/agent/loop.py",
+        "tmp_agent/brain_v9/agent/reasoning_corrector.py"
+      ],
+      "runtime_entrypoints": [
+        "POST /v2/chat/agent (route: operational_agent)",
+        "POST /agent (legacy AgentLoop)"
+      ],
+      "callable_from_chat": true,
+      "callable_from_agent": true,
+      "evidence": "planner.py (deterministic keyword/classification-based) builds plans with step_id/kind/tool/input (native_runtime.py line 267). finalizer.py does LLM synthesis with fallback chain (KIMI -> deepseek -> gpt-oss -> kimi-k2.5). AgentLoop has ReasoningResult/VerificationResult dataclasses and _emit_event for metacognition (loop.py lines 66-90). No separate evaluator class; verification is inline in AgentLoop.",
+      "risk_of_facade": "medium",
+      "notes": "Planner is deterministic (not LLM-based). Finalizer is single LLM call with fallback. Legacy AgentLoop has verification step but no separate evaluator component. V2 does not call planner for direct_assistant/brain_evidence routes."
+    },
+    {
+      "capability_name": "tool execution",
+      "code_exists": true,
+      "files_found": [
+        "tmp_agent/brain_v9/agent/tools.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py"
+      ],
+      "runtime_entrypoints": [
+        "POST /chat (Tool01, GAK, AgentLoop)",
+        "POST /agent (AgentLoop)",
+        "POST /v2/chat/agent (ToolGatewayV2)",
+        "POST /gate/approve (direct tool invoke with _bypass_gate)"
+      ],
+      "callable_from_chat": true,
+      "callable_from_agent": true,
+      "evidence": "build_standard_executor() returns ToolExecutor with 100+ tools (tools.py). ToolGatewayV2 validates against capability list, enforces governance.py allowlist, executes with _bypass_gate for approved items (tool_gateway.py lines 69-71). Legacy path uses ToolExecutor directly in AgentLoop and _tool01_router. Governance gate integration via ExecutionGate.check in tool wrappers (tools.py lines 117-119, 170-171, 2419-2420).",
+      "risk_of_facade": "low",
+      "notes": "Tool execution is real and wired in both legacy and V2 paths. Governance integration active."
+    },
+    {
+      "capability_name": "governance gate",
+      "code_exists": true,
+      "files_found": [
+        "tmp_agent/brain_v9/governance/execution_gate.py",
+        "tmp_agent/brain_v9/governance/signed_approvals.py",
+        "tmp_agent/brain_v9/governance/capability_policy.py"
+      ],
+      "runtime_entrypoints": [
+        "POST /chat (GAK, Tool01, AgentLoop tool wrappers)",
+        "POST /agent (AgentLoop tool wrappers)",
+        "POST /v2/chat/agent (ToolGatewayV2 -> governance.py)",
+        "POST /gate/approve/{pending_id}",
+        "POST /gate/reject/{pending_id}"
+      ],
+      "callable_from_chat": true,
+      "callable_from_agent": true,
+      "evidence": "ExecutionGate singleton (execution_gate.py line 861) enforces P0-P3 risk, god mode, signed approvals. Tool wrappers call gate.check() (tools.py lines 170-171, 2419-2420). V2 ToolGatewayV2 calls governance.enforce_governance() (governance.py line 28). /gate/approve endpoint hardened in 06C (main.py line 1935).",
+      "risk_of_facade": "low",
+      "notes": "Governance gate is fully active and enforced across all paths. Signed approval flow works for P3/protected paths."
+    },
+    {
+      "capability_name": "signed approvals",
+      "code_exists": true,
+      "files_found": [
+        "tmp_agent/brain_v9/governance/signed_approvals.py",
+        "tmp_agent/brain_v9/governance/execution_gate.py"
+      ],
+      "runtime_entrypoints": [
+        "POST /gate/approve/{pending_id} with approval_token",
+        "ExecutionGate.approve() with approval_token"
+      ],
+      "callable_from_chat": true,
+      "callable_from_agent": true,
+      "evidence": "signed_approvals.py creates/verifies HMAC tokens with actor/scope/action/target/nonce. ExecutionGate.approve() verifies token against BRAIN_SIGNED_APPROVAL_SECRET (line 790). Token required for P3/protected paths (line 741). 06C hardened endpoint checks signed_approval_validated flag.",
+      "risk_of_facade": "low",
+      "notes": "Signed approval flow is implemented and tested (05, 06B, 06C tests pass). Used for P3 and protected path tools."
+    },
+    {
+      "capability_name": "model fallback/arbitration",
+      "code_exists": true,
+      "files_found": [
+        "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+        "tmp_agent/brain_v9/core/llm.py"
+      ],
+      "runtime_entrypoints": [
+        "POST /v2/chat/agent (finalizer in all V2 routes)",
+        "POST /chat (LLMManager.query with chain)",
+        "POST /agent (AgentLoop -> LLMManager)"
+      ],
+      "callable_from_chat": true,
+      "callable_from_agent": true,
+      "evidence": "finalizer.py lines 8-9, 189-225: PRIMARY_KIMI_MODEL = 'kimi-k2.6:cloud', FALLBACK_MODELS = ['deepseek-v4-pro:cloud', 'gpt-oss:120b-cloud', 'kimi-k2.5:cloud']. Linear fallback loop. LLMManager.query has model_priority and chains (llm.py). No arbitration beyond linear fallback. V2 routes all use finalizer; legacy uses LLMManager chain.",
+      "risk_of_facade": "low",
+      "notes": "Fallback is real and used. However it's a simple linear chain, not intelligent arbitration. V2 finalizer is the synthesis step for all routes."
+    },
+    {
+      "capability_name": "visual trace",
+      "code_exists": true,
+      "files_found": [
+        "tmp_agent/brain_v9/main.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/trace.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/schemas.py"
+      ],
+      "runtime_entrypoints": [
+        "POST /chat (multiple _emit_agent_trace_internal calls)",
+        "POST /v2/chat/agent (TraceStore in NativeAgentRuntimeV2)",
+        "GET /brain/agent/trace/events",
+        "GET /v2/agent/{run_id}/trace"
+      ],
+      "callable_from_chat": true,
+      "callable_from_agent": true,
+      "evidence": "main.py lines 4437-4559: _append_trace_event, _broadcast_trace_event, _emit_agent_trace_internal. Chat endpoint emits 7 trace events per request (lines 1822-1916). V2 NativeAgentRuntimeV2 uses TraceStore (trace.py) writing trace.jsonl per run. schemas.py AgentRun has trace_events count. Dashboard consumes traces.",
+      "risk_of_facade": "low",
+      "notes": "Visual trace is active and emitted in both legacy and V2 paths. Not LangGraph streaming but custom event stream."
+    },
+    {
+      "capability_name": "streaming",
+      "code_exists": true,
+      "files_found": [
+        "tmp_agent/brain_v9/main.py"
+      ],
+      "runtime_entrypoints": [
+        "GET /chat/stream",
+        "GET /v2/chat/agent/stream (if implemented)"
+      ],
+      "callable_from_chat": true,
+      "callable_from_agent": false,
+      "evidence": "main.py has /chat/stream SSE endpoint (search for chat/stream). V2 runtime does not have streaming endpoint in api_adapter.py. AgentLoop.run is blocking with wait_for timeout.",
+      "risk_of_facade": "medium",
+      "notes": "Streaming exists for legacy /chat via SSE. V2 agent path does not stream; returns full result after completion."
+    },
+    {
+      "capability_name": "UI chat path",
+      "code_exists": true,
+      "files_found": [
+        "tmp_agent/brain_v9/main.py",
+        "tmp_agent/brain_v9/core/router_entrypoint.py",
+        "tmp_agent/brain_v9/core/session.py"
+      ],
+      "runtime_entrypoints": [
+        "POST /chat"
+      ],
+      "callable_from_chat": true,
+      "callable_from_agent": false,
+      "evidence": "/chat (main.py line 1438) -> handle_user_message (router_entrypoint.py line 156) -> BrainSession.chat (session.py line 417). Route selection: trivial fastpath, curated lookup, Tool01, GAK, policy gate, fastpath templates, grounded code/ui analysis, AgentLoop, or direct LLM. No V2 runtime. Emits visual traces. Uses ExecutionGate for P2/P3 tools.",
+      "risk_of_facade": "medium",
+      "notes": "Legacy /chat is a complex multi-route pipeline with many fastpaths. Does NOT use LangGraph, V2 runtime, or automatic FAISS retrieval. Tool execution is real but gated. Most queries resolve via fastpath or direct LLM."
+    },
+    {
+      "capability_name": "API agent path",
+      "code_exists": true,
+      "files_found": [
+        "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py"
+      ],
+      "runtime_entrypoints": [
+        "POST /v2/chat/agent",
+        "POST /v2/agent/run",
+        "POST /v2/agent/{run_id}/plan",
+        "POST /v2/agent/{run_id}/execute"
+      ],
+      "callable_from_chat": false,
+      "callable_from_agent": true,
+      "evidence": "api_adapter.py line 134 (chat_agent) -> NativeAgentRuntimeV2.execute_run(). Routes: direct_assistant, promotion_adapter_dry_run, brain_evidence, mixed_brain_reasoning, operational_agent (default). Uses MemoryGatewayV2, ToolGatewayV2, planner, finalizer, intent_adapter. Creates per-run artifacts. Does NOT use LangGraph.",
+      "risk_of_facade": "low",
+      "notes": "V2 agent path is a distinct, governed runtime with durable execution. More structured than legacy but still single-LLM-call synthesis (finalizer). No LangGraph graph execution."
+    },
+    {
+      "capability_name": "OpenAI-compatible API path",
+      "code_exists": true,
+      "files_found": [
+        "tmp_agent/brain_v9/api/openai_compat.py"
+      ],
+      "runtime_entrypoints": [
+        "POST /v1/chat/completions"
+      ],
+      "callable_from_chat": true,
+      "callable_from_agent": false,
+      "evidence": "openai_compat.py line 17: imports handle_user_message from router_entrypoint. Line 160-175: delegates to handle_user_message with context. Does NOT use V2 runtime. Uses legacy BrainSession path. Blocks tools/memory/FAISS writes (lines 253-256).",
+      "risk_of_facade": "high",
+      "notes": "OpenAI-compatible endpoint is a thin wrapper over legacy /chat path. Does not expose V2 agent capabilities. Tools, memory writes, FAISS writes blocked."
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "scores": {
+    "capability_wired_score": 75,
+    "runtime_activation_score": 55,
+    "traceability_score": 70,
+    "memory_use_score": 55,
+    "retrieval_use_score": 55,
+    "tool_use_score": 70,
+    "governance_score": 90,
+    "LangGraph_real_use_score": 0,
+    "chat_quality_score": 45,
+    "reliability_score": 60,
+    "latency_observed_seconds": null,
+    "failure_rate": null,
+    "timeout_rate": null
+  },
+  "classification": "PARTIAL_CAPABILITY_USE",
+  "evidence": {
+    "wired_but_not_activated": [
+      "LangGraphAgentRuntimeV2 exists but is not instantiated",
+      "FAISS retrieval exists but only in V2 operational_agent route",
+      "Evidence routing only in V2 brain_evidence/mixed routes",
+      "Planner is deterministic keyword-based, not LLM-based",
+      "OpenAI-compatible path bypasses V2 entirely"
+    ],
+    "activated": [
+      "NativeAgentRuntimeV2 with durable per-run artifacts",
+      "MemoryGatewayV2 with semantic_retrieve",
+      "ToolGatewayV2 with governance enforcement",
+      "Signed approvals for P3/protected paths (06C hardened)",
+      "Visual trace emission in both legacy and V2 paths",
+      "Governance gate active across all paths"
+    ],
+    "not_implemented": [
+      "LangGraph graph.invoke/stream/astream in production",
+      "LangGraph checkpointer/saver (MemorySaver/PostgresSaver)",
+      "Per-thread checkpointing with thread_id/configurable",
+      "LLM-based planner/evaluator",
+      "Model arbitration beyond linear fallback",
+      "Streaming in V2 agent path"
+    ]
+  },
+  "comparison": {
+    "direct_llm_path": {
+      "score": 30,
+      "notes": "OpenAI-compatible endpoint delegates to legacy handle_user_message, no tools, no memory, no governance"
+    },
+    "standard_tool_agent": {
+      "score": 50,
+      "notes": "Legacy /agent uses AgentLoop with tools and governance but single LLM chain, no durable state"
+    },
+    "v2_agent_path": {
+      "score": 75,
+      "notes": "NativeAgentRuntimeV2 has durable runs, governance, tool gateway, evidence routing, but final synthesis is single LLM call"
+    },
+    "langgraph_ideal": {
+      "score": 100,
+      "notes": "Full StateGraph orchestration with checkpointer, streaming, human-in-the-loop, evaluator nodes"
+    }
+  }
+}

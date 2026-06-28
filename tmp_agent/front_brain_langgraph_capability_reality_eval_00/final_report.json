@@ -1,0 +1,115 @@
+{
+  "front": "FRONT-BRAIN-LANGGRAPH-CAPABILITY-REALITY-EVAL-00",
+  "baseline": "1fb1383e",
+  "final_head": "1fb1383e",
+  "branch": "codex/own-capital-sustainable-return",
+  "status": "completed",
+  "classification": "PARTIAL_CAPABILITY_USE",
+  "evidence_summary": {
+    "langgraph_active": false,
+    "langgraph_code_exists": true,
+    "active_runtime": "NativeAgentRuntimeV2",
+    "legacy_chat_uses_v2": false,
+    "v2_agent_uses_langgraph": false,
+    "openai_compat_uses_v2": false,
+    "governance_active": true,
+    "signed_approvals_active": true,
+    "faiss_active_in_legacy_chat": false,
+    "faiss_active_in_v2_agent": true,
+    "visual_trace_active": true,
+    "streaming_active_in_v2": false,
+    "streaming_active_in_legacy": true,
+    "durable_execution_active": true
+  },
+  "what_chat_actually_uses": {
+    "legacy_chat": [
+      "handle_user_message (router_entrypoint)",
+      "BrainSession.chat",
+      "Multiple fastpaths (trivial, curated_lookup, Tool01, GAK, policy_gate, grounded_code, grounded_ui)",
+      "AgentLoop (only when use_agent=True)",
+      "Direct LLM via LLMManager.query (fallback)",
+      "ExecutionGate for P2/P3 tools",
+      "Visual trace emission (7 events/request)",
+      "Streaming SSE endpoint (/chat/stream)"
+    ],
+    "v2_chat_agent": [
+      "NativeAgentRuntimeV2 (via get_agent_runtime_v2())",
+      "MemoryGatewayV2.semantic_retrieve (read-only)",
+      "ToolGatewayV2.call() with governance enforcement",
+      "AgentV2IntentAdapter for route selection",
+      "Deterministic planner (planner.py)",
+      "Finalizer with linear model fallback",
+      "Per-run durable artifacts (run.json, checkpoint.json, trace.jsonl)",
+      "Visual trace via TraceStore"
+    ],
+    "openai_compat": [
+      "Direct delegation to handle_user_message",
+      "No V2 runtime",
+      "Tools/memory/FAISS writes blocked",
+      "Legacy BrainSession path"
+    ]
+  },
+  "what_exists_but_not_activated": [
+    "LangGraphAgentRuntimeV2 class with StateGraph (4 nodes)",
+    "LangGraph checkpointer infrastructure (file-based CheckpointStore)",
+    "Per-run checkpoint.json (not LangGraph checkpointer)",
+    "Planner (deterministic keyword-based, not LLM)",
+    "FAISS retrieval (only in V2 operational_agent/brain_evidence)",
+    "Evidence routing (only in V2 brain_evidence/mixed_brain_reasoning)",
+    "Model fallback chain (linear, not arbitration)"
+  ],
+  "what_is_missing_vs_langgraph_ideal": [
+    "No StateGraph graph.invoke/stream/astream at runtime",
+    "No MemorySaver/SqliteSaver/PostgresSaver checkpointer",
+    "No thread_id/configurable for conversation resumption",
+    "No human-in-the-loop interrupts",
+    "No evaluator/judge nodes",
+    "No LangSmith tracing integration",
+    "No streaming in V2 agent path"
+  ],
+  "comparison_to_baselines": {
+    "direct_llm": 30,
+    "standard_tool_agent": 50,
+    "v2_native_agent": 75,
+    "langgraph_ideal": 100
+  },
+  "scorecard": {
+    "capability_wired_score": 75,
+    "runtime_activation_score": 55,
+    "traceability_score": 70,
+    "memory_use_score": 55,
+    "retrieval_use_score": 55,
+    "tool_use_score": 70,
+    "governance_score": 90,
+    "LangGraph_real_use_score": 0,
+    "chat_quality_score": 45,
+    "reliability_score": 60
+  },
+  "recommended_next_action": "B. pause roadmap and wire missing runtime capabilities",
+  "remaining_gaps": [
+    "LangGraph not active at runtime (dead code in langgraph_runtime.py)",
+    "No per-thread checkpointing/resumption",
+    "No human-in-the-loop interrupts",
+    "No evaluator node",
+    "Model fallback is linear chain, not arbitration",
+    "V2 agent path has no streaming",
+    "Legacy /chat does not auto-retrieve FAISS",
+    "OpenAI-compatible endpoint bypasses V2 entirely",
+    "No LangSmith evaluation suite integration"
+  ],
+  "validation": {
+    "python_py_compile_test": true,
+    "pytest_smoke_test": true,
+    "pytest_06c_regression": true,
+    "git_hygiene_guard": true,
+    "source_files_modified": false,
+    "memory_touched": false,
+    "faiss_touched": false,
+    "trading_touched": false,
+    "env_touched": false
+  },
+  "phase1_run_id": null,
+  "phase1_result": "not_run",
+  "nontrading_run_id": null,
+  "nontrading_result": "not_run"
+}
