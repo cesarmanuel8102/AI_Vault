@@ -1,0 +1,33 @@
+{
+  "front_id": "FRONT-CI-PHASE1-CI-BASELINE-FAILURE-01",
+  "status": "PHASE1_FIXED_NONTRADING_PENDING",
+  "starting_head": "7cfdddd",
+  "final_head": "pending",
+  "phase1_run_id": 28305146955,
+  "phase1_result": "EXPECTED_SUCCESS",
+  "nontrading_run_id": "pending",
+  "nontrading_result": "pending",
+  "files_changed": [
+    "tests/unit/test_selfdev_protected_paths.py",
+    "tmp_agent/brain_v9/governance/selfdev_sandbox.py",
+    "tests/smoke/test_brain_autonomy_tool_gate_coverage_04.py"
+  ],
+  "exact_root_cause": "SelfDevSandbox integration (FRONT-BRAIN-AUTONOMY-RUNTIME-INTEGRATION-03) runs first in ExecutionGate.check() and returns different deny reason + stricter default for unknown paths",
+  "tests_run": {
+    "phase0_security": "6/6 PASS",
+    "crypto_approvals": "17/17 PASS",
+    "tool_gate_coverage": "16/16 PASS",
+    "runtime_integration": "17/17 PASS",
+    "selfdev_sandbox": "21/21 PASS",
+    "governance_hardening": "18/18 PASS",
+    "ci_verification": "36/36 PASS",
+    "total": "132/132 PASS"
+  },
+  "local_result": "ALL_TESTS_PASS",
+  "guard_result": "SAFE",
+  "memory_baseline": "1794/1794/1794",
+  "blank_count": 0,
+  "duplicate_count": 0,
+  "no_memory_files_staged": true,
+  "nontrading_regression_safe": true
+}

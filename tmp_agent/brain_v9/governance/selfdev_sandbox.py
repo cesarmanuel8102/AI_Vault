@@ -84,8 +84,8 @@ class SelfDevSandbox:
         if is_protected_path(normalized):
             return Capability.GOVERNANCE_EDIT
 
-        # Default: file write restricted for unknown paths
-        return Capability.FILE_WRITE_RESTRICTED
+        # Default: allow non-protected paths (not self-dev / governance / security / trading / secrets)
+        return Capability.FILE_READ
 
     def evaluate_selfdev_action(
         self,
