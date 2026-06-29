@@ -1,0 +1,60 @@
+{
+  "front": "FRONT-BRAIN-LANGGRAPH-DEEP-AGENTV2-PARITY-07",
+  "baseline": "b0e344e",
+  "source_file_modified": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+  "source_files_not_modified": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/memory_gateway.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/intent_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/context_assembler.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/checkpoints.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/trace.py",
+    "tmp_agent/brain_v9/main.py"
+  ],
+  "production_wiring_changed": false,
+  "runtime_selector_changed": false,
+  "api_adapter_changed": false,
+  "native_runtime_changed": false,
+  "langgraph_runtime_changed": false,
+  "class_modified": "LangGraphParityRuntimeV2",
+  "helpers_integrated": {
+    "AgentV2IntentAdapter.select_route": true,
+    "AgentV2IntentAdapter.get_evidence_sources": true,
+    "planner.build_plan": true,
+    "context_assembler": "partial_pure_helpers_only",
+    "ToolGatewayV2": true,
+    "MemoryGatewayV2": true,
+    "TraceStore": true,
+    "CheckpointStore": true
+  },
+  "fallback_paths_remaining": [
+    "Deterministic route shim if AgentV2IntentAdapter.select_route raises",
+    "Deterministic evidence shim if get_evidence_sources raises or returns empty",
+    "Deterministic planner shim if build_plan raises",
+    "Deterministic parity finalizer (no live LLM) unless injectable finalizer provided"
+  ],
+  "safety_controls": [
+    "run_root must be provided by tests; default points to non-production runs_parity directory",
+    "Write tools blocked via ToolGatewayV2.call with mode parameter",
+    "Unknown tools skipped with reason unsupported_tool_in_parity",
+    "mode_requires_escalation called before tool execution",
+    "No import of api_adapter.py",
+    "No modification of runtime.py, api_adapter.py, native_runtime.py, langgraph_runtime.py",
+    "Full context_assembler skipped to avoid scanning production RUN_ROOT",
+    "No live LLM in deterministic finalizer"
+  ],
+  "known_limitations": [
+    "context_assembler full assembly skipped; only pure helpers reused",
+    "Finalizer remains deterministic/injectable; not native finalize_agent_run",
+    "No graph.stream usage",
+    "No AGENT_V2_BACKEND wiring",
+    "planner.build_plan classifications may differ from route labels (e.g., endpoint_probe, repo_audit)"
+  ]
+}

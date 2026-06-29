@@ -1,22 +1,25 @@
-"""Isolated LangGraph parity prototype runtime for Brain V9 Agent Kernel V2.
+"""Isolated LangGraph deep parity runtime for Brain V9 Agent Kernel V2.
 
 This module is intentionally NOT wired into runtime.py, api_adapter.py, or main.py.
-It is a test-only parity prototype that reuses Native V2 components without
-altering production wiring. All persistence defaults to a caller-provided
+It is a test-only deep parity prototype that reuses Native V2 helper components
+without altering production wiring. All persistence defaults to a caller-provided
 run_root (tests MUST pass a temporary directory).
 """
 from __future__ import annotations
 import hashlib, json, time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from .state import CANONICAL_AGENT_VERSION
 from .schemas import AgentTraceEvent, ToolCallRequest, to_dict, utc_now
-from .governance import validate_mode, mode_requires_escalation
+from .governance import validate_mode, mode_requires_escalation, READ_ONLY_TOOL_NAMES, WRITE_TOOL_NAMES
 from .checkpoints import CheckpointStore
 from .trace import TraceStore
 from .tool_gateway import ToolGatewayV2
 from .memory_gateway import MemoryGatewayV2
+from .intent_adapter import AgentV2IntentAdapter
+from .planner import build_plan
+from .context_assembler import _is_follow_up, _has_generic_override
 
 LANGGRAPH_AVAILABLE = False
 GRAPH_START = None
@@ -53,14 +56,43 @@ REQUIRED_CAPABILITY_KEYS = {
     "parity_runtime",
 }
 
+DEEP_PARITY_KEYS = {
+    "intent_route_source",
+    "intent_route_fallback_used",
+    "evidence_source",
+    "evidence_fallback_used",
+    "planner_source",
+    "planner_fallback_used",
+    "context_assembler_used",
+    "context_assembler_skip_reason",
+    "native_helpers_used",
+    "native_helper_errors",
+    "deep_parity_runtime",
+    "finalizer_source",
+    "native_helper_parity_score",
+}
+
+# Tools that the parity runtime will execute via ToolGatewayV2
+SUPPORTED_READ_TOOLS = {
+    "repo_status_read",
+    "repo_history_read",
+    "grep_search",
+    "file_read",
+    "route_probe",
+    "semantic_retrieve",
+    "smoke_test_readonly",
+}
+
 
 class LangGraphParityRuntimeV2:
     backend = "langgraph_parity"
 
-    def __init__(self, run_root: Optional[Any] = None):
+    def __init__(self, run_root: Optional[Any] = None, finalizer_fn: Optional[Callable[[Dict[str, Any]], str]] = None):
         self.run_root = Path(run_root) if run_root else Path(__file__).resolve().parents[4] / "tmp_agent" / "agent_kernel_v2" / "runs_parity"
         self.tools = ToolGatewayV2()
         self.memory = MemoryGatewayV2()
+        self.intent_adapter = AgentV2IntentAdapter()
+        self.finalizer_fn = finalizer_fn
         self.graph_available = LANGGRAPH_AVAILABLE
         self.graph_error = None
         if LANGGRAPH_AVAILABLE:
@@ -116,7 +148,10 @@ class LangGraphParityRuntimeV2:
         retrieval_skipped = not retrieval_attempted and intent_route not in {"direct_assistant", "promotion_adapter_dry_run"}
         tools_considered = [s for s in plan if s.get("tool_name")]
         tools_executed = [s for s in tools_considered if s.get("status") in ("completed", "failed", "blocked")]
-        return {
+        native_helpers_used = state.get("native_helpers_used", [])
+        native_helper_errors = state.get("native_helper_errors", [])
+        parity_score = self._compute_native_helper_parity_score(state)
+        meta = {
             "memory_used": retrieval_attempted,
             "retrieval_attempted": retrieval_attempted,
             "retrieval_no_results": retrieval_no_results,
@@ -134,12 +169,41 @@ class LangGraphParityRuntimeV2:
             "node_path": state.get("node_path", []),
             "langgraph_active": self.graph_available,
             "parity_runtime": True,
+            # deep parity keys
+            "intent_route_source": state.get("intent_route_source"),
+            "intent_route_fallback_used": state.get("intent_route_fallback_used", False),
+            "evidence_source": state.get("evidence_source"),
+            "evidence_fallback_used": state.get("evidence_fallback_used", False),
+            "planner_source": state.get("planner_source"),
+            "planner_fallback_used": state.get("planner_fallback_used", False),
+            "context_assembler_used": state.get("context_assembler_used", False),
+            "context_assembler_skip_reason": state.get("context_assembler_skip_reason"),
+            "native_helpers_used": native_helpers_used,
+            "native_helper_errors": native_helper_errors,
+            "deep_parity_runtime": True,
+            "finalizer_source": state.get("finalizer_source"),
+            "native_helper_parity_score": parity_score,
         }
+        return meta
+
+    def _compute_native_helper_parity_score(self, state: Dict[str, Any]) -> int:
+        score = 0
+        if state.get("intent_route_source") == "AgentV2IntentAdapter.select_route":
+            score += 25
+        if state.get("evidence_source") == "AgentV2IntentAdapter.get_evidence_sources":
+            score += 25
+        if state.get("planner_source") == "planner.build_plan":
+            score += 25
+        if state.get("context_assembler_used"):
+            score += 10
+        if state.get("tool_gateway_parity_improved"):
+            score += 10
+        if state.get("memory_gateway_read_only"):
+            score += 5
+        return min(score, 100)
 
     def _deterministic_route(self, message: str) -> Dict[str, Any]:
-        """Mirrors intent_adapter route selection without heavy imports.
-        This is intentionally a simple keyword-based shim for the parity prototype.
-        Full parity would import AgentV2IntentAdapter directly."""
+        """Fallback keyword-based route shim kept only for graceful degradation."""
         msg_lower = message.lower()
         generic_signals = {"hi", "hello", "hey", "good morning", "good afternoon", "how are you", "thanks", "gracias"}
         if any(s in msg_lower for s in generic_signals) and len(message.split()) <= 5:
@@ -158,14 +222,23 @@ class LangGraphParityRuntimeV2:
     def _deterministic_finalizer(self, state: Dict[str, Any]) -> str:
         route = state.get("intent_route")
         if route == "direct_assistant":
-            return f"Hello. I am the parity prototype deterministic assistant. Intent route: {route}."
+            return f"Hello. I am the deep parity assistant. Intent route: {route}."
         if state.get("mode_escalation_required") or state.get("approval_required"):
             blocked = ", ".join(state.get("blocked_tools") or ["write tool"])
-            return f"Write intent blocked in read_only mode. Blocked tools: {blocked}. Governance enforced."
+            return f"Write intent blocked in read_only mode. Blocked tools: {blocked}. Governance enforced. Native helpers used: {state.get('native_helpers_used', [])}."
         if route == "brain_evidence":
             tool_names = [s.get("tool_name") for s in state.get("plan", []) if s.get("tool_name")]
-            return f"Brain evidence deterministic summary. Tools considered: {', '.join(tool_names) if tool_names else 'none'}. Evidence routed: {bool(state.get('evidence_sources'))}."
-        return f"Parity prototype deterministic response. Route: {route}."
+            source_types = [s.get("type") for s in state.get("evidence_sources", [])]
+            return (
+                f"Brain evidence deep parity summary. Tools considered: {', '.join(tool_names) if tool_names else 'none'}. "
+                f"Evidence sources: {', '.join(source_types) if source_types else 'none'}. "
+                f"Native helpers: {state.get('native_helpers_used', [])}."
+            )
+        return f"Deep parity deterministic response. Route: {route}. Native helpers: {state.get('native_helpers_used', [])}."
+
+    def _record_native_helper_error(self, state: Dict[str, Any], helper: str, error: Any) -> None:
+        state.setdefault("native_helper_errors", []).append({"helper": helper, "error": str(error)[:200]})
+        self._trace(state["run_id"], "native_helper_error", f"{helper} failed", {"error": str(error)[:200]})
 
     # ------------------------------------------------------------------
     # Graph nodes
@@ -187,94 +260,216 @@ class LangGraphParityRuntimeV2:
             "agent_version": CANONICAL_AGENT_VERSION,
             "canonical_agent": False,
             "parity_runtime": True,
+            "deep_parity_runtime": True,
             "langgraph_active": self.graph_available,
             "node_path": ["start"],
+            "native_helpers_used": [],
+            "native_helper_errors": [],
+            "blocked_tools": [],
+            "tool_results": [],
         })
-        self._trace(run_id, "start_node", "LangGraph parity run started", {"mode_requested": mode, "mode_effective": mode_effective})
+        self._trace(run_id, "start_node", "LangGraph deep parity run started", {"mode_requested": mode, "mode_effective": mode_effective})
         self._save_checkpoint(state, step_index=0)
         return state
 
     def _intent_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        route_info = self._deterministic_route(state.get("message", ""))
+        message = state.get("message", "")
+        # Build a minimal recent_context using safe pure helpers from context_assembler.
+        recent_ctx = {
+            "is_follow_up": _is_follow_up(message),
+            "has_generic_override": _has_generic_override(message),
+            "prev_route": None,
+            "prev_sources": None,
+        }
+        state["session_context"] = recent_ctx
+        try:
+            route_info = self.intent_adapter.select_route(message, recent_context=recent_ctx)
+            source = "AgentV2IntentAdapter.select_route"
+            fallback = False
+            state.setdefault("native_helpers_used", []).append("AgentV2IntentAdapter.select_route")
+        except Exception as exc:
+            route_info = self._deterministic_route(message)
+            source = "deterministic_shim"
+            fallback = True
+            self._record_native_helper_error(state, "AgentV2IntentAdapter.select_route", exc)
         state.update({
-            "intent_route": route_info["route"],
-            "intent_detected": route_info["intent"],
+            "intent_route": route_info.get("route", "direct_assistant"),
+            "intent_detected": route_info.get("intent", route_info.get("intent_detected", "UNKNOWN")),
             "intent_confidence": route_info.get("confidence", 0.0),
+            "route_raw": route_info,
+            "intent_route_source": source,
+            "intent_route_fallback_used": fallback,
             "node_path": state.get("node_path", []) + ["intent"],
         })
-        self._trace(state["run_id"], "intent_node", f"Route selected: {route_info['route']}", route_info)
+        self._trace(state["run_id"], "intent_node", f"Route selected: {state['intent_route']}", {"source": source, "fallback": fallback, "route_info": route_info})
         return state
 
     def _context_assembly_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        state["session_context"] = {
-            "is_follow_up": False,
-            "user_id": state.get("user_id"),
-            "goal_preview": state.get("message", "")[:120],
-        }
-        state["node_path"] = state.get("node_path", []) + ["context_assembly"]
-        self._trace(state["run_id"], "context_assembly_node", "Session context assembled", state["session_context"])
+        # Full assemble_recent_context scans the production RUN_ROOT by default, which is not
+        # isolated to the caller-provided run_root. We therefore record an explicit skip and
+        # reuse only the pure helper functions (_is_follow_up, _has_generic_override) already
+        # captured in the intent node.
+        state.update({
+            "context_assembler_used": False,
+            "context_assembler_skip_reason": "requires_production_run_root_scan_not_isolated",
+            "context_assembler_pure_helpers_used": True,
+            "node_path": state.get("node_path", []) + ["context_assembly"],
+        })
+        if "AgentV2IntentAdapter.select_route" in state.get("native_helpers_used", []):
+            state.setdefault("native_helpers_used", []).append("context_assembler.pure_helpers")
+        self._trace(state["run_id"], "context_assembly_node", "Session context assembled (pure helpers only)", state["session_context"])
         return state
 
     def _memory_retrieval_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
         state["memory_hits"] = []
+        state["memory_retrieval_result"] = {"ok": True, "hit_count": 0, "degraded": False, "skipped": True}
+        state["memory_gateway_read_only"] = True
         state["node_path"] = state.get("node_path", []) + ["memory_retrieval"]
         if state.get("intent_route") in {"brain_evidence", "mixed_brain_reasoning", "operational_agent"}:
             try:
                 result = self.memory.semantic_retrieve(state.get("message", ""), top_k=3)
                 hits = result.get("hits", [])
                 state["memory_hits"] = hits[:3]
-                state["memory_retrieval_result"] = {"ok": True, "hit_count": len(hits), "degraded": result.get("degraded", False)}
+                state["memory_retrieval_result"] = {
+                    "ok": True,
+                    "hit_count": len(hits),
+                    "degraded": result.get("degraded", False),
+                    "skipped": False,
+                    "backend": result.get("backend"),
+                    "error": result.get("error"),
+                }
+                state.setdefault("native_helpers_used", []).append("MemoryGatewayV2.semantic_retrieve")
                 self._trace(state["run_id"], "memory_retrieval_node", f"Semantic retrieval returned {len(hits)} hits", state["memory_retrieval_result"])
             except Exception as exc:
-                state["memory_retrieval_result"] = {"ok": False, "error": str(exc)[:200]}
-                self._trace(state["run_id"], "memory_retrieval_node", "Semantic retrieval failed", {"error": str(exc)[:200]})
+                state["memory_retrieval_result"] = {"ok": False, "error": str(exc)[:200], "skipped": False}
+                self._record_native_helper_error(state, "MemoryGatewayV2.semantic_retrieve", exc)
         else:
             self._trace(state["run_id"], "memory_retrieval_node", "Memory retrieval skipped", {"route": state.get("intent_route")})
         return state
 
     def _evidence_routing_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
         state["evidence_sources"] = []
+        state["evidence_source"] = "none"
+        state["evidence_fallback_used"] = False
         state["node_path"] = state.get("node_path", []) + ["evidence_routing"]
-        if state.get("intent_route") in {"brain_evidence", "mixed_brain_reasoning"}:
-            # Mirror native evidence source contract minimally
-            msg_lower = state.get("message", "").lower()
-            sources = [{"type": "front_brain", "tools": ["repo_status_read", "grep_search", "file_read"], "grep_pattern": "agent|brain|kernel"}]
-            if any(s in msg_lower for s in ["endpoint", "gate", "approve", "status", "health"]):
-                sources.append({"type": "runtime_operations", "tools": ["repo_status_read", "file_read"], "grep_pattern": "runtime|restart|health|port|server|process"})
-            state["evidence_sources"] = sources
-            self._trace(state["run_id"], "evidence_routing_node", f"Evidence sources selected: {len(sources)}", {"sources": [s["type"] for s in sources]})
+        route = state.get("intent_route")
+        if route in {"brain_evidence", "mixed_brain_reasoning"}:
+            try:
+                sources = self.intent_adapter.get_evidence_sources(route, state.get("message", ""))
+                if sources:
+                    state["evidence_sources"] = sources
+                    state["evidence_source"] = "AgentV2IntentAdapter.get_evidence_sources"
+                    state["evidence_fallback_used"] = False
+                    state.setdefault("native_helpers_used", []).append("AgentV2IntentAdapter.get_evidence_sources")
+                    self._trace(state["run_id"], "evidence_routing_node", f"Evidence sources selected: {len(sources)}", {"sources": [s.get("type") for s in sources]})
+                else:
+                    raise RuntimeError("empty_evidence_sources")
+            except Exception as exc:
+                self._record_native_helper_error(state, "AgentV2IntentAdapter.get_evidence_sources", exc)
+                # Minimal deterministic fallback to preserve functionality
+                msg_lower = state.get("message", "").lower()
+                sources = [{"type": "front_brain", "tools": ["repo_status_read", "grep_search", "file_read"], "grep_pattern": "agent|brain|kernel"}]
+                if any(s in msg_lower for s in ["endpoint", "gate", "approve", "status", "health"]):
+                    sources.append({"type": "runtime_operations", "tools": ["repo_status_read", "file_read"], "grep_pattern": "runtime|restart|health|port|server|process"})
+                state["evidence_sources"] = sources
+                state["evidence_source"] = "deterministic_shim"
+                state["evidence_fallback_used"] = True
+                self._trace(state["run_id"], "evidence_routing_node", "Evidence fallback used", {"sources": [s.get("type") for s in sources]})
         else:
-            self._trace(state["run_id"], "evidence_routing_node", "No evidence routing", {"route": state.get("intent_route")})
+            self._trace(state["run_id"], "evidence_routing_node", "No evidence routing", {"route": route})
         return state
 
     def _planner_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
         route = state.get("intent_route")
-        plan: List[Dict[str, Any]] = []
-        classification = route
+        message = state.get("message", "")
+        mode = state.get("mode_effective", "read_only")
+        state["planner_source"] = "none"
+        state["planner_fallback_used"] = False
+        state["planner_metadata"] = {}
+
         if route == "direct_assistant":
             plan = [{"step_id": "direct_finalization", "kind": "finalization", "title": "Direct assistant finalization", "status": "planned", "tool_name": None}]
             classification = "direct_assistant"
-        elif route == "brain_evidence":
-            classification = "brain_evidence"
-            plan = [
-                {"step_id": "semantic_retrieve", "kind": "tool", "title": "Semantic memory retrieval", "status": "planned", "tool_name": "semantic_retrieve", "input": {"query": state.get("message", ""), "top_k": 3}},
-                {"step_id": "repo_status", "kind": "tool", "title": "Read repository status", "status": "planned", "tool_name": "repo_status_read", "input": {}},
-                {"step_id": "grep", "kind": "tool", "title": "Search relevant files", "status": "planned", "tool_name": "grep_search", "input": {"pattern": "gate|approve|endpoint|brain", "glob": "*.py"}},
-                {"step_id": "evidence_summary", "kind": "summary", "title": "Summarize evidence", "status": "planned", "tool_name": None},
-            ]
-        elif route == "operational_agent":
-            classification = "approval_required_write"
-            plan = [
-                {"step_id": "plan", "kind": "plan", "title": "Classify goal as approval_required_write", "status": "completed", "tool_name": None},
-                {"step_id": "file_patch_apply_approval_required", "kind": "tool", "title": "Apply patch (approval required)", "status": "planned", "tool_name": "file_patch_apply_approval_required", "input": {"path": "README.md", "patch": "sample"}},
-            ]
+            state["planner_source"] = "direct_assistant_short_circuit"
         else:
-            plan = [{"step_id": "direct_finalization", "kind": "finalization", "title": "Fallback finalization", "status": "planned", "tool_name": None}]
+            try:
+                classification, plan, metadata = build_plan(message, mode)
+                state["planner_source"] = "planner.build_plan"
+                state["planner_metadata"] = metadata
+                state.setdefault("native_helpers_used", []).append("planner.build_plan")
+                # Normalize plan entries to parity schema if needed (native build_plan already emits compatible dicts)
+                for step in plan:
+                    step.setdefault("status", "planned")
+            except Exception as exc:
+                self._record_native_helper_error(state, "planner.build_plan", exc)
+                classification = route
+                plan = [{"step_id": "fallback_finalization", "kind": "finalization", "title": "Planner fallback finalization", "status": "planned", "tool_name": None}]
+                state["planner_source"] = "deterministic_shim"
+                state["planner_fallback_used"] = True
+
+        # For brain_evidence / mixed_brain_reasoning, enrich the planner plan with evidence-source-driven steps
+        # matching the native runtime evidence bridge as closely as is safe in isolation.
+        if route in {"brain_evidence", "mixed_brain_reasoning"} and not state.get("planner_fallback_used"):
+            evidence_sources = state.get("evidence_sources") or []
+            plan = self._merge_evidence_plan(evidence_sources, plan, message)
+
         state["plan"] = plan
         state["classification"] = classification
         state["node_path"] = state.get("node_path", []) + ["planner"]
-        self._trace(state["run_id"], "planner_node", f"Plan built with {len(plan)} steps", {"classification": classification})
+        self._trace(state["run_id"], "planner_node", f"Plan built with {len(plan)} steps", {"classification": classification, "source": state["planner_source"]})
         return state
+
+    def _merge_evidence_plan(self, evidence_sources: List[Dict[str, Any]], base_plan: List[Dict[str, Any]], message: str) -> List[Dict[str, Any]]:
+        """Mirror native _build_evidence_plan logic: convert selected evidence sources into tool steps."""
+        from .native_runtime import NativeAgentRuntimeV2  # local import for path resolution helper only
+        existing_tools = {s.get("tool_name") for s in base_plan if s.get("tool_name")}
+        new_steps: List[Dict[str, Any]] = []
+
+        def resolve_paths(src):
+            raw_paths = src.get("paths", [])
+            resolved = []
+            root = Path(__file__).resolve().parents[4]
+            for raw_path in raw_paths:
+                if "*" in raw_path or "?" in raw_path:
+                    matches = sorted([p for p in root.glob(raw_path) if p.is_file()], key=lambda p: p.stat().st_mtime, reverse=True)
+                    resolved.extend(str(m) for m in matches[:3])
+                else:
+                    resolved.append(raw_path)
+            return resolved
+
+        for src in evidence_sources:
+            resolved_paths = resolve_paths(src)
+            for tool in src.get("tools", []):
+                if tool == "repo_status_read" and tool not in existing_tools:
+                    new_steps.append({"step_id": "ev_repo_status", "kind": "tool", "title": "Read repository status", "status": "planned", "tool_name": "repo_status_read", "input": {}})
+                    existing_tools.add(tool)
+                elif tool == "grep_search" and tool not in existing_tools:
+                    pattern = src.get("grep_pattern", "agent|brain|kernel")
+                    new_steps.append({"step_id": "ev_grep", "kind": "tool", "title": "Search relevant files", "status": "planned", "tool_name": "grep_search", "input": {"pattern": pattern, "glob": "*.py"}})
+                    existing_tools.add(tool)
+                elif tool == "file_read":
+                    for idx, path in enumerate(resolved_paths):
+                        if path not in existing_tools:
+                            new_steps.append({"step_id": f"ev_file_{idx}", "kind": "tool", "title": f"Read evidence file ({src.get('type')})", "status": "planned", "tool_name": "file_read", "input": {"path": path}})
+                            existing_tools.add(path)
+                elif tool == "repo_history_read" and tool not in existing_tools:
+                    new_steps.append({"step_id": "ev_repo_history", "kind": "tool", "title": "Read repository history", "status": "planned", "tool_name": "repo_history_read", "input": {"path": "tmp_agent/brain_v9", "limit": 10}})
+                    existing_tools.add(tool)
+                elif tool == "semantic_retrieve" and tool not in existing_tools:
+                    new_steps.append({"step_id": "ev_semantic", "kind": "tool", "title": "Retrieve semantic memory", "status": "planned", "tool_name": "semantic_retrieve", "input": {"query": message[:200], "top_k": 3}})
+                    existing_tools.add(tool)
+
+        # Insert evidence steps after any leading plan/classification step but before summary steps
+        merged: List[Dict[str, Any]] = []
+        inserted = False
+        for step in base_plan:
+            merged.append(step)
+            if not inserted and step.get("kind") in {"plan", "finalization", "llm"}:
+                merged.extend(new_steps)
+                inserted = True
+        if not inserted:
+            merged.extend(new_steps)
+        return merged
 
     def _governance_gate_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
         route = state.get("intent_route")
@@ -285,7 +480,8 @@ class LangGraphParityRuntimeV2:
         state["approval_required"] = mode_esc
         state["required_permission"] = "build" if mode_esc else None
         state["confirmation_id"] = f"confirm_{state['run_id']}" if mode_esc else None
-        state["blocked_tools"] = []
+        if "blocked_tools" not in state:
+            state["blocked_tools"] = []
         state["node_path"] = state.get("node_path", []) + ["governance_gate"]
         self._trace(state["run_id"], "governance_gate_node", f"Governance check: escalation={mode_esc}", {"scheduled_tools": scheduled_tools})
         return state
@@ -295,68 +491,95 @@ class LangGraphParityRuntimeV2:
         state["executed_tools"] = []
         state["scheduled_tools"] = [s.get("tool_name") for s in state.get("plan", []) if s.get("tool_name")]
         state["node_path"] = state.get("node_path", []) + ["tool_execution"]
+        state["tool_gateway_parity_improved"] = True
+        mode = state.get("mode_effective", "read_only")
+
         for step in state.get("plan", []):
             tool_name = step.get("tool_name")
             if not tool_name:
                 step["status"] = "completed"
                 continue
-            if state.get("mode_escalation_required"):
+
+            # If governance already escalated and the tool is a write tool, short-circuit block.
+            if state.get("mode_escalation_required") and tool_name in WRITE_TOOL_NAMES:
                 result = {"tool_name": tool_name, "ok": False, "blocked": True, "approval_required": True, "error": "write_tool_blocked_in_read_only_mode"}
                 state["tool_results"].append(result)
                 state["blocked_tools"].append(tool_name)
                 step["status"] = "blocked"
+                step["output"] = result
                 self._trace(state["run_id"], "tool_execution_node", f"Tool {tool_name} blocked by governance", result)
                 continue
-            try:
-                if tool_name == "semantic_retrieve":
-                    res = self.memory.semantic_retrieve(step["input"].get("query", state.get("message", "")), int(step["input"].get("top_k", 3)))
-                    result = {"tool_name": tool_name, "ok": True, "result": res}
-                elif tool_name in {"repo_status_read", "repo_history_read", "grep_search", "file_read", "route_probe"}:
-                    req = ToolCallRequest(tool_name=tool_name, args=step.get("input", {}), mode=state.get("mode_effective", "read_only"))
-                    tres = self.tools.call(req)
-                    result = to_dict(tres)
-                else:
-                    req = ToolCallRequest(tool_name=tool_name, args=step.get("input", {}), mode=state.get("mode_effective", "read_only"))
-                    tres = self.tools.call(req)
-                    result = to_dict(tres)
+
+            # Unknown tools are skipped rather than failed.
+            if tool_name not in SUPPORTED_READ_TOOLS and tool_name not in WRITE_TOOL_NAMES:
+                result = {"tool_name": tool_name, "ok": False, "skipped": True, "error": "unsupported_tool_in_parity"}
+                step["status"] = "skipped"
+                step["output"] = result
                 state["tool_results"].append(result)
-                step["status"] = "completed" if result.get("ok") else "failed"
-                if result.get("blocked"):
+                self._trace(state["run_id"], "tool_execution_node", f"Tool {tool_name} skipped (unsupported in parity)", result)
+                continue
+
+            try:
+                req = ToolCallRequest(tool_name=tool_name, args=step.get("input", {}), mode=mode)
+                tres = self.tools.call(req)
+                rd = to_dict(tres)
+                state["tool_results"].append(rd)
+                step["output"] = rd
+                step["status"] = "blocked" if tres.blocked else ("completed" if tres.ok else "failed")
+                if tres.blocked:
                     state["blocked_tools"].append(tool_name)
-                else:
+                elif tres.ok:
                     state["executed_tools"].append(tool_name)
-                self._trace(state["run_id"], "tool_execution_node", f"Tool {tool_name} executed", {"ok": result.get("ok"), "blocked": result.get("blocked")})
+                self._trace(state["run_id"], "tool_execution_node", f"Tool {tool_name} executed", {"ok": rd.get("ok"), "blocked": rd.get("blocked"), "error": rd.get("error")})
             except Exception as exc:
                 result = {"tool_name": tool_name, "ok": False, "error": str(exc)[:200]}
                 state["tool_results"].append(result)
+                step["output"] = result
                 step["status"] = "failed"
                 self._trace(state["run_id"], "tool_execution_node", f"Tool {tool_name} failed", {"error": str(exc)[:200]})
         return state
 
     def _result_normalization_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
         state["node_path"] = state.get("node_path", []) + ["result_normalization"]
-        self._trace(state["run_id"], "result_normalization_node", "Tool results normalized", {"tool_count": len(state.get("tool_results", []))})
+        self._trace(state["run_id"], "result_normalization_node", "Tool results normalized", {"tool_count": len(state.get("tool_results", [])), "executed": len(state.get("executed_tools", [])), "blocked": len(state.get("blocked_tools", []))})
         return state
 
     def _finalizer_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        state["final_answer"] = self._deterministic_finalizer(state)
-        state["provider_metadata"] = {"provider_used": "deterministic_parity_finalizer", "model_used": "parity_v0", "provider_degraded": False}
+        if self.finalizer_fn is not None:
+            try:
+                state["final_answer"] = self.finalizer_fn(state)
+                state["finalizer_source"] = "injected_finalizer"
+            except Exception as exc:
+                self._record_native_helper_error(state, "injected_finalizer", exc)
+                state["final_answer"] = self._deterministic_finalizer(state)
+                state["finalizer_source"] = "deterministic_parity_finalizer_fallback"
+        else:
+            state["final_answer"] = self._deterministic_finalizer(state)
+            state["finalizer_source"] = "deterministic_parity_finalizer"
+        state["provider_metadata"] = {
+            "provider_used": state["finalizer_source"],
+            "model_used": "parity_v1_deep",
+            "provider_degraded": False,
+            "native_helpers_used": state.get("native_helpers_used", []),
+        }
         state["status"] = "completed"
         state["node_path"] = state.get("node_path", []) + ["finalizer"]
-        self._trace(state["run_id"], "finalizer_node", "Final answer generated", {"final_answer_preview": state["final_answer"][:120]})
+        self._trace(state["run_id"], "finalizer_node", "Final answer generated", {"final_answer_preview": state["final_answer"][:120], "source": state["finalizer_source"]})
         return state
 
     def _evaluator_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
         plan = state.get("plan", [])
         has_tools = any(s.get("tool_name") for s in plan)
         executed_tools = [s.get("tool_name") for s in plan if s.get("status") in ("completed", "failed", "blocked") and s.get("tool_name")]
+        memory_hits = state.get("memory_hits", [])
         state["evaluator_result"] = {
             "answered_user_intent": state.get("final_answer") is not None and len(state.get("final_answer", "")) > 0,
-            "correct_route": state.get("intent_route") in {"direct_assistant", "brain_evidence", "operational_agent"},
+            "correct_route": state.get("intent_route") in {"direct_assistant", "brain_evidence", "mixed_brain_reasoning", "operational_agent"},
             "tool_use_adequate": has_tools and len(executed_tools) >= 1 if state.get("intent_route") != "direct_assistant" else True,
-            "memory_retrieval_adequate": True,
+            "memory_retrieval_adequate": bool(memory_hits) or state.get("intent_route") == "direct_assistant",
             "governance_compliant": not (state.get("mode_escalation_required") and not state.get("approval_required")),
             "answer_complete": state.get("status") == "completed",
+            "native_helper_parity_score": self._compute_native_helper_parity_score(state),
         }
         state["node_path"] = state.get("node_path", []) + ["evaluator"]
         self._trace(state["run_id"], "evaluator_node", "Evaluation complete", state["evaluator_result"])
@@ -431,6 +654,7 @@ class LangGraphParityRuntimeV2:
                 "classification": "LANGGRAPH_NOT_AVAILABLE",
                 "langgraph_active": False,
                 "parity_runtime": True,
+                "deep_parity_runtime": False,
                 "final_answer": "LangGraph parity runtime is unavailable because the langgraph package is not installed or failed to initialize.",
             }
         initial_state = {"message": message, "mode_requested": mode, "user_id": user_id}
