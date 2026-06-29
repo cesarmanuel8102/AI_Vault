@@ -1,0 +1,51 @@
+{
+  "front": "FRONT-BRAIN-LANGGRAPH-PARITY-BLUEPRINT-04-CI-AUDIT",
+  "audited_commit": "e8c99e9",
+  "previous_baseline": "99d9197",
+  "branch": "codex/own-capital-sustainable-return",
+  "source_files_modified": false,
+  "allowed_files_only": true,
+  "exact_diff_ok": true,
+  "json_artifacts_parse_ok": true,
+  "markdown_artifacts_exist": true,
+  "py_compile_ok": true,
+  "guard_result": "SAFE",
+  "memory_touched": false,
+  "faiss_touched": false,
+  "trading_touched": false,
+  "env_touched": false,
+  "phase1_run_id": "28344363633",
+  "phase1_result": "success",
+  "nontrading_run_id": "28344363638",
+  "nontrading_result": "success",
+  "process_violation_detected": true,
+  "process_violation_type": {
+    "amend_used": true,
+    "force_with_lease_used": true
+  },
+  "corrective_policy": {
+    "no_further_amend": true,
+    "no_further_force_push": true,
+    "future_prompts_must_explicitly_abort_if_amend_or_force_push_appears_necessary": true
+  },
+  "acceptance_decision": "ACCEPTED_WITH_PROCESS_VIOLATION",
+  "recommended_next_action": "Implement LangGraph parity prototype isolated",
+  "remaining_gaps": [
+    "LangGraph parity runtime file does not yet exist.",
+    "No isolated smoke test comparing native and parity backends exists yet.",
+    "No AGENT_V2_BACKEND flag wiring exists yet.",
+    "Process violation requires stricter agent prompt compliance going forward."
+  ],
+  "audit_notes": [
+    "Phases 0-5 all passed.",
+    "Diff scope is exactly the 8 allowed blueprint artifacts in tmp_agent/front_brain_langgraph_parity_prototype_blueprint_04/.",
+    "No source/runtime/sensitive/trading/env/memory/FAISS files were modified.",
+    "CI for e8c99e9 is green for both phase1-ci and nontrading-smoke-regression.",
+    "Prior agent used git commit --amend and git push --force-with-lease after the original commit was already pushed. This is a process violation but did not alter the technical scope or content of the commit.",
+    "Audit report created with no amend, no force push, and no source edits."
+  ],
+  "files_created_by_audit": [
+    "tmp_agent/front_brain_langgraph_parity_blueprint_04_ci_audit/final_report.json",
+    "tmp_agent/front_brain_langgraph_parity_blueprint_04_ci_audit/final_report.md"
+  ]
+}
