@@ -1,0 +1,56 @@
+{
+  "front": "FRONT-BRAIN-LANGGRAPH-FAIR-BENCHMARK-READINESS-GATE-08A",
+  "baseline": "7f40cc6",
+  "source_files_modified": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"
+  ],
+  "conditionally_modified_files": [],
+  "test_file_created": "tests/smoke/test_brain_langgraph_fair_benchmark_readiness_gate_08a.py",
+  "report_files_created": [
+    "tmp_agent/front_brain_langgraph_fair_benchmark_readiness_gate_08a/parity_readiness_matrix.json",
+    "tmp_agent/front_brain_langgraph_fair_benchmark_readiness_gate_08a/parity_readiness_matrix.md",
+    "tmp_agent/front_brain_langgraph_fair_benchmark_readiness_gate_08a/readiness_probe.json",
+    "tmp_agent/front_brain_langgraph_fair_benchmark_readiness_gate_08a/readiness_probe.md",
+    "tmp_agent/front_brain_langgraph_fair_benchmark_readiness_gate_08a/implementation_summary.json",
+    "tmp_agent/front_brain_langgraph_fair_benchmark_readiness_gate_08a/implementation_summary.md",
+    "tmp_agent/front_brain_langgraph_fair_benchmark_readiness_gate_08a/final_report.json",
+    "tmp_agent/front_brain_langgraph_fair_benchmark_readiness_gate_08a/final_report.md"
+  ],
+  "closures_implemented": {
+    "isolated_context_assembly": "_assemble_isolated_context scans self.run_root and produces prev_route/prev_goal/answer_preview/is_follow_up",
+    "finalizer_input_schema_parity": "_build_finalizer_input mirrors native build_finalizer_prompt with goal, mode, classification, tool_evidence, memory_evidence, tool_distinction, session_context",
+    "evaluator_parity": "_evaluator_node supports injected evaluator and returns full_parity_score",
+    "graph_stream_probe": "graph_stream_probe proves compiled graph supports stream()",
+    "backend_flag_readiness_probe": "backend_flag_readiness_probe reports future wiring requirements without changing production"
+  },
+  "production_files_not_modified": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/context_assembler.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/intent_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/memory_gateway.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/trace.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/checkpoints.py",
+    "tmp_agent/brain_v9/main.py"
+  ],
+  "safety_controls": [
+    "No production helper modified except isolated langgraph_parity_runtime.py",
+    "context_assembler.py unchanged; isolated equivalent used instead",
+    "Write tools blocked in read_only mode",
+    "Memory retrieval read-only",
+    "Checkpoints and traces only under self.run_root",
+    "No live LLM in tests",
+    "No AGENT_V2_BACKEND wiring implemented"
+  ],
+  "known_limitations": [
+    "Finalizer execution remains deterministic/injectable; native live-LLM synthesis quality is non-comparable in isolated tests",
+    "AGENT_V2_BACKEND flag and runtime.py branch intentionally deferred",
+    "Production streaming adapter for /v2/chat/agent intentionally deferred"
+  ]
+}

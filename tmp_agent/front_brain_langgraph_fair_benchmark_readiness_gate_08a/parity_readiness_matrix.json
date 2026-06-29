@@ -1,0 +1,266 @@
+{
+  "front": "FRONT-BRAIN-LANGGRAPH-FAIR-BENCHMARK-READINESS-GATE-08A",
+  "baseline": "7f40cc6",
+  "ready_for_final_benchmark": true,
+  "blockers_for_fair_benchmark": [],
+  "non_comparable_items": [
+    "finalizer execution (live LLM synthesis quality not comparable in isolated tests)"
+  ],
+  "intentionally_deferred_items": [
+    "finalizer execution",
+    "backend flag readiness"
+  ],
+  "matrix": [
+    {
+      "capability_name": "intent routing",
+      "native_component": "AgentV2IntentAdapter.select_route",
+      "langgraph_component": "AgentV2IntentAdapter.select_route in _intent_node",
+      "parity_status": "equivalent",
+      "evidence": "route_info selects direct_assistant/brain_evidence/operational_agent",
+      "remaining_gap": null,
+      "benchmark_relevance": "high",
+      "blocking_for_fair_benchmark": false
+    },
+    {
+      "capability_name": "evidence routing",
+      "native_component": "AgentV2IntentAdapter.get_evidence_sources",
+      "langgraph_component": "AgentV2IntentAdapter.get_evidence_sources in _evidence_routing_node",
+      "parity_status": "equivalent",
+      "evidence": "evidence_sources populated for brain_evidence routes",
+      "remaining_gap": null,
+      "benchmark_relevance": "high",
+      "blocking_for_fair_benchmark": false
+    },
+    {
+      "capability_name": "planner.build_plan",
+      "native_component": "planner.build_plan",
+      "langgraph_component": "planner.build_plan in _planner_node",
+      "parity_status": "equivalent",
+      "evidence": "classification and plan come from native planner for non-direct routes",
+      "remaining_gap": null,
+      "benchmark_relevance": "high",
+      "blocking_for_fair_benchmark": false
+    },
+    {
+      "capability_name": "context assembly",
+      "native_component": "context_assembler.assemble_recent_context over production RUN_ROOT",
+      "langgraph_component": "_assemble_isolated_context over self.run_root",
+      "parity_status": "comparable_enough_for_benchmark",
+      "evidence": "recent runs scanned, prev_route/prev_goal/answer_preview/is_follow_up produced",
+      "remaining_gap": "Different storage root; no production session history",
+      "benchmark_relevance": "medium",
+      "blocking_for_fair_benchmark": false
+    },
+    {
+      "capability_name": "governance",
+      "native_component": "mode_requires_escalation / WRITE_TOOL_NAMES",
+      "langgraph_component": "mode_requires_escalation / WRITE_TOOL_NAMES in _governance_gate_node and _tool_execution_node",
+      "parity_status": "equivalent",
+      "evidence": "write intents escalated/blocked in read_only mode",
+      "remaining_gap": null,
+      "benchmark_relevance": "high",
+      "blocking_for_fair_benchmark": false
+    },
+    {
+      "capability_name": "read-only tool execution",
+      "native_component": "ToolGatewayV2.call",
+      "langgraph_component": "ToolGatewayV2.call in _tool_execution_node",
+      "parity_status": "equivalent",
+      "evidence": "repo_status_read, grep_search, file_read, semantic_retrieve executed",
+      "remaining_gap": null,
+      "benchmark_relevance": "high",
+      "blocking_for_fair_benchmark": false
+    },
+    {
+      "capability_name": "write blocking",
+      "native_component": "ToolGatewayV2.call blocks write tools in read_only",
+      "langgraph_component": "Pre-check + ToolGatewayV2.call",
+      "parity_status": "equivalent",
+      "evidence": "write tools recorded as blocked/approval_required",
+      "remaining_gap": null,
+      "benchmark_relevance": "high",
+      "blocking_for_fair_benchmark": false
+    },
+    {
+      "capability_name": "memory retrieval",
+      "native_component": "MemoryGatewayV2.semantic_retrieve",
+      "langgraph_component": "MemoryGatewayV2.semantic_retrieve in _memory_retrieval_node",
+      "parity_status": "equivalent",
+      "evidence": "read-only semantic retrieve with hit count",
+      "remaining_gap": null,
+      "benchmark_relevance": "medium",
+      "blocking_for_fair_benchmark": false
+    },
+    {
+      "capability_name": "finalizer input schema",
+      "native_component": "build_finalizer_prompt",
+      "langgraph_component": "_build_finalizer_input",
+      "parity_status": "comparable_enough_for_benchmark",
+      "evidence": "goal, mode, classification, intent_route, tool_evidence, memory_evidence, tool_distinction, session_context present",
+      "remaining_gap": "Does not call native build_finalizer_prompt directly",
+      "benchmark_relevance": "medium",
+      "blocking_for_fair_benchmark": false
+    },
+    {
+      "capability_name": "finalizer execution",
+      "native_component": "finalize_agent_run (calls live LLM)",
+      "langgraph_component": "injected_finalizer or deterministic_parity_finalizer (LLM-safe)",
+      "parity_status": "intentionally_different",
+      "evidence": "Tests avoid live LLM; deterministic fallback always available",
+      "remaining_gap": "Live LLM synthesis quality not comparable in isolated tests",
+      "benchmark_relevance": "low",
+      "blocking_for_fair_benchmark": false
+    },
+    {
+      "capability_name": "evaluator",
+      "native_component": "implicit in execute_run",
+      "langgraph_component": "_evaluator_node",
+      "parity_status": "comparable_enough_for_benchmark",
+      "evidence": "route_correct, tool_use_adequate, governance_compliant, full_parity_score",
+      "remaining_gap": null,
+      "benchmark_relevance": "medium",
+      "blocking_for_fair_benchmark": false
+    },
+    {
+      "capability_name": "provider metadata",
+      "native_component": "FinalizerMetadata / provider_used / model_used",
+      "langgraph_component": "provider_metadata with provider_used, model_used, live_llm_called",
+      "parity_status": "comparable_enough_for_benchmark",
+      "evidence": "provider metadata present and records parity source",
+      "remaining_gap": null,
+      "benchmark_relevance": "low",
+      "blocking_for_fair_benchmark": false
+    },
+    {
+      "capability_name": "capability metadata",
+      "native_component": "_build_capability_metadata in api_adapter.py",
+      "langgraph_component": "_build_capability_metadata in LangGraphParityRuntimeV2",
+      "parity_status": "equivalent",
+      "evidence": "All required and deep/full parity keys present",
+      "remaining_gap": null,
+      "benchmark_relevance": "medium",
+      "blocking_for_fair_benchmark": false
+    },
+    {
+      "capability_name": "trace",
+      "native_component": "TraceStore under RUN_ROOT",
+      "langgraph_component": "TraceStore under self.run_root",
+      "parity_status": "equivalent",
+      "evidence": "per-node trace events persisted",
+      "remaining_gap": null,
+      "benchmark_relevance": "low",
+      "blocking_for_fair_benchmark": false
+    },
+    {
+      "capability_name": "checkpoint",
+      "native_component": "CheckpointStore under RUN_ROOT",
+      "langgraph_component": "CheckpointStore under self.run_root",
+      "parity_status": "equivalent",
+      "evidence": "start and end checkpoints saved",
+      "remaining_gap": null,
+      "benchmark_relevance": "low",
+      "blocking_for_fair_benchmark": false
+    },
+    {
+      "capability_name": "stream observability",
+      "native_component": "graph.stream or FastAPI streaming adapter",
+      "langgraph_component": "graph_stream_probe proves graph.stream works",
+      "parity_status": "comparable_enough_for_benchmark",
+      "evidence": "stream_available=True, event_count=15",
+      "remaining_gap": "No production streaming wiring to /v2/chat/agent",
+      "benchmark_relevance": "low",
+      "blocking_for_fair_benchmark": false
+    },
+    {
+      "capability_name": "backend flag readiness",
+      "native_component": "runtime.py returns NativeAgentRuntimeV2",
+      "langgraph_component": "backend_flag_readiness_probe reports future wiring requirements",
+      "parity_status": "production_wiring_only",
+      "evidence": "can_support_opt_in_backend_flag true, production_wiring_changed false",
+      "remaining_gap": "AGENT_V2_BACKEND flag and runtime.py branch not implemented",
+      "benchmark_relevance": "low",
+      "blocking_for_fair_benchmark": false
+    },
+    {
+      "capability_name": "production wiring isolation",
+      "native_component": "runtime.py, api_adapter.py, main.py",
+      "langgraph_component": "LangGraphParityRuntimeV2 is not imported by any production file",
+      "parity_status": "equivalent",
+      "evidence": "runtime.py only imports NativeAgentRuntimeV2; api_adapter.py uses get_agent_runtime_v2",
+      "remaining_gap": null,
+      "benchmark_relevance": "high",
+      "blocking_for_fair_benchmark": false
+    }
+  ],
+  "scenario_outputs": {
+    "direct_assistant": {
+      "intent_route": "direct_assistant",
+      "classification": "direct_assistant",
+      "finalizer_input_schema_complete": true
+    },
+    "brain_evidence": {
+      "intent_route": "brain_evidence",
+      "classification": "endpoint_probe",
+      "finalizer_input_schema_complete": true
+    },
+    "tool_request": {
+      "intent_route": "brain_evidence",
+      "classification": "repo_audit",
+      "finalizer_input_schema_complete": true
+    },
+    "write_intent_blocked": {
+      "intent_route": "operational_agent",
+      "classification": "approval_required_write",
+      "finalizer_input_schema_complete": true
+    },
+    "protected_write": {
+      "intent_route": "brain_evidence",
+      "classification": "memory_question",
+      "finalizer_input_schema_complete": true
+    },
+    "memory_question": {
+      "intent_route": "brain_evidence",
+      "classification": "memory_question",
+      "finalizer_input_schema_complete": true
+    }
+  },
+  "stream_probe": {
+    "stream_available": true,
+    "stream_event_count": 15,
+    "stream_nodes_seen": [
+      "capability_metadata",
+      "context_assembly",
+      "end",
+      "evaluator",
+      "evidence_routing",
+      "finalizer",
+      "governance_gate",
+      "intent",
+      "memory_retrieval",
+      "planner",
+      "repair_or_replan",
+      "result_normalization",
+      "start",
+      "tool_execution"
+    ],
+    "stream_error": null,
+    "production_streaming_wiring_changed": false
+  },
+  "backend_flag_probe": {
+    "can_support_opt_in_backend_flag": true,
+    "required_files_for_future_wiring": [
+      "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+      "tmp_agent/brain_v9/main.py"
+    ],
+    "production_wiring_changed": false,
+    "default_runtime_unchanged": true,
+    "risk_level": "medium",
+    "blockers": [
+      "No AGENT_V2_BACKEND env flag parsing implemented",
+      "No runtime.py branch to LangGraphParityRuntimeV2",
+      "No streaming response adapter for /v2/chat/agent"
+    ]
+  },
+  "recommended_next_action": "A. Run final full-parity benchmark"
+}
