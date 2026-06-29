@@ -1,0 +1,303 @@
+{
+  "front": "FRONT-BRAIN-FRONTEND-DASHBOARD-CHAT-CONTRACT-GATE-08C",
+  "baseline": "979c277",
+  "generated_at": "2026-06-29",
+  "assumption": "LangGraphParityRuntimeV2 becomes opt-in backend via AGENT_V2_BACKEND flag; get_agent_runtime_v2() returns LangGraphParityRuntimeV2 when flag is set; default remains NativeAgentRuntimeV2.",
+  "matrix": [
+    {
+      "component": "/v2/chat/agent response schema",
+      "current_native_behavior": "Returns {ok, canonical_agent_v2, route, run_id, final_answer, provider_metadata, capability_metadata, mode_*, mode_escalation_*, approval_required, confirmation_id, required_permission, expected_write_scope, trace_url, blocked_tools, intent_route, intent_detected, intent_confidence}.",
+      "langgraph_expected_behavior": "Returns similar state dict but missing expected_write_scope and auto_decision; provider_metadata uses deterministic/injected finalizer source; capability_metadata contains extra parity keys.",
+      "compatibility_status": "compatible_with_adapter",
+      "risk_level": "high",
+      "required_before_wiring": true,
+      "required_adapter_or_test": "Adapter in api_adapter.py or wrapper in runtime selector must normalize response: add expected_write_scope from scheduled write tools, add auto_decision='n/a' fallback, preserve all fields consumed by UI.",
+      "evidence_file": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py:409-427; tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py:210-232",
+      "recommendation": "Add response normalization contract before flag activation; write schema parity tests."
+    },
+    {
+      "component": "ui/index.html chat rendering",
+      "current_native_behavior": "Sends POST /v2/chat/agent; renders final_answer, metadata line, escalation panel, execution trace, legacy tool/approval cards based on response fields.",
+      "langgraph_expected_behavior": "Same endpoint; final_answer is deterministic parity summary; metadata line shows model_used='parity_v1_full' and provider source; escalation panel depends on expected_write_scope being present.",
+      "compatibility_status": "compatible_with_adapter",
+      "risk_level": "high",
+      "required_before_wiring": true,
+      "required_adapter_or_test": "Ensure /v2/chat/agent response includes all fields used by ui/index.html: expected_write_scope, required_permission, confirmation_id, trace_url, mode_escalation_required.",
+      "evidence_file": "tmp_agent/brain_v9/ui/index.html:1352-1415",
+      "recommendation": "Contract test through TestClient with monkeypatched finalizer to verify schema."
+    },
+    {
+      "component": "dashboard /brain-dashboard/chat proxy",
+      "current_native_behavior": "dashboard_routes.py:313 proxies POST to 127.0.0.1:8091/v2/chat/agent and maps response to dashboard fields including content, run_id, trace_url, mode_effective, expected_write_scope.",
+      "langgraph_expected_behavior": "Proxy still works if /v2/chat/agent response schema is normalized. dashboard_routes.py already maps many fields but requires expected_write_scope and auto_decision.",
+      "compatibility_status": "compatible_with_adapter",
+      "risk_level": "high",
+      "required_before_wiring": true,
+      "required_adapter_or_test": "Schema normalization at /v2/chat/agent; verify dashboard proxy sees expected fields; verify service on 8091 uses same backend as 8090.",
+      "evidence_file": "tmp_agent/brain_v9/dashboard/dashboard_routes.py:313-358",
+      "recommendation": "Add dashboard proxy contract tests before wiring."
+    },
+    {
+      "component": "dashboard trace view",
+      "current_native_behavior": "dashboard/static/app.js:279 fetches /brain-dashboard/agent-v2/runs/{run_id}/trace and filters events by event_type: plan_created, tool_call_started, tool_call_completed.",
+      "langgraph_expected_behavior": "LangGraph emits node-based trace events: start_node, intent_node, context_assembly, memory_retrieval, evidence_routing, planner_node, governance_gate, tool_execution_node, result_normalization, finalizer_node, evaluator_node, repair_or_replan, capability_metadata_node, end_node. Plan/Tools/Evidence sections may be empty.",
+      "compatibility_status": "incompatible",
+      "risk_level": "high",
+      "required_before_wiring": true,
+      "required_adapter_or_test": "Either (a) LangGraph runtime must emit Native-equivalent trace event types, or (b) dashboard JS must be taught to render node-based events. Option (a) is safer and does not change frontend files.",
+      "evidence_file": "tmp_agent/brain_v9/dashboard/static/app.js:279-372; tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py:132-136",
+      "recommendation": "Add trace event type adapter in LangGraph runtime or runtime wrapper before wiring."
+    },
+    {
+      "component": "agent_trace_console",
+      "current_native_behavior": "Consumes /brain/agent-trace/latest and /brain/agent-trace/stream. Filters by type: thinking, tool, evidence, governance, etc. Not dependent on runtime.",
+      "langgraph_expected_behavior": "Transport unaffected. If LangGraph runtime emits internal events via main.py emitters, event types could differ, but endpoint is runtime-independent.",
+      "compatibility_status": "not_applicable",
+      "risk_level": "low",
+      "required_before_wiring": false,
+      "required_adapter_or_test": "Verify no regression in visual trace console when /v2/chat/agent is exercised under LangGraph.",
+      "evidence_file": "tmp_agent/brain_v9/ui/agent_trace_console.html:55-142",
+      "recommendation": "No wiring blocker, but regression test recommended."
+    },
+    {
+      "component": "trace_url compatibility",
+      "current_native_behavior": "api_adapter.py constructs trace_url = f'/v2/agent/runs/{run_id}/trace'. Native stores trace.jsonl under RUN_ROOT.",
+      "langgraph_expected_behavior": "Same trace_url format. LangGraph stores trace under self.run_root (default tmp_agent/agent_kernel_v2/runs_parity). If run_root differs, trace endpoint may 404.",
+      "compatibility_status": "compatible_with_adapter",
+      "risk_level": "high",
+      "required_before_wiring": true,
+      "required_adapter_or_test": "Ensure LangGraph backend uses same run_root as Native when opt-in flag is active, or api_adapter trace endpoint resolves run_id across both roots.",
+      "evidence_file": "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py:140-148; tmp_agent/brain_v9/core/agent_kernel_v2/state.py:RUN_ROOT; tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py:107",
+      "recommendation": "Unify run_root for opt-in backend or implement dual-root trace lookup."
+    },
+    {
+      "component": "run_id compatibility",
+      "current_native_behavior": "Native generates agv2_ prefix via hash of goal+timestamp+user_id.",
+      "langgraph_expected_behavior": "LangGraph uses same prefix and similar hash in _new_run_id. run_id format compatible.",
+      "compatibility_status": "compatible",
+      "risk_level": "low",
+      "required_before_wiring": false,
+      "required_adapter_or_test": "Verify run_id regex/parsing in dashboard still works.",
+      "evidence_file": "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py:50; tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py:155",
+      "recommendation": "No action required."
+    },
+    {
+      "component": "capability_metadata compatibility",
+      "current_native_behavior": "api_adapter.py _build_capability_metadata derives memory_used, retrieval_*, planner_used, evidence_*, tools_*, governance_checked, intent_route, classification.",
+      "langgraph_expected_behavior": "LangGraph _build_capability_metadata returns superset including deep parity keys. All required keys present.",
+      "compatibility_status": "compatible",
+      "risk_level": "low",
+      "required_before_wiring": false,
+      "required_adapter_or_test": "Ensure api_adapter.py required keys remain present; UI does not use deep parity keys.",
+      "evidence_file": "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py:11-46; tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py:159-216",
+      "recommendation": "No action required; extra keys are safe."
+    },
+    {
+      "component": "provider_metadata compatibility",
+      "current_native_behavior": "provider_metadata from finalize_agent_run contains provider_used, model_used, provider_degraded, fallback_reason.",
+      "langgraph_expected_behavior": "LangGraph sets provider_used=finalizer_source, model_used='parity_v1_full', live_llm_called=false, provider_degraded=false. UI will display different strings.",
+      "compatibility_status": "compatible_with_adapter",
+      "risk_level": "medium",
+      "required_before_wiring": false,
+      "required_adapter_or_test": "If injecting live LLM finalizer, provider_metadata should mirror native shape; if deterministic, dashboard must tolerate parity labels.",
+      "evidence_file": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py:744-750",
+      "recommendation": "Document parity labels in dashboard or inject finalizer for production-like behavior."
+    },
+    {
+      "component": "mode read_only",
+      "current_native_behavior": "Native validates mode and blocks write tools via ToolGatewayV2.",
+      "langgraph_expected_behavior": "LangGraph _governance_gate_node and _tool_execution_node block write tools in read_only using same governance helpers.",
+      "compatibility_status": "compatible",
+      "risk_level": "low",
+      "required_before_wiring": false,
+      "required_adapter_or_test": "Existing governance tests suffice; add frontend contract test.",
+      "evidence_file": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py:654-718",
+      "recommendation": "No action required."
+    },
+    {
+      "component": "mode build",
+      "current_native_behavior": "Native uses mode_requires_escalation and generates expected_write_scope, required_permission='build', confirmation_id.",
+      "langgraph_expected_behavior": "LangGraph computes mode_escalation_required and confirmation_id, but does NOT produce expected_write_scope or integrate with /gate/approve. Write tools outside SUPPORTED_READ_TOOLS are marked 'unsupported_tool_in_parity' and skipped.",
+      "compatibility_status": "incompatible",
+      "risk_level": "high",
+      "required_before_wiring": true,
+      "required_adapter_or_test": "Add expected_write_scope generation in LangGraph; ensure build mode UX degrades gracefully or blocks safely.",
+      "evidence_file": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py:86, 654-718; tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py:305-312",
+      "recommendation": "Build mode is a blocking gap. Either limit opt-in to read_only/dry_run until fixed, or implement expected_write_scope + write tool handling."
+    },
+    {
+      "component": "mode auto",
+      "current_native_behavior": "Native create_run calls infer_auto_decision and returns auto_decision in response.",
+      "langgraph_expected_behavior": "LangGraph does not implement infer_auto_decision; auto_decision would be missing. UI shows 'n/a' only if present.",
+      "compatibility_status": "compatible_with_adapter",
+      "risk_level": "medium",
+      "required_before_wiring": true,
+      "required_adapter_or_test": "Response normalization must add auto_decision='n/a' or implement infer_auto_decision in LangGraph.",
+      "evidence_file": "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py:55; tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py:436-466",
+      "recommendation": "Add auto_decision to normalized response."
+    },
+    {
+      "component": "approval_required",
+      "current_native_behavior": "Native returns mode_escalation_required and approval_required semantics via expected_write_scope/confirmation_id.",
+      "langgraph_expected_behavior": "LangGraph sets mode_escalation_required=True and approval_required=True for write tools, but no actionable /gate/approve integration.",
+      "compatibility_status": "compatible_with_adapter",
+      "risk_level": "medium",
+      "required_before_wiring": true,
+      "required_adapter_or_test": "Frontend escalation panel must receive expected_write_scope and confirmation_id. No /gate integration needed for read-only display.",
+      "evidence_file": "tmp_agent/brain_v9/ui/index.html:1382-1385",
+      "recommendation": "Ensure expected_write_scope is populated."
+    },
+    {
+      "component": "confirmation_id",
+      "current_native_behavior": "Native generates confirmation_id = f'confirm_{run_id}' and uses it for build escalation.",
+      "langgraph_expected_behavior": "LangGraph also generates confirmation_id = f'confirm_{run_id}'. Format compatible.",
+      "compatibility_status": "compatible",
+      "risk_level": "low",
+      "required_before_wiring": false,
+      "required_adapter_or_test": "Verify UI receives confirmation_id when mode_escalation_required is true.",
+      "evidence_file": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py:662; tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py:312",
+      "recommendation": "No action required if expected_write_scope is added."
+    },
+    {
+      "component": "required_permission",
+      "current_native_behavior": "Native sets required_permission='build' for escalation.",
+      "langgraph_expected_behavior": "LangGraph sets required_permission='build' in _governance_gate_node.",
+      "compatibility_status": "compatible",
+      "risk_level": "low",
+      "required_before_wiring": false,
+      "required_adapter_or_test": "Existing behavior.",
+      "evidence_file": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py:661",
+      "recommendation": "No action required."
+    },
+    {
+      "component": "tool results",
+      "current_native_behavior": "Native stores tool results in run.plan[].output and passes to finalizer.",
+      "langgraph_expected_behavior": "LangGraph stores tool_results in state['tool_results'] and step outputs. Not exposed directly in /v2/chat/agent response, but capability_metadata summarizes.",
+      "compatibility_status": "compatible_with_adapter",
+      "risk_level": "low",
+      "required_before_wiring": false,
+      "required_adapter_or_test": "UI does not directly consume tool_results array from /v2/chat/agent today.",
+      "evidence_file": "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py:210-232; tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py:669-718",
+      "recommendation": "No action required unless future UI depends on raw tool_results."
+    },
+    {
+      "component": "blocked tools",
+      "current_native_behavior": "api_adapter.py returns blocked_tools list from run.",
+      "langgraph_expected_behavior": "LangGraph appends blocked tool names to state['blocked_tools']; api_adapter reads run.get('blocked_tools') so it will work.",
+      "compatibility_status": "compatible",
+      "risk_level": "low",
+      "required_before_wiring": false,
+      "required_adapter_or_test": "Verify list shape is same.",
+      "evidence_file": "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py:228",
+      "recommendation": "No action required."
+    },
+    {
+      "component": "streaming/progress",
+      "current_native_behavior": "/v2/chat/agent is synchronous JSON. Visual progress comes from /brain/agent-trace/stream which is independent of runtime.",
+      "langgraph_expected_behavior": "Same synchronous JSON. LangGraph graph.stream exists in probe only; no production streaming wiring.",
+      "compatibility_status": "not_applicable",
+      "risk_level": "low",
+      "required_before_wiring": false,
+      "required_adapter_or_test": "No streaming contract required for /v2/chat/agent today.",
+      "evidence_file": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py:878-900",
+      "recommendation": "Document non-streaming status; optional future work."
+    },
+    {
+      "component": "health/status panels",
+      "current_native_behavior": "/v2/agent/status returns backend='native_runtime'. /brain-dashboard/status agent_v2 block shows backend and latest_provider_used.",
+      "langgraph_expected_behavior": "backend becomes 'langgraph_parity'. latest_provider_used becomes deterministic finalizer source. Status panels tolerate string change.",
+      "compatibility_status": "compatible",
+      "risk_level": "low",
+      "required_before_wiring": false,
+      "required_adapter_or_test": "Verify dashboard does not hardcode backend string.",
+      "evidence_file": "tmp_agent/brain_v9/dashboard/dashboard_routes.py:175-206",
+      "recommendation": "No action required."
+    },
+    {
+      "component": "error handling",
+      "current_native_behavior": "Native execute_run catches exceptions, saves status='failed', returns run dict. api_adapter returns JSON.",
+      "langgraph_expected_behavior": "If langgraph package unavailable, LangGraph run() returns dict without run_id/trace_url, which could break api_adapter response construction.",
+      "compatibility_status": "incompatible",
+      "risk_level": "blocking",
+      "required_before_wiring": true,
+      "required_adapter_or_test": "api_adapter must handle LangGraph unavailability gracefully; runtime selector should not return LangGraph if env flag is not set or package missing.",
+      "evidence_file": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py:858-872; tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py:198-232",
+      "recommendation": "Guard opt-in wiring: only activate if langgraph available and flag explicitly set; otherwise fallback to Native."
+    },
+    {
+      "component": "/chat legacy",
+      "current_native_behavior": "POST /chat uses handle_user_message -> BrainSession.chat.",
+      "langgraph_expected_behavior": "Unchanged. Legacy chat does not touch Agent V2 runtime.",
+      "compatibility_status": "not_applicable",
+      "risk_level": "none",
+      "required_before_wiring": false,
+      "required_adapter_or_test": "none",
+      "evidence_file": "tmp_agent/brain_v9/main.py:1438-1600",
+      "recommendation": "No action required."
+    },
+    {
+      "component": "/v1/chat/completions",
+      "current_native_behavior": "POST /v1/chat/completions uses handle_user_message -> BrainSession.chat.",
+      "langgraph_expected_behavior": "Unchanged. OpenAI adapter does not touch Agent V2 runtime.",
+      "compatibility_status": "not_applicable",
+      "risk_level": "none",
+      "required_before_wiring": false,
+      "required_adapter_or_test": "none",
+      "evidence_file": "tmp_agent/brain_v9/api/openai_compat.py:136-208",
+      "recommendation": "No action required."
+    },
+    {
+      "component": "dashboard 8092 to 8091 proxy assumption",
+      "current_native_behavior": "Dashboard 8092 assumes Agent V2 backend is reachable on 127.0.0.1:8091.",
+      "langgraph_expected_behavior": "Proxy still works as long as 8091 exposes /v2/chat/agent. If opt-in wiring is only on 8090 but 8091 runs Native, dashboard chat will not use LangGraph. If 8091 runs LangGraph, schema/trace path must be preserved.",
+      "compatibility_status": "compatible_with_adapter",
+      "risk_level": "medium",
+      "required_before_wiring": true,
+      "required_adapter_or_test": "Document that 8091 and 8090 must use same backend selection logic when flag is active; ensure dashboard proxy works.",
+      "evidence_file": "tmp_agent/brain_v9/dashboard/dashboard_routes.py:313-365",
+      "recommendation": "Add contract test exercising dashboard proxy against both Native and LangGraph backends."
+    },
+    {
+      "component": "run_root differences",
+      "current_native_behavior": "Native stores runs/traces under RUN_ROOT (tmp_agent/brain_v9/state.py).",
+      "langgraph_expected_behavior": "LangGraph defaults to tmp_agent/agent_kernel_v2/runs_parity.",
+      "compatibility_status": "incompatible",
+      "risk_level": "high",
+      "required_before_wiring": true,
+      "required_adapter_or_test": "Opt-in wiring must pass same run_root to LangGraphParityRuntimeV2 as Native RUN_ROOT, or api_adapter trace endpoint must search both roots.",
+      "evidence_file": "tmp_agent/brain_v9/core/agent_kernel_v2/state.py; tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py:107",
+      "recommendation": "Use production RUN_ROOT for opt-in backend."
+    },
+    {
+      "component": "checkpoint/trace storage differences",
+      "current_native_behavior": "Native uses TraceStore and CheckpointStore under RUN_ROOT.",
+      "langgraph_expected_behavior": "LangGraph uses same TraceStore/CheckpointStore classes but under different run_root by default.",
+      "compatibility_status": "compatible_with_adapter",
+      "risk_level": "medium",
+      "required_before_wiring": true,
+      "required_adapter_or_test": "Ensure same run_root or implement trace resolution adapter.",
+      "evidence_file": "tmp_agent/brain_v9/core/agent_kernel_v2/trace.py; tmp_agent/brain_v9/core/agent_kernel_v2/checkpoints.py; tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py:132-148",
+      "recommendation": "Unify storage root."
+    }
+  ],
+  "compatibility_summary": {
+    "compatible": 7,
+    "compatible_with_adapter": 7,
+    "incompatible": 3,
+    "not_applicable": 4,
+    "unknown": 0,
+    "blocking_items": 1
+  },
+  "high_risk_items": [
+    "/v2/chat/agent response schema",
+    "ui/index.html chat rendering",
+    "dashboard /brain-dashboard/chat proxy",
+    "dashboard trace view",
+    "trace_url compatibility",
+    "mode build",
+    "run_root differences"
+  ],
+  "blocking_items": [
+    "error handling when langgraph unavailable"
+  ]
+}

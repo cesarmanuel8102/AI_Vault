@@ -1,0 +1,158 @@
+{
+  "front": "FRONT-BRAIN-FRONTEND-DASHBOARD-CHAT-CONTRACT-GATE-08C",
+  "baseline": "979c277",
+  "generated_at": "2026-06-29",
+  "purpose": "Define the minimum endpoint and response contracts that any future AGENT_V2_BACKEND opt-in wiring must preserve before it can be activated.",
+  "requirements": [
+    {
+      "id": "REQ-01",
+      "category": "/v2/chat/agent response contract",
+      "requirement": "The response MUST contain the following fields with stable semantics: ok, route, run_id, final_answer, capability_metadata, provider_metadata, mode_requested, mode_effective, mode_escalation_required, approval_required (or mode_escalation_required equivalent), confirmation_id, required_permission, trace_url, blocked_tools.",
+      "required_for": ["ui/index.html", "dashboard/static/app.js"],
+      "current_native_status": "satisfied",
+      "langgraph_gap": "LangGraph run() does not return expected_write_scope or auto_decision; provider_metadata shape differs.",
+      "must_be_added_or_adapter": "Response normalization adapter in api_adapter.py or runtime selector must add expected_write_scope (list of scheduled write tools), auto_decision fallback ('n/a'), and normalize provider_metadata fields.",
+      "test_required": true,
+      "test_scope": "TestClient POST /v2/chat/agent with monkeypatched finalizer asserts all required response fields are present for direct_assistant, brain_evidence, write_intent_blocked, and build-mode scenarios."
+    },
+    {
+      "id": "REQ-02",
+      "category": "Trace contract",
+      "requirement": "A run_id returned by /v2/chat/agent MUST be resolvable via GET /v2/agent/runs/{run_id}/trace and return {ok, run_id, trace[], event_count}. The dashboard 8092 proxy MUST also resolve the same run_id.",
+      "required_for": ["ui/index.html trace panel", "dashboard/static/app.js renderExecutionTrace"],
+      "current_native_status": "satisfied",
+      "langgraph_gap": "LangGraph defaults to different run_root; trace events use node-based event_type names.",
+      "must_be_added_or_adapter": "Use production RUN_ROOT for opt-in LangGraph backend. Add trace event type adapter in LangGraph runtime so that dashboard filters (plan_created, tool_call_*) continue to match, or add dual event emission.",
+      "test_required": true,
+      "test_scope": "For both Native and LangGraph backends, after POST /v2/chat/agent, fetch trace_url and assert ok=true, trace non-empty, event_count>0. For LangGraph, assert plan_created and tool_call_* events are present in trace."
+    },
+    {
+      "id": "REQ-03",
+      "category": "Dashboard 8092 proxy contract",
+      "requirement": "POST /brain-dashboard/chat MUST proxy to the same Agent V2 backend that /v2/chat/agent uses on 8091, and MUST return content, canonical_agent_v2, run_id, trace_url, classification, status, mode_effective, and error shape {ok:false, error, content} on failure.",
+      "required_for": ["dashboard/static/app.js chat widget"],
+      "current_native_status": "satisfied",
+      "langgraph_gap": "Proxy depends on 8091 service; if 8090 and 8091 backend selection diverges, dashboard may use Native while main UI uses LangGraph or vice versa.",
+      "must_be_added_or_adapter": "Document and enforce that 8091 uses identical AGENT_V2_BACKEND flag parsing as 8090. Add contract test against dashboard_routes chat() and agent_v2_trace() functions.",
+      "test_required": true,
+      "test_scope": "Test dashboard proxy endpoints directly (or mock urllib request) asserting request body and response mapping. If LangGraph available, run end-to-end through dashboard app mounted via TestClient."
+    },
+    {
+      "id": "REQ-04",
+      "category": "Mode contract",
+      "requirement": "read_only mode MUST remain safe (write tools blocked). build mode MUST require approval (mode_escalation_required=true, required_permission='build', confirmation_id present, expected_write_scope present). auto mode MUST NOT silently mutate to write; it MUST expose auto_decision in response.",
+      "required_for": ["ui/index.html mode switch", "dashboard/static/app.js setChatMode"],
+      "current_native_status": "satisfied",
+      "langgraph_gap": "LangGraph lacks expected_write_scope and auto_decision; build mode may skip unsupported write tools instead of escalating.",
+      "must_be_added_or_adapter": "Add expected_write_scope generation in LangGraph _governance_gate_node. Add auto_decision fallback in response normalization. Ensure build mode escalates safely.",
+      "test_required": true,
+      "test_scope": "TestClient scenarios: read_only direct_assistant ok; build mode returns mode_escalation_required=true, expected_write_scope non-empty, confirmation_id present; auto mode returns auto_decision field."
+    },
+    {
+      "id": "REQ-05",
+      "category": "Approval contract",
+      "requirement": "When mode_escalation_required is true, the frontend MUST receive expected_write_scope and confirmation_id. There is no requirement that /gate/approve resolve the escalation immediately, but the UI MUST degrade gracefully.",
+      "required_for": ["ui/index.html renderEscalationPanel", "dashboard/static/app.js metadata line"],
+      "current_native_status": "satisfied",
+      "langgraph_gap": "confirmation_id exists but expected_write_scope missing; dashboard does not render escalation panel, only metadata line.",
+      "must_be_added_or_adapter": "Add expected_write_scope to response normalization. Dashboard may optionally render escalation panel later.",
+      "test_required": true,
+      "test_scope": "Assert expected_write_scope and confirmation_id are present in build-mode response for both backends."
+    },
+    {
+      "id": "REQ-06",
+      "category": "Error contract",
+      "requirement": "If LangGraph is unavailable or the opt-in flag is not set, the system MUST fall back to NativeAgentRuntimeV2 and MUST NOT return a malformed response to /v2/chat/agent.",
+      "required_for": ["all Agent V2 frontends"],
+      "current_native_status": "satisfied",
+      "langgraph_gap": "LangGraph run() can return dict without run_id/trace_url when graph_available=false.",
+      "must_be_added_or_adapter": "Runtime selector MUST verify langgraph package and explicit flag before instantiating LangGraphParityRuntimeV2. api_adapter.py MUST NOT construct trace_url unless run_id exists.",
+      "test_required": true,
+      "test_scope": "Unit test runtime selector with/without AGENT_V2_BACKEND flag and with/without langgraph package. Assert fallback to Native and safe error JSON when backend unavailable."
+    },
+    {
+      "id": "REQ-07",
+      "category": "Streaming / progress contract",
+      "requirement": "/v2/chat/agent MAY remain synchronous JSON. Visual trace streaming through /brain/agent-trace/stream MUST remain operational and independent of the runtime backend.",
+      "required_for": ["ui/index.html connectAw", "ui/agent_trace_console.html connectSSE"],
+      "current_native_status": "satisfied",
+      "langgraph_gap": "None; visual trace endpoints are runtime-independent.",
+      "must_be_added_or_adapter": "No adapter needed.",
+      "test_required": false,
+      "test_scope": "N/A — existing SSE tests are sufficient."
+    },
+    {
+      "id": "REQ-08",
+      "category": "Legacy chat contract",
+      "requirement": "/chat and /v1/chat/completions MUST continue to route through handle_user_message and BrainSession.chat regardless of AGENT_V2_BACKEND flag.",
+      "required_for": ["legacy integrations", "Open WebUI"],
+      "current_native_status": "satisfied",
+      "langgraph_gap": "None by design.",
+      "must_be_added_or_adapter": "Explicitly exclude these endpoints from backend switching; add regression tests.",
+      "test_required": true,
+      "test_scope": "TestClient POST /chat and /v1/chat/completions with AGENT_V2_BACKEND=langgraph mocked; assert response still comes from legacy BrainSession path."
+    },
+    {
+      "id": "REQ-09",
+      "category": "Status panel contract",
+      "requirement": "/v2/agent/status, /brain-dashboard/status, /brain-dashboard/agent-v2/status MUST return backend string that dashboards tolerate (no hardcoded checks for 'native_runtime').",
+      "required_for": ["ops dashboards"],
+      "current_native_status": "satisfied",
+      "langgraph_gap": "backend becomes 'langgraph_parity'.",
+      "must_be_added_or_adapter": "No code change if dashboards already tolerate arbitrary backend string. Verify no hardcoded string checks.",
+      "test_required": true,
+      "test_scope": "Grep for hardcoded 'native_runtime' in frontend files; assert none found."
+    },
+    {
+      "id": "REQ-10",
+      "category": "Embedded dashboard contract",
+      "requirement": "All endpoints consumed by ui/dashboard_*.js on /dashboard and /dashboard-v2 MUST remain independent of Agent V2 runtime.",
+      "required_for": ["ui/dashboard_*.js"],
+      "current_native_status": "satisfied",
+      "langgraph_gap": "None.",
+      "must_be_added_or_adapter": "No adapter needed.",
+      "test_required": false,
+      "test_scope": "N/A — confirmed by static analysis."
+    }
+  ],
+  "minimum_test_matrix_before_wiring": [
+    {
+      "test_name": "v2_chat_agent_schema_parity",
+      "backend": "both",
+      "required_fields": ["ok", "route", "run_id", "final_answer", "provider_metadata", "capability_metadata", "mode_requested", "mode_effective", "mode_escalation_required", "confirmation_id", "required_permission", "trace_url", "blocked_tools"],
+      "scenarios": ["direct_assistant", "brain_evidence", "write_intent_blocked", "build_mode_explicit"]
+    },
+    {
+      "test_name": "v2_trace_resolution",
+      "backend": "both",
+      "assertions": ["trace_url resolves", "trace ok", "event_count > 0", "plan_created event present for non-direct routes"]
+    },
+    {
+      "test_name": "dashboard_8092_proxy_contract",
+      "backend": "both",
+      "assertions": ["/brain-dashboard/chat returns ok and content", "/brain-dashboard/agent-v2/runs/{run_id}/trace returns trace"]
+    },
+    {
+      "test_name": "mode_switch_contract",
+      "backend": "both",
+      "assertions": ["read_only safe", "build escalates with expected_write_scope", "auto returns auto_decision"]
+    },
+    {
+      "test_name": "runtime_fallback_when_langgraph_unavailable",
+      "backend": "mocked missing package",
+      "assertions": ["flag ignored", "Native runtime returned", "no crash"]
+    },
+    {
+      "test_name": "legacy_chat_unchanged",
+      "backend": "langgraph flag set",
+      "assertions": ["/chat still routes through BrainSession", "/v1/chat/completions still routes through BrainSession"]
+    }
+  ],
+  "recommended_next_action": "B. Add endpoint contract tests before blueprint",
+  "rationale": [
+    "Three incompatible items were identified (dashboard trace event types, mode build handling, run_root mismatch).",
+    "One blocking item (error handling when LangGraph unavailable) must be addressed at the runtime selector level.",
+    "Seven compatible_with_adapter items require response normalization or lightweight tests.",
+    "No frontend/dashboard source files need modification, but backend contract tests are required before safe wiring."
+  ]
+}

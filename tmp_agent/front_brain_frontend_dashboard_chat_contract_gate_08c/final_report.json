@@ -1,0 +1,109 @@
+{
+  "front": "FRONT-BRAIN-FRONTEND-DASHBOARD-CHAT-CONTRACT-GATE-08C",
+  "starting_head": "979c277",
+  "final_head": null,
+  "branch": "codex/own-capital-sustainable-return",
+  "status": "validated",
+  "source_files_modified": [],
+  "report_files_created": [
+    "tmp_agent/front_brain_frontend_dashboard_chat_contract_gate_08c/endpoint_inventory.json",
+    "tmp_agent/front_brain_frontend_dashboard_chat_contract_gate_08c/endpoint_inventory.md",
+    "tmp_agent/front_brain_frontend_dashboard_chat_contract_gate_08c/frontend_call_map.json",
+    "tmp_agent/front_brain_frontend_dashboard_chat_contract_gate_08c/frontend_call_map.md",
+    "tmp_agent/front_brain_frontend_dashboard_chat_contract_gate_08c/langgraph_opt_in_impact_matrix.json",
+    "tmp_agent/front_brain_frontend_dashboard_chat_contract_gate_08c/langgraph_opt_in_impact_matrix.md",
+    "tmp_agent/front_brain_frontend_dashboard_chat_contract_gate_08c/contract_requirements.json",
+    "tmp_agent/front_brain_frontend_dashboard_chat_contract_gate_08c/contract_requirements.md",
+    "tmp_agent/front_brain_frontend_dashboard_chat_contract_gate_08c/final_report.json",
+    "tmp_agent/front_brain_frontend_dashboard_chat_contract_gate_08c/final_report.md"
+  ],
+  "production_wiring_changed": false,
+  "runtime_selector_changed": false,
+  "api_adapter_changed": false,
+  "native_runtime_changed": false,
+  "langgraph_runtime_changed": false,
+  "langgraph_parity_runtime_changed": false,
+  "frontend_files_changed": false,
+  "dashboard_files_changed": false,
+  "endpoint_inventory_count": 38,
+  "frontend_call_count": 22,
+  "high_risk_items": [
+    "/v2/chat/agent response schema",
+    "ui/index.html chat rendering",
+    "dashboard /brain-dashboard/chat proxy",
+    "dashboard trace view",
+    "trace_url compatibility / run_root mismatch",
+    "mode build handling",
+    "error handling when langgraph unavailable"
+  ],
+  "blocking_items": [
+    "error handling when langgraph unavailable"
+  ],
+  "opt_in_blueprint_ready": true,
+  "required_before_blueprint": [
+    "Add response normalization adapter in api_adapter.py or runtime selector for /v2/chat/agent (expected_write_scope, auto_decision, provider_metadata)",
+    "Use production RUN_ROOT for LangGraph opt-in backend or implement dual-root trace lookup",
+    "Add trace event type adapter so dashboard trace filters (plan_created, tool_call_*) match LangGraph output",
+    "Implement expected_write_scope in LangGraph _governance_gate_node for build mode",
+    "Add runtime selector guard: only instantiate LangGraphParityRuntimeV2 when AGENT_V2_BACKEND=langgraph AND langgraph package is available",
+    "Add endpoint contract tests covering schema parity, trace resolution, dashboard proxy, mode switch, fallback, and legacy chat"
+  ],
+  "recommended_next_action": "B. Add endpoint contract tests before blueprint",
+  "next_front_name": "FRONT-BRAIN-AGENT-V2-BACKEND-FLAG-CONTRACT-TESTS-08D",
+  "prior_context": {
+    "benchmark_decision": "A — opt-in_backend_blueprint",
+    "benchmark_front": "FRONT-BRAIN-NATIVE-VS-LANGGRAPH-FAIR-FULL-PARITY-BENCHMARK-08B",
+    "benchmark_native_score": 850,
+    "benchmark_langgraph_core_score": 880,
+    "benchmark_langgraph_with_bonus": 930,
+    "architecture_bonus": 50,
+    "production_wiring_changed": false,
+    "runtime_selector_changed": false,
+    "api_adapter_changed": false,
+    "langgraph_parity_runtime_changed": false,
+    "caveat": "Frontend/dashboard/chat endpoint contracts were not validated by benchmark 08B."
+  },
+  "audit_findings": {
+    "native_v2_touched_endpoints": [
+      "POST /v2/chat/agent",
+      "GET /v2/agent/capabilities",
+      "GET /v2/agent/status",
+      "GET /v2/agent/runs",
+      "POST /v2/agent/runs",
+      "GET /v2/agent/runs/{run_id}",
+      "POST /v2/agent/runs/{run_id}/plan",
+      "POST /v2/agent/runs/{run_id}/execute",
+      "GET /v2/agent/runs/{run_id}/trace",
+      "POST /brain-dashboard/chat",
+      "GET /brain-dashboard/agent-v2/runs/{run_id}/trace",
+      "GET /brain-dashboard/status",
+      "GET /brain-dashboard/agent-v2/status",
+      "GET /brain-dashboard/agent-v2/status (main.py)"
+    ],
+    "legacy_chat_independent": [
+      "POST /chat",
+      "POST /v1/chat/completions"
+    ],
+    "visual_trace_independent": [
+      "GET /brain/agent-trace/latest",
+      "GET /brain/agent-trace/stream",
+      "POST /brain/agent-trace/event"
+    ],
+    "approval_gate_independent": [
+      "POST /gate/approve/{pending_id}",
+      "POST /gate/reject/{pending_id}",
+      "POST /tool01/permission/approve"
+    ],
+    "embedded_dashboard_independent": "All /brain/*, /trading/*, /autonomy/* endpoints consumed by ui/dashboard_*.js are independent of Agent V2 runtime.",
+    "port_map": {
+      "8090": "main FastAPI app (Brain Chat V9)",
+      "8091": "Agent V2 backend (exposed by main app or worker; dashboard 8092 proxies here)",
+      "8092": "persistent autonomy dashboard app"
+    }
+  },
+  "guard_result": "SAFE",
+  "memory_touched": false,
+  "faiss_touched": false,
+  "trading_touched": false,
+  "env_touched": false
+}
