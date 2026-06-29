@@ -1,0 +1,29 @@
+{
+  "file_exists": true,
+  "importable": true,
+  "import_error": null,
+  "dependencies_missing": [],
+  "instantiable": true,
+  "instantiation_error": null,
+  "graph_probe_available": true,
+  "graph_probe_executed": true,
+  "graph_probe_result": {
+    "ok": true,
+    "backend": "langgraph",
+    "out": {
+      "probe": true,
+      "planned": true,
+      "retrieved": true,
+      "tools_checked": true,
+      "finalized": true
+    }
+  },
+  "graph_stream_available": false,
+  "checkpointer_detected": false,
+  "MemoryGatewayV2_detected": false,
+  "ToolGatewayV2_detected": false,
+  "governance_detected": false,
+  "trace_detected": false,
+  "production_wired": false,
+  "classification": "LANGGRAPH_EXECUTABLE_ISOLATED"
+}

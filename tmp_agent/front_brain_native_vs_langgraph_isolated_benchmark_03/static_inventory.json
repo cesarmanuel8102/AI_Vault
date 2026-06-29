@@ -1,0 +1,32 @@
+{
+  "native_runtime_exists": true,
+  "native_runtime_active_in_runtime_selector": true,
+  "native_runtime_backend": "native_runtime",
+  "langgraph_runtime_file_exists": true,
+  "langgraph_runtime_importable": true,
+  "langgraph_runtime_instantiable": true,
+  "langgraph_dependencies_available": true,
+  "langgraph_uses_StateGraph": true,
+  "langgraph_uses_checkpointer": false,
+  "langgraph_has_graph_invoke": true,
+  "langgraph_has_graph_stream": false,
+  "langgraph_uses_MemoryGatewayV2": false,
+  "langgraph_uses_ToolGatewayV2": false,
+  "langgraph_uses_governance": false,
+  "langgraph_uses_trace": false,
+  "production_routes_using_langgraph": [],
+  "production_routes_using_native": [
+    "/v2/chat/agent"
+  ],
+  "source_files_modified": false,
+  "evidence": {
+    "runtime_selector_source": "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+    "native_runtime_source": "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+    "langgraph_runtime_source": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_runtime.py",
+    "api_adapter_route_source": "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "runtime_selector_note": "get_agent_runtime_v2() returns a singleton NativeAgentRuntimeV2 instance; langgraph_runtime is not imported or used.",
+    "langgraph_runtime_note": "LangGraphAgentRuntimeV2 subclasses NativeAgentRuntimeV2, defines a toy StateGraph with plan/retrieve/tools/final nodes, compiles it, and exposes graph_probe(). It does not wire MemoryGatewayV2, ToolGatewayV2, governance, trace, or checkpointing.",
+    "langgraph_import_check": "langgraph package is installed and StateGraph/END/START import succeeded during instantiation test.",
+    "production_wiring_note": "No production route imports LangGraphAgentRuntimeV2 or calls its graph. /v2/chat/agent uses get_agent_runtime_v2() -> NativeAgentRuntimeV2."
+  }
+}

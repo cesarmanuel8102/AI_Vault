@@ -1,0 +1,64 @@
+{
+  "native_v2": {
+    "runtime_importability": 100,
+    "route_integration": 100,
+    "production_readiness": 85,
+    "capability_metadata": 100,
+    "traceability": 80,
+    "checkpointing": 75,
+    "memory_gateway_use": 90,
+    "tool_gateway_use": 90,
+    "governance_preservation": 95,
+    "testability": 90,
+    "operational_risk": 85,
+    "implementation_cost": 90,
+    "expected_agent_quality_gain": 60,
+    "total_score": 1040,
+    "max_possible": 1300,
+    "normalized_score": 80
+  },
+  "langgraph": {
+    "runtime_importability": 70,
+    "route_integration": 0,
+    "production_readiness": 20,
+    "capability_metadata": 0,
+    "traceability": 10,
+    "checkpointing": 10,
+    "memory_gateway_use": 0,
+    "tool_gateway_use": 0,
+    "governance_preservation": 0,
+    "testability": 60,
+    "operational_risk": 30,
+    "implementation_cost": 25,
+    "expected_agent_quality_gain": 20,
+    "total_score": 245,
+    "max_possible": 1300,
+    "normalized_score": 19,
+    "abstract_potential": 70
+  },
+  "classification_native": "PRODUCTION_CANONICAL",
+  "classification_langgraph": "LANGGRAPH_EXECUTABLE_ISOLATED",
+  "decision": "KEEP_NATIVE_V2_AND_IMPROVE",
+  "decision_rationale": [
+    "Native V2 is already the active backend for /v2/chat/agent and returns full capability_metadata.",
+    "Native V2 preserves governance, memory gateway read-only use, tool gateway enforcement, trace, and per-run checkpointing.",
+    "LangGraph runtime is importable and its toy StateGraph executes in isolation, but it has no production route integration, no capability_metadata, no MemoryGatewayV2/ToolGatewayV2 wiring, no governance, no trace, and no checkpointer.",
+    "LangGraph does not beat Native V2 on any measured production dimension; its benefits remain theoretical.",
+    "Wiring LangGraph now would require substantial implementation and risk introduction without proven quality gain."
+  ],
+  "evidence": {
+    "native_runtime_active": true,
+    "native_route": "/v2/chat/agent",
+    "native_capability_metadata_keys": [
+      "memory_used", "retrieval_attempted", "retrieval_no_results", "retrieval_skipped",
+      "planner_used", "evidence_routed", "evidence_sources_count", "tools_considered",
+      "tools_executed", "tools_blocked", "governance_checked", "trace_events_count",
+      "intent_route", "classification"
+    ],
+    "langgraph_file": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_runtime.py",
+    "langgraph_importable": true,
+    "langgraph_instantiable": true,
+    "langgraph_graph_probe_ok": true,
+    "langgraph_production_wired": false
+  }
+}

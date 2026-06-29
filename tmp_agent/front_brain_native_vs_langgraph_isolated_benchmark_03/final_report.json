@@ -1,0 +1,87 @@
+{
+  "front": "FRONT-BRAIN-NATIVE-VS-LANGGRAPH-ISOLATED-BENCHMARK-03",
+  "branch": "codex/own-capital-sustainable-return",
+  "starting_head": "c58e2a6",
+  "source_files_modified": false,
+  "test_file_created": "tests/smoke/test_brain_native_vs_langgraph_isolated_benchmark_03.py",
+  "native_probe_summary": {
+    "probe_method": "FastAPI TestClient POST /v2/chat/agent",
+    "endpoint": "/v2/chat/agent",
+    "status_code": 200,
+    "backend": "native_runtime",
+    "runtime_class": "NativeAgentRuntimeV2",
+    "capability_metadata_present": true,
+    "required_keys_present": [
+      "memory_used", "retrieval_attempted", "retrieval_no_results", "retrieval_skipped",
+      "planner_used", "evidence_routed", "evidence_sources_count", "tools_considered",
+      "tools_executed", "tools_blocked", "governance_checked", "trace_events_count",
+      "intent_route", "classification"
+    ],
+    "governance_probe_result": "write intent blocked in read_only mode",
+    "trace_events_count": 28,
+    "source_modified": false
+  },
+  "langgraph_probe_summary": {
+    "file_exists": true,
+    "importable": true,
+    "instantiable": true,
+    "graph_probe_available": true,
+    "graph_probe_executed": true,
+    "graph_probe_result": {
+      "ok": true,
+      "backend": "langgraph",
+      "out": {"probe": true, "planned": true, "retrieved": true, "tools_checked": true, "finalized": true}
+    },
+    "checkpointer_detected": false,
+    "MemoryGatewayV2_detected": false,
+    "ToolGatewayV2_detected": false,
+    "governance_detected": false,
+    "trace_detected": false,
+    "production_wired": false,
+    "classification": "LANGGRAPH_EXECUTABLE_ISOLATED"
+  },
+  "scorecard_summary": {
+    "native_v2_normalized_score": 80,
+    "langgraph_normalized_score": 19,
+    "native_v2_classification": "PRODUCTION_CANONICAL",
+    "langgraph_classification": "LANGGRAPH_EXECUTABLE_ISOLATED",
+    "decision": "KEEP_NATIVE_V2_AND_IMPROVE"
+  },
+  "decision": "KEEP_NATIVE_V2_AND_IMPROVE",
+  "rationale": [
+    "Native V2 is already wired to /v2/chat/agent, returns full capability_metadata, and preserves governance.",
+    "LangGraph runtime is importable and its toy StateGraph executes in isolation, but lacks production route integration, capability metadata, memory/tool/governance/trace wiring, and checkpointing.",
+    "LangGraph does not beat Native V2 on any measured dimension; wiring it now would introduce risk without proven benefit."
+  ],
+  "what_changed": [
+    "Created isolated benchmark smoke test.",
+    "Created static_inventory.json, native_probe.json, langgraph_probe.json.",
+    "Created comparison_scorecard.json/.md and final_report.json/.md."
+  ],
+  "what_did_not_change": [
+    "native_runtime.py",
+    "runtime.py",
+    "api_adapter.py",
+    "main.py",
+    "governance files",
+    "memory files",
+    "FAISS/index files",
+    "trading/broker/QC/QuantConnect files",
+    ".env"
+  ],
+  "langgraph_should_be_wired_now": false,
+  "native_v2_remains_canonical": true,
+  "governance_status": "preserved",
+  "memory_faiss_trading_env_status": "untouched",
+  "recommended_next_action": "A. Continue improving Native V2 with capability-driven patches",
+  "files_created": [
+    "tests/smoke/test_brain_native_vs_langgraph_isolated_benchmark_03.py",
+    "tmp_agent/front_brain_native_vs_langgraph_isolated_benchmark_03/static_inventory.json",
+    "tmp_agent/front_brain_native_vs_langgraph_isolated_benchmark_03/native_probe.json",
+    "tmp_agent/front_brain_native_vs_langgraph_isolated_benchmark_03/langgraph_probe.json",
+    "tmp_agent/front_brain_native_vs_langgraph_isolated_benchmark_03/comparison_scorecard.json",
+    "tmp_agent/front_brain_native_vs_langgraph_isolated_benchmark_03/comparison_scorecard.md",
+    "tmp_agent/front_brain_native_vs_langgraph_isolated_benchmark_03/final_report.json",
+    "tmp_agent/front_brain_native_vs_langgraph_isolated_benchmark_03/final_report.md"
+  ]
+}

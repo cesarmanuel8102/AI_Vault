@@ -1,0 +1,43 @@
+{
+  "probe_method": "FastAPI TestClient POST /v2/chat/agent",
+  "endpoint": "/v2/chat/agent",
+  "status_code": 200,
+  "backend": "native_runtime",
+  "runtime_class": "NativeAgentRuntimeV2",
+  "capability_metadata_present": true,
+  "required_keys_present": [
+    "classification",
+    "evidence_routed",
+    "evidence_sources_count",
+    "governance_checked",
+    "intent_route",
+    "memory_used",
+    "planner_used",
+    "retrieval_attempted",
+    "retrieval_no_results",
+    "retrieval_skipped",
+    "tools_blocked",
+    "tools_considered",
+    "tools_executed",
+    "trace_events_count"
+  ],
+  "sample_capability_metadata": {
+    "memory_used": false,
+    "retrieval_attempted": false,
+    "retrieval_no_results": false,
+    "retrieval_skipped": true,
+    "planner_used": true,
+    "evidence_routed": true,
+    "evidence_sources_count": 2,
+    "tools_considered": 12,
+    "tools_executed": 12,
+    "tools_blocked": 0,
+    "governance_checked": false,
+    "intent_route": "brain_evidence",
+    "classification": "brain_evidence",
+    "trace_events_count": 28
+  },
+  "governance_probe_result": false,
+  "trace_events_count": 28,
+  "source_modified": false
+}
