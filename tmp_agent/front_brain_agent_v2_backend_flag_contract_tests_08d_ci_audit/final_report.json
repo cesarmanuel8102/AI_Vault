@@ -1,0 +1,31 @@
+{
+  "audited_front": "FRONT-BRAIN-AGENT-V2-BACKEND-FLAG-CONTRACT-TESTS-08D",
+  "previous_baseline": "af5636b",
+  "audited_head": "c658fd0",
+  "audit_date": "2026-06-29",
+  "branch": "codex/own-capital-sustainable-return",
+  "remote_diff_allowed_only": true,
+  "source_files_modified": false,
+  "frontend_files_modified": false,
+  "dashboard_files_modified": false,
+  "production_wiring_changed": false,
+  "json_artifacts_parse_ok": true,
+  "guard_result": "SAFE",
+  "phase1_run_id": 28390268745,
+  "phase1_result": "success",
+  "nontrading_run_id": 28390268688,
+  "nontrading_result": "success",
+  "process_violation_detected": true,
+  "process_violation_type": {
+    "amend_used": true,
+    "force_push_used": false,
+    "force_with_lease_used": false
+  },
+  "acceptance_decision": "ACCEPTED_WITH_PROCESS_VIOLATION",
+  "corrective_policy": {
+    "no_future_amend": true,
+    "no_future_force_push": true,
+    "future_fronts_must_abort_if_final_head_requires_amend": true
+  },
+  "recommended_next_action": "Proceed to response normalization adapter and runtime selector guard for AGENT_V2_BACKEND; enforce no-amend/no-force-push policy in future fronts."
+}
