@@ -1,0 +1,61 @@
+{
+  "front": "FRONT-BRAIN-LANGGRAPH-PARITY-PROTOTYPE-IMPLEMENT-05",
+  "starting_head": "a5498ee",
+  "final_head": "TBD",
+  "branch": "codex/own-capital-sustainable-return",
+  "status": "validated",
+  "source_files_created": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+    "tests/smoke/test_brain_langgraph_parity_prototype_05.py"
+  ],
+  "source_files_modified": [],
+  "files_changed": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+    "tests/smoke/test_brain_langgraph_parity_prototype_05.py",
+    "tmp_agent/front_brain_langgraph_parity_prototype_implement_05/implementation_summary.json",
+    "tmp_agent/front_brain_langgraph_parity_prototype_implement_05/implementation_summary.md",
+    "tmp_agent/front_brain_langgraph_parity_prototype_implement_05/parity_probe.json",
+    "tmp_agent/front_brain_langgraph_parity_prototype_implement_05/parity_probe.md",
+    "tmp_agent/front_brain_langgraph_parity_prototype_implement_05/final_report.json",
+    "tmp_agent/front_brain_langgraph_parity_prototype_implement_05/final_report.md"
+  ],
+  "tests_run": 17,
+  "tests_passed": 17,
+  "regression_tests_run": 27,
+  "regression_tests_passed": 27,
+  "unit_security_tests_run": 3,
+  "unit_security_tests_passed": 3,
+  "langgraph_available": true,
+  "parity_runtime_importable": true,
+  "parity_runtime_instantiable": true,
+  "direct_assistant_ok": true,
+  "brain_evidence_ok": true,
+  "write_intent_blocked": true,
+  "capability_metadata_ok": true,
+  "trace_ok": true,
+  "checkpoint_ok": true,
+  "evaluator_ok": true,
+  "runtime_selector_unchanged": true,
+  "production_route_unchanged": true,
+  "memory_touched": false,
+  "faiss_touched": false,
+  "trading_touched": false,
+  "env_touched": false,
+  "guard_result": "SAFE",
+  "roadmap_items_advanced": [
+    "Phase 0 skeleton",
+    "Phase 1 tool/memory wiring",
+    "Phase 2 intent/planning/evidence parity (prototype shim)",
+    "Phase 3 finalizer/metadata parity",
+    "Phase 4 trace/checkpoint parity",
+    "Phase 5 isolated smoke parity test"
+  ],
+  "recommended_next_action": "A. Run parity benchmark against Native V2",
+  "remaining_gaps": [
+    "Full AgentV2IntentAdapter reuse not yet wired",
+    "context_assembler reuse not yet wired",
+    "planner.build_plan reuse not yet wired",
+    "No AGENT_V2_BACKEND flag wiring",
+    "No streaming/graph.stream usage"
+  ]
+}

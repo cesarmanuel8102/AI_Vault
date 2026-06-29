@@ -1,0 +1,62 @@
+{
+  "front": "FRONT-BRAIN-LANGGRAPH-PARITY-PROTOTYPE-IMPLEMENT-05",
+  "baseline": "a5498ee",
+  "source_files_created": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"
+  ],
+  "source_files_modified": [],
+  "production_wiring_changed": false,
+  "runtime_selector_changed": false,
+  "api_adapter_changed": false,
+  "native_runtime_changed": false,
+  "langgraph_runtime_changed": false,
+  "class_created": "LangGraphParityRuntimeV2",
+  "public_methods": [
+    "__init__",
+    "run",
+    "graph_probe",
+    "get_trace",
+    "get_checkpoint",
+    "get_run"
+  ],
+  "nodes_created": [
+    "start",
+    "intent",
+    "context_assembly",
+    "memory_retrieval",
+    "evidence_routing",
+    "planner",
+    "governance_gate",
+    "tool_execution",
+    "result_normalization",
+    "finalizer",
+    "evaluator",
+    "repair_or_replan",
+    "capability_metadata",
+    "end"
+  ],
+  "native_components_reused": [
+    "ToolGatewayV2",
+    "MemoryGatewayV2",
+    "CheckpointStore",
+    "TraceStore",
+    "governance.validate_mode",
+    "governance.mode_requires_escalation",
+    "schemas.AgentTraceEvent",
+    "schemas.ToolCallRequest",
+    "schemas.to_dict"
+  ],
+  "unsupported_or_recorded_skips": [
+    "Full AgentV2IntentAdapter reuse replaced by deterministic shim for prototype isolation",
+    "context_assembler not reused to avoid memory/state coupling",
+    "planner.build_plan not reused to avoid route/goal coupling",
+    "finalizer.finalize_agent_run not reused to avoid live LLM call"
+  ],
+  "safety_controls": [
+    "run_root must be provided by tests; default points to non-production runs_parity directory",
+    "Write tools blocked via ToolGatewayV2.call with mode parameter",
+    "mode_requires_escalation called before tool execution",
+    "No import of api_adapter.py",
+    "No modification of runtime.py, api_adapter.py, native_runtime.py, langgraph_runtime.py"
+  ]
+}
