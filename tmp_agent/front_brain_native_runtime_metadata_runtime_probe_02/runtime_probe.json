@@ -1,0 +1,175 @@
+{
+  "runtime_selector": {
+    "backend": "native_runtime",
+    "runtime_class": "NativeAgentRuntimeV2"
+  },
+  "brain_evidence_read_only": {
+    "message": "What is the status of the brain gate approve endpoint?",
+    "mode": "read_only",
+    "status_code": 200,
+    "body": {
+      "ok": true,
+      "canonical_agent_v2": true,
+      "route": "/v2/chat/agent",
+      "run_id": "agv2_3e628f2780684d64",
+      "trace_url": "/v2/agent/runs/agv2_3e628f2780684d64/trace",
+      "final_answer": "## Agent V2 Finalizer — Brain Evidence Analysis\n\n---\n\n### Summary\n\n**Goal:** Determine the status of the \"brain gate approve endpoint.\"\n\n**Finding:** No direct evidence of a dedicated \"brain gate approve endpoint\" was found in the executed tool results. The evidence reveals a Brain V9 runtime with API infrastructure, but the specific \"approve\" gate endpoint is **not present in the searched files**. What *was* found is an unrelated `approve` command in a capital allocator script (`80_CAPITAL_ENGINE\\capital_allocator.py:106`) requiring `exp_id amount reason` parameters — this is **not** a brain gate endpoint.\n\n---\n\n### Brain Evidence\n\n| Evidence ID | Tool | Source | Deterministic Finding |\n|-------------|------|--------|----------------------|\n| `tool_1`, `tool_6` | `repo_status_read` | Git HEAD | Commit `3c01aa6`, clean working tree (no uncommitted changes) |\n| `tool_2` | `grep_search` | Codebase | **No matches** for \"brain gate approve\" or \"approve endpoint\" in brain API routes. Found only: (a) `capital_allocator.py:106` — CLI-style `SystemExit(\"approve requires: exp_id amount reason\")` in capital engine, and (b) `brain_v2_pocketoption_test.py` — test script for mode switching |\n| `tool_3` | `file_read` | `api_adapter.py` | Brain V9 API adapter exists with `APIRouter`, `require_strict_operator_access`, capability metadata builder. **No approve endpoint defined here.** |\n| `tool_4` | `file_read` | `native_runtime.py` | Native runtime V2 with `ToolGatewayV2`, `CheckpointStore`, `MemoryGatewayV2`, `TraceStore`. **No gate/approve endpoint in runtime core.** |\n| `tool_5` | `file_read` | `__init__.py` | Minimal exports: `get_agent_runtime_v2` only |\n| `tool_7` | `grep_search` | Broader codebase | `advisor_server_clean.py` has `/v1/agent/runtime/snapshot/set` and `/healthz`. **No `/approve` or gate endpoint found.** |\n| `tool_8` | `file_read` | `brain_gen.log` | Brain V9 running on `127.0.0.1:8091`, routers: `/upgrade/*`, `/brain/agent-trace/stream`. **No approve endpoint in active routes.** |\n| `tool_9` | `file_read` | `brain_adaptive.log` | Same runtime startup pattern, port 8091. Session 'default' v4-unified active. |\n| `tool_10` | `file_read` | `brain_semantic_mem.log` | Same runtime, includes `/health` returning 503 at one point. **No approve endpoint logged.** |\n\n**Inference (labeled):** The \"brain gate approve endpoint\" may be a **requested but not yet implemented** feature, or it may exist under a different naming convention in files **not searched** by the scheduled `grep_search` patterns. The current Brain V9 API surface (`api_adapter.py`, `native_runtime.py`, logs) shows **no evidence** of an `/approve` or gate-approval endpoint.\n\n---\n\n### Actions Performed\n\n| Tool | Requested | Scheduled | Executed | Result |\n|------|-----------|-----------|----------|--------|\n| `repo_status_read` | ❌ No | ✅ Yes | ✅ Yes | Git HEAD `3c01aa6`, clean |\n| `grep_search` | ❌ No | ✅ Yes | ✅ Yes | No brain gate approve matches; unrelated capital engine `approve` found |\n| `file_read` | ❌ No | ✅ Yes | ✅ Yes | 6 files read: API adapter, native runtime, `__init__`, 3 logs |\n\n**No tools were unavailable.** All scheduled tools executed successfully. No additional tools were requested by the user.\n\n---\n\n### Risks / Gates\n\n| Risk | Evidence | Severity |\n|------|----------|----------|\n| **Missing endpoint** | No deterministic evidence of \"brain gate approve endpoint\" in any searched file | Medium — feature may not exist or may be unimplemented |\n| **Naming ambiguity** | \"approve\" exists in `capital_allocator.py` but",
+      "provider_metadata": {
+        "provider_attempted": [
+          "ollama:kimi-k2.6:cloud"
+        ],
+        "provider_used": "ollama_cloud",
+        "model_used": "kimi-k2.6:cloud",
+        "provider_degraded": false,
+        "fallback_reason": "none",
+        "latency_ms": 6877,
+        "kimi_available": true,
+        "raw_cot_exposed": false
+      },
+      "classification": "brain_evidence",
+      "status": "completed",
+      "mode_requested": "read_only",
+      "mode_effective": "read_only",
+      "auto_decision": "n/a",
+      "mode_escalation_required": null,
+      "mode_escalation_reason": null,
+      "required_permission": null,
+      "expected_write_scope": null,
+      "confirmation_id": null,
+      "blocked_tools": null,
+      "intent_route": "brain_evidence",
+      "intent_detected": "QUERY",
+      "intent_confidence": 0.99,
+      "capability_metadata": {
+        "memory_used": false,
+        "retrieval_attempted": false,
+        "retrieval_no_results": false,
+        "retrieval_skipped": true,
+        "planner_used": true,
+        "evidence_routed": true,
+        "evidence_sources_count": 2,
+        "tools_considered": 12,
+        "tools_executed": 12,
+        "tools_blocked": 0,
+        "governance_checked": false,
+        "intent_route": "brain_evidence",
+        "classification": "brain_evidence",
+        "trace_events_count": 28
+      }
+    }
+  },
+  "direct_assistant_read_only": {
+    "message": "hi",
+    "mode": "read_only",
+    "status_code": 200,
+    "body": {
+      "ok": true,
+      "canonical_agent_v2": true,
+      "route": "/v2/chat/agent",
+      "run_id": "agv2_4a0bd540a59f6e58",
+      "trace_url": "/v2/agent/runs/agv2_4a0bd540a59f6e58/trace",
+      "final_answer": "Hi! I'm here to help. What can I do for you today?",
+      "provider_metadata": {
+        "provider_attempted": [
+          "ollama:kimi-k2.6:cloud"
+        ],
+        "provider_used": "ollama_cloud",
+        "model_used": "kimi-k2.6:cloud",
+        "provider_degraded": false,
+        "fallback_reason": "none",
+        "latency_ms": 1007,
+        "kimi_available": true,
+        "raw_cot_exposed": false
+      },
+      "classification": null,
+      "status": "completed",
+      "mode_requested": "read_only",
+      "mode_effective": "read_only",
+      "auto_decision": "n/a",
+      "mode_escalation_required": null,
+      "mode_escalation_reason": null,
+      "required_permission": null,
+      "expected_write_scope": null,
+      "confirmation_id": null,
+      "blocked_tools": null,
+      "intent_route": "direct_assistant",
+      "intent_detected": "CONVERSATION",
+      "intent_confidence": 0.99,
+      "capability_metadata": {
+        "memory_used": false,
+        "retrieval_attempted": false,
+        "retrieval_no_results": false,
+        "retrieval_skipped": false,
+        "planner_used": false,
+        "evidence_routed": false,
+        "evidence_sources_count": 0,
+        "tools_considered": 0,
+        "tools_executed": 0,
+        "tools_blocked": 0,
+        "governance_checked": false,
+        "intent_route": "direct_assistant",
+        "classification": null,
+        "trace_events_count": 4
+      }
+    }
+  },
+  "write_intent_blocked_in_read_only": {
+    "message": "apply patch to README.md",
+    "mode": "read_only",
+    "status_code": 200,
+    "body": {
+      "ok": true,
+      "canonical_agent_v2": true,
+      "route": "/v2/chat/agent",
+      "run_id": "agv2_87bbe46e07581890",
+      "trace_url": "/v2/agent/runs/agv2_87bbe46e07581890/trace",
+      "final_answer": "## Summary\nGoal was to apply a patch to README.md. The agent was in `read_only` mode with classification `approval_required_write`. One write tool was scheduled and executed; it was correctly blocked by mode constraints. Read tools (`repo_status_read`, `grep_search`, `file_read`) executed and passed. No memory evidence was used.\n\n---\n\n## Evidence used\n\n| Evidence ID | Tool | Type | Status |\n|-------------|------|------|--------|\n| tool_1 | `file_patch_apply_approval_required` | LIVE TOOL EVIDENCE | **Executed and correctly blocked** — `write_tool_blocked_in_read_only_mode` |\n| tool_2 | `repo_status_read` | LIVE TOOL EVIDENCE | **Executed and passed** |\n| tool_3 | `grep_search` | LIVE TOOL EVIDENCE | **Executed and passed** |\n| tool_4 | `file_read` | LIVE TOOL EVIDENCE | **Executed and passed** |\n| *(none)* | *(none)* | MEMORY EVIDENCE | None present |\n\n---\n\n## Actions performed\n\n| Tool | Distinction | Outcome |\n|------|-------------|---------|\n| `file_patch_apply_approval_required` | Scheduled: **yes**; Requested: **no**; Executed: **yes** | Blocked by read-only mode safety gate |\n| `repo_status_read` | Scheduled and executed | Passed — returned HEAD at `3c01aa6`, clean working tree |\n| `grep_search` | Scheduled and executed | Passed — returned matches from `advisor_server_clean.py` |\n| `file_read` | Scheduled and executed | Passed — returned `api_adapter.py` content |\n\n---\n\n## Risks/gates\n\n| Gate | State | Detail |\n|------|-------|--------|\n| Write approval gate | **Active and enforced** | `read_only` mode blocked `file_patch_apply_approval_required` |\n| Mode escalation | **Blocked** | Classification `approval_required_write` requires explicit approval; no approval was granted |\n| Semantic/FAISS writes | **Not triggered** | No semantic write tools scheduled |\n| Trading | **Not applicable** | No trading tools involved |\n\n---\n\n## Next safe action\n\nTo proceed toward the goal of applying a patch to README.md, the operator must:\n\n1. **Escalate mode** from `read_only` to an approved write-capable mode (e.g., `approved_write`), or\n2. **Grant explicit approval** for the `file_patch_apply_approval_required` tool, satisfying the `approval_required_write` classification.\n\nUntil then, any write tool execution will continue to be correctly blocked.",
+      "provider_metadata": {
+        "provider_attempted": [
+          "ollama:kimi-k2.6:cloud"
+        ],
+        "provider_used": "ollama_cloud",
+        "model_used": "kimi-k2.6:cloud",
+        "provider_degraded": false,
+        "fallback_reason": "none",
+        "latency_ms": 5397,
+        "kimi_available": true,
+        "raw_cot_exposed": false
+      },
+      "classification": "approval_required_write",
+      "status": "completed",
+      "mode_requested": "read_only",
+      "mode_effective": "read_only",
+      "auto_decision": "n/a",
+      "mode_escalation_required": true,
+      "mode_escalation_reason": null,
+      "required_permission": "build",
+      "expected_write_scope": [
+        "file_patch_apply_approval_required"
+      ],
+      "confirmation_id": "confirm_agv2_87bbe46e07581890",
+      "blocked_tools": [
+        "file_patch_apply_approval_required"
+      ],
+      "intent_route": "operational_agent",
+      "intent_detected": "CONVERSATION",
+      "intent_confidence": 0.5,
+      "capability_metadata": {
+        "memory_used": false,
+        "retrieval_attempted": false,
+        "retrieval_no_results": false,
+        "retrieval_skipped": true,
+        "planner_used": true,
+        "evidence_routed": true,
+        "evidence_sources_count": 1,
+        "tools_considered": 4,
+        "tools_executed": 4,
+        "tools_blocked": 1,
+        "governance_checked": true,
+        "intent_route": "operational_agent",
+        "classification": "approval_required_write",
+        "trace_events_count": 13
+      }
+    }
+  }
+}

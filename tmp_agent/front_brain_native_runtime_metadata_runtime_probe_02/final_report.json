@@ -1,0 +1,52 @@
+{
+  "front_id": "FRONT-BRAIN-NATIVE-RUNTIME-METADATA-RUNTIME-PROBE-02",
+  "branch": "codex/own-capital-sustainable-return",
+  "baseline": "3c01aa64",
+  "status": "verified",
+  "date": "2026-06-29",
+  "goal": "Runtime-probe /v2/chat/agent to prove capability_metadata is returned in the live API path, NativeAgentRuntimeV2 remains active, LangGraph is not activated, and governance/security are preserved.",
+  "test_file": "tests/smoke/test_brain_native_runtime_metadata_runtime_probe_02.py",
+  "probe_reports": [
+    "tmp_agent/front_brain_native_runtime_metadata_runtime_probe_02/runtime_probe.json",
+    "tmp_agent/front_brain_native_runtime_metadata_runtime_probe_02/runtime_probe.md"
+  ],
+  "validation": {
+    "tests_total": 15,
+    "tests_passed": 15,
+    "tests_failed": 0,
+    "required_metadata_keys_present": [
+      "memory_used",
+      "retrieval_attempted",
+      "retrieval_no_results",
+      "retrieval_skipped",
+      "planner_used",
+      "evidence_routed",
+      "evidence_sources_count",
+      "tools_considered",
+      "tools_executed",
+      "tools_blocked",
+      "governance_checked",
+      "trace_events_count",
+      "intent_route",
+      "classification"
+    ],
+    "runtime_backend": "native_runtime",
+    "runtime_class": "NativeAgentRuntimeV2",
+    "langgraph_active": false,
+    "governance_weakened": false,
+    "sensitive_paths_staged": false
+  },
+  "source_files_modified": [],
+  "files_created": [
+    "tests/smoke/test_brain_native_runtime_metadata_runtime_probe_02.py",
+    "tmp_agent/front_brain_native_runtime_metadata_runtime_probe_02/runtime_probe.json",
+    "tmp_agent/front_brain_native_runtime_metadata_runtime_probe_02/runtime_probe.md",
+    "tmp_agent/front_brain_native_runtime_metadata_runtime_probe_02/final_report.json",
+    "tmp_agent/front_brain_native_runtime_metadata_runtime_probe_02/final_report.md"
+  ],
+  "notes": [
+    "Strict-operator dependency was overridden only inside the test sandbox by patching brain_v9.api_security.require_strict_operator_access.__code__ before importing app.",
+    "finalize_agent_run was monkeypatched to avoid live LLM calls.",
+    "No memory writes, FAISS mutation, trading, broker calls, or source edits occurred during probing."
+  ]
+}
