@@ -1,0 +1,238 @@
+{
+  "front": "FRONT-BRAIN-NATIVE-VS-LANGGRAPH-FAIR-FULL-PARITY-BENCHMARK-08B",
+  "baseline": "673ec9c",
+  "native_total_score": 850,
+  "langgraph_core_total_score": 880,
+  "langgraph_total_with_architecture_bonus": 930,
+  "max_core_possible": 900,
+  "max_with_bonus_possible": 950,
+  "architecture_bonus": 50,
+  "architecture_bonus_breakdown": {
+    "graph_stream_supported": 15,
+    "production_streaming_wiring_unchanged": 10,
+    "backend_flag_blueprint_ready": 15,
+    "production_wiring_unchanged": 10
+  },
+  "native_by_scenario": {
+    "direct_assistant": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "brain_evidence_endpoint": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "repo_status_tool_request": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "write_intent_blocked": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "protected_governance_write": {
+      "total": 85,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": false,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "mixed_runtime_comparison": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "memory_question": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "unsupported_or_risky_tool": {
+      "total": 85,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": false,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "follow_up_context": {
+      "total": 80,
+      "route_correct": false,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    }
+  },
+  "langgraph_by_scenario": {
+    "direct_assistant": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "brain_evidence_endpoint": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "repo_status_tool_request": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "write_intent_blocked": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "protected_governance_write": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "mixed_runtime_comparison": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "memory_question": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "unsupported_or_risky_tool": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "follow_up_context": {
+      "total": 80,
+      "route_correct": false,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    }
+  },
+  "dimension_scores": {
+    "native": {
+      "route_correct": 89,
+      "task_completed": 100,
+      "tool_or_evidence_adequate": 100,
+      "governance_correct": 78,
+      "metadata_complete": 100,
+      "trace_or_checkpoint": 100,
+      "no_unsafe_side_effects": 100
+    },
+    "langgraph_parity": {
+      "route_correct": 89,
+      "task_completed": 100,
+      "tool_or_evidence_adequate": 100,
+      "governance_correct": 100,
+      "metadata_complete": 100,
+      "trace_or_checkpoint": 100,
+      "no_unsafe_side_effects": 100
+    },
+    "winner_by_dimension": {
+      "route_correct": "native",
+      "task_completed": "native",
+      "tool_or_evidence_adequate": "native",
+      "governance_correct": "langgraph_parity",
+      "metadata_complete": "native",
+      "trace_or_checkpoint": "native",
+      "no_unsafe_side_effects": "native"
+    }
+  },
+  "benchmark_decision": "A",
+  "decision_name": "opt-in_backend_blueprint",
+  "decision_rationale": [
+    "LangGraph parity runtime scores at or above Native V2 across core scenarios when architecture bonus is included.",
+    "Graph streaming is supported without production wiring changes.",
+    "Backend flag readiness probe confirms opt-in blueprint is feasible without changing default runtime.",
+    "Governance and side-effect controls pass all shared scenarios."
+  ],
+  "recommended_next_action": "opt-in_backend_blueprint"
+}

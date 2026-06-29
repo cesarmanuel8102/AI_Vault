@@ -1,0 +1,20 @@
+{
+  "front": "FRONT-BRAIN-NATIVE-VS-LANGGRAPH-FAIR-FULL-PARITY-BENCHMARK-08B",
+  "baseline": "673ec9c",
+  "decision": "A",
+  "decision_name": "opt-in_backend_blueprint",
+  "decision_meaning": "Proceed with opt-in LangGraph backend blueprint (safe wiring behind AGENT_V2_BACKEND flag).",
+  "rationale": [
+    "LangGraph parity runtime scores at or above Native V2 across core scenarios when architecture bonus is included.",
+    "Graph streaming is supported without production wiring changes.",
+    "Backend flag readiness probe confirms opt-in blueprint is feasible without changing default runtime.",
+    "Governance and side-effect controls pass all shared scenarios."
+  ],
+  "native_total_score": 850,
+  "langgraph_core_total_score": 880,
+  "langgraph_total_with_bonus": 930,
+  "architecture_bonus": 50,
+  "production_wiring_changed": false,
+  "default_runtime_unchanged": true,
+  "recommended_next_action": "opt-in_backend_blueprint"
+}
