@@ -1,0 +1,226 @@
+{
+  "front": "FRONT-BRAIN-DASHBOARD-CHAT-MANUAL-LIVE-SMOKE-AFTER-08E-R2",
+  "baseline": "65d4f7c",
+  "checks": [
+    {
+      "check_name": "backend_health",
+      "url_or_command": "GET http://127.0.0.1:8091/health",
+      "method": "GET",
+      "request_body_if_any": null,
+      "expected": "200 with status healthy",
+      "actual_status": 200,
+      "actual_summary": "{\"status\":\"healthy\",\"sessions\":1,\"version\":\"9.0.0\",\"safe_mode\":false}",
+      "result": "PASS",
+      "failure_classification": null,
+      "notes": "Backend started successfully."
+    },
+    {
+      "check_name": "backend_status",
+      "url_or_command": "GET http://127.0.0.1:8091/status",
+      "method": "GET",
+      "request_body_if_any": null,
+      "expected": "200 with ready true",
+      "actual_status": 200,
+      "actual_summary": "{\"sessions\":[\"default\"],\"ready\":true,\"version\":\"9.0.0\",\"safe_mode\":false}",
+      "result": "PASS",
+      "failure_classification": null,
+      "notes": null
+    },
+    {
+      "check_name": "backend_ui_index_html",
+      "url_or_command": "GET http://127.0.0.1:8091/ui/index.html",
+      "method": "GET",
+      "request_body_if_any": null,
+      "expected": "200 HTML",
+      "actual_status": 200,
+      "actual_summary": "<!DOCTYPE html>...Brain Chat V9...",
+      "result": "PASS",
+      "failure_classification": null,
+      "notes": null
+    },
+    {
+      "check_name": "backend_ui_root",
+      "url_or_command": "GET http://127.0.0.1:8091/ui",
+      "method": "GET",
+      "request_body_if_any": null,
+      "expected": "200 HTML",
+      "actual_status": 200,
+      "actual_summary": "<!DOCTYPE html>...Brain Chat V9...",
+      "result": "PASS",
+      "failure_classification": null,
+      "notes": null
+    },
+    {
+      "check_name": "v2_chat_agent_native_default",
+      "url_or_command": "POST http://127.0.0.1:8091/v2/chat/agent",
+      "method": "POST",
+      "request_body_if_any": {
+        "message": "native live smoke check after 08e r2",
+        "mode": "read_only",
+        "user_id": "manual_live_smoke_r2"
+      },
+      "expected": "200 ok=true backend=native_runtime final_answer present run_id present trace_url present",
+      "actual_status": 200,
+      "actual_summary": "ok=true backend=native_runtime run_id=agv2_16224f2e4510b35c trace_url=/v2/agent/runs/agv2_16224f2e4510b35c/trace",
+      "result": "PASS",
+      "failure_classification": null,
+      "notes": "X-Brain-Token header required and supplied."
+    },
+    {
+      "check_name": "v2_chat_agent_invalid_backend_fallback",
+      "url_or_command": "POST http://127.0.0.1:8094/v2/chat/agent (AGENT_V2_BACKEND=invalid_backend isolated)",
+      "method": "POST",
+      "request_body_if_any": {
+        "message": "invalid backend env isolated smoke",
+        "mode": "read_only",
+        "user_id": "manual_live_smoke_r2"
+      },
+      "expected": "200 ok=true backend=native_runtime backend_fallback_used=true",
+      "actual_status": 200,
+      "actual_summary": "backend=native_runtime backend_fallback_used=true reason mentions unrecognized backend",
+      "result": "PASS",
+      "failure_classification": null,
+      "notes": "Ran against isolated backend on port 8094 to avoid polluting main service env."
+    },
+    {
+      "check_name": "v2_chat_agent_langgraph_env_fallback",
+      "url_or_command": "POST http://127.0.0.1:8093/v2/chat/agent (AGENT_V2_BACKEND=langgraph isolated)",
+      "method": "POST",
+      "request_body_if_any": {
+        "message": "langgraph env isolated smoke",
+        "mode": "read_only",
+        "user_id": "manual_live_smoke_r2"
+      },
+      "expected": "200 ok=true backend=native_runtime backend_fallback_used=true reason mentions production compatibility or missing create_run/execute_run",
+      "actual_status": 200,
+      "actual_summary": "backend=native_runtime backend_fallback_used=true reason cites missing create_run/execute_run",
+      "result": "PASS",
+      "failure_classification": null,
+      "notes": "Isolated backend on port 8093. Log confirms correct fallback."
+    },
+    {
+      "check_name": "legacy_chat",
+      "url_or_command": "POST http://127.0.0.1:8091/chat",
+      "method": "POST",
+      "request_body_if_any": {
+        "message": "legacy chat smoke check",
+        "session_id": "manual_live_smoke_r2",
+        "model_priority": "chat"
+      },
+      "expected": "200 with response/content",
+      "actual_status": 200,
+      "actual_summary": "{\"response\":\"Para probar localmente...\"}",
+      "result": "PASS",
+      "failure_classification": null,
+      "notes": "Legacy endpoint does not require strict token."
+    },
+    {
+      "check_name": "openai_compat",
+      "url_or_command": "POST http://127.0.0.1:8091/v1/chat/completions",
+      "method": "POST",
+      "request_body_if_any": {
+        "model": "brain-v9-local",
+        "messages": [
+          {
+            "role": "user",
+            "content": "openai compat smoke check"
+          }
+        ]
+      },
+      "expected": "200 object=chat.completion choices present",
+      "actual_status": 200,
+      "actual_summary": "{\"id\":\"...\",\"object\":\"chat.completion\",\"created\":...,\"choices\":[...]}",
+      "result": "PASS",
+      "failure_classification": null,
+      "notes": "X-Brain-Token header required and supplied."
+    },
+    {
+      "check_name": "dashboard_health",
+      "url_or_command": "GET http://127.0.0.1:8092/health",
+      "method": "GET",
+      "request_body_if_any": null,
+      "expected": "200 ok=true dashboard=brain_persistent_autonomy",
+      "actual_status": 200,
+      "actual_summary": "{\"ok\":true,\"dashboard\":\"brain_persistent_autonomy\",\"port\":8092}",
+      "result": "PASS",
+      "failure_classification": null,
+      "notes": null
+    },
+    {
+      "check_name": "dashboard_status",
+      "url_or_command": "GET http://127.0.0.1:8092/brain-dashboard/status",
+      "method": "GET",
+      "request_body_if_any": null,
+      "expected": "200 ok=true brain healthy",
+      "actual_status": 200,
+      "actual_summary": "brain ok=true status=healthy api=http://127.0.0.1:8091",
+      "result": "PASS",
+      "failure_classification": null,
+      "notes": null
+    },
+    {
+      "check_name": "dashboard_agent_v2_status",
+      "url_or_command": "GET http://127.0.0.1:8092/brain-dashboard/agent-v2/status",
+      "method": "GET",
+      "request_body_if_any": null,
+      "expected": "200 ok=true backend=native_runtime canonical_for_new_agent_runs=true",
+      "actual_status": 200,
+      "actual_summary": "backend=native_runtime canonical_for_new_agent_runs=true runs=1754",
+      "result": "PASS",
+      "failure_classification": null,
+      "notes": null
+    },
+    {
+      "check_name": "dashboard_static_index",
+      "url_or_command": "GET http://127.0.0.1:8092/",
+      "method": "GET",
+      "request_body_if_any": null,
+      "expected": "200 HTML dashboard app shell",
+      "actual_status": 200,
+      "actual_summary": "<!doctype html>...Brain Operator Dashboard...",
+      "result": "PASS",
+      "failure_classification": null,
+      "notes": null
+    },
+    {
+      "check_name": "dashboard_chat_proxy",
+      "url_or_command": "POST http://127.0.0.1:8092/brain-dashboard/chat",
+      "method": "POST",
+      "request_body_if_any": {
+        "message": "dashboard live smoke check after 08e r2",
+        "mode": "read_only",
+        "user_id": "manual_live_smoke_r2"
+      },
+      "expected": "200 ok=true content present (backend reachable on 8091)",
+      "actual_status": 200,
+      "actual_summary": "{\"ok\":false,\"error\":\"HTTP Error 403: Forbidden\",\"content\":\"Brain API unreachable.\",\"note\":\"Ensure Agent V2 backend is running on 8091\"}",
+      "result": "FAIL",
+      "failure_classification": "DASHBOARD_PROXY_LIVE_FAILURE / BLOCKED_SOURCE_FIX_REQUIRED",
+      "notes": "Backend /v2/chat/agent is healthy and reachable, but dashboard_routes.py does not forward X-Brain-Token to the strict-operator backend endpoint. Root cause: tmp_agent/brain_v9/dashboard/dashboard_routes.py lines 323-328 omit token header."
+    },
+    {
+      "check_name": "dashboard_trace_proxy",
+      "url_or_command": "GET http://127.0.0.1:8092/brain-dashboard/agent-v2/runs/{run_id}/trace",
+      "method": "GET",
+      "request_body_if_any": null,
+      "expected": "200 ok=true trace data or controlled not-found",
+      "actual_status": 200,
+      "actual_summary": "{\"ok\":false,\"error\":\"HTTP Error 403: Forbidden\",\"message\":\"Trace fetch failed for agv2_75093e7e9de75155\"}",
+      "result": "FAIL",
+      "failure_classification": "DASHBOARD_PROXY_LIVE_FAILURE / BLOCKED_SOURCE_FIX_REQUIRED",
+      "notes": "Same root cause as dashboard chat proxy: backend /v2/agent/runs/{run_id}/trace is under strict-operator access and dashboard_routes.py does not supply X-Brain-Token."
+    },
+    {
+      "check_name": "browser_manual_ui",
+      "url_or_command": "Manual browser checklist",
+      "method": "MANUAL",
+      "request_body_if_any": null,
+      "expected": "UI loads and chat responses appear",
+      "actual_status": null,
+      "actual_summary": "MANUAL_BROWSER_NOT_EXECUTED",
+      "result": "SKIP",
+      "failure_classification": null,
+      "notes": "Automation environment cannot drive browser. Manual checklist provided in final_report.md."
+    }
+  ]
+}

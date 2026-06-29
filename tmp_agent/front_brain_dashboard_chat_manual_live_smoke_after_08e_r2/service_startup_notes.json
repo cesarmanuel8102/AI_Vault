@@ -1,0 +1,30 @@
+{
+  "backend_port_selected": 8091,
+  "dashboard_port_selected": 8092,
+  "preexisting_backend_process": false,
+  "preexisting_dashboard_process": false,
+  "start_attempted": true,
+  "backend_pid": 75624,
+  "dashboard_pid": 43228,
+  "log_paths": {
+    "backend_stdout": "tmp_agent/front_brain_dashboard_chat_manual_live_smoke_after_08e_r2/logs/brain_8091.log",
+    "backend_stderr": "tmp_agent/front_brain_dashboard_chat_manual_live_smoke_after_08e_r2/logs/brain_8091.err",
+    "dashboard_stdout": "tmp_agent/front_brain_dashboard_chat_manual_live_smoke_after_08e_r2/logs/dashboard_8092.log",
+    "dashboard_stderr": "tmp_agent/front_brain_dashboard_chat_manual_live_smoke_after_08e_r2/logs/dashboard_8092.err"
+  },
+  "startup_errors": null,
+  "docker_started": false,
+  "brokers_started": false,
+  "trading_started": false,
+  "environment": {
+    "BRAIN_ADMIN_TOKEN": "LIVE_SMOKE_R2_TEST_ADMIN_TOKEN",
+    "AGENT_V2_BACKEND": "unset for main services; isolated subprocess tests used langgraph/invalid_backend on ports 8093/8094",
+    "PYTHONPATH": "C:\\AI_VAULT_CANONICAL prepended"
+  },
+  "isolated_fallback_servers": {
+    "langgraph_env_port": 8093,
+    "langgraph_env_pid": 45652,
+    "invalid_backend_env_port": 8094,
+    "invalid_backend_env_pid": 128860
+  }
+}
