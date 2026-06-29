@@ -2,9 +2,10 @@
 
 **Front**: FRONT-BRAIN-AGENT-V2-CONTROLLED-BACKEND-OPT-IN-READINESS-REVIEW-08F0  
 **Branch**: codex/own-capital-sustainable-return  
-**Baseline / Final head**: 883df0a  
-**Status**: REVIEW_COMPLETE  
-**Overall readiness**: **NOT READY**
+**Starting baseline**: 883df0a  
+**Final head**: cad294c  
+**Status**: READY_FOR_08F1_REVIEW_COMPLETE  
+**Readiness status**: READY_FOR_08F1
 
 ## Scope
 
@@ -34,34 +35,36 @@ This was a **reports-only readiness/audit front**. It did **not** modify source 
 - PASS: 6
 - PARTIAL: 3
 - FAIL: 5 (2 CRITICAL)
-- Overall: **NOT READY** for LangGraph opt-in activation.
+- Overall LangGraph opt-in activation readiness: **NOT READY**.
+- Front 08F0 itself is ready to close and hand off to implementation front 08F1.
 
-## Critical blockers
+## Top blockers for LangGraph opt-in
 
-1. **Runtime interface parity (CRITICAL)** — `LangGraphParityRuntimeV2` lacks `create_run(goal, mode, user_id)` and `execute_run(run_id)`, so `runtime.py` falls back to Native.
-2. **Canary readiness (CRITICAL)** — LangGraph cannot be selected as backend without code changes.
+1. **Runtime interface parity** — `LangGraphParityRuntimeV2` lacks `create_run(goal, mode, user_id)` and `execute_run(run_id)`, so `runtime.py` falls back to Native.
+2. **Canary readiness** — LangGraph cannot be selected as backend without code changes.
+3. **Response translation** — graph final state must be translated into Native-style run dict before `response_normalizer` can produce a stable schema.
+4. **Test coverage** — no opt-in LangGraph backend contract smoke test exists yet.
 
-## Other gaps
-
-- Missing run lifecycle methods (`plan_run`, `list_runs`, `pause`, `resume`, `cancel`).
-- Graph final state must be translated into Native-style run dict before `response_normalizer` can produce a stable schema.
-- No opt-in LangGraph backend smoke test exists yet.
-- Governance/read_only enforcement and observability metadata are PARTIAL.
-
-## Safe fallbacks
+## Safe fallbacks confirmed
 
 - Trace contract is compatible.
 - Dashboard/token/security contracts are compatible.
 - Native default and fallback guard remain intact.
 - No memory/FAISS/trading/broker/env/frontend/dashboard changes were made.
 
+## Commit/push status
+
+- Commit created: `cad294c docs(agent): review langgraph opt-in readiness 08f0`
+- Pushed: yes
+- Only 12 report files under `tmp_agent/front_brain_agent_v2_controlled_backend_opt_in_readiness_review_08f0/` were added.
+
 ## Recommended next front
 
 **FRONT-BRAIN-AGENT-V2-LANGGRAPH-RUNTIME-CONTRACT-PARITY-08F1**
 
-Implement a controlled source patch in `langgraph_parity_runtime.py` (and possibly `runtime.py` log clarity only) that adds production-compatible wrapper methods, response translation, and opt-in tests while preserving Native as default.
+Implement a controlled source patch in `langgraph_parity_runtime.py` (and possibly `runtime.py` log clarity only) that adds production-compatible wrapper methods, response translation, and opt-in tests while preserving Native as default. Do not start a LangGraph canary yet.
 
-## Files created
+## Files in this front
 
 All under `tmp_agent/front_brain_agent_v2_controlled_backend_opt_in_readiness_review_08f0/`:
 - diagnostic_summary.{md,json}
@@ -77,5 +80,5 @@ All under `tmp_agent/front_brain_agent_v2_controlled_backend_opt_in_readiness_re
 - [x] No default backend change
 - [x] No security/env/frontend/dashboard changes
 - [x] No memory/FAISS/trading/broker changes
-- [x] Reports complete
-- [ ] Scope check, staging, commit, push, and CI verification to follow
+- [x] Reports complete and pushed
+- [ ] CI verification pending / to be confirmed
