@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Optional
+from typing import Any, Optional
 
 from .native_runtime import NativeAgentRuntimeV2
 
@@ -47,6 +47,30 @@ def is_any_non_native_backend_requested(raw_value: Optional[str]) -> bool:
         return False
     normalized = str(raw_value).strip().lower()
     return normalized != "" and normalized not in NATIVE_BACKEND_VALUES
+
+
+def is_agent_v2_production_runtime_compatible(
+    runtime: Any,
+) -> tuple[bool, list[str]]:
+    """Check whether a runtime object implements the production Agent V2 interface.
+
+    The /v2/chat/agent path requires at least ``create_run`` and ``execute_run``.
+    Additional methods are checked defensively; missing optional methods are not
+    treated as fatal.
+    """
+    required_methods = ("create_run", "execute_run")
+    optional_methods = ("plan_run", "list_runs", "get_run", "get_trace")
+    missing: list[str] = []
+    for method in required_methods:
+        if not hasattr(runtime, method) or not callable(getattr(runtime, method, None)):
+            missing.append(method)
+    # Optional methods: only report if the attribute exists but is not callable,
+    # since missing optional methods do not block production fallback.
+    for method in optional_methods:
+        attr = getattr(runtime, method, None)
+        if attr is not None and not callable(attr):
+            missing.append(method)
+    return (not missing, missing)
 
 
 def _build_native_runtime_with_metadata(
@@ -119,7 +143,23 @@ def get_agent_runtime_v2():
 
     lang_rt = _try_build_langgraph_runtime(raw_value)
     if lang_rt is not None:
-        return lang_rt
+        compatible, missing_methods = is_agent_v2_production_runtime_compatible(lang_rt)
+        if compatible:
+            return lang_rt
+        logger.warning(
+            "AGENT_V2_BACKEND=%r requested but selected runtime %s is missing production methods %s; falling back to native_runtime",
+            raw_value,
+            type(lang_rt).__name__,
+            missing_methods,
+        )
+        return _build_native_runtime_with_metadata(
+            fallback_used=True,
+            fallback_reason=(
+                f"AGENT_V2_BACKEND={raw_value!r} requested but selected backend "
+                f"'{type(lang_rt).__name__}' is not production runtime compatible "
+                f"(missing methods: {missing_methods}); falling back to native_runtime"
+            ),
+        )
 
     # Safe fallback to native with metadata explaining why
     return _build_native_runtime_with_metadata(

@@ -1,0 +1,41 @@
+{
+  "incident": "FRONT-BRAIN-DASHBOARD-CHAT-RECOVERY-AFTER-08E-R1",
+  "baseline": "f45ad26",
+  "branch": "codex/own-capital-sustainable-return",
+  "workdir": "C:\\AI_VAULT_CANONICAL",
+  "root_cause_code": "LANGGRAPH_PARITY_RUNTIME_INTERFACE_MISMATCH",
+  "root_cause_summary": "LangGraphParityRuntimeV2 instantiates and reports graph_available=True, but does not implement the production runtime interface (create_run, execute_run) expected by api_adapter.chat_agent. When AGENT_V2_BACKEND=langgraph, the 08E selector returns it and /v2/chat/agent crashes with AttributeError.",
+  "affected_flows": [
+    "/v2/chat/agent",
+    "dashboard /chat proxy to 8091",
+    "dashboard /trace proxy to 8091",
+    "AGENT_V2_BACKEND=langgraph request path"
+  ],
+  "runtime_selection": {
+    "native_default": {"env_value": "unset", "expected": "NativeRuntimeV2", "actual": "NativeRuntimeV2", "status": "PASS"},
+    "invalid_backend": {"env_value": "quantum", "expected": "NativeRuntimeV2 fallback", "actual": "NativeRuntimeV2 fallback", "status": "PASS"},
+    "langgraph_requested": {"env_value": "langgraph", "expected": "NativeRuntimeV2 fallback (interface missing)", "actual": "NativeRuntimeV2 fallback", "status": "PASS"}
+  },
+  "interface_check": {
+    "NativeRuntimeV2": {"create_run": true, "execute_run": true, "run": true},
+    "LangGraphParityRuntimeV2": {"create_run": false, "execute_run": false, "run": true}
+  },
+  "live_services": {
+    "8090": "SERVICE_NOT_RUNNING",
+    "8091": "SERVICE_NOT_RUNNING",
+    "8092": "SERVICE_NOT_RUNNING"
+  },
+  "file_changes_allowed": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+    "tests/smoke/test_brain_chat_native_default_recovery_after_08e_r1.py",
+    "tests/smoke/test_brain_dashboard_chat_recovery_after_08e_r1.py",
+    "tmp_agent/front_brain_dashboard_chat_recovery_after_08e_r1/"
+  ],
+  "forbidden_changes": {
+    "langgraph_parity_runtime.py": false,
+    "native_runtime.py": false,
+    "frontend": false,
+    "dashboard_static": false,
+    "memory_faiss_trading_env": false
+  }
+}

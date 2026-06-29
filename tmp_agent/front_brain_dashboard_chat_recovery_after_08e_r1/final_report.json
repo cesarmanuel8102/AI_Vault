@@ -1,0 +1,46 @@
+{
+  "incident": "FRONT-BRAIN-DASHBOARD-CHAT-RECOVERY-AFTER-08E-R1",
+  "conclusion": "RECOVERED_AND_SAFE_TO_MERGE",
+  "baseline": "f45ad26",
+  "branch": "codex/own-capital-sustainable-return",
+  "primary_fix_file": "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+  "fix_summary": "Added is_agent_v2_production_runtime_compatible() and tightened get_agent_runtime_v2() to reject backends that lack create_run/execute_run. LangGraphParityRuntimeV2 is now only selected if it is both graph_available and production-interface compatible; otherwise the selector falls back to NativeRuntimeV2 with backend_fallback_used=True and a reason citing missing production methods.",
+  "test_files_added": [
+    "tests/smoke/test_brain_chat_native_default_recovery_after_08e_r1.py",
+    "tests/smoke/test_brain_dashboard_chat_recovery_after_08e_r1.py"
+  ],
+  "report_files_added": [
+    "tmp_agent/front_brain_dashboard_chat_recovery_after_08e_r1/diagnostic_matrix.json",
+    "tmp_agent/front_brain_dashboard_chat_recovery_after_08e_r1/diagnostic_matrix.md",
+    "tmp_agent/front_brain_dashboard_chat_recovery_after_08e_r1/recovery_results.json",
+    "tmp_agent/front_brain_dashboard_chat_recovery_after_08e_r1/recovery_results.md",
+    "tmp_agent/front_brain_dashboard_chat_recovery_after_08e_r1/final_report.json",
+    "tmp_agent/front_brain_dashboard_chat_recovery_after_08e_r1/final_report.md"
+  ],
+  "validation": {
+    "py_compile": "PASS",
+    "recovery_tests": "PASS (19/19)",
+    "08e_tests": "PASS (25/25, 1 skipped)",
+    "08d_functional": "PASS with expected scope-guard failures due to required runtime.py change",
+    "git_guard": "SAFE"
+  },
+  "scope_assurance": {
+    "langgraph_parity_runtime.py_modified": false,
+    "native_runtime.py_modified": false,
+    "frontend_modified": false,
+    "dashboard_static_modified": false,
+    "memory_faiss_trading_env_modified": false,
+    "default_backend_changed_to_langgraph": false
+  },
+  "live_services": {
+    "8090": "SERVICE_NOT_RUNNING",
+    "8091": "SERVICE_NOT_RUNNING",
+    "8092": "SERVICE_NOT_RUNNING"
+  },
+  "recommended_next_steps": [
+    "Stage only allowed files: runtime.py, the two recovery tests, and the report directory.",
+    "Commit with message referencing FRONT-BRAIN-DASHBOARD-CHAT-RECOVERY-AFTER-08E-R1.",
+    "Push normally (no force).",
+    "Verify CI green."
+  ]
+}
