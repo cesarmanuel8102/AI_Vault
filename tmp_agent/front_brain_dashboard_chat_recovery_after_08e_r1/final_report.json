@@ -1,7 +1,8 @@
 {
   "incident": "FRONT-BRAIN-DASHBOARD-CHAT-RECOVERY-AFTER-08E-R1",
-  "conclusion": "RECOVERED_AND_SAFE_TO_MERGE",
+  "conclusion": "RECOVERED_AND_PUSHED",
   "baseline": "f45ad26",
+  "head_commit": "8e398cf",
   "branch": "codex/own-capital-sustainable-return",
   "primary_fix_file": "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
   "fix_summary": "Added is_agent_v2_production_runtime_compatible() and tightened get_agent_runtime_v2() to reject backends that lack create_run/execute_run. LangGraphParityRuntimeV2 is now only selected if it is both graph_available and production-interface compatible; otherwise the selector falls back to NativeRuntimeV2 with backend_fallback_used=True and a reason citing missing production methods.",
@@ -37,10 +38,19 @@
     "8091": "SERVICE_NOT_RUNNING",
     "8092": "SERVICE_NOT_RUNNING"
   },
+  "commit_and_push": {
+    "commit_hash": "8e398cf",
+    "pushed_to_remote": true,
+    "push_command": "git push -u origin codex/own-capital-sustainable-return",
+    "force_used": false
+  },
+  "ci_verification": {
+    "status": "PENDING_MANUAL_CHECK",
+    "reason": "gh CLI is not installed in this environment; verify via GitHub Actions web UI.",
+    "branch": "codex/own-capital-sustainable-return",
+    "head_commit": "8e398cf"
+  },
   "recommended_next_steps": [
-    "Stage only allowed files: runtime.py, the two recovery tests, and the report directory.",
-    "Commit with message referencing FRONT-BRAIN-DASHBOARD-CHAT-RECOVERY-AFTER-08E-R1.",
-    "Push normally (no force).",
-    "Verify CI green."
+    "Open the GitHub Actions page for the repository and confirm the run for commit 8e398cf on branch codex/own-capital-sustainable-return is green."
   ]
 }

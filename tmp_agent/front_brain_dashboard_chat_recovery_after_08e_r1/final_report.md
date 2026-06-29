@@ -1,6 +1,11 @@
 # FRONT-BRAIN-DASHBOARD-CHAT-RECOVERY-AFTER-08E-R1 — Final Report
 
-## Conclusion: RECOVERED AND SAFE TO MERGE
+## Conclusion: RECOVERED AND PUSHED
+
+- **Baseline:** f45ad26
+- **Head commit:** 8e398cf
+- **Branch:** codex/own-capital-sustainable-return
+- **Remote push:** completed (no force)
 
 ## What changed
 - **Primary fix:** `tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py`
@@ -35,12 +40,15 @@
 ## Live Services
 Ports 8090/8091/8092 were not running during validation, so live smoke was recorded as `SERVICE_NOT_RUNNING`. All contract validation used TestClient.
 
+## Commit and Push
+- **Commit hash:** `8e398cf`
+- **Pushed to remote:** yes
+- **Force used:** no
+
+## CI Verification
+- **Status:** pending manual check
+- **Reason:** `gh` CLI is not installed in this environment, so GitHub Actions status could not be queried automatically.
+- Please open the GitHub Actions page for the repository and confirm the run for commit `8e398cf` on branch `codex/own-capital-sustainable-return` is green.
+
 ## Recommended Next Steps
-1. Stage only the allowed files:
-   - `tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py`
-   - `tests/smoke/test_brain_chat_native_default_recovery_after_08e_r1.py`
-   - `tests/smoke/test_brain_dashboard_chat_recovery_after_08e_r1.py`
-   - `tmp_agent/front_brain_dashboard_chat_recovery_after_08e_r1/`
-2. Commit with a message referencing the incident ID.
-3. Push normally (no force).
-4. Verify CI green.
+1. Verify CI green for commit `8e398cf`.
