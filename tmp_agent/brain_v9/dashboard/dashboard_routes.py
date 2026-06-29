@@ -28,6 +28,26 @@ def startupinfo_no_window():
 router = APIRouter(prefix="/brain-dashboard")
 
 
+def _brain_admin_token() -> str | None:
+    """Return the configured BRAIN_ADMIN_TOKEN value, if any.
+
+    The token is read from the environment and must never be logged or returned
+    to clients. Callers should include it only in backend-to-backend requests
+    under strict operator access.
+    """
+    token = os.getenv("BRAIN_ADMIN_TOKEN", "").strip()
+    return token if token else None
+
+
+def _strict_headers(existing: dict[str, str] | None = None) -> dict[str, str]:
+    """Return request headers with X-Brain-Token added when configured."""
+    headers = dict(existing) if existing else {}
+    token = _brain_admin_token()
+    if token:
+        headers["X-Brain-Token"] = token
+    return headers
+
+
 def _parse_journal(limit: int = 10) -> list[dict[str, Any]]:
     events = []
     journal = Path("memory/autonomous_journal.jsonl")
@@ -323,7 +343,7 @@ def chat(req: ChatRequest) -> dict[str, Any]:
     request = urllib.request.Request(
         "http://127.0.0.1:8091/v2/chat/agent",
         data=json.dumps(body).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
+        headers=_strict_headers({"Content-Type": "application/json"}),
         method="POST",
     )
     try:
@@ -363,7 +383,9 @@ def agent_v2_trace(run_id: str) -> dict[str, Any]:
     """Proxy to canonical Agent V2 trace endpoint from 8092 (same-origin for dashboard)."""
     url = f"http://127.0.0.1:8091/v2/agent/runs/{run_id}/trace"
     try:
-        with urllib.request.urlopen(url, timeout=30) as response:
+        headers = _strict_headers()
+        request = urllib.request.Request(url, headers=headers, method="GET")
+        with urllib.request.urlopen(request, timeout=30) as response:
             return json.loads(response.read().decode("utf-8"))
     except Exception as e:
         return {"ok": False, "error": str(e), "message": f"Trace fetch failed for {run_id}"}
