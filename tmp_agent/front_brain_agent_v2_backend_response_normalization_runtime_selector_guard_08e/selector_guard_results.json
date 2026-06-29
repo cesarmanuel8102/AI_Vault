@@ -1,0 +1,33 @@
+{
+  "front_id": "FRONT-BRAIN-AGENT-V2-BACKEND-RESPONSE-NORMALIZATION-AND-RUNTIME-SELECTOR-GUARD-08E",
+  "component": "runtime_selector_guard",
+  "generated_utc": "2026-06-29T18:46:07.097623+00:00",
+  "tests_file": "tests/smoke/test_brain_agent_v2_runtime_selector_guard_08e.py",
+  "total": 13,
+  "passed": 13,
+  "failed": 0,
+  "skipped": 0,
+  "env_var": "AGENT_V2_BACKEND",
+  "native_values": [
+    "",
+    "native",
+    "native_runtime"
+  ],
+  "langgraph_values": [
+    "langgraph",
+    "langgraph_parity",
+    "langgraph_parity_runtime"
+  ],
+  "default": "native_runtime",
+  "key_assertions": [
+    "NativeAgentRuntimeV2 is default when env unset",
+    "Native values select native_runtime",
+    "Invalid values fall back to native_runtime with fallback_used=True and reason",
+    "LangGraph opt-in only succeeds when package available and initializes",
+    "LangGraph unavailable falls back to native_runtime with fallback metadata",
+    "/v2/chat/agent returns backend=“native_runtime” and correct fallback metadata",
+    "No frontend/dashboard source files modified",
+    "No sensitive paths touched"
+  ],
+  "decision": "PASS"
+}

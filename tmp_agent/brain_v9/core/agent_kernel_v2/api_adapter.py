@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, ConfigDict
 from .finalizer import PRIMARY_KIMI_MODEL
 from .runtime import get_agent_runtime_v2
+from .response_normalizer import normalize_agent_v2_chat_response
 from .state import CANONICAL_AGENT_VERSION
 from brain_v9.api_security import require_strict_operator_access
 
@@ -197,17 +198,17 @@ def chat_agent(req: AgentChatRequest):
     
     rt = get_agent_runtime_v2()
     run = rt.create_run(req.message, validated_mode, req.user_id)
-    
+
     # For direct_assistant and brain_evidence routes, we already handle in execute_run
     # For mixed_brain_reasoning and operational_agent, we need the planner
     if route_info["route"] in {"mixed_brain_reasoning", "operational_agent"}:
         run = rt.plan_run(run["run_id"])
-    
+
     run = rt.execute_run(run["run_id"])
     trace_events = rt.get_trace(run["run_id"])
     capability_metadata = _build_capability_metadata(run)
     capability_metadata["trace_events_count"] = len(trace_events)
-    return {
+    raw_response = {
         "ok": True,
         "canonical_agent_v2": True,
         "route": "/v2/chat/agent",
@@ -230,4 +231,12 @@ def chat_agent(req: AgentChatRequest):
         "intent_detected": run.get("intent_detected"),
         "intent_confidence": run.get("intent_confidence"),
         "capability_metadata": capability_metadata,
+        "backend_selected": getattr(rt, "backend_selected", rt.backend),
+        "backend_fallback_used": getattr(rt, "backend_fallback_used", False),
+        "backend_fallback_reason": getattr(rt, "backend_fallback_reason", None),
     }
+    return normalize_agent_v2_chat_response(
+        raw_response,
+        backend=getattr(rt, "backend", "native_runtime"),
+        mode_requested=validated_mode,
+    )

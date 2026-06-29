@@ -1,0 +1,30 @@
+{
+  "front_id": "FRONT-BRAIN-AGENT-V2-BACKEND-RESPONSE-NORMALIZATION-AND-RUNTIME-SELECTOR-GUARD-08E",
+  "branch": "codex/own-capital-sustainable-return",
+  "baseline": "193f25ddc265330f960ff5a606cdde79c87c7966",
+  "generated_utc": "2026-06-29T18:45:24.930618+00:00",
+  "test_files": [
+    "tests/smoke/test_brain_agent_v2_backend_response_normalization_08e.py",
+    "tests/smoke/test_brain_agent_v2_runtime_selector_guard_08e.py"
+  ],
+  "source_files": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py"
+  ],
+  "test_summary": {
+    "total": 26,
+    "passed": 26,
+    "failed": 0,
+    "skipped": 0
+  },
+  "validation": {
+    "py_compile": true,
+    "08E_tests_passed": true,
+    "08D_schema_behavior_regressions_passed": true,
+    "08D_scope_guard_tests_documented": "08E intentionally modifies allowed source files; 08D scope-guard tests fail as expected",
+    "security_unit_tests_passed": "50/51 (1 pre-existing rbac admin permission failure unrelated to this change)",
+    "guard_safe": "ExecutionGate status mode=build, pending=0"
+  },
+  "decision": "PROCEED"
+}

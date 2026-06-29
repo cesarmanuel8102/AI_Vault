@@ -1,0 +1,37 @@
+{
+  "front_id": "FRONT-BRAIN-AGENT-V2-BACKEND-RESPONSE-NORMALIZATION-AND-RUNTIME-SELECTOR-GUARD-08E",
+  "branch": "codex/own-capital-sustainable-return",
+  "baseline": "193f25ddc265330f960ff5a606cdde79c87c7966",
+  "current_head": null,
+  "generated_utc": "2026-06-29T18:46:29.652588+00:00",
+  "decision": "PROCEED",
+  "decision_reason": "Minimum safe backend-selection foundation implemented and validated. Native remains default. LangGraph opt-in only via env, with safe fallback. No production activation.",
+  "source_changes": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py"
+  ],
+  "test_changes": [
+    "tests/smoke/test_brain_agent_v2_backend_response_normalization_08e.py",
+    "tests/smoke/test_brain_agent_v2_runtime_selector_guard_08e.py"
+  ],
+  "reports": [
+    "implementation_summary.json",
+    "normalization_results.json",
+    "selector_guard_results.json",
+    "contract_regression_results.json",
+    "final_report.json"
+  ],
+  "validation": {
+    "py_compile": true,
+    "08E_tests": "26 passed, 0 failed",
+    "08D_regression": "23 passed, 7 expected scope-guard failures",
+    "security_unit_tests": "50 passed, 1 pre-existing unrelated rbac failure",
+    "guard_status": "ExecutionGate mode=build, pending=0"
+  },
+  "notes": [
+    "08D scope-guard tests fail because 08E is explicitly allowed to modify runtime.py and api_adapter.py; these failures are documented, not defects.",
+    "Security unit test failure (test_rbac_does_not_grant_p3_auto_approval) is pre-existing and unrelated to this front.",
+    "No frontend/dashboard/memory/FAISS/trading/.env files modified."
+  ]
+}

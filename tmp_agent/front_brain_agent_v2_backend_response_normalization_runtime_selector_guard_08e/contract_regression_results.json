@@ -1,0 +1,25 @@
+{
+  "front_id": "FRONT-BRAIN-AGENT-V2-BACKEND-RESPONSE-NORMALIZATION-AND-RUNTIME-SELECTOR-GUARD-08E",
+  "component": "08D_contract_regression",
+  "generated_utc": "2026-06-29T18:46:16.136014+00:00",
+  "tests_files": [
+    "tests/smoke/test_brain_agent_v2_backend_flag_contracts_08d.py",
+    "tests/smoke/test_brain_dashboard_chat_contracts_08d.py",
+    "tests/smoke/test_brain_agent_v2_trace_contracts_08d.py"
+  ],
+  "total": 30,
+  "passed": 23,
+  "failed": 7,
+  "skipped": 0,
+  "schema_behavior_regressions": "PASS (all functional /v2/chat/agent, status, capabilities, trace, dashboard contract tests passed)",
+  "expected_scope_guard_failures": [
+    "test_no_backend_flag_wiring_exists_yet: 08E intentionally adds AGENT_V2_BACKEND wiring to runtime.py and api_adapter.py",
+    "test_v2_chat_agent_write_intent_read_only_contract: _assert_no_source_files_changed sees allowed 08E modifications",
+    "test_v2_chat_agent_protected_write_contract: _assert_no_source_files_changed sees allowed 08E modifications",
+    "test_v2_chat_agent_auto_mode_contract: _assert_no_source_files_changed sees allowed 08E modifications",
+    "test_no_source_or_frontend_modified (08d): allowed source files differ from 08D baseline",
+    "test_no_dashboard_source_files_modified (08d): allowed source files differ from 08D baseline",
+    "test_no_source_or_frontend_modified (trace 08d): allowed source files differ from 08D baseline"
+  ],
+  "decision": "ACCEPTED_WITH_SCOPE_GUARD_EXPECTED_FAILURES"
+}
