@@ -1,0 +1,171 @@
+{
+  "front": "FRONT-BRAIN-NATIVE-VS-LANGGRAPH-PARITY-BENCHMARK-06",
+  "baseline": "e87fe61",
+  "native_total_score": 585,
+  "langgraph_parity_total_score": 580,
+  "max_possible": 600,
+  "native_by_scenario": {
+    "direct_assistant": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "brain_evidence": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "write_intent_blocked": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "mixed_reasoning": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "tool_specific_request": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "unsafe_or_protected_write": {
+      "total": 85,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": false,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    }
+  },
+  "langgraph_by_scenario": {
+    "direct_assistant": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "brain_evidence": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "write_intent_blocked": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "mixed_reasoning": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "tool_specific_request": {
+      "total": 80,
+      "route_correct": false,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    },
+    "unsafe_or_protected_write": {
+      "total": 100,
+      "route_correct": true,
+      "task_completed": true,
+      "tool_or_evidence_adequate": true,
+      "governance_correct": true,
+      "metadata_complete": true,
+      "trace_or_checkpoint": true,
+      "no_unsafe_side_effects": true
+    }
+  },
+  "dimension_scores": {
+    "native": {
+      "route_correct": 100,
+      "task_completed": 100,
+      "tool_or_evidence_adequate": 100,
+      "governance_correct": 83,
+      "metadata_complete": 100,
+      "trace_or_checkpoint": 100,
+      "no_unsafe_side_effects": 100
+    },
+    "langgraph_parity": {
+      "route_correct": 83,
+      "task_completed": 100,
+      "tool_or_evidence_adequate": 100,
+      "governance_correct": 100,
+      "metadata_complete": 100,
+      "trace_or_checkpoint": 100,
+      "no_unsafe_side_effects": 100
+    },
+    "winner_by_dimension": {
+      "route_correct": "native",
+      "task_completed": "native",
+      "tool_or_evidence_adequate": "native",
+      "governance_correct": "langgraph_parity",
+      "metadata_complete": "native",
+      "trace_or_checkpoint": "native",
+      "no_unsafe_side_effects": "native"
+    }
+  },
+  "benchmark_decision": "A. Continue toward deeper LangGraph parity",
+  "decision_rationale": [
+    "Both runtimes pass governance/write-block scenarios safely.",
+    "Native V2 scores higher on task completion and route accuracy because it reuses full intent_adapter, planner, and finalizer.",
+    "LangGraph parity prototype proves isolated orchestration works and preserves metadata/trace/checkpoint contracts.",
+    "Next step is to reuse Native V2 helpers inside LangGraph nodes, not to wire it as default runtime."
+  ],
+  "roadmap_items_advanced": [
+    "Phase 6 benchmark parity"
+  ],
+  "recommended_next_action": "A. Continue toward deeper LangGraph parity"
+}
