@@ -1,0 +1,45 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-BACKEND-FLAG-CONTRACT-TESTS-08D",
+  "starting_head": "af5636b",
+  "final_head": "917c96552ded8bccd7a1d2a454ae26674a249c23",
+  "branch": "codex/own-capital-sustainable-return",
+  "baseline": "af5636b",
+  "status": "validated",
+  "source_files_modified": [],
+  "report_files_created": [
+    "tmp_agent/front_brain_agent_v2_backend_flag_contract_tests_08d/contract_test_matrix.json",
+    "tmp_agent/front_brain_agent_v2_backend_flag_contract_tests_08d/contract_test_matrix.md",
+    "tmp_agent/front_brain_agent_v2_backend_flag_contract_tests_08d/native_contract_results.json",
+    "tmp_agent/front_brain_agent_v2_backend_flag_contract_tests_08d/native_contract_results.md",
+    "tmp_agent/front_brain_agent_v2_backend_flag_contract_tests_08d/dashboard_contract_results.json",
+    "tmp_agent/front_brain_agent_v2_backend_flag_contract_tests_08d/dashboard_contract_results.md",
+    "tmp_agent/front_brain_agent_v2_backend_flag_contract_tests_08d/trace_contract_results.json",
+    "tmp_agent/front_brain_agent_v2_backend_flag_contract_tests_08d/trace_contract_results.md",
+    "tmp_agent/front_brain_agent_v2_backend_flag_contract_tests_08d/final_report.json",
+    "tmp_agent/front_brain_agent_v2_backend_flag_contract_tests_08d/final_report.md"
+  ],
+  "test_files_created": [
+    "tests/smoke/test_brain_agent_v2_backend_flag_contracts_08d.py",
+    "tests/smoke/test_brain_dashboard_chat_contracts_08d.py",
+    "tests/smoke/test_brain_agent_v2_trace_contracts_08d.py"
+  ],
+  "production_wiring_changed": false,
+  "runtime_selector_changed": false,
+  "api_adapter_changed": false,
+  "native_runtime_changed": false,
+  "langgraph_runtime_changed": false,
+  "langgraph_parity_runtime_changed": false,
+  "frontend_files_changed": false,
+  "dashboard_files_changed": false,
+  "validation": {
+    "py_compile": "passed",
+    "pytest_backend_flag_contracts": "30 passed, 0 failed",
+    "pytest_dashboard_chat_contracts": "9 passed, 0 failed",
+    "pytest_trace_contracts": "7 passed, 0 failed",
+    "security_unit_tests": "15 passed, 0 failed",
+    "no_sensitive_paths_staged": "SAFE"
+  },
+  "summary": "Added contract tests that pin endpoint, dashboard proxy, and trace schemas for the future AGENT_V2_BACKEND opt-in wiring. No source files were modified. No LangGraph activation occurred.",
+  "prior_front": "FRONT-BRAIN-FRONTEND-DASHBOARD-CHAT-CONTRACT-GATE-08C",
+  "next_recommended_action": "Apply response normalization adapter and runtime selector guard before activating AGENT_V2_BACKEND flag."
+}

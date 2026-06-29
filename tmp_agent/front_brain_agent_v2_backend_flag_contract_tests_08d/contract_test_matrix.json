@@ -1,0 +1,248 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-BACKEND-FLAG-CONTRACT-TESTS-08D",
+  "artifact": "contract_test_matrix",
+  "baseline": "af5636b",
+  "generated_at": "2026-06-29",
+  "matrix": [
+    {
+      "test_name": "test_runtime_selector_default_is_native",
+      "file": "tests/smoke/test_brain_agent_v2_backend_flag_contracts_08d.py",
+      "contract": "REQ-06 runtime fallback",
+      "backend": "native",
+      "result": "passed",
+      "note": "get_agent_runtime_v2() returns NativeAgentRuntimeV2 at baseline."
+    },
+    {
+      "test_name": "test_no_backend_flag_wiring_exists_yet",
+      "file": "tests/smoke/test_brain_agent_v2_backend_flag_contracts_08d.py",
+      "contract": "REQ-06 no premature wiring",
+      "backend": "native",
+      "result": "passed",
+      "note": "AGENT_V2_BACKEND and LangGraphParityRuntimeV2 absent from runtime.py/api_adapter.py."
+    },
+    {
+      "test_name": "test_v2_chat_agent_direct_assistant_contract",
+      "file": "tests/smoke/test_brain_agent_v2_backend_flag_contracts_08d.py",
+      "contract": "REQ-01 /v2/chat/agent schema",
+      "backend": "native",
+      "result": "passed",
+      "note": "All required response fields present for direct_assistant route."
+    },
+    {
+      "test_name": "test_v2_chat_agent_brain_evidence_contract",
+      "file": "tests/smoke/test_brain_agent_v2_backend_flag_contracts_08d.py",
+      "contract": "REQ-01 /v2/chat/agent schema",
+      "backend": "native",
+      "result": "passed",
+      "note": "capability_metadata contains all dashboard-expected keys."
+    },
+    {
+      "test_name": "test_v2_chat_agent_write_intent_read_only_contract",
+      "file": "tests/smoke/test_brain_agent_v2_backend_flag_contracts_08d.py",
+      "contract": "REQ-04 mode read_only safe",
+      "backend": "native",
+      "result": "passed",
+      "note": "Write intent in read_only escalates or blocks tools; no source modified."
+    },
+    {
+      "test_name": "test_v2_chat_agent_protected_write_contract",
+      "file": "tests/smoke/test_brain_agent_v2_backend_flag_contracts_08d.py",
+      "contract": "REQ-04 governance metadata present",
+      "backend": "native",
+      "result": "passed",
+      "note": "Protected-path write does not modify source; governance keys present."
+    },
+    {
+      "test_name": "test_v2_chat_agent_auto_mode_contract",
+      "file": "tests/smoke/test_brain_agent_v2_backend_flag_contracts_08d.py",
+      "contract": "REQ-04 mode auto exposes auto_decision",
+      "backend": "native",
+      "result": "passed",
+      "note": "auto_decision field present; no source modified."
+    },
+    {
+      "test_name": "test_v2_chat_agent_provider_metadata_contract",
+      "file": "tests/smoke/test_brain_agent_v2_backend_flag_contracts_08d.py",
+      "contract": "REQ-01 provider_metadata",
+      "backend": "native",
+      "result": "passed",
+      "note": "provider_metadata dict present."
+    },
+    {
+      "test_name": "test_v2_chat_agent_error_shape_contract",
+      "file": "tests/smoke/test_brain_agent_v2_backend_flag_contracts_08d.py",
+      "contract": "REQ-06 error shape",
+      "backend": "native",
+      "result": "passed",
+      "note": "Empty message returns safe error/validation JSON."
+    },
+    {
+      "test_name": "test_v2_agent_status_contract",
+      "file": "tests/smoke/test_brain_agent_v2_backend_flag_contracts_08d.py",
+      "contract": "REQ-09 status panel contract",
+      "backend": "native",
+      "result": "passed",
+      "note": "All required status fields present; backend='native_runtime'."
+    },
+    {
+      "test_name": "test_v2_agent_capabilities_contract",
+      "file": "tests/smoke/test_brain_agent_v2_backend_flag_contracts_08d.py",
+      "contract": "REQ-09 capabilities panel contract",
+      "backend": "native",
+      "result": "passed",
+      "note": "Capabilities response shape stable."
+    },
+    {
+      "test_name": "test_legacy_chat_contract_unchanged",
+      "file": "tests/smoke/test_brain_agent_v2_backend_flag_contracts_08d.py",
+      "contract": "REQ-08 legacy chat",
+      "backend": "native",
+      "result": "passed",
+      "note": "Legacy /chat does not expose canonical_agent_v2 fields."
+    },
+    {
+      "test_name": "test_openai_compat_contract_unchanged",
+      "file": "tests/smoke/test_brain_agent_v2_backend_flag_contracts_08d.py",
+      "contract": "REQ-08 OpenAI-compat chat",
+      "backend": "native",
+      "result": "passed",
+      "note": "OpenAI-compat response shape unchanged."
+    },
+    {
+      "test_name": "test_no_source_or_frontend_modified",
+      "file": "tests/smoke/test_brain_agent_v2_backend_flag_contracts_08d.py",
+      "contract": "scope guard",
+      "backend": "native",
+      "result": "passed",
+      "note": "No source/frontend files modified during test run."
+    },
+    {
+      "test_name": "test_dashboard_chat_proxy_contract",
+      "file": "tests/smoke/test_brain_dashboard_chat_contracts_08d.py",
+      "contract": "REQ-03 dashboard chat proxy",
+      "backend": "native",
+      "result": "passed",
+      "note": "Dashboard chat maps all required fields with mocked upstream."
+    },
+    {
+      "test_name": "test_dashboard_chat_proxy_error_shape",
+      "file": "tests/smoke/test_brain_dashboard_chat_contracts_08d.py",
+      "contract": "REQ-03 dashboard chat error shape",
+      "backend": "native",
+      "result": "passed",
+      "note": "Failing upstream returns {ok:false, error, content}."
+    },
+    {
+      "test_name": "test_dashboard_agent_v2_trace_proxy_contract",
+      "file": "tests/smoke/test_brain_dashboard_chat_contracts_08d.py",
+      "contract": "REQ-03 dashboard trace proxy",
+      "backend": "native",
+      "result": "passed",
+      "note": "Dashboard trace proxy returns {ok, run_id, trace, event_count}."
+    },
+    {
+      "test_name": "test_dashboard_agent_v2_status_contract",
+      "file": "tests/smoke/test_brain_dashboard_chat_contracts_08d.py",
+      "contract": "REQ-09 dashboard agent-v2 status",
+      "backend": "native",
+      "result": "passed",
+      "note": "Dashboard agent-v2/status shape stable."
+    },
+    {
+      "test_name": "test_dashboard_status_includes_agent_v2_panel",
+      "file": "tests/smoke/test_brain_dashboard_chat_contracts_08d.py",
+      "contract": "REQ-09 status panel contract",
+      "backend": "native",
+      "result": "passed",
+      "note": "Main dashboard status includes agent_v2 block."
+    },
+    {
+      "test_name": "test_dashboard_chat_build_mode_escalation_contract",
+      "file": "tests/smoke/test_brain_dashboard_chat_contracts_08d.py",
+      "contract": "REQ-04 / REQ-05 build mode escalation",
+      "backend": "native",
+      "result": "passed",
+      "note": "Dashboard build mode maps mode_escalation_required, expected_write_scope, confirmation_id."
+    },
+    {
+      "test_name": "test_dashboard_chat_auto_mode_exposes_auto_decision",
+      "file": "tests/smoke/test_brain_dashboard_chat_contracts_08d.py",
+      "contract": "REQ-04 mode auto",
+      "backend": "native",
+      "result": "passed",
+      "note": "Dashboard auto mode maps auto_decision field."
+    },
+    {
+      "test_name": "test_dashboard_chat_message_required_validation",
+      "file": "tests/smoke/test_brain_dashboard_chat_contracts_08d.py",
+      "contract": "REQ-03 dashboard chat validation",
+      "backend": "native",
+      "result": "passed",
+      "note": "Empty message returns 400."
+    },
+    {
+      "test_name": "test_no_dashboard_source_files_modified",
+      "file": "tests/smoke/test_brain_dashboard_chat_contracts_08d.py",
+      "contract": "scope guard",
+      "backend": "native",
+      "result": "passed",
+      "note": "No dashboard/frontend files modified."
+    },
+    {
+      "test_name": "test_v2_chat_agent_trace_url_resolves",
+      "file": "tests/smoke/test_brain_agent_v2_trace_contracts_08d.py",
+      "contract": "REQ-02 trace resolution",
+      "backend": "native",
+      "result": "passed",
+      "note": "trace_url from /v2/chat/agent resolves to trace payload."
+    },
+    {
+      "test_name": "test_v2_agent_trace_event_schema_contract",
+      "file": "tests/smoke/test_brain_agent_v2_trace_contracts_08d.py",
+      "contract": "REQ-02 trace event schema",
+      "backend": "native",
+      "result": "passed",
+      "note": "Trace events contain event_type and at least one content key."
+    },
+    {
+      "test_name": "test_trace_contract_supports_dashboard_expected_sections",
+      "file": "tests/smoke/test_brain_agent_v2_trace_contracts_08d.py",
+      "contract": "REQ-02 dashboard trace filters",
+      "backend": "native",
+      "result": "passed",
+      "note": "run_completed required; plan_created/tool_call_* route-dependent and recorded."
+    },
+    {
+      "test_name": "test_visual_trace_latest_endpoint_contract",
+      "file": "tests/smoke/test_brain_agent_v2_trace_contracts_08d.py",
+      "contract": "REQ-07 visual trace latest",
+      "backend": "native",
+      "result": "passed",
+      "note": "Visual trace latest returns {success, events}."
+    },
+    {
+      "test_name": "test_visual_trace_stream_route_exists",
+      "file": "tests/smoke/test_brain_agent_v2_trace_contracts_08d.py",
+      "contract": "REQ-07 visual trace stream route",
+      "backend": "native",
+      "result": "passed",
+      "note": "Route /brain/agent-trace/stream is registered."
+    },
+    {
+      "test_name": "test_trace_run_root_current_native_contract",
+      "file": "tests/smoke/test_brain_agent_v2_trace_contracts_08d.py",
+      "contract": "REQ-02 trace consistency",
+      "backend": "native",
+      "result": "passed",
+      "note": "Native trace resolves using current RUN_ROOT."
+    },
+    {
+      "test_name": "test_no_source_or_frontend_modified",
+      "file": "tests/smoke/test_brain_agent_v2_trace_contracts_08d.py",
+      "contract": "scope guard",
+      "backend": "native",
+      "result": "passed",
+      "note": "No source/frontend files modified."
+    }
+  ]
+}

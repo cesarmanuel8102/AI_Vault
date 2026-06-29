@@ -1,0 +1,100 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-BACKEND-FLAG-CONTRACT-TESTS-08D",
+  "artifact": "native_contract_results",
+  "baseline": "af5636b",
+  "generated_at": "2026-06-29",
+  "backend": "native_runtime",
+  "test_file": "tests/smoke/test_brain_agent_v2_backend_flag_contracts_08d.py",
+  "summary": {
+    "total": 14,
+    "passed": 14,
+    "failed": 0,
+    "skipped": 0
+  },
+  "findings": [
+    {
+      "name": "Runtime selector default",
+      "assertion": "get_agent_runtime_v2() returns NativeAgentRuntimeV2",
+      "result": "passed",
+      "evidence": "backend == 'native_runtime'"
+    },
+    {
+      "name": "No AGENT_V2_BACKEND wiring yet",
+      "assertion": "runtime.py and api_adapter.py do not reference LangGraphParityRuntimeV2, AGENT_V2_BACKEND, or langgraph_parity_runtime",
+      "result": "passed",
+      "evidence": "Text search returned no matches"
+    },
+    {
+      "name": "/v2/chat/agent direct_assistant schema",
+      "assertion": "Required fields present: ok, canonical_agent_v2, route, run_id, final_answer, provider_metadata, capability_metadata, mode_requested, mode_effective, mode_escalation_required, required_permission, confirmation_id, trace_url, blocked_tools, intent_route, intent_detected, intent_confidence",
+      "result": "passed",
+      "evidence": "All fields present in response JSON"
+    },
+    {
+      "name": "/v2/chat/agent brain_evidence capability_metadata",
+      "assertion": "capability_metadata contains memory_used, retrieval_attempted, planner_used, evidence_routed, tools_considered, tools_executed, tools_blocked, governance_checked, trace_events_count, intent_route, classification",
+      "result": "passed",
+      "evidence": "All metadata keys present"
+    },
+    {
+      "name": "read_only mode safety",
+      "assertion": "Write intent in read_only mode escalates or blocks tools and does not modify source files",
+      "result": "passed",
+      "evidence": "mode_effective='read_only' and (mode_escalation_required or blocked_tools)"
+    },
+    {
+      "name": "Protected write governance metadata",
+      "assertion": "Protected-path write request returns governance keys and no source modification",
+      "result": "passed",
+      "evidence": "blocked_tools, mode_escalation_required, required_permission present in response"
+    },
+    {
+      "name": "auto mode exposes auto_decision",
+      "assertion": "mode=auto returns auto_decision and does not modify source files",
+      "result": "passed",
+      "evidence": "auto_decision field present"
+    },
+    {
+      "name": "provider_metadata present",
+      "assertion": "provider_metadata dict is present in /v2/chat/agent response",
+      "result": "passed",
+      "evidence": "provider_metadata is dict"
+    },
+    {
+      "name": "Error shape for empty message",
+      "assertion": "Empty message request returns safe JSON error or validation response",
+      "result": "passed",
+      "evidence": "status in {200,400,422} and body contains detail/error/ok"
+    },
+    {
+      "name": "/v2/agent/status contract",
+      "assertion": "Required fields present: ok, backend, canonical_for_new_agent_runs, runs, trace_available, checkpointed, legacy_agent_status",
+      "result": "passed",
+      "evidence": "All required fields present; backend='native_runtime'"
+    },
+    {
+      "name": "/v2/agent/capabilities contract",
+      "assertion": "Required fields present: ok, canonical, version, backend, capabilities",
+      "result": "passed",
+      "evidence": "All required fields present"
+    },
+    {
+      "name": "Legacy /chat unchanged",
+      "assertion": "POST /chat does not expose canonical_agent_v2 or route fields",
+      "result": "passed",
+      "evidence": "Response contains response/content and no Agent V2 canonical keys"
+    },
+    {
+      "name": "OpenAI-compat /v1/chat/completions unchanged",
+      "assertion": "Response shape remains {id, object, created, model, choices} and no canonical_agent_v2",
+      "result": "passed",
+      "evidence": "All required fields present"
+    },
+    {
+      "name": "Scope guard",
+      "assertion": "No source or frontend files modified",
+      "result": "passed",
+      "evidence": "git diff --name-only empty except allowed test/report paths"
+    }
+  ]
+}

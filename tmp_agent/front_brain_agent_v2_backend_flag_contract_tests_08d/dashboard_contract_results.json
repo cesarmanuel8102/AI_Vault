@@ -1,0 +1,68 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-BACKEND-FLAG-CONTRACT-TESTS-08D",
+  "artifact": "dashboard_contract_results",
+  "baseline": "af5636b",
+  "generated_at": "2026-06-29",
+  "backend": "native_runtime (upstream mocked)",
+  "test_file": "tests/smoke/test_brain_dashboard_chat_contracts_08d.py",
+  "summary": {
+    "total": 9,
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0
+  },
+  "findings": [
+    {
+      "name": "Dashboard chat proxy contract",
+      "assertion": "POST /brain-dashboard/chat returns ok=true with all dashboard-required fields",
+      "result": "passed",
+      "fields_verified": [
+        "content", "canonical_agent_v2", "run_id", "trace_url", "classification", "status",
+        "model_used", "provider_used", "provider_degraded", "fallback_reason", "raw_cot_exposed",
+        "mode_requested", "mode_effective", "auto_decision", "mode_escalation_required",
+        "mode_escalation_reason", "required_permission", "expected_write_scope", "confirmation_id",
+        "blocked_tools"
+      ]
+    },
+    {
+      "name": "Dashboard chat error shape",
+      "assertion": "When upstream 8091 is unreachable, /brain-dashboard/chat returns {ok:false, error, content}",
+      "result": "passed"
+    },
+    {
+      "name": "Dashboard trace proxy contract",
+      "assertion": "GET /brain-dashboard/agent-v2/runs/{run_id}/trace proxies to /v2/agent/runs/{run_id}/trace and returns {ok, run_id, trace, event_count}",
+      "result": "passed"
+    },
+    {
+      "name": "Dashboard agent-v2/status contract",
+      "assertion": "GET /brain-dashboard/agent-v2/status returns ok=true with agent_v2 block containing backend and chat_agent_route=/v2/chat/agent",
+      "result": "passed"
+    },
+    {
+      "name": "Main dashboard status includes agent_v2 panel",
+      "assertion": "GET /brain-dashboard/status contains agent_v2 block with backend, runs, trace_available",
+      "result": "passed"
+    },
+    {
+      "name": "Build mode escalation contract",
+      "assertion": "Dashboard chat build mode maps mode_escalation_required=true, required_permission='build', confirmation_id, expected_write_scope",
+      "result": "passed"
+    },
+    {
+      "name": "Auto mode exposes auto_decision",
+      "assertion": "Dashboard chat auto mode maps auto_decision field",
+      "result": "passed"
+    },
+    {
+      "name": "Message validation",
+      "assertion": "Empty/whitespace message returns 400",
+      "result": "passed"
+    },
+    {
+      "name": "Scope guard",
+      "assertion": "No dashboard or source files modified",
+      "result": "passed"
+    }
+  ]
+}
