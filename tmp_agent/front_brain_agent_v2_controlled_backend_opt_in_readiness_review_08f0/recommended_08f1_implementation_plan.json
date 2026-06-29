@@ -1,0 +1,91 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-CONTROLLED-BACKEND-OPT-IN-READINESS-REVIEW-08F0",
+  "recommended_next_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-RUNTIME-CONTRACT-PARITY-08F1",
+  "purpose": "Controlled source patch that adds a production-compatible runtime wrapper around LangGraphParityRuntimeV2 without changing default backend, dashboard, frontend, memory, FAISS, trading, or env.",
+  "design_principles": [
+    "NativeAgentRuntimeV2 remains the default backend",
+    "LangGraph opt-in only via AGENT_V2_BACKEND env var",
+    "Do not activate LangGraph by default",
+    "Preserve fallback-to-native guard in runtime.py",
+    "Keep /v2/chat/agent response schema stable via response_normalizer.py",
+    "No dashboard/frontend changes unless strictly necessary",
+    "No memory/FAISS/trading/env changes"
+  ],
+  "allowed_source_files": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py"
+  ],
+  "allowed_test_files": [
+    "tests/smoke/test_brain_agent_v2_langgraph_backend_contract_08f1.py"
+  ],
+  "prohibited_files": [
+    "tmp_agent/brain_v9/api_security.py",
+    "tmp_agent/brain_v9/main.py",
+    "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+    "tmp_agent/brain_v9/dashboard/dashboard_app.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py",
+    "tmp_agent/brain_v9/memory/*",
+    "tmp_agent/brain_v9/financial/*",
+    "tmp_agent/brain_v9/strategies/*",
+    ".env",
+    "frontend/*",
+    "tmp_agent/brain_v9/dashboard/static/*"
+  ],
+  "exact_changes": {
+    "langgraph_parity_runtime.py": [
+      "Add create_run(self, goal: str, mode: str = 'read_only', user_id: str = 'local') -> Dict[str, Any]",
+      "Add execute_run(self, run_id: str) -> Dict[str, Any]",
+      "Add plan_run(self, run_id: str) -> Dict[str, Any] (no-op or graph-aware)",
+      "Add list_runs(self) -> List[Dict[str, Any]]",
+      "Add pause_run/resume_run/cancel_run stubs that raise NotImplementedError or return safe no-ops",
+      "Persist run.json in _run_dir(run_id) after create/execute",
+      "Translate graph final state into Native-style run dict with final_answer, provider_metadata, capability_metadata, etc.",
+      "Set backend_selected='langgraph_parity', backend_fallback_used=False, backend_fallback_reason=None on instance"
+    ],
+    "runtime.py": [
+      "Preserve existing fallback guard; no relaxation",
+      "Optionally improve log message clarity when LangGraph compatibility check fails"
+    ]
+  },
+  "exact_tests_to_add": [
+    "Test that with AGENT_V2_BACKEND=langgraph, get_agent_runtime_v2() returns a runtime with backend='langgraph_parity' when langgraph package is available and wrapper is compatible",
+    "Test that create_run/execute_run return a run dict containing run_id, final_answer, status, provider_metadata, capability_metadata",
+    "Test that /v2/chat/agent (via TestClient) returns normalized schema with backend_selected='langgraph_parity' when AGENT_V2_BACKEND=langgraph",
+    "Test that read_only mode blocks write tools and sets mode_escalation_required when build intent detected",
+    "Test that when LangGraph is unavailable or wrapper incompatible, runtime falls back to native_runtime with backend_fallback_used=true and a reason string",
+    "Test trace retrieval contract /v2/agent/runs/{run_id}/trace works for LangGraph run"
+  ],
+  "validations_to_run": [
+    "python -m py_compile tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+    "python -m py_compile tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+    "python -m pytest tests/smoke/test_brain_agent_v2_langgraph_backend_contract_08f1.py -v",
+    "python -m pytest tests/smoke/test_brain_agent_v2_runtime_selector_guard_08e.py -v",
+    "python -m pytest tests/smoke/test_brain_dashboard_chat_proxy_token_fix_08e_r3.py -v",
+    "python scripts/git_hygiene/check_no_sensitive_paths_staged.py"
+  ],
+  "live_smoke_expectations": [
+    "Backend health and status still PASS with default backend",
+    "With AGENT_V2_BACKEND=langgraph and valid setup, /v2/chat/agent returns ok=true and normalized schema",
+    "Dashboard chat and trace proxies continue to work",
+    "Fallback to native_runtime occurs if LangGraph setup is invalid"
+  ],
+  "ci_expectations": [
+    "phase1-ci green",
+    "nontrading-smoke-regression green"
+  ],
+  "rollback_plan": [
+    "Unset AGENT_V2_BACKEND or set to native_runtime to restore Native default",
+    "Revert only tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py and remove the new test file",
+    "runtime.py fallback guard ensures Native works even if LangGraph code is partially present"
+  ],
+  "acceptance_criteria": [
+    "LangGraph backend can be selected only when AGENT_V2_BACKEND=langgraph and package is available",
+    "Production runtime compatibility check in runtime.py passes (create_run + execute_run callable)",
+    "/v2/chat/agent returns stable normalized response schema regardless of backend",
+    "Native remains default and fallback is safe",
+    "Dashboard proxies work for both backends",
+    "CI green on both required workflows"
+  ]
+}

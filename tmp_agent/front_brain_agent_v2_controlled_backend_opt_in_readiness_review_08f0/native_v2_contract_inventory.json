@@ -1,0 +1,116 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-CONTROLLED-BACKEND-OPT-IN-READINESS-REVIEW-08F0",
+  "title": "Native Agent V2 Production Contract Inventory",
+  "source_head": "883df0a",
+  "default_backend": "native_runtime",
+  "backend_selector": "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+  "production_files": {
+    "runtime_selector": "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+    "api_adapter": "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "native_runtime": "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+    "response_normalizer": "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py",
+    "dashboard_proxy": "tmp_agent/brain_v9/dashboard/dashboard_routes.py"
+  },
+  "runtime_interface": {
+    "class": "NativeAgentRuntimeV2",
+    "backend_constant": "native_runtime",
+    "constructor": "__init__() -> None",
+    "required_methods": [
+      {
+        "method": "create_run",
+        "signature": "create_run(self, goal: str, mode: str = 'read_only', user_id: str = 'local') -> Dict[str, Any]",
+        "description": "Create a new run, validate mode, generate run_id agv2_<hash>, persist run.json and checkpoint, return run dict"
+      },
+      {
+        "method": "execute_run",
+        "signature": "execute_run(self, run_id: str) -> Dict[str, Any]",
+        "description": "Load run, assemble context, select intent route, plan/execute, finalize, persist, return completed/failed run dict"
+      }
+    ],
+    "optional_methods": [
+      {"method": "plan_run", "signature": "plan_run(self, run_id: str) -> Dict[str, Any]"},
+      {"method": "pause_run", "signature": "pause_run(self, run_id: str) -> Dict[str, Any]"},
+      {"method": "resume_run", "signature": "resume_run(self, run_id: str) -> Dict[str, Any]"},
+      {"method": "cancel_run", "signature": "cancel_run(self, run_id: str) -> Dict[str, Any]"},
+      {"method": "get_run", "signature": "get_run(self, run_id: str) -> Dict[str, Any]"},
+      {"method": "get_trace", "signature": "get_trace(self, run_id: str) -> List[Dict[str, Any]]"},
+      {"method": "list_runs", "signature": "list_runs(self) -> List[Dict[str, Any]]"}
+    ]
+  },
+  "api_endpoints": {
+    "chat_agent": {
+      "path": "POST /v2/chat/agent",
+      "auth": "require_strict_operator_access (X-Brain-Token)",
+      "request_fields": {
+        "message": "str (required)",
+        "mode": "str (default 'read_only')",
+        "user_id": "str (default 'local')"
+      },
+      "pipeline": [
+        "validate message not empty",
+        "reject forbidden bypass/override fields",
+        "parse mode from natural language or request mode",
+        "assemble recent context",
+        "select intent route",
+        "rt.create_run(message, validated_mode, user_id)",
+        "if route in {mixed_brain_reasoning, operational_agent}: rt.plan_run(run_id)",
+        "rt.execute_run(run_id)",
+        "trace_events = rt.get_trace(run_id)",
+        "build capability_metadata",
+        "normalize response"
+      ]
+    },
+    "trace": {
+      "path": "GET /v2/agent/runs/{run_id}/trace",
+      "auth": "require_strict_operator_access",
+      "response": "{ok, run_id, trace: List[Dict], event_count}"
+    },
+    "run_lifecycle": {
+      "create": "POST /v2/agent/runs",
+      "get": "GET /v2/agent/runs/{run_id}",
+      "plan": "POST /v2/agent/runs/{run_id}/plan",
+      "execute": "POST /v2/agent/runs/{run_id}/execute",
+      "pause": "POST /v2/agent/runs/{run_id}/pause",
+      "resume": "POST /v2/agent/runs/{run_id}/resume",
+      "cancel": "POST /v2/agent/runs/{run_id}/cancel"
+    }
+  },
+  "normalized_response_schema": {
+    "top_level_required": [
+      "ok", "canonical_agent_v2", "route", "run_id", "final_answer",
+      "provider_metadata", "capability_metadata", "mode_requested", "mode_effective",
+      "mode_escalation_required", "approval_required", "confirmation_id",
+      "required_permission", "expected_write_scope", "trace_url", "blocked_tools",
+      "intent_route", "intent_detected", "intent_confidence", "classification",
+      "status", "auto_decision", "backend", "backend_selected", "backend_fallback_used",
+      "backend_fallback_reason", "error", "detail"
+    ],
+    "provider_metadata_required": ["provider_used", "model_used", "provider_degraded", "fallback_reason"],
+    "capability_metadata_required": [
+      "memory_used", "retrieval_attempted", "retrieval_no_results", "retrieval_skipped",
+      "planner_used", "evidence_routed", "evidence_sources_count", "tools_considered",
+      "tools_executed", "tools_blocked", "governance_checked", "trace_events_count",
+      "intent_route", "classification"
+    ],
+    "trace_url_format": "/v2/agent/runs/{run_id}/trace",
+    "run_id_format": "agv2_<16-char-hex-sha256>"
+  },
+  "mode_and_governance": {
+    "mode_validation": "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py validate_mode(mode)",
+    "read_only_behavior": "Write tools are blocked via ToolGatewayV2; mode escalation sets required_permission='build' and confirmation_id",
+    "auto_mode": "infer_auto_decision(goal) resolves to a concrete mode",
+    "fallback_to_native_when_invalid_backend": "runtime.py falls back to NativeAgentRuntimeV2 with backend_fallback_used=true and reason metadata"
+  },
+  "dashboard_proxy_expectations": {
+    "chat_proxy_path": "/brain-dashboard/chat -> POST http://127.0.0.1:8091/v2/chat/agent",
+    "trace_proxy_path": "/brain-dashboard/agent-v2/runs/{run_id}/trace -> GET http://127.0.0.1:8091/v2/agent/runs/{run_id}/trace",
+    "token_forwarding": "X-Brain-Token added by dashboard_routes.py _strict_headers() when BRAIN_ADMIN_TOKEN configured"
+  },
+  "backend_selector_behavior": {
+    "env_var": "AGENT_V2_BACKEND",
+    "native_values": ["", "native", "native_runtime"],
+    "langgraph_values": ["langgraph", "langgraph_parity", "langgraph_parity_runtime"],
+    "invalid_values": "Any non-native, non-LangGraph value falls back to native_runtime with metadata",
+    "production_runtime_compatibility_check": "runtime.py checks for create_run and execute_run (required); plan_run/list_runs/get_run/get_trace (optional, must be callable if present)"
+  }
+}

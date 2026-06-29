@@ -1,0 +1,142 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-CONTROLLED-BACKEND-OPT-IN-READINESS-REVIEW-08F0",
+  "title": "Opt-In Backend Readiness Matrix",
+  "source_head": "883df0a",
+  "categories": [
+    {
+      "id": "runtime_interface_parity",
+      "name": "Runtime interface parity",
+      "status": "FAIL",
+      "evidence": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+      "blocking_gaps": ["Missing create_run(goal, mode, user_id)", "Missing execute_run(run_id)", "Missing plan_run/list_runs"],
+      "required_08f1_work": "Add production-runtime wrapper methods to LangGraph class (or a new adapter class) matching Native signatures.",
+      "risk_level": "CRITICAL"
+    },
+    {
+      "id": "response_normalization_parity",
+      "name": "Response normalization parity",
+      "status": "PARTIAL",
+      "evidence": "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py lines 211-241; response_normalizer.py",
+      "blocking_gaps": ["LangGraph run() returns graph state, not a Native-style run dict", "api_adapter builds raw_response from Native fields"],
+      "required_08f1_work": "Translate graph final state into Native-style run dict before normalization, or adapt response builder in api_adapter.",
+      "risk_level": "HIGH"
+    },
+    {
+      "id": "trace_contract_parity",
+      "name": "Trace contract parity",
+      "status": "PASS",
+      "evidence": "langgraph_parity_runtime.py get_trace() uses TraceStore; native_runtime.py get_trace() uses TraceStore",
+      "blocking_gaps": [],
+      "required_08f1_work": "Ensure run_root layout matches Native so dashboard trace proxy works.",
+      "risk_level": "LOW"
+    },
+    {
+      "id": "run_lifecycle_parity",
+      "name": "Run lifecycle parity",
+      "status": "FAIL",
+      "evidence": "api_adapter.py endpoints POST /runs/{run_id}/{plan,execute,pause,resume,cancel}",
+      "blocking_gaps": ["LangGraph class has no plan_run, pause_run, resume_run, cancel_run"],
+      "required_08f1_work": "Implement lifecycle methods as no-ops or graph-aware operations; or document that they return not-implemented with safe fallback.",
+      "risk_level": "MEDIUM"
+    },
+    {
+      "id": "dashboard_compatibility",
+      "name": "Dashboard compatibility",
+      "status": "PASS",
+      "evidence": "tmp_agent/brain_v9/dashboard/dashboard_routes.py (R3 token forwarding fix)",
+      "blocking_gaps": [],
+      "required_08f1_work": "No dashboard changes needed if backend response contract is preserved.",
+      "risk_level": "LOW"
+    },
+    {
+      "id": "security_token_compatibility",
+      "name": "Security / token compatibility",
+      "status": "PASS",
+      "evidence": "api_adapter.py uses require_strict_operator_access on all /v2/agent and /v2/chat endpoints",
+      "blocking_gaps": [],
+      "required_08f1_work": "No changes to api_security.py; runtime wrapper inherits existing endpoint auth.",
+      "risk_level": "LOW"
+    },
+    {
+      "id": "governance_read_only_enforcement",
+      "name": "Governance / read_only enforcement",
+      "status": "PARTIAL",
+      "evidence": "langgraph_parity_runtime.py includes governance_gate node using validate_mode and mode_requires_escalation",
+      "blocking_gaps": ["Need to verify graph actually blocks write tools in read_only mode the same way Native does"],
+      "required_08f1_work": "Add tests proving read_only blocks writes and build mode escalates.",
+      "risk_level": "MEDIUM"
+    },
+    {
+      "id": "fallback_to_native_behavior",
+      "name": "Fallback-to-native behavior",
+      "status": "PASS",
+      "evidence": "runtime.py get_agent_runtime_v2() falls back to NativeAgentRuntimeV2 when LangGraph is missing, fails init, or incompatible",
+      "blocking_gaps": [],
+      "required_08f1_work": "Preserve existing fallback guard; do not relax it.",
+      "risk_level": "LOW"
+    },
+    {
+      "id": "test_coverage",
+      "name": "Test coverage",
+      "status": "FAIL",
+      "evidence": "No test proves LangGraph backend returns normalized /v2/chat/agent response",
+      "blocking_gaps": ["Missing opt-in LangGraph backend smoke test"],
+      "required_08f1_work": "Add tests/smoke/test_brain_agent_v2_langgraph_backend_contract_08f1.py proving either parity or safe fallback.",
+      "risk_level": "HIGH"
+    },
+    {
+      "id": "ci_coverage",
+      "name": "CI coverage",
+      "status": "PASS",
+      "evidence": "phase1-ci and nontrading-smoke-regression already run smoke tests; R3 CI green at 883df0a",
+      "blocking_gaps": [],
+      "required_08f1_work": "New 08F1 tests must be included in smoke test discovery automatically.",
+      "risk_level": "LOW"
+    },
+    {
+      "id": "no_memory_faiss_mutation_risk",
+      "name": "No memory/FAISS mutation risk",
+      "status": "PASS",
+      "evidence": "08F0 created only report files; LangGraph class reuses MemoryGatewayV2 read path; no write path introduced",
+      "blocking_gaps": [],
+      "required_08f1_work": "08F1 must not add FAISS writes, vector index rebuilds, or memory mutations.",
+      "risk_level": "LOW"
+    },
+    {
+      "id": "no_trading_broker_mutation_risk",
+      "name": "No trading/broker mutation risk",
+      "status": "PASS",
+      "evidence": "08F0 did not touch trading, broker, strategy, or risk files",
+      "blocking_gaps": [],
+      "required_08f1_work": "08F1 must not touch trading/IBKR/broker files.",
+      "risk_level": "LOW"
+    },
+    {
+      "id": "observability_debug_metadata",
+      "name": "Observability / debug metadata",
+      "status": "PARTIAL",
+      "evidence": "LangGraph class sets parity/deep_parity metadata keys; Native sets provider_metadata and capability_metadata",
+      "blocking_gaps": ["Need to ensure backend_selected/backend_fallback_* are populated for dashboard/frontend"],
+      "required_08f1_work": "Set backend metadata on wrapper instance; preserve parity metadata in capability_metadata.",
+      "risk_level": "MEDIUM"
+    },
+    {
+      "id": "rollback_safety",
+      "name": "Rollback safety",
+      "status": "PASS",
+      "evidence": "Native is default; AGENT_V2_BACKEND unset or native value selects Native; removing LangGraph code leaves Native path intact",
+      "blocking_gaps": [],
+      "required_08f1_work": "Keep LangGraph path fully opt-in and default-unchanged.",
+      "risk_level": "LOW"
+    },
+    {
+      "id": "canary_readiness",
+      "name": "Canary readiness",
+      "status": "FAIL",
+      "evidence": "LangGraph cannot be selected without code changes because production compatibility check fails",
+      "blocking_gaps": ["Missing runtime interface wrapper", "Missing response translation", "Missing opt-in tests"],
+      "required_08f1_work": "Implement 08F1 wrapper + tests; then LangGraph becomes usable as opt-in canary.",
+      "risk_level": "CRITICAL"
+    }
+  ]
+}

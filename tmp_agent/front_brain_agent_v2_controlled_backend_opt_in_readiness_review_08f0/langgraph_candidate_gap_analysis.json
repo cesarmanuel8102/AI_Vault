@@ -1,0 +1,67 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-CONTROLLED-BACKEND-OPT-IN-READINESS-REVIEW-08F0",
+  "title": "LangGraph Candidate Gap Analysis",
+  "source_head": "883df0a",
+  "candidate_file": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+  "candidate_class": "LangGraphParityRuntimeV2",
+  "backend_constant": "langgraph_parity",
+  "wired_to_production": false,
+  "module_docstring": "Isolated LangGraph deep parity runtime for Brain V9 Agent Kernel V2. Intentionally NOT wired into runtime.py, api_adapter.py, or main.py.",
+  "public_methods_found": [
+    {
+      "method": "__init__",
+      "signature": "__init__(self, run_root=None, finalizer_fn=None, evaluator_fn=None)"
+    },
+    {"method": "run", "signature": "run(self, message: str, mode: str = 'read_only', user_id: str = 'probe') -> Dict[str, Any]"},
+    {"method": "graph_probe", "signature": "graph_probe(self) -> Dict[str, Any]"},
+    {"method": "graph_stream_probe", "signature": "graph_stream_probe(self) -> Dict[str, Any]"},
+    {"method": "backend_flag_readiness_probe", "signature": "backend_flag_readiness_probe(self) -> Dict[str, Any]"},
+    {"method": "get_trace", "signature": "get_trace(self, run_id: str) -> List[Dict[str, Any]]"},
+    {"method": "get_checkpoint", "signature": "get_checkpoint(self, run_id: str) -> Optional[Dict[str, Any]]"},
+    {"method": "get_run", "signature": "get_run(self, run_id: str) -> Optional[Dict[str, Any]]"}
+  ],
+  "production_runtime_methods_status": {
+    "create_run": {"present": false, "notes": "Public API exposes run(message, mode, user_id) instead of create_run(goal, mode, user_id). api_adapter.chat_agent calls rt.create_run(...), so this method is missing for production compatibility."},
+    "execute_run": {"present": false, "notes": "No execute_run(run_id) method exists. The graph is invoked directly via run()."},
+    "plan_run": {"present": false, "notes": "No plan_run(run_id) method."},
+    "pause_run": {"present": false, "notes": "No pause_run(run_id) method."},
+    "resume_run": {"present": false, "notes": "No resume_run(run_id) method."},
+    "cancel_run": {"present": false, "notes": "No cancel_run(run_id) method."},
+    "get_run": {"present": true, "notes": "Returns Optional[Dict]. Loads run.json from _run_dir(run_id)."},
+    "get_trace": {"present": true, "notes": "Returns TraceStore(...).read(). Compatible shape."},
+    "list_runs": {"present": false, "notes": "No list_runs() method."}
+  },
+  "response_normalization": {
+    "normalized_by_api_adapter": false,
+    "notes": "LangGraph run() returns a raw final_state dict. It does not set canonical fields expected by response_normalizer.py such as final_answer, provider_metadata, mode_requested, mode_effective, etc., unless the graph nodes populate them. api_adapter would need to translate the graph output before normalization."
+  },
+  "trace_contract": {
+    "trace_persistence": true,
+    "trace_retrieval": true,
+    "trace_format": "TraceStore(self._run_dir(run_id)).read() -> List[Dict[str, Any]]",
+    "notes": "Trace storage is compatible with /v2/agent/runs/{run_id}/trace contract, assuming run_root layout matches Native."
+  },
+  "security_and_governance": {
+    "strict_operator_access": "api_adapter requires X-Brain-Token; LangGraph runtime itself has no auth layer.",
+    "mode_enforcement": "Graph includes governance_gate node using validate_mode and mode_requires_escalation. Read-only tool blocking relies on ToolGatewayV2. Same governance primitives as Native.",
+    "read_only_blocks_writes": true,
+    "notes": "If LangGraph is wired through api_adapter, the existing require_strict_operator_access and governance primitives apply."
+  },
+  "fallback_metadata": {
+    "backend_selected": "Not set on class by default; runtime.py sets it if selected.",
+    "backend_fallback_used": "Not set on class by default; runtime.py sets it if selected.",
+    "backend_fallback_reason": "Not set on class by default; runtime.py sets it if selected."
+  },
+  "native_only_assumption_risks": [
+    "api_adapter.chat_agent calls rt.create_run and rt.execute_run directly; LangGraph class has run() but not those methods.",
+    "api_adapter uses route_info to decide whether to call plan_run; LangGraph has no plan_run.",
+    "response_normalizer expects run dict fields that may not be present in LangGraph final_state.",
+    "Dashboard and other consumers expect backend metadata attributes (backend_selected, backend_fallback_used, backend_fallback_reason)."
+  ],
+  "top_gaps": [
+    "Missing create_run(goal, mode, user_id) and execute_run(run_id) methods required by production runtime interface.",
+    "No plan_run/list_runs/pause/resume/cancel lifecycle methods.",
+    "LangGraph run() output needs translation/normalization before response_normalizer can produce stable schema.",
+    "LangGraph runtime is not wired into runtime.py; runtime.py will fall back to Native because compatibility check fails."
+  ]
+}
