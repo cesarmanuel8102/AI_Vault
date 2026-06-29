@@ -2,6 +2,7 @@
 
 - **Front:** FRONT-BRAIN-NATIVE-VS-LANGGRAPH-FAIR-FULL-PARITY-BENCHMARK-08B
 - **Baseline:** 673ec9c
+- **Final head:** 51dce3b
 - **Status:** validated
 - **Decision:** A — opt-in_backend_blueprint
 - **Native score:** 850
