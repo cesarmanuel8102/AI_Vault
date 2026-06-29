@@ -1,0 +1,783 @@
+{
+  "runtime_core": {
+    "module": "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+    "capabilities": [
+      {
+        "name": "create_run",
+        "method": "create_run",
+        "description": "Create a versioned AgentRun with hashed run_id, normalized mode, and auto_decision inference.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "plan_run",
+        "method": "plan_run",
+        "description": "Generate a deterministic or explicit tool plan using planner.py with metadata tracking.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "execute_run",
+        "method": "execute_run",
+        "description": "Full execute loop: context, intent routing, evidence planning, tool execution, adaptive expansion, governance, finalization, tracing.",
+        "risk_level": "medium",
+        "read_only": false,
+        "requires_approval": true,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "pause_run",
+        "method": "pause_run",
+        "description": "Set run status to paused and checkpoint.",
+        "risk_level": "low",
+        "read_only": false,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "resume_run",
+        "method": "resume_run",
+        "description": "Set run status to running and checkpoint.",
+        "risk_level": "low",
+        "read_only": false,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "cancel_run",
+        "method": "cancel_run",
+        "description": "Set run status to cancelled and checkpoint.",
+        "risk_level": "low",
+        "read_only": false,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "get_run",
+        "method": "get_run",
+        "description": "Load persisted run.json for a run_id.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "list_runs",
+        "method": "list_runs",
+        "description": "List all persisted runs from tmp_agent/agent_kernel_v2/runs.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "get_trace",
+        "method": "get_trace",
+        "description": "Read trace.jsonl for a run_id.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      }
+    ],
+    "persistence": {
+      "run_json": "tmp_agent/agent_kernel_v2/runs/{run_id}/run.json",
+      "trace_jsonl": "tmp_agent/agent_kernel_v2/runs/{run_id}/trace.jsonl",
+      "checkpoint_json": "tmp_agent/agent_kernel_v2/runs/{run_id}/checkpoint.json",
+      "artifact_dir": "tmp_agent/agent_kernel_v2/runs/{run_id}/artifacts"
+    }
+  },
+  "intent_routing": {
+    "module": "tmp_agent/brain_v9/core/agent_kernel_v2/intent_adapter.py",
+    "capabilities": [
+      {
+        "name": "detect_intent",
+        "method": "detect_intent",
+        "description": "Classify user message into intent, confidence, and meta via IntentDetector.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "select_route",
+        "method": "select_route",
+        "description": "Choose production route: direct_assistant, promotion_adapter_dry_run, brain_evidence, mixed_brain_reasoning, operational_agent, with context inheritance for follow-ups.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "get_evidence_sources",
+        "method": "get_evidence_sources",
+        "description": "Dual-mode evidence source selector: LLM classifier when BRAIN_USE_LLM_INTENT_CLASSIFIER enabled; deterministic scorer otherwise.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "promotion_adapter_dry_run_detection",
+        "method": "_detect_promotion_adapter_intent",
+        "description": "Detect promotion/dry-run candidate validation requests and extract candidate_id.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      }
+    ],
+    "routes": [
+      "direct_assistant",
+      "promotion_adapter_dry_run",
+      "brain_evidence",
+      "mixed_brain_reasoning",
+      "operational_agent"
+    ]
+  },
+  "context_assembly": {
+    "module": "tmp_agent/brain_v9/core/agent_kernel_v2/context_assembler.py",
+    "capabilities": [
+      {
+        "name": "assemble_recent_context",
+        "method": "assemble_recent_context",
+        "description": "Build recent session context for a user: prior turns, is_follow_up, summary, prev_route/classification/sources/goal.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "follow_up_detection",
+        "method": "_is_follow_up",
+        "description": "Detect follow-up questions using pronouns and short message heuristics.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      }
+    ]
+  },
+  "planning": {
+    "module": "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+    "capabilities": [
+      {
+        "name": "build_plan",
+        "method": "build_plan",
+        "description": "Build a plan from mandatory/explicit/keyword classification with metadata.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "classify_goal",
+        "method": "classify_goal",
+        "description": "Keyword-driven goal classification into diagnostic categories.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "mandatory_tool_request_parse",
+        "method": "parse_mandatory_tool_requests",
+        "description": "Parse user requests that explicitly require multiple checks.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "explicit_tool_request_parse",
+        "method": "_detect_explicit_tool_requests",
+        "description": "Parse explicit tool-name requests.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "diagnostic_phrase_parse",
+        "method": "_detect_diagnostic_phrases",
+        "description": "Parse diagnostic phrases into tool mappings.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "tool_resolution",
+        "method": "_resolve_tool",
+        "description": "Resolve requested tool names to canonical tools or safe equivalents.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      }
+    ],
+    "planner_classes": [
+      "repo_audit",
+      "code_search",
+      "endpoint_probe",
+      "memory_question",
+      "dashboard_diagnosis",
+      "provider_diagnosis",
+      "frontend_diagnosis",
+      "smoke_test",
+      "documentation_task",
+      "safe_patch_dry_run",
+      "approval_required_write",
+      "general_reasoning",
+      "mandatory_multitool",
+      "explicit_tool_request",
+      "brain_evidence",
+      "mixed_brain_reasoning"
+    ]
+  },
+  "evidence_engineering": {
+    "module": "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+    "capabilities": [
+      {
+        "name": "build_evidence_plan",
+        "method": "_build_evidence_plan",
+        "description": "Translate intent_adapter evidence sources into tool steps (repo_status_read, grep_search, file_read, semantic_retrieve, repo_history_read).",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "resolve_evidence_paths",
+        "method": "_resolve_evidence_paths",
+        "description": "Resolve glob paths into concrete file paths for file_read.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "adaptive_expansion",
+        "method": "_run_adaptive_expansion",
+        "description": "Expand plan when grep returns zero matches, file paths unresolved, semantic hits empty, or follow-up expansion intent detected.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      }
+    ]
+  },
+  "tool_gateway": {
+    "module": "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+    "capabilities": [
+      {
+        "name": "repo_status_read",
+        "method": "repo_status_read",
+        "description": "Read git status/HEAD/branch summary safely.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "repo_history_read",
+        "method": "repo_history_read",
+        "description": "Read git log for a path.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "grep_search",
+        "method": "grep_search",
+        "description": "Run rg grep with allowlisted globs and forbidden-path filtering.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "file_read",
+        "method": "file_read",
+        "description": "Read a file at relative path with forbidden-path blocking.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "route_probe",
+        "method": "route_probe",
+        "description": "HTTP GET/POST probe to localhost endpoints with path allowlisting.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "semantic_retrieve",
+        "method": "semantic_retrieve",
+        "description": "FAISS + jsonl fallback semantic memory retrieval (read-only).",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "smoke_test_readonly",
+        "method": "smoke",
+        "description": "Run an allowlisted pytest smoke test read-only target.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "file_patch_dry_run",
+        "method": "file_patch_dry_run",
+        "description": "Generate a dry-run patch preview; no writes.",
+        "risk_level": "medium",
+        "read_only": false,
+        "requires_approval": true,
+        "allowed_modes": ["build"]
+      },
+      {
+        "name": "file_patch_apply_approval_required",
+        "method": "file_patch_apply_approval_required",
+        "description": "Apply a patch requiring AGENTV2_APPROVED_ token and path safety.",
+        "risk_level": "high",
+        "read_only": false,
+        "requires_approval": true,
+        "allowed_modes": ["build"]
+      },
+      {
+        "name": "git_commit_approval_required",
+        "method": "git_commit_approval_required",
+        "description": "Commit staged changes with AGENTV2_APPROVED_ token.",
+        "risk_level": "high",
+        "read_only": false,
+        "requires_approval": true,
+        "allowed_modes": ["build"]
+      },
+      {
+        "name": "promotion_candidate_validate",
+        "method": "promotion_candidate_validate",
+        "description": "Dry-run validation of promotion candidate (reads only).",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      }
+    ],
+    "blocked_tool_names": {
+      "report_writer": "Not exposed through ToolGatewayV2 list_capabilities"
+    }
+  },
+  "memory_gateway": {
+    "module": "tmp_agent/brain_v9/core/agent_kernel_v2/memory_gateway.py",
+    "capabilities": [
+      {
+        "name": "semantic_retrieve",
+        "method": "semantic_retrieve",
+        "description": "FAISS-backed semantic retrieval with jsonl keyword fallback.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "retrieve_by_domain",
+        "method": "retrieve_by_domain",
+        "description": "Retrieve memory records by metadata domain.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "retrieve_recent_agent_lessons",
+        "method": "retrieve_recent_agent_lessons",
+        "description": "Retrieve recent agent-related memory records.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "explain_retrieval",
+        "method": "explain_retrieval",
+        "description": "Explain retrieval result for a query.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "integrity_check",
+        "method": "integrity_check",
+        "description": "Validate FAISS index alignment with jsonl records.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      }
+    ],
+    "read_only_default": true
+  },
+  "finalization": {
+    "module": "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+    "capabilities": [
+      {
+        "name": "finalize_agent_run",
+        "method": "finalize_agent_run",
+        "description": "Generate final answer via Ollama provider chain with fallback and COT marker blocking.",
+        "risk_level": "medium",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "build_finalizer_prompt",
+        "method": "build_finalizer_prompt",
+        "description": "Assemble evidence/tool/memory/recent_context payload into LLM prompt.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "structured_fallback",
+        "method": "_structured_fallback",
+        "description": "Deterministic final answer when all LLM providers fail.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      }
+    ]
+  },
+  "governance": {
+    "module": "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+    "capabilities": [
+      {
+        "name": "validate_mode",
+        "method": "validate_mode",
+        "description": "Normalize and sanitize mode to read_only/build/auto; reject dangerous modes.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "parse_mode_from_message",
+        "method": "parse_mode_from_message",
+        "description": "Parse natural-language mode switch commands safely.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "infer_auto_decision",
+        "method": "infer_auto_decision",
+        "description": "Infer whether auto goal requires build based on write-intent keywords.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "mode_requires_escalation",
+        "method": "mode_requires_escalation",
+        "description": "Detect read_only/auto goals that need build escalation due to write tools or intent.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "write_allowed",
+        "method": "write_allowed",
+        "description": "Validate AGENTV2_APPROVED_ token in build mode.",
+        "risk_level": "high",
+        "read_only": false,
+        "requires_approval": true,
+        "allowed_modes": ["build"]
+      },
+      {
+        "name": "path_is_blocked",
+        "method": "path_is_blocked",
+        "description": "Block forbidden path parts (.env, trading, etc.).",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "selfdev_governance_blocked",
+        "method": "selfdev_governance_blocked",
+        "description": "Protect governance-critical files from self-dev edits.",
+        "risk_level": "high",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "contains_forbidden_request_fields",
+        "method": "contains_forbidden_request_fields",
+        "description": "Reject bypass/override/god mode request fields.",
+        "risk_level": "high",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      }
+    ],
+    "protected_paths": [
+      "tmp_agent/brain_v9/api_security.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+      "scripts/git_hygiene/check_no_sensitive_paths_staged.py",
+      "tests/smoke/_accepted_runtime_baseline.py",
+      "tests/smoke/test_agent_v2_auth_endpoints_01.py",
+      "tests/smoke/test_governance_rbac_dev_god_hardening_01.py",
+      ".gitignore"
+    ],
+    "write_tool_names": [
+      "file_patch_dry_run",
+      "file_patch_apply_approval_required",
+      "git_commit_approval_required",
+      "report_writer"
+    ],
+    "read_only_tool_names": [
+      "repo_status_read",
+      "repo_history_read",
+      "repo_diff_read",
+      "grep_search",
+      "file_read",
+      "route_probe",
+      "semantic_retrieve",
+      "smoke_test_readonly"
+    ]
+  },
+  "tracing": {
+    "module": "tmp_agent/brain_v9/core/agent_kernel_v2/trace.py",
+    "capabilities": [
+      {
+        "name": "append_trace_event",
+        "method": "append",
+        "description": "Append sanitized AgentTraceEvent to trace.jsonl.",
+        "risk_level": "low",
+        "read_only": false,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "read_trace",
+        "method": "read",
+        "description": "Read trace.jsonl for a run.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_opathy_check": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "sanitize_payload",
+        "method": "sanitize_payload",
+        "description": "Redact any trace payload containing raw COT markers.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      }
+    ]
+  },
+  "checkpointing": {
+    "module": "tmp_agent/brain_v9/core/agent_kernel_v2/checkpoints.py",
+    "capabilities": [
+      {
+        "name": "save_checkpoint",
+        "method": "save",
+        "description": "Save AgentCheckpoint JSON with run_id, status, step_index, data.",
+        "risk_level": "low",
+        "read_only": false,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "load_checkpoint",
+        "method": "load",
+        "description": "Load checkpoint JSON for a run.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      }
+    ]
+  },
+  "api_adapter": {
+    "module": "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "capabilities": [
+      {
+        "name": "capabilities_endpoint",
+        "method": "capabilities",
+        "route": "GET /v2/agent/capabilities",
+        "description": "Return runtime capabilities, backend, version, planner classes.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "status_endpoint",
+        "method": "status",
+        "route": "GET /v2/agent/status",
+        "description": "Return runtime status, latest provider metadata, checkpointed flag.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "list_runs_endpoint",
+        "method": "list_runs",
+        "route": "GET /v2/agent/runs",
+        "description": "List all runs.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "create_run_endpoint",
+        "method": "create_run",
+        "route": "POST /v2/agent/runs",
+        "description": "Create a new run.",
+        "risk_level": "low",
+        "read_only": false,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "plan_run_endpoint",
+        "method": "plan_run",
+        "route": "POST /v2/agent/runs/{run_id}/plan",
+        "description": "Plan an existing run.",
+        "risk_level": "low",
+        "read_only": false,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "execute_run_endpoint",
+        "method": "execute_run",
+        "route": "POST /v2/agent/runs/{run_id}/execute",
+        "description": "Execute an existing run.",
+        "risk_level": "medium",
+        "read_only": false,
+        "requires_approval": true,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "pause_run_endpoint",
+        "method": "pause_run",
+        "route": "POST /v2/agent/runs/{run_id}/pause",
+        "description": "Pause a run.",
+        "risk_level": "low",
+        "read_only": false,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "resume_run_endpoint",
+        "method": "resume_run",
+        "route": "POST /v2/agent/runs/{run_id}/resume",
+        "description": "Resume a run.",
+        "risk_level": "low",
+        "read_only": false,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "cancel_run_endpoint",
+        "method": "cancel_run",
+        "route": "POST /v2/agent/runs/{run_id}/cancel",
+        "description": "Cancel a run.",
+        "risk_level": "low",
+        "read_only": false,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "get_run_endpoint",
+        "method": "get_run",
+        "route": "GET /v2/agent/runs/{run_id}",
+        "description": "Get a run by id.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "get_trace_endpoint",
+        "method": "get_trace",
+        "route": "GET /v2/agent/runs/{run_id}/trace",
+        "description": "Get trace for a run.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "operator_presets_endpoint",
+        "method": "operator_presets",
+        "route": "GET /v2/agent/operator-presets",
+        "description": "List operator presets.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "maintenance_modes_endpoint",
+        "method": "maintenance_modes",
+        "route": "GET /v2/agent/maintenance/modes",
+        "description": "Return maintenance mode flags.",
+        "risk_level": "low",
+        "read_only": true,
+        "requires_approval": false,
+        "allowed_modes": ["read_only", "build", "auto"]
+      },
+      {
+        "name": "chat_agent_endpoint",
+        "method": "chat_agent",
+        "route": "POST /v2/chat/agent",
+        "description": "Conversational entry point that creates, plans (when needed), executes, and returns final_answer + capability_metadata.",
+        "risk_level": "medium",
+        "read_only": false,
+        "requires_approval": true,
+        "allowed_modes": ["read_only", "build", "auto"]
+      }
+    ],
+    "capability_metadata_keys": [
+      "memory_used",
+      "retrieval_attempted",
+      "retrieval_no_results",
+      "retrieval_skipped",
+      "planner_used",
+      "evidence_routed",
+      "evidence_sources_count",
+      "tools_considered",
+      "tools_executed",
+      "tools_blocked",
+      "governance_checked",
+      "intent_route",
+      "classification",
+      "trace_events_count"
+    ]
+  }
+}

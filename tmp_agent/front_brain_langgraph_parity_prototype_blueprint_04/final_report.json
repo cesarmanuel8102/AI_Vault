@@ -1,0 +1,61 @@
+{
+  "front": "FRONT-BRAIN-LANGGRAPH-PARITY-PROTOTYPE-BLUEPRINT-04",
+  "branch": "codex/own-capital-sustainable-return",
+  "starting_head": "99d9197",
+  "ending_head": "58dde99",
+  "status": "blueprint_complete",
+  "source_files_modified": false,
+  "goal": "Design a LangGraph parity prototype that mirrors NativeAgentRuntimeV2 capabilities without editing source files, activating LangGraph as default, or weakening governance.",
+  "summary": "Created a complete blueprint for a future flag-gated LangGraph parity runtime. The blueprint maps every Native V2 capability to a LangGraph node/component, preserves governance/tool/memory/trace/checkpoint contracts, and defines a phased implementation path with tests. No source code was modified in this front.",
+  "artifacts_created": [
+    "tmp_agent/front_brain_langgraph_parity_prototype_blueprint_04/static_inventory.json",
+    "tmp_agent/front_brain_langgraph_parity_prototype_blueprint_04/native_capability_map.json",
+    "tmp_agent/front_brain_langgraph_parity_prototype_blueprint_04/langgraph_parity_design.json",
+    "tmp_agent/front_brain_langgraph_parity_prototype_blueprint_04/langgraph_parity_design.md",
+    "tmp_agent/front_brain_langgraph_parity_prototype_blueprint_04/test_plan.json",
+    "tmp_agent/front_brain_langgraph_parity_prototype_blueprint_04/roadmap_impact.json",
+    "tmp_agent/front_brain_langgraph_parity_prototype_blueprint_04/final_report.json",
+    "tmp_agent/front_brain_langgraph_parity_prototype_blueprint_04/final_report.md"
+  ],
+  "files_not_modified": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/main.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/memory_gateway.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/intent_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/context_assembler.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/checkpoints.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/trace.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/state.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/schemas.py",
+    ".env"
+  ],
+  "governance_status": "preserved",
+  "memory_faiss_trading_env_status": "untouched",
+  "langgraph_default_runtime": false,
+  "native_v2_remains_canonical": true,
+  "design_decisions": [
+    "Native V2 stays canonical; LangGraph parity is an optional future backend.",
+    "All governance and tool execution remain mediated by existing native modules.",
+    "capability_metadata is derived using the same helper as native to avoid client drift.",
+    "Native persistence (run.json, checkpoint.json, trace.jsonl) remains the source of truth.",
+    "Implementation is split into 7 phases; only Phase 7 touches runtime.py and only for a flag-gated selector."
+  ],
+  "next_recommended_actions": [
+    "Review and approve the blueprint artifacts.",
+    "Decide on checkpointer strategy (MemorySaver vs SqliteSaver).",
+    "Begin Phase 0 in a new front: create tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py skeleton.",
+    "Do not modify runtime.py or activate LangGraph as default until the parity smoke test passes."
+  ],
+  "validation": {
+    "py_compile_passed": true,
+    "guard_safe": true,
+    "scope_check_passed": true
+  }
+}

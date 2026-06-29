@@ -1,0 +1,402 @@
+{
+  "front": "FRONT-BRAIN-LANGGRAPH-PARITY-PROTOTYPE-BLUEPRINT-04",
+  "branch": "codex/own-capital-sustainable-return",
+  "starting_head": "99d9197",
+  "source_files_modified": false,
+  "goal": "Design a LangGraph parity prototype that mirrors NativeAgentRuntimeV2 capabilities without editing source files, activating LangGraph as default, or weakening governance.",
+  "design_principles": [
+    "Native V2 remains the canonical backend; LangGraph is a separately compilable parity target.",
+    "All governance, tool-gateway, memory-gateway, trace, and checkpoint contracts must be preserved exactly.",
+    "capability_metadata returned by /v2/chat/agent must remain byte-identical in keys and semantics.",
+    "No production route wiring changes; /v2/chat/agent continues to use get_agent_runtime_v2() -> NativeAgentRuntimeV2.",
+    "The LangGraph parity prototype is a design/blueprint only; no source edits in this front.",
+    "Future implementation should be gated by a runtime feature flag (e.g., AGENT_V2_BACKEND=langgraph_parity) and reversible in one commit."
+  ],
+  "native_runtime_reference": {
+    "backend": "native_runtime",
+    "class": "NativeAgentRuntimeV2",
+    "module": "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+    "active_route": "/v2/chat/agent",
+    "capability_metadata_keys": [
+      "memory_used",
+      "retrieval_attempted",
+      "retrieval_no_results",
+      "retrieval_skipped",
+      "planner_used",
+      "evidence_routed",
+      "evidence_sources_count",
+      "tools_considered",
+      "tools_executed",
+      "tools_blocked",
+      "governance_checked",
+      "intent_route",
+      "classification",
+      "trace_events_count"
+    ]
+  },
+  "langgraph_current_state": {
+    "backend": "langgraph",
+    "class": "LangGraphAgentRuntimeV2",
+    "module": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_runtime.py",
+    "active_route": "none",
+    "status": "LANGGRAPH_EXECUTABLE_ISOLATED",
+    "gaps": [
+      "No MemoryGatewayV2 wiring",
+      "No ToolGatewayV2 wiring",
+      "No governance integration",
+      "No TraceStore integration",
+      "No CheckpointStore integration",
+      "No capability_metadata derivation",
+      "No production route integration",
+      "No adaptive expansion",
+      "No intent routing parity",
+      "No finalizer template routing"
+    ]
+  },
+  "proposed_state_graph": {
+    "state_schema": {
+      "run_id": "str",
+      "goal": "str",
+      "mode": "str",
+      "user_id": "str",
+      "status": "str",
+      "classification": "str | None",
+      "intent_route": "str | None",
+      "intent_detected": "str | None",
+      "intent_confidence": "float | None",
+      "evidence_sources": "list[dict] | None",
+      "plan": "list[dict]",
+      "metadata": "dict",
+      "results": "list[dict]",
+      "memory_hits": "list[dict]",
+      "blocked_tools": "list[str]",
+      "mode_escalation_required": "bool",
+      "required_permission": "str | None",
+      "confirmation_id": "str | None",
+      "final_answer": "str | None",
+      "provider_metadata": "dict | None",
+      "session_context": "dict | None",
+      "trace_events_count": "int",
+      "capability_metadata": "dict | None"
+    },
+    "nodes": [
+      {
+        "id": "create_run",
+        "function": "native_runtime.create_run equivalent",
+        "description": "Validate mode, hash run_id, set version, persist run.json, emit trace, save checkpoint.",
+        "native_capability": "runtime_core.create_run",
+        "langgraph_node_type": "plain node",
+        "output_updates": ["run_id", "goal", "mode", "user_id", "status", "created_utc", "updated_utc", "canonical_agent", "agent_version", "mode_requested", "mode_effective", "auto_decision"]
+      },
+      {
+        "id": "assemble_context",
+        "function": "context_assembler.assemble_recent_context equivalent",
+        "description": "Load recent user turns and follow-up signals.",
+        "native_capability": "context_assembly.assemble_recent_context",
+        "langgraph_node_type": "plain node",
+        "output_updates": ["session_context"]
+      },
+      {
+        "id": "select_route",
+        "function": "intent_adapter.select_route equivalent",
+        "description": "Intent detection, route selection, context inheritance.",
+        "native_capability": "intent_routing.select_route",
+        "langgraph_node_type": "plain node",
+        "output_updates": ["intent_route", "intent_detected", "intent_confidence"]
+      },
+      {
+        "id": "build_plan",
+        "function": "planner.build_plan + _build_evidence_plan equivalent",
+        "description": "For operational_agent/mixed_brain_reasoning build deterministic plan; for brain_evidence build evidence plan; direct_assistant/promotion_adapter skip to finalization.",
+        "native_capability": "planning.build_plan, evidence_engineering.build_evidence_plan",
+        "langgraph_node_type": "plain node",
+        "output_updates": ["classification", "plan", "metadata", "evidence_sources"]
+      },
+      {
+        "id": "check_governance",
+        "function": "governance.mode_requires_escalation equivalent",
+        "description": "Detect write-intent escalation, set confirmation_id and blocked tool scope.",
+        "native_capability": "governance.mode_requires_escalation",
+        "langgraph_node_type": "plain node",
+        "output_updates": ["mode_escalation_required", "required_permission", "confirmation_id"]
+      },
+      {
+        "id": "execute_tools",
+        "function": "tool_gateway parallel or sequential invocation",
+        "description": "Execute planned tools via ToolGatewayV2, respecting governance blocks and mode. Each tool call must update step status.",
+        "native_capability": "tool_gateway.*, runtime_core.execute_run._execute_step",
+        "langgraph_node_type": "plain node (sequential) or conditional edge loop",
+        "output_updates": ["results", "memory_hits", "blocked_tools"]
+      },
+      {
+        "id": "adaptive_expansion",
+        "function": "native_runtime._run_adaptive_expansion equivalent",
+        "description": "If zero grep/semantic hits or unresolved paths, append fallback tools and re-execute.",
+        "native_capability": "evidence_engineering.adaptive_expansion",
+        "langgraph_node_type": "conditional node / loop edge",
+        "output_updates": ["plan", "results"]
+      },
+      {
+        "id": "finalize",
+        "function": "finalizer.finalize_agent_run equivalent",
+        "description": "Call finalizer with correct template override and capability metadata derivation.",
+        "native_capability": "finalization.finalize_agent_run, api_adapter._build_capability_metadata",
+        "langgraph_node_type": "plain node",
+        "output_updates": ["final_answer", "provider_metadata", "capability_metadata", "status"]
+      },
+      {
+        "id": "persist_and_trace",
+        "function": "CheckpointStore.save + TraceStore.append equivalent",
+        "description": "Persist run.json, checkpoint.json, trace events after every state transition.",
+        "native_capability": "checkpointing.save_checkpoint, tracing.append_trace_event",
+        "langgraph_node_type": "plain node (can be inlined into each node)",
+        "output_updates": ["trace_events_count"]
+      }
+    ],
+    "edges": [
+      {"from": "START", "to": "create_run"},
+      {"from": "create_run", "to": "assemble_context"},
+      {"from": "assemble_context", "to": "select_route"},
+      {"from": "select_route", "to": "direct_assistant_final", "condition": "intent_route == 'direct_assistant'"},
+      {"from": "select_route", "to": "promotion_adapter_final", "condition": "intent_route == 'promotion_adapter_dry_run'"},
+      {"from": "select_route", "to": "build_plan", "condition": "intent_route in {'brain_evidence','mixed_brain_reasoning','operational_agent'}"},
+      {"from": "build_plan", "to": "check_governance"},
+      {"from": "check_governance", "to": "execute_tools"},
+      {"from": "execute_tools", "to": "adaptive_expansion"},
+      {"from": "adaptive_expansion", "to": "execute_tools", "condition": "adaptive_expanded == True"},
+      {"from": "adaptive_expansion", "to": "finalize", "condition": "adaptive_expanded == False"},
+      {"from": "direct_assistant_final", "to": "persist_and_trace"},
+      {"from": "promotion_adapter_final", "to": "persist_and_trace"},
+      {"from": "finalize", "to": "persist_and_trace"},
+      {"from": "persist_and_trace", "to": "END"}
+    ],
+    "conditional_route_table": {
+      "direct_assistant": "Skip planner/tools; call finalizer with template_override='direct_assistant'.",
+      "promotion_adapter_dry_run": "Build single promotion_candidate_validate step, execute, then finalize with template_override='promotion_adapter_dry_run'.",
+      "brain_evidence": "Use evidence_sources to build evidence plan, execute, adapt, finalize with template_override='brain_evidence'.",
+      "mixed_brain_reasoning": "Add generic reasoning step + evidence plan, execute, adapt, finalize with template_override='mixed_brain_reasoning'.",
+      "operational_agent": "Use planner.build_plan, optionally enrich with evidence_sources, execute, adapt, finalize with default template."
+    }
+  },
+  "component_wiring_spec": {
+    "memory_gateway": {
+      "native_class": "MemoryGatewayV2",
+      "native_module": "tmp_agent/brain_v9/core/agent_kernel_v2/memory_gateway.py",
+      "langgraph_integration": "Instantiate MemoryGatewayV2 in graph state builder; expose as graph config or state field; invoke semantic_retrieve inside execute_tools node for steps with tool_name='semantic_retrieve'.",
+      "parity_requirements": [
+        "FAISS + jsonl keyword fallback preserved",
+        "domain_gate and top_k honored",
+        "write_performed always false"
+      ]
+    },
+    "tool_gateway": {
+      "native_class": "ToolGatewayV2",
+      "native_module": "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+      "langgraph_integration": "Instantiate ToolGatewayV2 in graph state builder; use ToolCallRequest/ToolCallResult schemas in execute_tools node; call tools.call(request, mode=state.mode).",
+      "parity_requirements": [
+        "All read-only tools available",
+        "Write tools blocked outside build mode or without approval token",
+        "Forbidden path blocking preserved",
+        "Route probe only localhost"
+      ]
+    },
+    "governance": {
+      "native_module": "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+      "langgraph_integration": "Call validate_mode, mode_requires_escalation, contains_forbidden_request_fields in nodes; keep write_allowed check inside write-tool execution.",
+      "parity_requirements": [
+        "Dangerous modes rejected",
+        "read_only write-intent escalated",
+        "auto build-intent escalated",
+        "God/override fields rejected"
+      ]
+    },
+    "trace": {
+      "native_class": "TraceStore",
+      "native_module": "tmp_agent/brain_v9/core/agent_kernel_v2/trace.py",
+      "langgraph_integration": "Wrap each node with a TraceStore.append on entry/exit; sanitize payloads with RAW_COT_MARKERS.",
+      "parity_requirements": [
+        "trace.jsonl per run",
+        "COT markers redacted",
+        "event types match native events"
+      ]
+    },
+    "checkpoint": {
+      "native_class": "CheckpointStore",
+      "native_module": "tmp_agent/brain_v9/core/agent_kernel_v2/checkpoints.py",
+      "langgraph_integration": "Use langgraph.checkpoint.sqlite.SqliteSaver or MemorySaver only as a secondary resumability layer; primary checkpoint remains CheckpointStore JSON with identical schema.",
+      "parity_requirements": [
+        "checkpoint.json schema unchanged",
+        "pause/resume via native CheckpointStore first",
+        "LangGraph checkpointer is additive, not replacement"
+      ]
+    },
+    "finalizer": {
+      "native_module": "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+      "langgraph_integration": "Call finalize_agent_run from finalize node; pass correct template_override based on intent_route; preserve provider fallback chain and COT blocking.",
+      "parity_requirements": [
+        "Identical prompt payload construction",
+        "Template overrides: direct_assistant, brain_evidence, mixed_brain_reasoning, promotion_adapter_dry_run",
+        "Provider metadata returned"
+      ]
+    }
+  },
+  "capability_metadata_derivation_spec": {
+    "description": "api_adapter._build_capability_metadata must be reused verbatim; the LangGraph parity runtime must populate identical keys from the final state.",
+    "mapping": {
+      "memory_used": "any plan step tool_name == 'semantic_retrieve'",
+      "retrieval_attempted": "any plan step tool_name == 'semantic_retrieve'",
+      "retrieval_no_results": "any semantic step output.result.hits is empty",
+      "retrieval_skipped": "not retrieval_attempted and intent_route not in {direct_assistant, promotion_adapter_dry_run}",
+      "planner_used": "bool(plan) and any(step.tool_name for step in plan)",
+      "evidence_routed": "bool(evidence_sources)",
+      "evidence_sources_count": "len(evidence_sources or [])",
+      "tools_considered": "len([s for s in plan if s.tool_name])",
+      "tools_executed": "len([s for s in plan if s.status in (completed, failed, blocked)])",
+      "tools_blocked": "len(blocked_tools)",
+      "governance_checked": "mode_escalation_required or blocked_tools",
+      "intent_route": "state.intent_route",
+      "classification": "state.classification",
+      "trace_events_count": "len(TraceStore.read(run_id))"
+    }
+  },
+  "implementation_phases": [
+    {
+      "phase": 0,
+      "name": "Flag-gated skeleton",
+      "goal": "Create a new LangGraphParityRuntimeV2 class behind AGENT_V2_BACKEND=langgraph_parity without touching runtime.py default.",
+      "files_touched": [
+        "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py (new)"
+      ],
+      "acceptance_criteria": [
+        "Class importable and instantiable",
+        "StateGraph compiles",
+        "graph.invoke accepts a goal and returns state with run_id"
+      ]
+    },
+    {
+      "phase": 1,
+      "name": "Tool and memory wiring",
+      "goal": "Implement execute_tools node using ToolGatewayV2 and MemoryGatewayV2 with governance pre-check.",
+      "files_touched": [
+        "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"
+      ],
+      "acceptance_criteria": [
+        "read-only tools execute and return ToolCallResult dicts",
+        "write tools blocked in read_only mode",
+        "semantic_retrieve returns memory_hits"
+      ]
+    },
+    {
+      "phase": 2,
+      "name": "Intent, planning, evidence parity",
+      "goal": "Wrap AgentV2IntentAdapter, build_plan, _build_evidence_plan, and adaptive expansion as nodes.",
+      "files_touched": [
+        "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"
+      ],
+      "acceptance_criteria": [
+        "All five routes reachable",
+        "Evidence sources produce same plan as native for same goal",
+        "Adaptive expansion matches native fallback behavior"
+      ]
+    },
+    {
+      "phase": 3,
+      "name": "Finalizer and capability metadata parity",
+      "goal": "Call native finalizer and derive capability_metadata with identical keys/semantics.",
+      "files_touched": [
+        "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"
+      ],
+      "acceptance_criteria": [
+        "/v2/chat/agent (when backend flag set) returns same capability_metadata schema",
+        "Final answers use correct template override"
+      ]
+    },
+    {
+      "phase": 4,
+      "name": "Trace and checkpoint parity",
+      "goal": "Persist run.json, checkpoint.json, trace.jsonl exactly like native; add optional LangGraph checkpointer.",
+      "files_touched": [
+        "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"
+      ],
+      "acceptance_criteria": [
+        "run.json diff against native is limited to backend field",
+        "trace.jsonl event types match",
+        "pause/resume via checkpoint.json works"
+      ]
+    },
+    {
+      "phase": 5,
+      "name": "Isolated smoke parity test",
+      "goal": "Create tests/smoke/test_brain_langgraph_parity_runtime_05.py comparing native and langgraph parity outputs for same inputs.",
+      "files_touched": [
+        "tests/smoke/test_brain_langgraph_parity_runtime_05.py (new)"
+      ],
+      "acceptance_criteria": [
+        "All 14 capability_metadata keys equal",
+        "Governance blocks match",
+        "No production route wired by default"
+      ]
+    },
+    {
+      "phase": 6,
+      "name": "Optional route wiring behind flag",
+      "goal": "Allow runtime.py to select LangGraphParityRuntimeV2 only when AGENT_V2_BACKEND=langgraph_parity is set; default remains native.",
+      "files_touched": [
+        "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py"
+      ],
+      "acceptance_criteria": [
+        "Default backend still native_runtime",
+        "Flag switch instantiates parity runtime",
+        "api_adapter unchanged"
+      ]
+    }
+  ],
+  "risk_analysis": {
+    "risks": [
+      {
+        "risk": "LangGraph graph state becomes the source of truth and diverges from native run.json schema.",
+        "mitigation": "Mandate native CheckpointStore/run.json persistence after every node; LangGraph state is transient execution context only."
+      },
+      {
+        "risk": "Governance bypass through graph node ordering or direct state mutation.",
+        "mitigation": "Every tool invocation goes through ToolGatewayV2.call with mode parameter; governance checks happen before node entry."
+      },
+      {
+        "risk": "Capability metadata drift between backends.",
+        "mitigation": "Share api_adapter._build_capability_metadata helper; add smoke parity assertions."
+      },
+      {
+        "risk": "LangGraph checkpointer writes to unexpected paths.",
+        "mitigation": "Use in-memory MemorySaver for prototype; SqliteSaver only with explicit tmp_agent/agent_kernel_v2/langgraph_checkpoints.db path and gitignored."
+      },
+      {
+        "risk": "Adaptive expansion loops indefinitely.",
+        "mitigation": "Mirror native loop: single expansion pass with at most one retry per trigger condition."
+      }
+    ]
+  },
+  "files_to_create_in_future_fronts": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+    "tests/smoke/test_brain_langgraph_parity_runtime_05.py"
+  ],
+  "files_not_to_modify_in_this_front": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/main.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/memory_gateway.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/intent_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/context_assembler.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/checkpoints.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/trace.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/state.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/schemas.py",
+    "tmp_agent/brain_v9/main.py",
+    ".env"
+  ]
+}

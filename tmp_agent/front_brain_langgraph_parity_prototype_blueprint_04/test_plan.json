@@ -1,0 +1,115 @@
+{
+  "front": "FRONT-BRAIN-LANGGRAPH-PARITY-PROTOTYPE-BLUEPRINT-04",
+  "test_plan_for_future_implementation": {
+    "goal": "Verify that a future LangGraph parity runtime produces identical observable behavior to NativeAgentRuntimeV2 for the same inputs, while keeping native canonical by default.",
+    "test_levels": [
+      {
+        "level": "unit",
+        "tests": [
+          {
+            "id": "LP-UNIT-01",
+            "name": "LangGraph state graph compiles",
+            "target": "langgraph_parity_runtime.py",
+            "assertion": "StateGraph compiles without errors and graph.invoke accepts a goal string.",
+            "mocking": "finalizer, LLM provider"
+          },
+          {
+            "id": "LP-UNIT-02",
+            "name": "create_run node produces valid run.json schema",
+            "target": "create_run node",
+            "assertion": "run_id prefixed with agv2_, status created, mode normalized, checkpoint.json exists.",
+            "mocking": "none"
+          },
+          {
+            "id": "LP-UNIT-03",
+            "name": "select_route node returns same route as native for sample goals",
+            "target": "select_route node",
+            "assertion": "Routes for 'hello', 'apply patch', 'what is status of brain gate', and 'valida candidato X' match native.",
+            "mocking": "none"
+          },
+          {
+            "id": "LP-UNIT-04",
+            "name": "execute_tools node uses ToolGatewayV2 and blocks writes in read_only",
+            "target": "execute_tools node",
+            "assertion": "file_patch_apply_approval_required returns blocked=true in read_only mode; read-only tools return ok=true.",
+            "mocking": "finalizer"
+          },
+          {
+            "id": "LP-UNIT-05",
+            "name": "capability_metadata derivation matches native helper",
+            "target": "finalize node",
+            "assertion": "All 14 required keys present and values semantically equal for a fixed run state.",
+            "mocking": "finalizer"
+          }
+        ]
+      },
+      {
+        "level": "integration",
+        "tests": [
+          {
+            "id": "LP-INT-01",
+            "name": "Full graph run for direct_assistant route",
+            "target": "compiled graph",
+            "assertion": "Returns final_answer and capability_metadata; planner_used=false, memory_used=false, intent_route=direct_assistant.",
+            "mocking": "finalizer"
+          },
+          {
+            "id": "LP-INT-02",
+            "name": "Full graph run for brain_evidence route",
+            "target": "compiled graph",
+            "assertion": "evidence_routed=true, tools_executed >= 1, trace_events_count >= 5, capability_metadata has all keys.",
+            "mocking": "finalizer"
+          },
+          {
+            "id": "LP-INT-03",
+            "name": "Full graph run for operational_agent with write intent",
+            "target": "compiled graph",
+            "assertion": "mode_escalation_required=true, tools_blocked >= 1, governance_checked=true.",
+            "mocking": "finalizer"
+          },
+          {
+            "id": "LP-INT-04",
+            "name": "Pause and resume via checkpoint.json",
+            "target": "CheckpointStore + graph interrupt/resume",
+            "assertion": "After pause, checkpoint.json status is paused; after resume, status becomes completed.",
+            "mocking": "finalizer"
+          }
+        ]
+      },
+      {
+        "level": "smoke",
+        "tests": [
+          {
+            "id": "LP-SMOKE-01",
+            "name": "Parity smoke test: native vs langgraph for same message",
+            "target": "/v2/chat/agent via TestClient",
+            "assertion": "With AGENT_V2_BACKEND=langgraph_parity, response capability_metadata equals native capability_metadata for the same goal (keys and semantics).",
+            "mocking": "strict-operator override, finalizer monkeypatch"
+          },
+          {
+            "id": "LP-SMOKE-02",
+            "name": "Default backend remains native",
+            "target": "runtime.py / get_agent_runtime_v2",
+            "assertion": "Without flag, backend is native_runtime and class is NativeAgentRuntimeV2.",
+            "mocking": "none"
+          },
+          {
+            "id": "LP-SMOKE-03",
+            "name": "Governance preserved under parity backend",
+            "target": "/v2/chat/agent via TestClient",
+            "assertion": "Write intent in read_only mode returns mode_escalation_required=true and blocked tools.",
+            "mocking": "strict-operator override, finalizer monkeypatch"
+          }
+        ]
+      }
+    ],
+    "acceptance_criteria": [
+      "All unit and integration tests pass with mocked finalizer.",
+      "Smoke parity test passes when comparing native and parity backends for the same goal.",
+      "No production route wiring changes unless AGENT_V2_BACKEND=langgraph_parity is explicitly set.",
+      "capability_metadata keys are identical between backends.",
+      "Governance blocks are identical between backends for write-intent probes."
+    ],
+    "test_file_recommendation": "tests/smoke/test_brain_langgraph_parity_runtime_05.py"
+  }
+}

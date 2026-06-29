@@ -1,0 +1,69 @@
+{
+  "front": "FRONT-BRAIN-LANGGRAPH-PARITY-PROTOTYPE-BLUEPRINT-04",
+  "roadmap_impact": {
+    "summary": "The LangGraph parity prototype is a strategic, flag-gated future runtime option. It does not change current production wiring but defines a concrete implementation path that preserves all Native V2 guarantees.",
+    "impact_areas": [
+      {
+        "area": "agent_runtime",
+        "current_state": "NativeAgentRuntimeV2 is the sole canonical backend for /v2/chat/agent.",
+        "proposed_change": "Add an optional LangGraphParityRuntimeV2 selectable via AGENT_V2_BACKEND=langgraph_parity; default remains native.",
+        "risk_level": "medium",
+        "benefit": "Enables future LangGraph-based features (cycles, conditional edges, streaming) without forced migration."
+      },
+      {
+        "area": "governance_and_safety",
+        "current_state": "Governance, path blocking, mode escalation, and approval tokens live in governance.py and ToolGatewayV2.",
+        "proposed_change": "Keep all governance logic in native modules; LangGraph nodes call them as pure functions.",
+        "risk_level": "low",
+        "benefit": "No new governance surface; bypass risk is minimized because tool execution still routes through ToolGatewayV2."
+      },
+      {
+        "area": "observability",
+        "current_state": "Per-run trace.jsonl and checkpoint.json are the canonical observability artifacts.",
+        "proposed_change": "Preserve native persistence format; optionally add LangGraph checkpointer for resumability only.",
+        "risk_level": "low",
+        "benefit": "Existing dashboards, tests, and audits continue to work unchanged."
+      },
+      {
+        "area": "capability_metadata_contract",
+        "current_state": "14 required keys returned by /v2/chat/agent.",
+        "proposed_change": "Reuse api_adapter._build_capability_metadata so parity backend returns identical schema.",
+        "risk_level": "low",
+        "benefit": "Clients and smoke tests do not need backend-specific handling."
+      },
+      {
+        "area": "testing",
+        "current_state": "Smoke tests validate native backend and benchmarked LangGraph isolation.",
+        "proposed_change": "Add parity smoke test comparing native and parity outputs for the same goals.",
+        "risk_level": "low",
+        "benefit": "Regressions in parity implementation are caught before any flag is enabled."
+      },
+      {
+        "area": "implementation_cost",
+        "current_state": "LangGraph runtime is a 33-line toy graph.",
+        "proposed_change": "Implement a full parity wrapper across 7 phases, estimated medium effort.",
+        "risk_level": "medium",
+        "benefit": "Provides a real evaluation target for LangGraph value without destabilizing production."
+      }
+    ],
+    "recommended_priority": "medium",
+    "recommended_sequencing": [
+      "Complete remaining Native V2 capability improvements (Front 03 recommendation A).",
+      "Begin Phase 0 skeleton in a new front: create langgraph_parity_runtime.py with compiling StateGraph only.",
+      "Proceed through Phases 1-5 with isolated tests; do not wire runtime.py until parity smoke test passes.",
+      "Only after smoke parity passes, add optional AGENT_V2_BACKEND flag wiring in runtime.py.",
+      "Run full regression suite before any production flag activation."
+    ],
+    "blocking_decisions": [
+      "Whether to allow MemorySaver only or also SqliteSaver for checkpointer (default: MemorySaver for prototype).",
+      "Whether to expose parity backend via environment variable or operator preset only (default: environment variable for safety).",
+      "Whether to deprecate the existing toy langgraph_runtime.py or leave it untouched (default: leave untouched)."
+    ],
+    "success_metrics": [
+      "Parity smoke test capability_metadata keys match native 100%.",
+      "Parity smoke test governance blocks match native for write-intent probes.",
+      "No change in default backend without explicit flag.",
+      "Existing native smoke tests continue to pass at 100%."
+    ]
+  }
+}
