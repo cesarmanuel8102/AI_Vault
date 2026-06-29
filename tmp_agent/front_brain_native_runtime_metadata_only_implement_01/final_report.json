@@ -1,0 +1,45 @@
+{
+  "front": "FRONT-BRAIN-NATIVE-RUNTIME-METADATA-ONLY-IMPLEMENT-01",
+  "starting_head": "6a1645b5",
+  "changed_files": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "tests/smoke/test_brain_native_runtime_metadata_only_01.py",
+    "tmp_agent/front_brain_native_runtime_metadata_only_implement_01/final_report.json",
+    "tmp_agent/front_brain_native_runtime_metadata_only_implement_01/final_report.md"
+  ],
+  "source_lines_changed": 42,
+  "native_runtime_touched": false,
+  "runtime_behavior_changed": false,
+  "metadata_fields_added": [
+    "capability_metadata.memory_used",
+    "capability_metadata.retrieval_attempted",
+    "capability_metadata.retrieval_no_results",
+    "capability_metadata.retrieval_skipped",
+    "capability_metadata.planner_used",
+    "capability_metadata.evidence_routed",
+    "capability_metadata.evidence_sources_count",
+    "capability_metadata.tools_considered",
+    "capability_metadata.tools_executed",
+    "capability_metadata.tools_blocked",
+    "capability_metadata.governance_checked",
+    "capability_metadata.trace_events_count",
+    "capability_metadata.intent_route",
+    "capability_metadata.classification"
+  ],
+  "tests_run": {
+    "metadata_only_smoke": "12 passed",
+    "langgraph_eval_00": "12 passed",
+    "06c_gate_hardening": "10 passed",
+    "06b_signed_approval_wiring": "15 passed",
+    "05_crypto_approvals": "17 passed",
+    "unit_execution_gate_god_p3": "OK",
+    "unit_dev_endpoints_default_off": "OK",
+    "unit_selfdev_protected_paths": "OK"
+  },
+  "guard_result": "SAFE",
+  "memory_touched": false,
+  "faiss_touched": false,
+  "trading_touched": false,
+  "env_touched": false,
+  "recommended_next_action": "Stage allowed files, commit, push, verify CI green"
+}

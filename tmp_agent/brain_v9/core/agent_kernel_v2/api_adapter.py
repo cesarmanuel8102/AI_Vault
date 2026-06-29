@@ -7,6 +7,44 @@ from .runtime import get_agent_runtime_v2
 from .state import CANONICAL_AGENT_VERSION
 from brain_v9.api_security import require_strict_operator_access
 
+
+def _build_capability_metadata(run: Dict[str, Any]) -> Dict[str, Any]:
+    """Derive capability activation metadata from the V2 run object."""
+    plan = run.get("plan") or []
+    intent_route = run.get("intent_route")
+    semantic_steps = [s for s in plan if s.get("tool_name") == "semantic_retrieve"]
+    retrieval_attempted = bool(semantic_steps)
+    retrieval_no_results = any(
+        not (s.get("output", {}).get("result", {}).get("hits", []))
+        for s in semantic_steps
+    )
+    retrieval_skipped = (
+        not retrieval_attempted
+        and intent_route not in {"direct_assistant", "promotion_adapter_dry_run"}
+    )
+    tools_considered = [s for s in plan if s.get("tool_name")]
+    tools_executed = [
+        s for s in tools_considered
+        if s.get("status") in ("completed", "failed", "blocked")
+    ]
+    return {
+        "memory_used": retrieval_attempted,
+        "retrieval_attempted": retrieval_attempted,
+        "retrieval_no_results": retrieval_no_results,
+        "retrieval_skipped": retrieval_skipped,
+        "planner_used": bool(plan and any(s.get("tool_name") for s in plan)),
+        "evidence_routed": bool(run.get("evidence_sources")),
+        "evidence_sources_count": len(run.get("evidence_sources") or []),
+        "tools_considered": len(tools_considered),
+        "tools_executed": len(tools_executed),
+        "tools_blocked": len(run.get("blocked_tools") or []),
+        "governance_checked": bool(
+            run.get("mode_escalation_required") or run.get("blocked_tools")
+        ),
+        "intent_route": intent_route,
+        "classification": run.get("classification"),
+    }
+
 router = APIRouter(prefix="/v2/agent", tags=["Agent V2"], dependencies=[Depends(require_strict_operator_access)])
 chat_router = APIRouter(prefix="/v2/chat", tags=["Agent V2 Chat"], dependencies=[Depends(require_strict_operator_access)])
 
@@ -166,6 +204,9 @@ def chat_agent(req: AgentChatRequest):
         run = rt.plan_run(run["run_id"])
     
     run = rt.execute_run(run["run_id"])
+    trace_events = rt.get_trace(run["run_id"])
+    capability_metadata = _build_capability_metadata(run)
+    capability_metadata["trace_events_count"] = len(trace_events)
     return {
         "ok": True,
         "canonical_agent_v2": True,
@@ -188,4 +229,5 @@ def chat_agent(req: AgentChatRequest):
         "intent_route": run.get("intent_route"),
         "intent_detected": run.get("intent_detected"),
         "intent_confidence": run.get("intent_confidence"),
+        "capability_metadata": capability_metadata,
     }
