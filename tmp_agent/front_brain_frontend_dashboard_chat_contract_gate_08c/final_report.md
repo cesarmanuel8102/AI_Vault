@@ -6,6 +6,8 @@
 
 **Status:** `validated`
 
+**Final head:** `7976ba4`
+
 This front is a **report-only audit**. No source files, frontend files, dashboard files, runtime files, or production wiring were modified.
 
 ## Purpose
