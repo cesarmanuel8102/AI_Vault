@@ -5,7 +5,7 @@
 - **Front:** FRONT-BRAIN-DASHBOARD-CHAT-MANUAL-LIVE-SMOKE-AFTER-08E-R2
 - **Baseline / starting head:** 65d4f7c
 - **Branch:** codex/own-capital-sustainable-return
-- **Final head:** not yet pushed; reports only staged locally after this front
+- **Final head:** 9525823
 - **Acceptance decision:** REJECTED_LIVE_SMOKE
 
 ## What worked
