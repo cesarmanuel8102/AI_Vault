@@ -1,0 +1,43 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-REAL-LLM-NL-INTENT-ROUTER-GOVERNANCE-TOOLS-CAPABILITY-CLOSEOUT-08F8-R1",
+  "branch": "codex/own-capital-sustainable-return",
+  "baseline": "0df95088f361a7372aeaf3df6845ee610e2f8343",
+  "diagnosis_timestamp_utc": "2026-06-30T20:45:00Z",
+  "service_status": {
+    "health": {"ok": true, "url": "http://127.0.0.1:8091/health", "status_code": 200},
+    "v2_agent_status": {"ok": true, "status_code": 200, "backend": "langgraph_parity", "langgraph_default_active": true, "rollback_backend": "native_runtime"},
+    "v2_chat_agent": {"ok": true, "status_code": 200, "provider_used": "deterministic_parity_finalizer", "model_used": "parity_v1_full", "intent_detected": "QUERY", "route_selected": "direct_assistant"},
+    "v2_capabilities": {"ok": false, "status_code": 500, "reason": "LangGraphParityRuntimeV2 has no list_capabilities method"},
+    "ui": {"ok": true, "status_code": 200, "url": "http://127.0.0.1:8091/ui/"},
+    "trace": {"ok": true, "trace_url": "/v2/agent/runs/agv2_b46992b4852b6537/trace"}
+  },
+  "gap_findings": {
+    "langgraph_default_active": true,
+    "native_rollback_preserved": true,
+    "chat_uses_real_llm": false,
+    "chat_uses_deterministic_parity_finalizer": true,
+    "provider_used": "deterministic_parity_finalizer",
+    "model_used": "parity_v1_full",
+    "real_llm_provider_available": "unknown/ollama_cloud configured but not reachable in this test",
+    "intent_classification_granularity": "coarse (QUERY/direct_assistant); missing required intents like explain_capabilities, repo_read, dashboard_diagnosis, code_change_request, push_request, delete_request, memory_read, memory_write, autonomy_dryrun, self_improvement_reportonly, trading_broker_live",
+    "router_maps_intent_to_safe_route": false,
+    "governance_blocks_unsafe_actions": "partial: write tools blocked in read_only, but no explicit policy for trading/IBKR, delete, memory-write, autonomy, self-improvement",
+    "capabilities_endpoint_works": false,
+    "trace_includes_all_metadata": false,
+    "dashboard_exposes_fallback_metadata": "partial (shows latest_provider_used)"
+  },
+  "root_causes": [
+    "LangGraphParityRuntimeV2._finalizer_node uses _deterministic_finalizer and reports provider_used='deterministic_parity_finalizer' instead of calling finalize_agent_run.",
+    "LangGraphParityRuntimeV2 has no list_capabilities implementation, causing /v2/agent/capabilities 500.",
+    "AgentV2IntentAdapter.select_route returns legacy intents (CONVERSATION/QUERY/COMMAND) and routes (direct_assistant/brain_evidence/operational_agent), not the required NL intent taxonomy.",
+    "Governance has no explicit policy table for trading/IBKR, delete, memory-write, autonomy, self-improvement; escalation only checks mode + write tool names.",
+    "api_adapter.py capabilities endpoint calls rt.list_capabilities() without guarding missing method and does not include required keys like real_llm_available, trading_broker_allowed, memory_write_allowed, supported_intents, known_gaps."
+  ],
+  "risk_assessment": {
+    "real_llm_gap": "P1_BLOCKER for 'real agent' acceptance; parity finalizer is currently primary.",
+    "capabilities_500": "P0_BLOCKER for required endpoint.",
+    "intent_router_gap": "P1_BLOCKER for required NL routing.",
+    "governance_policy_gap": "P1_BLOCKER for explicit safety boundaries.",
+    "trace_metadata_gap": "P2 observability"
+  }
+}

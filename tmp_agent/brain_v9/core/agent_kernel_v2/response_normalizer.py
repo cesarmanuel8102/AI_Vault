@@ -231,8 +231,23 @@ def normalize_agent_v2_chat_response(
     out.setdefault("langgraph_default_active", bool(raw.get("langgraph_default_active")))
     out.setdefault("rollback_backend", raw.get("rollback_backend") or "native_runtime")
 
-    # Error / detail
-    out.setdefault("error", raw.get("error"))
-    out.setdefault("detail", raw.get("detail"))
+    # Tool distinction fields
+    out.setdefault("tools_considered", raw.get("tools_considered") if raw.get("tools_considered") is not None else [])
+    out.setdefault("tools_executed", raw.get("tools_executed") if raw.get("tools_executed") is not None else [])
+    out.setdefault("tools_blocked", raw.get("tools_blocked") if raw.get("tools_blocked") is not None else [])
+
+    # Governance/intent enrichment fields
+    out.setdefault("governance_decision", raw.get("governance_decision") if raw.get("governance_decision") is not None else "allow")
+    out.setdefault("governance_required_permission", raw.get("governance_required_permission"))
+    out.setdefault("governance_blocked_reason", raw.get("governance_blocked_reason"))
+    out.setdefault("intent_language", raw.get("intent_language") if raw.get("intent_language") is not None else "unknown")
+    out.setdefault("intent_risk_level", raw.get("intent_risk_level") if raw.get("intent_risk_level") is not None else "safe")
+    out.setdefault("intent_requires_approval", bool(raw.get("intent_requires_approval")))
+    out.setdefault("intent_blocked_reason", raw.get("intent_blocked_reason"))
+    out.setdefault("route_raw", raw.get("route_raw"))
+
+    # Error / detail (08e contract requires these keys to be present and string-typed)
+    out.setdefault("error", raw.get("error") if raw.get("error") is not None else "")
+    out.setdefault("detail", raw.get("detail") if raw.get("detail") is not None else "")
 
     return out

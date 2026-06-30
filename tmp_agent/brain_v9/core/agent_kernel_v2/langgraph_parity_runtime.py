@@ -21,6 +21,9 @@ from .memory_gateway import MemoryGatewayV2
 from .intent_adapter import AgentV2IntentAdapter
 from .planner import build_plan
 from .context_assembler import _is_follow_up, _has_generic_override
+from .intent_classifier import classify_intent, list_supported_intents
+from .governance_policy import decide_governance
+from .finalizer import finalize_agent_run
 
 LANGGRAPH_AVAILABLE = False
 GRAPH_START = None
@@ -479,6 +482,10 @@ class LangGraphParityRuntimeV2:
         self._save_checkpoint(state, step_index=0)
         return state
 
+    def list_capabilities(self) -> List[Dict[str, Any]]:
+        """Return tool capabilities; required by /v2/agent/capabilities."""
+        return self.tools.list_capabilities()
+
     def _intent_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
         message = state.get("message", "")
         user_id = state.get("user_id", "probe")
@@ -490,26 +497,61 @@ class LangGraphParityRuntimeV2:
         state["context_assembler_full_parity"] = recent_ctx.get("context_assembler_full_parity", False)
         state["context_assembler_skip_reason"] = None
         state.setdefault("native_helpers_used", []).append("context_assembler.isolated_run_root_equivalent")
+
+        # New NL intent classifier
         try:
-            route_info = self.intent_adapter.select_route(message, recent_context=recent_ctx)
-            source = "AgentV2IntentAdapter.select_route"
-            fallback = False
-            state.setdefault("native_helpers_used", []).append("AgentV2IntentAdapter.select_route")
+            classification = classify_intent(message)
+            source = "NLIntentClassifierV2.classify_intent"
+            fallback = classification.get("classifier") == "keyword_with_llm_degraded"
+            state.setdefault("native_helpers_used", []).append("NLIntentClassifierV2.classify_intent")
         except Exception as exc:
-            route_info = self._deterministic_route(message)
+            classification = {
+                "intent": "unknown_or_insufficient_info",
+                "confidence": 0.0,
+                "language": "unknown",
+                "risk_level": "safe",
+                "requires_approval": False,
+                "route": "direct_assistant",
+                "reason": f"classifier_failed: {exc}",
+                "blocked_reason": None,
+                "classifier": "fallback",
+            }
             source = "deterministic_shim"
             fallback = True
-            self._record_native_helper_error(state, "AgentV2IntentAdapter.select_route", exc)
+            self._record_native_helper_error(state, "NLIntentClassifierV2.classify_intent", exc)
+
+        route = classification.get("route", "direct_assistant")
+        # Context-aware routing: follow-up questions inherit prior topic
+        if recent_ctx and recent_ctx.get("is_follow_up"):
+            prev_route = recent_ctx.get("prev_route")
+            prev_sources = recent_ctx.get("prev_sources")
+            if prev_route in {"brain_evidence", "mixed_brain_reasoning", "operational_agent"}:
+                from .context_assembler import _has_generic_override
+                if not _has_generic_override(message):
+                    route = prev_route
+                    classification["route"] = route
+                    classification["context_inherited"] = True
+
         state.update({
-            "intent_route": route_info.get("route", "direct_assistant"),
-            "intent_detected": route_info.get("intent", route_info.get("intent_detected", "UNKNOWN")),
-            "intent_confidence": route_info.get("confidence", 0.0),
-            "route_raw": route_info,
+            "intent_route": route,
+            "intent_detected": classification.get("intent", "unknown_or_insufficient_info"),
+            "intent_confidence": classification.get("confidence", 0.0),
+            "intent_language": classification.get("language", "unknown"),
+            "intent_risk_level": classification.get("risk_level", "safe"),
+            "intent_requires_approval": classification.get("requires_approval", False),
+            "intent_blocked_reason": classification.get("blocked_reason"),
+            "route_raw": classification,
             "intent_route_source": source,
             "intent_route_fallback_used": fallback,
             "node_path": state.get("node_path", []) + ["intent"],
         })
-        self._trace(state["run_id"], "intent_node", f"Route selected: {state['intent_route']}", {"source": source, "fallback": fallback, "route_info": route_info})
+        self._trace(state["run_id"], "intent_node", f"Route selected: {state['intent_route']}", {
+            "source": source,
+            "fallback": fallback,
+            "classification": classification,
+            "intent_detected": state["intent_detected"],
+            "route_selected": state["intent_route"],
+        })
         return state
 
     def _context_assembly_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -671,24 +713,46 @@ class LangGraphParityRuntimeV2:
         scheduled_tools = [s.get("tool_name") for s in plan if s.get("tool_name")]
         mode_requested = state.get("mode_requested", "read_only")
         mode_effective = state.get("mode_effective", "read_only")
+        intent = state.get("intent_detected", "unknown_or_insufficient_info")
+
+        # Intent-based governance policy
+        gov = decide_governance(intent, mode_requested, mode_effective)
+        state["governance_decision"] = gov["governance_decision"]
+        state["governance_required_permission"] = gov["required_permission"]
+        state["governance_blocked_reason"] = gov["blocked_reason"]
+        state["governance_safe_mode"] = gov["safe_mode"]
+
+        # Tool-level escalation still applies for write tools
         mode_esc = mode_requires_escalation(state.get("message", ""), mode_effective, scheduled_tools)
-        state["mode_escalation_required"] = mode_esc
-        state["approval_required"] = mode_esc
-        state["required_permission"] = "build" if mode_esc else None
-        state["confirmation_id"] = f"confirm_{state['run_id']}" if mode_esc else None
+        state["mode_escalation_required"] = mode_esc or gov["approval_required"]
+        state["approval_required"] = mode_esc or gov["approval_required"]
+        if gov["required_permission"]:
+            state["required_permission"] = gov["required_permission"]
+        else:
+            state["required_permission"] = "build" if mode_esc else None
+        state["confirmation_id"] = f"confirm_{state['run_id']}" if state["approval_required"] else None
         if "blocked_tools" not in state:
             state["blocked_tools"] = []
         # Reflect auto escalation in mode_effective without losing mode_requested.
         if mode_requested == "auto":
             state["mode_effective"] = escalate_auto_mode_effective(mode_requested, mode_esc, state.get("message", ""))
         state["node_path"] = state.get("node_path", []) + ["governance_gate"]
-        self._trace(state["run_id"], "governance_gate_node", f"Governance check: escalation={mode_esc}", {"scheduled_tools": scheduled_tools})
+        self._trace(state["run_id"], "governance_gate_node", f"Governance check: decision={gov['governance_decision']}", {
+            "intent": intent,
+            "governance_decision": gov["governance_decision"],
+            "required_permission": state["required_permission"],
+            "approval_required": state["approval_required"],
+            "blocked_reason": gov["blocked_reason"],
+            "scheduled_tools": scheduled_tools,
+        })
         return state
 
     def _tool_execution_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
         state["tool_results"] = []
         state["executed_tools"] = []
         state["scheduled_tools"] = [s.get("tool_name") for s in state.get("plan", []) if s.get("tool_name")]
+        state["tools_considered"] = list(dict.fromkeys(state["scheduled_tools"]))
+        state["tools_blocked"] = []
         state["node_path"] = state.get("node_path", []) + ["tool_execution"]
         state["tool_gateway_parity_improved"] = True
         mode = state.get("mode_effective", "read_only")
@@ -703,6 +767,7 @@ class LangGraphParityRuntimeV2:
                 result = {"tool_name": tool_name, "ok": False, "blocked": True, "approval_required": True, "error": "write_tool_blocked_in_read_only_mode"}
                 state["tool_results"].append(result)
                 state["blocked_tools"].append(tool_name)
+                state["tools_blocked"].append(tool_name)
                 step["status"] = "blocked"
                 step["output"] = result
                 self._trace(state["run_id"], "tool_execution_node", f"Tool {tool_name} blocked by governance", result)
@@ -725,6 +790,7 @@ class LangGraphParityRuntimeV2:
                 step["status"] = "blocked" if tres.blocked else ("completed" if tres.ok else "failed")
                 if tres.blocked:
                     state["blocked_tools"].append(tool_name)
+                    state["tools_blocked"].append(tool_name)
                 elif tres.ok:
                     state["executed_tools"].append(tool_name)
                 self._trace(state["run_id"], "tool_execution_node", f"Tool {tool_name} executed", {"ok": rd.get("ok"), "blocked": rd.get("blocked"), "error": rd.get("error")})
@@ -734,6 +800,21 @@ class LangGraphParityRuntimeV2:
                 step["output"] = result
                 step["status"] = "failed"
                 self._trace(state["run_id"], "tool_execution_node", f"Tool {tool_name} failed", {"error": str(exc)[:200]})
+
+        # Add a summary trace event for tooling decisions.
+        self._trace(
+            state["run_id"],
+            "tool_execution_summary",
+            "Tool execution phase summary",
+            {
+                "tools_considered": state.get("tools_considered", []),
+                "tools_executed": state.get("executed_tools", []),
+                "tools_blocked": state.get("tools_blocked", []),
+                "tool_results_count": len(state.get("tool_results", [])),
+                "governance_decision": state.get("governance_decision"),
+                "mode_escalation_required": state.get("mode_escalation_required"),
+            },
+        )
         return state
 
     def _result_normalization_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -746,30 +827,110 @@ class LangGraphParityRuntimeV2:
         state["finalizer_input"] = finalizer_input
         input_complete = all(k in finalizer_input for k in ("goal", "mode", "classification", "intent_route", "tool_evidence", "memory_evidence", "tool_distinction"))
         state["finalizer_input_schema_complete"] = input_complete
+
+        provider_metadata: Dict[str, Any] = {}
+        fallback_used = False
+        fallback_reason: Optional[str] = None
+        real_llm_called = False
+        provider_used = "unknown"
+        model_used = "unknown"
+
         if self.finalizer_fn is not None:
             try:
                 state["final_answer"] = self.finalizer_fn(state)
                 state["finalizer_source"] = "injected_finalizer"
                 state["finalizer_parity_mode"] = "injected"
+                provider_used = "injected_finalizer"
+                model_used = "injected"
+                real_llm_called = False
             except Exception as exc:
                 self._record_native_helper_error(state, "injected_finalizer", exc)
+                fallback_used = True
+                fallback_reason = f"injected_finalizer_failed:{exc}"
                 state["final_answer"] = self._deterministic_finalizer(state)
                 state["finalizer_source"] = "deterministic_parity_finalizer_fallback"
                 state["finalizer_parity_mode"] = "deterministic_fallback"
+                provider_used = state["finalizer_source"]
+                model_used = "parity_v1_full"
         else:
-            state["final_answer"] = self._deterministic_finalizer(state)
-            state["finalizer_source"] = "deterministic_parity_finalizer"
-            state["finalizer_parity_mode"] = "deterministic"
-        state["provider_metadata"] = {
-            "provider_used": state["finalizer_source"],
-            "model_used": "parity_v1_full",
-            "provider_degraded": False,
-            "native_helpers_used": state.get("native_helpers_used", []),
-            "live_llm_called": False,
-        }
+            # Try real LLM finalizer first when no injected function is supplied.
+            template_override = None
+            route = state.get("intent_route")
+            if route == "direct_assistant":
+                template_override = "direct_assistant"
+            elif route == "brain_evidence":
+                template_override = "brain_evidence"
+            elif route == "mixed_brain_reasoning":
+                template_override = "mixed_brain_reasoning"
+
+            scheduled_tools = [s.get("tool_name") for s in state.get("plan", []) if s.get("tool_name")]
+            executed_tools = [s.get("tool_name") for s in state.get("plan", []) if s.get("status") == "completed" and s.get("tool_name")]
+            try:
+                answer, meta = finalize_agent_run(
+                    run={
+                        "goal": state.get("message"),
+                        "mode": state.get("mode_effective"),
+                        "classification": state.get("classification"),
+                    },
+                    memory_hits=state.get("memory_hits", []) or [],
+                    tool_results=state.get("tool_results", []) or [],
+                    requested_checks=[],
+                    scheduled_tools=scheduled_tools,
+                    executed_tools=executed_tools,
+                    template_override=template_override,
+                    recent_context=state.get("session_context"),
+                )
+                state["final_answer"] = answer
+                state["finalizer_source"] = f"finalize_agent_run:{meta.get('provider_used', 'unknown')}"
+                state["finalizer_parity_mode"] = "real_llm" if meta.get("provider_used") == "ollama_cloud" else "structured_fallback"
+                provider_used = meta.get("provider_used", "unknown")
+                model_used = meta.get("model_used", "unknown")
+                fallback_used = bool(meta.get("provider_degraded")) or meta.get("provider_used") != "ollama_cloud"
+                fallback_reason = meta.get("fallback_reason") if fallback_used else None
+                real_llm_called = meta.get("provider_used") == "ollama_cloud"
+                provider_metadata = dict(meta)
+            except Exception as exc:
+                self._record_native_helper_error(state, "finalize_agent_run", exc)
+                fallback_used = True
+                fallback_reason = f"finalize_agent_run_failed:{exc}"
+                state["final_answer"] = self._deterministic_finalizer(state)
+                state["finalizer_source"] = "deterministic_parity_finalizer_fallback"
+                state["finalizer_parity_mode"] = "deterministic_fallback"
+                provider_used = state["finalizer_source"]
+                model_used = "parity_v1_full"
+                real_llm_called = False
+
+        # Normalize provider_metadata if finalize_agent_run did not return one (e.g. injected or fallback path).
+        if not provider_metadata:
+            provider_metadata = {
+                "provider_used": provider_used,
+                "model_used": model_used,
+                "provider_degraded": fallback_used,
+                "fallback_reason": fallback_reason or ("none" if not fallback_used else ""),
+                "native_helpers_used": state.get("native_helpers_used", []),
+                "live_llm_called": real_llm_called,
+            }
+        else:
+            provider_metadata.setdefault("provider_used", provider_used)
+            provider_metadata.setdefault("model_used", model_used)
+            provider_metadata.setdefault("provider_degraded", fallback_used)
+            provider_metadata.setdefault("fallback_reason", fallback_reason or "")
+            provider_metadata.setdefault("native_helpers_used", state.get("native_helpers_used", []))
+            provider_metadata.setdefault("live_llm_called", real_llm_called)
+
+        state["provider_metadata"] = provider_metadata
         state["status"] = "completed"
         state["node_path"] = state.get("node_path", []) + ["finalizer"]
-        self._trace(state["run_id"], "finalizer_node", "Final answer generated", {"final_answer_preview": state["final_answer"][:120], "source": state["finalizer_source"], "input_schema_complete": input_complete})
+        self._trace(state["run_id"], "finalizer_node", "Final answer generated", {
+            "final_answer_preview": state["final_answer"][:120],
+            "source": state["finalizer_source"],
+            "input_schema_complete": input_complete,
+            "fallback_used": fallback_used,
+            "fallback_reason": fallback_reason,
+            "provider_used": provider_metadata.get("provider_used"),
+            "model_used": provider_metadata.get("model_used"),
+            "live_llm_called": provider_metadata.get("live_llm_called"),
+        })
         return state
 
     def _evaluator_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -1400,6 +1561,22 @@ class LangGraphParityRuntimeV2:
                 translated[key] = graph_state[key]
             elif key in run:
                 translated[key] = run[key]
+
+        # Forward new governance/intent/tooling enrichment fields from graph state
+        for key in (
+            "governance_decision", "governance_required_permission", "governance_blocked_reason",
+            "governance_safe_mode", "intent_language", "intent_risk_level", "intent_requires_approval",
+            "intent_blocked_reason", "route_raw", "tools_considered", "tools_executed", "tools_blocked",
+            "scheduled_tools", "executed_tools", "native_helpers_used", "native_helper_errors",
+            "intent_route_source", "intent_route_fallback_used", "finalizer_source", "finalizer_parity_mode",
+            "finalizer_input_schema_complete", "evaluator_source", "evaluator_parity_mode", "evaluator_result",
+            "repair_needed", "graph_stream_supported", "graph_stream_event_count",
+        ):
+            if key in graph_state:
+                translated[key] = graph_state[key]
+            elif key in run:
+                translated[key] = run[key]
+
         return translated
 
     def _extract_final_answer(self, graph_state: Dict[str, Any]) -> str:

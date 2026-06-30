@@ -1,0 +1,28 @@
+{
+  "baseline": "0df95088f361a7372aeaf3df6845ee610e2f8343",
+  "branch": "codex/own-capital-sustainable-return",
+  "goals": [
+    "Real LLM reasoning with deterministic fallback",
+    "Bilingual NL intent classification",
+    "Governance policy table",
+    "Capability registry truthful report",
+    "Trace observability"
+  ],
+  "files_to_patch": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py"
+  ],
+  "new_modules": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/intent_classifier.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance_policy.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/capability_registry.py"
+  ],
+  "tests": [
+    "tests/smoke/test_brain_agent_v2_real_llm_reasoning_08f8_r1.py",
+    "tests/smoke/test_brain_agent_v2_nl_intent_router_governance_08f8_r1.py",
+    "tests/smoke/test_brain_agent_v2_capabilities_endpoint_08f8_r1.py",
+    "tests/smoke/test_brain_agent_v2_chat_end_to_end_closeout_08f8_r1.py"
+  ],
+  "commit_message": "feat(agent): close real llm intent router governance 08f8 r1"
+}

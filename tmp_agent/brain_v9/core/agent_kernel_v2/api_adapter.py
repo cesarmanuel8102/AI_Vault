@@ -46,6 +46,8 @@ def _build_capability_metadata(run: Dict[str, Any]) -> Dict[str, Any]:
         "classification": run.get("classification"),
     }
 
+from .capability_registry import build_capability_report
+
 router = APIRouter(prefix="/v2/agent", tags=["Agent V2"], dependencies=[Depends(require_strict_operator_access)])
 chat_router = APIRouter(prefix="/v2/chat", tags=["Agent V2 Chat"], dependencies=[Depends(require_strict_operator_access)])
 
@@ -64,26 +66,22 @@ class AgentChatRequest(BaseModel):
 @router.get("/capabilities")
 def capabilities():
     rt = get_agent_runtime_v2()
-    return {
-        "ok": True,
-        "canonical": True,
-        "version": CANONICAL_AGENT_VERSION,
-        "backend": rt.backend,
-        "backend_selected": getattr(rt, "backend_selected", rt.backend),
-        "backend_default": getattr(rt, "backend_default", None),
-        "backend_fallback_used": getattr(rt, "backend_fallback_used", False),
-        "backend_fallback_reason": getattr(rt, "backend_fallback_reason", None),
-        "runtime_type": getattr(rt, "runtime_type", type(rt).__name__),
-        "langgraph_default_active": getattr(rt, "backend_default", None) == "langgraph_parity",
-        "rollback_backend": getattr(rt, "rollback_backend", "native_runtime"),
-        "primary_finalizer_model": PRIMARY_KIMI_MODEL,
-        "planner_classes": [
-            "repo_audit", "code_search", "endpoint_probe", "memory_question", "dashboard_diagnosis",
-            "provider_diagnosis", "frontend_diagnosis", "smoke_test", "documentation_task",
-            "safe_patch_dry_run", "approval_required_write", "general_reasoning",
-        ],
-        "capabilities": rt.list_capabilities(),
-    }
+    report = build_capability_report(rt)
+    # Merge runtime-level keys expected by existing consumers.
+    report.setdefault("version", CANONICAL_AGENT_VERSION)
+    report.setdefault("backend", rt.backend)
+    report["backend_selected"] = getattr(rt, "backend_selected", rt.backend)
+    report["backend_default"] = getattr(rt, "backend_default", None)
+    report["backend_fallback_used"] = getattr(rt, "backend_fallback_used", False)
+    report["backend_fallback_reason"] = getattr(rt, "backend_fallback_reason", None)
+    report["primary_finalizer_model"] = PRIMARY_KIMI_MODEL
+    report["planner_classes"] = [
+        "repo_audit", "code_search", "endpoint_probe", "memory_question", "dashboard_diagnosis",
+        "provider_diagnosis", "frontend_diagnosis", "smoke_test", "documentation_task",
+        "safe_patch_dry_run", "approval_required_write", "general_reasoning",
+    ]
+    report["tool_capabilities"] = rt.list_capabilities()
+    return report
 
 @router.get("/status")
 def status():
@@ -222,6 +220,17 @@ def chat_agent(req: AgentChatRequest):
     trace_events = rt.get_trace(run["run_id"])
     capability_metadata = _build_capability_metadata(run)
     capability_metadata["trace_events_count"] = len(trace_events)
+    capability_metadata["tools_considered"] = run.get("tools_considered") or capability_metadata["tools_considered"]
+    capability_metadata["tools_executed"] = len(run.get("executed_tools") or [])
+    capability_metadata["tools_blocked"] = len(run.get("tools_blocked") or [])
+    capability_metadata["intent_route"] = run.get("intent_route") or capability_metadata["intent_route"]
+    capability_metadata["classification"] = run.get("classification") or capability_metadata["classification"]
+    capability_metadata["governance_decision"] = run.get("governance_decision")
+    capability_metadata["intent_detected"] = run.get("intent_detected")
+    capability_metadata["intent_confidence"] = run.get("intent_confidence")
+    capability_metadata["provider_used"] = (run.get("provider_metadata") or {}).get("provider_used")
+    capability_metadata["model_used"] = (run.get("provider_metadata") or {}).get("model_used")
+    capability_metadata["live_llm_called"] = (run.get("provider_metadata") or {}).get("live_llm_called", False)
     raw_response = {
         "ok": True,
         "canonical_agent_v2": True,
@@ -241,9 +250,20 @@ def chat_agent(req: AgentChatRequest):
         "expected_write_scope": run.get("expected_write_scope"),
         "confirmation_id": run.get("confirmation_id"),
         "blocked_tools": run.get("blocked_tools"),
+        "tools_considered": run.get("tools_considered"),
+        "tools_executed": run.get("executed_tools"),
+        "tools_blocked": run.get("tools_blocked"),
+        "governance_decision": run.get("governance_decision"),
+        "governance_required_permission": run.get("governance_required_permission"),
+        "governance_blocked_reason": run.get("governance_blocked_reason"),
         "intent_route": run.get("intent_route"),
         "intent_detected": run.get("intent_detected"),
         "intent_confidence": run.get("intent_confidence"),
+        "intent_language": run.get("intent_language"),
+        "intent_risk_level": run.get("intent_risk_level"),
+        "intent_requires_approval": run.get("intent_requires_approval"),
+        "intent_blocked_reason": run.get("intent_blocked_reason"),
+        "route_raw": run.get("route_raw"),
         "capability_metadata": capability_metadata,
         "backend_selected": getattr(rt, "backend_selected", rt.backend),
         "backend_default": getattr(rt, "backend_default", None),
