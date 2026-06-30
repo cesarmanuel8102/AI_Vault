@@ -73,16 +73,16 @@
   },
   "ci_status": {
     "phase1-ci": {
-      "status": "pending_verification",
-      "conclusion": null,
-      "run_id": null,
-      "url": null
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 28462063518,
+      "url": "https://github.com/cesarmanuel8102/AI_Vault/actions/runs/28462063518"
     },
     "nontrading-smoke-regression": {
-      "status": "pending_verification",
-      "conclusion": null,
-      "run_id": null,
-      "url": null
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 28462063497,
+      "url": "https://github.com/cesarmanuel8102/AI_Vault/actions/runs/28462063497"
     }
   },
   "gate_summary": {
@@ -162,6 +162,6 @@
   "known_non_blockers": [
     "Pre-existing LSP/type-checker diagnostics in runtime.py, langgraph_parity_runtime.py, main.py, langgraph_runtime.py, and dashboard_routes.py are not introduced by this report-only front and do not affect runtime behavior or smoke tests."
   ],
-  "basis": "Report-only scope valid; all required 08F7 deliverables completed; 37/37 smoke tests passed; py_compile and hygiene passed; native default preserved; LangGraph remains opt-in only via isolated shell/session; default promotion blocked by GATE-01 native parity gap; canary accepted and repair roadmap recorded; CI status to be verified after commit.",
+  "basis": "Report-only scope valid; all required 08F7 deliverables completed; 37/37 smoke tests passed; py_compile and hygiene passed; native default preserved; LangGraph remains opt-in only via isolated shell/session; default promotion blocked by GATE-01 native parity gap; canary accepted and repair roadmap recorded; phase1-ci and nontrading-smoke-regression green for 08F7 commit 01b38ad."
   "recorded_at": "2026-06-30T21:15:00+00:00"
 }
