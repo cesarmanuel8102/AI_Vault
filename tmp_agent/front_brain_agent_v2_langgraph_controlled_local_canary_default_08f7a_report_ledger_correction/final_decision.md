@@ -1,7 +1,7 @@
 # Final Decision — 08F7A Report Ledger Correction
 
 ## Status
-READY_TO_COMMIT_REPORT_LEDGER_CORRECTION
+COMPLETED_PUSHED_CI_GREEN
 
 ## Starting head
 `054559703e17771a5ce6f0138a7d0d0bb845c70e`
@@ -49,9 +49,19 @@ READY_TO_COMMIT_REPORT_LEDGER_CORRECTION
 - 08F7-R1 started: no
 
 ## Acceptance
-- **Before commit:** `PENDING_COMMIT_AND_CI`
-- **Official new baseline:** `PENDING_08F7A_COMMIT_AND_CI`
+- **Decision:** `ACCEPTED_08F7A_REPORT_LEDGER_CORRECTION`
+- **08F7A correction commit:** `1d8347087eaa5dfab21fe53afb9cfcdddaf60d56`
+- **Official new baseline:** `1d8347087eaa5dfab21fe53afb9cfcdddaf60d56`
 - **Recommended next front:** `FRONT-BRAIN-AGENT-V2-LANGGRAPH-PRODUCTION-METHOD-PARITY-08F7-R1`
 
-## Next step
-Stage explicit report files, commit normally, push normally, and verify CI for the new correction commit.
+## CI verification
+- **Phase 1 baseline (Windows):** completed / success
+- **Hygiene Guard:** completed / success
+- **Security Smoke Tests:** completed / success
+- **Dashboard / Trace Tests:** completed / success
+- **Roadmap / Policy Regression:** completed / success
+- **Memory / Retrieval Regression:** completed / success
+
+## Process guard
+- No amend, force push, force-with-lease, reset, stash, or history rewrite used.
+- Only the 8 allowed report files were staged and committed.
