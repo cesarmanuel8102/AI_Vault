@@ -1,5 +1,7 @@
 # Next Front Recommendation — FRONT-BRAIN-AGENT-V2-LANGGRAPH-AUDIT-CORRECTED-BASELINE-ACCEPTANCE-08F4-R3
 
+> Corrected by **FRONT-BRAIN-AGENT-V2-LANGGRAPH-AUDIT-CORRECTED-BASELINE-ACCEPTANCE-08F4-R3A**.
+
 ## Recommendation
 
 **PROCEED_TO_NEXT_FRONT**
@@ -10,18 +12,18 @@
 
 ## Purpose
 
-Close out the 08F5 observability and rollback acceptance work for the LangGraph parity runtime, using the new audit-corrected baseline `8a4b7b1` as the starting point.
+Close out the 08F5 observability and rollback acceptance work for the LangGraph parity runtime.
 
-## Blockers before starting 08F5
+## Blockers
 
-1. This R3 acceptance commit must be pushed to origin successfully.
-2. CI for the acceptance commit must remain green for `phase1-ci` and `nontrading-smoke-regression`.
+None. The R3 acceptance commit `e3517df` is on origin and CI is green.
 
 ## Suggested base
 
 Branch: `codex/own-capital-sustainable-return`
-Baseline: `8a4b7b1df4a9bad8781de3eef22afc348a5a9354`
+Baseline: `e3517df465c5834181f38383819de0267be8b689`
 
-## Recorded
+## Timestamps
 
-`2026-06-30T15:15:29+00:00`
+- Recorded: `2026-06-30T15:15:29+00:00`
+- Corrected: `2026-06-30T15:30:00+00:00`

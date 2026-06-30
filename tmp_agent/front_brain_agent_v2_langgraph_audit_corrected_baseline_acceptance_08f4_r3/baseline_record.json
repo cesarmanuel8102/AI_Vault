@@ -1,16 +1,18 @@
 {
   "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-AUDIT-CORRECTED-BASELINE-ACCEPTANCE-08F4-R3",
+  "correction_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-AUDIT-CORRECTED-BASELINE-ACCEPTANCE-08F4-R3A",
   "branch": "codex/own-capital-sustainable-return",
   "previous_official_baseline": "440c89a5dc48db29f9cd50c1d4985208b6cf05b8",
   "previous_baseline_source": "R2 technical artifact acceptance (FRONT-BRAIN-AGENT-V2-LANGGRAPH-08F4-R1-PROCESS-VIOLATION-AUDIT-AND-CLOSEOUT-R2)",
-  "new_official_baseline": "8a4b7b1df4a9bad8781de3eef22afc348a5a9354",
-  "new_baseline_short": "8a4b7b1",
-  "new_baseline_message": "docs(agent): audit 08f4 r1 process violation and closeout",
+  "new_official_baseline": "e3517df465c5834181f38383819de0267be8b689",
+  "new_baseline_short": "e3517df",
+  "new_baseline_message": "docs(agent): accept audit-corrected langgraph baseline 08f4 r3",
   "baseline_type": "audit_corrected_baseline",
   "contents": {
     "technical_patch_commit": "440c89a5dc48db29f9cd50c1d4985208b6cf05b8",
     "r2_audit_closeout_commit": "8a4b7b1df4a9bad8781de3eef22afc348a5a9354",
-    "r3_acceptance_commit": "PENDING_PUSH"
+    "r3_acceptance_commit": "e3517df465c5834181f38383819de0267be8b689",
+    "r3_acceptance_commit_short": "e3517df"
   },
   "traceability": [
     {
@@ -27,8 +29,9 @@
     {
       "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-AUDIT-CORRECTED-BASELINE-ACCEPTANCE-08F4-R3",
       "status": "ACCEPTED_08F4_R3_AUDIT_CORRECTED_BASELINE",
-      "head": "8a4b7b1df4a9bad8781de3eef22afc348a5a9354"
+      "head": "e3517df465c5834181f38383819de0267be8b689"
     }
   ],
-  "recorded_at": "2026-06-30T15:15:29+00:00"
+  "recorded_at": "2026-06-30T15:15:29+00:00",
+  "corrected_at": "2026-06-30T15:30:00+00:00"
 }

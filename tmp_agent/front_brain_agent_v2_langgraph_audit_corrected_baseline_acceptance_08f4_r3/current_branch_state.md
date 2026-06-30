@@ -1,4 +1,6 @@
-# FRONT-BRAIN-AGENT-V2-LANGGRAPH-AUDIT-CORRECTED-BASELINE-ACCEPTANCE-08F4-R3
+# Current Branch State — FRONT-BRAIN-AGENT-V2-LANGGRAPH-AUDIT-CORRECTED-BASELINE-ACCEPTANCE-08F4-R3
+
+> Corrected by **FRONT-BRAIN-AGENT-V2-LANGGRAPH-AUDIT-CORRECTED-BASELINE-ACCEPTANCE-08F4-R3A**.
 
 ## Current Branch State
 
@@ -6,8 +8,8 @@
 |---|---|
 | Front | FRONT-BRAIN-AGENT-V2-LANGGRAPH-AUDIT-CORRECTED-BASELINE-ACCEPTANCE-08F4-R3 |
 | Branch | `codex/own-capital-sustainable-return` |
-| Current HEAD | `8a4b7b1df4a9bad8781de3eef22afc348a5a9354` (`8a4b7b1`) |
-| Origin HEAD | `8a4b7b1df4a9bad8781de3eef22afc348a5a9354` (`8a4b7b1`) |
+| Current HEAD | `e3517df465c5834181f38383819de0267be8b689` (`e3517df`) |
+| Origin HEAD | `e3517df465c5834181f38383819de0267be8b689` (`e3517df`) |
 | Local equals origin | Yes |
 | State lock | LOCKED |
 | Hygiene guard | SAFE |
@@ -16,19 +18,21 @@
 
 ## Recent history (top 4 commits)
 
-1. `8a4b7b1` — docs(agent): audit 08f4 r1 process violation and closeout
-2. `440c89a` — fix(agent): harden langgraph failure modes 08f4 r1
-3. `d2f5737` — docs(agent): audit 08f4 process violation and closeout
-4. `ab9d66b` — docs(agent): harden langgraph governance failure modes 08f4
+1. `e3517df` — docs(agent): accept audit-corrected langgraph baseline 08f4 r3
+2. `8a4b7b1` — docs(agent): audit 08f4 r1 process violation and closeout
+3. `440c89a` — fix(agent): harden langgraph failure modes 08f4 r1
+4. `d2f5737` — docs(agent): audit 08f4 process violation and closeout
 
-## R2 audit closeout confirmation
+## R2 and R3 confirmation
 
-The R2 audit front `FRONT-BRAIN-AGENT-V2-LANGGRAPH-08F4-R1-PROCESS-VIOLATION-AUDIT-AND-CLOSEOUT-R2` is present in branch history at `8a4b7b1`. It documented the 08F4-R1 process violation, verified the technical patch at `440c89a`, and accepted it as a technical artifact only.
+- R2 audit closeout commit `8a4b7b1` is in history.
+- R3 acceptance commit `e3517df` is in history and on origin.
 
 ## Untracked legacy artifacts
 
 Untracked smoke/runtime artifacts remain in the working tree. They were not staged, deleted, or cleaned for this report-only front.
 
-## Timestamp
+## Timestamps
 
-`2026-06-30T15:15:29+00:00`
+- Recorded: `2026-06-30T15:15:29+00:00`
+- Corrected: `2026-06-30T15:30:00+00:00`
