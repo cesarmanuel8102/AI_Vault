@@ -1,7 +1,7 @@
 {
   "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DASHBOARD-LIVE-SMOKE-08F3",
   "starting_head": "703ebfd",
-  "final_head": "d2c0113",
+  "final_head": "e96d62d",
   "branch": "codex/own-capital-sustainable-return",
   "status": "ACCEPTED_08F3",
   "native_default_preserved": true,
@@ -49,5 +49,5 @@
   "amend_used": false,
   "force_push_used": false,
   "force_with_lease_used": false,
-  "ci_verified_head": "e064c11"
+  "ci_verified_head": "c0c0125"
 }
