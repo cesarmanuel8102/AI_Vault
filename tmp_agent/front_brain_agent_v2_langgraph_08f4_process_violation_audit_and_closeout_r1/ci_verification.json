@@ -1,0 +1,25 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-08F4-PROCESS-VIOLATION-AUDIT-AND-CLOSEOUT-R1",
+  "actual_head": "ab9d66bd18c471680fb9903f0dd172c4f7612ae1",
+  "actual_head_short": "ab9d66b",
+  "github_ci_verified_for_actual_head": true,
+  "phase1_ci": {
+    "workflow_name": "phase1-ci",
+    "run_id": 28416248395,
+    "run_number": 528,
+    "head_sha": "ab9d66bd18c471680fb9903f0dd172c4f7612ae1",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/cesarmanuel8102/AI_Vault/actions/runs/28416248395"
+  },
+  "nontrading_smoke_regression": {
+    "workflow_name": "nontrading-smoke-regression",
+    "run_id": 28416248399,
+    "run_number": 97,
+    "head_sha": "ab9d66bd18c471680fb9903f0dd172c4f7612ae1",
+    "status": "completed",
+    "conclusion": "success",
+    "html_url": "https://github.com/cesarmanuel8102/AI_Vault/actions/runs/28416248399"
+  },
+  "notes": "Both required workflows completed successfully for the actual current head ab9d66b. GitHub API returned concrete run records; empty response was not treated as success."
+}

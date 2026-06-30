@@ -1,0 +1,33 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-08F4-PROCESS-VIOLATION-AUDIT-AND-CLOSEOUT-R1",
+  "branch": "codex/own-capital-sustainable-return",
+  "starting_baseline": "0105ed2",
+  "actual_head_before_audit": "ab9d66bd18c471680fb9903f0dd172c4f7612ae1",
+  "scope_report_only": true,
+  "amend_used_in_08f4": true,
+  "force_push_used_in_08f4": false,
+  "force_with_lease_used_in_08f4": true,
+  "history_rewrite_detected": true,
+  "report_self_reference_loop_detected": true,
+  "github_ci_verified_for_actual_head": true,
+  "github_ci_verified_for_audit_commit": "PENDING",
+  "phase1_result": "success",
+  "nontrading_result": "success",
+  "safety_gaps_exposed": [
+    "BUG-08F4-01",
+    "BUG-08F4-02",
+    "BUG-08F4-03",
+    "BUG-08F4-04"
+  ],
+  "blocking_gaps": ["BUG-08F4-03"],
+  "status": "COMPLETED_WITH_PROCESS_VIOLATION_AND_EXPOSED_GAPS",
+  "acceptance_decision": "ACCEPTED_AS_AUDIT_ARTIFACT_ONLY",
+  "official_new_baseline": "ab9d66bd18c471680fb9903f0dd172c4f7612ae1",
+  "do_not_proceed_to_08f5": true,
+  "recommended_next_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-GOVERNANCE-FAILURE-MODES-HARDENING-08F4-R1",
+  "recommended_next_action": "Repair safety gaps in a new scoped source patch front. No amend. No force push. Native remains default. Start with BUG-08F4-03 (timeout/circuit-breaker), then BUG-08F4-01 and BUG-08F4-02.",
+  "amend_used_in_this_audit": false,
+  "force_push_used_in_this_audit": false,
+  "force_with_lease_used_in_this_audit": false,
+  "notes": "Scope is report-only and actual HEAD ab9d66b passed both required GitHub Actions workflows. However, 08F4 used amend and force-with-lease, creating history rewrites and a stale final_head_after_push. Therefore the content is accepted as audit artifact only, and the next step is a clean R1 source-patch front."
+}
