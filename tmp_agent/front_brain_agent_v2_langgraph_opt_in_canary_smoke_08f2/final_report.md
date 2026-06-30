@@ -3,7 +3,8 @@
 **Front**: FRONT-BRAIN-AGENT-V2-LANGGRAPH-OPT-IN-CANARY-SMOKE-08F2  
 **Branch**: codex/own-capital-sustainable-return  
 **Starting baseline**: abb3c91  
-**Status**: CANARY_SMOKE_COMPLETE
+**Final head**: 271a201  
+**Status**: ACCEPTED_08F2
 
 ## Scope
 
@@ -55,9 +56,9 @@ This front executed a **controlled, reports-only LangGraph opt-in canary smoke**
 
 ## Commit/push status
 
-- Commit created: pending
-- Pushed: pending
-- CI verified: pending
+- Commit created: 271a201
+- Pushed: origin/codex/own-capital-sustainable-return
+- CI verified: all success (Phase 1 baseline (Windows), Security Smoke Tests, Dashboard / Trace Tests, Memory / Retrieval Regression, Roadmap / Policy Regression, Hygiene Guard)
 
 ## Recommended next front
 
