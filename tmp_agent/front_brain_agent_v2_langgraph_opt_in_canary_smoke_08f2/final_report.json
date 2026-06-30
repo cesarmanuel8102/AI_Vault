@@ -1,7 +1,8 @@
 {
   "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-OPT-IN-CANARY-SMOKE-08F2",
   "starting_head": "abb3c91",
-  "final_head": "271a201",
+  "final_head": "0a34cf1",
+  "ci_verified_head": "271a201",
   "branch": "codex/own-capital-sustainable-return",
   "status": "ACCEPTED_08F2",
   "native_default_preserved": true,
