@@ -1,0 +1,44 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-08F7A-FINAL-BASELINE-SYNC-08F7B",
+  "phase": "phase_3_ci_verification",
+  "verified_commit": "747726229d7e6bb94570aceda2c7bb29f209708c",
+  "verified_commit_short": "7477262",
+  "verification_date": "2026-06-30T21:40:00+00:00",
+  "source": "https://api.github.com/repos/cesarmanuel8102/AI_Vault/commits/747726229d7e6bb94570aceda2c7bb29f209708c/check-runs",
+  "overall_status": "success",
+  "check_runs": [
+    {
+      "name": "Phase 1 baseline (Windows)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Hygiene Guard",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Security Smoke Tests",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Dashboard / Trace Tests",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Roadmap / Policy Regression",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Memory / Retrieval Regression",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "phase1_result": "success",
+  "nontrading_result": "success",
+  "ci_verified": true
+}
