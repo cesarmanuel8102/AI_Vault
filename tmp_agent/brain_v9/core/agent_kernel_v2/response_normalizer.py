@@ -36,8 +36,12 @@ REQUIRED_TOP_LEVEL_FIELDS = (
     "auto_decision",
     "backend",
     "backend_selected",
+    "backend_default",
     "backend_fallback_used",
     "backend_fallback_reason",
+    "runtime_type",
+    "langgraph_default_active",
+    "rollback_backend",
     "error",
     "detail",
 )
@@ -220,8 +224,12 @@ def normalize_agent_v2_chat_response(
     backend_selected = raw.get("backend_selected") or backend
     out.setdefault("backend", backend_selected)
     out.setdefault("backend_selected", backend_selected)
+    out.setdefault("backend_default", raw.get("backend_default"))
     out.setdefault("backend_fallback_used", bool(raw.get("backend_fallback_used")))
     out.setdefault("backend_fallback_reason", raw.get("backend_fallback_reason"))
+    out.setdefault("runtime_type", raw.get("runtime_type") or backend_selected)
+    out.setdefault("langgraph_default_active", bool(raw.get("langgraph_default_active")))
+    out.setdefault("rollback_backend", raw.get("rollback_backend") or "native_runtime")
 
     # Error / detail
     out.setdefault("error", raw.get("error"))

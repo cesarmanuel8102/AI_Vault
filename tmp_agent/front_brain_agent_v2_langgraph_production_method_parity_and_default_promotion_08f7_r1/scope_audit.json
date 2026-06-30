@@ -1,0 +1,44 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-PRODUCTION-METHOD-PARITY-AND-DEFAULT-PROMOTION-08F7-R1",
+  "created_utc": "2026-06-30T18:38:24.865523+00:00",
+  "modified_source_files": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py",
+    "tmp_agent/brain_v9/dashboard/dashboard_routes.py"
+  ],
+  "modified_test_files": [
+    "tests/smoke/test_brain_agent_v2_langgraph_production_method_parity_08f7_r1.py",
+    "tests/smoke/test_brain_agent_v2_langgraph_default_promotion_08f7_r1.py",
+    "tests/smoke/test_brain_agent_v2_langgraph_backend_contract_08f1.py",
+    "tests/smoke/test_brain_agent_v2_langgraph_failure_modes_08f4_r1.py",
+    "tests/smoke/test_brain_agent_v2_runtime_selector_guard_08e.py",
+    "tests/smoke/test_brain_dashboard_chat_proxy_token_fix_08e_r3.py"
+  ],
+  "modified_report_files": [
+    "tmp_agent/front_brain_agent_v2_langgraph_production_method_parity_and_default_promotion_08f7_r1/default_promotion_decision.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_production_method_parity_and_default_promotion_08f7_r1/default_promotion_decision.md",
+    "tmp_agent/front_brain_agent_v2_langgraph_production_method_parity_and_default_promotion_08f7_r1/final_report.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_production_method_parity_and_default_promotion_08f7_r1/final_report.md",
+    "tmp_agent/front_brain_agent_v2_langgraph_production_method_parity_and_default_promotion_08f7_r1/implementation_plan.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_production_method_parity_and_default_promotion_08f7_r1/implementation_plan.md",
+    "tmp_agent/front_brain_agent_v2_langgraph_production_method_parity_and_default_promotion_08f7_r1/production_method_parity_matrix.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_production_method_parity_and_default_promotion_08f7_r1/production_method_parity_matrix.md",
+    "tmp_agent/front_brain_agent_v2_langgraph_production_method_parity_and_default_promotion_08f7_r1/rollback_validation.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_production_method_parity_and_default_promotion_08f7_r1/rollback_validation.md",
+    "tmp_agent/front_brain_agent_v2_langgraph_production_method_parity_and_default_promotion_08f7_r1/scope_audit.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_production_method_parity_and_default_promotion_08f7_r1/scope_audit.md",
+    "tmp_agent/front_brain_agent_v2_langgraph_production_method_parity_and_default_promotion_08f7_r1/smoke_validation_matrix.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_production_method_parity_and_default_promotion_08f7_r1/smoke_validation_matrix.md",
+    "tmp_agent/front_brain_agent_v2_langgraph_production_method_parity_and_default_promotion_08f7_r1/state_lock.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_production_method_parity_and_default_promotion_08f7_r1/state_lock.md"
+  ],
+  "memory_touched": false,
+  "faiss_touched": false,
+  "trading_touched": false,
+  "env_touched": false,
+  "native_rollback_preserved": true,
+  "langgraph_default_promotion_authorized": true,
+  "updated_utc": "2026-06-30T18:41:01.026000+00:00"
+}

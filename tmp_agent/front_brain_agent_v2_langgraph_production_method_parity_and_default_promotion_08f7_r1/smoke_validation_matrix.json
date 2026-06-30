@@ -1,0 +1,19 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-PRODUCTION-METHOD-PARITY-AND-DEFAULT-PROMOTION-08F7-R1",
+  "created_utc": "2026-06-30T18:38:24.865523+00:00",
+  "py_compile": "PASS",
+  "focused_tests": {
+    "status": "PASS",
+    "result": "12 passed"
+  },
+  "regression_tests": {
+    "status": "PASS",
+    "result": "37 passed"
+  },
+  "hygiene": "SAFE before staging",
+  "commands": [
+    "python -m py_compile ...",
+    "python -m pytest tests/smoke/test_brain_agent_v2_langgraph_production_method_parity_08f7_r1.py tests/smoke/test_brain_agent_v2_langgraph_default_promotion_08f7_r1.py -v",
+    "python -m pytest tests/smoke/test_brain_agent_v2_langgraph_backend_contract_08f1.py tests/smoke/test_brain_agent_v2_langgraph_failure_modes_08f4_r1.py tests/smoke/test_brain_agent_v2_runtime_selector_guard_08e.py tests/smoke/test_brain_dashboard_chat_proxy_token_fix_08e_r3.py -v"
+  ]
+}

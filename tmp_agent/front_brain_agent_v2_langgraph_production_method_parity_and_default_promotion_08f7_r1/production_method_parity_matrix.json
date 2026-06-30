@@ -1,0 +1,78 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-PRODUCTION-METHOD-PARITY-AND-DEFAULT-PROMOTION-08F7-R1",
+  "created_utc": "2026-06-30T18:38:24.865523+00:00",
+  "methods": [
+    {
+      "method": "create_run",
+      "native_behavior": "create persisted run.json and trace run_created",
+      "langgraph_behavior": "create persisted run.json and trace run_created",
+      "parity_gap": false,
+      "required_patch": "preserved existing implementation",
+      "test_required": true
+    },
+    {
+      "method": "execute_run",
+      "native_behavior": "execute run through route/planner/tools/finalizer with governance",
+      "langgraph_behavior": "execute graph flow and translate to Native-style run",
+      "parity_gap": false,
+      "required_patch": "preserved existing implementation",
+      "test_required": true
+    },
+    {
+      "method": "plan_run",
+      "native_behavior": "build_plan, persist planned state, checkpoint/trace",
+      "langgraph_behavior": "now builds/stores plan without executing tools or writes; checks escalation",
+      "parity_gap": false,
+      "required_patch": "implemented production-safe planning transition",
+      "test_required": true
+    },
+    {
+      "method": "pause_run",
+      "native_behavior": "persist paused state and trace",
+      "langgraph_behavior": "now validates non-terminal state before pausing",
+      "parity_gap": false,
+      "required_patch": "implemented transition guard",
+      "test_required": true
+    },
+    {
+      "method": "resume_run",
+      "native_behavior": "resume paused run",
+      "langgraph_behavior": "now only resumes paused runs and preserves governance fields",
+      "parity_gap": false,
+      "required_patch": "implemented transition guard",
+      "test_required": true
+    },
+    {
+      "method": "cancel_run",
+      "native_behavior": "cancel non-terminal run",
+      "langgraph_behavior": "now cancels non-terminal runs and refuses terminal corruption",
+      "parity_gap": false,
+      "required_patch": "implemented transition guard",
+      "test_required": true
+    },
+    {
+      "method": "list_runs",
+      "native_behavior": "list persisted runs",
+      "langgraph_behavior": "list persisted parity runs",
+      "parity_gap": false,
+      "required_patch": "none",
+      "test_required": true
+    },
+    {
+      "method": "get_run",
+      "native_behavior": "load run or KeyError",
+      "langgraph_behavior": "load run with malformed-state guard",
+      "parity_gap": false,
+      "required_patch": "none",
+      "test_required": true
+    },
+    {
+      "method": "get_trace",
+      "native_behavior": "read trace events",
+      "langgraph_behavior": "read trace events",
+      "parity_gap": false,
+      "required_patch": "none",
+      "test_required": true
+    }
+  ]
+}

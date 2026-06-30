@@ -1,7 +1,7 @@
 """Contract tests for LangGraph runtime contract parity (08F1).
 
 Pins that LangGraphParityRuntimeV2 implements the production Agent V2 runtime
-interface when AGENT_V2_BACKEND=langgraph, while Native remains the default.
+interface with LangGraph promoted as default while Native remains explicit rollback.
 """
 from __future__ import annotations
 
@@ -147,10 +147,13 @@ def test_langgraph_selected_when_env_set(monkeypatch):
 # ------------------------------------------------------------------
 # 4. Native default preservation
 # ------------------------------------------------------------------
-def test_native_default_when_env_unset(monkeypatch):
+def test_langgraph_default_when_env_unset(monkeypatch):
     monkeypatch.delenv("AGENT_V2_BACKEND", raising=False)
     rt = get_agent_runtime_v2()
-    assert rt.backend == "native_runtime"
+    selected = getattr(rt, "backend_selected", rt.backend)
+    if not LANGGRAPH_AVAILABLE or selected != "langgraph_parity":
+        pytest.skip("LangGraph package not installed; fallback verified in selector guard tests")
+    assert rt.backend == "langgraph_parity"
 
 
 # ------------------------------------------------------------------
@@ -224,8 +227,17 @@ def test_only_allowed_source_files_modified():
     allowed_prefixes = [
         "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
         "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py",
+        "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
         "tests/smoke/test_brain_agent_v2_langgraph_backend_contract_08f1.py",
+        "tests/smoke/test_brain_agent_v2_langgraph_default_promotion_08f7_r1.py",
+        "tests/smoke/test_brain_agent_v2_langgraph_production_method_parity_08f7_r1.py",
+        "tests/smoke/test_brain_agent_v2_runtime_selector_guard_08e.py",
+        "tests/smoke/test_brain_dashboard_chat_proxy_token_fix_08e_r3.py",
+        "tests/smoke/test_brain_agent_v2_langgraph_failure_modes_08f4_r1.py",
         "tmp_agent/front_brain_agent_v2_langgraph_runtime_contract_parity_08f1/",
+        "tmp_agent/front_brain_agent_v2_langgraph_production_method_parity_and_default_promotion_08f7_r1/",
     ]
     disallowed = [c for c in changed if not any(c.startswith(p) for p in allowed_prefixes)]
     assert not disallowed, f"Disallowed source files modified: {disallowed}"

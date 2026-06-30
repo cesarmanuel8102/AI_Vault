@@ -1,10 +1,9 @@
 """Runtime selector guard for Agent V2 backends.
 
-Keeps NativeAgentRuntimeV2 as the default. Only selects LangGraphParityRuntimeV2
-when the AGENT_V2_BACKEND environment variable explicitly requests it and the
-LangGraph package is available and initializes successfully.
-
-Invalid values, missing packages, or init failures all fall back to Native.
+LangGraphParityRuntimeV2 is the default Agent V2 backend when
+AGENT_V2_BACKEND is unset. NativeAgentRuntimeV2 remains the explicit rollback
+backend and the safe fallback for invalid values, missing packages, or init
+failures.
 """
 from __future__ import annotations
 
@@ -19,25 +18,27 @@ logger = logging.getLogger(__name__)
 
 NATIVE_BACKEND_VALUES = {"", "native", "native_runtime"}
 LANGGRAPH_BACKEND_VALUES = {"langgraph", "langgraph_parity", "langgraph_parity_runtime"}
+DEFAULT_AGENT_V2_BACKEND = "langgraph_parity"
+ROLLBACK_AGENT_V2_BACKEND = "native_runtime"
 
 
 def resolve_agent_v2_backend_choice(raw_value: Optional[str]) -> str:
     """Resolve raw env value into the canonical backend choice."""
     if raw_value is None:
-        return "native_runtime"
+        return DEFAULT_AGENT_V2_BACKEND
     normalized = str(raw_value).strip().lower()
     if normalized in NATIVE_BACKEND_VALUES:
-        return "native_runtime"
+        return ROLLBACK_AGENT_V2_BACKEND
     if normalized in LANGGRAPH_BACKEND_VALUES:
         return "langgraph_parity"
     # Unknown values are treated as native (safe fallback)
-    return "native_runtime"
+    return ROLLBACK_AGENT_V2_BACKEND
 
 
 def is_langgraph_backend_requested(raw_value: Optional[str]) -> bool:
     """Return True iff the raw env value requests a LangGraph backend."""
     if raw_value is None:
-        return False
+        return True
     return str(raw_value).strip().lower() in LANGGRAPH_BACKEND_VALUES
 
 
@@ -58,8 +59,8 @@ def is_agent_v2_production_runtime_compatible(
     Additional methods are checked defensively; missing optional methods are not
     treated as fatal.
     """
-    required_methods = ("create_run", "execute_run")
-    optional_methods = ("plan_run", "list_runs", "get_run", "get_trace")
+    required_methods = ("create_run", "execute_run", "plan_run", "pause_run", "resume_run", "cancel_run")
+    optional_methods = ("list_runs", "get_run", "get_trace")
     missing: list[str] = []
     for method in required_methods:
         if not hasattr(runtime, method) or not callable(getattr(runtime, method, None)):
@@ -79,9 +80,12 @@ def _build_native_runtime_with_metadata(
 ) -> NativeAgentRuntimeV2:
     """Create a Native runtime and attach backend metadata safely."""
     rt = NativeAgentRuntimeV2()
-    rt.backend_selected = "native_runtime"
+    rt.backend_selected = ROLLBACK_AGENT_V2_BACKEND
+    rt.backend_default = DEFAULT_AGENT_V2_BACKEND
     rt.backend_fallback_used = fallback_used
     rt.backend_fallback_reason = fallback_reason
+    rt.runtime_type = type(rt).__name__
+    rt.rollback_backend = ROLLBACK_AGENT_V2_BACKEND
     # Expose backend metadata on the class so all instances report consistently.
     if not hasattr(NativeAgentRuntimeV2, "backend_selected"):
         NativeAgentRuntimeV2.backend_selected = rt.backend_selected
@@ -89,6 +93,12 @@ def _build_native_runtime_with_metadata(
         NativeAgentRuntimeV2.backend_fallback_used = rt.backend_fallback_used
     if not hasattr(NativeAgentRuntimeV2, "backend_fallback_reason"):
         NativeAgentRuntimeV2.backend_fallback_reason = rt.backend_fallback_reason
+    if not hasattr(NativeAgentRuntimeV2, "backend_default"):
+        NativeAgentRuntimeV2.backend_default = rt.backend_default
+    if not hasattr(NativeAgentRuntimeV2, "runtime_type"):
+        NativeAgentRuntimeV2.runtime_type = rt.runtime_type
+    if not hasattr(NativeAgentRuntimeV2, "rollback_backend"):
+        NativeAgentRuntimeV2.rollback_backend = rt.rollback_backend
     return rt
 
 
@@ -106,9 +116,12 @@ def _try_build_langgraph_runtime(
                 rt.graph_error,
             )
             return None
-        rt.backend_selected = "langgraph_parity"
+        rt.backend_selected = DEFAULT_AGENT_V2_BACKEND
+        rt.backend_default = DEFAULT_AGENT_V2_BACKEND
         rt.backend_fallback_used = False
         rt.backend_fallback_reason = None
+        rt.runtime_type = type(rt).__name__
+        rt.rollback_backend = ROLLBACK_AGENT_V2_BACKEND
         return rt
     except Exception as exc:  # pragma: no cover - defensive import guard
         logger.warning(
@@ -127,21 +140,28 @@ def get_agent_runtime_backend_name() -> str:
 def get_agent_runtime_v2():
     """Return the Agent V2 runtime selected by AGENT_V2_BACKEND env var.
 
-    Defaults to NativeAgentRuntimeV2. Falls back to Native on invalid values,
-    missing packages, or init failures.
+    Defaults to LangGraphParityRuntimeV2 when AGENT_V2_BACKEND is unset.
+    AGENT_V2_BACKEND=native is the explicit rollback path. Invalid values,
+    missing packages, or init failures fall back to Native with metadata.
     """
     raw_value = os.environ.get("AGENT_V2_BACKEND")
-    if not is_any_non_native_backend_requested(raw_value):
+    resolved = resolve_agent_v2_backend_choice(raw_value)
+
+    if resolved == ROLLBACK_AGENT_V2_BACKEND and raw_value is None:
         return _build_native_runtime_with_metadata()
 
-    if not is_langgraph_backend_requested(raw_value):
+    if resolved == ROLLBACK_AGENT_V2_BACKEND and not is_langgraph_backend_requested(raw_value):
         # A non-native, non-LangGraph value was provided -> invalid -> safe native fallback
         return _build_native_runtime_with_metadata(
-            fallback_used=True,
-            fallback_reason=f"AGENT_V2_BACKEND={raw_value!r} is not a recognized backend; falling back to native_runtime",
+            fallback_used=is_any_non_native_backend_requested(raw_value),
+            fallback_reason=(
+                f"AGENT_V2_BACKEND={raw_value!r} is not a recognized backend; falling back to native_runtime"
+                if is_any_non_native_backend_requested(raw_value)
+                else None
+            ),
         )
 
-    lang_rt = _try_build_langgraph_runtime(raw_value)
+    lang_rt = _try_build_langgraph_runtime(raw_value if raw_value is not None else DEFAULT_AGENT_V2_BACKEND)
     if lang_rt is not None:
         compatible, missing_methods = is_agent_v2_production_runtime_compatible(lang_rt)
         if compatible:

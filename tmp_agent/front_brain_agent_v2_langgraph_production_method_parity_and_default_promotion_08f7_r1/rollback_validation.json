@@ -1,0 +1,11 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-PRODUCTION-METHOD-PARITY-AND-DEFAULT-PROMOTION-08F7-R1",
+  "created_utc": "2026-06-30T18:38:24.865523+00:00",
+  "rollback_backend": "native",
+  "env_value": "AGENT_V2_BACKEND=native",
+  "rollback_works_without_code_changes": true,
+  "rollback_works_without_git_changes": true,
+  "fallback_to_native_on_langgraph_failure": true,
+  "memory_faiss_touched": false,
+  "trading_touched": false
+}

@@ -1,0 +1,18 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-PRODUCTION-METHOD-PARITY-AND-DEFAULT-PROMOTION-08F7-R1",
+  "created_utc": "2026-06-30T18:38:24.865523+00:00",
+  "steps": [
+    "Implement guarded plan_run/pause_run/resume_run/cancel_run parity",
+    "Keep create_run/execute_run/list_runs/get_run/get_trace intact",
+    "Promote LangGraph as default when AGENT_V2_BACKEND is unset",
+    "Preserve AGENT_V2_BACKEND=native rollback",
+    "Fallback to Native with metadata on LangGraph init/contract failure",
+    "Expose backend_default/runtime_type/fallback metadata in Agent V2 responses",
+    "Run focused/regression/hygiene validations before explicit staging"
+  ],
+  "safety": {
+    "memory_faiss_mutation_allowed": false,
+    "trading_broker_allowed": false,
+    "native_rollback_required": true
+  }
+}

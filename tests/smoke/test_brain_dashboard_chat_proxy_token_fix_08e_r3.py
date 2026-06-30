@@ -63,7 +63,8 @@ def _mock_urlopen_trace():
     return _inner
 
 
-def test_dashboard_chat_proxy_forwards_token(client):
+def test_dashboard_chat_proxy_forwards_token(client, monkeypatch):
+    monkeypatch.setenv("BRAIN_ADMIN_TOKEN", "R3_UNIT_TEST_ADMIN_TOKEN")
     with patch("tmp_agent.brain_v9.dashboard.dashboard_routes.urllib.request.urlopen", _mock_urlopen_chat()):
         resp = client.post("/brain-dashboard/chat", json={
             "message": "r3 token forwarding check",
@@ -79,7 +80,8 @@ def test_dashboard_chat_proxy_forwards_token(client):
     assert "R3_UNIT_TEST_ADMIN_TOKEN" not in resp.text
 
 
-def test_dashboard_trace_proxy_forwards_token(client):
+def test_dashboard_trace_proxy_forwards_token(client, monkeypatch):
+    monkeypatch.setenv("BRAIN_ADMIN_TOKEN", "R3_UNIT_TEST_ADMIN_TOKEN")
     with patch("tmp_agent.brain_v9.dashboard.dashboard_routes.urllib.request.urlopen", _mock_urlopen_trace()):
         resp = client.get("/brain-dashboard/agent-v2/runs/agv2_r3_test_run/trace")
     assert resp.status_code == 200

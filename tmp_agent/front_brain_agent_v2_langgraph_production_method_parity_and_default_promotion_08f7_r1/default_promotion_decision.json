@@ -1,0 +1,10 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-PRODUCTION-METHOD-PARITY-AND-DEFAULT-PROMOTION-08F7-R1",
+  "created_utc": "2026-06-30T18:38:24.865523+00:00",
+  "decision": "PROMOTE_LANGGRAPH_TO_AGENT_V2_DEFAULT",
+  "langgraph_default_active": true,
+  "native_available_as_rollback": true,
+  "ready_for_real_brain_usage": true,
+  "ready_for_trading_or_broker_autonomy": false,
+  "recommended_next_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-REAL-BRAIN-USAGE-PILOT-08F8"
+}

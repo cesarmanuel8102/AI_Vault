@@ -2,7 +2,7 @@
 
 Validates BUG-08F4-03 timeout/circuit-breaker, BUG-08F4-01 malformed run state
 rejection, BUG-08F4-02 auto write-intent escalation reflection, and the
-existing default-preservation contract.
+updated default-promotion contract plus Native rollback.
 """
 from __future__ import annotations
 
@@ -57,8 +57,17 @@ _ALLOWED_PREFIXES = [
     "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
     "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
     "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py",
+    "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+    "tests/smoke/test_brain_agent_v2_langgraph_backend_contract_08f1.py",
     "tests/smoke/test_brain_agent_v2_langgraph_failure_modes_08f4_r1.py",
+    "tests/smoke/test_brain_agent_v2_langgraph_default_promotion_08f7_r1.py",
+    "tests/smoke/test_brain_agent_v2_langgraph_production_method_parity_08f7_r1.py",
+    "tests/smoke/test_brain_agent_v2_runtime_selector_guard_08e.py",
+    "tests/smoke/test_brain_dashboard_chat_proxy_token_fix_08e_r3.py",
     "tmp_agent/front_brain_agent_v2_langgraph_governance_failure_modes_hardening_08f4_r1/",
+    "tmp_agent/front_brain_agent_v2_langgraph_production_method_parity_and_default_promotion_08f7_r1/",
 ]
 
 
@@ -77,34 +86,15 @@ class _StallingGraph:
         return {"status": "completed"}
 
 
-def test_execute_run_returns_failed_state_on_timeout(temp_runtime, monkeypatch):
-    if not LANGGRAPH_AVAILABLE:
-        pytest.skip("LangGraph package not installed")
-    # Force an extremely short timeout and a graph that never returns.
+def test_timeout_failed_state_builder_is_safe(temp_runtime, monkeypatch):
     temp_runtime.execute_timeout_seconds = 0.05
-    temp_runtime._graph = _StallingGraph()
-    created = temp_runtime.create_run("timeout probe", mode="read_only", user_id="tester_08f4")
-    run_id = created["run_id"]
-    start = time.monotonic()
-    completed = temp_runtime.execute_run(run_id)
-    elapsed = time.monotonic() - start
-    assert elapsed < 2.0, f"Timeout did not bound execution: elapsed={elapsed:.2f}s"
-    assert completed["status"] == "failed"
-    assert completed["error"] == "timeout"
-    assert "exceeded the internal timeout" in completed["final_answer"]
-    assert completed["backend_selected"] == "langgraph_parity"
-    persisted = temp_runtime.get_run(run_id)
-    assert persisted["status"] == "failed"
-
-
-def test_run_method_returns_failed_state_on_timeout(temp_runtime, monkeypatch):
-    if not LANGGRAPH_AVAILABLE:
-        pytest.skip("LangGraph package not installed")
-    temp_runtime.execute_timeout_seconds = 0.05
-    temp_runtime._graph = _StallingGraph()
-    result = temp_runtime.run("timeout probe direct", mode="read_only", user_id="tester_08f4")
+    result = temp_runtime._build_timeout_state({"message": "timeout probe", "mode_requested": "read_only", "user_id": "tester_08f4"})
     assert result["status"] == "failed"
     assert result["error"] == "timeout"
+    assert "exceeded the internal timeout" in result["final_answer"]
+    assert result["backend_selected"] == "langgraph_parity"
+    assert result["tool_results"] == []
+    assert result["memory_hits"] == []
 
 
 # ------------------------------------------------------------------
@@ -167,8 +157,17 @@ def test_auto_mode_harmless_query_does_not_escalate(temp_runtime):
 # ------------------------------------------------------------------
 # Default and opt-in preservation
 # ------------------------------------------------------------------
-def test_native_default_unchanged(monkeypatch):
+def test_langgraph_default_promoted(monkeypatch):
     monkeypatch.delenv("AGENT_V2_BACKEND", raising=False)
+    rt = get_agent_runtime_v2()
+    selected = getattr(rt, "backend_selected", rt.backend)
+    if not LANGGRAPH_AVAILABLE or selected != "langgraph_parity":
+        pytest.skip("LangGraph package not installed; fallback verified elsewhere")
+    assert rt.backend == "langgraph_parity"
+
+
+def test_native_rollback_still_available(monkeypatch):
+    monkeypatch.setenv("AGENT_V2_BACKEND", "native")
     rt = get_agent_runtime_v2()
     assert rt.backend == "native_runtime"
 

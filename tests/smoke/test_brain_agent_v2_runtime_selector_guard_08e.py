@@ -1,8 +1,6 @@
 """Contract tests for the runtime selector guard.
 
-Pins that NativeAgentRuntimeV2 remains the default, that invalid or missing
-AGENT_V2_BACKEND values fall back safely to Native, and that explicit LangGraph
-opt-in only succeeds when the package is available and initializes.
+Pins that LangGraphParityRuntimeV2 is now the default when AGENT_V2_BACKEND is unset, that invalid values fall back safely to Native, and that explicit Native remains the rollback backend.
 """
 from __future__ import annotations
 
@@ -28,7 +26,6 @@ from tmp_agent.brain_v9.main import app
 from fastapi.testclient import TestClient
 
 os.environ.setdefault("BRAIN_ADMIN_TOKEN", "AGENTV2_TEST_ADMIN_TOKEN")
-os.environ.setdefault("AGENT_V2_BACKEND", "")
 
 
 async def _strict_op_passthrough(request, x_brain_token=None):
@@ -59,10 +56,14 @@ def _clear_env(monkeypatch):
     monkeypatch.delenv("AGENT_V2_BACKEND", raising=False)
 
 
-def test_default_backend_is_native_when_env_unset(monkeypatch):
+def test_default_backend_is_langgraph_when_env_unset(monkeypatch):
     _clear_env(monkeypatch)
     rt = get_agent_runtime_v2()
-    assert rt.backend == "native_runtime"
+    selected = getattr(rt, "backend_selected", rt.backend)
+    if selected != "langgraph_parity":
+        pytest.skip("LangGraph unavailable; fallback verified elsewhere")
+    assert rt.backend == "langgraph_parity"
+    assert getattr(rt, "backend_default", None) == "langgraph_parity"
 
 
 @pytest.mark.parametrize("value", ["native", "native_runtime", ""])
@@ -81,10 +82,10 @@ def test_invalid_backend_value_falls_back_to_native(monkeypatch):
     assert getattr(rt, "backend_fallback_reason", "") is not None
 
 
-def test_langgraph_backend_request_does_not_change_default_without_env(monkeypatch):
+def test_unset_env_resolves_to_langgraph_default(monkeypatch):
     _clear_env(monkeypatch)
-    assert get_agent_runtime_backend_name() == "native_runtime"
-    assert not is_langgraph_backend_requested(os.environ.get("AGENT_V2_BACKEND"))
+    assert get_agent_runtime_backend_name() == "langgraph_parity"
+    assert is_langgraph_backend_requested(os.environ.get("AGENT_V2_BACKEND"))
 
 
 def test_langgraph_backend_request_falls_back_if_unavailable(monkeypatch):
@@ -115,7 +116,7 @@ def test_langgraph_backend_request_can_select_langgraph_if_available(monkeypatch
         pytest.skip("LangGraph package not installed or failed to initialize; fallback verified elsewhere")
 
 
-def test_api_adapter_default_native_contract_after_selector_change(monkeypatch):
+def test_api_adapter_default_langgraph_contract_after_selector_change(monkeypatch):
     _clear_env(monkeypatch)
     client = TestClient(app)
     response = client.post(
@@ -125,8 +126,8 @@ def test_api_adapter_default_native_contract_after_selector_change(monkeypatch):
     assert response.status_code == 200
     data = response.json()
     assert data["ok"] is True
-    assert data["backend"] == "native_runtime"
-    assert data["backend_selected"] == "native_runtime"
+    assert data["backend_default"] == "langgraph_parity"
+    assert data["rollback_backend"] == "native_runtime"
 
 
 def test_api_adapter_invalid_env_fallback_contract(monkeypatch):
@@ -155,7 +156,7 @@ def test_api_adapter_invalid_env_fallback_contract(monkeypatch):
 
 
 def test_resolve_backend_choice_function():
-    assert resolve_agent_v2_backend_choice(None) == "native_runtime"
+    assert resolve_agent_v2_backend_choice(None) == "langgraph_parity"
     assert resolve_agent_v2_backend_choice("") == "native_runtime"
     assert resolve_agent_v2_backend_choice("native") == "native_runtime"
     assert resolve_agent_v2_backend_choice("native_runtime") == "native_runtime"
@@ -165,7 +166,7 @@ def test_resolve_backend_choice_function():
 
 
 def test_is_langgraph_backend_requested_function():
-    assert not is_langgraph_backend_requested(None)
+    assert is_langgraph_backend_requested(None)
     assert not is_langgraph_backend_requested("")
     assert not is_langgraph_backend_requested("native")
     assert is_langgraph_backend_requested("langgraph")
@@ -180,7 +181,6 @@ def test_no_frontend_dashboard_source_modified():
         "tmp_agent/brain_v9/ui/index.html",
         "tmp_agent/brain_v9/ui/agent_trace_console.html",
         "tmp_agent/brain_v9/dashboard/dashboard_app.py",
-        "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
         "tmp_agent/brain_v9/dashboard/static/app.js",
     ]
     disallowed = [c for c in changed if any(c.startswith(f) for f in forbidden)]

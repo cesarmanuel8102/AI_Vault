@@ -9,7 +9,7 @@ from __future__ import annotations
 import hashlib, json, time
 import concurrent.futures
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from .state import CANONICAL_AGENT_VERSION
 from .schemas import AgentTraceEvent, ToolCallRequest, to_dict, utc_now
@@ -1061,6 +1061,49 @@ class LangGraphParityRuntimeV2:
     # ------------------------------------------------------------------
     # Production runtime contract parity
     # ------------------------------------------------------------------
+    TERMINAL_STATUSES = {"completed", "failed", "cancelled", "degraded"}
+    PAUSABLE_STATUSES = {"created", "planned", "running", "resumed"}
+
+    def _safe_error_run(self, run: Dict[str, Any], error: str, event_type: str = "invalid_transition") -> Dict[str, Any]:
+        """Return a stable run dict with a controlled error without corrupting state."""
+        run["error"] = error
+        run["detail"] = error
+        run["updated_utc"] = utc_now()
+        self._save_run_json(run)
+        self._trace(run["run_id"], event_type, error, {"status": run.get("status")})
+        return run
+
+    def _transition_allowed(self, current: str, target: str) -> Tuple[bool, str]:
+        if current in self.TERMINAL_STATUSES:
+            if current == target:
+                return True, "terminal_noop"
+            return False, f"cannot transition terminal run from {current} to {target}"
+        if target == "planned" and current in {"created", "planned", "resumed"}:
+            return True, "ok"
+        if target == "paused" and current in self.PAUSABLE_STATUSES:
+            return True, "ok"
+        if target == "resumed" and current == "paused":
+            return True, "ok"
+        if target == "cancelled" and current not in self.TERMINAL_STATUSES:
+            return True, "ok"
+        return False, f"invalid transition from {current} to {target}"
+
+    def _apply_status_transition(self, run: Dict[str, Any], target: str, event_type: str, message: str, data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        current = str(run.get("status") or "created")
+        allowed, reason = self._transition_allowed(current, target)
+        if not allowed:
+            return self._safe_error_run(run, reason, "invalid_transition")
+        if reason != "terminal_noop":
+            run["previous_status"] = current
+            run["status"] = target
+        run["updated_utc"] = utc_now()
+        run.pop("error", None)
+        run.pop("detail", None)
+        self._save_run_json(run)
+        payload = {"from_status": current, "to_status": run.get("status"), **(data or {})}
+        self._trace(run["run_id"], event_type, message, payload)
+        return run
+
     def create_run(self, goal: str, mode: str = "read_only", user_id: str = "local") -> Dict[str, Any]:
         """Create a Native-compatible run and persist run.json.
 
@@ -1102,16 +1145,56 @@ class LangGraphParityRuntimeV2:
         return run
 
     def plan_run(self, run_id: str) -> Dict[str, Any]:
-        """Return the loaded run with a graph-internal planner marker."""
+        """Create a Native-compatible planning state without executing tools or writes."""
         run = self._load_run_or_raise(run_id)
-        run["planner_used"] = True
-        run["graph_internal_planner"] = True
-        run.setdefault("plan", [])
-        run["status"] = "planned"
-        run["updated_utc"] = utc_now()
-        self._save_run_json(run)
-        self._trace(run_id, "plan_marked", "LangGraph planner is graph-internal")
-        return run
+        current = str(run.get("status") or "created")
+        allowed, reason = self._transition_allowed(current, "planned")
+        if not allowed:
+            return self._safe_error_run(run, reason, "invalid_transition")
+
+        mode = run.get("mode_effective") or run.get("mode") or "read_only"
+        classification = run.get("classification") or "langgraph_parity_planned"
+        plan = run.get("plan")
+        metadata: Dict[str, Any] = run.get("metadata") or {}
+        if not isinstance(plan, list) or not plan:
+            try:
+                classification, plan, metadata = build_plan(run.get("goal", ""), mode)
+                for step in plan:
+                    if isinstance(step, dict):
+                        step.setdefault("status", "planned")
+            except Exception as exc:
+                classification = run.get("intent_route") or "langgraph_parity_planned"
+                plan = [{
+                    "step_id": "langgraph_plan_fallback",
+                    "kind": "finalization",
+                    "title": "LangGraph planner fallback finalization",
+                    "status": "planned",
+                    "tool_name": None,
+                    "input": {},
+                }]
+                metadata = {"planner_error": str(exc)[:200]}
+
+        scheduled_tools = [s.get("tool_name") for s in plan if isinstance(s, dict) and s.get("tool_name")]
+        escalation = mode_requires_escalation(run.get("goal", ""), mode, scheduled_tools)
+        run.update({
+            "classification": classification,
+            "plan": plan,
+            "metadata": metadata,
+            "planner_used": True,
+            "graph_internal_planner": True,
+            "mode_escalation_required": escalation,
+            "approval_required": bool(escalation),
+            "required_permission": "build" if escalation else None,
+            "expected_write_scope": [t for t in scheduled_tools if t in WRITE_TOOL_NAMES],
+            "confirmation_id": f"confirm_{run_id}" if escalation else None,
+        })
+        return self._apply_status_transition(
+            run,
+            "planned",
+            "plan_created",
+            "LangGraph parity plan created",
+            {"step_count": len(plan), "classification": classification, "scheduled_tools": scheduled_tools},
+        )
 
     def execute_run(self, run_id: str) -> Dict[str, Any]:
         """Execute the existing LangGraph flow and translate the result into a Native-style run dict."""
@@ -1198,27 +1281,20 @@ class LangGraphParityRuntimeV2:
 
     def pause_run(self, run_id: str) -> Dict[str, Any]:
         run = self._load_run_or_raise(run_id)
-        run["status"] = "paused"
-        run["updated_utc"] = utc_now()
-        self._save_run_json(run)
-        self._trace(run_id, "run_paused", "Run paused")
-        return run
+        return self._apply_status_transition(run, "paused", "run_paused", "Run paused")
 
     def resume_run(self, run_id: str) -> Dict[str, Any]:
         run = self._load_run_or_raise(run_id)
-        run["status"] = "planned" if run.get("plan") else "created"
-        run["updated_utc"] = utc_now()
-        self._save_run_json(run)
-        self._trace(run_id, "run_resumed", "Run resumed")
-        return run
+        current = str(run.get("status") or "created")
+        allowed, reason = self._transition_allowed(current, "resumed")
+        if not allowed:
+            return self._safe_error_run(run, reason, "invalid_transition")
+        run["resumed_to_status"] = "planned" if run.get("plan") else "created"
+        return self._apply_status_transition(run, "resumed", "run_resumed", "Run resumed")
 
     def cancel_run(self, run_id: str) -> Dict[str, Any]:
         run = self._load_run_or_raise(run_id)
-        run["status"] = "cancelled"
-        run["updated_utc"] = utc_now()
-        self._save_run_json(run)
-        self._trace(run_id, "run_cancelled", "Run cancelled")
-        return run
+        return self._apply_status_transition(run, "cancelled", "run_cancelled", "Run cancelled")
 
     def list_runs(self) -> List[Dict[str, Any]]:
         runs: List[Dict[str, Any]] = []
