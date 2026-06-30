@@ -1,0 +1,9 @@
+{
+  "phase": "native_default_after_smoke",
+  "status": "PASS",
+  "runtime_class": "NativeAgentRuntimeV2",
+  "backend": "native_runtime",
+  "native_default_preserved": true,
+  "env_AGENT_V2_BACKEND": null,
+  "notes": "Clean process with AGENT_V2_BACKEND unset selects NativeAgentRuntimeV2 as default."
+}

@@ -1,0 +1,39 @@
+{
+  "phase": "process_startup",
+  "status": "BACKEND_AND_DASHBOARD_STARTED",
+  "backend_port": 8091,
+  "dashboard_port": 8092,
+  "port_8091_preflight": "free_after_cleanup",
+  "port_8092_preflight": "free_after_cleanup",
+  "stale_processes_terminated": [
+    {
+      "port": 8091,
+      "pid": 184048,
+      "process": "python.exe"
+    },
+    {
+      "port": 8092,
+      "pid": 51556,
+      "process": "python.exe"
+    }
+  ],
+  "backend_command_candidates": [
+    "python -m uvicorn tmp_agent.brain_v9.main:app --host 127.0.0.1 --port 8091"
+  ],
+  "dashboard_command_candidates": [
+    "python -m uvicorn tmp_agent.brain_v9.dashboard.dashboard_app:app --host 127.0.0.1 --port 8092"
+  ],
+  "backend_subprocess_pid": 106788,
+  "dashboard_subprocess_pid": 177220,
+  "backend_stdout_log": "tmp_agent/front_brain_agent_v2_langgraph_dashboard_live_smoke_08f3/backend_stdout.log",
+  "backend_stderr_log": "tmp_agent/front_brain_agent_v2_langgraph_dashboard_live_smoke_08f3/backend_stderr.log",
+  "dashboard_stdout_log": "tmp_agent/front_brain_agent_v2_langgraph_dashboard_live_smoke_08f3/dashboard_stdout.log",
+  "dashboard_stderr_log": "tmp_agent/front_brain_agent_v2_langgraph_dashboard_live_smoke_08f3/dashboard_stderr.log",
+  "notes": "Ports were occupied by stale python.exe processes from prior smoke runs. They were terminated safely and ports are now free. No unrelated processes were harmed.",
+  "process_shutdown_status": "CLEAN",
+  "stopped_pids": [
+    19772,
+    39124
+  ],
+  "remaining_pids": []
+}

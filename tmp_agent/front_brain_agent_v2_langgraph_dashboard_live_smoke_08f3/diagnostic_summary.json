@@ -1,0 +1,49 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DASHBOARD-LIVE-SMOKE-08F3",
+  "starting_head": "703ebfd",
+  "branch": "codex/own-capital-sustainable-return",
+  "purpose": "Run deeper dashboard/live smoke and trace UX verification using real backend process on port 8091 with LangGraph selected only through AGENT_V2_BACKEND=langgraph.",
+  "state_lock": {
+    "branch": "codex/own-capital-sustainable-return",
+    "head": "703ebfd",
+    "origin_head": "703ebfd",
+    "tracked_diff": false,
+    "staged_diff": false,
+    "guard": "SAFE"
+  },
+  "08f2_baseline_confirmed": true,
+  "phase_results": {
+    "process_startup": "PASS",
+    "backend_live_smoke": "PASS",
+    "trace_proxy_smoke": "PASS",
+    "dashboard_live_smoke": "PARTIAL",
+    "token_security_smoke": "PASS",
+    "native_default_after_smoke": "PASS"
+  },
+  "backend_run_id": "agv2_f3b5b20d9599b514",
+  "dashboard_run_id": "agv2_6cf111b5fbf3b588",
+  "backend_selected": "langgraph_parity",
+  "backend_fallback_used": false,
+  "native_default_preserved": true,
+  "langgraph_default_activation": false,
+  "token_leak_detected": false,
+  "process_shutdown_status": "CLEAN",
+  "source_files_modified": false,
+  "test_files_modified": false,
+  "dashboard_files_modified": false,
+  "frontend_files_modified": false,
+  "api_security_changed": false,
+  "main_changed": false,
+  "api_adapter_changed": false,
+  "native_runtime_changed": false,
+  "response_normalizer_changed": false,
+  "memory_touched": false,
+  "faiss_touched": false,
+  "trading_touched": false,
+  "env_touched": false,
+  "guard_result": "SAFE",
+  "top_blockers_remaining": [
+    "Dashboard chat proxy response does not expose backend_selected/backend_fallback_used; observed but not patched in this reports-only front."
+  ],
+  "notes": "All live backend assertions passed. Dashboard proxy connectivity and token forwarding passed. Dashboard response schema transparency is a reporting gap, not a live smoke failure."
+}

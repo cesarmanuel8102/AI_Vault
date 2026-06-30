@@ -1,0 +1,25 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DASHBOARD-LIVE-SMOKE-08F3",
+  "validation_results": {
+    "py_compile": {
+      "langgraph_parity_runtime.py": "PASS",
+      "runtime.py": "PASS"
+    },
+    "tests": {
+      "test_brain_agent_v2_langgraph_backend_contract_08f1.py": "10 passed, 0 failed, 0 skipped",
+      "test_brain_agent_v2_runtime_selector_guard_08e.py": "14 passed, 0 failed, 0 skipped",
+      "test_brain_agent_v2_backend_response_normalization_08e.py": "12 passed, 0 failed, 0 skipped",
+      "test_brain_dashboard_chat_proxy_token_fix_08e_r3.py": "3 passed, 0 failed, 0 skipped"
+    },
+    "git_hygiene_guard": "SAFE"
+  },
+  "phase_smoke_results": {
+    "process_startup": "PASS (stale processes terminated; ports free)",
+    "backend_live_smoke": "PASS (HTTP 200, backend_selected=langgraph_parity)",
+    "trace_proxy_smoke": "PASS (backend trace 27 events, dashboard trace proxy 200)",
+    "dashboard_live_smoke": "PARTIAL (proxy 200 ok, but backend_selected not exposed in dashboard response)",
+    "token_security_smoke": "PASS (no token value leaked in payloads/logs)",
+    "native_default_after_smoke": "PASS (NativeAgentRuntimeV2 selected)"
+  },
+  "notes": "All tests pass when run in clean isolated sessions. No source modifications. Guard SAFE."
+}

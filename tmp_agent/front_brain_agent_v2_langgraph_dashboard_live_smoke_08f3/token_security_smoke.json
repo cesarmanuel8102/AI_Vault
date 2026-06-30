@@ -1,0 +1,24 @@
+{
+  "phase": "token_security_smoke",
+  "status": "PASS",
+  "test_token_value": "AGENTV2_08F3_TEST_TOKEN",
+  "token_value_leak_detected": false,
+  "checked_locations": [
+    "backend_chat_response.json",
+    "backend_trace_response.json",
+    "backend_health_response.json",
+    "dashboard_chat_response.json",
+    "dashboard_trace_response.json",
+    "dashboard_health_response.json",
+    "backend_stdout.log",
+    "backend_stderr.log",
+    "dashboard_stdout.log",
+    "dashboard_stderr.log"
+  ],
+  "checked_token_names": [
+    "TEST_ADMIN_TOKEN_VALUE",
+    "X-Brain-Token",
+    "BRAIN_ADMIN_TOKEN"
+  ],
+  "notes": "The real test token value does not appear in any captured response payload or uvicorn log. Token name placeholders appear only in this report metadata. The test token was used only for this smoke and is not a production secret."
+}

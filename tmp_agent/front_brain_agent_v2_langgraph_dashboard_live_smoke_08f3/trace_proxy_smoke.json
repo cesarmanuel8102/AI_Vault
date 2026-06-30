@@ -1,0 +1,23 @@
+{
+  "phase": "trace_proxy_smoke",
+  "status": "PASS",
+  "backend_trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_f3b5b20d9599b514/trace",
+  "dashboard_trace_url": "http://127.0.0.1:8092/brain-dashboard/agent-v2/runs/agv2_6cf111b5fbf3b588/trace",
+  "backend_http_status": 200,
+  "dashboard_http_status": 200,
+  "backend_run_id": "agv2_f3b5b20d9599b514",
+  "dashboard_run_id": "agv2_6cf111b5fbf3b588",
+  "backend_trace_is_list": true,
+  "backend_trace_length": 27,
+  "backend_event_count": 27,
+  "dashboard_trace_is_list": true,
+  "dashboard_trace_length": 2,
+  "dashboard_event_count": 2,
+  "token_leak_detected": false,
+  "checked_tokens": [
+    "TEST_ADMIN_TOKEN_VALUE",
+    "X-Brain-Token",
+    "BRAIN_ADMIN_TOKEN"
+  ],
+  "notes": "Live backend trace endpoint returned 200 with ok=true and a 27-event trace. Dashboard trace proxy returned 200 with ok=true and a 2-event summarized trace. No secret/token leakage observed in either trace body."
+}

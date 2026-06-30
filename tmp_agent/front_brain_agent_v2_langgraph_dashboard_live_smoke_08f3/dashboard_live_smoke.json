@@ -1,0 +1,17 @@
+{
+  "phase": "dashboard_live_smoke",
+  "status": "PARTIAL",
+  "dashboard_url": "http://127.0.0.1:8092",
+  "health_http_status": 200,
+  "chat_proxy_http_status": 200,
+  "chat_proxy_ok": true,
+  "chat_run_id": "agv2_6cf111b5fbf3b588",
+  "chat_trace_url": "/v2/agent/runs/agv2_6cf111b5fbf3b588/trace",
+  "backend_selected_in_dashboard_response": null,
+  "backend_fallback_used_in_dashboard_response": null,
+  "mode_effective": "read_only",
+  "mode_requested": "read_only",
+  "approval_required": false,
+  "token_leak_detected": false,
+  "notes": "Dashboard process started and /health returned 200. Dashboard chat proxy reached backend and returned 200 with ok=true, run_id, trace_url, and mode_effective=read_only. However, dashboard_routes.py does not forward backend_selected/backend from the proxied backend response, so the dashboard response cannot assert LangGraph backend selection directly. The underlying backend is running with AGENT_V2_BACKEND=langgraph and direct backend chat confirmed backend_selected=langgraph_parity. This is a dashboard schema/reporting gap, not a source patch for this front."
+}
