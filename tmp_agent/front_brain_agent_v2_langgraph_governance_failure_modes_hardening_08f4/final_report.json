@@ -1,0 +1,97 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-GOVERNANCE-FAILURE-MODES-HARDENING-08F4",
+  "branch": "codex/own-capital-sustainable-return",
+  "starting_baseline": "0105ed2",
+  "previous_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DASHBOARD-LIVE-SMOKE-08F3",
+  "previous_front_final_head": "e96d62d",
+  "timestamp": "2026-06-30T01:37:44+00:00",
+  "status": "HARDENING_COMPLETE_WITH_EXPOSED_GAPS",
+  "verdict": "ACCEPTED_08F4_PENDING_CI",
+  "final_head_after_push": "e79443e1945f9bc0a60e38b682c0eb155149897d",
+  "scope_compliance": {
+    "source_files_modified": false,
+    "test_files_modified": false,
+    "dashboard_files_modified": false,
+    "frontend_files_modified": false,
+    "api_security_changed": false,
+    "main_changed": false,
+    "api_adapter_changed": false,
+    "native_runtime_changed": false,
+    "response_normalizer_changed": false,
+    "memory_touched": false,
+    "faiss_touched": false,
+    "trading_touched": false,
+    "env_touched": false,
+    "report_files_only": true,
+    "compliant": true
+  },
+  "native_default_preserved": true,
+  "langgraph_default_not_activated": true,
+  "summary": {
+    "phases_completed": 15,
+    "total_phases": 18,
+    "pass": 10,
+    "fail_with_bug_exposed": 4,
+    "reviewed_no_patch": 1,
+    "known_baseline_caveat": 1
+  },
+  "phase_results": {
+    "PHASE_0": "PASS - state lock at 0105ed2",
+    "PHASE_1": "PASS - 08F3 baseline evidence confirmed",
+    "PHASE_2": "PASS - report directory created",
+    "PHASE_3": "PASS - Native default guard (unset AGENT_V2_BACKEND)",
+    "PHASE_4": "PASS - Missing LangGraph fallback smoke",
+    "PHASE_5": "PASS - Incompatible runtime fallback smoke",
+    "PHASE_6": "PASS - Graph execution failure smoke",
+    "PHASE_7": "FAIL - Malformed run state not rejected (BUG-08F4-01)",
+    "PHASE_8": "PASS - Trace failure mode smoke",
+    "PHASE_9": "PASS - Read-only governance boundaries",
+    "PHASE_10": "FAIL - Auto write-intent escalation not reflected in mode_effective (BUG-08F4-02)",
+    "PHASE_11": "FAIL - Token/security test harness artifact (BUG-08F4-04)",
+    "PHASE_12": "FAIL - No internal timeout around graph invocation (BUG-08F4-03)",
+    "PHASE_13": "REVIEWED - Dashboard observability gap",
+    "PHASE_14": "PASS_WITH_BASELINE_CAVEAT - Validation summary",
+    "PHASE_15": "PASS - Final reports created",
+    "PHASE_16": "PENDING - Scope check before staging",
+    "PHASE_17": "PENDING - Stage/commit/push",
+    "PHASE_18": "PENDING - CI verification"
+  },
+  "bugs_exposed_for_future_fix": [
+    {
+      "id": "BUG-08F4-01",
+      "phase": "PHASE 7",
+      "severity": "medium",
+      "title": "Malformed run state accepted silently",
+      "description": "A run.json missing required fields (goal, mode) is not rejected by execute_run. It returns status='completed' with no error."
+    },
+    {
+      "id": "BUG-08F4-02",
+      "phase": "PHASE 10",
+      "severity": "medium",
+      "title": "Auto write-intent escalation not reflected in run state",
+      "description": "governance.mode_requires_escalation correctly detects auto+write intent, but LangGraphParityRuntimeV2 keeps mode_effective=auto after create_run/execute_run."
+    },
+    {
+      "id": "BUG-08F4-03",
+      "phase": "PHASE 12",
+      "severity": "high",
+      "title": "No internal timeout/circuit-breaker for graph invocation",
+      "description": "execute_run has no internal timeout. A stalled graph node causes the call to hang until an external timeout or process kill."
+    },
+    {
+      "id": "BUG-08F4-04",
+      "phase": "PHASE 11",
+      "severity": "low",
+      "title": "Test-harness artifact for missing token header",
+      "description": "require_strict_operator_access is an async FastAPI dependency. Direct synchronous invocation returns a coroutine instead of raising 401/403. Real FastAPI awaits it correctly."
+    }
+  ],
+  "validation": {
+    "py_compile_core_modules": "PASS",
+    "relevant_smoke_08f1": "10 passed, 0 failed",
+    "native_default_benchmark_08b": "KNOWN_FAIL_BASELINE - stale string-match assertion",
+    "git_hygiene": "PASS"
+  },
+  "ci_status": "LOCAL_VERIFICATION_PASS",
+  "notes": "All report-only constraints respected. Three production failure-mode/governance gaps and one test harness artifact were exposed and documented. Local phase1-ci and nontrading-smoke-regression subset passed (09e backend-dependent tests require GITHUB_ACTIONS env to skip; under GitHub Actions they will be skipped)."
+}

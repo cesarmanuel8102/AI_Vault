@@ -1,0 +1,35 @@
+{
+  "phase": "PHASE 14 - Validation summary",
+  "timestamp": "2026-06-30T01:30:00+00:00",
+  "checks": {
+    "py_compile_core_modules": {
+      "command": "python -m py_compile tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py tmp_agent/brain_v9/core/agent_kernel_v2/governance.py tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py tmp_agent/brain_v9/api_security.py tmp_agent/brain_v9/main.py tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+      "status": "PASS",
+      "errors": []
+    },
+    "relevant_smoke_tests": {
+      "command": "python -m pytest tests/smoke/test_brain_agent_v2_langgraph_backend_contract_08f1.py -q",
+      "status": "PASS",
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "notes": "08F1 contract tests confirm runtime metadata parity and backend fallback fields."
+    },
+    "native_default_benchmark_regression": {
+      "command": "python -m pytest tests/smoke/test_brain_native_vs_langgraph_fair_full_parity_benchmark_08b.py::test_production_route_still_native -q",
+      "status": "KNOWN_FAIL_BASELINE",
+      "passed": 0,
+      "failed": 1,
+      "skipped": 0,
+      "notes": "08b's test_production_route_still_native asserts that runtime.py source contains no 'langgraph_parity_runtime' string. The source legitimately references langgraph_parity_runtime in LANGGRAPH_BACKEND_VALUES and _try_build_langgraph_runtime while still defaulting to native. This is a stale test assertion, not a regression introduced by 08F4. Not patched per 08F4 reports-only scope."
+    },
+    "git_hygiene_guard": {
+      "status": "PASS",
+      "protected_files_modified": false,
+      "report_only_scope": true,
+      "notes": "No tracked source, test, runtime, dashboard, frontend/static, api_security, main, api_adapter, native_runtime, or response_normalizer files are modified. Only new untracked report files exist under tmp_agent/front_brain_agent_v2_langgraph_governance_failure_modes_hardening_08f4/."
+    }
+  },
+  "overall_status": "PASS_WITH_BASELINE_CAVEAT",
+  "notes": "Core modules compile cleanly; 08F1 contract smoke passes; git hygiene is clean. The 08b native default test fails due to an overly strict string assertion that predates 08F4 and is unrelated to the Native default behavior. Documented as baseline caveat."
+}

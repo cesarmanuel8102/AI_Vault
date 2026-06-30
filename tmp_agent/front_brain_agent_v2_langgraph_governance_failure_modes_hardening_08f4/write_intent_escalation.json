@@ -1,0 +1,38 @@
+{
+  "phase": "PHASE 10 - Write intent escalation smoke",
+  "timestamp": "2026-06-30T01:24:51.870481+00:00",
+  "env_AGENT_V2_BACKEND": "langgraph",
+  "runtime_class": "LangGraphParityRuntimeV2",
+  "outcomes": [
+    {
+      "case": "read_only_write_intent",
+      "mode_requested": "read_only",
+      "mode_normalized": "read_only",
+      "mode_effective": "read_only",
+      "requires_escalation": true,
+      "auto_decision": "build_required",
+      "safe": true
+    },
+    {
+      "case": "auto_write_intent",
+      "mode_requested": "auto",
+      "mode_normalized": "auto",
+      "mode_effective": "auto",
+      "requires_escalation": true,
+      "auto_decision": "build_required",
+      "safe": false
+    },
+    {
+      "case": "auto_read_intent",
+      "mode_requested": "auto",
+      "mode_normalized": "auto",
+      "mode_effective": "auto",
+      "mode_effective_note": "auto is preserved for read intent; this is acceptable if downstream tool gateway enforces escalation at execution time",
+      "requires_escalation": false,
+      "auto_decision": "read",
+      "safe": false
+    }
+  ],
+  "status": "FAIL",
+  "notes": "BUG EXPOSED (report only, no patch): When mode=auto and the prompt implies write intent, governance.mode_requires_escalation correctly returns true, but the runtime still reports mode_effective=auto after create_run/execute_run. The LangGraph parity runtime does not escalate mode_effective to build_required/auto-build. For read intent under auto, mode_effective stays auto (acceptable if tool gateway enforces escalation at execution). However, the write-intent/auto case is a governance/failure-mode gap: the run state should reflect that escalation is required (e.g., mode_effective=build_required or status=blocked) before any write tool is scheduled. No source code modified."
+}

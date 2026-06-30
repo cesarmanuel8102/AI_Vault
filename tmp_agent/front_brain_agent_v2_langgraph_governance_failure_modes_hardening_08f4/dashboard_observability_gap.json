@@ -1,0 +1,10 @@
+{
+  "phase": "PHASE 13 - Dashboard observability gap review",
+  "timestamp": "2026-06-30T01:26:40.195289+00:00",
+  "status": "REVIEWED",
+  "gap": "dashboard_routes.py chat proxy does not forward backend_selected/backend_fallback_used",
+  "evidence": "08F3 dashboard_live_smoke.json noted that /brain-dashboard/chat returned ok=true, run_id, trace_url, mode_effective, but not backend_selected or backend_fallback_used. Direct backend /v2/chat/agent confirmed LangGraph was selected when AGENT_V2_BACKEND=langgraph, yet the dashboard proxy response cannot assert it.",
+  "impact": "Operators using only the dashboard cannot directly see which backend handled the run or whether a fallback occurred. This is a reporting/observability gap, not a functional failure.",
+  "recommendation": "In a future front, extend the dashboard chat proxy response to include backend metadata from the proxied backend response. This front is reports-only; no source code was modified.",
+  "notes": "This gap was already identified and accepted as non-blocking in 08F3. It is tracked here for completeness."
+}

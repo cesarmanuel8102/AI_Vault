@@ -1,0 +1,28 @@
+{
+  "phase": "PHASE 7 - Malformed run state smoke",
+  "timestamp": "2026-06-30T01:22:44.265333+00:00",
+  "env_AGENT_V2_BACKEND": "langgraph",
+  "runtime_class": "LangGraphParityRuntimeV2",
+  "outcomes": [
+    {
+      "case": "missing_run_json",
+      "raised": "KeyError",
+      "message": "'agv2_nonexistent_run_12345'",
+      "safe": true
+    },
+    {
+      "case": "invalid_json",
+      "raised": "JSONDecodeError",
+      "message": "Expecting property name enclosed in double quotes: line 1 column 2 (char 1)",
+      "safe": true
+    },
+    {
+      "case": "incomplete_fields",
+      "status": "completed",
+      "error": null,
+      "safe": false
+    }
+  ],
+  "status": "FAIL",
+  "notes": "BUG EXPOSED (report only, no patch): a run.json with missing required fields (no goal/mode) is not rejected by execute_run. Instead it returns status='completed' with no error. Missing or invalid JSON files raise exceptions, which is acceptable but could be normalized. This is a governance/failure-mode gap tracked for a future front; no source code was modified in 08F4."
+}

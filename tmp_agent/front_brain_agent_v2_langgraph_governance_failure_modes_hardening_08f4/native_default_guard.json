@@ -1,0 +1,14 @@
+{
+  "phase": "PHASE 3 - Native default guard",
+  "timestamp": "2026-06-30T01:20:59.508108Z",
+  "env_AGENT_V2_BACKEND": null,
+  "runtime_class": "NativeAgentRuntimeV2",
+  "backend_selected": "native_runtime",
+  "backend_fallback_used": false,
+  "backend_fallback_reason": null,
+  "assert_native_class": true,
+  "assert_backend_native": true,
+  "assert_no_fallback": true,
+  "status": "PASS",
+  "notes": "Clean process with AGENT_V2_BACKEND unset selects NativeAgentRuntimeV2 as default with no fallback."
+}

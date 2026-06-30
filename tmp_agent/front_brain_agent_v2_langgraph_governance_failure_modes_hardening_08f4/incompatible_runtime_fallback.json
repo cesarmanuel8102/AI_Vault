@@ -1,0 +1,14 @@
+{
+  "phase": "PHASE 5 - Incompatible runtime fallback smoke",
+  "timestamp": "2026-06-30T01:21:48.171854+00:00",
+  "env_AGENT_V2_BACKEND": "langgraph",
+  "runtime_class": "NativeAgentRuntimeV2",
+  "backend_selected": "native_runtime",
+  "backend_fallback_used": true,
+  "backend_fallback_reason": "AGENT_V2_BACKEND='langgraph' requested but selected backend 'IncompatibleRuntime' is not production runtime compatible (missing methods: ['create_run', 'execute_run']); falling back to native_runtime",
+  "assert_native_class": true,
+  "assert_fallback_used": true,
+  "assert_reason_cites_production_methods": true,
+  "status": "PASS",
+  "notes": "Injected an incompatible runtime object lacking create_run and execute_run. The runtime selector rejected it and fell back to NativeAgentRuntimeV2, reporting the missing production methods."
+}

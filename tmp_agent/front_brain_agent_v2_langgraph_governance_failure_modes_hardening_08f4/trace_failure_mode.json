@@ -1,0 +1,31 @@
+{
+  "phase": "PHASE 8 - Trace failure mode smoke",
+  "timestamp": "2026-06-30T01:23:22.730476+00:00",
+  "env_AGENT_V2_BACKEND": "langgraph",
+  "runtime_class": "LangGraphParityRuntimeV2",
+  "outcomes": [
+    {
+      "case": "unknown_run_id",
+      "trace_type": "list",
+      "len": 0,
+      "safe": true,
+      "notes": "Unknown run_id returns empty trace list without crashing."
+    },
+    {
+      "case": "malformed_trace",
+      "raised": "JSONDecodeError",
+      "message": "Expecting value: line 1 column 1 (char 0)",
+      "safe": true,
+      "notes": "Malformed trace.jsonl raises JSONDecodeError. This is acceptable but could be hardened to return empty list with logged warning instead of propagating raw exception."
+    },
+    {
+      "case": "corrupt_existing_trace",
+      "raised": "JSONDecodeError",
+      "message": "Expecting property name enclosed in double quotes: line 1 column 1 (char 0)",
+      "safe": true,
+      "notes": "Corrupted existing trace raises JSONDecodeError. Same hardening opportunity as malformed trace."
+    }
+  ],
+  "status": "PASS",
+  "notes": "Trace failure modes are safe (do not expose secrets or cause undefined behavior), but raw JSONDecodeError propagates from TraceStore on malformed lines. A future front could add defensive parsing in TraceStore to return an empty/warning trace. No source code modified."
+}

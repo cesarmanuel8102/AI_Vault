@@ -1,0 +1,15 @@
+{
+  "phase": "PHASE 6 - Graph execution failure smoke",
+  "timestamp": "2026-06-30T01:22:22.210791+00:00",
+  "env_AGENT_V2_BACKEND": "langgraph",
+  "runtime_class": "LangGraphParityRuntimeV2",
+  "run_id": "agv2_bfde0107f3539a8c",
+  "executed_status": "failed",
+  "executed_error": "forced graph execution failure",
+  "executed_final_answer": "LangGraph execution failed: forced graph execution failure",
+  "assert_status_failed": true,
+  "assert_error_recorded": true,
+  "assert_final_answer_safe": true,
+  "status": "PASS",
+  "notes": "Monkeypatched LangGraphParityRuntimeV2.run() to raise RuntimeError. execute_run caught the exception, persisted run status=failed, recorded the error, and returned a safe final_answer."
+}

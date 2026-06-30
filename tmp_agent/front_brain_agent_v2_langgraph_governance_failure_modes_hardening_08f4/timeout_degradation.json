@@ -1,0 +1,12 @@
+{
+  "phase": "PHASE 12 - Timeout/degradation smoke",
+  "timestamp": "2026-06-30T01:26:40.195289+00:00",
+  "env_AGENT_V2_BACKEND": "langgraph",
+  "runtime_class": "LangGraphParityRuntimeV2",
+  "outcome": "timeout_observed",
+  "elapsed_seconds": 5.0,
+  "hung": true,
+  "safe": false,
+  "notes": "BUG EXPOSED (report only, no patch): When LangGraphParityRuntimeV2.run() was patched to loop forever, execute_run() hung for the full 5-second external timeout. There is no internal timeout/circuit-breaker in execute_run to abort a stalled graph invocation and return status=failed. This is a failure-mode gap: a long-running or stuck graph node could keep the request thread occupied indefinitely. No source code modified.",
+  "status": "FAIL"
+}

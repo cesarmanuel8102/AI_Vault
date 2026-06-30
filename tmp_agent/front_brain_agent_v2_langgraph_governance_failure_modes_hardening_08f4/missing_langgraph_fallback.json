@@ -1,0 +1,14 @@
+{
+  "phase": "PHASE 4 - Missing LangGraph fallback smoke",
+  "timestamp": "2026-06-30T01:21:23.304055+00:00",
+  "env_AGENT_V2_BACKEND": "langgraph",
+  "runtime_class": "NativeAgentRuntimeV2",
+  "backend_selected": "native_runtime",
+  "backend_fallback_used": true,
+  "backend_fallback_reason": "AGENT_V2_BACKEND='langgraph' requested but LangGraph is unavailable or failed to initialize; falling back to native_runtime",
+  "assert_native_class": true,
+  "assert_fallback_used": true,
+  "assert_reason_contains_langgraph": true,
+  "status": "PASS",
+  "notes": "Simulated missing LangGraph by monkeypatching _try_build_langgraph_runtime to return None; runtime selector safely fell back to NativeAgentRuntimeV2 with a descriptive reason."
+}

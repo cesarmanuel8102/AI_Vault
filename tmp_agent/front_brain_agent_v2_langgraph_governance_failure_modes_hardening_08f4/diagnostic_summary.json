@@ -1,0 +1,95 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-GOVERNANCE-FAILURE-MODES-HARDENING-08F4",
+  "branch": "codex/own-capital-sustainable-return",
+  "starting_baseline": "0105ed2",
+  "previous_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DASHBOARD-LIVE-SMOKE-08F3",
+  "previous_front_final_head": "e96d62d",
+  "status": "ACCEPTED_08F4_WITH_EXPOSED_GAPS",
+  "summary": {
+    "phases_completed": 15,
+    "total_phases": 18,
+    "pass": 10,
+    "fail_with_bug_exposed": 4,
+    "reviewed_no_patch": 1,
+    "known_baseline_caveat": 1,
+    "native_default_preserved": true,
+    "langgraph_default_not_activated": true,
+    "source_code_modified": false
+  },
+  "phase_results": {
+    "PHASE_0": "PASS - state lock at 0105ed2",
+    "PHASE_1": "PASS - 08F3 baseline evidence confirmed",
+    "PHASE_2": "PASS - report directory created",
+    "PHASE_3": "PASS - Native default guard clean process",
+    "PHASE_4": "PASS - Missing LangGraph fallback smoke",
+    "PHASE_5": "PASS - Incompatible runtime fallback smoke",
+    "PHASE_6": "PASS - Graph execution failure smoke",
+    "PHASE_7": "FAIL - malformed run state not rejected (bug exposed, report only)",
+    "PHASE_8": "PASS - Trace failure mode smoke",
+    "PHASE_9": "PASS - Read-only governance boundaries",
+    "PHASE_10": "FAIL - auto write-intent escalation not reflected in mode_effective (bug exposed, report only)",
+    "PHASE_11": "FAIL - missing_token_header test-harness artifact (real FastAPI layer sound)",
+    "PHASE_12": "FAIL - no internal timeout around graph invocation (bug exposed, report only)",
+    "PHASE_13": "REVIEWED - Dashboard observability gap documented, no patch",
+    "PHASE_14": "PASS_WITH_BASELINE_CAVEAT - py_compile clean, 08F1 smoke passes, git hygiene clean, 08b stale assertion fails"
+  },
+  "bugs_exposed_for_future_fix": [
+    {
+      "id": "BUG-08F4-01",
+      "phase": "PHASE 7",
+      "file": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+      "title": "Malformed run state accepted silently",
+      "severity": "medium",
+      "description": "A run.json missing required fields (goal, mode) is not rejected by execute_run. The run completes with status='completed' and no error.",
+      "recommendation": "Add upfront schema validation in create_run/execute_run (or a dedicated run state validator) that rejects runs missing required fields with status=failed and a descriptive error."
+    },
+    {
+      "id": "BUG-08F4-02",
+      "phase": "PHASE 10",
+      "file": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+      "title": "Auto write-intent escalation not reflected in run state",
+      "severity": "medium",
+      "description": "governance.mode_requires_escalation correctly detects auto+write intent, but create_run/execute_run keep mode_effective=auto instead of escalating to build_required/auto-build.",
+      "recommendation": "When mode_requires_escalation returns true, set mode_effective='build_required' and status='blocked' or 'escalated' in the run state before scheduling any write tool."
+    },
+    {
+      "id": "BUG-08F4-03",
+      "phase": "PHASE 12",
+      "file": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+      "title": "No internal timeout/circuit-breaker for graph invocation",
+      "severity": "high",
+      "description": "execute_run invokes the graph without an internal timeout. A stalled node causes the call to hang until the external client times out or the process is killed.",
+      "recommendation": "Wrap graph invocation in a timeout (e.g., asyncio.wait_for or threading.Timer) and return status='failed' with a timeout error, possibly with a partial checkpoint."
+    }
+  ],
+  "safety_assessment": {
+    "native_default": "safe",
+    "fallback_behavior": "safe",
+    "read_only_boundaries": "safe",
+    "token_security_real_layer": "safe",
+    "token_security_test_harness": "artifact",
+    "known_gaps": [
+      "Malformed run state not rejected",
+      "Auto write-intent escalation not reflected in run state",
+      "No internal graph invocation timeout",
+      "Dashboard chat proxy does not expose backend metadata"
+    ]
+  },
+  "scope_compliance": {
+    "source_files_modified": false,
+    "test_files_modified": false,
+    "dashboard_files_modified": false,
+    "frontend_files_modified": false,
+    "api_security_changed": false,
+    "main_changed": false,
+    "api_adapter_changed": false,
+    "native_runtime_changed": false,
+    "response_normalizer_changed": false,
+    "memory_touched": false,
+    "faiss_touched": false,
+    "trading_touched": false,
+    "env_touched": false,
+    "report_files_only": true,
+    "compliant": true
+  }
+}
