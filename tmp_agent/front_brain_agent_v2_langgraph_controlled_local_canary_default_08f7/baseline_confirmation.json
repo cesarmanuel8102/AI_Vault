@@ -1,0 +1,33 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-CONTROLLED-LOCAL-CANARY-DEFAULT-08F7",
+  "branch": "codex/own-capital-sustainable-return",
+  "previous_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DEFAULT-PROMOTION-READINESS-AND-ROBUSTNESS-ROADMAP-08F6",
+  "official_starting_baseline": "ce82142d6047aaec25f4a80a719a3c43b79702cc",
+  "official_starting_baseline_short": "ce82142",
+  "08f6_accepted": true,
+  "08f6_recommended_decision": "READY_FOR_CONTROLLED_LOCAL_CANARY_ONLY",
+  "native_default_preserved": true,
+  "langgraph_default_activation": false,
+  "langgraph_opt_in_operational": true,
+  "ready_to_make_langgraph_default_now": false,
+  "gate_01_blocker": true,
+  "gate_04_partial": true,
+  "gate_08_partial": true,
+  "recommended_next_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-CONTROLLED-LOCAL-CANARY-DEFAULT-08F7",
+  "08f6_ci_status": {
+    "phase1-ci": {
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 28460487241,
+      "url": "https://github.com/cesarmanuel8102/AI_Vault/actions/runs/28460487241"
+    },
+    "nontrading-smoke-regression": {
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 28460487244,
+      "url": "https://github.com/cesarmanuel8102/AI_Vault/actions/runs/28460487244"
+    }
+  },
+  "phase_1_baseline_confirmation": "COMPLETED",
+  "recorded_at": "2026-06-30T19:15:00+00:00"
+}

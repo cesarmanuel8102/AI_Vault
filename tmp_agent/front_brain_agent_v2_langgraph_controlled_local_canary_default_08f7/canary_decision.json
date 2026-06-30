@@ -1,0 +1,66 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-CONTROLLED-LOCAL-CANARY-DEFAULT-08F7",
+  "phase": "phase_9_canary_decision",
+  "decision_date": "2026-06-30T21:10:00+00:00",
+  "canary_decision": "CANARY_ACCEPTED_READY_FOR_PARITY_REPAIR",
+  "basis": "Controlled local canary with AGENT_V2_BACKEND=langgraph in isolated shell/session succeeded; rollback to native runtime succeeded; all 37 smoke tests passed; py_compile and hygiene passed; native default remains unchanged in source code; no .env or secrets modified; GATE-01 remains open, so default promotion is still blocked.",
+  "pass_fail": {
+    "phase_0_state_lock": true,
+    "phase_1_baseline_confirmation": true,
+    "phase_2_canary_environment_plan": true,
+    "phase_3_native_default_control": true,
+    "phase_4_langgraph_canary_selection": true,
+    "phase_5_rollback": true,
+    "phase_6_smoke_validation": true,
+    "phase_7_dashboard_trace_canary": true,
+    "phase_8_blocker_status_review": true,
+    "native_default_preserved": true,
+    "langgraph_opt_in_only": true,
+    "langgraph_default_activation": false,
+    "canary_safe": true,
+    "default_promotion_safe_now": false,
+    "ready_to_make_langgraph_default_now": false
+  },
+  "smoke_validation_summary": {
+    "total_tests_run": 37,
+    "total_passed": 37,
+    "total_failed": 0,
+    "total_skipped": 0,
+    "py_compile": "PASSED",
+    "hygiene_check": "SAFE"
+  },
+  "canary_rules_respected": {
+    "isolated_shell_only": true,
+    "env_var_set_in_session_only": true,
+    "no_machine_or_user_level_persistence": true,
+    "no_dotenv_edit": true,
+    "env_var_unset_after_canary": true,
+    "native_default_verified_after_unset": true,
+    "all_probes_read_only_or_smoke_only": true
+  },
+  "scope_rules_respected": {
+    "source_code_modified": false,
+    "tests_modified": false,
+    "runtime_modified": false,
+    "dashboard_modified": false,
+    "api_security_modified": false,
+    "env_or_secrets_modified": false,
+    "memory_or_faiss_modified": false,
+    "trading_or_broker_modified": false,
+    "journal_or_promotion_modified": false,
+    "default_backend_changed": false,
+    "plan_run_implemented": false,
+    "pause_run_implemented": false,
+    "resume_run_implemented": false,
+    "cancel_run_implemented": false,
+    "08f7_r1_not_started": true
+  },
+  "blocking_gate": {
+    "gate": "GATE-01",
+    "name": "Native parity",
+    "reason": "LangGraphParityRuntimeV2 plan_run, pause_run, resume_run, cancel_run are present but not parity-complete with NativeAgentRuntimeV2."
+  },
+  "recommended_next_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-PRODUCTION-METHOD-PARITY-08F7-R1",
+  "next_front_mission": "Close GATE-01 by implementing real planner binding and pause/resume/cancel semantics in LangGraphParityRuntimeV2 with parity tests against NativeAgentRuntimeV2.",
+  "next_phase": "phase_10_recommended_repair_fronts"
+}

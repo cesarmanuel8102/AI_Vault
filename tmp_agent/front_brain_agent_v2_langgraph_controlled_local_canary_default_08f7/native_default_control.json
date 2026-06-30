@@ -1,0 +1,31 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-CONTROLLED-LOCAL-CANARY-DEFAULT-08F7",
+  "phase": 3,
+  "probe_name": "Native default control",
+  "command": "Remove-Item Env:\\AGENT_V2_BACKEND -ErrorAction SilentlyContinue; python - <<'PY' ... PY",
+  "env": {
+    "AGENT_V2_BACKEND": null
+  },
+  "observed": {
+    "AGENT_V2_BACKEND": null,
+    "runtime_type": "NativeAgentRuntimeV2",
+    "backend_name": "native_runtime",
+    "backend": "native_runtime",
+    "backend_selected": "native_runtime",
+    "backend_fallback_used": false,
+    "backend_fallback_reason": null
+  },
+  "expected": {
+    "AGENT_V2_BACKEND": null,
+    "runtime_type": "NativeAgentRuntimeV2",
+    "backend_name": "native_runtime",
+    "backend": "native_runtime",
+    "backend_selected": "native_runtime",
+    "backend_fallback_used": false
+  },
+  "result": "PASS",
+  "blocking": false,
+  "notes": "Native remains the source-code default when AGENT_V2_BACKEND is absent. No fallback used.",
+  "phase_3_native_default_control": "COMPLETED",
+  "recorded_at": "2026-06-30T19:22:00+00:00"
+}

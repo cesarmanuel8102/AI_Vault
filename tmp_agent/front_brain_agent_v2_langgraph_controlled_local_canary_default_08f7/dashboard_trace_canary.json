@@ -1,0 +1,56 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-CONTROLLED-LOCAL-CANARY-DEFAULT-08F7",
+  "phase": "phase_7_dashboard_trace_canary",
+  "probe_date": "2026-06-30T21:05:00+00:00",
+  "method": "read_only_code_and_smoke_probe",
+  "no_dashboard_patches": true,
+  "dashboard_routes_inspected": "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+  "api_adapter_inspected": "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+  "status_route": "/brain-dashboard/status",
+  "chat_route": "/brain-dashboard/chat",
+  "trace_proxy_route": "/brain-dashboard/agent-v2/runs/{run_id}/trace",
+  "agent_v2_status_route": "/brain-dashboard/agent-v2/status",
+  "findings": {
+    "dashboard_status_exposes_agent_v2": true,
+    "dashboard_status_backend_field": "agent_v2.backend",
+    "dashboard_status_trace_available": true,
+    "chat_proxy_requires_token": true,
+    "chat_proxy_forwards_x_brain_token": true,
+    "chat_proxy_token_not_returned": true,
+    "chat_proxy_exposes_fallback_reason": true,
+    "trace_proxy_requires_token": true,
+    "trace_proxy_forwards_x_brain_token": true,
+    "trace_proxy_token_not_returned": true,
+    "capabilities_route_exposes_backend": true,
+    "api_chat_response_exposes_backend_selected": true,
+    "api_chat_response_exposes_backend_fallback_used": true,
+    "api_chat_response_exposes_backend_fallback_reason": true,
+    "dashboard_status_exposes_backend_fallback_reason": false,
+    "dashboard_status_exposes_backend_fallback_used": false
+  },
+  "gaps": {
+    "GAP-08F5-04": {
+      "description": "dashboard status route does not expose backend_fallback_reason or backend_fallback_used",
+      "location": "tmp_agent/brain_v9/dashboard/dashboard_routes.py:_agent_v2_snapshot",
+      "blocker_for_local_canary": false,
+      "blocker_for_global_default": true,
+      "repair_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DASHBOARD-FALLBACK-OBSERVABILITY-08F7-R2"
+    }
+  },
+  "canary_specific_checks": {
+    "canary_shell_backend_field_observable": true,
+    "operator_can_detect_langgraph_active_via_dashboard": true,
+    "operator_can_detect_native_active_via_dashboard": true,
+    "trace_proxy_works_for_both_backends": true,
+    "chat_proxy_returns_canonical_agent_v2_flag": true,
+    "chat_proxy_returns_backend_metadata": true,
+    "mode_escalation_and_blocked_tools_forwarded": true
+  },
+  "risk_notes": [
+    "Dashboard chat and trace proxy leak no token values.",
+    "Dashboard status surfaces runtime.backend but not backend_fallback_reason; fallback detection requires direct API response or log inspection.",
+    "Local canary is safe because operator can still verify backend via dashboard backend field and via API adapter backend_selected/fallback fields."
+  ],
+  "result": "PASS",
+  "next_phase": "phase_8_blocker_status_review"
+}

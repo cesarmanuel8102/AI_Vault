@@ -1,0 +1,36 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-CONTROLLED-LOCAL-CANARY-DEFAULT-08F7",
+  "phase": 4,
+  "probe_name": "LangGraph canary selection",
+  "command": "$env:AGENT_V2_BACKEND = \"langgraph\"; python - <<'PY' ... PY",
+  "env": {
+    "AGENT_V2_BACKEND": "langgraph"
+  },
+  "observed": {
+    "AGENT_V2_BACKEND": "langgraph",
+    "runtime_type": "LangGraphParityRuntimeV2",
+    "backend_name": "langgraph_parity",
+    "backend": "langgraph_parity",
+    "backend_selected": "langgraph_parity",
+    "backend_fallback_used": false,
+    "backend_fallback_reason": null,
+    "graph_available": true,
+    "graph_error": null,
+    "execute_timeout_seconds": 30.0
+  },
+  "expected": {
+    "runtime_type": "LangGraphParityRuntimeV2",
+    "backend_name": "langgraph_parity",
+    "backend": "langgraph_parity",
+    "backend_selected": "langgraph_parity",
+    "backend_fallback_used": false,
+    "graph_available": true,
+    "graph_error": null,
+    "execute_timeout_seconds": 30.0
+  },
+  "result": "PASS",
+  "blocking": false,
+  "notes": "Isolated shell env override selects LangGraph. Graph available, timeout configured to 30.0s, no fallback.",
+  "phase_4_langgraph_canary_selection": "COMPLETED",
+  "recorded_at": "2026-06-30T19:23:00+00:00"
+}

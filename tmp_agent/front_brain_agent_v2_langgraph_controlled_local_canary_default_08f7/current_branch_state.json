@@ -1,0 +1,16 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-CONTROLLED-LOCAL-CANARY-DEFAULT-08F7",
+  "branch": "codex/own-capital-sustainable-return",
+  "starting_baseline": "ce82142d6047aaec25f4a80a719a3c43b79702cc",
+  "starting_baseline_short": "ce82142",
+  "local_head": "ce82142d6047aaec25f4a80a719a3c43b79702cc",
+  "origin_head": "ce82142d6047aaec25f4a80a719a3c43b79702cc",
+  "branch_matches_origin": true,
+  "tracked_diff": "NONE",
+  "staged_diff": "NONE",
+  "hygiene_guard": "SAFE",
+  "untracked_files_present": true,
+  "untracked_files_count_estimate": "numerous legacy smoke/agent/front artifacts",
+  "phase_0_state_lock": "COMPLETED",
+  "recorded_at": "2026-06-30T19:10:00+00:00"
+}

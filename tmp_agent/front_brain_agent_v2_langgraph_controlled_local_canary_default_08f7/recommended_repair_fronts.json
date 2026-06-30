@@ -1,0 +1,69 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-CONTROLLED-LOCAL-CANARY-DEFAULT-08F7",
+  "phase": "phase_10_recommended_repair_fronts",
+  "generated_at": "2026-06-30T21:12:00+00:00",
+  "recommended_fronts": [
+    {
+      "priority": 1,
+      "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-PRODUCTION-METHOD-PARITY-08F7-R1",
+      "mission": "Close GATE-01 by making LangGraphParityRuntimeV2 production-method-parity with NativeAgentRuntimeV2.",
+      "scope": "source-code",
+      "must_not": [
+        "change the default backend in runtime.py",
+        "promote LangGraph to global default",
+        "modify .env or secrets",
+        "touch memory/FAISS/trading/journal/promotion queues"
+      ],
+      "deliverables": [
+        "Implement real plan_run in LangGraphParityRuntimeV2 using build_plan and ToolGatewayV2 semantic binding where appropriate.",
+        "Implement pause_run that stops/resumes graph thread and checkpoint state.",
+        "Implement resume_run that restores graph thread from checkpoint and continues execution.",
+        "Implement cancel_run that cleanly terminates graph execution and marks status cancelled.",
+        "Add parity tests comparing LangGraphParityRuntimeV2 and NativeAgentRuntimeV2 for create_run, plan_run, execute_run, pause_run, resume_run, cancel_run, get_trace, list_runs.",
+        "Ensure all parity tests pass under AGENT_V2_BACKEND=langgraph isolated shell and under default native backend."
+      ],
+      "blocking_gate": "GATE-01",
+      "estimated_phase_count": 6,
+      "success_criteria": "GATE-01 moves from OPEN to PASS; 08F7 canary smoke tests still pass; native default unchanged."
+    },
+    {
+      "priority": 2,
+      "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DASHBOARD-FALLBACK-OBSERVABILITY-08F7-R2",
+      "mission": "Close GATE-04 by exposing backend fallback metadata in dashboard status.",
+      "scope": "source-code",
+      "must_not": [
+        "change default backend",
+        "leak BRAIN_ADMIN_TOKEN",
+        "modify .env or secrets"
+      ],
+      "deliverables": [
+        "Extend _agent_v2_snapshot in dashboard_routes.py to return backend_fallback_used and backend_fallback_reason.",
+        "Add dashboard smoke test asserting fallback reason is visible when fallback occurs.",
+        "Ensure dashboard status route remains read-only."
+      ],
+      "blocking_gate": "GATE-04",
+      "estimated_phase_count": 4,
+      "success_criteria": "Dashboard /brain-dashboard/status exposes backend_fallback_reason and backend_fallback_used; no token leakage; smoke tests pass."
+    },
+    {
+      "priority": 3,
+      "front": "FRONT-BRAIN-AGENT-V2-RUNTIME-BUDGET-AND-MODEL-ROUTING-GOVERNANCE-08F7-R3",
+      "mission": "Close GATE-08 by documenting and enforcing explicit cost/step/model-routing policy.",
+      "scope": "source-code and docs",
+      "must_not": [
+        "change default backend",
+        "modify .env or secrets"
+      ],
+      "deliverables": [
+        "Document per-step budget and max-step policy in governance.py or runtime config.",
+        "Add model-routing policy (PRIMARY_KIMI_MODEL, fallback model ordering, provider degradation rules).",
+        "Add smoke tests asserting budget/step limits are enforced for both native and LangGraph backends."
+      ],
+      "blocking_gate": "GATE-08",
+      "estimated_phase_count": 4,
+      "success_criteria": "GATE-08 moves from PARTIAL to PASS; policy is visible in code/docs and enforced by smoke tests."
+    }
+  ],
+  "ordering_rationale": "GATE-01 is the only hard blocker for default promotion, so R1 is mandatory before any default-promotion PR. R2 and R3 are also required for global default but can proceed in parallel after R1 is scoped; sequence shown reflects dependency on R1 for end-to-end parity confidence.",
+  "next_phase": "phase_11_final_report"
+}

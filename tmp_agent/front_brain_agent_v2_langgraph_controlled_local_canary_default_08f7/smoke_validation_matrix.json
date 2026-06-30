@@ -1,0 +1,117 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-CONTROLLED-LOCAL-CANARY-DEFAULT-08F7",
+  "phase": 6,
+  "summary": {
+    "total_tests_run": 37,
+    "total_passed": 37,
+    "total_failed": 0,
+    "total_skipped": 0,
+    "py_compile": "PASSED",
+    "hygiene_check": "SAFE"
+  },
+  "validations": [
+    {
+      "command": "python -m py_compile tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+      "env": "AGENT_V2_BACKEND unset",
+      "result": "PASSED",
+      "pass_fail": "PASS",
+      "blocking": false,
+      "notes": "Syntax check only."
+    },
+    {
+      "command": "python -m py_compile tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+      "env": "AGENT_V2_BACKEND unset",
+      "result": "PASSED",
+      "pass_fail": "PASS",
+      "blocking": false,
+      "notes": "Syntax check only."
+    },
+    {
+      "command": "python -m py_compile tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+      "env": "AGENT_V2_BACKEND unset",
+      "result": "PASSED",
+      "pass_fail": "PASS",
+      "blocking": false,
+      "notes": "Syntax check only."
+    },
+    {
+      "command": "python -m py_compile tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+      "env": "AGENT_V2_BACKEND unset",
+      "result": "PASSED",
+      "pass_fail": "PASS",
+      "blocking": false,
+      "notes": "Syntax check only."
+    },
+    {
+      "command": "python -m py_compile tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+      "env": "AGENT_V2_BACKEND unset",
+      "result": "PASSED",
+      "pass_fail": "PASS",
+      "blocking": false,
+      "notes": "Syntax check only."
+    },
+    {
+      "command": "python -m py_compile tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py",
+      "env": "AGENT_V2_BACKEND unset",
+      "result": "PASSED",
+      "pass_fail": "PASS",
+      "blocking": false,
+      "notes": "Syntax check only."
+    },
+    {
+      "command": "python -m pytest tests/smoke/test_brain_agent_v2_runtime_selector_guard_08e.py -v",
+      "env": "AGENT_V2_BACKEND unset",
+      "result": "14 passed, 0 failed, 0 skipped",
+      "pass_fail": "PASS",
+      "duration_seconds": 6.44,
+      "blocking": false,
+      "notes": "Native default and fallback behavior verified."
+    },
+    {
+      "command": "python -m pytest tests/smoke/test_brain_agent_v2_langgraph_backend_contract_08f1.py -v",
+      "env": "AGENT_V2_BACKEND=langgraph",
+      "result": "10 passed, 0 failed, 0 skipped",
+      "pass_fail": "PASS",
+      "duration_seconds": 35.11,
+      "blocking": false,
+      "notes": "LangGraph backend contract verified under opt-in."
+    },
+    {
+      "command": "python -m pytest tests/smoke/test_brain_agent_v2_langgraph_failure_modes_08f4_r1.py -v",
+      "env": "AGENT_V2_BACKEND=langgraph",
+      "result": "10 passed, 0 failed, 0 skipped",
+      "pass_fail": "PASS",
+      "duration_seconds": 7.18,
+      "blocking": false,
+      "notes": "LangGraph failure modes and governance escalation verified."
+    },
+    {
+      "command": "python -m pytest tests/smoke/test_brain_dashboard_chat_proxy_token_fix_08e_r3.py -v",
+      "env": "AGENT_V2_BACKEND unset",
+      "result": "3 passed, 0 failed, 0 skipped",
+      "pass_fail": "PASS",
+      "duration_seconds": 0.49,
+      "blocking": false,
+      "notes": "Dashboard chat/trace proxy token handling verified."
+    },
+    {
+      "command": "python -m pytest tests/smoke/test_brain_agent_v2_runtime_selector_guard_08e.py -v",
+      "env": "AGENT_V2_BACKEND unset (post-LangGraph rollback)",
+      "result": "14 passed, 0 failed, 0 skipped",
+      "pass_fail": "PASS",
+      "duration_seconds": 6.14,
+      "blocking": false,
+      "notes": "Rollback to Native verified after LangGraph canary tests."
+    },
+    {
+      "command": "python scripts/git_hygiene/check_no_sensitive_paths_staged.py",
+      "env": "AGENT_V2_BACKEND unset",
+      "result": "SAFE",
+      "pass_fail": "PASS",
+      "blocking": false,
+      "notes": "No sensitive/runtime content staged."
+    }
+  ],
+  "phase_6_smoke_validation_matrix": "COMPLETED",
+  "recorded_at": "2026-06-30T19:30:00+00:00"
+}

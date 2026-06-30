@@ -1,0 +1,30 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-CONTROLLED-LOCAL-CANARY-DEFAULT-08F7",
+  "phase": 5,
+  "probe_name": "Rollback to Native",
+  "command": "Remove-Item Env:\\AGENT_V2_BACKEND -ErrorAction SilentlyContinue; python - <<'PY' ... PY",
+  "env": {
+    "AGENT_V2_BACKEND": null
+  },
+  "observed": {
+    "AGENT_V2_BACKEND": null,
+    "runtime_type": "NativeAgentRuntimeV2",
+    "backend_name": "native_runtime",
+    "backend": "native_runtime",
+    "backend_selected": "native_runtime",
+    "backend_fallback_used": false,
+    "backend_fallback_reason": null
+  },
+  "expected": {
+    "runtime_type": "NativeAgentRuntimeV2",
+    "backend_name": "native_runtime",
+    "backend": "native_runtime",
+    "backend_selected": "native_runtime",
+    "backend_fallback_used": false
+  },
+  "result": "PASS",
+  "blocking": false,
+  "notes": "Immediate rollback to Native after canary. Requires no code change, no git change, only env unset/restart if server process was live.",
+  "phase_5_rollback_probe": "COMPLETED",
+  "recorded_at": "2026-06-30T19:24:00+00:00"
+}

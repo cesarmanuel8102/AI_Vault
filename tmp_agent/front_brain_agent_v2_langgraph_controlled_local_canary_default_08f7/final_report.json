@@ -1,0 +1,167 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-CONTROLLED-LOCAL-CANARY-DEFAULT-08F7",
+  "branch": "codex/own-capital-sustainable-return",
+  "starting_baseline": "ce82142d6047aaec25f4a80a719a3c43b79702cc",
+  "starting_baseline_short": "ce82142",
+  "scope": "report-only",
+  "scope_rules_respected": true,
+  "process_rules_respected": true,
+  "source_code_modified": false,
+  "tests_modified": false,
+  "runtime_modified": false,
+  "dashboard_modified": false,
+  "api_security_modified": false,
+  "env_or_secrets_modified": false,
+  "memory_or_faiss_modified": false,
+  "trading_or_broker_modified": false,
+  "journal_or_promotion_modified": false,
+  "default_backend_changed": false,
+  "native_default_preserved": true,
+  "langgraph_opt_in_only": true,
+  "langgraph_default_activation": false,
+  "08f7_r1_not_started": true,
+  "artifacts": {
+    "report_directory": "tmp_agent/front_brain_agent_v2_langgraph_controlled_local_canary_default_08f7/",
+    "files": [
+      "current_branch_state.md",
+      "current_branch_state.json",
+      "baseline_confirmation.md",
+      "baseline_confirmation.json",
+      "canary_environment_plan.md",
+      "canary_environment_plan.json",
+      "native_default_control.md",
+      "native_default_control.json",
+      "langgraph_canary_probe.md",
+      "langgraph_canary_probe.json",
+      "rollback_probe.md",
+      "rollback_probe.json",
+      "smoke_validation_matrix.md",
+      "smoke_validation_matrix.json",
+      "dashboard_trace_canary.md",
+      "dashboard_trace_canary.json",
+      "blocker_status_review.md",
+      "blocker_status_review.json",
+      "canary_decision.md",
+      "canary_decision.json",
+      "recommended_repair_fronts.md",
+      "recommended_repair_fronts.json",
+      "final_report.md",
+      "final_report.json"
+    ]
+  },
+  "phase_completion": {
+    "phase_0_state_lock": "COMPLETED",
+    "phase_1_baseline_confirmation": "COMPLETED",
+    "phase_2_canary_environment_plan": "COMPLETED",
+    "phase_3_native_default_control": "COMPLETED",
+    "phase_4_langgraph_canary_selection": "COMPLETED",
+    "phase_5_rollback_probe": "COMPLETED",
+    "phase_6_smoke_validation_matrix": "COMPLETED",
+    "phase_7_dashboard_trace_canary": "COMPLETED",
+    "phase_8_blocker_status_review": "COMPLETED",
+    "phase_9_canary_decision": "COMPLETED",
+    "phase_10_recommended_repair_fronts": "COMPLETED",
+    "phase_11_final_report": "COMPLETED"
+  },
+  "smoke_validation_summary": {
+    "total_tests_run": 37,
+    "total_passed": 37,
+    "total_failed": 0,
+    "total_skipped": 0,
+    "py_compile": "PASSED",
+    "hygiene_check": "SAFE"
+  },
+  "ci_status": {
+    "phase1-ci": {
+      "status": "pending_verification",
+      "conclusion": null,
+      "run_id": null,
+      "url": null
+    },
+    "nontrading-smoke-regression": {
+      "status": "pending_verification",
+      "conclusion": null,
+      "run_id": null,
+      "url": null
+    }
+  },
+  "gate_summary": {
+    "pass": 6,
+    "partial": 2,
+    "fail": 0,
+    "unknown": 0,
+    "blockers": 1
+  },
+  "blocking_gates": [
+    {
+      "gate": "GATE-01",
+      "name": "Native parity",
+      "blocker": true,
+      "reason": "LangGraphParityRuntimeV2 implements plan_run, pause_run, resume_run, cancel_run as state-only stubs; real planner binding and graph-thread coordination are not yet parity-complete with NativeAgentRuntimeV2."
+    }
+  ],
+  "partial_gates": [
+    {
+      "gate": "GATE-04",
+      "name": "Observability",
+      "reason": "GAP-08F5-04: dashboard status route does not expose backend_fallback_reason or backend_fallback_used."
+    },
+    {
+      "gate": "GATE-08",
+      "name": "Operational cost and model routing",
+      "reason": "Explicit cost/step/model-routing policy not yet documented and enforced as runtime policy."
+    }
+  ],
+  "canary_evidence": {
+    "native_default_control": {
+      "env_var_unset": true,
+      "backend_selected": "native_runtime",
+      "fallback_used": false,
+      "fallback_reason": null
+    },
+    "langgraph_canary_selection": {
+      "env_var_set": true,
+      "backend_selected": "langgraph_parity",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "graph_available": true,
+      "execute_timeout_seconds": 30.0
+    },
+    "rollback": {
+      "env_var_unset_after_canary": true,
+      "backend_selected": "native_runtime",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "rollback_required_code_or_git_changes": false
+    },
+    "dashboard_trace": {
+      "chat_proxy_requires_token": true,
+      "trace_proxy_requires_token": true,
+      "dashboard_status_exposes_backend": true,
+      "dashboard_status_exposes_fallback_reason": false,
+      "api_chat_exposes_backend_fallback_reason": true
+    }
+  },
+  "canary_decision": "CANARY_ACCEPTED_READY_FOR_PARITY_REPAIR",
+  "ready_to_make_langgraph_default_now": false,
+  "canary_safe": true,
+  "default_promotion_safe_now": false,
+  "recommended_next_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-PRODUCTION-METHOD-PARITY-08F7-R1",
+  "recommended_repair_fronts": [
+    "FRONT-BRAIN-AGENT-V2-LANGGRAPH-PRODUCTION-METHOD-PARITY-08F7-R1",
+    "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DASHBOARD-FALLBACK-OBSERVABILITY-08F7-R2",
+    "FRONT-BRAIN-AGENT-V2-RUNTIME-BUDGET-AND-MODEL-ROUTING-GOVERNANCE-08F7-R3"
+  ],
+  "required_evidence_before_default_promotion": [
+    "GATE-01 closed: LangGraphParityRuntimeV2 implements plan_run, pause_run, resume_run, cancel_run with parity tests against NativeAgentRuntimeV2.",
+    "GATE-04 closed: dashboard status route exposes backend_fallback_reason and backend_fallback_used.",
+    "GATE-08 closed: cost/step/model-routing policy documented and enforced in runtime configuration.",
+    "Local canary Stage 2 completed with operator logs, trace comparison, and no critical issues.",
+    "All gates show PASS before any source patch changes the default backend."
+  ],
+  "known_non_blockers": [
+    "Pre-existing LSP/type-checker diagnostics in runtime.py, langgraph_parity_runtime.py, main.py, langgraph_runtime.py, and dashboard_routes.py are not introduced by this report-only front and do not affect runtime behavior or smoke tests."
+  ],
+  "basis": "Report-only scope valid; all required 08F7 deliverables completed; 37/37 smoke tests passed; py_compile and hygiene passed; native default preserved; LangGraph remains opt-in only via isolated shell/session; default promotion blocked by GATE-01 native parity gap; canary accepted and repair roadmap recorded; CI status to be verified after commit.",
+  "recorded_at": "2026-06-30T21:15:00+00:00"
+}
