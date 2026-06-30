@@ -1,0 +1,77 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-OBSERVABILITY-AND-ROLLBACK-CLOSEOUT-08F5",
+  "branch": "codex/own-capital-sustainable-return",
+  "purpose": "Risk and gap register for the LangGraph opt-in operational closeout",
+  "risks": [
+    {
+      "id": "RISK-08F5-01",
+      "area": "Runtime selection",
+      "description": "Operator accidentally sets AGENT_V2_BACKEND at machine scope, making LangGraph the default for all server processes",
+      "severity": "MEDIUM",
+      "likelihood": "LOW",
+      "mitigation": "Runbook restricts machine-level env changes; operators verify via /v2/agent/status before production use.",
+      "residual_risk": "LOW"
+    },
+    {
+      "id": "RISK-08F5-02",
+      "area": "LangGraph parity runtime",
+      "description": "LangGraph package version drift could cause graph compilation or node wiring failures not caught by current smoke tests",
+      "severity": "MEDIUM",
+      "likelihood": "LOW",
+      "mitigation": "Runtime.py falls back to Native on import/init failure; CI smoke tests run with installed langgraph version.",
+      "residual_risk": "LOW"
+    },
+    {
+      "id": "RISK-08F5-03",
+      "area": "Timeout / circuit-breaker",
+      "description": "Internal 30s timeout may be too short for very large evidence plans, causing false failed states",
+      "severity": "LOW",
+      "likelihood": "LOW",
+      "mitigation": "execute_timeout_seconds is configurable per instance; operator runbook documents adjustment if needed.",
+      "residual_risk": "LOW"
+    },
+    {
+      "id": "RISK-08F5-04",
+      "area": "Dashboard observability",
+      "description": "Dashboard /brain-dashboard/agent-v2/status does not expose backend_fallback_reason directly, only backend name",
+      "severity": "LOW",
+      "likelihood": "MEDIUM",
+      "mitigation": "Operators can inspect /v2/chat/agent response or logs for full fallback metadata; gap accepted for 08F5.",
+      "residual_risk": "LOW"
+    },
+    {
+      "id": "RISK-08F5-05",
+      "area": "Default backend policy",
+      "description": "Future front could inadvertently change default to langgraph by modifying runtime.py or main.py",
+      "severity": "HIGH",
+      "likelihood": "LOW",
+      "mitigation": "Scope guard in smoke tests and hygiene script; any default change requires explicit operator acceptance front.",
+      "residual_risk": "LOW"
+    }
+  ],
+  "gaps": [
+    {
+      "id": "GAP-08F5-01",
+      "area": "Prometheus / structured metrics",
+      "description": "No dedicated Prometheus-style counter for backend_selection events or fallback_reason occurrences",
+      "impact": "Operators must rely on endpoint responses and logs for backend telemetry",
+      "acceptance": "Accepted for 08F5; future observability front may add metrics if required"
+    },
+    {
+      "id": "GAP-08F5-02",
+      "area": "Live dashboard toggle",
+      "description": "No UI toggle to switch backend at runtime; backend selection is env-var driven",
+      "impact": "Operators must restart server or spawn a new process to change backend",
+      "acceptance": "Accepted for 08F5; runtime env-var opt-in matches current operational model"
+    },
+    {
+      "id": "GAP-08F5-03",
+      "area": "LangGraph graph stream observability",
+      "description": "graph_stream_supported / graph_stream_event_count are tracked but graph.stream() is not actively used in production wiring",
+      "impact": "Streaming observability remains parity metadata only",
+      "acceptance": "Accepted for 08F5; streaming is not required for opt-in readiness"
+    }
+  ],
+  "phase_7_risk_and_gap_register": "COMPLETED",
+  "recorded_at": "2026-06-30T17:10:00+00:00"
+}

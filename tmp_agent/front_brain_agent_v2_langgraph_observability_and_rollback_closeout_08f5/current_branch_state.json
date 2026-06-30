@@ -1,0 +1,17 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-OBSERVABILITY-AND-ROLLBACK-CLOSEOUT-08F5",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_commit": "7fb435fbcf3d8b5399d5fff92c14678467b01346",
+  "head_commit_short": "7fb435f",
+  "baseline_commit": "7fb435fbcf3d8b5399d5fff92c14678467b01346",
+  "baseline_commit_short": "7fb435f",
+  "previous_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-AUDIT-CORRECTED-BASELINE-ACCEPTANCE-08F4-R3A",
+  "state": "LOCKED",
+  "no_unstaged_runtime_changes": true,
+  "hygiene_check": "SAFE",
+  "native_default_preserved": true,
+  "langgraph_opt_in_only": true,
+  "langgraph_default_activation": false,
+  "phase_0_state_lock": "COMPLETED",
+  "recorded_at": "2026-06-30T16:30:00+00:00"
+}

@@ -1,0 +1,69 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-OBSERVABILITY-AND-ROLLBACK-CLOSEOUT-08F5",
+  "branch": "codex/own-capital-sustainable-return",
+  "purpose": "Record the smoke validation matrix executed for the 08F5 closeout",
+  "tests": [
+    {
+      "test_file": "tests/smoke/test_brain_agent_v2_runtime_selector_guard_08e.py",
+      "description": "Runtime selector guard contract (Native default, invalid fallback, LangGraph opt-in)",
+      "env": "default (Native) or set by test",
+      "result": "PASSED",
+      "passed": 14,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "test_file": "tests/smoke/test_brain_dashboard_chat_proxy_token_fix_08e_r3.py",
+      "description": "Dashboard chat/trace proxy forwards X-Brain-Token without leaking it",
+      "env": "default",
+      "result": "PASSED",
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "test_file": "tests/smoke/test_brain_agent_v2_langgraph_backend_contract_08f1.py",
+      "description": "LangGraph parity runtime contract and /v2/chat/agent normalized schema",
+      "env": "AGENT_V2_BACKEND=langgraph",
+      "result": "PASSED",
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "test_file": "tests/smoke/test_brain_agent_v2_langgraph_failure_modes_08f4_r1.py",
+      "description": "LangGraph failure modes: timeout, malformed run state, auto escalation, default preservation",
+      "env": "AGENT_V2_BACKEND=langgraph",
+      "result": "PASSED",
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "py_compile_checks": {
+    "description": "Syntax check of core runtime, API, dashboard, and response normalizer modules",
+    "files": [
+      "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py",
+      "tmp_agent/brain_v9/main.py",
+      "tmp_agent/brain_v9/dashboard/dashboard_routes.py"
+    ],
+    "result": "PASSED"
+  },
+  "hygiene_check": {
+    "script": "scripts/git_hygiene/check_no_sensitive_paths_staged.py",
+    "result": "SAFE"
+  },
+  "summary": {
+    "total_tests_run": 37,
+    "total_passed": 37,
+    "total_failed": 0,
+    "total_skipped": 0
+  },
+  "phase_6_smoke_validation_matrix": "COMPLETED",
+  "recorded_at": "2026-06-30T17:05:00+00:00"
+}

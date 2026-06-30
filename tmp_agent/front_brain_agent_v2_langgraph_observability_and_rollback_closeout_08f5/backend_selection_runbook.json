@@ -1,0 +1,52 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-OBSERVABILITY-AND-ROLLBACK-CLOSEOUT-08F5",
+  "branch": "codex/own-capital-sustainable-return",
+  "purpose": "Operator runbook for selecting Agent V2 backend without changing source code",
+  "environment_variable": "AGENT_V2_BACKEND",
+  "allowed_values": {
+    "native": ["", "native", "native_runtime"],
+    "langgraph": ["langgraph", "langgraph_parity", "langgraph_parity_runtime"]
+  },
+  "default": "native_runtime",
+  "rules": [
+    "Native is always the default when AGENT_V2_BACKEND is unset or empty.",
+    "LangGraph is opt-in only. Set AGENT_V2_BACKEND=langgraph before starting the Brain V9 server.",
+    "Any unknown value is treated as Native with backend_fallback_used=true.",
+    "If the langgraph package is missing or fails to initialize, the selector falls back to Native.",
+    "Do not change runtime.py, api_adapter.py, main.py, or response_normalizer.py to switch backends.",
+    "The backend can be observed at runtime via /v2/agent/status, /v2/chat/agent responses, and /brain-dashboard/agent-v2/status."
+  ],
+  "powershell_examples": {
+    "check_current_value": "$env:AGENT_V2_BACKEND",
+    "use_native_default": "Remove-Item Env:\AGENT_V2_BACKEND",
+    "opt_in_langgraph_session": "$env:AGENT_V2_BACKEND = 'langgraph'",
+    "opt_in_langgraph_process": "[Environment]::SetEnvironmentVariable('AGENT_V2_BACKEND', 'langgraph', 'Process')",
+    "opt_in_langgraph_machine": "[Environment]::SetEnvironmentVariable('AGENT_V2_BACKEND', 'langgraph', 'Machine')",
+    "start_server_with_langgraph": "$env:AGENT_V2_BACKEND='langgraph'; python -m tmp_agent.brain_v9.main",
+    "probe_backend": "python -c \"from brain_v9.core.agent_kernel_v2.runtime import get_agent_runtime_v2, get_agent_runtime_backend_name; print(get_agent_runtime_backend_name()); print(get_agent_runtime_v2().backend)\""
+  },
+  "verification_endpoints": [
+    {
+      "endpoint": "GET /v2/agent/status",
+      "expected_native": "backend: native_runtime",
+      "expected_langgraph": "backend: langgraph_parity"
+    },
+    {
+      "endpoint": "POST /v2/chat/agent",
+      "expected_native": "backend_selected: native_runtime",
+      "expected_langgraph": "backend_selected: langgraph_parity"
+    },
+    {
+      "endpoint": "GET /brain-dashboard/agent-v2/status",
+      "expected_native": "backend: native_runtime",
+      "expected_langgraph": "backend: langgraph_parity"
+    }
+  ],
+  "cautions": [
+    "Do not set AGENT_V2_BACKEND at system level unless the operator explicitly intends to make LangGraph the default for all processes on that machine.",
+    "Always confirm the backend via /v2/agent/status before running production smoke tests against LangGraph.",
+    "If backend_fallback_used is true, inspect backend_fallback_reason for the exact cause."
+  ],
+  "phase_3_backend_selection_runbook": "COMPLETED",
+  "recorded_at": "2026-06-30T16:50:00+00:00"
+}

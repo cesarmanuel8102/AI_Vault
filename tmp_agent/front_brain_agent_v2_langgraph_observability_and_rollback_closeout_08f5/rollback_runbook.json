@@ -1,0 +1,62 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-OBSERVABILITY-AND-ROLLBACK-CLOSEOUT-08F5",
+  "branch": "codex/own-capital-sustainable-return",
+  "purpose": "Operator rollback procedure to restore Native default when LangGraph opt-in is causing problems",
+  "rollback_triggers": [
+    "backend_fallback_used is true and backend_fallback_reason indicates LangGraph unavailable",
+    "LangGraph runs time out or fail repeatedly",
+    "Smoke tests fail under AGENT_V2_BACKEND=langgraph",
+    "Dashboard shows unexpected backend or provider degradation",
+    "Operator decides to exit LangGraph opt-in experiment"
+  ],
+  "rollback_steps": [
+    {
+      "step": 1,
+      "action": "Stop the Brain V9 server process.",
+      "powershell": "Get-Process python | Where-Object { $_.CommandLine -like '*tmp_agent.brain_v9.main*' } | Stop-Process -Force"
+    },
+    {
+      "step": 2,
+      "action": "Unset AGENT_V2_BACKEND in the current session.",
+      "powershell": "Remove-Item Env:\\AGENT_V2_BACKEND"
+    },
+    {
+      "step": 3,
+      "action": "If set at process level, clear it.",
+      "powershell": "[Environment]::SetEnvironmentVariable('AGENT_V2_BACKEND', $null, 'Process')"
+    },
+    {
+      "step": 4,
+      "action": "If set at machine level and should no longer apply, clear it (requires admin).",
+      "powershell": "[Environment]::SetEnvironmentVariable('AGENT_V2_BACKEND', $null, 'Machine')"
+    },
+    {
+      "step": 5,
+      "action": "Start the server without LangGraph opt-in.",
+      "powershell": "python -m tmp_agent.brain_v9.main"
+    },
+    {
+      "step": 6,
+      "action": "Verify backend is native_runtime.",
+      "powershell": "python -c \"from brain_v9.core.agent_kernel_v2.runtime import get_agent_runtime_backend_name; print(get_agent_runtime_backend_name())\""
+    },
+    {
+      "step": 7,
+      "action": "Run the smoke validation matrix for Native default.",
+      "powershell": "pytest tests/smoke/test_brain_agent_v2_runtime_selector_guard_08e.py -v"
+    }
+  ],
+  "post_rollback_verification": [
+    "GET /v2/agent/status returns backend: native_runtime",
+    "POST /v2/chat/agent returns backend_selected: native_runtime",
+    "/brain-dashboard/agent-v2/status returns backend: native_runtime",
+    "phase1-ci and nontrading-smoke-regression remain green"
+  ],
+  "notes": [
+    "No source code changes are required for rollback; the selector guard already falls back to Native when AGENT_V2_BACKEND is unset or invalid.",
+    "Run artifacts from LangGraph opt-in sessions are isolated to their caller-provided run_root and do not corrupt production RUN_ROOT.",
+    "Native runtime is the only production-supported backend at the 08F5 closeout stage."
+  ],
+  "phase_4_rollback_runbook": "COMPLETED",
+  "recorded_at": "2026-06-30T16:55:00+00:00"
+}

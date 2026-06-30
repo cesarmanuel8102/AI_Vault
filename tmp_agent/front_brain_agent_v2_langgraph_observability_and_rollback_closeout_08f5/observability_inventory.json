@@ -1,0 +1,94 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-OBSERVABILITY-AND-ROLLBACK-CLOSEOUT-08F5",
+  "branch": "codex/own-capital-sustainable-return",
+  "inspection_target": "Agent V2 runtime selector and both backends",
+  "read_only_inspection": true,
+  "observability_inventory": {
+    "backend_selector": {
+      "module": "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+      "default": "NativeAgentRuntimeV2",
+      "opt_in_env_var": "AGENT_V2_BACKEND",
+      "accepted_native_values": ["", "native", "native_runtime"],
+      "accepted_langgraph_values": ["langgraph", "langgraph_parity", "langgraph_parity_runtime"],
+      "fallback_behavior": "Unknown or missing values, missing langgraph package, init failure, or missing production methods all fall back to Native with backend_fallback_used=true and a reason string.",
+      "key_functions": [
+        "resolve_agent_v2_backend_choice",
+        "is_langgraph_backend_requested",
+        "get_agent_runtime_backend_name",
+        "get_agent_runtime_v2",
+        "is_agent_v2_production_runtime_compatible"
+      ]
+    },
+    "native_runtime": {
+      "module": "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+      "class": "NativeAgentRuntimeV2",
+      "backend": "native_runtime",
+      "default_persistence": "RUN_ROOT from state.py",
+      "production_methods": ["create_run", "plan_run", "execute_run", "get_run", "list_runs", "get_trace", "pause_run", "resume_run", "cancel_run"],
+      "observability_notes": [
+        "Run state persisted as run.json under RUN_ROOT/<run_id>/",
+        "Trace persisted via TraceStore per run",
+        "Checkpoints via CheckpointStore",
+        "Mode escalation written into run['mode_escalation_required'] / run['required_permission']"
+      ]
+    },
+    "langgraph_parity_runtime": {
+      "module": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+      "class": "LangGraphParityRuntimeV2",
+      "backend": "langgraph_parity",
+      "graph_available_at_runtime": true,
+      "default_timeout_seconds": 30.0,
+      "timeout_configurable_per_instance": true,
+      "nodes": ["start", "intent", "context_assembly", "memory_retrieval", "evidence_routing", "planner", "governance_gate", "tool_execution", "result_normalization", "finalizer", "evaluator", "repair_or_replan", "capability_metadata", "end"],
+      "observability_notes": [
+        "Run state persisted as run.json under caller-provided run_root/<run_id>/",
+        "Trace persisted via TraceStore per run",
+        "Checkpoints via CheckpointStore at step_index 0 and 99",
+        "Capability metadata derived in _capability_metadata_node",
+        "Internal timeout/circuit-breaker wraps _graph.invoke in ThreadPoolExecutor(max_workers=1)",
+        "Malformed run state rejected with status=failed, error=malformed_run_state",
+        "Auto write-intent escalates mode_effective to approval_required while preserving mode_requested=auto"
+      ]
+    },
+    "api_adapter": {
+      "module": "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+      "routes": ["/v2/agent/*", "/v2/chat/agent"],
+      "auth": "require_strict_operator_access",
+      "backend_exposure": "backend, backend_selected, backend_fallback_used, backend_fallback_reason included in /v2/chat/agent response",
+      "normalized_response": "response_normalizer.normalize_agent_v2_chat_response"
+    },
+    "response_normalizer": {
+      "module": "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py",
+      "purpose": "Guarantees stable /v2/chat/agent schema regardless of backend",
+      "key_functions": ["normalize_provider_metadata", "normalize_capability_metadata", "normalize_agent_v2_chat_response"]
+    },
+    "governance": {
+      "module": "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+      "key_functions": ["validate_mode", "mode_requires_escalation", "escalate_auto_mode_effective", "write_allowed", "selfdev_governance_blocked", "contains_forbidden_request_fields"],
+      "write_tools": ["file_patch_dry_run", "file_patch_apply_approval_required", "git_commit_approval_required", "report_writer"],
+      "read_only_tools": ["repo_status_read", "repo_history_read", "repo_diff_read", "grep_search", "file_read", "route_probe", "semantic_retrieve", "smoke_test_readonly"]
+    },
+    "dashboard": {
+      "module": "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+      "agent_v2_status_route": "/brain-dashboard/agent-v2/status",
+      "chat_proxy_route": "/brain-dashboard/chat",
+      "trace_proxy_route": "/brain-dashboard/agent-v2/runs/{run_id}/trace",
+      "token_handling": "X-Brain-Token forwarded when BRAIN_ADMIN_TOKEN configured; token never returned in response"
+    },
+    "main_py": {
+      "module": "tmp_agent/brain_v9/main.py",
+      "agent_v2_status_alias": "/brain-dashboard/agent-v2/status",
+      "wiring": "agent_v2_router and agent_v2_chat_router included; backend selection happens inside get_agent_runtime_v2() at runtime"
+    }
+  },
+  "runtime_probe_results": {
+    "langgraph_available": true,
+    "default_backend_is_native": true,
+    "langgraph_opt_in_works": true,
+    "invalid_backend_falls_back": true,
+    "langgraph_run_status": "completed",
+    "langgraph_node_path": ["start", "intent", "context_assembly", "memory_retrieval", "evidence_routing", "planner", "governance_gate", "tool_execution", "result_normalization", "finalizer", "evaluator", "repair_or_replan", "capability_metadata", "end"]
+  },
+  "phase_2_observability_inventory": "COMPLETED",
+  "recorded_at": "2026-06-30T16:45:00+00:00"
+}

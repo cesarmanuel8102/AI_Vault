@@ -1,0 +1,81 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-OBSERVABILITY-AND-ROLLBACK-CLOSEOUT-08F5",
+  "branch": "codex/own-capital-sustainable-return",
+  "purpose": "Quick-reference operator commands for observing, selecting, and rolling back the Agent V2 backend",
+  "commands": {
+    "inspect_current_backend": {
+      "description": "Show the current AGENT_V2_BACKEND value",
+      "powershell": "$env:AGENT_V2_BACKEND"
+    },
+    "set_langgraph_session": {
+      "description": "Opt in to LangGraph for the current PowerShell session only",
+      "powershell": "$env:AGENT_V2_BACKEND = 'langgraph'"
+    },
+    "set_native_session": {
+      "description": "Return to Native for the current PowerShell session only",
+      "powershell": "$env:AGENT_V2_BACKEND = 'native'"
+    },
+    "unset_backend_session": {
+      "description": "Remove AGENT_V2_BACKEND from the current session (Native default)",
+      "powershell": "Remove-Item Env:\\AGENT_V2_BACKEND"
+    },
+    "probe_runtime_backend": {
+      "description": "Instantiate the selector and print the chosen backend and fallback state",
+      "powershell": "python -c \"from brain_v9.core.agent_kernel_v2.runtime import get_agent_runtime_v2; rt=get_agent_runtime_v2(); print(rt.backend, getattr(rt, 'backend_selected', 'n/a'), getattr(rt, 'backend_fallback_used', 'n/a'), getattr(rt, 'backend_fallback_reason', 'n/a'))\""
+    },
+    "probe_backend_name_only": {
+      "description": "Print the resolved backend name without instantiating a runtime",
+      "powershell": "python -c \"from brain_v9.core.agent_kernel_v2.runtime import get_agent_runtime_backend_name; print(get_agent_runtime_backend_name())\""
+    },
+    "start_server_native": {
+      "description": "Start Brain V9 with Native default",
+      "powershell": "python -m tmp_agent.brain_v9.main"
+    },
+    "start_server_langgraph": {
+      "description": "Start Brain V9 with LangGraph opt-in",
+      "powershell": "$env:AGENT_V2_BACKEND='langgraph'; python -m tmp_agent.brain_v9.main"
+    },
+    "status_native_or_langgraph": {
+      "description": "Query the runtime status endpoint",
+      "powershell": "Invoke-RestMethod -Uri http://127.0.0.1:8091/v2/agent/status -UseBasicParsing"
+    },
+    "chat_probe_native_or_langgraph": {
+      "description": "Send a chat probe through /v2/chat/agent",
+      "powershell": "Invoke-RestMethod -Uri http://127.0.0.1:8091/v2/chat/agent -Method POST -Body '{\\\"message\\\":\\\"status check\\\",\\\"mode\\\":\\\"read_only\\\",\\\"user_id\\\":\\\"operator\\\"}' -ContentType 'application/json' -UseBasicParsing"
+    },
+    "dashboard_agent_v2_status": {
+      "description": "Query the dashboard agent v2 status endpoint",
+      "powershell": "Invoke-RestMethod -Uri http://127.0.0.1:8090/brain-dashboard/agent-v2/status -UseBasicParsing"
+    },
+    "run_selector_guard_smoke": {
+      "description": "Run the runtime selector guard smoke tests (Native default contract)",
+      "powershell": "pytest tests/smoke/test_brain_agent_v2_runtime_selector_guard_08e.py -v"
+    },
+    "run_langgraph_contract_smoke": {
+      "description": "Run the LangGraph backend contract smoke tests",
+      "powershell": "$env:AGENT_V2_BACKEND='langgraph'; pytest tests/smoke/test_brain_agent_v2_langgraph_backend_contract_08f1.py -v"
+    },
+    "run_langgraph_failure_mode_smoke": {
+      "description": "Run the LangGraph failure-mode hardening smoke tests",
+      "powershell": "$env:AGENT_V2_BACKEND='langgraph'; pytest tests/smoke/test_brain_agent_v2_langgraph_failure_modes_08f4_r1.py -v"
+    },
+    "run_dashboard_token_smoke": {
+      "description": "Run the dashboard chat proxy token smoke tests",
+      "powershell": "pytest tests/smoke/test_brain_dashboard_chat_proxy_token_fix_08e_r3.py -v"
+    },
+    "hygiene_check_dry_run": {
+      "description": "Run the no-sensitive-paths hygiene check without staging",
+      "powershell": "python scripts/git_hygiene/check_no_sensitive_paths_staged.py --dry-run"
+    },
+    "show_git_status": {
+      "description": "Show current git status",
+      "powershell": "git status --short"
+    },
+    "show_recent_commits": {
+      "description": "Show recent commits",
+      "powershell": "git log --oneline -10"
+    }
+  },
+  "phase_5_operator_commands": "COMPLETED",
+  "recorded_at": "2026-06-30T17:00:00+00:00"
+}

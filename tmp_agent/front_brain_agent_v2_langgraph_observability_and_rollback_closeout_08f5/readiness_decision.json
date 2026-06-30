@@ -1,0 +1,65 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-OBSERVABILITY-AND-ROLLBACK-CLOSEOUT-08F5",
+  "branch": "codex/own-capital-sustainable-return",
+  "starting_baseline": "7fb435fbcf3d8b5399d5fff92c14678467b01346",
+  "starting_baseline_short": "7fb435f",
+  "scope": "report-only",
+  "scope_rules_respected": true,
+  "process_rules_respected": true,
+  "source_code_modified": false,
+  "tests_modified": false,
+  "runtime_modified": false,
+  "dashboard_modified": false,
+  "api_security_modified": false,
+  "env_or_secrets_modified": false,
+  "memory_or_faiss_modified": false,
+  "trading_or_broker_modified": false,
+  "journal_or_promotion_modified": false,
+  "default_backend_changed": false,
+  "native_default_preserved": true,
+  "langgraph_opt_in_only": true,
+  "langgraph_default_activation": false,
+  "phase_completion": {
+    "phase_0_state_lock": "COMPLETED",
+    "phase_1_baseline_confirmation": "COMPLETED",
+    "phase_2_observability_inventory": "COMPLETED",
+    "phase_3_backend_selection_runbook": "COMPLETED",
+    "phase_4_rollback_runbook": "COMPLETED",
+    "phase_5_operator_commands": "COMPLETED",
+    "phase_6_smoke_validation_matrix": "COMPLETED",
+    "phase_7_risk_and_gap_register": "COMPLETED",
+    "phase_8_readiness_decision": "COMPLETED",
+    "phase_9_final_report": "PENDING"
+  },
+  "smoke_validation_summary": {
+    "total_tests_run": 37,
+    "total_passed": 37,
+    "total_failed": 0,
+    "total_skipped": 0,
+    "py_compile": "PASSED",
+    "hygiene_check": "SAFE"
+  },
+  "ci_status_at_decision": {
+    "phase1-ci": {
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 28455364187,
+      "url": "https://github.com/cesarmanuel8102/AI_Vault/actions/runs/28455364187"
+    },
+    "nontrading-smoke-regression": {
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 28455364593,
+      "url": "https://github.com/cesarmanuel8102/AI_Vault/actions/runs/28455364593"
+    }
+  },
+  "known_non_blockers": [
+    "Pre-existing LSP/type-checker diagnostics in runtime.py, langgraph_parity_runtime.py, and main.py are not introduced by this report-only front and do not affect runtime behavior or smoke tests."
+  ],
+  "acceptance_decision": "ACCEPTED_08F5_LANGGRAPH_OPT_IN_OPERATIONAL_CLOSEOUT",
+  "official_new_baseline": "final_head",
+  "safe_to_operate_langgraph_opt_in": true,
+  "safe_to_make_langgraph_default": false,
+  "basis": "Report-only scope valid; all required 08F5 deliverables completed; 37/37 smoke tests passed; py_compile and hygiene passed; native default preserved; LangGraph remains opt-in only; no process violations; CI green.",
+  "recorded_at": "2026-06-30T17:15:00+00:00"
+}
