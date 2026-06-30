@@ -1,0 +1,13 @@
+{
+  "phase": "trace_smoke",
+  "status": "PASS",
+  "run_id": "agv2_94773981084674d1",
+  "trace_is_list": true,
+  "trace_length": 2,
+  "token_leak_detected": false,
+  "checked_tokens": [
+    "AGENTV2_08F2_TEST_TOKEN",
+    "AGENTV2_TEST_ADMIN_TOKEN_08F1"
+  ],
+  "notes": "Trace retrieved via direct runtime invocation. No token or secret leakage observed."
+}

@@ -1,0 +1,30 @@
+{
+  "phase": "langgraph_opt_in_direct_runtime_smoke",
+  "status": "PASS",
+  "runtime_class": "LangGraphParityRuntimeV2",
+  "backend_selected": "langgraph_parity",
+  "backend_fallback_used": false,
+  "backend_fallback_reason": null,
+  "run_id": "agv2_893f07899f7c7fa0",
+  "required_fields_present": [
+    "backend_fallback_reason",
+    "backend_fallback_used",
+    "backend_selected",
+    "capability_metadata",
+    "final_answer",
+    "mode_effective",
+    "mode_requested",
+    "provider_metadata",
+    "run_id",
+    "status",
+    "trace_url"
+  ],
+  "created_and_executed_fields_complete": true,
+  "executed_status": "completed",
+  "trace_is_list": true,
+  "trace_length": 2,
+  "goal": "Give a concise Agent V2 status check. Do not write files.",
+  "mode": "read_only",
+  "user_id": "08f2_canary",
+  "notes": "Used temporary run_root. First attempt failed because run_root was a string; retry with Path succeeded. This is a runtime invocation detail, not a source patch."
+}

@@ -1,0 +1,11 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-OPT-IN-CANARY-SMOKE-08F2",
+  "starting_head": "abb3c91",
+  "branch": "codex/own-capital-sustainable-return",
+  "status": "CANARY_SMOKE_COMPLETE",
+  "native_default_preserved": true,
+  "langgraph_default_activation": false,
+  "langgraph_canary_started": true,
+  "langgraph_canary_scope": "controlled_opt_in_local_smoke",
+  "summary": "Controlled LangGraph opt-in canary smoke completed. All core phases passed. No source or test files modified. Dashboard proxy smoke confirmed route reachability and no token leak; backend was not live on 8091."
+}

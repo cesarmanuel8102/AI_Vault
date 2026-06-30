@@ -1,0 +1,11 @@
+{
+  "phase": "native_default_smoke",
+  "status": "PASS",
+  "backend": "native_runtime",
+  "backend_selected": "native_runtime",
+  "backend_fallback_used": false,
+  "backend_fallback_reason": null,
+  "runtime_class": "NativeAgentRuntimeV2",
+  "env_AGENT_V2_BACKEND": "unset",
+  "notes": "NativeAgentRuntimeV2 remains default when AGENT_V2_BACKEND is not set."
+}

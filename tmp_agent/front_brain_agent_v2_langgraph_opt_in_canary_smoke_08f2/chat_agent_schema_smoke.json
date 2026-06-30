@@ -1,0 +1,28 @@
+{
+  "phase": "chat_agent_schema_smoke",
+  "status": "PASS",
+  "http_status": 200,
+  "run_id": "agv2_94773981084674d1",
+  "backend": "langgraph_parity",
+  "backend_selected": "langgraph_parity",
+  "backend_fallback_used": false,
+  "mode_effective": "read_only",
+  "approval_required": false,
+  "trace_url": "/v2/agent/runs/agv2_94773981084674d1/trace",
+  "required_chat_fields_present": [
+    "backend",
+    "backend_fallback_reason",
+    "backend_fallback_used",
+    "backend_selected",
+    "canonical_agent_v2",
+    "capability_metadata",
+    "final_answer",
+    "ok",
+    "provider_metadata",
+    "run_id",
+    "trace_url"
+  ],
+  "missing_required_keys": [],
+  "final_answer_preview": "Brain evidence full parity summary. Tools considered: grep_search, file_read, file_read, file_read, file_read, file_read, file_read, file_read, file_read, semantic_retrieve, repo_status_read. Evidence",
+  "notes": "TestClient POST /v2/chat/agent with LangGraph opt-in returned normalized schema. Strict operator access was bypassed via patch (same approach as 08F1 contract test); ollama finalizer was faked."
+}

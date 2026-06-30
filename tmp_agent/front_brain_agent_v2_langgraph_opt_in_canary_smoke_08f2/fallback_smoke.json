@@ -1,0 +1,11 @@
+{
+  "phase": "fallback_smoke",
+  "status": "PASS",
+  "runtime_class": "NativeAgentRuntimeV2",
+  "backend": "native_runtime",
+  "backend_selected": "native_runtime",
+  "backend_fallback_used": true,
+  "backend_fallback_reason": "AGENT_V2_BACKEND='langgraph' requested but LangGraph is unavailable or failed to initialize; falling back to native_runtime",
+  "simulation_method": "monkeypatch _try_build_langgraph_runtime to return None",
+  "notes": "Fallback to Native preserved when LangGraph construction is simulated as unavailable."
+}

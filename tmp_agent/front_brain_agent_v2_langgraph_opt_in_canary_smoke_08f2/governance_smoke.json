@@ -1,0 +1,16 @@
+{
+  "phase": "read_only_governance_smoke",
+  "status": "PASS",
+  "run_id": "agv2_83aca54d5aabe713",
+  "mode_effective": "read_only",
+  "mode_escalation_required": true,
+  "approval_required": true,
+  "required_permission": "build",
+  "blocked_tools": [
+    "file_read",
+    "file_patch_dry_run"
+  ],
+  "final_answer_preview": "Write intent blocked in read_only mode. Blocked tools: file_read, file_patch_dry_run. Governance enforced.",
+  "tracked_source_changes_after_smoke": [],
+  "notes": "Write-intent message in read_only mode was correctly escalated. No source files were modified during the smoke."
+}

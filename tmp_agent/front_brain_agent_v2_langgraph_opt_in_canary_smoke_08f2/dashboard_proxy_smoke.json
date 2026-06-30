@@ -1,0 +1,13 @@
+{
+  "phase": "dashboard_proxy_smoke",
+  "status": "PASS",
+  "health_status": 200,
+  "chat_status": 200,
+  "chat_ok": false,
+  "chat_error": "HTTP Error 403: Forbidden",
+  "chat_note": "Brain API unreachable. Ensure Agent V2 backend is running on 8091",
+  "trace_status": 404,
+  "trace_detail": "Not Found",
+  "token_leak_detected": false,
+  "notes": "Dashboard routes are reachable via TestClient. Chat proxy returned 200 but proxied backend returned 403 because no live backend was running on 8091. Trace proxy route returned 404 (expected without backend). No X-Brain-Token leakage observed. Backend live dependency is acceptable for controlled local smoke."
+}

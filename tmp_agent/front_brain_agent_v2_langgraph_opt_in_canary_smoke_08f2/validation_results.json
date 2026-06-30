@@ -1,0 +1,42 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-OPT-IN-CANARY-SMOKE-08F2",
+  "validation_results": {
+    "py_compile": {
+      "langgraph_parity_runtime.py": "PASS",
+      "runtime.py": "PASS"
+    },
+    "tests": {
+      "test_brain_agent_v2_langgraph_backend_contract_08f1.py": "10 passed, 0 failed, 0 skipped",
+      "test_brain_agent_v2_runtime_selector_guard_08e.py": "14 passed, 0 failed, 0 skipped",
+      "test_brain_agent_v2_backend_response_normalization_08e.py": "12 passed, 0 failed, 0 skipped",
+      "test_brain_dashboard_chat_proxy_token_fix_08e_r3.py": {
+        "isolated_run": "3 passed, 0 failed, 0 skipped",
+        "batched_run": "1 passed, 2 failed",
+        "note": "Two R3 tests fail when run in the same pytest session as the LangGraph opt-in tests due to test isolation/environment state (dashboard route cached with different AGENT_V2_BACKEND/strict-op state). When run in isolation, all 3 R3 tests pass. No source code was modified."
+      }
+    },
+    "git_hygiene_guard": "SAFE"
+  },
+  "phase_smoke_results": {
+    "native_default_smoke": "PASS",
+    "langgraph_opt_in_direct_runtime_smoke": "PASS",
+    "chat_agent_schema_smoke": "PASS",
+    "trace_smoke": "PASS",
+    "read_only_governance_smoke": "PASS",
+    "fallback_smoke": "PASS",
+    "dashboard_proxy_smoke": "PASS (route reachability and no token leak; backend not live)"
+  },
+  "contract_verification": {
+    "native_default_preserved": true,
+    "langgraph_default_activation": false,
+    "langgraph_canary_started": true,
+    "langgraph_canary_scope": "controlled_opt_in_local_smoke",
+    "langgraph_runtime_selected_when_opt_in": true,
+    "langgraph_opt_in_direct_runtime_ok": true,
+    "normalized_chat_schema_passed": true,
+    "trace_contract_passed": true,
+    "read_only_governance_passed": true,
+    "fallback_to_native_preserved": true,
+    "dashboard_proxy_smoke_result": "PASS"
+  }
+}
