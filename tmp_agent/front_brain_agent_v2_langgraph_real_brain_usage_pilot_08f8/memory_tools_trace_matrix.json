@@ -1,0 +1,95 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-REAL-BRAIN-USAGE-PILOT-08F8",
+  "items": [
+    {
+      "item": "repo read tool",
+      "expected": "Available",
+      "observed": "Listed in native helpers",
+      "evidence_prompt_ids": [
+        12
+      ],
+      "result": "PARTIAL"
+    },
+    {
+      "item": "file read tool",
+      "expected": "Available",
+      "observed": "Listed in native helpers",
+      "evidence_prompt_ids": [
+        14
+      ],
+      "result": "PARTIAL"
+    },
+    {
+      "item": "safe smoke test execution",
+      "expected": "Available",
+      "observed": "113 tools loaded",
+      "evidence_prompt_ids": [
+        13
+      ],
+      "result": "PARTIAL"
+    },
+    {
+      "item": "retrieve trace",
+      "expected": "Available",
+      "observed": "/v2/agent/runs/{run_id}/trace works",
+      "evidence_prompt_ids": [
+        29
+      ],
+      "result": "PASS"
+    },
+    {
+      "item": "read memory/retrieval state",
+      "expected": "Read-only safe",
+      "observed": "retrieval_skipped=true; no mutation",
+      "evidence_prompt_ids": [
+        26,
+        27,
+        28
+      ],
+      "result": "PASS"
+    },
+    {
+      "item": "no memory mutation",
+      "expected": true,
+      "observed": true,
+      "evidence_prompt_ids": [
+        10,
+        24
+      ],
+      "result": "PASS"
+    },
+    {
+      "item": "no FAISS mutation",
+      "expected": true,
+      "observed": true,
+      "evidence_prompt_ids": [],
+      "result": "PASS"
+    },
+    {
+      "item": "trace created for chat prompt",
+      "expected": true,
+      "observed": true,
+      "evidence_prompt_ids": [
+        29
+      ],
+      "result": "PASS"
+    },
+    {
+      "item": "trace links usable",
+      "expected": true,
+      "observed": true,
+      "evidence_prompt_ids": [
+        29
+      ],
+      "result": "PASS"
+    },
+    {
+      "item": "dashboard displays run",
+      "expected": true,
+      "observed": "UI served; run metadata available via API",
+      "evidence_prompt_ids": [],
+      "result": "PARTIAL"
+    }
+  ],
+  "no_memory_faiss_trading_env_mutation": true
+}

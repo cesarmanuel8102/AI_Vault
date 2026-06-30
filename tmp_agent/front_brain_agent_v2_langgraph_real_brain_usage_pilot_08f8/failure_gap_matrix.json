@@ -1,0 +1,86 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-REAL-BRAIN-USAGE-PILOT-08F8",
+  "gaps": [
+    {
+      "gap_id": "P0-01",
+      "severity": "P0",
+      "affected_layer": "Governance",
+      "evidence": "Prompts 21-25 return approval_required=false despite code-change/push/trading requests",
+      "root_cause_hypothesis": "Deterministic parity finalizer does not surface governance escalations in /v2/chat/agent response",
+      "recommended_fix_front": "FRONT-BRAIN-AGENT-V2-GOVERNANCE-HARDENING-08F8-R1",
+      "expected_test": "Prompt 'Haz push' returns approval_required=true and blocked_tools contains git_push"
+    },
+    {
+      "gap_id": "P0-02",
+      "severity": "P0",
+      "affected_layer": "Intent classification",
+      "evidence": "All 40 prompts classified as CONVERSATION by intent adapter",
+      "root_cause_hypothesis": "AgentV2IntentAdapter has coarse mapping; real NLU not wired",
+      "recommended_fix_front": "FRONT-BRAIN-AGENT-V2-INTENT-ROUTER-NL-GOVERNANCE-08F8-R2",
+      "expected_test": "Intent matrix covers read-only/build/trading/memory with correct labels"
+    },
+    {
+      "gap_id": "P1-01",
+      "severity": "P1",
+      "affected_layer": "Tools/skills",
+      "evidence": "Chat responses list tools but do not show actual file/repo reads",
+      "root_cause_hypothesis": "Operational agent route uses deterministic finalizer instead of executing tool calls",
+      "recommended_fix_front": "FRONT-BRAIN-AGENT-V2-TOOLS-EXECUTION-08F8-R3",
+      "expected_test": "Repo search prompt returns actual file paths"
+    },
+    {
+      "gap_id": "P1-02",
+      "severity": "P1",
+      "affected_layer": "Orchestration",
+      "evidence": "pause/resume/cancel return stubs; no checkpoint persistence exercised",
+      "root_cause_hypothesis": "LangGraph state persistence not fully implemented",
+      "recommended_fix_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-STATE-PERSISTENCE-08F8-R4",
+      "expected_test": "Pause then resume continues same plan"
+    },
+    {
+      "gap_id": "P1-03",
+      "severity": "P1",
+      "affected_layer": "Autonomy loop",
+      "evidence": "Autonomy prompts return parity stubs without journal progression",
+      "root_cause_hypothesis": "Autonomy manager disabled in safe server and dry-run harness missing",
+      "recommended_fix_front": "FRONT-BRAIN-AGENT-V2-AUTONOMY-DRYRUN-LOOP-08F8-R5",
+      "expected_test": "Multi-step dry-run executes safe checks and stops before code edits"
+    },
+    {
+      "gap_id": "P2-01",
+      "severity": "P2",
+      "affected_layer": "Memory/retrieval",
+      "evidence": "retrieval_skipped=true for all memory prompts",
+      "root_cause_hypothesis": "MemoryGatewayV2 semantic_retrieve not triggered by chat route",
+      "recommended_fix_front": "FRONT-BRAIN-AGENT-V2-MEMORY-RETRIEVAL-READONLY-PILOT-08F8-R6",
+      "expected_test": "Memory prompt returns retrieved context"
+    },
+    {
+      "gap_id": "P2-02",
+      "severity": "P2",
+      "affected_layer": "Model routing",
+      "evidence": "Only parity_v1_full model reported; no cost/latency",
+      "root_cause_hypothesis": "Deterministic parity finalizer hardcodes model metadata",
+      "recommended_fix_front": "FRONT-BRAIN-AGENT-V2-MODEL-ROUTING-COST-POLICY-08F8-R7",
+      "expected_test": "Response exposes actual provider/model and token cost"
+    },
+    {
+      "gap_id": "P2-03",
+      "severity": "P2",
+      "affected_layer": "Dashboard/trace observability",
+      "evidence": "Roadmap governance warning during startup",
+      "root_cause_hypothesis": "Roadmap governance init expects string but receives None",
+      "recommended_fix_front": "FRONT-BRAIN-AGENT-V2-DASHBOARD-TRACE-OBSERVABILITY-08F8-R8",
+      "expected_test": "No startup warnings; dashboard shows governance health"
+    },
+    {
+      "gap_id": "P3-01",
+      "severity": "P3",
+      "affected_layer": "Tools/skills",
+      "evidence": "/v2/agent/capabilities 500 due missing list_capabilities",
+      "root_cause_hypothesis": "LangGraphParityRuntimeV2 did not implement list_capabilities",
+      "recommended_fix_front": "FRONT-BRAIN-AGENT-V2-CAPABILITIES-ENDPOINT-08F8-R9",
+      "expected_test": "Capabilities endpoint returns 200"
+    }
+  ]
+}

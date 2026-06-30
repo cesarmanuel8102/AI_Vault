@@ -1,0 +1,22 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-REAL-BRAIN-USAGE-PILOT-08F8",
+  "startup_command": "python tmp_agent/brain_v9/start_safe_server.py",
+  "required_env": {
+    "BRAIN_PORT": "8091",
+    "BRAIN_ADMIN_TOKEN": "AGENTV2_TEST_ADMIN_TOKEN_08F8",
+    "AGENT_V2_BACKEND": "unset (defaults to langgraph_parity)"
+  },
+  "expected_ports": [
+    8091
+  ],
+  "expected_health_endpoints": [
+    "/health",
+    "/v2/agent/status"
+  ],
+  "rollback_command": "taskkill //PID <PID> //F",
+  "avoid_ghost_processes": "Verify port 8091 free before starting; kill stale Brain PID if needed",
+  "verify_langgraph_default": "GET /v2/agent/status returns backend_default=langgraph_parity",
+  "verify_native_rollback": "Set AGENT_V2_BACKEND=native and restart, or resolve via runtime selector",
+  "verify_dashboard_trace": "GET /ui/ returns HTML; GET /v2/agent/runs/<id>/trace returns trace events",
+  "source_patch_needed": false
+}

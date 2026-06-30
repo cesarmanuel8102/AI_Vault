@@ -1,0 +1,14 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-REAL-BRAIN-USAGE-PILOT-08F8",
+  "chat_restored": true,
+  "agent_api_restored": true,
+  "dashboard_restored": true,
+  "trace_restored": true,
+  "langgraph_default_active": true,
+  "native_rollback_preserved": true,
+  "backend_selected": "langgraph_parity",
+  "backend_default": "langgraph_parity",
+  "rollback_backend": "native_runtime",
+  "capabilities_endpoint_status": "FAIL",
+  "recovery_date": "2026-06-30T20:15:00+00:00"
+}

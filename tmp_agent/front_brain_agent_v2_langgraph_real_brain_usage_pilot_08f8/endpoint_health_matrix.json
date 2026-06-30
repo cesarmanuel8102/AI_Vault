@@ -1,0 +1,83 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-REAL-BRAIN-USAGE-PILOT-08F8",
+  "endpoints": [
+    {
+      "endpoint": "/health",
+      "method": "GET",
+      "expected": 200,
+      "actual_status_code": 200,
+      "response_summary": "healthy",
+      "backend_selected": "langgraph_parity",
+      "backend_default": "langgraph_parity",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "trace_url": null,
+      "result": "PASS"
+    },
+    {
+      "endpoint": "/v2/agent/status",
+      "method": "GET",
+      "expected": 200,
+      "actual_status_code": 200,
+      "response_summary": "langgraph_parity default active",
+      "backend_selected": "langgraph_parity",
+      "backend_default": "langgraph_parity",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "trace_url": null,
+      "result": "PASS"
+    },
+    {
+      "endpoint": "/v2/chat/agent",
+      "method": "POST",
+      "expected": 200,
+      "actual_status_code": 200,
+      "response_summary": "canonical_agent_v2 response with trace_url",
+      "backend_selected": "langgraph_parity",
+      "backend_default": "langgraph_parity",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "trace_url": "present in response",
+      "result": "PASS"
+    },
+    {
+      "endpoint": "/v2/agent/capabilities",
+      "method": "GET",
+      "expected": 200,
+      "actual_status_code": 500,
+      "response_summary": "AttributeError: LangGraphParityRuntimeV2 missing list_capabilities",
+      "backend_selected": null,
+      "backend_default": null,
+      "fallback_used": null,
+      "fallback_reason": null,
+      "trace_url": null,
+      "result": "FAIL"
+    },
+    {
+      "endpoint": "/ui/",
+      "method": "GET",
+      "expected": 200,
+      "actual_status_code": 200,
+      "response_summary": "Brain Chat V9 HTML served",
+      "backend_selected": null,
+      "backend_default": null,
+      "fallback_used": null,
+      "fallback_reason": null,
+      "trace_url": null,
+      "result": "PASS"
+    },
+    {
+      "endpoint": "/v2/agent/runs/{run_id}/trace",
+      "method": "GET",
+      "expected": 200,
+      "actual_status_code": 200,
+      "response_summary": "trace events returned",
+      "backend_selected": "langgraph_parity",
+      "backend_default": "langgraph_parity",
+      "fallback_used": false,
+      "fallback_reason": null,
+      "trace_url": "self",
+      "result": "PASS"
+    }
+  ]
+}

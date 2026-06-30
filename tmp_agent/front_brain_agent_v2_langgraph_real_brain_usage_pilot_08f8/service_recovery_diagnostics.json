@@ -1,0 +1,46 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-REAL-BRAIN-USAGE-PILOT-08F8-CHAT-AGENT-DASHBOARD-RECOVERY-AND-CAPABILITY-MATRIX",
+  "diagnosis_date": "2026-06-30T20:10:00+00:00",
+  "brain_v9_main_py": "tmp_agent/brain_v9/main.py",
+  "chat_ui_server_py": "NOT_PRESENT",
+  "dashboard_routes_py": "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+  "dashboard_app_py": "tmp_agent/brain_v9/dashboard/dashboard_app.py",
+  "expected_ports": {
+    "brain_chat_api": 8091,
+    "dashboard_ui": 8091,
+    "trace_endpoint": 8091
+  },
+  "failure_modes_found": [
+    {
+      "component": "Agent V2 strict endpoints",
+      "failure": "Require X-Brain-Token because BRAIN_ADMIN_TOKEN was not set in server env",
+      "resolution": "Restarted safe server with BRAIN_ADMIN_TOKEN exported in process env"
+    },
+    {
+      "component": "/v2/agent/capabilities",
+      "failure": "HTTP 500 AttributeError: LangGraphParityRuntimeV2 missing list_capabilities",
+      "resolution": "Documented as gap; no source patch applied"
+    },
+    {
+      "component": "Roadmap governance initializer",
+      "failure": "Warning during startup: 'NoneType' object has no attribute 'lower'",
+      "resolution": "Non-fatal; documented as observability gap"
+    }
+  ],
+  "processes_started": [
+    "Brain V9 safe server on 127.0.0.1:8091 (PID noted in startup log)"
+  ],
+  "processes_stopped": [
+    "Stale Brain server PID 60500 on port 8091"
+  ],
+  "ports_used": [
+    8091
+  ],
+  "py_compile_results": {
+    "main.py": "OK",
+    "chat_ui_server.py": "FILE_NOT_FOUND",
+    "dashboard_routes.py": "OK",
+    "dashboard_app.py": "OK"
+  },
+  "no_memory_faiss_trading_env_touched": true
+}
