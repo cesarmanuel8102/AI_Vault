@@ -1,0 +1,32 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-RUNTIME-CONTRACT-PARITY-08F1",
+  "validation_results": {
+    "py_compile": {
+      "langgraph_parity_runtime.py": "PASS",
+      "runtime.py": "PASS"
+    },
+    "tests": {
+      "test_brain_agent_v2_langgraph_backend_contract_08f1.py": "10 passed, 0 failed, 0 skipped",
+      "test_brain_agent_v2_runtime_selector_guard_08e.py": "14 passed, 0 failed, 0 skipped",
+      "test_brain_agent_v2_backend_response_normalization_08e.py": "12 passed, 0 failed, 0 skipped",
+      "test_brain_dashboard_chat_proxy_token_fix_08e_r3.py": "3 passed, 0 failed, 0 skipped"
+    },
+    "git_hygiene_guard": "SAFE",
+    "older_test_adjustment": "tests/smoke/test_brain_agent_v2_backend_response_normalization_08e.py had outdated scope guard forbidding langgraph_parity_runtime.py modifications; updated minimally to match approved 08F1 scope"
+  },
+  "contract_verification": {
+    "runtime_interface_parity": true,
+    "create_run_signature": true,
+    "execute_run_signature": true,
+    "plan_run_signature": true,
+    "list_runs_signature": true,
+    "lifecycle_methods_present": true,
+    "response_translation": true,
+    "backend_metadata_set": true,
+    "native_default_preserved": true,
+    "fallback_to_native_preserved": true,
+    "normalized_chat_schema_passed": true,
+    "trace_contract_passed": true,
+    "read_only_governance_passed": true
+  }
+}

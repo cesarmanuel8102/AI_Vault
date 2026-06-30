@@ -1,0 +1,86 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-RUNTIME-CONTRACT-PARITY-08F1",
+  "starting_head": "81c6122",
+  "final_head": null,
+  "branch": "codex/own-capital-sustainable-return",
+  "status": "IMPLEMENTATION_COMPLETE",
+  "native_default_preserved": true,
+  "langgraph_default_activation": false,
+  "langgraph_canary_started": false,
+  "source_files_modified": true,
+  "allowed_source_files_only": true,
+  "dashboard_files_modified": false,
+  "frontend_files_modified": false,
+  "api_security_changed": false,
+  "main_changed": false,
+  "api_adapter_changed": false,
+  "native_runtime_changed": false,
+  "response_normalizer_changed": false,
+  "memory_touched": false,
+  "faiss_touched": false,
+  "trading_touched": false,
+  "env_touched": false,
+  "guard_result": "SAFE",
+  "top_blockers_from_08f0": [
+    "LangGraphParityRuntimeV2 lacks create_run(goal, mode, user_id)",
+    "LangGraphParityRuntimeV2 lacks execute_run(run_id)",
+    "LangGraph run() output needs translation into Native-style run dict before response normalization",
+    "Missing LangGraph opt-in backend contract tests"
+  ],
+  "blockers_resolved": true,
+  "recommended_next_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-OPT-IN-CANARY-SMOKE-08F2",
+  "recommended_next_action": "Run controlled local/live canary smoke with AGENT_V2_BACKEND=langgraph. Keep Native default. Do not start production canary yet.",
+  "commit_created": false,
+  "pushed": false,
+  "ci_verified": false,
+  "amend_used": false,
+  "force_push_used": false,
+  "force_with_lease_used": false,
+  "phase_7_validation": {
+    "py_compile": {
+      "langgraph_parity_runtime.py": "PASS",
+      "runtime.py": "PASS"
+    },
+    "tests": {
+      "test_brain_agent_v2_langgraph_backend_contract_08f1.py": "10 passed, 0 failed, 0 skipped",
+      "test_brain_agent_v2_runtime_selector_guard_08e.py": "14 passed, 0 failed, 0 skipped",
+      "test_brain_agent_v2_backend_response_normalization_08e.py": "12 passed, 0 failed, 0 skipped",
+      "test_brain_dashboard_chat_proxy_token_fix_08e_r3.py": "3 passed, 0 failed, 0 skipped"
+    },
+    "git_hygiene_guard": "SAFE"
+  },
+  "contract_parity_summary": {
+    "create_run": true,
+    "execute_run": true,
+    "plan_run": true,
+    "list_runs": true,
+    "pause_run": true,
+    "resume_run": true,
+    "cancel_run": true,
+    "response_translation": true,
+    "backend_metadata": true,
+    "trace_contract": true,
+    "read_only_governance": true
+  },
+  "modified_files": {
+    "source": [
+      "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"
+    ],
+    "tests": [
+      "tests/smoke/test_brain_agent_v2_langgraph_backend_contract_08f1.py",
+      "tests/smoke/test_brain_agent_v2_backend_response_normalization_08e.py"
+    ],
+    "reports": [
+      "tmp_agent/front_brain_agent_v2_langgraph_runtime_contract_parity_08f1/diagnostic_summary.md",
+      "tmp_agent/front_brain_agent_v2_langgraph_runtime_contract_parity_08f1/diagnostic_summary.json",
+      "tmp_agent/front_brain_agent_v2_langgraph_runtime_contract_parity_08f1/implementation_notes.md",
+      "tmp_agent/front_brain_agent_v2_langgraph_runtime_contract_parity_08f1/implementation_notes.json",
+      "tmp_agent/front_brain_agent_v2_langgraph_runtime_contract_parity_08f1/validation_results.md",
+      "tmp_agent/front_brain_agent_v2_langgraph_runtime_contract_parity_08f1/validation_results.json",
+      "tmp_agent/front_brain_agent_v2_langgraph_runtime_contract_parity_08f1/live_smoke_results.md",
+      "tmp_agent/front_brain_agent_v2_langgraph_runtime_contract_parity_08f1/live_smoke_results.json",
+      "tmp_agent/front_brain_agent_v2_langgraph_runtime_contract_parity_08f1/final_report.md",
+      "tmp_agent/front_brain_agent_v2_langgraph_runtime_contract_parity_08f1/final_report.json"
+    ]
+  }
+}

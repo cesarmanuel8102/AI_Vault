@@ -929,3 +929,224 @@ class LangGraphParityRuntimeV2:
         if not p.exists():
             return None
         return json.loads(p.read_text(encoding="utf-8"))
+
+    # ------------------------------------------------------------------
+    # Production runtime contract parity
+    # ------------------------------------------------------------------
+    def create_run(self, goal: str, mode: str = "read_only", user_id: str = "local") -> Dict[str, Any]:
+        """Create a Native-compatible run and persist run.json.
+
+        This method is required for get_agent_runtime_v2() production compatibility.
+        It does not invoke the graph; that happens in execute_run.
+        """
+        normalized_mode = validate_mode(mode)
+        run_id = self._new_run_id(goal, user_id)
+        created_utc = utc_now()
+        run: Dict[str, Any] = {
+            "run_id": run_id,
+            "goal": goal,
+            "message": goal,
+            "mode": normalized_mode,
+            "mode_requested": mode,
+            "mode_effective": normalized_mode,
+            "user_id": user_id,
+            "status": "created",
+            "created_utc": created_utc,
+            "updated_utc": created_utc,
+            "agent_version": CANONICAL_AGENT_VERSION,
+            "canonical_agent": True,
+            "final_answer": "",
+            "provider_metadata": {},
+            "capability_metadata": {},
+            "blocked_tools": [],
+            "expected_write_scope": [],
+            "backend_selected": "langgraph_parity",
+            "backend_fallback_used": False,
+            "backend_fallback_reason": None,
+            "trace_url": f"/v2/agent/runs/{run_id}/trace",
+        }
+        self._save_run_json(run)
+        self._trace(run_id, "run_created", "LangGraph parity run created", {
+            "mode_requested": mode,
+            "mode_effective": normalized_mode,
+            "goal_preview": goal[:180],
+        })
+        return run
+
+    def plan_run(self, run_id: str) -> Dict[str, Any]:
+        """Return the loaded run with a graph-internal planner marker."""
+        run = self._load_run_or_raise(run_id)
+        run["planner_used"] = True
+        run["graph_internal_planner"] = True
+        run.setdefault("plan", [])
+        run["status"] = "planned"
+        run["updated_utc"] = utc_now()
+        self._save_run_json(run)
+        self._trace(run_id, "plan_marked", "LangGraph planner is graph-internal")
+        return run
+
+    def execute_run(self, run_id: str) -> Dict[str, Any]:
+        """Execute the existing LangGraph flow and translate the result into a Native-style run dict."""
+        run = self._load_run_or_raise(run_id)
+        goal = run.get("goal", "")
+        mode = run.get("mode_effective") or run.get("mode", "read_only")
+        user_id = run.get("user_id", "local")
+
+        if not self.graph_available:
+            run["status"] = "failed"
+            run["error"] = self.graph_error or "langgraph package not installed"
+            run["final_answer"] = f"LangGraph unavailable: {run['error']}"
+            self._save_run_json(run)
+            return run
+
+        try:
+            graph_state = self.run(goal, mode=mode, user_id=user_id)
+        except Exception as exc:
+            run["status"] = "failed"
+            run["error"] = str(exc)[:500]
+            run["final_answer"] = f"LangGraph execution failed: {run['error']}"
+            self._save_run_json(run)
+            self._trace(run_id, "run_failed", "LangGraph execution failed", {"error": run["error"]})
+            return run
+
+        # Translate graph final state back into the run dict expected by api_adapter
+        translated = self._translate_graph_state_to_native_run(run, graph_state)
+        translated["status"] = graph_state.get("status") or "completed"
+        translated.setdefault("run_id", run_id)
+        self._save_run_json(translated)
+        self._trace(run_id, "run_completed", "LangGraph run completed", {
+            "status": translated.get("status"),
+            "final_answer_preview": str(translated.get("final_answer", ""))[:120],
+        })
+        return translated
+
+    def pause_run(self, run_id: str) -> Dict[str, Any]:
+        run = self._load_run_or_raise(run_id)
+        run["status"] = "paused"
+        run["updated_utc"] = utc_now()
+        self._save_run_json(run)
+        self._trace(run_id, "run_paused", "Run paused")
+        return run
+
+    def resume_run(self, run_id: str) -> Dict[str, Any]:
+        run = self._load_run_or_raise(run_id)
+        run["status"] = "planned" if run.get("plan") else "created"
+        run["updated_utc"] = utc_now()
+        self._save_run_json(run)
+        self._trace(run_id, "run_resumed", "Run resumed")
+        return run
+
+    def cancel_run(self, run_id: str) -> Dict[str, Any]:
+        run = self._load_run_or_raise(run_id)
+        run["status"] = "cancelled"
+        run["updated_utc"] = utc_now()
+        self._save_run_json(run)
+        self._trace(run_id, "run_cancelled", "Run cancelled")
+        return run
+
+    def list_runs(self) -> List[Dict[str, Any]]:
+        runs: List[Dict[str, Any]] = []
+        if not self.run_root.exists():
+            return runs
+        for p in sorted(self.run_root.glob("*/run.json")):
+            try:
+                runs.append(json.loads(p.read_text(encoding="utf-8")))
+            except Exception:
+                continue
+        return runs
+
+    def _load_run_or_raise(self, run_id: str) -> Dict[str, Any]:
+        run = self.get_run(run_id)
+        if run is None:
+            raise KeyError(run_id)
+        return run
+
+    def _translate_graph_state_to_native_run(
+        self,
+        run: Dict[str, Any],
+        graph_state: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """Convert a LangGraph final state dict into the Native-style run dict expected by api_adapter."""
+        run_id = run.get("run_id", graph_state.get("run_id", ""))
+        final_answer = self._extract_final_answer(graph_state) or ""
+
+        # Preserve mode/governance fields from graph state if present
+        mode_requested = graph_state.get("mode_requested") or run.get("mode_requested", "read_only")
+        mode_effective = graph_state.get("mode_effective") or run.get("mode_effective", "read_only")
+        mode_esc = bool(graph_state.get("mode_escalation_required") or run.get("mode_escalation_required"))
+        approval_required = bool(graph_state.get("approval_required") or mode_esc)
+        blocked_tools = list(graph_state.get("blocked_tools") or run.get("blocked_tools") or [])
+        intent_route = graph_state.get("intent_route") or run.get("intent_route", "unknown")
+        intent_detected = graph_state.get("intent_detected") or run.get("intent_detected", intent_route)
+        intent_confidence = graph_state.get("intent_confidence")
+        if intent_confidence is None:
+            intent_confidence = run.get("intent_confidence", 0.0)
+        classification = graph_state.get("classification") or run.get("classification", intent_route)
+        auto_decision = graph_state.get("auto_decision") or run.get("auto_decision", "n/a")
+
+        expected_write_scope = list(graph_state.get("expected_write_scope") or run.get("expected_write_scope") or [])
+        required_permission = graph_state.get("required_permission") or run.get("required_permission")
+        confirmation_id = graph_state.get("confirmation_id") or run.get("confirmation_id")
+        if mode_esc and not confirmation_id:
+            confirmation_id = f"confirm_{run_id}"
+        if mode_esc and not required_permission:
+            required_permission = "build"
+
+        # Use graph state's capability metadata if available; otherwise build it
+        capability_metadata = graph_state.get("capability_metadata") or self._build_capability_metadata(graph_state)
+        # Ensure parity keys are present without overwriting Native contract keys
+        capability_metadata.setdefault("trace_events_count", len(self.get_trace(run_id)))
+
+        # Provider metadata from graph finalizer node
+        provider_metadata = graph_state.get("provider_metadata") or {
+            "provider_used": graph_state.get("finalizer_source") or "deterministic_parity_finalizer",
+            "model_used": "parity_v1_full",
+            "provider_degraded": False,
+            "fallback_reason": "",
+        }
+
+        translated: Dict[str, Any] = {
+            "run_id": run_id,
+            "goal": run.get("goal", graph_state.get("message", "")),
+            "message": run.get("message", graph_state.get("message", "")),
+            "mode": mode_effective,
+            "mode_requested": mode_requested,
+            "mode_effective": mode_effective,
+            "mode_escalation_required": mode_esc,
+            "approval_required": approval_required,
+            "required_permission": required_permission,
+            "confirmation_id": confirmation_id,
+            "expected_write_scope": expected_write_scope,
+            "blocked_tools": blocked_tools,
+            "intent_route": intent_route,
+            "intent_detected": intent_detected,
+            "intent_confidence": intent_confidence,
+            "classification": classification,
+            "auto_decision": auto_decision,
+            "final_answer": final_answer,
+            "provider_metadata": provider_metadata,
+            "capability_metadata": capability_metadata,
+            "trace_url": f"/v2/agent/runs/{run_id}/trace",
+            "backend_selected": "langgraph_parity",
+            "backend_fallback_used": False,
+            "backend_fallback_reason": None,
+            "user_id": run.get("user_id", graph_state.get("user_id", "local")),
+            "created_utc": run.get("created_utc", graph_state.get("created_utc", utc_now())),
+            "updated_utc": utc_now(),
+            "agent_version": run.get("agent_version", CANONICAL_AGENT_VERSION),
+            "canonical_agent": True,
+        }
+        # Copy forward plan, evidence_sources, status if available
+        for key in ("plan", "evidence_sources", "tool_results", "memory_hits", "status", "error", "detail"):
+            if key in graph_state:
+                translated[key] = graph_state[key]
+            elif key in run:
+                translated[key] = run[key]
+        return translated
+
+    def _extract_final_answer(self, graph_state: Dict[str, Any]) -> str:
+        for key in ("final_answer", "content", "response", "message", "answer"):
+            val = graph_state.get(key)
+            if val is not None and str(val):
+                return str(val)
+        return ""

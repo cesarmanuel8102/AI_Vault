@@ -1,0 +1,42 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-RUNTIME-CONTRACT-PARITY-08F1",
+  "implementation_summary": "Added production runtime contract methods to LangGraphParityRuntimeV2 and an opt-in backend smoke test. Native default and fallback behavior preserved.",
+  "modified_files": {
+    "source": [
+      "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"
+    ],
+    "tests": [
+      "tests/smoke/test_brain_agent_v2_langgraph_backend_contract_08f1.py",
+      "tests/smoke/test_brain_agent_v2_backend_response_normalization_08e.py"
+    ]
+  },
+  "key_changes": {
+    "langgraph_parity_runtime.py": [
+      "Added create_run(goal, mode='read_only', user_id='local') -> Dict[str, Any]",
+      "Added execute_run(run_id: str) -> Dict[str, Any]",
+      "Added plan_run(run_id: str) -> Dict[str, Any]",
+      "Added list_runs() -> List[Dict[str, Any]]",
+      "Added pause_run, resume_run, cancel_run lifecycle methods",
+      "Added _translate_graph_state_to_native_run helper",
+      "Added _extract_final_answer helper",
+      "Persist run.json and trace events in Native-compatible layout",
+      "Set backend_selected='langgraph_parity' and fallback metadata on created run dicts"
+    ],
+    "runtime.py": "No changes. Fallback guard preserved as-is."
+  },
+  "design_decisions": [
+    "NativeAgentRuntimeV2 remains the default backend",
+    "LangGraph opt-in only via AGENT_V2_BACKEND env var",
+    "No changes to api_adapter.py; runtime wrapper satisfies production contract",
+    "No changes to response_normalizer.py; wrapper produces Native-style run dict",
+    "Graph final state translated before returning to api_adapter",
+    "Run directory layout matches Native so trace proxy works",
+    "Read-only governance enforced inside existing graph nodes"
+  ],
+  "rollback_plan": [
+    "Unset AGENT_V2_BACKEND or set to native_runtime to restore Native default",
+    "Revert tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+    "Remove tests/smoke/test_brain_agent_v2_langgraph_backend_contract_08f1.py",
+    "Restore tests/smoke/test_brain_agent_v2_backend_response_normalization_08e.py scope guard if reverting 08F1"
+  ]
+}
