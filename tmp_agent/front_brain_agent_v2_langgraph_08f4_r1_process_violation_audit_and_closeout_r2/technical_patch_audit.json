@@ -1,0 +1,82 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-08F4-R1-PROCESS-VIOLATION-AUDIT-AND-CLOSEOUT-R2",
+  "rejected_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-GOVERNANCE-FAILURE-MODES-HARDENING-08F4-R1",
+  "baseline_sha": "d2f573766a7edfeed8c7ea9905dc26a1ede76709",
+  "actual_current_head": "440c89a5dc48db29f9cd50c1d4985208b6cf05b8",
+  "files_changed_since_baseline": [
+    "tests/smoke/test_brain_agent_v2_langgraph_failure_modes_08f4_r1.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+    "tmp_agent/front_brain_agent_v2_langgraph_governance_failure_modes_hardening_08f4_r1/bugfix_matrix.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_governance_failure_modes_hardening_08f4_r1/bugfix_matrix.md",
+    "tmp_agent/front_brain_agent_v2_langgraph_governance_failure_modes_hardening_08f4_r1/diagnostic_summary.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_governance_failure_modes_hardening_08f4_r1/diagnostic_summary.md",
+    "tmp_agent/front_brain_agent_v2_langgraph_governance_failure_modes_hardening_08f4_r1/final_report.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_governance_failure_modes_hardening_08f4_r1/final_report.md",
+    "tmp_agent/front_brain_agent_v2_langgraph_governance_failure_modes_hardening_08f4_r1/governance.patch",
+    "tmp_agent/front_brain_agent_v2_langgraph_governance_failure_modes_hardening_08f4_r1/implementation_notes.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_governance_failure_modes_hardening_08f4_r1/implementation_notes.md",
+    "tmp_agent/front_brain_agent_v2_langgraph_governance_failure_modes_hardening_08f4_r1/langgraph_parity_runtime.patch",
+    "tmp_agent/front_brain_agent_v2_langgraph_governance_failure_modes_hardening_08f4_r1/validation_results.json",
+    "tmp_agent/front_brain_agent_v2_langgraph_governance_failure_modes_hardening_08f4_r1/validation_results.md"
+  ],
+  "allowed_source_files": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+    "tests/smoke/test_brain_agent_v2_langgraph_failure_modes_08f4_r1.py"
+  ],
+  "forbidden_files_modified": [],
+  "technical_patch_scope_allowed": true,
+  "bug_08f4_03_timeout_circuit_breaker_verified": true,
+  "bug_08f4_03_evidence": [
+    "DEFAULT_EXECUTE_TIMEOUT_SECONDS = 30.0 added",
+    "execute_timeout_seconds constructor parameter added",
+    "_invoke_with_timeout wraps _graph.invoke in ThreadPoolExecutor(max_workers=1)",
+    "future.result(timeout=...) bounds execution",
+    "TimeoutError returns _build_timeout_state with status=failed, error=timeout",
+    "executor.shutdown(wait=False, cancel_futures=True) prevents caller trapping"
+  ],
+  "bug_08f4_01_malformed_run_state_verified": true,
+  "bug_08f4_01_evidence": [
+    "_REQUIRED_RUN_FIELDS = {run_id, goal, mode} added",
+    "_is_run_state_valid validates loaded dict",
+    "get_run returns failed stub for invalid JSON/missing fields",
+    "_load_run_or_raise returns _malformed marker on parse failure",
+    "_create_malformed_run_response persists status=failed, error=malformed_run_state"
+  ],
+  "bug_08f4_02_auto_write_escalation_verified": true,
+  "bug_08f4_02_evidence": [
+    "escalate_auto_mode_effective added to governance.py",
+    "_governance_gate_node updates mode_effective to approval_required when mode_requested=auto and escalation required",
+    "mode_requested preserved as auto",
+    "_translate_graph_state_to_native_run carries mode_effective forward"
+  ],
+  "native_default_preserved": true,
+  "native_default_evidence": [
+    "runtime.py not modified",
+    "get_agent_runtime_v2 still defaults to native_runtime when AGENT_V2_BACKEND unset",
+    "No production wiring changed in main.py/api_adapter.py"
+  ],
+  "langgraph_default_activation": false,
+  "langgraph_opt_in_evidence": [
+    "AGENT_V2_BACKEND=langgraph still required to select LangGraphParityRuntimeV2",
+    "08F1 contract test test_native_default_when_env_unset still passes",
+    "08F4 test test_langgraph_opt_in_still_selects_langgraph still passes"
+  ],
+  "forbidden_scope_check": {
+    "dashboard_frontend_changed": false,
+    "api_security_changed": false,
+    "main_py_changed": false,
+    "api_adapter_changed": false,
+    "native_runtime_changed": false,
+    "response_normalizer_changed": false,
+    "memory_semantic_changed": false,
+    "faiss_vector_index_changed": false,
+    "trading_ibkr_broker_changed": false,
+    "portfolio_risk_changed": false,
+    "env_secrets_changed": false,
+    "autonomous_journal_changed": false,
+    "promotion_queues_changed": false
+  },
+  "audit_method": "read-only diff inspection; no source modifications"
+}

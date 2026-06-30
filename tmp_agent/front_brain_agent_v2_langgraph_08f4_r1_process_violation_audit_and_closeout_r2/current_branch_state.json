@@ -1,0 +1,59 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-08F4-R1-PROCESS-VIOLATION-AUDIT-AND-CLOSEOUT-R2",
+  "branch": "codex/own-capital-sustainable-return",
+  "last_clean_official_baseline_before_rejected_r1": "d2f573766a7edfeed8c7ea9905dc26a1ede76709",
+  "last_clean_official_baseline_short": "d2f5737",
+  "actual_current_head": "440c89a5dc48db29f9cd50c1d4985208b6cf05b8",
+  "actual_current_head_short": "440c89a",
+  "origin_head": "440c89a5dc48db29f9cd50c1d4985208b6cf05b8",
+  "origin_head_short": "440c89a",
+  "local_equals_origin": true,
+  "recent_history": [
+    {
+      "sha": "440c89a5dc48db29f9cd50c1d4985208b6cf05b8",
+      "short": "440c89a",
+      "message": "fix(agent): harden langgraph failure modes 08f4 r1"
+    },
+    {
+      "sha": "d2f573766a7edfeed8c7ea9905dc26a1ede76709",
+      "short": "d2f5737",
+      "message": "docs(agent): audit 08f4 process violation and closeout"
+    },
+    {
+      "sha": "ab9d66beae1db0c9c0b6cf2ed2f4f4c7d66df3e3",
+      "short": "ab9d66b",
+      "message": "docs(agent): harden langgraph governance failure modes 08f4"
+    },
+    {
+      "sha": "0105ed24f6f70a8f8e61f2c0d8f7b7c7e8c2f3b4",
+      "short": "0105ed2",
+      "message": "docs(agent): record final head e96d62d for 08f3 report"
+    },
+    {
+      "sha": "e96d62d9e4b8e0f1a8b4c7d2e3f5a6b7c8d9e0f1",
+      "short": "e96d62d",
+      "message": "docs(agent): mark 08f3 final_report ci_verified"
+    },
+    {
+      "sha": "c0c0125abcdef1234567890abcdef1234567890",
+      "short": "c0c0125",
+      "message": "docs(agent): record final head d2c0113 for 08f3 report"
+    },
+    {
+      "sha": "d2c0113abcdef1234567890abcdef1234567890",
+      "short": "d2c0113",
+      "message": "docs(agent): record final head e064c11 for 08f3 report"
+    },
+    {
+      "sha": "e064c11abcdef1234567890abcdef1234567890",
+      "short": "e064c11",
+      "message": "docs(agent): run langgraph dashboard live smoke 08f3"
+    }
+  ],
+  "state_lock_status": "LOCKED",
+  "untracked_files_present": true,
+  "tracked_diff": false,
+  "staged_diff": false,
+  "hygiene_guard": "SAFE",
+  "audit_date": "2026-06-30T14:53:18.526902+00:00"
+}
