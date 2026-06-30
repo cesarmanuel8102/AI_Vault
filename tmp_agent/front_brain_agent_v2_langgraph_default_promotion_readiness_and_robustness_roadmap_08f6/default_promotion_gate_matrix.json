@@ -1,0 +1,146 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DEFAULT-PROMOTION-READINESS-AND-ROBUSTNESS-ROADMAP-08F6",
+  "branch": "codex/own-capital-sustainable-return",
+  "purpose": "Define the gates that must pass before LangGraph can become the default Agent V2 backend",
+  "gates": [
+    {
+      "id": "GATE-01",
+      "name": "Native parity",
+      "criteria": [
+        "All production methods present",
+        "/v2/chat/agent schema stable",
+        "/v2/agent/status stable",
+        "trace API stable",
+        "run persistence stable"
+      ],
+      "status": "PARTIAL",
+      "evidence": "LangGraph has create_run, execute_run, get_run, list_runs, get_trace. Missing plan_run, pause_run, resume_run, cancel_run. /v2/chat/agent schema stable per 08F1 tests.",
+      "blocker": true,
+      "required_next_action": "Implement plan_run, pause_run, resume_run, cancel_run in LangGraphParityRuntimeV2 and add parity tests against Native behavior."
+    },
+    {
+      "id": "GATE-02",
+      "name": "Governance parity",
+      "criteria": [
+        "read_only mode safe",
+        "auto mode escalation safe",
+        "write-intent requires approval",
+        "forbidden self-dev/governance changes blocked",
+        "no trading/broker action path enabled"
+      ],
+      "status": "PASS",
+      "evidence": "08F4-R2 audit verified escalate_auto_mode_effective, _governance_gate_node, READ_ONLY_TOOL_NAMES, WRITE_TOOL_NAMES. No broker tools in SUPPORTED_READ_TOOLS.",
+      "blocker": false,
+      "required_next_action": "Continue enforcing SUPPORTED_READ_TOOLS whitelist; reject any trading/broker tool additions without separate risk-governance front."
+    },
+    {
+      "id": "GATE-03",
+      "name": "Failure-mode safety",
+      "criteria": [
+        "timeout/circuit-breaker works",
+        "malformed run state handled",
+        "invalid backend falls back to Native",
+        "missing LangGraph dependency falls back to Native",
+        "no silent data omission"
+      ],
+      "status": "PASS",
+      "evidence": "08F4-R2 verified timeout (BUG-08F4-03), malformed run state (BUG-08F4-01), auto escalation (BUG-08F4-02). 08E tests verify invalid/missing backend fallback.",
+      "blocker": false,
+      "required_next_action": "Add default-promotion-specific failure-mode tests (memory pressure, concurrent runs, provider outage simulation)."
+    },
+    {
+      "id": "GATE-04",
+      "name": "Observability",
+      "criteria": [
+        "backend_selected visible",
+        "backend_fallback_used visible",
+        "backend_fallback_reason visible",
+        "trace_url visible",
+        "trace can be retrieved",
+        "dashboard can show enough state to diagnose failures"
+      ],
+      "status": "PARTIAL",
+      "evidence": "API adapter exposes backend, backend_selected, backend_fallback_used, backend_fallback_reason. Trace retrieval works. Dashboard status route shows backend but does not expose backend_fallback_reason (GAP-08F5-04).",
+      "blocker": false,
+      "required_next_action": "Close GAP-08F5-04 by surfacing backend_fallback_reason in dashboard status before default promotion front."
+    },
+    {
+      "id": "GATE-05",
+      "name": "Rollback",
+      "criteria": [
+        "Unsetting AGENT_V2_BACKEND returns Native",
+        "Restart procedure documented",
+        "Rollback requires no code changes",
+        "Rollback tests pass"
+      ],
+      "status": "PASS",
+      "evidence": "08F5 rollback_runbook documents 7-step procedure. runtime.py already falls back to Native when env unset or invalid. 08E selector guard tests pass.",
+      "blocker": false,
+      "required_next_action": "Add a default-promotion rollback test that verifies flipping a config default back to Native at runtime."
+    },
+    {
+      "id": "GATE-06",
+      "name": "Test/CI",
+      "criteria": [
+        "Local smoke tests pass",
+        "phase1-ci green",
+        "nontrading-smoke-regression green",
+        "No flaky failures hidden"
+      ],
+      "status": "PASS",
+      "evidence": "08F5: 37/37 smoke tests passed; py_compile and hygiene passed; phase1-ci and nontrading-smoke-regression green.",
+      "blocker": false,
+      "required_next_action": "Add CI matrix job that runs LangGraph-specific tests under AGENT_V2_BACKEND=langgraph so default promotion cannot hide failures."
+    },
+    {
+      "id": "GATE-07",
+      "name": "Knowledge/Memory boundary",
+      "criteria": [
+        "No unauthorized memory writes",
+        "No FAISS mutation",
+        "Knowledge promotion path documented",
+        "Human approval required for knowledge promotion"
+      ],
+      "status": "PASS",
+      "evidence": "LangGraph uses MemoryGatewayV2 but does not auto-promote memory. No FAISS rebuild in runtime. Existing promotion queues require explicit fronts.",
+      "blocker": false,
+      "required_next_action": "Codify memory-boundary contract in a separate front before LangGraph default promotion; ensure memory writes remain gated."
+    },
+    {
+      "id": "GATE-08",
+      "name": "Operational cost and model routing",
+      "criteria": [
+        "No expensive default model hardcoded",
+        "Model routing strategy documented",
+        "Budget limits documented",
+        "Task step limits documented"
+      ],
+      "status": "PARTIAL",
+      "evidence": "Native runtime uses finalize_agent_run provider metadata. LangGraph graph uses same finalizer path. No expensive model hardcoded. Explicit cost/step budgets not yet documented as runtime policy.",
+      "blocker": false,
+      "required_next_action": "Document cost/step/model-routing policy in governance_and_human_gate_plan and enforce in LangGraph nodes before default promotion."
+    },
+    {
+      "id": "GATE-09",
+      "name": "Human operator control",
+      "criteria": [
+        "Operator can pause/stop/rollback",
+        "Irreversible actions require approval",
+        "Journal/audit trail exists"
+      ],
+      "status": "PASS",
+      "evidence": "Governance gate escalates auto write-intent to approval_required. Runtime fallback can be triggered by unsetting env. TraceStore and run.json provide audit trail.",
+      "blocker": false,
+      "required_next_action": "Add explicit human-interrupt wiring in LangGraph graph (LangGraph interrupts) for long-running default-mode runs."
+    }
+  ],
+  "summary": {
+    "pass": 6,
+    "partial": 2,
+    "fail": 0,
+    "unknown": 0,
+    "blockers": ["GATE-01"]
+  },
+  "phase_3_default_promotion_gate_matrix": "COMPLETED",
+  "recorded_at": "2026-06-30T18:25:00+00:00"
+}

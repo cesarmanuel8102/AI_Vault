@@ -1,0 +1,117 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DEFAULT-PROMOTION-READINESS-AND-ROBUSTNESS-ROADMAP-08F6",
+  "branch": "codex/own-capital-sustainable-return",
+  "purpose": "Define approval gates and operational limits for irreversible actions in the agentic runtime",
+  "approval_gates": [
+    {
+      "action": "file writes",
+      "rule": "read-only or dry-run by default; write requires mode=approval_required or explicit file_patch_apply_approval_required tool",
+      "irreversible": false,
+      "approval_required": true
+    },
+    {
+      "action": "source patches",
+      "rule": "only in dedicated promotion fronts; report-only fronts never patch source",
+      "irreversible": true,
+      "approval_required": true
+    },
+    {
+      "action": "test patches",
+      "rule": "only in dedicated test-fix fronts; must pass CI before baseline update",
+      "irreversible": true,
+      "approval_required": true
+    },
+    {
+      "action": "git commits",
+      "rule": "require human review; no auto-commit by agent without explicit front",
+      "irreversible": true,
+      "approval_required": true
+    },
+    {
+      "action": "pushes",
+      "rule": "normal push only; no force push, force-with-lease, or amend",
+      "irreversible": true,
+      "approval_required": true
+    },
+    {
+      "action": "memory promotion",
+      "rule": "candidate -> validated -> human approved -> promoted -> retrieval tested",
+      "irreversible": true,
+      "approval_required": true
+    },
+    {
+      "action": "FAISS rebuild",
+      "rule": "separate front required; no runtime-triggered rebuild",
+      "irreversible": true,
+      "approval_required": true
+    },
+    {
+      "action": "tool registry changes",
+      "rule": "new write/broker/trading tools require separate risk-governance front",
+      "irreversible": true,
+      "approval_required": true
+    },
+    {
+      "action": "model routing changes",
+      "rule": "must be documented and reviewed; no hidden fallback to expensive model",
+      "irreversible": false,
+      "approval_required": true
+    },
+    {
+      "action": "cost budget changes",
+      "rule": "explicit approval; logged in decision journal",
+      "irreversible": false,
+      "approval_required": true
+    },
+    {
+      "action": "trading/broker integration",
+      "rule": "explicitly forbidden without separate risk-governance front",
+      "irreversible": true,
+      "approval_required": true
+    },
+    {
+      "action": "external API calls",
+      "rule": "read-only/dry-run allowed; write/stateful calls require approval",
+      "irreversible": false,
+      "approval_required": true
+    },
+    {
+      "action": "cloud tracing",
+      "rule": "opt-in only; operator must approve and configure endpoint",
+      "irreversible": false,
+      "approval_required": true
+    },
+    {
+      "action": "default backend promotion",
+      "rule": "only after all gates pass and a separate front is accepted; human approval required",
+      "irreversible": true,
+      "approval_required": true
+    }
+  ],
+  "operational_limits": {
+    "max_steps_per_task": 50,
+    "max_token_cost_budget_per_run_usd": 2.0,
+    "max_wall_clock_duration_seconds": 300,
+    "max_retry_count": 3,
+    "emergency_stop_rule": "Operator can stop any run by unsetting AGENT_V2_BACKEND or restarting the server; fallback to Native is automatic.",
+    "audit_log_required_fields": [
+      "run_id",
+      "backend_selected",
+      "backend_fallback_used",
+      "backend_fallback_reason",
+      "mode_requested",
+      "mode_effective",
+      "tools_considered",
+      "tools_blocked",
+      "tools_executed",
+      "node_path",
+      "trace_events_count",
+      "provider_used",
+      "model_used",
+      "updated_utc"
+    ],
+    "failure_loudness_rule": "No silent fallback unless explicitly recorded in backend_fallback_used and backend_fallback_reason. All failures must emit a trace event and set run status to failed with a reason."
+  },
+  "phase_6_governance_and_human_gate_plan": "COMPLETED",
+  "recorded_at": "2026-06-30T18:40:00+00:00"
+}

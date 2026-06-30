@@ -1,0 +1,142 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DEFAULT-PROMOTION-READINESS-AND-ROBUSTNESS-ROADMAP-08F6",
+  "branch": "codex/own-capital-sustainable-return",
+  "starting_baseline": "6ecc495b6f505683edbae2de35dfccf6831698d5",
+  "starting_baseline_short": "6ecc495",
+  "scope": "report-only",
+  "scope_rules_respected": true,
+  "process_rules_respected": true,
+  "source_code_modified": false,
+  "tests_modified": false,
+  "runtime_modified": false,
+  "dashboard_modified": false,
+  "api_security_modified": false,
+  "env_or_secrets_modified": false,
+  "memory_or_faiss_modified": false,
+  "trading_or_broker_modified": false,
+  "journal_or_promotion_modified": false,
+  "default_backend_changed": false,
+  "native_default_preserved": true,
+  "langgraph_opt_in_only": true,
+  "langgraph_default_activation": false,
+  "artifacts": {
+    "report_directory": "tmp_agent/front_brain_agent_v2_langgraph_default_promotion_readiness_and_robustness_roadmap_08f6/",
+    "files": [
+      "current_branch_state.md",
+      "current_branch_state.json",
+      "baseline_confirmation.md",
+      "baseline_confirmation.json",
+      "native_vs_langgraph_comparison.md",
+      "native_vs_langgraph_comparison.json",
+      "default_promotion_gate_matrix.md",
+      "default_promotion_gate_matrix.json",
+      "langgraph_suite_adoption_plan.md",
+      "langgraph_suite_adoption_plan.json",
+      "brain_knowledge_and_memory_roadmap.md",
+      "brain_knowledge_and_memory_roadmap.json",
+      "governance_and_human_gate_plan.md",
+      "governance_and_human_gate_plan.json",
+      "staged_promotion_plan.md",
+      "staged_promotion_plan.json",
+      "readiness_decision.md",
+      "readiness_decision.json",
+      "final_report.md",
+      "final_report.json"
+    ]
+  },
+  "phase_completion": {
+    "phase_0_state_lock": "COMPLETED",
+    "phase_1_baseline_confirmation": "COMPLETED",
+    "phase_2_native_vs_langgraph_comparison": "COMPLETED",
+    "phase_3_default_promotion_gate_matrix": "COMPLETED",
+    "phase_4_langgraph_suite_adoption_plan": "COMPLETED",
+    "phase_5_brain_knowledge_and_memory_roadmap": "COMPLETED",
+    "phase_6_governance_and_human_gate_plan": "COMPLETED",
+    "phase_7_staged_promotion_plan": "COMPLETED",
+    "phase_8_readiness_decision": "COMPLETED",
+    "phase_9_final_report": "COMPLETED"
+  },
+  "smoke_validation_summary": {
+    "total_tests_run": 37,
+    "total_passed": 37,
+    "total_failed": 0,
+    "total_skipped": 0,
+    "py_compile": "PASSED",
+    "hygiene_check": "SAFE"
+  },
+  "ci_status": {
+    "phase1-ci": {
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 28455364187,
+      "url": "https://github.com/cesarmanuel8102/AI_Vault/actions/runs/28455364187"
+    },
+    "nontrading-smoke-regression": {
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 28455364593,
+      "url": "https://github.com/cesarmanuel8102/AI_Vault/actions/runs/28455364593"
+    }
+  },
+  "gate_summary": {
+    "pass": 6,
+    "partial": 2,
+    "fail": 0,
+    "unknown": 0,
+    "blockers": 1
+  },
+  "blocking_gates": [
+    {
+      "gate": "GATE-01",
+      "name": "Native parity",
+      "blocker": true,
+      "reason": "LangGraphParityRuntimeV2 is missing plan_run, pause_run, resume_run, and cancel_run. NativeAgentRuntimeV2 exposes all nine production methods."
+    }
+  ],
+  "partial_gates": [
+    {
+      "gate": "GATE-04",
+      "name": "Observability",
+      "reason": "GAP-08F5-04: dashboard status route does not expose backend_fallback_reason."
+    },
+    {
+      "gate": "GATE-08",
+      "name": "Operational cost and model routing",
+      "reason": "Explicit cost/step/model-routing policy not yet documented as runtime policy."
+    }
+  ],
+  "native_vs_langgraph_comparison_summary": {
+    "native_stronger": 5,
+    "langgraph_stronger": 8,
+    "equivalent": 5,
+    "blockers": 2
+  },
+  "known_non_blockers": [
+    "Pre-existing LSP/type-checker diagnostics in runtime.py, langgraph_parity_runtime.py, and main.py are not introduced by this report-only front and do not affect runtime behavior or smoke tests.",
+    "GAP-08F5-04 (dashboard status route does not expose backend_fallback_reason) is recorded but not a default-promotion blocker for local canary."
+  ],
+  "staged_promotion_plan": {
+    "stage_0_current_state": "COMPLETED",
+    "stage_1_opt_in_expanded_smoke": "RECOMMENDED",
+    "stage_2_local_canary_default_isolated_shell": "RECOMMENDED",
+    "stage_3_configurable_local_default": "BLOCKED_BY_GATE_01",
+    "stage_4_default_promotion_pr": "BLOCKED_BY_GATE_01",
+    "stage_5_knowledge_memory_expansion": "FUTURE",
+    "stage_6_domain_specific_agent_roles": "FUTURE"
+  },
+  "acceptance_decision": "ACCEPTED_08F6_LANGGRAPH_DEFAULT_PROMOTION_READINESS_AND_ROBUSTNESS_ROADMAP",
+  "official_new_baseline": "final_head",
+  "readiness_decision": "READY_FOR_CONTROLLED_LOCAL_CANARY_ONLY",
+  "safe_to_operate_langgraph_opt_in": true,
+  "safe_to_make_langgraph_default": false,
+  "recommended_next_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-CONTROLLED-LOCAL-CANARY-DEFAULT-08F7",
+  "required_evidence_before_default_promotion": [
+    "GATE-01 closed: LangGraphParityRuntimeV2 implements plan_run, pause_run, resume_run, cancel_run with parity tests against NativeAgentRuntimeV2.",
+    "GATE-04 closed: dashboard status route exposes backend_fallback_reason and backend_fallback_used.",
+    "GATE-08 closed: cost/step/model-routing policy documented and enforced in runtime configuration.",
+    "Local canary Stage 2 completed with operator logs, trace comparison, and no critical issues.",
+    "All gates show PASS before any source patch changes the default backend."
+  ],
+  "basis": "Report-only scope valid; all required 08F6 deliverables completed; 37/37 smoke tests passed; py_compile and hygiene passed; native default preserved; LangGraph remains opt-in only; default promotion blocked by GATE-01 native parity gap; roadmap and staged plan accepted; CI green.",
+  "recorded_at": "2026-06-30T18:55:00+00:00"
+}

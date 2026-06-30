@@ -1,0 +1,195 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DEFAULT-PROMOTION-READINESS-AND-ROBUSTNESS-ROADMAP-08F6",
+  "branch": "codex/own-capital-sustainable-return",
+  "purpose": "Evidence-driven comparison of NativeAgentRuntimeV2 vs LangGraphParityRuntimeV2 for default promotion readiness",
+  "basis": "08F5 observability inventory, 08F4-R2 technical patch audit, 08F1/08F4/08E smoke tests, source inspection at 6ecc495",
+  "native_runtime": {
+    "module": "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+    "class": "NativeAgentRuntimeV2",
+    "default": true,
+    "production_methods": ["create_run", "plan_run", "execute_run", "get_run", "list_runs", "get_trace", "pause_run", "resume_run", "cancel_run"]
+  },
+  "langgraph_runtime": {
+    "module": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+    "class": "LangGraphParityRuntimeV2",
+    "default": false,
+    "opt_in_env": "AGENT_V2_BACKEND=langgraph",
+    "production_methods": ["create_run", "execute_run", "get_run", "list_runs", "get_trace"]
+  },
+  "comparison": [
+    {
+      "id": "C-01",
+      "dimension": "Runtime contract completeness",
+      "native": "Full 9-method production interface implemented",
+      "langgraph": "create_run, execute_run, get_run, list_runs, get_trace present; plan_run, pause_run, resume_run, cancel_run not implemented",
+      "classification": "Native stronger",
+      "evidence": "native_runtime.py:46-505 implements all 9 methods. langgraph_parity_runtime.py inspection shows no plan_run/pause_run/resume_run/cancel_run methods.",
+      "blocker_for_default": true
+    },
+    {
+      "id": "C-02",
+      "dimension": "State persistence",
+      "native": "run.json + CheckpointStore + TraceStore under RUN_ROOT",
+      "langgraph": "run.json + CheckpointStore + TraceStore under caller-provided run_root (defaults to runs_parity)",
+      "classification": "Equivalent",
+      "evidence": "Both use CheckpointStore and TraceStore; both persist run.json. 08F1 contract tests verify schema stability.",
+      "blocker_for_default": false
+    },
+    {
+      "id": "C-03",
+      "dimension": "Trace quality",
+      "native": "TraceStore events per step, provider metadata, mode escalation",
+      "langgraph": "TraceStore events per graph node plus capability_metadata node; node_path included",
+      "classification": "LangGraph stronger",
+      "evidence": "08F5 observability inventory shows LangGraph nodes emit trace events and capability metadata; node_path gives deterministic step sequence.",
+      "blocker_for_default": false
+    },
+    {
+      "id": "C-04",
+      "dimension": "Checkpoint/resume readiness",
+      "native": "CheckpointStore.save at status changes; pause_run/resume_run exist",
+      "langgraph": "Checkpoints at step_index 0 and 99; no pause_run/resume_run; resume path unverified",
+      "classification": "Native stronger",
+      "evidence": "native_runtime.py has pause_run/resume_run. langgraph_parity_runtime.py only saves checkpoints in _save_checkpoint; no resume method.",
+      "blocker_for_default": true
+    },
+    {
+      "id": "C-05",
+      "dimension": "Human-in-the-loop suitability",
+      "native": "Governance gate inside execute_run; mode escalation recorded",
+      "langgraph": "Governance gate as graph node; mode_effective escalation to approval_required while preserving mode_requested=auto",
+      "classification": "Equivalent",
+      "evidence": "08F4-R2 audit verified escalate_auto_mode_effective in governance.py and _governance_gate_node carries mode_effective forward.",
+      "blocker_for_default": false
+    },
+    {
+      "id": "C-06",
+      "dimension": "Failure containment",
+      "native": "Try/except around _load_run and execute_run; returns failed status",
+      "langgraph": "Graph-level timeout/circuit-breaker; malformed run state handling; invalid backend fallback",
+      "classification": "LangGraph stronger",
+      "evidence": "08F4-R2 verified timeout, malformed_run_state, and auto escalation fixes in langgraph_parity_runtime.py.",
+      "blocker_for_default": false
+    },
+    {
+      "id": "C-07",
+      "dimension": "Timeout/circuit-breaker",
+      "native": "No explicit timeout in Native execute_run",
+      "langgraph": "DEFAULT_EXECUTE_TIMEOUT_SECONDS=30.0; ThreadPoolExecutor(max_workers=1) wrapping _graph.invoke",
+      "classification": "LangGraph stronger",
+      "evidence": "08F4-R2 audit item bug_08f4_03_timeout_circuit_breaker_verified: true.",
+      "blocker_for_default": false
+    },
+    {
+      "id": "C-08",
+      "dimension": "Malformed run handling",
+      "native": "KeyError if run.json missing; load failure may raise",
+      "langgraph": "_REQUIRED_RUN_FIELDS validation; _create_malformed_run_response returns status=failed, error=malformed_run_state",
+      "classification": "LangGraph stronger",
+      "evidence": "08F4-R2 audit item bug_08f4_01_malformed_run_state_verified: true.",
+      "blocker_for_default": false
+    },
+    {
+      "id": "C-09",
+      "dimension": "Write-intent escalation",
+      "native": "Governance validate_mode + infer_auto_decision; mode escalation recorded",
+      "langgraph": "escalate_auto_mode_effective; mode_requested=auto preserved, mode_effective=approval_required",
+      "classification": "Equivalent",
+      "evidence": "08F4-R2 audit item bug_08f4_02_auto_write_escalation_verified: true.",
+      "blocker_for_default": false
+    },
+    {
+      "id": "C-10",
+      "dimension": "Fallback to Native",
+      "native": "Default already Native",
+      "langgraph": "runtime.py falls back to Native on invalid env, missing package, init failure, missing production methods",
+      "classification": "Equivalent",
+      "evidence": "08F5 observability inventory and 08E runtime selector guard tests verify fallback.",
+      "blocker_for_default": false
+    },
+    {
+      "id": "C-11",
+      "dimension": "Dashboard compatibility",
+      "native": "/brain-dashboard/agent-v2/status shows native_runtime; /brain-dashboard/chat proxy stable",
+      "langgraph": "API adapter exposes backend metadata; dashboard status route returns backend; backend_fallback_reason not shown in dashboard",
+      "classification": "Native stronger",
+      "evidence": "08F5 risk_and_gap_register notes GAP-08F5-04: dashboard does not expose backend_fallback_reason.",
+      "blocker_for_default": false
+    },
+    {
+      "id": "C-12",
+      "dimension": "Test coverage",
+      "native": "08E selector guard (14 tests), dashboard token fix (3 tests)",
+      "langgraph": "08F1 contract (10 tests), 08F4 failure modes (10 tests)",
+      "classification": "Equivalent",
+      "evidence": "08F5 smoke_validation_matrix: 37/37 passed across 4 test files.",
+      "blocker_for_default": false
+    },
+    {
+      "id": "C-13",
+      "dimension": "CI coverage",
+      "native": "phase1-ci and nontrading-smoke-regression green with Native default",
+      "langgraph": "Same CI runs green; LangGraph-specific tests require AGENT_V2_BACKEND=langgraph locally or in CI matrix",
+      "classification": "Equivalent",
+      "evidence": "08F5 CI green. CI matrix for LangGraph-specific tests not yet documented as a separate job.",
+      "blocker_for_default": false
+    },
+    {
+      "id": "C-14",
+      "dimension": "Maintainability",
+      "native": "Single Python class; linear flow; easy to debug",
+      "langgraph": "Graph with 14 nodes; higher conceptual overhead; requires LangGraph package expertise",
+      "classification": "Native stronger",
+      "evidence": "native_runtime.py is ~505 lines. langgraph_parity_runtime.py is ~1334 lines plus graph wiring.",
+      "blocker_for_default": false
+    },
+    {
+      "id": "C-15",
+      "dimension": "Fit with Brain's long-term goal",
+      "native": "Stable, proven, but harder to extend to multi-agent/human-in-the-loop",
+      "langgraph": "Designed for durable execution, stateful workflows, human interrupts, sub-agent orchestration",
+      "classification": "LangGraph stronger",
+      "evidence": "LangGraph OSS primitives (graph nodes, checkpoints, interrupts) map directly to Brain's agentic roadmap items.",
+      "blocker_for_default": false
+    },
+    {
+      "id": "C-16",
+      "dimension": "Fit with multi-agent orchestration",
+      "native": "Single runtime; no sub-agent harness",
+      "langgraph": "Graph nodes can host sub-agent calls; future multi-agent roles fit naturally",
+      "classification": "LangGraph stronger",
+      "evidence": "LangGraph suite adoption plan Layer 4 identifies future roles (Memory Curator, Governance Auditor, etc.).",
+      "blocker_for_default": false
+    },
+    {
+      "id": "C-17",
+      "dimension": "Fit with memory/knowledge evolution",
+      "native": "MemoryGatewayV2 used directly; no explicit evidence-linking",
+      "langgraph": "memory_retrieval node; capability metadata tracks retrieval; evidence routing node exists",
+      "classification": "LangGraph stronger",
+      "evidence": "langgraph_parity_runtime.py nodes: memory_retrieval, evidence_routing, capability_metadata.",
+      "blocker_for_default": false
+    },
+    {
+      "id": "C-18",
+      "dimension": "Fit with tool governance",
+      "native": "Governance checks inside execute_run; ToolGatewayV2",
+      "langgraph": "Governance gate as explicit graph node; SUPPORTED_READ_TOOLS whitelist; blocked_tools tracked",
+      "classification": "LangGraph stronger",
+      "evidence": "langgraph_parity_runtime.py SUPPORTED_READ_TOOLS set and _governance_gate_node.",
+      "blocker_for_default": false
+    }
+  ],
+  "summary": {
+    "native_stronger": 5,
+    "langgraph_stronger": 8,
+    "equivalent": 5,
+    "blockers_for_default": [
+      "C-01 Runtime contract completeness: LangGraph missing plan_run, pause_run, resume_run, cancel_run",
+      "C-04 Checkpoint/resume readiness: no pause/resume methods, resume path unverified"
+    ]
+  },
+  "overall_assessment": "LangGraph is structurally better aligned with Brain's long-term agentic orchestration goals, but it is not yet a production-complete replacement for Native. Two blocking gaps must be closed before default promotion can be considered.",
+  "phase_2_native_vs_langgraph_comparison": "COMPLETED",
+  "recorded_at": "2026-06-30T18:15:00+00:00"
+}

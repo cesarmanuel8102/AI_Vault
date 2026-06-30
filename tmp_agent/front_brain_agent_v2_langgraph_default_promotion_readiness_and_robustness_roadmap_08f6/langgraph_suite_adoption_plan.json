@@ -1,0 +1,69 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DEFAULT-PROMOTION-READINESS-AND-ROBUSTNESS-ROADMAP-08F6",
+  "branch": "codex/own-capital-sustainable-return",
+  "purpose": "Plan how Brain should use the broader LangGraph/LangSmith ecosystem without overcommitting",
+  "layers": [
+    {
+      "id": "LAYER-01",
+      "name": "LangGraph OSS Runtime",
+      "current_status": "Integrated as opt-in backend (LangGraphParityRuntimeV2)",
+      "value_to_brain": "Provides durable execution, structured graph nodes, stateful workflows, and future human-in-the-loop hooks.",
+      "risk": "Graph complexity; package version drift; missing production methods.",
+      "prerequisite": "All GATE-01 production methods implemented and tested.",
+      "next_front_required": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-CONTROLLED-LOCAL-CANARY-DEFAULT-08F7 or FRONT-BRAIN-AGENT-V2-LANGGRAPH-DEFAULT-PROMOTION-PATCH-08F7"
+    },
+    {
+      "id": "LAYER-02",
+      "name": "LangSmith Observability / local equivalent",
+      "current_status": "Not integrated. Local TraceStore already provides per-run traces.",
+      "value_to_brain": "Could provide trace export, run metrics, failure clustering, and evaluation datasets.",
+      "risk": "Cloud dependency; data leakage of source code or user prompts; cost.",
+      "prerequisite": "Local runtime stable; explicit operator approval for any cloud tracing.",
+      "next_front_required": "Optional future front to evaluate local LangSmith self-hosting or trace export adapter."
+    },
+    {
+      "id": "LAYER-03",
+      "name": "LangGraph Platform / deployment concept",
+      "current_status": "Not evaluated; local Brain preferred.",
+      "value_to_brain": "Managed deployments, scaling, and persisted checkpoints in production.",
+      "risk": "External cloud by default violates self-hosted preference; cost; vendor lock-in.",
+      "prerequisite": "Local runtime is default-stable and all gates pass.",
+      "next_front_required": "Separate evaluation front only after local default promotion succeeds."
+    },
+    {
+      "id": "LAYER-04",
+      "name": "Deep Agents / sub-agent harness concept",
+      "current_status": "Conceptual. Single-agent governance must be stable first.",
+      "value_to_brain": "Future multi-agent roles: Research Agent, Memory Curator, Code Auditor, Governance Auditor, CEI/FDOT Knowledge Agent, Trading Research Agent, Strategy Risk Auditor.",
+      "risk": "Swarms before single-agent governance is stable create uncontrolled action surface.",
+      "prerequisite": "LangGraph is default backend; tool governance, memory boundaries, and human gates are proven.",
+      "next_front_required": "FRONT-BRAIN-MULTI-AGENT-ROLES-ROADMAP-09A (do not start now)"
+    },
+    {
+      "id": "LAYER-05",
+      "name": "MCP / tools",
+      "current_status": "ToolGatewayV2 exists; SUPPORTED_READ_TOOLS whitelist in LangGraph runtime.",
+      "value_to_brain": "Safe tool registry enables read-only, dry-run, approval-required, and forbidden tool classes.",
+      "risk": "Broker/trading execution tools must never be added without separate risk-governance front.",
+      "prerequisite": "Governance and human gate plan accepted.",
+      "next_front_required": "FRONT-BRAIN-AGENT-V2-TOOL-REGISTRY-GOVERNANCE-08F6-R1 or later."
+    },
+    {
+      "id": "LAYER-06",
+      "name": "Evaluation",
+      "current_status": "Smoke tests exist; no formal LangGraph-vs-Native regression suite.",
+      "value_to_brain": "Scenario tests, golden prompts, regression journals, trace comparison, pass/fail rubric.",
+      "risk": "Hidden regressions if default promotion happens without comparable evaluation.",
+      "prerequisite": "LangGraph runtime completes Native parity.",
+      "next_front_required": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-EVALUATION-HARNESS-08F8 or part of 08F7 exit criteria."
+    }
+  ],
+  "tool_classification": {
+    "read_only": ["repo_status_read", "repo_history_read", "grep_search", "file_read", "route_probe", "semantic_retrieve", "smoke_test_readonly"],
+    "dry_run": ["promotion_candidate_validate"],
+    "approval_required_write": ["file_patch_apply_approval_required", "git_commit_approval_required"],
+    "forbidden_without_separate_risk_front": ["broker_order_execute", "portfolio_rebalance_live", "strategy_deploy_live"]
+  },
+  "phase_4_langgraph_suite_adoption_plan": "COMPLETED",
+  "recorded_at": "2026-06-30T18:30:00+00:00"
+}

@@ -1,0 +1,48 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DEFAULT-PROMOTION-READINESS-AND-ROBUSTNESS-ROADMAP-08F6",
+  "branch": "codex/own-capital-sustainable-return",
+  "previous_accepted_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-OBSERVABILITY-AND-ROLLBACK-CLOSEOUT-08F5",
+  "starting_baseline": "6ecc495b6f505683edbae2de35dfccf6831698d5",
+  "starting_baseline_short": "6ecc495",
+  "08f5_final_report": "tmp_agent/front_brain_agent_v2_langgraph_observability_and_rollback_closeout_08f5/final_report.json",
+  "08f5_readiness_decision": "tmp_agent/front_brain_agent_v2_langgraph_observability_and_rollback_closeout_08f5/readiness_decision.json",
+  "08f5_observability_inventory": "tmp_agent/front_brain_agent_v2_langgraph_observability_and_rollback_closeout_08f5/observability_inventory.json",
+  "08f5_rollback_runbook": "tmp_agent/front_brain_agent_v2_langgraph_observability_and_rollback_closeout_08f5/rollback_runbook.json",
+  "08f5_operator_commands": "tmp_agent/front_brain_agent_v2_langgraph_observability_and_rollback_closeout_08f5/operator_commands.json",
+  "08f4_r2_technical_patch_audit": "tmp_agent/front_brain_agent_v2_langgraph_08f4_r1_process_violation_audit_and_closeout_r2/technical_patch_audit.json",
+  "08f5_accepted": true,
+  "official_baseline_after_08f5": "6ecc495b6f505683edbae2de35dfccf6831698d5",
+  "native_default_preserved": true,
+  "langgraph_default_activation": false,
+  "langgraph_opt_in_preserved": true,
+  "rollback_documented": true,
+  "observability_documented": true,
+  "safe_to_operate_langgraph_opt_in": true,
+  "safe_to_make_langgraph_default": false,
+  "ci_green_at_08f5": {
+    "phase1-ci": {
+      "run_id": 28455364187,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    "nontrading-smoke-regression": {
+      "run_id": 28455364593,
+      "status": "completed",
+      "conclusion": "success"
+    }
+  },
+  "08f5_scope_confirmed": {
+    "source_code_modified": false,
+    "tests_modified": false,
+    "runtime_modified": false,
+    "dashboard_modified": false,
+    "api_security_modified": false,
+    "env_or_secrets_modified": false,
+    "memory_or_faiss_modified": false,
+    "trading_or_broker_modified": false,
+    "journal_or_promotion_modified": false,
+    "default_backend_changed": false
+  },
+  "phase_1_baseline_confirmation": "COMPLETED",
+  "recorded_at": "2026-06-30T18:05:00+00:00"
+}

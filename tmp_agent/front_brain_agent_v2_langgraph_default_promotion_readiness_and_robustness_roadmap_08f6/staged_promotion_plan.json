@@ -1,0 +1,77 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DEFAULT-PROMOTION-READINESS-AND-ROBUSTNESS-ROADMAP-08F6",
+  "branch": "codex/own-capital-sustainable-return",
+  "purpose": "Define the safe staged path to promote LangGraph from opt-in to default",
+  "stages": [
+    {
+      "id": "STAGE-00",
+      "name": "Current state",
+      "entry_criteria": "Baseline 6ecc495 accepted; Native default; LangGraph opt-in via AGENT_V2_BACKEND=langgraph",
+      "exit_criteria": "All 08F6 roadmap artifacts accepted",
+      "evidence_required": "08F5 closeout reports and 08F6 readiness review",
+      "rollback_path": "Already Native default; unset AGENT_V2_BACKEND",
+      "next_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DEFAULT-PROMOTION-READINESS-AND-ROBUSTNESS-ROADMAP-08F6 (this front)"
+    },
+    {
+      "id": "STAGE-01",
+      "name": "Opt-in expanded smoke",
+      "entry_criteria": "08F6 accepted; Native default preserved",
+      "exit_criteria": "Additional scenarios covered; no default change; comparison data collected",
+      "evidence_required": "New smoke tests comparing Native vs LangGraph outputs and failure modes",
+      "rollback_path": "Unset AGENT_V2_BACKEND; revert to Native-only test runs",
+      "next_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-EXPANDED-SMOKE-08F6-R1 or proceed to Stage 2"
+    },
+    {
+      "id": "STAGE-02",
+      "name": "Local canary default in isolated shell only",
+      "entry_criteria": "Stage 01 passed; operator wants hands-on LangGraph default experience",
+      "exit_criteria": "One terminal/session runs with AGENT_V2_BACKEND=langgraph; logs/traces monitored; no production default changed",
+      "evidence_required": "Operator log of canary session; trace comparison; issues filed",
+      "rollback_path": "Close terminal/session; restart with unset env",
+      "next_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-CONTROLLED-LOCAL-CANARY-DEFAULT-08F7"
+    },
+    {
+      "id": "STAGE-03",
+      "name": "Configurable local default",
+      "entry_criteria": "All GATE-01 blockers closed; GATE-04 and GATE-08 partial items closed; local canary stable",
+      "exit_criteria": "Default controlled by explicit config; rollback documented; no hardcoded default change in source",
+      "evidence_required": "Config-driven default selection test; rollback test; dashboard exposes fallback_reason",
+      "rollback_path": "Change config value or unset env; restart server",
+      "next_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-CONFIGURABLE-LOCAL-DEFAULT-08F7-R2"
+    },
+    {
+      "id": "STAGE-04",
+      "name": "Default promotion PR/front",
+      "entry_criteria": "All gates PASS; human approval obtained; source patch allowed only in this front",
+      "exit_criteria": "Source patch changes default to LangGraph; full CI green; rollback commit plan documented",
+      "evidence_required": "Pull request / front report; CI green; parity test suite; rollback runbook",
+      "rollback_path": "Revert promotion commit or apply pre-prepared rollback commit",
+      "next_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DEFAULT-PROMOTION-PATCH-08F7"
+    },
+    {
+      "id": "STAGE-05",
+      "name": "Knowledge/memory expansion",
+      "entry_criteria": "LangGraph default stable in production for defined observation period",
+      "exit_criteria": "Controlled memory promotion flow operational; no unauthorized FAISS rebuilds",
+      "evidence_required": "Memory promotion front acceptance; retrieval tests; stale-knowledge detection",
+      "rollback_path": "Disable memory promotion node; revert to read-only memory retrieval",
+      "next_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-MEMORY-PROMOTION-08F8"
+    },
+    {
+      "id": "STAGE-06",
+      "name": "Domain-specific agent roles",
+      "entry_criteria": "LangGraph default stable; memory boundaries proven; tool governance enforced",
+      "exit_criteria": "Sub-agent roles defined but no broker execution enabled",
+      "evidence_required": "Role definitions; harness tests; human-gate verification",
+      "rollback_path": "Disable sub-agent role nodes; return to single-agent graph",
+      "next_front": "FRONT-BRAIN-MULTI-AGENT-ROLES-ROADMAP-09A"
+    }
+  ],
+  "notes": [
+    "No stage enables broker/trading execution without a separate risk-governance front.",
+    "Each stage must complete and be accepted before the next stage starts.",
+    "Default promotion is intentionally split into multiple fronts to prevent uncontrolled activation."
+  ],
+  "phase_7_staged_promotion_plan": "COMPLETED",
+  "recorded_at": "2026-06-30T18:45:00+00:00"
+}

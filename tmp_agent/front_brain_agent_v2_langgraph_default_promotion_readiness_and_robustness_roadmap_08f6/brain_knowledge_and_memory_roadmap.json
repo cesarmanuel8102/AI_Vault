@@ -1,0 +1,68 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DEFAULT-PROMOTION-READINESS-AND-ROBUSTNESS-ROADMAP-08F6",
+  "branch": "codex/own-capital-sustainable-return",
+  "purpose": "Define how LangGraph should become the orchestration layer for Brain's knowledge, memory, and decision relationship without uncontrolled memory writes",
+  "memory_categories": [
+    "operator profile / preferences",
+    "project state",
+    "front / commit ledger",
+    "technical decisions",
+    "lessons learned",
+    "domain knowledge",
+    "CEI / FDOT knowledge",
+    "trading / research knowledge",
+    "rejected / obsolete knowledge"
+  ],
+  "memory_stores": [
+    "structured ledger",
+    "semantic memory",
+    "FAISS / vector index",
+    "run journal",
+    "decision journal",
+    "artifact reports"
+  ],
+  "promotion_flow": [
+    "raw observation",
+    "candidate memory",
+    "validation",
+    "human approval",
+    "promotion",
+    "retrieval test",
+    "rollback / deprecation"
+  ],
+  "langgraph_role": {
+    "orchestration": "Route each run through memory retrieval at the memory_retrieval node",
+    "evidence_linking": "Attach evidence source IDs to retrieved context and any candidate memory",
+    "separation": "Keep accepted memory separate from candidate memory",
+    "mutation_guard": "Prevent silent memory mutation; all writes require explicit tool/front approval",
+    "audit_trail": "TraceStore records retrieval attempts, source IDs, and governance decisions"
+  },
+  "safeguards": [
+    "No write to memory/semantic without explicit front",
+    "No FAISS rebuild without explicit front",
+    "No auto-promotion of knowledge",
+    "Stale knowledge detection required",
+    "Evidence-linked retrieval required",
+    "Candidate memory must be validated before promotion",
+    "Human approval required for promotion"
+  ],
+  "brain_relationship": {
+    "principle": "LangGraph should orchestrate Brain, not replace Brain",
+    "brain_role": "Brain remains the domain system owning CEI/FDOT, trading, research, and project knowledge",
+    "langgraph_role": "LangGraph becomes the controlled agentic runtime around Brain tools, memory, and governance"
+  },
+  "durable_execution_mapping": {
+    "durable execution": "LangGraph checkpoints and resume paths protect long-running reasoning",
+    "stateful workflows": "Graph state carries run context, mode, plan, and evidence source IDs across nodes",
+    "human-in-the-loop": "LangGraph interrupts or governance gate pauses for approval_required mode",
+    "traces": "TraceStore + capability_metadata node provide per-run traceability",
+    "rollback": "CheckpointStore + env-based backend fallback provide dual rollback paths",
+    "memory": "memory_retrieval node integrates accepted memory; candidate memory kept separate",
+    "tool governance": "_governance_gate_node enforces SUPPORTED_READ_TOOLS and mode escalation",
+    "knowledge growth": "Evidence-linked retrieval feeds candidate memory; promotion requires human approval",
+    "relationship with Brain/AI_Vault": "LangGraph executes on behalf of Brain's goals without usurping domain ownership",
+    "long-term goal execution": "Graph nodes can be decomposed into future sub-agent roles after default stabilization"
+  },
+  "phase_5_brain_knowledge_and_memory_roadmap": "COMPLETED",
+  "recorded_at": "2026-06-30T18:35:00+00:00"
+}

@@ -1,0 +1,16 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-DEFAULT-PROMOTION-READINESS-AND-ROBUSTNESS-ROADMAP-08F6",
+  "branch": "codex/own-capital-sustainable-return",
+  "starting_baseline": "6ecc495b6f505683edbae2de35dfccf6831698d5",
+  "starting_baseline_short": "6ecc495",
+  "local_head": "6ecc495b6f505683edbae2de35dfccf6831698d5",
+  "local_head_short": "6ecc495",
+  "origin_head": "6ecc495b6f505683edbae2de35dfccf6831698d5",
+  "origin_head_short": "6ecc495",
+  "branch_matches_origin": true,
+  "no_tracked_diff": true,
+  "no_staged_diff": true,
+  "hygiene_guard_result": "SAFE",
+  "state_lock": "COMPLETED",
+  "recorded_at": "2026-06-30T18:00:00+00:00"
+}
