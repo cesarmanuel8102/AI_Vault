@@ -1,0 +1,48 @@
+{
+  "front_id": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-GOVERNANCE-FAILURE-MODES-HARDENING-08F4-R1",
+  "decision": "ACCEPTED_08F4_R1",
+  "baseline_sha": "d2f573766a7edfeed8c7ea9905dc26a1ede76709",
+  "final_head_sha": "478a6be640d96a93694e5c3d21f7a09478a04bf4",
+  "rationale": [
+    "BUG-08F4-03 fixed: internal timeout around graph invocation with safe failed state",
+    "BUG-08F4-01 fixed: malformed run state rejected with controlled failure response",
+    "BUG-08F4-02 fixed: auto write-intent escalates mode_effective to approval_required",
+    "Native default preserved; LangGraph opt-in only",
+    "Scope clean: only allowed files modified",
+    "Local validation passes: compile, 08F4 smoke, 08F1 regression, hygiene"
+  ],
+  "validation": {
+    "compile": "PASS",
+    "08f4_r1_smoke": "10/10 PASS",
+    "08f1_regression": "9/9 PASS (scope guard deselected)",
+    "hygiene_guard": "SAFE",
+    "scope_audit": "PASS",
+    "ci": {
+      "phase1-ci": {
+        "status": "completed",
+        "conclusion": "success",
+        "run_id": "28452981403"
+      },
+      "nontrading-smoke-regression": {
+        "status": "completed",
+        "conclusion": "success",
+        "run_id": "28452981350"
+      }
+    }
+  },
+  "process_compliance": {
+    "amend_used": false,
+    "force_push_used": false,
+    "history_rewrite": false,
+    "explicit_staging": true,
+    "hygiene_guard_before_commit": true
+  },
+  "files_changed": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+    "tests/smoke/test_brain_agent_v2_langgraph_failure_modes_08f4_r1.py",
+    "tmp_agent/front_brain_agent_v2_langgraph_governance_failure_modes_hardening_08f4_r1/"
+  ],
+  "prepared_by": "opencode",
+  "date": "2026-06-30"
+}

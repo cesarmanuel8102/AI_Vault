@@ -1,0 +1,38 @@
+{
+  "compile_checks": {
+    "command": "python -m py_compile tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py tmp_agent/brain_v9/core/agent_kernel_v2/governance.py tests/smoke/test_brain_agent_v2_langgraph_failure_modes_08f4_r1.py",
+    "result": "PASS"
+  },
+  "08f4_r1_smoke": {
+    "command": "python -m pytest tests/smoke/test_brain_agent_v2_langgraph_failure_modes_08f4_r1.py -v --timeout=120",
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0,
+    "result": "PASS"
+  },
+  "08f1_regression_contract": {
+    "command": "python -m pytest tests/smoke/test_brain_agent_v2_langgraph_backend_contract_08f1.py -k \"not test_only_allowed_source_files_modified\" -v --timeout=120",
+    "passed": 9,
+    "failed": 0,
+    "skipped": 0,
+    "deselected": 1,
+    "result": "PASS",
+    "note": "08F1 scope guard frozen to 08F1 allowed prefixes; 08F4 suite has up-to-date scope guard"
+  },
+  "hygiene_guard": {
+    "command": "python scripts/git_hygiene/check_no_sensitive_paths_staged.py",
+    "result": "SAFE"
+  },
+  "scope_audit": {
+    "tracked_changed_files": [
+      "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+      "tests/smoke/test_brain_agent_v2_langgraph_failure_modes_08f4_r1.py"
+    ],
+    "untracked_report_files": [
+      "tmp_agent/front_brain_agent_v2_langgraph_governance_failure_modes_hardening_08f4_r1/"
+    ],
+    "forbidden_files_modified": false
+  },
+  "ci_status": "pending push"
+}

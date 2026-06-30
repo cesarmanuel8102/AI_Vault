@@ -1,0 +1,53 @@
+{
+  "front_id": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-GOVERNANCE-FAILURE-MODES-HARDENING-08F4-R1",
+  "baseline_sha": "d2f573766a7edfeed8c7ea9905dc26a1ede76709",
+  "changes": [
+    {
+      "bug": "BUG-08F4-03",
+      "file": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+      "summary": "Add bounded graph invocation with ThreadPoolExecutor and safe timeout terminal state",
+      "details": [
+        "DEFAULT_EXECUTE_TIMEOUT_SECONDS = 30.0",
+        "execute_timeout_seconds constructor parameter",
+        "_invoke_with_timeout wraps _graph.invoke",
+        "_build_timeout_state returns failed Native-style state",
+        "executor.shutdown(wait=False, cancel_futures=True) prevents caller trapping"
+      ]
+    },
+    {
+      "bug": "BUG-08F4-01",
+      "file": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+      "summary": "Validate run state before execution and return controlled failure for malformed state",
+      "details": [
+        "_REQUIRED_RUN_FIELDS = {run_id, goal, mode}",
+        "_is_run_state_valid validates loaded dict",
+        "get_run returns failed stub for invalid JSON or missing fields",
+        "_load_run_or_raise reads raw run.json and returns _malformed marker on parse failure",
+        "_create_malformed_run_response persists failed Native-style run"
+      ]
+    },
+    {
+      "bug": "BUG-08F4-02",
+      "files": [
+        "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"
+      ],
+      "summary": "Reflect auto-mode write-intent escalation as approval_required in run state",
+      "details": [
+        "escalate_auto_mode_effective added to governance.py",
+        "_governance_gate_node updates mode_effective to approval_required when mode_requested=auto and escalation required",
+        "mode_requested preserved as auto",
+        "_translate_graph_state_to_native_run carries mode_effective forward"
+      ]
+    }
+  ],
+  "test_file": "tests/smoke/test_brain_agent_v2_langgraph_failure_modes_08f4_r1.py",
+  "scope_discipline": {
+    "production_wiring_changed": false,
+    "native_default_changed": false,
+    "forbidden_files_modified": false,
+    "runtime_py_modified": false,
+    "governance_py_modified_for_shared_helper": true
+  },
+  "known_diagnostics": "Pre-existing LSP/Pylance type errors in _build_graph due to Optional[LiteralString] GRAPH_START/GRAPH_END and StateGraph(dict) schema typing; no runtime or py_compile impact"
+}

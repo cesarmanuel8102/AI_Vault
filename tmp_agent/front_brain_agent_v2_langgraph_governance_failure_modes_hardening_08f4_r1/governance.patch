@@ -1,0 +1,24 @@
+diff --git a/tmp_agent/brain_v9/core/agent_kernel_v2/governance.py b/tmp_agent/brain_v9/core/agent_kernel_v2/governance.py
+index 6dab3b6..244ae9a 100644
+--- a/tmp_agent/brain_v9/core/agent_kernel_v2/governance.py
++++ b/tmp_agent/brain_v9/core/agent_kernel_v2/governance.py
+@@ -125,6 +125,19 @@ def mode_requires_escalation(goal: str, mode: str, scheduled_tools: list[str]) -
+     return False
+ 
+ 
++def escalate_auto_mode_effective(mode_requested: str, escalation_required: bool, goal: str) -> str:
++    """Return the effective mode for an auto request after escalation analysis.
++
++    If the user explicitly requested auto but governance detects write/build intent,
++    the effective mode should reflect that the run is blocked/pending approval rather
++    than misleadingly staying 'auto'. For read_only or build modes the requested mode
++    is returned unchanged.
++    """
++    if mode_requested == "auto" and escalation_required:
++        return "approval_required"
++    return mode_requested
++
++
+ def write_allowed(mode: str, approval_token: str | None = None) -> bool:
+     """Check if write is allowed with valid approval token."""
+     return mode == "build" and bool(approval_token and approval_token.startswith("AGENTV2_APPROVED_"))

@@ -1,0 +1,70 @@
+{
+  "matrix": [
+    {
+      "id": "BUG-08F4-03",
+      "severity": "blocking/high",
+      "symptom": "Graph invocation could hang caller thread",
+      "root_cause": "_graph.invoke() called directly without bounded wait",
+      "fix": "ThreadPoolExecutor(max_workers=1) with future.result(timeout); safe failed state on TimeoutError; executor shutdown without blocking",
+      "tests": [
+        "test_execute_run_returns_failed_state_on_timeout",
+        "test_run_method_returns_failed_state_on_timeout"
+      ]
+    },
+    {
+      "id": "BUG-08F4-01",
+      "severity": "medium",
+      "symptom": "Partial run.json accepted and produced completed result",
+      "root_cause": "execute_run did not validate required fields",
+      "fix": "_REQUIRED_RUN_FIELDS validation; _load_run_or_raise returns malformed marker; _create_malformed_run_response",
+      "tests": [
+        "test_execute_run_rejects_missing_required_fields",
+        "test_execute_run_rejects_invalid_json_run_state",
+        "test_get_run_returns_failed_stub_for_malformed_state"
+      ]
+    },
+    {
+      "id": "BUG-08F4-02",
+      "severity": "medium",
+      "symptom": "auto mode still reported mode_effective=auto after escalation",
+      "root_cause": "Escalation flags set but mode_effective not updated",
+      "fix": "escalate_auto_mode_effective() in governance.py; applied in _governance_gate_node(); mode_requested preserved",
+      "tests": [
+        "test_auto_mode_write_intent_escalates_to_approval_required",
+        "test_auto_mode_harmless_query_does_not_escalate"
+      ]
+    }
+  ],
+  "regression": [
+    {
+      "concern": "Native default preserved",
+      "test": "test_native_default_unchanged",
+      "result": "PASS"
+    },
+    {
+      "concern": "LangGraph opt-in works",
+      "test": "test_langgraph_opt_in_still_selects_langgraph",
+      "result": "PASS"
+    },
+    {
+      "concern": "08F1 runtime contract methods",
+      "test": "test_langgraph_runtime_has_required_methods",
+      "result": "PASS"
+    },
+    {
+      "concern": "08F1 create/execute schema",
+      "test": "test_create_run_returns_native_style_run, test_execute_run_returns_native_style_run",
+      "result": "PASS"
+    },
+    {
+      "concern": "08F1 read-only governance",
+      "test": "test_read_only_blocks_write_intent",
+      "result": "PASS"
+    },
+    {
+      "concern": "Scope guard",
+      "test": "test_only_allowed_source_files_modified (08F4 suite)",
+      "result": "PASS"
+    }
+  ]
+}

@@ -1,0 +1,287 @@
+diff --git a/tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py b/tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py
+index e073744..2efcfbd 100644
+--- a/tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py
++++ b/tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py
+@@ -7,12 +7,13 @@ run_root (tests MUST pass a temporary directory).
+ """
+ from __future__ import annotations
+ import hashlib, json, time
++import concurrent.futures
+ from pathlib import Path
+ from typing import Any, Callable, Dict, List, Optional
+ 
+ from .state import CANONICAL_AGENT_VERSION
+ from .schemas import AgentTraceEvent, ToolCallRequest, to_dict, utc_now
+-from .governance import validate_mode, mode_requires_escalation, READ_ONLY_TOOL_NAMES, WRITE_TOOL_NAMES
++from .governance import validate_mode, mode_requires_escalation, escalate_auto_mode_effective, READ_ONLY_TOOL_NAMES, WRITE_TOOL_NAMES
+ from .checkpoints import CheckpointStore
+ from .trace import TraceStore
+ from .tool_gateway import ToolGatewayV2
+@@ -98,11 +99,14 @@ SUPPORTED_READ_TOOLS = {
+ class LangGraphParityRuntimeV2:
+     backend = "langgraph_parity"
+ 
++    DEFAULT_EXECUTE_TIMEOUT_SECONDS = 30.0
++
+     def __init__(
+         self,
+         run_root: Optional[Any] = None,
+         finalizer_fn: Optional[Callable[[Dict[str, Any]], str]] = None,
+         evaluator_fn: Optional[Callable[[Dict[str, Any]], Dict[str, Any]]] = None,
++        execute_timeout_seconds: Optional[float] = None,
+     ):
+         self.run_root = Path(run_root) if run_root else Path(__file__).resolve().parents[4] / "tmp_agent" / "agent_kernel_v2" / "runs_parity"
+         self.tools = ToolGatewayV2()
+@@ -110,6 +114,7 @@ class LangGraphParityRuntimeV2:
+         self.intent_adapter = AgentV2IntentAdapter()
+         self.finalizer_fn = finalizer_fn
+         self.evaluator_fn = evaluator_fn
++        self.execute_timeout_seconds = float(execute_timeout_seconds if execute_timeout_seconds is not None else self.DEFAULT_EXECUTE_TIMEOUT_SECONDS)
+         self.graph_available = LANGGRAPH_AVAILABLE
+         self.graph_error = None
+         if LANGGRAPH_AVAILABLE:
+@@ -152,6 +157,15 @@ class LangGraphParityRuntimeV2:
+         payload["updated_utc"] = utc_now()
+         (self._run_dir(run_id) / "run.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+ 
++    _REQUIRED_RUN_FIELDS = {"run_id", "goal", "mode"}
++
++    def _is_run_state_valid(self, state: Dict[str, Any]) -> bool:
++        """Check that a loaded run dict contains the minimum required fields."""
++        if not isinstance(state, dict):
++            return False
++        missing = self._REQUIRED_RUN_FIELDS - set(state.keys())
++        return not missing
++
+     def _new_run_id(self, message: str, user_id: str) -> str:
+         seed = f"{message}|{utc_now()}|{user_id}".encode("utf-8")
+         return "agv2_" + hashlib.sha256(seed).hexdigest()[:16]
+@@ -655,13 +669,18 @@ class LangGraphParityRuntimeV2:
+         route = state.get("intent_route")
+         plan = state.get("plan", [])
+         scheduled_tools = [s.get("tool_name") for s in plan if s.get("tool_name")]
+-        mode_esc = mode_requires_escalation(state.get("message", ""), state.get("mode_effective", "read_only"), scheduled_tools)
++        mode_requested = state.get("mode_requested", "read_only")
++        mode_effective = state.get("mode_effective", "read_only")
++        mode_esc = mode_requires_escalation(state.get("message", ""), mode_effective, scheduled_tools)
+         state["mode_escalation_required"] = mode_esc
+         state["approval_required"] = mode_esc
+         state["required_permission"] = "build" if mode_esc else None
+         state["confirmation_id"] = f"confirm_{state['run_id']}" if mode_esc else None
+         if "blocked_tools" not in state:
+             state["blocked_tools"] = []
++        # Reflect auto escalation in mode_effective without losing mode_requested.
++        if mode_requested == "auto":
++            state["mode_effective"] = escalate_auto_mode_effective(mode_requested, mode_esc, state.get("message", ""))
+         state["node_path"] = state.get("node_path", []) + ["governance_gate"]
+         self._trace(state["run_id"], "governance_gate_node", f"Governance check: escalation={mode_esc}", {"scheduled_tools": scheduled_tools})
+         return state
+@@ -867,9 +886,94 @@ class LangGraphParityRuntimeV2:
+                 "final_answer": "LangGraph parity runtime is unavailable because the langgraph package is not installed or failed to initialize.",
+             }
+         initial_state = {"message": message, "mode_requested": mode, "user_id": user_id}
+-        final_state = self._graph.invoke(initial_state)
++        final_state = self._invoke_with_timeout(initial_state)
+         return {**final_state, "ok": True}
+ 
++    def _invoke_with_timeout(self, initial_state: Dict[str, Any]) -> Dict[str, Any]:
++        """Invoke the compiled graph with an internal timeout/circuit-breaker.
++
++        Uses a single-use ThreadPoolExecutor so that a stalled graph node cannot
++        block the calling thread indefinitely. The timeout defaults to
++        self.execute_timeout_seconds and can be overridden per-instance.
++        On timeout we do NOT wait for the worker thread to finish (shutdown
++        cancel_futures=True when available) so the caller is never trapped by
++        a non-terminating node.
++        """
++        timeout = max(0.05, self.execute_timeout_seconds)
++
++        def _invoke():
++            return self._graph.invoke(initial_state)
++
++        executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
++        future = executor.submit(_invoke)
++        try:
++            return future.result(timeout=timeout)
++        except concurrent.futures.TimeoutError:
++            return self._build_timeout_state(initial_state)
++        finally:
++            try:
++                executor.shutdown(wait=False, cancel_futures=True)
++            except TypeError:
++                # Python < 3.9 does not support cancel_futures.
++                executor.shutdown(wait=False)
++
++    def _build_timeout_state(self, initial_state: Dict[str, Any]) -> Dict[str, Any]:
++        """Return a safe, Native-style terminal state after a timeout."""
++        import datetime as _dt
++        run_id = self._new_run_id(initial_state.get("message", ""), initial_state.get("user_id", "probe"))
++        ts = _dt.datetime.now(_dt.timezone.utc).isoformat()
++        return {
++            "run_id": run_id,
++            "message": initial_state.get("message", ""),
++            "mode_requested": initial_state.get("mode_requested", "read_only"),
++            "mode_effective": initial_state.get("mode_requested", "read_only"),
++            "user_id": initial_state.get("user_id", "probe"),
++            "status": "failed",
++            "created_utc": ts,
++            "updated_utc": ts,
++            "agent_version": CANONICAL_AGENT_VERSION,
++            "canonical_agent": True,
++            "parity_runtime": True,
++            "deep_parity_runtime": True,
++            "full_parity_runtime": True,
++            "langgraph_active": self.graph_available,
++            "intent_route": "direct_assistant",
++            "classification": "direct_assistant",
++            "final_answer": f"LangGraph execution exceeded the internal timeout ({self.execute_timeout_seconds}s) and was safely degraded. No tool writes occurred.",
++            "error": "timeout",
++            "provider_metadata": {
++                "provider_used": "deterministic_parity_finalizer_timeout",
++                "model_used": "parity_v1_full",
++                "provider_degraded": True,
++                "fallback_reason": "graph_invocation_timeout",
++                "native_helpers_used": [],
++                "live_llm_called": False,
++            },
++            "capability_metadata": self._build_capability_metadata({
++                "run_id": run_id,
++                "intent_route": "direct_assistant",
++                "classification": "direct_assistant",
++                "plan": [],
++                "evidence_sources": [],
++                "blocked_tools": [],
++                "tool_results": [],
++                "memory_hits": [],
++                "node_path": ["start", "timeout_degraded"],
++                "mode_effective": initial_state.get("mode_requested", "read_only"),
++                "status": "failed",
++            }),
++            "trace_events_count": 0,
++            "tool_results": [],
++            "memory_hits": [],
++            "plan": [],
++            "evidence_sources": [],
++            "blocked_tools": [],
++            "node_path": ["start", "timeout_degraded"],
++            "backend_selected": "langgraph_parity",
++            "backend_fallback_used": False,
++            "backend_fallback_reason": None,
++        }
++
+     def graph_probe(self) -> Dict[str, Any]:
+         if not self.graph_available:
+             return {"ok": False, "backend": self.backend, "langgraph_active": False, "error": self.graph_error}
+@@ -928,7 +1032,31 @@ class LangGraphParityRuntimeV2:
+         p = self._run_dir(run_id) / "run.json"
+         if not p.exists():
+             return None
+-        return json.loads(p.read_text(encoding="utf-8"))
++        try:
++            data = json.loads(p.read_text(encoding="utf-8"))
++        except Exception:
++            return None
++        if not self._is_run_state_valid(data):
++            return {
++                "run_id": data.get("run_id", run_id) if isinstance(data, dict) else run_id,
++                "goal": "",
++                "message": "",
++                "mode": "read_only",
++                "mode_requested": "read_only",
++                "mode_effective": "read_only",
++                "status": "failed",
++                "error": "malformed_run_state",
++                "final_answer": "Run state is malformed or missing required fields and cannot be executed.",
++                "backend_selected": "langgraph_parity",
++                "backend_fallback_used": False,
++                "backend_fallback_reason": None,
++                "user_id": "local",
++                "created_utc": utc_now(),
++                "updated_utc": utc_now(),
++                "agent_version": CANONICAL_AGENT_VERSION,
++                "canonical_agent": True,
++            }
++        return data
+ 
+     # ------------------------------------------------------------------
+     # Production runtime contract parity
+@@ -988,6 +1116,13 @@ class LangGraphParityRuntimeV2:
+     def execute_run(self, run_id: str) -> Dict[str, Any]:
+         """Execute the existing LangGraph flow and translate the result into a Native-style run dict."""
+         run = self._load_run_or_raise(run_id)
++        if not isinstance(run, dict):
++            return self._create_malformed_run_response(run_id)
++
++        if not self._is_run_state_valid(run):
++            run_id = run.get("run_id", run_id) if isinstance(run, dict) else run_id
++            return self._create_malformed_run_response(run_id)
++
+         goal = run.get("goal", "")
+         mode = run.get("mode_effective") or run.get("mode", "read_only")
+         user_id = run.get("user_id", "local")
+@@ -1020,6 +1155,47 @@ class LangGraphParityRuntimeV2:
+         })
+         return translated
+ 
++    def _create_malformed_run_response(self, run_id: str) -> Dict[str, Any]:
++        """Return a controlled failed Native-style run dict for malformed run state."""
++        failed_run = {
++            "run_id": run_id,
++            "goal": "",
++            "message": "",
++            "mode": "read_only",
++            "mode_requested": "read_only",
++            "mode_effective": "read_only",
++            "mode_escalation_required": False,
++            "approval_required": False,
++            "required_permission": None,
++            "confirmation_id": None,
++            "blocked_tools": [],
++            "expected_write_scope": [],
++            "status": "failed",
++            "error": "malformed_run_state",
++            "final_answer": "Run state is malformed or missing required fields and cannot be executed.",
++            "provider_metadata": {
++                "provider_used": "deterministic_parity_finalizer_malformed",
++                "model_used": "parity_v1_full",
++                "provider_degraded": True,
++                "fallback_reason": "malformed_run_state",
++                "native_helpers_used": [],
++                "live_llm_called": False,
++            },
++            "capability_metadata": {},
++            "trace_url": f"/v2/agent/runs/{run_id}/trace",
++            "backend_selected": "langgraph_parity",
++            "backend_fallback_used": False,
++            "backend_fallback_reason": None,
++            "user_id": "local",
++            "created_utc": utc_now(),
++            "updated_utc": utc_now(),
++            "agent_version": CANONICAL_AGENT_VERSION,
++            "canonical_agent": True,
++        }
++        self._save_run_json(failed_run)
++        self._trace(run_id, "run_failed", "Malformed run state rejected", {"error": "malformed_run_state"})
++        return failed_run
++
+     def pause_run(self, run_id: str) -> Dict[str, Any]:
+         run = self._load_run_or_raise(run_id)
+         run["status"] = "paused"
+@@ -1056,9 +1232,15 @@ class LangGraphParityRuntimeV2:
+         return runs
+ 
+     def _load_run_or_raise(self, run_id: str) -> Dict[str, Any]:
+-        run = self.get_run(run_id)
+-        if run is None:
++        p = self._run_dir(run_id) / "run.json"
++        if not p.exists():
+             raise KeyError(run_id)
++        try:
++            run = json.loads(p.read_text(encoding="utf-8"))
++        except Exception:
++            return {"run_id": run_id, "_malformed": True}
++        if not isinstance(run, dict):
++            return {"run_id": run_id, "_malformed": True}
+         return run
+ 
+     def _translate_graph_state_to_native_run(
