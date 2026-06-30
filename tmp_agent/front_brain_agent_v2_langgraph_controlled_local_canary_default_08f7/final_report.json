@@ -162,6 +162,12 @@
   "known_non_blockers": [
     "Pre-existing LSP/type-checker diagnostics in runtime.py, langgraph_parity_runtime.py, main.py, langgraph_runtime.py, and dashboard_routes.py are not introduced by this report-only front and do not affect runtime behavior or smoke tests."
   ],
-  "basis": "Report-only scope valid; all required 08F7 deliverables completed; 37/37 smoke tests passed; py_compile and hygiene passed; native default preserved; LangGraph remains opt-in only via isolated shell/session; default promotion blocked by GATE-01 native parity gap; canary accepted and repair roadmap recorded; phase1-ci and nontrading-smoke-regression green for 08F7 commit 01b38ad."
+  "basis": "Report-only scope valid; all required 08F7 deliverables completed; 37/37 smoke tests passed; py_compile and hygiene passed; native default preserved; LangGraph remains opt-in only via isolated shell/session; default promotion blocked by GATE-01 native parity gap; canary accepted and repair roadmap recorded; phase1-ci and nontrading-smoke-regression green for 08F7 technical canary commit 01b38ad.",
+  "technical_canary_commit": "01b38adfcfd6e0029d69ccd4e28365ae6eabc63b",
+  "report_ledger_followup_head": "054559703e17771a5ce6f0138a7d0d0bb845c70e",
+  "current_remote_head_before_08f7a": "054559703e17771a5ce6f0138a7d0d0bb845c70e",
+  "08f7a_required": true,
+  "08f7a_reason": "final_report.json syntax error (missing comma before recorded_at) and ledger/CI head mismatch after follow-up commit",
+  "official_new_baseline": "PENDING_08F7A_COMMIT_AND_CI",
   "recorded_at": "2026-06-30T21:15:00+00:00"
 }

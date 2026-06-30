@@ -6,6 +6,8 @@ Report-only controlled local canary. No source code, tests, runtime, dashboard, 
 ## Branch and baseline
 - **Branch:** `codex/own-capital-sustainable-return`
 - **Starting baseline:** `ce82142d6047aaec25f4a80a719a3c43b79702cc`
+- **08F7 technical canary commit:** `01b38adfcfd6e0029d69ccd4e28365ae6eabc63b`
+- **08F7 report ledger head before correction:** `054559703e17771a5ce6f0138a7d0d0bb845c70e`
 - **Previous front:** `FRONT-BRAIN-AGENT-V2-LANGGRAPH-DEFAULT-PROMOTION-READINESS-AND-ROBUSTNESS-ROADMAP-08F6`
 
 ## Phase completion
@@ -88,5 +90,10 @@ GATE-01 remains the only hard blocker for global default promotion.
 ## Known non-blockers
 Pre-existing LSP/type-checker diagnostics in `runtime.py`, `langgraph_parity_runtime.py`, `main.py`, `langgraph_runtime.py`, and `dashboard_routes.py` are not introduced by this report-only front and do not affect runtime behavior or smoke tests.
 
+## CI status
+- **phase1-ci** run `28462063518`: `success` (against 08F7 technical canary commit `01b38ad`).
+- **nontrading-smoke-regression** run `28462063497`: `success` (against 08F7 technical canary commit `01b38ad`).
+- **08F7 report ledger head** (`0545597`) required correction before it can be accepted as a clean baseline.
+
 ## Conclusion
-The 08F7 controlled local canary is complete and accepted. LangGraph can be selected in an isolated shell via `AGENT_V2_BACKEND=langgraph`, observed through existing dashboard/API surfaces, and rolled back cleanly to Native. Default promotion is intentionally blocked by GATE-01 until method parity is implemented in the recommended follow-up front.
+The 08F7 controlled local canary is complete and accepted. LangGraph can be selected in an isolated shell via `AGENT_V2_BACKEND=langgraph`, observed through existing dashboard/API surfaces, and rolled back cleanly to Native. Default promotion is intentionally blocked by GATE-01 until method parity is implemented in the recommended follow-up front. The 08F7 report ledger was corrected by front `08F7A` and the branch baseline advances only after 08F7A's own CI is green.

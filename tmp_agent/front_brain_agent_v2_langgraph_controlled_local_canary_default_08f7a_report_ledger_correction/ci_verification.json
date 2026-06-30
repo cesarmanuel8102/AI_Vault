@@ -1,0 +1,45 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-CONTROLLED-LOCAL-CANARY-DEFAULT-08F7A-REPORT-LEDGER-CORRECTION",
+  "phase": "phase_4_ci_verification",
+  "verified_at": "2026-06-30T21:45:00+00:00",
+  "repository": "cesarmanuel8102/AI_Vault",
+  "branch": "codex/own-capital-sustainable-return",
+  "current_remote_head_before_08f7a": "054559703e17771a5ce6f0138a7d0d0bb845c70e",
+  "ci_for_current_remote_head_before_08f7a": "VERIFIED_GREEN",
+  "08f7_technical_canary_commit": "01b38adfcfd6e0029d69ccd4e28365ae6eabc63b",
+  "08f7_technical_canary_ci": {
+    "phase1-ci": {
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 28462063518,
+      "url": "https://github.com/cesarmanuel8102/AI_Vault/actions/runs/28462063518",
+      "head_sha": "01b38adfcfd6e0029d69ccd4e28365ae6eabc63b"
+    },
+    "nontrading-smoke-regression": {
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 28462063497,
+      "url": "https://github.com/cesarmanuel8102/AI_Vault/actions/runs/28462063497",
+      "head_sha": "01b38adfcfd6e0029d69ccd4e28365ae6eabc63b"
+    }
+  },
+  "head_0545597_ci": {
+    "phase1-ci": {
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 28462063518,
+      "url": "https://github.com/cesarmanuel8102/AI_Vault/actions/runs/28462063518",
+      "head_sha": "054559703e17771a5ce6f0138a7d0d0bb845c70e"
+    },
+    "nontrading-smoke-regression": {
+      "status": "completed",
+      "conclusion": "success",
+      "run_id": 28462063497,
+      "url": "https://github.com/cesarmanuel8102/AI_Vault/actions/runs/28462063497",
+      "head_sha": "054559703e17771a5ce6f0138a7d0d0bb845c70e"
+    }
+  },
+  "ci_for_08f7a_correction_commit_required": true,
+  "08f7a_correction_commit_must_trigger_new_ci": true,
+  "next_phase": "phase_5_correction_summary"
+}

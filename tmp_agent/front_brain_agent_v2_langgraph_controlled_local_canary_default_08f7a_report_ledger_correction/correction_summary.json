@@ -1,0 +1,56 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-CONTROLLED-LOCAL-CANARY-DEFAULT-08F7A-REPORT-LEDGER-CORRECTION",
+  "phase": "phase_5_correction_summary",
+  "generated_at": "2026-06-30T21:50:00+00:00",
+  "branch": "codex/own-capital-sustainable-return",
+  "starting_head_before_08f7a": "054559703e17771a5ce6f0138a7d0d0bb845c70e",
+  "08f7_technical_canary_commit": "01b38adfcfd6e0029d69ccd4e28365ae6eabc63b",
+  "08f7_technical_canary_accepted": true,
+  "08f7_report_ledger_defects": [
+    {
+      "defect": "invalid_json_syntax",
+      "location": "tmp_agent/front_brain_agent_v2_langgraph_controlled_local_canary_default_08f7/final_report.json",
+      "detail": "Missing comma before \"recorded_at\" field caused JSON parse failure."
+    },
+    {
+      "defect": "ledger_ci_head_mismatch",
+      "location": "tmp_agent/front_brain_agent_v2_langgraph_controlled_local_canary_default_08f7/final_report.json",
+      "detail": "Final report basis referenced CI green for 08F7 technical commit 01b38ad, but the actual current remote head before correction is 0545597. The report ledger did not clearly separate technical canary commit from report ledger follow-up head."
+    }
+  ],
+  "08f7_report_ledger_corrected": true,
+  "correction_scope": "report-only",
+  "source_files_modified": false,
+  "test_files_modified": false,
+  "runtime_files_modified": false,
+  "dashboard_files_modified": false,
+  "frontend_files_modified": false,
+  "api_security_changed": false,
+  "main_changed": false,
+  "api_adapter_changed": false,
+  "native_runtime_changed": false,
+  "langgraph_parity_runtime_changed": false,
+  "response_normalizer_changed": false,
+  "memory_touched": false,
+  "faiss_touched": false,
+  "trading_touched": false,
+  "env_touched": false,
+  "process_rules_respected": {
+    "amend_used": false,
+    "force_push_used": false,
+    "force_with_lease_used": false,
+    "git_add_a_used": false,
+    "history_rewritten": false,
+    "untracked_files_cleaned": false
+  },
+  "native_default_preserved": true,
+  "langgraph_default_activation": false,
+  "langgraph_opt_in_only": true,
+  "canary_safe": true,
+  "ready_to_make_langgraph_default_now": false,
+  "default_promotion_safe_now": false,
+  "08f7_r1_not_started": true,
+  "recommended_next_front": "FRONT-BRAIN-AGENT-V2-LANGGRAPH-PRODUCTION-METHOD-PARITY-08F7-R1",
+  "basis": "08F7 technical canary findings and decision are unchanged. Only the report ledger is being corrected. Native default remains unchanged. No source, test, runtime, dashboard, security, memory, FAISS, trading, or env files are modified. 08F7A is report-ledger correction only.",
+  "next_phase": "phase_6_final_decision"
+}
