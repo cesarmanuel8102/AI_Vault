@@ -1,104 +1,85 @@
-# financial_autonomy_autobuild.py
+from pathlib import Path
 import os
 import time
-from pathlib import Path
-from financial_autonomy_bridge import FinancialAutonomyBridge
-from trust_score_integration import FinancialTrustIntegration
+import json
+from typing import Dict
+
+from financial_autonomy.bridge.financial_autonomy_bridge import FinancialAutonomyBridge
+from financial_autonomy.bridge.trust_score_integration import FinancialTrustIntegration
+
 
 class FinancialAutonomyAutobuild:
-    \"\"\"Sistema de autoconstrucción para integración financiero-autónoma\"\"\"
-    
-    def __init__(self):
-        self.vault_path = Path(\"C:\\AI_VAULT\")
-        self.module_path = self.vault_path / \"financial_autonomy\"
+    """Sistema de autoconstruccion para integracion financiero-autonoma."""
+
+    def __init__(self, vault_path: str | Path | None = None):
+        self.vault_path = Path(vault_path or os.getenv("BRAIN_BASE_PATH", Path(__file__).resolve().parents[1]))
+        self.module_path = self.vault_path / "financial_autonomy"
         self.bridge = FinancialAutonomyBridge(str(self.vault_path))
         self.trust_integrator = FinancialTrustIntegration(str(self.vault_path))
-    
+
     def run_autobuild_cycle(self):
-        \"\"\"Ejecutar ciclo completo de autoconstrucción\"\"\"
-        print(\"🚀 Iniciando ciclo de autoconstrucción financiero-autónoma...\")
-        
-        # Fase 1: Verificar integración
+        """Ejecutar ciclo completo de autoconstruccion."""
+        print("Iniciando ciclo de autoconstruccion financiero-autonoma...")
+
         if not self.verify_integration():
-            print(\"🔧 Reparando integración...\")
-            self.repair_integration()
-        
-        # Fase 2: Optimizar basado en métricas
+            print("Integracion no verificada; no se aplican reparaciones automaticas.")
+
         self.optimize_based_on_performance()
-        
-        # Fase 3: Actualizar trust score
         self.update_financial_trust()
-        
-        # Fase 4: Generar reporte de automejora
         self.generate_improvement_report()
-        
-        print(\"✅ Ciclo de autoconstrucción completado\")
-    
+
+        print("Ciclo de autoconstruccion completado")
+
     def verify_integration(self) -> bool:
-        \"\"\"Verificar que la integración funciona\"\"\"
+        """Verificar que la integracion puede leer metricas sin broker real."""
         try:
-            # Probar bridge
             metrics = self.bridge.expose_financial_metrics()
-            if \"error\" in metrics:
+            if "error" in metrics:
                 return False
-            
-            # Verificar trust score
-            self.trust_integrator.enhance_trust_with_finance()
-            
-            return True
+            return self.trust_integrator.enhance_trust_with_finance()
         except Exception as e:
-            print(f\"❌ Error en verificación: {e}\")
+            print(f"Error en verificacion: {e}")
             return False
-    
+
     def optimize_based_on_performance(self):
-        \"\"\"Optimizar basado en métricas de performance\"\"\"
+        """Generar feedback de optimizacion sin ejecutar trades reales."""
         try:
             metrics = self.bridge.expose_financial_metrics()
-            
-            # Generar sugerencias de optimización automática
             optimizations = self.generate_auto_optimizations(metrics)
-            
-            # Aplicar optimizaciones
             if optimizations:
                 self.bridge.receive_autonomy_feedback(optimizations)
-                print(\"✅ Optimizaciones aplicadas automáticamente\")
-            
+                print("Optimizaciones registradas")
         except Exception as e:
-            print(f\"❌ Error en optimización automática: {e}\")
-    
-    def generate_auto_optimizations(self, metrics: Dict) -> Dict:
-        \"\"\"Generar optimizaciones automáticas basadas en métricas\"\"\"
-        # Lógica de optimización inteligente
-        optimizations = {\"parameters\": {}, \"risk\": {}}
-        
-        # Ejemplo: ajustar parámetros basado en Sharpe ratio
-        sharpe = metrics.get(\"portfolio_performance\", {}).get(\"sharpe\", 0)
-        if sharpe < 1.0:
-            optimizations[\"parameters\"][\"aggressiveness\"] = \"increase\"
-        
-        return optimizations
-    
-    def update_financial_trust(self):
-        \"\"\"Actualizar trust score financiero\"\"\"
-        self.trust_integrator.enhance_trust_with_finance()
-    
-    def generate_improvement_report(self):
-        \"\"\"Generar reporte de automejora\"\"\"
-        report_path = self.module_path / \"reports\" / f\"autobuild_report_{int(time.time())}.json\"
-        report_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        report = {
-            \"timestamp\": time.time(),
-            \"cycle_type\": \"financial_autonomy\",
-            \"improvements_applied\": [],
-            \"performance_metrics\": self.bridge.expose_financial_metrics(),
-            \"trust_score_updated\": True
-        }
-        
-        import json
-        report_path.write_text(json.dumps(report, indent=2))
+            print(f"Error en optimizacion automatica: {e}")
 
-if __name__ == \"__main__\":
+    def generate_auto_optimizations(self, metrics: Dict) -> Dict:
+        """Generar sugerencias conservadoras basadas en metricas."""
+        optimizations = {"parameters": {}, "risk": {}}
+        sharpe = metrics.get("portfolio_performance", {}).get("sharpe", 0)
+        if sharpe < 1.0:
+            optimizations["parameters"]["aggressiveness"] = "review_required"
+        return optimizations
+
+    def update_financial_trust(self):
+        """Actualizar trust score financiero local si el archivo existe/puede crearse."""
+        self.trust_integrator.enhance_trust_with_finance()
+
+    def generate_improvement_report(self):
+        """Generar reporte local de automejora."""
+        report_path = self.module_path / "reports" / f"autobuild_report_{int(time.time())}.json"
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report = {
+            "timestamp": time.time(),
+            "cycle_type": "financial_autonomy",
+            "improvements_applied": [],
+            "performance_metrics": self.bridge.expose_financial_metrics(),
+            "trust_score_updated": True,
+            "real_money_enabled": False,
+            "broker_execution_enabled": False,
+        }
+        report_path.write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+
+if __name__ == "__main__":
     autobuild = FinancialAutonomyAutobuild()
     autobuild.run_autobuild_cycle()
-

@@ -1,0 +1,29 @@
+{
+  "status": "COMPLETE",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_before": "e9242a3",
+  "head_after": "e9242a3",
+  "scope": "restore financial_autonomy compile/import/API dry-run safety",
+  "files_modified": [
+    "financial_autonomy/__init__.py",
+    "financial_autonomy/api/financial_endpoints.py",
+    "financial_autonomy/bridge/financial_autonomy_bridge.py",
+    "financial_autonomy/bridge/trust_score_integration.py",
+    "financial_autonomy/financial_autonomy_autobuild.py",
+    "financial_autonomy/integration_setup.py"
+  ],
+  "tests_created": [
+    "tests/smoke/test_front_financial_autonomy_compile_contract_10.py"
+  ],
+  "py_compile_passed": true,
+  "isolated_smoke": "4 passed",
+  "focal_regression": "21 passed, 3 warnings",
+  "real_money_enabled": false,
+  "broker_execution_enabled": false,
+  "memory_semantic_touched": false,
+  "faiss_touched": false,
+  "trading_touched": false,
+  "ibkr_touched": false,
+  "commit_created": false,
+  "push_done": false
+}
