@@ -179,9 +179,65 @@ def promotion_queue_status() -> Dict[str, Any]:
     dashboard_queue = _safe_path("memory/promotion_queue")
     if dashboard_queue and dashboard_queue.exists():
         files = sorted(dashboard_queue.glob("*.json"))
+        review_required_true = 0
+        review_required_false = 0
+        resolved_utc_present = 0
+        promotion_record_id_present = 0
+        terminal_status_counts: Dict[str, int] = {}
+        canonical_promotion_counts: Dict[str, int] = {}
+        parse_errors: List[str] = []
+        sample_records: List[Dict[str, Any]] = []
+        for file_path in files:
+            try:
+                record = json.loads(file_path.read_text(encoding="utf-8"))
+            except Exception as e:
+                parse_errors.append(f"{file_path.name}: {str(e)[:80]}")
+                continue
+
+            review_required = record.get("review_required")
+            if review_required is True:
+                review_required_true += 1
+            elif review_required is False:
+                review_required_false += 1
+
+            terminal_status = str(record.get("terminal_status") or "<missing>")
+            terminal_status_counts[terminal_status] = terminal_status_counts.get(terminal_status, 0) + 1
+
+            canonical_promotion = str(record.get("canonical_promotion"))
+            canonical_promotion_counts[canonical_promotion] = canonical_promotion_counts.get(canonical_promotion, 0) + 1
+
+            if record.get("resolved_utc"):
+                resolved_utc_present += 1
+            if record.get("promotion_record_id"):
+                promotion_record_id_present += 1
+            if len(sample_records) < 5:
+                sample_records.append({
+                    "file": str(file_path.relative_to(REPO_ROOT)),
+                    "candidate_id": record.get("candidate_id"),
+                    "review_required": review_required,
+                    "terminal_status": record.get("terminal_status"),
+                    "canonical_promotion": record.get("canonical_promotion"),
+                    "resolved_utc": record.get("resolved_utc"),
+                    "resolution_reason": record.get("resolution_reason"),
+                })
+
         dashboard_status_memory.update({
             "exists": True,
             "promotion_queue_count": len(files),
+            "active_review_required_count": review_required_true,
+            "review_required_false_count": review_required_false,
+            "resolved_utc_present_count": resolved_utc_present,
+            "promotion_record_id_present_count": promotion_record_id_present,
+            "terminal_status_counts": terminal_status_counts,
+            "canonical_promotion_counts": canonical_promotion_counts,
+            "parse_error_count": len(parse_errors),
+            "parse_errors": parse_errors[:10],
+            "pending_interpretation": (
+                "The dashboard count is a raw file count under memory/promotion_queue. "
+                "Active pending review should be derived from review_required=true; "
+                "resolved or archived files can still be counted by the dashboard raw metric."
+            ),
+            "sample_records": sample_records,
             "sample_files": [str(f.relative_to(REPO_ROOT)) for f in files[:10]],
         })
     evidence.append({"dashboard_status_memory_reconciliation": dashboard_status_memory})
@@ -235,7 +291,8 @@ def promotion_queue_status() -> Dict[str, Any]:
     summary = (
         f"Canonical promotion/review queue dirs checked: {len(queue_dirs)}, existing: {canonical_existing}, "
         f"entries: {canonical_entries}; dashboard /brain-dashboard/status memory.promotion_queue_count: "
-        f"{dashboard_status_memory.get('promotion_queue_count')}; dashboard learning candidate_promote_count: "
+        f"{dashboard_status_memory.get('promotion_queue_count')}; active review_required=true: "
+        f"{dashboard_status_memory.get('active_review_required_count')}; dashboard learning candidate_promote_count: "
         f"{dashboard_learning.get('candidate_promote_count')}"
     )
     return {"tool_name": "promotion_queue_status", "ok": True, "mutated_state": False, "summary": summary, "evidence": evidence, "error": None}

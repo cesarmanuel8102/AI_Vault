@@ -1,0 +1,26 @@
+{
+  "status": "IMPLEMENTED",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_before": "9a2d7bd",
+  "fix": "promotion_queue_status now reports dashboard raw count plus active review_required pending state and terminal status distribution",
+  "files_modified": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/evidence_tools.py",
+    "tests/smoke/test_brain_agent_v2_agentic_benchmark_gap_repair_08f8_r1d.py"
+  ],
+  "dashboard_memory_promotion_queue_count": 57,
+  "active_review_required_count": 0,
+  "review_required_false_count": 57,
+  "terminal_status_counts": {
+    "approved_for_canonical_promotion": 6,
+    "promoted_to_canonical": 6,
+    "archived_duplicate": 12,
+    "archived_superseded": 33
+  },
+  "py_compile_passed": true,
+  "smoke_passed": "10 passed",
+  "no_memory_semantic_write": true,
+  "no_faiss_write": true,
+  "no_trading_touched": true,
+  "commit_created": false,
+  "push_done": false
+}

@@ -146,6 +146,12 @@ def test_promotion_queue_status_reconciles_dashboard_learning_count():
     assert mem_rec["frontend_field"] == "memory.promotion_queue_count"
     assert "promotion_queue_count" in mem_rec
     assert "memory/promotion_queue" in mem_rec["formula"]
+    assert "active_review_required_count" in mem_rec
+    assert "terminal_status_counts" in mem_rec
+    assert "resolved_utc_present_count" in mem_rec
+    assert "pending_interpretation" in mem_rec
+    assert "raw file count" in mem_rec["pending_interpretation"]
+    assert "review_required=true" in mem_rec["pending_interpretation"]
 
     reconciliation = [
         item.get("dashboard_learning_reconciliation")
