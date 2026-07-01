@@ -5,9 +5,13 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
-PRIMARY_KIMI_MODEL = "kimi-k2.6:cloud"
+try:
+    from brain_v9.config import API_ENDPOINTS, PRIMARY_KIMI_MODEL
+except Exception:
+    API_ENDPOINTS = {"ollama": "http://127.0.0.1:11434/api/chat"}
+    PRIMARY_KIMI_MODEL = "kimi-k2.6:cloud"
+
 FALLBACK_MODELS = ["deepseek-v4-pro:cloud", "gpt-oss:120b-cloud", "kimi-k2.5:cloud"]
-OLLAMA_CHAT_URL = "http://127.0.0.1:11434/api/chat"
 FORBIDDEN_FINAL_MARKERS = ("chain-of-thought", "hidden reasoning", "private reasoning", "scratchpad")
 
 
@@ -42,7 +46,8 @@ def _ollama_chat(model: str, prompt: str, timeout: int = 45, system_content: str
         ],
         "options": {"temperature": 0.1, "num_predict": 900},
     }
-    req = urllib.request.Request(OLLAMA_CHAT_URL, data=json.dumps(body).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
+    ollama_chat_url = API_ENDPOINTS.get("ollama", "http://127.0.0.1:11434/api/chat")
+    req = urllib.request.Request(ollama_chat_url, data=json.dumps(body).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         data = json.loads(resp.read().decode("utf-8", "replace"))
     content = ((data.get("message") or {}).get("content") or "").strip()

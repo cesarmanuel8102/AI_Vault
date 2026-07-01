@@ -167,6 +167,14 @@ API_ENDPOINTS = {
     "ollama": os.getenv("OLLAMA_URL",      "http://localhost:11434/api/chat"),
 }
 
+# Provider routing defaults. Keep model/endpoint selection centralized so
+# Agent V2, codegen, semantic embeddings and capability probes do not drift.
+PRIMARY_KIMI_MODEL = os.getenv("PRIMARY_KIMI_MODEL", "kimi-k2.6:cloud")
+OLLAMA_BASE_URL = os.getenv(
+    "OLLAMA_BASE_URL",
+    API_ENDPOINTS["ollama"].replace("/api/chat", "").rstrip("/"),
+)
+
 # Modelos Ollama
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
 OLLAMA_AGENT_MODEL = os.getenv("OLLAMA_AGENT_MODEL", "deepseek-r1:14b")

@@ -20,7 +20,10 @@ from aiohttp import ClientSession, ClientTimeout, ClientConnectorError
 
 log = logging.getLogger("CodeGen")
 
-OLLAMA_CHAT_URL = "http://localhost:11434/api/chat"
+try:
+    from brain_v9.config import API_ENDPOINTS
+except Exception:
+    API_ENDPOINTS = {"ollama": "http://localhost:11434/api/chat"}
 
 # Model chain: cloud first (fast, 480B), local fallback (14B)
 CODEGEN_MODELS = [
@@ -100,7 +103,7 @@ class CodeGenClient:
             },
         }
         async with session.post(
-            OLLAMA_CHAT_URL,
+            API_ENDPOINTS.get("ollama", "http://localhost:11434/api/chat"),
             json=payload,
             timeout=ClientTimeout(total=timeout),
         ) as resp:

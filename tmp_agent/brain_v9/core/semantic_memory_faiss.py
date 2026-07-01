@@ -33,7 +33,7 @@ try:
 except ImportError:
     FAISS_AVAILABLE = False
 
-from brain_v9.config import BASE_PATH, STATE_PATH
+from brain_v9.config import API_ENDPOINTS, BASE_PATH, OLLAMA_BASE_URL, STATE_PATH
 
 log = logging.getLogger("semantic_memory_faiss")
 
@@ -44,7 +44,7 @@ FAISS_INDEX_PATH = SEMANTIC_ROOT / "semantic_memory_faiss.index"
 FAISS_IDS_PATH = SEMANTIC_ROOT / "semantic_memory_faiss_ids.json"
 STATUS_PATH = STATE_PATH / "semantic_memory_status.json"
 
-OLLAMA_URL = "http://localhost:11434"
+OLLAMA_URL = OLLAMA_BASE_URL or API_ENDPOINTS.get("ollama", "http://localhost:11434/api/chat").replace("/api/chat", "")
 EMBEDDING_MODEL = "nomic-embed-text"  # Modelo rápido de embeddings
 EMBEDDING_DIMS = 768  # nomic-embed-text genera 768 dims
 
