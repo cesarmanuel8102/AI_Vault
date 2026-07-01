@@ -28,3 +28,12 @@ Positive risky requests still escalate or block normally.
 - No memory/semantic data mutated.
 - No FAISS/index mutation.
 - No .env or secrets touched.
+
+## Live post-restart verification
+- File: tmp_agent/front_brain_intent_negation_guard_03/live_negation_verify_after_restart.json
+- Result: PASS
+- intent_detected: unknown_or_insufficient_info
+- governance_decision: allow
+- approval_required: false
+- backend/model: langgraph_parity / kimi-k2.6:cloud
+
