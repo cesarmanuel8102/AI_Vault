@@ -103,3 +103,47 @@ def test_live_trading_request_still_fails_closed(tmp_path, monkeypatch):
     assert out.get("governance_decision") == "blocked"
     assert out.get("governance_blocked_reason")
     assert out.get("approval_required") is False
+
+
+def test_generic_langgraph_architecture_question_requires_evidence(tmp_path, monkeypatch):
+    rt = _runtime(tmp_path, monkeypatch)
+    out = _run(
+        rt,
+        "Explícame tu arquitectura interna de LangGraph dentro de Brain y cómo decides usar herramientas; basa la respuesta en evidencia del repo.",
+    )
+    assert out.get("intent_detected") == "evidence_required_diagnosis"
+    assert out.get("classification") == "evidence_required_diagnosis"
+    _assert_readonly_evidence_run(out)
+    tools = _tool_names(out)
+    assert "repo_file_search" in tools
+    assert "repo_file_read" in tools
+
+
+def test_generic_dashboard_queue_discrepancy_requires_evidence(tmp_path, monkeypatch):
+    rt = _runtime(tmp_path, monkeypatch)
+    out = _run(
+        rt,
+        "Valora con evidencia por qué el dashboard puede mostrar una cifra distinta a la cola de promoción.",
+    )
+    assert out.get("intent_route") == "brain_evidence"
+    assert out.get("classification") in {"dashboard_diagnosis", "evidence_required_diagnosis", "promotion_queue_status"}
+    _assert_readonly_evidence_run(out)
+
+
+def test_generic_self_knowledge_question_uses_evidence_policy(tmp_path, monkeypatch):
+    rt = _runtime(tmp_path, monkeypatch)
+    out = _run(
+        rt,
+        "Dime con evidencia si puedes razonar sobre tu propio kernel, tus herramientas y tus brechas actuales.",
+    )
+    assert out.get("intent_route") == "brain_evidence"
+    assert out.get("classification") == "evidence_required_diagnosis"
+    _assert_readonly_evidence_run(out)
+
+
+def test_casual_chat_still_allows_direct_assistant(tmp_path, monkeypatch):
+    rt = _runtime(tmp_path, monkeypatch)
+    out = _run(rt, "hola")
+    assert out.get("intent_route") == "direct_assistant"
+    assert out.get("classification") == "direct_assistant"
+    assert (out.get("capability_metadata") or {}).get("tools_executed", 0) == 0

@@ -1,0 +1,26 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-EVIDENCE-POLICY-ROOT-CAUSE-REPAIR-08F8-R1E",
+  "status": "IMPLEMENTED_VALIDATED",
+  "base_head": "7280324",
+  "root_cause": "Agent V2 relied on narrow phrase-specific intent patterns and could answer Brain-internal diagnostic questions through direct_assistant when no exact phrase matched.",
+  "fix": [
+    "Added generic evidence-required policy in intent_classifier for Brain/repo/memory/dashboard/LangGraph/trace/financial/capability domains.",
+    "Added planner counterpart evidence_required_diagnosis with generic read-only evidence tools.",
+    "Prevented generic phrases like 'usar herramientas' from being treated as explicit tool names.",
+    "Kept casual chat on direct_assistant and kept unsafe real-money trading blocked."
+  ],
+  "validation": {
+    "py_compile": "PASS",
+    "pytest": "21 passed",
+    "tests": [
+      "tests/smoke/test_brain_agent_v2_agentic_benchmark_gap_repair_08f8_r1d.py",
+      "tests/smoke/test_brain_agent_v2_backend_response_normalization_08e.py"
+    ]
+  },
+  "safety": {
+    "real_money_used": false,
+    "broker_ibkr_touched": false,
+    "memory_semantic_write": false,
+    "faiss_write": false
+  }
+}

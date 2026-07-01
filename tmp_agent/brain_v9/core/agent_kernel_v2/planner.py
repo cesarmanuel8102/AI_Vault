@@ -11,7 +11,7 @@ PLANNER_CLASSES = [
     "explicit_tool_request", "autonomy_diagnosis", "recent_changes_diagnosis",
     "teacher_codex_search", "memory_structure_diagnosis", "semantic_memory_status",
     "promotion_queue_status", "trace_inspect", "capability_registry_read",
-    "financial_autonomy_diagnosis",
+    "financial_autonomy_diagnosis", "evidence_required_diagnosis",
 ]
 
 # Explicit tool request patterns - if user names a tool, schedule it directly
@@ -25,6 +25,11 @@ EXPLICIT_TOOL_PATTERNS = {
     r"(?:complementada\s+con|complemented\s+with)\s+([a-z_][a-z0-9_]*)" : r"\1",
     # English explicit tool requests with action verb + tool type
     r"(?:schedule|run|use|execute)\s+(?:the\s+)?([a-z_][a-z0-9_]*)\s+(?:tool|check|test)" : r"\1",
+}
+
+GENERIC_TOOL_WORDS = {
+    "tool", "tools", "herramienta", "herramientas", "check", "checks",
+    "test", "tests", "prueba", "pruebas", "evidencia", "evidence",
 }
 
 # Diagnostic phrase mappings - when user describes a symptom, map to diagnostic tools
@@ -95,6 +100,47 @@ DIAGNOSTIC_PHRASES = {
     },
 }
 
+EVIDENCE_ACTION_RE = re.compile(
+    r"\b(audit|audita|auditar|review|revisa|revisar|inspect|inspecciona|diagnose|"
+    r"diagnostica|explain|explica|explicar|how|como|cómo|why|por\s+que|por\s+qué|"
+    r"status|estado|evidence|evidencia|verify|verifica|confirm|confirma|valora|"
+    r"valorar|demuestra|prove)\b",
+    re.IGNORECASE,
+)
+
+EVIDENCE_DOMAIN_RE = re.compile(
+    r"\b(brain|agent|agente|agent\s+v2|langgraph|kernel|runtime|repo|repository|"
+    r"repositorio|dashboard|chat|ui|memory|memoria|semantic|faiss|trace|traza|"
+    r"tool|tools|herramientas?|financial_autonomy|financial\s+autonomy|"
+    r"autonom(?:ia|ía)\s+financiera|broker_execution_enabled|real_money_enabled|"
+    r"promotion\s+queue|cola\s+de\s+promoci(?:o|ó)n|candidate|candidato|"
+    r"governance|gobernanza|provider|kimi|ollama|finalizer|planner|selector|"
+    r"router|arquitectura|architecture|autodesarrollo|self-development|"
+    r"autoconocimiento|capacidades|capabilities)\b",
+    re.IGNORECASE,
+)
+
+
+def _requires_generic_evidence(goal: str) -> bool:
+    """Return True when a prompt should not be answered without tools.
+
+    This is the planner counterpart to intent_classifier's evidence policy.
+    It keeps root-cause behavior consistent even when planner classification is
+    called directly by tests or runtimes.
+    """
+    g = goal or ""
+    if not EVIDENCE_DOMAIN_RE.search(g):
+        return False
+    if EVIDENCE_ACTION_RE.search(g):
+        return True
+    return bool(re.search(
+        r"langgraph|financial_autonomy|broker_execution_enabled|real_money_enabled|"
+        r"promotion\s+queue|cola\s+de\s+promoci(?:o|ó)n|trace|traza|semantic|faiss|"
+        r"autodesarrollo|self-development|autoconocimiento",
+        g,
+        re.IGNORECASE,
+    ))
+
 
 def _detect_explicit_tool_requests(goal: str) -> List[Dict[str, Any]]:
     """Detect if user explicitly names a tool. Returns list of tool requests."""
@@ -104,6 +150,8 @@ def _detect_explicit_tool_requests(goal: str) -> List[Dict[str, Any]]:
     for pattern, tool_name_group in EXPLICIT_TOOL_PATTERNS.items():
         for match in re.finditer(pattern, goal, re.IGNORECASE):
             tool_name = match.group(1).strip().lower()
+            if tool_name in GENERIC_TOOL_WORDS:
+                continue
             if tool_name and len(tool_name) > 2 and tool_name not in seen_tools:
                 seen_tools.add(tool_name)
                 requests.append({
@@ -187,6 +235,8 @@ def classify_goal(goal: str, mode: str = "read_only") -> str:
         return "promotion_queue_status"
     if any(x in g for x in ["capability registry", "registro de capacidades", "list capabilities", "que capacidades", "lee capacidades"]):
         return "capability_registry_read"
+    if _requires_generic_evidence(goal):
+        return "evidence_required_diagnosis"
     
     if any(x in g for x in [".env", "apply patch", "commit", "push", "write tool", "blocked write"]):
         return "approval_required_write"
@@ -335,6 +385,12 @@ def build_plan(goal: str, mode: str = "read_only") -> tuple[str, List[Dict[str, 
         add("financial_bridge", "tool", "Read financial autonomy bridge", "repo_file_read", {"path": "financial_autonomy/bridge/financial_autonomy_bridge.py", "max_bytes": 8000})
         add("financial_smoke", "tool", "Read dry-run safety smoke", "repo_file_read", {"path": "tests/smoke/test_front_financial_autonomy_compile_contract_10.py", "max_bytes": 8000})
         add("financial_memory", "memory", "Retrieve financial autonomy memory", "semantic_retrieve", {"query": "financial_autonomy dry-run broker_execution_enabled real_money_enabled autonomous financial system", "top_k": 3})
+    if classification == "evidence_required_diagnosis":
+        add("repo_status", "tool", "Read repository status", "repo_status_read", {})
+        add("brain_evidence_search", "tool", "Search Brain Agent V2 evidence", "repo_file_search", {"pattern": "LangGraphParityRuntimeV2|Agent V2|agent_kernel_v2|capability|finalizer|planner|tool_results|evidence_sources|financial_autonomy|semantic_memory|dashboard", "glob": "*.py"})
+        add("runtime_read", "tool", "Read LangGraph parity runtime", "repo_file_read", {"path": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py", "max_bytes": 10000})
+        add("capability_read", "tool", "Read capability registry", "capability_registry_read", {})
+        add("semantic_context", "memory", "Retrieve semantic context for internal Brain question", "semantic_retrieve", {"query": goal, "top_k": 4})
     if classification == "safe_patch_dry_run":
         add("patch_dry_run", "tool", "Prepare patch preview only", "file_patch_dry_run", {"goal": goal})
     if classification == "approval_required_write":

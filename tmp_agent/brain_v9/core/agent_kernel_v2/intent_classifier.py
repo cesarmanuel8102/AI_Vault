@@ -38,6 +38,7 @@ SUPPORTED_INTENTS = {
     "trace_inspect",
     "capability_registry_read",
     "financial_autonomy_diagnosis",
+    "evidence_required_diagnosis",
     "unknown_or_insufficient_info",
 }
 
@@ -54,6 +55,7 @@ SAFE_READ_INTENTS = {
     "trace_inspect",
     "capability_registry_read",
     "financial_autonomy_diagnosis",
+    "evidence_required_diagnosis",
 }
 
 APPROVAL_REQUIRED_INTENTS = {
@@ -95,6 +97,7 @@ INTENT_ROUTE_MAP = {
     "trace_inspect": "brain_evidence",
     "capability_registry_read": "brain_evidence",
     "financial_autonomy_diagnosis": "brain_evidence",
+    "evidence_required_diagnosis": "brain_evidence",
     "unknown_or_insufficient_info": "direct_assistant",
 }
 
@@ -325,6 +328,32 @@ NEGATION_GUARDED_INTENTS = {
     "trading_broker_live",
 }
 
+EVIDENCE_ACTION_TERMS = {
+    "audit", "audita", "auditar", "review", "revisa", "revisar", "inspect",
+    "inspecciona", "inspeccionar", "diagnose", "diagnostica", "diagnosticar",
+    "explain", "explica", "explicar", "how", "como", "cómo", "why", "por que",
+    "por qué", "status", "estado", "evidence", "evidencia", "trace", "traza",
+    "prove", "demuestra", "confirm", "confirma", "verify", "verifica",
+    "valora", "valorar", "capabilities", "capacidades",
+}
+
+EVIDENCE_DOMAIN_TERMS = {
+    "brain", "agent", "agente", "agent v2", "langgraph", "kernel", "runtime",
+    "repo", "repository", "repositorio", "dashboard", "chat", "ui", "memory",
+    "memoria", "semantic", "faiss", "trace", "traza", "tool", "tools",
+    "herramienta", "herramientas", "financial_autonomy", "financial autonomy",
+    "autonomia financiera", "autonomía financiera", "broker_execution_enabled",
+    "real_money_enabled", "promotion queue", "cola de promocion", "cola de promoción",
+    "candidate", "candidato", "governance", "gobernanza", "provider", "kimi",
+    "ollama", "finalizer", "planner", "selector", "router", "arquitectura",
+    "architecture", "autodesarrollo", "self-development", "autoconocimiento",
+}
+
+EVIDENCE_POLICY_EXCLUSIONS = {
+    "hola", "hello", "hi", "buenos dias", "buenos días", "buenas tardes",
+    "buenas noches", "gracias", "thanks",
+}
+
 _NEGATION_PREFIX_RE = re.compile(
     r"(?:^|[\s,.;:])(?:no|sin|nunca|jamas|jamás|not|without|never|do\s+not|don['’]?t)"
     r"(?:\s+\w+){0,5}\s*$"
@@ -343,6 +372,70 @@ def _has_non_negated_phrase(lowered: str, phrase: str) -> bool:
         if not _NEGATION_PREFIX_RE.search(prefix):
             return True
     return False
+
+
+def _has_term(text: str, term: str) -> bool:
+    if " " in term or "_" in term:
+        return term in text
+    return re.search(rf"(?<![a-z0-9_]){re.escape(term)}(?![a-z0-9_])", text) is not None
+
+
+def _evidence_policy_classify(message: str) -> Optional[Dict[str, Any]]:
+    """Generic evidence-routing policy for Brain-internal questions.
+
+    The narrow INTENT_PATTERNS table is intentionally not the only gate. Any
+    read-only prompt that asks the agent to inspect, explain, verify, audit, or
+    diagnose Brain/repo/memory/finance/trace/dashboard internals must route
+    through evidence tools instead of free-form direct assistant text.
+    """
+    lowered = (message or "").lower()
+    stripped = lowered.strip(" .?!¡¿")
+    if not stripped or stripped in EVIDENCE_POLICY_EXCLUSIONS:
+        return None
+
+    action_hits = [t for t in EVIDENCE_ACTION_TERMS if _has_term(lowered, t)]
+    domain_hits = [t for t in EVIDENCE_DOMAIN_TERMS if _has_term(lowered, t)]
+    if not domain_hits:
+        return None
+
+    # Direct domain phrases that always need evidence even if the verb is terse.
+    always_evidence = any(t in domain_hits for t in {
+        "langgraph", "financial_autonomy", "financial autonomy",
+        "broker_execution_enabled", "real_money_enabled", "promotion queue",
+        "cola de promocion", "cola de promoción", "trace", "traza",
+        "semantic", "faiss", "autodesarrollo", "self-development",
+    })
+    if not action_hits and not always_evidence:
+        return None
+
+    intent = "evidence_required_diagnosis"
+    if any(t in domain_hits for t in {"financial_autonomy", "financial autonomy", "autonomia financiera", "autonomía financiera", "broker_execution_enabled", "real_money_enabled"}):
+        intent = "financial_autonomy_diagnosis"
+    elif any(t in domain_hits for t in {"trace", "traza"}):
+        intent = "trace_inspect"
+    elif any(t in domain_hits for t in {"promotion queue", "cola de promocion", "cola de promoción"}):
+        intent = "promotion_queue_status"
+    elif any(t in domain_hits for t in {"semantic", "faiss"}):
+        intent = "semantic_memory_status"
+    elif any(t in domain_hits for t in {"memory", "memoria"}):
+        intent = "memory_structure_diagnosis"
+    elif any(t in domain_hits for t in {"autodesarrollo", "self-development", "autoconocimiento", "capabilities", "capacidades"}):
+        intent = "capability_registry_read"
+    elif any(t in domain_hits for t in {"dashboard", "ui"}):
+        intent = "dashboard_diagnosis"
+
+    return {
+        "intent": intent,
+        "confidence": 0.86,
+        "language": _detect_language(message),
+        "risk_level": "safe",
+        "requires_approval": False,
+        "route": INTENT_ROUTE_MAP.get(intent, "brain_evidence"),
+        "reason": f"generic evidence policy matched actions={action_hits[:5]} domains={domain_hits[:5]}",
+        "blocked_reason": None,
+        "matched_terms": action_hits[:5] + domain_hits[:5],
+        "classifier": "evidence_policy",
+    }
 
 def _keyword_classify(message: str) -> Dict[str, Any]:
     """Deterministic keyword-based classifier. Conservative on unsafe/unknown."""
@@ -370,6 +463,15 @@ def _keyword_classify(message: str) -> Dict[str, Any]:
             best_risk = risk
             best_reason = f"matched deterministic keywords: {local_matched[:5]}"
             matched_terms = local_matched
+
+    policy_result = _evidence_policy_classify(message)
+    if (
+        policy_result is not None
+        and best_intent not in BLOCKED_INTENTS
+        and best_intent not in APPROVAL_REQUIRED_INTENTS
+    ):
+        if best_intent == "unknown_or_insufficient_info":
+            return policy_result
 
     requires_approval = best_intent in APPROVAL_REQUIRED_INTENTS or best_intent in DRY_RUN_ONLY_INTENTS or best_intent in REPORT_ONLY_INTENTS
     blocked_reason = None
@@ -403,7 +505,7 @@ def _llm_classify(message: str) -> Optional[Dict[str, Any]]:
         "autonomy_dryrun, self_improvement_reportonly, trading_broker_live, "
         "teacher_codex_search, memory_structure_diagnosis, semantic_memory_status, "
         "promotion_queue_status, trace_inspect, capability_registry_read, "
-        "financial_autonomy_diagnosis, unknown_or_insufficient_info. "
+        "financial_autonomy_diagnosis, evidence_required_diagnosis, unknown_or_insufficient_info. "
         "risk_level must be one of safe, approval_required, blocked. "
         "language one of es, en, mixed, unknown. route one of direct_assistant, brain_evidence, operational_agent. "
         "Use Spanish/English mixed queries. For trading/broker/live-money always return intent=trading_broker_live, risk_level=blocked. "
