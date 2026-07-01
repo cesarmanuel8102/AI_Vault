@@ -9,6 +9,8 @@ PLANNER_CLASSES = [
     "provider_diagnosis", "frontend_diagnosis", "smoke_test", "documentation_task",
     "safe_patch_dry_run", "approval_required_write", "general_reasoning", "mandatory_multitool",
     "explicit_tool_request", "autonomy_diagnosis", "recent_changes_diagnosis",
+    "teacher_codex_search", "memory_structure_diagnosis", "semantic_memory_status",
+    "promotion_queue_status", "trace_inspect", "capability_registry_read",
 ]
 
 # Explicit tool request patterns - if user names a tool, schedule it directly
@@ -188,6 +190,20 @@ def classify_goal(goal: str, mode: str = "read_only") -> str:
     if any(x in g for x in ["changes", "cambios", "commits", "history", "log", "diff"]):
         return "recent_changes_diagnosis"
     
+    # New evidence intent classifications (maps from intent_classifier.py new intents)
+    if any(x in g for x in ["teacher mode", "modo teacher", "codex teacher", "maestro codex", "aprendizaje guiado", "teacher codex"]):
+        return "teacher_codex_search"
+    if any(x in g for x in ["memory structure", "estructura de memoria", "como esta estructurada", "que falta para que funcione", "persistent memory structure", "estructurada la memoria"]):
+        return "memory_structure_diagnosis"
+    if any(x in g for x in ["semantic memory status", "estado de la memoria semantica", "faiss status", "indice faiss", "estado faiss"]):
+        return "semantic_memory_status"
+    if any(x in g for x in ["promotion queue", "cola de promocion", "candidates pending", "review queue", "cola de revision"]):
+        return "promotion_queue_status"
+    if any(x in g for x in ["trace inspect", "inspecciona trace", "lee trace", "trace details", "view trace", "ver trace"]):
+        return "trace_inspect"
+    if any(x in g for x in ["capability registry", "registro de capacidades", "list capabilities", "que capacidades", "lee capacidades"]):
+        return "capability_registry_read"
+    
     return "general_reasoning"
 
 
@@ -273,6 +289,22 @@ def build_plan(goal: str, mode: str = "read_only") -> tuple[str, List[Dict[str, 
         add("probe_8092_dashboard", "tool", "Probe dashboard status", "route_probe", {"url": "http://127.0.0.1:8092/brain-dashboard/status"})
     if classification == "smoke_test":
         add("smoke", "tool", "Run allowlisted smoke test", "smoke_test_readonly", {"target": "tests/smoke/smoke_front_brain_agent_v2_total_operational_excellence_closeout_01.py"})
+    if classification == "teacher_codex_search":
+        add("codex_search", "tool", "Search for teacher/codex mode references", "repo_file_search", {"pattern": "teacher|codex|aprendizaje guiado", "glob": "*.py"})
+        add("semantic_codex", "memory", "Retrieve semantic memory for codex/teacher", "semantic_retrieve", {"query": "codex teacher mode guided learning", "top_k": 3})
+    if classification == "memory_structure_diagnosis":
+        add("memory_inspect", "tool", "Inspect memory structure", "memory_structure_inspect", {})
+        add("semantic_status", "tool", "Check semantic memory status", "semantic_memory_status", {})
+        add("repo_status", "tool", "Read repository status", "repo_status_read", {})
+    if classification == "semantic_memory_status":
+        add("semantic_status", "tool", "Check semantic memory status", "semantic_memory_status", {})
+    if classification == "promotion_queue_status":
+        add("promotion_status", "tool", "Check promotion queue status", "promotion_queue_status", {})
+    if classification == "trace_inspect":
+        add("repo_status", "tool", "Read repository status", "repo_status_read", {})
+        add("repo_history", "tool", "Read recent commit history", "repo_history_read", {"path": "tmp_agent/brain_v9", "limit": 5})
+    if classification == "capability_registry_read":
+        add("capability_read", "tool", "Read capability registry", "capability_registry_read", {})
     if classification == "safe_patch_dry_run":
         add("patch_dry_run", "tool", "Prepare patch preview only", "file_patch_dry_run", {"goal": goal})
     if classification == "approval_required_write":
@@ -299,6 +331,12 @@ def _resolve_tool(tool_name: str) -> tuple[str, Dict[str, Any], str]:
         "file_patch_dry_run": ("file_patch_dry_run", {}, ""),
         "file_patch_apply_approval_required": ("file_patch_apply_approval_required", {}, ""),
         "git_commit_approval_required": ("git_commit_approval_required", {}, ""),
+        "repo_file_search": ("repo_file_search", {"pattern": "agent", "glob": "*.py"}, "pattern needs to be specified"),
+        "repo_file_read": ("repo_file_read", {"path": "README.md"}, "path needs to be specified"),
+        "memory_structure_inspect": ("memory_structure_inspect", {}, ""),
+        "semantic_memory_status": ("semantic_memory_status", {}, ""),
+        "promotion_queue_status": ("promotion_queue_status", {}, ""),
+        "capability_registry_read": ("capability_registry_read", {}, ""),
     }
     
     if t in direct_map:

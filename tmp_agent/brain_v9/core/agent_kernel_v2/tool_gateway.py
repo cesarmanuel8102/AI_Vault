@@ -31,6 +31,13 @@ class ToolGatewayV2:
             AgentCapability("file_patch_dry_run", "Preview a file patch", "medium", False, False, ["dry_run", "approval_required"]),
             AgentCapability("file_patch_apply_approval_required", "Apply a patch only with approval", "high", False, True, ["approval_required", "write_allowed"]),
             AgentCapability("git_commit_approval_required", "Commit only with approval", "high", False, True, ["approval_required", "write_allowed"]),
+
+            AgentCapability("repo_file_search", "Search repository text files for evidence", "low", True, False, ["read_only", "dry_run"]),
+            AgentCapability("repo_file_read", "Read a safe repo file for evidence", "low", True, False, ["read_only", "dry_run"]),
+            AgentCapability("memory_structure_inspect", "Inspect memory directory structure read-only", "low", True, False, ["read_only", "dry_run"]),
+            AgentCapability("semantic_memory_status", "Read-only semantic memory/FAISS status", "low", True, False, ["read_only", "dry_run"]),
+            AgentCapability("promotion_queue_status", "Read-only promotion/review queue status", "low", True, False, ["read_only", "dry_run"]),
+            AgentCapability("capability_registry_read", "Read tool capability registry", "low", True, False, ["read_only", "dry_run"]),
         ]
 
     def list_capabilities(self) -> List[Dict[str, Any]]:
@@ -118,6 +125,11 @@ class ToolGatewayV2:
             return self._smoke(name, req.args)
         if name in {"report_writer", "file_patch_dry_run"}:
             return ToolCallResult(name, ok=True, result={"dry_run": mode != "build", "preview": req.args})
+        # Evidence tools dispatch
+        if name in {"repo_file_search", "repo_file_read", "memory_structure_inspect", "semantic_memory_status", "promotion_queue_status", "capability_registry_read"}:
+            from .evidence_tools import dispatch_evidence_tool
+            result = dispatch_evidence_tool(name, req.args)
+            return ToolCallResult(name, ok=result.get("ok", False), result=result.get("evidence", {}), error=result.get("error"))
         return ToolCallResult(name, ok=False, error="unknown_tool")
 
     def _repo_history(self, name, args):

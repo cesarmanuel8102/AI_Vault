@@ -27,6 +27,8 @@ READ_ONLY_TOOL_NAMES = {
     "repo_status_read", "repo_history_read", "repo_diff_read",
     "grep_search", "file_read", "route_probe", "semantic_retrieve",
     "smoke_test_readonly",
+    "repo_file_search", "repo_file_read", "memory_structure_inspect",
+    "semantic_memory_status", "promotion_queue_status", "capability_registry_read",
 }
 
 # Governance-critical files that self-dev tools must not modify without explicit governance approval

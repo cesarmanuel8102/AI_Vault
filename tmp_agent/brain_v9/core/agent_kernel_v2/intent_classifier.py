@@ -31,6 +31,12 @@ SUPPORTED_INTENTS = {
     "autonomy_dryrun",
     "self_improvement_reportonly",
     "trading_broker_live",
+    "teacher_codex_search",
+    "memory_structure_diagnosis",
+    "semantic_memory_status",
+    "promotion_queue_status",
+    "trace_inspect",
+    "capability_registry_read",
     "unknown_or_insufficient_info",
 }
 
@@ -40,6 +46,12 @@ SAFE_READ_INTENTS = {
     "repo_read",
     "dashboard_diagnosis",
     "memory_read",
+    "teacher_codex_search",
+    "memory_structure_diagnosis",
+    "semantic_memory_status",
+    "promotion_queue_status",
+    "trace_inspect",
+    "capability_registry_read",
 }
 
 APPROVAL_REQUIRED_INTENTS = {
@@ -74,6 +86,12 @@ INTENT_ROUTE_MAP = {
     "autonomy_dryrun": "operational_agent",
     "self_improvement_reportonly": "direct_assistant",
     "trading_broker_live": "direct_assistant",
+    "teacher_codex_search": "brain_evidence",
+    "memory_structure_diagnosis": "brain_evidence",
+    "semantic_memory_status": "brain_evidence",
+    "promotion_queue_status": "brain_evidence",
+    "trace_inspect": "brain_evidence",
+    "capability_registry_read": "brain_evidence",
     "unknown_or_insufficient_info": "direct_assistant",
 }
 
@@ -178,7 +196,7 @@ INTENT_PATTERNS: List[Tuple[str, List[str], List[str], str]] = [
         "propón una mejora", "propon una mejora", "proponer mejora", "sugerir mejora",
         "sin aplicar", "sin aplicarla", "automejora", "auto-mejora",
     ], "safe"),
-    ("trading_broker_live", [
+("trading_broker_live", [
         "connect ibkr", "connect broker", "live trading", "real trade", "trading test",
         "enable trading", "automatic trading", "auto trading", "place trade", "execute trade",
     ], [
@@ -187,6 +205,67 @@ INTENT_PATTERNS: List[Tuple[str, List[str], List[str], str]] = [
         "trading automático", "trading automatico", "haz una operación", "hacer una operacion",
         "ejecuta trade", "ejecutar trade", "dinero real",
     ], "blocked"),
+    ("teacher_codex_search", [
+        "teacher mode", "codex teacher", "guided learning", "teacher mode codex",
+        "teacher guided learning", "codex guided learning", "codex teacher mode",
+        "modo teacher", "maestro codex", "aprendizaje guiado", "maestro codex teacher",
+        "codex mode teacher", "teacher mode codex cli", "codex teacher cli",
+    ], [
+        "modo teacher", "maestro codex", "aprendizaje guiado", "modo maestro",
+        "teacher codex", "codex teacher", "modo de aprendizaje guiado",
+        "aprendizaje guiado por un maestro", "modo teacher codex",
+    ], "safe"),
+    ("memory_structure_diagnosis", [
+        "memory structure", "memory structure diagnosis", "persistent memory structure",
+        "how is memory structured", "what is missing from memory", "memory structure what is missing",
+        "inspect memory structure", "check memory structure", "diagnose memory structure",
+        "qué falta para que funcione la memoria", "como esta estructurada la memoria",
+        "estructura de la memoria", "estructura de memoria persistente",
+        "qué falta para que funcione", "falta para que funcione la memoria",
+        "inspecciona la estructura de memoria", "diagnostica estructura de memoria",
+    ], [
+        "estructura de memoria", "estructura de memoria persistente",
+        "cómo está estructurada la memoria", "como esta estructurada la memoria",
+        "qué falta para que funcione la memoria", "que falta para que funcione la memoria",
+        "inspecciona la estructura de memoria", "diagnostica estructura de memoria",
+    ], "safe"),
+    ("semantic_memory_status", [
+        "semantic memory status", "semantic memory", "faiss status", "faiss index",
+        "faiss index status", "semantic memory faiss", "vector index status",
+        "semantic memory index", "how is semantic memory", "semantic memory stats",
+        "estado de la memoria semántica", "estado de memoria semantica",
+        "estado faiss", "indice faiss", "indice faiss estado",
+    ], [
+        "estado de la memoria semántica", "estado de memoria semantica",
+        "estado faiss", "índice faiss", "indice faiss",
+        "estado de faiss", "índice faiss estado",
+    ], "safe"),
+    ("promotion_queue_status", [
+        "promotion queue", "promotion queue status", "candidate queue", "review queue",
+        "promotion status", "candidates pending", "promotion queue candidates",
+        "cola de promocion", "cola de promociones", "cola de revisión",
+        "cola de candidatos", "estado de promocion", "estado de cola",
+    ], [
+        "cola de promocion", "cola de promociones", "cola de revisión", "cola de revisión",
+        "cola de candidatos", "estado de promocion", "estado de cola",
+        "candidatos pendientes", "promociones pendientes",
+    ], "safe"),
+    ("trace_inspect", [
+        "trace inspect", "inspect trace", "read trace", "trace details",
+        "run trace", "trace run", "trace details run", "view trace",
+        "inspecciona trace", "lee trace", "trace run_id", "ver trace",
+    ], [
+        "inspecciona trace", "lee trace", "trace run", "detalles trace",
+        "ver trace", "trace run_id",
+    ], "safe"),
+    ("capability_registry_read", [
+        "capability registry", "capabilities registry", "what capabilities",
+        "list capabilities", "capabilities read", "agent capabilities",
+        "read capabilities", "capabilities read",
+    ], [
+        "registro de capacidades", "capacidades del agente", "qué capacidades",
+        "lista capacidades", "capacidades read", "lee capacidades",
+    ], "safe"),
 ]
 
 

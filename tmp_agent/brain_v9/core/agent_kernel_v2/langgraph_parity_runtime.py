@@ -96,6 +96,12 @@ SUPPORTED_READ_TOOLS = {
     "route_probe",
     "semantic_retrieve",
     "smoke_test_readonly",
+    "repo_file_search",
+    "repo_file_read",
+    "memory_structure_inspect",
+    "semantic_memory_status",
+    "promotion_queue_status",
+    "capability_registry_read",
 }
 
 
@@ -694,6 +700,27 @@ class LangGraphParityRuntimeV2:
                     existing_tools.add(tool)
                 elif tool == "semantic_retrieve" and tool not in existing_tools:
                     new_steps.append({"step_id": "ev_semantic", "kind": "tool", "title": "Retrieve semantic memory", "status": "planned", "tool_name": "semantic_retrieve", "input": {"query": message[:200], "top_k": 3}})
+                    existing_tools.add(tool)
+                elif tool == "repo_file_search" and tool not in existing_tools:
+                    pattern = src.get("grep_pattern", "agent|brain|kernel")
+                    new_steps.append({"step_id": "ev_repo_file_search", "kind": "tool", "title": "Search repo files for evidence", "status": "planned", "tool_name": "repo_file_search", "input": {"pattern": pattern, "glob": "*.py"}})
+                    existing_tools.add(tool)
+                elif tool == "repo_file_read" and tool not in existing_tools:
+                    for idx, path in enumerate(resolved_paths):
+                        if path not in existing_tools:
+                            new_steps.append({"step_id": f"ev_repo_file_read_{idx}", "kind": "tool", "title": f"Read evidence file", "status": "planned", "tool_name": "repo_file_read", "input": {"path": path}})
+                            existing_tools.add(path)
+                elif tool == "memory_structure_inspect" and tool not in existing_tools:
+                    new_steps.append({"step_id": "ev_mem_struct", "kind": "tool", "title": "Inspect memory structure", "status": "planned", "tool_name": "memory_structure_inspect", "input": {}})
+                    existing_tools.add(tool)
+                elif tool == "semantic_memory_status" and tool not in existing_tools:
+                    new_steps.append({"step_id": "ev_sem_status", "kind": "tool", "title": "Check semantic memory status", "status": "planned", "tool_name": "semantic_memory_status", "input": {}})
+                    existing_tools.add(tool)
+                elif tool == "promotion_queue_status" and tool not in existing_tools:
+                    new_steps.append({"step_id": "ev_promo_status", "kind": "tool", "title": "Check promotion queue status", "status": "planned", "tool_name": "promotion_queue_status", "input": {}})
+                    existing_tools.add(tool)
+                elif tool == "capability_registry_read" and tool not in existing_tools:
+                    new_steps.append({"step_id": "ev_cap_read", "kind": "tool", "title": "Read capability registry", "status": "planned", "tool_name": "capability_registry_read", "input": {}})
                     existing_tools.add(tool)
 
         merged: List[Dict[str, Any]] = []
