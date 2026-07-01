@@ -13,6 +13,8 @@ def _build_capability_metadata(run: Dict[str, Any]) -> Dict[str, Any]:
     """Derive capability activation metadata from the V2 run object."""
     plan = run.get("plan") or []
     intent_route = run.get("intent_route")
+    evidence_sources = run.get("evidence_sources") or []
+    tool_results = run.get("tool_results") or []
     semantic_steps = [s for s in plan if s.get("tool_name") == "semantic_retrieve"]
     retrieval_attempted = bool(semantic_steps)
     retrieval_no_results = any(
@@ -34,8 +36,8 @@ def _build_capability_metadata(run: Dict[str, Any]) -> Dict[str, Any]:
         "retrieval_no_results": retrieval_no_results,
         "retrieval_skipped": retrieval_skipped,
         "planner_used": bool(plan and any(s.get("tool_name") for s in plan)),
-        "evidence_routed": bool(run.get("evidence_sources")),
-        "evidence_sources_count": len(run.get("evidence_sources") or []),
+        "evidence_routed": bool(evidence_sources or tool_results),
+        "evidence_sources_count": len(evidence_sources) if evidence_sources else len(tool_results),
         "tools_considered": len(tools_considered),
         "tools_executed": len(tools_executed),
         "tools_blocked": len(run.get("blocked_tools") or []),
@@ -253,6 +255,8 @@ def chat_agent(req: AgentChatRequest):
         "tools_considered": run.get("tools_considered"),
         "tools_executed": run.get("executed_tools"),
         "tools_blocked": run.get("tools_blocked"),
+        "evidence_sources": run.get("evidence_sources") or [],
+        "tool_results": run.get("tool_results") or [],
         "governance_decision": run.get("governance_decision"),
         "governance_required_permission": run.get("governance_required_permission"),
         "governance_blocked_reason": run.get("governance_blocked_reason"),

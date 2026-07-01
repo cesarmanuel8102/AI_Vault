@@ -37,6 +37,7 @@ SUPPORTED_INTENTS = {
     "promotion_queue_status",
     "trace_inspect",
     "capability_registry_read",
+    "financial_autonomy_diagnosis",
     "unknown_or_insufficient_info",
 }
 
@@ -52,6 +53,7 @@ SAFE_READ_INTENTS = {
     "promotion_queue_status",
     "trace_inspect",
     "capability_registry_read",
+    "financial_autonomy_diagnosis",
 }
 
 APPROVAL_REQUIRED_INTENTS = {
@@ -84,7 +86,7 @@ INTENT_ROUTE_MAP = {
     "memory_read": "brain_evidence",
     "memory_write": "operational_agent",
     "autonomy_dryrun": "operational_agent",
-    "self_improvement_reportonly": "direct_assistant",
+    "self_improvement_reportonly": "brain_evidence",
     "trading_broker_live": "direct_assistant",
     "teacher_codex_search": "brain_evidence",
     "memory_structure_diagnosis": "brain_evidence",
@@ -92,6 +94,7 @@ INTENT_ROUTE_MAP = {
     "promotion_queue_status": "brain_evidence",
     "trace_inspect": "brain_evidence",
     "capability_registry_read": "brain_evidence",
+    "financial_autonomy_diagnosis": "brain_evidence",
     "unknown_or_insufficient_info": "direct_assistant",
 }
 
@@ -191,10 +194,27 @@ INTENT_PATTERNS: List[Tuple[str, List[str], List[str], str]] = [
     ("self_improvement_reportonly", [
         "evaluate your answer", "propose an improvement", "self improve", "self-improve",
         "report only improvement", "suggest improvement without applying",
+        "self-development", "self development", "self-development plan",
+        "current capabilities", "capability audit", "audit your capabilities",
+        "self knowledge", "autonomous development",
     ], [
         "evalúa tu respuesta", "evalua tu respuesta", "evalúa respuesta anterior",
         "propón una mejora", "propon una mejora", "proponer mejora", "sugerir mejora",
         "sin aplicar", "sin aplicarla", "automejora", "auto-mejora",
+        "autodesarrollo", "auto desarrollo", "plan de autodesarrollo",
+        "capacidades actuales", "audita tus capacidades", "auditar capacidades",
+        "autoconocimiento", "auto conocimiento",
+    ], "safe"),
+    ("financial_autonomy_diagnosis", [
+        "financial_autonomy", "financial autonomy", "financial autonomy dry-run",
+        "financial autonomy dry run", "financial autonomy module",
+        "broker_execution_enabled", "real_money_enabled",
+        "financial autonomous system", "autonomous financial system",
+    ], [
+        "financial_autonomy", "autonomía financiera", "autonomia financiera",
+        "módulo financiero autónomo", "modulo financiero autonomo",
+        "sistema financiero autónomo", "sistema financiero autonomo",
+        "broker_execution_enabled", "real_money_enabled",
     ], "safe"),
 ("trading_broker_live", [
         "connect ibkr", "connect broker", "live trading", "real trade", "trading test",
@@ -254,9 +274,13 @@ INTENT_PATTERNS: List[Tuple[str, List[str], List[str], str]] = [
         "trace inspect", "inspect trace", "read trace", "trace details",
         "run trace", "trace run", "trace details run", "view trace",
         "inspecciona trace", "lee trace", "trace run_id", "ver trace",
+        "inspect a recent trace", "recent trace", "trace truthfulness",
+        "real tools or direct answer", "tools actually executed",
     ], [
         "inspecciona trace", "lee trace", "trace run", "detalles trace",
-        "ver trace", "trace run_id",
+        "ver trace", "trace run_id", "inspeccionar un trace",
+        "trace reciente", "traza reciente", "traza", "herramientas reales",
+        "solo respuesta", "herramientas ejecutadas",
     ], "safe"),
     ("capability_registry_read", [
         "capability registry", "capabilities registry", "what capabilities",
@@ -376,7 +400,10 @@ def _llm_classify(message: str) -> Optional[Dict[str, Any]]:
         "intent, confidence, language, risk_level, requires_approval, route, reason, blocked_reason. "
         "Allowed intents: read_only_status, explain_capabilities, repo_read, dashboard_diagnosis, "
         "code_change_request, push_request, delete_request, memory_read, memory_write, "
-        "autonomy_dryrun, self_improvement_reportonly, trading_broker_live, unknown_or_insufficient_info. "
+        "autonomy_dryrun, self_improvement_reportonly, trading_broker_live, "
+        "teacher_codex_search, memory_structure_diagnosis, semantic_memory_status, "
+        "promotion_queue_status, trace_inspect, capability_registry_read, "
+        "financial_autonomy_diagnosis, unknown_or_insufficient_info. "
         "risk_level must be one of safe, approval_required, blocked. "
         "language one of es, en, mixed, unknown. route one of direct_assistant, brain_evidence, operational_agent. "
         "Use Spanish/English mixed queries. For trading/broker/live-money always return intent=trading_broker_live, risk_level=blocked. "
@@ -443,6 +470,13 @@ def classify_intent(message: str) -> Dict[str, Any]:
     """Public classifier entry point. Keyword first, optional LLM override."""
     keyword_result = _keyword_classify(message)
     if not BRAIN_USE_LLM_INTENT_CLASSIFIER:
+        return keyword_result
+    if keyword_result["intent"] in BLOCKED_INTENTS:
+        # Safety: never let an LLM downgrade a deterministic live-trading block.
+        return keyword_result
+    if keyword_result["intent"] != "unknown_or_insufficient_info" and keyword_result["confidence"] >= 0.85:
+        # High-confidence deterministic evidence routes are more reliable than
+        # a general LLM classifier for narrow Brain operational intents.
         return keyword_result
     llm_result = _llm_classify(message)
     if llm_result is None:

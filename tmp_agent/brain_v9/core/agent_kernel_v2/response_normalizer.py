@@ -97,6 +97,8 @@ def normalize_capability_metadata(
     raw = raw or {}
     src = raw_capability_metadata or {}
     plan = raw.get("plan") or []
+    evidence_sources = raw.get("evidence_sources") or []
+    tool_results = raw.get("tool_results") or []
     intent_route = src.get("intent_route") or raw.get("intent_route")
     semantic_steps = [s for s in plan if s.get("tool_name") == "semantic_retrieve"]
     retrieval_attempted = src.get("retrieval_attempted") if "retrieval_attempted" in src else bool(semantic_steps)
@@ -119,8 +121,8 @@ def normalize_capability_metadata(
         "retrieval_no_results": bool(retrieval_no_results),
         "retrieval_skipped": bool(retrieval_skipped),
         "planner_used": bool(src.get("planner_used")) if "planner_used" in src else bool(plan and any(s.get("tool_name") for s in plan)),
-        "evidence_routed": bool(src.get("evidence_routed")) if "evidence_routed" in src else bool(raw.get("evidence_sources")),
-        "evidence_sources_count": src.get("evidence_sources_count") if "evidence_sources_count" in src else len(raw.get("evidence_sources") or []),
+        "evidence_routed": bool(src.get("evidence_routed")) if "evidence_routed" in src else bool(evidence_sources or tool_results),
+        "evidence_sources_count": src.get("evidence_sources_count") if "evidence_sources_count" in src else (len(evidence_sources) if evidence_sources else len(tool_results)),
         "tools_considered": tools_considered,
         "tools_executed": tools_executed,
         "tools_blocked": src.get("tools_blocked") if "tools_blocked" in src else len(raw.get("blocked_tools") or []),
@@ -235,6 +237,8 @@ def normalize_agent_v2_chat_response(
     out.setdefault("tools_considered", raw.get("tools_considered") if raw.get("tools_considered") is not None else [])
     out.setdefault("tools_executed", raw.get("tools_executed") if raw.get("tools_executed") is not None else [])
     out.setdefault("tools_blocked", raw.get("tools_blocked") if raw.get("tools_blocked") is not None else [])
+    out.setdefault("evidence_sources", raw.get("evidence_sources") if raw.get("evidence_sources") is not None else [])
+    out.setdefault("tool_results", raw.get("tool_results") if raw.get("tool_results") is not None else [])
 
     # Governance/intent enrichment fields
     out.setdefault("governance_decision", raw.get("governance_decision") if raw.get("governance_decision") is not None else "allow")

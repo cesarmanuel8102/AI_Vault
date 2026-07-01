@@ -11,6 +11,7 @@ PLANNER_CLASSES = [
     "explicit_tool_request", "autonomy_diagnosis", "recent_changes_diagnosis",
     "teacher_codex_search", "memory_structure_diagnosis", "semantic_memory_status",
     "promotion_queue_status", "trace_inspect", "capability_registry_read",
+    "financial_autonomy_diagnosis",
 ]
 
 # Explicit tool request patterns - if user names a tool, schedule it directly
@@ -156,6 +157,36 @@ def classify_goal(goal: str, mode: str = "read_only") -> str:
     # Prevent "programa X tool" from being misclassified as safe_patch_dry_run
     if re.search(r"(?:programa|solicita|solicitar|usa|ejecuta|verifica)\s+(?:al\s+)?(?:planner\s+)?(?:que\s+)?(?:programe|programe|schedule|run|use|execute)\s+([a-z_]+)", g):
         return "explicit_tool_request"
+
+    # Specific read-only evidence classifications must run before generic
+    # dry-run/memory/autonomy keywords so diagnostic prompts do not become
+    # patch previews or direct answers.
+    if any(x in g for x in [
+        "financial_autonomy", "financial autonomy", "autonomía financiera",
+        "autonomia financiera", "broker_execution_enabled", "real_money_enabled",
+        "sistema financiero autónomo", "sistema financiero autonomo",
+    ]):
+        return "financial_autonomy_diagnosis"
+    if any(x in g for x in [
+        "self-development", "self development", "autodesarrollo", "auto desarrollo",
+        "capacidades actuales", "current capabilities", "audita tus capacidades",
+        "auditar capacidades", "autoconocimiento", "self knowledge",
+    ]):
+        return "capability_registry_read"
+    if any(x in g for x in [
+        "trace inspect", "inspect trace", "inspecciona trace", "lee trace",
+        "trace reciente", "recent trace", "traza reciente", "traza",
+        "herramientas reales", "solo respuesta", "tools actually executed",
+    ]):
+        return "trace_inspect"
+    if any(x in g for x in ["memory structure", "estructura de memoria", "como esta estructurada", "que falta para que funcione", "persistent memory structure", "estructurada la memoria"]):
+        return "memory_structure_diagnosis"
+    if any(x in g for x in ["semantic memory status", "estado de la memoria semantica", "faiss status", "indice faiss", "estado faiss"]):
+        return "semantic_memory_status"
+    if any(x in g for x in ["promotion queue", "cola de promocion", "candidates pending", "review queue", "cola de revision"]):
+        return "promotion_queue_status"
+    if any(x in g for x in ["capability registry", "registro de capacidades", "list capabilities", "que capacidades", "lee capacidades"]):
+        return "capability_registry_read"
     
     if any(x in g for x in [".env", "apply patch", "commit", "push", "write tool", "blocked write"]):
         return "approval_required_write"
@@ -193,17 +224,6 @@ def classify_goal(goal: str, mode: str = "read_only") -> str:
     # New evidence intent classifications (maps from intent_classifier.py new intents)
     if any(x in g for x in ["teacher mode", "modo teacher", "codex teacher", "maestro codex", "aprendizaje guiado", "teacher codex"]):
         return "teacher_codex_search"
-    if any(x in g for x in ["memory structure", "estructura de memoria", "como esta estructurada", "que falta para que funcione", "persistent memory structure", "estructurada la memoria"]):
-        return "memory_structure_diagnosis"
-    if any(x in g for x in ["semantic memory status", "estado de la memoria semantica", "faiss status", "indice faiss", "estado faiss"]):
-        return "semantic_memory_status"
-    if any(x in g for x in ["promotion queue", "cola de promocion", "candidates pending", "review queue", "cola de revision"]):
-        return "promotion_queue_status"
-    if any(x in g for x in ["trace inspect", "inspecciona trace", "lee trace", "trace details", "view trace", "ver trace"]):
-        return "trace_inspect"
-    if any(x in g for x in ["capability registry", "registro de capacidades", "list capabilities", "que capacidades", "lee capacidades"]):
-        return "capability_registry_read"
-    
     return "general_reasoning"
 
 
@@ -303,8 +323,18 @@ def build_plan(goal: str, mode: str = "read_only") -> tuple[str, List[Dict[str, 
     if classification == "trace_inspect":
         add("repo_status", "tool", "Read repository status", "repo_status_read", {})
         add("repo_history", "tool", "Read recent commit history", "repo_history_read", {"path": "tmp_agent/brain_v9", "limit": 5})
+        add("trace_search", "tool", "Search trace/tool evidence wiring", "repo_file_search", {"pattern": "tool_evidence|tool_result|trace|tools_executed|evidence_sources", "glob": "*.py"})
+        add("trace_runtime_read", "tool", "Read Agent V2 trace/runtime adapter", "repo_file_read", {"path": "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py", "max_bytes": 8000})
     if classification == "capability_registry_read":
         add("capability_read", "tool", "Read capability registry", "capability_registry_read", {})
+        add("capability_search", "tool", "Search self-development capability wiring", "repo_file_search", {"pattern": "capability|autodesarrollo|self_improvement|agent_kernel_v2|langgraph", "glob": "*.py"})
+        add("capability_history", "tool", "Read recent agent capability commits", "repo_history_read", {"path": "tmp_agent/brain_v9/core/agent_kernel_v2", "limit": 8})
+    if classification == "financial_autonomy_diagnosis":
+        add("financial_search", "tool", "Search financial autonomy safety flags", "repo_file_search", {"pattern": "financial_autonomy|FinancialAutonomy|broker_execution_enabled|real_money_enabled|dry_run", "glob": "*.py"})
+        add("financial_init", "tool", "Read financial_autonomy package contract", "repo_file_read", {"path": "financial_autonomy/__init__.py", "max_bytes": 4000})
+        add("financial_bridge", "tool", "Read financial autonomy bridge", "repo_file_read", {"path": "financial_autonomy/bridge/financial_autonomy_bridge.py", "max_bytes": 8000})
+        add("financial_smoke", "tool", "Read dry-run safety smoke", "repo_file_read", {"path": "tests/smoke/test_front_financial_autonomy_compile_contract_10.py", "max_bytes": 8000})
+        add("financial_memory", "memory", "Retrieve financial autonomy memory", "semantic_retrieve", {"query": "financial_autonomy dry-run broker_execution_enabled real_money_enabled autonomous financial system", "top_k": 3})
     if classification == "safe_patch_dry_run":
         add("patch_dry_run", "tool", "Prepare patch preview only", "file_patch_dry_run", {"goal": goal})
     if classification == "approval_required_write":
