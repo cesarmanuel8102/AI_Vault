@@ -1,0 +1,26 @@
+{
+  "front": "FRONT-BRAIN-UI-TOKEN-PREFLIGHT-01",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_before": "cff1293",
+  "status": "IMPLEMENTED_VALIDATED",
+  "scope": [
+    "tmp_agent/brain_v9/ui/index.html",
+    "tests/smoke/test_front_brain_ui_token_preflight_01.py"
+  ],
+  "changes": [
+    "UI blocks chat send before strict operator request if no token is saved",
+    "UI focuses token input and shows explicit launcher-token instruction",
+    "UI keeps token value out of committed source"
+  ],
+  "py_compile_passed": true,
+  "focused_tests_passed": "9 passed",
+  "security_weakened": false,
+  "token_hardcoded_in_ui": false,
+  "money_real_used": false,
+  "broker_touched": false,
+  "memory_semantic_touched": false,
+  "faiss_touched": false,
+  "trading_touched": false,
+  "env_touched": false,
+  "recommended_next_front": "FRONT-BRAIN-CONTRACT-TESTS-BOUNDARIES-02"
+}

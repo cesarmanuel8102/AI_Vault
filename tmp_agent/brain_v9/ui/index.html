@@ -653,6 +653,7 @@
   <input id="token-input" type="password" placeholder="Pega el token local aquí" style="flex:1;max-width:360px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;" onkeydown="if(event.key==='Enter')saveOperatorToken()">
   <button onclick="saveOperatorToken()" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer;">Guardar</button>
   <span id="token-status" style="font-size:12px;color:var(--amber);">Sin token</span>
+  <span style="font-size:12px;color:var(--text2);">El launcher imprime el token local. No se guarda en el repo.</span>
 </div>
 
 <nav>
@@ -1018,6 +1019,20 @@ function saveOperatorToken() {
   setOperatorToken(token);
   input.value = '';
   addMsg('system', 'Token de operador guardado localmente. Prueba enviar un mensaje.', ts());
+}
+
+function requireOperatorTokenForChat() {
+  if (getOperatorToken()) return true;
+  showTokenBanner(true);
+  updateTokenUI();
+  const input = document.getElementById('token-input');
+  if (input) input.focus();
+  addMsg(
+    'system',
+    'Token de operador requerido. Pega el token que imprimió el launcher local y pulsa Guardar antes de enviar chat.',
+    ts()
+  );
+  return false;
 }
 
 // Initialize token UI on load
@@ -1394,6 +1409,7 @@ async function sendMessage() {
   const inp   = document.getElementById('input');
   const msg   = inp.value.trim();
   if (!msg) return;
+  if (!requireOperatorTokenForChat()) return;
 
   // Parse natural-language mode commands inline
   const detectedMode = detectModeInMessage(msg);
