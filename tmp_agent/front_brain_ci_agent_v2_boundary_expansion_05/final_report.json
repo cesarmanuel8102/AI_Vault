@@ -1,0 +1,34 @@
+{
+  "status": "IMPLEMENTED_VALIDATED",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_local": "79b0032",
+  "head_remote": "79b0032",
+  "files_modified": [
+    ".github/workflows/nontrading-smoke-regression.yml"
+  ],
+  "ci_job_added": "agent-v2-boundaries",
+  "tests_in_ci": [
+    "tests/contract/test_agent_v2_boundary_contracts_02.py",
+    "tests/smoke/test_front_brain_intent_negation_guard_03.py",
+    "tests/smoke/test_front_brain_langgraph_docstring_truth_04.py",
+    "tests/smoke/test_front_brain_ui_token_preflight_01.py",
+    "tests/smoke/test_front_brain_memory_ownership_contract_01.py",
+    "tests/smoke/test_front_brain_active_path_centralization_02.py",
+    "tests/smoke/test_front_brain_provider_centralization_01.py"
+  ],
+  "validation": {
+    "py_compile": "PASS",
+    "local_ci_equivalent": "20 passed",
+    "workflow_static": "PASS"
+  },
+  "safety": {
+    "no_memory_semantic_mutation": true,
+    "no_env_or_secrets": true,
+    "no_real_money": true,
+    "no_faiss_mutation": true,
+    "no_trading_changes": true,
+    "no_broker_ibkr": true
+  },
+  "commit_created": false,
+  "push_done": false
+}
