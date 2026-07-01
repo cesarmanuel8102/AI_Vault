@@ -1,0 +1,29 @@
+{
+  "status": "IMPLEMENTED_VALIDATED",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_local": "beab8b3",
+  "head_remote": "beab8b3",
+  "files_modified": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"
+  ],
+  "tests_created": [
+    "tests/smoke/test_front_brain_langgraph_docstring_truth_04.py"
+  ],
+  "issue": "Docstring still claimed LangGraph parity runtime was NOT wired and test-only, despite being promoted as default.",
+  "fix": "Docstring now states runtime-selector default status and governance/read-only boundaries.",
+  "validation": {
+    "focal_regression": "11 passed",
+    "py_compile": "PASS",
+    "smoke": "1 passed"
+  },
+  "safety": {
+    "no_env_or_secrets": true,
+    "no_memory_semantic_mutation": true,
+    "no_real_money": true,
+    "no_trading_changes": true,
+    "no_broker_ibkr": true,
+    "no_faiss_mutation": true
+  },
+  "commit_created": false,
+  "push_done": false
+}

@@ -1,9 +1,9 @@
-"""Isolated LangGraph deep parity runtime for Brain V9 Agent Kernel V2.
+"""LangGraph parity runtime for Brain V9 Agent Kernel V2.
 
-This module is intentionally NOT wired into runtime.py, api_adapter.py, or main.py.
-It is a test-only deep parity prototype that reuses Native V2 helper components
-without altering production wiring. All persistence defaults to a caller-provided
-run_root (tests MUST pass a temporary directory).
+This module is wired through the Agent V2 runtime selector and is the default
+backend when ``BRAIN_AGENT_V2_BACKEND=langgraph_parity``. It reuses Native V2
+helper components while preserving strict governance, read-only defaults, and
+caller-provided run_root persistence boundaries for tests and local operation.
 """
 from __future__ import annotations
 import hashlib, json, time
@@ -1585,3 +1585,4 @@ class LangGraphParityRuntimeV2:
             if val is not None and str(val):
                 return str(val)
         return ""
+
