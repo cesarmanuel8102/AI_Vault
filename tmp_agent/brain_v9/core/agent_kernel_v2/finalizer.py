@@ -100,9 +100,34 @@ def _structured_fallback(goal: str, mode: str, memory_hits: List[Dict[str, Any]]
     ])
 
 
+CRITICAL_FINALIZER_TOOL_NAMES = {
+    "promotion_queue_status",
+    "semantic_memory_status",
+    "memory_structure_inspect",
+    "capability_registry_read",
+}
+
+
+def _select_finalizer_tool_results(tool_results: List[Dict[str, Any]], limit: int = 10) -> List[Dict[str, Any]]:
+    """Keep prompt bounded without dropping the decisive evidence tool.
+
+    Generic supporting tools can push the actual diagnostic tool past the first
+    N results. If that happens, the finalizer sees the tool as executed in the
+    distinction table but cannot see its payload, then hallucinates a missing
+    evidence gap. Preserve critical read-only diagnostic tools explicitly.
+    """
+    selected = list(tool_results[:limit])
+    selected_ids = {id(item) for item in selected}
+    for item in tool_results[limit:]:
+        if item.get("tool_name") in CRITICAL_FINALIZER_TOOL_NAMES and id(item) not in selected_ids:
+            selected.append(item)
+            selected_ids.add(id(item))
+    return selected
+
+
 def build_finalizer_prompt(run: Dict[str, Any], memory_hits: List[Dict[str, Any]], tool_results: List[Dict[str, Any]], requested_checks: List[Dict[str, Any]]|None = None, scheduled_tools: List[str]|None = None, executed_tools: List[str]|None = None, template_override: str|None = None, recent_context: Dict[str, Any]|None = None) -> str:
     safe_results = []
-    for idx, item in enumerate(tool_results[:10], start=1):
+    for idx, item in enumerate(_select_finalizer_tool_results(tool_results), start=1):
         safe_results.append({
             "evidence_id": f"tool_{idx}",
             "tool_name": item.get("tool_name"),

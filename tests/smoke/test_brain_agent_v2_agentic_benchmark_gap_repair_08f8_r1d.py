@@ -8,6 +8,7 @@ HTTP token layer and exercises LangGraphParityRuntimeV2 directly.
 from __future__ import annotations
 
 import sys
+import json
 
 sys.path.insert(0, "C:/AI_VAULT_CANONICAL")
 sys.path.insert(0, "C:/AI_VAULT_CANONICAL/tmp_agent")
@@ -15,6 +16,7 @@ sys.path.insert(0, "C:/AI_VAULT_CANONICAL/tmp_agent")
 from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphParityRuntimeV2
 import brain_v9.core.agent_kernel_v2.langgraph_parity_runtime as _lg_runtime
 from brain_v9.core.agent_kernel_v2.evidence_tools import promotion_queue_status
+from brain_v9.core.agent_kernel_v2.finalizer import build_finalizer_prompt
 
 
 def _fake_finalize_agent_run(**kwargs):
@@ -164,6 +166,47 @@ def test_promotion_queue_status_reconciles_dashboard_learning_count():
     assert "candidate_promote_count" in rec
     assert "proposal_count" in rec
     assert "not canonical semantic promotion queue" in rec["note"]
+
+
+def test_finalizer_prompt_keeps_critical_promotion_queue_payload_when_truncated():
+    generic_results = [
+        {
+            "tool_name": "file_read",
+            "ok": True,
+            "blocked": False,
+            "approval_required": False,
+            "error": None,
+            "result": {"index": idx},
+        }
+        for idx in range(10)
+    ]
+    critical_result = {
+        "tool_name": "promotion_queue_status",
+        "ok": True,
+        "blocked": False,
+        "approval_required": False,
+        "error": None,
+        "result": [
+            {
+                "dashboard_status_memory_reconciliation": {
+                    "promotion_queue_count": 57,
+                    "active_review_required_count": 0,
+                    "terminal_status_counts": {"archived_superseded": 33},
+                }
+            }
+        ],
+    }
+    prompt = build_finalizer_prompt(
+        {"goal": "explain promotion queue 57", "mode": "read_only", "classification": "promotion_queue_status"},
+        [],
+        generic_results + [critical_result],
+        template_override="brain_evidence",
+    )
+    payload = json.loads(prompt.split("\n", 1)[1])
+    tool_names = [item["tool_name"] for item in payload["tool_evidence"]]
+    assert "promotion_queue_status" in tool_names
+    assert "active_review_required_count" in prompt
+    assert "archived_superseded" in prompt
 
 
 def test_generic_self_knowledge_question_uses_evidence_policy(tmp_path, monkeypatch):

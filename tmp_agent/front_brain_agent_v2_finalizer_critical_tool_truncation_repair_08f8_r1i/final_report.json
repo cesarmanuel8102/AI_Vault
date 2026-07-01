@@ -1,0 +1,22 @@
+{
+  "status": "IMPLEMENTED",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_before": "7cd7f04",
+  "root_cause": "build_finalizer_prompt only included first 10 tool_results; promotion_queue_status could be tool 11 and was omitted from LLM evidence prompt",
+  "fix": "preserve critical diagnostic tools in finalizer prompt even when generic tool evidence reaches the normal limit",
+  "critical_tools": [
+    "promotion_queue_status",
+    "semantic_memory_status",
+    "memory_structure_inspect",
+    "capability_registry_read"
+  ],
+  "files_modified": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+    "tests/smoke/test_brain_agent_v2_agentic_benchmark_gap_repair_08f8_r1d.py"
+  ],
+  "py_compile_passed": true,
+  "smoke_passed": "11 passed",
+  "no_memory_semantic_write": true,
+  "no_faiss_write": true,
+  "no_trading_touched": true
+}
