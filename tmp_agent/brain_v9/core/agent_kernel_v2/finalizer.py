@@ -125,9 +125,63 @@ def _select_finalizer_tool_results(tool_results: List[Dict[str, Any]], limit: in
     return selected
 
 
+def _compact_critical_tool_result(item: Dict[str, Any]) -> Any:
+    """Return a small high-signal payload for known diagnostic tools."""
+    if item.get("tool_name") != "promotion_queue_status":
+        return item.get("result", {})
+
+    result = item.get("result", {})
+    if not isinstance(result, list):
+        return result
+
+    compact: Dict[str, Any] = {
+        "tool_name": "promotion_queue_status",
+        "queue_dirs": [],
+    }
+    for entry in result:
+        if not isinstance(entry, dict):
+            continue
+        if "dir" in entry:
+            compact["queue_dirs"].append({
+                "dir": entry.get("dir"),
+                "exists": entry.get("exists"),
+                "entry_count": entry.get("entry_count"),
+                "json_file_count": entry.get("json_file_count"),
+                "dashboard_status_source": entry.get("dashboard_status_source"),
+            })
+        if "dashboard_status_memory_reconciliation" in entry:
+            rec = entry.get("dashboard_status_memory_reconciliation") or {}
+            compact["dashboard_status_memory_reconciliation"] = {
+                "dashboard_route": rec.get("dashboard_route"),
+                "frontend_field": rec.get("frontend_field"),
+                "formula": rec.get("formula"),
+                "promotion_queue_count": rec.get("promotion_queue_count"),
+                "active_review_required_count": rec.get("active_review_required_count"),
+                "review_required_false_count": rec.get("review_required_false_count"),
+                "resolved_utc_present_count": rec.get("resolved_utc_present_count"),
+                "terminal_status_counts": rec.get("terminal_status_counts"),
+                "canonical_promotion_counts": rec.get("canonical_promotion_counts"),
+                "pending_interpretation": rec.get("pending_interpretation"),
+            }
+        if "dashboard_learning_reconciliation" in entry:
+            rec = entry.get("dashboard_learning_reconciliation") or {}
+            compact["dashboard_learning_reconciliation"] = {
+                "dashboard_route": rec.get("dashboard_route"),
+                "candidate_promote_count": rec.get("candidate_promote_count"),
+                "proposal_count": rec.get("proposal_count"),
+                "note": rec.get("note"),
+            }
+    return compact
+
+
 def build_finalizer_prompt(run: Dict[str, Any], memory_hits: List[Dict[str, Any]], tool_results: List[Dict[str, Any]], requested_checks: List[Dict[str, Any]]|None = None, scheduled_tools: List[str]|None = None, executed_tools: List[str]|None = None, template_override: str|None = None, recent_context: Dict[str, Any]|None = None) -> str:
     safe_results = []
     for idx, item in enumerate(_select_finalizer_tool_results(tool_results), start=1):
+        result_for_prompt = (
+            _compact_critical_tool_result(item)
+            if item.get("tool_name") in CRITICAL_FINALIZER_TOOL_NAMES
+            else item.get("result", {})
+        )
         safe_results.append({
             "evidence_id": f"tool_{idx}",
             "tool_name": item.get("tool_name"),
@@ -135,7 +189,7 @@ def build_finalizer_prompt(run: Dict[str, Any], memory_hits: List[Dict[str, Any]
             "blocked": item.get("blocked"),
             "approval_required": item.get("approval_required"),
             "error": item.get("error"),
-            "result_preview": _safe_preview(item.get("result", {}), 900),
+            "result_preview": _safe_preview(result_for_prompt, 1800),
         })
     safe_hits = []
     for idx, hit in enumerate(memory_hits[:6], start=1):

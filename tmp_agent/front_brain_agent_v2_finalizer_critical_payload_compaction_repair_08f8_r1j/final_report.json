@@ -1,0 +1,23 @@
+{
+  "status": "IMPLEMENTED",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_before": "f209c81",
+  "root_cause": "critical tool was preserved but its result_preview truncated before nested reconciliation fields",
+  "fix": "compact promotion_queue_status payload before finalizer preview so pending/review/status counts are visible",
+  "fields_preserved": [
+    "promotion_queue_count",
+    "active_review_required_count",
+    "review_required_false_count",
+    "resolved_utc_present_count",
+    "terminal_status_counts",
+    "pending_interpretation"
+  ],
+  "files_modified": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py"
+  ],
+  "py_compile_passed": true,
+  "smoke_passed": "11 passed",
+  "no_memory_semantic_write": true,
+  "no_faiss_write": true,
+  "no_trading_touched": true
+}
