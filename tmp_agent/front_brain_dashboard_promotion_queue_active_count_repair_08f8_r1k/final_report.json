@@ -1,0 +1,20 @@
+{
+  "status": "IMPLEMENTED",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_before": "a4987e8",
+  "root_cause": "dashboard used raw memory/promotion_queue json file count as pending queue count and alert trigger",
+  "fix": "preserve raw count but add active review-required count; alerts and UI recommendations use active count",
+  "files_modified": [
+    "tmp_agent/brain_v9/memory/memory_auditor.py",
+    "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+    "tmp_agent/brain_v9/dashboard/static/app.js",
+    "tmp_agent/brain_v9/monitoring/alert_rules.py",
+    "tests/smoke/test_brain_agent_v2_agentic_benchmark_gap_repair_08f8_r1d.py"
+  ],
+  "py_compile_passed": true,
+  "smoke_passed": "12 passed",
+  "expected_dashboard_display": "0 active / 57 files",
+  "no_memory_semantic_write": true,
+  "no_faiss_write": true,
+  "no_trading_touched": true
+}

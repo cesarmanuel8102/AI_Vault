@@ -17,6 +17,8 @@ from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphPari
 import brain_v9.core.agent_kernel_v2.langgraph_parity_runtime as _lg_runtime
 from brain_v9.core.agent_kernel_v2.evidence_tools import promotion_queue_status
 from brain_v9.core.agent_kernel_v2.finalizer import build_finalizer_prompt
+from tmp_agent.brain_v9.memory.memory_auditor import audit_memory_state
+from tmp_agent.brain_v9.monitoring.alert_rules import evaluate_alerts
 
 
 def _fake_finalize_agent_run(**kwargs):
@@ -207,6 +209,29 @@ def test_finalizer_prompt_keeps_critical_promotion_queue_payload_when_truncated(
     assert "promotion_queue_status" in tool_names
     assert "active_review_required_count" in prompt
     assert "archived_superseded" in prompt
+
+
+def test_dashboard_memory_queue_alert_uses_active_review_count_not_raw_files():
+    memory = audit_memory_state()
+    assert "promotion_queue_count" in memory
+    assert "promotion_queue_active_review_required_count" in memory
+    assert "promotion_queue_terminal_status_counts" in memory
+
+    no_active_alerts = evaluate_alerts({
+        "memory": {
+            "promotion_queue_count": 57,
+            "promotion_queue_active_review_required_count": 0,
+        }
+    })
+    assert not any(alert.get("code") == "promotion_queue_pending" for alert in no_active_alerts)
+
+    active_alerts = evaluate_alerts({
+        "memory": {
+            "promotion_queue_count": 57,
+            "promotion_queue_active_review_required_count": 1,
+        }
+    })
+    assert any(alert.get("code") == "promotion_queue_pending" for alert in active_alerts)
 
 
 def test_generic_self_knowledge_question_uses_evidence_policy(tmp_path, monkeypatch):

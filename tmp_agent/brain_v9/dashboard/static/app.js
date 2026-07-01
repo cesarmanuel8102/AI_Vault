@@ -109,7 +109,9 @@ function renderActivity(data) {
 function renderMemory(data, safety) {
   const mem = data.memory || {};
   document.getElementById('mem-journal').textContent = mem.journal_count || 0;
-  document.getElementById('mem-queue').textContent = mem.promotion_queue_count || 0;
+  const activeQueue = mem.promotion_queue_active_review_required_count || 0;
+  const rawQueue = mem.promotion_queue_count || 0;
+  document.getElementById('mem-queue').textContent = activeQueue + ' active / ' + rawQueue + ' files';
   document.getElementById('mem-staging').textContent = mem.semantic_staging_count || 0;
   document.getElementById('mem-audit').textContent = mem.promotion_audit_count || 0;
   document.getElementById('mem-lines').textContent = safety.semantic_memory_lines || '—';
@@ -129,7 +131,9 @@ function renderPromotionQueue(data) {
   if (!items.length) { container.innerHTML = '<p>No pending candidates.</p>'; return; }
   let html = '<table><thead><tr><th>ID</th><th>Category</th><th>Confidence</th><th>Status</th></tr></thead><tbody>';
   items.forEach(it => {
-    html += '<tr><td>' + (it.id || it.file || '—') + '</td><td>' + (it.category || '—') + '</td><td>' + (it.confidence || '—') + '</td><td><span class="badge yellow">Pending human review</span></td></tr>';
+    const status = it.review_required === true ? 'Pending human review' : (it.terminal_status || 'Resolved/no active review');
+    const badge = it.review_required === true ? 'yellow' : 'green';
+    html += '<tr><td>' + (it.id || it.file || '—') + '</td><td>' + (it.category || '—') + '</td><td>' + (it.confidence || '—') + '</td><td><span class="badge ' + badge + '">' + status + '</span></td></tr>';
   });
   html += '</tbody></table>';
   container.innerHTML = html;
@@ -154,7 +158,7 @@ function renderRecommendations(data, safety, queue) {
   const aut = data.autonomy || {};
 
   let recs = [];
-  if (mem.promotion_queue_count > 0) recs.push('Review promotion queue before autonomous promotion.');
+  if ((mem.promotion_queue_active_review_required_count || 0) > 0) recs.push('Review active promotion queue candidates before autonomous promotion.');
   if (wd.heartbeat_present && heartbeatStale(wd.heartbeat?.updated_utc)) recs.push('Heartbeat is stale — verify autonomy process.');
   if (aut.fallback_rate > 0.3) recs.push('High fallback rate detected — check provider health.');
   if (!recs.length) recs.push('All systems nominal. No immediate operator action required.');

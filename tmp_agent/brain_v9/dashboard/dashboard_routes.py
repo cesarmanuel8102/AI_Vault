@@ -86,6 +86,9 @@ def _parse_promotion_queue() -> list[dict[str, Any]]:
                 "file": str(path),
                 "category": data.get("category"),
                 "confidence": data.get("confidence"),
+                "review_required": data.get("review_required"),
+                "terminal_status": data.get("terminal_status"),
+                "resolved_utc": data.get("resolved_utc"),
             })
         except json.JSONDecodeError:
             items.append({"id": path.stem, "file": str(path)})
@@ -256,7 +259,7 @@ def dashboard_status() -> dict[str, Any]:
     sch = safe_component("scheduler", lambda: _scheduler_info(use_subprocess=False), {"exists": False, "enabled": False, "state": "unknown", "degraded": True})
     safety = safe_component("safety", _safety_status, {"canonical_semantic_mutated": None, "faiss_mutated": None})
     alerts = []
-    if isinstance(mem, dict) and (mem.get("promotion_queue_count") or 0) > 0:
+    if isinstance(mem, dict) and (mem.get("promotion_queue_active_review_required_count") or 0) > 0:
         alerts.append({"severity": "LOW", "code": "promotion_queue_pending", "message": "Memory items are waiting for human review before semantic promotion.", "action": "operator_review"})
     if isinstance(wd, dict) and wd.get("stopped"):
         alerts.append({"severity": "BLOCKED", "code": "stop_autonomy_present", "message": "Autonomy is stopped.", "action": "do_not_run"})
