@@ -20,11 +20,12 @@ from tmp_agent.brain_v9.memory.memory_snapshot import CANONICAL_FILES, SNAPSHOT_
 from tmp_agent.brain_v9.memory.memory_rollback import rollback_from_snapshot, verify_snapshot
 from tmp_agent.brain_v9.memory.memory_auditor import append_promotion_audit
 from tmp_agent.brain_v9.memory.promotion_pipeline_adapter import PromotionPipelineAdapter
+from tmp_agent.brain_v9.config import BASE_PATH
 
 # Also support legacy import path used by tests/server
 from tmp_agent.brain_v9.core.semantic_memory_faiss import get_semantic_memory_faiss
 
-ROOT = Path("C:/AI_VAULT_CANONICAL")
+ROOT = BASE_PATH
 SEMANTIC_JSONL = ROOT / "memory" / "semantic" / "semantic_memory.jsonl"
 FAISS_INDEX = ROOT / "memory" / "semantic" / "semantic_memory_faiss.index"
 FAISS_IDS = ROOT / "memory" / "semantic" / "semantic_memory_faiss_ids.json"

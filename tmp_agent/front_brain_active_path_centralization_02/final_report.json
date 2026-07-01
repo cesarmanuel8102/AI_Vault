@@ -1,0 +1,27 @@
+{
+  "front": "FRONT-BRAIN-HARDCODED-PATHS-ACTIVE-MODULES-02",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_before": "fba79e0",
+  "status": "IMPLEMENTED_VALIDATED",
+  "scope": [
+    "tmp_agent/brain_v9/memory/promotion_candidate_promoter.py",
+    "tmp_agent/brain_v9/memory/promotion_pipeline_adapter.py",
+    "tmp_agent/brain_v9/learning/capability_evaluator.py",
+    "tests/smoke/test_front_brain_active_path_centralization_02.py"
+  ],
+  "changes": [
+    "replaced C:/AI_VAULT_CANONICAL ROOT with config BASE_PATH in promotion promoter",
+    "replaced C:/AI_VAULT_CANONICAL ROOT with config BASE_PATH in promotion adapter",
+    "replaced targeted regression C:/AI_VAULT paths/cwd/PYTHONPATH with BASE_PATH-derived paths",
+    "added smoke coverage for active path centralization"
+  ],
+  "py_compile_passed": true,
+  "focused_tests_passed": "5 passed",
+  "money_real_used": false,
+  "broker_touched": false,
+  "memory_semantic_touched": false,
+  "faiss_touched": false,
+  "trading_touched": false,
+  "env_touched": false,
+  "recommended_next_front": "FRONT-BRAIN-MEMORY-OWNERSHIP-CONTRACT-TESTS-01"
+}

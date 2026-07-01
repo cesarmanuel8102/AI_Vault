@@ -11,6 +11,7 @@ from brain_v9.learning.external_intel_ingestor import _append_event
 from brain_v9.learning.proposal_governance import load_registry, save_registry, transition_proposal_state
 from brain_v9.learning.sandbox_executor import _proposal_lookup
 from brain_v9.learning.status import CAPABILITY_SCORECARD_PATH
+from brain_v9.config import BASE_PATH
 
 VALID_VERDICTS = {
     "insufficient_evidence",
@@ -21,21 +22,21 @@ VALID_VERDICTS = {
 
 TARGETED_TESTS = {
     "governance_quality": [
-        r"C:\AI_VAULT\tests\unit\test_learning_pipeline.py",
-        r"C:\AI_VAULT\tests\unit\test_autonomous_governance_eval.py",
+        str(BASE_PATH / "tests" / "unit" / "test_learning_pipeline.py"),
+        str(BASE_PATH / "tests" / "unit" / "test_autonomous_governance_eval.py"),
     ],
     "tool_use_accuracy": [
-        r"C:\AI_VAULT\tests\unit\test_brain_chat_hygiene.py",
-        r"C:\AI_VAULT\tests\unit\test_network_scan_regressions.py",
-        r"C:\AI_VAULT\tests\unit\test_grounded_code_fastpath.py",
+        str(BASE_PATH / "tests" / "unit" / "test_brain_chat_hygiene.py"),
+        str(BASE_PATH / "tests" / "unit" / "test_network_scan_regressions.py"),
+        str(BASE_PATH / "tests" / "unit" / "test_grounded_code_fastpath.py"),
     ],
     "planning_coherence": [
-        r"C:\AI_VAULT\tests\unit\test_brain_chat_hygiene.py",
-        r"C:\AI_VAULT\tests\unit\test_llm_codex_integration.py",
+        str(BASE_PATH / "tests" / "unit" / "test_brain_chat_hygiene.py"),
+        str(BASE_PATH / "tests" / "unit" / "test_llm_codex_integration.py"),
     ],
     "execution_reliability": [
-        r"C:\AI_VAULT\tests\unit\test_learning_pipeline.py",
-        r"C:\AI_VAULT\tests\unit\test_llm_codex_integration.py",
+        str(BASE_PATH / "tests" / "unit" / "test_learning_pipeline.py"),
+        str(BASE_PATH / "tests" / "unit" / "test_llm_codex_integration.py"),
     ],
 }
 
@@ -77,7 +78,7 @@ def _no_production_write(evaluation_summary: Dict[str, Any]) -> bool:
 
 
 def _targeted_regression(target_capability: str) -> Dict[str, Any]:
-    tests = TARGETED_TESTS.get(target_capability, [r"C:\AI_VAULT\tests\unit\test_learning_pipeline.py"])
+    tests = TARGETED_TESTS.get(target_capability, [str(BASE_PATH / "tests" / "unit" / "test_learning_pipeline.py")])
     cmd = [
         "python",
         "-m",
@@ -86,10 +87,10 @@ def _targeted_regression(target_capability: str) -> Dict[str, Any]:
         "-q",
     ]
     env = os.environ.copy()
-    env["PYTHONPATH"] = r"C:\AI_VAULT\tmp_agent;C:\AI_VAULT"
+    env["PYTHONPATH"] = f"{BASE_PATH / 'tmp_agent'};{BASE_PATH}"
     result = subprocess.run(
         cmd,
-        cwd=r"C:\AI_VAULT",
+        cwd=str(BASE_PATH),
         env=env,
         capture_output=True,
         text=True,

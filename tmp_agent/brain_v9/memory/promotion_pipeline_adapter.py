@@ -5,7 +5,9 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
-ROOT = Path("C:/AI_VAULT_CANONICAL")
+from tmp_agent.brain_v9.config import BASE_PATH
+
+ROOT = BASE_PATH
 
 QUEUE_DIR = ROOT / "memory" / "promotion_queue"
 STAGING_DIR = ROOT / "memory" / "semantic_staging"
