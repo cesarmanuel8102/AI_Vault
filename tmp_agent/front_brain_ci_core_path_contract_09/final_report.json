@@ -1,0 +1,23 @@
+{
+  "status": "IMPLEMENTED_VALIDATED",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_local": "ac200ed",
+  "head_remote": "ac200ed",
+  "files_modified": [
+    ".github/workflows/nontrading-smoke-regression.yml"
+  ],
+  "added_test": "tests/smoke/test_front_brain_core_path_centralization_08.py",
+  "validation": {
+    "local_ci_equivalent": "26 passed"
+  },
+  "safety": {
+    "no_memory_semantic_mutation": true,
+    "no_trading_changes": true,
+    "no_broker_ibkr": true,
+    "no_real_money": true,
+    "no_env_or_secrets": true,
+    "no_faiss_mutation": true
+  },
+  "commit_created": false,
+  "push_done": false
+}
