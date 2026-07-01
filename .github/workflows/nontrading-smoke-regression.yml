@@ -152,6 +152,36 @@ jobs:
         shell: pwsh
         run: |
           python -m pytest tests/contract/test_agent_v2_boundary_contracts_02.py tests/smoke/test_front_brain_intent_negation_guard_03.py tests/smoke/test_front_brain_langgraph_docstring_truth_04.py tests/smoke/test_front_brain_ui_token_preflight_01.py tests/smoke/test_front_brain_memory_ownership_contract_01.py tests/smoke/test_front_brain_active_path_centralization_02.py tests/smoke/test_front_brain_provider_centralization_01.py tests/smoke/test_front_brain_dashboard_api_live_contract_06.py tests/smoke/test_front_brain_core_path_centralization_08.py -q
+
+  financial-autonomy:
+    name: Financial Autonomy Dry-Run Contract
+    runs-on: windows-latest
+    timeout-minutes: 10
+    env:
+      PYTHONPATH: ${{ github.workspace }};${{ github.workspace }}\tmp_agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install deps
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Compile Financial Autonomy dry-run modules
+        shell: pwsh
+        run: |
+          python -m py_compile financial_autonomy/__init__.py
+          python -m py_compile financial_autonomy/financial_autonomy_autobuild.py
+          python -m py_compile financial_autonomy/integration_setup.py
+          python -m py_compile financial_autonomy/api/financial_endpoints.py
+          python -m py_compile financial_autonomy/bridge/financial_autonomy_bridge.py
+          python -m py_compile financial_autonomy/bridge/trust_score_integration.py
+          python -m py_compile tests/smoke/test_front_financial_autonomy_compile_contract_10.py
+      - name: Financial Autonomy dry-run contract
+        shell: pwsh
+        run: python -m pytest tests/smoke/test_front_financial_autonomy_compile_contract_10.py -q
+
   hygiene-guard:
     name: Hygiene Guard
     runs-on: windows-latest
