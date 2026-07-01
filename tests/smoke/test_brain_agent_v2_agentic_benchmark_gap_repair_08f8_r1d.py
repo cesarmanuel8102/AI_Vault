@@ -14,6 +14,7 @@ sys.path.insert(0, "C:/AI_VAULT_CANONICAL/tmp_agent")
 
 from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphParityRuntimeV2
 import brain_v9.core.agent_kernel_v2.langgraph_parity_runtime as _lg_runtime
+from brain_v9.core.agent_kernel_v2.evidence_tools import promotion_queue_status
 
 
 def _fake_finalize_agent_run(**kwargs):
@@ -128,6 +129,23 @@ def test_generic_dashboard_queue_discrepancy_requires_evidence(tmp_path, monkeyp
     assert out.get("intent_route") == "brain_evidence"
     assert out.get("classification") in {"dashboard_diagnosis", "evidence_required_diagnosis", "promotion_queue_status"}
     _assert_readonly_evidence_run(out)
+
+
+def test_promotion_queue_status_reconciles_dashboard_learning_count():
+    out = promotion_queue_status()
+    assert out["ok"] is True
+    assert out["mutated_state"] is False
+    reconciliation = [
+        item.get("dashboard_learning_reconciliation")
+        for item in out.get("evidence", [])
+        if isinstance(item, dict) and item.get("dashboard_learning_reconciliation")
+    ]
+    assert reconciliation, "promotion_queue_status must explain dashboard learning candidate count separately"
+    rec = reconciliation[0]
+    assert rec["dashboard_route"] == "/brain/learning/status"
+    assert "candidate_promote_count" in rec
+    assert "proposal_count" in rec
+    assert "not canonical semantic promotion queue" in rec["note"]
 
 
 def test_generic_self_knowledge_question_uses_evidence_policy(tmp_path, monkeypatch):

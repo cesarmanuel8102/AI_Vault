@@ -1,0 +1,29 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-DASHBOARD-QUEUE-RECONCILIATION-REPAIR-08F8-R1F",
+  "status": "IMPLEMENTED_VALIDATED",
+  "base_head": "7ec1024",
+  "issue": "Agent answered promotion queue count from canonical filesystem queues only and did not query dashboard/learning candidate source, making the answer honest but insufficient when UI showed another count.",
+  "fix": [
+    "Extended promotion_queue_status evidence tool to reconcile canonical promotion/review queue directories with dashboard learning candidate source.",
+    "Added dashboard_learning_reconciliation from tmp_agent/state/learning_status_latest.json and frontend formula used by dashboard_secondary_panels.js.",
+    "Added smoke contract so future answers expose candidate_promote_count/proposal_count separately from canonical semantic promotion queue entries."
+  ],
+  "observed_current_values": {
+    "canonical_queue_dirs_existing": 0,
+    "canonical_queue_entries": 0,
+    "dashboard_learning_proposal_count": 8,
+    "dashboard_learning_candidate_promote_count": 0,
+    "evaluation_passed_candidate_count": 0
+  },
+  "validation": {
+    "py_compile": "PASS",
+    "pytest": "10 passed",
+    "test": "tests/smoke/test_brain_agent_v2_agentic_benchmark_gap_repair_08f8_r1d.py"
+  },
+  "safety": {
+    "real_money_used": false,
+    "broker_ibkr_touched": false,
+    "memory_semantic_write": false,
+    "faiss_write": false
+  }
+}

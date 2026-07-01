@@ -130,7 +130,16 @@ def semantic_memory_status() -> Dict[str, Any]:
 
 
 def promotion_queue_status() -> Dict[str, Any]:
-    """Read-only status of promotion/review queues."""
+    """Read-only status of promotion/review queues.
+
+    This intentionally reconciles two different concepts that the UI may show
+    near each other:
+    - canonical promotion/review filesystem queues
+    - dashboard learning candidates from /brain/learning/status
+
+    A visible dashboard candidate count is not necessarily a pending semantic
+    memory promotion queue count.
+    """
     evidence = []
     queue_dirs = [
         "tmp_agent/state/promotion_queue",
@@ -148,7 +157,54 @@ def promotion_queue_status() -> Dict[str, Any]:
         else:
             evidence.append({"dir": d, "exists": False})
 
-    summary = f"Promotion/review queues checked: {len(evidence)}, existing: {sum(1 for e in evidence if isinstance(e, dict) and e.get('exists'))}"
+    learning_status_path = _safe_path("tmp_agent/state/learning_status_latest.json")
+    dashboard_learning = {
+        "source": "tmp_agent/state/learning_status_latest.json",
+        "dashboard_route": "/brain/learning/status",
+        "frontend_source": "tmp_agent/brain_v9/ui/dashboard_secondary_panels.js",
+        "frontend_formula": "proposals.filter(p => p.current_state === 'candidate_promote').length",
+        "exists": bool(learning_status_path and learning_status_path.exists()),
+        "candidate_promote_count": None,
+        "proposal_count": None,
+        "evaluation_passed_candidate_count": None,
+        "activation_candidate_verdicts": None,
+        "note": "Dashboard learning candidates are external-learning proposal states, not canonical semantic promotion queue entries.",
+    }
+    if learning_status_path and learning_status_path.exists():
+        try:
+            payload = json.loads(learning_status_path.read_text(encoding="utf-8"))
+            panels = payload.get("panels") or {}
+            proposals = panels.get("proposals") or []
+            evaluation = panels.get("evaluation") or {}
+            activation = payload.get("activation") or {}
+            dashboard_learning.update({
+                "proposal_count": len(proposals) if isinstance(proposals, list) else None,
+                "candidate_promote_count": sum(
+                    1 for p in proposals
+                    if isinstance(p, dict) and p.get("current_state") == "candidate_promote"
+                ) if isinstance(proposals, list) else None,
+                "evaluation_passed_candidate_count": int(
+                    ((evaluation.get("by_verdict") or {}) if isinstance(evaluation, dict) else {}).get("evaluation_passed_candidate", 0) or 0
+                ),
+                "activation_candidate_verdicts": activation.get("candidate_verdicts") if isinstance(activation, dict) else None,
+                "updated_utc": payload.get("updated_utc"),
+                "milestone": payload.get("milestone"),
+            })
+        except Exception as e:
+            dashboard_learning["error"] = str(e)[:200]
+    evidence.append({"dashboard_learning_reconciliation": dashboard_learning})
+
+    canonical_existing = sum(1 for e in evidence if isinstance(e, dict) and e.get("exists"))
+    canonical_entries = sum(
+        int(e.get("entry_count", 0) or 0)
+        for e in evidence
+        if isinstance(e, dict) and "entry_count" in e
+    )
+    summary = (
+        f"Canonical promotion/review queue dirs checked: {len(queue_dirs)}, existing: {canonical_existing}, "
+        f"entries: {canonical_entries}; dashboard learning candidate_promote_count: "
+        f"{dashboard_learning.get('candidate_promote_count')}"
+    )
     return {"tool_name": "promotion_queue_status", "ok": True, "mutated_state": False, "summary": summary, "evidence": evidence, "error": None}
 
 
