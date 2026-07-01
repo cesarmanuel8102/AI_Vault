@@ -1,7 +1,7 @@
 """
 Persistent semantic memory for Brain V9.
 
-This module provides a dependency-light vector store under C:\\AI_VAULT\\memory\\semantic.
+This module provides a dependency-light vector store under BASE_PATH / "memory" / "semantic".
 It uses deterministic hashed lexical embeddings with numpy so it works without
 Chroma/FAISS/sentence-transformers. The public API is intentionally small so the
 backend can later be replaced by Chroma/FAISS without changing callers.
@@ -445,8 +445,7 @@ def get_semantic_memory() -> SemanticMemory:
     # Intentar usar FAISS si está disponible y tiene índice
     try:
         from brain_v9.core.semantic_memory_faiss import get_semantic_memory_faiss
-        from pathlib import Path
-        faiss_index = Path("C:/AI_VAULT/memory/semantic/semantic_memory_faiss.index")
+        faiss_index = SEMANTIC_ROOT / "semantic_memory_faiss.index"
         if faiss_index.exists():
             mem = get_semantic_memory_faiss()
             if mem._index is not None or faiss_index.stat().st_size > 0:
@@ -455,3 +454,5 @@ def get_semantic_memory() -> SemanticMemory:
         pass
     # Fallback a implementación original con hashing
     return SemanticMemory()
+
+

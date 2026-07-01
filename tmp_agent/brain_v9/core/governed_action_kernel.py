@@ -11,6 +11,8 @@ from typing import Optional, List, Dict, Any
 from pathlib import Path
 import re
 
+from brain_v9.config import BASE_PATH
+
 
 @dataclass
 class ActionRequest:
@@ -266,7 +268,7 @@ def requires_governed_tool(action: ActionRequest) -> bool:
 
 # ── Policy engine ─────────────────────────────────────────────────────────
 
-_WORKSPACE_ROOT = Path("C:/AI_VAULT/tmp_agent/workspace").resolve()
+_WORKSPACE_ROOT = (BASE_PATH / "tmp_agent" / "workspace").resolve()
 _PROTECTED_PATHS = {
     "memory/semantic",
     "tmp_agent/strategies",
@@ -280,7 +282,7 @@ def _is_within_workspace(path_str: Optional[str]) -> bool:
     try:
         p = Path(path_str)
         if not p.is_absolute():
-            p = Path("C:/AI_VAULT") / path_str
+            p = BASE_PATH / path_str
         resolved = p.resolve()
         workspace = _WORKSPACE_ROOT.resolve()
         return str(resolved).lower().startswith(str(workspace).lower() + "\\") or resolved == workspace
@@ -291,9 +293,9 @@ def _is_within_workspace(path_str: Optional[str]) -> bool:
 def _is_protected_path(path_str: Optional[str]) -> bool:
     if not path_str:
         return False
-    p = Path(path_str) if Path(path_str).is_absolute() else Path("C:/AI_VAULT") / path_str
+    p = Path(path_str) if Path(path_str).is_absolute() else BASE_PATH / path_str
     try:
-        rel = p.relative_to(Path("C:/AI_VAULT")).as_posix().lower()
+        rel = p.relative_to(BASE_PATH).as_posix().lower()
     except Exception:
         return False
     return any(rel == prefix or rel.startswith(prefix + "/") for prefix in _PROTECTED_PATHS)
@@ -399,7 +401,7 @@ def evaluate_action_policy(action: ActionRequest) -> PolicyDecision:
         dec.requires_permission = True
         dec.tool_name = "filesystem.read_file"
         dec.risk_level = "low"
-        dec.scope = "C:/AI_VAULT"
+        dec.scope = str(BASE_PATH)
         dec.options = ["allow_once", "allow_session", "deny"]
         dec.reason = "Filesystem read requires explicit permission"
         return dec
@@ -571,4 +573,6 @@ def build_synthetic_message(action: ActionRequest) -> str:
     elif action.action_type == "permission.elevate":
         return "elevation request"
     return action.raw_message
+
+
 

@@ -1,0 +1,34 @@
+{
+  "status": "IMPLEMENTED_VALIDATED",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_local": "3f59284",
+  "head_remote": "3f59284",
+  "files_modified": [
+    "tmp_agent/brain_v9/core/governed_action_kernel.py",
+    "tmp_agent/brain_v9/core/semantic_memory.py"
+  ],
+  "tests_created": [
+    "tests/smoke/test_front_brain_core_path_centralization_08.py"
+  ],
+  "changes": [
+    "GAK workspace root derives from BASE_PATH/tmp_agent/workspace",
+    "GAK relative policy paths resolve against BASE_PATH",
+    "semantic_memory FAISS index detection derives from SEMANTIC_ROOT"
+  ],
+  "validation": {
+    "py_compile": "PASS",
+    "focal_regression": "16 passed",
+    "core_path_smoke": "2 passed"
+  },
+  "remaining_hardcoded_path_debt": "Other legacy/trading/tools paths remain; this front only changed active core nontrading runtime paths.",
+  "safety": {
+    "no_broker_ibkr": true,
+    "no_memory_semantic_mutation": true,
+    "no_trading_changes": true,
+    "no_env_or_secrets": true,
+    "no_real_money": true,
+    "no_faiss_mutation": true
+  },
+  "commit_created": false,
+  "push_done": false
+}
