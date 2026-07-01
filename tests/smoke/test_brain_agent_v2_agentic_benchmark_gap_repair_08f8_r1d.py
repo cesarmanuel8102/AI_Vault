@@ -135,6 +135,18 @@ def test_promotion_queue_status_reconciles_dashboard_learning_count():
     out = promotion_queue_status()
     assert out["ok"] is True
     assert out["mutated_state"] is False
+    memory_reconciliation = [
+        item.get("dashboard_status_memory_reconciliation")
+        for item in out.get("evidence", [])
+        if isinstance(item, dict) and item.get("dashboard_status_memory_reconciliation")
+    ]
+    assert memory_reconciliation, "promotion_queue_status must explain /brain-dashboard/status memory.promotion_queue_count"
+    mem_rec = memory_reconciliation[0]
+    assert mem_rec["dashboard_route"] == "/brain-dashboard/status"
+    assert mem_rec["frontend_field"] == "memory.promotion_queue_count"
+    assert "promotion_queue_count" in mem_rec
+    assert "memory/promotion_queue" in mem_rec["formula"]
+
     reconciliation = [
         item.get("dashboard_learning_reconciliation")
         for item in out.get("evidence", [])

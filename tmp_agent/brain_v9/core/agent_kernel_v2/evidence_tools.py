@@ -145,17 +145,46 @@ def promotion_queue_status() -> Dict[str, Any]:
         "tmp_agent/state/promotion_queue",
         "tmp_agent/state/promotion_candidates",
         "tmp_agent/state/review_queue",
+        "memory/promotion_queue",
     ]
     for d in queue_dirs:
         p = _safe_path(d)
         if p and p.exists():
             try:
                 entries = list(p.iterdir())
-                evidence.append({"dir": d, "exists": True, "entry_count": len(entries), "entries": [e.name for e in entries[:10]]})
+                json_entries = [e for e in entries if e.is_file() and e.suffix.lower() == ".json"]
+                evidence.append({
+                    "dir": d,
+                    "exists": True,
+                    "entry_count": len(entries),
+                    "json_file_count": len(json_entries),
+                    "dashboard_status_source": d == "memory/promotion_queue",
+                    "entries": [e.name for e in entries[:10]],
+                })
             except Exception as e:
                 evidence.append({"dir": d, "exists": True, "error": str(e)[:100]})
         else:
             evidence.append({"dir": d, "exists": False})
+
+    dashboard_status_memory = {
+        "source": "tmp_agent/brain_v9/memory/memory_auditor.py:audit_memory_state",
+        "dashboard_route": "/brain-dashboard/status",
+        "frontend_source": "tmp_agent/brain_v9/dashboard/static/app.js",
+        "frontend_field": "memory.promotion_queue_count",
+        "formula": "len(list(Path('memory/promotion_queue').glob('*.json')))",
+        "promotion_queue_count": 0,
+        "exists": False,
+        "note": "This is the 8092 dashboard memory promotion queue count. It is distinct from tmp_agent/state promotion queues and from /brain/learning/status proposal candidates.",
+    }
+    dashboard_queue = _safe_path("memory/promotion_queue")
+    if dashboard_queue and dashboard_queue.exists():
+        files = sorted(dashboard_queue.glob("*.json"))
+        dashboard_status_memory.update({
+            "exists": True,
+            "promotion_queue_count": len(files),
+            "sample_files": [str(f.relative_to(REPO_ROOT)) for f in files[:10]],
+        })
+    evidence.append({"dashboard_status_memory_reconciliation": dashboard_status_memory})
 
     learning_status_path = _safe_path("tmp_agent/state/learning_status_latest.json")
     dashboard_learning = {
@@ -194,15 +223,19 @@ def promotion_queue_status() -> Dict[str, Any]:
             dashboard_learning["error"] = str(e)[:200]
     evidence.append({"dashboard_learning_reconciliation": dashboard_learning})
 
-    canonical_existing = sum(1 for e in evidence if isinstance(e, dict) and e.get("exists"))
+    canonical_existing = sum(
+        1 for e in evidence
+        if isinstance(e, dict) and e.get("exists") and str(e.get("dir", "")).startswith("tmp_agent/state/")
+    )
     canonical_entries = sum(
         int(e.get("entry_count", 0) or 0)
         for e in evidence
-        if isinstance(e, dict) and "entry_count" in e
+        if isinstance(e, dict) and "entry_count" in e and str(e.get("dir", "")).startswith("tmp_agent/state/")
     )
     summary = (
         f"Canonical promotion/review queue dirs checked: {len(queue_dirs)}, existing: {canonical_existing}, "
-        f"entries: {canonical_entries}; dashboard learning candidate_promote_count: "
+        f"entries: {canonical_entries}; dashboard /brain-dashboard/status memory.promotion_queue_count: "
+        f"{dashboard_status_memory.get('promotion_queue_count')}; dashboard learning candidate_promote_count: "
         f"{dashboard_learning.get('candidate_promote_count')}"
     )
     return {"tool_name": "promotion_queue_status", "ok": True, "mutated_state": False, "summary": summary, "evidence": evidence, "error": None}

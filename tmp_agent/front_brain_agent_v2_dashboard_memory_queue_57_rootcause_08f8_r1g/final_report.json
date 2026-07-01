@@ -1,0 +1,23 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-DASHBOARD-MEMORY-QUEUE-57-ROOTCAUSE-08F8-R1G",
+  "status": "IMPLEMENTED_VALIDATED",
+  "root_cause": "Dashboard 8092 shows memory.promotion_queue_count from memory/promotion_queue/*.json, while Agent V2 promotion_queue_status previously checked tmp_agent/state/* queues and /brain/learning/status only.",
+  "resolved_question": {
+    "canonical_tmp_agent_state_promotion_queue": 0,
+    "dashboard_8092_memory_promotion_queue_count": 57,
+    "dashboard_learning_candidate_promote_count": 0,
+    "source_of_57": "memory/promotion_queue/*.json via tmp_agent/brain_v9/memory/memory_auditor.py:audit_memory_state and /brain-dashboard/status"
+  },
+  "validation": {
+    "py_compile": "PASS",
+    "pytest": "10 passed",
+    "test": "tests/smoke/test_brain_agent_v2_agentic_benchmark_gap_repair_08f8_r1d.py"
+  },
+  "safety": {
+    "real_money_used": false,
+    "broker_ibkr_touched": false,
+    "memory_semantic_write": false,
+    "faiss_write": false,
+    "memory_files_read_only": true
+  }
+}
