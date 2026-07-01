@@ -214,6 +214,32 @@ def _detect_language(message: str) -> str:
         return "en"
     return "unknown"
 
+NEGATION_GUARDED_INTENTS = {
+    "code_change_request",
+    "delete_request",
+    "push_request",
+    "memory_write",
+    "trading_broker_live",
+}
+
+_NEGATION_PREFIX_RE = re.compile(
+    r"(?:^|[\s,.;:])(?:no|sin|nunca|jamas|jamás|not|without|never|do\s+not|don['’]?t)"
+    r"(?:\s+\w+){0,5}\s*$"
+)
+
+
+def _has_non_negated_phrase(lowered: str, phrase: str) -> bool:
+    """Return True when a matched phrase is not locally negated.
+
+    This prevents safety/escalation keywords inside constraints like
+    "sin escribir memoria" or "do not use broker" from being treated as the
+    user's requested action. Real positive requests remain classified normally.
+    """
+    for match in re.finditer(re.escape(phrase), lowered):
+        prefix = lowered[max(0, match.start() - 80): match.start()]
+        if not _NEGATION_PREFIX_RE.search(prefix):
+            return True
+    return False
 
 def _keyword_classify(message: str) -> Dict[str, Any]:
     """Deterministic keyword-based classifier. Conservative on unsafe/unknown."""
@@ -229,6 +255,8 @@ def _keyword_classify(message: str) -> Dict[str, Any]:
         local_matched = []
         for phrase in en_phrases + es_phrases:
             if phrase in lowered:
+                if intent in NEGATION_GUARDED_INTENTS and not _has_non_negated_phrase(lowered, phrase):
+                    continue
                 # Multi-word phrases score higher
                 bonus = 3 if " " in phrase else 1
                 score += bonus
@@ -369,3 +397,4 @@ def select_route_from_intent(classification: Dict[str, Any]) -> str:
 
 def list_supported_intents() -> List[str]:
     return sorted(SUPPORTED_INTENTS)
+

@@ -1,0 +1,35 @@
+{
+  "status": "IMPLEMENTED_VALIDATED",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_local": "198e14a",
+  "head_remote": "198e14a",
+  "files_modified": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/intent_classifier.py"
+  ],
+  "tests_created": [
+    "tests/smoke/test_front_brain_intent_negation_guard_03.py"
+  ],
+  "evidence_files": [
+    "tmp_agent/front_brain_intent_negation_guard_03/final_report.json",
+    "tmp_agent/front_brain_intent_negation_guard_03/final_report.md"
+  ],
+  "bug": "Negated risky phrases such as sin escribir memoria were classified as positive memory_write intent.",
+  "fix": "Add local negation guard for risky deterministic keyword intents while preserving positive risky requests.",
+  "validation": {
+    "live_router_governance_with_correct_token": "12 passed",
+    "negation_smoke": "4 passed",
+    "focal_regression": "10 passed",
+    "py_compile": "PASS",
+    "unauthenticated_old_token_live_smoke": "expected 403 failure, not a code regression"
+  },
+  "safety": {
+    "no_env_or_secrets": true,
+    "no_broker_ibkr": true,
+    "no_faiss_mutation": true,
+    "no_real_money": true,
+    "no_memory_semantic_mutation": true,
+    "no_trading_changes": true
+  },
+  "commit_created": false,
+  "push_done": false
+}
