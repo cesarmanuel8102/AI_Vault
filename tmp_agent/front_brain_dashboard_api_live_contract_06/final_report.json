@@ -1,0 +1,46 @@
+{
+  "status": "IMPLEMENTED_VALIDATED",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_local": "4d42095",
+  "head_remote": "4d42095",
+  "browser_automation_status": "BLOCKED_BY_BROWSER_SECURITY_POLICY_FOR_127_0_0_1_8092",
+  "fallback_validation": "HTTP/API live contract + static UI/proxy checks",
+  "files_created": [
+    "tests/smoke/test_front_brain_dashboard_api_live_contract_06.py"
+  ],
+  "evidence_files": [
+    "tmp_agent/front_brain_dashboard_api_live_contract_06/manual_live_dashboard_proxy_verify.json",
+    "tmp_agent/front_brain_dashboard_api_live_contract_06/final_report.json",
+    "tmp_agent/front_brain_dashboard_api_live_contract_06/final_report.md"
+  ],
+  "validation": {
+    "combined_agent_dashboard_regression": "15 passed",
+    "live_dashboard_contract": "4 passed",
+    "direct_missing_token_403": "PASS",
+    "py_compile": "PASS",
+    "dashboard_chat_proxy": "PASS",
+    "dashboard_health": "PASS",
+    "trace_proxy": "PASS",
+    "brain_health": "PASS"
+  },
+  "live_observed": {
+    "raw_cot_exposed": false,
+    "provider": "ollama_cloud",
+    "canonical_agent_v2": true,
+    "backend": "langgraph_parity",
+    "model": "kimi-k2.6:cloud",
+    "direct_agent_missing_token_rejected": true,
+    "brain_port": 8091,
+    "dashboard_port": 8092
+  },
+  "safety": {
+    "no_memory_semantic_mutation": true,
+    "no_broker_ibkr": true,
+    "no_trading_changes": true,
+    "no_env_or_secrets": true,
+    "no_real_money": true,
+    "no_faiss_mutation": true
+  },
+  "commit_created": false,
+  "push_done": false
+}

@@ -1,0 +1,106 @@
+{
+  "root_status": 200,
+  "root_has_token_literal": false,
+  "root_has_dashboard_chat": false,
+  "dashboard_status": {
+    "ok": true,
+    "agent_v2": {
+      "ok": true,
+      "canonical_for_new_agent_runs": true,
+      "backend": "langgraph_parity",
+      "backend_selected": "langgraph_parity",
+      "backend_default": "langgraph_parity",
+      "backend_fallback_used": false,
+      "backend_fallback_reason": null,
+      "runtime_type": "LangGraphParityRuntimeV2",
+      "langgraph_default_active": true,
+      "rollback_backend": "native_runtime",
+      "primary_finalizer_model": "kimi-k2.6:cloud",
+      "latest_provider_used": "deterministic_parity_finalizer",
+      "latest_model_used": "parity_v1_full",
+      "latest_provider_degraded": false,
+      "runs": 828,
+      "latest_run_id": "agv2_ffe80153017da6c6",
+      "trace_available": true,
+      "chat_agent_route": "/v2/chat/agent",
+      "status_route": "/brain-dashboard/agent-v2/status",
+      "capabilities_route": "/v2/agent/capabilities",
+      "legacy_agent_status": "legacy_compatible_not_canonical"
+    },
+    "message": "Agent V2 is canonical for new agent operations; legacy agent remains compatible."
+  },
+  "chat": {
+    "ok": true,
+    "content": "No tools were requested, scheduled, or executed in this run. The session context shows a prior identical query with no route taken, and current tool_evidence, memory_evidence, and tool_distinction are all empty — indicating this was handled as a direct assistant response with no tool involvement whatsoever.",
+    "canonical_agent_v2": true,
+    "run_id": "agv2_d77d6af2908eb1e3",
+    "trace_url": "/v2/agent/runs/agv2_d77d6af2908eb1e3/trace",
+    "classification": "direct_assistant",
+    "status": "completed",
+    "model_used": "kimi-k2.6:cloud",
+    "provider_used": "ollama_cloud",
+    "provider_degraded": false,
+    "fallback_reason": "none",
+    "raw_cot_exposed": false,
+    "mode_requested": "read_only",
+    "mode_effective": "read_only",
+    "auto_decision": "n/a",
+    "mode_escalation_required": false,
+    "mode_escalation_reason": null,
+    "required_permission": null,
+    "expected_write_scope": [],
+    "confirmation_id": null,
+    "blocked_tools": []
+  },
+  "trace": {
+    "ok": true,
+    "run_id": "agv2_d77d6af2908eb1e3",
+    "trace": [
+      {
+        "data": {
+          "goal_preview": "E2E dashboard proxy check: responde una linea, sin escribir memoria y sin broker.",
+          "mode_effective": "read_only",
+          "mode_requested": "read_only"
+        },
+        "event_type": "run_created",
+        "message": "LangGraph parity run created",
+        "run_id": "agv2_d77d6af2908eb1e3",
+        "step_id": null,
+        "timestamp_utc": "2026-07-01T02:22:02.230493Z"
+      },
+      {
+        "data": {
+          "classification": "dashboard_diagnosis",
+          "from_status": "created",
+          "scheduled_tools": [
+            "semantic_retrieve",
+            "repo_status_read",
+            "grep_search",
+            "route_probe",
+            "route_probe",
+            "route_probe"
+          ],
+          "step_count": 7,
+          "to_status": "planned"
+        },
+        "event_type": "plan_created",
+        "message": "LangGraph parity plan created",
+        "run_id": "agv2_d77d6af2908eb1e3",
+        "step_id": null,
+        "timestamp_utc": "2026-07-01T02:22:02.235476Z"
+      },
+      {
+        "data": {
+          "final_answer_preview": "No tools were requested, scheduled, or executed in this run. The session context shows a prior identical query with no r",
+          "status": "completed"
+        },
+        "event_type": "run_completed",
+        "message": "LangGraph run completed",
+        "run_id": "agv2_d77d6af2908eb1e3",
+        "step_id": null,
+        "timestamp_utc": "2026-07-01T02:22:06.854216Z"
+      }
+    ],
+    "event_count": 3
+  }
+}
