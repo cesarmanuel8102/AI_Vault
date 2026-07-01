@@ -227,10 +227,9 @@ def promote_candidate(
         from tmp_agent.brain_v9.core.semantic_memory_faiss import get_semantic_memory_faiss
         mem = get_semantic_memory_faiss()
 
-        with mem.records_path.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps(semantic_record, ensure_ascii=False, sort_keys=True) + "\n")
-
-        mem._add_to_index(record_id, semantic_record["text"])
+        promote_result = mem.promote_record(semantic_record, rebuild=True)
+        if not promote_result.get("ok") or not promote_result.get("inserted"):
+            raise RuntimeError(f"promote_record failed: {promote_result}")
 
         # Verify FAISS state
         after_ids = _read_json_ids(FAISS_IDS)

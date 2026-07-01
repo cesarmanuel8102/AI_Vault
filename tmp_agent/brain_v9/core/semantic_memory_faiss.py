@@ -250,6 +250,38 @@ class SemanticMemoryFAISS:
             self._add_to_index(record_id, clean)
         return {"ok": True, "inserted": True, "id": record_id, "records": len(self._read_records())}
 
+    def promote_record(self, record: Dict[str, Any], rebuild: bool = True) -> Dict[str, Any]:
+        """
+        Public write boundary for canonical promotion records with caller-owned IDs.
+
+        Promotion pipelines must use this method instead of appending to
+        records_path or calling _add_to_index from outside this class. This keeps
+        JSONL and FAISS mutation owned by SemanticMemoryFAISS.
+        """
+        payload = dict(record or {})
+        record_id = str(payload.get("id") or "").strip()
+        text = str(payload.get("text") or "").strip()
+        if not record_id:
+            return {"ok": False, "inserted": False, "error": "missing_record_id"}
+        if not text:
+            return {"ok": False, "inserted": False, "id": record_id, "error": "empty_text"}
+        if self._record_exists(record_id):
+            return {"ok": True, "inserted": False, "id": record_id, "reason": "duplicate"}
+
+        payload.setdefault("created_utc", self._utc_now())
+        payload.setdefault("source", "promotion")
+        payload.setdefault("session_id", "promotion")
+        payload.setdefault("kind", "canonical_candidate")
+        payload.setdefault("metadata", {})
+
+        self.records_path.parent.mkdir(parents=True, exist_ok=True)
+        with self.records_path.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps(payload, ensure_ascii=False, sort_keys=True) + "\n")
+
+        if rebuild:
+            self._add_to_index(record_id, text)
+        return {"ok": True, "inserted": True, "id": record_id, "records": len(self._read_records())}
+
     def _add_to_index(self, record_id: str, text: str) -> None:
         """Añade un vector al índice FAISS (incremental)."""
         self._ensure_index_loaded()

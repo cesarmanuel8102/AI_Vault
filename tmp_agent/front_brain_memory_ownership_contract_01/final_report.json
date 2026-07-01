@@ -1,0 +1,25 @@
+{
+  "front": "FRONT-BRAIN-MEMORY-OWNERSHIP-CONTRACT-TESTS-01",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_before": "30597a1",
+  "status": "IMPLEMENTED_VALIDATED",
+  "scope": [
+    "tmp_agent/brain_v9/core/semantic_memory_faiss.py",
+    "tmp_agent/brain_v9/memory/promotion_candidate_promoter.py",
+    "tests/smoke/test_front_brain_memory_ownership_contract_01.py"
+  ],
+  "changes": [
+    "added public SemanticMemoryFAISS.promote_record boundary",
+    "changed promotion_candidate_promoter to use promote_record instead of direct records_path append plus private _add_to_index",
+    "added temp-root smoke coverage for promote_record and static private-boundary enforcement"
+  ],
+  "py_compile_passed": true,
+  "focused_tests_passed": "7 passed",
+  "money_real_used": false,
+  "broker_touched": false,
+  "production_memory_touched": false,
+  "faiss_touched": false,
+  "trading_touched": false,
+  "env_touched": false,
+  "recommended_next_front": "FRONT-BRAIN-CONTRACT-TESTS-BOUNDARIES-02"
+}
