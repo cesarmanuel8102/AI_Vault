@@ -647,6 +647,14 @@
   <div class="status-dot" id="status-dot" title="Estado del sistema"></div>
 </header>
 
+<!-- Operator token banner -->
+<div id="token-banner" style="display:none;background:var(--surface);border-bottom:1px solid var(--border);padding:8px 20px;font-size:13px;color:var(--text2);align-items:center;gap:10px;">
+  <span>🔐 Token de operador requerido para usar Agent V2</span>
+  <input id="token-input" type="password" placeholder="Pega el token local aquí" style="flex:1;max-width:360px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:13px;" onkeydown="if(event.key==='Enter')saveOperatorToken()">
+  <button onclick="saveOperatorToken()" style="background:var(--accent);color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer;">Guardar</button>
+  <span id="token-status" style="font-size:12px;color:var(--amber);">Sin token</span>
+</div>
+
 <nav>
   <button class="active" onclick="showPanel('chat')">Chat</button>
   <button onclick="showPanel('platforms')">Platforms</button>
@@ -918,8 +926,11 @@ async function api(path, opts = {}) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), resolvedTimeout);
     try {
-      const r = await fetch(BASE + path, {
-        headers: { 'Content-Type': 'application/json' },
+  const r = await fetch(BASE + path, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(getOperatorToken() ? { 'X-Brain-Token': getOperatorToken() } : {}),
+        },
         ...fetchOpts,
         signal: controller.signal,
       });
@@ -935,6 +946,10 @@ async function api(path, opts = {}) {
 
       if (!r.ok) {
         const detail = data?.detail || data?.error || data?.message || `HTTP ${r.status}`;
+        if (r.status === 401 || r.status === 403) {
+          showTokenBanner(true);
+          throw new Error(`Operator token rejected or missing: ${detail}`);
+        }
         throw new Error(detail);
       }
       return data;
@@ -952,6 +967,10 @@ async function api(path, opts = {}) {
         continue;
       }
       throw lastError;
+    } finally {
+      if (lastError && (lastError.message || '').includes('Operator token')) {
+        showTokenBanner(true);
+      }
     }
   }
   throw lastError || new Error('request failed');
@@ -960,6 +979,49 @@ async function api(path, opts = {}) {
 function ts() {
   return new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
 }
+
+const _TOKEN_KEY = 'brain_v9_operator_token';
+
+function getOperatorToken() {
+  try { return localStorage.getItem(_TOKEN_KEY) || ''; } catch { return ''; }
+}
+
+function setOperatorToken(token) {
+  try {
+    if (token) localStorage.setItem(_TOKEN_KEY, token);
+    else localStorage.removeItem(_TOKEN_KEY);
+  } catch {}
+  updateTokenUI();
+}
+
+function showTokenBanner(show) {
+  const banner = document.getElementById('token-banner');
+  if (banner) banner.style.display = show ? 'flex' : 'none';
+}
+
+function updateTokenUI() {
+  const token = getOperatorToken();
+  const status = document.getElementById('token-status');
+  if (status) status.textContent = token ? 'Token configurado' : 'Sin token';
+  if (status) status.style.color = token ? 'var(--green)' : 'var(--amber)';
+  showTokenBanner(!token);
+}
+
+function saveOperatorToken() {
+  const input = document.getElementById('token-input');
+  if (!input) return;
+  const token = input.value.trim();
+  if (!token) {
+    alert('Pega el token de operador proporcionado por el launcher.');
+    return;
+  }
+  setOperatorToken(token);
+  input.value = '';
+  addMsg('system', 'Token de operador guardado localmente. Prueba enviar un mensaje.', ts());
+}
+
+// Initialize token UI on load
+updateTokenUI();
 
 function escapeHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -2632,6 +2694,7 @@ function initAw() {
 
 // ── Init ───────────────────────────────────────────────────────────────────
 async function init() {
+  updateTokenUI();
   addMsg('system', 'Brain Chat V9 conectando…');
   try {
     const h = await api('/health');
@@ -2640,7 +2703,7 @@ async function init() {
       ? `Listo · ${h.version} · Ollama: ${h.ollama_model || 'connected'}`
       : `Iniciando… (${h.status})`);
   } catch(e) {
-    addMsg('system', 'No se pudo conectar con el servidor. ¿Está corriendo en puerto 8090?');
+    addMsg('system', 'No se pudo conectar con el servidor. ¿Está corriendo en puerto 8091?');
   }
   document.getElementById('input').focus();
 }
