@@ -314,7 +314,7 @@ def _llm_classify(message: str) -> Optional[Dict[str, Any]]:
         ],
         "options": {"temperature": 0.1, "num_predict": 256},
     }
-    url = API_ENDPOINTS.get("ollama", "http://127.0.0.1:11434/api/chat")
+    url = API_ENDPOINTS["ollama"]
     req = urllib.request.Request(
         url,
         data=json.dumps(body).encode("utf-8"),

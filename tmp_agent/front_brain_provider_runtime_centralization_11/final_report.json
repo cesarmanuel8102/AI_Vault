@@ -1,0 +1,22 @@
+{
+  "status": "COMPLETE",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_before": "e504d9b",
+  "head_after": "e504d9b",
+  "scope": "remove Agent V2 runtime hardcoded Ollama endpoint fallbacks",
+  "files_modified": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/intent_classifier.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/intent_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/capability_registry.py",
+    "tests/smoke/test_front_brain_provider_centralization_01.py"
+  ],
+  "py_compile_passed": true,
+  "tests": "14 passed, 3 warnings",
+  "provider_policy": "Kimi via centralized API_ENDPOINTS and PRIMARY_KIMI_MODEL remains unchanged",
+  "no_real_money": true,
+  "no_broker": true,
+  "no_memory_semantic_touch": true,
+  "commit_created": false,
+  "push_done": false
+}

@@ -23,10 +23,23 @@ def test_ollama_chat_endpoint_is_centralized_for_agent_and_codegen():
     finalizer = _read("tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py")
     codegen = _read("tmp_agent/brain_v9/brain/codegen.py")
 
-    assert "API_ENDPOINTS.get(\"ollama\"" in finalizer
+    assert "API_ENDPOINTS[\"ollama\"]" in finalizer
     assert "API_ENDPOINTS.get(\"ollama\"" in codegen
     assert "OLLAMA_CHAT_URL = \"http://127.0.0.1:11434/api/chat\"" not in finalizer
     assert "OLLAMA_CHAT_URL = \"http://localhost:11434/api/chat\"" not in codegen
+
+
+def test_agent_v2_runtime_ollama_calls_do_not_use_hardcoded_endpoint_fallbacks():
+    paths = [
+        "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/intent_classifier.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/intent_adapter.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/capability_registry.py",
+    ]
+    for path in paths:
+        text = _read(path)
+        assert 'API_ENDPOINTS.get("ollama", "http://127.0.0.1:11434/api/chat")' not in text
+        assert 'API_ENDPOINTS.get("ollama", "http://localhost:11434/api/chat")' not in text
 
 
 def test_semantic_embedding_base_url_comes_from_config():

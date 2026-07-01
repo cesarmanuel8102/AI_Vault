@@ -46,7 +46,7 @@ def _ollama_chat(model: str, prompt: str, timeout: int = 45, system_content: str
         ],
         "options": {"temperature": 0.1, "num_predict": 900},
     }
-    ollama_chat_url = API_ENDPOINTS.get("ollama", "http://127.0.0.1:11434/api/chat")
+    ollama_chat_url = API_ENDPOINTS["ollama"]
     req = urllib.request.Request(ollama_chat_url, data=json.dumps(body).encode("utf-8"), headers={"Content-Type": "application/json"}, method="POST")
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         data = json.loads(resp.read().decode("utf-8", "replace"))

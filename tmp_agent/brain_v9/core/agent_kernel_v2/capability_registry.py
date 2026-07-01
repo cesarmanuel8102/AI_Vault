@@ -25,7 +25,7 @@ FALLBACK_MODELS = ["deepseek-v4-pro:cloud", "gpt-oss:120b-cloud", "kimi-k2.5:clo
 
 def _probe_ollama_reachable() -> bool:
     """Lightweight probe: list local models on Ollama."""
-    url = API_ENDPOINTS.get("ollama", "http://127.0.0.1:11434/api/chat").replace("/api/chat", "/api/tags")
+    url = API_ENDPOINTS["ollama"].replace("/api/chat", "/api/tags")
     try:
         with urllib.request.urlopen(urllib.request.Request(url, method="GET", headers={"Accept": "application/json"}), timeout=3) as resp:
             return resp.status == 200
