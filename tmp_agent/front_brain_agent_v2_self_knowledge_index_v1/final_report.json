@@ -1,0 +1,65 @@
+{
+  "front": "BRAIN_SELF_KNOWLEDGE_INDEX_V1",
+  "status": "IMPLEMENTED_VALIDATED_READY_TO_COMMIT",
+  "timestamp_utc": "2026-07-02T00:57:53.868325+00:00",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_before_commit": "6a51fd1",
+  "remote_before_commit": "6a51fd1",
+  "problem_addressed": "Agent V2 lacked a canonical self-knowledge source map, causing scattered lookup behavior and weak dashboard/system self-understanding.",
+  "solution": "Added a read-only canonical Brain self-knowledge index and wired it through evidence tools, governance, tool gateway, planner, intent classifier, LangGraph runtime, and finalizer preservation.",
+  "domains_indexed": [
+    "agent_v2_runtime",
+    "langgraph_parity",
+    "dashboard",
+    "memory_semantic_faiss",
+    "promotion_queue",
+    "curated_knowledge",
+    "financial_autonomy",
+    "trading_qc_ibkr",
+    "governance_approval",
+    "capabilities_tools",
+    "ci_tests",
+    "known_gaps"
+  ],
+  "files_to_commit": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/self_knowledge_index.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/evidence_tools.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/intent_classifier.py",
+    "tests/smoke/test_brain_agent_v2_self_knowledge_index_v1.py",
+    "tests/smoke/test_brain_agent_v2_agentic_benchmark_gap_repair_08f8_r1d.py",
+    "tmp_agent/front_brain_agent_v2_self_knowledge_index_v1/sample_lookup_outputs.json",
+    "tmp_agent/front_brain_agent_v2_self_knowledge_index_v1/live_agent_probe_results.json",
+    "tmp_agent/front_brain_agent_v2_self_knowledge_index_v1/final_report.json",
+    "tmp_agent/front_brain_agent_v2_self_knowledge_index_v1/final_report.md"
+  ],
+  "validation": {
+    "py_compile": "PASS",
+    "self_knowledge_smoke": "7 passed",
+    "agentic_gap_regression": "12 passed",
+    "combined_smoke": "19 passed",
+    "live_agent_probe": "PASS"
+  },
+  "live_probe": {
+    "evidence_file": "tmp_agent/front_brain_agent_v2_self_knowledge_index_v1/live_agent_probe_results.json",
+    "classification_expected": "brain_self_knowledge_lookup",
+    "provider_observed": "ollama_cloud",
+    "model_observed": "kimi-k2.6:cloud"
+  },
+  "safety": {
+    "read_only": true,
+    "memory_semantic_written": false,
+    "faiss_written": false,
+    "trading_touched": false,
+    "broker_ibkr_touched": false,
+    "real_money_touched": false,
+    "git_add_all_used": false
+  },
+  "commit_created": false,
+  "push_done": false,
+  "recommended_next_action": "Commit and push BRAIN_SELF_KNOWLEDGE_INDEX_V1, then restart/probe Agent V2 on the committed head."
+}

@@ -102,6 +102,7 @@ SUPPORTED_READ_TOOLS = {
     "semantic_memory_status",
     "promotion_queue_status",
     "capability_registry_read",
+    "brain_self_knowledge_lookup",
 }
 
 
@@ -721,6 +722,9 @@ class LangGraphParityRuntimeV2:
                     existing_tools.add(tool)
                 elif tool == "capability_registry_read" and tool not in existing_tools:
                     new_steps.append({"step_id": "ev_cap_read", "kind": "tool", "title": "Read capability registry", "status": "planned", "tool_name": "capability_registry_read", "input": {}})
+                    existing_tools.add(tool)
+                elif tool == "brain_self_knowledge_lookup" and tool not in existing_tools:
+                    new_steps.append({"step_id": "ev_self_knowledge", "kind": "tool", "title": "Read Brain self-knowledge source map", "status": "planned", "tool_name": "brain_self_knowledge_lookup", "input": {"query": message[:400], "top_k": 4}})
                     existing_tools.add(tool)
 
         merged: List[Dict[str, Any]] = []

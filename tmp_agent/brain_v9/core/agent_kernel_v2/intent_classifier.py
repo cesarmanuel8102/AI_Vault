@@ -37,6 +37,7 @@ SUPPORTED_INTENTS = {
     "promotion_queue_status",
     "trace_inspect",
     "capability_registry_read",
+    "brain_self_knowledge_lookup",
     "financial_autonomy_diagnosis",
     "evidence_required_diagnosis",
     "unknown_or_insufficient_info",
@@ -54,6 +55,7 @@ SAFE_READ_INTENTS = {
     "promotion_queue_status",
     "trace_inspect",
     "capability_registry_read",
+    "brain_self_knowledge_lookup",
     "financial_autonomy_diagnosis",
     "evidence_required_diagnosis",
 }
@@ -96,6 +98,7 @@ INTENT_ROUTE_MAP = {
     "promotion_queue_status": "brain_evidence",
     "trace_inspect": "brain_evidence",
     "capability_registry_read": "brain_evidence",
+    "brain_self_knowledge_lookup": "brain_evidence",
     "financial_autonomy_diagnosis": "brain_evidence",
     "evidence_required_diagnosis": "brain_evidence",
     "unknown_or_insufficient_info": "direct_assistant",
@@ -293,6 +296,15 @@ INTENT_PATTERNS: List[Tuple[str, List[str], List[str], str]] = [
         "registro de capacidades", "capacidades del agente", "qué capacidades",
         "lista capacidades", "capacidades read", "lee capacidades",
     ], "safe"),
+    ("brain_self_knowledge_lookup", [
+        "self knowledge", "brain self knowledge", "system self knowledge",
+        "where to look", "where should you search", "source map",
+        "brain architecture overview", "whole brain state", "full brain status",
+    ], [
+        "autoconocimiento", "autoconocimiento del brain", "donde buscar",
+        "dónde buscar", "como buscar", "cómo buscar", "mapa de fuentes",
+        "estado global del brain", "brain en su totalidad", "arquitectura completa",
+    ], "safe"),
 ]
 
 
@@ -419,7 +431,9 @@ def _evidence_policy_classify(message: str) -> Optional[Dict[str, Any]]:
         intent = "semantic_memory_status"
     elif any(t in domain_hits for t in {"memory", "memoria"}):
         intent = "memory_structure_diagnosis"
-    elif any(t in domain_hits for t in {"autodesarrollo", "self-development", "autoconocimiento", "capabilities", "capacidades"}):
+    elif any(t in domain_hits for t in {"autoconocimiento", "brain", "agent", "agente", "architecture", "arquitectura"}):
+        intent = "brain_self_knowledge_lookup"
+    elif any(t in domain_hits for t in {"autodesarrollo", "self-development", "capabilities", "capacidades"}):
         intent = "capability_registry_read"
     elif any(t in domain_hits for t in {"dashboard", "ui"}):
         intent = "dashboard_diagnosis"
@@ -504,7 +518,7 @@ def _llm_classify(message: str) -> Optional[Dict[str, Any]]:
         "code_change_request, push_request, delete_request, memory_read, memory_write, "
         "autonomy_dryrun, self_improvement_reportonly, trading_broker_live, "
         "teacher_codex_search, memory_structure_diagnosis, semantic_memory_status, "
-        "promotion_queue_status, trace_inspect, capability_registry_read, "
+        "promotion_queue_status, trace_inspect, capability_registry_read, brain_self_knowledge_lookup, "
         "financial_autonomy_diagnosis, evidence_required_diagnosis, unknown_or_insufficient_info. "
         "risk_level must be one of safe, approval_required, blocked. "
         "language one of es, en, mixed, unknown. route one of direct_assistant, brain_evidence, operational_agent. "

@@ -317,6 +317,12 @@ def capability_registry_read() -> Dict[str, Any]:
     return {"tool_name": "capability_registry_read", "ok": True, "mutated_state": False, "summary": summary, "evidence": evidence, "error": None}
 
 
+def brain_self_knowledge_lookup(query: str = "", domain: str | None = None, top_k: int = 4) -> Dict[str, Any]:
+    """Read the canonical self-knowledge source map for Brain internals."""
+    from .self_knowledge_index import brain_self_knowledge_lookup as _lookup
+    return _lookup(query=query, domain=domain, top_k=top_k)
+
+
 # Mapping for ToolGatewayV2 dispatch
 EVIDENCE_TOOL_MAP = {
     "repo_file_search": repo_file_search,
@@ -325,6 +331,7 @@ EVIDENCE_TOOL_MAP = {
     "semantic_memory_status": semantic_memory_status,
     "promotion_queue_status": promotion_queue_status,
     "capability_registry_read": capability_registry_read,
+    "brain_self_knowledge_lookup": brain_self_knowledge_lookup,
 }
 
 

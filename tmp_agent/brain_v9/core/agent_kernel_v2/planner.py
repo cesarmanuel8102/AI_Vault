@@ -12,6 +12,7 @@ PLANNER_CLASSES = [
     "teacher_codex_search", "memory_structure_diagnosis", "semantic_memory_status",
     "promotion_queue_status", "trace_inspect", "capability_registry_read",
     "financial_autonomy_diagnosis", "evidence_required_diagnosis",
+    "brain_self_knowledge_lookup",
 ]
 
 # Explicit tool request patterns - if user names a tool, schedule it directly
@@ -220,7 +221,7 @@ def classify_goal(goal: str, mode: str = "read_only") -> str:
         "capacidades actuales", "current capabilities", "audita tus capacidades",
         "auditar capacidades", "autoconocimiento", "self knowledge",
     ]):
-        return "capability_registry_read"
+        return "brain_self_knowledge_lookup"
     if any(x in g for x in [
         "trace inspect", "inspect trace", "inspecciona trace", "lee trace",
         "trace reciente", "recent trace", "traza reciente", "traza",
@@ -342,6 +343,19 @@ def build_plan(goal: str, mode: str = "read_only") -> tuple[str, List[Dict[str, 
     classification = classify_goal(goal, mode)
     add("plan", "plan", f"Classify goal as {classification}", None, {})
 
+    if classification in {
+        "brain_self_knowledge_lookup",
+        "capability_registry_read",
+        "financial_autonomy_diagnosis",
+        "memory_structure_diagnosis",
+        "semantic_memory_status",
+        "promotion_queue_status",
+        "trace_inspect",
+        "dashboard_diagnosis",
+        "evidence_required_diagnosis",
+    }:
+        add("self_knowledge", "tool", "Read canonical Brain self-knowledge source map", "brain_self_knowledge_lookup", {"query": goal, "top_k": 4})
+
     if classification in {"memory_question", "provider_diagnosis", "dashboard_diagnosis", "general_reasoning"}:
         add("retrieve", "memory", "Read-only semantic retrieval", "semantic_retrieve", {"query": goal, "top_k": 4})
     if classification in {"repo_audit", "dashboard_diagnosis", "provider_diagnosis", "general_reasoning"}:
@@ -379,6 +393,10 @@ def build_plan(goal: str, mode: str = "read_only") -> tuple[str, List[Dict[str, 
         add("capability_read", "tool", "Read capability registry", "capability_registry_read", {})
         add("capability_search", "tool", "Search self-development capability wiring", "repo_file_search", {"pattern": "capability|autodesarrollo|self_improvement|agent_kernel_v2|langgraph", "glob": "*.py"})
         add("capability_history", "tool", "Read recent agent capability commits", "repo_history_read", {"path": "tmp_agent/brain_v9/core/agent_kernel_v2", "limit": 8})
+    if classification == "brain_self_knowledge_lookup":
+        add("capability_read", "tool", "Read capability registry", "capability_registry_read", {})
+        add("brain_evidence_search", "tool", "Search Brain Agent V2 evidence", "repo_file_search", {"pattern": "Agent V2|LangGraphParityRuntimeV2|capability|dashboard|semantic_memory|financial_autonomy|promotion_queue|tool_gateway", "glob": "*.py"})
+        add("semantic_context", "memory", "Retrieve semantic context for Brain self-knowledge", "semantic_retrieve", {"query": goal, "top_k": 3})
     if classification == "financial_autonomy_diagnosis":
         add("financial_search", "tool", "Search financial autonomy safety flags", "repo_file_search", {"pattern": "financial_autonomy|FinancialAutonomy|broker_execution_enabled|real_money_enabled|dry_run", "glob": "*.py"})
         add("financial_init", "tool", "Read financial_autonomy package contract", "repo_file_read", {"path": "financial_autonomy/__init__.py", "max_bytes": 4000})
@@ -423,6 +441,7 @@ def _resolve_tool(tool_name: str) -> tuple[str, Dict[str, Any], str]:
         "semantic_memory_status": ("semantic_memory_status", {}, ""),
         "promotion_queue_status": ("promotion_queue_status", {}, ""),
         "capability_registry_read": ("capability_registry_read", {}, ""),
+        "brain_self_knowledge_lookup": ("brain_self_knowledge_lookup", {"query": "Brain self knowledge", "top_k": 4}, "query can be specified"),
     }
     
     if t in direct_map:

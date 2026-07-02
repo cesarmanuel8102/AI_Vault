@@ -38,6 +38,7 @@ class ToolGatewayV2:
             AgentCapability("semantic_memory_status", "Read-only semantic memory/FAISS status", "low", True, False, ["read_only", "dry_run"]),
             AgentCapability("promotion_queue_status", "Read-only promotion/review queue status", "low", True, False, ["read_only", "dry_run"]),
             AgentCapability("capability_registry_read", "Read tool capability registry", "low", True, False, ["read_only", "dry_run"]),
+            AgentCapability("brain_self_knowledge_lookup", "Read canonical Brain self-knowledge source map", "low", True, False, ["read_only", "dry_run"]),
         ]
 
     def list_capabilities(self) -> List[Dict[str, Any]]:
@@ -126,7 +127,7 @@ class ToolGatewayV2:
         if name in {"report_writer", "file_patch_dry_run"}:
             return ToolCallResult(name, ok=True, result={"dry_run": mode != "build", "preview": req.args})
         # Evidence tools dispatch
-        if name in {"repo_file_search", "repo_file_read", "memory_structure_inspect", "semantic_memory_status", "promotion_queue_status", "capability_registry_read"}:
+        if name in {"repo_file_search", "repo_file_read", "memory_structure_inspect", "semantic_memory_status", "promotion_queue_status", "capability_registry_read", "brain_self_knowledge_lookup"}:
             from .evidence_tools import dispatch_evidence_tool
             result = dispatch_evidence_tool(name, req.args)
             return ToolCallResult(name, ok=result.get("ok", False), result=result.get("evidence", {}), error=result.get("error"))

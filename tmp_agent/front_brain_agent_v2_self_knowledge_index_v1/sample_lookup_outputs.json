@@ -1,0 +1,400 @@
+{
+  "dashboard_promotion_queue": {
+    "tool_name": "brain_self_knowledge_lookup",
+    "ok": true,
+    "mutated_state": false,
+    "summary": "Selected 2 Brain self-knowledge domain(s): dashboard, promotion_queue",
+    "evidence": {
+      "query": "por que dashboard cuenta 57 en promotion queue",
+      "requested_domain": null,
+      "matched_domains": [
+        {
+          "canonical_domain": "dashboard",
+          "description": "8092 dashboard, status aggregation, frontend rendering and Agent V2 proxy.",
+          "keywords": [
+            "dashboard",
+            "ui",
+            "frontend",
+            "pantalla",
+            "status",
+            "8092",
+            "panel"
+          ],
+          "authoritative_files": [
+            "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+            "tmp_agent/brain_v9/dashboard/dashboard_app.py",
+            "tmp_agent/brain_v9/dashboard/static/app.js",
+            "tmp_agent/brain_v9/memory/memory_auditor.py"
+          ],
+          "authoritative_endpoints": [
+            "/brain-dashboard/status",
+            "/brain-dashboard/agent-v2/status",
+            "/brain-dashboard/chat"
+          ],
+          "required_tools": [
+            "brain_self_knowledge_lookup",
+            "route_probe",
+            "repo_file_read"
+          ],
+          "critical_fields": [
+            "memory",
+            "alerts",
+            "agent_v2",
+            "promotion_queue_count",
+            "promotion_queue_active_review_required_count"
+          ],
+          "known_ambiguities": [
+            "Raw dashboard counts may not mean active pending work unless active fields confirm it."
+          ],
+          "do_not_infer": [
+            "Do not equate raw file counts with pending candidates.",
+            "Do not infer browser UI state without probing endpoint or browser."
+          ],
+          "live_vs_historical_rule": "Use /brain-dashboard/status for live dashboard data; use app.js only to explain rendering.",
+          "recommended_next_checks": [
+            "Probe dashboard status",
+            "Read dashboard_routes.py",
+            "Read frontend field mapping"
+          ]
+        },
+        {
+          "canonical_domain": "promotion_queue",
+          "description": "Promotion queue files, active review state, terminal statuses and dashboard reconciliation.",
+          "keywords": [
+            "promotion queue",
+            "cola de promocion",
+            "cola de promoci�n",
+            "candidate",
+            "candidato",
+            "review_required",
+            "57"
+          ],
+          "authoritative_files": [
+            "tmp_agent/brain_v9/core/agent_kernel_v2/evidence_tools.py",
+            "tmp_agent/brain_v9/memory/memory_auditor.py",
+            "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+            "memory/promotion_queue/*.json"
+          ],
+          "authoritative_endpoints": [
+            "/brain-dashboard/status",
+            "/brain/learning/status"
+          ],
+          "required_tools": [
+            "brain_self_knowledge_lookup",
+            "promotion_queue_status",
+            "route_probe"
+          ],
+          "critical_fields": [
+            "promotion_queue_count",
+            "active_review_required_count",
+            "terminal_status_counts",
+            "candidate_promote_count"
+          ],
+          "known_ambiguities": [
+            "Dashboard raw file count, active review-required count, and external learning candidate count are different metrics."
+          ],
+          "do_not_infer": [
+            "Do not call raw files pending unless review_required=true.",
+            "Do not mix /brain/learning/status proposals with semantic promotion queue files."
+          ],
+          "live_vs_historical_rule": "Use promotion_queue_status for reconciled live facts; dashboard status alone is insufficient for pending interpretation.",
+          "recommended_next_checks": [
+            "Run promotion_queue_status",
+            "Probe /brain-dashboard/status",
+            "Probe /brain/learning/status if relevant"
+          ]
+        }
+      ],
+      "required_tools_union": [
+        "brain_self_knowledge_lookup",
+        "promotion_queue_status",
+        "repo_file_read",
+        "route_probe"
+      ],
+      "authoritative_files_union": [
+        "memory/promotion_queue/*.json",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/evidence_tools.py",
+        "tmp_agent/brain_v9/dashboard/dashboard_app.py",
+        "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+        "tmp_agent/brain_v9/dashboard/static/app.js",
+        "tmp_agent/brain_v9/memory/memory_auditor.py"
+      ],
+      "authoritative_endpoints_union": [
+        "/brain-dashboard/agent-v2/status",
+        "/brain-dashboard/chat",
+        "/brain-dashboard/status",
+        "/brain/learning/status"
+      ],
+      "global_rules": [
+        "Treat this index as a routing map, not as live state proof.",
+        "Use live endpoints/tools for current state before making current-state claims.",
+        "Distinguish live tool evidence from historical memory/evidence artifacts.",
+        "Never infer real-money or write capability from research or paper evidence."
+      ]
+    },
+    "error": null
+  },
+  "financial_autonomy": {
+    "tool_name": "brain_self_knowledge_lookup",
+    "ok": true,
+    "mutated_state": false,
+    "summary": "Selected 3 Brain self-knowledge domain(s): financial_autonomy, ci_tests, trading_qc_ibkr",
+    "evidence": {
+      "query": "estado del sistema financiero autonomo y trading real",
+      "requested_domain": null,
+      "matched_domains": [
+        {
+          "canonical_domain": "financial_autonomy",
+          "description": "Financial autonomy package, dry-run bridge, portfolio/compliance gaps and real-money blockers.",
+          "keywords": [
+            "financial_autonomy",
+            "financial autonomy",
+            "autonomia financiera",
+            "autonom�a financiera",
+            "sistema financiero autonomo",
+            "sistema financiero aut�nomo",
+            "financiero autonomo",
+            "financiero aut�nomo",
+            "portfolio",
+            "compliance",
+            "real money"
+          ],
+          "authoritative_files": [
+            "financial_autonomy/__init__.py",
+            "financial_autonomy/bridge/financial_autonomy_bridge.py",
+            "tests/smoke/test_front_financial_autonomy_compile_contract_10.py",
+            "ROADMAP_STATUS.json"
+          ],
+          "authoritative_endpoints": [],
+          "required_tools": [
+            "brain_self_knowledge_lookup",
+            "repo_file_search",
+            "repo_file_read",
+            "semantic_retrieve"
+          ],
+          "critical_fields": [
+            "broker_execution_enabled",
+            "real_money_enabled",
+            "dry_run",
+            "known_blockers",
+            "compile_status"
+          ],
+          "known_ambiguities": [
+            "Some financial autonomy modules may be partial or historically broken; check compile/tests before claiming readiness."
+          ],
+          "do_not_infer": [
+            "Do not claim real-money readiness from research backtests.",
+            "Do not enable broker execution."
+          ],
+          "live_vs_historical_rule": "Use code/tests for current capability; use audit reports as historical context only.",
+          "recommended_next_checks": [
+            "Search safety flags",
+            "Compile financial_autonomy package",
+            "Read roadmap blockers"
+          ]
+        },
+        {
+          "canonical_domain": "ci_tests",
+          "description": "Local and GitHub validation, smoke tests, sensitive path hygiene and regression status.",
+          "keywords": [
+            "ci",
+            "tests",
+            "pytest",
+            "smoke",
+            "validation",
+            "hygiene",
+            "github actions"
+          ],
+          "authoritative_files": [
+            ".github/workflows/",
+            "tests/smoke/",
+            "tests/unit/",
+            "scripts/git_hygiene/check_no_sensitive_paths_staged.py"
+          ],
+          "authoritative_endpoints": [],
+          "required_tools": [
+            "brain_self_knowledge_lookup",
+            "repo_status_read",
+            "repo_file_search",
+            "smoke_test_readonly"
+          ],
+          "critical_fields": [
+            "tests_passed",
+            "py_compile",
+            "check_no_sensitive_paths_staged",
+            "remote_ci_status"
+          ],
+          "known_ambiguities": [
+            "Local smoke pass does not imply full CI pass unless remote run is checked."
+          ],
+          "do_not_infer": [
+            "Do not claim CI green without a run id or explicit local/remote evidence."
+          ],
+          "live_vs_historical_rule": "Use local test output for local validation; use GitHub checks for remote validation.",
+          "recommended_next_checks": [
+            "Run targeted smoke",
+            "Run hygiene",
+            "Check GitHub Actions when requested"
+          ]
+        },
+        {
+          "canonical_domain": "trading_qc_ibkr",
+          "description": "Trading research, QuantConnect paper deployment, IBKR permissions and live-paper operational status.",
+          "keywords": [
+            "trading",
+            "qc",
+            "quantconnect",
+            "ibkr",
+            "paper",
+            "broker",
+            "hive",
+            "strategy"
+          ],
+          "authoritative_files": [
+            "tmp_agent/brain_v9/trading/",
+            "tmp_agent/brain_v9/financial/strategy_adapter.py",
+            "tmp_agent/strategies/"
+          ],
+          "authoritative_endpoints": [
+            "/brain-dashboard/status"
+          ],
+          "required_tools": [
+            "brain_self_knowledge_lookup",
+            "repo_file_search",
+            "route_probe"
+          ],
+          "critical_fields": [
+            "paper_trading",
+            "broker_execution_enabled",
+            "platform_summary",
+            "live_status",
+            "drawdown",
+            "alerts"
+          ],
+          "known_ambiguities": [
+            "Research artifacts, QC backtests, paper live, and real money are separate states."
+          ],
+          "do_not_infer": [
+            "Do not place real trades.",
+            "Do not infer IBKR readiness from permissions screenshot alone.",
+            "Do not mix research PnL with live-paper PnL."
+          ],
+          "live_vs_historical_rule": "Use live platform/dashboard endpoints for current paper state; use research artifacts only for historical validation.",
+          "recommended_next_checks": [
+            "Probe platform summary",
+            "Inspect latest QC live logs",
+            "Check broker_execution_enabled=false for real money"
+          ]
+        }
+      ],
+      "required_tools_union": [
+        "brain_self_knowledge_lookup",
+        "repo_file_read",
+        "repo_file_search",
+        "repo_status_read",
+        "route_probe",
+        "semantic_retrieve",
+        "smoke_test_readonly"
+      ],
+      "authoritative_files_union": [
+        ".github/workflows/",
+        "ROADMAP_STATUS.json",
+        "financial_autonomy/__init__.py",
+        "financial_autonomy/bridge/financial_autonomy_bridge.py",
+        "scripts/git_hygiene/check_no_sensitive_paths_staged.py",
+        "tests/smoke/",
+        "tests/smoke/test_front_financial_autonomy_compile_contract_10.py",
+        "tests/unit/",
+        "tmp_agent/brain_v9/financial/strategy_adapter.py",
+        "tmp_agent/brain_v9/trading/",
+        "tmp_agent/strategies/"
+      ],
+      "authoritative_endpoints_union": [
+        "/brain-dashboard/status"
+      ],
+      "global_rules": [
+        "Treat this index as a routing map, not as live state proof.",
+        "Use live endpoints/tools for current state before making current-state claims.",
+        "Distinguish live tool evidence from historical memory/evidence artifacts.",
+        "Never infer real-money or write capability from research or paper evidence."
+      ]
+    },
+    "error": null
+  },
+  "self_knowledge": {
+    "tool_name": "brain_self_knowledge_lookup",
+    "ok": true,
+    "mutated_state": false,
+    "summary": "Selected 1 Brain self-knowledge domain(s): ci_tests",
+    "evidence": {
+      "query": "donde buscar el autoconocimiento del Brain completo",
+      "requested_domain": null,
+      "matched_domains": [
+        {
+          "canonical_domain": "ci_tests",
+          "description": "Local and GitHub validation, smoke tests, sensitive path hygiene and regression status.",
+          "keywords": [
+            "ci",
+            "tests",
+            "pytest",
+            "smoke",
+            "validation",
+            "hygiene",
+            "github actions"
+          ],
+          "authoritative_files": [
+            ".github/workflows/",
+            "tests/smoke/",
+            "tests/unit/",
+            "scripts/git_hygiene/check_no_sensitive_paths_staged.py"
+          ],
+          "authoritative_endpoints": [],
+          "required_tools": [
+            "brain_self_knowledge_lookup",
+            "repo_status_read",
+            "repo_file_search",
+            "smoke_test_readonly"
+          ],
+          "critical_fields": [
+            "tests_passed",
+            "py_compile",
+            "check_no_sensitive_paths_staged",
+            "remote_ci_status"
+          ],
+          "known_ambiguities": [
+            "Local smoke pass does not imply full CI pass unless remote run is checked."
+          ],
+          "do_not_infer": [
+            "Do not claim CI green without a run id or explicit local/remote evidence."
+          ],
+          "live_vs_historical_rule": "Use local test output for local validation; use GitHub checks for remote validation.",
+          "recommended_next_checks": [
+            "Run targeted smoke",
+            "Run hygiene",
+            "Check GitHub Actions when requested"
+          ]
+        }
+      ],
+      "required_tools_union": [
+        "brain_self_knowledge_lookup",
+        "repo_file_search",
+        "repo_status_read",
+        "smoke_test_readonly"
+      ],
+      "authoritative_files_union": [
+        ".github/workflows/",
+        "scripts/git_hygiene/check_no_sensitive_paths_staged.py",
+        "tests/smoke/",
+        "tests/unit/"
+      ],
+      "authoritative_endpoints_union": [],
+      "global_rules": [
+        "Treat this index as a routing map, not as live state proof.",
+        "Use live endpoints/tools for current state before making current-state claims.",
+        "Distinguish live tool evidence from historical memory/evidence artifacts.",
+        "Never infer real-money or write capability from research or paper evidence."
+      ]
+    },
+    "error": null
+  }
+}

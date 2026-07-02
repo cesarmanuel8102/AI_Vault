@@ -63,8 +63,9 @@ def test_self_development_uses_capability_evidence(tmp_path, monkeypatch):
     rt = _runtime(tmp_path, monkeypatch)
     out = _run(rt, "Audita tus capacidades actuales y propón pasos de autodesarrollo sin aplicar cambios.")
     assert out.get("intent_detected") == "self_improvement_reportonly"
-    assert out.get("classification") == "capability_registry_read"
+    assert out.get("classification") == "brain_self_knowledge_lookup"
     _assert_readonly_evidence_run(out)
+    assert "brain_self_knowledge_lookup" in _tool_names(out)
     assert "capability_registry_read" in _tool_names(out)
 
 
@@ -116,12 +117,12 @@ def test_generic_langgraph_architecture_question_requires_evidence(tmp_path, mon
         rt,
         "Explícame tu arquitectura interna de LangGraph dentro de Brain y cómo decides usar herramientas; basa la respuesta en evidencia del repo.",
     )
-    assert out.get("intent_detected") == "evidence_required_diagnosis"
-    assert out.get("classification") == "evidence_required_diagnosis"
+    assert out.get("intent_detected") == "brain_self_knowledge_lookup"
+    assert out.get("classification") in {"brain_self_knowledge_lookup", "evidence_required_diagnosis"}
     _assert_readonly_evidence_run(out)
     tools = _tool_names(out)
+    assert "brain_self_knowledge_lookup" in tools
     assert "repo_file_search" in tools
-    assert "repo_file_read" in tools
 
 
 def test_generic_dashboard_queue_discrepancy_requires_evidence(tmp_path, monkeypatch):

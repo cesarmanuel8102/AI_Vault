@@ -105,6 +105,7 @@ CRITICAL_FINALIZER_TOOL_NAMES = {
     "semantic_memory_status",
     "memory_structure_inspect",
     "capability_registry_read",
+    "brain_self_knowledge_lookup",
 }
 
 
