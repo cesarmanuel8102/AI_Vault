@@ -1,0 +1,133 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-IDENTITY-GUARD-AND-INTENT-FLOOR-WIDEN-02",
+  "phase": "PHASE_1_PATCH",
+  "timestamp": "2026-07-02T03:52:00Z",
+  "timestamp_final": "2026-07-02T04:32:00Z",
+  "branch": "codex/own-capital-sustainable-return",
+  "starting_head": "4ba0ecea725b6260b4aebe36ffc138121e70b0ef",
+  "carry_forward_from": "front-brain-agent-v2-intent-floor-and-identity-preamble-repair-01",
+  "modified_files": [
+    {
+      "path": "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py",
+      "insertions": 108,
+      "deletions": 1,
+      "fixes_applied": ["Fix A"],
+      "description": "Added post-response identity guard: 13 disclaimer regex patterns (EN+ES), Spanish/English replacement constants stating Canonical Agent V2 identity + tool inventory + read_only guarantee, _identity_guard_rewrite() helper, and unconditional rewrite call at the sole normalization chokepoint (covers Native, LangGraph, injected, timeout, structured fallback, deterministic finalizer paths). Metadata stashed under 'identity_guard_metadata'."
+    },
+    {
+      "path": "tmp_agent/brain_v9/core/agent_kernel_v2/intent_classifier.py",
+      "insertions": 93,
+      "deletions": 3,
+      "fixes_applied": ["Fix B", "Fix C"],
+      "description": "Fix B: widened brain_self_knowledge_lookup EN/ES patterns with interrogative anchors ('donde debes buscar', 'reconcilialo', 'son la misma cosa', 'que puedes hacer realmente', 'que pruebas validan', 'usa evidencia'); extended EVIDENCE_ACTION_TERMS with reconciliation/validation verbs (reconcilia, valida, verify, prove, evidence); extended EVIDENCE_DOMAIN_TERMS with head/proposals/learning_proposals/promotion_queue; extended always_evidence set. Fix C: defense-in-depth memory_write patterns (auto-promote, promotion queue commit, consolida memoria, canonicaliza memoria, promocion automatica, etc.) so P7-style prompts stay memory_write even if D1 patterns fall through."
+    },
+    {
+      "path": "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+      "insertions": 30,
+      "deletions": 3,
+      "fixes_applied": ["Fix B (mirror)"],
+      "description": "Mirrored Fix B widening in EVIDENCE_ACTION_RE, EVIDENCE_DOMAIN_RE, and _requires_generic_evidence always-evidence regex so planner stays aligned with classifier's widened scope."
+    },
+    {
+      "path": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+      "insertions": 174,
+      "deletions": 9,
+      "fixes_applied": ["Fix D", "Fix D reinforcement"],
+      "description": "Fix D primary: (1) new _derive_financial_autonomy_flags(state, reason) helper supporting 'success' (all False canonical fields) and 'timeout' (preserves legacy 'unknown' values for backward compat + adds new canonical fields side-by-side); (2) injected into _finalizer_node after state['status']='completed' so success path always emits the canonical dict; (3) refactored _build_timeout_state financial-autonomy branch inline dict to call helper with reason='timeout'; (4) extended _translate_graph_state_to_native_run copy tuple to include 'financial_autonomy_flags'. Fix D reinforcement: added defensive re-derivation block in _translate_graph_state_to_native_run (~L1770-1774) that re-derives financial_autonomy_flags on success path when the key was stripped by LangGraph StateGraph(dict) state propagation. LangGraph's StateGraph strips arbitrary keys added by nodes; only keys re-set post-graph-execution survive. This defensive block is the belt-and-suspenders companion to the copy-tuple extension."
+    },
+    {
+      "path": "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+      "insertions": 32,
+      "deletions": 4,
+      "fixes_applied": ["carried_forward_B1_B2"],
+      "description": "Unchanged from previous front (B1/B2 identity preamble). Included in diff because it is carry-forward from the previous front's working tree per state_lock protocol."
+    },
+    {
+      "path": "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+      "insertions": 16,
+      "deletions": 0,
+      "fixes_applied": ["Fix D reinforcement (companion)"],
+      "description": "Fix D reinforcement companion: added explicit \"financial_autonomy_flags\": run.get(\"financial_autonomy_flags\") pull into the raw_response dict (~L279) so the flags dict, once derived by langgraph_parity_runtime, actually surfaces in the /v2/chat/agent response body. Without this, LangGraph's StateGraph key-stripping combined with api_adapter not explicitly picking the key would result in the response body omitting financial_autonomy_flags even when the runtime state contained it. This is the second half of the two-part fix; both halves are required for P10 to score 5."
+    }
+  ],
+  "diff_stat": {
+    "files_changed": 6,
+    "insertions": 453,
+    "deletions": 20,
+    "net_added_lines": 433
+  },
+  "compilation": {
+    "py_compile_all_files": "OK",
+    "files_checked": [
+      "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/intent_classifier.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+      "tests/smoke/test_brain_agent_v2_identity_guard_intent_floor_widen_02.py"
+    ]
+  },
+  "lsp_findings_out_of_scope": [
+    {
+      "file": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+      "lines": "1111-1141",
+      "region": "_build_graph StateGraph section",
+      "status": "PRE_EXISTING",
+      "action": "NOT_FIXED_OUT_OF_SCOPE"
+    },
+    {
+      "file": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+      "lines": "1505",
+      "region": "mode_requires_escalation scheduled_tools list variance",
+      "status": "PRE_EXISTING",
+      "action": "NOT_FIXED_OUT_OF_SCOPE"
+    },
+    {
+      "file": "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+      "lines": "83-101, 119+",
+      "region": "NativeAgentRuntimeV2 attribute assignment",
+      "status": "PRE_EXISTING",
+      "action": "NOT_TOUCHED"
+    },
+    {
+      "file": "tmp_agent/brain_v9/core/intent.py",
+      "lines": "122",
+      "region": "None assignment to List parameter",
+      "status": "PRE_EXISTING",
+      "action": "NOT_TOUCHED"
+    },
+    {
+      "file": "tmp_agent/brain_v9/api_security.py",
+      "lines": "19",
+      "region": "import security.rbac unresolved",
+      "status": "PRE_EXISTING_AND_FORBIDDEN",
+      "action": "NOT_TOUCHED"
+    },
+    {
+      "file": "tmp_agent/brain_v9/start_local_browser_operational.py",
+      "lines": "84-85",
+      "region": "TextIO.reconfigure attribute",
+      "status": "PRE_EXISTING_AND_FORBIDDEN",
+      "action": "NOT_TOUCHED"
+    }
+  ],
+  "new_files_added": [
+    "tests/smoke/test_brain_agent_v2_identity_guard_intent_floor_widen_02.py"
+  ],
+  "forbidden_regions_touched": false,
+  "stash_used_this_front": false,
+  "git_reset_used": false,
+  "amend_used": false,
+  "force_push_used": false,
+  "add_dash_A_used": false,
+  "memory_faiss_env_broker_touched": false,
+  "phase_3_mid_flight_edits": {
+    "reason": "LangGraph StateGraph(dict) strips arbitrary keys added by nodes. Live-verified: _finalizer_node set state['financial_autonomy_flags'] unconditionally on success, but that key was stripped when compiled graph returned. Only keys explicitly re-set in _translate_graph_state_to_native_run (via copy tuple) survive. Two-part fix required.",
+    "edits_added_during_phase_3": [
+      "langgraph_parity_runtime.py: defensive re-derivation block at _translate_graph_state_to_native_run L~1749-1774 (Fix D reinforcement, ~25 additional insertions)",
+      "api_adapter.py: explicit \"financial_autonomy_flags\": run.get(\"financial_autonomy_flags\") in raw_response at ~L279 (16 insertions)"
+    ],
+    "verification": "Post-restart smoke probe on P10 exact prompt confirmed 10-key financial_autonomy_flags dict surfaces in response body with all 6 required boolean flags set to False and dry_run_guard=True."
+  }
+}

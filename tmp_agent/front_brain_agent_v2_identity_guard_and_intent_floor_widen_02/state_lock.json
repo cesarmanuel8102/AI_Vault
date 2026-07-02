@@ -1,0 +1,44 @@
+{
+  "phase": 0,
+  "artifact": "state_lock",
+  "front": "FRONT-BRAIN-AGENT-V2-IDENTITY-GUARD-AND-INTENT-FLOOR-WIDEN-02",
+  "workdir": "C:/AI_VAULT_CANONICAL",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_sha_full": "4ba0ecea725b6260b4aebe36ffc138121e70b0ef",
+  "head_sha_short": "4ba0ece",
+  "origin_sha_full": "4ba0ecea725b6260b4aebe36ffc138121e70b0ef",
+  "origin_sha_short": "4ba0ece",
+  "origin_matches_head": true,
+  "baseline_matches_expected": true,
+  "tracked_diff_files": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/intent_classifier.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py"
+  ],
+  "tracked_diff_numstat": {
+    "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py": {"added": 32, "removed": 4},
+    "tmp_agent/brain_v9/core/agent_kernel_v2/intent_classifier.py": {"added": 53, "removed": 3},
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py": {"added": 75, "removed": 7},
+    "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py": {"added": 17, "removed": 3}
+  },
+  "tracked_diff_totals": {
+    "files": 4,
+    "insertions": 177,
+    "deletions": 17
+  },
+  "staged_diff": [],
+  "tracked_diff_is_subset_of_allowed_source_files": true,
+  "git_hygiene_check": "SAFE",
+  "carry_forward_from_previous_front": {
+    "previous_front": "FRONT-BRAIN-AGENT-V2-INTENT-FLOOR-AND-IDENTITY-PREAMBLE-REPAIR-01",
+    "previous_starting_head": "4ba0ecea725b6260b4aebe36ffc138121e70b0ef",
+    "previous_final_head": "4ba0ecea725b6260b4aebe36ffc138121e70b0ef",
+    "previous_new_score": 81,
+    "previous_acceptance_threshold": 85,
+    "previous_acceptance_decision": "FAIL",
+    "previous_commit_created": false,
+    "previous_pushed": false,
+    "previous_stash_slip_disclosed": true
+  }
+}

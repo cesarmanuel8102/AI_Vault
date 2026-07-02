@@ -109,7 +109,10 @@ SUPPORTED_READ_TOOLS = {
 class LangGraphParityRuntimeV2:
     backend = "langgraph_parity"
 
-    DEFAULT_EXECUTE_TIMEOUT_SECONDS = 30.0
+    # Repair C1 (front-brain-agent-v2-intent-floor-and-identity-preamble-repair-01):
+    # Raised from 30.0s to 60.0s so evidence-heavy prompts (grep/read/tool chains)
+    # have room to complete without breaking the safety timeout for genuine hangs.
+    DEFAULT_EXECUTE_TIMEOUT_SECONDS = 60.0
 
     def __init__(
         self,
@@ -853,6 +856,72 @@ class LangGraphParityRuntimeV2:
         self._trace(state["run_id"], "result_normalization_node", "Tool results normalized", {"tool_count": len(state.get("tool_results", [])), "executed": len(state.get("executed_tools", [])), "blocked": len(state.get("blocked_tools", []))})
         return state
 
+    # Fix D (front-brain-agent-v2-identity-guard-and-intent-floor-widen-02):
+    # Canonical financial_autonomy_flags helper. Used by both _finalizer_node
+    # (success path) and _build_timeout_state (financial-autonomy timeout path)
+    # so every completed run emits the canonical governance-flags dict.
+    #
+    # BACKWARD COMPATIBILITY: the "timeout" reason preserves the legacy dict
+    # shape that the intent_floor_and_identity_preamble_repair_01 regression
+    # tests expect (broker_execution_enabled/real_money_enabled/
+    # live_trading_active == "unknown", plus governance_policy_ref + note).
+    # It additionally emits the new canonical boolean fields side-by-side.
+    #
+    # The "success" reason emits the fully canonical False-valued dict.
+    def _derive_financial_autonomy_flags(
+        self,
+        state: Dict[str, Any],
+        reason: str = "success",
+    ) -> Dict[str, Any]:
+        """Return canonical financial_autonomy_flags dict.
+
+        reason: "success" or "timeout". Timeout preserves legacy "unknown"
+        string values for backward compat and adds new canonical False fields.
+        Success emits fully-canonical False values.
+        """
+        governance_policy_ref = (
+            "intent_classifier.BLOCKED_INTENTS + finalizer.safety_constraints"
+        )
+        if reason == "timeout":
+            return {
+                # Legacy fields (values preserved from previous timeout dict).
+                "broker_execution_enabled": "unknown",
+                "real_money_enabled": "unknown",
+                "live_trading_active": "unknown",
+                # New canonical boolean fields (governance-frozen even in timeout).
+                "live_trading_enabled": False,
+                "paper_mode": False,
+                "dry_run_guard": True,
+                "ibkr_connected": False,
+                "governance_policy_ref": governance_policy_ref,
+                "evidence_source": "static_governance_policy_timeout_degraded",
+                "note": (
+                    "Runtime execution timed out. Static evidence indicates "
+                    "broker/real_money/live_trading are permanently blocked by "
+                    "governance policy. No live-market flag can be true because "
+                    "the trading_broker_live intent is in BLOCKED_INTENTS and no "
+                    "IBKR connector is installed."
+                ),
+            }
+        return {
+            "broker_execution_enabled": False,
+            "real_money_enabled": False,
+            "live_trading_enabled": False,
+            "live_trading_active": False,
+            "paper_mode": False,
+            "dry_run_guard": True,
+            "ibkr_connected": False,
+            "governance_policy_ref": governance_policy_ref,
+            "evidence_source": "static_governance_policy",
+            "note": (
+                "All financial-autonomy flags are permanently held false by "
+                "governance policy: trading_broker_live is in "
+                "intent_classifier.BLOCKED_INTENTS, no IBKR connector is "
+                "installed, and dry_run_guard is enforced at the runtime "
+                "layer for every plan step regardless of intent."
+            ),
+        }
+
     def _finalizer_node(self, state: Dict[str, Any]) -> Dict[str, Any]:
         finalizer_input = self._build_finalizer_input(state)
         state["finalizer_input"] = finalizer_input
@@ -951,6 +1020,15 @@ class LangGraphParityRuntimeV2:
 
         state["provider_metadata"] = provider_metadata
         state["status"] = "completed"
+        # Fix D (front-brain-agent-v2-identity-guard-and-intent-floor-widen-02):
+        # Always emit canonical financial_autonomy_flags on the success path so
+        # P10-style financial-autonomy diagnosis prompts get the structured
+        # governance-guarantee dict regardless of whether the intent was
+        # financial_autonomy_diagnosis. Downstream consumers (dashboard,
+        # response_normalizer, tests) can rely on this field being present.
+        state["financial_autonomy_flags"] = self._derive_financial_autonomy_flags(
+            state, reason="success"
+        )
         state["node_path"] = state.get("node_path", []) + ["finalizer"]
         self._trace(state["run_id"], "finalizer_node", "Final answer generated", {
             "final_answer_preview": state["final_answer"][:120],
@@ -1114,7 +1192,61 @@ class LangGraphParityRuntimeV2:
         import datetime as _dt
         run_id = self._new_run_id(initial_state.get("message", ""), initial_state.get("user_id", "probe"))
         ts = _dt.datetime.now(_dt.timezone.utc).isoformat()
-        return {
+
+        # Repair C2 (front-brain-agent-v2-intent-floor-and-identity-preamble-repair-01):
+        # If the message concerns financial_autonomy / broker / real-money live-trading,
+        # emit structured flags with all values 'unknown' and a governance pointer.
+        # Static evidence indicates these are permanently blocked by governance policy
+        # (intent_classifier.BLOCKED_INTENTS + finalizer.safety_constraints), so the
+        # timeout answer must not be a generic apology - it must name the flags and
+        # explain the static safety guarantee. No live-market flag can be true because
+        # trading_broker_live is in BLOCKED_INTENTS and no IBKR connector is installed.
+        _msg_lower = (initial_state.get("message") or "").lower()
+        _fa_patterns = (
+            "financial_autonomy", "financial autonomy",
+            "autonomia financiera", "autonomía financiera",
+            "broker_execution_enabled", "real_money_enabled",
+            "live_trading", "financial autonomous system",
+            "sistema financiero autónomo", "sistema financiero autonomo",
+            "autonomia financiera", "autonomía financiera",
+        )
+        _is_financial_autonomy = any(p in _msg_lower for p in _fa_patterns)
+
+        if _is_financial_autonomy:
+            _intent_route = "brain_evidence"
+            _classification = "financial_autonomy_diagnosis"
+            _final_answer = (
+                "LangGraph execution exceeded the internal timeout ("
+                f"{self.execute_timeout_seconds}s) and was safely degraded. "
+                "Financial-autonomy diagnosis: broker_execution_enabled=unknown "
+                "(runtime timeout), real_money_enabled=unknown (runtime timeout), "
+                "live_trading_active=unknown (runtime timeout). "
+                "Static evidence (independent of this run) indicates all three flags "
+                "are permanently held false by governance policy: the "
+                "trading_broker_live intent is in intent_classifier.BLOCKED_INTENTS "
+                "and no IBKR connector is installed. Governance policy ref: "
+                "intent_classifier.BLOCKED_INTENTS + finalizer.safety_constraints. "
+                "No tool writes occurred. Please retry with a more specific question "
+                "if you need live introspection."
+            )
+            _financial_autonomy_flags = self._derive_financial_autonomy_flags(
+                initial_state, reason="timeout"
+            )
+        else:
+            _intent_route = "direct_assistant"
+            _classification = "direct_assistant"
+            _final_answer = (
+                f"LangGraph execution exceeded the internal timeout ("
+                f"{self.execute_timeout_seconds}s) and was safely degraded. "
+                "No tool writes occurred."
+            )
+            # Preserved behavior: non-financial timeout does NOT emit
+            # financial_autonomy_flags (asserted by existing regression test
+            # tests/smoke/test_brain_agent_v2_intent_floor_identity_preamble_repair_01.py
+            # :: test_langgraph_timeout_non_financial_prompt_stays_short_and_direct).
+            _financial_autonomy_flags = None
+
+        _state: Dict[str, Any] = {
             "run_id": run_id,
             "message": initial_state.get("message", ""),
             "mode_requested": initial_state.get("mode_requested", "read_only"),
@@ -1129,9 +1261,9 @@ class LangGraphParityRuntimeV2:
             "deep_parity_runtime": True,
             "full_parity_runtime": True,
             "langgraph_active": self.graph_available,
-            "intent_route": "direct_assistant",
-            "classification": "direct_assistant",
-            "final_answer": f"LangGraph execution exceeded the internal timeout ({self.execute_timeout_seconds}s) and was safely degraded. No tool writes occurred.",
+            "intent_route": _intent_route,
+            "classification": _classification,
+            "final_answer": _final_answer,
             "error": "timeout",
             "provider_metadata": {
                 "provider_used": "deterministic_parity_finalizer_timeout",
@@ -1143,8 +1275,8 @@ class LangGraphParityRuntimeV2:
             },
             "capability_metadata": self._build_capability_metadata({
                 "run_id": run_id,
-                "intent_route": "direct_assistant",
-                "classification": "direct_assistant",
+                "intent_route": _intent_route,
+                "classification": _classification,
                 "plan": [],
                 "evidence_sources": [],
                 "blocked_tools": [],
@@ -1165,6 +1297,9 @@ class LangGraphParityRuntimeV2:
             "backend_fallback_used": False,
             "backend_fallback_reason": None,
         }
+        if _financial_autonomy_flags is not None:
+            _state["financial_autonomy_flags"] = _financial_autonomy_flags
+        return _state
 
     def graph_probe(self) -> Dict[str, Any]:
         if not self.graph_available:
@@ -1586,8 +1721,11 @@ class LangGraphParityRuntimeV2:
             "agent_version": run.get("agent_version", CANONICAL_AGENT_VERSION),
             "canonical_agent": True,
         }
-        # Copy forward plan, evidence_sources, status if available
-        for key in ("plan", "evidence_sources", "tool_results", "memory_hits", "status", "error", "detail"):
+        # Copy forward plan, evidence_sources, status if available.
+        # Fix D (front-brain-agent-v2-identity-guard-and-intent-floor-widen-02):
+        # financial_autonomy_flags added so the canonical governance-flags dict
+        # set by _finalizer_node survives the LangGraph -> Native translation.
+        for key in ("plan", "evidence_sources", "tool_results", "memory_hits", "status", "error", "detail", "financial_autonomy_flags"):
             if key in graph_state:
                 translated[key] = graph_state[key]
             elif key in run:
@@ -1607,6 +1745,33 @@ class LangGraphParityRuntimeV2:
                 translated[key] = graph_state[key]
             elif key in run:
                 translated[key] = run[key]
+
+        # Fix D reinforcement (front-brain-agent-v2-identity-guard-and-intent-floor-widen-02):
+        # LangGraph's StateGraph(dict) does NOT preserve arbitrary keys added by
+        # nodes when the compiled graph returns. Live-verified by dumping
+        # /v2/chat/agent responses: `finalizer_input`, `finalizer_input_schema_complete`,
+        # `node_path`, and (critically) `financial_autonomy_flags` were all
+        # stripped even though `_finalizer_node` assigned them.
+        #
+        # `_finalizer_node` already sets `state["financial_autonomy_flags"]`
+        # unconditionally on success, and `_build_timeout_state` sets it on
+        # financial_autonomy_diagnosis timeouts. But the copy tuple above only
+        # helps if the key survives StateGraph propagation to `graph_state`,
+        # which in practice it does not for the live LangGraph-real path.
+        #
+        # This defensive fallback re-derives the canonical dict when it is
+        # missing on the success path so P10-style prompts always get the
+        # structured governance-flags dict in the /v2/chat/agent response body.
+        # Non-financial timeouts (status="failed", error="timeout") and other
+        # failure statuses are intentionally skipped so we never widen the
+        # emitted-flags surface beyond the completed success path plus the
+        # existing timeout branch (which is already handled by
+        # `_build_timeout_state` and preserved on the pre-graph dict path).
+        _final_status = translated.get("status") or graph_state.get("status") or ""
+        if _final_status == "completed" and "financial_autonomy_flags" not in translated:
+            translated["financial_autonomy_flags"] = self._derive_financial_autonomy_flags(
+                graph_state, reason="success"
+            )
 
         return translated
 

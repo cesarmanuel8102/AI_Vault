@@ -1,0 +1,120 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-IDENTITY-GUARD-AND-INTENT-FLOOR-WIDEN-02",
+  "phase": "PHASE_4_SCOPE_AUDIT",
+  "timestamp": "2026-07-02T04:35:00Z",
+  "purpose": "Verify all changes are within allowed source files and no forbidden regions or hygiene protocols were violated.",
+  "allowed_source_files_10": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/intent_classifier.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/self_knowledge_index.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/evidence_tools.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py"
+  ],
+  "files_actually_modified_6": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/intent_classifier.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py"
+  ],
+  "allowed_files_not_modified_4": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/self_knowledge_index.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/evidence_tools.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py"
+  ],
+  "all_modified_files_in_allowed_set": true,
+  "tests_added": [
+    "tests/smoke/test_brain_agent_v2_identity_guard_intent_floor_widen_02.py"
+  ],
+  "report_artifacts_added": [
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/state_lock.json",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/state_lock.md",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/carry_forward_audit.json",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/carry_forward_audit.md",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/diagnosis.json",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/diagnosis.md",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/implementation_plan.json",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/implementation_plan.md",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/patch_results.json",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/patch_results.md",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/test_results.json",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/test_results.md",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/live_benchmark_raw_responses.json",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/live_benchmark_full_responses.json",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/live_benchmark_trace_summaries.json",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/live_benchmark_results.json",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/live_benchmark_results.md",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/scorecard.json",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/scorecard.md",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/scope_audit.json",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/scope_audit.md",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/run_benchmark.py",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/_score_results.py",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/_start_brain_server.ps1",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/_restart_brain_server.ps1",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/_wait_for_health.py",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/_check_state.ps1",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/_smoke_probe.py",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/_dump_p10.py",
+    "tmp_agent/front_brain_agent_v2_identity_guard_and_intent_floor_widen_02/_inspect.py"
+  ],
+  "forbidden_regions_check": {
+    "memory_slash_touched": false,
+    "faiss_slash_touched": false,
+    "dotenv_touched": false,
+    "api_security_py_touched": false,
+    "start_local_browser_operational_py_touched": false,
+    "any_broker_ibkr_file_touched": false,
+    "any_trading_execution_file_touched": false,
+    "any_real_money_file_touched": false,
+    "autonomy_r2_touched": false,
+    "any_file_outside_10_allowed_source_files": false
+  },
+  "git_hygiene_check": {
+    "git_stash_used_this_front": false,
+    "git_reset_used": false,
+    "git_clean_used": false,
+    "git_commit_amend_used": false,
+    "git_push_force_used": false,
+    "git_add_dash_A_used": false,
+    "history_rewritten": false,
+    "explicit_git_add_per_file_planned_for_phase_5": true,
+    "note": "Previous front had a stash slip; this front adhered to no-stash triage-in-place protocol throughout."
+  },
+  "lsp_findings_check": {
+    "pre_existing_lsp_findings_left_unchanged": [
+      "langgraph_parity_runtime.py:1111-1141 (StateGraph typing)",
+      "langgraph_parity_runtime.py:1505 (scheduled_tools list-of-Any)",
+      "runtime.py:83-101, 119+ (NativeAgentRuntimeV2 attribute assignment)",
+      "intent.py:122 (None to List param)",
+      "api_security.py:19 (security.rbac import unresolved, FORBIDDEN region)",
+      "start_local_browser_operational.py:84-85 (TextIO.reconfigure, FORBIDDEN region)"
+    ],
+    "new_lsp_findings_introduced_by_this_front": [],
+    "py_compile_all_6_modified_plus_test": "OK"
+  },
+  "diff_files_tracked": {
+    "count": 6,
+    "insertions_total": 453,
+    "deletions_total": 20,
+    "net_added": 433,
+    "all_within_10_allowed_files": true
+  },
+  "server_lifecycle": {
+    "server_restarts_this_front": 1,
+    "restart_reason": "Load newly-patched code paths (Fix A/B/C/D/reinforcement) into a fresh process; previous server had stale code",
+    "restart_previous_pid": 126512,
+    "restart_new_pid": 127900,
+    "restart_health_probe_status": "OK on first poll",
+    "server_writes_or_mutations_observed": false
+  },
+  "scope_audit_verdict": "PASS",
+  "verdict_rationale": "All 6 modified source files are within the 10-allowed-file whitelist. Zero forbidden-region touches. Zero git-hygiene violations (no stash, no reset, no amend, no force push, no -A). No new LSP errors. All pre-existing out-of-scope LSP findings left untouched per plan. Test-only additions confined to tests/smoke/. Report artifacts confined to the front's own tmp_agent/ subdirectory. Server restart was a non-persistent process operation with no writes or mutations."
+}

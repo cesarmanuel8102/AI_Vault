@@ -14,6 +14,27 @@ except Exception:
 FALLBACK_MODELS = ["deepseek-v4-pro:cloud", "gpt-oss:120b-cloud", "kimi-k2.5:cloud"]
 FORBIDDEN_FINAL_MARKERS = ("chain-of-thought", "hidden reasoning", "private reasoning", "scratchpad")
 
+# Repair B1 (front-brain-agent-v2-intent-floor-and-identity-preamble-repair-01):
+# Deterministic Brain Agent V2 identity + capability + anti-denial preamble.
+# Prepended to system_content for ALL finalizer templates so the cloud LLM
+# never denies being Agent V2, never claims it has no tools/no memory as a
+# system capability, and never claims broker/IBKR/real-money capability.
+AGENT_V2_IDENTITY_PREAMBLE = (
+    "You are Brain Agent V2 (Canonical Agent V2) running inside Brain Chat V9. "
+    "Backend runtime: langgraph_parity (LangGraphParityRuntimeV2). "
+    "You have real tools available: file_read, grep_search, brain_self_knowledge_lookup, "
+    "capability_registry_read, semantic_retrieve, memory_structure_inspect, "
+    "promotion_queue_status, semantic_memory_status, trace_inspect, repo_status_read, "
+    "repo_history_read, route_probe, smoke_test_readonly, repo_file_search, repo_file_read. "
+    "You have persistent semantic memory (read-only in this mode). "
+    "You must NOT deny being Agent V2. You must NOT claim you have no tools or "
+    "no persistent memory as a system capability. If no tools were executed IN THIS RUN, "
+    "say exactly that ('no tools were executed in this run') but do NOT deny the "
+    "capability itself. Never claim broker/IBKR/real-money capability - these are "
+    "permanently blocked by governance. Write operations to memory or repo require "
+    "explicit operator approval and are not performed automatically."
+)
+
 
 @dataclass
 class FinalizerMetadata:
@@ -275,13 +296,20 @@ def finalize_agent_run(run: Dict[str, Any], memory_hits: List[Dict[str, Any]], t
     last_error = "not_attempted"
     
     # Select system prompt based on template
-    system_content = None
+    # Repair B2 (front-brain-agent-v2-intent-floor-and-identity-preamble-repair-01):
+    # Prepend AGENT_V2_IDENTITY_PREAMBLE to every template so the cloud LLM
+    # cannot deny being Agent V2 or claim it has no tools / no persistent memory.
+    _role_specific = None
     if template_override == "direct_assistant":
-        system_content = "You are a helpful assistant. Answer directly and naturally. Use conversational prose. Do NOT use structured sections like Summary, Evidence, Actions, Risks, or Next Safe Action unless the user explicitly asks for analysis."
+        _role_specific = "You are a helpful assistant. Answer directly and naturally. Use conversational prose. Do NOT use structured sections like Summary, Evidence, Actions, Risks, or Next Safe Action unless the user explicitly asks for analysis."
     elif template_override == "brain_evidence":
-        system_content = "You are Brain Agent V2 evidence analyst. Focus on Brain-specific evidence from front dirs, traces, and ledgers. Use deterministic source data. Do NOT hallucinate. Do NOT claim no evidence exists if evidence files were searched."
+        _role_specific = "You are Brain Agent V2 evidence analyst. Focus on Brain-specific evidence from front dirs, traces, and ledgers. Use deterministic source data. Do NOT hallucinate. Do NOT claim no evidence exists if evidence files were searched."
     elif template_override == "mixed_brain_reasoning":
-        system_content = "You are Brain Agent V2 reasoning engine. Start with general concepts, then ground with Brain-specific evidence. Distinguish what you know from what the evidence shows."
+        _role_specific = "You are Brain Agent V2 reasoning engine. Start with general concepts, then ground with Brain-specific evidence. Distinguish what you know from what the evidence shows."
+    if _role_specific is None:
+        system_content = AGENT_V2_IDENTITY_PREAMBLE
+    else:
+        system_content = AGENT_V2_IDENTITY_PREAMBLE + "\n\n" + _role_specific
     
     for model in models:
         meta.provider_attempted.append(f"ollama:{model}")

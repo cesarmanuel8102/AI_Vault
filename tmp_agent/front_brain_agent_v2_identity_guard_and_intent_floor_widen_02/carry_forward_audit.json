@@ -1,0 +1,72 @@
+{
+  "phase": 0,
+  "artifact": "carry_forward_audit",
+  "front": "FRONT-BRAIN-AGENT-V2-IDENTITY-GUARD-AND-INTENT-FLOOR-WIDEN-02",
+  "previous_front": "FRONT-BRAIN-AGENT-V2-INTENT-FLOOR-AND-IDENTITY-PREAMBLE-REPAIR-01",
+  "carry_forward_decision": "CONTINUE_FROM_PARTIAL_REPAIR",
+  "carry_forward_reason": "Previous front improved the agent from 69 to 81 (+12); acceptance threshold is 85 (gap of 4). Working tree contains valid patches (F1 partial, F2 attempted, F3 fixed, D1 partial) that provide the foundation for closing remaining gaps. Discarding would forfeit +12 improvement and require re-implementing F3 (which is confirmed working).",
+  "current_modified_files": [
+    {"path": "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py", "added": 32, "removed": 4},
+    {"path": "tmp_agent/brain_v9/core/agent_kernel_v2/intent_classifier.py", "added": 53, "removed": 3},
+    {"path": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py", "added": 75, "removed": 7},
+    {"path": "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py", "added": 17, "removed": 3}
+  ],
+  "current_untracked_report_files_from_previous_front": [
+    "tmp_agent/front_brain_agent_v2_intent_floor_and_identity_preamble_repair_01/*"
+  ],
+  "current_untracked_test_from_previous_front": "tests/smoke/test_brain_agent_v2_intent_floor_identity_preamble_repair_01.py",
+  "current_untracked_test_still_valid_this_front": true,
+  "previous_score": 81,
+  "previous_acceptance_threshold": 85,
+  "previous_gap_to_pass": 4,
+  "previous_acceptance_decision": "FAIL",
+  "previous_commit_created": false,
+  "previous_pushed": false,
+  "previous_ci_verified": false,
+  "previous_official_new_baseline": false,
+  "previous_baseline_remains_at": "4ba0ecea725b6260b4aebe36ffc138121e70b0ef",
+  "previous_stash_slip_disclosure": {
+    "slip_id": "PHASE_5_STASH_SLIP_01",
+    "occurred_in_front": "FRONT-BRAIN-AGENT-V2-INTENT-FLOOR-AND-IDENTITY-PREAMBLE-REPAIR-01",
+    "occurred_in_phase": 5,
+    "description": "During Phase 5 test-triage of the previous front, `git stash push` + `git stash pop` were invoked while investigating seven pre-existing failing regression tests. This violated the hard rule 'NO git stash' listed in the previous front spec.",
+    "verified_no_content_loss": true,
+    "verified_byte_identical_restore": true,
+    "documented_in_previous_final_report": true,
+    "user_acknowledged_and_approved_continuing_previous_front": true,
+    "policy_takeaway": "Future fronts (including THIS one) MUST route test-triage through a separate worktree or scratch branch. THIS front will NOT use git stash under any circumstance."
+  },
+  "current_front_prohibitions_acknowledged": [
+    "No R2 activation",
+    "No autonomy activation",
+    "No IBKR",
+    "No broker",
+    "No trading",
+    "No real money",
+    "No memory/semantic writes",
+    "No FAISS writes",
+    "No .env / secrets edits",
+    "No api_security.py weakening",
+    "No git reset",
+    "No git clean",
+    "No git stash (CRITICAL - repeat of previous violation is unacceptable)",
+    "No git amend",
+    "No force push",
+    "No force-with-lease",
+    "No git add -A",
+    "No broad refactor"
+  ],
+  "current_front_source_file_allowlist": [
+    "tmp_agent/brain_v9/core/agent_kernel_v2/intent_classifier.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/self_knowledge_index.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/evidence_tools.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py"
+  ],
+  "all_allowed_source_files_exist": true
+}

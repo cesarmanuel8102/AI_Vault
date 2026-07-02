@@ -184,10 +184,37 @@ INTENT_PATTERNS: List[Tuple[str, List[str], List[str], str]] = [
     ("memory_write", [
         "write memory", "write semantic memory", "store memory", "save memory",
         "update memory", "mutate faiss",
+        # Repair D1 (front-brain-agent-v2-intent-floor-and-identity-preamble-repair-01):
+        # extended English memory-write / promotion-write patterns so promotion
+        # requests are classified as memory_write (approval_required) rather
+        # than as a read-only semantic_memory_status query.
+        "promote memory", "promote candidates", "promote to canonical",
+        "canonical semantic memory", "memory promotion", "promote all candidates",
+        "promotion queue write", "canonicalize memory", "canonicalize candidates",
+        "approve promotion", "promote automatically",
+        # Fix C (front-brain-agent-v2-identity-guard-and-intent-floor-widen-02):
+        # additional defense-in-depth patterns so P7-style requests classify as
+        # memory_write even if server hot-reload of D1 patterns is delayed.
+        "auto-promote", "auto promote", "promote all", "commit memory",
+        "consolidate memory", "promotion queue commit", "memory canonicalization",
+        "canonicalize semantic memory",
     ], [
         "escribe memoria", "escribir memoria", "guarda memoria", "guardar memoria",
         "almacena memoria", "almacenar memoria", "actualiza memoria", "actualizar memoria",
         "mutar faiss", "escribe memoria semántica", "escribe memoria semantica",
+        # Repair D1 additions - Spanish/mixed promotion-write patterns.
+        "promueve memoria", "promueve candidatos", "promociona candidatos",
+        "promocionar candidatos", "pasar a canonical", "canonicalizar memoria",
+        "canonicalizar candidatos", "aprobar promoción", "aprobar promocion",
+        "promueve automáticamente", "promueve automaticamente",
+        "promocionar automáticamente", "promocionar automaticamente",
+        "promueve todos los candidatos", "promociona todos los candidatos",
+        "a canonical semantic memory",
+        # Fix C additions - Spanish memory-write / promotion-write defense-in-depth.
+        "consolida memoria", "consolidar memoria", "canonicaliza memoria",
+        "canonicaliza candidatos", "canonicaliza la memoria",
+        "promoción automática", "promocion automatica",
+        "automatiza promociones", "commit de memoria", "commit memoria",
     ], "approval_required"),
     ("autonomy_dryrun", [
         "activate autonomy", "autonomy dry run", "autonomy dry-run", "run autonomously",
@@ -300,10 +327,23 @@ INTENT_PATTERNS: List[Tuple[str, List[str], List[str], str]] = [
         "self knowledge", "brain self knowledge", "system self knowledge",
         "where to look", "where should you search", "source map",
         "brain architecture overview", "whole brain state", "full brain status",
+        # Fix B (front-brain-agent-v2-identity-guard-and-intent-floor-widen-02):
+        # widened English self-knowledge / evidence-source anchors so P3/P5/P16
+        # interrogative variants route to brain_self_knowledge_lookup instead of
+        # falling into memory_structure_diagnosis via evidence_policy.
+        "where should you look", "reconcile it", "same thing",
+        "which sources", "what tests validate", "use evidence",
     ], [
         "autoconocimiento", "autoconocimiento del brain", "donde buscar",
         "dónde buscar", "como buscar", "cómo buscar", "mapa de fuentes",
         "estado global del brain", "brain en su totalidad", "arquitectura completa",
+        # Fix B additions - Spanish widened anchors for P3/P5/P16-style prompts.
+        "dónde debes buscar", "donde debes buscar",
+        "dónde buscar primero", "donde buscar primero",
+        "reconcílialo", "reconcilialo", "son la misma cosa",
+        "qué puedes hacer realmente", "que puedes hacer realmente",
+        "qué pruebas validan", "que pruebas validan",
+        "usa evidencia", "qué fuentes", "que fuentes", "qué fuente", "que fuente",
     ], "safe"),
 ]
 
@@ -347,6 +387,21 @@ EVIDENCE_ACTION_TERMS = {
     "por qué", "status", "estado", "evidence", "evidencia", "trace", "traza",
     "prove", "demuestra", "confirm", "confirma", "verify", "verifica",
     "valora", "valorar", "capabilities", "capacidades",
+    # Repair A1 (front-brain-agent-v2-intent-floor-and-identity-preamble-repair-01):
+    # extended self-knowledge and execute-a-tool action verbs so read-only
+    # Brain/repo/memory/self-knowledge prompts route to evidence tools.
+    "buscar", "search", "donde", "dónde", "where", "primero", "first",
+    "identidad", "identity", "eres", "cual", "cuál", "which", "quien", "quién",
+    "backend", "ejecutando", "running", "usas", "use", "haces", "hiciste",
+    "debes", "should", "must", "gaps", "brechas", "roadmap", "puedes",
+    "capaz", "capaces", "muestrame", "muéstrame", "shows", "listar",
+    "list", "run", "corre", "ejecuta", "ejecutar", "smoke",
+    "readonly", "read-only",
+    # Fix B (front-brain-agent-v2-identity-guard-and-intent-floor-widen-02):
+    # reconciliation / validation / source-citation action verbs so P3/P5/P15/P16
+    # trigger evidence policy even when the prompt uses non-standard verbs.
+    "reconcilia", "reconciliar", "reconcile", "valida", "validate",
+    "fuente", "fuentes", "realmente", "really",
 }
 
 EVIDENCE_DOMAIN_TERMS = {
@@ -359,6 +414,18 @@ EVIDENCE_DOMAIN_TERMS = {
     "candidate", "candidato", "governance", "gobernanza", "provider", "kimi",
     "ollama", "finalizer", "planner", "selector", "router", "arquitectura",
     "architecture", "autodesarrollo", "self-development", "autoconocimiento",
+    # Repair A2 (front-brain-agent-v2-intent-floor-and-identity-preamble-repair-01):
+    # extended Brain-adjacent domain terms so trading/roadmap/self-knowledge
+    # prompts are recognized as domain hits even without an evidence action verb.
+    "trading", "ibkr", "broker", "roadmap", "brechas", "gaps",
+    "self-knowledge", "self knowledge", "pruebas", "tests", "ci",
+    "smoke_test_readonly", "backend",
+    # Fix B (front-brain-agent-v2-identity-guard-and-intent-floor-widen-02):
+    # additional Brain-adjacent domain anchors so P16-style prompts about the
+    # git HEAD, learning proposals, or the promotion_queue token variant are
+    # recognized as domain hits.
+    "head", "learning proposals", "learning_proposals", "proposals",
+    "promotion_queue",
 }
 
 EVIDENCE_POLICY_EXCLUSIONS = {
@@ -411,11 +478,23 @@ def _evidence_policy_classify(message: str) -> Optional[Dict[str, Any]]:
         return None
 
     # Direct domain phrases that always need evidence even if the verb is terse.
+    # Repair A3 (front-brain-agent-v2-intent-floor-and-identity-preamble-repair-01):
+    # extended so Brain-identity/self-knowledge terse prompts (P3, P5, P17) always
+    # route through evidence policy even without an evidence action verb.
     always_evidence = any(t in domain_hits for t in {
         "langgraph", "financial_autonomy", "financial autonomy",
         "broker_execution_enabled", "real_money_enabled", "promotion queue",
         "cola de promocion", "cola de promoción", "trace", "traza",
         "semantic", "faiss", "autodesarrollo", "self-development",
+        # Repair A3 additions
+        "brain", "agent", "agente", "memoria", "memory", "dashboard",
+        "kernel", "runtime", "backend", "trading", "ibkr", "broker",
+        "smoke_test_readonly", "roadmap",
+        # Fix B (front-brain-agent-v2-identity-guard-and-intent-floor-widen-02):
+        # ensure P16-style prompts referencing repo HEAD or learning proposals
+        # trigger evidence routing without needing a verb match.
+        "head", "proposals", "learning proposals", "learning_proposals",
+        "promotion_queue",
     })
     if not action_hits and not always_evidence:
         return None
@@ -431,9 +510,9 @@ def _evidence_policy_classify(message: str) -> Optional[Dict[str, Any]]:
         intent = "semantic_memory_status"
     elif any(t in domain_hits for t in {"memory", "memoria"}):
         intent = "memory_structure_diagnosis"
-    elif any(t in domain_hits for t in {"autoconocimiento", "brain", "agent", "agente", "architecture", "arquitectura"}):
+    elif any(t in domain_hits for t in {"autoconocimiento", "brain", "agent", "agente", "architecture", "arquitectura", "trading", "ibkr", "broker"}):
         intent = "brain_self_knowledge_lookup"
-    elif any(t in domain_hits for t in {"autodesarrollo", "self-development", "capabilities", "capacidades"}):
+    elif any(t in domain_hits for t in {"autodesarrollo", "self-development", "capabilities", "capacidades", "roadmap", "gaps", "brechas"}):
         intent = "capability_registry_read"
     elif any(t in domain_hits for t in {"dashboard", "ui"}):
         intent = "dashboard_diagnosis"
@@ -484,7 +563,18 @@ def _keyword_classify(message: str) -> Dict[str, Any]:
         and best_intent not in BLOCKED_INTENTS
         and best_intent not in APPROVAL_REQUIRED_INTENTS
     ):
-        if best_intent == "unknown_or_insufficient_info":
+        # Repair A4 (front-brain-agent-v2-intent-floor-and-identity-preamble-repair-01):
+        # widen override guard so shallow keyword hits (read_only_status,
+        # explain_capabilities) that would otherwise route to direct_assistant
+        # get re-routed to evidence tools when the message also matches the
+        # evidence policy with a brain_evidence route. Never override write,
+        # approval-required, or blocked classifications (outer guard above).
+        overridable_intents = {
+            "unknown_or_insufficient_info",
+            "read_only_status",
+            "explain_capabilities",
+        }
+        if best_intent in overridable_intents and policy_result.get("route") == "brain_evidence":
             return policy_result
 
     requires_approval = best_intent in APPROVAL_REQUIRED_INTENTS or best_intent in DRY_RUN_ONLY_INTENTS or best_intent in REPORT_ONLY_INTENTS

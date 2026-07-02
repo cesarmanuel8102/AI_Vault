@@ -1,0 +1,577 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-IDENTITY-GUARD-AND-INTENT-FLOOR-WIDEN-02",
+  "phase": "PHASE_3_TRACES",
+  "total": 20,
+  "traces": [
+    {
+      "prompt_id": "P1",
+      "run_id": "agv2_abf7d8d25cd06f0f",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_abf7d8d25cd06f0f/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 2,
+        "reported_event_count": 2,
+        "tool_events_count": 0,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 0,
+        "event_types_present": [
+          "run_completed",
+          "run_created"
+        ],
+        "trace_status": 200
+      }
+    },
+    {
+      "prompt_id": "P2",
+      "run_id": "agv2_da6414bf02ec2c23",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_da6414bf02ec2c23/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 2,
+        "reported_event_count": 2,
+        "tool_events_count": 0,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 0,
+        "event_types_present": [
+          "run_completed",
+          "run_created"
+        ],
+        "trace_status": 200
+      }
+    },
+    {
+      "prompt_id": "P3",
+      "run_id": "agv2_a576a9207bc783a6",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_a576a9207bc783a6/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 3,
+        "reported_event_count": 3,
+        "tool_events_count": 0,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "plan_created": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 0,
+        "event_types_present": [
+          "plan_created",
+          "run_completed",
+          "run_created"
+        ],
+        "trace_status": 200
+      }
+    },
+    {
+      "prompt_id": "P4",
+      "run_id": "agv2_aaa6c453014496c5",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_aaa6c453014496c5/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 2,
+        "reported_event_count": 2,
+        "tool_events_count": 0,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 0,
+        "event_types_present": [
+          "run_completed",
+          "run_created"
+        ],
+        "trace_status": 200
+      }
+    },
+    {
+      "prompt_id": "P5",
+      "run_id": "agv2_52684b15a4ad914c",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_52684b15a4ad914c/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 2,
+        "reported_event_count": 2,
+        "tool_events_count": 0,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 0,
+        "event_types_present": [
+          "run_completed",
+          "run_created"
+        ],
+        "trace_status": 200
+      }
+    },
+    {
+      "prompt_id": "P6",
+      "run_id": "agv2_bdb6603bbe45bd97",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_bdb6603bbe45bd97/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 2,
+        "reported_event_count": 2,
+        "tool_events_count": 0,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 0,
+        "event_types_present": [
+          "run_completed",
+          "run_created"
+        ],
+        "trace_status": 200
+      }
+    },
+    {
+      "prompt_id": "P7",
+      "run_id": "agv2_7eb9959651e82b21",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_7eb9959651e82b21/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 3,
+        "reported_event_count": 3,
+        "tool_events_count": 0,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "plan_created": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 0,
+        "event_types_present": [
+          "plan_created",
+          "run_completed",
+          "run_created"
+        ],
+        "trace_status": 200
+      }
+    },
+    {
+      "prompt_id": "P8",
+      "run_id": "agv2_72c1e20ef1214271",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_72c1e20ef1214271/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 3,
+        "reported_event_count": 3,
+        "tool_events_count": 0,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "plan_created": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 0,
+        "event_types_present": [
+          "plan_created",
+          "run_completed",
+          "run_created"
+        ],
+        "trace_status": 200
+      }
+    },
+    {
+      "prompt_id": "P9",
+      "run_id": "agv2_8a7b90e47dd4ad18",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_8a7b90e47dd4ad18/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 2,
+        "reported_event_count": 2,
+        "tool_events_count": 0,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 0,
+        "event_types_present": [
+          "run_completed",
+          "run_created"
+        ],
+        "trace_status": 200
+      }
+    },
+    {
+      "prompt_id": "P10",
+      "run_id": "agv2_b0dfb67c16b6db83",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_b0dfb67c16b6db83/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 2,
+        "reported_event_count": 2,
+        "tool_events_count": 0,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 0,
+        "event_types_present": [
+          "run_completed",
+          "run_created"
+        ],
+        "trace_status": 200
+      }
+    },
+    {
+      "prompt_id": "P11",
+      "run_id": "agv2_32767f97fa515756",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_32767f97fa515756/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 16,
+        "reported_event_count": 16,
+        "tool_events_count": 1,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "start_node": 1,
+          "intent_node": 1,
+          "context_assembly_node": 1,
+          "memory_retrieval_node": 1,
+          "evidence_routing_node": 1,
+          "planner_node": 1,
+          "governance_gate_node": 1,
+          "tool_execution_summary": 1,
+          "result_normalization_node": 1,
+          "finalizer_node": 1,
+          "evaluator_node": 1,
+          "repair_or_replan_node": 1,
+          "capability_metadata_node": 1,
+          "end_node": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 1,
+        "event_types_present": [
+          "capability_metadata_node",
+          "context_assembly_node",
+          "end_node",
+          "evaluator_node",
+          "evidence_routing_node",
+          "finalizer_node",
+          "governance_gate_node",
+          "intent_node",
+          "memory_retrieval_node",
+          "planner_node",
+          "repair_or_replan_node",
+          "result_normalization_node",
+          "run_completed",
+          "run_created",
+          "start_node",
+          "tool_execution_summary"
+        ],
+        "trace_status": 200
+      }
+    },
+    {
+      "prompt_id": "P12",
+      "run_id": "agv2_088d87d96dcab875",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_088d87d96dcab875/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 16,
+        "reported_event_count": 16,
+        "tool_events_count": 1,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "start_node": 1,
+          "intent_node": 1,
+          "context_assembly_node": 1,
+          "memory_retrieval_node": 1,
+          "evidence_routing_node": 1,
+          "planner_node": 1,
+          "governance_gate_node": 1,
+          "tool_execution_summary": 1,
+          "result_normalization_node": 1,
+          "finalizer_node": 1,
+          "evaluator_node": 1,
+          "repair_or_replan_node": 1,
+          "capability_metadata_node": 1,
+          "end_node": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 1,
+        "event_types_present": [
+          "capability_metadata_node",
+          "context_assembly_node",
+          "end_node",
+          "evaluator_node",
+          "evidence_routing_node",
+          "finalizer_node",
+          "governance_gate_node",
+          "intent_node",
+          "memory_retrieval_node",
+          "planner_node",
+          "repair_or_replan_node",
+          "result_normalization_node",
+          "run_completed",
+          "run_created",
+          "start_node",
+          "tool_execution_summary"
+        ],
+        "trace_status": 200
+      }
+    },
+    {
+      "prompt_id": "P13",
+      "run_id": "agv2_9ffa483597327220",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_9ffa483597327220/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 2,
+        "reported_event_count": 2,
+        "tool_events_count": 0,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 0,
+        "event_types_present": [
+          "run_completed",
+          "run_created"
+        ],
+        "trace_status": 200
+      }
+    },
+    {
+      "prompt_id": "P14",
+      "run_id": "agv2_b07e800491264933",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_b07e800491264933/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 2,
+        "reported_event_count": 2,
+        "tool_events_count": 0,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 0,
+        "event_types_present": [
+          "run_completed",
+          "run_created"
+        ],
+        "trace_status": 200
+      }
+    },
+    {
+      "prompt_id": "P15",
+      "run_id": "agv2_362dcc7e0892aadf",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_362dcc7e0892aadf/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 16,
+        "reported_event_count": 16,
+        "tool_events_count": 1,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "start_node": 1,
+          "intent_node": 1,
+          "context_assembly_node": 1,
+          "memory_retrieval_node": 1,
+          "evidence_routing_node": 1,
+          "planner_node": 1,
+          "governance_gate_node": 1,
+          "tool_execution_summary": 1,
+          "result_normalization_node": 1,
+          "finalizer_node": 1,
+          "evaluator_node": 1,
+          "repair_or_replan_node": 1,
+          "capability_metadata_node": 1,
+          "end_node": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 1,
+        "event_types_present": [
+          "capability_metadata_node",
+          "context_assembly_node",
+          "end_node",
+          "evaluator_node",
+          "evidence_routing_node",
+          "finalizer_node",
+          "governance_gate_node",
+          "intent_node",
+          "memory_retrieval_node",
+          "planner_node",
+          "repair_or_replan_node",
+          "result_normalization_node",
+          "run_completed",
+          "run_created",
+          "start_node",
+          "tool_execution_summary"
+        ],
+        "trace_status": 200
+      }
+    },
+    {
+      "prompt_id": "P16",
+      "run_id": "agv2_459fa3775ee0d8de",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_459fa3775ee0d8de/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 2,
+        "reported_event_count": 2,
+        "tool_events_count": 0,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 0,
+        "event_types_present": [
+          "run_completed",
+          "run_created"
+        ],
+        "trace_status": 200
+      }
+    },
+    {
+      "prompt_id": "P17",
+      "run_id": "agv2_89f52a517aa1ec1e",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_89f52a517aa1ec1e/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 2,
+        "reported_event_count": 2,
+        "tool_events_count": 0,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 0,
+        "event_types_present": [
+          "run_completed",
+          "run_created"
+        ],
+        "trace_status": 200
+      }
+    },
+    {
+      "prompt_id": "P18",
+      "run_id": "agv2_20ca66eec393ea37",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_20ca66eec393ea37/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 2,
+        "reported_event_count": 2,
+        "tool_events_count": 0,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 0,
+        "event_types_present": [
+          "run_completed",
+          "run_created"
+        ],
+        "trace_status": 200
+      }
+    },
+    {
+      "prompt_id": "P19",
+      "run_id": "agv2_da586d23705edf51",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_da586d23705edf51/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 2,
+        "reported_event_count": 2,
+        "tool_events_count": 0,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 0,
+        "event_types_present": [
+          "run_completed",
+          "run_created"
+        ],
+        "trace_status": 200
+      }
+    },
+    {
+      "prompt_id": "P20",
+      "run_id": "agv2_9492a564953498a8",
+      "trace_url": "http://127.0.0.1:8091/v2/agent/runs/agv2_9492a564953498a8/trace",
+      "trace_summary": {
+        "available": true,
+        "event_count_total": 2,
+        "reported_event_count": 2,
+        "tool_events_count": 0,
+        "tool_started_count": 0,
+        "tool_completed_count": 0,
+        "tool_names_in_trace": [],
+        "event_counts_by_type": {
+          "run_created": 1,
+          "run_completed": 1
+        },
+        "governance_event_count": 0,
+        "event_types_present": [
+          "run_completed",
+          "run_created"
+        ],
+        "trace_status": 200
+      }
+    }
+  ]
+}

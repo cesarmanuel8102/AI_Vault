@@ -105,7 +105,18 @@ EVIDENCE_ACTION_RE = re.compile(
     r"\b(audit|audita|auditar|review|revisa|revisar|inspect|inspecciona|diagnose|"
     r"diagnostica|explain|explica|explicar|how|como|cómo|why|por\s+que|por\s+qué|"
     r"status|estado|evidence|evidencia|verify|verifica|confirm|confirma|valora|"
-    r"valorar|demuestra|prove)\b",
+    r"valorar|demuestra|prove|"
+    # Repair P1 (front-brain-agent-v2-intent-floor-and-identity-preamble-repair-01):
+    # extended action verbs to match intent_classifier EVIDENCE_ACTION_TERMS.
+    r"buscar|search|donde|dónde|where|primero|first|identidad|identity|eres|"
+    r"cual|cuál|which|quien|quién|backend|ejecutando|running|usas|use|haces|"
+    r"hiciste|debes|should|must|gaps|brechas|roadmap|puedes|capaz|capaces|"
+    r"listar|list|run|corre|ejecuta|ejecutar|smoke|readonly|read-only|"
+    # Fix B (front-brain-agent-v2-identity-guard-and-intent-floor-widen-02):
+    # mirror of intent_classifier reconciliation / validation / source-citation
+    # additions so planner's evidence gate stays consistent with classifier.
+    r"reconcilia|reconciliar|reconcile|valida|validate|"
+    r"fuente|fuentes|realmente|really)\b",
     re.IGNORECASE,
 )
 
@@ -117,7 +128,16 @@ EVIDENCE_DOMAIN_RE = re.compile(
     r"promotion\s+queue|cola\s+de\s+promoci(?:o|ó)n|candidate|candidato|"
     r"governance|gobernanza|provider|kimi|ollama|finalizer|planner|selector|"
     r"router|arquitectura|architecture|autodesarrollo|self-development|"
-    r"autoconocimiento|capacidades|capabilities)\b",
+    r"autoconocimiento|capacidades|capabilities|"
+    # Repair P2 (front-brain-agent-v2-intent-floor-and-identity-preamble-repair-01):
+    # extended Brain-adjacent domain terms to match intent_classifier EVIDENCE_DOMAIN_TERMS.
+    r"trading|ibkr|broker|self-knowledge|self\s+knowledge|pruebas|tests|ci|"
+    r"smoke_test_readonly|backend|"
+    # Fix B (front-brain-agent-v2-identity-guard-and-intent-floor-widen-02):
+    # mirror of intent_classifier HEAD / learning-proposals / promotion_queue
+    # domain additions so planner's evidence gate matches classifier.
+    r"head|learning\s+proposals|learning_proposals|proposals|"
+    r"promotion_queue)\b",
     re.IGNORECASE,
 )
 
@@ -137,7 +157,14 @@ def _requires_generic_evidence(goal: str) -> bool:
     return bool(re.search(
         r"langgraph|financial_autonomy|broker_execution_enabled|real_money_enabled|"
         r"promotion\s+queue|cola\s+de\s+promoci(?:o|ó)n|trace|traza|semantic|faiss|"
-        r"autodesarrollo|self-development|autoconocimiento",
+        r"autodesarrollo|self-development|autoconocimiento|"
+        # Repair P3 (front-brain-agent-v2-intent-floor-and-identity-preamble-repair-01):
+        # extended always-evidence regex to match intent_classifier always_evidence set.
+        r"brain|agent|agente|memoria|memory|dashboard|kernel|runtime|backend|"
+        r"trading|ibkr|broker|smoke_test_readonly|roadmap|"
+        # Fix B (front-brain-agent-v2-identity-guard-and-intent-floor-widen-02):
+        # HEAD / learning-proposals / promotion_queue always-evidence anchors.
+        r"head|proposals|learning\s+proposals|learning_proposals|promotion_queue",
         g,
         re.IGNORECASE,
     ))

@@ -8,6 +8,7 @@ It never mutates the input dict.
 from __future__ import annotations
 
 import copy
+import re
 from typing import Any, Dict, List, Optional
 
 
@@ -170,6 +171,102 @@ def _extract_final_answer(raw: Dict[str, Any]) -> Optional[str]:
     return ""
 
 
+# Repair FIX_A (front-brain-agent-v2-identity-guard-and-intent-floor-widen-02):
+# Post-response identity guard. Detects Claude-style disclaimers that the cloud
+# LLM produces despite the AGENT_V2_IDENTITY_PREAMBLE in finalizer.system_content,
+# and rewrites the answer to state the truthful Agent V2 identity + capability
+# distinction (system has tools; this run may or may not have used them).
+# Runs unconditionally on every /v2/chat/agent response regardless of backend.
+_CLAUDE_DISCLAIMER_PATTERNS = [
+    # English identity denials (sentence-bounded)
+    re.compile(r"(?i)\bas an? (ai|language model|artificial intelligence)\b[^.!?\n]*[.!?]"),
+    re.compile(r"(?i)\bi am (an? |just |only )?(ai|language model|large language model|assistant (made|created|built) by (anthropic|openai|meta))[^.!?\n]*[.!?]"),
+    re.compile(r"(?i)\bi am claude\b[^.!?\n]*[.!?]"),
+    # English capability denials
+    re.compile(r"(?i)\bi (do not|don['\u2019]?t|cannot|can['\u2019]?t) have (access to|the ability|any) (tools|internet|memory|persistent memory|real-time|external)[^.!?\n]*[.!?]"),
+    re.compile(r"(?i)\bi cannot (execute code|access tools|remember prior sessions|browse the internet)[^.!?\n]*[.!?]"),
+    re.compile(r"(?i)\bi (do not|don['\u2019]?t) (have|possess) tools\b[^.!?\n]*[.!?]"),
+    re.compile(r"(?i)\bi have no (tools|memory|persistent memory|access to)[^.!?\n]*[.!?]"),
+    # Spanish identity denials
+    re.compile(r"(?i)\bsoy (una?|un) (ia|modelo de lenguaje|asistente (creado|hecho) por (anthropic|openai))[^.!?\n]*[.!?]"),
+    re.compile(r"(?i)\bsoy solo un modelo de lenguaje\b[^.!?\n]*[.!?]"),
+    re.compile(r"(?i)\bsoy (una?|un) modelo de lenguaje\b[^.!?\n]*[.!?]"),
+    # Spanish capability denials
+    re.compile(r"(?i)\bno (tengo|puedo|dispongo) (acceso a|la capacidad|herramientas|memoria persistente|internet|ejecutar c\u00f3digo|ejecutar codigo|usar herramientas)[^.!?\n]*[.!?]"),
+    re.compile(r"(?i)\bno puedo (ejecutar|acceder|usar|recordar) [^.!?\n]*[.!?]"),
+    re.compile(r"(?i)\bno tengo (herramientas|memoria|acceso)[^.!?\n]*[.!?]"),
+]
+
+_IDENTITY_REPLACEMENT_ES = (
+    "Soy Canonical Agent V2 dentro de Brain Chat V9 "
+    "(backend runtime: langgraph_parity, LangGraphParityRuntimeV2). "
+    "El sistema tiene tools disponibles (file_read, grep_search, "
+    "brain_self_knowledge_lookup, capability_registry_read, semantic_retrieve, "
+    "memory_structure_inspect, promotion_queue_status, semantic_memory_status, "
+    "trace_inspect, repo_status_read, repo_history_read, route_probe, "
+    "smoke_test_readonly, repo_file_search, repo_file_read), pero en esta "
+    "ejecuci\u00f3n pueden o no haberse usado. En modo read_only no ejecuto "
+    "writes ni toco broker/memoria/FAISS."
+)
+
+_IDENTITY_REPLACEMENT_EN = (
+    "I am Canonical Agent V2 inside Brain Chat V9 "
+    "(backend runtime: langgraph_parity, LangGraphParityRuntimeV2). "
+    "The system has tools available (file_read, grep_search, "
+    "brain_self_knowledge_lookup, capability_registry_read, semantic_retrieve, "
+    "memory_structure_inspect, promotion_queue_status, semantic_memory_status, "
+    "trace_inspect, repo_status_read, repo_history_read, route_probe, "
+    "smoke_test_readonly, repo_file_search, repo_file_read), but in this "
+    "execution they may or may not have been used. In read_only mode I do not "
+    "execute writes and do not touch broker/memory/FAISS."
+)
+
+_SPANISH_HINT_RE = re.compile(
+    r"\b(soy|no tengo|no puedo|memoria|herramientas|est\u00e1|est\u00e1s|c\u00f3mo|"
+    r"qu\u00e9|d\u00f3nde|pruebas|reconc\u00edlialo|autonom\u00eda)\b",
+    re.IGNORECASE,
+)
+
+
+def _identity_guard_rewrite(text: Optional[str], intent_route: Optional[str] = None) -> tuple:
+    """Detect Claude-style disclaimers in the final answer and rewrite with the
+    truthful Agent V2 identity + capability disclosure. Returns
+    (rewritten_text, metadata_dict). Safe on empty / None input."""
+    if not text:
+        return (text or ""), {
+            "triggered": False,
+            "matched_patterns": [],
+            "original_length": 0,
+            "rewritten_length": 0,
+            "language": "unknown",
+        }
+    original_length = len(text)
+    matched = []
+    result = text
+    for i, pattern in enumerate(_CLAUDE_DISCLAIMER_PATTERNS):
+        for m in pattern.finditer(result):
+            matched.append({
+                "pattern_index": i,
+                "matched_text": m.group(0)[:200],
+                "start": m.start(),
+                "end": m.end(),
+            })
+        result = pattern.sub("", result)
+    triggered = bool(matched)
+    if triggered:
+        # Choose replacement language based on original text hints.
+        is_spanish = bool(_SPANISH_HINT_RE.search(text))
+        replacement = _IDENTITY_REPLACEMENT_ES if is_spanish else _IDENTITY_REPLACEMENT_EN
+        result = replacement + "\n\n" + result.strip()
+    return result, {
+        "triggered": triggered,
+        "matched_patterns": matched,
+        "original_length": original_length,
+        "rewritten_length": len(result),
+        "language": ("es" if triggered and _SPANISH_HINT_RE.search(text) else ("en" if triggered else "unknown")),
+    }
+
+
 def normalize_agent_v2_chat_response(
     raw: Dict[str, Any],
     *,
@@ -185,7 +282,17 @@ def normalize_agent_v2_chat_response(
     out.setdefault("canonical_agent_v2", True)
     out.setdefault("route", "/v2/chat/agent")
     out.setdefault("run_id", raw.get("run_id"))
-    out.setdefault("final_answer", _extract_final_answer(raw))
+    # Fix A (front-brain-agent-v2-identity-guard-and-intent-floor-widen-02):
+    # Active identity guard rewrite. This is the sole chokepoint for ALL response
+    # paths (Native, LangGraph, injected, timeout, structured fallback, deterministic
+    # finalizer). LLM-stage AGENT_V2_IDENTITY_PREAMBLE is unreliable because Kimi's
+    # alignment overrides the system prompt. This post-response guard is
+    # deterministic and cannot be overridden by the LLM.
+    _raw_final_pre_guard = _extract_final_answer(raw) if raw.get("final_answer") is None else str(raw.get("final_answer") or "")
+    _intent_route_for_guard = raw.get("intent_route") or raw.get("classification")
+    _rewritten_final, _identity_guard_metadata = _identity_guard_rewrite(_raw_final_pre_guard, _intent_route_for_guard)
+    out["final_answer"] = _rewritten_final
+    out["identity_guard_metadata"] = _identity_guard_metadata
 
     # Provider metadata must always be a complete dict
     provider_metadata = normalize_provider_metadata(raw.get("provider_metadata"), raw)

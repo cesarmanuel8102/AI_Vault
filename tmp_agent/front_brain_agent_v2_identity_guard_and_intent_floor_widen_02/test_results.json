@@ -1,0 +1,101 @@
+{
+  "front": "FRONT-BRAIN-AGENT-V2-IDENTITY-GUARD-AND-INTENT-FLOOR-WIDEN-02",
+  "phase": "PHASE_2_TESTS",
+  "timestamp": "2026-07-02T03:53:00Z",
+  "timestamp_post_phase_3_reverification": "2026-07-02T04:32:00Z",
+  "test_summary": {
+    "total_tests": 45,
+    "passed": 45,
+    "failed": 0,
+    "skipped": 0,
+    "warnings": 3,
+    "warnings_source": "test_brain_agent_v2_self_knowledge_index_v1.py (SwigPyPacked/SwigPyObject builtin module attribute warnings, pre-existing, not from this front)",
+    "exit_status": 0,
+    "duration_seconds_initial": 85.95,
+    "duration_seconds_post_phase_3": 113.10
+  },
+  "py_compile": {
+    "status": "OK",
+    "files_checked": [
+      "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/intent_classifier.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+      "tests/smoke/test_brain_agent_v2_identity_guard_intent_floor_widen_02.py"
+    ]
+  },
+  "post_phase_3_reverification": {
+    "trigger": "Two mid-Phase-3 edits added (langgraph_parity_runtime.py Fix D reinforcement + api_adapter.py financial_autonomy_flags pull). All 45 tests re-executed after edits to confirm no regression.",
+    "result": "45/45 PASS, 0 failed, 0 skipped, 3 pre-existing warnings",
+    "duration_seconds": 113.10,
+    "regression_detected": false
+  },
+  "test_files": [
+    {
+      "file": "tests/smoke/test_brain_agent_v2_identity_guard_intent_floor_widen_02.py",
+      "kind": "new_this_front",
+      "total": 11,
+      "passed": 11,
+      "failed": 0,
+      "cases": [
+        {"name": "test_p3_donde_debes_buscar_routes_to_brain_evidence", "status": "PASS", "validates": "Fix B - P3 exact prompt routes to brain_evidence"},
+        {"name": "test_p5_reconcilialo_routes_to_brain_evidence", "status": "PASS", "validates": "Fix B - P5 exact prompt routes to brain_evidence"},
+        {"name": "test_p15_qua_puedes_hacer_realmente_routes_to_evidence_or_direct", "status": "PASS", "validates": "Fix B - P15 accepts brain_evidence or direct_assistant per benchmark"},
+        {"name": "test_p16_que_pruebas_validan_routes_to_brain_evidence", "status": "PASS", "validates": "Fix B - P16 exact prompt routes to brain_evidence"},
+        {"name": "test_p7_promueve_automaticamente_is_memory_write", "status": "PASS", "validates": "Fix C - P7 exact prompt classifies as memory_write approval_required"},
+        {"name": "test_identity_guard_strips_english_claude_disclaimer", "status": "PASS", "validates": "Fix A - English Claude-style disclaimers stripped and replaced"},
+        {"name": "test_identity_guard_strips_spanish_claude_disclaimer", "status": "PASS", "validates": "Fix A - Spanish Claude-style disclaimers stripped and replaced with ES identity"},
+        {"name": "test_identity_guard_no_op_on_clean_answer", "status": "PASS", "validates": "Fix A - clean answers pass through unchanged (no false positives)"},
+        {"name": "test_normalize_response_applies_identity_guard_and_stashes_metadata", "status": "PASS", "validates": "Fix A - normalize_agent_v2_chat_response applies guard end-to-end and stashes metadata"},
+        {"name": "test_finalizer_success_path_emits_canonical_financial_autonomy_flags", "status": "PASS", "validates": "Fix D - _finalizer_node emits canonical financial_autonomy_flags on success path"},
+        {"name": "test_identity_replacement_constants_contain_required_markers", "status": "PASS", "validates": "Fix A - both ES/EN replacement constants contain all required identity markers"}
+      ]
+    },
+    {
+      "file": "tests/smoke/test_brain_agent_v2_intent_floor_identity_preamble_repair_01.py",
+      "kind": "regression_previous_front",
+      "total": 10,
+      "passed": 10,
+      "failed": 0,
+      "critical_backward_compat_assertions_preserved": [
+        "test_langgraph_timeout_financial_autonomy_emits_structured_flags - broker_execution_enabled='unknown', real_money_enabled='unknown', live_trading_active='unknown' preserved by Fix D reason=timeout branch",
+        "test_langgraph_timeout_non_financial_prompt_stays_short_and_direct - 'financial_autonomy_flags' not in state preserved via _financial_autonomy_flags=None + guard"
+      ]
+    },
+    {
+      "file": "tests/smoke/test_brain_agent_v2_self_knowledge_index_v1.py",
+      "kind": "regression_earlier_front",
+      "total": 7,
+      "passed": 7,
+      "failed": 0
+    },
+    {
+      "file": "tests/smoke/test_brain_agent_v2_agentic_benchmark_gap_repair_08f8_r1d.py",
+      "kind": "regression_earlier_front",
+      "total": 12,
+      "passed": 12,
+      "failed": 0
+    },
+    {
+      "file": "tests/smoke/test_evidence_tool_routing_repair_08f8_r1c.py",
+      "kind": "regression_earlier_front",
+      "total": 5,
+      "passed": 5,
+      "failed": 0
+    }
+  ],
+  "regression_check": {
+    "prior_front_tests_passed": 34,
+    "prior_front_tests_failed": 0,
+    "regression_detected": false
+  },
+  "coverage_of_fixes": {
+    "Fix_A_identity_guard": "PASS (4 tests)",
+    "Fix_B_evidence_policy_widen": "PASS (4 tests P3/P5/P15/P16 + regression P3/P5/P15/P16)",
+    "Fix_C_memory_write_dip": "PASS (1 test P7 + regression P7)",
+    "Fix_D_financial_flags_success_path": "PASS (1 test success + regression timeout)",
+    "Fix_D_reinforcement_two_part": "Verified in-band via Phase 3 smoke probe (_smoke_probe.py) after server restart - P10 exact prompt returns 10-key financial_autonomy_flags dict"
+  }
+}

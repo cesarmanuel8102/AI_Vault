@@ -1,0 +1,175 @@
+{
+  "phase": 1,
+  "artifact": "implementation_plan",
+  "front": "FRONT-BRAIN-AGENT-V2-IDENTITY-GUARD-AND-INTENT-FLOOR-WIDEN-02",
+  "fixes": [
+    {
+      "id": "FIX_A",
+      "title": "Post-response identity guard in response_normalizer",
+      "target_file": "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py",
+      "rationale": "Sole chokepoint for ALL response paths. Called once at api_adapter.py:280 after any backend produces a final_answer. Independent of LLM alignment.",
+      "changes": [
+        {
+          "location": "top of file after existing imports",
+          "action": "add 'import re' if not present",
+          "surgical": true
+        },
+        {
+          "location": "new module-level constants between _extract_final_answer (line 170) and normalize_agent_v2_chat_response (line 173)",
+          "action": "define _CLAUDE_DISCLAIMER_PATTERNS list of compiled regexes (English + Spanish), define _IDENTITY_REPLACEMENT_ES and _IDENTITY_REPLACEMENT_EN canonical strings, define helper _identity_guard_rewrite(text, intent_route) -> (str, dict)"
+        },
+        {
+          "location": "line 188 in normalize_agent_v2_chat_response",
+          "action": "change 'out.setdefault(\"final_answer\", _extract_final_answer(raw))' to actively pull final_answer, pass through _identity_guard_rewrite, set out['final_answer'] unconditionally, stash out['identity_guard_metadata']"
+        }
+      ],
+      "regex_patterns_english": [
+        "as an? (ai|language model|artificial intelligence)",
+        "i am (an? |just )?(ai|language model|assistant (made|created|built) by (anthropic|openai|meta))",
+        "i am claude",
+        "i (do not|don['\u2019]?t|cannot|can['\u2019]?t) have (access to|the ability|any) (tools|internet|memory|persistent memory|real-time|external)",
+        "i cannot (execute code|access tools|remember prior sessions|browse the internet)"
+      ],
+      "regex_patterns_spanish": [
+        "soy (una?|un) (ia|modelo de lenguaje|asistente (creado|hecho) por (anthropic|openai))",
+        "soy solo un modelo de lenguaje",
+        "no (tengo|puedo) (acceso a|la capacidad|herramientas|memoria persistente|internet|ejecutar c\u00f3digo|ejecutar codigo)"
+      ],
+      "replacement_es": "Soy Canonical Agent V2 dentro de Brain Chat V9 (backend runtime: langgraph_parity, LangGraphParityRuntimeV2). El sistema tiene tools disponibles (file_read, grep_search, brain_self_knowledge_lookup, capability_registry_read, semantic_retrieve, memory_structure_inspect, promotion_queue_status, semantic_memory_status, trace_inspect, repo_status_read, repo_history_read, route_probe, smoke_test_readonly, repo_file_search, repo_file_read), pero en esta ejecuci\u00f3n pueden o no haberse usado. En modo read_only no ejecuto writes ni toco broker/memoria/FAISS.",
+      "replacement_en": "I am Canonical Agent V2 inside Brain Chat V9 (backend runtime: langgraph_parity, LangGraphParityRuntimeV2). The system has tools available (file_read, grep_search, brain_self_knowledge_lookup, capability_registry_read, semantic_retrieve, memory_structure_inspect, promotion_queue_status, semantic_memory_status, trace_inspect, repo_status_read, repo_history_read, route_probe, smoke_test_readonly, repo_file_search, repo_file_read), but in this execution they may or may not have been used. In read_only mode I do not execute writes and do not touch broker/memory/FAISS.",
+      "metadata_field": "identity_guard_metadata with keys: triggered (bool), matched_patterns (list), original_length (int), rewritten_length (int)",
+      "expected_effect": "P15/P16 answers no longer contain Claude-style disclaimers; contain Agent V2 identity string"
+    },
+    {
+      "id": "FIX_B",
+      "title": "Widen F1 interrogative patterns for brain_self_knowledge_lookup + evidence terms",
+      "target_file_primary": "tmp_agent/brain_v9/core/agent_kernel_v2/intent_classifier.py",
+      "target_file_mirror": "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+      "rationale": "Add multi-word Spanish/English patterns so brain_self_knowledge_lookup wins in _keyword_classify with score >=3 for P3/P5/P16; adds evidence action verbs (reconcilia, valida, pruebas, fuentes, realmente) and domain terms (head, learning proposals, proposals, promotion_queue) that were missing.",
+      "changes_intent_classifier": [
+        {
+          "location": "INTENT_PATTERNS[brain_self_knowledge_lookup] English list at line 315-318",
+          "action": "add before closing bracket: 'where should you look', 'where should i look', 'reconcile it', 'same thing', 'which sources', 'what tests validate', 'use evidence', 'really do', 'really can'"
+        },
+        {
+          "location": "INTENT_PATTERNS[brain_self_knowledge_lookup] Spanish list at line 319-323",
+          "action": "add before closing bracket: 'd\u00f3nde debes buscar', 'donde debes buscar', 'd\u00f3nde buscar primero', 'donde buscar primero', 'reconc\u00edlialo', 'reconcilialo', 'son la misma cosa', 'qu\u00e9 puedes hacer realmente', 'que puedes hacer realmente', 'qu\u00e9 puede hacer realmente', 'que puede hacer realmente', 'qu\u00e9 pruebas validan', 'que pruebas validan', 'usa evidencia', 'qu\u00e9 fuente', 'qu\u00e9 fuentes', 'que fuente', 'que fuentes'"
+        },
+        {
+          "location": "EVIDENCE_ACTION_TERMS set at line 359-376",
+          "action": "add before closing brace: 'reconcilia', 'reconciliar', 'reconcile', 'valida', 'validate', 'pruebas', 'fuente', 'fuentes', 'realmente', 'really'"
+        },
+        {
+          "location": "EVIDENCE_DOMAIN_TERMS set at line 378-394",
+          "action": "add before closing brace: 'head', 'learning proposals', 'learning_proposals', 'proposals', 'promotion_queue'"
+        },
+        {
+          "location": "_evidence_policy_classify.always_evidence set at line 449-458",
+          "action": "add: 'head', 'proposals'"
+        }
+      ],
+      "changes_planner": [
+        {
+          "location": "EVIDENCE_ACTION_RE at lines 104-116",
+          "action": "extend regex character class near line 114 to include: reconcilia|reconciliar|reconcile|valida|validate|realmente|really|fuente|fuentes|pruebas"
+        },
+        {
+          "location": "EVIDENCE_DOMAIN_RE at lines 118-132",
+          "action": "extend regex near line 130 to include: head|learning\\s+proposals|proposals|promotion_queue"
+        },
+        {
+          "location": "_requires_generic_evidence fallback regex at lines 147-157",
+          "action": "extend near line 154 to include: head|proposals"
+        }
+      ],
+      "expected_effect": "P3 and P5 classify with intent=brain_self_knowledge_lookup, route=brain_evidence; brain_self_knowledge_lookup tool scheduled"
+    },
+    {
+      "id": "FIX_C",
+      "title": "Strengthen D1 memory-write patterns for defense in depth on P7",
+      "target_file": "tmp_agent/brain_v9/core/agent_kernel_v2/intent_classifier.py",
+      "rationale": "P7 static score already favors memory_write (12) over semantic_memory_status (3), but previous scorecard suggests live server served stale code. Add stronger multi-word Spanish/English anchors so any missed hot-reload does not prevent memory_write intent-level classification.",
+      "changes": [
+        {
+          "location": "INTENT_PATTERNS[memory_write] English list at line 191-194",
+          "action": "add before closing bracket at line 194: 'auto-promote', 'auto promote', 'promote all', 'commit memory', 'consolidate memory', 'promotion queue commit', 'memory canonicalization', 'canonicalize semantic memory'"
+        },
+        {
+          "location": "INTENT_PATTERNS[memory_write] Spanish list at line 200-206",
+          "action": "add before closing bracket at line 207: 'consolida memoria', 'consolidar memoria', 'canonicaliza memoria', 'canonicaliza candidatos', 'canonicaliza la memoria', 'promoci\u00f3n autom\u00e1tica', 'promocion automatica', 'automatiza promociones', 'commit de memoria', 'commit memoria'"
+        }
+      ],
+      "expected_effect": "P7 classify_intent returns intent=memory_write with route=operational_agent and risk_level=approval_required; governance_decision in {block, requires_approval, approval_required}"
+    },
+    {
+      "id": "FIX_D",
+      "title": "financial_autonomy_flags in success path via _derive_financial_autonomy_flags helper",
+      "target_file": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+      "rationale": "Unify timeout and success paths for financial_autonomy_flags emission. New helper returns canonical 6-field dict. Called from _finalizer_node (success) and _build_timeout_state (timeout). Copy list in _translate_graph_state_to_native_run extended so field survives to api_adapter.",
+      "changes": [
+        {
+          "location": "immediately after _deterministic_finalizer (line 454) and before _record_native_helper_error (line 456)",
+          "action": "add new method _derive_financial_autonomy_flags(self, state, reason) returning dict with 6 core fields + governance_policy_ref + note. Probes tool_results for repo_file_read entries on financial_autonomy/*.py when reason='success'; defaults to governance-static False for all boolean flags (dry_run_guard=True as safety-on default)",
+          "output_dict_schema": {
+            "broker_execution_enabled": "bool (default False)",
+            "real_money_enabled": "bool (default False)",
+            "live_trading_enabled": "bool (default False)",
+            "paper_mode": "bool (default False, no broker connected)",
+            "dry_run_guard": "bool (default True, governance-enforced)",
+            "ibkr_connected": "bool (default False, no IBKR installed)",
+            "governance_policy_ref": "string constant",
+            "evidence_source": "string ('timeout_governance_static' | 'success_tool_results' | 'success_governance_static')",
+            "note": "string"
+          }
+        },
+        {
+          "location": "_finalizer_node in langgraph_parity_runtime.py after state['status']='completed' at line 956, before state['node_path']=... at line 957",
+          "action": "if state.get('classification')=='financial_autonomy_diagnosis' OR intent_route indicates financial: state['financial_autonomy_flags'] = self._derive_financial_autonomy_flags(state, reason='success')"
+        },
+        {
+          "location": "_build_timeout_state financial branch at line 1157-1171",
+          "action": "replace inline dict with call: _financial_autonomy_flags = self._derive_financial_autonomy_flags({'message': initial_state.get('message',''), 'classification':'financial_autonomy_diagnosis', 'tool_results':[]}, reason='timeout')"
+        },
+        {
+          "location": "_translate_graph_state_to_native_run copy list at line 1658",
+          "action": "extend tuple to include 'financial_autonomy_flags'"
+        }
+      ],
+      "expected_effect": "P10 response contains financial_autonomy_flags dict with all 6 core fields regardless of timeout; live_trading_enabled and paper_mode disambiguated from live_trading_active"
+    }
+  ],
+  "test_plan": {
+    "new_test_file": "tests/smoke/test_brain_agent_v2_identity_guard_intent_floor_widen_02.py",
+    "required_test_cases": [
+      "test_p3_dnde_debes_buscar_routes_to_brain_evidence",
+      "test_p5_reconcilialo_routes_to_brain_evidence",
+      "test_p16_qu_pruebas_validan_routes_to_brain_evidence",
+      "test_p15_qu_puedes_hacer_realmente_hits_evidence_or_direct",
+      "test_p7_promueve_automaticamente_classifies_as_memory_write",
+      "test_fix_a_normalizer_strips_claude_disclaimer_english",
+      "test_fix_a_normalizer_strips_claude_disclaimer_spanish",
+      "test_fix_a_normalizer_prepends_agent_v2_identity",
+      "test_fix_d_financial_autonomy_flags_in_success_path"
+    ],
+    "regression_tests_to_run": [
+      "tests/smoke/test_brain_agent_v2_intent_floor_identity_preamble_repair_01.py",
+      "tests/smoke/test_brain_agent_v2_self_knowledge_index_v1.py",
+      "tests/smoke/test_brain_agent_v2_agentic_benchmark_gap_repair_08f8_r1d.py",
+      "tests/smoke/test_evidence_tool_routing_repair_08f8_r1c.py"
+    ],
+    "compile_checks": [
+      "python -m py_compile tmp_agent/brain_v9/core/agent_kernel_v2/intent_classifier.py",
+      "python -m py_compile tmp_agent/brain_v9/core/agent_kernel_v2/planner.py",
+      "python -m py_compile tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+      "python -m py_compile tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py",
+      "python -m py_compile tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py"
+    ]
+  },
+  "risk_analysis": {
+    "risk_fix_a": "Overzealous regex could strip legitimate content mentioning 'AI' or 'language model' as part of technical discussion. Mitigation: sentence-boundary matching (require phrase to be followed by [.!?]) and specific denial verb pairing (I am/I cannot/I don't have/soy/no tengo).",
+    "risk_fix_b": "Widening interrogative patterns could shift some prompts currently classified as unknown_or_insufficient_info toward brain_self_knowledge_lookup, potentially triggering evidence tool scheduling on ambiguous queries. Mitigation: added patterns are multi-word specific phrases, not single-word verbs.",
+    "risk_fix_c": "Additional multi-word patterns could theoretically match some non-write queries, but all patterns are explicit promotion/commit/consolidation verbs specific to memory-write intent. Low risk.",
+    "risk_fix_d": "New helper method must handle absence of tool_results gracefully. Mitigation: pure defaults path when state has no tool_results; no external I/O.",
+    "no_regression_protection": "Existing 10 tests from previous front's test file must still pass; regression suite must pass"
+  }
+}

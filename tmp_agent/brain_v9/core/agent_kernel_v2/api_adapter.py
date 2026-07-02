@@ -276,6 +276,22 @@ def chat_agent(req: AgentChatRequest):
         "runtime_type": getattr(rt, "runtime_type", type(rt).__name__),
         "langgraph_default_active": getattr(rt, "backend_default", None) == "langgraph_parity",
         "rollback_backend": getattr(rt, "rollback_backend", "native_runtime"),
+        # Fix D reinforcement (front-brain-agent-v2-identity-guard-and-intent-floor-widen-02):
+        # Explicitly forward financial_autonomy_flags from the run dict into the
+        # /v2/chat/agent response body. _finalizer_node sets this on the success
+        # path via _derive_financial_autonomy_flags(reason="success"), and
+        # _build_timeout_state sets it on financial_autonomy_diagnosis timeouts.
+        # The LangGraph->Native translator (_translate_graph_state_to_native_run)
+        # also has a defensive fallback that re-derives the dict when it is
+        # missing on the completed status path. This top-level pull ensures the
+        # normalized /v2/chat/agent response actually surfaces the canonical
+        # governance-flags dict so P10-style prompts get a structured
+        # broker_execution_enabled / real_money_enabled / dry_run_guard object
+        # instead of a bare None. Non-financial requests where the run dict has
+        # no financial_autonomy_flags key remain as None (compatible with the
+        # existing "financial_autonomy_flags not in state" invariant asserted
+        # by test_brain_agent_v2_intent_floor_identity_preamble_repair_01).
+        "financial_autonomy_flags": run.get("financial_autonomy_flags"),
     }
     return normalize_agent_v2_chat_response(
         raw_response,

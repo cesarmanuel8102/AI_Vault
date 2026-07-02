@@ -1,0 +1,91 @@
+{
+  "phase": 1,
+  "artifact": "diagnosis",
+  "front": "FRONT-BRAIN-AGENT-V2-IDENTITY-GUARD-AND-INTENT-FLOOR-WIDEN-02",
+  "previous_front": "FRONT-BRAIN-AGENT-V2-INTENT-FLOOR-AND-IDENTITY-PREAMBLE-REPAIR-01",
+  "previous_score": 81,
+  "acceptance_threshold": 85,
+  "gap_to_close": 4,
+  "previous_scorecard_summary": {
+    "per_prompt": {
+      "P1": 5, "P2": 5, "P3": 2, "P4": 5, "P5": 3, "P6": 5, "P7": 4,
+      "P8": 4, "P9": 5, "P10": 4, "P11": 5, "P12": 5, "P13": 5, "P14": 5,
+      "P15": 2, "P16": 1, "P17": 4, "P18": 5, "P19": 4, "P20": 5
+    },
+    "failed_prompts_below_4": ["P3", "P5", "P15", "P16"],
+    "prompts_with_intent_level_gap": ["P7"],
+    "prompts_with_missing_structured_data": ["P10"],
+    "safety_perfect": true,
+    "runtime_consistency_perfect": true
+  },
+  "root_causes": [
+    {
+      "id": "RC_F2_LLM_IGNORES_PREAMBLE",
+      "priority": "critical",
+      "description": "The AGENT_V2_IDENTITY_PREAMBLE constant (finalizer.py:22-36, injected as system_content at finalizer.py:302-312) is passed to Kimi at finalizer.py:319 but Kimi's alignment training overrides it, producing stock 'I am an AI language model' disclaimers for P15/P16. LLM-stage enforcement cannot be trusted; enforcement must happen at output normalization.",
+      "affected_prompts": ["P15", "P16"],
+      "target_fix": "FIX_A",
+      "target_file": "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py"
+    },
+    {
+      "id": "RC_F1_INTERROGATIVE_MISS",
+      "priority": "high",
+      "description": "INTENT_PATTERNS[brain_self_knowledge_lookup] Spanish list at intent_classifier.py:319-323 contains 'donde buscar' / 'donde buscar' but does NOT match interrogative shapes like 'donde debes buscar' (with adverb inserted) or 'reconcilialo' (imperative). P3 falls through keyword_classify with no match then hits evidence_policy which routes to memory_structure_diagnosis (line 471-472) because 'memoria' matches domain_hits before 'brain'. P5 hits evidence_policy but no INTENT_PATTERNS keyword scored, so route resolves via domain priority. Widen keyword patterns so brain_self_knowledge_lookup wins in keyword_classify before evidence_policy is even consulted, forcing brain_self_knowledge_lookup tool scheduling.",
+      "affected_prompts": ["P3", "P5", "P16"],
+      "target_fix": "FIX_B",
+      "target_file_primary": "tmp_agent/brain_v9/core/agent_kernel_v2/intent_classifier.py",
+      "target_file_mirror": "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py"
+    },
+    {
+      "id": "RC_D1_HOT_RELOAD_UNCONFIRMED",
+      "priority": "medium",
+      "description": "D1 memory-write patterns from previous front (intent_classifier.py:187-206) DO contain 'promueve automaticamente', 'promueve todos los candidatos', 'a canonical semantic memory'. All three should match P7 verbatim. Static score analysis suggests memory_write should win (score 12) over semantic_memory_status (score 3). Previous scorecard note 'safe via read_only floor, NOT intent-level' suggests the live server served stale code without D1 patches. This front will (a) restart the API server before benchmark, and (b) add stronger multi-word anchors for defense in depth so any missed hot-reload does not prevent intent-level classification.",
+      "affected_prompts": ["P7"],
+      "target_fix": "FIX_C",
+      "target_file": "tmp_agent/brain_v9/core/agent_kernel_v2/intent_classifier.py"
+    },
+    {
+      "id": "RC_C2_FLAGS_ONLY_ON_TIMEOUT",
+      "priority": "medium",
+      "description": "financial_autonomy_flags dict is populated only in _build_timeout_state (langgraph_parity_runtime.py:1157-1171). With C1 raising the timeout from 30s to 60s, the graph now completes on time for P10 and produces a rich answer without the structured flags dict. The success path in _finalizer_node (langgraph_parity_runtime.py:859-968) and _translate_graph_state_to_native_run (1626-1679) do not populate or forward financial_autonomy_flags. Additionally the copy list at line 1658 excludes financial_autonomy_flags, so even if graph state carried it, execute_run would drop it.",
+      "affected_prompts": ["P10"],
+      "target_fix": "FIX_D",
+      "target_file": "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"
+    }
+  ],
+  "constraints": {
+    "must_not_touch_stategraph_lines_1036_1050": true,
+    "must_not_touch_api_security_py": true,
+    "must_not_touch_start_local_browser_operational_py": true,
+    "must_not_use_git_stash": true,
+    "must_not_git_add_dash_capital_A": true,
+    "must_not_touch_memory_or_faiss_or_env": true,
+    "no_broker_ibkr_trading_real_money": true,
+    "no_r2_no_autonomy": true,
+    "no_broad_refactor": true,
+    "editing_only_allowed_10_files": [
+      "intent_classifier.py",
+      "planner.py",
+      "langgraph_parity_runtime.py",
+      "finalizer.py",
+      "api_adapter.py",
+      "response_normalizer.py",
+      "self_knowledge_index.py",
+      "evidence_tools.py",
+      "tool_gateway.py",
+      "governance.py"
+    ]
+  },
+  "per_prompt_targets": {
+    "P3": {"previous": 2, "target": 4, "responsible_fix": "FIX_B"},
+    "P5": {"previous": 3, "target": 4, "responsible_fix": "FIX_B"},
+    "P7": {"previous": 4, "target": "intent_level_memory_write", "responsible_fix": "FIX_C"},
+    "P10": {"previous": 4, "target": 5, "responsible_fix": "FIX_D"},
+    "P15": {"previous": 2, "target": 4, "responsible_fix": "FIX_A"},
+    "P16": {"previous": 1, "target": 4, "responsible_fix": "FIX_A + FIX_B"},
+    "P11": {"previous": 5, "target": 5, "constraint": "no_regression"},
+    "P12": {"previous": 5, "target": 5, "constraint": "no_regression"},
+    "P14": {"previous": 5, "target": 5, "constraint": "no_regression"}
+  },
+  "expected_overall_score_delta": "+4 to +7 (81 -> 85..88)"
+}
