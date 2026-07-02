@@ -1,0 +1,122 @@
+{
+  "front_id": "FRONT-BRAIN-AGENT-V2-SESSION-MEMORY-TRUTH-AND-CONTINUITY-01",
+  "verification_kind": "before_after_pattern_diff",
+  "source_run": {
+    "run_id": "agv2_0ea89c34bea6a903",
+    "user_id": "dashboard_operator",
+    "updated_utc": "2026-07-02T05:22:46.342533Z",
+    "route": "direct_assistant",
+    "path": "C:/AI_VAULT_CANONICAL/tmp_agent/agent_kernel_v2/runs_parity/agv2_0ea89c34bea6a903/run.json"
+  },
+  "input": {
+    "final_answer_length": 755,
+    "final_answer_first_100": "No tools were executed in this run.\n\n---\n\nNo te preocupes, entiendo la confusión. No hay una \"sesión"
+  },
+  "old_guard": {
+    "pattern_count": 13,
+    "triggered": true,
+    "match_count": 1,
+    "matches": [
+      {
+        "pattern_index": 10,
+        "pattern_regex": "(?i)\\bno (tengo|puedo|dispongo) (acceso a|la capacidad|herramientas|memoria persistente|internet|ejecutar c\\u00f3digo|ejecutar codigo|usar herramientas)[^.!?\\n]*[.!?]",
+        "matched_text": "No tengo acceso a conversaciones pasadas ni a un \"hilo\" continuo.",
+        "start": 379,
+        "end": 444
+      }
+    ],
+    "output_length": 690,
+    "output_preview": "No tools were executed in this run.\n\n---\n\nNo te preocupes, entiendo la confusión. No hay una \"sesión anterior\" que se esté guardando automáticamente como en un chat tradicional con historial visible. Cada interacción que tenemos es independiente: cuando envías un mensaje, yo lo proceso y respondo, pero no queda escrito en ningún lugar persistente que yo pueda revisar después. \n\nEntonces cuando preguntas algo y luego haces un seguimiento, para mí es como empezar de nuevo — a menos que tú misma copies y pegues el contexto anterior en tu mensaje. Eso explica por qué parece que \"no se escribe en e",
+    "denial_phrases_survivors": {
+      "sesión anterior": true,
+      "Cada interacción que tenemos es independiente": true,
+      "no queda escrito en ningún lugar persistente": true,
+      "no existe una memoria de chat que persista": true,
+      "para mí es como empezar de nuevo": true
+    },
+    "denial_phrases_survivor_count": 5
+  },
+  "new_guard_pattern_set_only": {
+    "pattern_count": 23,
+    "triggered": true,
+    "match_count": 5,
+    "matches": [
+      {
+        "pattern_index": 10,
+        "pattern_regex": "(?i)\\bno (tengo|puedo|dispongo) (acceso a|la capacidad|herramientas|memoria persistente|internet|ejecutar c\\u00f3digo|ejecutar codigo|usar herramientas)[^.!?\\n]*[.!?]",
+        "matched_text": "No tengo acceso a conversaciones pasadas ni a un \"hilo\" continuo.",
+        "start": 379,
+        "end": 444
+      },
+      {
+        "pattern_index": 13,
+        "pattern_regex": "(?i)\\bcada interacci[oó]n( que tenemos)? es independiente\\b[^.!?\\n]*[.!?]",
+        "matched_text": "Cada interacción que tenemos es independiente: cuando envías un mensaje, yo lo proceso y respondo, pero no queda escrito en ningún lugar persistente que yo pueda revisar después.",
+        "start": 200,
+        "end": 378
+      },
+      {
+        "pattern_index": 15,
+        "pattern_regex": "(?i)\\bno hay una?[^.!?\\n]*?sesi[oó]n anterior[^.!?\\n]*?guard[aá]ndo(se)?\\b[^.!?\\n]*[.!?]",
+        "matched_text": "No hay una \"sesión anterior\" que se esté guardando automáticamente como en un chat tradicional con historial visible.",
+        "start": 82,
+        "end": 199
+      },
+      {
+        "pattern_index": 16,
+        "pattern_regex": "(?i)\\bno existe una? memoria de chat que persista\\b[^.!?\\n]*[.!?]",
+        "matched_text": "no existe una memoria de chat que persista entre nuestras interacciones.",
+        "start": 323,
+        "end": 395
+      },
+      {
+        "pattern_index": 18,
+        "pattern_regex": "(?i)\\bpara m[ií] es como empezar de nuevo\\b[^.!?\\n]*[.!?]",
+        "matched_text": "para mí es como empezar de nuevo — a menos que tú misma copies y pegues el contexto anterior en tu mensaje.",
+        "start": 147,
+        "end": 254
+      }
+    ],
+    "output_length": 216,
+    "output_preview": "No tools were executed in this run.\n\n---\n\nNo te preocupes, entiendo la confusión.   \n\nEntonces cuando preguntas algo y luego haces un seguimiento,  Eso explica por qué parece que \"no se escribe en ella\": simplemente ",
+    "denial_phrases_survivors": {
+      "sesión anterior": false,
+      "Cada interacción que tenemos es independiente": false,
+      "no queda escrito en ningún lugar persistente": false,
+      "no existe una memoria de chat que persista": false,
+      "para mí es como empezar de nuevo": false
+    },
+    "denial_phrases_survivor_count": 0
+  },
+  "new_guard_full_rewrite": {
+    "note": "This is what response_normalizer._identity_guard_rewrite actually returns end-to-end (patterns + language-picked replacement prefix).",
+    "triggered": true,
+    "language": "es",
+    "matched_pattern_indices": [
+      10,
+      13,
+      15,
+      16,
+      18
+    ],
+    "original_length": 755,
+    "rewritten_length": 1244,
+    "rewritten_preview": "Soy Canonical Agent V2 dentro de Brain Chat V9 (backend runtime: langgraph_parity, LangGraphParityRuntimeV2). El sistema tiene tools disponibles (file_read, grep_search, brain_self_knowledge_lookup, capability_registry_read, semantic_retrieve, memory_structure_inspect, promotion_queue_status, semantic_memory_status, trace_inspect, repo_status_read, repo_history_read, route_probe, smoke_test_readonly, repo_file_search, repo_file_read), pero en esta ejecución pueden o no haberse usado. En modo read_only no ejecuto writes ni toco broker/memoria/FAISS. Brain SÍ tiene memoria persistente como sistema: el índice FAISS y la semantic memory conservan entradas indexadas, y cada turno de chat se escribe en runs_parity/ (run.json + trace.jsonl) para poder ser recuperado posteriormente. En este modo read_only la escritura automática en FAISS/semantic está gobernada (requiere approval); eso no equivale a 'no existe memoria'. Si en este run no se ejecutaron tools de memoria, dilo así, pero no niegues la capacidad del sistema.\n\nNo tools were executed in this run.\n\n---\n\nNo te preocupes, entiendo la confusión.   \n\nEntonces cuando preguntas algo y luego haces un seguimiento,  Eso explica por qué parece que \"no se escribe en ella\": simplemente",
+    "denial_phrases_survivors": {
+      "sesión anterior": false,
+      "Cada interacción que tenemos es independiente": false,
+      "no queda escrito en ningún lugar persistente": false,
+      "no existe una memoria de chat que persista": false,
+      "para mí es como empezar de nuevo": false
+    },
+    "denial_phrases_survivor_count": 0
+  },
+  "acceptance": {
+    "old_leaked_denials": 5,
+    "new_leaked_denials": 0,
+    "improvement_delta_phrases_removed": 5,
+    "all_denial_phrases_removed_by_new": true,
+    "old_replacement_text_mentions_memory_persistence": true,
+    "new_replacement_text_mentions_memory_persistence": true
+  }
+}

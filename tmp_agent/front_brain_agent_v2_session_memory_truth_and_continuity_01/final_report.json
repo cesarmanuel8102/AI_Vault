@@ -1,0 +1,237 @@
+{
+  "front_id": "FRONT-BRAIN-AGENT-V2-SESSION-MEMORY-TRUTH-AND-CONTINUITY-01",
+  "mode": "read_only_with_conditional_finalizer_fix",
+  "opened_utc": "2026-07-02T01:22+",
+  "closed_utc": "2026-07-02T02:15+",
+  "head": "700b836a482a582365f786d47989e0943b0a9492",
+  "branch": "codex/own-capital-sustainable-return",
+
+  "trigger": {
+    "offending_run_id": "agv2_0ea89c34bea6a903",
+    "offending_run_updated_utc": "2026-07-02T05:22:46.342533Z",
+    "user_id": "dashboard_operator",
+    "route": "direct_assistant",
+    "operator_verdict": "not_acceptable_as_general_agent_v2_response",
+    "operator_quote_es": "cada interacción es independiente y no queda escrito en ningún lugar persistente"
+  },
+
+  "acceptance_answers": {
+    "Q1_used_tools_this_run": {
+      "answer": "no",
+      "evidence": {
+        "run_id": "agv2_0ea89c34bea6a903",
+        "executed_tools": [],
+        "tools_considered": [],
+        "tools_executed_count": 0,
+        "memory_hits": [],
+        "planner_used": false,
+        "planner_source": "direct_assistant_short_circuit"
+      },
+      "citation": "runs_parity/agv2_0ea89c34bea6a903/run.json:38,64,66,88,120"
+    },
+
+    "Q2_brain_has_persistent_memory_as_system": {
+      "answer": "yes",
+      "evidence": {
+        "faiss_ids": 1794,
+        "faiss_ntotal": 1794,
+        "semantic_memory_lines": 1794,
+        "canonical_semantic_mutated": true,
+        "last_audited_faiss_write_utc": "2026-06-15",
+        "runs_parity_entries": 1150,
+        "runs_parity_last_write_utc": "2026-07-02T05:22:46Z"
+      },
+      "citation": "/brain-dashboard/safety live snapshot; runs_parity/ file listing; T1 evidence answer in agv2_78cfbf756847667a/run.json:90+"
+    },
+
+    "Q3_can_recover_previous_question": {
+      "answer": "yes",
+      "evidence": {
+        "recovered_via_read": "runs_parity/",
+        "prior_turns_reconstructed": [
+          {
+            "turn": "T1",
+            "utc": "2026-07-02T05:21:03Z",
+            "run_id": "agv2_78cfbf756847667a",
+            "user_goal": "dime cuando fue la ultima escritura en tu memoria FAISS",
+            "route": "brain_evidence",
+            "confidence": 0.95
+          },
+          {
+            "turn": "T2",
+            "utc": "2026-07-02T05:22:02Z",
+            "run_id": "agv2_808118600f5a90b4",
+            "user_goal": "y porque no se esta escribiendo en ella?",
+            "route": "direct_assistant",
+            "confidence": 0.5
+          },
+          {
+            "turn": "T3",
+            "utc": "2026-07-02T05:22:46Z",
+            "run_id": "agv2_0ea89c34bea6a903",
+            "user_goal": "y porque no se esta escribiendo en ella? me refiero a la sesion o pregunta anterior.",
+            "route": "direct_assistant",
+            "confidence": 0.5,
+            "offending": true
+          }
+        ],
+        "runtime_own_context_path_works": true,
+        "context_assembler_path_A_stale": true,
+        "context_assembler_path_A_root": "tmp_agent/agent_kernel_v2/runs/  (last mtime 2026-07-01 22:27)",
+        "context_assembler_path_B_canonical": "tmp_agent/agent_kernel_v2/runs_parity/  (last mtime 2026-07-02 05:22:46)"
+      },
+      "citation": "context_assembler.py:12 (RUN_ROOT stale); langgraph_parity_runtime.py:124,290-380 (canonical)"
+    },
+
+    "Q4_why_memory_not_written_automatically": {
+      "answer": "by_governance_policy_not_by_accident",
+      "evidence": {
+        "semantic_faiss_writes_blocked": true,
+        "patch_apply_requires_approval": true,
+        "trading_blocked": true,
+        "memory_gateway_read_only_flag_set_per_run": true,
+        "auto_write_forbidden_by_front_spec": true,
+        "only_sanctioned_write_path": "promotion_candidate_promote (approval_required=true)",
+        "conversation_turn_to_semantic_pipeline_exists": false
+      },
+      "citation": "api_adapter.py:170-185; langgraph_parity_runtime.py:578; front_spec.json:18-24"
+    },
+
+    "Q5_what_is_needed_to_activate_safe_conversational_memory": {
+      "answer": "four_repairs_in_this_order",
+      "evidence": {
+        "not_in_this_front_scope": true,
+        "required_repairs": [
+          {
+            "order": 1,
+            "id": "session_memory_read_repair",
+            "why": "context_assembler.RUN_ROOT points to stale runs/ path; twin-write pollution corrupts prev_goal; follow-up inheritance only fires for 3 routes; _memory_retrieval_node skips for direct_assistant. Without these, read continuity fails even after identity guard fix.",
+            "target_files": [
+              "context_assembler.py:12 (RUN_ROOT)",
+              "langgraph_parity_runtime.py:535-543 (inheritance policy)",
+              "langgraph_parity_runtime.py:575-580 (memory_retrieval_node bypass)",
+              "twin-write mechanism (needs investigation to find source of duplicate run.json write)"
+            ]
+          },
+          {
+            "order": 2,
+            "id": "expanded_chat_validation_including_evaluator_denial_rubric",
+            "why": "Confirm no regression from repair #1 by replaying the 3-turn trigger sequence and follow-up battery. Add evaluator rubric that catches identity/memory denials — current evaluator scored T3 as memory_retrieval_adequate=true (false positive)."
+          },
+          {
+            "order": 3,
+            "id": "approved_memory_write_pipeline",
+            "why": "Only meaningful once #1 and #2 confirm reads are truthful. Governed pipeline (approval-gated) that writes conversation-turn summaries into semantic memory."
+          },
+          {
+            "order": 4,
+            "id": "conversation_transcript_persistence_documentation",
+            "why": "Transcripts ALREADY persist to runs_parity/. Front D would surface run_id linkage back to client, add session_id/conversation_id to AgentChatRequest, add prev-run pointer to response contract. Lowest priority — storage exists."
+          }
+        ]
+      },
+      "citation": "context_assembler.py:12,54-136; langgraph_parity_runtime.py:124,290-380,499-565,575-584; api_adapter.py:62-66,195-234"
+    }
+  },
+
+  "in_scope_fix_applied": {
+    "file": "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py",
+    "type": "additive_only",
+    "conditional_authorization_source": "front_spec.json:25-30 (condition_met=true)",
+    "changes": [
+      {
+        "change_id": "FIX_B.1",
+        "kind": "add_regex_patterns",
+        "location_before": "L197 (end of existing 13-pattern block)",
+        "location_after": "L198-215 (10 new patterns appended)",
+        "pattern_count_delta": 10,
+        "pattern_count_before": 13,
+        "pattern_count_after": 23,
+        "modifies_existing_patterns": false
+      },
+      {
+        "change_id": "FIX_B.2",
+        "kind": "extend_replacement_text",
+        "location": "_IDENTITY_REPLACEMENT_ES (L218-235) and _IDENTITY_REPLACEMENT_EN (L237-254)",
+        "modifies_existing_text": false,
+        "appends_memory_capability_disclosure": true,
+        "es_length_delta": "+503 chars (approx)",
+        "en_length_delta": "+485 chars (approx)"
+      }
+    ],
+    "not_modified": [
+      "_identity_guard_rewrite (control flow)",
+      "normalize_agent_v2_chat_response (mount point)",
+      "existing 13 patterns 1..13",
+      "any file listed in front_spec.hard_prohibitions or fix_touch_forbidden"
+    ]
+  },
+
+  "verification_results": {
+    "verifier": "_fix_verification.py (deterministic, offline, no server hit)",
+    "input": "exact final_answer from agv2_0ea89c34bea6a903/run.json:90",
+    "old_guard_pattern_count": 13,
+    "old_guard_pattern_matches_on_offending_text": 1,
+    "old_guard_denial_phrases_leaked": 5,
+    "new_guard_pattern_count": 23,
+    "new_guard_pattern_matches_on_offending_text": 5,
+    "new_guard_denial_phrases_leaked": 0,
+    "improvement_delta_phrases_removed": 5,
+    "all_denial_phrases_removed_by_new": true,
+    "full_rewrite_output_prepended_with_memory_capability_disclosure": true,
+    "matched_pattern_indices_new": [10, 13, 15, 16, 18]
+  },
+
+  "next_front_ranking": {
+    "chosen_order": ["B", "A", "C", "D"],
+    "ranking_rationale": {
+      "B_first": "session_memory_read_repair — fixes context_assembler.RUN_ROOT stale path, twin-write pollution, narrow route-inheritance, and _memory_retrieval_node bypass. These are the root cause of the context loss. Without B, later fronts inherit the same read bugs.",
+      "A_second": "expanded_chat_validation — after B lands, replay 3-turn trigger sequence + follow-up battery. Add evaluator rubric that penalizes identity/memory denials (current evaluator scored T3 as passing).",
+      "C_third": "approved_memory_write_pipeline — only meaningful once reads are truthful and identity guard is proven. Adds governed, approval-gated write path.",
+      "D_fourth": "conversation_transcript_persistence — transcripts ALREADY exist in runs_parity/. D is contract/documentation work (surface run_id to client, add session_id field, add prev-run pointer). Lowest priority because underlying storage already correct."
+    },
+    "hard_constraints_carried_forward": {
+      "no_auto_write": true,
+      "no_touch_memory_semantic_faiss_without_approval": true,
+      "no_r2_start": true,
+      "no_roadmap_continuation": true,
+      "no_expanded_validation_before_B": true,
+      "parked_issues_remain_parked": [
+        "stale PID file start_local_browser_operational_launcher.pid=73212",
+        "dashboard crash root cause unknown",
+        "scratch file cleanup"
+      ]
+    }
+  },
+
+  "hard_prohibitions_honored": {
+    "no_memory_semantic_faiss_edits": true,
+    "no_auto_write_implementation": true,
+    "no_r2_start": true,
+    "no_roadmap_continuation": true,
+    "no_expanded_validation": true,
+    "no_touch_context_assembler_py": true,
+    "no_touch_memory_retrieval_node": true,
+    "no_touch_trading_or_api_security": true,
+    "no_touch_start_local_browser_operational": true,
+    "no_server_state_disturbance": true
+  },
+
+  "artifacts": {
+    "front_spec": "tmp_agent/front_brain_agent_v2_session_memory_truth_and_continuity_01/front_spec.json",
+    "evidence_pack": "tmp_agent/front_brain_agent_v2_session_memory_truth_and_continuity_01/_evidence_pack.md",
+    "fix_verification_script": "tmp_agent/front_brain_agent_v2_session_memory_truth_and_continuity_01/_fix_verification.py",
+    "fix_verification_report": "tmp_agent/front_brain_agent_v2_session_memory_truth_and_continuity_01/_fix_verification.json",
+    "final_report_json": "tmp_agent/front_brain_agent_v2_session_memory_truth_and_continuity_01/final_report.json",
+    "final_report_md": "tmp_agent/front_brain_agent_v2_session_memory_truth_and_continuity_01/final_report.md",
+    "modified_source_file": "tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py"
+  },
+
+  "closeout_state": {
+    "front_status": "closed",
+    "server_state_untouched": true,
+    "commit_created": false,
+    "commit_authorization_required_before_push": true,
+    "next_action_required_from_operator": "review evidence + verification, decide whether to authorize commit of response_normalizer.py change and whether to open FRONT-B (session_memory_read_repair)"
+  }
+}

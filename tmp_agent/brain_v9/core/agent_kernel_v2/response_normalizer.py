@@ -195,6 +195,24 @@ _CLAUDE_DISCLAIMER_PATTERNS = [
     re.compile(r"(?i)\bno (tengo|puedo|dispongo) (acceso a|la capacidad|herramientas|memoria persistente|internet|ejecutar c\u00f3digo|ejecutar codigo|usar herramientas)[^.!?\n]*[.!?]"),
     re.compile(r"(?i)\bno puedo (ejecutar|acceder|usar|recordar) [^.!?\n]*[.!?]"),
     re.compile(r"(?i)\bno tengo (herramientas|memoria|acceso)[^.!?\n]*[.!?]"),
+    # Repair FIX_B (front-brain-agent-v2-session-memory-truth-and-continuity-01):
+    # Memory/session persistence denials that slipped past the FIX_A pattern set.
+    # Triggered by observed run agv2_0ea89c34bea6a903 (2026-07-02T05:22:46Z) which
+    # denied Brain's persistent-memory capability while runs_parity/ ARE persisting
+    # every turn and semantic_memory + FAISS index (1794 entries) exist read-only.
+    # Additive only; existing patterns above are untouched.
+    # Spanish
+    re.compile(r"(?i)\bcada interacci[oó]n( que tenemos)? es independiente\b[^.!?\n]*[.!?]"),
+    re.compile(r"(?i)\bno queda escrito en ning[uú]n lugar persistente\b[^.!?\n]*[.!?]"),
+    re.compile(r"(?i)\bno hay una?[^.!?\n]*?sesi[oó]n anterior[^.!?\n]*?guard[aá]ndo(se)?\b[^.!?\n]*[.!?]"),
+    re.compile(r"(?i)\bno existe una? memoria de chat que persista\b[^.!?\n]*[.!?]"),
+    re.compile(r"(?i)\bno tengo memoria de conversaciones (pasadas|anteriores)\b[^.!?\n]*[.!?]"),
+    re.compile(r"(?i)\bpara m[ií] es como empezar de nuevo\b[^.!?\n]*[.!?]"),
+    # English
+    re.compile(r"(?i)\beach (interaction|conversation)( we have)? is independent\b[^.!?\n]*[.!?]"),
+    re.compile(r"(?i)\bnothing is (written|saved|stored)[^.!?\n]*persistent[^.!?\n]*[.!?]"),
+    re.compile(r"(?i)\bthere is no (chat|conversation) memory that persists\b[^.!?\n]*[.!?]"),
+    re.compile(r"(?i)\bi don['\u2019]?t (have|retain) (any )?memory (of|between|across) (past|prior|previous) (conversations|sessions|interactions)\b[^.!?\n]*[.!?]"),
 ]
 
 _IDENTITY_REPLACEMENT_ES = (
@@ -206,7 +224,14 @@ _IDENTITY_REPLACEMENT_ES = (
     "trace_inspect, repo_status_read, repo_history_read, route_probe, "
     "smoke_test_readonly, repo_file_search, repo_file_read), pero en esta "
     "ejecuci\u00f3n pueden o no haberse usado. En modo read_only no ejecuto "
-    "writes ni toco broker/memoria/FAISS."
+    "writes ni toco broker/memoria/FAISS. "
+    "Brain S\u00cd tiene memoria persistente como sistema: el \u00edndice FAISS y "
+    "la semantic memory conservan entradas indexadas, y cada turno de chat se "
+    "escribe en runs_parity/ (run.json + trace.jsonl) para poder ser recuperado "
+    "posteriormente. En este modo read_only la escritura autom\u00e1tica en "
+    "FAISS/semantic est\u00e1 gobernada (requiere approval); eso no equivale a "
+    "'no existe memoria'. Si en este run no se ejecutaron tools de memoria, "
+    "dilo as\u00ed, pero no niegues la capacidad del sistema."
 )
 
 _IDENTITY_REPLACEMENT_EN = (
@@ -218,7 +243,14 @@ _IDENTITY_REPLACEMENT_EN = (
     "trace_inspect, repo_status_read, repo_history_read, route_probe, "
     "smoke_test_readonly, repo_file_search, repo_file_read), but in this "
     "execution they may or may not have been used. In read_only mode I do not "
-    "execute writes and do not touch broker/memory/FAISS."
+    "execute writes and do not touch broker/memory/FAISS. "
+    "Brain DOES have persistent memory as a system: the FAISS index and semantic "
+    "memory retain indexed entries, and every chat turn is written to "
+    "runs_parity/ (run.json + trace.jsonl) so it can be retrieved later. In "
+    "this read_only mode automatic writes to FAISS/semantic memory are "
+    "governed (require approval); that is not equivalent to 'no memory exists'. "
+    "If no memory tools were executed in this run, say so, but do not deny the "
+    "capability of the system."
 )
 
 _SPANISH_HINT_RE = re.compile(

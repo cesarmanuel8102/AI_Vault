@@ -1,0 +1,48 @@
+{
+  "front_id": "FRONT-BRAIN-AGENT-V2-SESSION-MEMORY-TRUTH-AND-CONTINUITY-01",
+  "mode": "read_only_with_conditional_finalizer_fix",
+  "opened_utc": "2026-07-02T01:22+",
+  "trigger": {
+    "operator_complaint_quote_es": "cada interacci\u00f3n es independiente y no queda escrito en ning\u00fan lugar persistente",
+    "verdict": "not_acceptable_as_general_agent_v2_response",
+    "operator_reasoning": "Puede ser cierto solo para 'este run no ejecut\u00f3 tools y no escribi\u00f3 memoria', pero no debe negar capacidades del sistema Brain."
+  },
+  "goals": [
+    "Determinar si /v2/chat/agent recibe o conserva historial de conversaci\u00f3n.",
+    "Determinar si UI/backend tiene session_id, conversation_id, run history o trace lookup.",
+    "Determinar si la pregunta anterior se puede recuperar v\u00eda traces/runs_parity.",
+    "Determinar si semantic memory es solo read-only actualmente.",
+    "Determinar por qu\u00e9 no se escribe memoria: read_only, governance, falta de tool, falta de approval, o falta de session-memory pipeline.",
+    "Corregir solo si el problema es finalizer/response_normalizer negando memoria de forma falsa."
+  ],
+  "hard_prohibitions": [
+    "no_implementar_auto_write",
+    "no_tocar_memory_semantic_FAISS",
+    "no_iniciar_R2",
+    "no_continuar_roadmap",
+    "no_hacer_expanded_validation_hasta_cerrar"
+  ],
+  "conditional_fix_authorization": {
+    "condition": "problem_is_finalizer_or_response_normalizer_falsely_denying_memory",
+    "condition_met": true,
+    "fix_scope_ceiling": "response_normalizer.py_and_finalizer.py_only",
+    "fix_touch_forbidden": ["memory/*", "semantic_memory*.py", "faiss*", "context_assembler.py", "_memory_retrieval_node", "trading/*", "api_security.py", "start_local_browser_operational.py"]
+  },
+  "acceptance_criteria_questions": [
+    "Q1: \u00bfSi no us\u00f3 tools en este run?",
+    "Q2: \u00bfSi Brain tiene memoria persistente como sistema?",
+    "Q3: \u00bfSi puede o no recuperar la pregunta anterior?",
+    "Q4: \u00bfPor qu\u00e9 no escribe memoria autom\u00e1ticamente?",
+    "Q5: \u00bfQu\u00e9 hace falta para activar memoria conversacional segura?"
+  ],
+  "final_report_must_propose_next_step": {
+    "options": [
+      "A: expanded_chat_validation",
+      "B: session_memory_read_repair",
+      "C: approved_memory_write_pipeline",
+      "D: conversation_transcript_persistence_front"
+    ],
+    "with_ranking": true,
+    "with_rationale": true
+  }
+}
