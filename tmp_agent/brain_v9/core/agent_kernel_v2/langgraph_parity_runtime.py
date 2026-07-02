@@ -20,7 +20,7 @@ from .tool_gateway import ToolGatewayV2
 from .memory_gateway import MemoryGatewayV2
 from .intent_adapter import AgentV2IntentAdapter
 from .planner import build_plan
-from .context_assembler import _is_follow_up, _has_generic_override
+from .context_assembler import _is_follow_up, _has_generic_override, collect_canonical_runs
 from .intent_classifier import classify_intent, list_supported_intents
 from .governance_policy import decide_governance
 from .finalizer import finalize_agent_run
@@ -288,8 +288,16 @@ class LangGraphParityRuntimeV2:
         return {"route": "direct_assistant", "intent": "UNKNOWN", "confidence": 0.5}
 
     def _assemble_isolated_context(self, message: str, user_id: str, current_run_id: str, max_turns: int = 5, max_chars: int = 3000) -> Dict[str, Any]:
-        """Native-equivalent context assembly that reads only from self.run_root (not production RUN_ROOT)."""
-        if not self.run_root.exists():
+        """Canonical context assembly that reads from BOTH runs/ and runs_parity/
+        stores via collect_canonical_runs, with twin-write deduplication.
+        Read-only. Never writes or mutates run files."""
+        recent = collect_canonical_runs(
+            user_id=user_id,
+            current_run_id=current_run_id,
+            current_message=message,
+            max_turns=max_turns,
+        )
+        if not recent:
             return {
                 "is_follow_up": _is_follow_up(message),
                 "has_generic_override": _has_generic_override(message),
@@ -300,55 +308,9 @@ class LangGraphParityRuntimeV2:
                 "prev_sources": None,
                 "prev_goal": None,
                 "prev_answer": None,
-                "context_assembler_source": "isolated_run_root_equivalent",
+                "context_assembler_source": "canonical_multi_store_with_dedupe",
                 "context_assembler_full_parity": True,
             }
-        runs: List[Dict[str, Any]] = []
-        for run_dir in self.run_root.iterdir():
-            if not run_dir.is_dir():
-                continue
-            run_file = run_dir / "run.json"
-            if not run_file.exists():
-                continue
-            try:
-                data = json.loads(run_file.read_text(encoding="utf-8"))
-                rid = data.get("run_id", "")
-                if rid == current_run_id:
-                    continue
-                uid = data.get("user_id", "local")
-                if user_id and uid and user_id != uid and user_id not in ("local", "anonymous"):
-                    continue
-                plan = data.get("plan") or []
-                tools = [s.get("tool_name") for s in plan if s.get("tool_name")]
-                runs.append({
-                    "run_id": rid,
-                    "user_id": uid,
-                    "goal": str(data.get("message", data.get("goal", "")))[:300],
-                    "route": data.get("intent_route", data.get("route", "n/a")),
-                    "classification": data.get("classification", "n/a"),
-                    "sources": [s.get("type", "") for s in data.get("evidence_sources", [])][:5],
-                    "tools": list(dict.fromkeys(tools))[:10],
-                    "answer_preview": str(data.get("final_answer", ""))[:400],
-                    "modified_ts": run_dir.stat().st_mtime,
-                })
-            except Exception:
-                continue
-        if not runs:
-            return {
-                "is_follow_up": _is_follow_up(message),
-                "has_generic_override": _has_generic_override(message),
-                "turns": [],
-                "summary": "",
-                "prev_route": None,
-                "prev_classification": None,
-                "prev_sources": None,
-                "prev_goal": None,
-                "prev_answer": None,
-                "context_assembler_source": "isolated_run_root_equivalent",
-                "context_assembler_full_parity": True,
-            }
-        runs.sort(key=lambda r: r["modified_ts"], reverse=True)
-        recent = runs[:max_turns]
         lines = []
         for i, r in enumerate(recent, 1):
             srcs = ",".join(r["sources"]) if r["sources"] else "none"
@@ -375,12 +337,11 @@ class LangGraphParityRuntimeV2:
             "prev_sources": first.get("sources"),
             "prev_goal": first.get("goal"),
             "prev_answer": first.get("answer_preview"),
-            "context_assembler_source": "isolated_run_root_equivalent",
+            "context_assembler_source": "canonical_multi_store_with_dedupe",
             "context_assembler_full_parity": True,
         }
 
     def _build_finalizer_input(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """Build an input payload that mirrors Native V2's finalize_agent_run expectations."""
         tool_results = state.get("tool_results", []) or []
         memory_hits = state.get("memory_hits", []) or []
         safe_results = []
@@ -533,12 +494,34 @@ class LangGraphParityRuntimeV2:
         route = classification.get("route", "direct_assistant")
         # Context-aware routing: follow-up questions inherit prior topic
         if recent_ctx and recent_ctx.get("is_follow_up"):
-            prev_route = recent_ctx.get("prev_route")
-            prev_sources = recent_ctx.get("prev_sources")
-            if prev_route in {"brain_evidence", "mixed_brain_reasoning", "operational_agent"}:
-                from .context_assembler import _has_generic_override
-                if not _has_generic_override(message):
-                    route = prev_route
+            from .context_assembler import _has_generic_override
+            if not _has_generic_override(message):
+                # Repair C (front-brain-agent-v2-session-memory-read-repair-01):
+                # Scan last N distinct turns for a meaningful prior turn,
+                # not only the immediate previous route. This prevents a
+                # single direct_assistant twin from blocking inheritance.
+                inherited = False
+                for turn in recent_ctx.get("turns", []):
+                    turn_route = turn.get("route", "n/a")
+                    turn_classification = turn.get("classification", "n/a")
+                    turn_tools = turn.get("tools", []) or []
+                    turn_sources = turn.get("sources", []) or []
+                    is_meaningful = (
+                        turn_route in {"brain_evidence", "mixed_brain_reasoning", "operational_agent"}
+                        or turn_classification not in {"direct_assistant", "n/a", "unknown_or_insufficient_info"}
+                        or len(turn_tools) > 0
+                        or len(turn_sources) > 0
+                    )
+                    if is_meaningful:
+                        route = turn_route if turn_route in {"brain_evidence", "mixed_brain_reasoning", "operational_agent"} else "brain_evidence"
+                        classification["route"] = route
+                        classification["context_inherited"] = True
+                        classification["context_inherited_from_run_id"] = turn.get("run_id")
+                        inherited = True
+                        break
+                if not inherited and recent_ctx.get("prev_route") in {"brain_evidence", "mixed_brain_reasoning", "operational_agent"}:
+                    # Fallback to immediate prev if available (backward compat)
+                    route = recent_ctx["prev_route"]
                     classification["route"] = route
                     classification["context_inherited"] = True
 

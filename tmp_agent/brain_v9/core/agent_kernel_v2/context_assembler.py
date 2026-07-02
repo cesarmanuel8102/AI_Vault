@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 RUN_ROOT = Path(__file__).resolve().parents[4] / "tmp_agent" / "agent_kernel_v2" / "runs"
+RUN_ROOT_PARITY = Path(__file__).resolve().parents[4] / "tmp_agent" / "agent_kernel_v2" / "runs_parity"
 
 # Signals that suggest a follow-up question referring to previous topic
 _FOLLOW_UP_SIGNALS = frozenset({
@@ -33,6 +34,13 @@ _FOLLOW_UP_SIGNALS = frozenset({
     "details on", "regarding", "focus on", "keep going",
     "try another", "another way", "another form", "wider", "broader",
     "review more", "wider review",
+    # Repair C (front-brain-agent-v2-session-memory-read-repair-01):
+    # Missing follow-up signals that caused T3 ("me refiero a la sesión o
+    # pregunta anterior") to not be detected as a follow-up, blocking context
+    # inheritance. Additive only.
+    "ella", "pregunta anterior", "sesion anterior", "sesi\u00f3n anterior",
+    "turno anterior", "me refiero a", "lo que dijiste",
+    "lo que pregunt\u00e9", "lo que pregunte", "previous turn",
 })
 
 _GENERIC_OVERRIDES = frozenset({
@@ -51,22 +59,30 @@ def _has_generic_override(message: str) -> bool:
     return any(g in msg_lower for g in _GENERIC_OVERRIDES)
 
 
-def assemble_recent_context(
-    user_id: str,
-    current_goal: str,
-    current_run_id: Optional[str] = None,
-    max_turns: int = 5,
-    max_chars: int = 4000,
-) -> Dict[str, Any]:
-    """
-    Scan RUN_ROOT for recent runs by user_id, build compact summary.
-    Safe for missing/malformed files.
-    """
-    if not RUN_ROOT.exists():
-        return {"turns": [], "is_follow_up": _is_follow_up(current_goal), "summary": "", "prev_route": None}
+def _normalize_message(msg: str) -> str:
+    return " ".join((msg or "").lower().split())
 
+
+def _run_completeness(r: Dict[str, Any]) -> int:
+    score = 0
+    score += min(len(str(r.get("answer_preview", ""))), 400)
+    score += len(r.get("sources", []) or []) * 10
+    score += len(r.get("tools", []) or []) * 5
+    if r.get("route", "n/a") != "n/a":
+        score += 1
+    return score
+
+
+def _scan_single_store(
+    store_root: Path,
+    user_id: str,
+    current_run_id: Optional[str],
+) -> List[Dict[str, Any]]:
+    """Read all valid runs from a single store root. Read-only."""
+    if not store_root.exists():
+        return []
     runs: List[Dict[str, Any]] = []
-    for run_dir in RUN_ROOT.iterdir():
+    for run_dir in store_root.iterdir():
         if not run_dir.is_dir():
             continue
         run_file = run_dir / "run.json"
@@ -78,7 +94,6 @@ def assemble_recent_context(
             if rid == current_run_id:
                 continue
             uid = data.get("user_id", "local")
-            # Prefer exact user_id match; allow shared test/local accounts
             if user_id and uid and user_id != uid and user_id not in ("local", "anonymous"):
                 continue
             plan_tools = []
@@ -87,7 +102,7 @@ def assemble_recent_context(
             runs.append({
                 "run_id": rid,
                 "user_id": uid,
-                "goal": (data.get("goal_preview") or data.get("goal", ""))[:300],
+                "goal": str(data.get("message", data.get("goal_preview") or data.get("goal", "")))[:300],
                 "route": data.get("intent_route", data.get("route", "n/a")),
                 "classification": data.get("classification", "n/a"),
                 "sources": [s.get("type", "") for s in data.get("evidence_sources", [])][:5],
@@ -97,12 +112,88 @@ def assemble_recent_context(
             })
         except Exception:
             continue
+    return runs
 
-    if not runs:
+
+def _deduplicate_runs(
+    runs: List[Dict[str, Any]],
+    current_run_id: str,
+    current_normalized: str,
+    twin_window: float = 120.0,
+) -> List[Dict[str, Any]]:
+    """Remove twin/sibling duplicates at read time. Never mutates source files.
+
+    - Excludes current run by run_id.
+    - Excludes self-references (same normalized message as current).
+    - Groups twins (same normalized message, within twin_window seconds).
+    - Keeps most complete run per twin cluster.
+    """
+    runs_sorted = sorted(runs, key=lambda r: r["modified_ts"], reverse=True)
+    kept: List[Dict[str, Any]] = []
+    for r in runs_sorted:
+        if r.get("run_id") == current_run_id:
+            continue
+        norm = _normalize_message(r.get("goal", ""))
+        if norm and norm == current_normalized:
+            continue
+        twin_idx: Optional[int] = None
+        for i, k in enumerate(kept):
+            knorm = _normalize_message(k.get("goal", ""))
+            if knorm and knorm == norm and abs(k["modified_ts"] - r["modified_ts"]) < twin_window:
+                twin_idx = i
+                break
+        if twin_idx is not None:
+            if _run_completeness(r) > _run_completeness(kept[twin_idx]):
+                kept[twin_idx] = r
+            continue
+        kept.append(r)
+    return kept
+
+
+def collect_canonical_runs(
+    user_id: str,
+    current_run_id: Optional[str] = None,
+    current_message: str = "",
+    max_turns: int = 10,
+    extra_stores: Optional[List[Path]] = None,
+) -> List[Dict[str, Any]]:
+    """Scan both runs/ and runs_parity/ stores, merge, deduplicate.
+
+    Read-only. Never writes, deletes, or mutates run files.
+    Returns distinct runs sorted by mtime descending, up to max_turns.
+    """
+    stores = [RUN_ROOT_PARITY, RUN_ROOT]
+    if extra_stores:
+        stores.extend(extra_stores)
+    all_runs: List[Dict[str, Any]] = []
+    for store in stores:
+        all_runs.extend(_scan_single_store(store, user_id, current_run_id))
+    current_normalized = _normalize_message(current_message)
+    distinct = _deduplicate_runs(all_runs, current_run_id or "", current_normalized)
+    return distinct[:max_turns]
+
+
+def assemble_recent_context(
+    user_id: str,
+    current_goal: str,
+    current_run_id: Optional[str] = None,
+    max_turns: int = 5,
+    max_chars: int = 4000,
+) -> Dict[str, Any]:
+    """
+    Scan canonical run stores (runs/ + runs_parity/) for recent runs by
+    user_id, deduplicate twins, build compact summary.
+    Safe for missing/malformed files. Read-only.
+    """
+    recent = collect_canonical_runs(
+        user_id=user_id,
+        current_run_id=current_run_id,
+        current_message=current_goal,
+        max_turns=max_turns,
+    )
+
+    if not recent:
         return {"turns": [], "is_follow_up": _is_follow_up(current_goal), "summary": "", "prev_route": None}
-
-    runs.sort(key=lambda r: r["modified_ts"], reverse=True)
-    recent = runs[:max_turns]
 
     # Build compact summary
     lines: List[str] = []

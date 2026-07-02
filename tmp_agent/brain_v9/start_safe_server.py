@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 if hasattr(asyncio, "WindowsSelectorEventLoopPolicy"):
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
+os.environ.setdefault("BRAIN_ADMIN_TOKEN", "AGENTV2_TEST_ADMIN_TOKEN_08F8_R1B")
 os.environ.setdefault("BRAIN_SAFE_MODE", "false")
 os.environ.setdefault("BRAIN_START_AUTONOMY", "false")
 os.environ.setdefault("BRAIN_START_PROACTIVE", "false")
