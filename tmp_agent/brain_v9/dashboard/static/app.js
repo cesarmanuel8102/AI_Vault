@@ -1,32 +1,46 @@
-// Brain Operator Console — SPA controller (v3)
-// Front: FRONT-BRAIN-UI-DASHBOARD-CHAT-MODERNIZATION-01
+// Brain Operator Console — SPA controller (v5)
+// Front: FRONT-BRAIN-UI-CHAT-LIVE-EXECUTION-TIMELINE-03
 // Frontend-only. No tokens. No dangerous controls. Existing read-only endpoints only.
 
 'use strict';
 
 const REFRESH_MS = 10000;
+const CHAT_TIMEOUT_MS = 60000;
 const VIEWS = ['overview', 'agent', 'chat', 'tools', 'memory', 'traces', 'safety', 'ops', 'roadmap'];
 
-// ── Cached state ──
 const S = {
-  status: null,      // /brain-dashboard/status
-  activity: null,    // /brain-dashboard/activity
-  scheduler: null,   // /brain-dashboard/scheduler
-  safety: null,      // /brain-dashboard/safety
-  queue: null,       // /brain-dashboard/promotion-queue
-  agentV2: null,     // /brain-dashboard/agent-v2/status
+  status: null,
+  activity: null,
+  scheduler: null,
+  safety: null,
+  queue: null,
+  agentV2: null,
   lastRefresh: null,
   online: true,
   currentView: 'overview',
-  chat: { mode: 'read_only', messages: [], busy: false, lastMeta: null },
+  chat: {
+    mode: 'read_only',
+    messages: [],
+    busy: false,
+    lastMeta: null,
+    timeline: [],
+    liveStatus: 'idle',
+    currentRunId: null,
+    requestStartedAt: null,
+    elapsedTimer: null,
+    elapsedText: '00:00',
+    lastTrace: null,
+    lastTraceStatus: 'not_loaded'
+  }
 };
 
-// ── Helpers ──
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, html) => { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; };
 function esc(s) { if (s == null) return ''; const d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
+function nowIso() { return new Date().toISOString(); }
+function fmtClock(ts) { if (!ts) return '—'; try { return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }); } catch { return '—'; } }
 function ago(ts) { if (!ts) return '—'; const m = (Date.now() - new Date(ts).getTime()) / 60000; if (m < 1) return 'just now'; if (m < 60) return Math.round(m) + 'm ago'; return Math.round(m / 60) + 'h ago'; }
-function stateBool(b) { return b ? 'green' : 'red'; }
+function safeArray(x) { return Array.isArray(x) ? x : []; }
 
 async function getJSON(url, timeoutMs) {
   const ctrl = new AbortController();
@@ -38,7 +52,6 @@ async function getJSON(url, timeoutMs) {
   } finally { clearTimeout(t); }
 }
 
-// ── Polling refresh ──
 async function refresh() {
   try {
     const [status, activity, scheduler, safety, queue, agentV2] = await Promise.all([
@@ -47,14 +60,14 @@ async function refresh() {
       getJSON('/brain-dashboard/scheduler'),
       getJSON('/brain-dashboard/safety'),
       getJSON('/brain-dashboard/promotion-queue'),
-      getJSON('/brain-dashboard/agent-v2/status'),
+      getJSON('/brain-dashboard/agent-v2/status')
     ]);
     S.status = status; S.activity = activity; S.scheduler = scheduler;
     S.safety = safety; S.queue = queue; S.agentV2 = agentV2;
     S.lastRefresh = new Date(); S.online = true;
     renderTopbar();
     if (S.currentView !== 'chat') renderCurrentView();
-    else renderChatSidebarStatus();
+    else renderChatSidePanels();
   } catch (e) {
     S.online = false;
     renderTopbar();
@@ -62,7 +75,6 @@ async function refresh() {
   }
 }
 
-// ── Topbar ──
 function renderTopbar() {
   const st = S.status || {};
   const brain = st.brain || {};
@@ -70,18 +82,16 @@ function renderTopbar() {
   const ag = st.agent_v2 || {};
   const wd = st.watchdog || {};
   const sf = S.safety || {};
-  const mem = st.memory || {};
-
   const setChip = (id, text, state) => { const c = $(id); if (!c) return; c.textContent = text; c.dataset.state = state; };
 
   setChip('ts-brain', brain.ok ? 'Brain API ●' : 'Brain API ✕', brain.ok ? 'green' : 'red');
   setChip('ts-dash', dash.ok ? 'Dashboard ●' : 'Dashboard ✕', dash.ok ? 'green' : 'red');
   setChip('ts-backend', ag.ok ? ('Backend: ' + (ag.backend || '—')) : 'Backend: —', ag.ok ? 'green' : 'unknown');
+
   const prov = ag.latest_provider_used || (st.kimi && st.kimi.ok ? 'kimi' : '—');
   const degraded = ag.latest_provider_degraded;
   setChip('ts-provider', degraded ? 'Provider DEGRADED' : ('Provider: ' + prov), degraded ? 'yellow' : (prov !== '—' ? 'green' : 'unknown'));
 
-  // Locks default LOCKED unless endpoint proves otherwise
   const memMutated = sf.canonical_semantic_mutated === true || sf.faiss_mutated === true;
   setChip('ts-memory', memMutated ? 'MEM MUTATED ⚠' : 'MEM LOCKED', memMutated ? 'yellow' : 'locked');
   setChip('ts-trading', 'TRADING LOCKED', 'locked');
@@ -98,7 +108,6 @@ function renderTopbar() {
   if (rf) rf.textContent = S.online ? ('↻ ' + ago(S.lastRefresh && S.lastRefresh.toISOString())) : '✕ offline';
 }
 
-// ── Router ──
 function router() {
   const h = location.hash.replace('#/', '') || 'overview';
   const view = VIEWS.includes(h) ? h : 'overview';
@@ -115,17 +124,20 @@ function renderCurrentView() {
   }
   const fn = { overview: viewOverview, agent: viewAgent, chat: viewChat, tools: viewTools,
                memory: viewMemory, traces: viewTraces, safety: viewSafety, ops: viewOps, roadmap: viewRoadmap }[S.currentView];
-  if (fn) c.innerHTML = fn(); else c.innerHTML = viewOverview();
+  c.innerHTML = fn ? fn() : viewOverview();
   if (S.currentView === 'chat') initChat();
 }
 
-// ── View: Overview ──
+function card(title, body, accent) {
+  const ac = accent ? `<span class="tag ${accent}" style="float:right">●</span>` : '';
+  return `<div class="card"><h3>${esc(title)}${ac}</h3>${body}</div>`;
+}
+
 function viewOverview() {
   const st = S.status || {}; const ag = st.agent_v2 || {}; const sf = S.safety || {};
   const mem = st.memory || {}; const wd = st.watchdog || {}; const aut = st.autonomy || {};
   const q = S.queue || {}; const sch = S.scheduler || {};
   const brain = st.brain || {}; const dash = st.dashboard || {}; const kimi = st.kimi || {};
-
   const capCount = ag.ok ? (ag.runtime_type ? '✓' : '—') : '—';
   const runs = ag.runs != null ? ag.runs : '—';
   const memMutated = sf.canonical_semantic_mutated === true || sf.faiss_mutated === true;
@@ -144,7 +156,7 @@ function viewOverview() {
   let alertsHtml = '';
   (st.alerts || []).forEach(a => {
     const cls = a.severity === 'BLOCKED' ? 'red' : (a.severity === 'LOW' ? 'yellow' : 'green');
-    alertsHtml += `<div class="tag ${cls}">${esc(a.severity)}</div> ${esc(a.message || a.code)}<br>`;
+    alertsHtml += `<span class="tag ${cls}">${esc(a.severity)}</span> ${esc(a.message || a.code)}<br>`;
   });
   if (!alertsHtml) alertsHtml = '<span class="tag gray">NOMINAL</span> No active alerts.';
 
@@ -165,12 +177,6 @@ function viewOverview() {
     </div>`;
 }
 
-function card(title, body, accent) {
-  const ac = accent ? `<span class="tag ${accent}" style="float:right">●</span>` : '';
-  return `<div class="card"><h3>${esc(title)}${ac}</h3>${body}</div>`;
-}
-
-// ── View: Agent ──
 function viewAgent() {
   const ag = (S.agentV2 && S.agentV2.agent_v2) || (S.status && S.status.agent_v2) || {};
   if (!ag.ok) return panelErr('Agent V2 status unavailable.', ag.error);
@@ -209,19 +215,22 @@ function viewAgent() {
     </div>`;
 }
 
-// ── View: Chat ──
+const MODE_LABELS = { read_only: 'READ', build: 'BUILD', auto: 'AUTO' };
+const MODE_BADGE = { read_only: 'READ_ONLY', build: 'BUILD', auto: 'AUTO' };
+const MODE_HINTS = {
+  read_only: 'Safe read-only diagnosis',
+  build: 'Draft/build mode — approval-gated',
+  auto: 'Auto routing — governance still enforced'
+};
+
 function viewChat() {
   return `
     <div class="chat-workspace">
       <aside class="chat-side">
         <button class="new-chat" id="chat-new">✎ New chat</button>
-        <div class="conv-list">
-          <div class="conv-item placeholder">
-            <div style="font-weight:600;color:var(--text-dim);font-style:normal;margin-bottom:2px">Session</div>
-            <div style="font-size:11px">In-memory only · not persisted</div>
-          </div>
-        </div>
-        <div class="side-status" id="chat-side-status"></div>
+        <div id="chat-session-card">${renderSessionCard()}</div>
+        <div id="chat-live-exec">${renderLiveExecutionPanel()}</div>
+        <div id="chat-agent-signals">${renderAgentSignals()}</div>
       </aside>
       <section class="chat-main">
         <div class="chat-msgs" id="chat-msgs"></div>
@@ -279,27 +288,39 @@ function viewChat() {
 
 function initChat() {
   renderChatMsgs();
-  renderChatSidebarStatus();
+  renderChatSidePanels();
   syncModeUI();
   const ta = $('chat-input');
-  ta.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+  if (ta) {
+    ta.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); }
+    });
+    ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 200) + 'px'; });
+  }
+  const send = $('chat-send');
+  if (send) send.addEventListener('click', sendChat);
+  const nw = $('chat-new');
+  if (nw) nw.addEventListener('click', () => {
+    S.chat.messages = [];
+    S.chat.lastMeta = null;
+    S.chat.currentRunId = null;
+    S.chat.lastTrace = null;
+    resetTimeline();
+    renderChatMsgs();
+    renderChatSidePanels();
+    if ($('chat-input')) $('chat-input').focus();
   });
-  ta.addEventListener('input', () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 200) + 'px'; });
-  $('chat-send').addEventListener('click', sendChat);
-  $('chat-new').addEventListener('click', () => { S.chat.messages = []; renderChatMsgs(); $('chat-input').focus(); });
   document.querySelectorAll('#chat-mode-segment .mode-btn').forEach(btn => {
     btn.addEventListener('click', () => setMode(btn.dataset.mode));
   });
+  if (!S.chat.timeline.length) resetTimeline();
 }
-
-const MODE_LABELS = { read_only: 'READ', build: 'BUILD', auto: 'AUTO' };
-const MODE_BADGE = { read_only: 'READ_ONLY', build: 'BUILD', auto: 'AUTO' };
 
 function setMode(mode) {
   if (!['read_only', 'build', 'auto'].includes(mode)) return;
   S.chat.mode = mode;
   syncModeUI();
+  renderChatSidePanels();
 }
 
 function syncModeUI() {
@@ -317,12 +338,184 @@ function syncModeUI() {
   if (statusLine && !S.chat.busy) statusLine.textContent = 'Mode: ' + (MODE_LABELS[m] || m);
 }
 
+function resetTimeline() {
+  S.chat.timeline = [];
+  S.chat.liveStatus = 'idle';
+  S.chat.requestStartedAt = null;
+  S.chat.elapsedText = '00:00';
+  S.chat.lastTraceStatus = 'not_loaded';
+  addTimelineEvent('idle', 'Waiting for request', 'pending', 'Select READ, BUILD, or AUTO and send a prompt.');
+}
+
+function addTimelineEvent(id, label, status, detail) {
+  const existing = S.chat.timeline.find(x => x.id === id);
+  const item = { id, label, status: status || 'pending', detail: detail || '', time: nowIso() };
+  if (existing) Object.assign(existing, item);
+  else S.chat.timeline.push(item);
+  renderChatSidePanels();
+}
+
+function updateTimelineEvent(id, status, detail) {
+  const item = S.chat.timeline.find(x => x.id === id);
+  if (!item) return addTimelineEvent(id, id, status, detail);
+  item.status = status || item.status;
+  if (detail != null) item.detail = detail;
+  item.time = nowIso();
+  renderChatSidePanels();
+}
+
+function startElapsedTimer() {
+  stopElapsedTimer();
+  S.chat.requestStartedAt = Date.now();
+  S.chat.elapsedTimer = setInterval(() => {
+    const sec = Math.floor((Date.now() - S.chat.requestStartedAt) / 1000);
+    S.chat.elapsedText = String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0');
+    renderChatSidePanels();
+  }, 1000);
+}
+
+function stopElapsedTimer() {
+  if (S.chat.elapsedTimer) clearInterval(S.chat.elapsedTimer);
+  S.chat.elapsedTimer = null;
+}
+
+function renderSessionCard() {
+  const meta = S.chat.lastMeta || {};
+  const mode = MODE_LABELS[S.chat.mode] || S.chat.mode.toUpperCase();
+  const shortRun = (S.chat.currentRunId || meta.run_id || '—');
+  const runShort = shortRun && shortRun !== '—' ? String(shortRun).slice(0, 12) + '…' : '—';
+  return `
+    <div class="live-card session-card">
+      <div class="live-card-title">Current Session</div>
+      <div class="signal-row"><span>Persistence</span><strong>In-memory only</strong></div>
+      <div class="signal-row"><span>Selected mode</span><strong>${esc(mode)}</strong></div>
+      <div class="signal-row"><span>Safety</span><strong>Mem/trading locked</strong></div>
+      <div class="signal-row"><span>Last run</span><code>${esc(runShort)}</code></div>
+    </div>`;
+}
+
+function renderLiveExecutionPanel() {
+  const status = S.chat.liveStatus || 'idle';
+  const items = S.chat.timeline.length ? S.chat.timeline : [{ id:'idle', label:'Waiting for request', status:'pending', detail:'No active request.', time:null }];
+  return `
+    <div class="live-card live-exec">
+      <div class="live-header">
+        <div>
+          <div class="live-card-title">Live Execution</div>
+          <div class="live-sub">UI-visible lifecycle · trace-enriched after response</div>
+        </div>
+        <div class="live-header-right">
+          <span class="live-status-pill ${esc(status)}">${esc(status.toUpperCase())}</span>
+          <span class="live-timer">${esc(S.chat.elapsedText || '00:00')}</span>
+        </div>
+      </div>
+      <div class="timeline-list">
+        ${items.map(renderTimelineItem).join('')}
+      </div>
+    </div>`;
+}
+
+function renderTimelineItem(item) {
+  const cls = item.status || 'pending';
+  return `
+    <div class="timeline-item ${esc(cls)}">
+      <div class="timeline-dot"></div>
+      <div class="timeline-body">
+        <div class="timeline-label">${esc(item.label)}</div>
+        <div class="timeline-detail">${esc(item.detail || '—')}</div>
+        <div class="timeline-time">${esc(item.time ? fmtClock(item.time) : '—')}</div>
+      </div>
+    </div>`;
+}
+
+function renderAgentSignals() {
+  const meta = S.chat.lastMeta || {};
+  const degraded = meta.provider_degraded === true;
+  const traceStatus = S.chat.lastTraceStatus || 'not_loaded';
+  const tools = traceToolsCount(S.chat.lastTrace);
+  const evidence = traceEvidenceCount(S.chat.lastTrace);
+  return `
+    <div class="live-card agent-signals">
+      <div class="live-card-title">Agent Signals</div>
+      <div class="signal-row"><span>Provider</span><strong>${esc((meta.provider_used || 'NOT EXPOSED'))}</strong></div>
+      <div class="signal-row"><span>Model</span><strong>${esc((meta.model_used || 'NOT EXPOSED'))}</strong></div>
+      <div class="signal-row"><span>Class</span><strong>${esc(meta.classification || 'NOT EXPOSED')}</strong></div>
+      <div class="signal-row"><span>Trace</span><strong>${esc(traceStatus.toUpperCase())}</strong></div>
+      <div class="signal-row"><span>Tools</span><strong>${tools == null ? 'NOT EXPOSED' : tools}</strong></div>
+      <div class="signal-row"><span>Evidence</span><strong>${evidence == null ? 'NOT EXPOSED' : evidence}</strong></div>
+      <div class="signal-row"><span>Fallback</span><strong>${degraded ? 'DEGRADED' : (fallbackReasonActive(meta) ? meta.fallback_reason : 'none')}</strong></div>
+      <div class="signal-row"><span>Blocked</span><strong>${safeArray(meta.blocked_tools).length ? safeArray(meta.blocked_tools).join(', ') : 'none'}</strong></div>
+    </div>`;
+}
+
+function renderChatSidePanels() {
+  const session = $('chat-session-card'); if (session) session.innerHTML = renderSessionCard();
+  const live = $('chat-live-exec'); if (live) live.innerHTML = renderLiveExecutionPanel();
+  const sig = $('chat-agent-signals'); if (sig) sig.innerHTML = renderAgentSignals();
+}
+
+function traceToolsCount(trace) {
+  if (!trace) return null;
+  if (Array.isArray(trace.tools)) return trace.tools.length;
+  if (Array.isArray(trace.executed_tools)) return trace.executed_tools.length;
+  if (Array.isArray(trace.tool_calls)) return trace.tool_calls.length;
+  const s = JSON.stringify(trace);
+  const matches = s.match(/tool[_-]?(call|executed|execution|result)/gi);
+  return matches ? matches.length : null;
+}
+
+function traceEvidenceCount(trace) {
+  if (!trace) return null;
+  if (Array.isArray(trace.evidence)) return trace.evidence.length;
+  if (Array.isArray(trace.evidence_used)) return trace.evidence_used.length;
+  if (Array.isArray(trace.memory_hits)) return trace.memory_hits.length;
+  const s = JSON.stringify(trace);
+  const matches = s.match(/evidence|memory_hit|semantic_retrieve/gi);
+  return matches ? matches.length : null;
+}
+
+function fallbackReasonActive(j) {
+  return !!(j && j.fallback_reason && j.fallback_reason !== 'none' && j.fallback_reason !== '');
+}
+
+async function loadTraceForRun(runId) {
+  if (!runId) return;
+  S.chat.lastTraceStatus = 'loading';
+  addTimelineEvent('trace_loading', 'Trace loading', 'running', 'Fetching trace after response completion.');
+  try {
+    const trace = await getJSON('/brain-dashboard/agent-v2/runs/' + encodeURIComponent(runId) + '/trace', 12000);
+    S.chat.lastTrace = trace;
+    S.chat.lastTraceStatus = 'loaded';
+    updateTimelineEvent('trace_loading', 'done', 'Trace loaded.');
+    enrichTimelineFromTrace(trace);
+  } catch (e) {
+    S.chat.lastTraceStatus = 'unavailable';
+    updateTimelineEvent('trace_loading', 'failed', 'Trace unavailable: ' + e.message);
+  }
+  renderChatSidePanels();
+}
+
+function enrichTimelineFromTrace(trace) {
+  if (!trace) return;
+  const tools = traceToolsCount(trace);
+  const evidence = traceEvidenceCount(trace);
+  if (tools == null) addTimelineEvent('trace_tools', 'Tools / plan', 'skipped', 'NOT EXPOSED by current trace payload.');
+  else addTimelineEvent('trace_tools', 'Tools inspected', 'done', tools + ' trace tool signal(s) detected.');
+  if (evidence == null) addTimelineEvent('trace_evidence', 'Evidence', 'skipped', 'NOT EXPOSED by current trace payload.');
+  else addTimelineEvent('trace_evidence', 'Evidence collected', 'done', evidence + ' evidence signal(s) detected.');
+  const s = JSON.stringify(trace);
+  if (/governance|blocked|approval/i.test(s)) addTimelineEvent('trace_governance', 'Governance checked', 'done', 'Governance / block / approval signals present in trace.');
+  else addTimelineEvent('trace_governance', 'Governance checked', 'skipped', 'NOT EXPOSED by current trace payload.');
+  if (/provider|model|finalizer|fallback/i.test(s)) addTimelineEvent('trace_provider', 'Provider/finalizer metadata', 'done', 'Provider/finalizer signals present in trace.');
+  else addTimelineEvent('trace_provider', 'Provider/finalizer metadata', 'skipped', 'NOT EXPOSED by current trace payload.');
+}
+
 function renderChatMsgs() {
   const box = $('chat-msgs');
   if (!box) return;
   if (!S.chat.messages.length) {
     box.innerHTML = `<div class="empty-state"><div class="ico">✎</div><div style="font-size:15px;font-weight:600">Start a conversation</div>
-      <div>Ask Brain anything. Responses render with markdown. Select a mode below — READ is the safe default. Governance is enforced regardless of mode.</div></div>`;
+      <div>Ask Brain anything. The left panel shows live execution events during the request and trace metadata after the response.</div></div>`;
     return;
   }
   box.innerHTML = '';
@@ -331,9 +524,7 @@ function renderChatMsgs() {
     const bubble = m.role === 'assistant' ? renderMarkdown(m.content) : esc(m.content);
     const warn = m.warnings ? m.warnings.map(w => `<div class="msg-warn ${w.type}">${esc(w.text)}</div>`).join('') : '';
     let modeTag = '';
-    if (m.role === 'user' && m.mode) {
-      modeTag = `<div class="msg-mode-tag"><span class="tag gray" style="font-size:9px">${esc((MODE_LABELS[m.mode] || m.mode.toUpperCase()))}</span></div>`;
-    }
+    if (m.role === 'user' && m.mode) modeTag = `<div class="msg-mode-tag"><span class="tag gray" style="font-size:9px">${esc((MODE_LABELS[m.mode] || m.mode.toUpperCase()))}</span></div>`;
     let escCard = '';
     if (m.role === 'assistant' && m.escalation && m.escalation.required) {
       escCard = `<div class="msg-escalation"><div class="esc-head">⚠ Approval Required</div>` +
@@ -350,65 +541,97 @@ function renderChatMsgs() {
   box.scrollTop = box.scrollHeight;
 }
 
-function renderChatSidebarStatus() {
-  const ss = $('chat-side-status');
-  if (!ss) return;
-  const st = S.status || {}; const ag = st.agent_v2 || {};
-  ss.innerHTML = `
-    <div style="font-weight:700;margin-bottom:6px">System Status</div>
-    <div>Backend: ${esc(ag.backend || '—')}</div>
-    <div>Provider: ${ag.latest_provider_degraded ? '<span style="color:var(--yellow)">DEGRADED</span>' : 'OK'}</div>
-    <div>Mode: <span class="tag blue" style="font-size:9px">READ-ONLY</span></div>
-    <div>Refreshed: ${ago(S.lastRefresh && S.lastRefresh.toISOString())}</div>`;
-}
-
 async function sendChat() {
   if (S.chat.busy) return;
   const ta = $('chat-input');
   const text = ta.value.trim();
   if (!text) return;
   const sentMode = S.chat.mode;
+
   S.chat.messages.push({ role: 'user', content: text, mode: sentMode });
   ta.value = ''; ta.style.height = 'auto';
   S.chat.busy = true;
+  S.chat.currentRunId = null;
+  S.chat.lastTrace = null;
+  S.chat.lastTraceStatus = 'trace_pending';
+  S.chat.liveStatus = 'running';
   $('chat-send').disabled = true; $('chat-status').textContent = 'Thinking…';
+
+  S.chat.timeline = [];
+  addTimelineEvent('request_prepared', 'Request prepared', 'done', 'Prompt captured in the browser.');
+  addTimelineEvent('mode_selected', 'Mode selected', 'done', `${MODE_LABELS[sentMode]} → ${sentMode}. Governance still enforced.`);
+  addTimelineEvent('request_sent', 'Request sent', 'done', 'POST /brain-dashboard/chat');
+  addTimelineEvent('waiting_provider', 'Waiting for Brain/provider', 'running', 'No tool details are available until response/trace is exposed.');
+  startElapsedTimer();
+
   S.chat.messages.push({ role: 'assistant', content: '…', loading: true });
   renderChatMsgs();
+  renderChatSidePanels();
+
+  const ctrl = new AbortController();
+  const to = setTimeout(() => ctrl.abort(), CHAT_TIMEOUT_MS);
   try {
     const r = await fetch('/brain-dashboard/chat', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: ctrl.signal,
       body: JSON.stringify({ message: text, mode: sentMode, user_id: 'dashboard_operator' })
     });
+    clearTimeout(to);
     const j = await r.json();
     S.chat.messages.pop();
+
+    updateTimelineEvent('waiting_provider', 'done', 'Brain returned a response.');
+    addTimelineEvent('response_received', 'Response received', j.ok ? 'done' : 'failed', `Status: ${j.status || (j.ok ? 'completed' : 'failed')}`);
+    if (j.run_id) {
+      S.chat.currentRunId = j.run_id;
+      addTimelineEvent('run_id', 'Run ID received', 'done', String(j.run_id));
+    }
+    if (j.classification) addTimelineEvent('classification', 'Classification', 'done', j.classification);
+    if (j.provider_used || j.model_used) addTimelineEvent('provider_model', 'Provider/model', 'done', `${j.provider_used || 'NOT EXPOSED'} / ${j.model_used || 'NOT EXPOSED'}`);
+    addTimelineEvent('mode_effective', 'Mode effective', 'done', `${j.mode_requested || sentMode} → ${j.mode_effective || 'NOT EXPOSED'}`);
+    if (j.provider_degraded) addTimelineEvent('provider_degraded', 'Provider degraded', 'failed', j.fallback_reason || 'Provider degradation reported.');
+    if (fallbackReasonActive(j)) addTimelineEvent('fallback', 'Fallback used', 'done', j.fallback_reason);
+
     const warnings = [];
     if (!j.ok) {
+      S.chat.liveStatus = 'failed';
       S.chat.messages.push({ role: 'assistant', content: '⚠ **Error:** ' + (j.content || j.error || 'Brain API unreachable. Ensure Agent V2 is running on 8091.') });
     } else {
       if (j.provider_degraded) warnings.push({ type: 'degraded', text: '⚠ Provider degraded. Fallback: ' + (j.fallback_reason || 'unknown') });
       if (j.raw_cot_exposed) warnings.push({ type: 'cot', text: '🚨 RAW CHAIN-OF-THOUGHT EXPOSED' });
-      // FIX-6: only show fallback warning when reason is truthy and not the literal 'none'/''
-      if (j.fallback_reason && !j.provider_degraded && j.fallback_reason !== 'none' && j.fallback_reason !== '') {
-        warnings.push({ type: 'fallback', text: 'Fallback used: ' + j.fallback_reason });
-      }
+      if (fallbackReasonActive(j) && !j.provider_degraded) warnings.push({ type: 'fallback', text: 'Fallback used: ' + j.fallback_reason });
       const escalation = (j.mode_escalation_required === true) ? {
         required: true,
         reason: j.mode_escalation_reason || '',
         permission: j.required_permission || '',
         scope: (j.expected_write_scope && j.expected_write_scope.length) ? j.expected_write_scope.join(', ') : '',
-        confirmation_id: j.confirmation_id || '',
+        confirmation_id: j.confirmation_id || ''
       } : null;
+      S.chat.liveStatus = 'completed';
       S.chat.messages.push({ role: 'assistant', content: j.content || '(no response)', warnings, escalation });
     }
+
     updateInspector(j);
     S.chat.lastMeta = j;
+    if (j.run_id) await loadTraceForRun(j.run_id);
+    addTimelineEvent('complete', 'Complete', S.chat.liveStatus === 'failed' ? 'failed' : 'done', 'UI request lifecycle finished.');
   } catch (e) {
+    clearTimeout(to);
     S.chat.messages.pop();
-    S.chat.messages.push({ role: 'assistant', content: '⚠ **Connection error:** ' + e.message + '\n\nEnsure the Brain API is running on 8091.' });
+    const isTimeout = e && e.name === 'AbortError';
+    S.chat.liveStatus = isTimeout ? 'timeout' : 'failed';
+    updateTimelineEvent('waiting_provider', 'failed', isTimeout ? 'Request timed out after 60s. Provider/backend may still be processing.' : e.message);
+    addTimelineEvent(isTimeout ? 'timeout' : 'request_failed', isTimeout ? 'Timeout' : 'Request failed', 'failed', isTimeout ? 'UI request timeout; no write action was attempted.' : e.message);
+    S.chat.messages.push({ role: 'assistant', content: '⚠ **Connection error:** ' + (isTimeout ? 'Request timed out after 60s.' : e.message) + '\n\nThe live timeline keeps this as a failed/timeout request. No write action was attempted.' });
   } finally {
+    stopElapsedTimer();
     S.chat.busy = false;
-    $('chat-send').disabled = false; $('chat-status').textContent = 'Ready';
+    if ($('chat-send')) $('chat-send').disabled = false;
+    if ($('chat-status')) $('chat-status').textContent = 'Ready';
     renderChatMsgs();
+    renderChatSidePanels();
+    syncModeUI();
   }
 }
 
@@ -420,7 +643,7 @@ function updateInspector(j) {
   set('insp-mode-req', j.mode_requested || S.chat.mode);
   set('insp-mode-eff', j.mode_effective || j.mode_requested || S.chat.mode);
   set('insp-auto-dec', (j.auto_decision && j.auto_decision !== 'n/a') ? j.auto_decision : '—');
-  set('insp-blocked', (j.blocked_tools && j.blocked_tools.length) ? j.blocked_tools.join(', ') : 'none');
+  set('insp-blocked', safeArray(j.blocked_tools).length ? safeArray(j.blocked_tools).join(', ') : 'none');
   const tr = $('insp-trace');
   if (tr) {
     if (j.trace_url) {
@@ -428,7 +651,6 @@ function updateInspector(j) {
       tr.innerHTML = `<a href="${esc(proxy)}" target="_blank" style="color:var(--accent)">Open trace →</a>`;
     } else { tr.textContent = '—'; }
   }
-  // Escalation card
   const escCard = $('insp-escalation-card');
   if (escCard) {
     const req = j.mode_escalation_required === true;
@@ -437,47 +659,36 @@ function updateInspector(j) {
       set('insp-esc-req', 'YES — approval required');
       set('insp-esc-reason', j.mode_escalation_reason || '—');
       set('insp-perm', j.required_permission || '—');
-      set('insp-scope', (j.expected_write_scope && j.expected_write_scope.length) ? j.expected_write_scope.join(', ') : '—');
+      set('insp-scope', safeArray(j.expected_write_scope).length ? safeArray(j.expected_write_scope).join(', ') : '—');
       set('insp-conf', j.confirmation_id || '—');
     }
   }
 }
 
-// ── Minimal safe Markdown renderer (escapes HTML first, then applies inline formatting) ──
 function renderMarkdown(md) {
   if (!md) return '';
   let s = String(md);
-  // Extract fenced code blocks first to protect them
   const blocks = [];
   s = s.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
     const i = blocks.length;
     blocks.push({ lang, code });
     return `\u0000CODE${i}\u0000`;
   });
-  // Escape HTML
   s = esc(s);
-  // Inline code
   s = s.replace(/`([^`]+)`/g, '<code class="inline">$1</code>');
-  // Bold / italic
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   s = s.replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>');
-  // Headers
   s = s.replace(/^### (.+)$/gm, '<h3>$1</h3>');
   s = s.replace(/^## (.+)$/gm, '<h2>$1</h2>');
   s = s.replace(/^# (.+)$/gm, '<h1>$1</h1>');
-  // Links
   s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
-  // Blockquote
   s = s.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
-  // Lists
   s = s.replace(/^(\s*)[-*] (.+)$/gm, '<li>$2</li>');
   s = s.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>');
-  // Paragraphs / line breaks
   s = s.split(/\n{2,}/).map(p => {
     if (/^<(h\d|ul|ol|blockquote|pre)/.test(p.trim())) return p;
     return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
   }).join('');
-  // Restore code blocks
   s = s.replace(/\u0000CODE(\d+)\u0000/g, (_, i) => {
     const b = blocks[+i];
     const copy = '<button class="code-copy" onclick="copyCode(this)">copy</button>';
@@ -493,7 +704,6 @@ window.copyCode = function(btn) {
   });
 };
 
-// ── View: Tools ──
 function viewTools() {
   return `
     <div class="page-head"><div><h1>Tools</h1><div class="sub">Agent tool registry — live tool list not exposed by current endpoints</div></div></div>
@@ -505,12 +715,11 @@ function viewTools() {
       <div style="font-size:12.5px;color:var(--text-dim);line-height:1.8">
         • Blocked tools appear in the chat inspector per-response (<code style="font-family:var(--mono);color:var(--accent)">blocked_tools</code> field).<br>
         • Read-only mode blocks all write tools (memory, FAISS, code, git, broker, trading).<br>
-        • Trace events (<code style="font-family:var(--mono);color:var(--accent)">tool_call_*</code>) are visible in the full trace link.
+        • Trace events are visible in the full trace link.
       </div>
     </div>`;
 }
 
-// ── View: Memory ──
 function viewMemory() {
   const st = S.status || {}; const mem = st.memory || {}; const sf = S.safety || {}; const q = S.queue || {};
   const mutSem = sf.canonical_semantic_mutated === true;
@@ -554,7 +763,6 @@ function timeline(act) {
   }).join('') + '</div>';
 }
 
-// ── View: Traces ──
 function viewTraces() {
   const ag = (S.status && S.status.agent_v2) || {};
   return `
@@ -570,7 +778,6 @@ function viewTraces() {
     </div>`;
 }
 
-// ── View: Safety ──
 function viewSafety() {
   const sf = S.safety || {};
   const lockRow = (name, desc, state, tagCls) => `
@@ -596,12 +803,11 @@ function viewSafety() {
       ${lockRow('Autonomy R2', 'Autonomy level 2 escalation', 'NOT ACTIVE', 'blue')}
     </div>
     <div class="panel"><h2>Run Mode</h2>
-      <div style="font-size:13px">Current effective mode: <span class="tag blue">READ-ONLY</span><br>
+      <div style="font-size:13px">Current selected chat mode: <span class="tag blue">${esc(MODE_BADGE[S.chat.mode])}</span><br>
       All write operations require explicit operator approval. No auto-write, no auto-promotion, no auto-trading.</div>
     </div>`;
 }
 
-// ── View: Ops ──
 function viewOps() {
   const st = S.status || {}; const brain = st.brain || {}; const dash = st.dashboard || {};
   return `
@@ -626,31 +832,27 @@ function viewOps() {
     </div>`;
 }
 
-// ── View: Roadmap ──
 function viewRoadmap() {
   return `
     <div class="page-head"><div><h1>Roadmap</h1><div class="sub">Modernization progress & next fronts</div></div></div>
-    <div class="panel"><h2>UI Modernization — Front 01 (this)</h2>
+    <div class="panel"><h2>UI Modernization</h2>
       <div style="font-size:13px;line-height:1.8">
         <span class="tag green">DONE</span> SPA shell with hash-routed views<br>
         <span class="tag green">DONE</span> Top status bar with service + lock indicators<br>
-        <span class="tag green">DONE</span> Left navigation (9 views)<br>
-        <span class="tag green">DONE</span> Overview cards grid<br>
-        <span class="tag green">DONE</span> Chat workspace (sidebar + bubbles + composer + inspector)<br>
-        <span class="tag green">DONE</span> Markdown rendering + code blocks with copy<br>
-        <span class="tag green">DONE</span> Safety locks panel (defaults LOCKED)<br>
-        <span class="tag green">DONE</span> Ops panel with runbook links<br>
-        <span class="tag green">DONE</span> Provider-degraded / fallback / CoT warnings<br>
+        <span class="tag green">DONE</span> READ / BUILD / AUTO mode controls<br>
+        <span class="tag green">DONE</span> Chat workspace with inspector<br>
+        <span class="tag green">DONE</span> Live Execution panel in the left column<br>
+        <span class="tag green">DONE</span> Trace enrichment after response where exposed<br>
+        <span class="tag yellow">DEFERRED</span> True backend streaming/SSE/WebSocket event stream<br>
         <span class="tag yellow">DEFERRED</span> Conversation persistence (backend required)<br>
-        <span class="tag yellow">DEFERRED</span> Live tool registry (endpoint required)<br>
         <span class="tag yellow">DEFERRED</span> Live service controls (approved backend front required)
       </div>
     </div>
     <div class="panel"><h2>Recommended Next Fronts</h2>
       <div style="font-size:13px;line-height:1.9">
-        • <strong>FRONT-BRAIN-UI-DASHBOARD-CHAT-MODERNIZATION-REVIEW-AND-POLISH-02</strong> — review, polish, fix gaps<br>
-        • <strong>FRONT-BRAIN-AGENT-V2-TRADING-REFUSAL-EXPLICITNESS-HARDENING-01</strong> — harden refusal explicitness<br>
-        • <strong>FRONT-BRAIN-AGENT-V2-CAPABILITY-REGISTRY-RUNTIME-TYPE-REPAIR-01</strong> — if runtime metadata issue remains
+        • <strong>FRONT-BRAIN-UI-DASHBOARD-CHAT-MANUAL-REVIEW-AND-COMMIT-04</strong> — manual browser review and controlled commit closeout<br>
+        • <strong>FRONT-BRAIN-UI-CHAT-BACKEND-STREAMING-EVENTS-04</strong> — true streaming/SSE/WebSocket events if desired<br>
+        • <strong>FRONT-BRAIN-AGENT-V2-TRADING-REFUSAL-EXPLICITNESS-HARDENING-01</strong> — later safety hardening
       </div>
     </div>`;
 }
@@ -661,10 +863,10 @@ function panelErr(msg, detail) {
     ${detail ? '<div style="font-size:12px;color:var(--text-mute)">' + esc(detail) + '</div>' : ''}</div>`;
 }
 
-// ── Boot ──
 window.addEventListener('hashchange', router);
 document.addEventListener('DOMContentLoaded', () => {
-  $('nav-refresh').addEventListener('click', refresh);
+  const refreshBtn = $('nav-refresh');
+  if (refreshBtn) refreshBtn.addEventListener('click', refresh);
   router();
   refresh();
   setInterval(refresh, REFRESH_MS);
