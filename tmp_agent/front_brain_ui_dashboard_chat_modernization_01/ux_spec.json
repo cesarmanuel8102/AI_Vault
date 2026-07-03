@@ -1,0 +1,10 @@
+{
+  "phase": 2,
+  "front": "FRONT-BRAIN-UI-DASHBOARD-CHAT-MODERNIZATION-01",
+  "approach": "SPA shell with hash-routed views, frontend-only, no backend changes",
+  "views": ["overview", "agent", "chat", "tools", "memory", "traces", "safety", "ops", "roadmap"],
+  "deferred": ["conversation_persistence", "attachments", "live_stop_restart", "branch_head_display"],
+  "files_to_modify": ["static/index.html", "static/styles.css", "static/app.js"],
+  "files_not_touched": ["dashboard_app.py", "dashboard_routes.py", "api_security.py", "start_safe_server.py", ".env", "memory/", "semantic/", "FAISS", "agent runtime", "governance"],
+  "acceptance_criteria": "dashboard loads with top bar + nav + overview; chat workspace sends/renders/inspector; safety locks default LOCKED; no enabled dangerous controls; no tokens in frontend; no backend modified"
+}

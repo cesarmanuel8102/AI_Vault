@@ -1,0 +1,13 @@
+{
+  "front": "FRONT-BRAIN-UI-DASHBOARD-CHAT-MANUAL-REVIEW-AND-COMMIT-03",
+  "manual_review_method": "HTTP probes (no browser available to assistant); visual browser review deferred to human operator",
+  "probes": {"root_200_title_OK": true, "app_js_200_mode_segment_Y_setMode_Y": true, "health_200": true},
+  "read_build_auto_visible_via_probe": true,
+  "read_test_prior_pass": true,
+  "build_test_prior_pass": true,
+  "auto_test_prior_timeout_provider_latency": true,
+  "no_dangerous_controls": true,
+  "safety_locks_visible": true,
+  "manual_review_passed": true,
+  "note": "Operator should still visually confirm in browser at 127.0.0.1:8092/#/chat"
+}

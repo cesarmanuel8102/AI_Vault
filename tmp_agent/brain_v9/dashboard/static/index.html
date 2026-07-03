@@ -3,111 +3,59 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Brain Operator Dashboard</title>
-  <link rel="stylesheet" href="/static/styles.css">
+  <title>Brain Operator Console</title>
+  <link rel="stylesheet" href="/static/styles.css?v=4">
 </head>
 <body>
-  <main>
-    <header class="header-bar">
-      <h1>Brain Persistent Autonomy</h1>
-      <div id="header-meta">
-        <span id="mode-badge" class="badge">Loading…</span>
-        <span id="scheduler-badge" class="badge">Scheduler: …</span>
-        <span id="heartbeat-badge" class="badge">Heartbeat: …</span>
-        <span id="next-run-badge" class="badge">Next run: …</span>
+  <div id="app">
+    <!-- Top status bar -->
+    <header class="topbar">
+      <div class="topbar-brand">
+        <span class="brand-mark">◆</span>
+        <span class="brand-name">Brain Console</span>
+        <span class="brand-sub" id="topbar-version">v9</span>
+      </div>
+      <div class="topbar-status" id="topbar-status">
+        <span class="chip" id="ts-brain" data-state="unknown">Brain API …</span>
+        <span class="chip" id="ts-dash" data-state="unknown">Dashboard …</span>
+        <span class="chip" id="ts-backend" data-state="unknown">Backend …</span>
+        <span class="chip" id="ts-provider" data-state="unknown">Provider …</span>
+        <span class="chip lock" id="ts-readonly" data-state="locked">READ-ONLY</span>
+        <span class="chip lock" id="ts-memory" data-state="locked">MEM LOCKED</span>
+        <span class="chip lock" id="ts-trading" data-state="locked">TRADING LOCKED</span>
+        <span class="chip" id="ts-autonomy" data-state="unknown">Autonomy …</span>
+        <span class="chip muted" id="ts-refresh">—</span>
       </div>
     </header>
 
-    <section class="grid cols-3" id="status-cards">
-      <div class="card"><h3>Brain API</h3><div id="brain-api-status">Checking…</div></div>
-      <div class="card"><h3>Kimi Provider</h3><div id="kimi-status">Checking…</div></div>
-      <div class="card"><h3>Dashboard</h3><div id="dashboard-status">Checking…</div></div>
-      <div class="card"><h3>Scheduler</h3><div id="scheduler-status">Checking…</div></div>
-      <div class="card"><h3>Autonomy</h3><div id="autonomy-status">Checking…</div></div>
-      <div class="card"><h3>Memory</h3><div id="memory-status">Checking…</div></div>
-    </section>
-
-    <section class="panel">
-      <h2>What Brain is Doing Now</h2>
-      <div class="kv-grid" id="doing-now">
-        <div><label>State</label><span id="now-state">…</span></div>
-        <div><label>Cycle</label><span id="now-cycle">…</span></div>
-        <div><label>Last Run</label><span id="now-last-run">…</span></div>
-        <div><label>Last Result</label><span id="now-last-result">…</span></div>
-        <div><label>Next Run</label><span id="now-next-run">…</span></div>
-        <div><label>Last Error</label><span id="now-last-error">—</span></div>
-      </div>
-    </section>
-
-    <section class="panel">
-      <h2>Recent Activity</h2>
-      <div id="activity-timeline" class="timeline">Loading…</div>
-    </section>
-
-    <section class="panel">
-      <h2>Memory</h2>
-      <div class="kv-grid" id="memory-panel">
-        <div><label>Autonomous Journal</label><span id="mem-journal">…</span></div>
-        <div><label>Promotion Queue</label><span id="mem-queue">…</span></div>
-        <div><label>Semantic Staging</label><span id="mem-staging">…</span></div>
-        <div><label>Promotion Audits</label><span id="mem-audit">…</span></div>
-        <div><label>Canonical Lines</label><span id="mem-lines">…</span></div>
-        <div><label>FAISS IDs</label><span id="mem-faiss">…</span></div>
-      </div>
-      <p class="safety-msg" id="safety-msg">Loading safety status…</p>
-    </section>
-
-    <section class="panel">
-      <h2>Promotion Queue</h2>
-      <div id="promotion-list" class="table-wrap">Loading…</div>
-    </section>
-
-    <section class="panel">
-      <h2>Scheduler</h2>
-      <div class="kv-grid" id="scheduler-panel">
-        <div><label>Task Exists</label><span id="sch-exists">…</span></div>
-        <div><label>Enabled</label><span id="sch-enabled">…</span></div>
-        <div><label>State</label><span id="sch-state">…</span></div>
-        <div><label>Last Run</label><span id="sch-last-run">…</span></div>
-        <div><label>Next Run</label><span id="sch-next-run">…</span></div>
-        <div><label>Last Result</label><span id="sch-last-result">…</span></div>
-        <div><label>Action Path</label><span id="sch-action">…</span></div>
-      </div>
-    </section>
-
-    <section class="panel">
-      <h2>Controls</h2>
-      <div class="controls">
-        <button onclick="control('run-once')">Run Once</button>
-        <button onclick="control('pause')" class="warn">Pause</button>
-        <button onclick="control('resume')">Resume</button>
-        <button onclick="control('stop')" class="danger">Stop</button>
-        <button onclick="refresh()" class="secondary">Refresh</button>
-      </div>
-      <p id="control-result" class="control-result"></p>
-    </section>
-
-    <section class="panel">
-      <h2>Chat with Brain</h2>
-      <div class="chat">
-        <div id="chat-mode-selector" class="mode-segment" style="display:flex;gap:2px;margin-bottom:8px;">
-          <button id="dash-mode-read" class="mode-btn active" onclick="setChatMode('read_only')">📖 READ</button>
-          <button id="dash-mode-build" class="mode-btn" onclick="setChatMode('build')">🔨 BUILD</button>
-          <button id="dash-mode-auto" class="mode-btn" onclick="setChatMode('auto')">⚙ AUTO</button>
+    <div class="layout">
+      <!-- Left navigation -->
+      <nav class="sidenav" id="sidenav">
+        <a class="nav-item" data-view="overview" href="#/overview"><span class="nav-ico">▣</span> Overview</a>
+        <a class="nav-item" data-view="agent" href="#/agent"><span class="nav-ico">◉</span> Agent</a>
+        <a class="nav-item" data-view="chat" href="#/chat"><span class="nav-ico">✎</span> Chat</a>
+        <a class="nav-item" data-view="tools" href="#/tools"><span class="nav-ico">⚙</span> Tools</a>
+        <a class="nav-item" data-view="memory" href="#/memory"><span class="nav-ico">❖</span> Memory</a>
+        <a class="nav-item" data-view="traces" href="#/traces"><span class="nav-ico">⟲</span> Traces</a>
+        <a class="nav-item" data-view="safety" href="#/safety"><span class="nav-ico">⛨</span> Safety</a>
+        <a class="nav-item" data-view="ops" href="#/ops"><span class="nav-ico">⌘</span> Ops</a>
+        <a class="nav-item" data-view="roadmap" href="#/roadmap"><span class="nav-ico">★</span> Roadmap</a>
+        <div class="nav-footer">
+          <span class="mode-badge" id="nav-mode">READ_ONLY</span>
+          <button class="btn ghost sm" id="nav-refresh" title="Refresh now">↻</button>
         </div>
-        <textarea id="msg" placeholder="Ask Brain something…"></textarea>
-        <div class="chat-meta" id="chat-meta"></div>
-        <button onclick="chat()">Send</button>
-      </div>
-      <div id="chat-output" class="chat-output"></div>
-    </section>
+      </nav>
 
-    <section class="panel">
-      <h2>Operator Recommendation</h2>
-      <div id="recommendation" class="recommendation">Loading…</div>
-      <div id="alerts" class="alerts"></div>
-    </section>
-  </main>
-  <script src="/static/app.js?v=2"></script>
+      <!-- Main content -->
+      <main class="content" id="content">
+        <div class="loading-screen">
+          <div class="spinner"></div>
+          <p>Loading Brain Console…</p>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script src="/static/app.js?v=4"></script>
 </body>
 </html>

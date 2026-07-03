@@ -1,0 +1,23 @@
+{
+  "backend_logic_modified": false,
+  "agent_runtime_modified": false,
+  "governance_modified": false,
+  "api_security_touched": false,
+  "env_touched": false,
+  "memory_touched": false,
+  "semantic_memory_touched": false,
+  "faiss_touched": false,
+  "broker_ibkr_qc_touched": false,
+  "trading_touched": false,
+  "real_money_touched": false,
+  "dangerous_controls_added": false,
+  "git_add_A_used": false,
+  "reset_used": false,
+  "stash_used": false,
+  "clean_used": false,
+  "amend_used": false,
+  "force_push_used": false,
+  "tracked_diff": ["M app.js", "M index.html", "M styles.css (frontend static only)"],
+  "staged_diff": "empty",
+  "verdict": "SCOPE_AUDIT_PASSED"
+}

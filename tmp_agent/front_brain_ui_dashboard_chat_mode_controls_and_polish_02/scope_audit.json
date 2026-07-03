@@ -1,0 +1,43 @@
+{
+  "phase": 7,
+  "front": "FRONT-BRAIN-UI-DASHBOARD-CHAT-MODE-CONTROLS-AND-POLISH-02",
+  "workspace": "C:/AI_VAULT_CANONICAL",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_start": "1d1874aa6b42a326807b9a5ca2768e759d889dcd",
+  "head_end": "1d1874aa6b42a326807b9a5ca2768e759d889dcd",
+  "head_matches": true,
+  "tracked_diff_name_status": [
+    "M tmp_agent/brain_v9/dashboard/static/app.js",
+    "M tmp_agent/brain_v9/dashboard/static/index.html",
+    "M tmp_agent/brain_v9/dashboard/static/styles.css"
+  ],
+  "staged_diff_name_status": "empty",
+  "prohibitions": {
+    "backend_logic_modified": false,
+    "agent_v2_runtime_modified": false,
+    "governance_modified": false,
+    "api_security_touched": false,
+    "env_touched": false,
+    "memory_touched": false,
+    "semantic_memory_touched": false,
+    "faiss_touched": false,
+    "broker_ibkr_qc_touched": false,
+    "trading_touched": false,
+    "real_money_touched": false,
+    "provider_credentials_touched": false,
+    "dangerous_controls_added": false,
+    "mode_controls_restored": true,
+    "mode_controls_only_change_request_mode": true,
+    "mode_controls_do_not_bypass_governance": true,
+    "git_add_A_used": false,
+    "reset_used": false,
+    "stash_used": false,
+    "clean_used": false,
+    "amend_used": false,
+    "force_push_used": false,
+    "commit_created": false,
+    "push_done": false
+  },
+  "conclusion": "SCOPE_AUDIT_PASSED",
+  "timestamp": "2026-07-02T00:00:00Z"
+}

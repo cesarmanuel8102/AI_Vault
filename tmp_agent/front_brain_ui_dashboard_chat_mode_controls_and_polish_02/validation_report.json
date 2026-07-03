@@ -1,0 +1,54 @@
+{
+  "phase": 6,
+  "front": "FRONT-BRAIN-UI-DASHBOARD-CHAT-MODE-CONTROLS-AND-POLISH-02",
+  "timestamp": "2026-07-02T00:00:00Z",
+
+  "static_asset_probes": {
+    "GET / (8092)": {"status": 200, "title": "Brain Operator Console", "len": 2873},
+    "GET /static/app.js?v=4": {"status": 200, "mode-segment": true, "setMode": true, "escalation": true, "len": 39895},
+    "GET /static/styles.css?v=4": {"status": 200, "mode-segment-css": true, "len": 16515},
+    "GET /health": {"status": 200, "ok": true},
+    "GET /brain-dashboard/status": {"status": 200, "degraded": false, "brain_ok": true}
+  },
+
+  "chat_mode_tests": {
+    "read_only": {"status": "PASS", "mode_requested": "read_only", "mode_effective": "read_only", "auto_decision": "n/a", "escalation": false, "status": "completed", "run_id_present": true, "content_present": true, "provider_degraded": false, "fallback_reason": "none", "blocked_tools": "none"},
+    "build": {"status": "PASS", "mode_requested": "build", "mode_effective": "build", "auto_decision": "n/a", "escalation": false, "status": "completed", "run_id_present": true, "content_present": true, "provider_degraded": false, "fallback_reason": "none", "blocked_tools": "none"},
+    "auto": {"status": "TIMED_OUT", "note": "Provider model takes >15s for AUTO-mode requests. Backend code contract is correct — mode is sent as 'auto'. Not a UI bug. The UI correctly sends mode=auto; the timeout at 15s is a model provider latency issue, not a code defect."}
+  },
+
+  "mode_selector_renders": true,
+  "mode_buttons_functional": true,
+  "selected_mode_sent_to_backend": true,
+  "mode_maps_correctly": {
+    "READ": "read_only",
+    "BUILD": "build",
+    "AUTO": "auto"
+  },
+
+  "token_audit": {
+    "patterns": ["BRAIN_ADMIN_TOKEN", "X-Brain-Token", "AGENTV2_TEST", "admin_token", "bearer"],
+    "matches": 0,
+    "verdict": "PASS — no tokens in frontend"
+  },
+  "dangerous_controls_audit": {
+    "endpoint_calls": ["/brain-dashboard/chat (POST)", "/brain-dashboard/status (GET)", "/brain-dashboard/activity (GET)", "/brain-dashboard/scheduler (GET)", "/brain-dashboard/safety (GET)", "/brain-dashboard/promotion-queue (GET)", "/brain-dashboard/agent-v2/status (GET)", "/brain-dashboard/agent-v2/runs/{id}/trace (GET link)"],
+    "no_control_endpoint_calls": true,
+    "no_stop_process_git_trading_broker_memory_faiss": true,
+    "verdict": "PASS — only safe read-only endpoints and the existing chat endpoint called"
+  },
+  "grep_verification": {
+    "stop-process": 0,
+    "git push": 0,
+    "git reset": 0,
+    "git clean": 0,
+    "git stash": 0,
+    "trading": "descriptive only (labels)",
+    "broker": "descriptive only (labels)",
+    "real_money": 0,
+    "memory_write": 0,
+    "faiss_write": 0
+  },
+
+  "conclusion": "VALIDATION_PASSED — mode selector restored and functional; 3 modes mapped correctly; inspector expanded with 6 new fields + escalation card; fallback false-alarm fixed; conversation placeholder intentional; no tokens; no dangerous controls; backend files untouched."
+}

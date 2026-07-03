@@ -1,0 +1,131 @@
+{
+  "phase": 1,
+  "front": "FRONT-BRAIN-UI-DASHBOARD-CHAT-MODERNIZATION-01",
+  "timestamp": "2026-07-02T00:00:00Z",
+
+  "dashboard_app_entrypoint": {
+    "path": "tmp_agent/brain_v9/dashboard/dashboard_app.py",
+    "framework": "FastAPI",
+    "app_var": "app",
+    "module": "tmp_agent.brain_v9.dashboard.dashboard_app:app",
+    "port": 8092,
+    "serves_static": true,
+    "static_mount": "/static -> dashboard/static/",
+    "root_route": "GET / -> FileResponse(static/index.html)",
+    "health_route": "GET /health"
+  },
+
+  "dashboard_routes": {
+    "path": "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+    "router_prefix": "/brain-dashboard",
+    "read_only_endpoints": [
+      "GET /brain-dashboard/status (aggregate: brain, kimi, dashboard, scheduler, autonomy, memory, safety, watchdog, alerts, agent_v2)",
+      "GET /brain-dashboard/activity (journal events)",
+      "GET /brain-dashboard/promotion-queue",
+      "GET /brain-dashboard/scheduler",
+      "GET /brain-dashboard/safety",
+      "GET /brain-dashboard/agent-v2/status",
+      "GET /brain-dashboard/agent-v2/runs/{run_id}/trace (proxy to 8091)"
+    ],
+    "write_control_endpoints_EXISTING": [
+      "POST /brain-dashboard/control/run-once",
+      "POST /brain-dashboard/control/pause",
+      "POST /brain-dashboard/control/resume",
+      "POST /brain-dashboard/control/stop"
+    ],
+    "chat_endpoint": "POST /brain-dashboard/chat (proxies to 8091 /v2/chat/agent)"
+  },
+
+  "static_files": {
+    "index_html": "tmp_agent/brain_v9/dashboard/static/index.html (113 lines, single-page, inline structure)",
+    "app_js": "tmp_agent/brain_v9/dashboard/static/app.js (386 lines, refresh loop + render functions + chat + execution trace panel)",
+    "styles_css": "tmp_agent/brain_v9/dashboard/static/styles.css (76 lines, dark theme already present but rustic)"
+  },
+
+  "chat_implementation": {
+    "location": "embedded inside dashboard index.html as a 'Chat with Brain' panel (NOT a separate page)",
+    "mode_selector": "read_only / build / auto segment buttons",
+    "textarea_id": "msg",
+    "output_id": "chat-output",
+    "meta_id": "chat-meta",
+    "endpoint": "POST /brain-dashboard/chat",
+    "features_present": [
+      "mode segment (READ/BUILD/AUTO)",
+      "send button",
+      "metadata line (canonical, model, classification, status, mode, auto_decision)",
+      "provider degraded warning",
+      "raw CoT exposed warning",
+      "trace link",
+      "collapsible Execution Trace panel with async trace fetch (plan/tools/evidence/governance/provider)"
+    ],
+    "features_missing": [
+      "separate modern chat workspace page/view",
+      "left sidebar with conversation list",
+      "right inspector panel",
+      "markdown rendering",
+      "code block styling with copy button",
+      "message bubbles (user vs assistant distinction)",
+      "loading spinner state",
+      "empty state",
+      "Enter-to-send / Shift+Enter newline",
+      "blocked tools display",
+      "evidence summary display"
+    ]
+  },
+
+  "chat_api_contract": {
+    "request": "POST /brain-dashboard/chat {message, mode, user_id}",
+    "response_fields": [
+      "ok", "content", "canonical_agent_v2", "run_id", "trace_url", "classification",
+      "status", "model_used", "provider_used", "provider_degraded", "fallback_reason",
+      "raw_cot_exposed", "mode_requested", "mode_effective", "auto_decision",
+      "mode_escalation_required", "mode_escalation_reason", "required_permission",
+      "expected_write_scope", "confirmation_id", "blocked_tools"
+    ]
+  },
+
+  "available_read_only_endpoints_for_ui": [
+    "/health (8092)",
+    "/brain-dashboard/status",
+    "/brain-dashboard/activity",
+    "/brain-dashboard/promotion-queue",
+    "/brain-dashboard/scheduler",
+    "/brain-dashboard/safety",
+    "/brain-dashboard/agent-v2/status",
+    "/brain-dashboard/agent-v2/runs/{run_id}/trace"
+  ],
+
+  "auth_requirements": {
+    "dashboard_public_endpoints": "no token required (localhost)",
+    "brain_api_strict_endpoints": "X-Brain-Token header required (handled server-side by dashboard proxy)",
+    "ui_needs_token": false,
+    "note": "The dashboard proxies to 8091 with the token server-side; the browser never needs the token. UI must never handle tokens."
+  },
+
+  "structure_classification": {
+    "single_page_app": true,
+    "multi_page": false,
+    "css_external": true,
+    "js_external": true,
+    "markdown_rendering": false,
+    "code_block_rendering": false,
+    "trace_panel": true,
+    "run_inspector": "partial (inline metadata + collapsible trace panel, no dedicated right inspector)",
+    "sidebar_navigation": false,
+    "top_status_bar": "partial (header-bar with mode/scheduler/heartbeat/next-run badges)"
+  },
+
+  "current_ui_problems": [
+    "Rustic dense layout, no navigation — everything stacked vertically on one long page",
+    "Chat is a small inline panel, not a workspace; no conversation history, no inspector",
+    "No markdown or code block rendering — responses shown as plain pre-wrap text",
+    "No message bubbles or user/assistant distinction",
+    "No empty/loading/error states beyond 'Thinking…'",
+    "Status info scattered, no cohesive top status bar with safety locks",
+    "No dedicated safety panel showing memory/FAISS/trading/real-money locks",
+    "No ops panel with 8091/8092/8070 status or runbook link",
+    "Trace data exists but is buried in a collapsible under chat output"
+  ],
+
+  "conclusion": "UI_INVENTORY_COMPLETED — single-page FastAPI dashboard, dark theme already present but rustic, chat embedded inline, no nav/sidebar/inspector/markdown. Rich endpoint data already available (status, agent_v2, safety, trace). Frontend-only modernization is feasible without backend changes."
+}

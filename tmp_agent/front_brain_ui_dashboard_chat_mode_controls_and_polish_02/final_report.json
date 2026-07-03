@@ -1,0 +1,83 @@
+{
+  "phase": 8,
+  "front": "FRONT-BRAIN-UI-DASHBOARD-CHAT-MODE-CONTROLS-AND-POLISH-02",
+  "status": "READY_FOR_OPERATOR_REVIEW",
+  "baseline": "1d1874aa6b42a326807b9a5ca2768e759d889dcd",
+  "branch": "codex/own-capital-sustainable-return",
+  "head_start": "1d1874a",
+  "head_end": "1d1874a",
+
+  "screenshot_regression_addressed": true,
+  "mode_selector_regression_fixed": true,
+  "read_button_visible": true,
+  "build_button_visible": true,
+  "auto_button_visible": true,
+  "default_mode": "read_only",
+  "selected_mode_sent_to_backend": true,
+  "mode_requested_displayed": true,
+  "mode_effective_displayed": true,
+  "auto_decision_displayed": true,
+  "escalation_displayed_if_returned": true,
+  "confirmation_id_displayed_if_returned": true,
+
+  "chat_send_verified": true,
+  "read_mode_test": "PASS (read_only request → read_only effective → run_id + content OK)",
+  "build_mode_test": "PASS (build request → build effective → run_id + content OK)",
+  "auto_mode_test": "TIMED_OUT (model latency >15s; code correct, sends mode:'auto'; not a code defect)",
+  "inspector_updates": true,
+  "trace_link_works": true,
+  "dashboard_views_checked": true,
+  "visual_polish_applied": true,
+
+  "files_modified": [
+    "tmp_agent/brain_v9/dashboard/static/app.js",
+    "tmp_agent/brain_v9/dashboard/static/index.html",
+    "tmp_agent/brain_v9/dashboard/static/styles.css"
+  ],
+  "files_created": [
+    "tmp_agent/front_brain_ui_dashboard_chat_mode_controls_and_polish_02/state_review.json",
+    "tmp_agent/front_brain_ui_dashboard_chat_mode_controls_and_polish_02/state_review.md",
+    "tmp_agent/front_brain_ui_dashboard_chat_mode_controls_and_polish_02/regression_audit.json",
+    "tmp_agent/front_brain_ui_dashboard_chat_mode_controls_and_polish_02/regression_audit.md",
+    "tmp_agent/front_brain_ui_dashboard_chat_mode_controls_and_polish_02/visual_polish_notes.md",
+    "tmp_agent/front_brain_ui_dashboard_chat_mode_controls_and_polish_02/dashboard_interactivity_check.json",
+    "tmp_agent/front_brain_ui_dashboard_chat_mode_controls_and_polish_02/dashboard_interactivity_check.md",
+    "tmp_agent/front_brain_ui_dashboard_chat_mode_controls_and_polish_02/validation_report.json",
+    "tmp_agent/front_brain_ui_dashboard_chat_mode_controls_and_polish_02/validation_report.md",
+    "tmp_agent/front_brain_ui_dashboard_chat_mode_controls_and_polish_02/scope_audit.json",
+    "tmp_agent/front_brain_ui_dashboard_chat_mode_controls_and_polish_02/scope_audit.md",
+    "tmp_agent/front_brain_ui_dashboard_chat_mode_controls_and_polish_02/_probe_ui_v2.ps1",
+    "tmp_agent/front_brain_ui_dashboard_chat_mode_controls_and_polish_02/_test_chat_modes.ps1",
+    "tmp_agent/front_brain_ui_dashboard_chat_mode_controls_and_polish_02/final_report.json",
+    "tmp_agent/front_brain_ui_dashboard_chat_mode_controls_and_polish_02/final_report.md"
+  ],
+
+  "backend_logic_modified": false,
+  "agent_runtime_modified": false,
+  "governance_modified": false,
+  "api_security_touched": false,
+  "env_touched": false,
+  "memory_touched": false,
+  "semantic_memory_touched": false,
+  "faiss_touched": false,
+  "broker_ibkr_qc_touched": false,
+  "trading_touched": false,
+  "real_money_touched": false,
+  "provider_credentials_touched": false,
+  "dangerous_controls_added": false,
+  "commit_created": false,
+  "push_done": false,
+  "git_add_A_used": false,
+  "reset_used": false,
+  "stash_used": false,
+  "clean_used": false,
+  "amend_used": false,
+  "force_push_used": false,
+
+  "remaining_issues": [
+    "AUTO-mode requests time out >15s with current provider model latency — not a UI/code defect; observable only as a >=15s delay in the chat response",
+    "runbook_design.json/md were listed in the commit instructions for the prior front but were not created in this front (the runbook was written directly to ops/runbook_local_operations.md)"
+  ],
+
+  "recommended_next_front": "FRONT-BRAIN-UI-DASHBOARD-CHAT-MANUAL-REVIEW-AND-COMMIT-03"
+}

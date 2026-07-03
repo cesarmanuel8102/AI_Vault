@@ -1,0 +1,62 @@
+{
+  "phase": 1,
+  "front": "FRONT-BRAIN-UI-DASHBOARD-CHAT-MODE-CONTROLS-AND-POLISH-02",
+  "timestamp": "2026-07-02T00:00:00Z",
+
+  "previous_mode_selector_location": "tmp_agent/brain_v9/dashboard/static/index.html (pre-modernization) lines 93-97: <div id='chat-mode-selector'> with 3 buttons dash-mode-read/build/auto calling setChatMode('read_only'|'build'|'auto')",
+  "previous_js_handler": "app.js function setChatMode(mode) updated dashChatMode and toggled .active class on buttons",
+
+  "current_state_object": "app.js line ~21: S.chat = { mode: 'read_only', messages: [], busy: false, lastMeta: null } — mode is hardcoded to 'read_only' with no setter",
+  "current_sendChat": "app.js sendChat() sends body JSON.stringify({ message, mode: S.chat.mode, user_id }) — contract is correct, but S.chat.mode can never change because no UI control updates it",
+  "current_composer_html": "app.js viewChat() renders composer with a static <span class='mode-badge' id='chat-mode-badge'>READ_ONLY</span> — NOT a selector, just a label",
+  "current_initChat": "initChat() wires Enter-to-send, input resize, send button, new-chat button — but NO mode button listeners (they don't exist)",
+
+  "mode_is_hardcoded_to_read_only": true,
+  "build_auto_modes_impossible_to_select": true,
+
+  "response_fields_displayed": [
+    "run_id (inspector)",
+    "classification (inspector)",
+    "model_used / provider_used (inspector)",
+    "mode_effective (inspector — but always read_only since mode can't change)",
+    "blocked_tools (inspector)",
+    "trace_url (inspector link)",
+    "provider_degraded (warning strip)",
+    "fallback_reason (warning strip — but shows even when value is 'none', causing false alarm)",
+    "raw_cot_exposed (warning strip)"
+  ],
+  "response_fields_NOT_displayed": [
+    "mode_requested",
+    "auto_decision",
+    "mode_escalation_required",
+    "mode_escalation_reason",
+    "required_permission",
+    "expected_write_scope",
+    "confirmation_id"
+  ],
+
+  "ui_sends_selected_mode_to_backend": "partially — sends S.chat.mode which is always read_only; user cannot select build/auto",
+
+  "classification": {
+    "mode_selector_regression": true,
+    "chat_functionality_status": "partial — send/receive works but mode is locked to read_only; build/auto unreachable",
+    "inspector_metadata_status": "partial — shows run/classification/model/mode_effective/blocked/trace, but missing mode_requested/auto_decision/escalation/permission/write_scope/confirmation_id",
+    "dashboard_visual_status": "improved — modern shell preserved, but mode controls regressed",
+    "fallback_display_bug": "true — shows 'Fallback used: none' as a warning strip even when fallback_reason is the literal string 'none' (false alarm)"
+  },
+
+  "required_fix": [
+    "FIX-1: Add segmented mode selector [READ][BUILD][AUTO] to chat composer, visible without scrolling",
+    "FIX-2: Wire selector to update S.chat.mode + composer badge + nav badge",
+    "FIX-3: READ → mode 'read_only', BUILD → mode 'build', AUTO → mode 'auto' (contract preserved)",
+    "FIX-4: Display mode_requested, mode_effective, auto_decision in inspector after each response",
+    "FIX-5: Display escalation card (mode_escalation_required, mode_escalation_reason, required_permission, expected_write_scope, confirmation_id) inside assistant bubble when present",
+    "FIX-6: Fix fallback false-alarm: only show fallback warning when fallback_reason is truthy AND not the literal 'none'",
+    "FIX-7: Add helper/safety text under selector: 'Mode selection does not bypass governance...'",
+    "FIX-8: Reflect selected mode in top bar / chat status line",
+    "FIX-9: Show user bubble mode subtly (small mode tag on user message)",
+    "FIX-10: Make 'NOT CONNECTED' conversation history look intentional, not broken"
+  ],
+
+  "conclusion": "REGRESSION_AUDIT_CONFIRMED — mode selector regression is real; chat works for read_only only; inspector missing several mode/escalation fields; fallback false-alarm bug present. Fixes scoped and safe (frontend-only)."
+}
