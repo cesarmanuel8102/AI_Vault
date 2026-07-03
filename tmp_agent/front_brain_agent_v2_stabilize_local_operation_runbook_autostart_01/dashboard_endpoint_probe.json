@@ -1,0 +1,118 @@
+{
+  "phase": 2,
+  "front": "FRONT-BRAIN-AGENT-V2-STABILIZE-LOCAL-OPERATION-RUNBOOK-AUTOSTART-01",
+  "timestamp": "2026-07-02T20:30:22Z",
+  "method": "read-only HTTP GET probes via _probe_endpoints.ps1 (Invoke-WebRequest, 8s timeout)",
+  "auth_header_used": "X-Brain-Token (the canonical header per tmp_agent/brain_v9/api_security.py)",
+  "token_handling": "token supplied via $env:BRAIN_ADMIN_TOKEN; NEVER printed in full; only redacted prefix shown",
+  "token_used_redacted": "AGENTV2_***REDACTED",
+
+  "results": [
+    {
+      "endpoint": "http://127.0.0.1:8091/health",
+      "status_code": 200,
+      "response_type": "application/json",
+      "body_preview": "{\"status\":\"healthy\",\"sessions\":1,\"version\":\"9.0.0\",\"safe_mode\":false}",
+      "auth_required": false,
+      "token_redacted": true,
+      "exists": true,
+      "notes": "Brain API health gate — healthy, v9.0.0, safe_mode off"
+    },
+    {
+      "endpoint": "http://127.0.0.1:8091/v2/agent/status",
+      "status_code": 200,
+      "response_type": "application/json",
+      "body_preview": "{\"ok\":true,\"canonical_for_new_agent_runs\":true,\"backend\":\"langgraph_parity\",\"backend_selected\":\"langgraph_parity\",\"backend_default\":\"langgraph_parity\",...}",
+      "auth_required": false,
+      "token_redacted": true,
+      "exists": true,
+      "notes": "Agent V2 status — langgraph_parity is canonical; header X-Brain-Token required (initial probe without it returned 403, corrected header returned 200)"
+    },
+    {
+      "endpoint": "http://127.0.0.1:8091/v2/agent/capabilities",
+      "status_code": 200,
+      "response_type": "application/json",
+      "body_preview": "{\"ok\":true,\"canonical\":true,\"capabilities_version\":\"08F8-R1\",\"backend_default\":\"langgraph_parity\",\"runtime_type\":\"LangGraphParityRuntimeV2\",\"langgraph_default_active\":true,...}",
+      "auth_required": false,
+      "token_redacted": true,
+      "exists": true,
+      "notes": "Agent V2 capabilities — capabilities_version 08F8-R1, runtime LangGraphParityRuntimeV2, langgraph default active"
+    },
+    {
+      "endpoint": "http://127.0.0.1:8092/",
+      "status_code": 200,
+      "response_type": "text/html; charset=utf-8",
+      "body_preview": "<!doctype html>...<title>Brain Operator Dashboard</title>...",
+      "auth_required": false,
+      "token_redacted": true,
+      "exists": true,
+      "notes": "Dashboard root index.html served"
+    },
+    {
+      "endpoint": "http://127.0.0.1:8092/health",
+      "status_code": 200,
+      "response_type": "application/json",
+      "body_preview": "{\"ok\":true,\"dashboard\":\"brain_persistent_autonomy\",\"port\":8092}",
+      "auth_required": false,
+      "token_redacted": true,
+      "exists": true,
+      "notes": "Dashboard health gate — online on 8092"
+    },
+    {
+      "endpoint": "http://127.0.0.1:8092/brain-dashboard/status",
+      "status_code": 200,
+      "response_type": "application/json",
+      "body_preview": "{\"ok\":true,\"degraded\":false,\"brain\":{\"ok\":true,\"status\":\"healthy\",\"api\":\"http://127.0.0.1:8091\"},\"kimi\":{\"ok\":true,\"status\":\"available_via_provider_probe\"},\"dashboard\":{\"ok\":true,\"status\":\"online\",\"status_latency_ms\":36...}}",
+      "auth_required": false,
+      "token_redacted": true,
+      "exists": true,
+      "notes": "Aggregate dashboard status — brain healthy, kimi/provider available, NOT degraded"
+    },
+    {
+      "endpoint": "http://127.0.0.1:8092/brain-dashboard/agent-v2/status",
+      "status_code": 200,
+      "response_type": "application/json",
+      "body_preview": "{\"ok\":true,\"agent_v2\":{\"ok\":true,\"canonical_for_new_agent_runs\":true,\"backend\":\"langgraph_parity\",...}}",
+      "auth_required": false,
+      "token_redacted": true,
+      "exists": true,
+      "notes": "Dashboard proxy to agent V2 status — langgraph_parity canonical"
+    },
+    {
+      "endpoint": "http://127.0.0.1:8092/brain-dashboard/chat",
+      "status_code": 405,
+      "response_type": "n/a",
+      "body_preview": "",
+      "auth_required": false,
+      "token_redacted": true,
+      "exists": true,
+      "notes": "405 Method Not Allowed on GET — this is a POST-only endpoint. Endpoint EXISTS; GET is intentionally rejected. Do not treat 405 here as a missing route."
+    },
+    {
+      "endpoint": "http://127.0.0.1:8070/",
+      "status_code": null,
+      "response_type": "n/a",
+      "body_preview": "",
+      "auth_required": false,
+      "token_redacted": true,
+      "exists": false,
+      "notes": "Legacy 8070 dashboard — connection refused / not listening. CONFIRMED INACTIVE. The current dashboard is 8092."
+    }
+  ],
+
+  "aggregate": {
+    "brain_8091_health": "200 healthy",
+    "brain_8091_agent_status": "200 (X-Brain-Token header required)",
+    "brain_8091_capabilities": "200 (X-Brain-Token header required)",
+    "dashboard_8092_root": "200",
+    "dashboard_8092_health": "200 online",
+    "dashboard_8092_brain_dashboard_status": "200 not degraded, kimi available",
+    "dashboard_8092_brain_dashboard_agent_v2_status": "200 langgraph_parity canonical",
+    "dashboard_8092_brain_dashboard_chat": "405 (POST-only endpoint; GET rejected as designed)",
+    "legacy_8070": "INACTIVE (connection refused)"
+  },
+
+  "auth_note": "Strict operator endpoints require header 'X-Brain-Token: <BRAIN_ADMIN_TOKEN>'. The earlier probe used Authorization/X-Admin-Token headers and correctly received 403; switching to the canonical X-Brain-Token header returned 200. Localhost bypass applies to require_operator_access but NOT to require_strict_operator_access — always send X-Brain-Token for v2 admin endpoints.",
+
+  "conclusion": "DASHBOARD_ENDPOINT_PROBE_COMPLETED — all live endpoints recorded honestly. 8091 healthy, 8092 online and not degraded, provider available, legacy 8070 confirmed inactive."
+}

@@ -1,0 +1,41 @@
+{
+  "phase": 4,
+  "front": "FRONT-BRAIN-AGENT-V2-STABILIZE-LOCAL-OPERATION-RUNBOOK-AUTOSTART-01",
+  "timestamp": "2026-07-02T00:00:00Z",
+  "scripts_created": [
+    "tmp_agent/brain_v9/ops/status_brain_local.ps1",
+    "tmp_agent/brain_v9/ops/start_brain_local.ps1",
+    "tmp_agent/brain_v9/ops/stop_brain_local.ps1",
+    "tmp_agent/brain_v9/ops/restart_brain_local.ps1"
+  ],
+  "runbook_created": "tmp_agent/brain_v9/ops/runbook_local_operations.md",
+  "script_safety_properties": {
+    "token_handling": "all scripts read BRAIN_ADMIN_TOKEN from environment only; never hardcoded; redacted prefix in output",
+    "kill_policy": "stop_brain_local.ps1 resolves the owning PID of the specific port (8091/8092) and stops ONLY that PID; never kills all python.exe",
+    "confirm_before_kill": "stop_brain_local.ps1 shows command line and prompts unless -Force",
+    "no_broad_deletes": "no Remove-Item of directories; stale PID removal is documented as a manual step",
+    "no_memory_faiss_broker_trading_touch": true,
+    "no_git_operations": true,
+    "canonical_launcher_used": "start_brain_local.ps1 uses start_safe_server.py for 8091 (no hardcoded secrets)",
+    "idempotent_start": "start_brain_local.ps1 refuses to double-bind if the port is already listening unless -Force"
+  },
+  "status_script_validation": {
+    "executed": true,
+    "output_captured": "8091 LISTEN PID=140052; 8092 LISTEN PID=102348; 8070 not listening; dashboard_only_8092.pid VALID; start_local_browser_operational_launcher.pid STALE; 8091/health 200; 8092/health 200; 8092/brain-dashboard/status 200 not degraded",
+    "verdict": "WORKS — read-only status is accurate and matches Phase 1/2 diagnosis"
+  },
+  "scope_respected": {
+    "source_runtime_files_modified": false,
+    "api_security_touched": false,
+    "start_safe_server_touched": false,
+    "start_local_browser_operational_touched": false,
+    "env_touched": false,
+    "memory_touched": false,
+    "faiss_touched": false,
+    "semantic_memory_touched": false,
+    "broker_ibkr_touched": false,
+    "trading_touched": false,
+    "real_money_touched": false
+  },
+  "conclusion": "PATCH_RESULTS_OK — 4 safe ops scripts + runbook created under the allowed ops folder; status script validated live; no source/security/memory/governance touched."
+}

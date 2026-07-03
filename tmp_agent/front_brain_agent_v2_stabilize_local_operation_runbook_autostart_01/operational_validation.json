@@ -1,0 +1,28 @@
+{
+  "phase": 5,
+  "front": "FRONT-BRAIN-AGENT-V2-STABILIZE-LOCAL-OPERATION-RUNBOOK-AUTOSTART-01",
+  "timestamp": "2026-07-02T00:00:00Z",
+
+  "checks": {
+    "status_command_works": {"pass": true, "evidence": "status_brain_local.ps1 executed live; output matches Phase 1/2"},
+    "8091_health_200": {"pass": true, "code": 200, "body": "{\"status\":\"healthy\",\"sessions\":1,\"version\":\"9.0.0\",\"safe_mode\":false}"},
+    "8092_root_200": {"pass": true, "code": 200, "type": "text/html"},
+    "8092_health_200": {"pass": true, "code": 200, "body": "{\"ok\":true,\"dashboard\":\"brain_persistent_autonomy\",\"port\":8092}"},
+    "agent_status_200_with_token": {"pass": true, "code": 200, "header": "X-Brain-Token", "token_redacted": true, "note": "200 only with correct X-Brain-Token header; 403 otherwise"},
+    "capabilities_200_with_token": {"pass": true, "code": 200, "header": "X-Brain-Token", "token_redacted": true},
+    "dashboard_endpoint_probes_recorded": {"pass": true, "evidence": "dashboard_endpoint_probe.json"},
+    "stale_pid_handling_documented": {"pass": true, "evidence": "runbook sections 8/9; one stale PID identified (start_local_browser_operational_launcher.pid=73212 not running)"},
+    "provider_429_handling_documented": {"pass": true, "evidence": "runbook section 15; ops_diagnosis section 7; no 429 currently present"},
+    "no_source_runtime_modified": {"pass": true},
+    "no_memory_faiss_touched": {"pass": true},
+    "no_broker_trading_touched": {"pass": true}
+  },
+
+  "restart_test": {
+    "tested": false,
+    "restart_skip_reason": "operator review required — scripts written and validated read-only, but an actual restart was not executed to avoid disrupting the currently-healthy running services without explicit operator approval"
+  },
+
+  "all_checks_pass": true,
+  "conclusion": "OPERATIONAL_VALIDATION_PASSED — status command works, 8091/8092 healthy, agent status + capabilities 200 with correct X-Brain-Token, dashboard probes recorded, stale PID + 429 handling documented, no source/memory/FAISS/broker/trading touched. Restart not executed (operator review required)."
+}

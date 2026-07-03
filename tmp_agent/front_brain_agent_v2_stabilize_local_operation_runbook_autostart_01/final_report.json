@@ -1,0 +1,77 @@
+{
+  "phase": 7,
+  "front": "FRONT-BRAIN-AGENT-V2-STABILIZE-LOCAL-OPERATION-RUNBOOK-AUTOSTART-01",
+  "status": "CORRECTED_CLOSEOUT_READY_FOR_OPERATOR_REVIEW",
+  "workspace": "C:/AI_VAULT_CANONICAL",
+  "branch": "codex/own-capital-sustainable-return",
+  "baseline": "af16b50ff186f97bf61f2bea0b6486d591ea490d",
+  "head_start": "af16b50ff186f97bf61f2bea0b6486d591ea490d",
+  "head_end": "af16b50ff186f97bf61f2bea0b6486d591ea490d",
+
+  "ops_diagnosis_completed": true,
+  "dashboard_endpoint_probe_completed": true,
+  "runbook_created": true,
+  "scripts_created": true,
+  "scripts": [
+    "tmp_agent/brain_v9/ops/status_brain_local.ps1",
+    "tmp_agent/brain_v9/ops/start_brain_local.ps1",
+    "tmp_agent/brain_v9/ops/stop_brain_local.ps1",
+    "tmp_agent/brain_v9/ops/restart_brain_local.ps1"
+  ],
+
+  "stale_pid_handling": "documented; 1 stale PID found (start_local_browser_operational_launcher.pid=73212 not running); safe manual removal in runbook sections 8/9",
+  "token_handling": "env-only (BRAIN_ADMIN_TOKEN); never hardcoded in scripts/runbook; redacted prefix in all output",
+  "provider_429_handling": "documented (runbook section 15); provider-side quota issue, not local; no 429 currently present",
+  "dashboard_8070_vs_8092_documented": true,
+
+  "health_8091": "200 healthy (v9.0.0, safe_mode false)",
+  "health_8092": "200 online (not degraded, kimi available)",
+  "agent_status_with_token": "200 (header X-Brain-Token; 403 without)",
+  "capabilities_with_token": "200 (header X-Brain-Token; 403 without)",
+  "restart_tested": false,
+  "restart_skip_reason": "operator review required",
+
+  "source_runtime_files_modified": false,
+  "api_security_touched": false,
+  "start_safe_server_touched": false,
+  "start_local_browser_operational_touched": false,
+  "env_touched": false,
+  "memory_touched": false,
+  "faiss_touched": false,
+  "semantic_memory_touched": false,
+  "broker_ibkr_touched": false,
+  "trading_touched": false,
+  "real_money_touched": false,
+  "reset_used": false,
+  "stash_used": false,
+  "clean_used": false,
+  "amend_used": false,
+  "force_push_used": false,
+  "git_add_A_used": false,
+  "commit_created": false,
+  "push_done": false,
+
+  "observations_for_operator_review": [
+    "DASHBOARD_ENDPOINT_ANALYSIS_INCOMPLETE_NO_ROUTE_PROBE — planner identified endpoints but did not execute live route_probe; documented, NOT repaired in this front (planner logic untouched).",
+    "start_local_browser_operational.py hardcodes a TEST admin token (AGENTV2_TEST_ADMIN_TOKEN_*); PROHIBITED to modify here — documented only; new ops scripts read BRAIN_ADMIN_TOKEN from env instead.",
+    "One stale launcher PID file present (PID 73212 not running) — safe to remove via runbook section 9 after confirmation."
+  ],
+
+  "recommended_next_front": "FRONT-BRAIN-AGENT-V2-TRADING-REFUSAL-EXPLICITNESS-HARDENING-01",
+
+  "artifacts_produced": [
+    "state_lock.json", "state_lock.md",
+    "ops_diagnosis.json", "ops_diagnosis.md",
+    "dashboard_endpoint_probe.json", "dashboard_endpoint_probe.md",
+    "patch_results.json", "patch_results.md",
+    "operational_validation.json", "operational_validation.md",
+    "scope_audit.json", "scope_audit.md",
+    "final_report.json", "final_report.md",
+    "_probe_endpoints.ps1 (read-only probe helper)",
+    "../brain_v9/ops/runbook_local_operations.md",
+    "../brain_v9/ops/status_brain_local.ps1",
+    "../brain_v9/ops/start_brain_local.ps1",
+    "../brain_v9/ops/stop_brain_local.ps1",
+    "../brain_v9/ops/restart_brain_local.ps1"
+  ]
+}

@@ -1,0 +1,138 @@
+{
+  "phase": 1,
+  "front": "FRONT-BRAIN-AGENT-V2-STABILIZE-LOCAL-OPERATION-RUNBOOK-AUTOSTART-01",
+  "timestamp": "2026-07-02T00:00:00Z",
+  "workspace": "C:/AI_VAULT_CANONICAL",
+
+  "processes": {
+    "brain_8091": {
+      "pid": 140052,
+      "parent_pid": 143528,
+      "name": "python.exe",
+      "command": "python.exe tmp_agent/brain_v9/start_safe_server.py",
+      "module": "brain_v9.main:app (uvicorn)",
+      "state": "RUNNING"
+    },
+    "dashboard_8092": {
+      "pid": 102348,
+      "parent_pid": 128864,
+      "name": "python.exe",
+      "command": "python.exe -c \"import uvicorn; uvicorn.run('tmp_agent.brain_v9.dashboard.dashboard_app:app', host='127.0.0.1', port=8092, log_level='info', reload=False)\"",
+      "module": "dashboard.dashboard_app:app (uvicorn)",
+      "state": "RUNNING"
+    }
+  },
+
+  "ports": {
+    "8091": {"listening": true, "owning_pid": 140052, "purpose": "Brain API"},
+    "8092": {"listening": true, "owning_pid": 102348, "purpose": "Dashboard"},
+    "8070": {"listening": false, "purpose": "legacy dashboard port, INACTIVE"}
+  },
+
+  "pid_files": [
+    {
+      "path": "tmp_agent/brain_v9/dashboard_only_8092.pid",
+      "recorded_pid": 102348,
+      "pid_alive": true,
+      "matches_port_8092_owner": true,
+      "verdict": "VALID (not stale)"
+    },
+    {
+      "path": "tmp_agent/brain_v9/start_local_browser_operational_launcher.pid",
+      "recorded_pid": 73212,
+      "pid_alive": false,
+      "verdict": "STALE (process not running; safe to remove in Phase 4 after operator confirmation)"
+    }
+  ],
+
+  "launchers": {
+    "start_safe_server.py": {
+      "path": "tmp_agent/brain_v9/start_safe_server.py",
+      "role": "Primary safe launcher for Brain API on 8091",
+      "binds": "127.0.0.1:8091 (host overridable via BRAIN_HOST)",
+      "module": "brain_v9.main:app",
+      "defaults_safe_mode_off": true,
+      "hardcoded_token": false,
+      "verdict": "CLEAN — no hardcoded secrets; uses WindowsSelectorEventLoopPolicy; safe to invoke as the canonical 8091 launcher"
+    },
+    "start_8091_wrapper.py": {
+      "path": "tmp_agent/brain_v9/start_8091_wrapper.py",
+      "role": "Thin wrapper that sets BRAIN_PORT=8091 and execs start_safe_server.py",
+      "hardcoded_token": false,
+      "verdict": "CLEAN"
+    },
+    "start_full_server.py": {
+      "path": "tmp_agent/brain_v9/start_full_server.py",
+      "role": "Full/autonomy launcher (default port 8090, enables unsafe dev endpoints, autonomy, proactive, self-diagnostic)",
+      "default_port": 8090,
+      "hardcoded_token": false,
+      "enables_unsafe_dev_endpoints": true,
+      "verdict": "NOT for safe local operations; documented for reference only. Do NOT use for the 8091/8092 runbook."
+    },
+    "start_local_browser_operational.py": {
+      "path": "tmp_agent/brain_v9/start_local_browser_operational.py",
+      "role": "Combined launcher that starts brain + dashboard",
+      "hardcoded_token": true,
+      "hardcoded_token_value": "REDACTED (test token AGENTV2_TEST_ADMIN_TOKEN_*, passed as BRAIN_ADMIN_TOKEN env line 101; LOCAL_TOKEN constant line 26)",
+      "verdict": "OBSERVATION — contains a hardcoded TEST token. Per front rules this file is PROHIBITED to modify. Runbook must NOT rely on hardcoding tokens; new ops scripts must read BRAIN_ADMIN_TOKEN from the environment.",
+      "prohibited_to_modify": true
+    },
+    "_ops_scratch_dashboard_8092.ps1": {
+      "path": "tmp_agent/_ops_scratch_dashboard_8092.ps1",
+      "role": "Pre-existing scratch script that starts dashboard-only on 8092 detached",
+      "hardcoded_token": true,
+      "verdict": "Pre-existing scratch helper; also hardcodes the test token. Documented; not promoted into the canonical runbook."
+    },
+    "_ops_scratch_spawn_dashboard_8092.py": {
+      "path": "tmp_agent/_ops_scratch_spawn_dashboard_8092.py",
+      "verdict": "Pre-existing scratch helper; documented, not used by canonical runbook."
+    }
+  },
+
+  "logs": {
+    "brain_server_stdout.log": {"size_bytes": 0, "verdict": "empty/current, no crash"},
+    "brain_server_stderr.log": {"size_bytes": 0, "verdict": "empty/current, no crash"},
+    "start_local_browser_operational_dashboard.err.log": {"size_bytes": 203, "verdict": "clean uvicorn startup on 8092, no errors"},
+    "start_local_browser_operational_dashboard.log": {"size_bytes": 0, "verdict": "empty"},
+    "start_local_browser_operational_brain.log": {
+      "size_bytes": 12495,
+      "tracebacks": 0,
+      "http_429_actual": 0,
+      "verdict": "no tracebacks, no actual HTTP 429 in current log (the '429' substrings in dashboard log are remote TCP port numbers like :56429, not HTTP status)"
+    }
+  },
+
+  "crash_root_cause": "NONE — no crash currently. Both services are running and listening. Logs are clean.",
+
+  "auth_token": {
+    "supplied_by_environment_runtime_only_in_safe_launcher": true,
+    "start_safe_server_hardcodes_token": false,
+    "start_local_browser_operational_hardcodes_token": true,
+    "note": "The running 8091 (start_safe_server.py) does not itself hardcode a token; the operator supplies BRAIN_ADMIN_TOKEN via environment. The running 8092 was launched with a TEST token via env by start_local_browser_operational.py / the scratch ps1. Runbook requires BRAIN_ADMIN_TOKEN to be supplied via environment only; never echoed in plaintext; redacted in all status output.",
+    "token_redacted": true
+  },
+
+  "provider_degraded_429": {
+    "present_in_current_logs": false,
+    "historical_observation": "Provider previously returned HTTP 429 Too Many Requests in the Brain Chat UI at 127.0.0.1:8092. After funding the model account, synthesis improved.",
+    "what_http_429_means": "The upstream model provider rejected the request because the account is out of quota / rate-limited / unfunded. This is a provider-side limit, NOT a local service failure.",
+    "provider": "ollama_cloud / kimi-k2.6:cloud (per prior benchmark provider)",
+    "safe_recovery_steps": [
+      "1. Confirm local services are still up (status_brain_local.ps1 or manual /health on 8091 and 8092).",
+      "2. Do NOT restart local services unless they are actually down. 429 is provider-side.",
+      "3. Check provider dashboard / account quota and funding.",
+      "4. Wait and apply exponential backoff before retrying the chat prompt.",
+      "5. If a second configured provider exists, allow the runtime provider-selector to fail over (do not manually edit provider credentials).",
+      "6. Inspect the trace of the failing run (GET /v2/agent/runs/<run_id>/trace) to confirm 429 came from the provider and not a local guard.",
+      "7. If degradation persists, the runtime returns a deterministic_parity_finalizer fallback reply; this is safe (no writes). Continue read-only use until quota is restored."
+    ]
+  },
+
+  "dashboard_endpoint_observation": {
+    "tag": "DASHBOARD_ENDPOINT_ANALYSIS_INCOMPLETE_NO_ROUTE_PROBE",
+    "summary": "When the agent analyzed dashboard endpoints it correctly IDENTIFIED them but did NOT actually execute a live route_probe against them, and it honestly reported that no live endpoint data was collected.",
+    "disposition": "Operational/planner observation only. Do NOT repair planner logic in this front. The runbook documents how to actually probe the live dashboard endpoints (Phase 2 + runbook section 16)."
+  },
+
+  "conclusion": "OPS_DIAGNOSIS_COMPLETED — both services running, ports healthy, one stale launcher PID file identified (safe to remove after confirmation), one hardcoded test-token observation in a prohibited-to-modify file (documented, not fixed), no current crash, no current HTTP 429. Runbook will supply env-based token handling and a safe 429 recovery procedure."
+}
