@@ -1,0 +1,36 @@
+{
+  "status": "CI_FAILURE_REPAIR_APPLIED_ON_GITHUB",
+  "front": "FRONT-BRAIN-CI-DASHBOARD-TRACE-FAILURE-REPAIR-01",
+  "workflow": "nontrading-smoke-regression",
+  "failed_job": "Dashboard / Trace Tests",
+  "workflow_job_command": "python tests/smoke/test_visual_trace_8092_canonical_path_fix_01.py",
+  "start_head": "9d0df55e63cb10b392a3fa9c8b31f5fb2de58913",
+  "root_causes_addressed": [
+    "The live regression accepted Brain API unreachable responses as clean because it only checked for absence of boilerplate.",
+    "The dashboard trace smoke test used a brittle exact-count assertion for a JavaScript replace(...) expression instead of checking the same-origin trace proxy contract semantically."
+  ],
+  "fixes_applied": [
+    "_live_regression.py now requires ok=true, non-empty content, no error content, and no boilerplate; it exits non-zero if any item is not clean.",
+    "live_regression.json now marks the prior unreachable responses as INVALIDATED_FALSE_POSITIVE with clean=false.",
+    "test_visual_trace_8092_canonical_path_fix_01.py now verifies the semantic same-origin trace proxy contract without requiring two exact replace(...) expressions."
+  ],
+  "files_modified": [
+    "tmp_agent/front_brain_chat_answer_quality_hardening_02/_live_regression.py",
+    "tmp_agent/front_brain_chat_answer_quality_hardening_02/live_regression.json",
+    "tests/smoke/test_visual_trace_8092_canonical_path_fix_01.py"
+  ],
+  "security_scope": {
+    "api_security_touched": false,
+    "env_touched": false,
+    "memory_touched": false,
+    "semantic_memory_touched": false,
+    "faiss_touched": false,
+    "broker_ibkr_qc_touched": false,
+    "trading_touched": false,
+    "real_money_touched": false,
+    "governance_weakened": false,
+    "planner_changed": false,
+    "tool_execution_changed": false
+  },
+  "remaining_verification": "Wait for the push-triggered nontrading-smoke-regression workflow and confirm Dashboard / Trace Tests passes."
+}
