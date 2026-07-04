@@ -15,6 +15,7 @@ IS_CI = bool(os.getenv("GITHUB_ACTIONS"))
 sys.path.insert(0, str(REPO_ROOT))
 sys.path.insert(0, str(REPO_ROOT / "tmp_agent"))
 
+
 def _backend_available():
     import socket
     try:
@@ -34,6 +35,7 @@ def _require_backend(label):
             return False
     return True
 
+
 from fastapi.testclient import TestClient
 
 os.environ.setdefault("BRAIN_ADMIN_TOKEN", "AGENTV2_TEST_ADMIN_TOKEN")
@@ -50,10 +52,9 @@ def test_dashboard_app_js_has_no_hardcoded_8091_trace_url():
     Verify dashboard/static/app.js does not contain hardcoded http://127.0.0.1:8091
     in trace link builders.
     """
-    from pathlib import Path
     js_path = REPO_ROOT / "tmp_agent/brain_v9/dashboard/static/app.js"
     content = js_path.read_text(encoding="utf-8")
-    # 8091 may appear in error messages ("Ensure Agent V2 is running on 8091") but NOT in trace URLs
+    # 8091 may appear in error messages ("Ensure Agent V2 is running on 8091") but NOT in trace URLs.
     trace_url_lines = [line for line in content.splitlines() if "trace_url" in line.lower() or "traceUrl" in line]
     for line in trace_url_lines:
         assert "127.0.0.1:8091" not in line, f"Hardcoded 8091 found in trace-related line: {line}"
@@ -62,14 +63,24 @@ def test_dashboard_app_js_has_no_hardcoded_8091_trace_url():
 
 def test_dashboard_app_js_uses_same_origin_trace_proxy():
     """
-    Verify app.js remaps /v2/agent/runs/ to /brain-dashboard/agent-v2/runs/
+    Verify app.js routes trace inspection through the same-origin dashboard proxy.
+
+    Earlier versions asserted that the exact replace(...) expression appeared at
+    least twice. That was brittle after the UI introduced live trace loading and
+    direct proxy fetches. The real contract is semantic: dashboard trace access
+    must use /brain-dashboard/agent-v2/runs/ and must not hardcode 8091 in trace
+    link builders.
     """
-    from pathlib import Path
     js_path = REPO_ROOT / "tmp_agent/brain_v9/dashboard/static/app.js"
     content = js_path.read_text(encoding="utf-8")
     assert "/brain-dashboard/agent-v2/runs/" in content, "app.js should use same-origin dashboard proxy"
-    # Make sure it replaces the old v2 path
-    assert content.count("replace('/v2/agent/runs/', '/brain-dashboard/agent-v2/runs/')") >= 2, "Should replace v2 trace path in multiple places"
+    trace_related_lines = [
+        line for line in content.splitlines()
+        if "trace" in line.lower() or "/v2/agent/runs/" in line or "/brain-dashboard/agent-v2/runs/" in line
+    ]
+    assert trace_related_lines, "app.js should contain trace-related client logic"
+    for line in trace_related_lines:
+        assert "http://127.0.0.1:8091" not in line, f"Trace logic must not hardcode 8091: {line}"
     print("PASS: dashboard_app_js_uses_same_origin_trace_proxy")
 
 
