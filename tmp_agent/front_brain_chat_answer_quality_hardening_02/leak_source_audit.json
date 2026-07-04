@@ -1,0 +1,28 @@
+{
+  "leak_source_identified": true,
+  "root_cause": "finalizer.py build_finalizer_prompt() sets payload['required_format'] = ['Summary', 'Evidence used', 'Actions performed', ...] which instructs the LLM to produce structured sections. The LLM complies and outputs '## Summary', '## Finalización de Ejecución Agent V2', 'I'll finalize this Agent V2 run...', etc. These reach the user via dashboard_routes.py:368 content = data.get('final_answer').",
+  "flow": "finalizer.py prompt → LLM → answer → langgraph_parity_runtime state['final_answer'] → response_normalizer.py (identity guard only, no boilerplate strip) → api_adapter.py final_answer → dashboard_routes.py content → UI",
+  "leak_patterns": [
+    "## Summary",
+    "## Finalización de Ejecución Agent V2",
+    "## Finalización de Ejecución Agent V2 — Diagnóstico",
+    "I'll finalize this Agent V2 run",
+    "The user requested",
+    "The user asked",
+    "This is an evidence-required diagnosis run",
+    "This is a read-only evidence diagnosis run",
+    "Requested vs scheduled vs executed",
+    "Requested vs Scheduled",
+    "LIVE TOOL EVIDENCE",
+    "MEMORY EVIDENCE",
+    "Actions Performed",
+    "Evidence used",
+    "Risks/gates",
+    "Next safe action"
+  ],
+  "generated_by": "LLM following finalizer prompt template instructions (required_format array)",
+  "not_generated_by": "deterministic fallback (that path produces different structured text), response_normalizer (it only does identity guard), provider directly (provider just follows the prompt)",
+  "useful_as_metadata": "yes — the structured sections are useful for trace/inspector but bad as user-facing content",
+  "fix_location": "response_normalizer.py — add sanitize_user_facing_content() that strips finalizer boilerplate preambles from final_answer before it reaches the chat UI",
+  "fix_approach": "conservative pattern-based stripper that removes known finalizer section headers and framing sentences while preserving actual answer paragraphs, code blocks, safety refusals, and legitimate markdown"
+}

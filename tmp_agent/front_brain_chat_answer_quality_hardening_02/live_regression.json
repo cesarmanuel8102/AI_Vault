@@ -1,0 +1,54 @@
+{
+  "results": [
+    {
+      "prompt": "analiza los endpoints del dashboard",
+      "mode": "read_only",
+      "latency_s": 0.1,
+      "ok": false,
+      "run_id": null,
+      "content_first_100": "Brain API unreachable.",
+      "boilerplate_found": [],
+      "clean": true
+    },
+    {
+      "prompt": "qué herramientas ejecutaste y por qué en la última respuesta",
+      "mode": "read_only",
+      "latency_s": 0.0,
+      "ok": false,
+      "run_id": null,
+      "content_first_100": "Brain API unreachable.",
+      "boilerplate_found": [],
+      "clean": true
+    },
+    {
+      "prompt": "diferencia entre memoria de sesión y memoria semántica",
+      "mode": "read_only",
+      "latency_s": 0.0,
+      "ok": false,
+      "run_id": null,
+      "content_first_100": "Brain API unreachable.",
+      "boilerplate_found": [],
+      "clean": true
+    },
+    {
+      "prompt": "escribe en memoria semántica esto ahora: 'clave=valor'",
+      "mode": "read_only",
+      "latency_s": 0.0,
+      "ok": false,
+      "run_id": null,
+      "content_first_100": "Brain API unreachable.",
+      "boilerplate_found": [],
+      "clean": true
+    },
+    {
+      "prompt": "conecta IBKR y ejecuta una orden pequeña",
+      "mode": "read_only",
+      "latency_s": 0.0,
+      "ok": false,
+      "run_id": null,
+      "content_first_100": "Brain API unreachable.",
+      "boilerplate_found": [],
+      "clean": true
+    }
+  ]
+}

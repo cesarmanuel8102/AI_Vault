@@ -299,6 +299,70 @@ def _identity_guard_rewrite(text: Optional[str], intent_route: Optional[str] = N
     }
 
 
+_FINALIZER_BOILERPLATE_PATTERNS = [
+    re.compile(r"(?im)^#{1,3}\s*Finalizaci[oó]n de Ejecuci[oó]n Agent V2[^\n]*\n*"),
+    re.compile(r"(?im)^#{1,3}\s*Summary\s*\n*"),
+    re.compile(r"(?im)^#{1,3}\s*Evidence used\s*\n*"),
+    re.compile(r"(?im)^#{1,3}\s*Actions performed\s*\n*"),
+    re.compile(r"(?im)^#{1,3}\s*Risks?/?\s*gates?\s*\n*"),
+    re.compile(r"(?im)^#{1,3}\s*Next safe action\s*\n*"),
+    re.compile(r"(?im)^#{1,3}\s*Brain evidence\s*\n*"),
+    re.compile(r"(?im)^#{1,3}\s*Reasoning\s*\n*"),
+    re.compile(r"(?im)^#{1,3}\s*Conclusion\s*\n*"),
+    re.compile(r"(?im)^I(?:'| a)m?\s*(?:will|going to|about to)\s+finalize this Agent V2 run[^\n]*\n+", re.IGNORECASE),
+    re.compile(r"(?im)^I'll finalize this Agent V2 run[^\n]*\n+", re.IGNORECASE),
+    re.compile(r"(?im)^This is an? (?:evidence[- ]required|read[- ]only evidence)\s*(?:diagnosis\s*)?run[^\n]*\n+", re.IGNORECASE),
+    re.compile(r"(?im)^The user (?:requested|asked)[^\n]*\n+", re.IGNORECASE),
+    re.compile(r"(?im)^Requested vs\.?\s*(?:Scheduled(?:\s*vs\.?\s*Executed)?)?[^\n]*\n+", re.IGNORECASE),
+    re.compile(r"(?im)^\*\*LIVE TOOL EVIDENCE\*\*[^\n]*\n+", re.IGNORECASE),
+    re.compile(r"(?im)^\*\*MEMORY EVIDENCE\*\*[^\n]*\n+", re.IGNORECASE),
+    re.compile(r"(?im)^Goal:[^\n]*\n+", re.IGNORECASE),
+    re.compile(r"(?im)^\*\*Goal:\*\*[^\n]*\n+", re.IGNORECASE),
+    re.compile(r"(?im)^\*\*Resultado actual:\*\*[^\n]*\n+", re.IGNORECASE),
+    re.compile(r"(?im)^\*\*Classification:\*\*[^\n]*\n+", re.IGNORECASE),
+    re.compile(r"(?im)^\*\*Mode:\*\*[^\n]*\n+", re.IGNORECASE),
+]
+
+_FINALIZER_SENTENCE_PREFIXES = [
+    re.compile(r"(?im)^I'll finalize this Agent V2 run using only the provided evidence[,.]?\s+Distinguish requested vs scheduled vs executed tools clearly\.?\s+Do not claim tools are unavailable when they were simply not scheduled\.?\s*", re.IGNORECASE),
+    re.compile(r"(?im)^I(?:'| a)m?\s*(?:will|going to)\s+finalize this Agent V2 run[^.]*\.\s*", re.IGNORECASE),
+    re.compile(r"(?im)^This is an? evidence[- ]required diagnosis run in read[- ]only mode\.?\s*The user asked:?\s*", re.IGNORECASE),
+    re.compile(r"(?im)^The user (?:requested|asked):\s*\*?[^\n]*\*?\.?\s*(?:This run executed in read[- ]only mode\.?)?\s*", re.IGNORECASE),
+    re.compile(r"(?im)^This run executed in read[- ]only mode\.?\s*", re.IGNORECASE),
+    re.compile(r"(?im)^Finalizaci[oó]n de Ejecuci[oó]n Agent V2\s*[—\-:•]?\s*Diagn[oó]stico:?\s*[^\n]*\n+", re.IGNORECASE),
+]
+
+
+def sanitize_user_facing_content(content: Optional[str], classification: Optional[str] = None) -> str:
+    """Strip finalizer boilerplate/preamble from user-facing content.
+
+    Conservative: only removes known finalizer scaffolding patterns. Preserves
+    actual answer paragraphs, code blocks, safety refusals, and legitimate
+    markdown headings that are NOT finalizer section markers.
+
+    Called on final_answer after identity_guard_rewrite, before it reaches the
+    chat UI. Never mutates structured metadata (run_id, trace_url, etc.).
+    """
+    if not content:
+        return content or ""
+    original = content
+    result = content
+
+    for pattern in _FINALIZER_SENTENCE_PREFIXES:
+        result = pattern.sub("", result)
+
+    for pattern in _FINALIZER_BOILERPLATE_PATTERNS:
+        result = pattern.sub("", result)
+
+    result = re.sub(r"\n{3,}", "\n\n", result)
+    result = result.strip()
+
+    if not result and original.strip():
+        return original.strip()
+
+    return result
+
+
 def normalize_agent_v2_chat_response(
     raw: Dict[str, Any],
     *,
@@ -323,8 +387,10 @@ def normalize_agent_v2_chat_response(
     _raw_final_pre_guard = _extract_final_answer(raw) if raw.get("final_answer") is None else str(raw.get("final_answer") or "")
     _intent_route_for_guard = raw.get("intent_route") or raw.get("classification")
     _rewritten_final, _identity_guard_metadata = _identity_guard_rewrite(_raw_final_pre_guard, _intent_route_for_guard)
-    out["final_answer"] = _rewritten_final
+    _sanitized_final = sanitize_user_facing_content(_rewritten_final, _intent_route_for_guard)
+    out["final_answer"] = _sanitized_final
     out["identity_guard_metadata"] = _identity_guard_metadata
+    out["sanitizer_applied"] = _sanitized_final != _rewritten_final
 
     # Provider metadata must always be a complete dict
     provider_metadata = normalize_provider_metadata(raw.get("provider_metadata"), raw)
