@@ -11,6 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 
 from tmp_agent.brain_v9.core.session_fmt_helpers import (
     format_action_value,
+    format_tool_result,
     fmt_check_port,
     fmt_check_http_service,
     fmt_check_all_services,
@@ -132,6 +133,61 @@ def test_fmt_get_system_info():
     assert "100GB" in result
 
 
+def test_format_tool_result_error():
+    result = format_tool_result("check_port", False, None, error="timeout")
+    assert "error" in result
+    assert "timeout" in result
+
+
+def test_format_tool_result_error_no_output():
+    result = format_tool_result("check_port", False, None)
+    assert "sin salida" in result
+
+
+def test_format_tool_result_dispatch_known():
+    out = {"port": 8091, "status": "libre"}
+    result = format_tool_result("check_port", True, out)
+    assert "8091" in result
+    assert "libre" in result
+
+
+def test_format_tool_result_dict_summary():
+    out = {"summary": "All good", "extra": "data"}
+    result = format_tool_result("unknown_tool", True, out)
+    assert result == "All good"
+
+
+def test_format_tool_result_dict_code_truncation():
+    long_content = "x" * 300
+    out = {"content": long_content}
+    result = format_tool_result("unknown_tool", True, out)
+    assert "truncado" in result
+    assert "300" in result
+
+
+def test_format_tool_result_dict_generic():
+    out = {"name": "brain", "count": 3, "ok": True}
+    result = format_tool_result("unknown_tool", True, out)
+    assert "brain" in result
+    assert "3" in result
+
+
+def test_format_tool_result_string():
+    result = format_tool_result("run_command", True, "hello world")
+    assert result == "hello world"
+
+
+def test_format_tool_result_string_truncated():
+    long_str = "x" * 600
+    result = format_tool_result("run_command", True, long_str)
+    assert len(result) <= 500
+
+
+def test_format_tool_result_non_str_non_dict():
+    result = format_tool_result("unknown", True, 42)
+    assert result == "42"
+
+
 def test_module_does_not_import_session():
     import inspect
     import tmp_agent.brain_v9.core.session_fmt_helpers as mod
@@ -163,6 +219,15 @@ if __name__ == "__main__":
         test_fmt_get_live_autonomy_status,
         test_fmt_run_diagnostic,
         test_fmt_get_system_info,
+        test_format_tool_result_error,
+        test_format_tool_result_error_no_output,
+        test_format_tool_result_dispatch_known,
+        test_format_tool_result_dict_summary,
+        test_format_tool_result_dict_code_truncation,
+        test_format_tool_result_dict_generic,
+        test_format_tool_result_string,
+        test_format_tool_result_string_truncated,
+        test_format_tool_result_non_str_non_dict,
         test_module_does_not_import_session,
     ]
     passed = 0

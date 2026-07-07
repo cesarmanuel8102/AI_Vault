@@ -5078,50 +5078,12 @@ class BrainSession:
 
     @classmethod
     def _format_tool_result(cls, tool: str, ok: bool, output, error=None) -> str:
-        """Format a single tool result into a human-readable string."""
-        if not ok or output is None:
-            return f"{tool}: error — {error or 'sin salida'}"
-        # R8.3: dispatch by tool name first — formatters handle dict OR list
-        if isinstance(output, (dict, list)):
-            method_name = cls._TOOL_FORMATTERS.get(tool)
-            if method_name:
-                try:
-                    formatter = getattr(cls, method_name)
-                    return formatter(output)
-                except Exception as _fmt_err:
-                    logging.getLogger("session").warning(
-                        "Formatter %s failed: %s", tool, _fmt_err, exc_info=True
-                    )
-        if isinstance(output, dict):
-            # Fallback: extract meaningful fields
-            summary = output.get("summary") or output.get("message") or output.get("diagnosis")
-            if isinstance(summary, str):
-                return summary[:500]
-            # R6.2: Detect code-dump-like fields (read_file, get_file_content, etc)
-            # and truncate aggressively. Without this, raw Python/JSON source
-            # leaks into the chat reply when LLM synthesis is unavailable.
-            for code_field in ("content", "text", "source", "code", "body"):
-                val = output.get(code_field)
-                if isinstance(val, str) and len(val) > 240:
-                    nlines = val.count("\n") + 1
-                    head = val[:200].replace("\n", " ⏎ ")
-                    return (
-                        f"{tool}: [{code_field} truncado: {len(val)} chars / "
-                        f"{nlines} lineas] {head}..."
-                    )
-            # Generic dict formatter
-            fields = []
-            for key, value in output.items():
-                if key in ("success", "raw"):
-                    continue
-                if isinstance(value, (str, int, float, bool)):
-                    fields.append(f"{key}: {cls._format_action_value(value)}")
-                if len(fields) >= 6:
-                    break
-            return ", ".join(fields) if fields else str(output)[:400]
-        if isinstance(output, str):
-            return output[:500]
-        return str(output)[:400]
+        """Format a single tool result into a human-readable string.
+
+        B7-STRANGLER-01B: delegates to
+        :func:`brain_v9.core.session_fmt_helpers.format_tool_result`.
+        """
+        return _fmt_helpers.format_tool_result(tool, ok, output, error)
 
     @classmethod
     def _summarize_action_output(cls, action: Dict) -> str:

@@ -27,10 +27,12 @@ delegate here, preserving:
 from __future__ import annotations
 
 import json
-from typing import Any, Dict
+import logging
+from typing import Any, Callable, Dict, Optional
 
 __all__ = [
     "format_action_value",
+    "format_tool_result",
     "fmt_check_port",
     "fmt_check_http_service",
     "fmt_check_all_services",
@@ -406,3 +408,89 @@ def fmt_get_technical_introspection(out: Dict) -> str:
     elif isinstance(caps, list):
         parts.append(f"Capacidades registradas: {len(caps)}")
     return "\n".join(parts) if parts else str(out)[:400]
+
+
+# Tool formatter registry: maps tool name to formatter function in this module.
+_TOOL_FORMATTER_FUNCS: Dict[str, str] = {
+    "check_port": "fmt_check_port",
+    "check_http_service": "fmt_check_http_service",
+    "check_url": "fmt_check_http_service",
+    "check_all_services": "fmt_check_all_services",
+    "check_service_status": "fmt_check_service_status",
+    "get_live_autonomy_status": "fmt_get_live_autonomy_status",
+    "run_diagnostic": "fmt_run_diagnostic",
+    "get_system_info": "fmt_get_system_info",
+    "run_command": "fmt_run_command",
+    "read_file": "fmt_read_file",
+    "list_directory": "fmt_list_directory",
+    "search_files": "fmt_search_files",
+    "list_processes": "fmt_list_processes",
+    "grep_codebase": "fmt_grep_codebase",
+    "list_recent_brain_changes": "fmt_list_recent_brain_changes",
+    "get_chat_metrics": "fmt_get_chat_metrics",
+    "semantic_memory_search": "fmt_semantic_memory_search",
+    "get_technical_introspection": "fmt_get_technical_introspection",
+}
+
+
+def format_tool_result(
+    tool: str,
+    ok: bool,
+    output: Any,
+    error: Optional[str] = None,
+) -> str:
+    """Format a single tool result into a human-readable string.
+
+    Pure function extracted from BrainSession._format_tool_result.
+    Dispatches to the appropriate ``fmt_<name>`` function in this module via
+    ``_TOOL_FORMATTER_FUNCS``.  Does NOT depend on ``BrainSession``.
+
+    Parameters
+    ----------
+    tool : str
+        Tool name (e.g. ``"check_port"``).
+    ok : bool
+        Whether the tool execution succeeded.
+    output : Any
+        Raw output from the tool (dict, list, str, etc.).
+    error : Optional[str]
+        Error message if the tool failed.
+    """
+    if not ok or output is None:
+        return f"{tool}: error — {error or 'sin salida'}"
+    if isinstance(output, (dict, list)):
+        func_name = _TOOL_FORMATTER_FUNCS.get(tool)
+        if func_name:
+            try:
+                formatter = globals().get(func_name)
+                if formatter:
+                    return formatter(output)
+            except Exception as exc:
+                logging.getLogger("session_fmt_helpers").warning(
+                    "Formatter %s failed: %s", tool, exc, exc_info=True
+                )
+    if isinstance(output, dict):
+        summary = output.get("summary") or output.get("message") or output.get("diagnosis")
+        if isinstance(summary, str):
+            return summary[:500]
+        for code_field in ("content", "text", "source", "code", "body"):
+            val = output.get(code_field)
+            if isinstance(val, str) and len(val) > 240:
+                nlines = val.count("\n") + 1
+                head = val[:200].replace("\n", " \u23ce ")
+                return (
+                    f"{tool}: [{code_field} truncado: {len(val)} chars / "
+                    f"{nlines} lineas] {head}..."
+                )
+        fields = []
+        for key, value in output.items():
+            if key in ("success", "raw"):
+                continue
+            if isinstance(value, (str, int, float, bool)):
+                fields.append(f"{key}: {format_action_value(value)}")
+            if len(fields) >= 6:
+                break
+        return ", ".join(fields) if fields else str(output)[:400]
+    if isinstance(output, str):
+        return output[:500]
+    return str(output)[:400]
