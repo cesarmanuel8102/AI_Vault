@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -359,8 +360,30 @@ def chat(req: ChatRequest) -> dict[str, Any]:
     try:
         with urllib.request.urlopen(request, timeout=120) as response:
             data = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        code = e.code
+        if code in (401, 403):
+            kind = "auth_governance"
+            hint = "BRAIN_ADMIN_TOKEN missing/mismatch on 8091 or X-Brain-Token not accepted by require_strict_operator_access."
+            content = "Brain API rejected the request: auth/governance denied."
+        elif code >= 500:
+            kind = "critical"
+            hint = "Backend 8091 returned a server error. Inspect 8091 logs."
+            content = "Brain API server error."
+        else:
+            kind = "operational_warning"
+            hint = f"Backend 8091 returned HTTP {code}."
+            content = f"Brain API returned HTTP {code}."
+        return {"ok": False, "error": f"HTTP {code}: {e.reason}", "error_kind": kind, "http_code": code, "content": content, "note": hint}
+    except urllib.error.URLError as e:
+        reason = getattr(e, "reason", str(e))
+        is_timeout = "timed out" in str(reason).lower() or isinstance(reason, TimeoutError)
+        kind = "operational_warning" if is_timeout else "critical"
+        hint = "Request timed out to 8091." if is_timeout else "Connection refused to 8091 — Brain API process not running or port blocked."
+        content = "Brain API timeout." if is_timeout else "Brain API unreachable: connection refused."
+        return {"ok": False, "error": str(e), "error_kind": kind, "content": content, "note": hint}
     except Exception as e:
-        return {"ok": False, "error": str(e), "content": "Brain API unreachable.", "note": "Ensure Agent V2 backend is running on 8091"}
+        return {"ok": False, "error": str(e), "error_kind": "critical", "content": "Brain API unreachable: unexpected proxy error.", "note": "Unexpected error in /brain-dashboard/chat proxy."}
     
     pm = data.get("provider_metadata", {})
     return {
@@ -397,8 +420,16 @@ def agent_v2_trace(run_id: str) -> dict[str, Any]:
         request = urllib.request.Request(url, headers=headers, method="GET")
         with urllib.request.urlopen(request, timeout=30) as response:
             return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        kind = "auth_governance" if e.code in (401, 403) else ("critical" if e.code >= 500 else "operational_warning")
+        return {"ok": False, "error": f"HTTP {e.code}: {e.reason}", "error_kind": kind, "http_code": e.code, "message": f"Trace fetch failed for {run_id}"}
+    except urllib.error.URLError as e:
+        reason = getattr(e, "reason", str(e))
+        is_timeout = "timed out" in str(reason).lower() or isinstance(reason, TimeoutError)
+        kind = "operational_warning" if is_timeout else "critical"
+        return {"ok": False, "error": str(e), "error_kind": kind, "message": f"Trace fetch failed for {run_id}"}
     except Exception as e:
-        return {"ok": False, "error": str(e), "message": f"Trace fetch failed for {run_id}"}
+        return {"ok": False, "error": str(e), "error_kind": "critical", "message": f"Trace fetch failed for {run_id}"}
 
 
 @router.get("/agent-v2/status")

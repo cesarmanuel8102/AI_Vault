@@ -280,7 +280,19 @@ def build_finalizer_prompt(run: Dict[str, Any], memory_hits: List[Dict[str, Any]
     prompt_header = (
         "Finalize this Agent V2 run using only this evidence. "
         "Distinguish requested vs scheduled vs executed tools clearly. "
-        "Do not claim tools are unavailable when they were simply not scheduled."
+        "Do not claim tools are unavailable when they were simply not scheduled.\n"
+        "Severity classification (use these exact categories when reporting findings):\n"
+        "- CRITICAL: crash, Traceback, HTTP 500, backend down, connection refused, failed run, no run_id.\n"
+        "- AUTH/GOVERNANCE: HTTP 401/403, strict token denied, blocked tool, permission denied.\n"
+        "- OPERATIONAL WARNING: timeout, provider degraded, runtime_type NoneType, file_too_large, partial evidence.\n"
+        "- HEALTHY SIGNAL: /health 200, /v2/chat/agent 200, run completed, trace_url present, mode_effective read_only.\n"
+        "Honesty rules:\n"
+        "- NEVER say 'no errors' or 'sin errores' if any CRITICAL, AUTH/GOVERNANCE, or OPERATIONAL WARNING signal is present in the evidence. "
+        "Use 'No veo errores criticos activos, pero si veo estas anomalias/advertencias: ...' instead.\n"
+        "- Distinguish LIVE TOOL EVIDENCE (current run, in-vivo) from MEMORY/HISTORICAL EVIDENCE (persistent context, aged). "
+        "Never use historical memory as proof of current state.\n"
+        "- If evidence coverage is incomplete (blocked tools, file_too_large, partial reads), state it explicitly and provide a concrete next step.\n"
+        "- Do not hallucinate runtime_type values; report exactly what capability_registry_read returned."
     )
     if payload.get("session_context"):
         prompt_header += "\nUse the recent session context below to understand references, but still distinguish current evidence from previous context."
