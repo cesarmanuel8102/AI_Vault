@@ -2383,8 +2383,7 @@ class BrainSession:
 
     @classmethod
     def _contains_raw_tool_markup(cls, text: str) -> bool:
-        lowered = str(text or "").lower()
-        return "<function_calls" in lowered or "<invoke name=" in lowered
+        return _qp.contains_raw_tool_markup(text)
 
     @classmethod
     def _looks_like_canned_failure(cls, text: str) -> bool:
@@ -5943,22 +5942,21 @@ class BrainSession:
 
     @staticmethod
     def _is_manual_confirmation_step(text: str) -> bool:
-        """Skip steps that are just confirmation instructions."""
-        t = text.lower()
-        manual_keywords = [
-            "allow once", "allow_once", "allow session", "allow_session",
-            "confirmo", "confirma", "dale", "sigue", "continua", "continúa",
-            "próximo", "proximo", "next", "manual", "aprueba",
-        ]
-        return any(k in t for k in manual_keywords)
+        """Skip steps that are just confirmation instructions.
+
+        B7-STRANGLER-02A shim — delegates to
+        :func:`brain_v9.core.session_query_predicates.is_manual_confirmation_step`.
+        """
+        return _qp.is_manual_confirmation_step(text)
 
     @staticmethod
     def _is_continue_sequence_message(text: str) -> bool:
-        """Detect continuation requests for active sequences."""
-        t = text.lower().strip().rstrip(".!?")
-        return t in ("continua", "continúa", "sigue", "próximo", "proximo",
-                       "next", "dale", "continuar", "adelante", "procede",
-                       "continua...", "sigue...")
+        """Detect continuation requests for active sequences.
+
+        B7-STRANGLER-02A shim — delegates to
+        :func:`brain_v9.core.session_query_predicates.is_continue_sequence_message`.
+        """
+        return _qp.is_continue_sequence_message(text)
 
     def _maybe_advance_chat_sequence(self) -> Optional[str]:
         """Return next actionable step text if sequence active, else None."""

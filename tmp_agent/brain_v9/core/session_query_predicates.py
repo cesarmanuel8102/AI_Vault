@@ -93,6 +93,9 @@ __all__ = [
     "is_abstract_reasoning_query",
     "is_operational_agent_query",
     "is_temporal_query",
+    "contains_raw_tool_markup",
+    "is_manual_confirmation_step",
+    "is_continue_sequence_message",
 ]
 
 # ---------------------------------------------------------------------------
@@ -412,3 +415,28 @@ def is_operational_agent_query(message: str) -> bool:
 
 def is_temporal_query(message: str) -> bool:
     return bool(_TEMPORAL_QUERY_RE.search(message or ""))
+
+
+def contains_raw_tool_markup(text: str) -> bool:
+    """Detect raw XML tool-call markup that should never leak to the user."""
+    lowered = str(text or "").lower()
+    return "<function_calls" in lowered or "<invoke name=" in lowered
+
+
+def is_manual_confirmation_step(text: str) -> bool:
+    """Skip steps that are just confirmation instructions."""
+    t = text.lower()
+    manual_keywords = [
+        "allow once", "allow_once", "allow session", "allow_session",
+        "confirmo", "confirma", "dale", "sigue", "continua", "continúa",
+        "próximo", "proximo", "next", "manual", "aprueba",
+    ]
+    return any(k in t for k in manual_keywords)
+
+
+def is_continue_sequence_message(text: str) -> bool:
+    """Detect continuation requests for active sequences."""
+    t = text.lower().strip().rstrip(".!?")
+    return t in ("continua", "continúa", "sigue", "próximo", "proximo",
+                   "next", "dale", "continuar", "adelante", "procede",
+                   "continua...", "sigue...")
