@@ -1,0 +1,86 @@
+name: Brain Agent V2 Hygiene
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "tmp_agent/brain_v9/**"
+      - "tmp_agent/front_brain_chat_answer_quality_hardening_02/**"
+      - "tests/contract/**"
+      - "tests/smoke/test_front_brain_ui_token_preflight_01.py"
+      - ".github/workflows/brain-agent-v2-hygiene.yml"
+  push:
+    branches:
+      - codex/own-capital-sustainable-return
+    paths:
+      - "tmp_agent/brain_v9/**"
+      - "tmp_agent/front_brain_chat_answer_quality_hardening_02/**"
+      - "tests/contract/**"
+      - "tests/smoke/test_front_brain_ui_token_preflight_01.py"
+      - ".github/workflows/brain-agent-v2-hygiene.yml"
+
+jobs:
+  hygiene:
+    name: Brain Agent V2 Hygiene Baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Security grep guard
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          forbidden_operator_token="AGENTV2_TEST_ADMIN_TOKEN_"
+          forbidden_operator_token="${forbidden_operator_token}08F8_R1B"
+
+          forbidden_dev_password="dev_admin_"
+          forbidden_dev_password="${forbidden_dev_password}2026!"
+
+          forbidden_old_bearer="MiClave"
+          forbidden_old_bearer="${forbidden_old_bearer}UltraSegura"
+
+          for pattern in "$forbidden_operator_token" "$forbidden_dev_password" "$forbidden_old_bearer"; do
+            if git grep -n -- "$pattern"; then
+              echo "FAIL: forbidden literal found in tracked files"
+              exit 1
+            fi
+          done
+
+          echo "OK: no forbidden secret/test credential literals found in tracked files"
+
+      - name: Python compile critical modules
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tmp_agent/brain_v9/api_security.py \
+            tmp_agent/brain_v9/start_safe_server.py \
+            tmp_agent/brain_v9/start_local_browser_operational.py \
+            tmp_agent/brain_v9/dashboard/dashboard_routes.py \
+            tmp_agent/brain_v9/core/agent_kernel_v2/finalizer.py \
+            tmp_agent/brain_v9/core/agent_kernel_v2/response_normalizer.py
+          echo "OK: all critical modules compile"
+
+      - name: Sanitizer regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tmp_agent/front_brain_chat_answer_quality_hardening_02/test_sanitizer.py
+
+      - name: Static boundary compile
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tests/contract/test_agent_v2_boundary_contracts_02.py \
+            tests/smoke/test_front_brain_ui_token_preflight_01.py
+          echo "OK: boundary tests compile"
