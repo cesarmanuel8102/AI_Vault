@@ -4973,26 +4973,7 @@ class BrainSession:
 
     @staticmethod
     def _format_action_value(value) -> str:
-        if isinstance(value, bool):
-            return "si" if value else "no"
-        if isinstance(value, (int, float)):
-            return str(value)
-        if isinstance(value, str):
-            return value
-        if isinstance(value, list):
-            compact = ", ".join(str(item) for item in value[:4])
-            if len(value) > 4:
-                compact += f" (+{len(value)-4} mas)"
-            return compact or "(vacio)"
-        if isinstance(value, dict):
-            pairs = []
-            for key, item in value.items():
-                if isinstance(item, (str, int, float, bool)):
-                    pairs.append(f"{key}={BrainSession._format_action_value(item)}")
-                if len(pairs) >= 4:
-                    break
-            return ", ".join(pairs) if pairs else json.dumps(value, ensure_ascii=False)[:160]
-        return str(value)
+        return _fmt_helpers.format_action_value(value)
 
     # ── P-OP59: Smart tool result formatters ──────────────────────────────────
     # B7-STRANGLER-06: extracted to brain_v9.core.session_fmt_helpers.

@@ -26,9 +26,11 @@ delegate here, preserving:
 """
 from __future__ import annotations
 
+import json
 from typing import Any, Dict
 
 __all__ = [
+    "format_action_value",
     "fmt_check_port",
     "fmt_check_http_service",
     "fmt_check_all_services",
@@ -47,6 +49,34 @@ __all__ = [
     "fmt_semantic_memory_search",
     "fmt_get_technical_introspection",
 ]
+
+
+def format_action_value(value: Any) -> str:
+    """Format an action value (bool/int/float/str/list/dict) for compact display.
+
+    Pure function extracted from BrainSession._format_action_value.
+    Recursively calls itself for dict values.
+    """
+    if isinstance(value, bool):
+        return "si" if value else "no"
+    if isinstance(value, (int, float)):
+        return str(value)
+    if isinstance(value, str):
+        return value
+    if isinstance(value, list):
+        compact = ", ".join(str(item) for item in value[:4])
+        if len(value) > 4:
+            compact += f" (+{len(value)-4} mas)"
+        return compact or "(vacio)"
+    if isinstance(value, dict):
+        pairs = []
+        for key, item in value.items():
+            if isinstance(item, (str, int, float, bool)):
+                pairs.append(f"{key}={format_action_value(item)}")
+            if len(pairs) >= 4:
+                break
+        return ", ".join(pairs) if pairs else json.dumps(value, ensure_ascii=False)[:160]
+    return str(value)
 
 
 def fmt_check_port(out: Dict) -> str:
