@@ -300,7 +300,9 @@ def _identity_guard_rewrite(text: Optional[str], intent_route: Optional[str] = N
 
 
 _FINALIZER_BOILERPLATE_PATTERNS = [
-    re.compile(r"(?im)^#{1,3}\s*Finalizaci[oó]n de Ejecuci[oó]n Agent V2[^\n]*\n*"),
+    re.compile(r"(?im)^#{1,3}\s*Finalizaci[oó\u00f3\u00d3]n de Ejecuci[oó\u00f3\u00d3]n Agent V2[^\n]*\n*"),
+    re.compile(r"(?im)^#{1,3}\s*FinalizaciA3n de ejecuciA3n Agent V2[^\n]*\n*"),
+    re.compile(r"(?im)^#{1,3}\s*Finalizaci\u00c3\u00b3n de ejecuci\u00c3\u00b3n Agent V2[^\n]*\n*"),
     re.compile(r"(?im)^#{1,3}\s*Summary\s*\n*"),
     re.compile(r"(?im)^#{1,3}\s*Evidence used\s*\n*"),
     re.compile(r"(?im)^#{1,3}\s*Actions performed\s*\n*"),

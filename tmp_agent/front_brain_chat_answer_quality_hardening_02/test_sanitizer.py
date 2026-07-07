@@ -23,6 +23,17 @@ def test_finalizacion_header_removed():
     assert "La diferencia es..." in result
 
 
+def test_finalizacion_mojibake_header_removed():
+    content_a3 = "## FinalizaciA3n de ejecuciA3n Agent V2\n\nTexto util."
+    result_a3 = sanitize_user_facing_content(content_a3)
+    assert "FinalizaciA3n" not in result_a3
+    assert "Texto util." in result_a3
+    content_double = "## Finalizaci\u00c3\u00b3n de ejecuci\u00c3\u00b3n Agent V2\n\nTexto util."
+    result_double = sanitize_user_facing_content(content_double)
+    assert "Agent V2" not in result_double.split("\n")[0]
+    assert "Texto util." in result_double
+
+
 def test_ill_finalize_removed():
     content = "I'll finalize this Agent V2 run using only the provided evidence, clearly distinguishing requested vs scheduled vs executed tools.\n\nThe answer is 42."
     result = sanitize_user_facing_content(content)
@@ -114,6 +125,7 @@ def test_metadata_not_altered():
 if __name__ == "__main__":
     tests = [
         test_summary_header_removed, test_finalizacion_header_removed,
+        test_finalizacion_mojibake_header_removed,
         test_ill_finalize_removed, test_the_user_requested_removed,
         test_evidence_required_framing_removed, test_normal_markdown_preserved,
         test_code_blocks_preserved, test_safety_refusal_preserved,
