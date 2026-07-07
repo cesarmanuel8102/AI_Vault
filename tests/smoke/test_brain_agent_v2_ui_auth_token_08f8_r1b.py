@@ -16,7 +16,9 @@ import pytest
 
 # Get the canonical repo root (tests/smoke/ -> tests/ -> repo_root)
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-LOCAL_TOKEN = "AGENTV2_TEST_ADMIN_TOKEN_08F8_R1B"
+LOCAL_TOKEN = os.getenv("BRAIN_ADMIN_TOKEN", "").strip()
+if not LOCAL_TOKEN:
+    pytest.skip("BRAIN_ADMIN_TOKEN required for live auth smoke", allow_module_level=True)
 BRAIN_URL = "http://127.0.0.1:8091"
 
 

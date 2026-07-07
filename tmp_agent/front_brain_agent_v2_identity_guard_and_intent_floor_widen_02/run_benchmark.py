@@ -16,13 +16,16 @@ Writes:
 """
 from __future__ import annotations
 import json
+import os
 import sys
 import time
 from pathlib import Path
 from typing import Any
 from urllib import request, error
 
-TOKEN = "AGENTV2_TEST_ADMIN_TOKEN_08F8_R1B"
+TOKEN = os.getenv("BRAIN_ADMIN_TOKEN", "").strip()
+if not TOKEN:
+    print("ERROR: BRAIN_ADMIN_TOKEN required."); sys.exit(2)
 BRAIN_BASE = "http://127.0.0.1:8091"
 OUT_DIR = Path(__file__).resolve().parent
 FRONT = "FRONT-BRAIN-AGENT-V2-IDENTITY-GUARD-AND-INTENT-FLOOR-WIDEN-02"

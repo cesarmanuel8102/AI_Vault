@@ -3,7 +3,10 @@ import json
 import sys
 from urllib import request, error
 
-TOKEN = "AGENTV2_TEST_ADMIN_TOKEN_08F8_R1B"
+import os
+TOKEN = os.getenv("BRAIN_ADMIN_TOKEN", "").strip()
+if not TOKEN:
+    print("ERROR: BRAIN_ADMIN_TOKEN required."); sys.exit(2)
 BASE = "http://127.0.0.1:8091"
 
 body = json.dumps({"message": "Evalua financial_autonomy en dry-run y dime broker_execution_enabled, real_money_enabled, live_trading_enabled, paper_mode, dry_run_guard e ibkr_connected.", "mode": "read_only"}).encode("utf-8")

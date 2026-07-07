@@ -224,7 +224,7 @@ class ProtocoloAutenticacionDesarrollador:
     
     def _create_default_credentials(self):
         salt = secrets.token_hex(16)
-        password_hash = self._hash_password("dev_admin_2026!", salt)
+        password_hash = self._hash_password(os.getenv("BRAIN_DEV_PASSWORD", "REDACTED_SET_BRAIN_DEV_PASSWORD"), salt)
         
         dev_cred = DeveloperCredentials(
             username="dev_admin",

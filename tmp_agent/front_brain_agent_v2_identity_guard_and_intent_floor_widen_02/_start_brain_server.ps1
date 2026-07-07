@@ -1,7 +1,10 @@
 $ErrorActionPreference = "Stop"
 
 # Ensure token matches what the benchmark runner uses
-$env:BRAIN_ADMIN_TOKEN = "AGENTV2_TEST_ADMIN_TOKEN_08F8_R1B"
+if (-not $env:BRAIN_ADMIN_TOKEN -or $env:BRAIN_ADMIN_TOKEN.Trim() -eq "") {
+    Write-Error "BRAIN_ADMIN_TOKEN is required. Set it in your environment."
+    exit 2
+}
 
 $reportDir = "C:\AI_VAULT_CANONICAL\tmp_agent\front_brain_agent_v2_identity_guard_and_intent_floor_widen_02"
 $stdoutLog = Join-Path $reportDir "brain_server_stdout.log"

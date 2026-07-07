@@ -16,9 +16,9 @@ print("=== TEST DIRECTO PAD ===")
 protocolo = ProtocoloAutenticacionDesarrollador()
 
 exito, sesion, mensaje = protocolo.autenticar(
-    "dev_admin", 
-    "dev_admin_2026!", 
-    "123456", 
+    "dev_admin",
+    "REDACTED_USE_ENV",
+    "REDACTED",
     ["admin1", "admin2"]
 )
 

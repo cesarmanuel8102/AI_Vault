@@ -34,7 +34,7 @@ def main():
     print("    Usuario: dev_admin")
     print("    Privilegio: LEVEL_5_GOD (Máximo)")
     
-    mensaje_auth = "AUTENTICAR: usuario=dev_admin password=dev_admin_2026! mfa=123456 testigos=[w1,w2]"
+    mensaje_auth = "AUTENTICAR: usuario=dev_admin password=REDACTED_USE_ENV mfa=REDACTED testigos=[w1,w2]"
     resultado_auth = BRAIN_V3_CHAT_AUTH.procesar_mensaje_chat(
         mensaje_auth, 
         "pad_console_session"

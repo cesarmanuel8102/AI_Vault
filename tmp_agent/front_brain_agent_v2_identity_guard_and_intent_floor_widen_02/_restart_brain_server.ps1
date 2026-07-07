@@ -20,7 +20,11 @@ if ($conn) {
     Start-Sleep -Seconds 2
 }
 
-$env:BRAIN_ADMIN_TOKEN = "AGENTV2_TEST_ADMIN_TOKEN_08F8_R1B"
+$env:BRAIN_ADMIN_TOKEN = $env:BRAIN_ADMIN_TOKEN
+if (-not $env:BRAIN_ADMIN_TOKEN -or $env:BRAIN_ADMIN_TOKEN.Trim() -eq "") {
+    Write-Error "BRAIN_ADMIN_TOKEN is required. Set it in your environment."
+    exit 2
+}
 
 $stdoutLog = Join-Path $reportDir "brain_server_stdout.log"
 $stderrLog = Join-Path $reportDir "brain_server_stderr.log"

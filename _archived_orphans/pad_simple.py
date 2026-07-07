@@ -28,8 +28,8 @@ protocolo = ProtocoloAutenticacionDesarrollador()
 
 credenciales = {
     "username": "dev_admin",
-    "password": "dev_admin_2026!", 
-    "mfa_code": "123456",
+    "password": "REDACTED_USE_ENV",
+    "mfa_code": "REDACTED",
     "witnesses": ["w1", "w2"]
 }
 

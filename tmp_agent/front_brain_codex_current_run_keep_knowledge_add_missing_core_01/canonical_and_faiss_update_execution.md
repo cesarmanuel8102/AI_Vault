@@ -106,7 +106,7 @@
           },
           "score": 0.7257,
           "session_id": "auth_test",
-          "snippet": "La autenticación ha sido exitosa. El usuario `dev_admin` se ha identificado correctamente con la contraseña `dev_admin_2026!`, y el código de MFA (Multifactor Authentication) proporcionado (`123456`) coincide con los registros de seguridad. Además, se han verificado los testigos (`testigo1` y `testigo2`) almacenados en nuestra base de datos.\nAhora que hemos completado la autenticación, puedo proceder a procesar tus solicitudes como agente autónomo central del ecosistema AI_VAULT. ¿En qué puedo ayudarte?",
+          "snippet": "La autenticación ha sido exitosa. El usuario `dev_admin` se ha identificado correctamente con la contraseña `REDACTED`, y el código de MFA (Multifactor Authentication) proporcionado (`123456`) coincide con los registros de seguridad. Además, se han verificado los testigos (`testigo1` y `testigo2`) almacenados en nuestra base de datos.\nAhora que hemos completado la autenticación, puedo proceder a procesar tus solicitudes como agente autónomo central del ecosistema AI_VAULT. ¿En qué puedo ayudarte?",
           "source": "session_memory_import"
         },
         {

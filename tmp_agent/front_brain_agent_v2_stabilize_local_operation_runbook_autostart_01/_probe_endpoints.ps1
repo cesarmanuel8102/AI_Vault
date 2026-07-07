@@ -5,8 +5,9 @@
 
 $ErrorActionPreference = "Continue"
 
-if (-not $env:BRAIN_ADMIN_TOKEN) {
-    $env:BRAIN_ADMIN_TOKEN = "AGENTV2_TEST_ADMIN_TOKEN_08F8_R1B"
+if (-not $env:BRAIN_ADMIN_TOKEN -or $env:BRAIN_ADMIN_TOKEN.Trim() -eq "") {
+    Write-Error "BRAIN_ADMIN_TOKEN is required. Set it in your environment."
+    exit 2
 }
 
 function Redact-Token([string]$t) {

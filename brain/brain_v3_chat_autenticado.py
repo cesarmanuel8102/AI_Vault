@@ -453,8 +453,8 @@ if __name__ == "__main__":
     
     credenciales_test = {
         "username": "dev_admin",
-        "password": "dev_admin_2026!",
-        "mfa_code": "123456",
+        "password": "REDACTED_USE_ENV_OR_TEST_FIXTURE",
+        "mfa_code": "REDACTED",
         "witnesses": ["testigo1", "testigo2"]
     }
     

@@ -159,5 +159,5 @@ def test_browser_ui_token_preflight_contract_static():
     assert "function requireOperatorTokenForChat()" in html
     assert "if (!requireOperatorTokenForChat()) return;" in html
     assert "'X-Brain-Token': getOperatorToken()" in html
-    assert "AGENTV2_TEST_ADMIN_TOKEN_08F8_R1B" not in html
+    assert "REDACTED_TEST_TOKEN_SHOULD_NOT_APPEAR" not in html
 

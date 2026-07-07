@@ -13,7 +13,11 @@
 #>
 $ErrorActionPreference = "Stop"
 
-$LocalToken = "AGENTV2_TEST_ADMIN_TOKEN_08F8_R1B"
+$LocalToken = $env:BRAIN_ADMIN_TOKEN
+if (-not $LocalToken -or $LocalToken.Trim() -eq "") {
+    Write-Error "BRAIN_ADMIN_TOKEN is required. Set it in your environment before launching."
+    exit 2
+}
 $BrainPort = 8091
 $DashboardPort = 8092
 $BaseDir = Split-Path -Parent $MyInvocation.MyCommand.Path

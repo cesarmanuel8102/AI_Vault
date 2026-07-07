@@ -17,6 +17,6 @@ def test_ui_blocks_chat_before_strict_operator_request_without_token():
 def test_ui_does_not_commit_local_operator_token_value():
     html = UI.read_text(encoding="utf-8")
 
-    assert "AGENTV2_TEST_ADMIN_TOKEN_08F8_R1B" not in html
+    assert "REDACTED_TEST_TOKEN_SHOULD_NOT_APPEAR" not in html
     assert "X-Brain-Token" in html
     assert "localStorage.setItem(_TOKEN_KEY, token)" in html

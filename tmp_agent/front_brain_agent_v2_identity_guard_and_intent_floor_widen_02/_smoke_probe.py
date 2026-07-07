@@ -4,7 +4,10 @@ import sys
 import time
 from urllib import request, error
 
-TOKEN = "AGENTV2_TEST_ADMIN_TOKEN_08F8_R1B"
+import os
+TOKEN = os.getenv("BRAIN_ADMIN_TOKEN", "").strip()
+if not TOKEN:
+    print("ERROR: BRAIN_ADMIN_TOKEN required."); sys.exit(2)
 BASE = "http://127.0.0.1:8091"
 
 PROBES = [

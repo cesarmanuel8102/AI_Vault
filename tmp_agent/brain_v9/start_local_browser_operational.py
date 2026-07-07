@@ -23,7 +23,10 @@ import time
 import urllib.request
 from pathlib import Path
 
-LOCAL_TOKEN = "AGENTV2_TEST_ADMIN_TOKEN_08F8_R1B"
+LOCAL_TOKEN = os.getenv("BRAIN_ADMIN_TOKEN", "").strip()
+if not LOCAL_TOKEN:
+    print("[launcher] ERROR: BRAIN_ADMIN_TOKEN is required. Set it in your environment before launching.")
+    raise SystemExit(2)
 BRAIN_PORT = 8091
 DASHBOARD_PORT = 8092
 BASE_DIR = Path(__file__).resolve().parent

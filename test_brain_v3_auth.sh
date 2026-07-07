@@ -25,8 +25,8 @@ curl -s -X POST http://127.0.0.1:8090/chat/v3 \
     "session_id": "test2",
     "credenciales": {
       "username": "dev_admin",
-      "password": "dev_admin_2026!",
-      "mfa_code": "123456",
+      "password": "REDACTED_USE_ENV",
+      "mfa_code": "REDACTED",
       "witnesses": ["testigo1", "testigo2"]
     }
   }' | python -m json.tool 2>/dev/null || echo "Error en respuesta"

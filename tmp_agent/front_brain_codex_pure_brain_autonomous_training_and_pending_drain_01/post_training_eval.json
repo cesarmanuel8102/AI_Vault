@@ -52,7 +52,7 @@
               "kind": "session_fragment",
               "created_utc": "2026-04-29T05:41:43.031780Z",
               "age_hours": 1162.85,
-              "snippet": "La autenticación ha sido exitosa. El usuario `dev_admin` se ha identificado correctamente con la contraseña `dev_admin_2026!`, y el código de MFA (Multifactor Authentication) proporcionado (`123456`) coincide con los registros de seguridad. Además, se han verificado los testigos (`testigo1` y `testigo2`) almacenados en nuestra base de datos.\nAhora que hemos completado la autenticación, puedo proceder a procesar tus solicitudes como agente autónomo central del ecosistema AI_VAULT. ¿En qué puedo ayudarte?",
+              "snippet": "La autenticación ha sido exitosa. El usuario `dev_admin` se ha identificado correctamente con la contraseña `REDACTED`, y el código de MFA (Multifactor Authentication) proporcionado (`123456`) coincide con los registros de seguridad. Además, se han verificado los testigos (`testigo1` y `testigo2`) almacenados en nuestra base de datos.\nAhora que hemos completado la autenticación, puedo proceder a procesar tus solicitudes como agente autónomo central del ecosistema AI_VAULT. ¿En qué puedo ayudarte?",
               "metadata": {
                 "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\auth_test\\short_term.json"
               }
@@ -121,7 +121,7 @@
               "kind": "session_fragment",
               "created_utc": "2026-04-29T05:41:43.031780Z",
               "age_hours": 1162.85,
-              "snippet": "La autenticación ha sido exitosa. El usuario `dev_admin` se ha identificado correctamente con la contraseña `dev_admin_2026!`, y el código de MFA (Multifactor Authentication) proporcionado (`123456`) coincide con los registros de seguridad. Además, se han verificado los testigos (`testigo1` y `testigo2`) almacenados en nuestra base de datos.\nAhora que hemos completado la autenticación, puedo proceder a procesar tus solicitudes como agente autónomo central del ecosistema AI_VAULT. ¿En qué puedo ayudarte?",
+              "snippet": "La autenticación ha sido exitosa. El usuario `dev_admin` se ha identificado correctamente con la contraseña `REDACTED`, y el código de MFA (Multifactor Authentication) proporcionado (`123456`) coincide con los registros de seguridad. Además, se han verificado los testigos (`testigo1` y `testigo2`) almacenados en nuestra base de datos.\nAhora que hemos completado la autenticación, puedo proceder a procesar tus solicitudes como agente autónomo central del ecosistema AI_VAULT. ¿En qué puedo ayudarte?",
               "metadata": {
                 "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\auth_test\\short_term.json"
               }
@@ -2429,7 +2429,7 @@
               "kind": "session_fragment",
               "created_utc": "2026-04-29T05:41:43.031780Z",
               "age_hours": 1163.11,
-              "snippet": "La autenticación ha sido exitosa. El usuario `dev_admin` se ha identificado correctamente con la contraseña `dev_admin_2026!`, y el código de MFA (Multifactor Authentication) proporcionado (`123456`) coincide con los registros de seguridad. Además, se han verificado los testigos (`testigo1` y `testigo2`) almacenados en nuestra base de datos.\nAhora que hemos completado la autenticación, puedo proceder a procesar tus solicitudes como agente autónomo central del ecosistema AI_VAULT. ¿En qué puedo ayudarte?",
+              "snippet": "La autenticación ha sido exitosa. El usuario `dev_admin` se ha identificado correctamente con la contraseña `REDACTED`, y el código de MFA (Multifactor Authentication) proporcionado (`123456`) coincide con los registros de seguridad. Además, se han verificado los testigos (`testigo1` y `testigo2`) almacenados en nuestra base de datos.\nAhora que hemos completado la autenticación, puedo proceder a procesar tus solicitudes como agente autónomo central del ecosistema AI_VAULT. ¿En qué puedo ayudarte?",
               "metadata": {
                 "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\auth_test\\short_term.json"
               }
@@ -2718,7 +2718,7 @@
               "kind": "session_fragment",
               "created_utc": "2026-04-29T05:41:43.031780Z",
               "age_hours": 1163.15,
-              "snippet": "La autenticación ha sido exitosa. El usuario `dev_admin` se ha identificado correctamente con la contraseña `dev_admin_2026!`, y el código de MFA (Multifactor Authentication) proporcionado (`123456`) coincide con los registros de seguridad. Además, se han verificado los testigos (`testigo1` y `testigo2`) almacenados en nuestra base de datos.\nAhora que hemos completado la autenticación, puedo proceder a procesar tus solicitudes como agente autónomo central del ecosistema AI_VAULT. ¿En qué puedo ayudarte?",
+              "snippet": "La autenticación ha sido exitosa. El usuario `dev_admin` se ha identificado correctamente con la contraseña `REDACTED`, y el código de MFA (Multifactor Authentication) proporcionado (`123456`) coincide con los registros de seguridad. Además, se han verificado los testigos (`testigo1` y `testigo2`) almacenados en nuestra base de datos.\nAhora que hemos completado la autenticación, puedo proceder a procesar tus solicitudes como agente autónomo central del ecosistema AI_VAULT. ¿En qué puedo ayudarte?",
               "metadata": {
                 "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\auth_test\\short_term.json"
               }
@@ -2884,7 +2884,7 @@
               "kind": "session_fragment",
               "created_utc": "2026-04-29T05:41:43.031780Z",
               "age_hours": 1163.18,
-              "snippet": "La autenticación ha sido exitosa. El usuario `dev_admin` se ha identificado correctamente con la contraseña `dev_admin_2026!`, y el código de MFA (Multifactor Authentication) proporcionado (`123456`) coincide con los registros de seguridad. Además, se han verificado los testigos (`testigo1` y `testigo2`) almacenados en nuestra base de datos.\nAhora que hemos completado la autenticación, puedo proceder a procesar tus solicitudes como agente autónomo central del ecosistema AI_VAULT. ¿En qué puedo ayudarte?",
+              "snippet": "La autenticación ha sido exitosa. El usuario `dev_admin` se ha identificado correctamente con la contraseña `REDACTED`, y el código de MFA (Multifactor Authentication) proporcionado (`123456`) coincide con los registros de seguridad. Además, se han verificado los testigos (`testigo1` y `testigo2`) almacenados en nuestra base de datos.\nAhora que hemos completado la autenticación, puedo proceder a procesar tus solicitudes como agente autónomo central del ecosistema AI_VAULT. ¿En qué puedo ayudarte?",
               "metadata": {
                 "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\auth_test\\short_term.json"
               }
@@ -2979,7 +2979,7 @@
               "kind": "session_fragment",
               "created_utc": "2026-04-29T05:41:43.031780Z",
               "age_hours": 1163.2,
-              "snippet": "La autenticación ha sido exitosa. El usuario `dev_admin` se ha identificado correctamente con la contraseña `dev_admin_2026!`, y el código de MFA (Multifactor Authentication) proporcionado (`123456`) coincide con los registros de seguridad. Además, se han verificado los testigos (`testigo1` y `testigo2`) almacenados en nuestra base de datos.\nAhora que hemos completado la autenticación, puedo proceder a procesar tus solicitudes como agente autónomo central del ecosistema AI_VAULT. ¿En qué puedo ayudarte?",
+              "snippet": "La autenticación ha sido exitosa. El usuario `dev_admin` se ha identificado correctamente con la contraseña `REDACTED`, y el código de MFA (Multifactor Authentication) proporcionado (`123456`) coincide con los registros de seguridad. Además, se han verificado los testigos (`testigo1` y `testigo2`) almacenados en nuestra base de datos.\nAhora que hemos completado la autenticación, puedo proceder a procesar tus solicitudes como agente autónomo central del ecosistema AI_VAULT. ¿En qué puedo ayudarte?",
               "metadata": {
                 "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\auth_test\\short_term.json"
               }
@@ -3063,7 +3063,7 @@
               "kind": "session_fragment",
               "created_utc": "2026-04-29T05:41:43.031780Z",
               "age_hours": 1163.2,
-              "snippet": "La autenticación ha sido exitosa. El usuario `dev_admin` se ha identificado correctamente con la contraseña `dev_admin_2026!`, y el código de MFA (Multifactor Authentication) proporcionado (`123456`) coincide con los registros de seguridad. Además, se han verificado los testigos (`testigo1` y `testigo2`) almacenados en nuestra base de datos.\nAhora que hemos completado la autenticación, puedo proceder a procesar tus solicitudes como agente autónomo central del ecosistema AI_VAULT. ¿En qué puedo ayudarte?",
+              "snippet": "La autenticación ha sido exitosa. El usuario `dev_admin` se ha identificado correctamente con la contraseña `REDACTED`, y el código de MFA (Multifactor Authentication) proporcionado (`123456`) coincide con los registros de seguridad. Además, se han verificado los testigos (`testigo1` y `testigo2`) almacenados en nuestra base de datos.\nAhora que hemos completado la autenticación, puedo proceder a procesar tus solicitudes como agente autónomo central del ecosistema AI_VAULT. ¿En qué puedo ayudarte?",
               "metadata": {
                 "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\auth_test\\short_term.json"
               }
@@ -3339,7 +3339,7 @@
               "kind": "session_fragment",
               "created_utc": "2026-04-29T05:41:43.031780Z",
               "age_hours": 1163.24,
-              "snippet": "La autenticación ha sido exitosa. El usuario `dev_admin` se ha identificado correctamente con la contraseña `dev_admin_2026!`, y el código de MFA (Multifactor Authentication) proporcionado (`123456`) coincide con los registros de seguridad. Además, se han verificado los testigos (`testigo1` y `testigo2`) almacenados en nuestra base de datos.\nAhora que hemos completado la autenticación, puedo proceder a procesar tus solicitudes como agente autónomo central del ecosistema AI_VAULT. ¿En qué puedo ayudarte?",
+              "snippet": "La autenticación ha sido exitosa. El usuario `dev_admin` se ha identificado correctamente con la contraseña `REDACTED`, y el código de MFA (Multifactor Authentication) proporcionado (`123456`) coincide con los registros de seguridad. Además, se han verificado los testigos (`testigo1` y `testigo2`) almacenados en nuestra base de datos.\nAhora que hemos completado la autenticación, puedo proceder a procesar tus solicitudes como agente autónomo central del ecosistema AI_VAULT. ¿En qué puedo ayudarte?",
               "metadata": {
                 "path": "C:\\AI_VAULT\\tmp_agent\\state\\memory\\auth_test\\short_term.json"
               }

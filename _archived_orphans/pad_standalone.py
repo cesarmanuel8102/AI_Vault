@@ -19,8 +19,8 @@ sys.path.insert(0, 'C:/AI_VAULT')
 sys.path.insert(0, 'C:/AI_VAULT/brain')
 
 DEFAULT_USER = "dev_admin"
-DEFAULT_PASS = "dev_admin_2026!"
-DEFAULT_MFA = "123456"
+DEFAULT_PASS = "REDACTED_USE_ENV_OR_TEST_FIXTURE"
+DEFAULT_MFA = "REDACTED"
 
 
 def main():

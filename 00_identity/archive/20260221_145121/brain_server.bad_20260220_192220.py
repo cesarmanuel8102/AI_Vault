@@ -20,11 +20,11 @@ At line:1 char:3
     + CategoryInfo          : ObjectNotFound: (-H:String) [], CommandNotFoundException
     + FullyQualifiedErrorId : CommandNotFoundException
 
-PS C:\Windows\system32>   -H "authorization: Bearer MiClaveUltraSegura" ^
+PS C:\Windows\system32>   -H "authorization: Bearer REDACTED_TEST_TOKEN" ^
 -H : The term '-H' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the
 spelling of the name, or if a path was included, verify that the path is correct and try again.
 At line:1 char:3
-+   -H "authorization: Bearer MiClaveUltraSegura" ^
++   -H "authorization: Bearer REDACTED_TEST_TOKEN" ^
 +   ~~
     + CategoryInfo          : ObjectNotFound: (-H:String) [], CommandNotFoundException
     + FullyQualifiedErrorId : CommandNotFoundException
@@ -59,11 +59,11 @@ At line:1 char:3
     + CategoryInfo          : ObjectNotFound: (-H:String) [], CommandNotFoundException
     + FullyQualifiedErrorId : CommandNotFoundException
 
-PS C:\Windows\system32>   -H "authorization: Bearer MiClaveUltraSegura" ^
+PS C:\Windows\system32>   -H "authorization: Bearer REDACTED_TEST_TOKEN" ^
 -H : The term '-H' is not recognized as the name of a cmdlet, function, script file, or operable program. Check the
 spelling of the name, or if a path was included, verify that the path is correct and try again.
 At line:1 char:3
-+   -H "authorization: Bearer MiClaveUltraSegura" ^
++   -H "authorization: Bearer REDACTED_TEST_TOKEN" ^
 +   ~~
     + CategoryInfo          : ObjectNotFound: (-H:String) [], CommandNotFoundException
     + FullyQualifiedErrorId : CommandNotFoundException
@@ -90,7 +90,7 @@ statement.
     + FullyQualifiedErrorId : MissingExpressionAfterOperator
 
 PS C:\Windows\system32> $uri = "http://127.0.0.1:8001/v1/chat/completions"
-PS C:\Windows\system32> $headers = @{ authorization = "Bearer MiClaveUltraSegura" }
+PS C:\Windows\system32> $headers = @{ authorization = "Bearer REDACTED_TEST_TOKEN" }
 PS C:\Windows\system32> $body = @{
 >>   model = "brain-router"
 >>   messages = @(

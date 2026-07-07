@@ -24,8 +24,8 @@ from protocolo_autenticacion_desarrollador import (
 
 # Configuración por defecto
 DEFAULT_USER = "dev_admin"
-DEFAULT_PASS = "dev_admin_2026!"
-DEFAULT_MFA = "123456"  # Cambiar en producción
+DEFAULT_PASS = "REDACTED_USE_ENV_OR_TEST_FIXTURE"
+DEFAULT_MFA = "REDACTED"  # Cambiar en producción
 DEFAULT_WITNESSES = ["witness_1", "witness_2"]
 
 class BrainDevMode:

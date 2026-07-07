@@ -6,6 +6,7 @@ so they can live in the repo without making CI depend on a developer runtime.
 from __future__ import annotations
 
 import json
+import os
 import socket
 import sys
 import urllib.error
@@ -18,7 +19,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 BRAIN = "http://127.0.0.1:8091"
 DASH = "http://127.0.0.1:8092"
-TOKEN_LITERAL = "AGENTV2_TEST_ADMIN_TOKEN_08F8_R1B"
+TOKEN_LITERAL = "REDACTED_TEST_TOKEN_SHOULD_NOT_APPEAR"
 
 
 def _port_open(port: int) -> bool:
