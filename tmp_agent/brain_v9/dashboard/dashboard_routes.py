@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from tmp_agent.brain_v9.autonomy.autonomy_control import request_run_once, set_pause, set_stop
@@ -409,6 +410,228 @@ def chat(req: ChatRequest) -> dict[str, Any]:
         "confirmation_id": data.get("confirmation_id", ""),
         "blocked_tools": data.get("blocked_tools", []),
     }
+
+
+# ---------------------------------------------------------------------------
+# Streaming chat endpoint (SSE)
+# ---------------------------------------------------------------------------
+
+def _sse_event(event_name: str, data: dict[str, Any]) -> str:
+    """Format a Server-Sent Events message."""
+    return f"event: {event_name}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"
+
+
+def _proxy_chat_to_8091(body: dict[str, Any]) -> dict[str, Any]:
+    """Call the canonical Agent V2 chat endpoint on 8091 and return parsed JSON.
+
+    Returns a dict with either the response data or an error envelope with
+    error_kind and http_code.
+    """
+    request = urllib.request.Request(
+        "http://127.0.0.1:8091/v2/chat/agent",
+        data=json.dumps(body).encode("utf-8"),
+        headers=_strict_headers({"Content-Type": "application/json"}),
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=120) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        code = e.code
+        if code in (401, 403):
+            kind = "auth_governance"
+        elif code >= 500:
+            kind = "critical"
+        else:
+            kind = "operational_warning"
+        return {"_proxy_error": True, "error_kind": kind, "http_code": code,
+                "error": f"HTTP {code}: {e.reason}"}
+    except urllib.error.URLError as e:
+        reason = getattr(e, "reason", str(e))
+        is_timeout = "timed out" in str(reason).lower() or isinstance(reason, TimeoutError)
+        kind = "operational_warning" if is_timeout else "critical"
+        return {"_proxy_error": True, "error_kind": kind,
+                "error": str(e)}
+    except Exception as e:
+        return {"_proxy_error": True, "error_kind": "critical",
+                "error": str(e)}
+
+
+def _proxy_trace_from_8091(run_id: str) -> dict[str, Any]:
+    """Call the canonical Agent V2 trace endpoint on 8091."""
+    url = f"http://127.0.0.1:8091/v2/agent/runs/{run_id}/trace"
+    try:
+        request = urllib.request.Request(url, headers=_strict_headers(), method="GET")
+        with urllib.request.urlopen(request, timeout=30) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except Exception:
+        return {"_proxy_error": True, "error": "trace fetch failed"}
+
+
+@router.post("/chat/stream")
+def chat_stream(req: ChatRequest):
+    """Streaming chat endpoint that emits SSE lifecycle events."""
+    if not req.message.strip():
+        raise HTTPException(status_code=400, detail="message required")
+
+    mode = req.mode
+    message = req.message.strip()
+    user_id = req.user_id
+
+    def event_generator():
+        import time
+
+        yield _sse_event("request.accepted", {
+            "ok": True,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "mode_requested": mode,
+        })
+
+        yield _sse_event("mode.selected", {
+            "mode_requested": mode,
+            "message_length": len(message),
+        })
+
+        yield _sse_event("backend.call.started", {
+            "endpoint": "/brain-dashboard/chat",
+            "canonical_agent_v2": True,
+        })
+
+        body = {"message": message, "mode": mode, "user_id": user_id}
+        data = _proxy_chat_to_8091(body)
+
+        if data.get("_proxy_error"):
+            error_kind = data.get("error_kind", "critical")
+            safe_msg = data.get("error", "Backend call failed")
+            if error_kind == "auth_governance":
+                safe_msg = "Brain API rejected the request: auth/governance denied."
+            elif error_kind == "critical":
+                safe_msg = "Brain API server error or unreachable."
+            yield _sse_event("stream.error", {
+                "ok": False,
+                "error": safe_msg,
+                "error_kind": error_kind,
+            })
+            return
+
+        pm = data.get("provider_metadata", {})
+        run_id = data.get("run_id", "")
+        trace_url = data.get("trace_url", "")
+
+        yield _sse_event("backend.call.completed", {
+            "ok": True,
+            "run_id": run_id,
+            "classification": data.get("classification", ""),
+            "provider_used": pm.get("provider_used", ""),
+            "model_used": pm.get("model_used", ""),
+        })
+
+        yield _sse_event("response.metadata", {
+            "run_id": run_id,
+            "trace_url": trace_url,
+            "classification": data.get("classification", ""),
+            "mode_requested": data.get("mode_requested", ""),
+            "mode_effective": data.get("mode_effective", ""),
+            "blocked_tools": data.get("blocked_tools", []),
+            "provider_used": pm.get("provider_used", ""),
+            "model_used": pm.get("model_used", ""),
+            "provider_degraded": pm.get("provider_degraded", False),
+            "fallback_reason": pm.get("fallback_reason", ""),
+        })
+
+        content = data.get("final_answer", "") or data.get("content", "")
+        yield _sse_event("response.final", {
+            "content": content,
+        })
+
+        # Trace enrichment phase
+        if run_id:
+            yield _sse_event("trace.fetch.started", {"run_id": run_id})
+
+            trace = _proxy_trace_from_8091(run_id)
+
+            if trace.get("_proxy_error"):
+                yield _sse_event("trace.fetch.completed", {
+                    "ok": False,
+                    "run_id": run_id,
+                    "error": "trace fetch failed",
+                })
+            else:
+                yield _sse_event("trace.fetch.completed", {
+                    "ok": True,
+                    "run_id": run_id,
+                })
+
+                # Analyze trace for enrichment signals
+                trace_str = json.dumps(trace, ensure_ascii=False)
+                tools_count = None
+                evidence_count = None
+                try:
+                    steps = trace.get("steps", trace.get("events", []))
+                    if isinstance(steps, list):
+                        tools_count = sum(
+                            1 for s in steps
+                            if isinstance(s, dict) and (
+                                s.get("tool") or s.get("tool_name") or
+                                s.get("type", "").startswith("tool")
+                            )
+                        )
+                        evidence_count = sum(
+                            1 for s in steps
+                            if isinstance(s, dict) and (
+                                s.get("evidence") or s.get("type", "") == "evidence"
+                            )
+                        )
+                except Exception:
+                    pass
+
+                governance_signals = bool(
+                    _contains_governance_signal(trace_str)
+                )
+                provider_signals = bool(
+                    _contains_provider_signal(trace_str)
+                )
+
+                yield _sse_event("trace.enriched", {
+                    "tools_count": tools_count,
+                    "evidence_count": evidence_count,
+                    "governance_signals": governance_signals,
+                    "provider_signals": provider_signals,
+                    "tool_details_exposed": tools_count is not None and tools_count > 0,
+                })
+
+                # Honest limitation: live tool events are not exposed
+                yield _sse_event("trace.limit", {
+                    "message": "Live tool events are not exposed by the current runtime; post-response trace enrichment was used.",
+                })
+        else:
+            yield _sse_event("trace.limit", {
+                "message": "No run_id returned; trace enrichment skipped.",
+            })
+
+        yield _sse_event("stream.completed", {
+            "ok": True,
+            "run_id": run_id,
+        })
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+def _contains_governance_signal(trace_str: str) -> bool:
+    import re
+    return bool(re.search(r"governance|blocked|approval|permission", trace_str, re.IGNORECASE))
+
+
+def _contains_provider_signal(trace_str: str) -> bool:
+    import re
+    return bool(re.search(r"provider|model|finalizer|fallback|degraded", trace_str, re.IGNORECASE))
 
 
 @router.get("/agent-v2/runs/{run_id}/trace")

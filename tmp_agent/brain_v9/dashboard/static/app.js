@@ -402,7 +402,7 @@ function renderLiveExecutionPanel() {
       <div class="live-header">
         <div>
           <div class="live-card-title">Live Execution</div>
-          <div class="live-sub">UI-visible lifecycle · trace-enriched after response</div>
+          <div class="live-sub">Server-driven events · trace-enriched after response</div>
         </div>
         <div class="live-header-right">
           <span class="live-status-pill ${esc(status)}">${esc(status.toUpperCase())}</span>
@@ -558,16 +558,220 @@ async function sendChat() {
   $('chat-send').disabled = true; $('chat-status').textContent = 'Thinking…';
 
   S.chat.timeline = [];
-  addTimelineEvent('request_prepared', 'Request prepared', 'done', 'Prompt captured in the browser.');
-  addTimelineEvent('mode_selected', 'Mode selected', 'done', `${MODE_LABELS[sentMode]} → ${sentMode}. Governance still enforced.`);
-  addTimelineEvent('request_sent', 'Request sent', 'done', 'POST /brain-dashboard/chat');
-  addTimelineEvent('waiting_provider', 'Waiting for Brain/provider', 'running', 'No tool details are available until response/trace is exposed.');
   startElapsedTimer();
 
   S.chat.messages.push({ role: 'assistant', content: '…', loading: true });
   renderChatMsgs();
   renderChatSidePanels();
 
+  const ctrl = new AbortController();
+  const to = setTimeout(() => ctrl.abort(), CHAT_TIMEOUT_MS);
+  try {
+    const streamOk = await sendChatStream(text, sentMode, ctrl);
+    clearTimeout(to);
+    if (!streamOk) {
+      // Fallback to legacy non-streaming endpoint
+      await sendChatLegacy(text, sentMode);
+    }
+  } catch (e) {
+    clearTimeout(to);
+    S.chat.messages.pop();
+    const isTimeout = e && e.name === 'AbortError';
+    S.chat.liveStatus = isTimeout ? 'timeout' : 'failed';
+    addTimelineEvent(isTimeout ? 'timeout' : 'request_failed', isTimeout ? 'Timeout' : 'Request failed', 'failed', isTimeout ? 'UI request timeout; no write action was attempted.' : e.message);
+    S.chat.messages.push({ role: 'assistant', content: '⚠ **Connection error:** ' + (isTimeout ? 'Request timed out after 60s.' : e.message) + '\n\nThe live timeline keeps this as a failed/timeout request. No write action was attempted.' });
+  } finally {
+    stopElapsedTimer();
+    S.chat.busy = false;
+    if ($('chat-send')) $('chat-send').disabled = false;
+    if ($('chat-status')) $('chat-status').textContent = 'Ready';
+    renderChatMsgs();
+    renderChatSidePanels();
+    syncModeUI();
+  }
+}
+
+async function sendChatStream(text, sentMode, ctrl) {
+  const SSE_EVENT_MAP = {
+    'request.accepted': { label: 'Request accepted', icon: 'done' },
+    'mode.selected': { label: 'Mode selected', icon: 'done' },
+    'backend.call.started': { label: 'Backend call started', icon: 'running' },
+    'backend.call.completed': { label: 'Backend completed', icon: 'done' },
+    'response.metadata': { label: 'Run metadata received', icon: 'done' },
+    'response.final': { label: 'Response received', icon: 'done' },
+    'trace.fetch.started': { label: 'Trace loading', icon: 'running' },
+    'trace.fetch.completed': { label: 'Trace loaded', icon: 'done' },
+    'trace.enriched': { label: 'Trace enriched', icon: 'done' },
+    'trace.limit': { label: 'Runtime limitation', icon: 'skipped' },
+    'stream.completed': { label: 'Complete', icon: 'done' },
+    'stream.error': { label: 'Stream error', icon: 'failed' },
+  };
+
+  let firstEventReceived = false;
+  let metadata = {};
+  let content = '';
+
+  try {
+    const r = await fetch('/brain-dashboard/chat/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: ctrl.signal,
+      body: JSON.stringify({ message: text, mode: sentMode, user_id: 'dashboard_operator' })
+    });
+
+    if (!r.ok || !r.body) {
+      return false; // signal fallback
+    }
+
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // Parse complete SSE messages (separated by \n\n)
+      let idx;
+      while ((idx = buffer.indexOf('\n\n')) >= 0) {
+        const rawEvent = buffer.slice(0, idx);
+        buffer = buffer.slice(idx + 2);
+
+        let eventName = '';
+        let eventData = {};
+        for (const line of rawEvent.split('\n')) {
+          if (line.startsWith('event: ')) eventName = line.slice(7).trim();
+          else if (line.startsWith('data: ')) {
+            try { eventData = JSON.parse(line.slice(6)); } catch { eventData = {}; }
+          }
+        }
+
+        if (!eventName) continue;
+        firstEventReceived = true;
+        handleSSEEvent(eventName, eventData, SSE_EVENT_MAP, metadata, content);
+      }
+    }
+
+    // Process any remaining buffer
+    if (buffer.trim()) {
+      let eventName = '';
+      let eventData = {};
+      for (const line of buffer.split('\n')) {
+        if (line.startsWith('event: ')) eventName = line.slice(7).trim();
+        else if (line.startsWith('data: ')) {
+          try { eventData = JSON.parse(line.slice(6)); } catch { eventData = {}; }
+        }
+      }
+      if (eventName) {
+        firstEventReceived = true;
+        handleSSEEvent(eventName, eventData, SSE_EVENT_MAP, metadata, content);
+      }
+    }
+
+    return firstEventReceived;
+  } catch (e) {
+    if (!firstEventReceived) return false; // fallback
+    throw e;
+  }
+}
+
+function handleSSEEvent(eventName, data, SSE_EVENT_MAP, metadata, content) {
+  const mapping = SSE_EVENT_MAP[eventName] || { label: eventName, icon: 'done' };
+  const status = mapping.icon === 'running' ? 'running' :
+                 mapping.icon === 'failed' ? 'failed' :
+                 mapping.icon === 'skipped' ? 'skipped' : 'done';
+
+  let detail = data.message || '';
+  switch (eventName) {
+    case 'request.accepted':
+      addTimelineEvent('request_accepted', mapping.label, 'done', 'Stream opened.');
+      break;
+    case 'mode.selected':
+      addTimelineEvent('mode_selected', mapping.label, 'done', (data.mode_requested || '') + ' (' + (data.message_length || 0) + ' chars)');
+      break;
+    case 'backend.call.started':
+      addTimelineEvent('backend_started', mapping.label, 'running', 'POST /v2/chat/agent via 8092 proxy');
+      break;
+    case 'backend.call.completed':
+      updateTimelineEvent('backend_started', 'done', 'Brain returned a response.');
+      addTimelineEvent('backend_completed', mapping.label, 'done',
+        'Status: ' + (data.ok ? 'completed' : 'failed') +
+        (data.run_id ? ' · Run: ' + String(data.run_id).slice(0, 12) : ''));
+      break;
+    case 'response.metadata':
+      metadata.value = data;
+      if (data.run_id) {
+        S.chat.currentRunId = data.run_id;
+        addTimelineEvent('run_id', 'Run ID received', 'done', String(data.run_id));
+      }
+      if (data.classification) addTimelineEvent('classification', 'Classification', 'done', data.classification);
+      if (data.provider_used || data.model_used)
+        addTimelineEvent('provider_model', 'Provider/model', 'done', (data.provider_used || '—') + ' / ' + (data.model_used || '—'));
+      addTimelineEvent('mode_effective', 'Mode effective', 'done', (data.mode_requested || '') + ' → ' + (data.mode_effective || '—'));
+      if (data.blocked_tools && data.blocked_tools.length)
+        addTimelineEvent('blocked_tools', 'Tools blocked', 'skipped', data.blocked_tools.join(', '));
+      if (data.provider_degraded)
+        addTimelineEvent('provider_degraded', 'Provider degraded', 'failed', data.fallback_reason || 'Provider degradation reported.');
+      updateInspector(data);
+      S.chat.lastMeta = data;
+      break;
+    case 'response.final':
+      content.value = data.content || '';
+      S.chat.messages.pop();
+      const warnings = [];
+      if (metadata.value && metadata.value.provider_degraded)
+        warnings.push({ type: 'degraded', text: '⚠ Provider degraded. Fallback: ' + (metadata.value.fallback_reason || 'unknown') });
+      if (metadata.value && metadata.value.raw_cot_exposed)
+        warnings.push({ type: 'cot', text: '🚨 RAW CHAIN-OF-THOUGHT EXPOSED' });
+      S.chat.liveStatus = 'completed';
+      S.chat.messages.push({ role: 'assistant', content: data.content || '(no response)', warnings });
+      renderChatMsgs();
+      break;
+    case 'trace.fetch.started':
+      S.chat.lastTraceStatus = 'loading';
+      addTimelineEvent('trace_loading', mapping.label, 'running', 'Fetching trace after response.');
+      break;
+    case 'trace.fetch.completed':
+      S.chat.lastTraceStatus = data.ok ? 'loaded' : 'unavailable';
+      updateTimelineEvent('trace_loading', data.ok ? 'done' : 'failed', data.ok ? 'Trace loaded.' : 'Trace unavailable.');
+      break;
+    case 'trace.enriched':
+      addTimelineEvent('trace_enriched', mapping.label, 'done',
+        'Tools: ' + (data.tools_count != null ? data.tools_count : 'N/A') +
+        ' · Evidence: ' + (data.evidence_count != null ? data.evidence_count : 'N/A') +
+        (data.governance_signals ? ' · Governance ✓' : '') +
+        (data.provider_signals ? ' · Provider ✓' : ''));
+      break;
+    case 'trace.limit':
+      addTimelineEvent('trace_limit', mapping.label, 'skipped', data.message || 'Live tool events not exposed.');
+      break;
+    case 'stream.completed':
+      if (data.run_id && !S.chat.currentRunId) {
+        S.chat.currentRunId = data.run_id;
+      }
+      // Fetch trace if we have run_id but haven't loaded it yet
+      if (data.run_id && S.chat.lastTraceStatus === 'trace_pending') {
+        S.chat.lastTraceStatus = 'loading';
+        renderChatSidePanels();
+        loadTraceForRun(data.run_id);
+      }
+      S.chat.liveStatus = S.chat.liveStatus === 'failed' ? 'failed' : 'completed';
+      addTimelineEvent('complete', 'Complete', S.chat.liveStatus === 'failed' ? 'failed' : 'done', 'Stream completed.');
+      break;
+    case 'stream.error':
+      S.chat.liveStatus = 'failed';
+      S.chat.messages.pop();
+      S.chat.messages.push({ role: 'assistant', content: '⚠ **Error:** ' + (data.error || 'Stream error.') });
+      addTimelineEvent('stream_error', mapping.label, 'failed', data.error || 'Stream error.');
+      renderChatMsgs();
+      break;
+  }
+  renderChatSidePanels();
+}
+
+async function sendChatLegacy(text, sentMode) {
+  addTimelineEvent('fallback', 'Fallback to legacy', 'done', 'Streaming failed, using /brain-dashboard/chat');
   const ctrl = new AbortController();
   const to = setTimeout(() => ctrl.abort(), CHAT_TIMEOUT_MS);
   try {
@@ -581,57 +785,37 @@ async function sendChat() {
     const j = await r.json();
     S.chat.messages.pop();
 
-    updateTimelineEvent('waiting_provider', 'done', 'Brain returned a response.');
-    addTimelineEvent('response_received', 'Response received', j.ok ? 'done' : 'failed', `Status: ${j.status || (j.ok ? 'completed' : 'failed')}`);
+    addTimelineEvent('response_received', 'Response received', j.ok ? 'done' : 'failed', 'Status: ' + (j.status || (j.ok ? 'completed' : 'failed')));
     if (j.run_id) {
       S.chat.currentRunId = j.run_id;
       addTimelineEvent('run_id', 'Run ID received', 'done', String(j.run_id));
     }
     if (j.classification) addTimelineEvent('classification', 'Classification', 'done', j.classification);
-    if (j.provider_used || j.model_used) addTimelineEvent('provider_model', 'Provider/model', 'done', `${j.provider_used || 'NOT EXPOSED'} / ${j.model_used || 'NOT EXPOSED'}`);
-    addTimelineEvent('mode_effective', 'Mode effective', 'done', `${j.mode_requested || sentMode} → ${j.mode_effective || 'NOT EXPOSED'}`);
+    if (j.provider_used || j.model_used) addTimelineEvent('provider_model', 'Provider/model', 'done', (j.provider_used || '—') + ' / ' + (j.model_used || '—'));
+    addTimelineEvent('mode_effective', 'Mode effective', 'done', (j.mode_requested || sentMode) + ' → ' + (j.mode_effective || '—'));
     if (j.provider_degraded) addTimelineEvent('provider_degraded', 'Provider degraded', 'failed', j.fallback_reason || 'Provider degradation reported.');
-    if (fallbackReasonActive(j)) addTimelineEvent('fallback', 'Fallback used', 'done', j.fallback_reason);
 
-    const warnings = [];
     if (!j.ok) {
       S.chat.liveStatus = 'failed';
-      S.chat.messages.push({ role: 'assistant', content: '⚠ **Error:** ' + (j.content || j.error || 'Brain API unreachable. Ensure Agent V2 is running on 8091.') });
+      S.chat.messages.push({ role: 'assistant', content: '⚠ **Error:** ' + (j.content || j.error || 'Brain API unreachable.') });
     } else {
+      const warnings = [];
       if (j.provider_degraded) warnings.push({ type: 'degraded', text: '⚠ Provider degraded. Fallback: ' + (j.fallback_reason || 'unknown') });
       if (j.raw_cot_exposed) warnings.push({ type: 'cot', text: '🚨 RAW CHAIN-OF-THOUGHT EXPOSED' });
-      if (fallbackReasonActive(j) && !j.provider_degraded) warnings.push({ type: 'fallback', text: 'Fallback used: ' + j.fallback_reason });
-      const escalation = (j.mode_escalation_required === true) ? {
-        required: true,
-        reason: j.mode_escalation_reason || '',
-        permission: j.required_permission || '',
-        scope: (j.expected_write_scope && j.expected_write_scope.length) ? j.expected_write_scope.join(', ') : '',
-        confirmation_id: j.confirmation_id || ''
-      } : null;
       S.chat.liveStatus = 'completed';
-      S.chat.messages.push({ role: 'assistant', content: j.content || '(no response)', warnings, escalation });
+      S.chat.messages.push({ role: 'assistant', content: j.content || '(no response)', warnings });
     }
 
     updateInspector(j);
     S.chat.lastMeta = j;
     if (j.run_id) await loadTraceForRun(j.run_id);
-    addTimelineEvent('complete', 'Complete', S.chat.liveStatus === 'failed' ? 'failed' : 'done', 'UI request lifecycle finished.');
+    addTimelineEvent('complete', 'Complete', S.chat.liveStatus === 'failed' ? 'failed' : 'done', 'Legacy request finished.');
   } catch (e) {
     clearTimeout(to);
     S.chat.messages.pop();
-    const isTimeout = e && e.name === 'AbortError';
-    S.chat.liveStatus = isTimeout ? 'timeout' : 'failed';
-    updateTimelineEvent('waiting_provider', 'failed', isTimeout ? 'Request timed out after 60s. Provider/backend may still be processing.' : e.message);
-    addTimelineEvent(isTimeout ? 'timeout' : 'request_failed', isTimeout ? 'Timeout' : 'Request failed', 'failed', isTimeout ? 'UI request timeout; no write action was attempted.' : e.message);
-    S.chat.messages.push({ role: 'assistant', content: '⚠ **Connection error:** ' + (isTimeout ? 'Request timed out after 60s.' : e.message) + '\n\nThe live timeline keeps this as a failed/timeout request. No write action was attempted.' });
-  } finally {
-    stopElapsedTimer();
-    S.chat.busy = false;
-    if ($('chat-send')) $('chat-send').disabled = false;
-    if ($('chat-status')) $('chat-status').textContent = 'Ready';
-    renderChatMsgs();
-    renderChatSidePanels();
-    syncModeUI();
+    S.chat.liveStatus = 'failed';
+    addTimelineEvent('request_failed', 'Request failed', 'failed', e.message);
+    S.chat.messages.push({ role: 'assistant', content: '⚠ **Error:** ' + e.message });
   }
 }
 

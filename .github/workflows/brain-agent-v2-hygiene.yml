@@ -11,6 +11,7 @@ on:
       - "tests/unit/test_session_query_predicates_01.py"
       - "tests/unit/test_session_observability_01.py"
       - "tests/smoke/test_front_brain_ui_token_preflight_01.py"
+      - "tests/smoke/test_front_brain_ui_chat_backend_streaming_events_04.py"
       - ".github/workflows/brain-agent-v2-hygiene.yml"
   push:
     branches:
@@ -23,6 +24,7 @@ on:
       - "tests/unit/test_session_query_predicates_01.py"
       - "tests/unit/test_session_observability_01.py"
       - "tests/smoke/test_front_brain_ui_token_preflight_01.py"
+      - "tests/smoke/test_front_brain_ui_chat_backend_streaming_events_04.py"
       - ".github/workflows/brain-agent-v2-hygiene.yml"
 
 jobs:
@@ -99,6 +101,12 @@ jobs:
         run: |
           set -euo pipefail
           python tests/unit/test_session_observability_01.py
+
+      - name: Dashboard streaming events tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/smoke/test_front_brain_ui_chat_backend_streaming_events_04.py
 
       - name: Static boundary compile
         shell: bash

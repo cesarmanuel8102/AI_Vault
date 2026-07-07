@@ -1,0 +1,41 @@
+{
+  "front": "FRONT-BRAIN-UI-CHAT-BACKEND-STREAMING-EVENTS-04",
+  "endpoint": "POST /brain-dashboard/chat/stream",
+  "content_type": "text/event-stream",
+  "protocol": "SSE over POST (fetch ReadableStream)",
+  "events_minimum": [
+    "request.accepted",
+    "mode.selected",
+    "backend.call.started",
+    "backend.call.completed",
+    "response.metadata",
+    "response.final",
+    "trace.fetch.started",
+    "trace.fetch.completed",
+    "trace.enriched",
+    "stream.completed",
+    "stream.error"
+  ],
+  "events_optional": [
+    "trace.limit",
+    "intent.classified",
+    "plan.created",
+    "tool.scheduled",
+    "tool.started",
+    "tool.completed",
+    "tool.blocked",
+    "evidence.collected",
+    "provider.started",
+    "provider.completed",
+    "token.delta"
+  ],
+  "honesty_rule": "No fake tool events. If tool details not exposed live, emit trace.limit.",
+  "backend_reuse": "Reuses same urllib proxy to 8091/v2/chat/agent as /brain-dashboard/chat",
+  "trace_reuse": "Reuses same urllib proxy to 8091/v2/agent/runs/{run_id}/trace",
+  "ui_fallback": "If stream fails before first event, fallback to legacy /brain-dashboard/chat",
+  "files_to_modify": [
+    "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+    "tmp_agent/brain_v9/dashboard/static/app.js",
+    "tmp_agent/brain_v9/dashboard/static/styles.css"
+  ]
+}
