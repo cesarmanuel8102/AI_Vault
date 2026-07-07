@@ -9,6 +9,7 @@ on:
       - "tests/contract/**"
       - "tests/unit/test_session_formatters_01.py"
       - "tests/unit/test_session_query_predicates_01.py"
+      - "tests/unit/test_session_observability_01.py"
       - "tests/smoke/test_front_brain_ui_token_preflight_01.py"
       - ".github/workflows/brain-agent-v2-hygiene.yml"
   push:
@@ -20,6 +21,7 @@ on:
       - "tests/contract/**"
       - "tests/unit/test_session_formatters_01.py"
       - "tests/unit/test_session_query_predicates_01.py"
+      - "tests/unit/test_session_observability_01.py"
       - "tests/smoke/test_front_brain_ui_token_preflight_01.py"
       - ".github/workflows/brain-agent-v2-hygiene.yml"
 
@@ -91,6 +93,12 @@ jobs:
         run: |
           set -euo pipefail
           python tests/unit/test_session_query_predicates_01.py
+
+      - name: Session observability unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/unit/test_session_observability_01.py
 
       - name: Static boundary compile
         shell: bash

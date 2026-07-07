@@ -13,6 +13,7 @@ __all__ = [
     "render_agent_failure_reply",
     "summarize_action_output",
     "render_operational_agent_summary",
+    "is_agent_execution_failure",
 ]
 
 
@@ -157,3 +158,27 @@ def render_operational_agent_summary(
     )
 
     return "\n".join(lines)
+
+
+# Status values that indicate the agent failed to execute tools properly.
+_AGENT_FAILURE_STATUSES = frozenset({
+    "ghost_completion",
+    "max_steps_reached",
+    "llm_pool_unavailable",
+    "retry_exhausted",
+    "timeout",
+})
+
+
+def is_agent_execution_failure(agent_result: Dict) -> bool:
+    """Return True if the agent result indicates a tool execution failure.
+
+    Pure function extracted from BrainSession._is_agent_execution_failure.
+    A failure is when success is False/absent AND the status matches one of
+    the known agent failure modes.
+    """
+    if not isinstance(agent_result, dict):
+        return False
+    status = str(agent_result.get("status") or "").lower()
+    success = bool(agent_result.get("success", True))
+    return (not success) and status in _AGENT_FAILURE_STATUSES

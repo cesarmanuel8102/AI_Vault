@@ -2966,15 +2966,10 @@ class BrainSession:
             pass
 
     def _is_agent_execution_failure(self, agent_result: Dict) -> bool:
-        status = str(agent_result.get("status") or "").lower()
-        success = bool(agent_result.get("success", True))
-        return (not success) and status in {
-            "ghost_completion",
-            "max_steps_reached",
-            "llm_pool_unavailable",
-            "retry_exhausted",
-            "timeout",
-        }
+        """B7-STRANGLER-03A shim — delegates to
+        :func:`brain_v9.core.session_agent_render.is_agent_execution_failure`.
+        """
+        return _agent_render.is_agent_execution_failure(agent_result)
 
     def _agent_failure_notice(self, status: str) -> str:
         return (
