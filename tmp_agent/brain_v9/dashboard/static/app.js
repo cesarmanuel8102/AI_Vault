@@ -609,7 +609,7 @@ async function sendChatStream(text, sentMode, ctrl) {
 
   let firstEventReceived = false;
   let metadata = {};
-  let content = '';
+  const content = { value: '' };
 
   try {
     const r = await fetch('/brain-dashboard/chat/stream', {

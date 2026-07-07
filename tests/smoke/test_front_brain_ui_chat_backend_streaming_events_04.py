@@ -131,6 +131,15 @@ def test_streaming_endpoint_imports_streaming_response():
     assert "StreamingResponse" in src, "StreamingResponse must be imported"
 
 
+def test_app_js_stream_content_state_is_mutable_object():
+    """Verify streaming content state is a mutable object, not a primitive string."""
+    with open("tmp_agent/brain_v9/dashboard/static/app.js", encoding="utf-8") as f:
+        src = f.read()
+    assert "const content = { value: '' }" in src, "content must be a mutable object with .value"
+    assert "let content = ''" not in src, "content must not be a primitive string"
+    assert "content.value = data.content || ''" in src, "content.value assignment must exist"
+
+
 if __name__ == "__main__":
     tests = [
         test_streaming_endpoint_route_exists,
@@ -145,6 +154,7 @@ if __name__ == "__main__":
         test_app_js_no_hardcoded_8091,
         test_no_secrets_in_dashboard_routes,
         test_streaming_endpoint_imports_streaming_response,
+        test_app_js_stream_content_state_is_mutable_object,
     ]
     passed = 0
     for t in tests:
