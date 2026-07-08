@@ -98,7 +98,7 @@ def test_static_ui_exposes_trading_view_without_controls():
         'data-view="trading"',
         "ts-qc",
         "ts-ibkr",
-        "/static/app.js?v=8",
+        "/static/app.js?v=9",
         "/static/styles.css?v=8",
     ):
         assert token in index
