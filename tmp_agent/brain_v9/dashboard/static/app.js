@@ -6,7 +6,7 @@
 
 const REFRESH_MS = 10000;
 const CHAT_TIMEOUT_MS = 60000;
-const VIEWS = ['overview', 'agent', 'chat', 'tools', 'memory', 'traces', 'safety', 'ops', 'roadmap'];
+const VIEWS = ['overview', 'agent', 'chat', 'trading', 'tools', 'memory', 'traces', 'safety', 'ops', 'roadmap'];
 
 const S = {
   status: null,
@@ -15,6 +15,7 @@ const S = {
   safety: null,
   queue: null,
   agentV2: null,
+  tradingLive: null,
   lastRefresh: null,
   online: true,
   currentView: 'overview',
@@ -54,16 +55,17 @@ async function getJSON(url, timeoutMs) {
 
 async function refresh() {
   try {
-    const [status, activity, scheduler, safety, queue, agentV2] = await Promise.all([
+    const [status, activity, scheduler, safety, queue, agentV2, tradingLive] = await Promise.all([
       getJSON('/brain-dashboard/status'),
       getJSON('/brain-dashboard/activity'),
       getJSON('/brain-dashboard/scheduler'),
       getJSON('/brain-dashboard/safety'),
       getJSON('/brain-dashboard/promotion-queue'),
-      getJSON('/brain-dashboard/agent-v2/status')
+      getJSON('/brain-dashboard/agent-v2/status'),
+      getJSON('/brain-dashboard/trading-live', 12000)
     ]);
     S.status = status; S.activity = activity; S.scheduler = scheduler;
-    S.safety = safety; S.queue = queue; S.agentV2 = agentV2;
+    S.safety = safety; S.queue = queue; S.agentV2 = agentV2; S.tradingLive = tradingLive;
     S.lastRefresh = new Date(); S.online = true;
     renderTopbar();
     if (S.currentView !== 'chat') renderCurrentView();
@@ -94,7 +96,10 @@ function renderTopbar() {
 
   const memMutated = sf.canonical_semantic_mutated === true || sf.faiss_mutated === true;
   setChip('ts-memory', memMutated ? 'MEM MUTATED ⚠' : 'MEM LOCKED', memMutated ? 'yellow' : 'locked');
+  const tl = S.tradingLive || {}; const qc = tl.qc || {}; const ib = tl.ibkr || {};
   setChip('ts-trading', 'TRADING LOCKED', 'locked');
+  setChip('ts-qc', qc.ok ? ('QC: ' + (qc.activity_status || qc.overall_status || 'LIVE')) : 'QC: —', qc.ok && !qc.stale ? 'green' : (qc.ok ? 'yellow' : 'unknown'));
+  setChip('ts-ibkr', ib.ok ? 'IBKR: connected' : (ib.port_open ? 'IBKR: port open' : 'IBKR: offline'), ib.ok ? 'green' : (ib.port_open ? 'yellow' : 'unknown'));
   setChip('ts-readonly', 'READ-ONLY', 'locked');
 
   const aut = st.autonomy || {};
@@ -122,7 +127,7 @@ function renderCurrentView() {
     c.innerHTML = '<div class="loading-screen"><div class="spinner"></div><p>Connecting to Brain…</p></div>';
     return;
   }
-  const fn = { overview: viewOverview, agent: viewAgent, chat: viewChat, tools: viewTools,
+  const fn = { overview: viewOverview, agent: viewAgent, chat: viewChat, trading: viewTrading, tools: viewTools,
                memory: viewMemory, traces: viewTraces, safety: viewSafety, ops: viewOps, roadmap: viewRoadmap }[S.currentView];
   c.innerHTML = fn ? fn() : viewOverview();
   if (S.currentView === 'chat') initChat();
@@ -887,6 +892,115 @@ window.copyCode = function(btn) {
     btn.textContent = '✓'; setTimeout(() => btn.textContent = 'copy', 1200);
   });
 };
+
+function fmtMoney(x) {
+  if (x == null || x === '') return '—';
+  const n = Number(x);
+  if (Number.isNaN(n)) return esc(x);
+  return '$' + n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+function fmtNum(x) {
+  if (x == null || x === '') return '—';
+  const n = Number(x);
+  if (Number.isNaN(n)) return esc(x);
+  return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+function renderPositionsTable(rows) {
+  rows = safeArray(rows);
+  if (!rows.length) return '<p class="muted-note">No positions reported.</p>';
+  let h = '<table><thead><tr><th>Symbol</th><th>Type</th><th>Qty</th><th>Avg Cost</th><th>Value</th></tr></thead><tbody>';
+  rows.forEach(r => {
+    h += `<tr><td>${esc(r.symbol || '—')}</td><td>${esc(r.secType || '—')}</td><td>${esc(r.position ?? '—')}</td><td>${fmtMoney(r.avgCost)}</td><td>${fmtMoney(r.marketValue)}</td></tr>`;
+  });
+  return h + '</tbody></table>';
+}
+
+function renderOrdersTable(rows) {
+  rows = safeArray(rows);
+  if (!rows.length) return '<p class="muted-note">No open orders reported.</p>';
+  let h = '<table><thead><tr><th>ID</th><th>Symbol</th><th>Action</th><th>Type</th><th>Qty</th><th>Status</th></tr></thead><tbody>';
+  rows.forEach(r => {
+    h += `<tr><td>${esc(r.orderId || '—')}</td><td>${esc(r.symbol || '—')}</td><td>${esc(r.action || '—')}</td><td>${esc(r.orderType || '—')}</td><td>${esc(r.totalQuantity ?? '—')}</td><td>${esc(r.status || '—')}</td></tr>`;
+  });
+  return h + '</tbody></table>';
+}
+
+function renderPhase391Table(rows) {
+  rows = safeArray(rows);
+  if (!rows.length) return '<p class="muted-note">PH391 has no completed rows exposed yet.</p>';
+  let h = '<table><thead><tr><th>Variant</th><th>Segment</th><th>Net</th><th>DD</th><th>ON entries</th><th>Halt</th></tr></thead><tbody>';
+  rows.forEach(r => {
+    h += `<tr><td>${esc(r.variant || '—')}</td><td>${esc(r.segment || '—')}</td><td>${fmtMoney(r.net_profit_usd)}</td><td>${fmtNum(r.drawdown_pct)}%</td><td>${fmtNum(r.on_entries)}</td><td>${esc(r.hive_halt || '—')}</td></tr>`;
+  });
+  return h + '</tbody></table>';
+}
+
+function viewTrading() {
+  const tl = S.tradingLive || {};
+  const qc = tl.qc || {};
+  const ib = tl.ibkr || {};
+  const qcState = qc.ok && !qc.stale ? 'green' : (qc.ok ? 'yellow' : 'red');
+  const ibState = ib.ok ? 'green' : (ib.port_open ? 'yellow' : 'red');
+  const warnings = safeArray(tl.warnings);
+  return `
+    <div class="page-head"><div><h1>Trading Live</h1><div class="sub">QC live paper + IBKR Gateway read-only observability · refreshed ${ago(S.lastRefresh && S.lastRefresh.toISOString())}</div></div>
+      <span class="tag blue">READ ONLY</span></div>
+    <div class="grid g-4" style="margin-bottom:18px">
+      ${card('QC Live Paper', `<div class="big">${qc.ok ? '●' : '✕'}</div><div class="label">${esc(qc.overall_status || '—')} · ${esc(qc.activity_status || '—')}</div>`, qcState)}
+      ${card('IBKR Gateway', `<div class="big">${ib.ok ? '●' : (ib.port_open ? '◐' : '✕')}</div><div class="label">${esc(ib.status || '—')} · port ${esc(ib.port || 4002)}</div>`, ibState)}
+      ${card('Equity', `<div class="big">${fmtMoney(qc.equity)}</div><div class="label">Net ${fmtMoney(qc.net_profit)} · holdings ${fmtMoney(qc.holdings_value)}</div>`, 'blue')}
+      ${card('Orders', `<div class="big">${esc(qc.orders_invalid ?? 0)}</div><div class="label">invalid · submitted ${esc(qc.orders_submitted ?? '—')} · filled ${esc(qc.orders_filled ?? '—')}</div>`, (Number(qc.orders_invalid || 0) > 0 ? 'yellow' : 'green'))}
+    </div>
+    <div class="grid g-2">
+      <div class="panel"><h2>QuantConnect Hive</h2><div class="kv">
+        <div class="item"><div class="k">Project</div><div class="v">${esc(qc.project_id || '—')}</div></div>
+        <div class="item"><div class="k">Deploy</div><div class="v">${esc(qc.deploy_id || '—')}</div></div>
+        <div class="item"><div class="k">Brokerage</div><div class="v">${esc(qc.brokerage || '—')}</div></div>
+        <div class="item"><div class="k">Hive Mode</div><div class="v">${esc(qc.hive_mode || '—')}</div></div>
+        <div class="item"><div class="k">Generated</div><div class="v">${esc(qc.generated_at_utc || '—')}</div></div>
+        <div class="item"><div class="k">Source Age</div><div class="v">${qc.source_age_seconds == null ? '—' : esc(qc.source_age_seconds + 's')} ${qc.stale ? '⚠ stale' : ''}</div></div>
+      </div></div>
+      <div class="panel"><h2>IBKR Read-Only</h2><div class="kv">
+        <div class="item"><div class="k">Port 4002</div><div class="v">${ib.port_open ? 'open' : 'closed'}</div></div>
+        <div class="item"><div class="k">PID</div><div class="v">${esc(ib.pid || '—')}</div></div>
+        <div class="item"><div class="k">Accounts</div><div class="v">${esc(ib.managed_accounts_count ?? '—')}</div></div>
+        <div class="item"><div class="k">Positions</div><div class="v">${esc(ib.position_count ?? 0)}</div></div>
+        <div class="item"><div class="k">Open Orders</div><div class="v">${esc(ib.open_order_count ?? 0)}</div></div>
+        <div class="item"><div class="k">Safety</div><div class="v">${ib.order_submission_enabled ? '⚠ orders enabled' : 'orders disabled'}</div></div>
+      </div>
+      <div class="port-grid">
+        <span>GW live 4001: <strong>${(ib.port_scan || {}).gateway_live_4001 ? 'open' : 'closed'}</strong></span>
+        <span>GW paper 4002: <strong>${(ib.port_scan || {}).gateway_paper_4002 ? 'open' : 'closed'}</strong></span>
+        <span>TWS live 7496: <strong>${(ib.port_scan || {}).tws_live_7496 ? 'open' : 'closed'}</strong></span>
+        <span>TWS paper 7497: <strong>${(ib.port_scan || {}).tws_paper_7497 ? 'open' : 'closed'}</strong></span>
+      </div>
+      ${ib.error ? `<div class="note-warn">IBKR read error: ${esc(ib.error)}</div>` : ''}</div>
+    </div>
+    <div class="grid g-2" style="margin-top:14px">
+      <div class="panel"><h2>IBKR Positions</h2>${renderPositionsTable(ib.positions)}</div>
+      <div class="panel"><h2>IBKR Open Orders</h2>${renderOrdersTable(ib.open_orders)}</div>
+    </div>
+    <div class="grid g-2" style="margin-top:14px">
+      <div class="panel"><h2>PH391 Research Running</h2>
+        <div class="kv" style="margin-bottom:10px">
+          <div class="item"><div class="k">Status</div><div class="v">${esc((qc.phase391 || {}).status || '—')}</div></div>
+          <div class="item"><div class="k">Rows</div><div class="v">${esc((qc.phase391 || {}).rows ?? '—')}</div></div>
+          <div class="item"><div class="k">Decision</div><div class="v">${esc((qc.phase391 || {}).decision || 'pending')}</div></div>
+        </div>
+        ${renderPhase391Table((qc.phase391 || {}).tail)}
+      </div>
+      <div class="panel"><h2>Safety / Warnings</h2>
+        <div style="font-size:13px;line-height:1.8">
+          <span class="tag blue">READ ONLY</span> No order submission controls exposed.<br>
+          <span class="tag blue">PAPER</span> IBKR route is constrained to paper Gateway port 4002.<br>
+          <span class="tag blue">NO MEMORY WRITE</span> Dashboard endpoint does not write semantic memory or FAISS.<br>
+          ${warnings.length ? warnings.map(w => `<span class="tag yellow">WARN</span> ${esc(w)}<br>`).join('') : '<span class="tag green">NOMINAL</span> No endpoint warnings.'}
+        </div>
+      </div>
+    </div>`;
+}
 
 function viewTools() {
   return `

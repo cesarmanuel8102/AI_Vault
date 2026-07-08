@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
@@ -28,6 +29,23 @@ def startupinfo_no_window():
 
 
 router = APIRouter(prefix="/brain-dashboard")
+
+QC_HIVE_STATUS_CANDIDATES = [
+    Path("C:/AI_VAULT/tmp_agent/strategies/mean_reversion_eq/qc_hive_live_paper_status_latest.json"),
+    Path("tmp_agent/strategies/mean_reversion_eq/qc_hive_live_paper_status_latest.json"),
+]
+QC_HIVE_REGISTRY_CANDIDATES = [
+    Path("C:/AI_VAULT/tmp_agent/strategies/mean_reversion_eq/trading_hive_canonical_registry_2026-07-07.json"),
+    Path("tmp_agent/strategies/mean_reversion_eq/trading_hive_canonical_registry_2026-07-07.json"),
+]
+QC_PHASE391_CANDIDATES = [
+    Path("C:/AI_VAULT/tmp_agent/strategies/mean_reversion_eq/phase391_overnight_universe_breadth_edge_expansion_qc_2026-07-07.json"),
+    Path("tmp_agent/strategies/mean_reversion_eq/phase391_overnight_universe_breadth_edge_expansion_qc_2026-07-07.json"),
+]
+QC_LIVE_STATE_CANDIDATES = [
+    Path("tmp_agent/state/qc_live/live_state.json"),
+    Path("C:/AI_VAULT/tmp_agent/state/qc_live/live_state.json"),
+]
 
 
 def _brain_admin_token() -> str | None:
@@ -100,6 +118,273 @@ def _parse_promotion_queue() -> list[dict[str, Any]]:
 def _truncate_error(exc: BaseException | str, limit: int = 220) -> str:
     text = str(exc)
     return text[:limit]
+
+
+def _read_first_json(paths: list[Path], default: Any = None) -> tuple[Any, str | None]:
+    for path in paths:
+        try:
+            if path.exists():
+                return json.loads(path.read_text(encoding="utf-8")), str(path)
+        except Exception:
+            continue
+    return default, None
+
+
+def _file_age_seconds(path_text: str | None) -> float | None:
+    if not path_text:
+        return None
+    try:
+        return round(datetime.now(timezone.utc).timestamp() - Path(path_text).stat().st_mtime, 1)
+    except Exception:
+        return None
+
+
+def _dashboard_port_listening(port: int, host: str = "127.0.0.1", timeout: float = 0.75) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except OSError:
+        return False
+
+
+def _dashboard_listening_pid(port: int) -> int | None:
+    cmd = (
+        f"$p = Get-NetTCPConnection -LocalPort {port} -State Listen -ErrorAction SilentlyContinue | "
+        "Select-Object -ExpandProperty OwningProcess -First 1; "
+        "if ($p) { Write-Output $p }"
+    )
+    try:
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-Command", cmd],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+    except Exception:
+        return None
+    raw = (result.stdout or "").strip()
+    if raw.isdigit():
+        return int(raw)
+    return None
+
+
+def _dashboard_find_named_processes(names: list[str]) -> list[dict[str, Any]]:
+    safe_names = [str(name).replace("'", "''") for name in names]
+    quoted = ",".join("'" + name + "'" for name in safe_names)
+    cmd = (
+        f"$names=@({quoted}); "
+        "$items = Get-CimInstance Win32_Process | "
+        "Where-Object { $names -contains $_.Name } | "
+        "Select-Object ProcessId,Name,CommandLine; "
+        "if ($items) { $items | ConvertTo-Json -Depth 3 -Compress }"
+    )
+    try:
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-Command", cmd],
+            capture_output=True,
+            text=True,
+            timeout=8,
+            check=False,
+        )
+        raw = (result.stdout or "").strip()
+        if not raw:
+            return []
+        parsed = json.loads(raw)
+        if isinstance(parsed, list):
+            return parsed
+        if isinstance(parsed, dict):
+            return [parsed]
+    except Exception:
+        return []
+    return []
+
+
+def _safe_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    try:
+        return float(str(value).replace("$", "").replace(",", "").replace("%", "").strip())
+    except Exception:
+        return None
+
+
+def _dashboard_qc_live_snapshot() -> dict[str, Any]:
+    monitor, monitor_path = _read_first_json(QC_HIVE_STATUS_CANDIDATES, {})
+    registry, registry_path = _read_first_json(QC_HIVE_REGISTRY_CANDIDATES, {})
+    phase391, phase391_path = _read_first_json(QC_PHASE391_CANDIDATES, {})
+    live_state, live_state_path = _read_first_json(QC_LIVE_STATE_CANDIDATES, {})
+
+    p391_rows = phase391.get("rows", []) if isinstance(phase391, dict) and isinstance(phase391.get("rows"), list) else []
+    p391_tail = []
+    for row in p391_rows[-6:]:
+        p391_tail.append({
+            "variant": row.get("variant"),
+            "segment": row.get("segment"),
+            "net_profit_usd": row.get("net_profit_usd"),
+            "drawdown_pct": row.get("drawdown_pct"),
+            "monthly_profit_usd": row.get("monthly_profit_usd"),
+            "on_entries": row.get("on_entries"),
+            "hive_halt": str(row.get("hive_halt")),
+        })
+
+    live_paper = registry.get("live_paper", {}) if isinstance(registry, dict) else {}
+    live_monitor_from_registry = live_paper.get("latest_monitor_status", {}) if isinstance(live_paper, dict) else {}
+    status = monitor if isinstance(monitor, dict) and monitor else live_monitor_from_registry
+    age_seconds = _file_age_seconds(monitor_path)
+    stale = age_seconds is None or age_seconds > 900
+
+    return {
+        "ok": bool(status) or bool(live_state),
+        "source": monitor_path or live_state_path or registry_path,
+        "source_age_seconds": age_seconds,
+        "stale": stale,
+        "project_id": status.get("project_id") or live_paper.get("project_id") or live_state.get("project_id"),
+        "deploy_id": status.get("deploy_id") or live_paper.get("deploy_id") or live_state.get("deploy_id"),
+        "brokerage": status.get("brokerage") or live_paper.get("brokerage") or "PaperBrokerage",
+        "hive_mode": status.get("hive_mode") or live_paper.get("hive_mode"),
+        "overall_status": status.get("overall_status") or live_state.get("status"),
+        "activity_status": status.get("activity_status"),
+        "generated_at_utc": status.get("generated_at_utc") or status.get("timestamp_utc") or live_state.get("last_poll_utc"),
+        "equity": _safe_float(status.get("equity")),
+        "net_profit": _safe_float(status.get("net_profit")),
+        "orders_submitted": status.get("orders_submitted"),
+        "orders_filled": status.get("orders_filled"),
+        "orders_invalid": status.get("orders_invalid"),
+        "holdings_value": _safe_float(status.get("holdings_value")),
+        "alerts": status.get("alerts") or live_state.get("alerts_active") or [],
+        "live_state": {
+            "deployed": live_state.get("deployed"),
+            "status": live_state.get("status"),
+            "poll_count": live_state.get("poll_count"),
+            "last_poll_utc": live_state.get("last_poll_utc"),
+            "source": live_state_path,
+        },
+        "phase391": {
+            "status": phase391.get("status") if isinstance(phase391, dict) else None,
+            "decision": phase391.get("decision") if isinstance(phase391, dict) else None,
+            "rows": len(p391_rows),
+            "tail": p391_tail,
+            "source": phase391_path,
+        },
+        "read_only": True,
+        "order_submission_enabled": False,
+    }
+
+
+def _dashboard_ibkr_readonly_snapshot() -> dict[str, Any]:
+    port_scan = {
+        "gateway_live_4001": _dashboard_port_listening(4001),
+        "gateway_paper_4002": _dashboard_port_listening(4002),
+        "tws_live_7496": _dashboard_port_listening(7496),
+        "tws_paper_7497": _dashboard_port_listening(7497),
+    }
+    port_open = _dashboard_port_listening(4002)
+    pid = _dashboard_listening_pid(4002)
+    processes = _dashboard_find_named_processes(["ibgateway.exe", "tws.exe"])
+    base: dict[str, Any] = {
+        "ok": False,
+        "host": "127.0.0.1",
+        "port": 4002,
+        "paper_port_enforced": True,
+        "read_only": True,
+        "order_submission_enabled": False,
+        "port_open": port_open,
+        "port_scan": port_scan,
+        "pid": pid,
+        "process_count": len(processes),
+        "processes": [
+            {
+                "pid": p.get("ProcessId"),
+                "name": p.get("Name"),
+            }
+            for p in processes[:5]
+        ],
+        "checked_utc": datetime.now(timezone.utc).isoformat(),
+    }
+    if not port_open:
+        if port_scan["tws_paper_7497"]:
+            base.update({
+                "status": "paper_tws_detected_wrong_port_for_gateway",
+                "error": "TWS paper appears open on 7497, but the dashboard read-only Gateway probe is constrained to IB Gateway paper port 4002.",
+            })
+        elif port_scan["gateway_live_4001"] or port_scan["tws_live_7496"]:
+            base.update({
+                "status": "live_port_detected_not_used",
+                "error": "A live IBKR port appears open; dashboard refuses to connect because paper-only observability is enforced on 4002.",
+            })
+        else:
+            base.update({"status": "gateway_not_listening", "error": "IBKR paper Gateway is not listening on 127.0.0.1:4002"})
+        return base
+
+    ib = None
+    try:
+        from ib_insync import IB
+
+        ib = IB()
+        ib.connect("127.0.0.1", 4002, clientId=293, timeout=5, readonly=True)
+        if not ib.isConnected():
+            base.update({"status": "connect_failed", "error": "ib_insync did not establish connection"})
+            return base
+
+        accounts = ib.managedAccounts()
+        summary: dict[str, Any] = {}
+        for av in ib.accountSummary():
+            if av.tag in ("NetLiquidation", "TotalCashValue", "UnrealizedPnL", "RealizedPnL", "BuyingPower", "AvailableFunds"):
+                summary[av.tag] = {"value": av.value, "currency": av.currency}
+
+        positions = []
+        exposure = 0.0
+        for pos in ib.positions():
+            value = float(pos.position or 0) * float(pos.avgCost or 0)
+            exposure += abs(value)
+            positions.append({
+                "symbol": getattr(pos.contract, "symbol", ""),
+                "secType": getattr(pos.contract, "secType", ""),
+                "position": pos.position,
+                "avgCost": round(float(pos.avgCost or 0), 4),
+                "marketValue": round(value, 2),
+                "conId": getattr(pos.contract, "conId", None),
+            })
+
+        open_orders = []
+        for trade in ib.openTrades():
+            order = trade.order
+            contract = trade.contract
+            open_orders.append({
+                "orderId": getattr(order, "orderId", None),
+                "symbol": getattr(contract, "symbol", ""),
+                "secType": getattr(contract, "secType", ""),
+                "action": getattr(order, "action", ""),
+                "orderType": getattr(order, "orderType", ""),
+                "totalQuantity": getattr(order, "totalQuantity", None),
+                "status": getattr(getattr(trade, "orderStatus", None), "status", "unknown"),
+            })
+
+        base.update({
+            "ok": True,
+            "status": "connected_readonly",
+            "managed_accounts_count": len(accounts),
+            "managed_accounts_masked": [str(a)[-4:].rjust(len(str(a)), "*") for a in accounts],
+            "account_summary": summary,
+            "positions": positions,
+            "position_count": len(positions),
+            "total_exposure": round(exposure, 2),
+            "open_orders": open_orders,
+            "open_order_count": len(open_orders),
+        })
+        return base
+    except Exception as exc:
+        base.update({"status": "read_error", "error": _truncate_error(exc)})
+        return base
+    finally:
+        if ib is not None:
+            try:
+                ib.disconnect()
+            except Exception:
+                pass
 
 
 def _scheduler_info(use_subprocess: bool = False) -> dict[str, Any]:
@@ -315,6 +600,33 @@ def scheduler() -> dict[str, Any]:
 @router.get("/safety")
 def safety() -> dict[str, Any]:
     return {"ok": True, ** _safety_status()}
+
+
+@router.get("/trading-live")
+def trading_live() -> dict[str, Any]:
+    started = datetime.now(timezone.utc)
+    qc = _dashboard_qc_live_snapshot()
+    ibkr = _dashboard_ibkr_readonly_snapshot()
+    elapsed_ms = round((datetime.now(timezone.utc) - started).total_seconds() * 1000, 3)
+    warnings: list[str] = []
+    if qc.get("stale"):
+        warnings.append("qc_monitor_stale_or_missing")
+    if not ibkr.get("ok"):
+        warnings.append("ibkr_readonly_unavailable")
+    return {
+        "ok": bool(qc.get("ok")) or bool(ibkr.get("ok")),
+        "degraded": bool(warnings),
+        "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+        "latency_ms": elapsed_ms,
+        "mode": "read_only_observability",
+        "real_money_enabled": False,
+        "order_submission_enabled": False,
+        "memory_write_enabled": False,
+        "faiss_write_enabled": False,
+        "warnings": warnings,
+        "qc": qc,
+        "ibkr": ibkr,
+    }
 
 
 @router.post("/control/run-once")

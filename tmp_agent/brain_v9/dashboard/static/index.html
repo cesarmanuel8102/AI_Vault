@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Brain Operator Console</title>
-  <link rel="stylesheet" href="/static/styles.css?v=6">
+  <link rel="stylesheet" href="/static/styles.css?v=8">
 </head>
 <body>
   <div id="app">
@@ -23,6 +23,8 @@
         <span class="chip lock" id="ts-readonly" data-state="locked">READ-ONLY</span>
         <span class="chip lock" id="ts-memory" data-state="locked">MEM LOCKED</span>
         <span class="chip lock" id="ts-trading" data-state="locked">TRADING LOCKED</span>
+        <span class="chip" id="ts-qc" data-state="unknown">QC …</span>
+        <span class="chip" id="ts-ibkr" data-state="unknown">IBKR …</span>
         <span class="chip" id="ts-autonomy" data-state="unknown">Autonomy …</span>
         <span class="chip muted" id="ts-refresh">—</span>
       </div>
@@ -34,6 +36,7 @@
         <a class="nav-item" data-view="overview" href="#/overview"><span class="nav-ico">▣</span> Overview</a>
         <a class="nav-item" data-view="agent" href="#/agent"><span class="nav-ico">◉</span> Agent</a>
         <a class="nav-item" data-view="chat" href="#/chat"><span class="nav-ico">✎</span> Chat</a>
+        <a class="nav-item" data-view="trading" href="#/trading"><span class="nav-ico">↗</span> Trading Live</a>
         <a class="nav-item" data-view="tools" href="#/tools"><span class="nav-ico">⚙</span> Tools</a>
         <a class="nav-item" data-view="memory" href="#/memory"><span class="nav-ico">❖</span> Memory</a>
         <a class="nav-item" data-view="traces" href="#/traces"><span class="nav-ico">⟲</span> Traces</a>
@@ -56,6 +59,6 @@
     </div>
   </div>
 
-  <script src="/static/app.js?v=7"></script>
+  <script src="/static/app.js?v=8"></script>
 </body>
 </html>
