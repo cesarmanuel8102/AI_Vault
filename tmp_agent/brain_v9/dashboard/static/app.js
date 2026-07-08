@@ -53,9 +53,13 @@ async function getJSON(url, timeoutMs) {
   } finally { clearTimeout(t); }
 }
 
+let refreshInFlight = false;
+
 async function refresh() {
+  if (refreshInFlight) return;
+  refreshInFlight = true;
   try {
-    const [status, activity, scheduler, safety, queue, agentV2, tradingLive] = await Promise.all([
+    const results = await Promise.allSettled([
       getJSON('/brain-dashboard/status'),
       getJSON('/brain-dashboard/activity'),
       getJSON('/brain-dashboard/scheduler'),
@@ -64,9 +68,16 @@ async function refresh() {
       getJSON('/brain-dashboard/agent-v2/status'),
       getJSON('/brain-dashboard/trading-live', 12000)
     ]);
-    S.status = status; S.activity = activity; S.scheduler = scheduler;
-    S.safety = safety; S.queue = queue; S.agentV2 = agentV2; S.tradingLive = tradingLive;
-    S.lastRefresh = new Date(); S.online = true;
+    const [status, activity, scheduler, safety, queue, agentV2, tradingLive] = results.map(r => r.status === 'fulfilled' ? r.value : null);
+    if (status) S.status = status;
+    if (activity) S.activity = activity;
+    if (scheduler) S.scheduler = scheduler;
+    if (safety) S.safety = safety;
+    if (queue) S.queue = queue;
+    if (agentV2) S.agentV2 = agentV2;
+    if (tradingLive) S.tradingLive = tradingLive;
+    S.lastRefresh = new Date();
+    S.online = status !== null;
     renderTopbar();
     if (S.currentView !== 'chat') renderCurrentView();
     else renderChatSidePanels();
@@ -74,6 +85,8 @@ async function refresh() {
     S.online = false;
     renderTopbar();
     console.warn('refresh error', e);
+  } finally {
+    refreshInFlight = false;
   }
 }
 

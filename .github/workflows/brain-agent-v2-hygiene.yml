@@ -13,6 +13,7 @@ on:
       - "tests/smoke/test_front_brain_ui_token_preflight_01.py"
       - "tests/smoke/test_front_brain_ui_chat_backend_streaming_events_04.py"
       - "tests/smoke/test_dashboard_trading_live_readonly_01.py"
+      - "tests/smoke/test_front_brain_ui_dashboard_load_performance_05a.py"
       - ".github/workflows/brain-agent-v2-hygiene.yml"
   push:
     branches:
@@ -27,6 +28,7 @@ on:
       - "tests/smoke/test_front_brain_ui_token_preflight_01.py"
       - "tests/smoke/test_front_brain_ui_chat_backend_streaming_events_04.py"
       - "tests/smoke/test_dashboard_trading_live_readonly_01.py"
+      - "tests/smoke/test_front_brain_ui_dashboard_load_performance_05a.py"
       - ".github/workflows/brain-agent-v2-hygiene.yml"
 
 jobs:
@@ -115,6 +117,12 @@ jobs:
         run: |
           set -euo pipefail
           python tests/smoke/test_dashboard_trading_live_readonly_01.py
+
+      - name: Dashboard load performance tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/smoke/test_front_brain_ui_dashboard_load_performance_05a.py
 
       - name: Static boundary compile
         shell: bash

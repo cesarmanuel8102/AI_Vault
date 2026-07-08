@@ -482,15 +482,80 @@ def _safety_status() -> dict[str, Any]:
     return result
 
 
+# ---------------------------------------------------------------------------
+# Agent V2 snapshot cache + run limiting (performance fix for 1766+ runs)
+# ---------------------------------------------------------------------------
+
+_AGENT_V2_SNAPSHOT_CACHE: dict[str, Any] = {"ts": 0.0, "data": None}
+_AGENT_V2_SNAPSHOT_TTL_SEC = 30
+_AGENT_V2_SNAPSHOT_RUN_LIMIT = 50
+
+
+def _limit_runs_for_dashboard(
+    runs: list[dict[str, Any]],
+    limit: int = _AGENT_V2_SNAPSHOT_RUN_LIMIT,
+) -> list[dict[str, Any]]:
+    """Return at most ``limit`` runs, preferring the most recent.
+
+    Defensive sort by available timestamp fields; falls back to original order.
+    Does NOT mutate the input list.
+    """
+    if len(runs) <= limit:
+        return runs
+    sortable = list(runs)
+    for field in ("created_at", "started_at", "updated_at", "finished_at", "timestamp"):
+        try:
+            sortable.sort(key=lambda r: r.get(field) or "", reverse=True)
+            return sortable[:limit]
+        except Exception:
+            continue
+    return sortable[-limit:]
+
+
+def _read_recent_runs_from_disk(limit: int = _AGENT_V2_SNAPSHOT_RUN_LIMIT) -> tuple[list[dict[str, Any]], int]:
+    """Read the N most recent run.json files from the runtime's run_root by mtime.
+
+    Returns (limited_runs, total_dirs_seen).
+    Falls back to rt.list_runs() if run_root is inaccessible.
+    """
+    try:
+        from tmp_agent.brain_v9.core.agent_kernel_v2.runtime import get_agent_runtime_v2
+        rt = get_agent_runtime_v2()
+        run_root = getattr(rt, "run_root", None)
+        if run_root is None or not run_root.exists():
+            all_runs = rt.list_runs()
+            return _limit_runs_for_dashboard(all_runs, limit), len(all_runs)
+        run_jsons = sorted(
+            run_root.glob("*/run.json"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
+        total = len(run_jsons)
+        limited_runs: list[dict[str, Any]] = []
+        for p in run_jsons[:limit]:
+            try:
+                limited_runs.append(json.loads(p.read_text(encoding="utf-8")))
+            except Exception:
+                continue
+        return limited_runs, total
+    except Exception:
+        return [], 0
+
+
 def _agent_v2_snapshot() -> dict[str, Any]:
+    import time as _time
+    now = _time.monotonic()
+    cached = _AGENT_V2_SNAPSHOT_CACHE
+    if cached["data"] is not None and (now - cached["ts"]) < _AGENT_V2_SNAPSHOT_TTL_SEC:
+        return dict(cached["data"])
     try:
         from tmp_agent.brain_v9.core.agent_kernel_v2.finalizer import PRIMARY_KIMI_MODEL
         from tmp_agent.brain_v9.core.agent_kernel_v2.runtime import get_agent_runtime_v2
         rt = get_agent_runtime_v2()
-        runs = rt.list_runs()
-        latest = runs[-1] if runs else {}
+        limited_runs, total_runs = _read_recent_runs_from_disk(_AGENT_V2_SNAPSHOT_RUN_LIMIT)
+        latest = limited_runs[-1] if limited_runs else {}
         meta = latest.get("provider_metadata") or {}
-        return {
+        result = {
             "ok": True,
             "canonical_for_new_agent_runs": True,
             "backend": rt.backend,
@@ -505,7 +570,9 @@ def _agent_v2_snapshot() -> dict[str, Any]:
             "latest_provider_used": meta.get("provider_used"),
             "latest_model_used": meta.get("model_used"),
             "latest_provider_degraded": meta.get("provider_degraded"),
-            "runs": len(runs),
+            "runs": total_runs,
+            "runs_returned": len(limited_runs),
+            "runs_truncated": total_runs > len(limited_runs),
             "latest_run_id": latest.get("run_id"),
             "trace_available": True,
             "chat_agent_route": "/v2/chat/agent",
@@ -513,6 +580,9 @@ def _agent_v2_snapshot() -> dict[str, Any]:
             "capabilities_route": "/v2/agent/capabilities",
             "legacy_agent_status": "legacy_compatible_not_canonical",
         }
+        cached["ts"] = now
+        cached["data"] = result
+        return dict(result)
     except Exception as exc:
         return {
             "ok": False,
