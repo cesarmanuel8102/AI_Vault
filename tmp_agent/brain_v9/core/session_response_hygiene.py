@@ -20,8 +20,9 @@ from `tmp_agent/brain_v9/main.py:1257`) and class-attr access used by tests.
 from __future__ import annotations
 
 import re
+from typing import List, Optional
 
-__all__ = ["sanitize_llm_chat_response"]
+__all__ = ["sanitize_llm_chat_response", "sanitize_memory_content", "extract_numbered_sequence"]
 
 
 def sanitize_llm_chat_response(content: str) -> str:
@@ -104,3 +105,61 @@ def sanitize_llm_chat_response(content: str) -> str:
     if had_theater:
         return cleaned2
     return cleaned2 or cleaned
+
+
+# ---------------------------------------------------------------------------
+# B7-STRANGLER-04B: Memory content sanitizer + numbered sequence extractor
+# ---------------------------------------------------------------------------
+
+def sanitize_memory_content(text: str) -> str:
+    """Remove internal markers from memory-bound text before persistence.
+
+    Pure function extracted from BrainSession._sanitize_memory_content.
+    Strips lines containing agent theater, dev markers, raw tool markup,
+    extractive summary markers, and internal state prefixes.
+    """
+    if not text:
+        return text
+    lines = []
+    for line in str(text).splitlines():
+        stripped = line.strip()
+        if stripped.startswith("*[Agente ORAV"):
+            continue
+        if stripped.startswith("---") and "[DEV]" in stripped:
+            continue
+        if stripped.startswith("<function_calls") or stripped.startswith("<invoke "):
+            continue
+        if stripped.startswith("</function_calls>") or stripped.startswith("</invoke>"):
+            continue
+        if stripped.startswith("*[Resumen extractivo"):
+            continue
+        if stripped.startswith("(estado interno:"):
+            continue
+        lines.append(line)
+    return "\n".join(lines).strip()
+
+
+def extract_numbered_sequence(message: str) -> Optional[List[str]]:
+    """Extract numbered steps, including inline lists like '1. a 2. b'.
+
+    Pure function extracted from BrainSession._extract_numbered_sequence.
+    Falls back to bullet/dash lists if no numbered markers found.
+    Returns None if no steps are found.
+    """
+    marker_re = re.compile(r"(?<!\d)(\d+)\.\s+")
+    markers = list(marker_re.finditer(message))
+    steps: List[str] = []
+    if markers:
+        for index, marker in enumerate(markers):
+            start = marker.end()
+            end = markers[index + 1].start() if index + 1 < len(markers) else len(message)
+            step = message[start:end].strip()
+            if step:
+                steps.append(re.sub(r"\s+", " ", step))
+        return steps if steps else None
+
+    for line in message.splitlines():
+        m = re.match(r"^\s*(?:-\s*|\*\s*)\s*(.+)\s*$", line)
+        if m:
+            steps.append(m.group(1).strip())
+    return steps if steps else None

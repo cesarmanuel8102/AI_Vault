@@ -160,6 +160,7 @@ from brain_v9.core import session_query_predicates as _qp  # noqa: E402,F401
 from brain_v9.core.session_response_hygiene import (  # noqa: E402,F401
     sanitize_llm_chat_response as _sanitize_llm_chat_response_impl,
 )
+from brain_v9.core import session_response_hygiene as _response_hygiene  # noqa: E402,F401
 
 # B7-STRANGLER-06: pure tool-result formatters extracted to their own module.
 # BrainSession keeps the 17 ``_fmt_<name>`` classmethods as one-line shims that
@@ -5810,25 +5811,10 @@ class BrainSession:
 
     @classmethod
     def _sanitize_memory_content(cls, text: str) -> str:
-        if not text:
-            return text
-        lines = []
-        for line in str(text).splitlines():
-            stripped = line.strip()
-            if stripped.startswith("*[Agente ORAV"):
-                continue
-            if stripped.startswith("---") and "[DEV]" in stripped:
-                continue
-            if stripped.startswith("<function_calls") or stripped.startswith("<invoke "):
-                continue
-            if stripped.startswith("</function_calls>") or stripped.startswith("</invoke>"):
-                continue
-            if stripped.startswith("*[Resumen extractivo"):
-                continue
-            if stripped.startswith("(estado interno:"):
-                continue
-            lines.append(line)
-        return "\n".join(lines).strip()
+        """B7-STRANGLER-04B shim — delegates to
+        :func:`brain_v9.core.session_response_hygiene.sanitize_memory_content`.
+        """
+        return _response_hygiene.sanitize_memory_content(text)
 
     @classmethod
     def _is_temporal_query(cls, message: str) -> bool:
@@ -5916,24 +5902,12 @@ class BrainSession:
     # ── CHAT-OPS-SEQUENCE-RECOVERY-01: numbered workflow continuation ────────
     @staticmethod
     def _extract_numbered_sequence(message: str) -> Optional[List[str]]:
-        """Extract numbered steps, including inline lists like '1. a 2. b'."""
-        marker_re = re.compile(r"(?<!\d)(\d+)\.\s+")
-        markers = list(marker_re.finditer(message))
-        steps: List[str] = []
-        if markers:
-            for index, marker in enumerate(markers):
-                start = marker.end()
-                end = markers[index + 1].start() if index + 1 < len(markers) else len(message)
-                step = message[start:end].strip()
-                if step:
-                    steps.append(re.sub(r"\s+", " ", step))
-            return steps if steps else None
+        """Extract numbered steps, including inline lists like '1. a 2. b'.
 
-        for line in message.splitlines():
-            m = re.match(r"^\s*(?:-\s*|\*\s*)\s*(.+)\s*$", line)
-            if m:
-                steps.append(m.group(1).strip())
-        return steps if steps else None
+        B7-STRANGLER-04B shim — delegates to
+        :func:`brain_v9.core.session_response_hygiene.extract_numbered_sequence`.
+        """
+        return _response_hygiene.extract_numbered_sequence(message)
 
     @staticmethod
     def _is_manual_confirmation_step(text: str) -> bool:
