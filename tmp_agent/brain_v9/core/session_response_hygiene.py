@@ -20,9 +20,15 @@ from `tmp_agent/brain_v9/main.py:1257`) and class-attr access used by tests.
 from __future__ import annotations
 
 import re
-from typing import List, Optional
+from typing import Dict, List, Optional, Tuple
 
-__all__ = ["sanitize_llm_chat_response", "sanitize_memory_content", "extract_numbered_sequence"]
+__all__ = [
+    "sanitize_llm_chat_response",
+    "sanitize_memory_content",
+    "extract_numbered_sequence",
+    "sanitize_llm_chat_response_with_metadata",
+    "agent_failure_notice",
+]
 
 
 def sanitize_llm_chat_response(content: str) -> str:
@@ -163,3 +169,53 @@ def extract_numbered_sequence(message: str) -> Optional[List[str]]:
         if m:
             steps.append(m.group(1).strip())
     return steps if steps else None
+
+
+# ---------------------------------------------------------------------------
+# B7-STRANGLER-05B: Agent result normalizers
+# ---------------------------------------------------------------------------
+
+def sanitize_llm_chat_response_with_metadata(content: str) -> Tuple[str, Dict[str, bool]]:
+    """Sanitize LLM chat response and return metadata about what was stripped.
+
+    Pure function extracted from BrainSession._sanitize_llm_chat_response_with_metadata.
+    Returns (sanitized_text, metadata_dict) where metadata_dict has keys
+    'thinking_stripped' and 'no_cot_leak'.
+    """
+    cleaned = content or ""
+    thinking_stripped = False
+    patterns = (
+        re.compile(r"(?is)^\s*thinking\.\.\.\s*.*?(?:\.\.\.\s*)?done thinking\.?\s*", re.MULTILINE),
+        re.compile(r"(?is)<thinking>.*?</thinking>"),
+        re.compile(r"(?is)\u200b.*?\u200b"),
+        re.compile(r"(?im)^\s*(?:chain-of-thought|chain of thought|scratchpad|private reasoning)\s*:\s*.*$"),
+    )
+    for pattern in patterns:
+        cleaned_next, count = pattern.subn("", cleaned)
+        thinking_stripped = thinking_stripped or count > 0
+        cleaned = cleaned_next
+    sanitized = sanitize_llm_chat_response(cleaned.strip())
+    raw_markers = re.compile(
+        r"(?i)thinking\.\.\.|done thinking|<thinking>|</thinking>|\u200b|\u200b|"
+        r"chain-of-thought\s*:|chain of thought\s*:|scratchpad\s*:|private reasoning\s*:"
+    )
+    if thinking_stripped and not sanitized.strip():
+        sanitized = "I can answer, but the model returned hidden reasoning without a usable final answer."
+    no_cot_leak = not bool(raw_markers.search(sanitized or ""))
+    if not no_cot_leak:
+        sanitized = "I can answer, but the model returned hidden reasoning without a usable final answer."
+        no_cot_leak = True
+        thinking_stripped = True
+    return sanitized, {"thinking_stripped": bool(thinking_stripped), "no_cot_leak": bool(no_cot_leak)}
+
+
+def agent_failure_notice(status: str) -> str:
+    """Return a user-facing notice when agent execution fails.
+
+    Pure function extracted from BrainSession._agent_failure_notice.
+    The notice explains that real tools could not run and the LLM is used instead.
+    """
+    return (
+        "No pude ejecutar herramientas reales en este turno "
+        f"(agent_status={status}). Respondo con el modelo LLM disponible."
+    )

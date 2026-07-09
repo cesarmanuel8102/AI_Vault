@@ -12,6 +12,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
 from tmp_agent.brain_v9.core.session_response_hygiene import (
     sanitize_memory_content,
     extract_numbered_sequence,
+    sanitize_llm_chat_response_with_metadata,
+    agent_failure_notice,
 )
 
 
@@ -159,6 +161,85 @@ def test_module_does_not_import_session():
         assert "brain_v9.core.session" not in line, f"session_response_hygiene must NOT import session.py, found: {line.strip()}"
 
 
+# --- sanitize_llm_chat_response_with_metadata tests ---
+
+def test_sanitize_metadata_clean_text():
+    text = "This is a clean response."
+    sanitized, meta = sanitize_llm_chat_response_with_metadata(text)
+    assert "clean response" in sanitized
+    assert meta["thinking_stripped"] is False
+    assert meta["no_cot_leak"] is True
+
+
+def test_sanitize_metadata_empty_text():
+    sanitized, meta = sanitize_llm_chat_response_with_metadata("")
+    assert meta["thinking_stripped"] is False
+    assert meta["no_cot_leak"] is True
+
+
+def test_sanitize_metadata_thinking_tag_stripped():
+    text = "thinking... some reasoning ... done thinking. Final answer here."
+    sanitized, meta = sanitize_llm_chat_response_with_metadata(text)
+    assert meta["thinking_stripped"] is True
+
+
+def test_sanitize_metadata_cot_marker_detected():
+    text = "chain-of-thought: let me think about this"
+    sanitized, meta = sanitize_llm_chat_response_with_metadata(text)
+    assert meta["no_cot_leak"] is True
+    assert "hidden reasoning" in sanitized
+
+
+def test_sanitize_metadata_parity_with_shim():
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "tmp_agent"))
+    try:
+        from brain_v9.core.session import BrainSession
+    finally:
+        pass
+    test_inputs = [
+        "Clean text response",
+        "",
+        "thinking... reasoning ... done thinking. Answer.",
+    ]
+    for text in test_inputs:
+        shim_result = BrainSession._sanitize_llm_chat_response_with_metadata(text)
+        direct_result = sanitize_llm_chat_response_with_metadata(text)
+        assert shim_result == direct_result
+
+
+# --- agent_failure_notice tests ---
+
+def test_agent_failure_notice_timeout():
+    result = agent_failure_notice("timeout")
+    assert "timeout" in result
+    assert "agent_status=timeout" in result
+    assert "LLM" in result
+
+
+def test_agent_failure_notice_ghost_completion():
+    result = agent_failure_notice("ghost_completion")
+    assert "ghost_completion" in result
+    assert "agent_status=ghost_completion" in result
+
+
+def test_agent_failure_notice_arbitrary_status():
+    result = agent_failure_notice("some_error")
+    assert "some_error" in result
+    assert "agent_status=some_error" in result
+
+
+def test_agent_failure_notice_parity_with_shim():
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "tmp_agent"))
+    try:
+        from brain_v9.core.session import BrainSession
+    finally:
+        pass
+    for status in ("timeout", "ghost_completion", "error"):
+        shim_result = BrainSession._agent_failure_notice(object(), status)
+        direct_result = agent_failure_notice(status)
+        assert shim_result == direct_result
+
+
 def test_brain_session_methods_are_thin_shims():
     """Structural test: verify BrainSession shims are thin delegates, not old code."""
     import ast
@@ -204,6 +285,50 @@ def test_brain_session_methods_are_thin_shims():
         assert token not in extract_src, f"forbidden token in _extract_numbered_sequence: {token}"
 
 
+def test_agent_result_normalizer_methods_are_thin_shims():
+    """Structural test: verify new B7-STRANGLER-05B shims are thin delegates."""
+    import ast
+    from pathlib import Path
+
+    p = Path(__file__).resolve().parents[2] / "tmp_agent" / "brain_v9" / "core" / "session.py"
+    txt = p.read_text(encoding="utf-8", errors="ignore")
+    tree = ast.parse(txt)
+    cls = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "BrainSession")
+
+    methods = {
+        n.name: n
+        for n in cls.body
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+
+    assert "_sanitize_llm_chat_response_with_metadata" in methods
+    assert "_agent_failure_notice" in methods
+
+    metadata_src = ast.get_source_segment(txt, methods["_sanitize_llm_chat_response_with_metadata"])
+    notice_src = ast.get_source_segment(txt, methods["_agent_failure_notice"])
+
+    assert "_response_hygiene.sanitize_llm_chat_response_with_metadata(content)" in metadata_src
+    assert "_response_hygiene.agent_failure_notice(status)" in notice_src
+
+    forbidden_metadata = [
+        "cleaned = content",
+        "thinking_stripped = False",
+        "patterns = (",
+        "raw_markers = re.compile",
+    ]
+    for token in forbidden_metadata:
+        assert token not in metadata_src, f"forbidden token in _sanitize_llm_chat_response_with_metadata: {token}"
+
+    forbidden_notice = [
+        "No pude ejecutar herramientas",
+        "Respondo con el modelo",
+    ]
+    for token in forbidden_notice:
+        assert token not in notice_src, f"forbidden token in _agent_failure_notice: {token}"
+
+    assert "def _agent_failure_notice(self" in notice_src, "must preserve self signature"
+
+
 if __name__ == "__main__":
     tests = [
         test_sanitize_removes_agent_orav_lines,
@@ -224,7 +349,17 @@ if __name__ == "__main__":
         test_extract_star_bullet_list_fallback,
         test_extract_numbered_sequence_parity_with_shim,
         test_module_does_not_import_session,
+        test_sanitize_metadata_clean_text,
+        test_sanitize_metadata_empty_text,
+        test_sanitize_metadata_thinking_tag_stripped,
+        test_sanitize_metadata_cot_marker_detected,
+        test_sanitize_metadata_parity_with_shim,
+        test_agent_failure_notice_timeout,
+        test_agent_failure_notice_ghost_completion,
+        test_agent_failure_notice_arbitrary_status,
+        test_agent_failure_notice_parity_with_shim,
         test_brain_session_methods_are_thin_shims,
+        test_agent_result_normalizer_methods_are_thin_shims,
     ]
     passed = 0
     for t in tests:

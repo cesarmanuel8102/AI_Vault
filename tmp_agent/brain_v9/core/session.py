@@ -2356,31 +2356,10 @@ class BrainSession:
 
     @staticmethod
     def _sanitize_llm_chat_response_with_metadata(content: str) -> Tuple[str, Dict[str, bool]]:
-        cleaned = content or ""
-        thinking_stripped = False
-        patterns = (
-            re.compile(r"(?is)^\s*thinking\.\.\.\s*.*?(?:\.\.\.\s*)?done thinking\.?\s*", re.MULTILINE),
-            re.compile(r"(?is)<thinking>.*?</thinking>"),
-            re.compile(r"(?is)<think>.*?</think>"),
-            re.compile(r"(?im)^\s*(?:chain-of-thought|chain of thought|scratchpad|private reasoning)\s*:\s*.*$"),
-        )
-        for pattern in patterns:
-            cleaned_next, count = pattern.subn("", cleaned)
-            thinking_stripped = thinking_stripped or count > 0
-            cleaned = cleaned_next
-        sanitized = _sanitize_llm_chat_response_impl(cleaned.strip())
-        raw_markers = re.compile(
-            r"(?i)thinking\.\.\.|done thinking|<thinking>|</thinking>|<think>|</think>|"
-            r"chain-of-thought\s*:|chain of thought\s*:|scratchpad\s*:|private reasoning\s*:"
-        )
-        if thinking_stripped and not sanitized.strip():
-            sanitized = "I can answer, but the model returned hidden reasoning without a usable final answer."
-        no_cot_leak = not bool(raw_markers.search(sanitized or ""))
-        if not no_cot_leak:
-            sanitized = "I can answer, but the model returned hidden reasoning without a usable final answer."
-            no_cot_leak = True
-            thinking_stripped = True
-        return sanitized, {"thinking_stripped": bool(thinking_stripped), "no_cot_leak": bool(no_cot_leak)}
+        """B7-STRANGLER-05B shim — delegates to
+        :func:`brain_v9.core.session_response_hygiene.sanitize_llm_chat_response_with_metadata`.
+        """
+        return _response_hygiene.sanitize_llm_chat_response_with_metadata(content)
 
     @classmethod
     def _contains_raw_tool_markup(cls, text: str) -> bool:
@@ -2973,10 +2952,11 @@ class BrainSession:
         return _agent_render.is_agent_execution_failure(agent_result)
 
     def _agent_failure_notice(self, status: str) -> str:
-        return (
-            "No pude ejecutar herramientas reales en este turno "
-            f"(agent_status={status}). Respondo con el modelo LLM disponible."
-        )
+        """B7-STRANGLER-05B shim — delegates to
+        :func:`brain_v9.core.session_response_hygiene.agent_failure_notice`.
+        Returns notice with agent_status=<status>.
+        """
+        return _response_hygiene.agent_failure_notice(status)
 
     # ── TOOL-01 deterministic router (before AgentLoop) ─────────────────────
     _TOOL01_ROUTER_PATTERNS = {
