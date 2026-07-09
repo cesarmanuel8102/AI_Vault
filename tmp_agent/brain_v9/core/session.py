@@ -161,6 +161,7 @@ from brain_v9.core.session_response_hygiene import (  # noqa: E402,F401
     sanitize_llm_chat_response as _sanitize_llm_chat_response_impl,
 )
 from brain_v9.core import session_response_hygiene as _response_hygiene  # noqa: E402,F401
+from brain_v9.core import session_curated_render as _curated_render  # noqa: E402,F401
 
 # B7-STRANGLER-06: pure tool-result formatters extracted to their own module.
 # BrainSession keeps the 17 ``_fmt_<name>`` classmethods as one-line shims that
@@ -1184,120 +1185,28 @@ class BrainSession:
 
     @staticmethod
     def _utility_score(utility: Dict) -> object:
-        return utility.get("u_score", utility.get("u_proxy_score", "N/A"))
-
+        """B7-STRANGLER-06A shim."""
+        return _curated_render.utility_score(utility)
     @staticmethod
     def _utility_blockers(utility: Dict) -> List[str]:
-        gate = utility.get("promotion_gate") or {}
-        blockers = gate.get("blockers")
-        return blockers if isinstance(blockers, list) else []
-
+        """B7-STRANGLER-06A shim."""
+        return _curated_render.utility_blockers(utility)
     def _parse_curated_lookup_command(self, message: str) -> Optional[Dict]:
-        """Parse explicit read-only curated-knowledge chat commands."""
-        raw = (message or "").strip()
-        if not raw:
-            return None
-
-        lowered = raw.lower()
-        colon_trigger = "busca en conocimiento curado:"
-        prefix_triggers = (
-            "que aprendiste sobre",
-            "qué aprendiste sobre",
-            "usa curated knowledge para responder",
-            "usa conocimiento curado para responder",
-        )
-
-        query: Optional[str] = None
-        if lowered.startswith(colon_trigger):
-            query = raw.split(":", 1)[1].strip() if ":" in raw else ""
-        else:
-            for trigger in prefix_triggers:
-                if lowered.startswith(trigger):
-                    query = raw[len(trigger):].strip()
-                    break
-
-        if query is None:
-            return None
-
-        return {
-            "query": query[:500].strip(),
-            "top_k": 5,
-        }
+        """B7-STRANGLER-06A shim."""
+        return _curated_render.parse_curated_lookup_command(message)
 
     def _run_curated_lookup_command(self, query: str, top_k: int = 5) -> Dict:
-        """Run curated lookup without LLM fallback, writes, or promotion."""
-        query = (query or "").strip()
-        warnings: List[str] = []
-        if not query:
-            content = self._format_curated_lookup_chat_response(query, None, warnings=["query_required"])
-            return {
-                "success": False,
-                "content": content,
-                "response": content,
-                "route": "curated_lookup_readonly",
-                "intent": "QUERY",
-                "model": "curated_lookup_readonly",
-                "metadata": {
-                    "label": "verified_curated_readonly",
-                    "result_count": 0,
-                    "warnings": ["query_required"],
-                    "real_write_allowed": False,
-                    "faiss_write_allowed": False,
-                    "llm_fallback_used": False,
-                    "automatic_context_injection": False,
-                },
-            }
-
+        """B7-STRANGLER-06A shim."""
         try:
             from brain.curated_runtime_lookup import search_curated_candidates
-
-            record = search_curated_candidates(
-                query,
-                top_k=max(1, min(int(top_k or 5), 10)),
-                require_provenance=True,
-                include_stale=False,
-            )
-            content = self._format_curated_lookup_chat_response(query, record, warnings=warnings)
-            result_count = len(getattr(record, "results", ()) or ())
-            return {
-                "success": True,
-                "content": content,
-                "response": content,
-                "route": "curated_lookup_readonly",
-                "intent": "QUERY",
-                "model": "curated_lookup_readonly",
-                "metadata": {
-                    "label": "verified_curated_readonly",
-                    "result_count": result_count,
-                    "total_available": getattr(record, "total_available", 0),
-                    "filtered_out": getattr(record, "filtered_out", 0),
-                    "warnings": warnings,
-                    "real_write_allowed": False,
-                    "faiss_write_allowed": False,
-                    "llm_fallback_used": False,
-                    "automatic_context_injection": False,
-                },
-            }
-        except Exception as exc:
-            warnings = ["lookup_unavailable"]
-            content = self._format_curated_lookup_chat_response(query, None, warnings=warnings, error=str(exc)[:160])
-            return {
-                "success": False,
-                "content": content,
-                "response": content,
-                "route": "curated_lookup_readonly",
-                "intent": "QUERY",
-                "model": "curated_lookup_readonly",
-                "metadata": {
-                    "label": "verified_curated_readonly",
-                    "result_count": 0,
-                    "warnings": warnings,
-                    "real_write_allowed": False,
-                    "faiss_write_allowed": False,
-                    "llm_fallback_used": False,
-                    "automatic_context_injection": False,
-                },
-            }
+        except ImportError:
+            search_curated_candidates = None
+        return _curated_render.run_curated_lookup_command(
+            query,
+            top_k=top_k,
+            format_func=_curated_render.format_curated_lookup_chat_response,
+            search_func=search_curated_candidates,
+        )
 
     def _format_curated_lookup_chat_response(
         self,
@@ -1306,59 +1215,13 @@ class BrainSession:
         warnings: Optional[List[str]] = None,
         error: Optional[str] = None,
     ) -> str:
-        warnings = list(warnings or [])
-        query = (query or "").strip()
-        lines = ["[verified_curated_readonly]", ""]
-
-        if not query:
-            lines.append("Consulta vacía. Usa: busca en conocimiento curado: <tema>")
-        elif error:
-            lines.append("No pude consultar el índice curated read-only de forma segura.")
-            lines.append(f"Motivo: {error}")
-            lines.append("No se ejecutó fallback LLM ni escritura de memoria.")
-        else:
-            results = list(getattr(lookup_result, "results", ()) or ())
-            total_available = getattr(lookup_result, "total_available", len(results))
-            filtered_out = getattr(lookup_result, "filtered_out", 0)
-            if not results:
-                lines.append(f"No encontré resultados curados para: \"{query}\".")
-                lines.append("")
-                lines.append("Esto no activa LLM fallback ni búsqueda externa.")
-            else:
-                lines.append(f"Encontré {len(results)} resultados curados para: \"{query}\"")
-                lines.append(f"Total disponible: {total_available}; filtrados: {filtered_out}")
-                lines.append("")
-                for idx, item in enumerate(results, 1):
-                    text = (getattr(item, "text", "") or "").strip()
-                    snippet = text[:360] + ("..." if len(text) > 360 else "")
-                    evidence_refs = list(getattr(item, "evidence_refs", ()) or ())
-                    lines.append(f"{idx}. Resumen:")
-                    lines.append(f"   {snippet or '(sin texto)'}")
-                    lines.append("   Fuente:")
-                    lines.append(f"   source_id: {getattr(item, 'source_id', 'unknown')}")
-                    lines.append("   Evidencia:")
-                    if evidence_refs:
-                        for ref in evidence_refs[:5]:
-                            lines.append(f"   - {ref}")
-                    else:
-                        lines.append("   - unknown")
-                    lines.append("   Scores:")
-                    lines.append(f"   validation_score: {getattr(item, 'validation_score', 'unknown')}")
-                    lines.append(f"   curation_score: {getattr(item, 'curation_score', 'unknown')}")
-                    lines.append(f"   trust_score: {getattr(item, 'trust_score', 'unknown')}")
-                    lines.append(f"   freshness: {getattr(item, 'freshness', 'unknown')}")
-                    lines.append(f"   dry_run_id: {getattr(item, 'dry_run_id', 'unknown')}")
-                    lines.append("")
-
-        if warnings:
-            lines.append("Warnings:")
-            for warning in warnings:
-                lines.append(f"- {warning}")
-            lines.append("")
-
-        lines.append("Limitación:")
-        lines.append("Esto es conocimiento curado read-only. No está promovido a memoria real.")
-        return "\n".join(lines).strip()
+        """B7-STRANGLER-06A shim."""
+        return _curated_render.format_curated_lookup_chat_response(
+            query=query,
+            lookup_result=lookup_result,
+            warnings=warnings,
+            error=error,
+        )
 
     async def _handle_command(self, message: str) -> Dict:
         """Handle /slash commands. Returns result dict."""
@@ -5817,59 +5680,11 @@ class BrainSession:
         return result
 
     def _get_curated_ingestion_response(self) -> str:
-        """
-        Obtener respuesta actualizada sobre estado P2 desde fuente canónica.
-        NO hardcodea estado; consulta ProjectStateProvider si disponible.
-        """
-        if not _PROJECT_STATE_PROVIDER_AVAILABLE:
-            return (
-                "No puedo confirmar estado P2 desde fuente canónica local en este turno. "
-                "No debo inventarlo."
-            )
-        
-        try:
-            provider = create_project_state_provider()  # type: ignore
-            state = provider.get_p2_state()
-            
-            lines = ["Estado Pipeline P2 (desde archivos locales):", ""]
-            
-            if state.p2_a_completed:
-                lines.append("P2-A: Completado (InformationCurator contract)")
-            else:
-                lines.append("P2-A: No detectado")
-            
-            if state.p2_b_completed:
-                lines.append("P2-B: Completado (contrato InformationCurator-LearningValidator)")
-            else:
-                lines.append("P2-B: No detectado")
-            
-            if state.p2_c_completed:
-                lines.append("P2-C: Completado (CurationValidationAdapter implementado)")
-                if state.p2_c_commit_hash:
-                    lines.append(f"       Commit: {state.p2_c_commit_hash}")
-            else:
-                lines.append("P2-C: No detectado (falta adapter)")
-            
-            if state.p2_d_completed:
-                lines.append("P2-D: Completado (documentacion + smoke tests)")
-                if state.p2_d_commit_hash:
-                    lines.append(f"       Commit: {state.p2_d_commit_hash}")
-            else:
-                lines.append("P2-D: No detectado (falta documentacion)")
-            
-            lines.append("")
-            lines.append("Limitaciones:")
-            lines.append("- Adapter NO escribe en SemanticMemoryBridge ni FAISS.")
-            lines.append("- Adapter NO conecta runtime/chat.")
-            lines.append("- Adapter NO activa autoaprendizaje.")
-            
-            return "\n".join(lines)
-            
-        except Exception as e:
-            return (
-                f"Error al consultar estado P2: {str(e)}. "
-                "No puedo confirmar estado desde fuente canónica local."
-            )
+        """B7-STRANGLER-06A shim."""
+        return _curated_render.get_curated_ingestion_response(
+            project_state_provider_available=_PROJECT_STATE_PROVIDER_AVAILABLE,
+            create_provider_func=create_project_state_provider if _PROJECT_STATE_PROVIDER_AVAILABLE else None,
+        )
 
     async def close(self):
         # R5.1: do NOT force-persist global singleton on per-session close;
