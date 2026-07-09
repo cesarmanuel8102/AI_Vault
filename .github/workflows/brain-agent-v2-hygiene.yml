@@ -12,6 +12,7 @@ on:
       - "tests/unit/test_session_observability_01.py"
       - "tests/unit/test_session_response_hygiene_01.py"
       - "tests/unit/test_session_curated_render_01.py"
+      - "tests/unit/test_session_command_handler_01.py"
       - "tests/smoke/test_front_brain_ui_token_preflight_01.py"
       - "tests/smoke/test_front_brain_ui_chat_backend_streaming_events_04.py"
       - "tests/smoke/test_dashboard_trading_live_readonly_01.py"
@@ -29,6 +30,7 @@ on:
       - "tests/unit/test_session_observability_01.py"
       - "tests/unit/test_session_response_hygiene_01.py"
       - "tests/unit/test_session_curated_render_01.py"
+      - "tests/unit/test_session_command_handler_01.py"
       - "tests/smoke/test_front_brain_ui_token_preflight_01.py"
       - "tests/smoke/test_front_brain_ui_chat_backend_streaming_events_04.py"
       - "tests/smoke/test_dashboard_trading_live_readonly_01.py"
@@ -121,6 +123,12 @@ jobs:
         run: |
           set -euo pipefail
           python tests/unit/test_session_curated_render_01.py
+
+      - name: Session command handler unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/unit/test_session_command_handler_01.py
 
       - name: Dashboard streaming events tests
         shell: bash
