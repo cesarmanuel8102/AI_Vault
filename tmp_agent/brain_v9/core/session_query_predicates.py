@@ -96,6 +96,8 @@ __all__ = [
     "contains_raw_tool_markup",
     "is_manual_confirmation_step",
     "is_continue_sequence_message",
+    "is_last_result_followup",
+    "LAST_RESULT_FOLLOWUP_PATTERNS",
 ]
 
 # ---------------------------------------------------------------------------
@@ -440,3 +442,44 @@ def is_continue_sequence_message(text: str) -> bool:
     return t in ("continua", "continúa", "sigue", "próximo", "proximo",
                    "next", "dale", "continuar", "adelante", "procede",
                    "continua...", "sigue...")
+
+
+# ---------------------------------------------------------------------------
+# B7-STRANGLER-05D: Last result followup predicate
+# ---------------------------------------------------------------------------
+
+LAST_RESULT_FOLLOWUP_PATTERNS = (
+        r"^\s*y\s+(?:los\s+)?resultados\??\s*$",
+        r"^\s*(?:muestra|dime|dame|mu[eé]strame)\s+(?:los\s+)?resultados\s*$",
+        r"^\s*responde\s+lo\s+que\s+se\s+pregunta\s*$",
+        r"^\s*(?:qu[eé]\s+(?:salió|encontr[oó])|qu[eé]\s+pas[oó])\s*\??\s*$",
+        r"^\s*(?:mu[eé]stralo|dame\s+el\s+resumen)\s*$",
+        r"^\s*(?:lista|listalos)\s+por\s+importancia\s*$",
+        r"^\s*(?:haz|hazme)\s+(?:el\s+)?resumen\s*$",
+        r"^\s*(?:se\s+realizaron\s+cambios\s+en\s+.*)\??\s*$",
+        r"^\s*(?:y\s+.*)\??\s*$",
+    )
+
+
+def is_last_result_followup(message: str, patterns=None) -> bool:
+    """Detect anaphoric follow-ups referring to the last tool result.
+
+    Pure function extracted from BrainSession._is_last_result_followup.
+    Only triggers on short, explicitly result-seeking messages.
+    Long original requests must NOT match unless they match explicit patterns.
+    """
+    if patterns is None:
+        patterns = LAST_RESULT_FOLLOWUP_PATTERNS
+    msg_lower = message.lower().strip()
+    if len(message) > 40:
+        for pat in patterns:
+            if re.search(pat, msg_lower):
+                return True
+        return False
+    keywords = ["resultados", "resumen", "sali\u00f3", "encontr\u00f3", "pas\u00f3", "muestralo"]
+    if any(k in msg_lower for k in keywords):
+        return True
+    for pat in patterns:
+        if re.search(pat, msg_lower):
+            return True
+    return False

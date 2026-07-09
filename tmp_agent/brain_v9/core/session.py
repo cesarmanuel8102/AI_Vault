@@ -5980,41 +5980,18 @@ class BrainSession:
             "tool01_real": True,
         }
 
-    _LAST_RESULT_FOLLOWUP_PATTERNS = (
-        r"^\s*y\s+(?:los\s+)?resultados\??\s*$",
-        r"^\s*(?:muestra|dime|dame|mu[eé]strame)\s+(?:los\s+)?resultados\s*$",
-        r"^\s*responde\s+lo\s+que\s+se\s+pregunta\s*$",
-        r"^\s*(?:qu[eé]\s+(?:salió|encontr[oó])|qu[eé]\s+pas[oó])\s*\??\s*$",
-        r"^\s*(?:mu[eé]stralo|dame\s+el\s+resumen)\s*$",
-        r"^\s*(?:lista|listalos)\s+por\s+importancia\s*$",
-        r"^\s*(?:haz|hazme)\s+(?:el\s+)?resumen\s*$",
-        r"^\s*(?:se\s+realizaron\s+cambios\s+en\s+.*)\??\s*$",
-        r"^\s*(?:y\s+.*)\??\s*$",
-    )
+    _LAST_RESULT_FOLLOWUP_PATTERNS = _qp.LAST_RESULT_FOLLOWUP_PATTERNS
 
     def _is_last_result_followup(self, message: str) -> bool:
         """Detect anaphoric follow-ups referring to the last tool result.
-        
-        Only triggers on short, explicitly result-seeking messages.
-        Long original requests (e.g., 'revisa cambios y listalos...') must NOT match.
+
+        B7-STRANGLER-05D shim — delegates to
+        :func:`brain_v9.core.session_query_predicates.is_last_result_followup`.
         """
-        msg_lower = message.lower().strip()
-        # Must be short (< 40 chars) OR match explicit regex patterns
-        if len(message) > 40:
-            # Long messages are likely new requests, not follow-ups
-            # Only allow if they match very explicit short patterns exactly
-            for pat in self._LAST_RESULT_FOLLOWUP_PATTERNS:
-                if re.search(pat, msg_lower):
-                    return True
-            return False
-        # Short messages: keyword heuristic
-        keywords = ["resultados", "resumen", "salió", "encontró", "pasó", "muestralo"]
-        if any(k in msg_lower for k in keywords):
-            return True
-        for pat in self._LAST_RESULT_FOLLOWUP_PATTERNS:
-            if re.search(pat, msg_lower):
-                return True
-        return False
+        return _qp.is_last_result_followup(
+            message,
+            patterns=self._LAST_RESULT_FOLLOWUP_PATTERNS,
+        )
 
     def _format_last_tool_result(self, message: str) -> Dict:
         """Answer from last tool result without LLM."""
