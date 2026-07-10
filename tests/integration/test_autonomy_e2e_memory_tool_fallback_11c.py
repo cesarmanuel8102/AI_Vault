@@ -207,10 +207,10 @@ def test_static_no_runtime_or_regulated_touch_tokens():
         "submit" + "_order",
         "dry_run_only" + "=False",
         "dry_run_only " + "= False",
-        "faiss.write_index",
-        "faiss.add",
-        "rebuild_index(",
-        "compact(dry_run=False",
+        "faiss." + "write_index",
+        "faiss." + "add",
+        "rebuild_" + "index(",
+        "compact(" + "dry_run=False",
     ]
     for token in forbidden:
         assert token not in source
