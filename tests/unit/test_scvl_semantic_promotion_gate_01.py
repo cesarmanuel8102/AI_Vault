@@ -38,6 +38,29 @@ class EnvFlag:
             os.environ[FLAG] = self.previous
 
 
+def _semantic_memory_without_faiss(root: Path, *, dims: int = 3) -> SemanticMemoryFAISS:
+    """Build a SemanticMemoryFAISS instance without requiring faiss-cpu in CI.
+
+    The tests in this file exercise promote_record()'s JSONL/FAISS mutation
+    boundary. They monkeypatch _add_to_index, so __init__'s FAISS availability
+    guard is intentionally bypassed to keep the hygiene workflow dependency-light.
+    """
+    mem = SemanticMemoryFAISS.__new__(SemanticMemoryFAISS)
+    mem.root = Path(root)
+    mem.records_path = mem.root / faiss_module.RECORDS_PATH.name
+    mem.index_path = mem.root / "semantic_memory_faiss.index"
+    mem.ids_path = mem.root / "semantic_memory_faiss_ids.json"
+    mem.status_path = mem.root / "semantic_memory_status.json"
+    mem.dims = int(dims)
+    mem.ollama_url = "http://127.0.0.1:9"
+    mem.model = "test-embedding-model"
+    mem._index = None
+    mem._ids = []
+    mem.root.mkdir(parents=True, exist_ok=True)
+    mem.status_path.parent.mkdir(parents=True, exist_ok=True)
+    return mem
+
+
 def coherent_validator(**kwargs):
     assert kwargs["selected_route"] == "semantic_promotion"
     assert kwargs["response_content"]
@@ -134,7 +157,7 @@ def test_promote_record_blocks_before_jsonl_or_faiss_write():
     try:
         faiss_module.apply_scvl_promotion_gate = blocked_gate
         with tempfile.TemporaryDirectory() as tmp:
-            mem = SemanticMemoryFAISS(root=Path(tmp) / "semantic", dims=3, ollama_url="http://127.0.0.1:9")
+            mem = _semantic_memory_without_faiss(Path(tmp) / "semantic")
 
             def fake_add_to_index(record_id, text):
                 calls["add_to_index"] += 1
@@ -162,7 +185,7 @@ def test_promote_record_legacy_path_unchanged_when_flag_disabled():
     try:
         faiss_module.apply_scvl_promotion_gate = disabled_gate
         with tempfile.TemporaryDirectory() as tmp:
-            mem = SemanticMemoryFAISS(root=Path(tmp) / "semantic", dims=3, ollama_url="http://127.0.0.1:9")
+            mem = _semantic_memory_without_faiss(Path(tmp) / "semantic")
 
             def fake_add_to_index(record_id, text):
                 calls["add_to_index"] += 1
