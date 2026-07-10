@@ -15,7 +15,7 @@ MOVED = {
     "_maybe_resume_pending_continuation",
     "_policy_route_decision",
 }
-BLOCKED = {"chat", "_route_to_agent"}
+BLOCKED = {"chat"}
 
 
 def _read(path: Path) -> str:
