@@ -34,6 +34,7 @@ except ImportError:
     FAISS_AVAILABLE = False
 
 from brain_v9.config import API_ENDPOINTS, BASE_PATH, OLLAMA_BASE_URL, STATE_PATH
+from brain_v9.core.scvl_promotion_gate import apply_scvl_promotion_gate
 
 log = logging.getLogger("semantic_memory_faiss")
 
@@ -268,11 +269,23 @@ class SemanticMemoryFAISS:
         if self._record_exists(record_id):
             return {"ok": True, "inserted": False, "id": record_id, "reason": "duplicate"}
 
+        gate_result = apply_scvl_promotion_gate(candidate=payload, logger=log)
+        if gate_result.get("enabled") and not gate_result.get("allowed"):
+            return {
+                "ok": False,
+                "inserted": False,
+                "id": record_id,
+                "error": "scvl_promotion_blocked",
+                "scvl": gate_result.get("scvl", {}),
+            }
+
         payload.setdefault("created_utc", self._utc_now())
         payload.setdefault("source", "promotion")
         payload.setdefault("session_id", "promotion")
         payload.setdefault("kind", "canonical_candidate")
         payload.setdefault("metadata", {})
+        if gate_result.get("enabled") and isinstance(payload.get("metadata"), dict):
+            payload["metadata"]["scvl"] = gate_result.get("scvl", {})
 
         self.records_path.parent.mkdir(parents=True, exist_ok=True)
         with self.records_path.open("a", encoding="utf-8") as fh:
