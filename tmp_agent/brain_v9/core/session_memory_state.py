@@ -9,8 +9,10 @@ from typing import Any, Dict, List
 
 import brain_v9.config as _cfg
 
-SESSION_MEMORY_ARTIFACT = _cfg.STATE_PATH / "session_memory.json"
+SESSION_MEMORY_ARTIFACT = _cfg.STATE_PATH / "session_memory.json"  # Legacy read-only fallback.
+SESSION_MEMORY_ARTIFACT_DIR = _cfg.STATE_PATH / "session_memory"
 _FILE_REF_RE = re.compile(r"[A-Za-z]:\\[^\s`\"']+")
+_SAFE_SESSION_ID_RE = re.compile(r"[^A-Za-z0-9_.-]+")
 
 
 def _now_utc_iso() -> str:
@@ -30,6 +32,19 @@ def _read_json(path: Path, default: Any) -> Any:
 def _write_json(path: Path, payload: Dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _safe_session_id(session_id: str = "default") -> str:
+    raw = str(session_id or "").strip() or "default"
+    safe = _SAFE_SESSION_ID_RE.sub("_", raw.replace("\\", "_").replace("/", "_"))
+    while ".." in safe:
+        safe = safe.replace("..", "_")
+    safe = safe.strip("._")[:80]
+    return safe if safe not in {"", ".", ".."} else "default"
+
+
+def _session_memory_artifact_path(session_id: str = "default") -> Path:
+    return _cfg.STATE_PATH / "session_memory" / f"{_safe_session_id(session_id)}.json"
 
 
 def _extract_file_refs(messages: List[Dict[str, Any]]) -> List[str]:
@@ -116,11 +131,15 @@ def build_session_memory(session_id: str = "default") -> Dict[str, Any]:
             "target_recent_turns": 10,
         },
     }
-    _write_json(SESSION_MEMORY_ARTIFACT, payload)
+    _write_json(_session_memory_artifact_path(session_id), payload)
     return payload
 
 
 def get_session_memory_latest(session_id: str = "default") -> Dict[str, Any]:
+    payload = _read_json(_session_memory_artifact_path(session_id), default={})
+    if isinstance(payload, dict) and payload and payload.get("session_id") == session_id:
+        return payload
+
     payload = _read_json(SESSION_MEMORY_ARTIFACT, default={})
     if isinstance(payload, dict) and payload and payload.get("session_id") == session_id:
         return payload
