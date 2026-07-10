@@ -18,9 +18,11 @@ on:
       - "tests/unit/test_session_routing_helpers_01.py"
       - "tests/unit/test_session_agent_route_01.py"
       - "tests/unit/test_session_memory_state_01.py"
+      - "tests/unit/test_scvl_final_answer_gate_01.py"
       - "tmp_agent/brain_v9/core/session_routing_helpers.py"
       - "tmp_agent/brain_v9/core/session_agent_route.py"
       - "tmp_agent/brain_v9/core/session_memory_state.py"
+      - "tmp_agent/brain_v9/core/session_scvl_gate.py"
       - "tests/smoke/test_front_brain_ui_token_preflight_01.py"
       - "tests/smoke/test_front_brain_ui_chat_backend_streaming_events_04.py"
       - "tests/smoke/test_dashboard_trading_live_readonly_01.py"
@@ -44,9 +46,11 @@ on:
       - "tests/unit/test_session_routing_helpers_01.py"
       - "tests/unit/test_session_agent_route_01.py"
       - "tests/unit/test_session_memory_state_01.py"
+      - "tests/unit/test_scvl_final_answer_gate_01.py"
       - "tmp_agent/brain_v9/core/session_routing_helpers.py"
       - "tmp_agent/brain_v9/core/session_agent_route.py"
       - "tmp_agent/brain_v9/core/session_memory_state.py"
+      - "tmp_agent/brain_v9/core/session_scvl_gate.py"
       - "tests/smoke/test_front_brain_ui_token_preflight_01.py"
       - "tests/smoke/test_front_brain_ui_chat_backend_streaming_events_04.py"
       - "tests/smoke/test_dashboard_trading_live_readonly_01.py"
@@ -177,6 +181,12 @@ jobs:
         run: |
           set -euo pipefail
           python tests/unit/test_session_memory_state_01.py
+
+      - name: SCVL final answer gate unit tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/unit/test_scvl_final_answer_gate_01.py
 
       - name: Dashboard streaming events tests
         shell: bash

@@ -9,6 +9,21 @@ import asyncio
 import json
 from typing import Dict
 
+from brain_v9.core.session_scvl_gate import apply_scvl_final_answer_gate
+
+
+def _apply_final_answer_gate(session, message: str, result: Dict) -> Dict:
+    return apply_scvl_final_answer_gate(
+        message=message,
+        result=result,
+        context={
+            "chat_metrics": getattr(session, "chat_metrics", None),
+            "route": result.get("route") or "agent",
+        },
+        logger=getattr(session, "logger", None),
+    )
+
+
 async def _route_to_agent(session, message: str, model_priority: str) -> Dict:
     # TOOL-01: try deterministic router first
     router_result = await session._tool01_router(message)
@@ -369,7 +384,7 @@ async def _route_to_agent(session, message: str, model_priority: str) -> Dict:
             content = f"{notice}\n\n{llm_text}"
         else:
             content = notice
-        return {
+        return _apply_final_answer_gate(session, message, {
             "success": bool(llm_result.get("success")),
             "content": content,
             "response": content,
@@ -381,7 +396,7 @@ async def _route_to_agent(session, message: str, model_priority: str) -> Dict:
             "agent_steps": steps,
             "agent_success": False,
             "fallback_success": bool(llm_result.get("success")),
-        }
+        })
     
     if synthesized:
         full = session._sanitize_user_visible_response(synthesized)
@@ -449,11 +464,11 @@ async def _route_to_agent(session, message: str, model_priority: str) -> Dict:
         if salvaged:
             full = session._sanitize_user_visible_response(salvaged["content"])
             extractive_fallback = False
-    return {
+    return _apply_final_answer_gate(session, message, {
         "success": (bool(agent_result.get("success", True)) or bool(salvaged)) and status not in (
             "ghost_completion", "max_steps_reached", "retry_exhausted", "timeout"
         ) and not extractive_fallback,
         "content": full, "response": full,
         "model": "agent_orav", "model_used": (salvaged or {}).get("model_used", "agent_orav"),
         "agent_steps": steps, "agent_status": status,
-    }
+    })
