@@ -7,6 +7,7 @@ on:
       - "tmp_agent/brain_v9/**"
       - "tmp_agent/front_brain_chat_answer_quality_hardening_02/**"
       - "tests/contract/**"
+      - "tests/integration/test_autonomy_e2e_memory_tool_fallback_11c.py"
       - "tests/unit/test_session_formatters_01.py"
       - "tests/unit/test_session_query_predicates_01.py"
       - "tests/unit/test_session_observability_01.py"
@@ -38,6 +39,7 @@ on:
       - "tmp_agent/brain_v9/**"
       - "tmp_agent/front_brain_chat_answer_quality_hardening_02/**"
       - "tests/contract/**"
+      - "tests/integration/test_autonomy_e2e_memory_tool_fallback_11c.py"
       - "tests/unit/test_session_formatters_01.py"
       - "tests/unit/test_session_query_predicates_01.py"
       - "tests/unit/test_session_observability_01.py"
@@ -199,6 +201,12 @@ jobs:
         run: |
           set -euo pipefail
           python tests/unit/test_scvl_semantic_promotion_gate_01.py
+
+      - name: Autonomy E2E memory tool fallback tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/integration/test_autonomy_e2e_memory_tool_fallback_11c.py
 
       - name: Dashboard streaming events tests
         shell: bash
