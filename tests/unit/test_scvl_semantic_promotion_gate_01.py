@@ -4,6 +4,7 @@ import json
 import os
 import sys
 import tempfile
+import types
 from pathlib import Path
 
 
@@ -11,6 +12,23 @@ ROOT = Path(__file__).resolve().parents[2]
 TMP_AGENT = ROOT / "tmp_agent"
 if str(TMP_AGENT) not in sys.path:
     sys.path.insert(0, str(TMP_AGENT))
+
+# The hygiene workflow intentionally keeps dependencies light. semantic_memory_faiss
+# imports numpy at module import time, but these tests exercise only promote_record's
+# gate boundary and monkeypatch _add_to_index. Provide a tiny import-time stub when
+# numpy is absent so the test remains independent from the FAISS/numpy runtime stack.
+try:
+    import numpy  # noqa: F401
+except ModuleNotFoundError:
+    fake_numpy = types.ModuleType("numpy")
+    fake_numpy.float32 = float
+    fake_numpy.int32 = int
+    fake_numpy.ndarray = object
+    fake_numpy.zeros = lambda *args, **kwargs: []
+    fake_numpy.array = lambda values, dtype=None: values
+    fake_numpy.vstack = lambda vectors, *args, **kwargs: vectors
+    fake_numpy.linalg = types.SimpleNamespace(norm=lambda vec: 0.0)
+    sys.modules["numpy"] = fake_numpy
 
 from brain_v9.core.scvl_promotion_gate import apply_scvl_promotion_gate
 from brain_v9.core.semantic_memory_faiss import SemanticMemoryFAISS
