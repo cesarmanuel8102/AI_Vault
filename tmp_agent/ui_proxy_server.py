@@ -7,7 +7,11 @@ from fastapi import FastAPI, Request, Response, Body
 from fastapi.responses import HTMLResponse
 
 BRAIN_BASE = os.environ.get("BRAIN_BASE", "http://127.0.0.1:8010").rstrip("/")
-OLLAMA_BASE = os.environ.get("OLLAMA_BASE", "http://127.0.0.1:11434").rstrip("/")
+try:
+    from brain_v9.config import OLLAMA_BASE_URL as _cfg_ollama_base
+    OLLAMA_BASE = (os.environ.get("OLLAMA_BASE") or _cfg_ollama_base).rstrip("/")
+except Exception:
+    OLLAMA_BASE = os.environ.get("OLLAMA_BASE", "").rstrip("/")
 DEFAULT_MODEL = os.environ.get("OLLAMA_MODEL", "qwen2.5:14b").strip()
 
 app = FastAPI(title="BrainLab UI Proxy", version="1.1.0")

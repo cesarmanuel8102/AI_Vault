@@ -8,12 +8,7 @@ import json
 import urllib.request
 from typing import Any, Dict, List
 
-try:
-    from brain_v9.config import API_ENDPOINTS, OLLAMA_MODEL, PRIMARY_KIMI_MODEL
-except Exception:
-    API_ENDPOINTS = {"ollama": "http://127.0.0.1:11434/api/chat"}
-    OLLAMA_MODEL = "llama3.1:8b"
-    PRIMARY_KIMI_MODEL = "kimi-k2.6:cloud"
+from brain_v9.config import API_ENDPOINTS, OLLAMA_MODEL, PRIMARY_KIMI_MODEL
 from .intent_classifier import list_supported_intents, INTENT_ROUTE_MAP
 from .tool_gateway import ToolGatewayV2
 from .governance_policy import summarize_governance_modes

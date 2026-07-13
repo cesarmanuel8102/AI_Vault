@@ -21,6 +21,7 @@ on:
       - "tests/unit/test_session_memory_state_01.py"
       - "tests/unit/test_scvl_final_answer_gate_01.py"
       - "tests/unit/test_scvl_semantic_promotion_gate_01.py"
+      - "tests/unit/test_ollama_config_centralization_11d_b.py"
       - "tmp_agent/brain_v9/core/session_routing_helpers.py"
       - "tmp_agent/brain_v9/core/session_agent_route.py"
       - "tmp_agent/brain_v9/core/session_memory_state.py"
@@ -53,6 +54,7 @@ on:
       - "tests/unit/test_session_memory_state_01.py"
       - "tests/unit/test_scvl_final_answer_gate_01.py"
       - "tests/unit/test_scvl_semantic_promotion_gate_01.py"
+      - "tests/unit/test_ollama_config_centralization_11d_b.py"
       - "tmp_agent/brain_v9/core/session_routing_helpers.py"
       - "tmp_agent/brain_v9/core/session_agent_route.py"
       - "tmp_agent/brain_v9/core/session_memory_state.py"
@@ -207,6 +209,12 @@ jobs:
         run: |
           set -euo pipefail
           python tests/integration/test_autonomy_e2e_memory_tool_fallback_11c.py
+
+      - name: Ollama config centralization 11D-B tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/unit/test_ollama_config_centralization_11d_b.py
 
       - name: Dashboard streaming events tests
         shell: bash

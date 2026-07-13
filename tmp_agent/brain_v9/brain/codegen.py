@@ -20,10 +20,7 @@ from aiohttp import ClientSession, ClientTimeout, ClientConnectorError
 
 log = logging.getLogger("CodeGen")
 
-try:
-    from brain_v9.config import API_ENDPOINTS
-except Exception:
-    API_ENDPOINTS = {"ollama": "http://localhost:11434/api/chat"}
+from brain_v9.config import API_ENDPOINTS
 
 # Model chain: cloud first (fast, 480B), local fallback (14B)
 CODEGEN_MODELS = [
@@ -103,7 +100,7 @@ class CodeGenClient:
             },
         }
         async with session.post(
-            API_ENDPOINTS.get("ollama", "http://localhost:11434/api/chat"),
+            API_ENDPOINTS.get("ollama"),
             json=payload,
             timeout=ClientTimeout(total=timeout),
         ) as resp:

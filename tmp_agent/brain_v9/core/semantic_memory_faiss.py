@@ -45,7 +45,7 @@ FAISS_INDEX_PATH = SEMANTIC_ROOT / "semantic_memory_faiss.index"
 FAISS_IDS_PATH = SEMANTIC_ROOT / "semantic_memory_faiss_ids.json"
 STATUS_PATH = STATE_PATH / "semantic_memory_status.json"
 
-OLLAMA_URL = OLLAMA_BASE_URL or API_ENDPOINTS.get("ollama", "http://localhost:11434/api/chat").replace("/api/chat", "")
+OLLAMA_URL = OLLAMA_BASE_URL or API_ENDPOINTS["ollama"].replace("/api/chat", "")
 EMBEDDING_MODEL = "nomic-embed-text"  # Modelo rápido de embeddings
 EMBEDDING_DIMS = 768  # nomic-embed-text genera 768 dims
 

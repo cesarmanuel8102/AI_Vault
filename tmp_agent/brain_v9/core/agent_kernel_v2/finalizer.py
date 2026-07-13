@@ -8,7 +8,6 @@ from typing import Any, Dict, List
 try:
     from brain_v9.config import API_ENDPOINTS, PRIMARY_KIMI_MODEL
 except Exception:
-    API_ENDPOINTS = {"ollama": "http://127.0.0.1:11434/api/chat"}
     PRIMARY_KIMI_MODEL = "kimi-k2.6:cloud"
 
 FALLBACK_MODELS = ["deepseek-v4-pro:cloud", "gpt-oss:120b-cloud", "kimi-k2.5:cloud"]

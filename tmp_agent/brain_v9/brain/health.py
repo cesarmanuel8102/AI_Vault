@@ -29,7 +29,7 @@ class BrainHealthMonitor:
             "success_statuses": {200},
         },
         "ollama": {
-            "url": "http://127.0.0.1:11434/api/tags",
+            "url": f"{_cfg.OLLAMA_BASE_URL}/api/tags",
             "name": "Ollama",
             "required": False,
             "success_statuses": {200},

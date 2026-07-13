@@ -10,12 +10,7 @@ import time
 import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
 
-try:
-    from brain_v9.config import API_ENDPOINTS, OLLAMA_MODEL, BRAIN_USE_LLM_INTENT_CLASSIFIER
-except Exception:
-    API_ENDPOINTS = {"ollama": "http://127.0.0.1:11434/api/chat"}
-    OLLAMA_MODEL = "llama3.1:8b"
-    BRAIN_USE_LLM_INTENT_CLASSIFIER = False
+from brain_v9.config import API_ENDPOINTS, OLLAMA_MODEL, BRAIN_USE_LLM_INTENT_CLASSIFIER
 
 
 SUPPORTED_INTENTS = {

@@ -13,7 +13,7 @@ from typing import Dict, List, Optional
 
 import aiohttp
 
-from brain_v9.config import BASE_PATH, LOG_ACCUMULATION_DIRS, LOG_RETENTION_DAYS
+from brain_v9.config import BASE_PATH, LOG_ACCUMULATION_DIRS, LOG_RETENTION_DAYS, OLLAMA_BASE_URL
 
 
 class SelfDiagnostic:
@@ -214,7 +214,7 @@ class SelfDiagnostic:
         """Verifica que Ollama responde."""
         try:
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=3)) as session:
-                async with session.get("http://localhost:11434/api/tags") as resp:
+                async with session.get(f"{OLLAMA_BASE_URL}/api/tags") as resp:
                     if resp.status == 200:
                         data = await resp.json()
                         models = [m.get("name") for m in data.get("models", [])]
