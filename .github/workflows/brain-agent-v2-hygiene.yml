@@ -23,6 +23,9 @@ on:
       - "tests/unit/test_scvl_semantic_promotion_gate_01.py"
       - "tests/unit/test_ollama_config_centralization_11d_b.py"
       - "tests/unit/test_ollama_config_session_message_11d_c.py"
+      - "tests/contract/test_main_router_topology_contract_12b.py"
+      - "docs/audit/MAIN_ROUTER_TOPOLOGY_AUDIT_12A.md"
+      - "tmp_agent/ui_proxy_server.py"
       - "tmp_agent/brain_v9/core/session_routing_helpers.py"
       - "tmp_agent/brain_v9/core/session_agent_route.py"
       - "tmp_agent/brain_v9/core/session_memory_state.py"
@@ -57,6 +60,9 @@ on:
       - "tests/unit/test_scvl_semantic_promotion_gate_01.py"
       - "tests/unit/test_ollama_config_centralization_11d_b.py"
       - "tests/unit/test_ollama_config_session_message_11d_c.py"
+      - "tests/contract/test_main_router_topology_contract_12b.py"
+      - "docs/audit/MAIN_ROUTER_TOPOLOGY_AUDIT_12A.md"
+      - "tmp_agent/ui_proxy_server.py"
       - "tmp_agent/brain_v9/core/session_routing_helpers.py"
       - "tmp_agent/brain_v9/core/session_agent_route.py"
       - "tmp_agent/brain_v9/core/session_memory_state.py"
@@ -223,6 +229,12 @@ jobs:
         run: |
           set -euo pipefail
           python tests/unit/test_ollama_config_session_message_11d_c.py
+
+      - name: Main router topology contract 12B
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/contract/test_main_router_topology_contract_12b.py
 
       - name: Dashboard streaming events tests
         shell: bash
