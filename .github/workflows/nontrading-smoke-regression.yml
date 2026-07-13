@@ -151,7 +151,7 @@ jobs:
       - name: Agent V2 contracts and focused smokes
         shell: pwsh
         run: |
-          python -m pytest tests/contract/test_agent_v2_boundary_contracts_02.py tests/contract/test_main_router_topology_contract_12b.py tests/smoke/test_front_brain_intent_negation_guard_03.py tests/smoke/test_front_brain_langgraph_docstring_truth_04.py tests/smoke/test_front_brain_ui_token_preflight_01.py tests/smoke/test_front_brain_memory_ownership_contract_01.py tests/smoke/test_front_brain_active_path_centralization_02.py tests/smoke/test_front_brain_provider_centralization_01.py tests/smoke/test_front_brain_dashboard_api_live_contract_06.py tests/smoke/test_front_brain_core_path_centralization_08.py -q
+          python -m pytest tests/contract/test_agent_v2_boundary_contracts_02.py tests/contract/test_main_router_topology_contract_12b.py tests/contract/test_main_router_dev_surface_guard_12c.py tests/smoke/test_front_brain_intent_negation_guard_03.py tests/smoke/test_front_brain_langgraph_docstring_truth_04.py tests/smoke/test_front_brain_ui_token_preflight_01.py tests/smoke/test_front_brain_memory_ownership_contract_01.py tests/smoke/test_front_brain_active_path_centralization_02.py tests/smoke/test_front_brain_provider_centralization_01.py tests/smoke/test_front_brain_dashboard_api_live_contract_06.py tests/smoke/test_front_brain_core_path_centralization_08.py -q
 
   financial-autonomy:
     name: Financial Autonomy Dry-Run Contract
