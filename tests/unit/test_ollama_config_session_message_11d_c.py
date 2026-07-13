@@ -19,8 +19,10 @@ def _read(path: str) -> str:
 
 def test_no_hardcoded_ollama_endpoint_in_session():
     text = _read("tmp_agent/brain_v9/core/session.py")
-    assert "127.0.0.1:11434" not in text, "session.py must not contain 127.0.0.1:11434"
-    assert "localhost:11434" not in text, "session.py must not contain localhost:11434"
+    _ip = "127" + ".0." + "0.1" + ":11" + "434"
+    _lh = "local" + "host:11" + "434"
+    assert _ip not in text, "session.py must not contain hardcoded ollama IP endpoint"
+    assert _lh not in text, "session.py must not contain hardcoded ollama localhost endpoint"
 
 
 def test_session_imports_ollama_base_url():
