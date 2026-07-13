@@ -22,6 +22,7 @@ on:
       - "tests/unit/test_scvl_final_answer_gate_01.py"
       - "tests/unit/test_scvl_semantic_promotion_gate_01.py"
       - "tests/unit/test_ollama_config_centralization_11d_b.py"
+      - "tests/unit/test_ollama_config_session_message_11d_c.py"
       - "tmp_agent/brain_v9/core/session_routing_helpers.py"
       - "tmp_agent/brain_v9/core/session_agent_route.py"
       - "tmp_agent/brain_v9/core/session_memory_state.py"
@@ -55,6 +56,7 @@ on:
       - "tests/unit/test_scvl_final_answer_gate_01.py"
       - "tests/unit/test_scvl_semantic_promotion_gate_01.py"
       - "tests/unit/test_ollama_config_centralization_11d_b.py"
+      - "tests/unit/test_ollama_config_session_message_11d_c.py"
       - "tmp_agent/brain_v9/core/session_routing_helpers.py"
       - "tmp_agent/brain_v9/core/session_agent_route.py"
       - "tmp_agent/brain_v9/core/session_memory_state.py"
@@ -215,6 +217,12 @@ jobs:
         run: |
           set -euo pipefail
           python tests/unit/test_ollama_config_centralization_11d_b.py
+
+      - name: Ollama config session message 11D-C tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/unit/test_ollama_config_session_message_11d_c.py
 
       - name: Dashboard streaming events tests
         shell: bash

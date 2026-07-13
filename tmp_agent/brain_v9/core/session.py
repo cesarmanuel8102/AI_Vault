@@ -34,7 +34,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from brain_v9.config import SYSTEM_IDENTITY, BASE_PATH, SERVER_HOST, SERVER_PORT, BRAIN_CHAT_DEV_MODE
+from brain_v9.config import SYSTEM_IDENTITY, BASE_PATH, SERVER_HOST, SERVER_PORT, BRAIN_CHAT_DEV_MODE, OLLAMA_BASE_URL
 from brain_v9.core.llm import LLMManager
 from brain_v9.core import validator_metrics as _validator_metrics
 from brain_v9.core.memory import MemoryManager
@@ -1077,7 +1077,7 @@ class BrainSession:
                 f"Modelos consultados: {_tried}.\n"
                 f"Motivo: {str(_llm_err)[:200] if _llm_err else 'sin detalle'}.\n"
                 f"Ollama: {_ollamastatus}.\n"
-                f"Proxima accion: verificar que Ollama este corriendo en 127.0.0.1:11434, "
+                f"Proxima accion: verificar que Ollama este corriendo en {OLLAMA_BASE_URL}, "
                 f"o reformular la consulta usando rutas deterministas (ej: 'git status', 'health', 'estado del sistema')."
             )
             try:
