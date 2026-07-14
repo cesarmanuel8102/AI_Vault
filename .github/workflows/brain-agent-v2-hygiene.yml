@@ -29,7 +29,9 @@ on:
       - "tests/contract/test_main_router_auth_permission_contract_12e.py"
       - "tests/contract/test_main_router_side_effect_boundary_12f.py"
       - "tests/contract/test_main_routes_health_status_split_13a.py"
+      - "tests/contract/test_main_routes_startup_state_adapter_13b.py"
       - "tmp_agent/brain_v9/routes/health_status.py"
+      - "tmp_agent/brain_v9/routes/health_status_state.py"
       - "docs/audit/MAIN_ROUTER_TOPOLOGY_AUDIT_12A.md"
       - "tmp_agent/ui_proxy_server.py"
       - "tmp_agent/brain_v9/core/session_routing_helpers.py"
@@ -72,7 +74,9 @@ on:
       - "tests/contract/test_main_router_auth_permission_contract_12e.py"
       - "tests/contract/test_main_router_side_effect_boundary_12f.py"
       - "tests/contract/test_main_routes_health_status_split_13a.py"
+      - "tests/contract/test_main_routes_startup_state_adapter_13b.py"
       - "tmp_agent/brain_v9/routes/health_status.py"
+      - "tmp_agent/brain_v9/routes/health_status_state.py"
       - "docs/audit/MAIN_ROUTER_TOPOLOGY_AUDIT_12A.md"
       - "tmp_agent/ui_proxy_server.py"
       - "tmp_agent/brain_v9/core/session_routing_helpers.py"
@@ -277,6 +281,12 @@ jobs:
         run: |
           set -euo pipefail
           python tests/contract/test_main_routes_health_status_split_13a.py
+
+      - name: Main startup-state adapter 13B
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/contract/test_main_routes_startup_state_adapter_13b.py
 
       - name: Dashboard streaming events tests
         shell: bash

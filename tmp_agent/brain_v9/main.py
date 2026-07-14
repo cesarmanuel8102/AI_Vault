@@ -174,6 +174,10 @@ from brain_v9.autonomy.router import router as autonomy_router
 from brain_v9.routes.canary_lookup_read_only import router as canary_lookup_read_only_router
 from brain_v9.routes.knowledge_read_api import router as knowledge_read_api_router
 from brain_v9.routes.health_status import router as health_status_router
+from brain_v9.routes.health_status_state import (
+    build_health_response,
+    build_status_payload,
+)
 from brain_v9.api.openai_compat import router as openai_compat_router
 from brain_v9.agent.tools import build_standard_executor
 from brain_v9.agent.loop import AgentLoop
@@ -1079,25 +1083,23 @@ async def _execute_god_chat_task(task: str, session_id: str) -> Dict[str, Any]:
 
 @app.get("/health")
 async def health():
-    if _startup_error:
-        return JSONResponse(content={"status": "startup_failed", "error": _startup_error, "hint": "Revisa los logs"}, status_code=503)
-    if not _startup_done:
-        return JSONResponse(content={"status": "initializing", "sessions": len(active_sessions)}, status_code=503)
-    return {
-        "status": "healthy",
-        "sessions": len(active_sessions),
-        "version": "9.0.0",
-        "safe_mode": BRAIN_SAFE_MODE,
-    }
+    resp = build_health_response(
+        startup_done=_startup_done,
+        startup_error=_startup_error,
+        active_sessions_count=len(active_sessions),
+        safe_mode=BRAIN_SAFE_MODE,
+    )
+    if resp["status_code"] != 200:
+        return JSONResponse(content=resp["content"], status_code=resp["status_code"])
+    return resp["content"]
 
 @app.get("/status")
 async def status():
-    return {
-        "sessions": list(active_sessions.keys()),
-        "ready": _startup_done,
-        "version": "9.0.0",
-        "safe_mode": BRAIN_SAFE_MODE,
-    }
+    return build_status_payload(
+        active_session_keys=list(active_sessions.keys()),
+        startup_done=_startup_done,
+        safe_mode=BRAIN_SAFE_MODE,
+    )
 
 
 @app.get("/healthz")
