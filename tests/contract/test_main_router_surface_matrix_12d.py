@@ -40,9 +40,7 @@ def _assert_not_contains(path: str, *tokens: str) -> None:
 # ── Surface matrices ──────────────────────────────────────────────
 
 READ_ONLY_SURFACES: dict[str, list[str]] = {
-    "tmp_agent/brain_v9/main.py": [
-        "/brain/validators",
-    ],
+    "tmp_agent/brain_v9/main.py": [],
     "tmp_agent/brain_v9/routes/health_status.py": [
         "/health",
         "/status",
@@ -61,6 +59,9 @@ READ_ONLY_SURFACES: dict[str, list[str]] = {
     ],
     "tmp_agent/brain_v9/routes/knowledge_read_api.py": [
         "APIRouter",
+    ],
+    "tmp_agent/brain_v9/routes/validators_observability.py": [
+        "/brain/validators",
     ],
 }
 
@@ -280,7 +281,12 @@ def test_health_status_router_declares_moved_get_routes():
         )
     # Deferred endpoints must NOT have @router.get in health_status.py
     assert '@router.get("/brain/validators")' not in text, (
-        "/brain/validators is deferred — must not have @router.get in health_status.py"
+        "/brain/validators is in validators_observability.py — must not have @router.get in health_status.py"
+    )
+    # Validators moved to validators_observability.py in 13D
+    vo_text = _read("tmp_agent/brain_v9/routes/validators_observability.py")
+    assert '@router.get("/brain/validators")' in vo_text, (
+        "validators_observability.py must declare @router.get for /brain/validators"
     )
 
 

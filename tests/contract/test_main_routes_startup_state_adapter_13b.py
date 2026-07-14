@@ -60,8 +60,7 @@ def test_main_uses_startup_state_adapter():
 
 def test_deferred_endpoints_remain_in_main():
     p = "tmp_agent/brain_v9/main.py"
-    _assert_contains(p, '@app.get("/brain/validators")')
-    # /health, /status, /healthz, /v1/agent/healthz moved to health_status.py in 13C
+    # /brain/validators moved to validators_observability.py in 13D
     _assert_contains(p, "configure_startup_state_provider")
 
 

@@ -60,7 +60,8 @@ def test_deferred_routes_no_longer_defined_directly_in_main():
 # -- 3. Brain validators remains deferred in main --
 
 def test_brain_validators_remains_deferred_in_main():
-    _assert_contains("tmp_agent/brain_v9/main.py", '@app.get("/brain/validators")')
+    # /brain/validators moved to validators_observability.py in 13D
+    _assert_not_contains("tmp_agent/brain_v9/main.py", '@app.get("/brain/validators")')
     _assert_not_contains("tmp_agent/brain_v9/routes/health_status.py",
         '@router.get("/brain/validators")')
 

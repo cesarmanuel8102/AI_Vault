@@ -177,6 +177,10 @@ from brain_v9.routes.health_status import (
     configure_startup_state_provider,
     router as health_status_router,
 )
+from brain_v9.routes.validators_observability import (
+    configure_validators_metrics_provider,
+    router as validators_observability_router,
+)
 from brain_v9.api.openai_compat import router as openai_compat_router
 from brain_v9.agent.tools import build_standard_executor
 from brain_v9.agent.loop import AgentLoop
@@ -186,6 +190,7 @@ app.include_router(autonomy_router)
 app.include_router(canary_lookup_read_only_router)
 app.include_router(knowledge_read_api_router)
 app.include_router(health_status_router)
+app.include_router(validators_observability_router)
 app.include_router(openai_compat_router)
 app.include_router(agent_v2_router)
 app.include_router(agent_v2_chat_router)
@@ -197,6 +202,46 @@ configure_startup_state_provider(lambda: {
     "active_session_keys": list(active_sessions.keys()),
     "safe_mode": BRAIN_SAFE_MODE,
 })
+
+
+def _validators_metrics_payload():
+    """R7.4: Live observability of validator counters."""
+    payload = {
+        "live_module_counters": {},
+        "chat_metrics_validators": {},
+        "merged": {},
+    }
+    try:
+        from brain_v9.core import validator_metrics as _vm
+        payload["live_module_counters"] = _vm.snapshot()
+    except Exception as _e:
+        payload["live_module_counters"] = {"_error": str(_e)}
+    try:
+        from brain_v9.core.session import _GLOBAL_CHAT_METRICS
+        if _GLOBAL_CHAT_METRICS is not None:
+            payload["chat_metrics_validators"] = dict(
+                _GLOBAL_CHAT_METRICS.data.get("validators", {})
+            )
+    except Exception as _e:
+        payload["chat_metrics_validators"] = {"_error": str(_e)}
+    merged = {}
+    for src in (payload["live_module_counters"], payload["chat_metrics_validators"]):
+        for k, v in src.items():
+            if isinstance(v, int):
+                merged[k] = max(merged.get(k, 0), v)
+    payload["merged"] = merged
+    payload["total_fires"] = sum(merged.values())
+    try:
+        from brain_v9.core.llm import LLMManager
+        payload["llm_latency"] = LLMManager.latency_percentiles()
+        payload["chain_health"] = LLMManager.chain_health_snapshot()
+    except Exception as _e:
+        payload["llm_latency"] = {"_error": str(_e)}
+        payload["chain_health"] = {"_error": str(_e)}
+    return payload
+
+
+configure_validators_metrics_provider(_validators_metrics_payload)
 
 # UPGRADE: AOS + L2 + Sandbox + EventBus + Settings
 try:
@@ -2033,53 +2078,6 @@ async def clear_memory(session_id: str, _operator: StrictOperatorAccess, memory_
 async def brain_rsi():
     from brain_v9.brain.rsi import RSIManager
     return await RSIManager().run_strategic_analysis()
-
-@app.get("/brain/validators")
-async def brain_validators():
-    """R7.4: Live observability of validator counters.
-
-    Returns the in-memory snapshot of brain_v9.core.validator_metrics
-    plus the merged ChatMetrics validators view (whichever is higher per
-    counter). No disk hit, instant truth.
-    """
-    payload = {
-        "live_module_counters": {},
-        "chat_metrics_validators": {},
-        "merged": {},
-    }
-    try:
-        from brain_v9.core import validator_metrics as _vm
-        payload["live_module_counters"] = _vm.snapshot()
-    except Exception as _e:
-        payload["live_module_counters"] = {"_error": str(_e)}
-    try:
-        from brain_v9.core.session import _GLOBAL_CHAT_METRICS
-        if _GLOBAL_CHAT_METRICS is not None:
-            payload["chat_metrics_validators"] = dict(
-                _GLOBAL_CHAT_METRICS.data.get("validators", {})
-            )
-    except Exception as _e:
-        payload["chat_metrics_validators"] = {"_error": str(_e)}
-    # Merge: take max per key
-    merged = {}
-    for src in (payload["live_module_counters"], payload["chat_metrics_validators"]):
-        for k, v in src.items():
-            if isinstance(v, int):
-                merged[k] = max(merged.get(k, 0), v)
-    payload["merged"] = merged
-    payload["total_fires"] = sum(merged.values())
-    # R8.1 + R8.2: per-model latency percentiles + per-chain health snapshot
-    try:
-        from brain_v9.core.llm import LLMManager
-        payload["llm_latency"] = LLMManager.latency_percentiles()
-        payload["chain_health"] = LLMManager.chain_health_snapshot()
-    except Exception as _e:
-        payload["llm_latency"] = {"_error": str(_e)}
-        payload["chain_health"] = {"_error": str(_e)}
-    return payload
-
-
-
 
 # ============================================================
 # B-Sprint Meta-Loop: Learned Patterns observability + control

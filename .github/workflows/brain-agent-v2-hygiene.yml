@@ -31,7 +31,9 @@ on:
       - "tests/contract/test_main_routes_health_status_split_13a.py"
       - "tests/contract/test_main_routes_startup_state_adapter_13b.py"
       - "tests/contract/test_main_routes_health_status_deferred_split_13c.py"
+      - "tests/contract/test_main_routes_validators_observability_split_13d.py"
       - "tmp_agent/brain_v9/routes/health_status.py"
+      - "tmp_agent/brain_v9/routes/validators_observability.py"
       - "tmp_agent/brain_v9/routes/health_status_state.py"
       - "docs/audit/MAIN_ROUTER_TOPOLOGY_AUDIT_12A.md"
       - "tmp_agent/ui_proxy_server.py"
@@ -77,7 +79,9 @@ on:
       - "tests/contract/test_main_routes_health_status_split_13a.py"
       - "tests/contract/test_main_routes_startup_state_adapter_13b.py"
       - "tests/contract/test_main_routes_health_status_deferred_split_13c.py"
+      - "tests/contract/test_main_routes_validators_observability_split_13d.py"
       - "tmp_agent/brain_v9/routes/health_status.py"
+      - "tmp_agent/brain_v9/routes/validators_observability.py"
       - "tmp_agent/brain_v9/routes/health_status_state.py"
       - "docs/audit/MAIN_ROUTER_TOPOLOGY_AUDIT_12A.md"
       - "tmp_agent/ui_proxy_server.py"
@@ -295,6 +299,12 @@ jobs:
         run: |
           set -euo pipefail
           python tests/contract/test_main_routes_health_status_deferred_split_13c.py
+
+      - name: Main validators observability split 13D
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/contract/test_main_routes_validators_observability_split_13d.py
 
       - name: Dashboard streaming events tests
         shell: bash

@@ -64,6 +64,7 @@ def test_main_router_includes_expected_router_surfaces():
         "app.include_router(canary_lookup_read_only_router)",
         "app.include_router(knowledge_read_api_router)",
         "app.include_router(health_status_router)",
+        "app.include_router(validators_observability_router)",
     )
 
 
