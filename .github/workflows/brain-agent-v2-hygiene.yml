@@ -27,6 +27,7 @@ on:
       - "tests/contract/test_main_router_dev_surface_guard_12c.py"
       - "tests/contract/test_main_router_surface_matrix_12d.py"
       - "tests/contract/test_main_router_auth_permission_contract_12e.py"
+      - "tests/contract/test_main_router_side_effect_boundary_12f.py"
       - "docs/audit/MAIN_ROUTER_TOPOLOGY_AUDIT_12A.md"
       - "tmp_agent/ui_proxy_server.py"
       - "tmp_agent/brain_v9/core/session_routing_helpers.py"
@@ -67,6 +68,7 @@ on:
       - "tests/contract/test_main_router_dev_surface_guard_12c.py"
       - "tests/contract/test_main_router_surface_matrix_12d.py"
       - "tests/contract/test_main_router_auth_permission_contract_12e.py"
+      - "tests/contract/test_main_router_side_effect_boundary_12f.py"
       - "docs/audit/MAIN_ROUTER_TOPOLOGY_AUDIT_12A.md"
       - "tmp_agent/ui_proxy_server.py"
       - "tmp_agent/brain_v9/core/session_routing_helpers.py"
@@ -259,6 +261,12 @@ jobs:
         run: |
           set -euo pipefail
           python tests/contract/test_main_router_auth_permission_contract_12e.py
+
+      - name: Main router side-effect boundary 12F
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/contract/test_main_router_side_effect_boundary_12f.py
 
       - name: Dashboard streaming events tests
         shell: bash
