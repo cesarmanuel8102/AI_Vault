@@ -150,14 +150,45 @@ def test_contract_self_check_no_runtime_imports():
 # -- 9. Provider can be configured with fake payload --
 
 def test_provider_can_be_configured_with_fake_payload():
-    from brain_v9.routes import validators_observability as vo
+    import builtins
+    import types
 
-    vo.configure_validators_metrics_provider(lambda: {"ok": True, "validators": {}})
-    payload = vo._validators_metrics()
-    assert payload["ok"] is True
+    class _FakeAPIRouter:
+        def __init__(self, *args, **kwargs):
+            pass
 
-    result = asyncio.run(vo.brain_validators())
-    assert result == {"ok": True, "validators": {}}
+        def get(self, *args, **kwargs):
+            def _decorator(fn):
+                return fn
+            return _decorator
+
+    previous_fastapi = sys.modules.get("fastapi")
+    previous_import = builtins.__import__
+    fake_fastapi = types.ModuleType("fastapi")
+    fake_fastapi.APIRouter = _FakeAPIRouter
+    sys.modules["fastapi"] = fake_fastapi
+
+    def _fake_import(name, *args, **kwargs):
+        if name == "fastapi" or name.startswith("fastapi."):
+            return fake_fastapi
+        return previous_import(name, *args, **kwargs)
+
+    try:
+        builtins.__import__ = _fake_import
+        from brain_v9.routes import validators_observability as vo
+
+        vo.configure_validators_metrics_provider(lambda: {"ok": True, "validators": {}})
+        payload = vo._validators_metrics()
+        assert payload["ok"] is True
+
+        result = asyncio.run(vo.brain_validators())
+        assert result == {"ok": True, "validators": {}}
+    finally:
+        builtins.__import__ = previous_import
+        if previous_fastapi is None:
+            sys.modules.pop("fastapi", None)
+        else:
+            sys.modules["fastapi"] = previous_fastapi
 
 
 _TESTS = [
