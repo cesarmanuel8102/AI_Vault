@@ -41,12 +41,13 @@ def _assert_not_contains(path: str, *tokens: str) -> None:
 
 READ_ONLY_SURFACES: dict[str, list[str]] = {
     "tmp_agent/brain_v9/main.py": [
-        "/health",
-        "/status",
-        "/healthz",
         "/brain/validators",
     ],
     "tmp_agent/brain_v9/routes/health_status.py": [
+        "/health",
+        "/status",
+        "/healthz",
+        "/v1/agent/healthz",
         "/v1/agent/status",
         "/brain/health",
         "/brain/security/posture",
@@ -262,6 +263,10 @@ def test_health_status_router_declares_moved_get_routes():
     token mentions in docstrings or comments."""
     text = _read("tmp_agent/brain_v9/routes/health_status.py")
     for endpoint in [
+        "/health",
+        "/status",
+        "/healthz",
+        "/v1/agent/healthz",
         "/v1/agent/status",
         "/brain/health",
         "/brain/security/posture",

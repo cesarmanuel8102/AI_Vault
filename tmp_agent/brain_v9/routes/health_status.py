@@ -1,9 +1,16 @@
 """Health and status read-only router.
 
-B7-STRANGLER-13A: Extracted from main.py — basic health/status/read-only
-GET endpoints that do not depend on main.py mutable globals.
+B7-STRANGLER-13A/13C: Extracted from main.py — health/status/read-only
+GET endpoints. The startup-state-dependent endpoints (/health, /status,
+/healthz, /v1/agent/healthz) receive their state via a provider callback
+registered by main.py at import time, avoiding any import of main.py
+from this module.
 
 Moved endpoints:
+  - GET /health
+  - GET /status
+  - GET /healthz
+  - GET /v1/agent/healthz
   - GET /v1/agent/status
   - GET /brain/health
   - GET /brain/security/posture
@@ -12,18 +19,17 @@ Moved endpoints:
   - GET /brain/metrics
   - GET /tools/coverage
 
-Deferred endpoints (remain in main.py due to global state deps):
-  - GET /health        (uses _startup_done, _startup_error, active_sessions)
-  - GET /status        (uses active_sessions, _startup_done)
-  - GET /healthz       (delegates to health())
-  - GET /v1/agent/healthz (delegates to health())
-  - GET /brain/validators (imports brain_v9.core.session._GLOBAL_CHAT_METRICS)
+Deferred endpoints (remain in main.py):
+  - GET /brain/validators (imports core module with global chat metrics)
 """
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping
 from datetime import datetime, timezone
+from typing import Any
 
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 
 from brain_v9.brain.risk_contract import (
     build_risk_contract_status,
@@ -33,9 +39,68 @@ from brain_v9.governance.governance_health import (
     build_governance_health,
     read_governance_health,
 )
+from brain_v9.routes.health_status_state import (
+    build_health_response,
+    build_status_payload,
+)
 
 router = APIRouter(tags=["health-status"])
 
+# ── Startup state provider (registered by main.py) ───────────────
+
+StartupStateProvider = Callable[[], Mapping[str, Any]]
+
+_startup_state_provider: StartupStateProvider | None = None
+
+
+def configure_startup_state_provider(provider: StartupStateProvider) -> None:
+    global _startup_state_provider
+    _startup_state_provider = provider
+
+
+def _startup_state() -> Mapping[str, Any]:
+    if _startup_state_provider is None:
+        raise RuntimeError("startup_state_provider_not_configured")
+    return _startup_state_provider()
+
+
+# ── Startup-state-dependent endpoints ────────────────────────────
+
+@router.get("/health")
+async def health():
+    state = _startup_state()
+    resp = build_health_response(
+        startup_done=bool(state["startup_done"]),
+        startup_error=state.get("startup_error"),
+        active_sessions_count=int(state["active_sessions_count"]),
+        safe_mode=bool(state["safe_mode"]),
+    )
+    if resp["status_code"] != 200:
+        return JSONResponse(content=resp["content"], status_code=resp["status_code"])
+    return resp["content"]
+
+
+@router.get("/status")
+async def status():
+    state = _startup_state()
+    return build_status_payload(
+        active_session_keys=list(state["active_session_keys"]),
+        startup_done=bool(state["startup_done"]),
+        safe_mode=bool(state["safe_mode"]),
+    )
+
+
+@router.get("/healthz")
+async def healthz():
+    return await health()
+
+
+@router.get("/v1/agent/healthz")
+async def v1_agent_healthz():
+    return await health()
+
+
+# ── Static / lazy-import endpoints ───────────────────────────────
 
 @router.get("/v1/agent/status")
 async def v1_agent_status(room_id: str | None = None):

@@ -29,6 +29,10 @@ def _assert_not_contains(path: str, *tokens: str) -> None:
 
 
 MOVED_ENDPOINTS = [
+    '/health',
+    '/status',
+    '/healthz',
+    '/v1/agent/healthz',
     '/v1/agent/status',
     '/brain/health',
     '/brain/security/posture',

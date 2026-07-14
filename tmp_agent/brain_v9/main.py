@@ -173,10 +173,9 @@ from brain_v9.trading.router  import router as trading_router
 from brain_v9.autonomy.router import router as autonomy_router
 from brain_v9.routes.canary_lookup_read_only import router as canary_lookup_read_only_router
 from brain_v9.routes.knowledge_read_api import router as knowledge_read_api_router
-from brain_v9.routes.health_status import router as health_status_router
-from brain_v9.routes.health_status_state import (
-    build_health_response,
-    build_status_payload,
+from brain_v9.routes.health_status import (
+    configure_startup_state_provider,
+    router as health_status_router,
 )
 from brain_v9.api.openai_compat import router as openai_compat_router
 from brain_v9.agent.tools import build_standard_executor
@@ -190,6 +189,14 @@ app.include_router(health_status_router)
 app.include_router(openai_compat_router)
 app.include_router(agent_v2_router)
 app.include_router(agent_v2_chat_router)
+
+configure_startup_state_provider(lambda: {
+    "startup_done": _startup_done,
+    "startup_error": _startup_error,
+    "active_sessions_count": len(active_sessions),
+    "active_session_keys": list(active_sessions.keys()),
+    "safe_mode": BRAIN_SAFE_MODE,
+})
 
 # UPGRADE: AOS + L2 + Sandbox + EventBus + Settings
 try:
@@ -1079,37 +1086,6 @@ async def _execute_god_chat_task(task: str, session_id: str) -> Dict[str, Any]:
     }
     _pad_audit("god_task_result", {**response, "session_id": session_id})
     return response
-
-
-@app.get("/health")
-async def health():
-    resp = build_health_response(
-        startup_done=_startup_done,
-        startup_error=_startup_error,
-        active_sessions_count=len(active_sessions),
-        safe_mode=BRAIN_SAFE_MODE,
-    )
-    if resp["status_code"] != 200:
-        return JSONResponse(content=resp["content"], status_code=resp["status_code"])
-    return resp["content"]
-
-@app.get("/status")
-async def status():
-    return build_status_payload(
-        active_session_keys=list(active_sessions.keys()),
-        startup_done=_startup_done,
-        safe_mode=BRAIN_SAFE_MODE,
-    )
-
-
-@app.get("/healthz")
-async def healthz():
-    return await health()
-
-
-@app.get("/v1/agent/healthz")
-async def v1_agent_healthz():
-    return await health()
 
 
 @app.get("/brain-dashboard/agent-v2/status")

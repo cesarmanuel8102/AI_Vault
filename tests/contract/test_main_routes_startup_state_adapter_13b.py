@@ -50,23 +50,19 @@ def test_startup_state_adapter_file_exists():
 def test_main_uses_startup_state_adapter():
     p = "tmp_agent/brain_v9/main.py"
     _assert_contains(p,
-        "build_health_response",
-        "build_status_payload",
-        "from brain_v9.routes.health_status_state import",
+        "configure_startup_state_provider",
+        "startup_done",
+        "safe_mode",
     )
 
 
-# -- 3. Deferred endpoints remain in main --
+# -- 3. Brain validators remains deferred in main; health/status moved to router --
 
 def test_deferred_endpoints_remain_in_main():
     p = "tmp_agent/brain_v9/main.py"
-    _assert_contains(p,
-        '@app.get("/health")',
-        '@app.get("/status")',
-        '@app.get("/healthz")',
-        '@app.get("/v1/agent/healthz")',
-        '@app.get("/brain/validators")',
-    )
+    _assert_contains(p, '@app.get("/brain/validators")')
+    # /health, /status, /healthz, /v1/agent/healthz moved to health_status.py in 13C
+    _assert_contains(p, "configure_startup_state_provider")
 
 
 # -- 4. Adapter payload shape: healthy --

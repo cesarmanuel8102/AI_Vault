@@ -30,6 +30,7 @@ on:
       - "tests/contract/test_main_router_side_effect_boundary_12f.py"
       - "tests/contract/test_main_routes_health_status_split_13a.py"
       - "tests/contract/test_main_routes_startup_state_adapter_13b.py"
+      - "tests/contract/test_main_routes_health_status_deferred_split_13c.py"
       - "tmp_agent/brain_v9/routes/health_status.py"
       - "tmp_agent/brain_v9/routes/health_status_state.py"
       - "docs/audit/MAIN_ROUTER_TOPOLOGY_AUDIT_12A.md"
@@ -75,6 +76,7 @@ on:
       - "tests/contract/test_main_router_side_effect_boundary_12f.py"
       - "tests/contract/test_main_routes_health_status_split_13a.py"
       - "tests/contract/test_main_routes_startup_state_adapter_13b.py"
+      - "tests/contract/test_main_routes_health_status_deferred_split_13c.py"
       - "tmp_agent/brain_v9/routes/health_status.py"
       - "tmp_agent/brain_v9/routes/health_status_state.py"
       - "docs/audit/MAIN_ROUTER_TOPOLOGY_AUDIT_12A.md"
@@ -287,6 +289,12 @@ jobs:
         run: |
           set -euo pipefail
           python tests/contract/test_main_routes_startup_state_adapter_13b.py
+
+      - name: Main health-status deferred split 13C
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/contract/test_main_routes_health_status_deferred_split_13c.py
 
       - name: Dashboard streaming events tests
         shell: bash

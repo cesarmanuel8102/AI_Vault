@@ -70,12 +70,16 @@ def test_main_router_includes_expected_router_surfaces():
 # -- 3. Core HTTP surfaces are visible --
 
 def test_core_http_surfaces_are_visible():
+    # /health, /status, /healthz moved to health_status.py in 13C
+    p_router = "tmp_agent/brain_v9/routes/health_status.py"
+    _assert_contains(p_router,
+        '@router.get("/health"',
+        '@router.get("/status"',
+        '@router.get("/healthz"',
+    )
     p = "tmp_agent/brain_v9/main.py"
     _assert_contains(p,
         '@app.post("/chat"',
-        '@app.get("/health"',
-        '@app.get("/status"',
-        '@app.get("/healthz"',
         '@app.get("/dashboard"',
         '@app.get("/dashboard-v2"',
     )
