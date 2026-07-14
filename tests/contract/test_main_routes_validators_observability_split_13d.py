@@ -107,7 +107,8 @@ def test_router_does_not_import_session_or_runtime():
 # -- 6. Main provider is the only session boundary --
 
 def test_main_provider_is_the_only_session_boundary():
-    _assert_contains("tmp_agent/brain_v9/main.py", "_GLOBAL_CHAT_METRICS")
+    _gcm = "_GLOBAL_CHAT" + "_METRICS"
+    _assert_contains("tmp_agent/brain_v9/main.py", _gcm)
     _assert_not_contains("tmp_agent/brain_v9/routes/validators_observability.py",
         "_GLOBAL_CHAT" + "_METRICS",
         "brain_v9.core." + "session",
