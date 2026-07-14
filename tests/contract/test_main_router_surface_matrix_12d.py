@@ -44,12 +44,15 @@ READ_ONLY_SURFACES: dict[str, list[str]] = {
         "/health",
         "/status",
         "/healthz",
+        "/brain/validators",
+    ],
+    "tmp_agent/brain_v9/routes/health_status.py": [
+        "/v1/agent/status",
         "/brain/health",
         "/brain/security/posture",
         "/brain/risk/status",
         "/brain/governance/health",
         "/brain/metrics",
-        "/brain/validators",
         "/tools/coverage",
     ],
     "tmp_agent/brain_v9/routes/canary_lookup_read_only.py": [
@@ -252,6 +255,30 @@ def test_contract_does_not_expand_runtime_authority():
     assert not hits, f"contract must not contain security-disabling tokens: {hits}"
 
 
+# -- 12. Health-status router declares moved GET routes as real decorators --
+
+def test_health_status_router_declares_moved_get_routes():
+    """Ensure moved endpoints are real @router.get decorators, not just
+    token mentions in docstrings or comments."""
+    text = _read("tmp_agent/brain_v9/routes/health_status.py")
+    for endpoint in [
+        "/v1/agent/status",
+        "/brain/health",
+        "/brain/security/posture",
+        "/brain/risk/status",
+        "/brain/governance/health",
+        "/brain/metrics",
+        "/tools/coverage",
+    ]:
+        assert f'@router.get("{endpoint}")' in text, (
+            f"health_status.py must declare @router.get for {endpoint}"
+        )
+    # Deferred endpoints must NOT have @router.get in health_status.py
+    assert '@router.get("/brain/validators")' not in text, (
+        "/brain/validators is deferred — must not have @router.get in health_status.py"
+    )
+
+
 # ── Runner ───────────────────────────────────────────────────────
 
 _TESTS = [
@@ -266,6 +293,7 @@ _TESTS = [
     test_contract_does_not_import_runtime_modules,
     test_contract_has_no_runtime_execution_tokens,
     test_contract_does_not_expand_runtime_authority,
+    test_health_status_router_declares_moved_get_routes,
 ]
 
 

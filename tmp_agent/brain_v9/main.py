@@ -173,6 +173,7 @@ from brain_v9.trading.router  import router as trading_router
 from brain_v9.autonomy.router import router as autonomy_router
 from brain_v9.routes.canary_lookup_read_only import router as canary_lookup_read_only_router
 from brain_v9.routes.knowledge_read_api import router as knowledge_read_api_router
+from brain_v9.routes.health_status import router as health_status_router
 from brain_v9.api.openai_compat import router as openai_compat_router
 from brain_v9.agent.tools import build_standard_executor
 from brain_v9.agent.loop import AgentLoop
@@ -181,6 +182,7 @@ app.include_router(trading_router)
 app.include_router(autonomy_router)
 app.include_router(canary_lookup_read_only_router)
 app.include_router(knowledge_read_api_router)
+app.include_router(health_status_router)
 app.include_router(openai_compat_router)
 app.include_router(agent_v2_router)
 app.include_router(agent_v2_chat_router)
@@ -1106,20 +1108,6 @@ async def healthz():
 @app.get("/v1/agent/healthz")
 async def v1_agent_healthz():
     return await health()
-
-
-@app.get("/v1/agent/status")
-async def v1_agent_status(room_id: str | None = None):
-    return {
-        "ok": True,
-        "status": "running",
-        "room_id": room_id,
-        "service": "brain_v9",
-        "legacy_agent_status": "legacy_compatible_not_canonical",
-        "canonical_agent_v2": "/v2/agent/status",
-        "canonical_chat_agent": "/v2/chat/agent",
-        "ts": datetime.now(timezone.utc).isoformat(),
-    }
 
 
 @app.get("/brain-dashboard/agent-v2/status")
@@ -2068,39 +2056,6 @@ async def brain_rsi():
     from brain_v9.brain.rsi import RSIManager
     return await RSIManager().run_strategic_analysis()
 
-@app.get("/brain/health")
-async def brain_health():
-    from brain_v9.brain.health import BrainHealthMonitor
-    return await BrainHealthMonitor().check_all_services()
-
-@app.get("/brain/security/posture")
-async def brain_security_posture(refresh: bool = True):
-    from brain_v9.brain.security_posture import (
-        build_security_posture,
-        get_security_posture_latest,
-    )
-    if refresh:
-        return build_security_posture(refresh_dependency_audit=True)
-    return get_security_posture_latest()
-
-
-@app.get("/brain/risk/status")
-async def brain_risk_status(refresh: bool = True):
-    return build_risk_contract_status(refresh=refresh) if refresh else read_risk_contract_status()
-
-
-@app.get("/brain/governance/health")
-async def brain_governance_health(refresh: bool = True):
-    return build_governance_health(refresh=refresh) if refresh else read_governance_health()
-
-@app.get("/brain/metrics")
-async def brain_metrics(days: int = 7):
-    from brain_v9.brain.metrics import MetricsAggregator
-    mgr = MetricsAggregator()
-    return {"current": await mgr.aggregate_system_metrics(),
-            "trends":  await mgr.get_performance_trends(days),
-            "errors":  await mgr.get_error_rates()}
-
 @app.get("/brain/validators")
 async def brain_validators():
     """R7.4: Live observability of validator counters.
@@ -2301,22 +2256,6 @@ async def brain_learned_test_simulate(_operator: StrictOperatorAccess, payload: 
         trace["_error"] = f"{type(exc).__name__}: {str(exc)[:300]}"
         return {"success": False, "trace": trace, "outcome": "exception"}
 
-
-@app.get("/tools/coverage")
-async def tools_coverage():
-    """R14: Per-tool reliability observability.
-
-    Returns invocations, success/failure counts, schema_violations,
-    truncations, vendored_skips, error_types breakdown and duration
-    percentiles per registered tool, plus aggregate totals and a
-    top-failing list. Helps the operator (and future self-improvement
-    cycles) target the worst tools first.
-    """
-    try:
-        from brain_v9.core import tool_metrics as _tm
-        return _tm.snapshot()
-    except Exception as exc:
-        return {"_error": str(exc), "tools": {}, "totals": {}, "top_failing": []}
 
 # ============================================================
 # C-Sprint: Code Mutation + Reasoning Correction observability
