@@ -176,6 +176,7 @@ from brain_v9.routes.gate_tool_routes import configure_active_sessions_provider,
 from brain_v9.routes.dashboard_shell_routes import configure_dashboard_html_path, router as dashboard_shell_routes_router
 from brain_v9.routes.dev_debug_routes import router as dev_debug_routes_router
 from brain_v9.routes.governance_control_routes import router as governance_control_routes_router
+from brain_v9.routes.memory_semantic_routes import router as memory_semantic_routes_router
 from brain_v9.routes.strategy_readonly_routes import router as strategy_readonly_routes_router
 from brain_v9.routes.trace_streaming_routes import _emit_agent_trace_internal, router as trace_streaming_routes_router
 from brain_v9.api.openai_compat import router as openai_compat_router
@@ -195,6 +196,7 @@ app.include_router(gate_tool_routes_router)
 app.include_router(dashboard_shell_routes_router)
 app.include_router(dev_debug_routes_router)
 app.include_router(governance_control_routes_router)
+app.include_router(memory_semantic_routes_router)
 app.include_router(strategy_readonly_routes_router)
 app.include_router(trace_streaming_routes_router)
 app.include_router(openai_compat_router)
@@ -2944,60 +2946,10 @@ class AgentRequest(BaseModel):
     max_steps:      int = 10
 
 
-class SemanticIngestRequest(BaseModel):
-    text: str
-    source: str = "manual"
-    session_id: str = "default"
-    kind: str = "note"
-
-
-class SemanticIngestSessionRequest(BaseModel):
-    session_id: str = "default"
-    limit: int = 200
-
 
 class ClaimAuditRequest(BaseModel):
     text: str
     evidence: str = ""
-
-
-@app.get("/brain/semantic-memory/search")
-async def brain_semantic_memory_search(query: str, top_k: int = 5):
-    # Input hardening: previene queries patologicas que tumban Ollama embeddings
-    # (queries gigantes, vacias, solo whitespace) y devuelve respuesta vacia limpia.
-    q = (query or "").strip()
-    if not q:
-        return {"ok": True, "query": query, "results": [], "note": "empty_query_skipped"}
-    # cap a 1000 chars: nomic-embed-text contexto util ~512 tokens
-    if len(q) > 1000:
-        q = q[:1000]
-    # cap top_k razonable
-    top_k = max(1, min(int(top_k or 5), 50))
-    try:
-        from brain_v9.core.semantic_memory import get_semantic_memory
-        memory = get_semantic_memory()
-        results = memory.search(q, top_k=top_k)
-        return {"ok": True, "query": query, "results": results}
-    except Exception as e:
-        log.warning("semantic-memory/search failed: %s", e)
-        return {"ok": False, "query": query, "results": [], "error": str(e)[:200]}
-
-
-@app.post("/brain/semantic-memory/ingest")
-async def brain_semantic_memory_ingest(req: SemanticIngestRequest, _operator: OperatorAccess):
-    from brain_v9.core.semantic_memory import get_semantic_memory
-    return get_semantic_memory().ingest_text(
-        text=req.text,
-        source=req.source,
-        session_id=req.session_id,
-        kind=req.kind,
-    )
-
-
-@app.post("/brain/semantic-memory/ingest-session")
-async def brain_semantic_memory_ingest_session(req: SemanticIngestSessionRequest, _operator: OperatorAccess):
-    from brain_v9.core.semantic_memory import get_semantic_memory
-    return get_semantic_memory().ingest_session_memory(session_id=req.session_id, limit=req.limit)
 
 
 @app.post("/brain/metacognition/audit")
