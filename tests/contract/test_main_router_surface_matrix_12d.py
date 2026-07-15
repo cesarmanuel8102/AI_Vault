@@ -63,6 +63,15 @@ READ_ONLY_SURFACES: dict[str, list[str]] = {
     "tmp_agent/brain_v9/routes/validators_observability.py": [
         "/brain/validators",
     ],
+    "tmp_agent/brain_v9/routes/read_only_diagnostics.py": [
+        "/brain/rsi",
+        "/brain/learned/patterns",
+        "/brain/learned/patterns/{pattern_id}",
+        "/brain/health_gate/status",
+        "/brain/reasoning/history",
+        "/brain/proactive/status",
+        "/brain/llm/circuit_breaker",
+    ],
 }
 
 CONTROL_SURFACES: dict[str, list[str]] = {
@@ -164,6 +173,7 @@ def test_read_only_route_files_do_not_define_mutating_handlers():
     for path in [
         "tmp_agent/brain_v9/routes/canary_lookup_read_only.py",
         "tmp_agent/brain_v9/routes/knowledge_read_api.py",
+        "tmp_agent/brain_v9/routes/read_only_diagnostics.py",
     ]:
         _assert_not_contains(path,
             "@router.post(",
@@ -288,6 +298,23 @@ def test_health_status_router_declares_moved_get_routes():
     assert '@router.get("/brain/validators")' in vo_text, (
         "validators_observability.py must declare @router.get for /brain/validators"
     )
+    ro_text = _read("tmp_agent/brain_v9/routes/read_only_diagnostics.py")
+    main_text = _read("tmp_agent/brain_v9/main.py")
+    for endpoint in [
+        "/brain/rsi",
+        "/brain/learned/patterns",
+        "/brain/learned/patterns/{pattern_id}",
+        "/brain/health_gate/status",
+        "/brain/reasoning/history",
+        "/brain/proactive/status",
+        "/brain/llm/circuit_breaker",
+    ]:
+        assert f'@router.get("{endpoint}")' in ro_text, (
+            f"read_only_diagnostics.py must declare @router.get for {endpoint}"
+        )
+        assert f'@app.get("{endpoint}")' not in main_text, (
+            f"main.py must not still declare @app.get for moved endpoint {endpoint}"
+        )
 
 
 # ── Runner ───────────────────────────────────────────────────────
