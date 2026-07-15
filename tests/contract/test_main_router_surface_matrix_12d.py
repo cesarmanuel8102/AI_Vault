@@ -105,7 +105,7 @@ READ_ONLY_SURFACES: dict[str, list[str]] = {
 }
 
 CONTROL_SURFACES: dict[str, list[str]] = {
-    "tmp_agent/brain_v9/main.py": [
+    "tmp_agent/brain_v9/routes/gate_tool_routes.py": [
         "/gate/approve",
         "/gate/reject",
         "/tool01/permission/approve",

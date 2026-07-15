@@ -172,6 +172,7 @@ from brain_v9.routes.validators_observability import (
 from brain_v9.routes.read_only_diagnostics import router as read_only_diagnostics_router
 from brain_v9.routes.read_only_diagnostics_extra import router as read_only_diagnostics_extra_router
 from brain_v9.routes.curated_knowledge_routes import router as curated_knowledge_routes_router
+from brain_v9.routes.gate_tool_routes import configure_active_sessions_provider, router as gate_tool_routes_router
 from brain_v9.api.openai_compat import router as openai_compat_router
 from brain_v9.agent.tools import build_standard_executor
 from brain_v9.agent.loop import AgentLoop
@@ -185,6 +186,7 @@ app.include_router(validators_observability_router)
 app.include_router(read_only_diagnostics_router)
 app.include_router(read_only_diagnostics_extra_router)
 app.include_router(curated_knowledge_routes_router)
+app.include_router(gate_tool_routes_router)
 app.include_router(openai_compat_router)
 app.include_router(agent_v2_router)
 app.include_router(agent_v2_chat_router)
@@ -236,6 +238,7 @@ def _validators_metrics_payload():
 
 
 configure_validators_metrics_provider(_validators_metrics_payload)
+configure_active_sessions_provider(lambda: active_sessions)
 
 # UPGRADE: AOS + L2 + Sandbox + EventBus + Settings
 try:
@@ -951,12 +954,6 @@ class ChatResponse(BaseModel):
     blocked_by_policy: Optional[bool] = None
     blocked_by_user: Optional[bool] = None
     tool_result: Optional[dict] = None
-
-
-class Tool01PermissionRequest(BaseModel):
-    session_id: str
-    permission_id: str
-    decision: str  # allow_once, allow_session, deny
 
 
 class ChangeRequest(BaseModel):
@@ -1931,135 +1928,6 @@ async def delete_session(session_id: str, _operator: StrictOperatorAccess):
     return JSONResponse(content={"error": "Sesión no encontrada"}, status_code=404)
 
 # ── Governance Gate API (for UI buttons) ───────────────────────────────────
-
-class GateApproveRequest(BaseModel):
-    approval_token: Optional[str] = None
-
-
-@app.post("/gate/approve/{pending_id}")
-async def gate_approve(pending_id: str, req: GateApproveRequest, _operator: StrictOperatorAccess):
-    """Approve a pending gated action via API (used by UI button)."""
-    from brain_v9.governance.execution_gate import get_gate
-    gate = get_gate()
-    approval_token = req.approval_token if req else None
-    item = gate.approve(pending_id, approval_token=approval_token)
-    if not item:
-        return JSONResponse(content={"success": False, "error": f"Approval failed or signed approval required: {pending_id}"}, status_code=403)
-
-    # Fail close if signed approval is required but not validated
-    if gate._pending_requires_signed_approval(item) and not item.get("signed_approval_validated"):
-        return JSONResponse(
-            content={"success": False, "error": "Signed approval required but not validated.", "signed_approval_validated": False},
-            status_code=403,
-        )
-
-    # Strip approval metadata from response so tokens/secrets are never leaked
-    item.pop("approval_token", None)
-    item.pop("approval_secret", None)
-
-    tool_name = item.get("tool", "?")
-    tool_args = item.get("args", {})
-    try:
-        from brain_v9.agent.tools import build_standard_executor
-        executor = build_standard_executor()
-        fn = executor._tools.get(tool_name, {}).get("func")
-        if fn is None:
-            return JSONResponse(content={"success": False, "error": f"Tool '{tool_name}' not found"}, status_code=404)
-        import asyncio as _aio
-        # Add _bypass_gate flag so the tool skips its internal gate check
-        approved_args = {**tool_args, "_bypass_gate": True}
-        if _aio.iscoroutinefunction(fn):
-            result = await fn(**approved_args)
-        else:
-            result = fn(**approved_args)
-        return {"success": True, "tool": tool_name, "result": str(result)[:500], "signed_approval_validated": item.get("signed_approval_validated", False)}
-    except Exception as exc:
-        return JSONResponse(content={"success": False, "tool": tool_name, "error": str(exc)[:500]}, status_code=500)
-
-@app.post("/gate/reject/{pending_id}")
-async def gate_reject(pending_id: str, _operator: StrictOperatorAccess):
-    """Reject a pending gated action via API (used by UI button)."""
-    from brain_v9.governance.execution_gate import get_gate
-    gate = get_gate()
-    ok = gate.reject(pending_id)
-    return {"success": ok, "pending_id": pending_id}
-
-
-# ── TOOL-01B Permission Gate API ───────────────────────────────────────────
-
-@app.post("/tool01/permission/approve")
-async def tool01_permission_approve(req: Tool01PermissionRequest, _operator: StrictOperatorAccess):
-    """Approve a TOOL-01 permission request via API."""
-    session = active_sessions.get(req.session_id)
-    if not session:
-        return {"success": False, "error": "Session not found"}
-    result = session._tool01_approve_permission(req.permission_id, req.decision)
-    if result.get("success"):
-        # Buscar original_message para ejecutar la tool
-        tool_name = result.get("tool_name", "")
-        # mapear nombre público a interno
-        for internal_name, public_name in session._TOOL01_PUBLIC_NAMES.items():
-            if public_name == tool_name:
-                tool_name = internal_name
-                break
-        original_message = ""
-        for grant_info in session._tool01_permission_grants.values():
-            if grant_info.get("permission_id") == req.permission_id:
-                original_message = grant_info.get("original_message", "")
-                break
-        # Ejecutar la tool directamente si es allow_once o allow_session
-        tool_result = None
-        if req.decision in ("allow_once", "allow_session") and tool_name in session._TOOL01_ROUTER_PATTERNS:
-            tool_result = await session._tool01_execute(tool_name, original_message)
-        return {
-            "success": True,
-            "decision": result["decision"],
-            "tool_name": result.get("tool_name"),
-            "tool_executed": tool_result is not None,
-            "tool_result": tool_result,
-            "message": f"Permission {result['decision']} granted and tool executed for {result.get('tool_name')}",
-        }
-    if result.get("blocked_by_user"):
-        return {
-            "success": False,
-            "blocked_by_user": True,
-            "decision": result.get("decision"),
-            "tool_name": result.get("tool_name"),
-            "message": f"Permission denied for {result.get('tool_name')}",
-        }
-    return {"success": False, "error": result.get("error", "Unknown error")}
-
-
-@app.get("/tool01/permission/pending/{session_id}")
-async def tool01_permission_pending(session_id: str):
-    """Get pending TOOL-01 permission for a session."""
-    session = active_sessions.get(session_id)
-    if not session:
-        return {"success": False, "error": "Session not found"}
-    perm = getattr(session, '_pending_tool01_permission', None)
-    if not perm:
-        return {"success": True, "permission_required": False}
-    return {"success": True, "permission_required": True, **perm}
-
-
-@app.get("/tool01/permission/grants/{session_id}")
-async def tool01_permission_grants(session_id: str):
-    """List active TOOL-01 permission grants for a session."""
-    session = active_sessions.get(session_id)
-    if not session:
-        return {"success": False, "error": "Session not found"}
-    grants = session._tool01_permission_grants
-    # Sanitize: remove internal objects
-    safe_grants = {}
-    for tool_name, grant in grants.items():
-        safe_grants[tool_name] = {
-            "granted": grant.get("granted"),
-            "grant_type": grant.get("grant_type"),
-            "scope": grant.get("scope"),
-            "blocked_prefixes": grant.get("blocked_prefixes"),
-        }
-    return {"success": True, "grants": safe_grants}
-
 
 @app.delete("/sessions/{session_id}/memory")
 async def clear_memory(session_id: str, _operator: StrictOperatorAccess, memory_type: str = "short"):

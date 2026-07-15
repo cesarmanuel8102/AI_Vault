@@ -50,7 +50,7 @@ def test_main_dev_debug_surfaces_remain_explicit():
 # -- 2. Gate and permission surfaces remain explicit --
 
 def test_gate_and_permission_surfaces_remain_explicit():
-    p = "tmp_agent/brain_v9/main.py"
+    p = "tmp_agent/brain_v9/routes/gate_tool_routes.py"
     _assert_contains(p,
         "/gate/approve",
         "/gate/reject",

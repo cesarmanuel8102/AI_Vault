@@ -92,11 +92,14 @@ def test_core_http_surfaces_are_visible():
 # -- 4. High-risk mutation surfaces are explicit --
 
 def test_high_risk_mutation_surfaces_are_explicit():
-    p = "tmp_agent/brain_v9/main.py"
-    _assert_contains(p,
+    gate = "tmp_agent/brain_v9/routes/gate_tool_routes.py"
+    _assert_contains(gate,
         "/gate/approve",
         "/gate/reject",
         "/tool01/permission/approve",
+    )
+    p = "tmp_agent/brain_v9/main.py"
+    _assert_contains(p,
         "/brain/mutations",
         "/rollback",
         "@app.delete(",

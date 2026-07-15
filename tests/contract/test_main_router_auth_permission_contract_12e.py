@@ -22,10 +22,10 @@ def _assert_contains(path: str, *tokens: str) -> None:
     assert not missing, f"{path} missing expected auth/permission tokens: {missing}"
 
 
-# -- 1. Main.py auth/permission surfaces --
+# -- 1. Gate/tool auth/permission surfaces --
 
-def test_main_auth_permission_surfaces_visible():
-    p = "tmp_agent/brain_v9/main.py"
+def test_gate_tool_auth_permission_surfaces_visible():
+    p = "tmp_agent/brain_v9/routes/gate_tool_routes.py"
     _assert_contains(p,
         "StrictOperatorAccess",
         "require_strict_operator_access",
@@ -165,7 +165,7 @@ def test_contract_no_security_disabling_tokens():
 
 
 _TESTS = [
-    test_main_auth_permission_surfaces_visible,
+    test_gate_tool_auth_permission_surfaces_visible,
     test_agent_v2_auth_surfaces_visible,
     test_openai_compat_auth_surfaces_visible,
     test_dashboard_control_surfaces_visible,

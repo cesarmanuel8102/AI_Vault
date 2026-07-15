@@ -39,6 +39,9 @@ def test_main_mutation_side_effects_explicit():
         "/brain/mutations/test_apply",
         "/rollback",
         "/sessions/{session_id}/memory",
+    )
+    gate = "tmp_agent/brain_v9/routes/gate_tool_routes.py"
+    _assert_contains(gate,
         "/gate/approve",
         "/gate/reject",
         "/tool01/permission/approve",
