@@ -182,6 +182,7 @@ from brain_v9.routes.validators_observability import (
     router as validators_observability_router,
 )
 from brain_v9.routes.read_only_diagnostics import router as read_only_diagnostics_router
+from brain_v9.routes.read_only_diagnostics_extra import router as read_only_diagnostics_extra_router
 from brain_v9.api.openai_compat import router as openai_compat_router
 from brain_v9.agent.tools import build_standard_executor
 from brain_v9.agent.loop import AgentLoop
@@ -193,6 +194,7 @@ app.include_router(knowledge_read_api_router)
 app.include_router(health_status_router)
 app.include_router(validators_observability_router)
 app.include_router(read_only_diagnostics_router)
+app.include_router(read_only_diagnostics_extra_router)
 app.include_router(openai_compat_router)
 app.include_router(agent_v2_router)
 app.include_router(agent_v2_chat_router)
@@ -2680,41 +2682,6 @@ async def brain_ce_proposal_eval_status(proposal_id: str):
         raise HTTPException(status_code=500, detail=f"ce eval status failed: {e}")
 
 
-@app.get("/brain/utility")
-async def brain_utility():
-    state = read_utility_state()
-    safe, reason = is_promotion_safe()
-    return {
-        "u_score": state["u_score"],
-        "governance_u_score": state.get("governance_u_score"),
-        "real_venue_u_score": state.get("real_venue_u_score"),
-        "u_score_components": state.get("u_score_components", {}),
-        "u_proxy_score": state.get("u_proxy_score"),
-        "verdict": state["verdict"],
-        "blockers": state["blockers"],
-        "can_promote": safe,
-        "promotion_reason": reason,
-        "current_phase": state["current_phase"],
-        "capital": state["capital"],
-        "components": state["components"],
-        "sample": state["sample"],
-        "next_actions": state["next_actions"],
-        "errors": state["errors"],
-        "source": state["source"],
-    }
-
-@app.get("/brain/utility/v2")
-async def brain_utility_v2():
-    return await brain_utility()
-
-
-@app.get("/brain/utility/status")
-async def brain_utility_status():
-    """Alias: utility status served from canonical /brain/utility/v2."""
-    data = await brain_utility_v2()
-    return {"ok": True, "route": "/brain/utility/status", "canonical": "/brain/utility/v2", **data}
-
-
 @app.post("/brain/utility/refresh")
 async def brain_utility_refresh(_operator: OperatorAccess):
     result = write_utility_snapshots()
@@ -2946,29 +2913,9 @@ async def brain_pipeline_health():
         "phase7_status": "sprint_3_complete",
     }
 
-@app.get("/brain/roadmap/governance")
-async def brain_roadmap_governance():
-    return read_roadmap_governance_status()
-
-@app.get("/brain/roadmap/development-status")
-async def brain_roadmap_development_status():
-    governance = read_roadmap_governance_status()
-    return governance.get("development_status", {})
-
-
-@app.get("/brain/post-bl-roadmap/status")
-async def brain_post_bl_roadmap_status():
-    return read_post_bl_roadmap_status()
-
-
 @app.post("/brain/post-bl-roadmap/refresh")
 async def brain_post_bl_roadmap_refresh(_operator: OperatorAccess):
     return refresh_post_bl_roadmap_status()
-
-
-@app.get("/brain/meta-improvement/status")
-async def brain_meta_improvement_status():
-    return read_meta_improvement_status()
 
 
 @app.post("/brain/meta-improvement/refresh")
@@ -2976,29 +2923,14 @@ async def brain_meta_improvement_refresh(_operator: OperatorAccess):
     return refresh_meta_improvement_status()
 
 
-@app.get("/brain/chat-product/status")
-async def brain_chat_product_status():
-    return read_chat_product_status()
-
-
 @app.post("/brain/chat-product/refresh")
 async def brain_chat_product_refresh(_operator: OperatorAccess):
     return refresh_chat_product_status()
 
 
-@app.get("/brain/autonomous-governance-eval/status")
-async def brain_autonomous_governance_eval_status():
-    return read_autonomous_governance_eval_status()
-
-
 @app.post("/brain/autonomous-governance-eval/refresh")
 async def brain_autonomous_governance_eval_refresh(_operator: OperatorAccess, run_self_test: bool = False):
     return build_autonomous_governance_eval(refresh=True, run_self_test=run_self_test)
-
-
-@app.get("/brain/utility-governance/status")
-async def brain_utility_governance_status():
-    return read_utility_governance_status()
 
 
 @app.post("/brain/utility-governance/refresh")
@@ -3030,38 +2962,6 @@ async def brain_session_memory(session_id: str = "default", refresh: bool = Fals
 @app.post("/brain/roadmap/governance/refresh")
 async def brain_roadmap_governance_refresh(_operator: OperatorAccess):
     return promote_roadmap_if_ready()
-
-@app.get("/brain/research/summary")
-async def brain_research_summary():
-    return get_research_summary()
-
-@app.get("/brain/research/knowledge")
-async def brain_research_knowledge():
-    return read_knowledge_base()
-
-@app.get("/brain/research/indicators")
-async def brain_research_indicators():
-    return read_indicator_registry()
-
-@app.get("/brain/research/strategies")
-async def brain_research_strategies():
-    return read_strategy_specs()
-
-@app.get("/brain/research/hypotheses")
-async def brain_research_hypotheses():
-    return read_hypothesis_queue()
-
-@app.get("/brain/research/candidates")
-async def brain_research_candidates():
-    return {
-        "updated_utc": get_research_summary().get("updated_utc"),
-        "candidates": build_strategy_candidates(),
-    }
-
-@app.get("/brain/learning/status")
-async def brain_learning_status(refresh: bool = False):
-    return build_learning_status(refresh=True) if refresh else read_learning_status()
-
 
 @app.post("/brain/learning/refresh")
 async def brain_learning_refresh(
@@ -3372,10 +3272,6 @@ async def brain_strategy_engine_execute_batch(strategy_id: str, _operator: Opera
 async def brain_strategy_engine_execute_comparison_cycle(_operator: OperatorAccess, max_candidates: int = 2, iterations_per_candidate: int | None = None):
     return await execute_comparison_cycle(max_candidates=max_candidates, iterations_per_candidate=iterations_per_candidate)
 
-@app.get("/brain/self-improvement/ledger")
-async def brain_self_improvement_ledger():
-    return get_self_improvement_ledger()
-
 @app.get("/brain/change-control/scorecard")
 async def brain_change_control_scorecard(refresh: bool = False):
     return build_change_scorecard() if refresh else get_change_scorecard_latest()
@@ -3417,10 +3313,6 @@ async def brain_control_layer_freeze(_operator: OperatorAccess, reason: str = "m
 @app.post("/brain/control-layer/unfreeze")
 async def brain_control_layer_unfreeze(_operator: OperatorAccess, reason: str = "manual_unfreeze"):
     return unfreeze_control_layer(reason=reason, source="api")
-
-@app.get("/brain/self-improvement/change/{change_id}/status")
-async def brain_self_improvement_change_status(change_id: str):
-    return get_change_status(change_id)
 
 @app.post("/brain/self-improvement/change")
 async def brain_self_improvement_create(req: ChangeRequest, _operator: OperatorAccess):

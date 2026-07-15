@@ -72,6 +72,27 @@ READ_ONLY_SURFACES: dict[str, list[str]] = {
         "/brain/proactive/status",
         "/brain/llm/circuit_breaker",
     ],
+    "tmp_agent/brain_v9/routes/read_only_diagnostics_extra.py": [
+        "/brain/utility",
+        "/brain/utility/v2",
+        "/brain/utility/status",
+        "/brain/roadmap/governance",
+        "/brain/roadmap/development-status",
+        "/brain/post-bl-roadmap/status",
+        "/brain/meta-improvement/status",
+        "/brain/chat-product/status",
+        "/brain/autonomous-governance-eval/status",
+        "/brain/utility-governance/status",
+        "/brain/research/summary",
+        "/brain/research/knowledge",
+        "/brain/research/indicators",
+        "/brain/research/strategies",
+        "/brain/research/hypotheses",
+        "/brain/research/candidates",
+        "/brain/learning/status",
+        "/brain/self-improvement/ledger",
+        "/brain/self-improvement/change/{change_id}/status",
+    ],
 }
 
 CONTROL_SURFACES: dict[str, list[str]] = {
@@ -174,6 +195,7 @@ def test_read_only_route_files_do_not_define_mutating_handlers():
         "tmp_agent/brain_v9/routes/canary_lookup_read_only.py",
         "tmp_agent/brain_v9/routes/knowledge_read_api.py",
         "tmp_agent/brain_v9/routes/read_only_diagnostics.py",
+        "tmp_agent/brain_v9/routes/read_only_diagnostics_extra.py",
     ]:
         _assert_not_contains(path,
             "@router.post(",
@@ -299,6 +321,7 @@ def test_health_status_router_declares_moved_get_routes():
         "validators_observability.py must declare @router.get for /brain/validators"
     )
     ro_text = _read("tmp_agent/brain_v9/routes/read_only_diagnostics.py")
+    ro_extra_text = _read("tmp_agent/brain_v9/routes/read_only_diagnostics_extra.py")
     main_text = _read("tmp_agent/brain_v9/main.py")
     for endpoint in [
         "/brain/rsi",
@@ -311,6 +334,33 @@ def test_health_status_router_declares_moved_get_routes():
     ]:
         assert f'@router.get("{endpoint}")' in ro_text, (
             f"read_only_diagnostics.py must declare @router.get for {endpoint}"
+        )
+        assert f'@app.get("{endpoint}")' not in main_text, (
+            f"main.py must not still declare @app.get for moved endpoint {endpoint}"
+        )
+    for endpoint in [
+        "/brain/utility",
+        "/brain/utility/v2",
+        "/brain/utility/status",
+        "/brain/roadmap/governance",
+        "/brain/roadmap/development-status",
+        "/brain/post-bl-roadmap/status",
+        "/brain/meta-improvement/status",
+        "/brain/chat-product/status",
+        "/brain/autonomous-governance-eval/status",
+        "/brain/utility-governance/status",
+        "/brain/research/summary",
+        "/brain/research/knowledge",
+        "/brain/research/indicators",
+        "/brain/research/strategies",
+        "/brain/research/hypotheses",
+        "/brain/research/candidates",
+        "/brain/learning/status",
+        "/brain/self-improvement/ledger",
+        "/brain/self-improvement/change/{change_id}/status",
+    ]:
+        assert f'@router.get("{endpoint}")' in ro_extra_text, (
+            f"read_only_diagnostics_extra.py must declare @router.get for {endpoint}"
         )
         assert f'@app.get("{endpoint}")' not in main_text, (
             f"main.py must not still declare @app.get for moved endpoint {endpoint}"
