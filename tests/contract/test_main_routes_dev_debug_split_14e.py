@@ -14,8 +14,10 @@ MOVED = [
     "/brain/introspection/status",
     "/brain/introspection/gpu",
 ]
-DEFERRED_POST = [
+MOVED_POST_TO_REMAINING_CONTROL = [
     "/self-diagnostic/run",
+]
+DEFERRED_POST = [
     "/brain/metacognition/audit",
 ]
 
@@ -41,6 +43,11 @@ def test_dev_debug_get_routes_moved():
         assert f'@app.get("{endpoint}")' not in main
     for endpoint in DEFERRED_POST:
         assert f'@app.post("{endpoint}")' in main
+        assert endpoint not in router
+    remaining = _read("tmp_agent/brain_v9/routes/main_remaining_control_routes.py")
+    for endpoint in MOVED_POST_TO_REMAINING_CONTROL:
+        assert f'@router.post("{endpoint}")' in remaining
+        assert f'@app.post("{endpoint}")' not in main
         assert endpoint not in router
 
 
