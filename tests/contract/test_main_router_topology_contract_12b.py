@@ -68,6 +68,9 @@ def test_main_router_includes_expected_router_surfaces():
         "app.include_router(read_only_diagnostics_router)",
         "app.include_router(read_only_diagnostics_extra_router)",
         "app.include_router(curated_knowledge_routes_router)",
+        "app.include_router(gate_tool_routes_router)",
+        "app.include_router(dashboard_shell_routes_router)",
+        "app.include_router(dev_debug_routes_router)",
     )
 
 

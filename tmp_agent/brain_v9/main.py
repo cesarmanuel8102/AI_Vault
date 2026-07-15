@@ -174,6 +174,7 @@ from brain_v9.routes.read_only_diagnostics_extra import router as read_only_diag
 from brain_v9.routes.curated_knowledge_routes import router as curated_knowledge_routes_router
 from brain_v9.routes.gate_tool_routes import configure_active_sessions_provider, router as gate_tool_routes_router
 from brain_v9.routes.dashboard_shell_routes import configure_dashboard_html_path, router as dashboard_shell_routes_router
+from brain_v9.routes.dev_debug_routes import router as dev_debug_routes_router
 from brain_v9.api.openai_compat import router as openai_compat_router
 from brain_v9.agent.tools import build_standard_executor
 from brain_v9.agent.loop import AgentLoop
@@ -189,6 +190,7 @@ app.include_router(read_only_diagnostics_extra_router)
 app.include_router(curated_knowledge_routes_router)
 app.include_router(gate_tool_routes_router)
 app.include_router(dashboard_shell_routes_router)
+app.include_router(dev_debug_routes_router)
 app.include_router(openai_compat_router)
 app.include_router(agent_v2_router)
 app.include_router(agent_v2_chat_router)
@@ -3181,23 +3183,6 @@ async def validate_action(action: Dict, _operator: OperatorAccess):
     ok, msg = PremisesChecker().check_action_compliance(action)
     return {"valid": ok, "message": msg}
 
-@app.get("/brain/auto-surgeon/status")
-async def brain_auto_surgeon_status():
-    from brain_v9.brain.auto_surgeon import get_surgeon_status
-    return get_surgeon_status()
-
-@app.get("/brain/auto-surgeon/diagnostics")
-async def brain_auto_surgeon_diagnostics():
-    from brain_v9.brain.trade_diagnostics import get_diagnostics_status
-    return get_diagnostics_status()
-
-@app.get("/self-diagnostic")
-async def self_diagnostic():
-    """Endpoint para obtener estado del autodiagnóstico."""
-    from brain_v9.core.self_diagnostic import get_self_diagnostic
-    diagnostic = get_self_diagnostic()
-    return diagnostic.get_status_report()
-
 @app.post("/self-diagnostic/run")
 async def run_self_diagnostic(_operator: OperatorAccess):
     """Ejecuta un ciclo de diagnóstico manualmente."""
@@ -3269,28 +3254,11 @@ async def brain_semantic_memory_ingest_session(req: SemanticIngestSessionRequest
     return get_semantic_memory().ingest_session_memory(session_id=req.session_id, limit=req.limit)
 
 
-@app.get("/brain/metacognition/status")
-async def brain_metacognition_status(refresh: bool = True):
-    from brain_v9.brain.metacognition import build_metacognition_status, read_metacognition_status
-    return build_metacognition_status() if refresh else read_metacognition_status()
-
-
 @app.post("/brain/metacognition/audit")
 async def brain_metacognition_audit(req: ClaimAuditRequest):
     from brain_v9.brain.metacognition import audit_response_claims
     return audit_response_claims(req.text, evidence=req.evidence)
 
-
-@app.get("/brain/introspection/status")
-async def brain_introspection_status(refresh: bool = True):
-    from brain_v9.brain.technical_introspection import build_introspection_status, read_introspection_status
-    return build_introspection_status() if refresh else read_introspection_status()
-
-
-@app.get("/brain/introspection/gpu")
-async def brain_introspection_gpu():
-    from brain_v9.brain.technical_introspection import get_gpu_status
-    return get_gpu_status()
 
 @app.post("/agent")
 async def run_agent(req: AgentRequest, _operator: StrictOperatorAccess):

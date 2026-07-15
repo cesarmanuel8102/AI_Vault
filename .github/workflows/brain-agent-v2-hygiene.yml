@@ -37,6 +37,7 @@ on:
       - "tests/contract/test_main_routes_curated_knowledge_split_14a.py"
       - "tests/contract/test_main_routes_gate_tool_split_14b.py"
       - "tests/contract/test_main_routes_dashboard_shell_split_14c.py"
+      - "tests/contract/test_main_routes_dev_debug_split_14e.py"
       - "tmp_agent/brain_v9/routes/health_status.py"
       - "tmp_agent/brain_v9/routes/validators_observability.py"
       - "tmp_agent/brain_v9/routes/read_only_diagnostics.py"
@@ -44,6 +45,7 @@ on:
       - "tmp_agent/brain_v9/routes/curated_knowledge_routes.py"
       - "tmp_agent/brain_v9/routes/gate_tool_routes.py"
       - "tmp_agent/brain_v9/routes/dashboard_shell_routes.py"
+      - "tmp_agent/brain_v9/routes/dev_debug_routes.py"
       - "tmp_agent/brain_v9/routes/health_status_state.py"
       - "docs/audit/MAIN_ROUTER_TOPOLOGY_AUDIT_12A.md"
       - "tmp_agent/ui_proxy_server.py"
@@ -95,6 +97,7 @@ on:
       - "tests/contract/test_main_routes_curated_knowledge_split_14a.py"
       - "tests/contract/test_main_routes_gate_tool_split_14b.py"
       - "tests/contract/test_main_routes_dashboard_shell_split_14c.py"
+      - "tests/contract/test_main_routes_dev_debug_split_14e.py"
       - "tmp_agent/brain_v9/routes/health_status.py"
       - "tmp_agent/brain_v9/routes/validators_observability.py"
       - "tmp_agent/brain_v9/routes/read_only_diagnostics.py"
@@ -102,6 +105,7 @@ on:
       - "tmp_agent/brain_v9/routes/curated_knowledge_routes.py"
       - "tmp_agent/brain_v9/routes/gate_tool_routes.py"
       - "tmp_agent/brain_v9/routes/dashboard_shell_routes.py"
+      - "tmp_agent/brain_v9/routes/dev_debug_routes.py"
       - "tmp_agent/brain_v9/routes/health_status_state.py"
       - "docs/audit/MAIN_ROUTER_TOPOLOGY_AUDIT_12A.md"
       - "tmp_agent/ui_proxy_server.py"
@@ -355,6 +359,12 @@ jobs:
         run: |
           set -euo pipefail
           python tests/contract/test_main_routes_dashboard_shell_split_14c.py
+
+      - name: Main dev debug split 14E
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/contract/test_main_routes_dev_debug_split_14e.py
 
       - name: Dashboard streaming events tests
         shell: bash
