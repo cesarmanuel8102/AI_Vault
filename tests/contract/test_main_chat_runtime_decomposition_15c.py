@@ -5,6 +5,7 @@ import re
 ROOT = Path(__file__).resolve().parents[2]
 MAIN = ROOT / "tmp_agent" / "brain_v9" / "main.py"
 HELPERS = ROOT / "tmp_agent" / "brain_v9" / "core" / "chat_runtime_helpers.py"
+SERVICE = ROOT / "tmp_agent" / "brain_v9" / "core" / "chat_entrypoint_service.py"
 CHAT_ENTRYPOINT_ROUTES = ROOT / "tmp_agent" / "brain_v9" / "routes" / "chat_entrypoint_routes.py"
 REPORT = ROOT / "docs" / "audit" / "MAIN_CHAT_RUNTIME_DECOMPOSITION_REPORT_15C.md"
 
@@ -22,7 +23,7 @@ def test_legacy_chat_route_remains_in_main_and_not_in_router():
 
 def test_runtime_helper_file_exists_and_main_uses_it():
     helper = _read(HELPERS)
-    main = _read(MAIN)
+    main_or_service = _read(MAIN) + "\n" + (_read(SERVICE) if SERVICE.exists() else "")
     names = [
         "looks_like_harmful_intrusion_request",
         "should_attempt_local_network_tool",
@@ -31,8 +32,8 @@ def test_runtime_helper_file_exists_and_main_uses_it():
     ]
     for name in names:
         assert f"def {name}" in helper
-        assert name in main
-    assert "from brain_v9.core.chat_runtime_helpers import" in main
+        assert name in main_or_service
+    assert "from brain_v9.core.chat_runtime_helpers import" in main_or_service
 
 
 def test_helper_file_has_no_forbidden_runtime_dependencies():
@@ -56,7 +57,7 @@ def test_helper_file_has_no_forbidden_runtime_dependencies():
 
 
 def test_chat_response_contract_tokens_still_present():
-    combined = _read(MAIN) + "\n" + _read(HELPERS)
+    combined = _read(MAIN) + "\n" + _read(HELPERS) + "\n" + (_read(SERVICE) if SERVICE.exists() else "")
     for token in [
         "pending_action",
         "trace",
