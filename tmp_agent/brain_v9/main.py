@@ -176,6 +176,7 @@ from brain_v9.routes.gate_tool_routes import configure_active_sessions_provider,
 from brain_v9.routes.dashboard_shell_routes import configure_dashboard_html_path, router as dashboard_shell_routes_router
 from brain_v9.routes.dev_debug_routes import router as dev_debug_routes_router
 from brain_v9.routes.governance_control_routes import router as governance_control_routes_router
+from brain_v9.routes.main_remaining_control_routes import router as main_remaining_control_routes_router
 from brain_v9.routes.memory_semantic_routes import router as memory_semantic_routes_router
 from brain_v9.routes.provider_readonly_routes import configure_provider_readonly, router as provider_readonly_routes_router
 from brain_v9.routes.strategy_readonly_routes import router as strategy_readonly_routes_router
@@ -197,6 +198,7 @@ app.include_router(gate_tool_routes_router)
 app.include_router(dashboard_shell_routes_router)
 app.include_router(dev_debug_routes_router)
 app.include_router(governance_control_routes_router)
+app.include_router(main_remaining_control_routes_router)
 app.include_router(memory_semantic_routes_router)
 app.include_router(provider_readonly_routes_router)
 app.include_router(strategy_readonly_routes_router)
@@ -2834,50 +2836,6 @@ async def brain_strategy_engine_simulation_gate(strategy_id: str):
     return research_to_probation_gate(strategy)
 
 
-@app.post("/brain/ops/log-cleanup")
-async def brain_ops_log_cleanup(_operator: OperatorAccess, force: bool = False):
-    """Fase 7.1: On-demand log cleanup across all accumulation directories."""
-    from brain_v9.core.self_diagnostic import get_self_diagnostic
-    diag = get_self_diagnostic()
-    return await diag.perform_log_cleanup(force=force)
-
-@app.get("/brain/ops/log-status")
-async def brain_ops_log_status():
-    """Fase 7.1: Scan log accumulation status without cleanup."""
-    from brain_v9.core.self_diagnostic import get_self_diagnostic
-    diag = get_self_diagnostic()
-    return await diag._check_logs_rotation()
-
-@app.get("/brain/ops/adn-quality")
-async def brain_ops_adn_quality():
-    """Fase 7.2: Codebase quality score (ADN modular)."""
-    from brain_v9.governance.adn_quality import build_adn_quality_report
-    return build_adn_quality_report()
-
-@app.get("/brain/ops/upgrade-check")
-async def brain_ops_upgrade_check():
-    """Fase 7.3: Run full pre+post upgrade validation checks."""
-    from brain_v9.ops.upgrade_protocol import run_full_upgrade_validation
-    return await run_full_upgrade_validation()
-
-@app.get("/brain/ops/pre-upgrade")
-async def brain_ops_pre_upgrade():
-    """Fase 7.3: Run pre-upgrade checks only."""
-    from brain_v9.ops.upgrade_protocol import run_pre_upgrade_checks
-    return await run_pre_upgrade_checks()
-
-@app.get("/brain/ops/post-upgrade")
-async def brain_ops_post_upgrade():
-    """Fase 7.3: Run post-upgrade checks only."""
-    from brain_v9.ops.upgrade_protocol import run_post_upgrade_checks
-    return await run_post_upgrade_checks()
-
-@app.get("/brain/ops/ethics")
-async def brain_ops_ethics():
-    """Fase 7.4: Ethics kernel compliance check."""
-    from brain_v9.governance.ethics_kernel import check_ethics_compliance
-    return check_ethics_compliance()
-
 @app.post("/brain/strategy-engine/refresh")
 async def brain_strategy_engine_refresh(_operator: OperatorAccess):
     return refresh_strategy_engine()
@@ -2901,12 +2859,6 @@ async def brain_strategy_engine_execute_batch(strategy_id: str, _operator: Opera
 async def brain_strategy_engine_execute_comparison_cycle(_operator: OperatorAccess, max_candidates: int = 2, iterations_per_candidate: int | None = None):
     return await execute_comparison_cycle(max_candidates=max_candidates, iterations_per_candidate=iterations_per_candidate)
 
-@app.post("/self-diagnostic/run")
-async def run_self_diagnostic(_operator: OperatorAccess):
-    """Ejecuta un ciclo de diagnóstico manualmente."""
-    from brain_v9.core.self_diagnostic import get_self_diagnostic
-    diagnostic = get_self_diagnostic()
-    return await diagnostic.run_single_check()
 
 
 class AgentRequest(BaseModel):
