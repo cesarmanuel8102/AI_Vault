@@ -147,8 +147,10 @@ MUTATION_SURFACES: dict[str, list[str]] = {
 
 DEV_DEBUG_SURFACES: dict[str, list[str]] = {
     "tmp_agent/brain_v9/main.py": [
-        "/chat/introspectivo/debug",
         "/brain/maintenance/action",
+    ],
+    "tmp_agent/brain_v9/routes/chat_entrypoint_routes.py": [
+        "/chat/introspectivo/debug",
     ],
     "tmp_agent/brain_v9/routes/provider_readonly_routes.py": [
         "/brain/maintenance/status",

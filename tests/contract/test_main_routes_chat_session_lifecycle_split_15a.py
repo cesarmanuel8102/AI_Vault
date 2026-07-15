@@ -18,8 +18,6 @@ MOVED = [
 
 DEFERRED = {
     "/chat": "primary BrainSession route has large PAD/GOD/chat runtime dependency graph; defer to dedicated chat entrypoint front",
-    "/chat/introspectivo": "introspective orchestrator route remains paired with ChatRequest/ChatResponse flow",
-    "/chat/introspectivo/debug": "debug shell remains with introspective orchestrator helper",
 }
 
 

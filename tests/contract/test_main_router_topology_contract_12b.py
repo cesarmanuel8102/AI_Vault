@@ -68,6 +68,7 @@ def test_main_router_includes_expected_router_surfaces():
         "app.include_router(read_only_diagnostics_router)",
         "app.include_router(read_only_diagnostics_extra_router)",
         "app.include_router(curated_knowledge_routes_router)",
+        "app.include_router(chat_entrypoint_router)",
         "app.include_router(gate_tool_routes_router)",
         "app.include_router(dashboard_shell_routes_router)",
         "app.include_router(dev_debug_routes_router)",
@@ -87,6 +88,11 @@ def test_core_http_surfaces_are_visible():
     p = "tmp_agent/brain_v9/main.py"
     _assert_contains(p,
         '@app.post("/chat"',
+    )
+    chat_entrypoint = "tmp_agent/brain_v9/routes/chat_entrypoint_routes.py"
+    _assert_contains(chat_entrypoint,
+        '@router.get("/chat/introspectivo/debug"',
+        '@router.post("/chat/introspectivo"',
     )
     dashboard_shell = "tmp_agent/brain_v9/routes/dashboard_shell_routes.py"
     _assert_contains(dashboard_shell,

@@ -45,7 +45,9 @@ on:
       - "tests/contract/test_main_routes_strategy_readonly_split_14f.py"
       - "tests/contract/test_main_routes_remaining_control_split_14h.py"
       - "tests/contract/test_main_routes_chat_session_lifecycle_split_15a.py"
+      - "tests/contract/test_main_routes_chat_entrypoint_split_15b.py"
       - "tmp_agent/brain_v9/routes/chat_session_lifecycle_routes.py"
+      - "tmp_agent/brain_v9/routes/chat_entrypoint_routes.py"
       - "tmp_agent/brain_v9/routes/health_status.py"
       - "tmp_agent/brain_v9/routes/validators_observability.py"
       - "tmp_agent/brain_v9/routes/read_only_diagnostics.py"
@@ -113,7 +115,9 @@ on:
       - "tests/contract/test_main_routes_strategy_readonly_split_14f.py"
       - "tests/contract/test_main_routes_remaining_control_split_14h.py"
       - "tests/contract/test_main_routes_chat_session_lifecycle_split_15a.py"
+      - "tests/contract/test_main_routes_chat_entrypoint_split_15b.py"
       - "tmp_agent/brain_v9/routes/chat_session_lifecycle_routes.py"
+      - "tmp_agent/brain_v9/routes/chat_entrypoint_routes.py"
       - "tmp_agent/brain_v9/routes/health_status.py"
       - "tmp_agent/brain_v9/routes/validators_observability.py"
       - "tmp_agent/brain_v9/routes/read_only_diagnostics.py"
@@ -423,6 +427,12 @@ jobs:
         run: |
           set -euo pipefail
           python tests/contract/test_main_routes_chat_session_lifecycle_split_15a.py
+
+      - name: Main chat entrypoint split 15B
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/contract/test_main_routes_chat_entrypoint_split_15b.py
 
       - name: Dashboard streaming events tests
         shell: bash
