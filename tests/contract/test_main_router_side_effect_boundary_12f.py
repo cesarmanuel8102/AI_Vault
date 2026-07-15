@@ -34,10 +34,13 @@ def test_main_mutation_side_effects_explicit():
     p = "tmp_agent/brain_v9/main.py"
     _assert_contains(p,
         "@app.post",
-        "@app.delete",
         "/brain/mutations",
         "/brain/mutations/test_apply",
         "/rollback",
+    )
+    chat_session = "tmp_agent/brain_v9/routes/chat_session_lifecycle_routes.py"
+    _assert_contains(chat_session,
+        "@router.delete",
         "/sessions/{session_id}/memory",
     )
     gate = "tmp_agent/brain_v9/routes/gate_tool_routes.py"

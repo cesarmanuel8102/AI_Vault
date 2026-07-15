@@ -172,6 +172,11 @@ from brain_v9.routes.validators_observability import (
 from brain_v9.routes.read_only_diagnostics import router as read_only_diagnostics_router
 from brain_v9.routes.read_only_diagnostics_extra import router as read_only_diagnostics_extra_router
 from brain_v9.routes.curated_knowledge_routes import router as curated_knowledge_routes_router
+from brain_v9.routes.chat_session_lifecycle_routes import (
+    configure_active_sessions_provider as configure_chat_active_sessions_provider,
+    configure_chat_runtime_provider,
+    router as chat_session_lifecycle_routes_router,
+)
 from brain_v9.routes.gate_tool_routes import configure_active_sessions_provider, router as gate_tool_routes_router
 from brain_v9.routes.dashboard_shell_routes import configure_dashboard_html_path, router as dashboard_shell_routes_router
 from brain_v9.routes.dev_debug_routes import router as dev_debug_routes_router
@@ -194,6 +199,7 @@ app.include_router(validators_observability_router)
 app.include_router(read_only_diagnostics_router)
 app.include_router(read_only_diagnostics_extra_router)
 app.include_router(curated_knowledge_routes_router)
+app.include_router(chat_session_lifecycle_routes_router)
 app.include_router(gate_tool_routes_router)
 app.include_router(dashboard_shell_routes_router)
 app.include_router(dev_debug_routes_router)
@@ -255,6 +261,7 @@ def _validators_metrics_payload():
 
 configure_validators_metrics_provider(_validators_metrics_payload)
 configure_active_sessions_provider(lambda: active_sessions)
+configure_chat_active_sessions_provider(lambda: active_sessions)
 configure_dashboard_html_path(lambda: _dashboard_html)
 
 # UPGRADE: AOS + L2 + Sandbox + EventBus + Settings
@@ -1122,6 +1129,34 @@ async def _execute_god_chat_task(task: str, session_id: str) -> Dict[str, Any]:
     return response
 
 
+def _get_agent_executor():
+    return _agent_executor
+
+
+def _set_agent_executor(executor) -> None:
+    global _agent_executor
+    _agent_executor = executor
+
+
+def _chat_session_runtime_payload() -> Dict[str, Any]:
+    from brain_v9.core.session import get_or_create_session
+
+    return {
+        "get_agent_executor": _get_agent_executor,
+        "set_agent_executor": _set_agent_executor,
+        "get_or_create_session": get_or_create_session,
+        "canonical_agent_fastpath": _canonical_agent_fastpath,
+        "summarize_agent_payload": _summarize_agent_payload,
+        "execute_god_chat_task": _execute_god_chat_task,
+        "pad_authenticated_sessions": _pad_authenticated_sessions,
+        "unsafe_dev_endpoints_enabled": BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS,
+        "safe_mode": BRAIN_SAFE_MODE,
+    }
+
+
+configure_chat_runtime_provider(_chat_session_runtime_payload)
+
+
 @app.post("/brain/maintenance/action")
 async def brain_maintenance_action(payload: MaintenanceActionRequest, _operator: OperatorAccess):
     result = _brain_maintenance_action_result(payload.service, payload.action)
@@ -1882,26 +1917,6 @@ Las restricciones se reactivaran en 60 minutos o al escribir:
 
     return ChatResponse(response=content_str, session_id=req.session_id, model_used=result.get("model"), success=result.get("success", False), pending_action=pending_action, permission_required=result.get("permission_required"), permission_id=result.get("permission_id"), tool_name=result.get("tool_name"), risk_level=result.get("risk_level"), options=result.get("options"), tool01_real=result.get("tool01_real"), tool01_router_used=result.get("tool01_router_used"), blocked_by_policy=result.get("blocked_by_policy"), blocked_by_user=result.get("blocked_by_user"), tool_result=result.get("tool_result"))
 
-@app.delete("/sessions/{session_id}")
-async def delete_session(session_id: str, _operator: StrictOperatorAccess):
-    if session_id in active_sessions:
-        await active_sessions[session_id].close()
-        del active_sessions[session_id]
-        return {"ok": True}
-    return JSONResponse(content={"error": "Sesión no encontrada"}, status_code=404)
-
-# ── Governance Gate API (for UI buttons) ───────────────────────────────────
-
-@app.delete("/sessions/{session_id}/memory")
-async def clear_memory(session_id: str, _operator: StrictOperatorAccess, memory_type: str = "short"):
-    if session_id not in active_sessions:
-        return JSONResponse(content={"error": "Sesión no encontrada"}, status_code=404)
-    active_sessions[session_id].memory.clear(memory_type)
-    return {"ok": True, "cleared": memory_type}
-
-# ============================================================
-# B-Sprint Meta-Loop: Learned Patterns observability + control
-# ============================================================
 @app.post("/brain/learned/patterns/{pattern_id}/disable")
 async def brain_learned_pattern_disable(pattern_id: str, _operator: StrictOperatorAccess):
     try:
@@ -2861,13 +2876,6 @@ async def brain_strategy_engine_execute_comparison_cycle(_operator: OperatorAcce
 
 
 
-class AgentRequest(BaseModel):
-    task:           str
-    session_id:     str = "default"
-    model_priority: str = "ollama"
-    max_steps:      int = 10
-
-
 
 class ClaimAuditRequest(BaseModel):
     text: str
@@ -2880,55 +2888,6 @@ async def brain_metacognition_audit(req: ClaimAuditRequest):
     return audit_response_claims(req.text, evidence=req.evidence)
 
 
-@app.post("/agent")
-async def run_agent(req: AgentRequest, _operator: StrictOperatorAccess):
-    """
-    [INTERNAL/DEPRECATED] Ciclo ORAV completo.
-    
-    NOTA OPERATIVA (CHAT-OPS-ARCH-01): /agent es endpoint interno para operador.
-    Para flujo gobernado con permisos y pending_action, use POST /chat.
-    /chat es la autoridad operacional única para usuarios.
-    """
-    global _agent_executor
-    if _agent_executor is None:
-        _agent_executor = build_standard_executor()
-
-    from brain_v9.core.session import get_or_create_session
-    session = get_or_create_session(req.session_id, active_sessions)
-    canonical_result = _canonical_agent_fastpath(req.task, session)
-    if canonical_result is not None:
-        return canonical_result
-    loop    = AgentLoop(session.llm, _agent_executor)
-    loop.MAX_STEPS = req.max_steps
-
-    agent_timeout = min(req.max_steps * 45, 360)  # 45s per step, max 6 min
-    try:
-        result = await asyncio.wait_for(
-            loop.run(req.task, context={"model_priority": req.model_priority}),
-            timeout=agent_timeout,
-        )
-    except asyncio.TimeoutError:
-        log.warning("Agent request timed out after %ds for task: %s", agent_timeout, req.task[:80])
-        result = {
-            "success": False,
-            "result": f"El agente excedió el tiempo límite ({agent_timeout}s).",
-            "steps": len(loop.history),
-            "summary": "timeout",
-            "status": "timeout",
-        }
-    raw_result = result.get("result")
-    result_text = _summarize_agent_payload(raw_result, fallback=result.get("summary", ""))
-    return {
-        "task":    req.task,
-        "success": result["success"],
-        "result":  result_text,
-        "raw_result": raw_result,
-        "steps":   result.get("steps", 0),
-        "summary": result.get("summary", ""),
-        "status":  result.get("status"),
-        "metacognition": result.get("metacognition", {}),
-        "history": loop.get_history(),
-    }
 
 
 # P-OP28e: Log unhandled task exceptions so they don't vanish silently
@@ -3105,140 +3064,6 @@ async def _shutdown():
     except Exception as exc:
         log.debug("Error closing connector sessions during shutdown: %s", exc)
 
-# ── Modo Desarrollador - Endpoint sin restricciones ───────────────────────────
-
-class DevModeRequest(BaseModel):
-    model_config = ConfigDict(extra='forbid')
-    task: str
-    auth_token: Optional[str] = None
-
-@app.post("/dev", dependencies=[Depends(require_strict_operator_access)])
-async def dev_mode_endpoint(req: DevModeRequest):
-    """
-    Endpoint de Modo Desarrollador - Ejecuta tareas sin restricciones del ORAV
-    Requiere autenticacion previa
-    """
-    if not BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS:
-        # FASE-0-SEGURIDAD / Patch 0C: HTTP 403 estricto (no JSON 200 con success=false).
-        raise HTTPException(
-            status_code=403,
-            detail="Endpoint /dev deshabilitado por seguridad. Set BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS=true para habilitar.",
-        )
-
-    global _pad_authenticated_sessions
-    
-    # Verificar autenticacion
-    session_id = req.auth_token or "dev_default"
-    esta_autenticado = session_id in _pad_authenticated_sessions
-    
-    if not esta_autenticado:
-        return {
-            "success": False,
-            "error": "Modo desarrollador requiere autenticacion previa",
-            "instrucciones": "Autenticacion PAD requerida. No se publican credenciales desde el endpoint.",
-            "auth_token": session_id
-        }
-    
-    # Verificar expiracion
-    pad_session = _pad_authenticated_sessions[session_id]
-    if datetime.now() > datetime.fromisoformat(pad_session["expires_at"]):
-        del _pad_authenticated_sessions[session_id]
-        return {
-            "success": False,
-            "error": "Sesion expirada. Re-autenticate."
-        }
-    
-    try:
-        result = await _execute_god_chat_task(req.task, session_id)
-        return {
-            "success": bool(result.get("success")),
-            "task": req.task,
-            "executed_by": "dev_mode",
-            "privilege": pad_session.get("privilege_level"),
-            "result": result,
-        }
-    except Exception as e:
-        import traceback
-        return {
-            "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()[:500]
-        }
-
-
-# ── Modo GOD - Endpoint sin restricciones ───────────────────────────
-
-class GodModeRequest(BaseModel):
-    model_config = ConfigDict(extra='forbid')
-    task: str
-    session_id: str
-
-@app.get("/godmode/status", dependencies=[Depends(require_strict_operator_access)])
-async def godmode_status(session_id: Optional[str] = None):
-    """Inspecciona estado god mode. Si session_id provisto, devuelve si esa sesion es god."""
-    out = {
-        "unsafe_endpoints_enabled": BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS,
-        "safe_mode": BRAIN_SAFE_MODE,
-        "active_pad_sessions": list(_pad_authenticated_sessions.keys()),
-        "active_pad_count": len(_pad_authenticated_sessions),
-    }
-    try:
-        from brain_v9.governance.execution_gate import get_gate
-        gate = get_gate()
-        out["gate_god_sessions"] = sorted(gate._god_sessions)
-        if session_id:
-            out["session_is_god"] = gate.is_god_mode(session_id)
-            out["session_in_pad"] = session_id in _pad_authenticated_sessions
-            if session_id in _pad_authenticated_sessions:
-                out["session_expires_at"] = _pad_authenticated_sessions[session_id].get("expires_at")
-    except Exception as e:
-        out["gate_error"] = str(e)
-    return out
-
-@app.post("/godmode", dependencies=[Depends(require_strict_operator_access)])
-async def godmode_endpoint(req: GodModeRequest):
-    """
-    Endpoint MODO GOD - Ejecuta tareas reales sin restricciones
-    Requiere autenticacion PAD previa via /chat
-    """
-    if not BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS:
-        # FASE-0-SEGURIDAD / Patch 0C: HTTP 403 estricto (no JSON 200 con success=false).
-        raise HTTPException(
-            status_code=403,
-            detail="Endpoint /godmode deshabilitado por seguridad. Set BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS=true para habilitar.",
-        )
-
-    global _pad_authenticated_sessions
-    
-    # Verificar autenticacion GOD
-    if req.session_id not in _pad_authenticated_sessions:
-        return {
-            "success": False,
-            "error": "Requiere autenticacion previa",
-            "authenticate_first": "Autenticacion PAD requerida. No se publican credenciales desde el endpoint."
-        }
-    
-    pad_session = _pad_authenticated_sessions[req.session_id]
-    if datetime.now() > datetime.fromisoformat(pad_session["expires_at"]):
-        del _pad_authenticated_sessions[req.session_id]
-        return {"success": False, "error": "Sesion expirada"}
-    
-    try:
-        result = await _execute_god_chat_task(req.task, req.session_id)
-        return {
-            "success": bool(result.get("success")),
-            "task": req.task,
-            "executed_by": "god_mode",
-            "privilege": pad_session.get("privilege_level"),
-            "result": result,
-        }
-    except Exception as e:
-        import traceback
-        return {
-            "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()[:500]
-        }
 
 
 # ── End of main.py ──────────────────────────────────────────────────────────────

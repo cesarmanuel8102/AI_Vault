@@ -108,7 +108,10 @@ def test_high_risk_mutation_surfaces_are_explicit():
     _assert_contains(p,
         "/brain/mutations",
         "/rollback",
-        "@app.delete(",
+    )
+    chat_session = "tmp_agent/brain_v9/routes/chat_session_lifecycle_routes.py"
+    _assert_contains(chat_session,
+        "@router.delete(",
         "/sessions/{session_id}/memory",
     )
 

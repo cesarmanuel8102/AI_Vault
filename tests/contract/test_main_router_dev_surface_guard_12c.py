@@ -72,9 +72,9 @@ def test_gate_and_permission_surfaces_remain_explicit():
 # -- 3. Memory mutation surfaces remain explicit --
 
 def test_memory_mutation_surfaces_remain_explicit():
-    p = "tmp_agent/brain_v9/main.py"
+    p = "tmp_agent/brain_v9/routes/chat_session_lifecycle_routes.py"
     _assert_contains(p,
-        "@app.delete",
+        "@router.delete",
         "/sessions/{session_id}",
         "/sessions/{session_id}/memory",
     )

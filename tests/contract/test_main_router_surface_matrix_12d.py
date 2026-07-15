@@ -131,11 +131,13 @@ CONTROL_SURFACES: dict[str, list[str]] = {
 
 MUTATION_SURFACES: dict[str, list[str]] = {
     "tmp_agent/brain_v9/main.py": [
-        "@app.delete",
-        "/sessions/{session_id}/memory",
         "/brain/mutations",
         "/brain/mutations/test_apply",
         "/rollback",
+    ],
+    "tmp_agent/brain_v9/routes/chat_session_lifecycle_routes.py": [
+        "@router.delete",
+        "/sessions/{session_id}/memory",
     ],
     "tmp_agent/ui_proxy_server.py": [
         "/ui/api/apply",
