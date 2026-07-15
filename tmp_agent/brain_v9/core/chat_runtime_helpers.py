@@ -84,6 +84,38 @@ CODE_INSPECTION_MARKERS = (
 )
 
 PENDING_ID_PATTERN = re.compile(r"(confirm_\d{8}_\d{6}_\w+)")
+PAD_USERNAME_PATTERN = re.compile(r"usuario[=:]\s*(\S+)", re.IGNORECASE)
+PAD_PASSWORD_PATTERN = re.compile(r"password[=:]\s*(\S+)", re.IGNORECASE)
+PAD_MFA_PATTERN = re.compile(r"mfa[=:]\s*(\S+)", re.IGNORECASE)
+PAD_WITNESSES_PATTERN = re.compile(r"testigos\[=\s*([^\]]+)", re.IGNORECASE)
+
+GOD_PRIVILEGE_TERMS = (
+    "modo god",
+    "modo desarrollador",
+    "developer mode",
+    "god mode",
+)
+
+GOD_EXISTENCE_TERMS = (
+    "tienes",
+    "existe",
+    "hay",
+    "implementado",
+    "disponible",
+    "solo responde si existe",
+)
+
+GOD_ACTIVATION_TERMS = (
+    "autenticar:",
+    "activar",
+    "habilitar",
+    "entrar",
+    "iniciar",
+    "bypass",
+    "sin restricciones",
+    "quita restricciones",
+    "elimina restricciones",
+)
 
 
 def _lower_message(message: str) -> str:
@@ -113,6 +145,56 @@ def should_attempt_local_network_tool(message: str) -> bool:
     msg_low = _lower_message(message)
     wants_execution = any(marker in msg_low for marker in LOCAL_NETWORK_EXECUTION_MARKERS)
     return wants_execution and should_scan_local_network(message) and not is_code_inspection_request(message)
+
+
+def is_safe_god_existence_question(message: str) -> bool:
+    """Detect safe questions about whether PAD/GOD exists without activating it."""
+    msg_low = _lower_message(message)
+    return (
+        any(term in msg_low for term in GOD_PRIVILEGE_TERMS)
+        and any(term in msg_low for term in GOD_EXISTENCE_TERMS)
+        and not any(term in msg_low for term in GOD_ACTIVATION_TERMS)
+    )
+
+
+def is_explicit_god_task(message: str) -> bool:
+    """Detect an explicit already-authenticated GOD task command."""
+    msg_low = _lower_message(message)
+    return (
+        msg_low.startswith(("god:", "dev:", "ejecuta:", "comando:", "shell:"))
+        or "ejecuta " in msg_low[:20]
+    )
+
+
+def extract_god_task_text(message: str) -> str:
+    """Preserve the legacy GOD task-text extraction behavior."""
+    message_text = message or ""
+    msg_low = message_text.lower()
+    if msg_low.startswith(("god:", "dev:")) and ":" in message_text:
+        return message_text.split(":", 1)[1].strip()
+    return message_text
+
+
+def parse_pad_credentials(message: str) -> Optional[Dict[str, Any]]:
+    """Parse PAD credentials from the legacy chat command format."""
+    message_text = message or ""
+    if "autenticar:" not in message_text.lower():
+        return None
+
+    username = PAD_USERNAME_PATTERN.search(message_text)
+    password = PAD_PASSWORD_PATTERN.search(message_text)
+    mfa = PAD_MFA_PATTERN.search(message_text)
+    witnesses_match = PAD_WITNESSES_PATTERN.search(message_text)
+    if not (username and password and mfa):
+        return None
+
+    witnesses = witnesses_match.group(1).split(",") if witnesses_match else ["w1", "w2"]
+    return {
+        "username": username.group(1),
+        "password": password.group(1),
+        "mfa_code": mfa.group(1),
+        "witnesses": witnesses,
+    }
 
 
 def has_pending_action_signal(result: Any, content: str) -> bool:

@@ -192,8 +192,12 @@ from brain_v9.routes.strategy_readonly_routes import router as strategy_readonly
 from brain_v9.routes.trace_streaming_routes import _emit_agent_trace_internal, router as trace_streaming_routes_router
 from brain_v9.core.chat_runtime_helpers import (
     extract_pending_action_from_text,
+    extract_god_task_text,
     has_pending_action_signal,
+    is_explicit_god_task,
+    is_safe_god_existence_question,
     looks_like_harmful_intrusion_request,
+    parse_pad_credentials,
     should_attempt_local_network_tool,
 )
 from brain_v9.api.openai_compat import router as openai_compat_router
@@ -1309,46 +1313,13 @@ async def chat(req: ChatRequest):
     global _pad_authenticated_sessions
     mensaje_lower = req.message.lower()
     
-    # Detectar preguntas de existencia seguras (no activación)
-    def _is_safe_god_existence_question(mensaje_lower: str) -> bool:
-        privilege_terms = (
-            "modo god",
-            "modo desarrollador",
-            "developer mode",
-            "god mode",
-        )
-        existence_terms = (
-            "tienes",
-            "existe",
-            "hay",
-            "implementado",
-            "disponible",
-            "solo responde si existe",
-        )
-        activation_terms = (
-            "autenticar:",
-            "activar",
-            "habilitar",
-            "entrar",
-            "iniciar",
-            "bypass",
-            "sin restricciones",
-            "quita restricciones",
-            "elimina restricciones",
-        )
-        return (
-            any(t in mensaje_lower for t in privilege_terms)
-            and any(t in mensaje_lower for t in existence_terms)
-            and not any(t in mensaje_lower for t in activation_terms)
-        )
-    
     # Detectar comandos PAD (excluyendo preguntas de existencia seguras)
     es_comando_pad = (
         "autenticar:" in mensaje_lower or 
         "modo desarrollador" in mensaje_lower or 
         "sin restricciones" in mensaje_lower or
         "modo god" in mensaje_lower
-    ) and not _is_safe_god_existence_question(mensaje_lower)
+    ) and not is_safe_god_existence_question(req.message)
     
     es_logout = (
         ("cerrar sesion" in mensaje_lower or "logout" in mensaje_lower)
@@ -1406,12 +1377,9 @@ async def chat(req: ChatRequest):
         if datetime.now() > datetime.fromisoformat(pad_session["expires_at"]):
             del _pad_authenticated_sessions[session_id]
         else:
-            explicit_god_task = (
-                mensaje_lower.startswith(("god:", "dev:", "ejecuta:", "comando:", "shell:"))
-                or "ejecuta " in mensaje_lower[:20]
-            )
+            explicit_god_task = is_explicit_god_task(req.message)
             if explicit_god_task:
-                task_text = req.message.split(":", 1)[1].strip() if req.message.lower().startswith(("god:", "dev:")) and ":" in req.message else req.message
+                task_text = extract_god_task_text(req.message)
                 try:
                     resultado = await _execute_god_chat_task(task_text, session_id)
                     return ChatResponse(
@@ -1445,21 +1413,7 @@ async def chat(req: ChatRequest):
             protocolo = ProtocoloAutenticacionDesarrollador()
             
             # Parsear credenciales
-            credenciales = None
-            if "autenticar:" in mensaje_lower:
-                import re
-                usuario = re.search(r'usuario[=:]\s*(\S+)', req.message, re.IGNORECASE)
-                password = re.search(r'password[=:]\s*(\S+)', req.message, re.IGNORECASE)
-                mfa = re.search(r'mfa[=:]\s*(\S+)', req.message, re.IGNORECASE)
-                testigos_match = re.search(r'testigos\[=\s*([^\]]+)', req.message, re.IGNORECASE)
-                
-                if usuario and password and mfa:
-                    credenciales = {
-                        "username": usuario.group(1),
-                        "password": password.group(1),
-                        "mfa_code": mfa.group(1),
-                        "witnesses": testigos_match.group(1).split(',') if testigos_match else ["w1", "w2"]
-                    }
+            credenciales = parse_pad_credentials(req.message)
             
             # Si no hay credenciales completas, pedir autenticacion
             if not credenciales:

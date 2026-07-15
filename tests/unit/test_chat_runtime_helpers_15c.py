@@ -44,6 +44,30 @@ def test_pending_action_signal_and_empty_extraction():
     assert helpers.extract_pending_action_from_text("requiere confirmacion sin id") is None
 
 
+def test_pad_god_predicates_and_task_text_extraction():
+    assert helpers.is_safe_god_existence_question("solo responde si existe modo god")
+    assert not helpers.is_safe_god_existence_question("activar modo god")
+    assert helpers.is_explicit_god_task("god: revisa estado")
+    assert helpers.is_explicit_god_task("ejecuta diagnostico")
+    assert not helpers.is_explicit_god_task("puedes revisar el estado")
+    assert helpers.extract_god_task_text("god: revisa estado") == "revisa estado"
+    assert helpers.extract_god_task_text("ejecuta diagnostico") == "ejecuta diagnostico"
+
+
+def test_parse_pad_credentials_legacy_format():
+    parsed = helpers.parse_pad_credentials(
+        "autenticar: usuario=alice password=secret mfa=123456 testigos[=wA,wB]"
+    )
+    assert parsed == {
+        "username": "alice",
+        "password": "secret",
+        "mfa_code": "123456",
+        "witnesses": ["wA", "wB"],
+    }
+    assert helpers.parse_pad_credentials("autenticar: usuario=alice") is None
+    assert helpers.parse_pad_credentials("modo god existe?") is None
+
+
 def test_helper_source_has_no_runtime_or_side_effect_dependencies():
     forbidden = [
         "brain_v9.main",
@@ -68,5 +92,7 @@ if __name__ == "__main__":
     test_local_network_tool_predicate_requires_execution_and_not_code_inspection()
     test_pending_action_extraction_preserves_legacy_payload_shape()
     test_pending_action_signal_and_empty_extraction()
+    test_pad_god_predicates_and_task_text_extraction()
+    test_parse_pad_credentials_legacy_format()
     test_helper_source_has_no_runtime_or_side_effect_dependencies()
     print("CHAT_RUNTIME_HELPERS_15C_OK")
