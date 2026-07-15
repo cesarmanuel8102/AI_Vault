@@ -177,6 +177,7 @@ from brain_v9.routes.dashboard_shell_routes import configure_dashboard_html_path
 from brain_v9.routes.dev_debug_routes import router as dev_debug_routes_router
 from brain_v9.routes.governance_control_routes import router as governance_control_routes_router
 from brain_v9.routes.memory_semantic_routes import router as memory_semantic_routes_router
+from brain_v9.routes.provider_readonly_routes import configure_provider_readonly, router as provider_readonly_routes_router
 from brain_v9.routes.strategy_readonly_routes import router as strategy_readonly_routes_router
 from brain_v9.routes.trace_streaming_routes import _emit_agent_trace_internal, router as trace_streaming_routes_router
 from brain_v9.api.openai_compat import router as openai_compat_router
@@ -197,6 +198,7 @@ app.include_router(dashboard_shell_routes_router)
 app.include_router(dev_debug_routes_router)
 app.include_router(governance_control_routes_router)
 app.include_router(memory_semantic_routes_router)
+app.include_router(provider_readonly_routes_router)
 app.include_router(strategy_readonly_routes_router)
 app.include_router(trace_streaming_routes_router)
 app.include_router(openai_compat_router)
@@ -928,6 +930,9 @@ def _brain_maintenance_action_result(service: str, action: str) -> Dict[str, Any
     }
 
 
+configure_provider_readonly(_build_brain_operating_context, _build_brain_maintenance_status)
+
+
 class ChatRequest(BaseModel):
     message:        str
     session_id:     str = "default"
@@ -1113,41 +1118,6 @@ async def _execute_god_chat_task(task: str, session_id: str) -> Dict[str, Any]:
     }
     _pad_audit("god_task_result", {**response, "session_id": session_id})
     return response
-
-
-@app.get("/brain-dashboard/agent-v2/status")
-async def brain_dashboard_agent_v2_status():
-    from brain_v9.core.agent_kernel_v2.finalizer import PRIMARY_KIMI_MODEL
-    from brain_v9.core.agent_kernel_v2.runtime import get_agent_runtime_v2
-    rt = get_agent_runtime_v2()
-    runs = rt.list_runs()
-    latest = runs[-1] if runs else {}
-    meta = latest.get("provider_metadata") or {}
-    return {
-        "ok": True,
-        "canonical_for_new_agent_runs": True,
-        "backend": rt.backend,
-        "primary_finalizer_model": PRIMARY_KIMI_MODEL,
-        "latest_provider_used": meta.get("provider_used"),
-        "latest_model_used": meta.get("model_used"),
-        "latest_provider_degraded": meta.get("provider_degraded"),
-        "runs": len(runs),
-        "latest_run_id": latest.get("run_id"),
-        "chat_agent_route": "/v2/chat/agent",
-        "legacy_agent_status": "legacy_compatible_not_canonical",
-    }
-
-@app.get("/brain/operating-context")
-async def brain_operating_context():
-    from brain_v9.trading.router import trading_policy
-
-    policy = await trading_policy()
-    return _build_brain_operating_context(policy)
-
-
-@app.get("/brain/maintenance/status")
-async def brain_maintenance_status():
-    return _build_brain_maintenance_status()
 
 
 @app.post("/brain/maintenance/action")

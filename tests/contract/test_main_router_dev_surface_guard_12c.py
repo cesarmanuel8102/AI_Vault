@@ -38,12 +38,15 @@ def test_main_dev_debug_surfaces_remain_explicit():
     p = "tmp_agent/brain_v9/main.py"
     _assert_contains(p,
         "/chat/introspectivo/debug",
-        "/brain/maintenance/status",
         "/brain/maintenance/action",
         "/brain/mutations",
         "/brain/mutations/test_apply",
         "/brain/mutations/{",
         "/rollback",
+    )
+    _assert_contains(
+        "tmp_agent/brain_v9/routes/provider_readonly_routes.py",
+        "/brain/maintenance/status",
     )
 
 
