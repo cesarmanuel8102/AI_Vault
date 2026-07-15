@@ -46,8 +46,11 @@ on:
       - "tests/contract/test_main_routes_remaining_control_split_14h.py"
       - "tests/contract/test_main_routes_chat_session_lifecycle_split_15a.py"
       - "tests/contract/test_main_routes_chat_entrypoint_split_15b.py"
+      - "tests/unit/test_chat_runtime_helpers_15c.py"
+      - "tests/contract/test_main_chat_runtime_decomposition_15c.py"
       - "tmp_agent/brain_v9/routes/chat_session_lifecycle_routes.py"
       - "tmp_agent/brain_v9/routes/chat_entrypoint_routes.py"
+      - "tmp_agent/brain_v9/core/chat_runtime_helpers.py"
       - "tmp_agent/brain_v9/routes/health_status.py"
       - "tmp_agent/brain_v9/routes/validators_observability.py"
       - "tmp_agent/brain_v9/routes/read_only_diagnostics.py"
@@ -116,8 +119,11 @@ on:
       - "tests/contract/test_main_routes_remaining_control_split_14h.py"
       - "tests/contract/test_main_routes_chat_session_lifecycle_split_15a.py"
       - "tests/contract/test_main_routes_chat_entrypoint_split_15b.py"
+      - "tests/unit/test_chat_runtime_helpers_15c.py"
+      - "tests/contract/test_main_chat_runtime_decomposition_15c.py"
       - "tmp_agent/brain_v9/routes/chat_session_lifecycle_routes.py"
       - "tmp_agent/brain_v9/routes/chat_entrypoint_routes.py"
+      - "tmp_agent/brain_v9/core/chat_runtime_helpers.py"
       - "tmp_agent/brain_v9/routes/health_status.py"
       - "tmp_agent/brain_v9/routes/validators_observability.py"
       - "tmp_agent/brain_v9/routes/read_only_diagnostics.py"
@@ -434,6 +440,13 @@ jobs:
           set -euo pipefail
           python tests/contract/test_main_routes_chat_entrypoint_split_15b.py
 
+      - name: Main chat runtime decomposition 15C
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/unit/test_chat_runtime_helpers_15c.py
+          python tests/contract/test_main_chat_runtime_decomposition_15c.py
+
       - name: Dashboard streaming events tests
         shell: bash
         run: |
@@ -460,3 +473,4 @@ jobs:
             tests/contract/test_agent_v2_boundary_contracts_02.py \
             tests/smoke/test_front_brain_ui_token_preflight_01.py
           echo "OK: boundary tests compile"
+

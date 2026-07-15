@@ -190,6 +190,12 @@ from brain_v9.routes.memory_semantic_routes import router as memory_semantic_rou
 from brain_v9.routes.provider_readonly_routes import configure_provider_readonly, router as provider_readonly_routes_router
 from brain_v9.routes.strategy_readonly_routes import router as strategy_readonly_routes_router
 from brain_v9.routes.trace_streaming_routes import _emit_agent_trace_internal, router as trace_streaming_routes_router
+from brain_v9.core.chat_runtime_helpers import (
+    extract_pending_action_from_text,
+    has_pending_action_signal,
+    looks_like_harmful_intrusion_request,
+    should_attempt_local_network_tool,
+)
 from brain_v9.api.openai_compat import router as openai_compat_router
 from brain_v9.agent.tools import build_standard_executor
 from brain_v9.agent.loop import AgentLoop
@@ -1574,13 +1580,7 @@ Las restricciones se reactivaran en 60 minutos o al escribir:
                 success=False
             )
 
-    msg_low = req.message.lower()
-    harmful_intrusion_kw = (
-        "hackea", "hackear", "rompe la clave", "crackea", "crackear",
-        "entrar al wifi", "entrar en el wifi", "entrar a un wifi", "robar wifi",
-        "bypass", "saltate", "sáltate", "credenciales ajenas", "wifi vecino",
-    )
-    if any(k in msg_low for k in harmful_intrusion_kw):
+    if looks_like_harmful_intrusion_request(req.message):
         return ChatResponse(
             response=(
                 "No puedo ayudar a vulnerar redes, credenciales o accesos ajenos. "
@@ -1591,18 +1591,7 @@ Las restricciones se reactivaran en 60 minutos o al escribir:
             model_used="brain_safety_guard",
             success=False,
         )
-    net_kw = ("red local","network","ip local","gateway","scan","escan","cidr","subred","subnet",
-              "interfaces","interfaz","host vivo","ping sweep","red wifi","wifi","nmap","puerto abierto",
-              "dispositivos conectados","dispositivos observables","hosts activos","bloqueado")
-    exec_intent_kw = ("escan", "scan", "detecta", "ejecut", "muestra", "lista", "enumera",
-                      "dime", "que hosts", "cuales hosts", "barre", "conectados")
-    wants_exec = any(k in msg_low for k in exec_intent_kw)
-    code_inspection_markers = (
-        ".py", ".json", ".md", ".ps1", "tmp_agent\\", "tmp_agent/", "brain_v9\\", "brain_v9/",
-        "core\\", "core/", "tests\\", "tests/", "agent\\", "agent/",
-    )
-    inspecting_code = any(marker in msg_low for marker in code_inspection_markers)
-    if wants_exec and any(k in msg_low for k in net_kw) and not inspecting_code:
+    if should_attempt_local_network_tool(req.message):
         try:
             from brain_v9.agent.tools import detect_local_network as _dln, scan_local_network as _sln
             det = await _dln()
@@ -1701,21 +1690,11 @@ Las restricciones se reactivaran en 60 minutos o al escribir:
               "blocked_by_user": result.get("blocked_by_user")}
     )
     
-    if "pending_id" in str(result) or "Accion P2" in content_str or "requiere confirmacion" in content_str.lower():
-        import re
-        import re as _re
-        _pid_match = _re.search(r'(confirm_\d{8}_\d{6}_\w+)', content_str)
-        if _pid_match:
-            pending_id = _pid_match.group(1)
-            # Extract tool name from pending_id (e.g., confirm_20260402_205953_freeze_strategy -> freeze_strategy)
-            _tool_parts = pending_id.split("_", 3)
-            tool_name = _tool_parts[3] if len(_tool_parts) > 3 else pending_id
-            pending_action = {
-                "pending_id": pending_id,
-                "tool": tool_name,
-                "risk": "P2",
-                "description": content_str.split("\n")[0] if "\n" in content_str else content_str[:200],
-            }
+    if has_pending_action_signal(result, content_str):
+        pending_action = extract_pending_action_from_text(content_str)
+        if pending_action:
+            pending_id = pending_action["pending_id"]
+            tool_name = pending_action["tool"]
             _emit_agent_trace_internal(
                 req.session_id, "chat_ui", "governance",
                 f"Tool execution pending: {tool_name}",
