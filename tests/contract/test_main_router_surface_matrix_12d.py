@@ -93,6 +93,15 @@ READ_ONLY_SURFACES: dict[str, list[str]] = {
         "/brain/self-improvement/ledger",
         "/brain/self-improvement/change/{change_id}/status",
     ],
+    "tmp_agent/brain_v9/routes/curated_knowledge_routes.py": [
+        "/brain/curated-knowledge/status",
+        "/brain/curated-knowledge/search",
+        "/brain/curated-knowledge/demo-search",
+        "verified_curated_readonly",
+        "verified_curated_readonly_demo",
+        "real_write_allowed",
+        "faiss_write_allowed",
+    ],
 }
 
 CONTROL_SURFACES: dict[str, list[str]] = {
@@ -322,6 +331,7 @@ def test_health_status_router_declares_moved_get_routes():
     )
     ro_text = _read("tmp_agent/brain_v9/routes/read_only_diagnostics.py")
     ro_extra_text = _read("tmp_agent/brain_v9/routes/read_only_diagnostics_extra.py")
+    curated_text = _read("tmp_agent/brain_v9/routes/curated_knowledge_routes.py")
     main_text = _read("tmp_agent/brain_v9/main.py")
     for endpoint in [
         "/brain/rsi",
@@ -337,6 +347,17 @@ def test_health_status_router_declares_moved_get_routes():
         )
         assert f'@app.get("{endpoint}")' not in main_text, (
             f"main.py must not still declare @app.get for moved endpoint {endpoint}"
+        )
+    for method, endpoint in [
+        ("get", "/brain/curated-knowledge/status"),
+        ("post", "/brain/curated-knowledge/search"),
+        ("post", "/brain/curated-knowledge/demo-search"),
+    ]:
+        assert f'@router.{method}("{endpoint}")' in curated_text, (
+            f"curated_knowledge_routes.py must declare @router.{method} for {endpoint}"
+        )
+        assert f'@app.{method}("{endpoint}")' not in main_text, (
+            f"main.py must not still declare @app.{method} for moved endpoint {endpoint}"
         )
     for endpoint in [
         "/brain/utility",

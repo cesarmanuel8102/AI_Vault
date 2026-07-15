@@ -67,6 +67,7 @@ def test_main_router_includes_expected_router_surfaces():
         "app.include_router(validators_observability_router)",
         "app.include_router(read_only_diagnostics_router)",
         "app.include_router(read_only_diagnostics_extra_router)",
+        "app.include_router(curated_knowledge_routes_router)",
     )
 
 
@@ -170,6 +171,7 @@ def test_health_and_readonly_routes_contract():
     knowledge = "tmp_agent/brain_v9/routes/knowledge_read_api.py"
     diagnostics = "tmp_agent/brain_v9/routes/read_only_diagnostics.py"
     diagnostics_extra = "tmp_agent/brain_v9/routes/read_only_diagnostics_extra.py"
+    curated = "tmp_agent/brain_v9/routes/curated_knowledge_routes.py"
     _assert_contains(canary, "APIRouter", "read-only", "/brain")
     _assert_contains(knowledge, "APIRouter", "/brain")
     _assert_contains(diagnostics, "APIRouter", "/brain/rsi", "/brain/proactive/status")
@@ -180,11 +182,19 @@ def test_health_and_readonly_routes_contract():
         "/brain/research/summary",
         "/brain/self-improvement/ledger",
     )
+    _assert_contains(
+        curated,
+        "APIRouter",
+        "/brain/curated-knowledge/status",
+        "/brain/curated-knowledge/search",
+        "/brain/curated-knowledge/demo-search",
+    )
     # read-only routes must not have POST or DELETE handlers
     _assert_not_contains(canary, "@router.post(", "@router.delete(")
     _assert_not_contains(knowledge, "@router.post(", "@router.delete(")
     _assert_not_contains(diagnostics, "@router.post(", "@router.delete(")
     _assert_not_contains(diagnostics_extra, "@router.post(", "@router.delete(")
+    _assert_not_contains(curated, "@router.delete(")
 
 
 # -- 10. Autonomy surface is explicitly controlled --
