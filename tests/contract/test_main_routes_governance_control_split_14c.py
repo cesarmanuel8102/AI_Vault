@@ -67,11 +67,14 @@ def test_governance_control_posts_preserve_operator_access():
 
 def test_godmode_deferred_in_main():
     router = _read(ROUTER)
+    chat_session = _read("tmp_agent/brain_v9/routes/chat_session_lifecycle_routes.py")
     main = _read("tmp_agent/brain_v9/main.py")
     for endpoint in DEFERRED:
         assert endpoint not in router
-    assert '@app.get("/godmode/status", dependencies=[Depends(require_strict_operator_access)])' in main
-    assert '@app.post("/godmode", dependencies=[Depends(require_strict_operator_access)])' in main
+    assert '@router.get("/godmode/status", dependencies=[Depends(require_strict_operator_access)])' in chat_session
+    assert '@router.post("/godmode", dependencies=[Depends(require_strict_operator_access)])' in chat_session
+    assert '@app.get("/godmode/status", dependencies=[Depends(require_strict_operator_access)])' not in main
+    assert '@app.post("/godmode", dependencies=[Depends(require_strict_operator_access)])' not in main
 
 
 def test_governance_control_router_no_auth_bypass_tokens():
