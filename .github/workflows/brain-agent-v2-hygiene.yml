@@ -52,6 +52,8 @@ on:
       - "tests/unit/test_chat_entrypoint_service_15e.py"
       - "tests/contract/test_main_chat_service_boundary_15e.py"
       - "tests/contract/test_main_routes_chat_final_route_move_15f.py"
+      - "tests/contract/test_main_router_residual_surface_audit_16a.py"
+      - "docs/audit/MAIN_ROUTER_RESIDUAL_SURFACE_AUDIT_16A.md"
       - "tmp_agent/brain_v9/routes/chat_session_lifecycle_routes.py"
       - "tmp_agent/brain_v9/routes/chat_entrypoint_routes.py"
       - "tmp_agent/brain_v9/core/chat_runtime_helpers.py"
@@ -130,6 +132,8 @@ on:
       - "tests/unit/test_chat_entrypoint_service_15e.py"
       - "tests/contract/test_main_chat_service_boundary_15e.py"
       - "tests/contract/test_main_routes_chat_final_route_move_15f.py"
+      - "tests/contract/test_main_router_residual_surface_audit_16a.py"
+      - "docs/audit/MAIN_ROUTER_RESIDUAL_SURFACE_AUDIT_16A.md"
       - "tmp_agent/brain_v9/routes/chat_session_lifecycle_routes.py"
       - "tmp_agent/brain_v9/routes/chat_entrypoint_routes.py"
       - "tmp_agent/brain_v9/core/chat_runtime_helpers.py"
@@ -475,6 +479,12 @@ jobs:
         run: |
           set -euo pipefail
           python tests/contract/test_main_routes_chat_final_route_move_15f.py
+
+      - name: Main router residual surface audit 16A
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/contract/test_main_router_residual_surface_audit_16a.py
 
       - name: Dashboard streaming events tests
         shell: bash
