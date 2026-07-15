@@ -57,8 +57,8 @@ def test_moved_session_routes_no_longer_in_main():
 
 def test_session_routes_preserve_methods():
     router = _read(ROUTER)
-    assert '@router.delete("/sessions/{session_id}")' in router
-    assert '@router.delete("/sessions/{session_id}/memory")' in router
+    assert '@router.delete("/sessions/{session_id}", dependencies=[Depends(require_strict_operator_access)])' in router
+    assert '@router.delete("/sessions/{session_id}/memory", dependencies=[Depends(require_strict_operator_access)])' in router
     assert '@router.post("/agent")' in router
     assert '@router.post("/dev", dependencies=[Depends(require_strict_operator_access)])' in router
     assert '@router.get("/godmode/status", dependencies=[Depends(require_strict_operator_access)])' in router

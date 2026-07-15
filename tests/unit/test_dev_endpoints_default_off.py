@@ -48,8 +48,8 @@ def test_on_for_strict_truthy():
 
 def test_dev_endpoint_returns_403_when_disabled():
     """Verifica que el codigo de /dev y /godmode levanta HTTPException(403)."""
-    main_path = _TMP / "brain_v9" / "main.py"
-    src = main_path.read_text(encoding="utf-8", errors="ignore")
+    routes_path = _TMP / "brain_v9" / "routes" / "chat_session_lifecycle_routes.py"
+    src = routes_path.read_text(encoding="utf-8", errors="ignore")
     # Ambos endpoints deben usar HTTPException con status_code=403, no return JSON.
     assert src.count("status_code=403") >= 2, "Faltan respuestas HTTP 403 en /dev y /godmode"
     # Asegura que no haya regresiones al patron antiguo de JSON success=False
@@ -58,10 +58,10 @@ def test_dev_endpoint_returns_403_when_disabled():
 
 
 def _find_unsafe_gate_blocks_ast():
-    """Busca via AST los `if not BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS:` en /dev y /godmode."""
+    """Busca via AST los gates unsafe-dev post-split en /dev y /godmode."""
     import ast
-    main_path = _TMP / "brain_v9" / "main.py"
-    src = main_path.read_text(encoding="utf-8", errors="ignore")
+    routes_path = _TMP / "brain_v9" / "routes" / "chat_session_lifecycle_routes.py"
+    src = routes_path.read_text(encoding="utf-8", errors="ignore")
     tree = ast.parse(src)
 
     targets = []
@@ -74,12 +74,26 @@ def _find_unsafe_gate_blocks_ast():
             if not isinstance(stmt, ast.If):
                 continue
             t = stmt.test
-            # match: if not BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS:
-            if (
+            # match legacy: if not BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS:
+            legacy_global_gate = (
                 isinstance(t, ast.UnaryOp)
                 and isinstance(t.op, ast.Not)
                 and isinstance(t.operand, ast.Name)
                 and t.operand.id == "BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS"
+            )
+            # match split router: if not runtime["unsafe_dev_endpoints_enabled"]:
+            runtime_mapping_gate = (
+                isinstance(t, ast.UnaryOp)
+                and isinstance(t.op, ast.Not)
+                and isinstance(t.operand, ast.Subscript)
+                and isinstance(t.operand.value, ast.Name)
+                and t.operand.value.id == "runtime"
+                and isinstance(t.operand.slice, ast.Constant)
+                and t.operand.slice.value == "unsafe_dev_endpoints_enabled"
+            )
+            if (
+                legacy_global_gate
+                or runtime_mapping_gate
             ):
                 targets.append((node.name, stmt))
     return targets
@@ -131,9 +145,9 @@ def test_no_dead_code_return_before_raise_in_unsafe_gate():
                 )
 
 
-def test_at_least_two_raise_403_in_main():
-    main_path = _TMP / "brain_v9" / "main.py"
-    src = main_path.read_text(encoding="utf-8", errors="ignore")
+def test_at_least_two_raise_403_in_dev_godmode_route_source():
+    routes_path = _TMP / "brain_v9" / "routes" / "chat_session_lifecycle_routes.py"
+    src = routes_path.read_text(encoding="utf-8", errors="ignore")
     # Patron tolerante a indentacion: raise HTTPException(...status_code=403...)
     import re
     matches = re.findall(r"raise\s+HTTPException\s*\([^)]*status_code\s*=\s*403", src, re.DOTALL)
@@ -146,5 +160,5 @@ if __name__ == "__main__":
     test_on_for_strict_truthy()
     test_dev_endpoint_returns_403_when_disabled()
     test_no_dead_code_return_before_raise_in_unsafe_gate()
-    test_at_least_two_raise_403_in_main()
+    test_at_least_two_raise_403_in_dev_godmode_route_source()
     print("OK: test_dev_endpoints_default_off")

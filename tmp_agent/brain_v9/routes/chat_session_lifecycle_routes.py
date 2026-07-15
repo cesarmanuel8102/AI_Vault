@@ -66,7 +66,7 @@ class GodModeRequest(BaseModel):
     session_id: str
 
 
-@router.delete("/sessions/{session_id}")
+@router.delete("/sessions/{session_id}", dependencies=[Depends(require_strict_operator_access)])
 async def delete_session(session_id: str):
     sessions = _active_sessions()
     if session_id in sessions:
@@ -75,7 +75,7 @@ async def delete_session(session_id: str):
     return {"success": True}
 
 
-@router.delete("/sessions/{session_id}/memory")
+@router.delete("/sessions/{session_id}/memory", dependencies=[Depends(require_strict_operator_access)])
 async def clear_session_memory(session_id: str, memory_type: str = "all"):
     sessions = _active_sessions()
     if session_id not in sessions:
