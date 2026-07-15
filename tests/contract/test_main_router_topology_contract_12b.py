@@ -84,8 +84,11 @@ def test_core_http_surfaces_are_visible():
     p = "tmp_agent/brain_v9/main.py"
     _assert_contains(p,
         '@app.post("/chat"',
-        '@app.get("/dashboard"',
-        '@app.get("/dashboard-v2"',
+    )
+    dashboard_shell = "tmp_agent/brain_v9/routes/dashboard_shell_routes.py"
+    _assert_contains(dashboard_shell,
+        '@router.get("/dashboard"',
+        '@router.get("/dashboard-v2"',
     )
 
 

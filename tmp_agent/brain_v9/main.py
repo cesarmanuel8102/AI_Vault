@@ -173,6 +173,7 @@ from brain_v9.routes.read_only_diagnostics import router as read_only_diagnostic
 from brain_v9.routes.read_only_diagnostics_extra import router as read_only_diagnostics_extra_router
 from brain_v9.routes.curated_knowledge_routes import router as curated_knowledge_routes_router
 from brain_v9.routes.gate_tool_routes import configure_active_sessions_provider, router as gate_tool_routes_router
+from brain_v9.routes.dashboard_shell_routes import configure_dashboard_html_path, router as dashboard_shell_routes_router
 from brain_v9.api.openai_compat import router as openai_compat_router
 from brain_v9.agent.tools import build_standard_executor
 from brain_v9.agent.loop import AgentLoop
@@ -187,6 +188,7 @@ app.include_router(read_only_diagnostics_router)
 app.include_router(read_only_diagnostics_extra_router)
 app.include_router(curated_knowledge_routes_router)
 app.include_router(gate_tool_routes_router)
+app.include_router(dashboard_shell_routes_router)
 app.include_router(openai_compat_router)
 app.include_router(agent_v2_router)
 app.include_router(agent_v2_chat_router)
@@ -239,6 +241,7 @@ def _validators_metrics_payload():
 
 configure_validators_metrics_provider(_validators_metrics_payload)
 configure_active_sessions_provider(lambda: active_sessions)
+configure_dashboard_html_path(lambda: _dashboard_html)
 
 # UPGRADE: AOS + L2 + Sandbox + EventBus + Settings
 try:
@@ -293,22 +296,6 @@ _FAIR_TEST_TARGET_TRADES = 50
 _FAIR_TEST_RETRY_THRESHOLD = 0.48
 _FAIR_TEST_SCALE_THRESHOLD = 0.55
 _PO_BINARY_PAYOUT = 0.92
-
-@app.get("/dashboard", include_in_schema=False)
-async def serve_dashboard():
-    """Serve the professional monitoring dashboard."""
-    from fastapi.responses import HTMLResponse
-    if os.path.exists(_dashboard_html):
-        with open(_dashboard_html, encoding="utf-8") as f:
-            return HTMLResponse(f.read())
-    return HTMLResponse("<h1>Dashboard not found</h1>", status_code=404)
-
-
-@app.get("/dashboard-v2", include_in_schema=False)
-async def serve_dashboard_v2():
-    """Compatibility alias for the Command Center v2 dashboard."""
-    return await serve_dashboard()
-
 
 class MaintenanceActionRequest(BaseModel):
     service: str
