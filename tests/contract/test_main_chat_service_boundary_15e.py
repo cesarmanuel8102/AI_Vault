@@ -15,20 +15,26 @@ def _read(path: Path) -> str:
 
 def _chat_block() -> str:
     main = _read(MAIN)
-    start = main.index('@app.post("/chat"')
-    next_app = main.find("\n@app.", start + 1)
-    next_def = main.find("\ndef ", start + 1)
-    end = min(x for x in (next_app, next_def) if x != -1)
-    return main[start:end]
+    router = _read(ROUTER)
+    source = main if '@app.post("/chat"' in main else router
+    marker = '@app.post("/chat"' if source is main else '@router.post("/chat"'
+    start = source.index(marker)
+    next_route = source.find("\n@app.", start + 1) if source is main else source.find("\n@router.", start + 1)
+    next_def = source.find("\ndef ", start + 1)
+    candidates = [x for x in (next_route, next_def) if x != -1]
+    end = min(candidates) if candidates else len(source)
+    return source[start:end]
 
 
 def test_chat_route_still_in_main():
-    assert '@app.post("/chat", response_model=ChatResponse)' in _read(MAIN)
+    assert '@router.post("/chat", response_model=ChatResponse)' in _read(ROUTER)
+    assert '@app.post("/chat"' not in _read(MAIN)
 
 
 def test_chat_route_wrapper_uses_service():
     main = _read(MAIN)
-    assert "handle_chat_entrypoint" in main
+    router = _read(ROUTER)
+    assert "handle_chat_entrypoint" in router
     assert "_build_chat_entrypoint_runtime" in main
     assert "ChatEntrypointRuntime" in main
 
@@ -62,7 +68,7 @@ def test_service_forbidden_imports():
 
 
 def test_chat_response_contract_tokens_preserved():
-    combined = _read(MAIN) + "\n" + _read(SERVICE)
+    combined = _read(MAIN) + "\n" + _read(ROUTER) + "\n" + _read(SERVICE)
     for token in [
         "ChatResponse",
         "pending_action",
@@ -77,7 +83,8 @@ def test_chat_response_contract_tokens_preserved():
 
 
 def test_chat_final_move_not_done_yet():
-    assert '@router.post("/chat"' not in _read(ROUTER)
+    assert '@router.post("/chat"' in _read(ROUTER)
+    assert '@app.post("/chat"' not in _read(MAIN)
     assert "15F" in _read(REPORT)
 
 
@@ -91,6 +98,8 @@ def test_15f_readiness_marker():
     assert "COMPLETED_SERVICE_BOUNDARY" in report
     assert "15F" in report
     assert "final move" in report
+    final_report = _read(ROOT / "docs" / "audit" / "MAIN_ROUTER_CHAT_FINAL_ROUTE_MOVE_REPORT_15F.md")
+    assert "FULLY_COMPLETED_CHAT_ROUTE_MOVE" in final_report
 
 
 if __name__ == "__main__":

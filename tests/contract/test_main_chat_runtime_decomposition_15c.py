@@ -14,11 +14,11 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_legacy_chat_route_remains_in_main_and_not_in_router():
+def test_legacy_chat_route_decomposition_is_preserved_after_final_move():
     main = _read(MAIN)
     router = _read(CHAT_ENTRYPOINT_ROUTES)
-    assert '@app.post("/chat", response_model=ChatResponse)' in main
-    assert '@router.post("/chat"' not in router
+    assert '@app.post("/chat"' not in main
+    assert '@router.post("/chat", response_model=ChatResponse)' in router
 
 
 def test_runtime_helper_file_exists_and_main_uses_it():
@@ -73,7 +73,7 @@ def test_chat_response_contract_tokens_still_present():
 
 def test_main_endpoint_count_is_unchanged_after_helper_extraction():
     main = _read(MAIN)
-    assert len(re.findall(r"@app\.(get|post|put|delete|patch)", main)) == 51
+    assert len(re.findall(r"@app\.(get|post|put|delete|patch)", main)) == 50
 
 
 def test_report_documents_15d_target():
@@ -84,7 +84,7 @@ def test_report_documents_15d_target():
 
 
 if __name__ == "__main__":
-    test_legacy_chat_route_remains_in_main_and_not_in_router()
+    test_legacy_chat_route_decomposition_is_preserved_after_final_move()
     test_runtime_helper_file_exists_and_main_uses_it()
     test_helper_file_has_no_forbidden_runtime_dependencies()
     test_chat_response_contract_tokens_still_present()

@@ -14,11 +14,13 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from brain_v9.api_security import StrictOperatorAccess
+from brain_v9.core.chat_entrypoint_service import handle_chat_entrypoint
 
 router = APIRouter(tags=["chat-entrypoint"])
 log = logging.getLogger("brain_v9")
 
 _chat_entrypoint_runtime_provider: Callable[[], Mapping[str, Any]] | None = None
+_chat_service_runtime_provider: Callable[[], Any] | None = None
 _brain_orchestrator = None
 
 
@@ -27,16 +29,28 @@ def configure_chat_entrypoint_runtime_provider(provider: Callable[[], Mapping[st
     _chat_entrypoint_runtime_provider = provider
 
 
+def configure_chat_service_runtime_provider(provider: Callable[[], Any]) -> None:
+    global _chat_service_runtime_provider
+    _chat_service_runtime_provider = provider
+
+
 def _chat_runtime() -> Mapping[str, Any]:
     if _chat_entrypoint_runtime_provider is None:
         raise RuntimeError("chat_entrypoint_runtime_provider_not_configured")
     return _chat_entrypoint_runtime_provider()
 
 
+def _chat_service_runtime() -> Any:
+    if _chat_service_runtime_provider is None:
+        raise RuntimeError("chat_service_runtime_provider_not_configured")
+    return _chat_service_runtime_provider()
+
+
 class ChatRequest(BaseModel):
     message: str
     session_id: str = "default"
-    model_priority: str = "auto"
+    # default /chat uses quality-first chain; introspective callers can still override.
+    model_priority: str = "chat"
 
 
 class ChatResponse(BaseModel):
@@ -93,6 +107,12 @@ def _compact_orchestrator_state() -> tuple[Dict[str, Any], bool]:
         except Exception as e:
             estado["error"] = str(e)
     return estado, orch is not None
+
+
+@router.post("/chat", response_model=ChatResponse)
+async def chat(req: ChatRequest):
+    """Chat endpoint con soporte para autenticacion PAD (Modo Desarrollador)."""
+    return await handle_chat_entrypoint(req, _chat_service_runtime())
 
 
 @router.get("/chat/introspectivo/debug")

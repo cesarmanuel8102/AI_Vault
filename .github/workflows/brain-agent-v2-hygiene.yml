@@ -51,6 +51,7 @@ on:
       - "tests/contract/test_main_routes_chat_final_move_15d.py"
       - "tests/unit/test_chat_entrypoint_service_15e.py"
       - "tests/contract/test_main_chat_service_boundary_15e.py"
+      - "tests/contract/test_main_routes_chat_final_route_move_15f.py"
       - "tmp_agent/brain_v9/routes/chat_session_lifecycle_routes.py"
       - "tmp_agent/brain_v9/routes/chat_entrypoint_routes.py"
       - "tmp_agent/brain_v9/core/chat_runtime_helpers.py"
@@ -128,6 +129,7 @@ on:
       - "tests/contract/test_main_routes_chat_final_move_15d.py"
       - "tests/unit/test_chat_entrypoint_service_15e.py"
       - "tests/contract/test_main_chat_service_boundary_15e.py"
+      - "tests/contract/test_main_routes_chat_final_route_move_15f.py"
       - "tmp_agent/brain_v9/routes/chat_session_lifecycle_routes.py"
       - "tmp_agent/brain_v9/routes/chat_entrypoint_routes.py"
       - "tmp_agent/brain_v9/core/chat_runtime_helpers.py"
@@ -467,6 +469,12 @@ jobs:
           set -euo pipefail
           python tests/unit/test_chat_entrypoint_service_15e.py
           python tests/contract/test_main_chat_service_boundary_15e.py
+
+      - name: Main chat final route move 15F
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tests/contract/test_main_routes_chat_final_route_move_15f.py
 
       - name: Dashboard streaming events tests
         shell: bash

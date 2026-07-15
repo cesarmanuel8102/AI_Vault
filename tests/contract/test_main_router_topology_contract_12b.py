@@ -85,12 +85,9 @@ def test_core_http_surfaces_are_visible():
         '@router.get("/status"',
         '@router.get("/healthz"',
     )
-    p = "tmp_agent/brain_v9/main.py"
-    _assert_contains(p,
-        '@app.post("/chat"',
-    )
     chat_entrypoint = "tmp_agent/brain_v9/routes/chat_entrypoint_routes.py"
     _assert_contains(chat_entrypoint,
+        '@router.post("/chat"',
         '@router.get("/chat/introspectivo/debug"',
         '@router.post("/chat/introspectivo"',
     )

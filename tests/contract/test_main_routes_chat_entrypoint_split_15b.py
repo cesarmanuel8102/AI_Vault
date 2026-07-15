@@ -9,13 +9,12 @@ ROUTER = "tmp_agent/brain_v9/routes/chat_entrypoint_routes.py"
 REPORT = "docs/audit/MAIN_ROUTER_CHAT_ENTRYPOINT_REPORT_15B.md"
 
 MOVED = [
+    ("post", "/chat"),
     ("get", "/chat/introspectivo/debug"),
     ("post", "/chat/introspectivo"),
 ]
 
-DEFERRED = {
-    "/chat": "POST /chat remains in main.py because it exceeds the dependency budget and owns PAD/GOD, native routing, trace emission, curated fastpath, network tools, and pending permission semantics.",
-}
+FORMERLY_DEFERRED = "/chat"
 
 
 def _read(rel: str) -> str:
@@ -52,14 +51,14 @@ def test_moved_chat_routes_no_longer_in_main():
 def test_deferred_chat_routes_documented():
     main = _read("tmp_agent/brain_v9/main.py")
     router = _read(ROUTER)
-    for endpoint, reason in DEFERRED.items():
-        assert reason
-        assert f'@app.post("{endpoint}"' in main
-        assert f'@router.post("{endpoint}"' not in router
+    assert f'@app.post("{FORMERLY_DEFERRED}"' not in main
+    assert f'@router.post("{FORMERLY_DEFERRED}"' in router
     report = _read(REPORT)
     assert "POST /chat" in report
     assert "deferred" in report.lower()
     assert "dependency budget" in report.lower()
+    final_report = _read("docs/audit/MAIN_ROUTER_CHAT_FINAL_ROUTE_MOVE_REPORT_15F.md")
+    assert "FULLY_COMPLETED_CHAT_ROUTE_MOVE" in final_report
 
 
 def test_router_provider_boundary_forbidden_imports():
@@ -171,6 +170,8 @@ def test_dependency_budget_recorded():
     assert "POST /chat dependency count: 27" in report
     assert "provider dependency count for moved introspective routes: 3" in report
     assert "PARTIALLY_COMPLETED_WITH_DEFERRED" in report
+    final_report = _read("docs/audit/MAIN_ROUTER_CHAT_FINAL_ROUTE_MOVE_REPORT_15F.md")
+    assert "service boundary reused" in final_report
 
 
 _TESTS = [

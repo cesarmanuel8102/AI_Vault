@@ -21,11 +21,13 @@ def test_chat_route_moved_or_deferred_consistently():
     main = _read(MAIN)
     router = _read(ROUTER)
     report = _read(REPORT)
+    final_report = _read(ROOT / "docs" / "audit" / "MAIN_ROUTER_CHAT_FINAL_ROUTE_MOVE_REPORT_15F.md")
     moved = _is_moved()
     if moved:
         assert '@app.post("/chat"' not in main
         assert '@router.post("/chat"' in router
-        assert "FULLY_COMPLETED_CHAT_MOVE" in report
+        assert "PARTIALLY_COMPLETED_WITH_DEFERRED" in report
+        assert "FULLY_COMPLETED_CHAT_ROUTE_MOVE" in final_report
     else:
         assert '@app.post("/chat"' in main
         assert '@router.post("/chat"' not in router
@@ -39,9 +41,8 @@ def test_provider_dependency_budget_or_deferred_reason_is_explicit():
     assert "Dependency count before" in report
     assert "Dependency count after" in report
     if _is_moved():
-        match = re.search(r"Provider key count:\s*`?(\d+)", report)
-        assert match
-        assert int(match.group(1)) <= 18
+        final_report = _read(ROOT / "docs" / "audit" / "MAIN_ROUTER_CHAT_FINAL_ROUTE_MOVE_REPORT_15F.md")
+        assert "service boundary reused" in final_report
     else:
         assert "Provider key count: `not applicable`" in report
         assert "deferred to 15E" in report

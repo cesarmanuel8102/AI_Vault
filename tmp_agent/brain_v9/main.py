@@ -178,7 +178,9 @@ from brain_v9.routes.chat_session_lifecycle_routes import (
     router as chat_session_lifecycle_routes_router,
 )
 from brain_v9.routes.chat_entrypoint_routes import (
+    ChatResponse,
     configure_chat_entrypoint_runtime_provider,
+    configure_chat_service_runtime_provider,
     router as chat_entrypoint_router,
 )
 from brain_v9.routes.gate_tool_routes import configure_active_sessions_provider, router as gate_tool_routes_router
@@ -190,7 +192,7 @@ from brain_v9.routes.memory_semantic_routes import router as memory_semantic_rou
 from brain_v9.routes.provider_readonly_routes import configure_provider_readonly, router as provider_readonly_routes_router
 from brain_v9.routes.strategy_readonly_routes import router as strategy_readonly_routes_router
 from brain_v9.routes.trace_streaming_routes import _emit_agent_trace_internal, router as trace_streaming_routes_router
-from brain_v9.core.chat_entrypoint_service import ChatEntrypointRuntime, handle_chat_entrypoint
+from brain_v9.core.chat_entrypoint_service import ChatEntrypointRuntime
 from brain_v9.api.openai_compat import router as openai_compat_router
 from brain_v9.agent.tools import build_standard_executor
 from brain_v9.agent.loop import AgentLoop
@@ -962,31 +964,6 @@ def _brain_maintenance_action_result(service: str, action: str) -> Dict[str, Any
 configure_provider_readonly(_build_brain_operating_context, _build_brain_maintenance_status)
 
 
-class ChatRequest(BaseModel):
-    message:        str
-    session_id:     str = "default"
-    # default "chat" usa cadena calidad-primero (kimi_cloud -> deepseek14b -> llama8b)
-    # en vez de "ollama" que prefiere locales y es mas lento sin valor extra
-    model_priority: str = "chat"
-
-class ChatResponse(BaseModel):
-    response:   str
-    session_id: str
-    model_used: Optional[str] = None
-    success:    bool = True
-    pending_action: Optional[dict] = None
-    permission_required: Optional[bool] = None
-    permission_id: Optional[str] = None
-    tool_name: Optional[str] = None
-    risk_level: Optional[str] = None
-    options: Optional[list] = None
-    tool01_real: Optional[bool] = None
-    tool01_router_used: Optional[bool] = None
-    blocked_by_policy: Optional[bool] = None
-    blocked_by_user: Optional[bool] = None
-    tool_result: Optional[dict] = None
-
-
 def _summarize_agent_payload(payload, fallback: str = "") -> str:
     if isinstance(payload, str):
         return payload
@@ -1295,10 +1272,8 @@ def _build_chat_entrypoint_runtime() -> ChatEntrypointRuntime:
     )
 
 
-@app.post("/chat", response_model=ChatResponse)
-async def chat(req: ChatRequest):
-    """Chat endpoint con soporte para autenticacion PAD (Modo Desarrollador)."""
-    return await handle_chat_entrypoint(req, _build_chat_entrypoint_runtime())
+configure_chat_service_runtime_provider(_build_chat_entrypoint_runtime)
+
 
 @app.post("/brain/learned/patterns/{pattern_id}/disable")
 async def brain_learned_pattern_disable(pattern_id: str, _operator: StrictOperatorAccess):
