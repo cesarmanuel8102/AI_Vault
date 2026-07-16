@@ -1,0 +1,145 @@
+name: Agent Loop Pilot — Deterministic Gate and Codex Supervisor
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: agent-loop-pilot-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  deterministic:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.actor == 'cesarmanuel8102' &&
+      startsWith(github.head_ref, 'agent/pilot-')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify pilot scope and reports
+        run: |
+          python scripts/agent_loop/pilot_verify.py \
+            --base-sha "${{ github.event.pull_request.base.sha }}" \
+            --head-sha "${{ github.event.pull_request.head.sha }}" \
+            --report-path "$RUNNER_TEMP/pilot-deterministic-report.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pilot-deterministic-report
+          path: ${{ runner.temp }}/pilot-deterministic-report.json
+          if-no-files-found: error
+
+  codex:
+    needs: deterministic
+    if: needs.deterministic.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      final_message: ${{ steps.codex.outputs.final-message }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Codex read-only supervision
+        id: codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: .github/codex/prompts/agent-loop-supervisor.md
+          output-file: codex-output.json
+          codex-args: '["--ephemeral", "--output-schema", ".github/codex/review-schema.json"]'
+          sandbox: read-only
+          allow-users: cesarmanuel8102
+      - uses: actions/upload-artifact@v4
+        with:
+          name: codex-supervisor-report
+          path: codex-output.json
+          if-no-files-found: error
+
+  publish:
+    needs: [deterministic, codex]
+    if: always() && github.event.pull_request.head.repo.full_name == github.repository && github.actor == 'cesarmanuel8102' && startsWith(github.head_ref, 'agent/pilot-')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Publish verdict and terminal labels
+        uses: actions/github-script@v7
+        env:
+          DETERMINISTIC_RESULT: ${{ needs.deterministic.result }}
+          CODEX_RESULT: ${{ needs.codex.result }}
+          CODEX_MESSAGE: ${{ needs.codex.outputs.final_message }}
+          OWNER_LOGIN: cesarmanuel8102
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const issue_number = context.payload.pull_request.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const known = ['loop:ci','loop:repairing','loop:ready-human-audit','loop:blocked','loop:failed','loop:token-exhausted'];
+            const current = await github.rest.issues.listLabelsOnIssue({owner, repo, issue_number});
+            for (const l of current.data) {
+              if (known.includes(l.name)) {
+                try { await github.rest.issues.removeLabel({owner, repo, issue_number, name:l.name}); } catch (_) {}
+              }
+            }
+            if (process.env.DETERMINISTIC_RESULT !== 'success') {
+              await github.rest.issues.addLabels({owner, repo, issue_number, labels:['loop:repairing']});
+              require('fs').writeFileSync('agent-loop-state-report.json', JSON.stringify({status:'REPAIRING',reason:'DETERMINISTIC_FAILURE',head_sha:process.env.HEAD_SHA},null,2));
+              return;
+            }
+            if (process.env.CODEX_RESULT !== 'success') {
+              await github.rest.issues.addLabels({owner, repo, issue_number, labels:['loop:blocked']});
+              require('fs').writeFileSync('agent-loop-state-report.json', JSON.stringify({status:'BLOCKED',reason:'CODEX_ACTION_FAILURE',head_sha:process.env.HEAD_SHA},null,2));
+              await github.rest.issues.createComment({owner, repo, issue_number,
+                body:`[AGENT-LOOP][BLOCKED][HEAD: ${process.env.HEAD_SHA}]\n\n@${process.env.OWNER_LOGIN} Codex action did not complete successfully. Inspect the codex job and secret configuration.`});
+              return;
+            }
+            let raw = process.env.CODEX_MESSAGE || '';
+            let parsed;
+            try {
+              raw = raw.replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,'').trim();
+              parsed = JSON.parse(raw);
+            } catch (e) {
+              await github.rest.issues.addLabels({owner, repo, issue_number, labels:['loop:blocked']});
+              require('fs').writeFileSync('agent-loop-state-report.json', JSON.stringify({status:'BLOCKED',reason:'INVALID_CODEX_JSON',head_sha:process.env.HEAD_SHA,raw:raw.slice(0,4000)},null,2));
+              await github.rest.issues.createComment({owner, repo, issue_number,
+                body:`[AGENT-LOOP][BLOCKED][HEAD: ${process.env.HEAD_SHA}]\n\n@${process.env.OWNER_LOGIN} Codex output was not valid schema JSON. See the workflow artifact.`});
+              return;
+            }
+            require('fs').writeFileSync('agent-loop-state-report.json', JSON.stringify({status:parsed.verdict,head_sha:process.env.HEAD_SHA,codex:parsed,deterministic:'PASS'},null,2));
+            if (parsed.verdict === 'PASS' && parsed.head_sha === process.env.HEAD_SHA) {
+              await github.rest.issues.addLabels({owner, repo, issue_number, labels:['loop:ready-human-audit']});
+              await github.rest.issues.createComment({owner, repo, issue_number,
+                body:`[AGENT-LOOP][READY_FOR_HUMAN_AUDIT][HEAD: ${process.env.HEAD_SHA}]\n\n@${process.env.OWNER_LOGIN} Kimi local gates, GitHub deterministic CI and Codex read-only supervision are PASS on the same HEAD. No merge was performed. Independent human reauditing is required.`});
+            } else if (parsed.verdict === 'CHANGES_REQUESTED') {
+              await github.rest.issues.addLabels({owner, repo, issue_number, labels:['loop:repairing']});
+            } else {
+              await github.rest.issues.addLabels({owner, repo, issue_number, labels:['loop:blocked']});
+              await github.rest.issues.createComment({owner, repo, issue_number,
+                body:`[AGENT-LOOP][BLOCKED][HEAD: ${process.env.HEAD_SHA}]\n\n@${process.env.OWNER_LOGIN} Codex returned BLOCKED. Human decision required.`});
+            }
+
+      - name: Upload aggregate loop state report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-loop-state-report
+          path: agent-loop-state-report.json
+          if-no-files-found: warn
+
