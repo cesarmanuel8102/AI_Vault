@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "worker_version": "1.5.0",
+  "platform": "Windows PowerShell 5.1",
+  "source_of_truth": "GitHub",
+  "executor": "OpenCode with ollama-cloud/kimi-k2.7-code",
+  "supervisor": "Codex GitHub Action read-only",
+  "human_final_authority": true,
+  "auto_merge": false,
+  "canonical_local_sync": false,
+  "hardening": {
+    "windows_cmd_resolution": true,
+    "dynamic_cli_flags": true,
+    "generation_workspaces": true,
+    "single_instance_lock": true,
+    "bounded_local_retries": true,
+    "mutually_exclusive_phase_labels": true,
+    "preflight_report": true,
+    "workspace_retention": true,
+    "final_local_same_head_report": true
+  }
+}
+
