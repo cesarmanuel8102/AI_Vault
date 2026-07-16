@@ -1,0 +1,54 @@
+name: Agent Loop Worker Contract
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - codex/own-capital-sustainable-return
+    paths:
+      - scripts/agent_loop/**
+      - tests/contract/test_agent_loop_worker_hardening_02.py
+      - tests/contract/test_agent_loop_worker_v153_regression.py
+      - tests/contract/test_agent_loop_worker_v153_base_advance.py
+      - .github/workflows/agent-loop-worker-contract.yml
+
+concurrency:
+  group: agent-loop-worker-contract-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  contract:
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      startsWith(github.head_ref, 'control-plane/')
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ['3.11']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: py_compile
+        run: |
+          python -m py_compile scripts/agent_loop/local_worker/agent_worker.py
+          python -m py_compile scripts/agent_loop/pilot_verify.py
+          python -m py_compile tests/contract/test_agent_loop_worker_hardening_02.py
+          python -m py_compile tests/contract/test_agent_loop_worker_v153_regression.py
+          python -m py_compile tests/contract/test_agent_loop_worker_v153_base_advance.py
+      - name: hardening contract
+        run: python tests/contract/test_agent_loop_worker_hardening_02.py
+      - name: v1.5.3 regression contract
+        run: python tests/contract/test_agent_loop_worker_v153_regression.py
+      - name: v1.5.3 base advance contract
+        run: python tests/contract/test_agent_loop_worker_v153_base_advance.py
+      - name: git diff check
+        run: git diff --check

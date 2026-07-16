@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 SPEC_RE = re.compile(r"<!--\s*AGENT_LOOP_SPEC\s*(\{.*?\})\s*AGENT_LOOP_SPEC\s*-->", re.S)
-WORKER_VERSION = "1.5.2"
+WORKER_VERSION = "1.5.3"
 PHASE_LABELS = {
     "agent:queued", "loop:executing", "loop:ci", "loop:repairing",
     "loop:ready-human-audit", "loop:blocked", "loop:failed",
@@ -29,12 +29,18 @@ REQUIRED_FORBIDDEN_PATHS = {
     "tmp_agent/brain_v9/core/session.py",
 }
 MODEL_SEED_PATHS: set[str] = set()
-PILOT_MARKER_TEXT = """# Agent Loop Pilot
-WORKER_VERSION=1.5.2
+_RUN_EVENT_CFG: dict | None = None
+_SENSITIVE_COMMAND_WORDS = {"auth", "token", "secret", "login", "password", "key"}
+PILOT_MARKER_TEMPLATE = """# Agent Loop Pilot
+WORKER_VERSION={worker_version}
+FRONT_ID={front_id}
 STATUS=PASS
 EXECUTOR=KIMI_OPENCODE_OLLAMA
 SUPERVISOR=CODEX_GITHUB_ACTION
 """
+
+def pilot_marker_text(front_id: str) -> str:
+    return PILOT_MARKER_TEMPLATE.format(worker_version=WORKER_VERSION, front_id=str(front_id))
 
 class CmdError(RuntimeError):
     def __init__(self, cmd, code, out):
@@ -52,17 +58,54 @@ def command_for_subprocess(args: list[str]) -> list[str]:
     resolved = shutil.which(values[0])
     if resolved:
         values[0] = resolved
-    if os.name == "nt" and Path(values[0]).suffix.lower() in {".cmd", ".bat"}:
+    suffix = os.path.splitext(values[0])[1].lower()
+    if os.name == "nt" and suffix in {".cmd", ".bat"}:
         comspec = os.environ.get("COMSPEC") or shutil.which("cmd.exe") or "cmd.exe"
         return [comspec, "/d", "/s", "/c", subprocess.list2cmdline(values)]
     return values
 
+def decode_process_output(data: bytes | str | None) -> tuple[str, str]:
+    if data is None:
+        return "", "none"
+    if isinstance(data, str):
+        return data, "text"
+    try:
+        return data.decode("utf-8"), "utf-8"
+    except UnicodeDecodeError:
+        return data.decode("utf-8", errors="replace"), "utf-8-replace"
+
+def completed_output(p) -> tuple[str, str]:
+    return decode_process_output(getattr(p, "stdout", b""))
+
+def command_identity(args: list[str]) -> str:
+    if not args:
+        return "unknown"
+    first = os.path.basename(str(args[0])).lower()
+    if first in {"git", "git.exe"}:
+        return "git"
+    if first in {"gh", "gh.exe"}:
+        return "gh"
+    if first.startswith("python"):
+        return "python"
+    if first in {"opencode", "opencode.cmd", "opencode.exe"}:
+        return "opencode"
+    if any(str(x).lower() in _SENSITIVE_COMMAND_WORDS for x in args[:3]):
+        return "sensitive-command"
+    return first or "unknown"
+
+def emit_subprocess_decoding_event(cfg: dict | None, args: list[str], mode: str) -> None:
+    if not cfg or mode != "utf-8-replace":
+        return
+    event(cfg, "subprocess_output_decoding_fallback", command=command_identity(args), decoding=mode)
+
 def run(args: list[str], cwd: Path | None = None, env: dict[str,str] | None = None, check=True, timeout=None) -> str:
-    p = subprocess.run(command_for_subprocess(args), cwd=str(cwd) if cwd else None, env=env, text=True,
+    p = subprocess.run(command_for_subprocess(args), cwd=str(cwd) if cwd else None, env=env, text=False,
                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
+    out, decoding = completed_output(p)
+    emit_subprocess_decoding_event(_RUN_EVENT_CFG, args, decoding)
     if check and p.returncode != 0:
-        raise CmdError(args, p.returncode, p.stdout)
-    return p.stdout
+        raise CmdError(args, p.returncode, out)
+    return out
 
 def gh_json(args: list[str]) -> Any:
     return json.loads(run(["gh", *args]))
@@ -97,8 +140,38 @@ def set_phase(repo: str, number: int, phase: str) -> None:
         raise ValueError(f"unknown phase label: {phase}")
     edit_labels(repo, number, add=[phase], remove=sorted(PHASE_LABELS - {phase}))
 
+def has_terminal_label(obj: dict) -> bool:
+    return bool(labels(obj) & TERMINAL_LABELS)
+
+def terminal_phase_from_labels(obj: dict) -> str | None:
+    labs = labels(obj)
+    for phase in ("loop:accepted", "loop:ready-human-audit", "loop:token-exhausted", "loop:failed", "loop:blocked"):
+        if phase in labs:
+            return phase
+    return None
+
+def state_is_terminal(st: dict) -> bool:
+    return str(st.get("status", "")) in TERMINAL_LABELS
+
 def comment(repo: str, number: int, body: str):
     run(["gh", "issue", "comment", str(number), "--repo", repo, "--body", body])
+
+def update_issue_body(repo: str, number: int, body: str) -> None:
+    run(["gh", "issue", "edit", str(number), "--repo", repo, "--body", body])
+
+def update_issue_spec_body(body: str, new_base_sha: str) -> str:
+    match = SPEC_RE.search(body or "")
+    if not match:
+        raise ValueError("AGENT_LOOP_SPEC missing")
+    spec = json.loads(match.group(1))
+    spec["expected_base_sha"] = new_base_sha
+    compact = json.dumps(spec, separators=(",", ":"), ensure_ascii=False)
+    return (body[:match.start()] + f"<!-- AGENT_LOOP_SPEC {compact} AGENT_LOOP_SPEC -->" + body[match.end():])
+
+def verify_commit_contains(cfg: dict, ancestor_sha: str, descendant_sha: str) -> None:
+    cmp = gh_json(["api", f"repos/{cfg['repo']}/compare/{ancestor_sha}...{descendant_sha}"])
+    if cmp.get("status") not in {"ahead", "identical"}:
+        raise ValueError("approved new base does not contain approved control-plane commit")
 
 def _normalize_repo_path(value: str) -> str:
     norm = str(value).replace("\\", "/").strip().lstrip("./")
@@ -214,7 +287,7 @@ Work only in the detached model workspace. It contains no Git metadata and no cr
 Do not invoke a shell, commit, push, use gh, merge, or access external directories.
 Objective: {spec['objective']}
 Allowed output path: docs/agent_loop/pilot/PILOT_MARKER.md
-Pilot requirement: write that file with exactly this UTF-8 text:\n---\n{PILOT_MARKER_TEXT}---
+Pilot requirement: write that file with exactly this UTF-8 text:\n---\n{pilot_marker_text(spec["front_id"])}---
 Do not create or edit EXECUTOR_REPORT.json; the trusted worker writes it after validation.
 Do not change the local agent policy or create any other file. This is cycle {cycle}.
 """
@@ -269,7 +342,7 @@ def prepare_model_workspace(repo_dir: Path, spec: dict, cycle: int) -> tuple[Pat
         raise RuntimeError("MODEL_WORKSPACE_GIT_METADATA_PRESENT")
     return model_dir, seed_hashes
 
-def audit_and_sync_model_workspace(model_dir: Path, repo_dir: Path, seed_hashes: dict[str, str]) -> list[str]:
+def audit_and_sync_model_workspace(model_dir: Path, repo_dir: Path, seed_hashes: dict[str, str], spec: dict | None = None) -> list[str]:
     """Reject metadata/extra writes, verify exact output, then copy only allowlisted output."""
     if (model_dir / ".git").exists():
         raise RuntimeError("MODEL_WORKSPACE_GIT_METADATA_DENIED")
@@ -285,7 +358,8 @@ def audit_and_sync_model_workspace(model_dir: Path, repo_dir: Path, seed_hashes:
             raise RuntimeError(f"MODEL_SEED_MODIFIED:{rel}")
     marker = model_dir / marker_rel
     content = marker.read_text(encoding="utf-8-sig").replace("\r\n", "\n")
-    if content != PILOT_MARKER_TEXT:
+    expected_front = (spec or {}).get("front_id", "PILOT-KIMI-CODEX-20260716-091529")
+    if content != pilot_marker_text(expected_front):
         raise RuntimeError("PILOT_MARKER_CONTENT_MISMATCH")
     destination = repo_dir / marker_rel
     current = repo_dir
@@ -310,21 +384,25 @@ def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=No
         cmd.append("--auto")
     if session_id: cmd += ["--session", session_id]
     cmd.append(make_prompt(spec, cycle, feedback))
-    p = subprocess.run(command_for_subprocess(cmd), cwd=str(model_dir), env=opencode_env(cfg, model_dir), text=True,
+    p = subprocess.run(command_for_subprocess(cmd), cwd=str(model_dir), env=opencode_env(cfg, model_dir), text=False,
                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    log.write_text(p.stdout, encoding="utf-8")
+    out, decoding = completed_output(p)
+    log.write_text(out, encoding="utf-8")
+    emit_subprocess_decoding_event(cfg, ["opencode"], decoding)
     if p.returncode != 0:
-        low = p.stdout.lower()
+        low = out.lower()
         if "context" in low or "token" in low or "rate limit" in low:
-            raise RuntimeError("TOKEN_EXHAUSTED:" + p.stdout[-3000:])
-        raise CmdError(cmd, p.returncode, p.stdout)
+            raise RuntimeError("TOKEN_EXHAUSTED:" + out[-3000:])
+        raise CmdError(cmd, p.returncode, out)
     return log, discover_session_id(model_dir, title)
 
 def run_profile(cfg, spec, repo_dir) -> tuple[bool,str]:
     cmd = [str(x) for x in cfg["test_profiles"][spec["test_profile"]]]
-    p = subprocess.run(command_for_subprocess(cmd), cwd=str(repo_dir), text=True,
+    p = subprocess.run(command_for_subprocess(cmd), cwd=str(repo_dir), text=False,
                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    return p.returncode == 0, p.stdout
+    out, _ = completed_output(p)
+    emit_subprocess_decoding_event(cfg, cmd, _)
+    return p.returncode == 0, out
 
 def write_executor_report(cfg, spec, repo_dir, issue_no, cycle, changes, test_ok, test_out, log_path):
     p = repo_dir / "docs/agent_loop/pilot/EXECUTOR_REPORT.json"
@@ -353,8 +431,10 @@ def run_preflight(cfg: dict) -> dict:
     for name in ("git", "gh", "python", "opencode"):
         resolved = shutil.which(name) or shutil.which(name + ".cmd") or shutil.which(name + ".exe")
         checks[name] = {"ok": bool(resolved), "path": resolved}
-    gh_status = subprocess.run(command_for_subprocess(["gh", "auth", "status"]), text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    checks["gh_auth"] = {"ok": gh_status.returncode == 0, "tail": gh_status.stdout[-1000:]}
+    gh_status = subprocess.run(command_for_subprocess(["gh", "auth", "status"]), text=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    gh_out, _ = completed_output(gh_status)
+    emit_subprocess_decoding_event(cfg, ["gh", "auth", "status"], _)
+    checks["gh_auth"] = {"ok": gh_status.returncode == 0, "tail": gh_out[-1000:]}
     models = run(["opencode", "models"], check=False)
     checks["opencode_model"] = {"ok": cfg["opencode_model"] in models, "model": cfg["opencode_model"]}
     ok = all(bool(v.get("ok")) for v in checks.values())
@@ -488,8 +568,10 @@ def latest_feedback(repo: str, pr_no: int, spec: dict, head_sha: str, install_ro
     run_id = str(run_item["databaseId"])
     temp = Path(tempfile.mkdtemp(prefix="codex-feedback-", dir=str(Path(install_root)/"reports")))
     try:
-        p = subprocess.run(["gh","run","download",run_id,"--repo",repo,"--name","codex-supervisor-report","--dir",str(temp)],
-                           text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+        p = subprocess.run(command_for_subprocess(["gh","run","download",run_id,"--repo",repo,"--name","codex-supervisor-report","--dir",str(temp)]),
+                           text=False,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+        _, decoding = completed_output(p)
+        emit_subprocess_decoding_event({"install_root": install_root}, ["gh", "run", "download"], decoding)
         if p.returncode == 0:
             candidates=list(temp.rglob("codex-output.json"))
             if candidates:
@@ -524,7 +606,7 @@ def execute_initial(cfg, issue, spec, state_path):
         log, discovered_session = run_kimi(cfg,spec,model_dir,n,cycle,feedback,session_id)
         if discovered_session: session_id = discovered_session
         try:
-            audit_and_sync_model_workspace(model_dir, repo_dir, seed_hashes)
+            audit_and_sync_model_workspace(model_dir, repo_dir, seed_hashes, spec)
         except Exception as exc:
             feedback = str(exc)
             event(cfg,"kimi_cycle_repair_needed",issue=n,cycle=cycle,bad=[str(exc)],test_ok=False)
@@ -556,7 +638,7 @@ def execute_initial(cfg, issue, spec, state_path):
 
 def process_state(cfg, state_path):
     st=load_json(state_path); issue=st["issue_number"]; spec=st["spec"]
-    if st.get("status") in TERMINAL_LABELS:
+    if state_is_terminal(st):
         return
     if not st.get("pr_number"):
         issue_obj=gh_json(["issue","view",str(issue),"--repo",cfg["repo"],"--json","number,title,body,author,labels,url"])
@@ -578,8 +660,15 @@ def process_state(cfg, state_path):
         # A new head may already be under review; avoid duplicate repair.
         st["last_head_sha"]=pr["headRefOid"]; save_json(state_path,st); return
     if st["cycles"] >= int(spec["max_kimi_cycles"]):
+        st["status"] = "loop:token-exhausted"
+        st["updated_utc"] = utc()
         set_phase(cfg["repo"], prn, "loop:token-exhausted")
-        comment(cfg["repo"],prn,f"[AGENT-LOOP][TOKEN_EXHAUSTED]\n\n@{cfg['owner']} Maximum Kimi cycles reached. Human audit required.")
+        set_phase(cfg["repo"], issue, "loop:token-exhausted")
+        if not st.get("terminal_notified"):
+            comment(cfg["repo"],prn,f"[AGENT-LOOP][TOKEN_EXHAUSTED]\n\n@{cfg['owner']} Maximum Kimi cycles reached. Human audit required.")
+            st["terminal_notified"] = True
+        save_json(state_path, st)
+        event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted", error="max cycles reached")
         return
     feedback=latest_feedback(cfg["repo"],prn,spec,pr["headRefOid"],cfg["install_root"])
     repo_dir=Path(st["repo_dir"])
@@ -590,7 +679,7 @@ def process_state(cfg, state_path):
     model_dir, seed_hashes = prepare_model_workspace(repo_dir, spec, cycle)
     log, discovered_session=run_kimi(cfg,spec,model_dir,issue,cycle,feedback,st.get("opencode_session_id"))
     if discovered_session: st["opencode_session_id"] = discovered_session
-    audit_and_sync_model_workspace(model_dir, repo_dir, seed_hashes)
+    audit_and_sync_model_workspace(model_dir, repo_dir, seed_hashes, spec)
     changes=changed_files(repo_dir,spec["expected_base_sha"])
     bad=[p for p in changes if not path_allowed(p,spec["allowed_paths"],spec["forbidden_paths"])]
     ok,out=run_profile(cfg,spec,repo_dir)
@@ -622,13 +711,27 @@ def process_once(cfg):
     for p in state_dir.glob("issue-*.json"):
         try:
             s=load_json(p)
-            if not str(s.get("status","")).startswith("loop:"): nonterm.append(p)
+            if not state_is_terminal(s): nonterm.append(p)
         except Exception: pass
     if nonterm: return
     issues=gh_json(["issue","list","--repo",cfg["repo"],"--state","open","--label","agent:queued","--limit","10",
                     "--json","number,title,body,author,labels,url"])
     for issue in issues:
+        if has_terminal_label(issue):
+            phase = terminal_phase_from_labels(issue)
+            event(cfg, "queued_terminal_issue_skipped", issue=issue["number"], phase=phase)
+            continue
         state_path=state_dir/f"issue-{issue['number']}.json"
+        if state_path.exists():
+            try:
+                existing = load_json(state_path)
+                if state_is_terminal(existing):
+                    phase = str(existing.get("status"))
+                    set_phase(cfg["repo"], issue["number"], phase)
+                    event(cfg, "terminal_state_preserved", issue=issue["number"], phase=phase)
+                    continue
+            except Exception:
+                pass
         spec = None
         try:
             spec=parse_spec(issue,cfg)
@@ -642,6 +745,195 @@ def process_once(cfg):
             comment(cfg["repo"],issue["number"],f"[AGENT-LOOP][BLOCKED]\n\n@{cfg['owner']} {msg[-5000:]}")
             event(cfg,"issue_blocked",issue=issue["number"],error=msg,trace=traceback.format_exc()[-5000:])
         break
+
+def trusted_resume_existing_pr(
+    cfg: dict,
+    issue_number: int,
+    expected_front: str,
+    expected_base_sha: str,
+    expected_pr_number: int,
+    expected_work_branch: str,
+    expected_pr_head: str,
+) -> Path:
+    if int(issue_number) != 5 or int(expected_pr_number) != 6:
+        raise ValueError("trusted resume is restricted to Issue #5 and PR #6")
+    state_path = Path(cfg["install_root"]) / "state" / f"issue-{issue_number}.json"
+    if not state_path.exists():
+        raise FileNotFoundError(str(state_path))
+    st = load_json(state_path)
+    spec = st.get("spec") or {}
+    if st.get("front") != expected_front or spec.get("front_id") != expected_front:
+        raise ValueError("front mismatch")
+    if spec.get("expected_base_sha") != expected_base_sha:
+        raise ValueError("base sha mismatch")
+    if spec.get("work_branch") != expected_work_branch:
+        raise ValueError("work branch mismatch")
+    issue = gh_json(["issue", "view", str(issue_number), "--repo", cfg["repo"],
+                     "--json", "number,state,body,author,labels,url"])
+    issue_spec = parse_spec(issue, cfg)
+    if issue.get("number") != int(issue_number) or issue_spec.get("front_id") != expected_front:
+        raise ValueError("remote issue/front mismatch")
+    if issue_spec.get("expected_base_sha") != expected_base_sha:
+        raise ValueError("remote issue base mismatch")
+    if issue_spec.get("work_branch") != expected_work_branch:
+        raise ValueError("remote issue work branch mismatch")
+    if str(issue.get("state", "")).upper() != "OPEN":
+        raise ValueError("issue is not open")
+    pr = gh_json(["pr", "view", str(expected_pr_number), "--repo", cfg["repo"],
+                  "--json", "number,url,state,isDraft,headRefName,headRefOid,baseRefName,labels"])
+    if pr.get("number") != int(expected_pr_number):
+        raise ValueError("PR number mismatch")
+    if str(pr.get("state", "")).upper() != "OPEN":
+        raise ValueError("PR is not open")
+    if pr.get("headRefName") != expected_work_branch:
+        raise ValueError("PR branch differs")
+    if pr.get("headRefOid") != expected_pr_head:
+        raise ValueError("PR HEAD moved")
+    if pr.get("baseRefName") != spec.get("base_branch"):
+        raise ValueError("PR base branch differs")
+    ref = gh_json(["api", f"repos/{cfg['repo']}/git/ref/heads/{spec['base_branch']}"])
+    current_base = ((ref.get("object") or {}).get("sha") or "").strip()
+    if current_base != expected_base_sha:
+        raise ValueError(f"base moved: expected {expected_base_sha} actual {current_base}")
+    backup = state_path.with_suffix(state_path.suffix + ".bak-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"))
+    shutil.copy2(state_path, backup)
+    max_cycles = int(spec.get("max_kimi_cycles", cfg.get("max_kimi_cycles_default", 1)))
+    st["pr_number"] = int(expected_pr_number)
+    st["pr_url"] = pr.get("url") or st.get("pr_url")
+    st["last_head_sha"] = expected_pr_head
+    st["cycles"] = max(0, max_cycles - 1)
+    st["local_retry_count"] = 0
+    st["terminal_notified"] = False
+    st["status"] = "WAITING_GITHUB"
+    st["trusted_existing_pr_resume_utc"] = utc()
+    st["updated_utc"] = utc()
+    save_json(state_path, st)
+    set_phase(cfg["repo"], issue_number, "loop:repairing")
+    set_phase(cfg["repo"], int(expected_pr_number), "loop:repairing")
+    event(cfg, "trusted_existing_pr_resume", issue=issue_number, pr=expected_pr_number,
+          front=expected_front, branch=expected_work_branch, head=expected_pr_head,
+          state_backup=str(backup))
+    return backup
+
+def trusted_base_advance_existing_pr(
+    cfg: dict,
+    issue_number: int,
+    expected_front: str,
+    expected_old_base_sha: str,
+    approved_new_base_sha: str,
+    approved_control_plane_commit: str,
+    expected_pr_number: int,
+    expected_work_branch: str,
+    expected_old_pr_head: str,
+) -> Path:
+    if int(issue_number) != 5 or int(expected_pr_number) != 6:
+        raise ValueError("trusted base advance is restricted to Issue #5 and PR #6")
+    verify_commit_contains(cfg, approved_control_plane_commit, approved_new_base_sha)
+    state_path = Path(cfg["install_root"]) / "state" / f"issue-{issue_number}.json"
+    if not state_path.exists():
+        raise FileNotFoundError(str(state_path))
+    st = load_json(state_path)
+    spec = st.get("spec") or {}
+    if st.get("front") != expected_front or spec.get("front_id") != expected_front:
+        raise ValueError("front mismatch")
+    if spec.get("expected_base_sha") != expected_old_base_sha:
+        raise ValueError("old base mismatch")
+    if spec.get("work_branch") != expected_work_branch:
+        raise ValueError("work branch mismatch")
+    issue = gh_json(["issue", "view", str(issue_number), "--repo", cfg["repo"],
+                     "--json", "number,state,body,author,labels,url"])
+    issue_spec = parse_spec(issue, cfg)
+    original_issue_body = issue.get("body") or ""
+    if issue.get("number") != int(issue_number) or issue_spec.get("front_id") != expected_front:
+        raise ValueError("remote issue/front mismatch")
+    if issue_spec.get("expected_base_sha") != expected_old_base_sha:
+        raise ValueError("remote issue old base mismatch")
+    if issue_spec.get("work_branch") != expected_work_branch:
+        raise ValueError("remote issue work branch mismatch")
+    if str(issue.get("state", "")).upper() != "OPEN":
+        raise ValueError("issue is not open")
+    pr = gh_json(["pr", "view", str(expected_pr_number), "--repo", cfg["repo"],
+                  "--json", "number,url,state,isDraft,headRefName,headRefOid,baseRefName,labels"])
+    if pr.get("number") != int(expected_pr_number):
+        raise ValueError("PR number mismatch")
+    if str(pr.get("state", "")).upper() != "OPEN":
+        raise ValueError("PR is not open")
+    if pr.get("isDraft") is not True:
+        raise ValueError("PR is not draft")
+    if pr.get("headRefName") != expected_work_branch:
+        raise ValueError("PR branch differs")
+    if pr.get("headRefOid") != expected_old_pr_head:
+        raise ValueError("old PR HEAD mismatch")
+    if pr.get("baseRefName") != spec.get("base_branch"):
+        raise ValueError("PR base branch differs")
+    ref = gh_json(["api", f"repos/{cfg['repo']}/git/ref/heads/{spec['base_branch']}"])
+    current_base = ((ref.get("object") or {}).get("sha") or "").strip()
+    if current_base != approved_new_base_sha:
+        raise ValueError(f"new base mismatch: expected {approved_new_base_sha} actual {current_base}")
+    reports = Path(cfg["install_root"]) / "reports"
+    reports.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    state_backup = state_path.with_suffix(state_path.suffix + ".bak-base-advance-" + stamp)
+    issue_body_backup = reports / f"issue-{issue_number}-body.bak-base-advance-{stamp}.md"
+    old_head_backup = reports / f"pr-{expected_pr_number}-old-head.bak-base-advance-{stamp}.txt"
+    shutil.copy2(state_path, state_backup)
+    issue_body_backup.write_text(original_issue_body, encoding="utf-8")
+    old_head_backup.write_text(expected_old_pr_head + "\n", encoding="utf-8")
+    repo_dir = Path(st.get("repo_dir") or "")
+    if not repo_dir.exists():
+        raise ValueError("state repo_dir missing")
+    new_head = None
+    issue_updated = False
+    branch_pushed = False
+    try:
+        run(["git", "fetch", "origin", spec["base_branch"], expected_work_branch], cwd=repo_dir)
+        run(["git", "checkout", expected_work_branch], cwd=repo_dir)
+        run(["git", "reset", "--hard", expected_old_pr_head], cwd=repo_dir)
+        run(["git", "config", "user.name", "AI Vault Kimi Worker"], cwd=repo_dir)
+        run(["git", "config", "user.email", "ai-vault-worker@users.noreply.github.com"], cwd=repo_dir)
+        run(["git", "merge", "--no-edit", approved_new_base_sha], cwd=repo_dir)
+        new_head = run(["git", "rev-parse", "HEAD"], cwd=repo_dir).strip()
+        diff_names = sorted(x for x in run(["git", "diff", "--name-only", approved_new_base_sha, new_head], cwd=repo_dir).splitlines() if x.strip())
+        expected = sorted(PROFILE_ALLOWED_PATHS["pilot"])
+        if diff_names != expected:
+            raise ValueError(f"pilot diff after base advance is not exact: {diff_names}")
+        run(["git", "push", "origin", f"HEAD:{expected_work_branch}"], cwd=repo_dir)
+        branch_pushed = True
+        new_body = update_issue_spec_body(original_issue_body, approved_new_base_sha)
+        update_issue_body(cfg["repo"], issue_number, new_body)
+        issue_updated = True
+        max_cycles = int(spec.get("max_kimi_cycles", cfg.get("max_kimi_cycles_default", 1)))
+        spec["expected_base_sha"] = approved_new_base_sha
+        st["spec"] = spec
+        st["pr_number"] = int(expected_pr_number)
+        st["pr_url"] = pr.get("url") or st.get("pr_url")
+        st["last_head_sha"] = new_head
+        st["cycles"] = max(0, max_cycles - 1)
+        st["local_retry_count"] = 0
+        st["terminal_notified"] = False
+        st["status"] = "WAITING_GITHUB"
+        st["trusted_base_advance_utc"] = utc()
+        st["updated_utc"] = utc()
+        save_json(state_path, st)
+        set_phase(cfg["repo"], issue_number, "loop:repairing")
+        set_phase(cfg["repo"], int(expected_pr_number), "loop:repairing")
+        event(cfg, "trusted_base_advance_existing_pr", issue=issue_number, pr=expected_pr_number,
+              front=expected_front, old_base=expected_old_base_sha, new_base=approved_new_base_sha,
+              old_head=expected_old_pr_head, new_head=new_head, state_backup=str(state_backup),
+              issue_body_backup=str(issue_body_backup), old_head_backup=str(old_head_backup))
+        return state_backup
+    except Exception:
+        save_json(state_path, load_json(state_backup))
+        if issue_updated:
+            try: update_issue_body(cfg["repo"], issue_number, original_issue_body)
+            except Exception: pass
+        if branch_pushed and new_head:
+            try:
+                run(["git", "push", f"--force-with-lease=refs/heads/{expected_work_branch}:{new_head}",
+                     "origin", f"{expected_old_pr_head}:refs/heads/{expected_work_branch}"], cwd=repo_dir)
+            except Exception:
+                pass
+        raise
 
 class SingleInstanceLock:
     def __init__(self, path: Path):
@@ -673,8 +965,31 @@ class SingleInstanceLock:
             if self.handle: self.handle.close()
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--once",action="store_true")
+    ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--once",action="store_true"); ap.add_argument("--trusted-resume-existing-pr", type=int); ap.add_argument("--trusted-base-advance-existing-pr", type=int); ap.add_argument("--expected-front"); ap.add_argument("--expected-base-sha"); ap.add_argument("--expected-old-base-sha"); ap.add_argument("--approved-new-base-sha"); ap.add_argument("--approved-control-plane-commit"); ap.add_argument("--expected-pr-number", type=int); ap.add_argument("--expected-work-branch"); ap.add_argument("--expected-pr-head"); ap.add_argument("--expected-old-pr-head")
     args=ap.parse_args(); cfg=load_json(Path(args.config)); Path(cfg["install_root"]).mkdir(parents=True,exist_ok=True)
+    global _RUN_EVENT_CFG
+    _RUN_EVENT_CFG = cfg
+    if args.trusted_base_advance_existing_pr is not None:
+        if not all([args.expected_front, args.expected_old_base_sha, args.approved_new_base_sha,
+                    args.approved_control_plane_commit, args.expected_pr_number,
+                    args.expected_work_branch, args.expected_old_pr_head]):
+            raise SystemExit("trusted base advance requires expected front, old base, approved new base, approved control-plane commit, PR number, branch, and old PR head")
+        backup = trusted_base_advance_existing_pr(cfg, args.trusted_base_advance_existing_pr,
+                                                  args.expected_front, args.expected_old_base_sha,
+                                                  args.approved_new_base_sha, args.approved_control_plane_commit,
+                                                  args.expected_pr_number, args.expected_work_branch,
+                                                  args.expected_old_pr_head)
+        print(json.dumps({"status":"BASE_ADVANCED_EXISTING_PR", "backup": str(backup)}, indent=2))
+        return
+    if args.trusted_resume_existing_pr is not None:
+        if not all([args.expected_front, args.expected_base_sha, args.expected_pr_number,
+                    args.expected_work_branch, args.expected_pr_head]):
+            raise SystemExit("trusted existing-PR resume requires expected front, base, PR number, branch, and PR head")
+        backup = trusted_resume_existing_pr(cfg, args.trusted_resume_existing_pr, args.expected_front,
+                                            args.expected_base_sha, args.expected_pr_number,
+                                            args.expected_work_branch, args.expected_pr_head)
+        print(json.dumps({"status":"RESUMED_EXISTING_PR", "backup": str(backup)}, indent=2))
+        return
     with SingleInstanceLock(Path(cfg["install_root"])/"state"/"worker.lock"):
         run_preflight(cfg)
         cleanup_stale_workspaces(cfg)
