@@ -7,13 +7,27 @@ from pathlib import Path
 from typing import Any
 
 SPEC_RE = re.compile(r"<!--\s*AGENT_LOOP_SPEC\s*(\{.*?\})\s*AGENT_LOOP_SPEC\s*-->", re.S)
-WORKER_VERSION = "1.5.0"
+WORKER_VERSION = "1.5.1"
 PHASE_LABELS = {
     "agent:queued", "loop:executing", "loop:ci", "loop:repairing",
     "loop:ready-human-audit", "loop:blocked", "loop:failed",
     "loop:token-exhausted", "loop:accepted"
 }
 TERMINAL_LABELS = {"loop:ready-human-audit", "loop:blocked", "loop:failed", "loop:token-exhausted", "loop:accepted"}
+PROFILE_ALLOWED_PATHS = {
+    "pilot": {
+        "docs/agent_loop/pilot/PILOT_MARKER.md",
+        "docs/agent_loop/pilot/EXECUTOR_REPORT.json",
+    }
+}
+REQUIRED_FORBIDDEN_PATHS = {
+    "memory/semantic/",
+    "memory/rollback",
+    "tmp_agent/state/",
+    "tmp_agent/brain_v9/trading/",
+    "financial_autonomy/",
+    "tmp_agent/brain_v9/core/session.py",
+}
 
 class CmdError(RuntimeError):
     def __init__(self, cmd, code, out):
@@ -79,22 +93,57 @@ def set_phase(repo: str, number: int, phase: str) -> None:
 def comment(repo: str, number: int, body: str):
     run(["gh", "issue", "comment", str(number), "--repo", repo, "--body", body])
 
+def _normalize_repo_path(value: str) -> str:
+    norm = str(value).replace("\\", "/").strip().lstrip("./")
+    if not norm or norm.startswith("/") or re.match(r"^[A-Za-z]:", norm):
+        raise ValueError(f"invalid repository path: {value!r}")
+    parts = [p for p in norm.split("/") if p]
+    if any(p == ".." for p in parts):
+        raise ValueError(f"path traversal is not allowed: {value!r}")
+    return "/".join(parts)
+
 def parse_spec(issue: dict, cfg: dict) -> dict:
     author = (issue.get("author") or {}).get("login")
     if author != cfg["owner"]:
         raise ValueError(f"untrusted issue author: {author}")
     m = SPEC_RE.search(issue.get("body") or "")
-    if not m: raise ValueError("AGENT_LOOP_SPEC missing")
+    if not m:
+        raise ValueError("AGENT_LOOP_SPEC missing")
     spec = json.loads(m.group(1))
     required = ["schema_version","front_id","repo","owner","base_branch","expected_base_sha",
                 "work_branch","objective","test_profile","max_kimi_cycles","allowed_paths","forbidden_paths"]
     missing = [k for k in required if k not in spec]
-    if missing: raise ValueError(f"missing fields: {missing}")
-    if spec["repo"] != cfg["repo"] or spec["owner"] != cfg["owner"]: raise ValueError("repo/owner mismatch")
-    if spec["base_branch"] != cfg["base_branch"]: raise ValueError("base branch mismatch")
-    if not spec["work_branch"].startswith("agent/pilot-"): raise ValueError("pilot worker only accepts agent/pilot-* branches")
-    if spec["test_profile"] not in cfg["test_profiles"]: raise ValueError("unknown test profile")
-    if not (1 <= int(spec["max_kimi_cycles"]) <= int(cfg["max_kimi_cycles_default"])): raise ValueError("invalid max cycles")
+    if missing:
+        raise ValueError(f"missing fields: {missing}")
+    if spec["schema_version"] != 1:
+        raise ValueError("unsupported schema_version")
+    if not re.fullmatch(r"[A-Z0-9][A-Z0-9._-]{5,127}", str(spec["front_id"])):
+        raise ValueError("invalid front_id")
+    if spec["repo"] != cfg["repo"] or spec["owner"] != cfg["owner"]:
+        raise ValueError("repo/owner mismatch")
+    if spec["base_branch"] != cfg["base_branch"]:
+        raise ValueError("base branch mismatch")
+    if not re.fullmatch(r"[0-9a-fA-F]{40}", str(spec["expected_base_sha"])):
+        raise ValueError("expected_base_sha must be a full 40-character commit SHA")
+    if not spec["work_branch"].startswith("agent/pilot-"):
+        raise ValueError("pilot worker only accepts agent/pilot-* branches")
+    profile = str(spec["test_profile"])
+    if profile not in cfg["test_profiles"] or profile not in PROFILE_ALLOWED_PATHS:
+        raise ValueError("unknown test profile")
+    if not (1 <= int(spec["max_kimi_cycles"]) <= int(cfg["max_kimi_cycles_default"])):
+        raise ValueError("invalid max cycles")
+    if not isinstance(spec["allowed_paths"], list) or not all(isinstance(x, str) for x in spec["allowed_paths"]):
+        raise ValueError("allowed_paths must be a string list")
+    if not isinstance(spec["forbidden_paths"], list) or not all(isinstance(x, str) for x in spec["forbidden_paths"]):
+        raise ValueError("forbidden_paths must be a string list")
+    allowed = {_normalize_repo_path(x) for x in spec["allowed_paths"]}
+    expected_allowed = PROFILE_ALLOWED_PATHS[profile]
+    if allowed != expected_allowed:
+        raise ValueError(f"allowed_paths do not match trusted profile {profile}")
+    forbidden = {str(x).replace("\\", "/").strip().lstrip("./") for x in spec["forbidden_paths"]}
+    if not REQUIRED_FORBIDDEN_PATHS.issubset(forbidden):
+        raise ValueError("required forbidden paths are missing")
+    spec["allowed_paths"] = sorted(allowed)
     return spec
 
 def path_allowed(path: str, allowed: list[str], forbidden: list[str]) -> bool:
@@ -116,7 +165,7 @@ def opencode_env(cfg: dict, repo_dir: Path) -> dict[str,str]:
     conf = {
         "$schema":"https://opencode.ai/config.json",
         "model":model,
-        "permission":{"external_directory":"deny","webfetch":"deny","websearch":"deny"}
+        "permission":{"external_directory":"deny","webfetch":"deny","websearch":"deny","bash":"deny","task":"deny","question":"deny"}
     }
     env = os.environ.copy()
     # Never expose GitHub/OpenAI credentials to OpenCode.
@@ -148,7 +197,7 @@ Allowed paths: {json.dumps(spec['allowed_paths'])}
 Forbidden paths: {json.dumps(spec['forbidden_paths'])}
 Pilot requirement: create docs/agent_loop/pilot/PILOT_MARKER.md with exactly this UTF-8 text:\n---\n{exact}---
 Do not create or edit EXECUTOR_REPORT.json; the trusted worker writes it after validation.
-Do not change any other file. Inspect git diff before finishing. This is cycle {cycle}.
+Do not change any other file. Do not invoke a shell; the trusted worker performs diff inspection and tests. This is cycle {cycle}.
 """
     if feedback:
         base += f"\nRepair only these verified failures, then recheck the diff:\n{feedback[:6000]}\n"
@@ -190,8 +239,9 @@ def run_kimi(cfg, spec, repo_dir, issue_no, cycle, feedback=None, session_id=Non
     return log, discover_session_id(repo_dir, title)
 
 def run_profile(cfg, spec, repo_dir) -> tuple[bool,str]:
-    cmd = cfg["test_profiles"][spec["test_profile"]]
-    p = subprocess.run(cmd, cwd=str(repo_dir), text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    cmd = [str(x) for x in cfg["test_profiles"][spec["test_profile"]]]
+    p = subprocess.run(command_for_subprocess(cmd), cwd=str(repo_dir), text=True,
+                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     return p.returncode == 0, p.stdout
 
 def write_executor_report(cfg, spec, repo_dir, issue_no, cycle, changes, test_ok, test_out, log_path):
@@ -200,7 +250,7 @@ def write_executor_report(cfg, spec, repo_dir, issue_no, cycle, changes, test_ok
     data = {
         "schema_version":1,"worker_version":WORKER_VERSION,"front_id":spec["front_id"],"issue_number":issue_no,
         "cycle":cycle,"executor":"Kimi via OpenCode/Ollama","model":cfg["opencode_model"],
-        "base_sha":spec["expected_base_sha"],"changed_files":changes,
+        "base_sha":spec["expected_base_sha"],"changed_files":sorted(set(changes) | {"docs/agent_loop/pilot/EXECUTOR_REPORT.json"}),
         "local_test_profile":spec["test_profile"],"local_test_passed":test_ok,
         "local_test_tail":test_out[-3000:],"opencode_log_local":str(log_path),
         "generated_utc":utc(),"merge_performed":False,"canonical_local_sync":False
@@ -427,9 +477,11 @@ def process_state(cfg, state_path):
     pr=gh_json(["pr","view",str(prn),"--repo",cfg["repo"],"--json","number,url,headRefOid,labels,state"])
     labs=labels(pr)
     if labs & TERMINAL_LABELS:
-        st["status"] = sorted(labs & TERMINAL_LABELS)[0]; st["updated_utc"]=utc(); save_json(state_path,st)
         phase = next((x for x in ("loop:accepted", "loop:ready-human-audit", "loop:token-exhausted", "loop:failed", "loop:blocked") if x in labs), None)
         if phase:
+            st["status"] = phase
+            st["updated_utc"] = utc()
+            save_json(state_path, st)
             set_phase(cfg["repo"], issue, phase)
         return
     if "loop:repairing" not in labs: return
@@ -486,6 +538,7 @@ def process_once(cfg):
                     "--json","number,title,body,author,labels,url"])
     for issue in issues:
         state_path=state_dir/f"issue-{issue['number']}.json"
+        spec = None
         try:
             spec=parse_spec(issue,cfg)
             save_json(state_path,{"issue_number":issue["number"],"front":spec["front_id"],"spec":spec,"status":"LOCAL_EXECUTION","updated_utc":utc()})
@@ -494,7 +547,7 @@ def process_once(cfg):
             msg=str(e)
             label="loop:token-exhausted" if ("TOKEN_EXHAUSTED" in msg or "MAX_CYCLES" in msg) else "loop:blocked"
             set_phase(cfg["repo"], issue["number"], label)
-            save_json(state_path,{"issue_number":issue["number"],"front":spec.get("front_id") if 'spec' in locals() else None,"spec":spec if 'spec' in locals() else {},"status":label,"worker_version":WORKER_VERSION,"error":msg[-5000:],"updated_utc":utc()})
+            save_json(state_path,{"issue_number":issue["number"],"front":spec.get("front_id") if isinstance(spec, dict) else None,"spec":spec if isinstance(spec, dict) else {},"status":label,"worker_version":WORKER_VERSION,"error":msg[-5000:],"updated_utc":utc()})
             comment(cfg["repo"],issue["number"],f"[AGENT-LOOP][BLOCKED]\n\n@{cfg['owner']} {msg[-5000:]}")
             event(cfg,"issue_blocked",issue=issue["number"],error=msg,trace=traceback.format_exc()[-5000:])
         break
@@ -541,4 +594,3 @@ def main():
             if args.once: break
             time.sleep(int(cfg["poll_seconds"]))
 if __name__ == "__main__": main()
-

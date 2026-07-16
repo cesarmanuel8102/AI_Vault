@@ -11,9 +11,9 @@ Pilot acceptance criteria:
    STATUS=PASS
    EXECUTOR=KIMI_OPENCODE_OLLAMA
    SUPERVISOR=CODEX_GITHUB_ACTION
-3. EXECUTOR_REPORT.json must be valid JSON, identify Kimi/OpenCode/Ollama, report local tests passed, declare worker_version >= 1.5.0, no merge and no canonical-local synchronization.
+3. EXECUTOR_REPORT.json must be valid JSON, identify Kimi/OpenCode/Ollama, report local tests passed, declare worker_version >= 1.5.1, no merge and no canonical-local synchronization.
 4. No runtime, workflow, memory, FAISS, state, trading, QC, IBKR, financial or security behavior may change.
-5. Report only material P0/P1 findings. Maximum five findings.
+5. The pilot worker must remain pilot-only, use a trusted server-side path profile, deny shell execution to Kimi, and leave tests/Git/GitHub actions to the trusted worker.
+6. Report only material P0/P1 findings. Maximum five findings.
 
 Return only JSON matching the supplied output schema. Use PASS only when every criterion is satisfied. head_sha must equal the checked-out PR HEAD SHA available from Git.
-
