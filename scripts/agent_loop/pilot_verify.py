@@ -1,23 +1,41 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, json, subprocess, sys
+import argparse, json, re, subprocess, sys
 from datetime import datetime, timezone
 from pathlib import Path
 
 MARKER = 'docs/agent_loop/pilot/PILOT_MARKER.md'
 EXECUTOR = 'docs/agent_loop/pilot/EXECUTOR_REPORT.json'
 ALLOWED = {MARKER, EXECUTOR}
-EXPECTED = '# Agent Loop Pilot\nWORKER_VERSION=1.5.2\nSTATUS=PASS\nEXECUTOR=KIMI_OPENCODE_OLLAMA\nSUPERVISOR=CODEX_GITHUB_ACTION\n'
-MIN_WORKER_VERSION = (1, 5, 2)
+MIN_WORKER_VERSION = (1, 5, 3)
 
 def run(args):
-    p=subprocess.run(args,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-    if p.returncode: raise RuntimeError(f"{args}: {p.stdout}")
+    p=subprocess.run(args,text=True,encoding='utf-8',errors='replace',stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    if p.returncode: raise RuntimeError(f"{args}: {p.stdout}{p.stderr}")
     return p.stdout.strip()
 
 def version_tuple(value):
     try: return tuple(int(x) for x in str(value).split('.')[:3])
     except Exception: return (0,0,0)
+
+def valid_marker(text: str) -> list[str]:
+    errors=[]
+    normalized=text.replace('\r\n','\n')
+    lines=normalized.splitlines()
+    fields={}
+    if not lines or lines[0] != '# Agent Loop Pilot': errors.append('marker title mismatch')
+    for line in lines[1:]:
+        if '=' in line:
+            k,v=line.split('=',1); fields[k.strip()]=v.strip()
+    if version_tuple(fields.get('WORKER_VERSION')) < MIN_WORKER_VERSION: errors.append('marker worker version too old')
+    if not re.fullmatch(r'PILOT-KIMI-CODEX-[0-9]{8}-[0-9]{6}', fields.get('FRONT_ID','')): errors.append('marker front id invalid')
+    if fields.get('STATUS') != 'PASS': errors.append('marker status mismatch')
+    if fields.get('EXECUTOR') != 'KIMI_OPENCODE_OLLAMA': errors.append('marker executor mismatch')
+    if fields.get('SUPERVISOR') != 'CODEX_GITHUB_ACTION': errors.append('marker supervisor mismatch')
+    required={'WORKER_VERSION','FRONT_ID','STATUS','EXECUTOR','SUPERVISOR'}
+    missing=sorted(required-set(fields))
+    if missing: errors.append(f'marker fields missing: {missing}')
+    return errors
 
 def collect_changed(base_sha=None, head_sha=None):
     if base_sha:
@@ -33,7 +51,7 @@ def main():
     marker=root/MARKER; executor=root/EXECUTOR
     errors=[]
     if not marker.exists(): errors.append('marker missing')
-    elif marker.read_text(encoding='utf-8-sig').replace('\r\n','\n') != EXPECTED: errors.append('marker content mismatch')
+    else: errors.extend(valid_marker(marker.read_text(encoding='utf-8-sig')))
     if not a.local:
         if not executor.exists():
             errors.append('executor report missing')
@@ -44,7 +62,7 @@ def main():
                 if d.get('local_test_passed') is not True: errors.append('local test not passed')
                 if d.get('merge_performed') is not False: errors.append('merge_performed must be false')
                 if d.get('canonical_local_sync') is not False: errors.append('canonical_local_sync must be false')
-                if version_tuple(d.get('worker_version')) < MIN_WORKER_VERSION: errors.append('worker_version must be >= 1.5.2')
+                if version_tuple(d.get('worker_version')) < MIN_WORKER_VERSION: errors.append('worker_version must be >= 1.5.3')
             except Exception as e: errors.append(f'executor report invalid: {e}')
     changed=collect_changed(a.base_sha,a.head_sha)
     expected={MARKER} if a.local else ALLOWED

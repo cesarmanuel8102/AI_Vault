@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "worker_version": "1.5.2",
+  "worker_version": "1.5.3",
   "platform": "Windows PowerShell 5.1",
   "source_of_truth": "GitHub",
   "executor": "OpenCode with ollama-cloud/kimi-k2.7-code",
@@ -27,6 +27,11 @@
     "git_metadata_unexposed": true,
     "trusted_output_copy": true,
     "inline_immutable_agent_policy": true,
-    "model_workspace_has_no_policy_file": true
+    "model_workspace_has_no_policy_file": true,
+    "deterministic_subprocess_decoding": true,
+    "terminal_state_reprocess_guard": true,
+    "trusted_issue5_existing_pr_resume": true,
+    "trusted_base_advance_existing_pr": true,
+    "subprocess_decoding_fallback_event": true
   }
 }

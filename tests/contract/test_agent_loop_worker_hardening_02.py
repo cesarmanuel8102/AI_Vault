@@ -187,9 +187,9 @@ with tempfile.TemporaryDirectory() as td:
     assert not (model / ".opencode").exists()
     assert seed_hashes == {}
     marker = model / "docs/agent_loop/pilot/PILOT_MARKER.md"
-    marker.write_text(worker.PILOT_MARKER_TEXT, encoding="utf-8")
+    marker.write_text(worker.pilot_marker_text("PILOT-KIMI-CODEX-20260716-091529"), encoding="utf-8")
     worker.audit_and_sync_model_workspace(model, repo, seed_hashes)
-    assert old_marker.read_text(encoding="utf-8") == worker.PILOT_MARKER_TEXT
+    assert old_marker.read_text(encoding="utf-8") == worker.pilot_marker_text("PILOT-KIMI-CODEX-20260716-091529")
 
 with tempfile.TemporaryDirectory() as td:
     repo = Path(td) / "repo"; repo.mkdir()
@@ -200,7 +200,7 @@ with tempfile.TemporaryDirectory() as td:
     malicious = model / ".git/hooks/pre-commit"
     malicious.parent.mkdir(parents=True); malicious.write_text("echo pwned\n", encoding="utf-8")
     marker = model / "docs/agent_loop/pilot/PILOT_MARKER.md"
-    marker.parent.mkdir(parents=True, exist_ok=True); marker.write_text(worker.PILOT_MARKER_TEXT, encoding="utf-8")
+    marker.parent.mkdir(parents=True, exist_ok=True); marker.write_text(worker.pilot_marker_text("PILOT-KIMI-CODEX-20260716-091529"), encoding="utf-8")
     expect_error(lambda: worker.audit_and_sync_model_workspace(model, repo, seed_hashes), "git_metadata")
 checks["detached_git_boundary"] = True
 
@@ -217,18 +217,21 @@ with tempfile.TemporaryDirectory() as td:
     executor.write_text(json.dumps({"worker_version":"1.5.1"}), encoding="utf-8")
     subprocess.run(["git", "add", "."], cwd=repo, check=True)
     subprocess.run(["git", "commit", "-m", "old pilot"], cwd=repo, check=True, stdout=subprocess.DEVNULL)
-    marker.write_text(worker.PILOT_MARKER_TEXT, encoding="utf-8")
+    marker.write_text(worker.pilot_marker_text("PILOT-KIMI-CODEX-20260716-091529"), encoding="utf-8")
     local = subprocess.run([sys.executable, str(verifier), "--local"], cwd=repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     assert local.returncode == 0, local.stdout
 checks["repeatable_local_pilot"] = True
 
-assert contract["worker_version"] == worker.WORKER_VERSION == "1.5.2"
+assert contract["worker_version"] == worker.WORKER_VERSION == "1.5.3"
 assert contract["pilot_only"] is True and contract["general_fronts_supported"] is False
 assert contract["hardening"]["agent_shell_denied"] is True
 assert contract["hardening"]["detached_model_workspace"] is True
 assert contract["hardening"]["git_metadata_unexposed"] is True
 assert contract["hardening"]["inline_immutable_agent_policy"] is True
 assert contract["hardening"]["model_workspace_has_no_policy_file"] is True
+assert contract["hardening"]["trusted_issue5_existing_pr_resume"] is True
+assert contract["hardening"]["trusted_base_advance_existing_pr"] is True
+assert contract["hardening"]["subprocess_decoding_fallback_event"] is True
 checks["contract_truthfulness"] = True
 
 failed = [name for name, ok in checks.items() if not ok]
