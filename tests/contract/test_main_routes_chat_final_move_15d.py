@@ -88,9 +88,9 @@ def test_no_endpoint_count_increase():
     main = _read(MAIN)
     endpoint_count = len(re.findall(r"@app\.(get|post|put|delete|patch)", main))
     if _is_moved():
-        assert endpoint_count == 50
+        assert endpoint_count <= 50, f"main.py endpoint count {endpoint_count} exceeds 50"
     else:
-        assert endpoint_count == 51
+        assert endpoint_count <= 51, f"main.py endpoint count {endpoint_count} exceeds 51"
 
 
 def test_main_includes_chat_entrypoint_router():

@@ -17,9 +17,7 @@ MOVED = [
 MOVED_POST_TO_REMAINING_CONTROL = [
     "/self-diagnostic/run",
 ]
-DEFERRED_POST = [
-    "/brain/metacognition/audit",
-]
+DEFERRED_POST = []  # /brain/metacognition/audit moved to dev_pipeline_audit_routes.py in 16B
 
 
 def _read(rel: str) -> str:

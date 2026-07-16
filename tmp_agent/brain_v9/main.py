@@ -192,6 +192,11 @@ from brain_v9.routes.memory_semantic_routes import router as memory_semantic_rou
 from brain_v9.routes.provider_readonly_routes import configure_provider_readonly, router as provider_readonly_routes_router
 from brain_v9.routes.strategy_readonly_routes import router as strategy_readonly_routes_router
 from brain_v9.routes.trace_streaming_routes import _emit_agent_trace_internal, router as trace_streaming_routes_router
+from brain_v9.routes.code_mutation_readonly_routes import router as code_mutation_readonly_router
+from brain_v9.routes.chat_excellence_readonly_routes import router as chat_excellence_readonly_router
+from brain_v9.routes.autonomy_readonly_shell_routes import router as autonomy_readonly_shell_router
+from brain_v9.routes.dev_pipeline_audit_routes import router as dev_pipeline_audit_router
+from brain_v9.routes.governance_refresh_shell_routes import router as governance_refresh_shell_router
 from brain_v9.core.chat_entrypoint_service import ChatEntrypointRuntime
 from brain_v9.api.openai_compat import router as openai_compat_router
 from brain_v9.agent.tools import build_standard_executor
@@ -217,6 +222,11 @@ app.include_router(memory_semantic_routes_router)
 app.include_router(provider_readonly_routes_router)
 app.include_router(strategy_readonly_routes_router)
 app.include_router(trace_streaming_routes_router)
+app.include_router(code_mutation_readonly_router)
+app.include_router(chat_excellence_readonly_router)
+app.include_router(autonomy_readonly_shell_router)
+app.include_router(dev_pipeline_audit_router)
+app.include_router(governance_refresh_shell_router)
 app.include_router(openai_compat_router)
 app.include_router(agent_v2_router)
 app.include_router(agent_v2_chat_router)
@@ -1400,34 +1410,6 @@ async def brain_learned_test_simulate(_operator: StrictOperatorAccess, payload: 
 # C-Sprint: Code Mutation + Reasoning Correction observability
 # ============================================================
 
-@app.get("/brain/mutations")
-async def brain_mutations(limit: int = 20):
-    """List recent code mutations."""
-    try:
-        from brain_v9.agent.code_mutator import CodeMutator
-        mutator = CodeMutator.get()
-        mutations = mutator.list_mutations(limit)
-        return {"count": len(mutations), "mutations": mutations}
-    except Exception as exc:
-        return {"_error": str(exc), "count": 0, "mutations": []}
-
-
-@app.get("/brain/mutations/{mutation_id}")
-async def brain_mutation_detail(mutation_id: str):
-    """Get details of a specific mutation."""
-    try:
-        from brain_v9.agent.code_mutator import CodeMutator
-        mutator = CodeMutator.get()
-        m = mutator.get_mutation(mutation_id)
-        if not m:
-            raise HTTPException(status_code=404, detail=f"Mutation {mutation_id} not found")
-        return m
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
-
-
 @app.post("/brain/mutations/{mutation_id}/rollback")
 async def brain_mutation_rollback(mutation_id: str, _operator: StrictOperatorAccess, reason: str = "manual"):
     """Rollback a mutation to its backup."""
@@ -1497,104 +1479,6 @@ async def brain_mutations_test_apply(
         return {"success": False, "error": str(exc)}
 
 
-@app.get("/brain/chat_excellence/status")
-async def brain_chat_excellence_status():
-    """R9.3: Live observability of the chat_excellence self-improvement loop.
-
-    Returns total iterations, latest iteration with full structured fields,
-    and a compact history of last 20 iterations (weakness + status only).
-    """
-    payload: Dict[str, Any] = {
-        "total_iterations": 0,
-        "latest": None,
-        "recent": [],
-        "parsed_ratio": 0.0,
-    }
-    try:
-        from brain_v9.config import BASE_PATH
-        ce_path = BASE_PATH / "tmp_agent" / "state" / "chat_excellence_history.json"
-        if not ce_path.exists():
-            payload["_note"] = "No iterations yet — loop runs every 60 min, first run in ~60-90s after boot"
-            return payload
-        with open(ce_path, "r", encoding="utf-8") as f:
-            history = json.load(f)
-        payload["total_iterations"] = len(history)
-        if history:
-            payload["latest"] = history[-1]
-            parsed_count = sum(1 for h in history if h.get("parsed_ok"))
-            payload["parsed_ratio"] = round(parsed_count / len(history), 3)
-            payload["recent"] = [
-                {
-                    "iter": h.get("iter"),
-                    "timestamp": h.get("timestamp"),
-                    "weakness": (h.get("weakness") or "")[:120],
-                    "impact_score": h.get("impact_score"),
-                    "status": h.get("status"),
-                    "elapsed_s": h.get("elapsed_s"),
-                    "parsed_ok": h.get("parsed_ok"),
-                }
-                for h in history[-20:]
-            ]
-    except Exception as e:
-        payload["_error"] = str(e)
-    return payload
-
-
-# ── R9.6: Acknowledge scheduler alerts ───────────────────────────────────────
-@app.post("/brain/scheduler/alerts/ack")
-async def brain_scheduler_alerts_ack(body: Dict[str, Any] = Body(default={})):
-    """Mark one or more scheduler alerts as acknowledged.
-
-    Body (all optional):
-      {
-        "indices":    [int, ...],   # explicit positions in alerts list
-        "type":       "service_down",
-        "task_id":    "service_health",
-        "all":        false,
-        "actor":      "dashboard"
-      }
-    """
-    try:
-        from brain_v9.autonomy.proactive_scheduler import get_proactive_scheduler
-        sched = get_proactive_scheduler()
-        acked = sched.acknowledge_alerts(
-            indices=body.get("indices"),
-            alert_type=body.get("type"),
-            task_id=body.get("task_id"),
-            ack_all=bool(body.get("all", False)),
-            actor=str(body.get("actor", "dashboard")),
-        )
-        return {"acked": acked, "ok": True}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"ack failed: {e}")
-
-
-# ── R9.7: Force-run a proactive task on demand ───────────────────────────────
-@app.post("/brain/proactive/run/{task_id}")
-async def brain_proactive_run_task(task_id: str):
-    """Force the scheduler to execute the given task on its next tick (≤30s)."""
-    try:
-        from brain_v9.autonomy.proactive_scheduler import get_proactive_scheduler
-        sched = get_proactive_scheduler()
-        task = sched.run_now(task_id)
-        if not task:
-            raise HTTPException(status_code=404, detail=f"task '{task_id}' not found")
-        return {
-            "queued": task_id,
-            "next_tick_s_max": getattr(sched, "CHECK_INTERVAL", 30),
-            "task": {
-                "id": task.get("id"),
-                "description": task.get("description"),
-                "interval_min": task.get("interval_min"),
-                "timeout_s": task.get("timeout_s"),
-            },
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"run_now failed: {e}")
-
-
 # ── R9.9: LLM circuit breaker + chain health observability ───────────────────
 @app.post("/brain/llm/circuit_breaker/reset")
 async def brain_llm_cb_reset(_operator: StrictOperatorAccess, model: Optional[str] = None):
@@ -1611,40 +1495,6 @@ async def brain_llm_cb_reset(_operator: StrictOperatorAccess, model: Optional[st
         return {"reset": reset}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-# ── R10.2: Chat Excellence Executor (proposal review) ────────────────────
-
-@app.get("/brain/chat_excellence/proposals")
-async def brain_ce_proposals(status: Optional[str] = None, limit: int = 50):
-    """List chat_excellence executor proposals (most recent first)."""
-    try:
-        from brain_v9.autonomy.chat_excellence_executor import list_proposals, stats
-        items = list_proposals(status_filter=status, limit=limit)
-        return {"items": items, "count": len(items), "stats": stats()}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"ce proposals list failed: {e}")
-
-
-@app.get("/brain/learning/proposals")
-async def brain_learning_proposals(status: Optional[str] = None, limit: int = 50):
-    """Alias: learning proposals served from chat_excellence source."""
-    data = await brain_ce_proposals(status=status, limit=limit)
-    return {"ok": True, "route": "/brain/learning/proposals", "canonical": "/brain/chat_excellence/proposals", **data}
-
-
-@app.get("/brain/chat_excellence/proposals/{proposal_id}")
-async def brain_ce_proposal_get(proposal_id: str):
-    try:
-        from brain_v9.autonomy.chat_excellence_executor import get_proposal
-        rec = get_proposal(proposal_id)
-        if rec is None:
-            raise HTTPException(status_code=404, detail=f"proposal {proposal_id} not found")
-        return rec
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"ce proposal get failed: {e}")
 
 
 @app.post("/brain/chat_excellence/proposals/{proposal_id}/reject")
@@ -1666,20 +1516,6 @@ async def brain_ce_proposal_reject(
         raise HTTPException(status_code=500, detail=f"ce reject failed: {e}")
 
 
-@app.post("/brain/chat_excellence/proposals/{proposal_id}/dry_run")
-async def brain_ce_proposal_dry_run(proposal_id: str):
-    """R10.2b: genera diff unificado del proposal SIN escribir nada.
-    Persiste el diff en el record para revision posterior."""
-    try:
-        from brain_v9.autonomy.chat_excellence_patcher import dry_run_proposal
-        result = dry_run_proposal(proposal_id)
-        if not result.get("ok") and result.get("error") == "proposal_not_found":
-            raise HTTPException(status_code=404, detail=f"proposal {proposal_id} not found")
-        return result
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"ce dry_run failed: {e}")
 
 
 @app.post("/brain/chat_excellence/proposals/{proposal_id}/apply")
@@ -1752,16 +1588,6 @@ async def brain_ce_proposal_rollback(proposal_id: str, payload: Dict = Body(defa
         raise HTTPException(status_code=500, detail=f"ce rollback failed: {e}")
 
 
-@app.get("/brain/chat_excellence/proposals/{proposal_id}/health_gate_log")
-async def brain_ce_proposal_health_gate_log(proposal_id: str, tail: int = 200):
-    """R10.2c: lee el log del health gate detached que valida el restart
-    post-apply y hace auto-rollback si el brain no recupera. Util para ver
-    el progreso/resultado de un apply con auto_restart=true."""
-    try:
-        from brain_v9.autonomy.chat_excellence_patcher import get_health_gate_log
-        return get_health_gate_log(proposal_id, tail=tail)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"ce health gate log failed: {e}")
 
 
 @app.post("/brain/chat_excellence/proposals/apply_batch")
@@ -1849,31 +1675,6 @@ async def brain_ce_proposals_evaluate(payload: Dict = Body(default={})):
         raise HTTPException(status_code=500, detail=f"ce evaluate failed: {e}")
 
 
-@app.get("/brain/chat_excellence/proposals/{proposal_id}/evaluation_status")
-async def brain_ce_proposal_eval_status(proposal_id: str):
-    """R11: lectura rapida del estado de evaluacion sin disparar nueva eval.
-    Devuelve {has_baseline, validated, last_eval_at, comparisons, ...}"""
-    try:
-        from brain_v9.autonomy.chat_excellence_patcher import _load_proposal
-        rec = _load_proposal(proposal_id)
-        if rec is None:
-            raise HTTPException(status_code=404, detail=f"proposal {proposal_id} not found")
-        return {
-            "ok": True,
-            "proposal_id": proposal_id,
-            "status": rec.get("status"),
-            "has_baseline": bool(rec.get("r11_baseline")),
-            "baseline_consts": list((rec.get("r11_baseline") or {}).keys()),
-            "validated": bool(rec.get("r11_validated")),
-            "regression_detected": bool(rec.get("r11_regression_detected")),
-            "last_eval_at": rec.get("r11_eval_at"),
-            "last_comparisons": rec.get("r11_comparisons") or [],
-            "applied_at": rec.get("applied_at"),
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"ce eval status failed: {e}")
 
 
 @app.post("/brain/utility/refresh")
@@ -1900,10 +1701,7 @@ async def brain_utility_refresh(_operator: OperatorAccess):
 async def brain_utility_v2_refresh(_operator: OperatorAccess):
     return await brain_utility_refresh(None)
 
-@app.get("/brain/autonomy/next-actions")
-async def brain_autonomy_next_actions():
-    result = write_utility_snapshots()
-    return result["next_actions"]
+
 
 @app.get("/brain/autonomy/sample-accumulator")
 async def brain_sample_accumulator_status():
@@ -2058,78 +1856,8 @@ async def brain_operations():
         "trading_policy": policy,
     }
 
-@app.get("/brain/pipeline-health")
-async def brain_pipeline_health():
-    """P7-05/P7-06: Pipeline health — test coverage and pipeline verification status."""
-    import subprocess, json as _json
-    from pathlib import Path
-
-    test_dir = Path(__file__).resolve().parent.parent / "tests"
-    # Collect test file inventory
-    test_files = sorted(test_dir.glob("**/test_*.py"))
-    file_count = len(test_files)
-
-    # Pipeline verification tests (P7-06)
-    pipeline_tests = [
-        {"id": "probe_to_features", "desc": "IBKR probe -> feature engine", "verified": True},
-        {"id": "features_to_signals", "desc": "Features -> signal engine", "verified": True},
-        {"id": "signal_to_execution", "desc": "Signal -> paper execution", "verified": True},
-        {"id": "full_chain", "desc": "Probe -> features -> signals -> execution", "verified": True},
-        {"id": "stale_data_blocking", "desc": "Stale data -> blocked signal", "verified": True},
-        {"id": "missing_probe", "desc": "Missing probe -> empty features", "verified": True},
-        {"id": "venue_mismatch", "desc": "Venue filter isolation", "verified": True},
-        {"id": "pending_resolution", "desc": "Deferred trade resolution", "verified": True},
-        {"id": "refresh_orchestration", "desc": "refresh_strategy_engine end-to-end", "verified": True},
-        {"id": "autonomy_ingester", "desc": "AutonomyManager IBKR ingester", "verified": True},
-    ]
-
-    # HTTP endpoint test coverage (P7-05)
-    endpoint_tests_count = 30
-
-    return {
-        "ok": True,
-        "test_files": file_count,
-        "total_tests": sum(1 for tf in test_files for line in tf.read_text(encoding="utf-8", errors="ignore").splitlines() if line.strip().startswith("def test_")),
-        "failures": 0,
-        "pipeline_verification": {
-            "tests": pipeline_tests,
-            "all_passing": all(t["verified"] for t in pipeline_tests),
-            "count": len(pipeline_tests),
-        },
-        "http_endpoint_tests": {
-            "count": endpoint_tests_count,
-            "all_passing": True,
-        },
-        "sprints": {
-            "p7_05_http_tests": "complete",
-            "p7_06_pipeline_stabilization": "complete",
-        },
-        "phase7_status": "sprint_3_complete",
-    }
-
-@app.post("/brain/post-bl-roadmap/refresh")
-async def brain_post_bl_roadmap_refresh(_operator: OperatorAccess):
-    return refresh_post_bl_roadmap_status()
 
 
-@app.post("/brain/meta-improvement/refresh")
-async def brain_meta_improvement_refresh(_operator: OperatorAccess):
-    return refresh_meta_improvement_status()
-
-
-@app.post("/brain/chat-product/refresh")
-async def brain_chat_product_refresh(_operator: OperatorAccess):
-    return refresh_chat_product_status()
-
-
-@app.post("/brain/autonomous-governance-eval/refresh")
-async def brain_autonomous_governance_eval_refresh(_operator: OperatorAccess, run_self_test: bool = False):
-    return build_autonomous_governance_eval(refresh=True, run_self_test=run_self_test)
-
-
-@app.post("/brain/utility-governance/refresh")
-async def brain_utility_governance_refresh(_operator: OperatorAccess):
-    return refresh_utility_governance_status()
 
 
 @app.get("/brain/session-memory")
@@ -2141,9 +1869,7 @@ async def brain_session_memory(session_id: str = "default", refresh: bool = Fals
 
     return build_session_memory(session_id=session_id) if refresh else get_session_memory_latest(session_id=session_id)
 
-@app.post("/brain/roadmap/governance/refresh")
-async def brain_roadmap_governance_refresh(_operator: OperatorAccess):
-    return promote_roadmap_if_ready()
+
 
 @app.post("/brain/learning/refresh")
 async def brain_learning_refresh(
@@ -2240,10 +1966,7 @@ class ClaimAuditRequest(BaseModel):
     evidence: str = ""
 
 
-@app.post("/brain/metacognition/audit")
-async def brain_metacognition_audit(req: ClaimAuditRequest):
-    from brain_v9.brain.metacognition import audit_response_claims
-    return audit_response_claims(req.text, evidence=req.evidence)
+
 
 
 
