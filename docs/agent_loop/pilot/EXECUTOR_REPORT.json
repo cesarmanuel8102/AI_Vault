@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "front_id": "PILOT-KIMI-CODEX-20260716-053820",
+  "issue_number": 2,
+  "cycle": 1,
+  "executor": "Kimi via OpenCode/Ollama",
+  "model": "ollama-cloud/kimi-k2.7-code",
+  "base_sha": "06d41b159a6a91453dd5ba8e58d410654c57feee",
+  "changed_files": [
+    "docs/agent_loop/pilot/EXECUTOR_REPORT.json",
+    "docs/agent_loop/pilot/PILOT_MARKER.md"
+  ],
+  "local_test_profile": "pilot",
+  "local_test_passed": true,
+  "local_test_tail": "{\n  \"schema_version\": 1,\n  \"status\": \"PASS\",\n  \"errors\": [],\n  \"changed_files\": [],\n  \"base_sha\": null,\n  \"head_sha\": null,\n  \"generated_utc\": \"2026-07-16T07:01:04.896420+00:00\"\n}\n",
+  "opencode_log_local": "C:\\AI_VAULT_AGENT_WORKER\\reports\\issue-2-cycle-1-opencode.jsonl",
+  "generated_utc": "2026-07-16T07:01:04.904047+00:00",
+  "merge_performed": false,
+  "canonical_local_sync": false
+}
