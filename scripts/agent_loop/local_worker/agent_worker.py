@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 SPEC_RE = re.compile(r"<!--\s*AGENT_LOOP_SPEC\s*(\{.*?\})\s*AGENT_LOOP_SPEC\s*-->", re.S)
-WORKER_VERSION = "1.5.3"
+WORKER_VERSION = "1.5.4"
 PHASE_LABELS = {
     "agent:queued", "loop:executing", "loop:ci", "loop:repairing",
     "loop:ready-human-audit", "loop:blocked", "loop:failed",
@@ -140,6 +140,77 @@ def set_phase(repo: str, number: int, phase: str) -> None:
         raise ValueError(f"unknown phase label: {phase}")
     edit_labels(repo, number, add=[phase], remove=sorted(PHASE_LABELS - {phase}))
 
+def phase_labels(obj: dict) -> set[str]:
+    return labels(obj) & PHASE_LABELS
+
+def assert_exact_phase(obj: dict, expected: str, label: str = "object") -> None:
+    actual = phase_labels(obj)
+    if actual != {expected}:
+        raise ValueError(f"{label} phase mismatch: expected {expected}, actual {sorted(actual)}")
+
+def restore_label_set(repo: str, number: int, original_labels: set[str]) -> None:
+    current = labels(gh_json(["issue", "view", str(number), "--repo", repo, "--json", "labels"]))
+    # Remove all non-original phase labels even if the preceding readback was stale
+    # or incomplete. GitHub label removal is best-effort per label in edit_labels.
+    remove = (current - original_labels) | (PHASE_LABELS - original_labels)
+    edit_labels(repo, number, add=sorted(original_labels - current), remove=sorted(remove))
+    edit_labels(repo, number, add=sorted(original_labels), remove=sorted(PHASE_LABELS - original_labels))
+
+def read_issue_labels(repo: str, number: int) -> dict:
+    return gh_json(["issue", "view", str(number), "--repo", repo, "--json", "number,labels"])
+
+def read_pr_labels(repo: str, number: int) -> dict:
+    return gh_json(["pr", "view", str(number), "--repo", repo, "--json", "number,labels"])
+
+def set_converged_phase(cfg: dict, state_path: Path, st: dict, phase: str, *, pr_number: int | None = None) -> dict:
+    issue = int(st["issue_number"])
+    prn = int(pr_number if pr_number is not None else st.get("pr_number") or 0)
+    original_state_bytes = state_path.read_bytes() if state_path.exists() else b""
+    original_issue_labels = labels(read_issue_labels(cfg["repo"], issue))
+    original_pr_labels = labels(read_pr_labels(cfg["repo"], prn)) if prn else set()
+    new_state = dict(st)
+    new_state["status"] = "WAITING_GITHUB" if phase == "loop:ci" else phase
+    new_state["updated_utc"] = utc()
+    try:
+        save_json(state_path, new_state)
+        set_phase(cfg["repo"], issue, phase)
+        if prn:
+            set_phase(cfg["repo"], prn, phase)
+        assert_exact_phase(read_issue_labels(cfg["repo"], issue), phase, f"Issue #{issue}")
+        if prn:
+            assert_exact_phase(read_pr_labels(cfg["repo"], prn), phase, f"PR #{prn}")
+        return new_state
+    except Exception as exc:
+        rollback = {"state": False, "issue_labels": False, "pr_labels": False}
+        try:
+            if original_state_bytes:
+                state_path.write_bytes(original_state_bytes)
+            elif state_path.exists():
+                state_path.unlink()
+            rollback["state"] = True
+        except Exception:
+            pass
+        try:
+            restore_label_set(cfg["repo"], issue, original_issue_labels)
+            rollback["issue_labels"] = True
+        except Exception:
+            pass
+        if prn:
+            try:
+                restore_label_set(cfg["repo"], prn, original_pr_labels)
+                rollback["pr_labels"] = True
+            except Exception:
+                pass
+        try:
+            event(cfg, "phase_convergence_rollback", issue=issue, pr=prn or None, phase=phase, error=bounded_tail(str(exc)), rollback=rollback)
+        except Exception:
+            pass
+        raise
+
+def pr_changed_files(repo: str, pr_number: int) -> list[str]:
+    out = run(["gh", "pr", "diff", str(pr_number), "--repo", repo, "--name-only"])
+    return sorted(x.strip().replace("\\", "/") for x in out.splitlines() if x.strip())
+
 def has_terminal_label(obj: dict) -> bool:
     return bool(labels(obj) & TERMINAL_LABELS)
 
@@ -156,8 +227,68 @@ def state_is_terminal(st: dict) -> bool:
 def comment(repo: str, number: int, body: str):
     run(["gh", "issue", "comment", str(number), "--repo", repo, "--body", body])
 
+def issue_comments(repo: str, number: int) -> list[dict]:
+    return gh_json(["api", f"repos/{repo}/issues/{number}/comments?per_page=100"])
+
+def notification_key(front_id: str | None, pr_number: int | None, head_sha: str | None, terminal_phase: str) -> str:
+    return "|".join([str(front_id or ""), str(pr_number or ""), str(head_sha or ""), str(terminal_phase)])
+
+def notification_marker(key: str) -> str:
+    return f"<!-- AGENT_LOOP_NOTIFICATION_KEY:{key} -->"
+
+def terminal_notification_tag(phase: str) -> str:
+    return {
+        "loop:token-exhausted": "TOKEN_EXHAUSTED",
+        "loop:blocked": "BLOCKED",
+        "loop:failed": "FAILED",
+        "loop:ready-human-audit": "READY_HUMAN_AUDIT",
+        "loop:accepted": "ACCEPTED",
+    }.get(phase, phase.split(":")[-1].upper())
+
+def normalize_terminal_message(text: str) -> str:
+    return re.sub(r"\s+", " ", str(text or "").strip()).lower()
+
+def is_legacy_terminal_notification(body: str, phase: str, message: str) -> bool:
+    tag = terminal_notification_tag(phase)
+    normalized_body = normalize_terminal_message(body)
+    normalized_message = normalize_terminal_message(message)
+    if f"[agent-loop][{tag.lower()}]" not in normalized_body:
+        return False
+    if normalized_message and normalized_message[:120] not in normalized_body:
+        return False
+    return True
+
+def publish_terminal_notification(cfg: dict, state_path: Path, st: dict, phase: str, message: str) -> dict:
+    pr_number = int(st.get("pr_number") or 0) or None
+    target = pr_number or int(st["issue_number"])
+    key = notification_key(st.get("front"), pr_number, st.get("last_head_sha"), phase)
+    marker = notification_marker(key)
+    ledger = set(st.get("notification_keys") or [])
+    if key in ledger:
+        st["terminal_notified"] = True
+        save_json(state_path, st)
+        return st
+    for item in issue_comments(cfg["repo"], target):
+        body = item.get("body") or ""
+        if marker in body or is_legacy_terminal_notification(body, phase, message):
+            ledger.add(key)
+            st["notification_keys"] = sorted(ledger)
+            st["terminal_notified"] = True
+            save_json(state_path, st)
+            return st
+    body = f"{marker}\n[AGENT-LOOP][{terminal_notification_tag(phase)}]\n\n@{cfg['owner']} {message[-4000:]}"
+    comment(cfg["repo"], target, body)
+    ledger.add(key)
+    st["notification_keys"] = sorted(ledger)
+    st["terminal_notified"] = True
+    save_json(state_path, st)
+    return st
+
 def update_issue_body(repo: str, number: int, body: str) -> None:
     run(["gh", "issue", "edit", str(number), "--repo", repo, "--body", body])
+
+def update_pr_body(repo: str, number: int, body: str) -> None:
+    run(["gh", "pr", "edit", str(number), "--repo", repo, "--body", body])
 
 def update_issue_spec_body(body: str, new_base_sha: str) -> str:
     match = SPEC_RE.search(body or "")
@@ -404,15 +535,36 @@ def run_profile(cfg, spec, repo_dir) -> tuple[bool,str]:
     emit_subprocess_decoding_event(cfg, cmd, _)
     return p.returncode == 0, out
 
+def bounded_tail(text: str, limit: int = 3000) -> str:
+    return (text or "")[-limit:]
+
+def marker_hash(repo_dir: Path) -> str | None:
+    marker = repo_dir / "docs/agent_loop/pilot/PILOT_MARKER.md"
+    return sha256_file(marker) if marker.is_file() else None
+
+def run_marker_content_check(repo_dir: Path) -> tuple[bool, str]:
+    cmd = [sys.executable, "scripts/agent_loop/pilot_verify.py", "--local", "--content-only"]
+    p = subprocess.run(command_for_subprocess(cmd), cwd=str(repo_dir), text=False,
+                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    out, _ = completed_output(p)
+    return p.returncode == 0, out
+
+def run_final_verifier(repo_dir: Path, base_sha: str, head_sha: str) -> tuple[bool, str]:
+    cmd = [sys.executable, "scripts/agent_loop/pilot_verify.py", "--base-sha", base_sha, "--head-sha", head_sha]
+    p = subprocess.run(command_for_subprocess(cmd), cwd=str(repo_dir), text=False,
+                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    out, _ = completed_output(p)
+    return p.returncode == 0, out
+
 def write_executor_report(cfg, spec, repo_dir, issue_no, cycle, changes, test_ok, test_out, log_path):
     p = repo_dir / "docs/agent_loop/pilot/EXECUTOR_REPORT.json"
     p.parent.mkdir(parents=True, exist_ok=True)
     data = {
         "schema_version":1,"worker_version":WORKER_VERSION,"front_id":spec["front_id"],"issue_number":issue_no,
         "cycle":cycle,"executor":"Kimi via OpenCode/Ollama","model":cfg["opencode_model"],
-        "base_sha":spec["expected_base_sha"],"changed_files":sorted(set(changes) | {"docs/agent_loop/pilot/EXECUTOR_REPORT.json"}),
+        "base_sha":spec["expected_base_sha"],"changed_files":sorted({"docs/agent_loop/pilot/PILOT_MARKER.md", "docs/agent_loop/pilot/EXECUTOR_REPORT.json"}),
         "local_test_profile":spec["test_profile"],"local_test_passed":test_ok,
-        "local_test_tail":test_out[-3000:],"opencode_log_local":str(log_path),
+        "local_test_tail":bounded_tail(test_out),"opencode_log_local":str(log_path),
         "generated_utc":utc(),"merge_performed":False,"canonical_local_sync":False
     }
     save_json(p, data)
@@ -525,16 +677,8 @@ def terminalize_state_error(cfg: dict, state_path: Path, exc: Exception) -> None
         event(cfg, "state_retry_scheduled", state=str(state_path), issue=issue, retry=retries, max_retries=max_retries, error=str(exc))
         return
     phase = classification if classification != "RETRY" else "loop:blocked"
-    st["status"] = phase
-    save_json(state_path, st)
-    set_phase(cfg["repo"], issue, phase)
-    if st.get("pr_number"):
-        set_phase(cfg["repo"], int(st["pr_number"]), phase)
-    if not st.get("terminal_notified"):
-        comment(cfg["repo"], st.get("pr_number") or issue,
-                f"[AGENT-LOOP][{phase.split(':')[-1].upper()}]\n\n@{cfg['owner']} {str(exc)[-4000:]}")
-        st["terminal_notified"] = True
-        save_json(state_path, st)
+    st = set_converged_phase(cfg, state_path, st, phase)
+    st = publish_terminal_notification(cfg, state_path, st, phase, str(exc))
     event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase=phase, error=str(exc))
 
 def prepare_repo(cfg, spec, issue_no):
@@ -630,8 +774,7 @@ def execute_initial(cfg, issue, spec, state_path):
         state={"issue_number":n,"front":spec["front_id"],"spec":spec,"repo_dir":str(repo_dir),"pr_number":pr["number"],
                "pr_url":pr["url"],"cycles":cycle,"last_head_sha":pr["headRefOid"],"opencode_session_id":session_id,
                "status":"WAITING_GITHUB","final_local_report":str(final_report),"worker_version":WORKER_VERSION,"updated_utc":utc()}
-        save_json(state_path,state)
-        set_phase(cfg["repo"], n, "loop:ci")
+        set_converged_phase(cfg, state_path, state, "loop:ci", pr_number=int(pr["number"]))
         event(cfg,"pr_created",issue=n,pr=pr["number"],sha=pr["headRefOid"])
         return
     raise RuntimeError("MAX_CYCLES_EXHAUSTED: initial candidate did not pass local gates")
@@ -652,8 +795,7 @@ def process_state(cfg, state_path):
         if phase:
             st["status"] = phase
             st["updated_utc"] = utc()
-            save_json(state_path, st)
-            set_phase(cfg["repo"], issue, phase)
+            set_converged_phase(cfg, state_path, st, phase, pr_number=prn)
         return
     if "loop:repairing" not in labs: return
     if pr["headRefOid"] != st.get("last_head_sha"):
@@ -662,12 +804,8 @@ def process_state(cfg, state_path):
     if st["cycles"] >= int(spec["max_kimi_cycles"]):
         st["status"] = "loop:token-exhausted"
         st["updated_utc"] = utc()
-        set_phase(cfg["repo"], prn, "loop:token-exhausted")
-        set_phase(cfg["repo"], issue, "loop:token-exhausted")
-        if not st.get("terminal_notified"):
-            comment(cfg["repo"],prn,f"[AGENT-LOOP][TOKEN_EXHAUSTED]\n\n@{cfg['owner']} Maximum Kimi cycles reached. Human audit required.")
-            st["terminal_notified"] = True
-        save_json(state_path, st)
+        st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
+        st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
         event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted", error="max cycles reached")
         return
     feedback=latest_feedback(cfg["repo"],prn,spec,pr["headRefOid"],cfg["install_root"])
@@ -679,23 +817,63 @@ def process_state(cfg, state_path):
     model_dir, seed_hashes = prepare_model_workspace(repo_dir, spec, cycle)
     log, discovered_session=run_kimi(cfg,spec,model_dir,issue,cycle,feedback,st.get("opencode_session_id"))
     if discovered_session: st["opencode_session_id"] = discovered_session
-    audit_and_sync_model_workspace(model_dir, repo_dir, seed_hashes, spec)
+    try:
+        audit_and_sync_model_workspace(model_dir, repo_dir, seed_hashes, spec)
+    except Exception as exc:
+        st["cycles"] = cycle
+        st["updated_utc"] = utc()
+        save_json(state_path, st)
+        event(cfg, "repair_local_gate_failed", issue=issue, pr=prn, cycle=cycle,
+              failure_class="MODEL_CONTENT_FAILURE", cycle_before=cycle-1, cycle_after=cycle,
+              changed_files=changed_files(repo_dir, spec["expected_base_sha"]), test_output_tail=bounded_tail(str(exc)),
+              marker_hash=marker_hash(repo_dir), current_head=run(["git","rev-parse","HEAD"], cwd=repo_dir).strip(),
+              expected_base=spec["expected_base_sha"], bad=[], test_ok=False)
+        return
+    content_ok, content_out = run_marker_content_check(repo_dir)
+    if not content_ok:
+        st["cycles"] = cycle
+        st["updated_utc"] = utc()
+        save_json(state_path, st)
+        event(cfg, "repair_local_gate_failed", issue=issue, pr=prn, cycle=cycle,
+              failure_class="MODEL_CONTENT_FAILURE", cycle_before=cycle-1, cycle_after=cycle,
+              changed_files=changed_files(repo_dir, spec["expected_base_sha"]), test_output_tail=bounded_tail(content_out),
+              marker_hash=marker_hash(repo_dir), current_head=run(["git","rev-parse","HEAD"], cwd=repo_dir).strip(),
+              expected_base=spec["expected_base_sha"], bad=[], test_ok=False)
+        return
     changes=changed_files(repo_dir,spec["expected_base_sha"])
     bad=[p for p in changes if not path_allowed(p,spec["allowed_paths"],spec["forbidden_paths"])]
-    ok,out=run_profile(cfg,spec,repo_dir)
-    if bad or not ok:
-        st["cycles"]=cycle; st["updated_utc"]=utc(); save_json(state_path,st)
-        event(cfg,"repair_local_gate_failed",issue=issue,pr=prn,cycle=cycle,bad=bad,test_ok=ok)
+    if bad:
+        event(cfg,"repair_local_gate_failed",issue=issue,pr=prn,cycle=cycle,
+              failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle_before=cycle-1, cycle_after=cycle-1,
+              changed_files=changes, test_output_tail="", marker_hash=marker_hash(repo_dir),
+              current_head=run(["git","rev-parse","HEAD"], cwd=repo_dir).strip(), expected_base=spec["expected_base_sha"], bad=bad,test_ok=False)
         return
-    write_executor_report(cfg,spec,repo_dir,issue,cycle,changes,ok,out,log)
+    write_executor_report(cfg,spec,repo_dir,issue,cycle,changes,True,content_out,log)
     run(["git","add","--all"],cwd=repo_dir)
+    final_candidate = run(["git","diff","--cached","--name-only"], cwd=repo_dir).splitlines()
+    if sorted(x for x in final_candidate if x.strip()) != sorted(PROFILE_ALLOWED_PATHS["pilot"]):
+        event(cfg,"repair_local_gate_failed",issue=issue,pr=prn,cycle=cycle,
+              failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle_before=cycle-1, cycle_after=cycle-1,
+              changed_files=final_candidate, test_output_tail="staged diff is not exactly pilot artifacts",
+              marker_hash=marker_hash(repo_dir), current_head=run(["git","rev-parse","HEAD"], cwd=repo_dir).strip(),
+              expected_base=spec["expected_base_sha"], bad=final_candidate,test_ok=False)
+        run(["git","reset"], cwd=repo_dir)
+        return
     run(["git","commit","-m",f"fix(agent-loop): address supervisor findings cycle {cycle}"],cwd=repo_dir)
-    run(["git","push","origin",spec["work_branch"]],cwd=repo_dir)
     newsha=run(["git","rev-parse","HEAD"],cwd=repo_dir).strip()
+    final_ok, final_out = run_final_verifier(repo_dir, spec["expected_base_sha"], newsha)
+    if not final_ok:
+        event(cfg,"repair_local_gate_failed",issue=issue,pr=prn,cycle=cycle,
+              failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle_before=cycle-1, cycle_after=cycle-1,
+              changed_files=changed_files(repo_dir,spec["expected_base_sha"]), test_output_tail=bounded_tail(final_out),
+              marker_hash=marker_hash(repo_dir), current_head=newsha, expected_base=spec["expected_base_sha"], bad=[],test_ok=False)
+        run(["git","reset","--hard","HEAD~1"], cwd=repo_dir)
+        return
+    run(["git","push","origin",spec["work_branch"]],cwd=repo_dir)
     pr_after = gh_json(["pr","view",str(prn),"--repo",cfg["repo"],"--json","number,url,headRefOid"])
     final_report = write_final_local_report(cfg, spec, issue, cycle, repo_dir, pr_after)
-    st.update(cycles=cycle,last_head_sha=newsha,status="WAITING_GITHUB",final_local_report=str(final_report),worker_version=WORKER_VERSION,updated_utc=utc()); save_json(state_path,st)
-    set_phase(cfg["repo"], prn, "loop:ci")
+    st.update(cycles=cycle,last_head_sha=newsha,status="WAITING_GITHUB",final_local_report=str(final_report),worker_version=WORKER_VERSION,updated_utc=utc())
+    set_converged_phase(cfg, state_path, st, "loop:ci", pr_number=prn)
 
 def process_once(cfg):
     state_dir=Path(cfg["install_root"])/"state"
@@ -740,9 +918,9 @@ def process_once(cfg):
         except Exception as e:
             msg=str(e)
             label="loop:token-exhausted" if ("TOKEN_EXHAUSTED" in msg or "MAX_CYCLES" in msg) else "loop:blocked"
-            set_phase(cfg["repo"], issue["number"], label)
-            save_json(state_path,{"issue_number":issue["number"],"front":spec.get("front_id") if isinstance(spec, dict) else None,"spec":spec if isinstance(spec, dict) else {},"status":label,"worker_version":WORKER_VERSION,"error":msg[-5000:],"updated_utc":utc()})
-            comment(cfg["repo"],issue["number"],f"[AGENT-LOOP][BLOCKED]\n\n@{cfg['owner']} {msg[-5000:]}")
+            st = {"issue_number":issue["number"],"front":spec.get("front_id") if isinstance(spec, dict) else None,"spec":spec if isinstance(spec, dict) else {},"status":label,"worker_version":WORKER_VERSION,"error":msg[-5000:],"updated_utc":utc()}
+            st = set_converged_phase(cfg, state_path, st, label)
+            publish_terminal_notification(cfg, state_path, st, label, msg)
             event(cfg,"issue_blocked",issue=issue["number"],error=msg,trace=traceback.format_exc()[-5000:])
         break
 
@@ -935,6 +1113,111 @@ def trusted_base_advance_existing_pr(
                 pass
         raise
 
+def scheduled_task_disabled(task_name: str = "AI_Vault_Kimi_GitHub_Worker") -> bool:
+    if os.name != "nt":
+        return True
+    out = run(["powershell", "-NoProfile", "-Command", f"(Get-ScheduledTask -TaskName '{task_name}').State"], check=False)
+    return "Disabled" in out
+
+def trusted_resume_issue5_pr6_v154(cfg: dict, issue_number: int, expected_front: str, expected_base_sha: str, expected_pr_number: int, expected_work_branch: str, expected_pr_head: str) -> Path:
+    if int(issue_number) != 5 or int(expected_pr_number) != 6:
+        raise ValueError("v1.5.4 resume is restricted to Issue #5 and PR #6")
+    if not scheduled_task_disabled():
+        raise ValueError("scheduled task must be Disabled before trusted resume")
+    state_path = Path(cfg["install_root"]) / "state" / "issue-5.json"
+    original_state_bytes = state_path.read_bytes()
+    st = json.loads(original_state_bytes.decode("utf-8-sig"))
+    if st.get("trusted_v154_resume_done"):
+        raise ValueError("trusted v1.5.4 resume already completed")
+    spec = st.get("spec") or {}
+    if st.get("front") != expected_front or spec.get("front_id") != expected_front:
+        raise ValueError("front mismatch")
+    if spec.get("expected_base_sha") != expected_base_sha:
+        raise ValueError("base mismatch")
+    if spec.get("work_branch") != expected_work_branch:
+        raise ValueError("branch mismatch")
+    issue = gh_json(["issue", "view", str(issue_number), "--repo", cfg["repo"], "--json", "number,state,body,author,labels,url"])
+    pr = gh_json(["pr", "view", str(expected_pr_number), "--repo", cfg["repo"], "--json", "number,url,state,isDraft,headRefName,headRefOid,baseRefName,body,labels"])
+    issue_spec = parse_spec(issue, cfg)
+    if str(issue.get("state", "")).upper() != "OPEN":
+        raise ValueError("issue is not open")
+    if str(pr.get("state", "")).upper() != "OPEN":
+        raise ValueError("PR is not open")
+    if pr.get("isDraft") is not True:
+        raise ValueError("PR is not draft")
+    if issue_spec.get("front_id") != expected_front or issue_spec.get("work_branch") != expected_work_branch:
+        raise ValueError("remote issue mismatch")
+    if pr.get("number") != expected_pr_number or pr.get("headRefName") != expected_work_branch or pr.get("headRefOid") != expected_pr_head:
+        raise ValueError("remote PR mismatch")
+    if pr.get("baseRefName") != spec.get("base_branch"):
+        raise ValueError("remote PR base/draft mismatch")
+    assert_exact_phase(issue, "loop:repairing", f"Issue #{issue_number}")
+    assert_exact_phase(pr, "loop:repairing", f"PR #{expected_pr_number}")
+    ref = gh_json(["api", f"repos/{cfg['repo']}/git/ref/heads/{spec['base_branch']}"])
+    current_base = ((ref.get("object") or {}).get("sha") or "").strip()
+    if current_base != expected_base_sha:
+        raise ValueError(f"base moved: expected {expected_base_sha} actual {current_base}")
+    diff_files = pr_changed_files(cfg["repo"], int(expected_pr_number))
+    if diff_files != sorted(PROFILE_ALLOWED_PATHS["pilot"]):
+        raise ValueError(f"unexpected PR diff: {diff_files}")
+    reports = Path(cfg["install_root"]) / "reports"; reports.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    backup = state_path.with_suffix(state_path.suffix + ".bak-v154-resume-" + stamp)
+    issue_body_backup = reports / f"issue-5-body.bak-v154-resume-{stamp}.md"
+    pr_body_backup = reports / f"pr-6-body.bak-v154-resume-{stamp}.md"
+    worker_backup = reports / f"agent_worker.py.bak-v154-resume-{stamp}"
+    original_issue_body = issue.get("body") or ""
+    original_pr_body = pr.get("body") or ""
+    original_issue_labels = labels(issue)
+    original_pr_labels = labels(pr)
+    backup.write_bytes(original_state_bytes)
+    issue_body_backup.write_text(original_issue_body, encoding="utf-8")
+    pr_body_backup.write_text(original_pr_body, encoding="utf-8")
+    installed = Path(cfg["install_root"]) / "worker" / "agent_worker.py"
+    if installed.exists(): shutil.copy2(installed, worker_backup)
+    mutated = False
+    try:
+        body = re.sub(r"EXPECTED_BASE_SHA:\s*[0-9a-fA-F]{40}", f"EXPECTED_BASE_SHA: {expected_base_sha}", original_pr_body)
+        if body == original_pr_body and expected_base_sha not in body:
+            body = body.rstrip() + f"\nEXPECTED_BASE_SHA: {expected_base_sha}\n"
+        update_pr_body(cfg["repo"], expected_pr_number, body); mutated = True
+        max_cycles = int(spec.get("max_kimi_cycles", cfg.get("max_kimi_cycles_default", 3)))
+        st.update({"pr_number": expected_pr_number, "pr_url": pr.get("url") or st.get("pr_url"), "repo_dir": st.get("repo_dir"),
+                   "last_head_sha": expected_pr_head, "cycles": max(0, max_cycles - 1), "local_retry_count": 0,
+                   "status": "WAITING_GITHUB", "trusted_v154_resume_done": True,
+                   "trusted_v154_resume_utc": utc(), "updated_utc": utc()})
+        st.setdefault("notification_keys", st.get("notification_keys") or [])
+        save_json(state_path, st); mutated = True
+        set_phase(cfg["repo"], issue_number, "loop:repairing"); mutated = True
+        set_phase(cfg["repo"], expected_pr_number, "loop:repairing"); mutated = True
+        assert_exact_phase(read_issue_labels(cfg["repo"], issue_number), "loop:repairing", f"Issue #{issue_number}")
+        assert_exact_phase(read_pr_labels(cfg["repo"], expected_pr_number), "loop:repairing", f"PR #{expected_pr_number}")
+        event(cfg, "trusted_v154_resume_existing_pr", issue=issue_number, pr=expected_pr_number, front=expected_front,
+              base=expected_base_sha, head=expected_pr_head, state_backup=str(backup), issue_body_backup=str(issue_body_backup),
+              pr_body_backup=str(pr_body_backup), worker_backup=str(worker_backup))
+        return backup
+    except Exception as exc:
+        rollback = {"state": False, "issue_body": False, "pr_body": False, "issue_labels": False, "pr_labels": False, "worker": False, "scheduled_task_disabled": scheduled_task_disabled()}
+        if mutated:
+            try: state_path.write_bytes(original_state_bytes); rollback["state"] = True
+            except Exception: pass
+            try: update_issue_body(cfg["repo"], issue_number, original_issue_body); rollback["issue_body"] = True
+            except Exception: pass
+            try: update_pr_body(cfg["repo"], expected_pr_number, original_pr_body); rollback["pr_body"] = True
+            except Exception: pass
+            try: restore_label_set(cfg["repo"], issue_number, original_issue_labels); rollback["issue_labels"] = True
+            except Exception: pass
+            try: restore_label_set(cfg["repo"], expected_pr_number, original_pr_labels); rollback["pr_labels"] = True
+            except Exception: pass
+            try:
+                if worker_backup.exists():
+                    shutil.copy2(worker_backup, installed)
+                    rollback["worker"] = True
+            except Exception: pass
+        event(cfg, "trusted_v154_resume_rollback", issue=issue_number, pr=expected_pr_number,
+              error=bounded_tail(str(exc)), rollback=rollback)
+        raise
+
 class SingleInstanceLock:
     def __init__(self, path: Path):
         self.path=path; self.handle=None
@@ -965,7 +1248,7 @@ class SingleInstanceLock:
             if self.handle: self.handle.close()
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--once",action="store_true"); ap.add_argument("--trusted-resume-existing-pr", type=int); ap.add_argument("--trusted-base-advance-existing-pr", type=int); ap.add_argument("--expected-front"); ap.add_argument("--expected-base-sha"); ap.add_argument("--expected-old-base-sha"); ap.add_argument("--approved-new-base-sha"); ap.add_argument("--approved-control-plane-commit"); ap.add_argument("--expected-pr-number", type=int); ap.add_argument("--expected-work-branch"); ap.add_argument("--expected-pr-head"); ap.add_argument("--expected-old-pr-head")
+    ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--once",action="store_true"); ap.add_argument("--trusted-resume-existing-pr", type=int); ap.add_argument("--trusted-base-advance-existing-pr", type=int); ap.add_argument("--trusted-v154-resume-existing-pr", type=int); ap.add_argument("--expected-front"); ap.add_argument("--expected-base-sha"); ap.add_argument("--expected-old-base-sha"); ap.add_argument("--approved-new-base-sha"); ap.add_argument("--approved-control-plane-commit"); ap.add_argument("--expected-pr-number", type=int); ap.add_argument("--expected-work-branch"); ap.add_argument("--expected-pr-head"); ap.add_argument("--expected-old-pr-head")
     args=ap.parse_args(); cfg=load_json(Path(args.config)); Path(cfg["install_root"]).mkdir(parents=True,exist_ok=True)
     global _RUN_EVENT_CFG
     _RUN_EVENT_CFG = cfg
@@ -980,6 +1263,12 @@ def main():
                                                   args.expected_pr_number, args.expected_work_branch,
                                                   args.expected_old_pr_head)
         print(json.dumps({"status":"BASE_ADVANCED_EXISTING_PR", "backup": str(backup)}, indent=2))
+        return
+    if args.trusted_v154_resume_existing_pr is not None:
+        if not all([args.expected_front, args.expected_base_sha, args.expected_pr_number, args.expected_work_branch, args.expected_pr_head]):
+            raise SystemExit("trusted v1.5.4 resume requires expected front, base, PR number, branch, and PR head")
+        backup = trusted_resume_issue5_pr6_v154(cfg, args.trusted_v154_resume_existing_pr, args.expected_front, args.expected_base_sha, args.expected_pr_number, args.expected_work_branch, args.expected_pr_head)
+        print(json.dumps({"status":"RESUMED_EXISTING_PR_V154", "backup": str(backup)}, indent=2))
         return
     if args.trusted_resume_existing_pr is not None:
         if not all([args.expected_front, args.expected_base_sha, args.expected_pr_number,
