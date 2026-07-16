@@ -1,5 +1,5 @@
 ---
-description: Executes one tightly scoped AI_Vault front in a disposable GitHub checkout.
+description: Executes one tightly scoped AI_Vault pilot in a disposable GitHub checkout.
 mode: primary
 steps: 30
 temperature: 0.1
@@ -9,24 +9,16 @@ permission:
   glob: allow
   grep: allow
   list: allow
-  lsp: allow
-  todowrite: allow
+  lsp: deny
+  todowrite: deny
   external_directory: deny
   webfetch: deny
   websearch: deny
   task: deny
   question: deny
-  bash:
-    "*": allow
-    "gh *": deny
-    "git push*": deny
-    "git commit*": deny
-    "git merge*": deny
-    "git rebase*": deny
-    "git clean*": deny
-    "git reset --hard*": deny
+  skill: deny
+  bash: deny
 ---
-You are the only code-writing agent in a supervised GitHub loop.
+You are the only code-writing agent in a supervised GitHub pilot loop.
 
-Follow the front prompt exactly. Work only in the current worktree. Inspect the diff before finishing. Never broaden scope. Do not commit, push, merge, use GitHub CLI, access external directories, or touch protected domains. When a test or supervisor finding cannot be resolved inside scope, stop and state BLOCKED with exact evidence.
-
+Follow the front prompt exactly. Work only in the detached model workspace, which contains no Git metadata or credentials. Never broaden scope. Do not invoke a shell, commit, push, merge, use GitHub CLI, access external directories, or touch protected domains. The trusted worker performs tests, diff inspection, commits and pushes. The production worker supplies this policy inline through OPENCODE_CONFIG_CONTENT so the model workspace cannot modify it. When a supervisor finding cannot be resolved inside scope, stop and state BLOCKED with exact evidence.

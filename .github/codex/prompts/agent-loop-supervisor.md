@@ -8,12 +8,13 @@ Pilot acceptance criteria:
    - docs/agent_loop/pilot/EXECUTOR_REPORT.json
 2. PILOT_MARKER.md must contain exactly:
    # Agent Loop Pilot
+   WORKER_VERSION=1.5.2
    STATUS=PASS
    EXECUTOR=KIMI_OPENCODE_OLLAMA
    SUPERVISOR=CODEX_GITHUB_ACTION
-3. EXECUTOR_REPORT.json must be valid JSON, identify Kimi/OpenCode/Ollama, report local tests passed, declare no merge and no canonical-local synchronization.
+3. EXECUTOR_REPORT.json must be valid JSON, identify Kimi/OpenCode/Ollama, report local tests passed, declare worker_version >= 1.5.2, no merge and no canonical-local synchronization.
 4. No runtime, workflow, memory, FAISS, state, trading, QC, IBKR, financial or security behavior may change.
-5. Report only material P0/P1 findings. Maximum five findings.
+5. The pilot worker must remain pilot-only, use a trusted server-side path profile, deny shell execution to Kimi, run Kimi in a detached workspace with no .git metadata or editable policy file, supply the custom agent policy inline, and copy only trusted outputs into the Git checkout.
+6. Report only material P0/P1 findings. Maximum five findings.
 
 Return only JSON matching the supplied output schema. Use PASS only when every criterion is satisfied. head_sha must equal the checked-out PR HEAD SHA available from Git.
-

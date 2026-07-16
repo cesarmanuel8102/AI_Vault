@@ -27,6 +27,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Verify hardened worker contract
+        run: python tests/contract/test_agent_loop_worker_hardening_02.py
       - name: Verify pilot scope and reports
         run: |
           python scripts/agent_loop/pilot_verify.py \
@@ -91,7 +93,7 @@ jobs:
             const issue_number = context.payload.pull_request.number;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const known = ['loop:ci','loop:repairing','loop:ready-human-audit','loop:blocked','loop:failed','loop:token-exhausted'];
+            const known = ['loop:ci','loop:repairing','loop:ready-human-audit','loop:blocked','loop:failed','loop:token-exhausted','loop:accepted'];
             const current = await github.rest.issues.listLabelsOnIssue({owner, repo, issue_number});
             for (const l of current.data) {
               if (known.includes(l.name)) {
