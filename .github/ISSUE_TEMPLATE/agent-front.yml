@@ -1,0 +1,14 @@
+name: Controlled agent front
+about: Queue a tightly scoped Kimi/OpenCode front
+body:
+  - type: markdown
+    attributes:
+      value: Use the local Start-Pilot.ps1 or an audited front generator. Do not hand-edit AGENT_LOOP_SPEC.
+  - type: textarea
+    id: context
+    attributes:
+      label: Human context
+      description: Optional context for the future human audit. Machine commands are ignored.
+    validations:
+      required: false
+
