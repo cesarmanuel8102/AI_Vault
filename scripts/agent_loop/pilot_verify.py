@@ -7,8 +7,8 @@ from pathlib import Path
 MARKER = 'docs/agent_loop/pilot/PILOT_MARKER.md'
 EXECUTOR = 'docs/agent_loop/pilot/EXECUTOR_REPORT.json'
 ALLOWED = {MARKER, EXECUTOR}
-EXPECTED = '# Agent Loop Pilot\nSTATUS=PASS\nEXECUTOR=KIMI_OPENCODE_OLLAMA\nSUPERVISOR=CODEX_GITHUB_ACTION\n'
-MIN_WORKER_VERSION = (1, 5, 0)
+EXPECTED = '# Agent Loop Pilot\nWORKER_VERSION=1.5.2\nSTATUS=PASS\nEXECUTOR=KIMI_OPENCODE_OLLAMA\nSUPERVISOR=CODEX_GITHUB_ACTION\n'
+MIN_WORKER_VERSION = (1, 5, 2)
 
 def run(args):
     p=subprocess.run(args,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
@@ -34,17 +34,18 @@ def main():
     errors=[]
     if not marker.exists(): errors.append('marker missing')
     elif marker.read_text(encoding='utf-8-sig').replace('\r\n','\n') != EXPECTED: errors.append('marker content mismatch')
-    if not executor.exists():
-        if not a.local: errors.append('executor report missing')
-    else:
-        try:
-            d=json.loads(executor.read_text(encoding='utf-8-sig'))
-            if d.get('executor')!='Kimi via OpenCode/Ollama': errors.append('executor identity mismatch')
-            if d.get('local_test_passed') is not True: errors.append('local test not passed')
-            if d.get('merge_performed') is not False: errors.append('merge_performed must be false')
-            if d.get('canonical_local_sync') is not False: errors.append('canonical_local_sync must be false')
-            if version_tuple(d.get('worker_version')) < MIN_WORKER_VERSION: errors.append('worker_version must be >= 1.5.0')
-        except Exception as e: errors.append(f'executor report invalid: {e}')
+    if not a.local:
+        if not executor.exists():
+            errors.append('executor report missing')
+        else:
+            try:
+                d=json.loads(executor.read_text(encoding='utf-8-sig'))
+                if d.get('executor')!='Kimi via OpenCode/Ollama': errors.append('executor identity mismatch')
+                if d.get('local_test_passed') is not True: errors.append('local test not passed')
+                if d.get('merge_performed') is not False: errors.append('merge_performed must be false')
+                if d.get('canonical_local_sync') is not False: errors.append('canonical_local_sync must be false')
+                if version_tuple(d.get('worker_version')) < MIN_WORKER_VERSION: errors.append('worker_version must be >= 1.5.2')
+            except Exception as e: errors.append(f'executor report invalid: {e}')
     changed=collect_changed(a.base_sha,a.head_sha)
     expected={MARKER} if a.local else ALLOWED
     extra=sorted(set(changed)-expected)
@@ -59,4 +60,3 @@ def main():
     print(json.dumps(report,indent=2))
     return 0 if not errors else 1
 if __name__=='__main__': sys.exit(main())
-

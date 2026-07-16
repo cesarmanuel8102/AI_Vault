@@ -5,8 +5,8 @@ GitHub is the source of truth for repository state and every candidate PR. Kimi 
 Worker contract: `scripts/agent_loop/local_worker/worker_contract.json`.
 Worker source: `scripts/agent_loop/local_worker/agent_worker.py`.
 
-Hardening 02.1 adds Windows `.cmd` resolution, dynamic OpenCode flag detection, generation workspaces, a single-instance lock, bounded retries, mutually exclusive phase labels, preflight evidence, retention cleanup, final same-HEAD local reports, trusted profile path allowlists and a shell-denied Kimi execution boundary. Auto-merge and synchronization with `C:\AI_VAULT_CANONICAL` remain prohibited.
+Hardening 02.2 adds Windows `.cmd` resolution, dynamic OpenCode flag detection, generation workspaces, a single-instance lock, bounded retries, mutually exclusive phase labels, preflight evidence, retention cleanup, final same-HEAD local reports, trusted profile path allowlists and a shell-denied Kimi execution boundary, and a detached model workspace that never exposes `.git` metadata, trusted Git credentials, or an editable agent-policy file to Kimi. The custom agent and deny rules are supplied inline through `OPENCODE_CONFIG_CONTENT`. Auto-merge and synchronization with `C:\AI_VAULT_CANONICAL` remain prohibited.
 
 ## Deliberate limitation
 
-Version 1.5.1 is **pilot-only**. It accepts only `agent/pilot-*`, only the `pilot` test profile and only the two pilot report paths. It is not authorized or technically capable of executing Brain front 16C. A separately reviewed `GENERAL-FRONT-03` must introduce generic front profiles and workflows before any production code front is queued.
+Version 1.5.2 is **pilot-only**. It accepts only `agent/pilot-*`, only the `pilot` test profile and only the two pilot report paths. It is not authorized or technically capable of executing Brain front 16C. A separately reviewed `GENERAL-FRONT-03` must introduce generic front profiles and workflows before any production code front is queued.

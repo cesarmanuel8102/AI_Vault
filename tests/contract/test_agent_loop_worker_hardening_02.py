@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import sys
 import subprocess
 import tempfile
 from pathlib import Path
@@ -86,6 +87,9 @@ try:
     permission = json.loads(env["OPENCODE_CONFIG_CONTENT"])["permission"]
     assert permission["bash"] == "deny"
     assert permission["external_directory"] == "deny"
+    assert permission["lsp"] == "deny" and permission["skill"] == "deny"
+    inline = json.loads(env["OPENCODE_CONFIG_CONTENT"])["agent"]["brain-kimi-executor"]
+    assert inline["permission"]["bash"] == "deny" and inline["permission"]["edit"] == "allow"
 finally:
     for key, value in old_env.items():
         if value is None:
@@ -171,9 +175,60 @@ with tempfile.TemporaryDirectory() as td:
     assert set(report["changed_files"]) == worker.PROFILE_ALLOWED_PATHS["pilot"]
 checks["executor_report_consistency"] = True
 
-assert contract["worker_version"] == worker.WORKER_VERSION == "1.5.1"
+with tempfile.TemporaryDirectory() as td:
+    repo = Path(td) / "repo"; repo.mkdir()
+    (repo / ".git").mkdir()
+    agent = repo / ".opencode/agents/brain-kimi-executor.md"
+    agent.parent.mkdir(parents=True); agent.write_text("policy\n", encoding="utf-8")
+    old_marker = repo / "docs/agent_loop/pilot/PILOT_MARKER.md"
+    old_marker.parent.mkdir(parents=True); old_marker.write_text("old\n", encoding="utf-8")
+    model, seed_hashes = worker.prepare_model_workspace(repo, valid_spec(), 1)
+    assert not (model / ".git").exists()
+    assert not (model / ".opencode").exists()
+    assert seed_hashes == {}
+    marker = model / "docs/agent_loop/pilot/PILOT_MARKER.md"
+    marker.write_text(worker.PILOT_MARKER_TEXT, encoding="utf-8")
+    worker.audit_and_sync_model_workspace(model, repo, seed_hashes)
+    assert old_marker.read_text(encoding="utf-8") == worker.PILOT_MARKER_TEXT
+
+with tempfile.TemporaryDirectory() as td:
+    repo = Path(td) / "repo"; repo.mkdir()
+    (repo / ".git").mkdir()
+    agent = repo / ".opencode/agents/brain-kimi-executor.md"
+    agent.parent.mkdir(parents=True); agent.write_text("policy\n", encoding="utf-8")
+    model, seed_hashes = worker.prepare_model_workspace(repo, valid_spec(), 1)
+    malicious = model / ".git/hooks/pre-commit"
+    malicious.parent.mkdir(parents=True); malicious.write_text("echo pwned\n", encoding="utf-8")
+    marker = model / "docs/agent_loop/pilot/PILOT_MARKER.md"
+    marker.parent.mkdir(parents=True, exist_ok=True); marker.write_text(worker.PILOT_MARKER_TEXT, encoding="utf-8")
+    expect_error(lambda: worker.audit_and_sync_model_workspace(model, repo, seed_hashes), "git_metadata")
+checks["detached_git_boundary"] = True
+
+with tempfile.TemporaryDirectory() as td:
+    repo = Path(td) / "repeatable"; repo.mkdir()
+    subprocess.run(["git", "init"], cwd=repo, check=True, stdout=subprocess.DEVNULL)
+    subprocess.run(["git", "config", "user.name", "test"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=repo, check=True)
+    verifier = repo / "scripts/agent_loop/pilot_verify.py"
+    verifier.parent.mkdir(parents=True); verifier.write_text((ROOT / "scripts/agent_loop/pilot_verify.py").read_text(encoding="utf-8"), encoding="utf-8")
+    marker = repo / "docs/agent_loop/pilot/PILOT_MARKER.md"
+    marker.parent.mkdir(parents=True); marker.write_text("# Agent Loop Pilot\nSTATUS=PASS\nEXECUTOR=KIMI_OPENCODE_OLLAMA\nSUPERVISOR=CODEX_GITHUB_ACTION", encoding="utf-8")
+    executor = repo / "docs/agent_loop/pilot/EXECUTOR_REPORT.json"
+    executor.write_text(json.dumps({"worker_version":"1.5.1"}), encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-m", "old pilot"], cwd=repo, check=True, stdout=subprocess.DEVNULL)
+    marker.write_text(worker.PILOT_MARKER_TEXT, encoding="utf-8")
+    local = subprocess.run([sys.executable, str(verifier), "--local"], cwd=repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    assert local.returncode == 0, local.stdout
+checks["repeatable_local_pilot"] = True
+
+assert contract["worker_version"] == worker.WORKER_VERSION == "1.5.2"
 assert contract["pilot_only"] is True and contract["general_fronts_supported"] is False
 assert contract["hardening"]["agent_shell_denied"] is True
+assert contract["hardening"]["detached_model_workspace"] is True
+assert contract["hardening"]["git_metadata_unexposed"] is True
+assert contract["hardening"]["inline_immutable_agent_policy"] is True
+assert contract["hardening"]["model_workspace_has_no_policy_file"] is True
 checks["contract_truthfulness"] = True
 
 failed = [name for name, ok in checks.items() if not ok]

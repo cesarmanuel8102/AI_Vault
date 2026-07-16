@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 SPEC_RE = re.compile(r"<!--\s*AGENT_LOOP_SPEC\s*(\{.*?\})\s*AGENT_LOOP_SPEC\s*-->", re.S)
-WORKER_VERSION = "1.5.1"
+WORKER_VERSION = "1.5.2"
 PHASE_LABELS = {
     "agent:queued", "loop:executing", "loop:ci", "loop:repairing",
     "loop:ready-human-audit", "loop:blocked", "loop:failed",
@@ -28,6 +28,13 @@ REQUIRED_FORBIDDEN_PATHS = {
     "financial_autonomy/",
     "tmp_agent/brain_v9/core/session.py",
 }
+MODEL_SEED_PATHS: set[str] = set()
+PILOT_MARKER_TEXT = """# Agent Loop Pilot
+WORKER_VERSION=1.5.2
+STATUS=PASS
+EXECUTOR=KIMI_OPENCODE_OLLAMA
+SUPERVISOR=CODEX_GITHUB_ACTION
+"""
 
 class CmdError(RuntimeError):
     def __init__(self, cmd, code, out):
@@ -162,10 +169,23 @@ def opencode_env(cfg: dict, repo_dir: Path) -> dict[str,str]:
     model = cfg["opencode_model"]
     # Preserve the user's existing OpenCode provider/auth configuration.
     # Override only the selected model and the worker permission boundary.
+    strict_permissions = {
+        "read":"allow", "edit":"allow", "glob":"allow", "grep":"allow", "list":"allow",
+        "bash":"deny", "task":"deny", "external_directory":"deny", "webfetch":"deny",
+        "websearch":"deny", "lsp":"deny", "skill":"deny", "question":"deny", "todowrite":"deny"
+    }
     conf = {
         "$schema":"https://opencode.ai/config.json",
         "model":model,
-        "permission":{"external_directory":"deny","webfetch":"deny","websearch":"deny","bash":"deny","task":"deny","question":"deny"}
+        "permission":strict_permissions,
+        "agent":{
+            "brain-kimi-executor":{
+                "description":"Writes one exact allowlisted pilot artifact in a detached workspace.",
+                "mode":"primary", "steps":30, "temperature":0.1, "model":model,
+                "prompt":"Follow the user prompt exactly. Never use shell, network, subagents, skills, LSP, or external paths.",
+                "permission":strict_permissions
+            }
+        }
     }
     env = os.environ.copy()
     # Never expose GitHub/OpenAI credentials to OpenCode.
@@ -189,18 +209,17 @@ def discover_session_id(repo_dir: Path, title: str) -> str | None:
     return None
 
 def make_prompt(spec: dict, cycle: int, feedback: str | None = None) -> str:
-    exact = """# Agent Loop Pilot\nSTATUS=PASS\nEXECUTOR=KIMI_OPENCODE_OLLAMA\nSUPERVISOR=CODEX_GITHUB_ACTION\n"""
     base = f"""You are the Kimi executor for {spec['front_id']}.
-Work only in the current Git checkout. Do not commit, push, use gh, merge, or access external directories.
+Work only in the detached model workspace. It contains no Git metadata and no credentials.
+Do not invoke a shell, commit, push, use gh, merge, or access external directories.
 Objective: {spec['objective']}
-Allowed paths: {json.dumps(spec['allowed_paths'])}
-Forbidden paths: {json.dumps(spec['forbidden_paths'])}
-Pilot requirement: create docs/agent_loop/pilot/PILOT_MARKER.md with exactly this UTF-8 text:\n---\n{exact}---
+Allowed output path: docs/agent_loop/pilot/PILOT_MARKER.md
+Pilot requirement: write that file with exactly this UTF-8 text:\n---\n{PILOT_MARKER_TEXT}---
 Do not create or edit EXECUTOR_REPORT.json; the trusted worker writes it after validation.
-Do not change any other file. Do not invoke a shell; the trusted worker performs diff inspection and tests. This is cycle {cycle}.
+Do not change the local agent policy or create any other file. This is cycle {cycle}.
 """
     if feedback:
-        base += f"\nRepair only these verified failures, then recheck the diff:\n{feedback[:6000]}\n"
+        base += f"\nRepair only these verified failures:\n{feedback[:6000]}\n"
     return base
 
 _OPENCODE_RUN_HELP: str | None = None
@@ -217,18 +236,81 @@ def opencode_run_supports(flag: str, cwd: Path | None = None) -> bool:
         _OPENCODE_RUN_HELP = run(["opencode", "run", "--help"], cwd=cwd, check=False)
     return flag in _OPENCODE_RUN_HELP
 
-def run_kimi(cfg, spec, repo_dir, issue_no, cycle, feedback=None, session_id=None):
+def _walk_workspace_files(root: Path) -> list[str]:
+    files = []
+    for path in root.rglob("*"):
+        if path.is_symlink():
+            raise RuntimeError(f"MODEL_WORKSPACE_SYMLINK_DENIED:{path}")
+        if path.is_file():
+            files.append(path.relative_to(root).as_posix())
+    return sorted(files)
+
+def prepare_model_workspace(repo_dir: Path, spec: dict, cycle: int) -> tuple[Path, dict[str, str]]:
+    """Create a no-.git workspace for Kimi and seed only trusted, non-secret files."""
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    model_dir = repo_dir.parent / f"model-cycle-{cycle}-{stamp}-{os.getpid()}"
+    model_dir.mkdir(parents=True, exist_ok=False)
+    seed_hashes: dict[str, str] = {}
+    for rel in sorted(MODEL_SEED_PATHS):
+        src = repo_dir / rel
+        if not src.is_file():
+            raise RuntimeError(f"MODEL_SEED_MISSING:{rel}")
+        dst = model_dir / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(src, dst)
+        seed_hashes[rel] = sha256_file(dst)
+    marker_rel = "docs/agent_loop/pilot/PILOT_MARKER.md"
+    marker_src = repo_dir / marker_rel
+    if marker_src.is_file():
+        marker_dst = model_dir / marker_rel
+        marker_dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(marker_src, marker_dst)
+    if (model_dir / ".git").exists():
+        raise RuntimeError("MODEL_WORKSPACE_GIT_METADATA_PRESENT")
+    return model_dir, seed_hashes
+
+def audit_and_sync_model_workspace(model_dir: Path, repo_dir: Path, seed_hashes: dict[str, str]) -> list[str]:
+    """Reject metadata/extra writes, verify exact output, then copy only allowlisted output."""
+    if (model_dir / ".git").exists():
+        raise RuntimeError("MODEL_WORKSPACE_GIT_METADATA_DENIED")
+    files = set(_walk_workspace_files(model_dir))
+    marker_rel = "docs/agent_loop/pilot/PILOT_MARKER.md"
+    expected = set(MODEL_SEED_PATHS) | {marker_rel}
+    extra = sorted(files - expected)
+    missing = sorted(expected - files)
+    if extra or missing:
+        raise RuntimeError(f"MODEL_WORKSPACE_BOUNDARY_FAILED extra={extra} missing={missing}")
+    for rel, expected_hash in seed_hashes.items():
+        if sha256_file(model_dir / rel) != expected_hash:
+            raise RuntimeError(f"MODEL_SEED_MODIFIED:{rel}")
+    marker = model_dir / marker_rel
+    content = marker.read_text(encoding="utf-8-sig").replace("\r\n", "\n")
+    if content != PILOT_MARKER_TEXT:
+        raise RuntimeError("PILOT_MARKER_CONTENT_MISMATCH")
+    destination = repo_dir / marker_rel
+    current = repo_dir
+    for part in Path(marker_rel).parts[:-1]:
+        current = current / part
+        if current.exists() and current.is_symlink():
+            raise RuntimeError(f"TRUSTED_OUTPUT_PARENT_SYMLINK_DENIED:{current}")
+    if destination.exists() and destination.is_symlink():
+        raise RuntimeError(f"TRUSTED_OUTPUT_SYMLINK_DENIED:{destination}")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(marker, destination)
+    return [marker_rel]
+
+def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=None):
     report_dir = Path(cfg["install_root"]) / "reports"
     log = report_dir / f"issue-{issue_no}-cycle-{cycle}-opencode.jsonl"
     title = f"AI_Vault {spec['front_id']}"
-    cmd = ["opencode","run","--dir",str(repo_dir),"--model",cfg["opencode_model"],
+    cmd = ["opencode","run","--dir",str(model_dir),"--model",cfg["opencode_model"],
            "--agent","brain-kimi-executor","--format","json",
            "--title",title]
-    if opencode_run_supports("--auto", cwd=repo_dir):
+    if opencode_run_supports("--auto", cwd=model_dir):
         cmd.append("--auto")
     if session_id: cmd += ["--session", session_id]
     cmd.append(make_prompt(spec, cycle, feedback))
-    p = subprocess.run(command_for_subprocess(cmd), cwd=str(repo_dir), env=opencode_env(cfg, repo_dir), text=True,
+    p = subprocess.run(command_for_subprocess(cmd), cwd=str(model_dir), env=opencode_env(cfg, model_dir), text=True,
                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     log.write_text(p.stdout, encoding="utf-8")
     if p.returncode != 0:
@@ -236,7 +318,7 @@ def run_kimi(cfg, spec, repo_dir, issue_no, cycle, feedback=None, session_id=Non
         if "context" in low or "token" in low or "rate limit" in low:
             raise RuntimeError("TOKEN_EXHAUSTED:" + p.stdout[-3000:])
         raise CmdError(cmd, p.returncode, p.stdout)
-    return log, discover_session_id(repo_dir, title)
+    return log, discover_session_id(model_dir, title)
 
 def run_profile(cfg, spec, repo_dir) -> tuple[bool,str]:
     cmd = [str(x) for x in cfg["test_profiles"][spec["test_profile"]]]
@@ -438,8 +520,15 @@ def execute_initial(cfg, issue, spec, state_path):
     session_id = None
     for cycle in range(1,int(spec["max_kimi_cycles"])+1):
         event(cfg,"kimi_cycle_start",issue=n,cycle=cycle,front=spec["front_id"])
-        log, discovered_session = run_kimi(cfg,spec,repo_dir,n,cycle,feedback,session_id)
+        model_dir, seed_hashes = prepare_model_workspace(repo_dir, spec, cycle)
+        log, discovered_session = run_kimi(cfg,spec,model_dir,n,cycle,feedback,session_id)
         if discovered_session: session_id = discovered_session
+        try:
+            audit_and_sync_model_workspace(model_dir, repo_dir, seed_hashes)
+        except Exception as exc:
+            feedback = str(exc)
+            event(cfg,"kimi_cycle_repair_needed",issue=n,cycle=cycle,bad=[str(exc)],test_ok=False)
+            continue
         changes = changed_files(repo_dir,spec["expected_base_sha"])
         bad = [p for p in changes if not path_allowed(p,spec["allowed_paths"],spec["forbidden_paths"])]
         # Worker owns executor report, so add it after initial path check.
@@ -498,8 +587,10 @@ def process_state(cfg, state_path):
     run(["git","checkout",spec["work_branch"]],cwd=repo_dir)
     run(["git","reset","--hard",f"origin/{spec['work_branch']}"],cwd=repo_dir)
     cycle=st["cycles"]+1
-    log, discovered_session=run_kimi(cfg,spec,repo_dir,issue,cycle,feedback,st.get("opencode_session_id"))
+    model_dir, seed_hashes = prepare_model_workspace(repo_dir, spec, cycle)
+    log, discovered_session=run_kimi(cfg,spec,model_dir,issue,cycle,feedback,st.get("opencode_session_id"))
     if discovered_session: st["opencode_session_id"] = discovered_session
+    audit_and_sync_model_workspace(model_dir, repo_dir, seed_hashes)
     changes=changed_files(repo_dir,spec["expected_base_sha"])
     bad=[p for p in changes if not path_allowed(p,spec["allowed_paths"],spec["forbidden_paths"])]
     ok,out=run_profile(cfg,spec,repo_dir)
