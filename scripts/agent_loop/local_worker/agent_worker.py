@@ -1587,6 +1587,22 @@ def trusted_v156_deploy_advance_recover_existing_pr(
     source = Path(source_worker).resolve()
     if sha256_file(source).upper() != str(approved_worker_sha256).upper():
         raise ValueError("approved worker SHA mismatch")
+    if not re.fullmatch(r"[0-9a-fA-F]{40}", str(approved_control_plane_commit or "")):
+        raise ValueError("approved control-plane commit must be a full SHA")
+    try:
+        control_repo = source.parents[3]
+    except IndexError as exc:
+        raise ValueError("source worker is not inside an approved checkout") from exc
+    expected_source = (control_repo / "scripts/agent_loop/local_worker/agent_worker.py").resolve()
+    if source != expected_source:
+        raise ValueError("source worker path is outside the approved checkout")
+    if Path(run(["git", "rev-parse", "--show-toplevel"], cwd=control_repo).strip()).resolve() != control_repo.resolve():
+        raise ValueError("control-plane checkout root mismatch")
+    control_head = run(["git", "rev-parse", "HEAD"], cwd=control_repo).strip()
+    if control_head != approved_control_plane_commit:
+        raise ValueError(f"control-plane checkout HEAD mismatch: {control_head}")
+    if run(["git", "status", "--porcelain"], cwd=control_repo).strip():
+        raise ValueError("control-plane checkout is dirty")
     current_ref = gh_json(["api", f"repos/{cfg['repo']}/git/ref/heads/{cfg.get('base_branch','codex/own-capital-sustainable-return')}"])
     current_base = ((current_ref.get("object") or {}).get("sha") or "").strip()
     if current_base != approved_current_base_sha:
@@ -1594,6 +1610,9 @@ def trusted_v156_deploy_advance_recover_existing_pr(
     cmp_pr9 = gh_json(["api", f"repos/{cfg['repo']}/compare/{APPROVED_PR9_HEAD_V156}...{approved_current_base_sha}"])
     if str(cmp_pr9.get("status")) not in {"ahead", "identical"}:
         raise ValueError("current base does not contain approved PR #9 head")
+    cmp_candidate = gh_json(["api", f"repos/{cfg['repo']}/compare/{approved_current_base_sha}...{approved_control_plane_commit}"])
+    if str(cmp_candidate.get("status")) not in {"ahead", "identical"}:
+        raise ValueError("approved control-plane commit is not descended from the live base")
     cmp_hist = gh_json(["api", f"repos/{cfg['repo']}/compare/{historical_base_sha}...{approved_current_base_sha}"])
     if str(cmp_hist.get("status")) not in {"ahead", "identical"}:
         raise ValueError("current base is not descendant of historical base")
@@ -1644,6 +1663,7 @@ def trusted_v156_deploy_advance_recover_existing_pr(
     pr_body_backup.write_text(original_pr_body, encoding="utf-8")
     pushed = False
     new_head = None
+    owner_action_payload = None
     try:
         shutil.copy2(source, installed)
         installed_sha = sha256_file(installed)
@@ -1677,7 +1697,8 @@ def trusted_v156_deploy_advance_recover_existing_pr(
         if int(reloaded.get("cycles") or -1) != 2 or reloaded.get("status") != "WAITING_GITHUB" or reloaded.get("last_head_sha") != new_head:
             raise ValueError("postcondition failed: state")
         event(cfg, "trusted_v156_deploy_advance_recovery_existing_pr", historical_base=historical_base_sha,
-              approved_current_base=approved_current_base_sha, old_pr_head=expected_old_pr_head, new_pr_head=new_head,
+              approved_current_base=approved_current_base_sha, approved_control_plane_commit=approved_control_plane_commit,
+              old_pr_head=expected_old_pr_head, new_pr_head=new_head,
               installed_worker_sha=installed_sha, state_backup=str(state_backup), worker_backup=str(worker_backup),
               issue_body_backup=str(issue_body_backup), pr_body_backup=str(pr_body_backup), task_disabled=scheduled_task_disabled(),
               canonical_touched=False, kimi_executed=False, once_executed=False)
@@ -1692,7 +1713,25 @@ def trusted_v156_deploy_advance_recover_existing_pr(
         except Exception: pass
         if pushed:
             try: run(["git", "push", f"--force-with-lease=refs/heads/{expected_work_branch}:{new_head}", "origin", f"{expected_old_pr_head}:refs/heads/{expected_work_branch}"], cwd=repo_dir); rollback["remote_branch"] = True
-            except Exception as rb_exc: rollback["owner_action_required"] = True; rollback["remote_error"] = bounded_tail(str(rb_exc))
+            except Exception as rb_exc:
+                actual_remote = "unknown"
+                try:
+                    remote_line = run(["git", "ls-remote", "origin", f"refs/heads/{expected_work_branch}"], cwd=repo_dir).strip()
+                    if remote_line:
+                        actual_remote = remote_line.split()[0]
+                except Exception:
+                    pass
+                rollback["owner_action_required"] = True
+                rollback["remote_error"] = bounded_tail(str(rb_exc))
+                owner_action_payload = {
+                    "status": "OWNER_ACTION_REQUIRED",
+                    "reason": "force-with-lease refused rollback after unexpected remote movement",
+                    "branch": expected_work_branch,
+                    "expected_lease_sha": new_head,
+                    "actual_remote_sha": actual_remote,
+                    "rollback_target_sha": expected_old_pr_head,
+                    "primary_failure": bounded_tail(str(exc)),
+                }
         try: update_issue_body(cfg["repo"], 5, original_issue_body); rollback["issue_body"] = True
         except Exception: pass
         try: update_pr_body(cfg["repo"], 6, original_pr_body); rollback["pr_body"] = True
@@ -1701,9 +1740,16 @@ def trusted_v156_deploy_advance_recover_existing_pr(
         except Exception: pass
         try: restore_label_set(cfg["repo"], 6, original_pr_labels); rollback["pr_labels"] = True
         except Exception: pass
-        event(cfg, "trusted_v156_post_merge_recovery_rollback", error=bounded_tail(str(exc)), rollback=rollback,
-              historical_base=historical_base_sha, approved_current_base=approved_current_base_sha,
-              old_pr_head=expected_old_pr_head, attempted_new_pr_head=new_head)
+        try:
+            event(cfg, "trusted_v156_post_merge_recovery_rollback", error=bounded_tail(str(exc)), rollback=rollback,
+                  historical_base=historical_base_sha, approved_current_base=approved_current_base_sha,
+                  approved_control_plane_commit=approved_control_plane_commit,
+                  old_pr_head=expected_old_pr_head, attempted_new_pr_head=new_head,
+                  owner_action=owner_action_payload)
+        except Exception:
+            pass
+        if owner_action_payload:
+            raise RuntimeError("OWNER_ACTION_REQUIRED:" + json.dumps(owner_action_payload, sort_keys=True)) from exc
         raise
 
 class SingleInstanceLock:
@@ -1774,8 +1820,12 @@ def main():
             with SingleInstanceLock(lock_path):
                 backup = trusted_v156_deploy_advance_recover_existing_pr(cfg, args.trusted_v156_deploy_advance_recover_existing_pr, args.source_worker, args.approved_worker_sha256, args.historical_base_sha, args.approved_current_base_sha, args.approved_control_plane_commit, args.expected_old_pr_head, args.expected_front, args.expected_pr_number, args.expected_work_branch)
         except RuntimeError as exc:
-            evidence = worker_process_evidence(cfg["install_root"])
-            raise SystemExit("worker.lock busy; trusted v1.5.6 post-merge recovery aborted before mutation; process_evidence=" + json.dumps(evidence, sort_keys=True)) from exc
+            if str(exc).startswith("OWNER_ACTION_REQUIRED:"):
+                raise SystemExit(str(exc)) from exc
+            if "another worker instance" in str(exc) or "worker.lock busy" in str(exc):
+                evidence = worker_process_evidence(cfg["install_root"])
+                raise SystemExit("worker.lock busy; trusted v1.5.6 post-merge recovery aborted before mutation; process_evidence=" + json.dumps(evidence, sort_keys=True)) from exc
+            raise
         print(json.dumps({"status":"POST_MERGE_RECOVERED_EXISTING_PR_V156", "backup": str(backup)}, indent=2))
         return
     if args.trusted_v155_deploy_recover_existing_pr is not None:
