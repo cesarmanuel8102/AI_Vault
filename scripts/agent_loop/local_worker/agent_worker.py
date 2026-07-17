@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 SPEC_RE = re.compile(r"<!--\s*AGENT_LOOP_SPEC\s*(\{.*?\})\s*AGENT_LOOP_SPEC\s*-->", re.S)
-WORKER_VERSION = "1.5.4"
+WORKER_VERSION = "1.5.6"
 PHASE_LABELS = {
     "agent:queued", "loop:executing", "loop:ci", "loop:repairing",
     "loop:ready-human-audit", "loop:blocked", "loop:failed",
@@ -230,6 +230,64 @@ def comment(repo: str, number: int, body: str):
 def issue_comments(repo: str, number: int) -> list[dict]:
     return gh_json(["api", f"repos/{repo}/issues/{number}/comments?per_page=100"])
 
+
+def seed_terminal_notification_keys_from_comments(cfg: dict, st: dict, phase: str, message: str) -> dict:
+    """Seed stable notification ledger from existing marker or legacy terminal comments."""
+    pr_number = int(st.get("pr_number") or 0) or None
+    target = pr_number or int(st["issue_number"])
+    key = notification_key(st.get("front"), pr_number, st.get("last_head_sha"), phase)
+    marker = notification_marker(key)
+    ledger = set(st.get("notification_keys") or [])
+    for item in issue_comments(cfg["repo"], target):
+        body = item.get("body") or ""
+        if marker in body or is_legacy_terminal_notification(body, phase, message):
+            ledger.add(key)
+    st["notification_keys"] = sorted(ledger)
+    return st
+
+def _safe_cmd_identity(command_line: str) -> str:
+    text = re.sub(r"(?i)(token|secret|password|key)=\S+", r"\1=<redacted>", str(command_line or ""))
+    return text[:500]
+
+def worker_process_evidence(install_root: str) -> list[dict]:
+    """Return bounded evidence for exact agent_worker.py/config worker command lines."""
+    if os.name != "nt":
+        return []
+    worker = str(Path(install_root) / "worker" / "agent_worker.py")
+    config = str(Path(install_root) / "config" / "worker.json")
+    ps = (
+        "$ErrorActionPreference='SilentlyContinue'; "
+        "Get-CimInstance Win32_Process | "
+        "Where-Object { $_.CommandLine -like '*agent_worker.py*' -and $_.CommandLine -like '*worker.json*' } | "
+        "Select-Object ProcessId,ExecutablePath,CommandLine | ConvertTo-Json -Depth 4"
+    )
+    out = run(["powershell", "-NoProfile", "-Command", ps], check=False)
+    if not out.strip():
+        return []
+    try:
+        raw = json.loads(out)
+    except Exception:
+        return [{"parse_error": bounded_tail(out)}]
+    items = raw if isinstance(raw, list) else [raw]
+    evidence = []
+    for item in items:
+        cmd = item.get("CommandLine") or ""
+        if worker.lower() in cmd.lower() and config.lower() in cmd.lower():
+            evidence.append({
+                "pid": item.get("ProcessId"),
+                "executable": item.get("ExecutablePath"),
+                "command_identity": _safe_cmd_identity(cmd),
+            })
+    return evidence[:5]
+
+def acquire_quiescence_or_raise(cfg: dict):
+    require_scheduled_task_disabled_for_trusted(cfg, "trusted maintenance")
+    try:
+        return SingleInstanceLock(Path(cfg["install_root"]) / "state" / "worker.lock").__enter__()
+    except Exception as exc:
+        evidence = worker_process_evidence(cfg["install_root"])
+        raise RuntimeError("worker.lock busy; trusted maintenance aborted before mutation; process_evidence=" + json.dumps(evidence, sort_keys=True)) from exc
+
 def notification_key(front_id: str | None, pr_number: int | None, head_sha: str | None, terminal_phase: str) -> str:
     return "|".join([str(front_id or ""), str(pr_number or ""), str(head_sha or ""), str(terminal_phase)])
 
@@ -268,14 +326,12 @@ def publish_terminal_notification(cfg: dict, state_path: Path, st: dict, phase: 
         st["terminal_notified"] = True
         save_json(state_path, st)
         return st
-    for item in issue_comments(cfg["repo"], target):
-        body = item.get("body") or ""
-        if marker in body or is_legacy_terminal_notification(body, phase, message):
-            ledger.add(key)
-            st["notification_keys"] = sorted(ledger)
-            st["terminal_notified"] = True
-            save_json(state_path, st)
-            return st
+    st = seed_terminal_notification_keys_from_comments(cfg, st, phase, message)
+    ledger = set(st.get("notification_keys") or [])
+    if key in ledger:
+        st["terminal_notified"] = True
+        save_json(state_path, st)
+        return st
     body = f"{marker}\n[AGENT-LOOP][{terminal_notification_tag(phase)}]\n\n@{cfg['owner']} {message[-4000:]}"
     comment(cfg["repo"], target, body)
     ledger.add(key)
@@ -935,6 +991,7 @@ def trusted_resume_existing_pr(
 ) -> Path:
     if int(issue_number) != 5 or int(expected_pr_number) != 6:
         raise ValueError("trusted resume is restricted to Issue #5 and PR #6")
+    require_scheduled_task_disabled_for_trusted(cfg, "trusted resume")
     state_path = Path(cfg["install_root"]) / "state" / f"issue-{issue_number}.json"
     if not state_path.exists():
         raise FileNotFoundError(str(state_path))
@@ -1006,6 +1063,7 @@ def trusted_base_advance_existing_pr(
 ) -> Path:
     if int(issue_number) != 5 or int(expected_pr_number) != 6:
         raise ValueError("trusted base advance is restricted to Issue #5 and PR #6")
+    require_scheduled_task_disabled_for_trusted(cfg, "trusted base advance")
     verify_commit_contains(cfg, approved_control_plane_commit, approved_new_base_sha)
     state_path = Path(cfg["install_root"]) / "state" / f"issue-{issue_number}.json"
     if not state_path.exists():
@@ -1119,11 +1177,104 @@ def scheduled_task_disabled(task_name: str = "AI_Vault_Kimi_GitHub_Worker") -> b
     out = run(["powershell", "-NoProfile", "-Command", f"(Get-ScheduledTask -TaskName '{task_name}').State"], check=False)
     return "Disabled" in out
 
+def require_scheduled_task_disabled_for_trusted(cfg: dict, action: str) -> None:
+    if os.name != "nt":
+        return
+    install_root = Path(str(cfg.get("install_root", ""))).resolve()
+    production_root = Path("C:/AI_VAULT_AGENT_WORKER").resolve()
+    if install_root == production_root and not scheduled_task_disabled():
+        raise ValueError(f"scheduled task must be Disabled before {action}")
+
+def _iter_worker_events(cfg: dict) -> list[dict]:
+    events_path = Path(cfg["install_root"]) / "reports" / "worker-events.jsonl"
+    if not events_path.exists():
+        raise FileNotFoundError(str(events_path))
+    out = []
+    for line_no, raw in enumerate(events_path.read_text(encoding="utf-8-sig").splitlines(), 1):
+        if not raw.strip():
+            continue
+        try:
+            item = json.loads(raw)
+        except Exception as exc:
+            raise ValueError(f"malformed worker event at line {line_no}") from exc
+        if not isinstance(item, dict):
+            raise ValueError(f"non-object worker event at line {line_no}")
+        out.append(item)
+    return out
+
+def _event_kind(item: dict) -> str:
+    return str(item.get("event") or item.get("kind") or item.get("type") or "")
+
+def _event_field(item: dict, key: str):
+    if key in item:
+        return item.get(key)
+    fields = item.get("fields")
+    if isinstance(fields, dict):
+        return fields.get(key)
+    return None
+
+def _event_matches(item: dict, kind: str, expected: dict) -> bool:
+    if _event_kind(item) != kind:
+        return False
+    for key, value in expected.items():
+        got = _event_field(item, key)
+        if isinstance(value, int):
+            try:
+                if int(got) != value:
+                    return False
+            except Exception:
+                return False
+        elif str(got) != str(value):
+            return False
+    return True
+
+def validate_v155_recovery_event_chronology(cfg: dict, base_sha: str, head_sha: str, repo_dir: str | None = None) -> None:
+    events = _iter_worker_events(cfg)
+    resume_expected = {"issue": 5, "pr": 6, "base": base_sha, "head": head_sha}
+    failure_expected = {
+        "issue": 5, "pr": 6, "cycle": 3, "cycle_before": 2, "cycle_after": 3,
+        "failure_class": "MODEL_CONTENT_FAILURE", "current_head": head_sha, "expected_base": base_sha,
+    }
+    resume_indexes = [i for i, e in enumerate(events) if _event_matches(e, "trusted_v154_resume_existing_pr", resume_expected)]
+    if len(resume_indexes) != 1:
+        raise ValueError(f"expected exactly one trusted_v154_resume_existing_pr event; found {len(resume_indexes)}")
+    failure_indexes = [i for i, e in enumerate(events) if _event_matches(e, "repair_local_gate_failed", failure_expected)]
+    if len(failure_indexes) != 1:
+        raise ValueError(f"expected exactly one matching repair_local_gate_failed event; found {len(failure_indexes)}")
+    if failure_indexes[0] <= resume_indexes[0]:
+        raise ValueError("repair_local_gate_failed event is not later than trusted_v154_resume_existing_pr")
+    terminal_bad = {"cycle_pushed", "trusted_cycle_success", "repair_success", "set_loop_ci", "loop_ci_transition"}
+    for item in events[failure_indexes[0] + 1:]:
+        kind = _event_kind(item)
+        if kind in terminal_bad and int(_event_field(item, "issue") or 5) == 5:
+            raise ValueError(f"unexpected later terminal event after failed cycle: {kind}")
+        if kind == "set_phase" and str(_event_field(item, "phase")) == "loop:ci":
+            raise ValueError("unexpected later loop:ci phase after failed cycle")
+    if not isinstance(repo_dir, str) or not repo_dir.strip():
+        raise ValueError("state.repo_dir is required for v1.5.5 recovery")
+    repo_path = Path(repo_dir)
+    if not repo_path.exists() or not repo_path.is_dir():
+        raise ValueError(f"state.repo_dir does not exist or is not a directory: {repo_dir}")
+    inside = run(["git", "rev-parse", "--is-inside-work-tree"], cwd=repo_path).strip().lower()
+    if inside != "true":
+        raise ValueError("state.repo_dir is not a Git worktree")
+    actual = run(["git", "rev-parse", "HEAD"], cwd=repo_path).strip()
+    if actual != head_sha:
+        raise ValueError(f"local repo_dir HEAD mismatch: {actual}")
+    remote_ref = run(["git", "rev-parse", "origin/agent/pilot-20260716-091529"], cwd=repo_path).strip()
+    if remote_ref != head_sha:
+        raise ValueError(f"origin/agent/pilot-20260716-091529 mismatch: {remote_ref}")
+    status = run(["git", "status", "--porcelain"], cwd=repo_path).strip()
+    if status:
+        raise ValueError("local repo_dir has pending candidate changes")
+    above = run(["git", "rev-list", f"{head_sha}..HEAD"], cwd=repo_path).strip()
+    if above:
+        raise ValueError("local repo_dir has commit above expected PR HEAD")
+
 def trusted_resume_issue5_pr6_v154(cfg: dict, issue_number: int, expected_front: str, expected_base_sha: str, expected_pr_number: int, expected_work_branch: str, expected_pr_head: str) -> Path:
     if int(issue_number) != 5 or int(expected_pr_number) != 6:
         raise ValueError("v1.5.4 resume is restricted to Issue #5 and PR #6")
-    if not scheduled_task_disabled():
-        raise ValueError("scheduled task must be Disabled before trusted resume")
+    require_scheduled_task_disabled_for_trusted(cfg, "trusted resume")
     state_path = Path(cfg["install_root"]) / "state" / "issue-5.json"
     original_state_bytes = state_path.read_bytes()
     st = json.loads(original_state_bytes.decode("utf-8-sig"))
@@ -1218,6 +1369,160 @@ def trusted_resume_issue5_pr6_v154(cfg: dict, issue_number: int, expected_front:
               error=bounded_tail(str(exc)), rollback=rollback)
         raise
 
+
+def trusted_v155_recover_existing_pr(cfg: dict, issue_number: int, expected_base_sha: str | None = None, expected_pr_head: str | None = None, approved_worker_sha256: str | None = None) -> Path:
+    if int(issue_number) != 5:
+        raise ValueError("trusted v1.5.5 recovery is restricted to Issue #5 and PR #6")
+    require_scheduled_task_disabled_for_trusted(cfg, "trusted recovery")
+    state_path = Path(cfg["install_root"]) / "state" / "issue-5.json"
+    original_state_bytes = state_path.read_bytes()
+    st = json.loads(original_state_bytes.decode("utf-8-sig"))
+    spec = st.get("spec") or {}
+    expected_front = "PILOT-KIMI-CODEX-20260716-091529"
+    expected_branch = "agent/pilot-20260716-091529"
+    expected_pr_number = 6
+    if st.get("trusted_v155_recovery_done"):
+        raise ValueError("trusted v1.5.5 recovery already completed")
+    if st.get("front") != expected_front or spec.get("front_id") != expected_front:
+        raise ValueError("front mismatch")
+    if spec.get("work_branch") != expected_branch:
+        raise ValueError("work branch mismatch")
+    if int(st.get("pr_number") or 0) != expected_pr_number:
+        raise ValueError("PR number mismatch")
+    if st.get("trusted_v154_resume_done") is not True:
+        raise ValueError("trusted_v154_resume_done is required")
+    if int(st.get("cycles") or -1) != 3 or st.get("status") != "WAITING_GITHUB":
+        raise ValueError("recovery requires cycles=3 and status=WAITING_GITHUB")
+    if expected_base_sha and spec.get("expected_base_sha") != expected_base_sha:
+        raise ValueError("base mismatch")
+    if expected_pr_head and st.get("last_head_sha") != expected_pr_head:
+        raise ValueError("state PR HEAD mismatch")
+    validate_v155_recovery_event_chronology(cfg, expected_base_sha or spec.get("expected_base_sha"), expected_pr_head or st.get("last_head_sha"), st.get("repo_dir"))
+    issue = gh_json(["issue", "view", "5", "--repo", cfg["repo"], "--json", "number,state,body,author,labels,url"])
+    pr = gh_json(["pr", "view", "6", "--repo", cfg["repo"], "--json", "number,url,state,isDraft,headRefName,headRefOid,baseRefName,body,labels"])
+    issue_spec = parse_spec(issue, cfg)
+    base_sha = expected_base_sha or spec.get("expected_base_sha")
+    head_sha = expected_pr_head or st.get("last_head_sha")
+    if str(issue.get("state", "")).upper() != "OPEN":
+        raise ValueError("issue is not open")
+    if str(pr.get("state", "")).upper() != "OPEN" or pr.get("isDraft") is not True:
+        raise ValueError("PR must be open and Draft")
+    if issue_spec.get("expected_base_sha") != base_sha:
+        raise ValueError("remote issue base mismatch")
+    if pr.get("headRefName") != expected_branch or pr.get("headRefOid") != head_sha:
+        raise ValueError("remote PR head mismatch")
+    ref = gh_json(["api", f"repos/{cfg['repo']}/git/ref/heads/{spec['base_branch']}"])
+    current_base = ((ref.get("object") or {}).get("sha") or "").strip()
+    if current_base != base_sha:
+        raise ValueError(f"base moved: expected {base_sha} actual {current_base}")
+    if pr_changed_files(cfg["repo"], 6) != sorted(PROFILE_ALLOWED_PATHS["pilot"]):
+        raise ValueError("unexpected PR diff")
+    reports = Path(cfg["install_root"]) / "reports"; reports.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    backup = state_path.with_suffix(state_path.suffix + ".bak-v155-recovery-" + stamp)
+    issue_body_backup = reports / f"issue-5-body.bak-v155-recovery-{stamp}.md"
+    pr_body_backup = reports / f"pr-6-body.bak-v155-recovery-{stamp}.md"
+    worker_backup = reports / f"agent_worker.py.bak-v155-recovery-{stamp}"
+    original_issue_body = issue.get("body") or ""
+    original_pr_body = pr.get("body") or ""
+    original_issue_labels = labels(issue)
+    original_pr_labels = labels(pr)
+    backup.write_bytes(original_state_bytes)
+    issue_body_backup.write_text(original_issue_body, encoding="utf-8")
+    pr_body_backup.write_text(original_pr_body, encoding="utf-8")
+    installed = Path(cfg["install_root"]) / "worker" / "agent_worker.py"
+    if installed.exists(): shutil.copy2(installed, worker_backup)
+    mutated = False
+    try:
+        st = seed_terminal_notification_keys_from_comments(cfg, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+        st.update({"cycles": 2, "status": "WAITING_GITHUB", "last_head_sha": head_sha,
+                   "local_retry_count": 0, "terminal_notified": False,
+                   "trusted_v155_recovery_done": True, "trusted_v155_recovery_utc": utc(), "updated_utc": utc()})
+        save_json(state_path, st); mutated = True
+        set_phase(cfg["repo"], 5, "loop:repairing"); mutated = True
+        set_phase(cfg["repo"], 6, "loop:repairing"); mutated = True
+        assert_exact_phase(read_issue_labels(cfg["repo"], 5), "loop:repairing", "Issue #5")
+        assert_exact_phase(read_pr_labels(cfg["repo"], 6), "loop:repairing", "PR #6")
+        reloaded = load_json(state_path)
+        if int(reloaded.get("cycles") or -1) != 2:
+            raise ValueError("postcondition failed: cycles")
+        if reloaded.get("status") != "WAITING_GITHUB":
+            raise ValueError("postcondition failed: status")
+        if reloaded.get("last_head_sha") != head_sha:
+            raise ValueError("postcondition failed: last_head_sha")
+        if reloaded.get("trusted_v155_recovery_done") is not True:
+            raise ValueError("postcondition failed: trusted_v155_recovery_done")
+        if approved_worker_sha256 and sha256_file(installed).upper() != str(approved_worker_sha256).upper():
+            raise ValueError("postcondition failed: installed worker SHA")
+        event(cfg, "trusted_v155_recovery_existing_pr", issue=5, pr=6, base=base_sha, head=head_sha,
+              state_backup=str(backup), issue_body_backup=str(issue_body_backup), pr_body_backup=str(pr_body_backup), worker_backup=str(worker_backup))
+        return backup
+    except Exception as exc:
+        rollback = {"state": False, "issue_body": False, "pr_body": False, "issue_labels": False, "pr_labels": False, "worker": False, "scheduled_task_disabled": scheduled_task_disabled()}
+        try: state_path.write_bytes(original_state_bytes); rollback["state"] = True
+        except Exception: pass
+        try: update_issue_body(cfg["repo"], 5, original_issue_body); rollback["issue_body"] = True
+        except Exception: pass
+        try: update_pr_body(cfg["repo"], 6, original_pr_body); rollback["pr_body"] = True
+        except Exception: pass
+        try: restore_label_set(cfg["repo"], 5, original_issue_labels); rollback["issue_labels"] = True
+        except Exception: pass
+        try: restore_label_set(cfg["repo"], 6, original_pr_labels); rollback["pr_labels"] = True
+        except Exception: pass
+        try:
+            if worker_backup.exists(): shutil.copy2(worker_backup, installed); rollback["worker"] = True
+        except Exception: pass
+        event(cfg, "trusted_v155_recovery_rollback", issue=5, pr=6, error=bounded_tail(str(exc)), rollback=rollback)
+        raise
+
+def trusted_v155_deploy_recover_existing_pr(cfg: dict, issue_number: int, source_worker: str, approved_worker_sha256: str, expected_base_sha: str | None = None, expected_pr_head: str | None = None) -> Path:
+    if int(issue_number) != 5:
+        raise ValueError("trusted v1.5.5 deploy recovery is restricted to Issue #5 and PR #6")
+    require_scheduled_task_disabled_for_trusted(cfg, "trusted deploy recovery")
+    source = Path(source_worker).resolve()
+    if not source.exists():
+        raise FileNotFoundError(str(source))
+    source_sha = sha256_file(source)
+    if source_sha.upper() != str(approved_worker_sha256).upper():
+        raise ValueError(f"approved source worker SHA mismatch: {source_sha}")
+    install_root = Path(cfg["install_root"])
+    installed = install_root / "worker" / "agent_worker.py"
+    state_path = install_root / "state" / "issue-5.json"
+    if not installed.exists():
+        raise FileNotFoundError(str(installed))
+    if not state_path.exists():
+        raise FileNotFoundError(str(state_path))
+    reports = install_root / "reports"; reports.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    worker_backup = reports / f"agent_worker.py.bak-v155-deploy-{stamp}"
+    state_backup = reports / f"issue-5.json.bak-v155-deploy-{stamp}"
+    original_worker = installed.read_bytes()
+    original_state = state_path.read_bytes()
+    shutil.copy2(installed, worker_backup)
+    state_backup.write_bytes(original_state)
+    try:
+        shutil.copy2(source, installed)
+        installed_sha = sha256_file(installed)
+        if installed_sha.upper() != str(approved_worker_sha256).upper():
+            raise ValueError(f"installed worker SHA mismatch: {installed_sha}")
+        backup = trusted_v155_recover_existing_pr(cfg, issue_number, expected_base_sha, expected_pr_head, approved_worker_sha256)
+        try:
+            event(cfg, "trusted_v155_deploy_recovery_existing_pr", issue=5, pr=6, source_sha=installed_sha, recovery_backup=str(backup), worker_backup=str(worker_backup), state_backup=str(state_backup))
+        except Exception:
+            pass
+        return backup
+    except Exception as exc:
+        rollback = {"state": False, "worker": False, "scheduled_task_disabled": scheduled_task_disabled()}
+        try: installed.write_bytes(original_worker); rollback["worker"] = True
+        except Exception: pass
+        try: state_path.write_bytes(original_state); rollback["state"] = True
+        except Exception: pass
+        event(cfg, "trusted_v155_deploy_recovery_rollback", issue=5, pr=6, error=bounded_tail(str(exc)), rollback=rollback)
+        raise
+
+
+
+
 class SingleInstanceLock:
     def __init__(self, path: Path):
         self.path=path; self.handle=None
@@ -1232,8 +1537,14 @@ class SingleInstanceLock:
             else:
                 import fcntl
                 fcntl.flock(self.handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except Exception:
-            self.handle.close(); raise RuntimeError("another worker instance is already running")
+        except Exception as exc:
+            self.handle.close()
+            try:
+                install_root = str(self.path.parent.parent)
+                evidence = worker_process_evidence(install_root)
+            except Exception:
+                evidence = []
+            raise RuntimeError("another worker instance is already running; process_evidence=" + json.dumps(evidence, sort_keys=True)) from exc
         return self
     def __exit__(self, exc_type, exc, tb):
         try:
@@ -1248,7 +1559,7 @@ class SingleInstanceLock:
             if self.handle: self.handle.close()
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--once",action="store_true"); ap.add_argument("--trusted-resume-existing-pr", type=int); ap.add_argument("--trusted-base-advance-existing-pr", type=int); ap.add_argument("--trusted-v154-resume-existing-pr", type=int); ap.add_argument("--expected-front"); ap.add_argument("--expected-base-sha"); ap.add_argument("--expected-old-base-sha"); ap.add_argument("--approved-new-base-sha"); ap.add_argument("--approved-control-plane-commit"); ap.add_argument("--expected-pr-number", type=int); ap.add_argument("--expected-work-branch"); ap.add_argument("--expected-pr-head"); ap.add_argument("--expected-old-pr-head")
+    ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--once",action="store_true"); ap.add_argument("--trusted-resume-existing-pr", type=int); ap.add_argument("--trusted-base-advance-existing-pr", type=int); ap.add_argument("--trusted-v154-resume-existing-pr", type=int); ap.add_argument("--trusted-v155-recover-existing-pr", type=int); ap.add_argument("--trusted-v155-deploy-recover-existing-pr", type=int); ap.add_argument("--expected-front"); ap.add_argument("--expected-base-sha"); ap.add_argument("--expected-old-base-sha"); ap.add_argument("--approved-new-base-sha"); ap.add_argument("--approved-control-plane-commit"); ap.add_argument("--expected-pr-number", type=int); ap.add_argument("--expected-work-branch"); ap.add_argument("--expected-pr-head"); ap.add_argument("--expected-old-pr-head"); ap.add_argument("--source-worker"); ap.add_argument("--approved-worker-sha256"); ap.add_argument("--historical-base-sha"); ap.add_argument("--approved-current-base-sha")
     args=ap.parse_args(); cfg=load_json(Path(args.config)); Path(cfg["install_root"]).mkdir(parents=True,exist_ok=True)
     global _RUN_EVENT_CFG
     _RUN_EVENT_CFG = cfg
@@ -1257,26 +1568,46 @@ def main():
                     args.approved_control_plane_commit, args.expected_pr_number,
                     args.expected_work_branch, args.expected_old_pr_head]):
             raise SystemExit("trusted base advance requires expected front, old base, approved new base, approved control-plane commit, PR number, branch, and old PR head")
-        backup = trusted_base_advance_existing_pr(cfg, args.trusted_base_advance_existing_pr,
-                                                  args.expected_front, args.expected_old_base_sha,
-                                                  args.approved_new_base_sha, args.approved_control_plane_commit,
-                                                  args.expected_pr_number, args.expected_work_branch,
-                                                  args.expected_old_pr_head)
+        with SingleInstanceLock(Path(cfg["install_root"])/"state"/"worker.lock"):
+            backup = trusted_base_advance_existing_pr(cfg, args.trusted_base_advance_existing_pr,
+                                                      args.expected_front, args.expected_old_base_sha,
+                                                      args.approved_new_base_sha, args.approved_control_plane_commit,
+                                                      args.expected_pr_number, args.expected_work_branch,
+                                                      args.expected_old_pr_head)
         print(json.dumps({"status":"BASE_ADVANCED_EXISTING_PR", "backup": str(backup)}, indent=2))
         return
     if args.trusted_v154_resume_existing_pr is not None:
         if not all([args.expected_front, args.expected_base_sha, args.expected_pr_number, args.expected_work_branch, args.expected_pr_head]):
             raise SystemExit("trusted v1.5.4 resume requires expected front, base, PR number, branch, and PR head")
-        backup = trusted_resume_issue5_pr6_v154(cfg, args.trusted_v154_resume_existing_pr, args.expected_front, args.expected_base_sha, args.expected_pr_number, args.expected_work_branch, args.expected_pr_head)
+        with SingleInstanceLock(Path(cfg["install_root"])/"state"/"worker.lock"):
+            backup = trusted_resume_issue5_pr6_v154(cfg, args.trusted_v154_resume_existing_pr, args.expected_front, args.expected_base_sha, args.expected_pr_number, args.expected_work_branch, args.expected_pr_head)
         print(json.dumps({"status":"RESUMED_EXISTING_PR_V154", "backup": str(backup)}, indent=2))
+        return
+    if args.trusted_v155_deploy_recover_existing_pr is not None:
+        if not all([args.source_worker, args.approved_worker_sha256, args.expected_base_sha, args.expected_pr_head]):
+            raise SystemExit("trusted v1.5.5 deploy recovery requires source worker, approved worker sha256, expected base, and expected PR head")
+        lock_path = Path(cfg["install_root"])/"state"/"worker.lock"
+        try:
+            with SingleInstanceLock(lock_path):
+                backup = trusted_v155_deploy_recover_existing_pr(cfg, args.trusted_v155_deploy_recover_existing_pr, args.source_worker, args.approved_worker_sha256, args.expected_base_sha, args.expected_pr_head)
+        except RuntimeError as exc:
+            evidence = worker_process_evidence(cfg["install_root"])
+            raise SystemExit("worker.lock busy; trusted v1.5.5 deploy recovery aborted before mutation; process_evidence=" + json.dumps(evidence, sort_keys=True)) from exc
+        print(json.dumps({"status":"DEPLOY_RECOVERED_EXISTING_PR_V155", "backup": str(backup)}, indent=2))
+        return
+    if args.trusted_v155_recover_existing_pr is not None:
+        with SingleInstanceLock(Path(cfg["install_root"])/"state"/"worker.lock"):
+            backup = trusted_v155_recover_existing_pr(cfg, args.trusted_v155_recover_existing_pr, args.expected_base_sha, args.expected_pr_head)
+        print(json.dumps({"status":"RECOVERED_EXISTING_PR_V155", "backup": str(backup)}, indent=2))
         return
     if args.trusted_resume_existing_pr is not None:
         if not all([args.expected_front, args.expected_base_sha, args.expected_pr_number,
                     args.expected_work_branch, args.expected_pr_head]):
             raise SystemExit("trusted existing-PR resume requires expected front, base, PR number, branch, and PR head")
-        backup = trusted_resume_existing_pr(cfg, args.trusted_resume_existing_pr, args.expected_front,
-                                            args.expected_base_sha, args.expected_pr_number,
-                                            args.expected_work_branch, args.expected_pr_head)
+        with SingleInstanceLock(Path(cfg["install_root"])/"state"/"worker.lock"):
+            backup = trusted_resume_existing_pr(cfg, args.trusted_resume_existing_pr, args.expected_front,
+                                                args.expected_base_sha, args.expected_pr_number,
+                                                args.expected_work_branch, args.expected_pr_head)
         print(json.dumps({"status":"RESUMED_EXISTING_PR", "backup": str(backup)}, indent=2))
         return
     with SingleInstanceLock(Path(cfg["install_root"])/"state"/"worker.lock"):
