@@ -206,10 +206,12 @@ def auth(topo: dict, **overrides) -> helper.Authorization:
     return helper.Authorization(**values)
 
 
-def run_case(*, fake_options=None, auth_overrides=None, hooks=None, source_override=None, repo_case=None, fake_setup=None):
+def run_case(*, fake_options=None, auth_overrides=None, hooks=None, source_override=None, repo_case=None, fake_setup=None, control_dirty=False):
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
         topo = create_topology(root)
+        if control_dirty:
+            (topo["control"] / "uncommitted-control-change.txt").write_text("dirty\n", encoding="utf-8")
         old_constants = (helper.common.HISTORICAL_BASE, helper.common.PRE_PR10_BASE, helper.common.OLD_PR_HEAD)
         helper.common.HISTORICAL_BASE, helper.common.PRE_PR10_BASE, helper.common.OLD_PR_HEAD = topo["historical"], topo["pre"], topo["old"]
         cfg, state_path = write_install(root, topo)

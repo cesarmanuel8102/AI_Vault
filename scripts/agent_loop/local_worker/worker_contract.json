@@ -50,6 +50,8 @@
     "v156_force_with_lease_conflict_owner_escalation": true,
     "v156_transactional_event_log_rollback": true,
     "v156_single_recovery_authority": true,
-    "v156_operator_direct_audit": true
+    "v156_operator_direct_audit": true,
+    "v156_control_plane_clean_checkout": true,
+    "v156_task_disabled_transactional_postcondition": true
   }
 }

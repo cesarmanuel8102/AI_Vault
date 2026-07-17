@@ -258,6 +258,13 @@ for rel in (
 ):
     assert (ROOT / rel).is_file(), rel
 checks["v156_single_recovery_authority"] = True
+for key in (
+    "v156_control_plane_clean_checkout",
+    "v156_task_disabled_transactional_postcondition",
+    "v156_operator_direct_audit",
+):
+    assert contract["hardening"][key] is True, key
+checks["v156_final_transaction_guards"] = True
 checks["contract_truthfulness"] = True
 
 failed = [name for name, ok in checks.items() if not ok]

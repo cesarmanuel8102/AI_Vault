@@ -31,6 +31,8 @@ def execute_recovery(
     checkout_head = require_sha("local control-plane HEAD", git(["rev-parse", "HEAD"], control_plane_root))
     if checkout_head != auth.approved_control_plane_commit:
         raise ValueError("local control-plane checkout HEAD mismatch")
+    if git(["status", "--porcelain"], control_plane_root):
+        raise ValueError("local control-plane checkout is dirty")
     if auth.approved_control_plane_commit != auth.approved_merged_base:
         raise ValueError("control-plane checkout is not the approved merged base")
     source_sha = worker.sha256_file(source_worker).upper()
@@ -182,6 +184,9 @@ def execute_recovery(
             raise ValueError("remote pilot HEAD postcondition failed")
         if worker.sha256_file(installed_worker).upper() != auth.approved_worker_sha256:
             raise ValueError("installed worker postcondition failed")
+        fire(hooks, "before_final_task_check")
+        if not worker.scheduled_task_disabled():
+            raise ValueError("scheduled task changed state during transaction")
 
         success_fields = {
             "historical_base": auth.historical_base,
@@ -197,7 +202,7 @@ def execute_recovery(
             "issue_body_backup": str(issue_backup),
             "pr_body_backup": str(pr_backup),
             "event_backup": str(event_backup) if original_event is not None else None,
-            "task_disabled": worker.scheduled_task_disabled(),
+            "task_disabled": True,
             "canonical_touched": False,
             "kimi_executed": False,
             "once_executed": False,
