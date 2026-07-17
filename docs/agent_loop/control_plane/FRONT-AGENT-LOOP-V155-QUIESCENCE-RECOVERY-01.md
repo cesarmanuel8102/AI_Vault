@@ -2,7 +2,7 @@
 
 ## Status
 
-CONTROL-PLANE HOTFIX REQUIRED
+IMPLEMENTED IN DRAFT PR #9
 
 ## Trigger
 
@@ -80,3 +80,38 @@ Release v1.5.5 to enforce process quiescence and transactional one-time recovery
 - one-time recovery returns `RECOVERED_EXISTING_PR_V155`.
 - state is exactly cycle 2 before the explicit one-shot.
 - canonical untouched.
+
+
+## Implementation summary
+
+Implemented in `control-plane/v155-quiescence-recovery`:
+
+- `WORKER_VERSION = 1.5.5`.
+- Trusted maintenance commands now acquire `state/worker.lock` before state-mutating work:
+  - `--trusted-resume-existing-pr`;
+  - `--trusted-base-advance-existing-pr`;
+  - `--trusted-v154-resume-existing-pr`;
+  - `--trusted-v155-recover-existing-pr`.
+- Lock contention now fails closed and includes bounded sanitized process evidence for exact worker/config command lines.
+- `--trusted-v155-recover-existing-pr 5` is permanently restricted to Issue #5 / PR #6.
+- Recovery validates the exact preserved pilot state and resets it to `cycles=2`, `WAITING_GITHUB`, `loop:repairing` without running Kimi or pushing.
+- Recovery seeds `notification_keys` from markerless legacy `TOKEN_EXHAUSTED` comments to prevent a fourth duplicate notification.
+- `Repair-AgentLoop-v1.5.5.ps1` and `Repair-AgentLoop-v1.5.5.Core.psm1` install v1.5.5, run contracts, execute only the one-time recovery command, and leave the scheduled task Disabled.
+
+## Local validation
+
+Windows local validation executed:
+
+- `python -m py_compile scripts/agent_loop/local_worker/agent_worker.py` — PASS
+- `python tests/contract/test_agent_loop_worker_v153_base_advance.py` — PASS
+- `python tests/contract/test_agent_loop_worker_v153_regression.py` — PASS
+- `python tests/contract/test_agent_loop_worker_v154_repair.py` — PASS
+- `python tests/contract/test_agent_loop_worker_v154_transaction_notifications.py` — PASS
+- `powershell -NoProfile -ExecutionPolicy Bypass -File tests/contract/test_agent_loop_worker_v154_deploy_rollback.ps1` — PASS
+- `python tests/contract/test_agent_loop_worker_v155_quiescence_recovery.py` — PASS
+- `powershell -NoProfile -ExecutionPolicy Bypass -File tests/contract/test_agent_loop_worker_v155_deploy_recovery.ps1` — PASS
+- `git diff --check` — PASS
+
+## Current live pilot note
+
+During this hotfix work, PR #6 was observed externally returning to `loop:token-exhausted` with a third legacy `TOKEN_EXHAUSTED` comment. This PR does not modify PR #6; the v1.5.5 recovery command is designed to transactionally repair that preserved second-pilot state after PR #9 is reviewed and deployed.

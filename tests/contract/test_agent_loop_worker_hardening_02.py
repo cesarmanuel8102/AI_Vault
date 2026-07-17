@@ -222,7 +222,7 @@ with tempfile.TemporaryDirectory() as td:
     assert local.returncode == 0, local.stdout
 checks["repeatable_local_pilot"] = True
 
-assert contract["worker_version"] == worker.WORKER_VERSION == "1.5.4"
+assert contract["worker_version"] == worker.WORKER_VERSION == "1.5.5"
 assert contract["pilot_only"] is True and contract["general_fronts_supported"] is False
 assert contract["hardening"]["agent_shell_denied"] is True
 assert contract["hardening"]["detached_model_workspace"] is True

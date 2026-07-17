@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "worker_version": "1.5.4",
+  "worker_version": "1.5.5",
   "platform": "Windows PowerShell 5.1",
   "source_of_truth": "GitHub",
   "executor": "OpenCode with ollama-cloud/kimi-k2.7-code",
@@ -39,6 +39,10 @@
     "v154_phase_convergence_readback": true,
     "v154_trusted_resume_transaction_rollback": true,
     "v154_terminal_notification_key_dedupe": true,
-    "v154_deploy_script_fail_safe_rollback": true
+    "v154_deploy_script_fail_safe_rollback": true,
+    "v155_trusted_command_quiescence_lock": true,
+    "v155_recover_existing_pr_issue5_pr6": true,
+    "v155_legacy_terminal_comment_dedupe": true,
+    "v155_deploy_script_recovery_transaction": true
   }
 }
