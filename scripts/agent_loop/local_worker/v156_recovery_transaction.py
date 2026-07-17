@@ -10,6 +10,11 @@ from typing import Any, Callable
 from v156_recovery_common import *
 
 
+ENRICHED_POST_RESUME = "enriched_post_resume"
+TERMINAL_RECONCILED_LEGACY = "terminal_reconciled_legacy"
+TERMINAL_BAD_EVENTS = {"cycle_pushed", "trusted_cycle_success", "repair_success", "set_loop_ci", "loop_ci_transition"}
+
+
 def validate_local_recovery_start(state: dict[str, Any], spec: dict[str, Any], auth: Authorization) -> str:
     if state.get("front") != FRONT or int(state.get("issue_number") or 0) != ISSUE or int(state.get("pr_number") or 0) != PR:
         raise ValueError("local state identity mismatch")
@@ -28,6 +33,77 @@ def validate_local_recovery_start(state: dict[str, Any], spec: dict[str, Any], a
     raise ValueError("local state is not the preserved failed cycle")
 
 
+def _trusted_resume_indexes(events: list[dict[str, Any]], auth: Authorization) -> list[int]:
+    expected = {"issue": ISSUE, "pr": PR, "base": auth.historical_base, "head": auth.expected_old_pr_head}
+    return [i for i, event in enumerate(events) if worker._event_matches(event, "trusted_v154_resume_existing_pr", expected)]
+
+
+def _reject_later_success_events(events: list[dict[str, Any]], start_index: int) -> None:
+    for item in events[start_index + 1:]:
+        kind = worker._event_kind(item)
+        if kind in TERMINAL_BAD_EVENTS and int(worker._event_field(item, "issue") or ISSUE) == ISSUE:
+            raise ValueError(f"unexpected later terminal event after recovery chronology anchor: {kind}")
+        if kind == "set_phase" and str(worker._event_field(item, "phase")) == "loop:ci":
+            raise ValueError("unexpected later loop:ci phase after recovery chronology anchor")
+
+
+def validate_enriched_post_resume_chronology(cfg: dict[str, Any], auth: Authorization, repo_dir: str | None) -> str:
+    worker.validate_v155_recovery_event_chronology(cfg, auth.historical_base, auth.expected_old_pr_head, repo_dir)
+    return ENRICHED_POST_RESUME
+
+
+def _validate_exact_legacy_token_comments(cfg: dict[str, Any]) -> None:
+    comments = worker.issue_comments(cfg["repo"], PR)
+    matches = legacy_token_comments(cfg)
+    if len(comments) != 3 or len(matches) != 3:
+        raise ValueError("expected exactly three unambiguous legacy TOKEN_EXHAUSTED comments")
+    marker_key = "AGENT_LOOP_NOTIFICATION_KEY"
+    for comment in comments:
+        body = str(comment.get("body") or "")
+        normalized = " ".join(body.strip().lower().split())
+        if marker_key in body or "[agent-loop][token_exhausted]" not in normalized or "maximum kimi cycles reached. human audit required." not in normalized:
+            raise ValueError("legacy TOKEN_EXHAUSTED comment is ambiguous or not contractual")
+
+
+def validate_terminal_reconciled_legacy_chronology(
+    cfg: dict[str, Any],
+    auth: Authorization,
+    *,
+    recovery_start_state: str,
+    state: dict[str, Any],
+    spec: dict[str, Any],
+    issue: dict[str, Any],
+    pr: dict[str, Any],
+) -> str:
+    if recovery_start_state != "reconciled_token_exhausted":
+        raise ValueError("terminal reconciled legacy chronology requires reconciled_token_exhausted state")
+    if int(state.get("cycles") or -1) != 3 or state.get("status") != "loop:token-exhausted":
+        raise ValueError("terminal reconciled legacy state mismatch")
+    if state.get("trusted_v154_resume_done") is not True or state.get("trusted_v155_recovery_done") or state.get("trusted_v156_post_merge_recovery_done"):
+        raise ValueError("terminal reconciled legacy recovery flags mismatch")
+    if spec.get("expected_base_sha") != auth.historical_base or state.get("last_head_sha") != auth.expected_old_pr_head:
+        raise ValueError("terminal reconciled legacy SHA mismatch")
+    events = worker._iter_worker_events(cfg)
+    resume_indexes = _trusted_resume_indexes(events, auth)
+    if len(resume_indexes) != 1:
+        raise ValueError(f"expected exactly one trusted_v154_resume_existing_pr event; found {len(resume_indexes)}")
+    _reject_later_success_events(events, resume_indexes[0])
+    if str(issue.get("state") or "").upper() != "OPEN" or str(pr.get("state") or "").upper() != "OPEN" or pr.get("isDraft") is not True:
+        raise ValueError("Issue #5 or PR #6 is not open/Draft")
+    if exact_phase(issue) != {"loop:repairing"} or exact_phase(pr) != {"loop:token-exhausted"}:
+        raise ValueError("terminal reconciled legacy Issue/PR phase mismatch")
+    if pr.get("headRefName") != WORK_BRANCH or pr.get("headRefOid") != auth.expected_old_pr_head or pr.get("baseRefName") != BASE_BRANCH:
+        raise ValueError("terminal reconciled legacy PR #6 branch, HEAD or base mismatch")
+    if issue_spec(issue.get("body") or "").get("expected_base_sha") != auth.historical_base:
+        raise ValueError("terminal reconciled legacy Issue #5 expected base moved")
+    if pr_expected_base(pr.get("body") or "") != auth.historical_base:
+        raise ValueError("terminal reconciled legacy PR #6 expected base moved")
+    if worker.pr_changed_files(REPO, PR) != PILOT_FILES:
+        raise ValueError("terminal reconciled legacy PR #6 diff is not exactly the two pilot files")
+    _validate_exact_legacy_token_comments(cfg)
+    return TERMINAL_RECONCILED_LEGACY
+
+
 def execute_recovery(
     cfg: dict[str, Any],
     auth: Authorization,
@@ -40,6 +116,8 @@ def execute_recovery(
     if cfg.get("repo") != REPO or cfg.get("base_branch", BASE_BRANCH) != BASE_BRANCH:
         raise ValueError("repository or base branch mismatch")
     worker.require_scheduled_task_disabled_for_trusted(cfg, "trusted v1.5.6 dynamic post-merge recovery")
+    if not worker.scheduled_task_disabled():
+        raise ValueError("scheduled task must be Disabled before trusted v1.5.6 dynamic post-merge recovery")
 
     control_plane_root = control_plane_root.resolve()
     source_worker = source_worker.resolve()
@@ -69,7 +147,6 @@ def execute_recovery(
     state = json.loads(original_state.decode("utf-8-sig"))
     spec = state.get("spec") or {}
     recovery_start_state = validate_local_recovery_start(state, spec, auth)
-    worker.validate_v155_recovery_event_chronology(cfg, auth.historical_base, auth.expected_old_pr_head, state.get("repo_dir"))
     repo_dir = Path(str(state.get("repo_dir") or ""))
     validate_local_pilot_repo(repo_dir, auth.expected_old_pr_head)
 
@@ -90,6 +167,14 @@ def execute_recovery(
         raise ValueError("PR #6 diff is not exactly the two pilot files")
     if len(legacy_token_comments(cfg)) != 3:
         raise ValueError("expected exactly three legacy TOKEN_EXHAUSTED comments")
+    if recovery_start_state == "preserved_waiting_github":
+        recovery_chronology_variant = validate_enriched_post_resume_chronology(cfg, auth, state.get("repo_dir"))
+    elif recovery_start_state == "reconciled_token_exhausted":
+        recovery_chronology_variant = validate_terminal_reconciled_legacy_chronology(
+            cfg, auth, recovery_start_state=recovery_start_state, state=state, spec=spec, issue=issue, pr=pr
+        )
+    else:
+        raise ValueError("unknown recovery start state")
 
     install_root = Path(cfg["install_root"])
     installed_worker = install_root / "worker" / "agent_worker.py"
@@ -218,6 +303,7 @@ def execute_recovery(
             "kimi_executed": False,
             "once_executed": False,
             "recovery_start_state": recovery_start_state,
+            "recovery_chronology_variant": recovery_chronology_variant,
         }
         fire(hooks, "before_success_event", fields=success_fields)
         append_event_transactional(cfg, "trusted_v156_dynamic_post_merge_recovery", success_fields, hooks)
