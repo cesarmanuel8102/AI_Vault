@@ -12,6 +12,7 @@ def test_distinct_real_post_merge_topology_success():
     outcome, error, before, after, fake, topo = run_case()
     assert error is None and outcome["status"] == "POST_MERGE_RECOVERED_EXISTING_PR_V156"
     assert outcome["recovery_start_state"] == "preserved_waiting_github"
+    assert outcome["recovery_chronology_variant"] == "enriched_post_resume"
     assert topo["historical"] != topo["pre"] != topo["feature"] != topo["merged"]
     state = json.loads(after["state"].decode())
     assert state["cycles"] == 2 and state["status"] == "WAITING_GITHUB"
@@ -22,13 +23,62 @@ def test_distinct_real_post_merge_topology_success():
 
 
 def test_reconciled_token_exhausted_local_state_success():
-    outcome, error, before, after, fake, topo = run_case(state_overrides={"status": "loop:token-exhausted"})
+    outcome, error, before, after, fake, topo = run_case(
+        state_overrides={"status": "loop:token-exhausted"},
+        event_variant="legacy",
+    )
     assert error is None and outcome["status"] == "POST_MERGE_RECOVERED_EXISTING_PR_V156"
     assert outcome["recovery_start_state"] == "reconciled_token_exhausted"
+    assert outcome["recovery_chronology_variant"] == "terminal_reconciled_legacy"
     state = json.loads(after["state"].decode())
     assert state["cycles"] == 2 and state["status"] == "WAITING_GITHUB"
     assert state["trusted_v156_post_merge_recovery_done"] is True
     assert after["remote"] == state["last_head_sha"] != topo["old"]
+
+
+def test_variant_a_requires_enriched_post_resume_event():
+    assert_pre_mutation_failure(event_variant="missing_failure")
+    assert_pre_mutation_failure(event_variant="legacy")
+    assert_pre_mutation_failure(
+        event_variant="legacy",
+        state_overrides={"status": "WAITING_GITHUB"},
+    )
+
+
+def test_variant_b_requires_terminal_reconciled_state_and_evidence():
+    # Legacy evidence is not allowed to rescue a WAITING_GITHUB state.
+    assert_pre_mutation_failure(event_variant="legacy", state_overrides={"status": "WAITING_GITHUB"})
+    # Terminal reconciled state requires the trusted resume anchor and no later success events.
+    assert_pre_mutation_failure(event_variant="missing_resume", state_overrides={"status": "loop:token-exhausted"})
+    assert_pre_mutation_failure(event_variant="double_resume", state_overrides={"status": "loop:token-exhausted"})
+    assert_pre_mutation_failure(event_variant="later_success", state_overrides={"status": "loop:token-exhausted"})
+    assert_pre_mutation_failure(event_variant="invalid_jsonl", state_overrides={"status": "loop:token-exhausted"})
+    # Terminal reconciled state requires exactly three unambiguous legacy comments.
+    assert_pre_mutation_failure(
+        event_variant="legacy",
+        state_overrides={"status": "loop:token-exhausted"},
+        fake_options={"token_comments": ["[AGENT-LOOP][TOKEN_EXHAUSTED]\n\nMaximum Kimi cycles reached. Human audit required."] * 2},
+    )
+    assert_pre_mutation_failure(
+        event_variant="legacy",
+        state_overrides={"status": "loop:token-exhausted"},
+        fake_options={"token_comments": ["[AGENT-LOOP][TOKEN_EXHAUSTED]\n\nMaximum Kimi cycles reached. Human audit required."] * 4},
+    )
+    assert_pre_mutation_failure(
+        event_variant="legacy",
+        state_overrides={"status": "loop:token-exhausted"},
+        fake_options={"token_comments": ["[AGENT-LOOP][TOKEN_EXHAUSTED]\n\nMaximum Kimi cycles reached. Human audit required."] * 2 + ["ambiguous TOKEN_EXHAUSTED"]},
+    )
+    assert_pre_mutation_failure(
+        event_variant="legacy",
+        state_overrides={"status": "loop:token-exhausted"},
+        fake_options={"token_comments": ["[AGENT-LOOP][TOKEN_EXHAUSTED]\n\nMaximum Kimi cycles reached. Human audit required.\n<!-- AGENT_LOOP_NOTIFICATION_KEY:x -->"] * 3},
+    )
+    assert_pre_mutation_failure(
+        event_variant="legacy",
+        state_overrides={"status": "loop:token-exhausted"},
+        fake_options={"task_disabled": False},
+    )
 
 
 def test_local_preserved_state_predicate_failures_are_pre_mutation():
@@ -212,6 +262,8 @@ def test_partial_state_and_remote_metadata_failures_roll_back():
 if __name__ == "__main__":
     test_distinct_real_post_merge_topology_success()
     test_reconciled_token_exhausted_local_state_success()
+    test_variant_a_requires_enriched_post_resume_event()
+    test_variant_b_requires_terminal_reconciled_state_and_evidence()
     test_local_preserved_state_predicate_failures_are_pre_mutation()
     test_live_github_contract_failures_are_pre_mutation()
     test_all_authorization_mismatches_fail_before_mutation()

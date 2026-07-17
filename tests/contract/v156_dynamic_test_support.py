@@ -89,7 +89,7 @@ def issue_body(base: str) -> str:
     return "<!-- AGENT_LOOP_SPEC " + json.dumps(spec, separators=(",", ":")) + " AGENT_LOOP_SPEC -->"
 
 
-def write_install(root: Path, topo: dict) -> tuple[dict, Path]:
+def write_install(root: Path, topo: dict, *, event_variant: str = "enriched") -> tuple[dict, Path]:
     (root / "state").mkdir(exist_ok=True)
     (root / "worker").mkdir(exist_ok=True)
     (root / "reports").mkdir(exist_ok=True)
@@ -97,10 +97,26 @@ def write_install(root: Path, topo: dict) -> tuple[dict, Path]:
     state = {"issue_number": 5, "front": FRONT, "spec": {"front_id": FRONT, "work_branch": BRANCH, "expected_base_sha": topo["historical"], "base_branch": BASE_BRANCH}, "repo_dir": str(topo["pilot"]), "pr_number": 6, "cycles": 3, "status": "WAITING_GITHUB", "last_head_sha": topo["old"], "trusted_v154_resume_done": True, "terminal_notified": True}
     state_path = root / "state/issue-5.json"
     state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
-    events = [
-        {"kind": "trusted_v154_resume_existing_pr", "issue": 5, "pr": 6, "base": topo["historical"], "head": topo["old"]},
-        {"kind": "repair_local_gate_failed", "issue": 5, "pr": 6, "cycle": 3, "cycle_before": 2, "cycle_after": 3, "failure_class": "MODEL_CONTENT_FAILURE", "current_head": topo["old"], "expected_base": topo["historical"]},
-    ]
+    resume = {"kind": "trusted_v154_resume_existing_pr", "issue": 5, "pr": 6, "base": topo["historical"], "head": topo["old"]}
+    enriched_failure = {"kind": "repair_local_gate_failed", "issue": 5, "pr": 6, "cycle": 3, "cycle_before": 2, "cycle_after": 3, "failure_class": "MODEL_CONTENT_FAILURE", "current_head": topo["old"], "expected_base": topo["historical"]}
+    legacy_failure = {"kind": "repair_local_gate_failed", "issue": 5, "pr": 6, "cycle": 3, "bad": [], "test_ok": False}
+    if event_variant == "enriched":
+        events = [resume, enriched_failure]
+    elif event_variant == "legacy":
+        events = [legacy_failure, resume]
+    elif event_variant == "missing_failure":
+        events = [resume]
+    elif event_variant == "missing_resume":
+        events = [legacy_failure]
+    elif event_variant == "double_resume":
+        events = [resume, resume, legacy_failure]
+    elif event_variant == "later_success":
+        events = [legacy_failure, resume, {"kind": "loop_ci_transition", "issue": 5, "pr": 6}]
+    elif event_variant == "invalid_jsonl":
+        (root / "reports/worker-events.jsonl").write_text(json.dumps(resume) + "\n" + '{"kind":', encoding="utf-8")
+        return {"install_root": str(root), "repo": REPO, "owner": OWNER, "base_branch": BASE_BRANCH}, state_path
+    else:
+        raise ValueError(event_variant)
     (root / "reports/worker-events.jsonl").write_text("\n".join(json.dumps(x) for x in events) + "\n", encoding="utf-8")
     return {"install_root": str(root), "repo": REPO, "owner": OWNER, "base_branch": BASE_BRANCH}, state_path
 
@@ -132,6 +148,8 @@ class FakeGitHub:
         incomplete_issue: bool = False,
         incomplete_pr: bool = False,
         github_unavailable: bool = False,
+        token_comments: list[str] | None = None,
+        task_disabled: bool = True,
     ):
         self.topo = topo
         self.issue_body = issue_body(issue_base or topo["historical"])
@@ -149,6 +167,8 @@ class FakeGitHub:
         self.incomplete_issue = incomplete_issue
         self.incomplete_pr = incomplete_pr
         self.github_unavailable = github_unavailable
+        self.token_comments = token_comments
+        self.task_disabled = task_disabled
         self.body_fail_once: str | None = None
         self.label_fail_once: str | None = None
         self.readback_fail_once: str | None = None
@@ -224,8 +244,11 @@ def patch_worker(fake: FakeGitHub):
     helper.worker.read_pr_labels = lambda repo, number: fake.gh_json(["pr", "view"])
     helper.worker.restore_label_set = lambda repo, number, labels: setattr(fake, "issue_labels" if int(number) == 5 else "pr_labels", set(labels))
     helper.worker.pr_changed_files = lambda repo, number: fake.changed_files
-    helper.worker.scheduled_task_disabled = lambda: True
-    helper.worker.issue_comments = lambda repo, number: [{"body": "[AGENT-LOOP][TOKEN_EXHAUSTED]\n\nMaximum Kimi cycles reached. Human audit required."} for _ in range(3)]
+    helper.worker.scheduled_task_disabled = lambda: fake.task_disabled
+    comments = fake.token_comments
+    if comments is None:
+        comments = ["[AGENT-LOOP][TOKEN_EXHAUSTED]\n\nMaximum Kimi cycles reached. Human audit required." for _ in range(3)]
+    helper.worker.issue_comments = lambda repo, number: [{"body": body} for body in comments]
     return originals
 
 
@@ -240,7 +263,7 @@ def auth(topo: dict, **overrides) -> helper.Authorization:
     return helper.Authorization(**values)
 
 
-def run_case(*, fake_options=None, auth_overrides=None, hooks=None, source_override=None, repo_case=None, fake_setup=None, control_dirty=False, state_overrides=None):
+def run_case(*, fake_options=None, auth_overrides=None, hooks=None, source_override=None, repo_case=None, fake_setup=None, control_dirty=False, state_overrides=None, event_variant: str = "enriched"):
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
         topo = create_topology(root)
@@ -248,7 +271,7 @@ def run_case(*, fake_options=None, auth_overrides=None, hooks=None, source_overr
             (topo["control"] / "uncommitted-control-change.txt").write_text("dirty\n", encoding="utf-8")
         old_constants = (helper.common.HISTORICAL_BASE, helper.common.PRE_PR10_BASE, helper.common.OLD_PR_HEAD)
         helper.common.HISTORICAL_BASE, helper.common.PRE_PR10_BASE, helper.common.OLD_PR_HEAD = topo["historical"], topo["pre"], topo["old"]
-        cfg, state_path = write_install(root, topo)
+        cfg, state_path = write_install(root, topo, event_variant=event_variant)
         if state_overrides:
             state = json.loads(state_path.read_text(encoding="utf-8"))
             for key, value in state_overrides.items():
