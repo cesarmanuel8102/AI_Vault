@@ -33,7 +33,15 @@ function New-Repo {
 }
 
 function Invoke-TestTransaction {
-  param($Install, $Repo, $WorkerSha, [scriptblock]$Recovery, [string]$RepoHead = $Merged, [string]$ControlCommit = $Merged)
+  param(
+    $Install,
+    $Repo,
+    $WorkerSha,
+    [scriptblock]$Recovery,
+    [string]$RepoHead = $Merged,
+    [string]$ControlCommit = $Merged,
+    [string]$RepoStatus = ""
+  )
   Invoke-AgentLoopV156DeploymentTransaction `
     -Repo $Repo -InstallRoot $Install -HistoricalBaseSha $Historical -PrePr10BaseSha $Pre `
     -ApprovedFeatureHead $Feature -ApprovedMergedBaseSha $Merged -ExpectedFront $Front `
@@ -41,6 +49,7 @@ function Invoke-TestTransaction {
     -ApprovedControlPlaneCommit $ControlCommit -ApprovedWorkerSha256 $WorkerSha `
     -StopTask { param($TaskName) } -DisableTask { param($TaskName) } `
     -GetTaskState { param($TaskName) "Disabled" } -GetRepoHead { param($RepoPath) $RepoHead } `
+    -GetRepoStatus { param($RepoPath) $RepoStatus } `
     -RunRepoCommand { param($RepoPath, [string[]]$CommandArgs) } -Recovery $Recovery `
     -WriteLine { param($Message) Write-Host $Message }
 }
@@ -89,7 +98,21 @@ function Test-ControlCommitMustEqualMergedBase {
   if ($script:recoveryCalled) { throw "recovery ran despite control/merged mismatch" }
 }
 
+function Test-DirtyCheckoutFailsBeforeRecovery {
+  $install = New-Install
+  $repo, $source, $helper, $sha = New-Repo
+  $script:recoveryCalled = $false
+  try {
+    Invoke-TestTransaction $install $repo $sha { param($a,$b,$c,$d,$e,$f,$g,$h,$i,$j,$k,$l,$m) $script:recoveryCalled = $true } -RepoStatus " M scripts/agent_loop/local_worker/v156_recovery_transaction.py"
+    throw "expected dirty checkout failure"
+  } catch {
+    if ($_.Exception.Message -notmatch "checkout is dirty") { throw }
+  }
+  if ($script:recoveryCalled) { throw "recovery ran with dirty control-plane checkout" }
+}
+
 Test-SuccessArgumentPlumbing
 Test-RecoveryFailureDoesNotPrintPass
 Test-ControlCommitMustEqualMergedBase
-Write-Host '{"status":"PASS","tests":["dynamic_arguments","failure","control_equals_merged"],"atomic_command":true}'
+Test-DirtyCheckoutFailsBeforeRecovery
+Write-Host '{"status":"PASS","tests":["dynamic_arguments","failure","control_equals_merged","dirty_checkout"],"atomic_command":true}'
