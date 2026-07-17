@@ -69,11 +69,15 @@ with tempfile.TemporaryDirectory() as td:
     cfg2 = dict(cfg, install_root=td)
     st = {"issue_number":5,"front":"PILOT-KIMI-CODEX-20260716-091529","spec":{},"status":"WAITING","pr_number":6,"terminal_notified":True}
     state = Path(td)/"state/issue-5.json"; state.parent.mkdir(); state.write_text(json.dumps(st), encoding='utf-8')
-    calls=[]; old_set=worker.set_phase; old_comment=worker.comment
+    calls=[]; old_set=worker.set_phase; old_comment=worker.comment; old_issue_labels=worker.read_issue_labels; old_pr_labels=worker.read_pr_labels; old_comments=worker.issue_comments
     worker.set_phase=lambda *a, **k: calls.append(('phase',a))
     worker.comment=lambda *a, **k: calls.append(('comment',a))
+    worker.read_issue_labels=lambda repo, num: {"labels":[{"name":"loop:token-exhausted"}]}
+    worker.read_pr_labels=lambda repo, num: {"labels":[{"name":"loop:token-exhausted"}]}
+    marker=worker.notification_marker(worker.notification_key(st["front"], st["pr_number"], st.get("last_head_sha"), "loop:token-exhausted"))
+    worker.issue_comments=lambda repo, num: [{"body":marker}]
     try: worker.terminalize_state_error(cfg2, state, RuntimeError('MAX_CYCLES_EXHAUSTED'))
-    finally: worker.set_phase=old_set; worker.comment=old_comment
+    finally: worker.set_phase=old_set; worker.comment=old_comment; worker.read_issue_labels=old_issue_labels; worker.read_pr_labels=old_pr_labels; worker.issue_comments=old_comments
     assert not [c for c in calls if c[0]=='comment']
 
 cap={}; old=worker.edit_labels

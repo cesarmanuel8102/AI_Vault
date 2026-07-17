@@ -222,7 +222,7 @@ with tempfile.TemporaryDirectory() as td:
     assert local.returncode == 0, local.stdout
 checks["repeatable_local_pilot"] = True
 
-assert contract["worker_version"] == worker.WORKER_VERSION == "1.5.3"
+assert contract["worker_version"] == worker.WORKER_VERSION == "1.5.4"
 assert contract["pilot_only"] is True and contract["general_fronts_supported"] is False
 assert contract["hardening"]["agent_shell_denied"] is True
 assert contract["hardening"]["detached_model_workspace"] is True
@@ -232,6 +232,13 @@ assert contract["hardening"]["model_workspace_has_no_policy_file"] is True
 assert contract["hardening"]["trusted_issue5_existing_pr_resume"] is True
 assert contract["hardening"]["trusted_base_advance_existing_pr"] is True
 assert contract["hardening"]["subprocess_decoding_fallback_event"] is True
+assert contract["hardening"]["v154_content_only_marker_gate"] is True
+assert contract["hardening"]["v154_trusted_resume_issue5_pr6"] is True
+assert contract["hardening"]["v154_no_auto_enable_after_resume"] is True
+assert contract["hardening"]["v154_phase_convergence_readback"] is True
+assert contract["hardening"]["v154_trusted_resume_transaction_rollback"] is True
+assert contract["hardening"]["v154_terminal_notification_key_dedupe"] is True
+assert contract["hardening"]["v154_deploy_script_fail_safe_rollback"] is True
 checks["contract_truthfulness"] = True
 
 failed = [name for name, ok in checks.items() if not ok]

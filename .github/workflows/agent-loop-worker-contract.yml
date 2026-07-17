@@ -10,6 +10,9 @@ on:
       - tests/contract/test_agent_loop_worker_hardening_02.py
       - tests/contract/test_agent_loop_worker_v153_regression.py
       - tests/contract/test_agent_loop_worker_v153_base_advance.py
+      - tests/contract/test_agent_loop_worker_v154_repair.py
+      - tests/contract/test_agent_loop_worker_v154_transaction_notifications.py
+      - tests/contract/test_agent_loop_worker_v154_deploy_rollback.ps1
       - .github/workflows/agent-loop-worker-contract.yml
 
 concurrency:
@@ -44,11 +47,21 @@ jobs:
           python -m py_compile tests/contract/test_agent_loop_worker_hardening_02.py
           python -m py_compile tests/contract/test_agent_loop_worker_v153_regression.py
           python -m py_compile tests/contract/test_agent_loop_worker_v153_base_advance.py
+          python -m py_compile tests/contract/test_agent_loop_worker_v154_repair.py
+          python -m py_compile tests/contract/test_agent_loop_worker_v154_transaction_notifications.py
       - name: hardening contract
         run: python tests/contract/test_agent_loop_worker_hardening_02.py
       - name: v1.5.3 regression contract
         run: python tests/contract/test_agent_loop_worker_v153_regression.py
       - name: v1.5.3 base advance contract
         run: python tests/contract/test_agent_loop_worker_v153_base_advance.py
+      - name: v1.5.4 repair contract
+        run: python tests/contract/test_agent_loop_worker_v154_repair.py
+      - name: v1.5.4 transaction and notification contract
+        run: python tests/contract/test_agent_loop_worker_v154_transaction_notifications.py
+      - name: v1.5.4 PowerShell deploy rollback contract
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/contract/test_agent_loop_worker_v154_deploy_rollback.ps1
       - name: git diff check
         run: git diff --check
