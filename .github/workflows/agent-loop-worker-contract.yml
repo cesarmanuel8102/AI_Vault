@@ -17,6 +17,7 @@ on:
       - tests/contract/test_agent_loop_worker_v155_deploy_recovery.ps1
       - tests/contract/test_agent_loop_worker_v156_post_merge_recovery.py
       - tests/contract/test_agent_loop_worker_v156_deploy_recovery.ps1
+      - tests/contract/v156_dynamic_test_support.py
       - .github/workflows/agent-loop-worker-contract.yml
 
 concurrency:
@@ -57,6 +58,7 @@ jobs:
           python -m py_compile tests/contract/test_agent_loop_worker_v154_repair.py
           python -m py_compile tests/contract/test_agent_loop_worker_v154_transaction_notifications.py
           python -m py_compile tests/contract/test_agent_loop_worker_v155_quiescence_recovery.py
+          python -m py_compile tests/contract/v156_dynamic_test_support.py
           python -m py_compile tests/contract/test_agent_loop_worker_v156_post_merge_recovery.py
       - name: hardening contract
         run: python tests/contract/test_agent_loop_worker_hardening_02.py
