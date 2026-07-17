@@ -15,6 +15,9 @@ on:
       - tests/contract/test_agent_loop_worker_v154_deploy_rollback.ps1
       - tests/contract/test_agent_loop_worker_v155_quiescence_recovery.py
       - tests/contract/test_agent_loop_worker_v155_deploy_recovery.ps1
+      - tests/contract/test_agent_loop_worker_v156_post_merge_recovery.py
+      - tests/contract/test_agent_loop_worker_v156_deploy_recovery.ps1
+      - tests/contract/v156_dynamic_test_support.py
       - .github/workflows/agent-loop-worker-contract.yml
 
 concurrency:
@@ -45,6 +48,9 @@ jobs:
       - name: py_compile
         run: |
           python -m py_compile scripts/agent_loop/local_worker/agent_worker.py
+          python -m py_compile scripts/agent_loop/local_worker/v156_recovery_common.py
+          python -m py_compile scripts/agent_loop/local_worker/v156_recovery_transaction.py
+          python -m py_compile scripts/agent_loop/local_worker/v156_post_merge_recovery.py
           python -m py_compile scripts/agent_loop/pilot_verify.py
           python -m py_compile tests/contract/test_agent_loop_worker_hardening_02.py
           python -m py_compile tests/contract/test_agent_loop_worker_v153_regression.py
@@ -52,6 +58,10 @@ jobs:
           python -m py_compile tests/contract/test_agent_loop_worker_v154_repair.py
           python -m py_compile tests/contract/test_agent_loop_worker_v154_transaction_notifications.py
           python -m py_compile tests/contract/test_agent_loop_worker_v155_quiescence_recovery.py
+          python -m py_compile tests/contract/v156_dynamic_test_support.py
+          python -m py_compile tests/contract/test_agent_loop_worker_v156_post_merge_recovery.py
+      - name: worker SHA-256 evidence
+        run: python -c "import hashlib,pathlib; p=pathlib.Path('scripts/agent_loop/local_worker/agent_worker.py'); print('WORKER_SHA256='+hashlib.sha256(p.read_bytes()).hexdigest().upper())"
       - name: hardening contract
         run: python tests/contract/test_agent_loop_worker_hardening_02.py
       - name: v1.5.3 regression contract
@@ -72,5 +82,11 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/contract/test_agent_loop_worker_v155_deploy_recovery.ps1
+      - name: v1.5.6 dynamic post-merge recovery contract
+        run: python tests/contract/test_agent_loop_worker_v156_post_merge_recovery.py
+      - name: v1.5.6 PowerShell dynamic deploy recovery contract
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/contract/test_agent_loop_worker_v156_deploy_recovery.ps1
       - name: git diff check
         run: git diff --check

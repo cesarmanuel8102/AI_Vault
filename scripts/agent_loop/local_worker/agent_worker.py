@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 SPEC_RE = re.compile(r"<!--\s*AGENT_LOOP_SPEC\s*(\{.*?\})\s*AGENT_LOOP_SPEC\s*-->", re.S)
-WORKER_VERSION = "1.5.5"
+WORKER_VERSION = "1.5.6"
 PHASE_LABELS = {
     "agent:queued", "loop:executing", "loop:ci", "loop:repairing",
     "loop:ready-human-audit", "loop:blocked", "loop:failed",
@@ -1520,6 +1520,9 @@ def trusted_v155_deploy_recover_existing_pr(cfg: dict, issue_number: int, source
         event(cfg, "trusted_v155_deploy_recovery_rollback", issue=5, pr=6, error=bounded_tail(str(exc)), rollback=rollback)
         raise
 
+
+
+
 class SingleInstanceLock:
     def __init__(self, path: Path):
         self.path=path; self.handle=None
@@ -1556,7 +1559,7 @@ class SingleInstanceLock:
             if self.handle: self.handle.close()
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--once",action="store_true"); ap.add_argument("--trusted-resume-existing-pr", type=int); ap.add_argument("--trusted-base-advance-existing-pr", type=int); ap.add_argument("--trusted-v154-resume-existing-pr", type=int); ap.add_argument("--trusted-v155-recover-existing-pr", type=int); ap.add_argument("--trusted-v155-deploy-recover-existing-pr", type=int); ap.add_argument("--expected-front"); ap.add_argument("--expected-base-sha"); ap.add_argument("--expected-old-base-sha"); ap.add_argument("--approved-new-base-sha"); ap.add_argument("--approved-control-plane-commit"); ap.add_argument("--expected-pr-number", type=int); ap.add_argument("--expected-work-branch"); ap.add_argument("--expected-pr-head"); ap.add_argument("--expected-old-pr-head"); ap.add_argument("--source-worker"); ap.add_argument("--approved-worker-sha256")
+    ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--once",action="store_true"); ap.add_argument("--trusted-resume-existing-pr", type=int); ap.add_argument("--trusted-base-advance-existing-pr", type=int); ap.add_argument("--trusted-v154-resume-existing-pr", type=int); ap.add_argument("--trusted-v155-recover-existing-pr", type=int); ap.add_argument("--trusted-v155-deploy-recover-existing-pr", type=int); ap.add_argument("--expected-front"); ap.add_argument("--expected-base-sha"); ap.add_argument("--expected-old-base-sha"); ap.add_argument("--approved-new-base-sha"); ap.add_argument("--approved-control-plane-commit"); ap.add_argument("--expected-pr-number", type=int); ap.add_argument("--expected-work-branch"); ap.add_argument("--expected-pr-head"); ap.add_argument("--expected-old-pr-head"); ap.add_argument("--source-worker"); ap.add_argument("--approved-worker-sha256"); ap.add_argument("--historical-base-sha"); ap.add_argument("--approved-current-base-sha")
     args=ap.parse_args(); cfg=load_json(Path(args.config)); Path(cfg["install_root"]).mkdir(parents=True,exist_ok=True)
     global _RUN_EVENT_CFG
     _RUN_EVENT_CFG = cfg

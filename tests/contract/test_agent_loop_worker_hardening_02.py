@@ -222,7 +222,7 @@ with tempfile.TemporaryDirectory() as td:
     assert local.returncode == 0, local.stdout
 checks["repeatable_local_pilot"] = True
 
-assert contract["worker_version"] == worker.WORKER_VERSION == "1.5.5"
+assert contract["worker_version"] == worker.WORKER_VERSION == "1.5.6"
 assert contract["pilot_only"] is True and contract["general_fronts_supported"] is False
 assert contract["hardening"]["agent_shell_denied"] is True
 assert contract["hardening"]["detached_model_workspace"] is True
@@ -239,6 +239,25 @@ assert contract["hardening"]["v154_phase_convergence_readback"] is True
 assert contract["hardening"]["v154_trusted_resume_transaction_rollback"] is True
 assert contract["hardening"]["v154_terminal_notification_key_dedupe"] is True
 assert contract["hardening"]["v154_deploy_script_fail_safe_rollback"] is True
+for key in (
+    "v156_dynamic_post_merge_recovery",
+    "v156_runtime_post_merge_sha_authorization",
+    "v156_approved_checkout_source_binding",
+    "v156_force_with_lease_conflict_owner_escalation",
+    "v156_transactional_event_log_rollback",
+    "v156_single_recovery_authority",
+):
+    assert contract["hardening"][key] is True, key
+worker_source = MODULE_PATH.read_text(encoding="utf-8")
+assert "--trusted-v156-deploy-advance-recover-existing-pr" not in worker_source
+assert "HISTORICAL_PILOT_BASE_V156" not in worker_source
+for rel in (
+    "scripts/agent_loop/local_worker/v156_post_merge_recovery.py",
+    "scripts/agent_loop/local_worker/v156_recovery_common.py",
+    "scripts/agent_loop/local_worker/v156_recovery_transaction.py",
+):
+    assert (ROOT / rel).is_file(), rel
+checks["v156_single_recovery_authority"] = True
 checks["contract_truthfulness"] = True
 
 failed = [name for name, ok in checks.items() if not ok]
