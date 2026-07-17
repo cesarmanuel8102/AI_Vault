@@ -35,21 +35,29 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    cfg = worker.load_json(Path(args.config))
-    auth = Authorization(
-        historical_base=args.historical_base_sha,
-        pre_pr10_base=args.pre_pr10_base_sha,
-        approved_feature_head=args.approved_feature_head,
-        approved_merged_base=args.approved_merged_base_sha,
-        approved_control_plane_commit=args.approved_control_plane_commit,
-        expected_old_pr_head=args.expected_old_pr_head,
-        expected_front=args.expected_front,
-        expected_pr_number=args.expected_pr_number,
-        expected_work_branch=args.expected_work_branch,
-        approved_worker_sha256=args.approved_worker_sha256,
-    )
     try:
-        result = run_locked(cfg, auth, source_worker=Path(args.source_worker))
+        checkout_root = common.ROOT.resolve()
+        if common.git(["rev-parse", "--is-inside-work-tree"], checkout_root).lower() != "true":
+            raise ValueError("control-plane checkout is not a Git worktree")
+        if common.git(["status", "--porcelain"], checkout_root):
+            raise ValueError("control-plane checkout is dirty")
+        if common.git(["rev-parse", "HEAD"], checkout_root) != args.approved_control_plane_commit:
+            raise ValueError("control-plane checkout HEAD mismatch")
+
+        cfg = worker.load_json(Path(args.config))
+        auth = Authorization(
+            historical_base=args.historical_base_sha,
+            pre_pr10_base=args.pre_pr10_base_sha,
+            approved_feature_head=args.approved_feature_head,
+            approved_merged_base=args.approved_merged_base_sha,
+            approved_control_plane_commit=args.approved_control_plane_commit,
+            expected_old_pr_head=args.expected_old_pr_head,
+            expected_front=args.expected_front,
+            expected_pr_number=args.expected_pr_number,
+            expected_work_branch=args.expected_work_branch,
+            approved_worker_sha256=args.approved_worker_sha256,
+        )
+        result = run_locked(cfg, auth, source_worker=Path(args.source_worker), control_plane_root=checkout_root)
         print(json.dumps(result, indent=2, sort_keys=True))
         return 0
     except OwnerActionRequired as exc:
