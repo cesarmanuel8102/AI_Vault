@@ -11,6 +11,7 @@ from v156_dynamic_test_support import *
 def test_distinct_real_post_merge_topology_success():
     outcome, error, before, after, fake, topo = run_case()
     assert error is None and outcome["status"] == "POST_MERGE_RECOVERED_EXISTING_PR_V156"
+    assert outcome["recovery_start_state"] == "preserved_waiting_github"
     assert topo["historical"] != topo["pre"] != topo["feature"] != topo["merged"]
     state = json.loads(after["state"].decode())
     assert state["cycles"] == 2 and state["status"] == "WAITING_GITHUB"
@@ -18,6 +19,88 @@ def test_distinct_real_post_merge_topology_success():
     assert after["remote"] == state["last_head_sha"] != topo["old"]
     assert fake.issue_labels == {"loop:repairing"} and fake.pr_labels == {"loop:repairing"}
     assert topo["merged"] in fake.issue_body and topo["merged"] in fake.pr_body
+
+
+def test_reconciled_token_exhausted_local_state_success():
+    outcome, error, before, after, fake, topo = run_case(state_overrides={"status": "loop:token-exhausted"})
+    assert error is None and outcome["status"] == "POST_MERGE_RECOVERED_EXISTING_PR_V156"
+    assert outcome["recovery_start_state"] == "reconciled_token_exhausted"
+    state = json.loads(after["state"].decode())
+    assert state["cycles"] == 2 and state["status"] == "WAITING_GITHUB"
+    assert state["trusted_v156_post_merge_recovery_done"] is True
+    assert after["remote"] == state["last_head_sha"] != topo["old"]
+
+
+def test_local_preserved_state_predicate_failures_are_pre_mutation():
+    base = {
+        "issue_number": 5,
+        "front": FRONT,
+        "pr_number": 6,
+        "cycles": 3,
+        "status": "WAITING_GITHUB",
+        "trusted_v154_resume_done": True,
+        "trusted_v155_recovery_done": None,
+        "trusted_v156_post_merge_recovery_done": None,
+        "last_head_sha": helper.common.OLD_PR_HEAD,
+    }
+    spec = {"expected_base_sha": helper.common.HISTORICAL_BASE}
+    auth_obj = helper.Authorization(
+        historical_base=helper.common.HISTORICAL_BASE,
+        pre_pr10_base=helper.common.PRE_PR10_BASE,
+        approved_feature_head="1" * 40,
+        approved_merged_base="2" * 40,
+        approved_control_plane_commit="2" * 40,
+        expected_old_pr_head=helper.common.OLD_PR_HEAD,
+        expected_front=FRONT,
+        expected_pr_number=6,
+        expected_work_branch=BRANCH,
+        approved_worker_sha256="A" * 64,
+    )
+    assert helper.transaction.validate_local_recovery_start(dict(base), dict(spec), auth_obj) == "preserved_waiting_github"
+    terminal = dict(base)
+    terminal["status"] = "loop:token-exhausted"
+    assert helper.transaction.validate_local_recovery_start(terminal, dict(spec), auth_obj) == "reconciled_token_exhausted"
+
+    bad_cases = [
+        ({"cycles": 2}, {}),
+        ({"status": "loop:blocked"}, {}),
+        ({"trusted_v154_resume_done": None}, {}),
+        ({"trusted_v155_recovery_done": True}, {}),
+        ({"trusted_v156_post_merge_recovery_done": True}, {}),
+        ({"last_head_sha": "0" * 40}, {}),
+        ({}, {"expected_base_sha": "0" * 40}),
+        ({"issue_number": 999}, {}),
+        ({"pr_number": 999}, {}),
+        ({"front": "wrong-front"}, {}),
+    ]
+    for state_patch, spec_patch in bad_cases:
+        state = dict(base)
+        state.update(state_patch)
+        patched_spec = dict(spec)
+        patched_spec.update(spec_patch)
+        try:
+            helper.transaction.validate_local_recovery_start(state, patched_spec, auth_obj)
+            raise AssertionError(f"expected predicate failure for {state_patch} {spec_patch}")
+        except ValueError:
+            pass
+
+
+def test_live_github_contract_failures_are_pre_mutation():
+    assert_pre_mutation_failure(fake_options={"github_unavailable": True}, state_overrides={"status": "loop:token-exhausted"})
+    assert_pre_mutation_failure(fake_options={"incomplete_issue": True}, state_overrides={"status": "loop:token-exhausted"})
+    assert_pre_mutation_failure(fake_options={"incomplete_pr": True}, state_overrides={"status": "loop:token-exhausted"})
+    assert_pre_mutation_failure(fake_options={"issue_state": "CLOSED"}, state_overrides={"status": "loop:token-exhausted"})
+    assert_pre_mutation_failure(fake_options={"pr_state": "CLOSED"}, state_overrides={"status": "loop:token-exhausted"})
+    assert_pre_mutation_failure(fake_options={"is_draft": False}, state_overrides={"status": "loop:token-exhausted"})
+    assert_pre_mutation_failure(fake_options={"issue_labels": {"loop:blocked"}}, state_overrides={"status": "loop:token-exhausted"})
+    assert_pre_mutation_failure(fake_options={"pr_labels": {"loop:blocked"}}, state_overrides={"status": "loop:token-exhausted"})
+    assert_pre_mutation_failure(fake_options={"pr_head": "0" * 40}, state_overrides={"status": "loop:token-exhausted"})
+    assert_pre_mutation_failure(fake_options={"head_ref_name": "wrong-branch"}, state_overrides={"status": "loop:token-exhausted"})
+    assert_pre_mutation_failure(fake_options={"base_ref_name": "wrong-base"}, state_overrides={"status": "loop:token-exhausted"})
+    assert_pre_mutation_failure(fake_options={"issue_base": "0" * 40}, state_overrides={"status": "loop:token-exhausted"})
+    assert_pre_mutation_failure(fake_options={"pr_base": "0" * 40}, state_overrides={"status": "loop:token-exhausted"})
+    assert_pre_mutation_failure(fake_options={"changed_files": PILOT_FILES + ["unexpected.txt"]}, state_overrides={"status": "loop:token-exhausted"})
+    assert_pre_mutation_failure(fake_options={"changed_files": PILOT_FILES[:1]}, state_overrides={"status": "loop:token-exhausted"})
 
 
 def test_all_authorization_mismatches_fail_before_mutation():
@@ -128,6 +211,9 @@ def test_partial_state_and_remote_metadata_failures_roll_back():
 
 if __name__ == "__main__":
     test_distinct_real_post_merge_topology_success()
+    test_reconciled_token_exhausted_local_state_success()
+    test_local_preserved_state_predicate_failures_are_pre_mutation()
+    test_live_github_contract_failures_are_pre_mutation()
     test_all_authorization_mismatches_fail_before_mutation()
     test_local_repo_cases_fail_before_mutation()
     test_remote_metadata_and_readback_failures_fully_roll_back()

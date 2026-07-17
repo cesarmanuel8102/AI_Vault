@@ -10,6 +10,24 @@ from typing import Any, Callable
 from v156_recovery_common import *
 
 
+def validate_local_recovery_start(state: dict[str, Any], spec: dict[str, Any], auth: Authorization) -> str:
+    if state.get("front") != FRONT or int(state.get("issue_number") or 0) != ISSUE or int(state.get("pr_number") or 0) != PR:
+        raise ValueError("local state identity mismatch")
+    if int(state.get("cycles") or -1) != 3:
+        raise ValueError("local state is not the preserved failed cycle")
+    if state.get("trusted_v154_resume_done") is not True or state.get("trusted_v155_recovery_done") or state.get("trusted_v156_post_merge_recovery_done"):
+        raise ValueError("local recovery flags mismatch")
+    if state.get("last_head_sha") != auth.expected_old_pr_head or spec.get("expected_base_sha") != auth.historical_base:
+        raise ValueError("local state SHA mismatch")
+
+    status = state.get("status")
+    if status == "WAITING_GITHUB":
+        return "preserved_waiting_github"
+    if status == "loop:token-exhausted":
+        return "reconciled_token_exhausted"
+    raise ValueError("local state is not the preserved failed cycle")
+
+
 def execute_recovery(
     cfg: dict[str, Any],
     auth: Authorization,
@@ -50,14 +68,7 @@ def execute_recovery(
     original_state = state_path.read_bytes()
     state = json.loads(original_state.decode("utf-8-sig"))
     spec = state.get("spec") or {}
-    if state.get("front") != FRONT or int(state.get("issue_number") or 0) != ISSUE or int(state.get("pr_number") or 0) != PR:
-        raise ValueError("local state identity mismatch")
-    if int(state.get("cycles") or -1) != 3 or state.get("status") != "WAITING_GITHUB":
-        raise ValueError("local state is not the preserved failed cycle")
-    if state.get("trusted_v154_resume_done") is not True or state.get("trusted_v155_recovery_done") or state.get("trusted_v156_post_merge_recovery_done"):
-        raise ValueError("local recovery flags mismatch")
-    if state.get("last_head_sha") != auth.expected_old_pr_head or spec.get("expected_base_sha") != auth.historical_base:
-        raise ValueError("local state SHA mismatch")
+    recovery_start_state = validate_local_recovery_start(state, spec, auth)
     worker.validate_v155_recovery_event_chronology(cfg, auth.historical_base, auth.expected_old_pr_head, state.get("repo_dir"))
     repo_dir = Path(str(state.get("repo_dir") or ""))
     validate_local_pilot_repo(repo_dir, auth.expected_old_pr_head)
@@ -206,6 +217,7 @@ def execute_recovery(
             "canonical_touched": False,
             "kimi_executed": False,
             "once_executed": False,
+            "recovery_start_state": recovery_start_state,
         }
         fire(hooks, "before_success_event", fields=success_fields)
         append_event_transactional(cfg, "trusted_v156_dynamic_post_merge_recovery", success_fields, hooks)

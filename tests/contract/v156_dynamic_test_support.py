@@ -113,14 +113,42 @@ def ancestor_status(repo: Path, ancestor: str, descendant: str) -> str:
 
 
 class FakeGitHub:
-    def __init__(self, topo: dict, *, issue_base: str | None = None, pr_base: str | None = None, pr_head: str | None = None, live_base: str | None = None):
+    def __init__(
+        self,
+        topo: dict,
+        *,
+        issue_base: str | None = None,
+        pr_base: str | None = None,
+        pr_head: str | None = None,
+        live_base: str | None = None,
+        issue_state: str = "OPEN",
+        pr_state: str = "OPEN",
+        is_draft: bool = True,
+        issue_labels: set[str] | None = None,
+        pr_labels: set[str] | None = None,
+        head_ref_name: str = BRANCH,
+        base_ref_name: str = BASE_BRANCH,
+        changed_files: list[str] | None = None,
+        incomplete_issue: bool = False,
+        incomplete_pr: bool = False,
+        github_unavailable: bool = False,
+    ):
         self.topo = topo
         self.issue_body = issue_body(issue_base or topo["historical"])
         self.pr_body = f"EXPECTED_BASE_SHA: {pr_base or topo['historical']}"
-        self.issue_labels = {"loop:repairing"}
-        self.pr_labels = {"loop:token-exhausted"}
+        self.issue_state = issue_state
+        self.pr_state = pr_state
+        self.is_draft = is_draft
+        self.issue_labels = set(issue_labels or {"loop:repairing"})
+        self.pr_labels = set(pr_labels or {"loop:token-exhausted"})
         self.pr_head_override = pr_head
         self.live_base_override = live_base
+        self.head_ref_name = head_ref_name
+        self.base_ref_name = base_ref_name
+        self.changed_files = list(changed_files or PILOT_FILES)
+        self.incomplete_issue = incomplete_issue
+        self.incomplete_pr = incomplete_pr
+        self.github_unavailable = github_unavailable
         self.body_fail_once: str | None = None
         self.label_fail_once: str | None = None
         self.readback_fail_once: str | None = None
@@ -131,18 +159,24 @@ class FakeGitHub:
         return self.pr_head_override or bare_ref(self.topo["remote"], f"refs/heads/{BRANCH}")
 
     def gh_json(self, args: list[str]):
+        if self.github_unavailable:
+            raise RuntimeError("controlled GitHub unavailable")
         if args[:2] == ["issue", "view"]:
+            if self.incomplete_issue:
+                return {"number": 5}
             labels = self.issue_labels
             if self.readback_fail_once == "issue":
                 self.readback_fail_once = None
                 labels = {"loop:blocked"}
-            return {"number": 5, "state": "OPEN", "author": {"login": OWNER}, "body": self.issue_body, "labels": [{"name": x} for x in sorted(labels)], "url": "issue"}
+            return {"number": 5, "state": self.issue_state, "author": {"login": OWNER}, "body": self.issue_body, "labels": [{"name": x} for x in sorted(labels)], "url": "issue"}
         if args[:2] == ["pr", "view"]:
+            if self.incomplete_pr:
+                return {"number": 6}
             labels = self.pr_labels
             if self.readback_fail_once == "pr":
                 self.readback_fail_once = None
                 labels = {"loop:blocked"}
-            return {"number": 6, "state": "OPEN", "isDraft": True, "headRefName": BRANCH, "headRefOid": self.remote_pr_head(), "baseRefName": BASE_BRANCH, "body": self.pr_body, "labels": [{"name": x} for x in sorted(labels)], "url": "pr"}
+            return {"number": 6, "state": self.pr_state, "isDraft": self.is_draft, "headRefName": self.head_ref_name, "headRefOid": self.remote_pr_head(), "baseRefName": self.base_ref_name, "body": self.pr_body, "labels": [{"name": x} for x in sorted(labels)], "url": "pr"}
         if args[:1] == ["api"] and "/compare/" in args[1]:
             ancestor, descendant = args[1].split("/compare/", 1)[1].split("...", 1)
             return {"status": ancestor_status(self.topo["control"], ancestor, descendant)}
@@ -189,7 +223,7 @@ def patch_worker(fake: FakeGitHub):
     helper.worker.read_issue_labels = lambda repo, number: fake.gh_json(["issue", "view"])
     helper.worker.read_pr_labels = lambda repo, number: fake.gh_json(["pr", "view"])
     helper.worker.restore_label_set = lambda repo, number, labels: setattr(fake, "issue_labels" if int(number) == 5 else "pr_labels", set(labels))
-    helper.worker.pr_changed_files = lambda repo, number: PILOT_FILES
+    helper.worker.pr_changed_files = lambda repo, number: fake.changed_files
     helper.worker.scheduled_task_disabled = lambda: True
     helper.worker.issue_comments = lambda repo, number: [{"body": "[AGENT-LOOP][TOKEN_EXHAUSTED]\n\nMaximum Kimi cycles reached. Human audit required."} for _ in range(3)]
     return originals
@@ -206,7 +240,7 @@ def auth(topo: dict, **overrides) -> helper.Authorization:
     return helper.Authorization(**values)
 
 
-def run_case(*, fake_options=None, auth_overrides=None, hooks=None, source_override=None, repo_case=None, fake_setup=None, control_dirty=False):
+def run_case(*, fake_options=None, auth_overrides=None, hooks=None, source_override=None, repo_case=None, fake_setup=None, control_dirty=False, state_overrides=None):
     with tempfile.TemporaryDirectory() as td:
         root = Path(td)
         topo = create_topology(root)
@@ -215,6 +249,14 @@ def run_case(*, fake_options=None, auth_overrides=None, hooks=None, source_overr
         old_constants = (helper.common.HISTORICAL_BASE, helper.common.PRE_PR10_BASE, helper.common.OLD_PR_HEAD)
         helper.common.HISTORICAL_BASE, helper.common.PRE_PR10_BASE, helper.common.OLD_PR_HEAD = topo["historical"], topo["pre"], topo["old"]
         cfg, state_path = write_install(root, topo)
+        if state_overrides:
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+            for key, value in state_overrides.items():
+                if key.startswith("spec."):
+                    state.setdefault("spec", {})[key.split(".", 1)[1]] = value
+                else:
+                    state[key] = value
+            state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
         if repo_case == "missing":
             state = json.loads(state_path.read_text(encoding="utf-8")); state["repo_dir"] = str(root / "missing-repo"); state_path.write_text(json.dumps(state, indent=2), encoding="utf-8")
         elif repo_case == "nongit":
