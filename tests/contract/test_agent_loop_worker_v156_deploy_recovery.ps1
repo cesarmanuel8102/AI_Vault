@@ -1,9 +1,95 @@
-$ErrorActionPreference="Stop"
-$Root=Resolve-Path (Join-Path $PSScriptRoot "..\..")
+$ErrorActionPreference = "Stop"
+$Root = Resolve-Path (Join-Path $PSScriptRoot "..\..")
 Import-Module (Join-Path $Root "scripts\agent_loop\Repair-AgentLoop-v1.5.6.Core.psm1") -Force
-function New-Install { $d=Join-Path ([IO.Path]::GetTempPath()) ("v156-"+[guid]::NewGuid().ToString("N")); New-Item -ItemType Directory -Force -Path (Join-Path $d "worker")|Out-Null; New-Item -ItemType Directory -Force -Path (Join-Path $d "state")|Out-Null; Set-Content (Join-Path $d "worker\agent_worker.py") "old"; Set-Content (Join-Path $d "state\issue-5.json") '{"cycles":3}'; return $d }
-function New-Repo { $r=Join-Path ([IO.Path]::GetTempPath()) ("v156-repo-"+[guid]::NewGuid().ToString("N")); New-Item -ItemType Directory -Force -Path (Join-Path $r "scripts\agent_loop\local_worker")|Out-Null; $s=Join-Path $r "scripts\agent_loop\local_worker\agent_worker.py"; Set-Content $s "new156"; return @($r,$s,(Get-FileHash $s -Algorithm SHA256).Hash) }
-function BaseInvoke($install,$repo,$sha,$recovery) { Invoke-AgentLoopV156DeploymentTransaction -Repo $repo -InstallRoot $install -HistoricalBaseSha ("1"*40) -ApprovedCurrentBaseSha ("2"*40) -ExpectedFront "PILOT-KIMI-CODEX-20260716-091529" -ExpectedIssue 5 -ExpectedPr 6 -ExpectedWorkBranch "agent/pilot-20260716-091529" -ExpectedOldPrHead ("3"*40) -ApprovedControlPlaneCommit ("4"*40) -ApprovedWorkerSha256 $sha -StopTask {param($t)} -DisableTask {param($t)} -GetTaskState {param($t) "Disabled"} -GetRepoHead {param($r) "4444444444444444444444444444444444444444"} -RunRepoCommand {param($r,[string[]]$c)} -Recovery $recovery -WriteLine {param($m) Write-Host $m} }
-function Test-Success { $i=New-Install; $r,$s,$sha=New-Repo; $calls=0; BaseInvoke $i $r $sha {param($SourceWorker,$InstallRoot,$ExpectedIssue,$HistoricalBaseSha,$ApprovedCurrentBaseSha,$ApprovedControlPlaneCommit,$ExpectedOldPrHead,$ExpectedFront,$ExpectedPr,$ExpectedWorkBranch,$ApprovedWorkerSha256) $script:calls+=1; Copy-Item $SourceWorker (Join-Path $InstallRoot "worker\agent_worker.py") -Force}; if ($script:calls -ne 1) { throw "atomic call missing" }; if ((Get-Content (Join-Path $i "worker\agent_worker.py") -Raw) -notmatch "new156") { throw "worker not installed" } }
-function Test-Fail { $i=New-Install; $r,$s,$sha=New-Repo; $before=Get-Content (Join-Path $i "worker\agent_worker.py") -Raw; try { BaseInvoke $i $r $sha {param($SourceWorker,$InstallRoot,$ExpectedIssue,$HistoricalBaseSha,$ApprovedCurrentBaseSha,$ApprovedControlPlaneCommit,$ExpectedOldPrHead,$ExpectedFront,$ExpectedPr,$ExpectedWorkBranch,$ApprovedWorkerSha256) throw "controlled fail"}; throw "should fail" } catch { if ($_.Exception.Message -notmatch "controlled fail") { throw } }; if ((Get-Content (Join-Path $i "worker\agent_worker.py") -Raw) -ne $before) { throw "unexpected mutation" } }
-Test-Success; Test-Fail; Write-Host '{"status":"PASS","tests":["success","failure"],"atomic_command":true}'
+
+$Historical = "1" * 40
+$Pre = "2" * 40
+$Feature = "3" * 40
+$Merged = "4" * 40
+$OldHead = "5" * 40
+$Front = "PILOT-KIMI-CODEX-20260716-091529"
+$Branch = "agent/pilot-20260716-091529"
+
+function New-Install {
+  $dir = Join-Path ([IO.Path]::GetTempPath()) ("v156-install-" + [guid]::NewGuid().ToString("N"))
+  New-Item -ItemType Directory -Force -Path (Join-Path $dir "worker") | Out-Null
+  New-Item -ItemType Directory -Force -Path (Join-Path $dir "state") | Out-Null
+  New-Item -ItemType Directory -Force -Path (Join-Path $dir "config") | Out-Null
+  Set-Content -LiteralPath (Join-Path $dir "worker\agent_worker.py") -Value "old-worker" -Encoding UTF8
+  Set-Content -LiteralPath (Join-Path $dir "state\issue-5.json") -Value '{"cycles":3}' -Encoding UTF8
+  Set-Content -LiteralPath (Join-Path $dir "config\worker.json") -Value '{}' -Encoding UTF8
+  return $dir
+}
+
+function New-Repo {
+  $repo = Join-Path ([IO.Path]::GetTempPath()) ("v156-repo-" + [guid]::NewGuid().ToString("N"))
+  $local = Join-Path $repo "scripts\agent_loop\local_worker"
+  New-Item -ItemType Directory -Force -Path $local | Out-Null
+  $source = Join-Path $local "agent_worker.py"
+  $helper = Join-Path $local "v156_post_merge_recovery.py"
+  Set-Content -LiteralPath $source -Value "new-worker-156" -Encoding UTF8
+  Set-Content -LiteralPath $helper -Value "print('helper')" -Encoding UTF8
+  return @($repo, $source, $helper, (Get-FileHash $source -Algorithm SHA256).Hash)
+}
+
+function Invoke-TestTransaction {
+  param($Install, $Repo, $WorkerSha, [scriptblock]$Recovery, [string]$RepoHead = $Merged, [string]$ControlCommit = $Merged)
+  Invoke-AgentLoopV156DeploymentTransaction `
+    -Repo $Repo -InstallRoot $Install -HistoricalBaseSha $Historical -PrePr10BaseSha $Pre `
+    -ApprovedFeatureHead $Feature -ApprovedMergedBaseSha $Merged -ExpectedFront $Front `
+    -ExpectedIssue 5 -ExpectedPr 6 -ExpectedWorkBranch $Branch -ExpectedOldPrHead $OldHead `
+    -ApprovedControlPlaneCommit $ControlCommit -ApprovedWorkerSha256 $WorkerSha `
+    -StopTask { param($TaskName) } -DisableTask { param($TaskName) } `
+    -GetTaskState { param($TaskName) "Disabled" } -GetRepoHead { param($RepoPath) $RepoHead } `
+    -RunRepoCommand { param($RepoPath, [string[]]$CommandArgs) } -Recovery $Recovery `
+    -WriteLine { param($Message) Write-Host $Message }
+}
+
+function Test-SuccessArgumentPlumbing {
+  $install = New-Install
+  $repo, $source, $helper, $sha = New-Repo
+  $script:calls = 0
+  Invoke-TestTransaction $install $repo $sha {
+    param($RecoveryScript,$SourceWorker,$InstallRoot,$HistoricalBaseSha,$PrePr10BaseSha,$ApprovedFeatureHead,$ApprovedMergedBaseSha,$ApprovedControlPlaneCommit,$ExpectedOldPrHead,$ExpectedFront,$ExpectedPr,$ExpectedWorkBranch,$ApprovedWorkerSha256)
+    $script:calls += 1
+    if ($RecoveryScript -ne $helper -or $SourceWorker -ne $source) { throw "wrong recovery source" }
+    if ($HistoricalBaseSha -ne $Historical -or $PrePr10BaseSha -ne $Pre) { throw "wrong base lineage" }
+    if ($ApprovedFeatureHead -ne $Feature -or $ApprovedMergedBaseSha -ne $Merged -or $ApprovedControlPlaneCommit -ne $Merged) { throw "wrong post-merge authorization" }
+    if ($ExpectedOldPrHead -ne $OldHead -or $ExpectedFront -ne $Front -or $ExpectedPr -ne 6 -or $ExpectedWorkBranch -ne $Branch) { throw "wrong pilot identity" }
+    if ($ApprovedWorkerSha256 -ne $sha) { throw "wrong worker SHA" }
+    Copy-Item -LiteralPath $SourceWorker -Destination (Join-Path $InstallRoot "worker\agent_worker.py") -Force
+  }
+  if ($script:calls -ne 1) { throw "atomic recovery not called exactly once" }
+  if ((Get-FileHash (Join-Path $install "worker\agent_worker.py") -Algorithm SHA256).Hash -ne $sha) { throw "worker not installed" }
+}
+
+function Test-RecoveryFailureDoesNotPrintPass {
+  $install = New-Install
+  $repo, $source, $helper, $sha = New-Repo
+  $before = Get-Content -LiteralPath (Join-Path $install "worker\agent_worker.py") -Raw
+  try {
+    Invoke-TestTransaction $install $repo $sha { param($a,$b,$c,$d,$e,$f,$g,$h,$i,$j,$k,$l,$m) throw "controlled recovery failure" }
+    throw "expected failure"
+  } catch {
+    if ($_.Exception.Message -notmatch "controlled recovery failure") { throw }
+  }
+  if ((Get-Content -LiteralPath (Join-Path $install "worker\agent_worker.py") -Raw) -ne $before) { throw "unexpected worker mutation" }
+}
+
+function Test-ControlCommitMustEqualMergedBase {
+  $install = New-Install
+  $repo, $source, $helper, $sha = New-Repo
+  $script:recoveryCalled = $false
+  try {
+    Invoke-TestTransaction $install $repo $sha { param($a,$b,$c,$d,$e,$f,$g,$h,$i,$j,$k,$l,$m) $script:recoveryCalled = $true } -RepoHead ("6" * 40) -ControlCommit ("6" * 40)
+    throw "expected authorization failure"
+  } catch {
+    if ($_.Exception.Message -notmatch "must equal approved merged base") { throw }
+  }
+  if ($script:recoveryCalled) { throw "recovery ran despite control/merged mismatch" }
+}
+
+Test-SuccessArgumentPlumbing
+Test-RecoveryFailureDoesNotPrintPass
+Test-ControlCommitMustEqualMergedBase
+Write-Host '{"status":"PASS","tests":["dynamic_arguments","failure","control_equals_merged"],"atomic_command":true}'
