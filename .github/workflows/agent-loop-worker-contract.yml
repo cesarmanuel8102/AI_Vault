@@ -13,6 +13,8 @@ on:
       - tests/contract/test_agent_loop_worker_v154_repair.py
       - tests/contract/test_agent_loop_worker_v154_transaction_notifications.py
       - tests/contract/test_agent_loop_worker_v154_deploy_rollback.ps1
+      - tests/contract/test_agent_loop_worker_v155_quiescence_recovery.py
+      - tests/contract/test_agent_loop_worker_v155_deploy_recovery.ps1
       - .github/workflows/agent-loop-worker-contract.yml
 
 concurrency:
@@ -49,6 +51,7 @@ jobs:
           python -m py_compile tests/contract/test_agent_loop_worker_v153_base_advance.py
           python -m py_compile tests/contract/test_agent_loop_worker_v154_repair.py
           python -m py_compile tests/contract/test_agent_loop_worker_v154_transaction_notifications.py
+          python -m py_compile tests/contract/test_agent_loop_worker_v155_quiescence_recovery.py
       - name: hardening contract
         run: python tests/contract/test_agent_loop_worker_hardening_02.py
       - name: v1.5.3 regression contract
@@ -63,5 +66,11 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/contract/test_agent_loop_worker_v154_deploy_rollback.ps1
+      - name: v1.5.5 quiescence recovery contract
+        run: python tests/contract/test_agent_loop_worker_v155_quiescence_recovery.py
+      - name: v1.5.5 PowerShell deploy recovery contract
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/contract/test_agent_loop_worker_v155_deploy_recovery.ps1
       - name: git diff check
         run: git diff --check

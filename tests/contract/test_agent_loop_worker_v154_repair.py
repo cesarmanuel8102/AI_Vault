@@ -13,9 +13,9 @@ BASE = "baab482a829a233cdffc25e558ff22eb6d335e69"
 HEAD = "686533399b9789fdd5737a3c69ab1a6c6469a4bd"
 BRANCH = "agent/pilot-20260716-091529"
 
-assert worker.WORKER_VERSION == "1.5.4"
+assert worker.WORKER_VERSION == "1.5.5"
 assert worker.pilot_marker_text(FRONT) == """# Agent Loop Pilot
-WORKER_VERSION=1.5.4
+WORKER_VERSION=1.5.5
 FRONT_ID=PILOT-KIMI-CODEX-20260716-091529
 STATUS=PASS
 EXECUTOR=KIMI_OPENCODE_OLLAMA
@@ -56,7 +56,7 @@ with tempfile.TemporaryDirectory() as td:
     changes = worker.changed_files(repo, sh(["git", "rev-parse", "HEAD"], repo))
     worker.write_executor_report({"opencode_model":"ollama-cloud/kimi-k2.7-code"}, {"front_id":FRONT,"expected_base_sha":BASE,"test_profile":"pilot"}, repo, 5, 3, changes, True, out, root / "opencode.jsonl")
     report = json.loads((repo / "docs/agent_loop/pilot/EXECUTOR_REPORT.json").read_text(encoding="utf-8"))
-    assert report["worker_version"] == "1.5.4"
+    assert report["worker_version"] == "1.5.5"
     assert report["base_sha"] == BASE
     assert report["issue_number"] == 5 and report["cycle"] == 3
     assert report["changed_files"] == sorted(["docs/agent_loop/pilot/PILOT_MARKER.md", "docs/agent_loop/pilot/EXECUTOR_REPORT.json"])
