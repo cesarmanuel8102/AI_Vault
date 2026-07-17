@@ -49,6 +49,7 @@
     "v156_approved_checkout_source_binding": true,
     "v156_force_with_lease_conflict_owner_escalation": true,
     "v156_transactional_event_log_rollback": true,
-    "v156_single_recovery_authority": true
+    "v156_single_recovery_authority": true,
+    "v156_operator_direct_audit": true
   }
 }
