@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 SPEC_RE = re.compile(r"<!--\s*AGENT_LOOP_SPEC\s*(\{.*?\})\s*AGENT_LOOP_SPEC\s*-->", re.S)
-WORKER_VERSION = "1.5.5"
+WORKER_VERSION = "1.5.6"
 PHASE_LABELS = {
     "agent:queued", "loop:executing", "loop:ci", "loop:repairing",
     "loop:ready-human-audit", "loop:blocked", "loop:failed",
@@ -1520,6 +1520,192 @@ def trusted_v155_deploy_recover_existing_pr(cfg: dict, issue_number: int, source
         event(cfg, "trusted_v155_deploy_recovery_rollback", issue=5, pr=6, error=bounded_tail(str(exc)), rollback=rollback)
         raise
 
+
+HISTORICAL_PILOT_BASE_V156 = "220fa3b043d2cae8f8b084c0617027d754963335"
+APPROVED_CURRENT_BASE_V156 = "a6bbcc528cddab29677ef7125948cec92d772ef1"
+APPROVED_PR9_HEAD_V156 = "f83070c15223af5b9d6e702a129f1f3979585617"
+OLD_PILOT_HEAD_V156 = "c94fa5c995684a8db2ecbec09ceef1cfb30c55c5"
+PILOT_FRONT_V156 = "PILOT-KIMI-CODEX-20260716-091529"
+PILOT_BRANCH_V156 = "agent/pilot-20260716-091529"
+PILOT_FILES_V156 = sorted(PROFILE_ALLOWED_PATHS["pilot"])
+
+def replace_issue_spec_base(body: str, new_base: str) -> str:
+    pattern = re.compile(r"<!--\s*AGENT_LOOP_SPEC\s*(.*?)\s*AGENT_LOOP_SPEC\s*-->", re.S)
+    m = pattern.search(body or "")
+    if not m:
+        raise ValueError("Issue body missing AGENT_LOOP_SPEC")
+    spec = json.loads(m.group(1).strip())
+    spec["expected_base_sha"] = new_base
+    new_block = "<!-- AGENT_LOOP_SPEC\n" + json.dumps(spec, indent=2, sort_keys=True) + "\nAGENT_LOOP_SPEC -->"
+    return body[:m.start()] + new_block + body[m.end():]
+
+def replace_pr_expected_base(body: str, new_base: str) -> str:
+    text = body or ""
+    if re.search(r"EXPECTED_BASE_SHA:\s*[0-9a-fA-F]{40}", text):
+        return re.sub(r"EXPECTED_BASE_SHA:\s*[0-9a-fA-F]{40}", f"EXPECTED_BASE_SHA: {new_base}", text)
+    return text.rstrip() + f"\nEXPECTED_BASE_SHA: {new_base}\n"
+
+def verify_v156_local_repo(repo_path: Path, expected_head: str) -> None:
+    if not repo_path.exists() or not repo_path.is_dir():
+        raise ValueError("state.repo_dir missing")
+    if run(["git", "rev-parse", "--is-inside-work-tree"], cwd=repo_path).strip().lower() != "true":
+        raise ValueError("state.repo_dir is not a git worktree")
+    head = run(["git", "rev-parse", "HEAD"], cwd=repo_path).strip()
+    if head != expected_head:
+        raise ValueError(f"local repo HEAD mismatch: {head}")
+    remote = run(["git", "rev-parse", "origin/agent/pilot-20260716-091529"], cwd=repo_path).strip()
+    if remote != expected_head:
+        raise ValueError(f"remote tracking branch mismatch: {remote}")
+    if run(["git", "status", "--porcelain"], cwd=repo_path).strip():
+        raise ValueError("local repo dirty")
+    if run(["git", "rev-list", f"{expected_head}..HEAD"], cwd=repo_path).strip():
+        raise ValueError("local repo has commit above expected head")
+
+def validate_v156_event_chronology(cfg: dict) -> None:
+    validate_v155_recovery_event_chronology(cfg, HISTORICAL_PILOT_BASE_V156, OLD_PILOT_HEAD_V156, load_json(Path(cfg["install_root"])/"state"/"issue-5.json").get("repo_dir"))
+
+def trusted_v156_deploy_advance_recover_existing_pr(
+    cfg: dict,
+    issue_number: int,
+    source_worker: str,
+    approved_worker_sha256: str,
+    historical_base_sha: str,
+    approved_current_base_sha: str,
+    approved_control_plane_commit: str,
+    expected_old_pr_head: str,
+    expected_front: str,
+    expected_pr_number: int,
+    expected_work_branch: str,
+) -> Path:
+    if cfg.get("repo") != "cesarmanuel8102/AI_Vault" or int(issue_number) != 5 or int(expected_pr_number) != 6:
+        raise ValueError("v1.5.6 recovery is restricted to AI_Vault Issue #5 / PR #6")
+    if expected_front != PILOT_FRONT_V156 or expected_work_branch != PILOT_BRANCH_V156:
+        raise ValueError("front or branch mismatch")
+    if historical_base_sha != HISTORICAL_PILOT_BASE_V156 or approved_current_base_sha != APPROVED_CURRENT_BASE_V156 or expected_old_pr_head != OLD_PILOT_HEAD_V156:
+        raise ValueError("approved SHA mismatch")
+    require_scheduled_task_disabled_for_trusted(cfg, "trusted v1.5.6 post-merge recovery")
+    source = Path(source_worker).resolve()
+    if sha256_file(source).upper() != str(approved_worker_sha256).upper():
+        raise ValueError("approved worker SHA mismatch")
+    current_ref = gh_json(["api", f"repos/{cfg['repo']}/git/ref/heads/{cfg.get('base_branch','codex/own-capital-sustainable-return')}"])
+    current_base = ((current_ref.get("object") or {}).get("sha") or "").strip()
+    if current_base != approved_current_base_sha:
+        raise ValueError(f"current base moved: {current_base}")
+    cmp_pr9 = gh_json(["api", f"repos/{cfg['repo']}/compare/{APPROVED_PR9_HEAD_V156}...{approved_current_base_sha}"])
+    if str(cmp_pr9.get("status")) not in {"ahead", "identical"}:
+        raise ValueError("current base does not contain approved PR #9 head")
+    cmp_hist = gh_json(["api", f"repos/{cfg['repo']}/compare/{historical_base_sha}...{approved_current_base_sha}"])
+    if str(cmp_hist.get("status")) not in {"ahead", "identical"}:
+        raise ValueError("current base is not descendant of historical base")
+    state_path = Path(cfg["install_root"]) / "state" / "issue-5.json"
+    original_state_bytes = state_path.read_bytes()
+    st = json.loads(original_state_bytes.decode("utf-8-sig"))
+    spec = st.get("spec") or {}
+    if st.get("front") != expected_front or int(st.get("issue_number") or 0) != 5 or int(st.get("pr_number") or 0) != 6:
+        raise ValueError("state identity mismatch")
+    if int(st.get("cycles") or -1) != 3 or st.get("status") != "WAITING_GITHUB" or st.get("trusted_v154_resume_done") is not True:
+        raise ValueError("state is not preserved failed cycle")
+    if st.get("trusted_v155_recovery_done"):
+        raise ValueError("v1.5.5 recovery already applied")
+    if st.get("last_head_sha") != expected_old_pr_head or spec.get("expected_base_sha") != historical_base_sha:
+        raise ValueError("state SHA mismatch")
+    validate_v156_event_chronology(cfg)
+    repo_dir = Path(str(st.get("repo_dir") or ""))
+    verify_v156_local_repo(repo_dir, expected_old_pr_head)
+    issue = gh_json(["issue", "view", "5", "--repo", cfg["repo"], "--json", "number,state,body,author,labels,url"])
+    pr = gh_json(["pr", "view", "6", "--repo", cfg["repo"], "--json", "number,url,state,isDraft,headRefName,headRefOid,baseRefName,body,labels"])
+    if str(issue.get("state", "")).upper() != "OPEN" or str(pr.get("state", "")).upper() != "OPEN" or pr.get("isDraft") is not True:
+        raise ValueError("Issue/PR state mismatch")
+    assert_exact_phase(issue, "loop:repairing", "Issue #5")
+    assert_exact_phase(pr, "loop:token-exhausted", "PR #6")
+    if pr.get("headRefOid") != expected_old_pr_head or pr.get("headRefName") != expected_work_branch:
+        raise ValueError("PR head mismatch")
+    if pr_changed_files(cfg["repo"], 6) != PILOT_FILES_V156:
+        raise ValueError("unexpected PR diff")
+    legacy_comments = [c for c in issue_comments(cfg["repo"], 6) if "[AGENT-LOOP][TOKEN_EXHAUSTED]" in (c.get("body") or "")]
+    if len(legacy_comments) != 3:
+        raise ValueError("expected exactly three legacy TOKEN_EXHAUSTED comments")
+    install_root = Path(cfg["install_root"])
+    reports = install_root / "reports"; reports.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    installed = install_root / "worker" / "agent_worker.py"
+    original_worker_bytes = installed.read_bytes()
+    original_issue_body = issue.get("body") or ""
+    original_pr_body = pr.get("body") or ""
+    original_issue_labels = labels(issue)
+    original_pr_labels = labels(pr)
+    state_backup = state_path.with_suffix(state_path.suffix + f".bak-v156-{stamp}")
+    worker_backup = reports / f"agent_worker.py.bak-v156-{stamp}"
+    issue_body_backup = reports / f"issue-5-body.bak-v156-{stamp}.md"
+    pr_body_backup = reports / f"pr-6-body.bak-v156-{stamp}.md"
+    state_backup.write_bytes(original_state_bytes)
+    worker_backup.write_bytes(original_worker_bytes)
+    issue_body_backup.write_text(original_issue_body, encoding="utf-8")
+    pr_body_backup.write_text(original_pr_body, encoding="utf-8")
+    pushed = False
+    new_head = None
+    try:
+        shutil.copy2(source, installed)
+        installed_sha = sha256_file(installed)
+        if installed_sha.upper() != str(approved_worker_sha256).upper():
+            raise ValueError("installed worker SHA mismatch")
+        run(["git", "fetch", "origin", cfg.get("base_branch", "codex/own-capital-sustainable-return"), expected_work_branch], cwd=repo_dir)
+        if run(["git", "rev-parse", f"origin/{expected_work_branch}"], cwd=repo_dir).strip() != expected_old_pr_head:
+            raise ValueError("remote work branch moved")
+        run(["git", "checkout", "-B", expected_work_branch, expected_old_pr_head], cwd=repo_dir)
+        run(["git", "merge", "--no-ff", "--no-edit", approved_current_base_sha], cwd=repo_dir)
+        new_head = run(["git", "rev-parse", "HEAD"], cwd=repo_dir).strip()
+        changed = sorted(run(["git", "diff", "--name-only", approved_current_base_sha, new_head], cwd=repo_dir).splitlines())
+        if changed != PILOT_FILES_V156:
+            raise ValueError(f"unexpected advanced PR diff: {changed}")
+        run(["git", "push", "origin", f"HEAD:refs/heads/{expected_work_branch}"], cwd=repo_dir)
+        pushed = True
+        update_issue_body(cfg["repo"], 5, replace_issue_spec_base(original_issue_body, approved_current_base_sha))
+        update_pr_body(cfg["repo"], 6, replace_pr_expected_base(original_pr_body, approved_current_base_sha))
+        st = seed_terminal_notification_keys_from_comments(cfg, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+        spec = dict(st.get("spec") or {})
+        spec["expected_base_sha"] = approved_current_base_sha
+        st.update({"cycles": 2, "status": "WAITING_GITHUB", "last_head_sha": new_head, "spec": spec,
+                   "local_retry_count": 0, "terminal_notified": False,
+                   "trusted_v156_post_merge_recovery_done": True, "worker_version": WORKER_VERSION, "updated_utc": utc()})
+        save_json(state_path, st)
+        set_phase(cfg["repo"], 5, "loop:repairing")
+        set_phase(cfg["repo"], 6, "loop:repairing")
+        assert_exact_phase(read_issue_labels(cfg["repo"], 5), "loop:repairing", "Issue #5")
+        assert_exact_phase(read_pr_labels(cfg["repo"], 6), "loop:repairing", "PR #6")
+        reloaded = load_json(state_path)
+        if int(reloaded.get("cycles") or -1) != 2 or reloaded.get("status") != "WAITING_GITHUB" or reloaded.get("last_head_sha") != new_head:
+            raise ValueError("postcondition failed: state")
+        event(cfg, "trusted_v156_deploy_advance_recovery_existing_pr", historical_base=historical_base_sha,
+              approved_current_base=approved_current_base_sha, old_pr_head=expected_old_pr_head, new_pr_head=new_head,
+              installed_worker_sha=installed_sha, state_backup=str(state_backup), worker_backup=str(worker_backup),
+              issue_body_backup=str(issue_body_backup), pr_body_backup=str(pr_body_backup), task_disabled=scheduled_task_disabled(),
+              canonical_touched=False, kimi_executed=False, once_executed=False)
+        return state_backup
+    except Exception as exc:
+        rollback = {"worker": False, "state": False, "local_branch": False, "remote_branch": False, "issue_body": False, "pr_body": False, "issue_labels": False, "pr_labels": False, "task_disabled": scheduled_task_disabled(), "owner_action_required": False}
+        try: installed.write_bytes(original_worker_bytes); rollback["worker"] = True
+        except Exception: pass
+        try: state_path.write_bytes(original_state_bytes); rollback["state"] = True
+        except Exception: pass
+        try: run(["git", "reset", "--hard", expected_old_pr_head], cwd=repo_dir); rollback["local_branch"] = True
+        except Exception: pass
+        if pushed:
+            try: run(["git", "push", f"--force-with-lease=refs/heads/{expected_work_branch}:{new_head}", "origin", f"{expected_old_pr_head}:refs/heads/{expected_work_branch}"], cwd=repo_dir); rollback["remote_branch"] = True
+            except Exception as rb_exc: rollback["owner_action_required"] = True; rollback["remote_error"] = bounded_tail(str(rb_exc))
+        try: update_issue_body(cfg["repo"], 5, original_issue_body); rollback["issue_body"] = True
+        except Exception: pass
+        try: update_pr_body(cfg["repo"], 6, original_pr_body); rollback["pr_body"] = True
+        except Exception: pass
+        try: restore_label_set(cfg["repo"], 5, original_issue_labels); rollback["issue_labels"] = True
+        except Exception: pass
+        try: restore_label_set(cfg["repo"], 6, original_pr_labels); rollback["pr_labels"] = True
+        except Exception: pass
+        event(cfg, "trusted_v156_post_merge_recovery_rollback", error=bounded_tail(str(exc)), rollback=rollback,
+              historical_base=historical_base_sha, approved_current_base=approved_current_base_sha,
+              old_pr_head=expected_old_pr_head, attempted_new_pr_head=new_head)
+        raise
+
 class SingleInstanceLock:
     def __init__(self, path: Path):
         self.path=path; self.handle=None
@@ -1556,7 +1742,7 @@ class SingleInstanceLock:
             if self.handle: self.handle.close()
 
 def main():
-    ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--once",action="store_true"); ap.add_argument("--trusted-resume-existing-pr", type=int); ap.add_argument("--trusted-base-advance-existing-pr", type=int); ap.add_argument("--trusted-v154-resume-existing-pr", type=int); ap.add_argument("--trusted-v155-recover-existing-pr", type=int); ap.add_argument("--trusted-v155-deploy-recover-existing-pr", type=int); ap.add_argument("--expected-front"); ap.add_argument("--expected-base-sha"); ap.add_argument("--expected-old-base-sha"); ap.add_argument("--approved-new-base-sha"); ap.add_argument("--approved-control-plane-commit"); ap.add_argument("--expected-pr-number", type=int); ap.add_argument("--expected-work-branch"); ap.add_argument("--expected-pr-head"); ap.add_argument("--expected-old-pr-head"); ap.add_argument("--source-worker"); ap.add_argument("--approved-worker-sha256")
+    ap=argparse.ArgumentParser(); ap.add_argument("--config",required=True); ap.add_argument("--once",action="store_true"); ap.add_argument("--trusted-resume-existing-pr", type=int); ap.add_argument("--trusted-base-advance-existing-pr", type=int); ap.add_argument("--trusted-v154-resume-existing-pr", type=int); ap.add_argument("--trusted-v155-recover-existing-pr", type=int); ap.add_argument("--trusted-v155-deploy-recover-existing-pr", type=int); ap.add_argument("--trusted-v156-deploy-advance-recover-existing-pr", type=int); ap.add_argument("--expected-front"); ap.add_argument("--expected-base-sha"); ap.add_argument("--expected-old-base-sha"); ap.add_argument("--approved-new-base-sha"); ap.add_argument("--approved-control-plane-commit"); ap.add_argument("--expected-pr-number", type=int); ap.add_argument("--expected-work-branch"); ap.add_argument("--expected-pr-head"); ap.add_argument("--expected-old-pr-head"); ap.add_argument("--source-worker"); ap.add_argument("--approved-worker-sha256"); ap.add_argument("--historical-base-sha"); ap.add_argument("--approved-current-base-sha")
     args=ap.parse_args(); cfg=load_json(Path(args.config)); Path(cfg["install_root"]).mkdir(parents=True,exist_ok=True)
     global _RUN_EVENT_CFG
     _RUN_EVENT_CFG = cfg
@@ -1579,6 +1765,18 @@ def main():
         with SingleInstanceLock(Path(cfg["install_root"])/"state"/"worker.lock"):
             backup = trusted_resume_issue5_pr6_v154(cfg, args.trusted_v154_resume_existing_pr, args.expected_front, args.expected_base_sha, args.expected_pr_number, args.expected_work_branch, args.expected_pr_head)
         print(json.dumps({"status":"RESUMED_EXISTING_PR_V154", "backup": str(backup)}, indent=2))
+        return
+    if args.trusted_v156_deploy_advance_recover_existing_pr is not None:
+        if not all([args.source_worker, args.approved_worker_sha256, args.historical_base_sha, args.approved_current_base_sha, args.approved_control_plane_commit, args.expected_old_pr_head, args.expected_front, args.expected_pr_number, args.expected_work_branch]):
+            raise SystemExit("trusted v1.5.6 post-merge recovery requires all explicit SHA/front/branch parameters")
+        lock_path = Path(cfg["install_root"])/"state"/"worker.lock"
+        try:
+            with SingleInstanceLock(lock_path):
+                backup = trusted_v156_deploy_advance_recover_existing_pr(cfg, args.trusted_v156_deploy_advance_recover_existing_pr, args.source_worker, args.approved_worker_sha256, args.historical_base_sha, args.approved_current_base_sha, args.approved_control_plane_commit, args.expected_old_pr_head, args.expected_front, args.expected_pr_number, args.expected_work_branch)
+        except RuntimeError as exc:
+            evidence = worker_process_evidence(cfg["install_root"])
+            raise SystemExit("worker.lock busy; trusted v1.5.6 post-merge recovery aborted before mutation; process_evidence=" + json.dumps(evidence, sort_keys=True)) from exc
+        print(json.dumps({"status":"POST_MERGE_RECOVERED_EXISTING_PR_V156", "backup": str(backup)}, indent=2))
         return
     if args.trusted_v155_deploy_recover_existing_pr is not None:
         if not all([args.source_worker, args.approved_worker_sha256, args.expected_base_sha, args.expected_pr_head]):
