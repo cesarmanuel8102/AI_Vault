@@ -31,6 +31,7 @@ def test_all_authorization_mismatches_fail_before_mutation():
         wrong = Path(td) / "agent_worker.py"
         wrong.write_bytes(WORKER_PATH.read_bytes())
         assert_pre_mutation_failure(source_override=wrong)
+    assert_pre_mutation_failure(control_dirty=True)
 
 
 def test_local_repo_cases_fail_before_mutation():
@@ -92,6 +93,17 @@ def test_real_force_with_lease_conflict_returns_owner_action_required():
     assert rollback["attempted_rollback_target"] == topo["old"]
 
 
+def test_task_state_change_before_commit_fully_rolls_back():
+    def enable_task(**kwargs):
+        helper.worker.scheduled_task_disabled = lambda: False
+    outcome, error, before, after, fake, topo = run_case(hooks={"before_final_task_check": enable_task})
+    assert outcome is None and "scheduled task changed state" in str(error)
+    assert before["state"] == after["state"] and before["worker"] == after["worker"]
+    assert before["issue_body"] == after["issue_body"] and before["pr_body"] == after["pr_body"]
+    assert before["issue_labels"] == after["issue_labels"] and before["pr_labels"] == after["pr_labels"]
+    assert after["remote"] == topo["old"]
+
+
 def test_partial_event_append_has_no_mixed_state():
     def partial(path: Path, record: str):
         with path.open("ab") as stream:
@@ -121,6 +133,7 @@ if __name__ == "__main__":
     test_remote_metadata_and_readback_failures_fully_roll_back()
     test_ordinary_failure_after_push_fully_rolls_back()
     test_real_force_with_lease_conflict_returns_owner_action_required()
+    test_task_state_change_before_commit_fully_rolls_back()
     test_partial_event_append_has_no_mixed_state()
     test_partial_state_and_remote_metadata_failures_roll_back()
     print(json.dumps({
@@ -132,4 +145,6 @@ if __name__ == "__main__":
         "remote_push_rollback": "PASS",
         "real_force_with_lease_conflict": "OWNER_ACTION_REQUIRED_PASS",
         "partial_event_append": "PASS",
+        "control_plane_clean": "PASS",
+        "task_disabled_transactional_postcondition": "PASS",
     }, indent=2))
