@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 SPEC_RE = re.compile(r"<!--\s*AGENT_LOOP_SPEC\s*(\{.*?\})\s*AGENT_LOOP_SPEC\s*-->", re.S)
-WORKER_VERSION = "1.5.6"
+WORKER_VERSION = "1.5.7"
 PHASE_LABELS = {
     "agent:queued", "loop:executing", "loop:ci", "loop:repairing",
     "loop:ready-human-audit", "loop:blocked", "loop:failed",
@@ -31,6 +31,21 @@ REQUIRED_FORBIDDEN_PATHS = {
 MODEL_SEED_PATHS: set[str] = set()
 _RUN_EVENT_CFG: dict | None = None
 _SENSITIVE_COMMAND_WORDS = {"auth", "token", "secret", "login", "password", "key"}
+_RUNTIME_EXECUTABLES: dict[str, str] = {}
+_EXECUTABLE_ALLOWED_EXTENSIONS = {
+    "git": {".exe"},
+    "gh": {".exe"},
+    "python": {".exe"},
+    "opencode": {".cmd", ".exe"},
+    "cmd": {".exe"},
+}
+_EXECUTABLE_CONFIG_KEYS = {
+    "git": "git_exe",
+    "gh": "gh_exe",
+    "python": "python_exe",
+    "opencode": "opencode_cmd",
+    "cmd": "cmd_exe",
+}
 PILOT_MARKER_TEMPLATE = """# Agent Loop Pilot
 WORKER_VERSION={worker_version}
 FRONT_ID={front_id}
@@ -50,19 +65,104 @@ class CmdError(RuntimeError):
 def utc() -> str:
     return datetime.now(timezone.utc).isoformat()
 
+def _is_relative_to(path: Path, parent: Path) -> bool:
+    try:
+        path.relative_to(parent)
+        return True
+    except ValueError:
+        return False
+
+def _runtime_command_name(value: str) -> str | None:
+    base = os.path.basename(str(value)).lower()
+    if base in {"git", "git.exe"}:
+        return "git"
+    if base in {"gh", "gh.exe"}:
+        return "gh"
+    if base.startswith("python"):
+        return "python"
+    if base in {"opencode", "opencode.cmd", "opencode.exe"}:
+        return "opencode"
+    if base in {"cmd", "cmd.exe"}:
+        return "cmd"
+    return None
+
+def _safe_version_at_least(actual: str, expected: str) -> bool:
+    def nums(text: str) -> tuple[int, ...]:
+        m = re.search(r"(\d+(?:\.\d+){0,3})", text or "")
+        return tuple(int(x) for x in m.group(1).split(".")) if m else (0,)
+    a, b = nums(actual), nums(expected)
+    width = max(len(a), len(b))
+    return a + (0,) * (width - len(a)) >= b + (0,) * (width - len(b))
+
 def command_for_subprocess(args: list[str]) -> list[str]:
     """Resolve commands safely on Windows, including npm .cmd/.bat shims."""
     values = [str(x) for x in args]
     if not values:
         raise ValueError("empty command")
-    resolved = shutil.which(values[0])
+    command_name = _runtime_command_name(values[0])
+    resolved = _RUNTIME_EXECUTABLES.get(command_name or "")
     if resolved:
         values[0] = resolved
+    else:
+        path_resolved = shutil.which(values[0])
+        if path_resolved:
+            values[0] = path_resolved
     suffix = os.path.splitext(values[0])[1].lower()
     if os.name == "nt" and suffix in {".cmd", ".bat"}:
-        comspec = os.environ.get("COMSPEC") or shutil.which("cmd.exe") or "cmd.exe"
+        comspec = _RUNTIME_EXECUTABLES.get("cmd") or os.environ.get("COMSPEC") or shutil.which("cmd.exe") or "cmd.exe"
         return [comspec, "/d", "/s", "/c", subprocess.list2cmdline(values)]
     return values
+
+def sanitize_command_for_log(args: list[str]) -> list[str]:
+    if not args:
+        return []
+    ident = command_identity(args)
+    safe: list[str] = [ident]
+    for value in args[1:]:
+        lower = str(value).lower()
+        if any(word in lower for word in _SENSITIVE_COMMAND_WORDS):
+            safe.append("<redacted>")
+        elif len(str(value)) > 160:
+            safe.append(str(value)[:80] + "...<truncated>")
+        else:
+            safe.append(str(value))
+    return safe
+
+def resolve_runtime_executables(cfg: dict, *, require_config: bool = False) -> dict[str, str]:
+    runtime_cfg = cfg.get("runtime_executables") or {}
+    allow_dirs = [Path(x).expanduser().resolve() for x in cfg.get("executable_allowlist_dirs") or []]
+    if require_config and (not isinstance(runtime_cfg, dict) or set(_EXECUTABLE_CONFIG_KEYS.values()) - set(runtime_cfg)):
+        raise RuntimeError("RUNTIME_EXECUTABLE_CONFIG_MISSING")
+    if require_config and not allow_dirs:
+        raise RuntimeError("RUNTIME_EXECUTABLE_ALLOWLIST_MISSING")
+    resolved: dict[str, str] = {}
+    for name, key in _EXECUTABLE_CONFIG_KEYS.items():
+        configured = runtime_cfg.get(key)
+        if not configured:
+            if require_config:
+                raise RuntimeError(f"RUNTIME_EXECUTABLE_MISSING:{key}")
+            found = shutil.which("opencode.cmd" if name == "opencode" else f"{name}.exe") or shutil.which(name)
+            if found:
+                resolved[name] = str(Path(found).resolve())
+            continue
+        path = Path(str(configured)).expanduser()
+        if not path.is_absolute():
+            raise RuntimeError(f"RUNTIME_EXECUTABLE_NOT_ABSOLUTE:{key}")
+        path = path.resolve()
+        if not path.is_file():
+            raise RuntimeError(f"RUNTIME_EXECUTABLE_NOT_FILE:{key}")
+        suffix = path.suffix.lower()
+        if suffix not in _EXECUTABLE_ALLOWED_EXTENSIONS[name]:
+            raise RuntimeError(f"RUNTIME_EXECUTABLE_EXTENSION_DENIED:{key}:{suffix}")
+        if allow_dirs and not any(_is_relative_to(path, allowed) for allowed in allow_dirs):
+            raise RuntimeError(f"RUNTIME_EXECUTABLE_OUTSIDE_ALLOWLIST:{key}")
+        resolved[name] = str(path)
+    return resolved
+
+def configure_runtime_resolution(cfg: dict, *, require_config: bool = False) -> dict[str, str]:
+    global _RUNTIME_EXECUTABLES
+    _RUNTIME_EXECUTABLES = resolve_runtime_executables(cfg, require_config=require_config)
+    return dict(_RUNTIME_EXECUTABLES)
 
 def decode_process_output(data: bytes | str | None) -> tuple[str, str]:
     if data is None:
@@ -636,9 +736,26 @@ def sha256_file(path: Path) -> str:
 def run_preflight(cfg: dict) -> dict:
     """Validate deterministic local dependencies without spending model tokens."""
     checks = {}
-    for name in ("git", "gh", "python", "opencode"):
-        resolved = shutil.which(name) or shutil.which(name + ".cmd") or shutil.which(name + ".exe")
-        checks[name] = {"ok": bool(resolved), "path": resolved}
+    resolved = configure_runtime_resolution(cfg, require_config=True)
+    for name in ("git", "gh", "python", "opencode", "cmd"):
+        checks[name] = {"ok": name in resolved, "path": resolved.get(name)}
+    min_versions = cfg.get("runtime_min_versions") or {}
+    version_commands = {
+        "git": ["git", "--version"],
+        "gh": ["gh", "--version"],
+        "python": ["python", "--version"],
+        "opencode": ["opencode", "--version"],
+    }
+    for name, command in version_commands.items():
+        if name not in resolved:
+            continue
+        out = run(command, check=False)
+        expected = min_versions.get(name)
+        checks[f"{name}_version"] = {
+            "ok": _safe_version_at_least(out, expected) if expected else True,
+            "minimum": expected,
+            "output": bounded_tail(out, 500),
+        }
     gh_status = subprocess.run(command_for_subprocess(["gh", "auth", "status"]), text=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     gh_out, _ = completed_output(gh_status)
     emit_subprocess_decoding_event(cfg, ["gh", "auth", "status"], _)

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "worker_version": "1.5.6",
+  "worker_version": "1.5.7",
   "platform": "Windows PowerShell 5.1",
   "source_of_truth": "GitHub",
   "executor": "OpenCode with ollama-cloud/kimi-k2.7-code",
@@ -52,6 +52,10 @@
     "v156_single_recovery_authority": true,
     "v156_operator_direct_audit": true,
     "v156_control_plane_clean_checkout": true,
-    "v156_task_disabled_transactional_postcondition": true
+    "v156_task_disabled_transactional_postcondition": true,
+    "v157_deterministic_runtime_resolution": true,
+    "v157_absolute_executable_config": true,
+    "v157_runtime_allowlist": true,
+    "v157_path_independent_preflight": true
   }
 }
