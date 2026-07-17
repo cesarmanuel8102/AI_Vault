@@ -47,6 +47,9 @@ jobs:
       - name: py_compile
         run: |
           python -m py_compile scripts/agent_loop/local_worker/agent_worker.py
+          python -m py_compile scripts/agent_loop/local_worker/v156_recovery_common.py
+          python -m py_compile scripts/agent_loop/local_worker/v156_recovery_transaction.py
+          python -m py_compile scripts/agent_loop/local_worker/v156_post_merge_recovery.py
           python -m py_compile scripts/agent_loop/pilot_verify.py
           python -m py_compile tests/contract/test_agent_loop_worker_hardening_02.py
           python -m py_compile tests/contract/test_agent_loop_worker_v153_regression.py
@@ -75,9 +78,9 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/contract/test_agent_loop_worker_v155_deploy_recovery.ps1
-      - name: v1.5.6 post-merge recovery contract
+      - name: v1.5.6 dynamic post-merge recovery contract
         run: python tests/contract/test_agent_loop_worker_v156_post_merge_recovery.py
-      - name: v1.5.6 PowerShell deploy recovery contract
+      - name: v1.5.6 PowerShell dynamic deploy recovery contract
         if: runner.os == 'Windows'
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/contract/test_agent_loop_worker_v156_deploy_recovery.ps1
