@@ -1,9 +1,8 @@
 from pathlib import Path
-import re
 
 root = Path(__file__).resolve().parents[1]
-worker_path = root / 'scripts/agent_loop/local_worker/agent_worker.py'
-s = worker_path.read_text(encoding='utf-8')
+path = root / 'tests/contract/test_agent_loop_worker_v156_post_merge_recovery.py'
+s = path.read_text(encoding='utf-8')
 
 def one(old, new, label):
     global s
@@ -12,132 +11,90 @@ def one(old, new, label):
     s = s.replace(old, new, 1)
 
 one(
-'''    source = Path(source_worker).resolve()
-    if sha256_file(source).upper() != str(approved_worker_sha256).upper():
-        raise ValueError("approved worker SHA mismatch")
-    current_ref = gh_json(["api", f"repos/{cfg['repo']}/git/ref/heads/{cfg.get('base_branch','codex/own-capital-sustainable-return')}"])
+'''    def upd_issue(repo,num,body):
+        if fail_at=="issue_body": raise RuntimeError("issue body fail")
+        store["issue_body"]=body
 ''',
-'''    source = Path(source_worker).resolve()
-    if sha256_file(source).upper() != str(approved_worker_sha256).upper():
-        raise ValueError("approved worker SHA mismatch")
-    if not re.fullmatch(r"[0-9a-fA-F]{40}", str(approved_control_plane_commit or "")):
-        raise ValueError("approved control-plane commit must be a full SHA")
-    try:
-        control_repo = source.parents[3]
-    except IndexError as exc:
-        raise ValueError("source worker is not inside an approved checkout") from exc
-    expected_source = (control_repo / "scripts/agent_loop/local_worker/agent_worker.py").resolve()
-    if source != expected_source:
-        raise ValueError("source worker path is outside the approved checkout")
-    if Path(run(["git", "rev-parse", "--show-toplevel"], cwd=control_repo).strip()).resolve() != control_repo.resolve():
-        raise ValueError("control-plane checkout root mismatch")
-    control_head = run(["git", "rev-parse", "HEAD"], cwd=control_repo).strip()
-    if control_head != approved_control_plane_commit:
-        raise ValueError(f"control-plane checkout HEAD mismatch: {control_head}")
-    if run(["git", "status", "--porcelain"], cwd=control_repo).strip():
-        raise ValueError("control-plane checkout is dirty")
-    current_ref = gh_json(["api", f"repos/{cfg['repo']}/git/ref/heads/{cfg.get('base_branch','codex/own-capital-sustainable-return')}"])
+'''    def upd_issue(repo,num,body):
+        if fail_at=="issue_body":
+            if force_lease_conflict and not store.get("third_party_head"):
+                third=Path(tempfile.mkdtemp(prefix="v156-third-party-"))
+                git(["clone",str(store["remote_path"]),str(third)],third.parent)
+                git(["checkout","-B",BRANCH,f"origin/{BRANCH}"],third)
+                git(["config","user.name","third"],third); git(["config","user.email","third@example.invalid"],third)
+                (third/"third-party.txt").write_text("third-party\\n",encoding="utf-8")
+                git(["add","third-party.txt"],third); git(["commit","-m","third-party movement"],third)
+                store["third_party_head"]=git(["rev-parse","HEAD"],third)
+                git(["push","origin",f"HEAD:refs/heads/{BRANCH}"],third)
+            raise RuntimeError("issue body fail")
+        store["issue_body"]=body
 ''',
-'bind approved checkout')
+'add real remote conflict')
 
 one(
-'''    cmp_pr9 = gh_json(["api", f"repos/{cfg['repo']}/compare/{APPROVED_PR9_HEAD_V156}...{approved_current_base_sha}"])
-    if str(cmp_pr9.get("status")) not in {"ahead", "identical"}:
-        raise ValueError("current base does not contain approved PR #9 head")
-    cmp_hist = gh_json(["api", f"repos/{cfg['repo']}/compare/{historical_base_sha}...{approved_current_base_sha}"])
+'''        root=Path(td); repo,hist,current,pr9,old=make_repo(root,dirty=dirty,ahead=ahead,wrong_head=wrong_head,nongit=nongit)
+        worker.HISTORICAL_PILOT_BASE_V156=hist; worker.APPROVED_CURRENT_BASE_V156=current; worker.APPROVED_PR9_HEAD_V156=pr9; worker.OLD_PILOT_HEAD_V156=old
 ''',
-'''    cmp_pr9 = gh_json(["api", f"repos/{cfg['repo']}/compare/{APPROVED_PR9_HEAD_V156}...{approved_current_base_sha}"])
-    if str(cmp_pr9.get("status")) not in {"ahead", "identical"}:
-        raise ValueError("current base does not contain approved PR #9 head")
-    cmp_candidate = gh_json(["api", f"repos/{cfg['repo']}/compare/{approved_current_base_sha}...{approved_control_plane_commit}"])
-    if str(cmp_candidate.get("status")) not in {"ahead", "identical"}:
-        raise ValueError("approved control-plane commit is not descended from the live base")
-    cmp_hist = gh_json(["api", f"repos/{cfg['repo']}/compare/{historical_base_sha}...{approved_current_base_sha}"])
+'''        root=Path(td); repo,hist,current,pr9,old=make_repo(root,dirty=dirty,ahead=ahead,wrong_head=wrong_head,nongit=nongit)
+        worker.HISTORICAL_PILOT_BASE_V156=hist; worker.APPROVED_CURRENT_BASE_V156=current; worker.APPROVED_PR9_HEAD_V156=pr9; worker.OLD_PILOT_HEAD_V156=old
+        remote_path=root/"remote.git"
+        control=root/"control"
+        git(["clone",str(remote_path),str(control)],root)
+        git(["checkout","-B","control-candidate",current],control)
+        git(["config","user.name","control"],control); git(["config","user.email","control@example.invalid"],control)
+        source=control/"scripts/agent_loop/local_worker/agent_worker.py"; source.parent.mkdir(parents=True,exist_ok=True); source.write_bytes(MODULE.read_bytes())
+        git(["add","scripts/agent_loop/local_worker/agent_worker.py"],control); git(["commit","-m","approved control candidate"],control)
+        control_commit=git(["rev-parse","HEAD"],control)
 ''',
-'validate candidate ancestry')
+'create approved control checkout')
 
 one(
-'''    pushed = False
-    new_head = None
-    try:
+'''        source=root/"source_worker.py"; source.write_bytes(MODULE.read_bytes()); sha=worker.sha256_file(source)
+        store={"issue_body":issue_body(hist),"pr_body":f"EXPECTED_BASE_SHA: {hist}","issue_labels":{"loop:repairing"},"pr_labels":{"loop:token-exhausted"},"pr_head":old,"events":[]}
 ''',
-'''    pushed = False
-    new_head = None
-    owner_action_payload = None
-    try:
+'''        sha=worker.sha256_file(source)
+        store={"issue_body":issue_body(hist),"pr_body":f"EXPECTED_BASE_SHA: {hist}","issue_labels":{"loop:repairing"},"pr_labels":{"loop:token-exhausted"},"pr_head":old,"events":[],"remote_path":remote_path,"control_commit":control_commit}
 ''',
-'initialize owner escalation')
+'use checkout-bound source')
 
 one(
-'''            except Exception as rb_exc: rollback["owner_action_required"] = True; rollback["remote_error"] = bounded_tail(str(rb_exc))
+'''                worker.trusted_v156_deploy_advance_recover_existing_pr({"install_root":str(root),"repo":REPO,"owner":OWNER,"base_branch":"codex/own-capital-sustainable-return"},5,str(source),sha,hist,current,current,old,FRONT,6,BRANCH)
 ''',
-'''            except Exception as rb_exc:
-                actual_remote = "unknown"
-                try:
-                    remote_line = run(["git", "ls-remote", "origin", f"refs/heads/{expected_work_branch}"], cwd=repo_dir).strip()
-                    if remote_line:
-                        actual_remote = remote_line.split()[0]
-                except Exception:
-                    pass
-                rollback["owner_action_required"] = True
-                rollback["remote_error"] = bounded_tail(str(rb_exc))
-                owner_action_payload = {
-                    "status": "OWNER_ACTION_REQUIRED",
-                    "reason": "force-with-lease refused rollback after unexpected remote movement",
-                    "branch": expected_work_branch,
-                    "expected_lease_sha": new_head,
-                    "actual_remote_sha": actual_remote,
-                    "rollback_target_sha": expected_old_pr_head,
-                    "primary_failure": bounded_tail(str(exc)),
-                }
+'''                worker.trusted_v156_deploy_advance_recover_existing_pr({"install_root":str(root),"repo":REPO,"owner":OWNER,"base_branch":"codex/own-capital-sustainable-return"},5,str(source),sha,hist,current,control_commit,old,FRONT,6,BRANCH)
 ''',
-'force lease escalation')
+'pass approved candidate commit')
 
 one(
-'''        event(cfg, "trusted_v156_post_merge_recovery_rollback", error=bounded_tail(str(exc)), rollback=rollback,
-              historical_base=historical_base_sha, approved_current_base=approved_current_base_sha,
-              old_pr_head=expected_old_pr_head, attempted_new_pr_head=new_head)
-        raise
+'''            remote=git(["rev-parse",f"origin/{BRANCH}"],repo) if repo.exists() and (repo/".git").exists() else ""
 ''',
-'''        try:
-            event(cfg, "trusted_v156_post_merge_recovery_rollback", error=bounded_tail(str(exc)), rollback=rollback,
-                  historical_base=historical_base_sha, approved_current_base=approved_current_base_sha,
-                  approved_control_plane_commit=approved_control_plane_commit,
-                  old_pr_head=expected_old_pr_head, attempted_new_pr_head=new_head,
-                  owner_action=owner_action_payload)
-        except Exception:
-            pass
-        if owner_action_payload:
-            raise RuntimeError("OWNER_ACTION_REQUIRED:" + json.dumps(owner_action_payload, sort_keys=True)) from exc
-        raise
+'''            remote=(git(["ls-remote","origin",f"refs/heads/{BRANCH}"],repo).split()[0] if repo.exists() and (repo/".git").exists() else "")
 ''',
-'emit distinct owner escalation')
+'read authoritative remote')
+
+insert = '''\n\ndef test_real_force_with_lease_conflict():
+    outcome,bs,as_,bw,aw,st,store,remote,old,current=run_case(fail_at="issue_body",conflict=True)
+    assert outcome.startswith("OWNER_ACTION_REQUIRED:"), outcome
+    assert store.get("third_party_head") and remote==store["third_party_head"] and remote!=old
+    payload=json.loads(outcome.split(":",1)[1])
+    assert payload["expected_lease_sha"]!=payload["actual_remote_sha"]
+    assert payload["actual_remote_sha"]==store["third_party_head"]
+    assert payload["rollback_target_sha"]==old
+    assert bs==as_ and bw==aw
+'''
+marker = '\nif __name__=="__main__":\n'
+if s.count(marker) != 1:
+    raise RuntimeError('main marker mismatch')
+s = s.replace(marker, insert + marker, 1)
 
 one(
-'''        except RuntimeError as exc:
-            evidence = worker_process_evidence(cfg["install_root"])
-            raise SystemExit("worker.lock busy; trusted v1.5.6 post-merge recovery aborted before mutation; process_evidence=" + json.dumps(evidence, sort_keys=True)) from exc
+'''    test_failures_before_mutation(); test_successful_combined_transition(); test_rollback_matrix()
+    print(json.dumps({"status":"PASS","worker_version":worker.WORKER_VERSION,"combined_transition":"PASS","pre_mutation_failures":"PASS","rollback_matrix":"PASS","remote_push_rollback":"PASS","force_with_lease_conflict":"COVERED_BY_EXACT_LEASE_PATH"},indent=2))
 ''',
-'''        except RuntimeError as exc:
-            if str(exc).startswith("OWNER_ACTION_REQUIRED:"):
-                raise SystemExit(str(exc)) from exc
-            if "another worker instance" in str(exc) or "worker.lock busy" in str(exc):
-                evidence = worker_process_evidence(cfg["install_root"])
-                raise SystemExit("worker.lock busy; trusted v1.5.6 post-merge recovery aborted before mutation; process_evidence=" + json.dumps(evidence, sort_keys=True)) from exc
-            raise
+'''    test_failures_before_mutation(); test_successful_combined_transition(); test_rollback_matrix(); test_real_force_with_lease_conflict()
+    print(json.dumps({"status":"PASS","worker_version":worker.WORKER_VERSION,"combined_transition":"PASS","pre_mutation_failures":"PASS","rollback_matrix":"PASS","remote_push_rollback":"PASS","approved_control_checkout_binding":"PASS","force_with_lease_conflict":"PASS_REAL_REMOTE_MOVEMENT","owner_action_required":"PASS"},indent=2))
 ''',
-'narrow lock error handling')
+'run real conflict test')
 
-one(
-'''        event(cfg, "trusted_v156_deploy_advance_recovery_existing_pr", historical_base=historical_base_sha,
-              approved_current_base=approved_current_base_sha, old_pr_head=expected_old_pr_head, new_pr_head=new_head,
-''',
-'''        event(cfg, "trusted_v156_deploy_advance_recovery_existing_pr", historical_base=historical_base_sha,
-              approved_current_base=approved_current_base_sha, approved_control_plane_commit=approved_control_plane_commit,
-              old_pr_head=expected_old_pr_head, new_pr_head=new_head,
-''',
-'success evidence candidate')
-
-compile(s, str(worker_path), 'exec')
-worker_path.write_text(s, encoding='utf-8')
-print('PATCHED_PR10_PREMERGE')
+compile(s, str(path), 'exec')
+path.write_text(s, encoding='utf-8')
+print('PATCHED_PR10_TESTS')
