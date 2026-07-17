@@ -45,6 +45,7 @@ function Invoke-AgentLoopV156DeploymentTransaction {
     [scriptblock]$GetTaskState = { param($TaskName) (Get-ScheduledTask -TaskName $TaskName).State },
     [scriptblock]$GetHash = { param($Path) (Get-FileHash $Path -Algorithm SHA256).Hash },
     [scriptblock]$GetRepoHead = { param($RepoPath) (Invoke-NativeChecked -Identity "git rev-parse" -FilePath "git" -ArgumentList @("rev-parse", "HEAD") -WorkingDirectory $RepoPath | Out-String).Trim() },
+    [scriptblock]$GetRepoStatus = { param($RepoPath) (Invoke-NativeChecked -Identity "git status --porcelain" -FilePath "git" -ArgumentList @("status", "--porcelain") -WorkingDirectory $RepoPath | Out-String).Trim() },
     [scriptblock]$RunRepoCommand = { param($RepoPath, [string[]]$CommandArgs) Invoke-NativeChecked -Identity ($CommandArgs -join ' ') -FilePath $CommandArgs[0] -ArgumentList $CommandArgs[1..($CommandArgs.Count-1)] -WorkingDirectory $RepoPath | Out-Null },
     [scriptblock]$Recovery = {
       param($RecoveryScript,$SourceWorker,$InstallRoot,$HistoricalBaseSha,$PrePr10BaseSha,$ApprovedFeatureHead,$ApprovedMergedBaseSha,$ApprovedControlPlaneCommit,$ExpectedOldPrHead,$ExpectedFront,$ExpectedPr,$ExpectedWorkBranch,$ApprovedWorkerSha256)
@@ -75,9 +76,13 @@ function Invoke-AgentLoopV156DeploymentTransaction {
   $repoHead = & $GetRepoHead $Repo
   if ($repoHead -ne $ApprovedControlPlaneCommit) { throw "Unexpected control-plane HEAD: $repoHead" }
   if ($ApprovedControlPlaneCommit -ne $ApprovedMergedBaseSha) { throw "Approved control-plane commit must equal approved merged base" }
+  $repoStatus = & $GetRepoStatus $Repo
+  if ($repoStatus) { throw "Control-plane checkout is dirty before validation" }
 
   $commands = @(
     @("python", "-m", "py_compile", "scripts/agent_loop/local_worker/agent_worker.py"),
+    @("python", "-m", "py_compile", "scripts/agent_loop/local_worker/v156_recovery_common.py"),
+    @("python", "-m", "py_compile", "scripts/agent_loop/local_worker/v156_recovery_transaction.py"),
     @("python", "-m", "py_compile", "scripts/agent_loop/local_worker/v156_post_merge_recovery.py"),
     @("python", "tests/contract/test_agent_loop_worker_v153_base_advance.py"),
     @("python", "tests/contract/test_agent_loop_worker_v154_repair.py"),
@@ -87,6 +92,8 @@ function Invoke-AgentLoopV156DeploymentTransaction {
     @("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "tests/contract/test_agent_loop_worker_v156_deploy_recovery.ps1")
   )
   foreach ($command in $commands) { & $RunRepoCommand $Repo $command }
+  $repoStatusAfterTests = & $GetRepoStatus $Repo
+  if ($repoStatusAfterTests) { throw "Control-plane checkout became dirty during validation" }
 
   $sourceWorker = Join-Path $Repo "scripts\agent_loop\local_worker\agent_worker.py"
   $recoveryScript = Join-Path $Repo "scripts\agent_loop\local_worker\v156_post_merge_recovery.py"
