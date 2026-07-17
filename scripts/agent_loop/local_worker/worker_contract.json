@@ -43,6 +43,12 @@
     "v155_trusted_command_quiescence_lock": true,
     "v155_recover_existing_pr_issue5_pr6": true,
     "v155_legacy_terminal_comment_dedupe": true,
-    "v155_deploy_script_recovery_transaction": true
+    "v155_deploy_script_recovery_transaction": true,
+    "v156_dynamic_post_merge_recovery": true,
+    "v156_runtime_post_merge_sha_authorization": true,
+    "v156_approved_checkout_source_binding": true,
+    "v156_force_with_lease_conflict_owner_escalation": true,
+    "v156_transactional_event_log_rollback": true,
+    "v156_single_recovery_authority": true
   }
 }
