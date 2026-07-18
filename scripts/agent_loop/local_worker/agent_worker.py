@@ -94,8 +94,55 @@ def _safe_version_at_least(actual: str, expected: str) -> bool:
     width = max(len(a), len(b))
     return a + (0,) * (width - len(a)) >= b + (0,) * (width - len(b))
 
-def command_for_subprocess(args: list[str]) -> list[str]:
-    """Resolve commands safely on Windows, including npm .cmd/.bat shims."""
+
+def _windows_short_path(path: str) -> str:
+    """Return the Windows 8.3 short path for a file or directory.
+
+    Used to avoid quoting/escaping problems when invoking .CMD/.BAT shims
+    whose absolute path contains spaces.
+    """
+    import ctypes
+    from ctypes import wintypes
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    GetShortPathNameW = kernel32.GetShortPathNameW
+    GetShortPathNameW.argtypes = [wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD]
+    GetShortPathNameW.restype = wintypes.DWORD
+    buf = ctypes.create_unicode_buffer(260)
+    size = GetShortPathNameW(path, buf, 260)
+    if size == 0 or size > 260:
+        raise RuntimeError(f"short_path_failed:{path}")
+    return buf[:size]
+
+
+def _win_cmd_quote(arg: str) -> str:
+    """Quote an argument for cmd.exe using Windows command-line rules.
+
+    Spaces and shell metacharacters (& | < > ^ % !) force quoting.
+    Inner double quotes are doubled (CommandLineToArgvW style).
+    """
+    if not arg:
+        return '""'
+    needs_quote = ' ' in arg or '"' in arg or any(c in arg for c in "&|<>")
+    if not needs_quote and not any(c in arg for c in "^%!"):
+        return arg
+    out = '"'
+    for ch in arg:
+        if ch == '"':
+            out += '""'
+        else:
+            out += ch
+    out += '"'
+    return out
+
+
+def command_for_subprocess(args: list[str]):
+    """Resolve commands safely on Windows, including npm .cmd/.bat shims.
+
+    For .CMD/.BAT shims on Windows the function returns a single command-line
+    string suitable for passing directly to subprocess.run(..., shell=False).
+    This avoids Python's list2cmdline backslash-escaping of inner quotes, which
+    breaks cmd.exe parsing for arguments containing spaces.
+    """
     values = [str(x) for x in args]
     if not values:
         raise ValueError("empty command")
@@ -110,7 +157,14 @@ def command_for_subprocess(args: list[str]) -> list[str]:
     suffix = os.path.splitext(values[0])[1].lower()
     if os.name == "nt" and suffix in {".cmd", ".bat"}:
         comspec = _RUNTIME_EXECUTABLES.get("cmd") or os.environ.get("COMSPEC") or shutil.which("cmd.exe") or "cmd.exe"
-        return [comspec, "/d", "/s", "/c", subprocess.list2cmdline(values)]
+        cmd_path = values[0]
+        if ' ' in cmd_path or '"' in cmd_path:
+            try:
+                cmd_path = _windows_short_path(cmd_path)
+            except Exception:
+                pass
+        inner = " ".join(_win_cmd_quote(v) for v in [cmd_path, *values[1:]])
+        return f"{comspec} /d /s /c {inner}"
     return values
 
 def sanitize_command_for_log(args: list[str]) -> list[str]:
