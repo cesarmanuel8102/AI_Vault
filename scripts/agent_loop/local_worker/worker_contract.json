@@ -66,6 +66,8 @@
     "v157_state_event_contract_tests": true,
     "v157_codex_supervisor_prompt": true,
     "v157_codex_supervisor_contract_tests": true,
-    "v157_worker_contract_workflow_updated": true
+    "v157_worker_contract_workflow_updated": true,
+    "v157_deploy_recovery_powershell_contract": true,
+    "v157_installed_worker_symbol_validation": true
   }
 }

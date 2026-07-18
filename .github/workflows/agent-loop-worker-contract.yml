@@ -24,6 +24,7 @@ on:
       - tests/contract/test_agent_loop_worker_v157_prompt_delivery.py
       - tests/contract/test_agent_loop_worker_v157_state_event_contract.py
       - tests/contract/test_agent_loop_worker_v157_codex_supervisor_contract.py
+      - tests/contract/test_agent_loop_worker_v157_deploy_recovery.ps1
       - .github/workflows/agent-loop-worker-contract.yml
 
 concurrency:
@@ -112,5 +113,9 @@ jobs:
         run: python tests/contract/test_agent_loop_worker_v157_state_event_contract.py
       - name: v1.5.7 codex supervisor contract
         run: python tests/contract/test_agent_loop_worker_v157_codex_supervisor_contract.py
+      - name: v1.5.7 PowerShell deploy recovery contract
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/contract/test_agent_loop_worker_v157_deploy_recovery.ps1
       - name: git diff check
         run: git diff --check
