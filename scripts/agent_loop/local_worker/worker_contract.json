@@ -60,6 +60,9 @@
     "v157_prompt_delivery_sentinel": true,
     "v157_executor_jsonl_ack_required": true,
     "v157_conversational_refusal_rejected": true,
-    "v157_no_output_change_rejected": true
+    "v157_no_output_change_rejected": true,
+    "v157_state_schema_version": true,
+    "v157_event_required_fields": true,
+    "v157_state_event_contract_tests": true
   }
 }

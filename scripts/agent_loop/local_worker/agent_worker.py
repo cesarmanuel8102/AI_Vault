@@ -8,6 +8,26 @@ from typing import Any
 
 SPEC_RE = re.compile(r"<!--\s*AGENT_LOOP_SPEC\s*(\{.*?\})\s*AGENT_LOOP_SPEC\s*-->", re.S)
 WORKER_VERSION = "1.5.7"
+STATE_SCHEMA_VERSION = 1
+
+STATE_KNOWN_TOP_LEVEL_KEYS = {
+    "issue_number", "front", "spec", "repo_dir", "pr_number", "pr_url",
+    "cycles", "last_head_sha", "opencode_session_id", "status",
+    "final_local_report", "worker_version", "updated_utc", "local_retry_count",
+    "error", "terminal_notified", "notification_keys", "state_schema_version",
+    "trusted_existing_pr_resume_utc", "trusted_base_advance_utc",
+    "trusted_v154_resume_done", "trusted_v155_recovery_done", "trusted_v156_post_merge_recovery_done",
+}
+
+EVENT_REQUIRED_FIELDS = {
+    "executor_started": {"front", "cycle", "command_identity", "model"},
+    "executor_completed": {"front", "cycle", "task_acknowledged", "jsonl_events"},
+    "kimi_cycle_start": {"issue", "cycle", "front"},
+    "kimi_cycle_repair_needed": {"issue", "cycle"},
+    "pr_created": {"issue", "pr", "sha"},
+    "state_terminalized": {"state", "issue", "phase"},
+    "worker_started": {"once", "worker_version", "worker_sha256"},
+}
 PHASE_LABELS = {
     "agent:queued", "loop:executing", "loop:ci", "loop:repairing",
     "loop:ready-human-audit", "loop:blocked", "loop:failed",
@@ -325,15 +345,41 @@ def load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8-sig"))
 
 def save_json(path: Path, data: Any) -> None:
+    if isinstance(data, dict) and "issue_number" in data and "status" in data:
+        data = normalize_state(data)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
 def event(cfg, kind, **fields):
     record = {"timestamp_utc": utc(), "kind": kind, **fields}
+    required = EVENT_REQUIRED_FIELDS.get(kind)
+    if required and not required.issubset(fields):
+        raise RuntimeError(f"EVENT_CONTRACT_VIOLATION:{kind}: missing {sorted(required - set(fields))}")
     p = Path(cfg["install_root"]) / "reports" / "worker-events.jsonl"
     p.parent.mkdir(parents=True, exist_ok=True)
     with p.open("a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+def normalize_state(st: dict) -> dict:
+    st = dict(st)
+    st["state_schema_version"] = STATE_SCHEMA_VERSION
+    st["worker_version"] = WORKER_VERSION
+    return st
+
+def validate_state_json(st: dict) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(st, dict):
+        return ["state is not a JSON object"]
+    if st.get("state_schema_version") != STATE_SCHEMA_VERSION:
+        errors.append(f"state_schema_version must be {STATE_SCHEMA_VERSION}")
+    required = {"issue_number", "status", "updated_utc"}
+    missing = sorted(required - set(st))
+    if missing:
+        errors.append(f"missing required state keys: {missing}")
+    unknown = sorted(set(st) - STATE_KNOWN_TOP_LEVEL_KEYS)
+    if unknown:
+        errors.append(f"unknown state keys: {unknown}")
+    return errors
 
 def labels(obj) -> set[str]:
     return {x["name"] for x in obj.get("labels", [])}
