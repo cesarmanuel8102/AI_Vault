@@ -58,6 +58,20 @@ EXECUTOR=KIMI_OPENCODE_OLLAMA
 SUPERVISOR=CODEX_GITHUB_ACTION
 """
 
+_CONVERSATIONAL_REJECTION_PATTERNS = {
+    "please provide the task",
+    "please clarify",
+    "what would you like me to do",
+    "i need more information",
+    "can you provide more details",
+    "missing instruction",
+    "no task specified",
+    "awaiting instructions",
+}
+
+def prompt_task_sentinel(front_id: str, cycle: int) -> str:
+    return f"ACK_TASK_ID={front_id}|cycle={cycle}"
+
 def pilot_marker_text(front_id: str) -> str:
     return PILOT_MARKER_TEMPLATE.format(worker_version=WORKER_VERSION, front_id=str(front_id))
 
@@ -639,7 +653,7 @@ def opencode_env(cfg: dict, repo_dir: Path) -> dict[str,str]:
             "brain-kimi-executor":{
                 "description":"Writes one exact allowlisted pilot artifact in a detached workspace.",
                 "mode":"primary", "steps":30, "temperature":0.1, "model":model,
-                "prompt":"Follow the user prompt exactly. Never use shell, network, subagents, skills, LSP, or external paths.",
+                "prompt":"Follow the user prompt exactly. The current directory is the workspace. Write files using only relative paths (docs/agent_loop/pilot/PILOT_MARKER.md). Never use absolute paths, shell, network, subagents, skills, LSP, or external paths.",
                 "permission":strict_permissions
             }
         }
@@ -666,14 +680,21 @@ def discover_session_id(repo_dir: Path, title: str) -> str | None:
     return None
 
 def make_prompt(spec: dict, cycle: int, feedback: str | None = None) -> str:
+    sentinel = prompt_task_sentinel(spec["front_id"], cycle)
     base = f"""You are the Kimi executor for {spec['front_id']}.
-Work only in the detached model workspace. It contains no Git metadata and no credentials.
+Your only job is to write exactly one file in the current workspace and then output the sentinel line.
+The current workspace is the directory passed via --dir. It contains no Git metadata and no credentials.
 Do not invoke a shell, commit, push, use gh, merge, or access external directories.
-Objective: {spec['objective']}
-Allowed output path: docs/agent_loop/pilot/PILOT_MARKER.md
-Pilot requirement: write that file with exactly this UTF-8 text:\n---\n{pilot_marker_text(spec["front_id"])}---
+Allowed output path (relative to the current workspace, no leading '/' or drive letter): docs/agent_loop/pilot/PILOT_MARKER.md
+Write that file with exactly this UTF-8 content:
+{pilot_marker_text(spec["front_id"])}
+After writing the file, output exactly this line and nothing else:
+{sentinel}
+If you cannot write the file, output exactly this line and nothing else:
+{sentinel} TASK_FAILED
+Do not ask questions, do not run tools other than read/write for the allowed file, and do not create or edit any other file.
 Do not create or edit EXECUTOR_REPORT.json; the trusted worker writes it after validation.
-Do not change the local agent policy or create any other file. This is cycle {cycle}.
+This is cycle {cycle}.
 """
     if feedback:
         base += f"\nRepair only these verified failures:\n{feedback[:6000]}\n"
@@ -761,15 +782,28 @@ def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=No
     report_dir = Path(cfg["install_root"]) / "reports"
     log = report_dir / f"issue-{issue_no}-cycle-{cycle}-opencode.jsonl"
     title = f"AI_Vault {spec['front_id']}"
+    sentinel = prompt_task_sentinel(spec["front_id"], cycle)
+    prompt = make_prompt(spec, cycle, feedback)
+    if sentinel not in prompt:
+        raise RuntimeError("TASK_NOT_ACKNOWLEDGED: prompt missing sentinel")
+    event(cfg, "executor_started", front=spec["front_id"], cycle=cycle,
+          command_identity="opencode", model=cfg["opencode_model"],
+          prompt_bytes=len(prompt.encode("utf-8")), sentinel_in_prompt=True)
     cmd = ["opencode","run","--dir",str(model_dir),"--model",cfg["opencode_model"],
            "--agent","brain-kimi-executor","--format","json",
            "--title",title]
     if opencode_run_supports("--auto", cwd=model_dir):
         cmd.append("--auto")
     if session_id: cmd += ["--session", session_id]
-    cmd.append(make_prompt(spec, cycle, feedback))
-    p = subprocess.run(command_for_subprocess(cmd), cwd=str(model_dir), env=opencode_env(cfg, model_dir), text=False,
-                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    cmd.append(prompt)
+    timeout = cfg.get("opencode_timeout_seconds")
+    try:
+        p = subprocess.run(command_for_subprocess(cmd), cwd=str(model_dir), env=opencode_env(cfg, model_dir), text=False,
+                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        out = (exc.output or b"").decode("utf-8", errors="replace")
+        log.write_text(out, encoding="utf-8")
+        raise RuntimeError(f"EXECUTOR_TIMEOUT: opencode run exceeded {timeout}s") from exc
     out, decoding = completed_output(p)
     log.write_text(out, encoding="utf-8")
     emit_subprocess_decoding_event(cfg, ["opencode"], decoding)
@@ -779,6 +813,44 @@ def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=No
             raise RuntimeError("TOKEN_EXHAUSTED:" + out[-3000:])
         raise CmdError(cmd, p.returncode, out)
     return log, discover_session_id(model_dir, title)
+
+def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path, cycle: int, seed_hash: str | None = None) -> None:
+    out = log.read_text(encoding="utf-8-sig")
+    lines = [x.strip() for x in out.splitlines() if x.strip()]
+    if not lines:
+        raise RuntimeError("EXECUTOR_JSONL_INVALID: empty output")
+    parsed: list[dict] = []
+    for line in lines:
+        try:
+            parsed.append(json.loads(line))
+        except Exception as exc:
+            raise RuntimeError(f"EXECUTOR_JSONL_INVALID: {exc}") from exc
+    text_parts: list[str] = []
+    for item in parsed:
+        if not isinstance(item, dict):
+            continue
+        part = item.get("part") or item
+        if isinstance(part, dict):
+            text_parts.append(str(part.get("text", "")))
+        text_parts.append(str(item.get("text", "")))
+    full_output = "\n".join(text_parts)
+    sentinel = prompt_task_sentinel(spec["front_id"], cycle)
+    acknowledged = sentinel in full_output
+    lowered = full_output.lower()
+    refused = any(pattern in lowered for pattern in _CONVERSATIONAL_REJECTION_PATTERNS)
+    marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+    unchanged = False
+    if seed_hash is not None and marker.is_file():
+        unchanged = sha256_file(marker) == seed_hash
+    event(cfg, "executor_completed", front=spec["front_id"], cycle=cycle,
+          task_acknowledged=acknowledged, conversational_refusal=refused,
+          marker_unchanged=unchanged, jsonl_events=len(parsed))
+    if not acknowledged:
+        raise RuntimeError("TASK_NOT_ACKNOWLEDGED: sentinel missing from executor output")
+    if refused:
+        raise RuntimeError("TASK_NOT_ACKNOWLEDGED: executor issued conversational refusal")
+    if unchanged:
+        raise RuntimeError("NO_OUTPUT_CHANGE: executor did not modify the pilot marker")
 
 def run_profile(cfg, spec, repo_dir) -> tuple[bool,str]:
     cmd = [str(x) for x in cfg["test_profiles"][spec["test_profile"]]]
@@ -1019,6 +1091,8 @@ def execute_initial(cfg, issue, spec, state_path):
         model_dir, seed_hashes = prepare_model_workspace(repo_dir, spec, cycle)
         log, discovered_session = run_kimi(cfg,spec,model_dir,n,cycle,feedback,session_id)
         if discovered_session: session_id = discovered_session
+        marker_seed = sha256_file(model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md") if (model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md").is_file() else None
+        validate_executor_delivery(cfg, spec, model_dir, log, cycle, seed_hash=marker_seed)
         try:
             audit_and_sync_model_workspace(model_dir, repo_dir, seed_hashes, spec)
         except Exception as exc:
@@ -1087,6 +1161,8 @@ def process_state(cfg, state_path):
     model_dir, seed_hashes = prepare_model_workspace(repo_dir, spec, cycle)
     log, discovered_session=run_kimi(cfg,spec,model_dir,issue,cycle,feedback,st.get("opencode_session_id"))
     if discovered_session: st["opencode_session_id"] = discovered_session
+    marker_seed = sha256_file(model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md") if (model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md").is_file() else None
+    validate_executor_delivery(cfg, spec, model_dir, log, cycle, seed_hash=marker_seed)
     try:
         audit_and_sync_model_workspace(model_dir, repo_dir, seed_hashes, spec)
     except Exception as exc:
