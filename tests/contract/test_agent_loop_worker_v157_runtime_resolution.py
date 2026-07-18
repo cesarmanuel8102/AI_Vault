@@ -38,6 +38,8 @@ def cfg_for(root: Path) -> dict:
             "gh_exe": touch(bin_dir / "gh.exe"),
             "python_exe": touch(bin_dir / "python.exe"),
             "opencode_cmd": touch(bin_dir / "opencode.CMD"),
+            "node_exe": touch(bin_dir / "node.exe"),
+            "opencode_entrypoint": touch(bin_dir / "opencode"),
             "cmd_exe": touch(cmd_dir / "cmd.exe"),
         },
         "executable_allowlist_dirs": [str(bin_dir), str(cmd_dir)],
@@ -71,11 +73,20 @@ def main() -> int:
             assert resolved["gh"].endswith("gh.exe")
             assert resolved["opencode"].endswith("opencode.CMD")
             cmd = worker.command_for_subprocess(["opencode", "run", "arg with spaces"])
-            assert cmd[0].endswith("cmd.exe")
-            assert cmd[1:4] == ["/d", "/s", "/c"]
-            assert "arg with spaces" in cmd[4]
+            assert isinstance(cmd, list), cmd
+            assert cmd[0].endswith("node.exe")
+            assert cmd[1].endswith("opencode")
+            assert "arg with spaces" in cmd[-1]
             checks["path_empty_absolute_config_passes"] = True
-            checks["cmd_wrapper_uses_configured_cmd"] = True
+            checks["lossless_node_entrypoint_used"] = True
+            worker._RUNTIME_EXECUTABLES.pop("node", None)
+            worker._RUNTIME_EXECUTABLES.pop("opencode_entrypoint", None)
+            cmd = worker.command_for_subprocess(["opencode", "run", "arg with spaces"])
+            assert isinstance(cmd, str), cmd
+            assert cmd.endswith("cmd.exe") or "cmd.exe" in cmd
+            assert "/d /s /c" in cmd
+            assert "arg with spaces" in cmd
+            checks["cmd_fallback_uses_configured_cmd"] = True
         finally:
             worker._RUNTIME_EXECUTABLES = {}
             if old_path is None:

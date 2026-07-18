@@ -70,6 +70,7 @@ _EXECUTABLE_CONFIG_KEYS = {
     "node": "node_exe",
     "cmd": "cmd_exe",
 }
+_REQUIRED_EXECUTABLE_CONFIG_KEYS = {"git_exe", "gh_exe", "python_exe", "opencode_cmd", "cmd_exe"}
 PILOT_MARKER_TEMPLATE = """# Agent Loop Pilot
 WORKER_VERSION={worker_version}
 FRONT_ID={front_id}
@@ -258,7 +259,7 @@ def sanitize_command_for_log(args: list[str]) -> list[str]:
 def resolve_runtime_executables(cfg: dict, *, require_config: bool = False) -> dict[str, str]:
     runtime_cfg = cfg.get("runtime_executables") or {}
     allow_dirs = [Path(x).expanduser().resolve() for x in cfg.get("executable_allowlist_dirs") or []]
-    if require_config and (not isinstance(runtime_cfg, dict) or set(_EXECUTABLE_CONFIG_KEYS.values()) - set(runtime_cfg)):
+    if require_config and (not isinstance(runtime_cfg, dict) or _REQUIRED_EXECUTABLE_CONFIG_KEYS - set(runtime_cfg)):
         raise RuntimeError("RUNTIME_EXECUTABLE_CONFIG_MISSING")
     if require_config and not allow_dirs:
         raise RuntimeError("RUNTIME_EXECUTABLE_ALLOWLIST_MISSING")
@@ -266,7 +267,7 @@ def resolve_runtime_executables(cfg: dict, *, require_config: bool = False) -> d
     for name, key in _EXECUTABLE_CONFIG_KEYS.items():
         configured = runtime_cfg.get(key)
         if not configured:
-            if require_config:
+            if require_config and key in _REQUIRED_EXECUTABLE_CONFIG_KEYS:
                 raise RuntimeError(f"RUNTIME_EXECUTABLE_MISSING:{key}")
             found = shutil.which("opencode.cmd" if name == "opencode" else f"{name}.exe") or shutil.which(name)
             if found:
