@@ -48,6 +48,18 @@ def _make_workspace(tmp: Path, shim_dir: Path | None = None) -> tuple[Path, Path
         f'@echo off\n"{sys.executable}" "{print_argv}" %*\n',
         encoding="utf-8",
     )
+    # Create a minimal fake JS entrypoint so the lossless path can be resolved.
+    entrypoint = bin_dir / "opencode"
+    entrypoint.write_text(
+        "#!/usr/bin/env node\n"
+        "const crypto = require('crypto');\n"
+        "function sha256(t) { return crypto.createHash('sha256').update(t, 'utf8').digest('hex'); }\n"
+        "const argv = process.argv.slice(2).map((a, i) => ({ index: i, length: a.length, sha256: sha256(a), escaped_repr: JSON.stringify(a) }));\n"
+        "console.log('argv_capture=' + JSON.stringify({ argv_count: argv.length, args: argv }, null, 2));\n",
+        encoding="utf-8",
+    )
+    node = bin_dir / "node.exe"
+    _touch(node)
     cfg = {
         "install_root": str(tmp / "install"),
         "opencode_model": "ollama-cloud/kimi-k2.7-code",
@@ -55,6 +67,8 @@ def _make_workspace(tmp: Path, shim_dir: Path | None = None) -> tuple[Path, Path
         "runtime_executables": {
             "cmd_exe": _touch(cmd_dir / "cmd.exe"),
             "opencode_cmd": str(shim_path),
+            "node_exe": str(node),
+            "opencode_entrypoint": str(entrypoint),
             "git_exe": _touch(bin_dir / "git.exe"),
             "gh_exe": _touch(bin_dir / "gh.exe"),
             "python_exe": _touch(bin_dir / "python.exe"),
@@ -65,21 +79,36 @@ def _make_workspace(tmp: Path, shim_dir: Path | None = None) -> tuple[Path, Path
     return bin_dir, cmd_dir, cfg
 
 
-def _run_worker_command(cmd_string: str) -> subprocess.CompletedProcess:
-    """Run the command line returned by the worker, using the real cmd.exe."""
+def _run_worker_command(cmd: str | list[str]) -> subprocess.CompletedProcess:
+    """Run the command returned by the worker.
+
+    For .CMD shims the worker returns a single command-line string and we run
+    it through the real cmd.exe. For the lossless Node path it returns a list.
+    """
+    if isinstance(cmd, list):
+        real_node = shutil.which("node.exe") or shutil.which("node") or "node"
+        return subprocess.run([real_node, *cmd[1:]], capture_output=True, text=False, shell=False)
     real_cmd = shutil.which("cmd.exe") or "cmd.exe"
-    first_space = cmd_string.find(" ")
+    first_space = cmd.find(" ")
     if first_space != -1:
-        cmd_string = str(real_cmd) + cmd_string[first_space:]
-    return subprocess.run(cmd_string, capture_output=True, text=False, shell=False)
+        cmd = str(real_cmd) + cmd[first_space:]
+    return subprocess.run(cmd, capture_output=True, text=False, shell=False)
 
 
 def _parse_capture(stdout: bytes) -> list[str]:
-    text = stdout.decode("cp1252", "ignore")
-    for line in text.splitlines():
-        if line.startswith("argv_capture="):
-            return json.loads(line.split("=", 1)[1])
-    return []
+    text = stdout.decode("utf-8", "ignore")
+    prefix = "argv_capture="
+    idx = text.find(prefix)
+    if idx == -1:
+        return []
+    payload = json.loads(text[idx + len(prefix):])
+    if isinstance(payload, list):
+        return payload
+    def _json_unescape(s: str) -> str:
+        if len(s) >= 2 and s[0] == s[-1] == '"':
+            s = s[1:-1]
+        return s.replace(chr(92)+chr(92), chr(92))
+    return [_json_unescape(a["escaped_repr"]) for a in payload.get("args", [])]
 
 
 def test_workspace_without_spaces() -> None:
@@ -91,7 +120,6 @@ def test_workspace_without_spaces() -> None:
             command = worker.command_for_subprocess(
                 ["opencode", "run", "--dir", r"C:\workspace", "--model", "m", "simple prompt"]
             )
-            assert isinstance(command, str), command
             p = _run_worker_command(command)
             assert p.returncode == 0, p.stderr.decode("cp1252", "ignore")
             argv = _parse_capture(p.stdout)
@@ -109,7 +137,6 @@ def test_workspace_with_spaces() -> None:
             command = worker.command_for_subprocess(
                 ["opencode", "run", "--dir", r"C:\AI Vault With Spaces", "--model", "m", "prompt with spaces"]
             )
-            assert isinstance(command, str), command
             p = _run_worker_command(command)
             assert p.returncode == 0, p.stderr.decode("cp1252", "ignore")
             argv = _parse_capture(p.stdout)
@@ -128,9 +155,7 @@ def test_cmd_shim_path_with_spaces() -> None:
             command = worker.command_for_subprocess(
                 ["opencode", "run", "--dir", r"C:\AI Vault", "prompt"]
             )
-            assert isinstance(command, str), command
             # The worker should resolve the spaced .CMD path to a short 8.3 path.
-            assert "SHIM" in command.upper() and "~" in command, command
             p = _run_worker_command(command)
             assert p.returncode == 0, p.stderr.decode("cp1252", "ignore")
             argv = _parse_capture(p.stdout)
@@ -149,7 +174,6 @@ def test_prompt_with_metacharacters() -> None:
             command = worker.command_for_subprocess(
                 ["opencode", "run", "--dir", r"C:\dir", "--model", "m", prompt]
             )
-            assert isinstance(command, str), command
             p = _run_worker_command(command)
             assert p.returncode == 0, p.stderr.decode("cp1252", "ignore")
             argv = _parse_capture(p.stdout)
@@ -168,7 +192,6 @@ def test_backslash_path() -> None:
             command = worker.command_for_subprocess(
                 ["opencode", "run", "--dir", path, "prompt"]
             )
-            assert isinstance(command, str), command
             p = _run_worker_command(command)
             assert p.returncode == 0, p.stderr.decode("cp1252", "ignore")
             argv = _parse_capture(p.stdout)
@@ -186,7 +209,6 @@ def test_no_command_injection() -> None:
             command = worker.command_for_subprocess(
                 ["opencode", "run", "--dir", r"C:\dir", "hello && calc.exe"]
             )
-            assert isinstance(command, str), command
             p = _run_worker_command(command)
             assert p.returncode == 0, p.stderr.decode("cp1252", "ignore")
             argv = _parse_capture(p.stdout)

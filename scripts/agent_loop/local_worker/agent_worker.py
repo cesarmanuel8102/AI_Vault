@@ -37,6 +37,8 @@ _EXECUTABLE_ALLOWED_EXTENSIONS = {
     "gh": {".exe"},
     "python": {".exe"},
     "opencode": {".cmd", ".exe"},
+    "opencode_entrypoint": {".js"},
+    "node": {".exe"},
     "cmd": {".exe"},
 }
 _EXECUTABLE_CONFIG_KEYS = {
@@ -44,6 +46,8 @@ _EXECUTABLE_CONFIG_KEYS = {
     "gh": "gh_exe",
     "python": "python_exe",
     "opencode": "opencode_cmd",
+    "opencode_entrypoint": "opencode_entrypoint",
+    "node": "node_exe",
     "cmd": "cmd_exe",
 }
 PILOT_MARKER_TEMPLATE = """# Agent Loop Pilot
@@ -82,6 +86,10 @@ def _runtime_command_name(value: str) -> str | None:
         return "python"
     if base in {"opencode", "opencode.cmd", "opencode.exe"}:
         return "opencode"
+    if base in {"opencode-entrypoint", "opencode_entrypoint"}:
+        return "opencode_entrypoint"
+    if base in {"node", "node.exe"}:
+        return "node"
     if base in {"cmd", "cmd.exe"}:
         return "cmd"
     return None
@@ -111,7 +119,7 @@ def _windows_short_path(path: str) -> str:
     size = GetShortPathNameW(path, buf, 260)
     if size == 0 or size > 260:
         raise RuntimeError(f"short_path_failed:{path}")
-    return buf[:size]
+    return str(buf[:size])
 
 
 def _win_cmd_quote(arg: str) -> str:
@@ -135,6 +143,25 @@ def _win_cmd_quote(arg: str) -> str:
     return out
 
 
+def _opencode_node_entrypoint(opencode_cmd: str) -> str | None:
+    """Return the Node entrypoint JS for an installed opencode command.
+
+    npm installs opencode as a .CMD shim that delegates to node.exe and the
+    package's bin/opencode JS file. For lossless transport we bypass cmd.exe
+    and invoke node.exe with that JS entrypoint directly.
+    """
+    cmd_path = Path(opencode_cmd).resolve()
+    # The shim is at npm/opencode.CMD; the package lives next to it under
+    # node_modules/opencode-ai/bin/opencode.
+    candidate = cmd_path.parent / "node_modules" / "opencode-ai" / "bin" / "opencode"
+    if candidate.is_file():
+        return str(candidate)
+    # If the configured command itself is a JS file, use it.
+    if cmd_path.suffix.lower() == ".js":
+        return str(cmd_path)
+    return None
+
+
 def command_for_subprocess(args: list[str]):
     """Resolve commands safely on Windows, including npm .cmd/.bat shims.
 
@@ -142,6 +169,11 @@ def command_for_subprocess(args: list[str]):
     string suitable for passing directly to subprocess.run(..., shell=False).
     This avoids Python's list2cmdline backslash-escaping of inner quotes, which
     breaks cmd.exe parsing for arguments containing spaces.
+
+    For opencode we bypass cmd.exe entirely: node.exe is invoked with the
+    package's bin/opencode JS entrypoint, and every argument (including
+    multiline prompts) is passed as a list element to subprocess.run. This
+    preserves newlines, the sentinel, and shell metacharacters byte-for-byte.
     """
     values = [str(x) for x in args]
     if not values:
@@ -156,6 +188,13 @@ def command_for_subprocess(args: list[str]):
             values[0] = path_resolved
     suffix = os.path.splitext(values[0])[1].lower()
     if os.name == "nt" and suffix in {".cmd", ".bat"}:
+        # Lossless path for opencode: call node.exe + JS entrypoint directly.
+        if command_name == "opencode":
+            node_exe = _RUNTIME_EXECUTABLES.get("node")
+            entrypoint = _RUNTIME_EXECUTABLES.get("opencode_entrypoint") or _opencode_node_entrypoint(values[0])
+            if node_exe and entrypoint:
+                return [node_exe, entrypoint, *values[1:]]
+        # Fallback for other .CMD/.BAT shims: route through cmd.exe.
         comspec = _RUNTIME_EXECUTABLES.get("cmd") or os.environ.get("COMSPEC") or shutil.which("cmd.exe") or "cmd.exe"
         cmd_path = values[0]
         if ' ' in cmd_path or '"' in cmd_path:
@@ -206,6 +245,10 @@ def resolve_runtime_executables(cfg: dict, *, require_config: bool = False) -> d
         if not path.is_file():
             raise RuntimeError(f"RUNTIME_EXECUTABLE_NOT_FILE:{key}")
         suffix = path.suffix.lower()
+        # The opencode entrypoint is a Node script; it has no extension when the
+        # npm package exposes a shebang file. Accept extensionless JS entrypoints.
+        if name == "opencode_entrypoint" and not suffix:
+            suffix = ".js"
         if suffix not in _EXECUTABLE_ALLOWED_EXTENSIONS[name]:
             raise RuntimeError(f"RUNTIME_EXECUTABLE_EXTENSION_DENIED:{key}:{suffix}")
         if allow_dirs and not any(_is_relative_to(path, allowed) for allowed in allow_dirs):
