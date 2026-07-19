@@ -10,7 +10,27 @@ function New-TempInstall {
   New-Item -ItemType Directory -Force -Path (Join-Path $dir "state") | Out-Null
   Set-Content -LiteralPath (Join-Path $dir "worker\agent_worker.py") -Value "old-worker" -Encoding UTF8
   Set-Content -LiteralPath (Join-Path $dir "config\worker.json") -Value '{}' -Encoding UTF8
+  Set-Content -LiteralPath (Join-Path $dir "config\worker_contract.json") -Value '{"old":true}' -Encoding UTF8
   return $dir
+}
+
+function Assert-InstallPreserved {
+  param(
+    [Parameter(Mandatory=$true)][string]$Install,
+    [Parameter(Mandatory=$true)][string]$BeforeWorker,
+    [Parameter(Mandatory=$true)][string]$BeforeConfig,
+    [AllowNull()][string]$BeforeWorkerContract
+  )
+  if ((Get-Content -LiteralPath (Join-Path $Install "worker\agent_worker.py") -Raw) -ne $BeforeWorker) { throw "worker rollback mismatch" }
+  if ((Get-Content -LiteralPath (Join-Path $Install "config\worker.json") -Raw) -ne $BeforeConfig) { throw "worker.json rollback mismatch" }
+  $contractPath = Join-Path $Install "config\worker_contract.json"
+  if ([string]::IsNullOrEmpty($BeforeWorkerContract)) {
+    if (Test-Path -LiteralPath $contractPath) { throw "new worker_contract was not removed" }
+  } else {
+    if ((Get-Content -LiteralPath $contractPath -Raw) -ne $BeforeWorkerContract) { throw "worker_contract rollback mismatch" }
+  }
+  if (Test-Path -LiteralPath (Join-Path $Install "state\mutated.json")) { throw "state was modified" }
+  if (Test-Path -LiteralPath (Join-Path $Install "reports\mutated.json")) { throw "reports were modified" }
 }
 
 function New-CleanRepo {
@@ -22,6 +42,9 @@ function New-CleanRepo {
   $sourceFiles = @(
     "scripts/agent_loop/local_worker/agent_worker.py",
     "scripts/agent_loop/local_worker/worker_contract.json",
+    ".github/workflows/agent-loop-pilot.yml",
+    ".github/codex/review-schema.json",
+    ".github/codex/prompts/agent-loop-supervisor.md",
     "tests/contract/test_agent_loop_worker_v157_runtime_resolution.py",
     "tests/contract/test_agent_loop_worker_v157_real_cmd_quoting.py",
     "tests/contract/test_agent_loop_worker_v157_lossless_transport.py",
@@ -48,6 +71,7 @@ function Test-InstallTransaction {
   $approved = Get-Sha256 (Join-Path $repo "scripts\agent_loop\local_worker\agent_worker.py")
   $control = ((Invoke-NativeChecked -Identity "git rev-parse" -FilePath "git" -ArgumentList @("rev-parse", "HEAD") -WorkingDirectory $repo) | Out-String).Trim()
   $lines = New-Object System.Collections.Generic.List[string]
+  $beforeConfig = Get-Sha256 (Join-Path $install "config\worker.json")
 
   $result = Invoke-AgentLoopV157InstallTransaction `
     -Repo $repo `
@@ -63,6 +87,7 @@ function Test-InstallTransaction {
   $installedHash = Get-Sha256 (Join-Path $install "worker\agent_worker.py")
   if ($installedHash -ne $approved) { throw "installed worker SHA mismatch" }
   if (-not (Test-Path -LiteralPath (Join-Path $install "config\worker_contract.json") -PathType Leaf)) { throw "worker_contract.json not installed" }
+  if ((Get-Sha256 (Join-Path $install "config\worker.json")) -ne $beforeConfig) { throw "worker.json was modified" }
   if ($result.status -ne "INSTALLED_V157") { throw "unexpected status $($result.status)" }
   $markerCount = @($lines | Where-Object { $_ -eq "V157_DEPLOY_RECOVERY_CONTRACT_PASS" }).Count
   if ($markerCount -ne 1) { throw "expected exactly one pass marker; got $markerCount" }
@@ -101,6 +126,7 @@ function Test-RollbackOnPostInstallFailure {
   $control = ((Invoke-NativeChecked -Identity "git rev-parse" -FilePath "git" -ArgumentList @("rev-parse", "HEAD") -WorkingDirectory $repo) | Out-String).Trim()
   $beforeWorker = Get-Content -LiteralPath (Join-Path $install "worker\agent_worker.py") -Raw
   $beforeConfig = Get-Content -LiteralPath (Join-Path $install "config\worker.json") -Raw
+  $beforeContract = Get-Content -LiteralPath (Join-Path $install "config\worker_contract.json") -Raw
   $script:taskChecks = 0
   try {
     Invoke-AgentLoopV157InstallTransaction `
@@ -118,9 +144,116 @@ function Test-RollbackOnPostInstallFailure {
   catch {
     if ($_.Exception.Message -notmatch "Scheduled task changed state") { throw }
   }
-  if ((Get-Content -LiteralPath (Join-Path $install "worker\agent_worker.py") -Raw) -ne $beforeWorker) { throw "worker was not restored after post-install failure" }
-  if ((Get-Content -LiteralPath (Join-Path $install "config\worker.json") -Raw) -ne $beforeConfig) { throw "config was not restored after post-install failure" }
-  if (Test-Path -LiteralPath (Join-Path $install "state\mutated.json")) { throw "state was modified" }
+  Assert-InstallPreserved -Install $install -BeforeWorker $beforeWorker -BeforeConfig $beforeConfig -BeforeWorkerContract $beforeContract
+}
+
+function Test-RollbackRemovesNewWorkerContract {
+  $repo = New-CleanRepo
+  $install = New-TempInstall
+  Remove-Item -LiteralPath (Join-Path $install "config\worker_contract.json") -Force
+  $approved = Get-Sha256 (Join-Path $repo "scripts\agent_loop\local_worker\agent_worker.py")
+  $control = ((Invoke-NativeChecked -Identity "git rev-parse" -FilePath "git" -ArgumentList @("rev-parse", "HEAD") -WorkingDirectory $repo) | Out-String).Trim()
+  $beforeWorker = Get-Content -LiteralPath (Join-Path $install "worker\agent_worker.py") -Raw
+  $beforeConfig = Get-Content -LiteralPath (Join-Path $install "config\worker.json") -Raw
+  try {
+    Invoke-AgentLoopV157InstallTransaction `
+      -Repo $repo `
+      -InstallRoot $install `
+      -ApprovedControlPlaneCommit $control `
+      -ApprovedWorkerSha256 $approved `
+      -StopTask { param($Name) } `
+      -DisableTask { param($Name) } `
+      -GetTaskState { param($Name) "Disabled" } `
+      -AfterCopyHook { param($Root) throw "Injected post-copy failure" } `
+      -WriteLine { param($Message) } | Out-Null
+    throw "expected post-copy failure"
+  }
+  catch {
+    if ($_.Exception.Message -notmatch "Injected post-copy failure") { throw }
+  }
+  Assert-InstallPreserved -Install $install -BeforeWorker $beforeWorker -BeforeConfig $beforeConfig -BeforeWorkerContract $null
+}
+
+function Test-RollbackOnInstalledHashMismatch {
+  $repo = New-CleanRepo
+  $install = New-TempInstall
+  $approved = Get-Sha256 (Join-Path $repo "scripts\agent_loop\local_worker\agent_worker.py")
+  $control = ((Invoke-NativeChecked -Identity "git rev-parse" -FilePath "git" -ArgumentList @("rev-parse", "HEAD") -WorkingDirectory $repo) | Out-String).Trim()
+  $beforeWorker = Get-Content -LiteralPath (Join-Path $install "worker\agent_worker.py") -Raw
+  $beforeConfig = Get-Content -LiteralPath (Join-Path $install "config\worker.json") -Raw
+  $beforeContract = Get-Content -LiteralPath (Join-Path $install "config\worker_contract.json") -Raw
+  try {
+    Invoke-AgentLoopV157InstallTransaction `
+      -Repo $repo `
+      -InstallRoot $install `
+      -ApprovedControlPlaneCommit $control `
+      -ApprovedWorkerSha256 $approved `
+      -StopTask { param($Name) } `
+      -DisableTask { param($Name) } `
+      -GetTaskState { param($Name) "Disabled" } `
+      -GetHash { param($Path) if ($Path -like "*worker\agent_worker.py" -and $Path -like "$install*") { "bad" * 16 } else { Get-Sha256 $Path } } `
+      -WriteLine { param($Message) } | Out-Null
+    throw "expected installed worker hash mismatch"
+  }
+  catch {
+    if ($_.Exception.Message -notmatch "Installed worker SHA mismatch") { throw }
+  }
+  Assert-InstallPreserved -Install $install -BeforeWorker $beforeWorker -BeforeConfig $beforeConfig -BeforeWorkerContract $beforeContract
+}
+
+function Test-RollbackOnInstalledSymbolFailure {
+  $repo = New-CleanRepo
+  $install = New-TempInstall
+  $approved = Get-Sha256 (Join-Path $repo "scripts\agent_loop\local_worker\agent_worker.py")
+  $control = ((Invoke-NativeChecked -Identity "git rev-parse" -FilePath "git" -ArgumentList @("rev-parse", "HEAD") -WorkingDirectory $repo) | Out-String).Trim()
+  $beforeWorker = Get-Content -LiteralPath (Join-Path $install "worker\agent_worker.py") -Raw
+  $beforeConfig = Get-Content -LiteralPath (Join-Path $install "config\worker.json") -Raw
+  $beforeContract = Get-Content -LiteralPath (Join-Path $install "config\worker_contract.json") -Raw
+  try {
+    Invoke-AgentLoopV157InstallTransaction `
+      -Repo $repo `
+      -InstallRoot $install `
+      -ApprovedControlPlaneCommit $control `
+      -ApprovedWorkerSha256 $approved `
+      -StopTask { param($Name) } `
+      -DisableTask { param($Name) } `
+      -GetTaskState { param($Name) "Disabled" } `
+      -GetHash { param($Path) if ($Path -like "$install*worker\agent_worker.py") { $approved } else { Get-Sha256 $Path } } `
+      -AfterCopyHook { param($Root) (Get-Content -LiteralPath (Join-Path $Root "worker\agent_worker.py") -Raw).Replace("prompt_task_sentinel", "prompt_task_missing") | Set-Content -LiteralPath (Join-Path $Root "worker\agent_worker.py") -Encoding UTF8 } `
+      -WriteLine { param($Message) } | Out-Null
+    throw "expected installed worker symbol failure"
+  }
+  catch {
+    if ($_.Exception.Message -notmatch "v157 symbol missing") { throw }
+  }
+  Assert-InstallPreserved -Install $install -BeforeWorker $beforeWorker -BeforeConfig $beforeConfig -BeforeWorkerContract $beforeContract
+}
+
+function Test-RollbackOnSmokeFailure {
+  $repo = New-CleanRepo
+  $install = New-TempInstall
+  $approved = Get-Sha256 (Join-Path $repo "scripts\agent_loop\local_worker\agent_worker.py")
+  $control = ((Invoke-NativeChecked -Identity "git rev-parse" -FilePath "git" -ArgumentList @("rev-parse", "HEAD") -WorkingDirectory $repo) | Out-String).Trim()
+  $beforeWorker = Get-Content -LiteralPath (Join-Path $install "worker\agent_worker.py") -Raw
+  $beforeConfig = Get-Content -LiteralPath (Join-Path $install "config\worker.json") -Raw
+  $beforeContract = Get-Content -LiteralPath (Join-Path $install "config\worker_contract.json") -Raw
+  try {
+    Invoke-AgentLoopV157InstallTransaction `
+      -Repo $repo `
+      -InstallRoot $install `
+      -ApprovedControlPlaneCommit $control `
+      -ApprovedWorkerSha256 $approved `
+      -StopTask { param($Name) } `
+      -DisableTask { param($Name) } `
+      -GetTaskState { param($Name) "Disabled" } `
+      -BeforeSmokeHook { param($Root) (Get-Content -LiteralPath (Join-Path $Root "worker\agent_worker.py") -Raw).Replace('WORKER_VERSION = "1.5.7"', 'WORKER_VERSION = "0.0.0"') | Set-Content -LiteralPath (Join-Path $Root "worker\agent_worker.py") -Encoding UTF8 } `
+      -WriteLine { param($Message) } | Out-Null
+    throw "expected installed worker smoke failure"
+  }
+  catch {
+    if ($_.Exception.Message -notmatch "native command failed: worker version smoke") { throw }
+  }
+  Assert-InstallPreserved -Install $install -BeforeWorker $beforeWorker -BeforeConfig $beforeConfig -BeforeWorkerContract $beforeContract
 }
 
 function Test-InvalidConfigFailsClosed {
@@ -279,6 +412,10 @@ function Test-RefuseCanonicalPath {
 Test-InstallTransaction
 Test-RollbackOnBadSha
 Test-RollbackOnPostInstallFailure
+Test-RollbackRemovesNewWorkerContract
+Test-RollbackOnInstalledHashMismatch
+Test-RollbackOnInstalledSymbolFailure
+Test-RollbackOnSmokeFailure
 Test-InvalidConfigFailsClosed
 Test-BadControlPlaneCommitFailsClosed
 Test-UntrackedUnexpectedBlocked -RelativePath "unexpected.txt"
@@ -289,4 +426,4 @@ Test-PreexistingBytecodePreserved
 Test-NativeArgumentHandling
 Test-RefuseCanonicalPath
 Write-Host 'V157_DEPLOY_RECOVERY_CONTRACT_PASS'
-Write-Host '{"status":"PASS","tests":["install_transaction","rollback_on_bad_sha","rollback_on_post_install_failure","invalid_config","bad_control_plane_commit","untracked_unexpected","bytecode_cleaned","preexisting_bytecode_preserved","native_arguments","refuse_canonical_path"],"atomic_command":true}'
+Write-Host '{"status":"PASS","tests":["install_transaction","rollback_on_bad_sha","rollback_on_post_install_failure","rollback_removes_new_worker_contract","rollback_on_installed_hash_mismatch","rollback_on_installed_symbol_failure","rollback_on_smoke_failure","invalid_config","bad_control_plane_commit","untracked_unexpected","bytecode_cleaned","preexisting_bytecode_preserved","native_arguments","refuse_canonical_path"],"atomic_command":true}'

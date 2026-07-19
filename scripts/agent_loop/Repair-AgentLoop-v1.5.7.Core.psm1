@@ -169,6 +169,8 @@ function Invoke-AgentLoopV157InstallTransaction {
     [scriptblock]$DisableTask = { param($Name) Disable-ScheduledTask -TaskName $Name -ErrorAction Stop | Out-Null },
     [scriptblock]$GetTaskState = { param($Name) (Get-ScheduledTask -TaskName $Name).State },
     [scriptblock]$GetHash = { param($Path) (Get-Sha256 $Path) },
+    [scriptblock]$AfterCopyHook = { param($InstallRoot) },
+    [scriptblock]$BeforeSmokeHook = { param($InstallRoot) },
     [scriptblock]$WriteLine = { param($Message) Write-Host $Message }
   )
 
@@ -211,6 +213,7 @@ function Invoke-AgentLoopV157InstallTransaction {
 
   $installWorker = Join-Path $InstallRoot "worker\agent_worker.py"
   $installConfig = Join-Path $InstallRoot "config\worker.json"
+  $installWorkerContract = Join-Path $InstallRoot "config\worker_contract.json"
   $installState = Join-Path $InstallRoot "state"
   $installReports = Join-Path $InstallRoot "reports"
 
@@ -224,19 +227,30 @@ function Invoke-AgentLoopV157InstallTransaction {
   }
 
   $originalWorker = $null
+  $originalWorkerBytes = $null
+  $originalWorkerContract = $null
+  $originalWorkerContractBytes = $null
   $originalConfig = $null
+  $originalConfigHash = $null
   $stamp = (Get-Date -Format "yyyyMMddTHHmmssZ")
   $backupDir = Join-Path $InstallRoot "backups\v157-$stamp"
   New-Item -ItemType Directory -Force -Path $backupDir | Out-Null
 
-  $installed = $false
+  $mutationStarted = $false
   try {
     if (Test-Path -LiteralPath $installWorker -PathType Leaf) {
       $originalWorker = & $GetHash $installWorker
+      $originalWorkerBytes = [IO.File]::ReadAllBytes($installWorker)
       Copy-Item -LiteralPath $installWorker -Destination (Join-Path $backupDir "agent_worker.py.bak") -Force
+    }
+    if (Test-Path -LiteralPath $installWorkerContract -PathType Leaf) {
+      $originalWorkerContract = & $GetHash $installWorkerContract
+      $originalWorkerContractBytes = [IO.File]::ReadAllBytes($installWorkerContract)
+      Copy-Item -LiteralPath $installWorkerContract -Destination (Join-Path $backupDir "worker_contract.json.bak") -Force
     }
     if (Test-Path -LiteralPath $installConfig -PathType Leaf) {
       $originalConfig = Get-Content -LiteralPath $installConfig -Raw
+      $originalConfigHash = & $GetHash $installConfig
       Copy-Item -LiteralPath $installConfig -Destination (Join-Path $backupDir "worker.json.bak") -Force
     }
 
@@ -245,12 +259,14 @@ function Invoke-AgentLoopV157InstallTransaction {
     New-Item -ItemType Directory -Force -Path $installState | Out-Null
     New-Item -ItemType Directory -Force -Path $installReports | Out-Null
 
+    $mutationStarted = $true
     Copy-Item -LiteralPath $sourceWorker -Destination $installWorker -Force
-    Copy-Item -LiteralPath $sourceWorkerContract -Destination (Join-Path $InstallRoot "config\worker_contract.json") -Force
+    Copy-Item -LiteralPath $sourceWorkerContract -Destination $installWorkerContract -Force
+    & $AfterCopyHook $InstallRoot
     $installedHash = & $GetHash $installWorker
     if ($installedHash -ne $ApprovedWorkerSha256) { throw "Installed worker SHA mismatch" }
     Test-AgentLoopV157WorkerSymbols -WorkerPath $installWorker
-    $installed = $true
+    & $BeforeSmokeHook $InstallRoot
 
     # Post-install smoke: the installed worker must be importable and version check passes.
     $smoke = (Invoke-NativeChecked -Identity "worker version smoke" -FilePath "python" -ArgumentList @(
@@ -268,16 +284,27 @@ function Invoke-AgentLoopV157InstallTransaction {
     return @{ status="INSTALLED_V157"; installed_sha256=$installedHash; backup_dir=$backupDir }
   }
   catch {
-    if ($installed) {
+    $primary = $_
+    if ($mutationStarted) {
       if ($originalWorker) {
         Copy-Item -LiteralPath (Join-Path $backupDir "agent_worker.py.bak") -Destination $installWorker -Force -ErrorAction SilentlyContinue
       }
       elseif (Test-Path -LiteralPath $installWorker) { Remove-Item -LiteralPath $installWorker -Force -ErrorAction SilentlyContinue }
+      if ($originalWorkerContract) {
+        Copy-Item -LiteralPath (Join-Path $backupDir "worker_contract.json.bak") -Destination $installWorkerContract -Force -ErrorAction SilentlyContinue
+      }
+      elseif (Test-Path -LiteralPath $installWorkerContract) { Remove-Item -LiteralPath $installWorkerContract -Force -ErrorAction SilentlyContinue }
       if ($originalConfig) {
         Copy-Item -LiteralPath (Join-Path $backupDir "worker.json.bak") -Destination $installConfig -Force -ErrorAction SilentlyContinue
       }
+      if ($originalWorker -and ((& $GetHash $installWorker) -ne $originalWorker)) { throw "ROLLBACK_FAILED: worker hash mismatch after rollback; primary=$($primary.Exception.Message)" }
+      if ((-not $originalWorker) -and (Test-Path -LiteralPath $installWorker)) { throw "ROLLBACK_FAILED: new worker still exists after rollback; primary=$($primary.Exception.Message)" }
+      if ($originalWorkerContract -and ((& $GetHash $installWorkerContract) -ne $originalWorkerContract)) { throw "ROLLBACK_FAILED: worker_contract hash mismatch after rollback; primary=$($primary.Exception.Message)" }
+      if ((-not $originalWorkerContract) -and (Test-Path -LiteralPath $installWorkerContract)) { throw "ROLLBACK_FAILED: new worker_contract still exists after rollback; primary=$($primary.Exception.Message)" }
+      if ($originalConfigHash -and ((& $GetHash $installConfig) -ne $originalConfigHash)) { throw "ROLLBACK_FAILED: worker.json hash mismatch after rollback; primary=$($primary.Exception.Message)" }
+      if ((& $GetTaskState $TaskName) -ne "Disabled") { throw "ROLLBACK_FAILED: scheduled task is not Disabled; primary=$($primary.Exception.Message)" }
     }
-    throw $_
+    throw $primary
   }
 }
 
