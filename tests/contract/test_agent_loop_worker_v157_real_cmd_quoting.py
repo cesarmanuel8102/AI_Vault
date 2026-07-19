@@ -17,6 +17,7 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+from unittest import SkipTest
 
 ROOT = Path(__file__).resolve().parents[2]
 MODULE = ROOT / "scripts/agent_loop/local_worker/agent_worker.py"
@@ -24,6 +25,11 @@ spec = importlib.util.spec_from_file_location("agent_worker_v157_cmd", MODULE)
 assert spec and spec.loader
 worker = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(worker)
+
+
+def _require_windows_cmd_contract() -> None:
+    if os.name != "nt":
+        raise SkipTest("real cmd.exe quoting contract is Windows-only")
 
 
 def _touch(path: Path) -> str:
@@ -112,6 +118,7 @@ def _parse_capture(stdout: bytes) -> list[str]:
 
 
 def test_workspace_without_spaces() -> None:
+    _require_windows_cmd_contract()
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
         _make_workspace(tmp)
@@ -129,6 +136,7 @@ def test_workspace_without_spaces() -> None:
 
 
 def test_workspace_with_spaces() -> None:
+    _require_windows_cmd_contract()
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
         _make_workspace(tmp)
@@ -146,6 +154,7 @@ def test_workspace_with_spaces() -> None:
 
 
 def test_cmd_shim_path_with_spaces() -> None:
+    _require_windows_cmd_contract()
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
         shim_dir = tmp / "Shim Dir"
@@ -165,6 +174,7 @@ def test_cmd_shim_path_with_spaces() -> None:
 
 
 def test_prompt_with_metacharacters() -> None:
+    _require_windows_cmd_contract()
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
         _make_workspace(tmp)
@@ -183,6 +193,7 @@ def test_prompt_with_metacharacters() -> None:
 
 
 def test_backslash_path() -> None:
+    _require_windows_cmd_contract()
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
         _make_workspace(tmp)
@@ -201,6 +212,7 @@ def test_backslash_path() -> None:
 
 
 def test_no_command_injection() -> None:
+    _require_windows_cmd_contract()
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
         _make_workspace(tmp)
@@ -229,6 +241,31 @@ def test_command_log_redacts_sensitive_words() -> None:
     assert any(str(x) == "<redacted>" for x in safe), safe
 
 
+def test_posix_command_shape_is_direct_argv() -> None:
+    if os.name == "nt":
+        raise SkipTest("POSIX direct argv contract is not applicable on Windows")
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        _make_workspace(tmp)
+        cfg = _make_workspace(tmp)[2]
+        worker.configure_runtime_resolution(cfg, require_config=True)
+        try:
+            path_with_spaces = "/tmp/AI Vault With Spaces"
+            prompt = 'prompt with spaces & pipes | and "quotes"'
+            command = worker.command_for_subprocess(
+                ["opencode", "run", "--dir", path_with_spaces, "--model", "m", prompt]
+            )
+            assert isinstance(command, list), command
+            assert command[0] == cfg["runtime_executables"]["opencode_cmd"], command
+            assert command[1] == "run", command
+            assert path_with_spaces in command, command
+            assert command[command.index("--dir") + 1] == path_with_spaces, command
+            assert command[-1] == prompt, command
+            assert "cmd.exe" not in " ".join(command).lower(), command
+        finally:
+            worker._RUNTIME_EXECUTABLES = {}
+
+
 def main() -> int:
     tests = [
         test_workspace_without_spaces,
@@ -239,16 +276,23 @@ def main() -> int:
         test_no_command_injection,
         test_sanitize_command_for_log_does_not_leak_prompt,
         test_command_log_redacts_sensitive_words,
+        test_posix_command_shape_is_direct_argv,
     ]
     failed = 0
+    skipped = 0
+    passed = 0
     for t in tests:
         try:
             t()
+            passed += 1
             print(f"PASS: {t.__name__}")
+        except SkipTest as exc:
+            skipped += 1
+            print(f"SKIP: {t.__name__}: {exc}")
         except Exception as exc:
             failed += 1
             print(f"FAIL: {t.__name__}: {exc}")
-    print(f"\n{len(tests) - failed}/{len(tests)} passed")
+    print(f"\n{passed} passed, {skipped} skipped, {failed} failed")
     return 0 if failed == 0 else 1
 
 
