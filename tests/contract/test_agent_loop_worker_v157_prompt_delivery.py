@@ -103,7 +103,8 @@ def run_case(mode: str, objective: str = "Create the exact pilot marker.") -> tu
                 extra.write_text("extra\n", encoding="utf-8")
                 return Completed(json_event(sentinel))
             if mode == "conversation":
-                return Completed(json_event("Please provide the task or instruction set."))
+                marker.write_text(worker.pilot_marker_text(FRONT), encoding="utf-8")
+                return Completed(json_event(worker.prompt_task_sentinel(FRONT, 1) + "\nPlease provide the task or instruction set."))
             if mode == "prompt_absent":
                 return Completed(json_event("missing ack"))
             if mode == "no_change":
@@ -139,13 +140,13 @@ assert any(e["kind"] == "executor_started" for e in events)
 assert any(e["kind"] == "executor_completed" and e["task_acknowledged"] is True for e in events)
 checks["prompt_sentinel_received_and_exact_marker_passes"] = True
 
-expect_error(lambda: run_case("prompt_absent"), "task_not_acknowledged")
+expect_error(lambda: run_case("prompt_absent"), "prompt missing sentinel")
 checks["prompt_absent_fails"] = True
 
-expect_error(lambda: run_case("conversation"), "task_not_acknowledged")
+expect_error(lambda: run_case("conversation"), "conversational refusal")
 checks["conversation_fails"] = True
 
-expect_error(lambda: run_case("no_change"), "no_output_change")
+expect_error(lambda: run_case("no_change"), "did not modify the pilot marker")
 checks["exit_zero_no_modification_fails"] = True
 
 expect_error(lambda: run_case("wrong"), "pilot_marker_content_mismatch")
@@ -154,13 +155,13 @@ checks["wrong_marker_fails"] = True
 expect_error(lambda: run_case("extra"), "workspace_boundary")
 checks["extra_file_fails"] = True
 
-expect_error(lambda: run_case("invalid_jsonl"), "executor_jsonl_invalid")
+expect_error(lambda: run_case("invalid_jsonl"), "expecting property name")
 checks["invalid_jsonl_fails"] = True
 
-expect_error(lambda: run_case("timeout"), "executor_timeout")
+expect_error(lambda: run_case("timeout"), "opencode run exceeded")
 checks["timeout_fails"] = True
 
-expect_error(lambda: run_case("executable_failure"), "command failed")
+expect_error(lambda: run_case("executable_failure"), "opencode process exited non-zero")
 checks["executable_failure_fails"] = True
 
 events, _model, _log = run_case("exact", objective="Create marker. SECRET_TOKEN_SHOULD_NOT_LEAK")

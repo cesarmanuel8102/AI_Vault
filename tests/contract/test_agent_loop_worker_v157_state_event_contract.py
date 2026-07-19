@@ -74,10 +74,11 @@ def _restore(originals):
 def _make_state(tmp: Path, cycles: int = 2) -> Path:
     repo_dir = tmp / "repo"
     repo_dir.mkdir()
+    spec = _base_spec()
     state = {
         "issue_number": 5,
         "front": FRONT,
-        "spec": _base_spec(),
+        "spec": spec,
         "repo_dir": str(repo_dir),
         "pr_number": 6,
         "pr_url": "https://example.invalid/pr/6",
@@ -86,6 +87,8 @@ def _make_state(tmp: Path, cycles: int = 2) -> Path:
         "opencode_session_id": "session-old",
         "status": "WAITING_GITHUB",
         "updated_utc": worker.utc(),
+        "state_schema_version": worker.STATE_SCHEMA_VERSION,
+        "worker_version": worker.WORKER_VERSION,
     }
     state_path = tmp / "state" / "issue-5.json"
     worker.save_json(state_path, state)
@@ -238,6 +241,46 @@ def test_event_chronology_rejects_impossible_sequence() -> None:
     ]) == []
 
 
+def test_event_chronology_rejects_pushed_without_committed() -> None:
+    assert worker.validate_v157_event_chronology([
+        {"kind": "cycle_pushed", "issue": 5, "pr": 6, "cycle": 3, "head_sha": HEAD},
+    ])
+
+
+def test_event_chronology_rejects_pushed_before_committed() -> None:
+    assert worker.validate_v157_event_chronology([
+        {"kind": "cycle_pushed", "issue": 5, "pr": 6, "cycle": 3, "head_sha": HEAD},
+        {"kind": "cycle_committed", "issue": 5, "pr": 6, "cycle": 3, "head_sha": HEAD},
+    ])
+
+
+def test_event_chronology_rejects_committed_pushed_after_terminalized() -> None:
+    assert worker.validate_v157_event_chronology([
+        {"kind": "state_terminalized", "issue": 5, "pr": 6, "phase": "loop:token-exhausted", "failure_class": "MAX_CYCLES_REACHED"},
+        {"kind": "cycle_committed", "issue": 5, "pr": 6, "cycle": 3, "head_sha": HEAD},
+    ])
+    assert worker.validate_v157_event_chronology([
+        {"kind": "state_terminalized", "issue": 5, "pr": 6, "phase": "loop:token-exhausted", "failure_class": "MAX_CYCLES_REACHED"},
+        {"kind": "cycle_pushed", "issue": 5, "pr": 6, "cycle": 3, "head_sha": HEAD},
+    ])
+
+
+def test_event_chronology_rejects_executor_started_after_terminalized() -> None:
+    assert worker.validate_v157_event_chronology([
+        {"kind": "state_terminalized", "issue": 5, "pr": 6, "phase": "loop:token-exhausted", "failure_class": "MAX_CYCLES_REACHED"},
+        {"kind": "executor_started", "issue": 5, "pr": 6, "cycle": 4, "command_identity": "opencode", "model": "m"},
+    ])
+
+
+def test_event_chronology_rejects_reverted_without_committed() -> None:
+    assert any(
+        "reverted" in e.lower()
+        for e in worker.validate_v157_event_chronology([
+            {"kind": "cycle_commit_reverted", "issue": 5, "pr": 6, "cycle": 3, "head_sha": HEAD, "failure_class": "TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE"},
+        ])
+    )
+
+
 def _assert_terminalized_without_post_actions(tmp: Path, state_path: Path) -> None:
     state = worker.load_json(state_path)
     assert state["cycles"] == 3
@@ -306,9 +349,67 @@ def test_final_cycle_final_verifier_failure_terminalizes_without_push() -> None:
             worker.process_state(_cfg(td), state_path)
             _assert_terminalized_without_post_actions(tmp, state_path)
             assert not any("git push" in c for c in calls)
+            events = _events(tmp)
+            assert not any(e["kind"] == "cycle_committed" for e in events)
+            assert not any(e["kind"] == "cycle_pushed" for e in events)
         finally:
             _restore(originals)
             worker.run = old_run
+
+
+def test_executor_attempt_consumed_non_final_saves_state() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _make_state(tmp, cycles=1)
+        events: list[dict] = []
+        originals = _common_process_patches(tmp)
+
+        def fake_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+            events.append({"kind": "injected", "cycle": cycle})
+            raise worker.ExecutorAttemptConsumed("EXECUTOR_TIMEOUT", "timeout", {"cycle": cycle, "command_identity": "opencode", "local_log_path": str(tmp / "opencode.jsonl"), "returncode": None})
+
+        originals2 = _patch_worker(run_kimi=fake_run_kimi)
+        try:
+            worker.process_state(_cfg(td), state_path)
+            state = worker.load_json(state_path)
+            assert state["cycles"] == 2
+            assert state["status"] == "WAITING_GITHUB"
+            assert not worker.state_is_terminal(state)
+            events = _events(tmp)
+            assert any(e["kind"] == "executor_failed" and e.get("failure_class") == "EXECUTOR_TIMEOUT" for e in events)
+        finally:
+            _restore(originals2)
+            _restore(originals)
+
+
+def test_executor_attempt_consumed_final_terminalizes() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _make_state(tmp, cycles=2)
+        originals = _common_process_patches(tmp)
+
+        def fake_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+            raise worker.ExecutorAttemptConsumed("COMMAND_FAILED", "non-zero", {"cycle": cycle, "command_identity": "opencode", "local_log_path": str(tmp / "opencode.jsonl"), "returncode": 1})
+
+        originals2 = _patch_worker(run_kimi=fake_run_kimi)
+        try:
+            worker.process_state(_cfg(td), state_path)
+            state = worker.load_json(state_path)
+            events = _events(tmp)
+            assert state["cycles"] == 3
+            assert state["status"] == "loop:token-exhausted"
+            assert any(e["kind"] == "executor_failed" and e.get("failure_class") == "COMMAND_FAILED" for e in events)
+            assert any(e["kind"] == "state_terminalized" for e in events)
+            assert worker.validate_v157_event_chronology(events) == []
+        finally:
+            _restore(originals2)
+            _restore(originals)
+
+
+def test_prompt_canary_absent_from_exception_and_log() -> None:
+    canary = "CANARY_PROMPT_CONTENT_12345"
+    safe = worker._redacted_cmd_repr(["opencode", "run", "--dir", "C:\\d", "--model", "m", canary])
+    assert all(canary not in str(x) for x in safe), safe
 
 
 def main() -> int:
@@ -321,10 +422,18 @@ def main() -> int:
         test_worker_started_event_contract,
         test_legacy_repair_local_gate_aliases_to_local_gate_failed,
         test_event_chronology_rejects_impossible_sequence,
+        test_event_chronology_rejects_pushed_without_committed,
+        test_event_chronology_rejects_pushed_before_committed,
+        test_event_chronology_rejects_committed_pushed_after_terminalized,
+        test_event_chronology_rejects_executor_started_after_terminalized,
+        test_event_chronology_rejects_reverted_without_committed,
         test_final_cycle_audit_failure_terminalizes_same_run,
         test_final_cycle_marker_failure_terminalizes_same_run,
         test_final_cycle_out_of_scope_terminalizes_same_run,
         test_final_cycle_final_verifier_failure_terminalizes_without_push,
+        test_executor_attempt_consumed_non_final_saves_state,
+        test_executor_attempt_consumed_final_terminalizes,
+        test_prompt_canary_absent_from_exception_and_log,
     ]
     failed = 0
     for test in tests:

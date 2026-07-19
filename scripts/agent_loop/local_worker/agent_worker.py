@@ -27,6 +27,7 @@ EVENT_REQUIRED_FIELDS = {
     "repair_local_gate_failed": {"issue", "pr", "cycle", "failure_class", "cycle_before", "cycle_after"},
     "cycle_committed": {"issue", "pr", "cycle", "head_sha"},
     "cycle_pushed": {"issue", "pr", "cycle", "head_sha"},
+    "cycle_commit_reverted": {"issue", "pr", "cycle", "head_sha", "failure_class"},
     "codex_review_started": {"issue", "pr", "head_sha"},
     "codex_review_passed": {"issue", "pr", "head_sha"},
     "codex_review_failed": {"issue", "pr", "head_sha", "error"},
@@ -106,10 +107,29 @@ def prompt_task_sentinel(front_id: str, cycle: int) -> str:
 def pilot_marker_text(front_id: str) -> str:
     return PILOT_MARKER_TEMPLATE.format(worker_version=WORKER_VERSION, front_id=str(front_id))
 
+class PreExecutionFailure(RuntimeError):
+    """Deterministic failure before the OpenCode/Kimi process was started. Does not consume a Kimi cycle."""
+
+    def __init__(self, failure_class: str, message: str, details: dict | None = None):
+        super().__init__(message)
+        self.failure_class = failure_class
+        self.details = details or {}
+
+
+class ExecutorAttemptConsumed(RuntimeError):
+    """OpenCode/Kimi process was started and this attempt must consume exactly one Kimi cycle."""
+
+    def __init__(self, failure_class: str, message: str, details: dict | None = None):
+        super().__init__(message)
+        self.failure_class = failure_class
+        self.details = details or {}
+
+
 class CmdError(RuntimeError):
     def __init__(self, cmd, code, out):
-        super().__init__(f"command failed ({code}): {cmd}\n{out[-4000:]}")
-        self.cmd, self.code, self.out = cmd, code, out
+        redacted = _redacted_cmd_repr(cmd)
+        super().__init__(f"command failed ({code}): {redacted}\n{out[-4000:]}")
+        self.cmd, self.code, self.out = redacted, code, out
 
 def utc() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -251,6 +271,37 @@ def command_for_subprocess(args: list[str]):
         return f"{comspec} /d /s /c {inner}"
     return values
 
+def _sha256_text(text: str) -> str:
+    import hashlib
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _redacted_cmd_repr(args: list[str]) -> list[str]:
+    """Return a log/event-safe representation of a command line.
+
+    For the opencode identity the final argument is treated as the prompt and
+    is fully redacted to a stable hash/length placeholder so that prompt
+    content can never leak into exceptions, logs, events, state, or reports.
+    """
+    if not args:
+        return []
+    ident = command_identity(args)
+    if ident != "opencode" or len(args) < 2:
+        return sanitize_command_for_log(args)
+    safe: list[str] = [ident]
+    prompt = str(args[-1])
+    for value in args[1:-1]:
+        lower = str(value).lower()
+        if any(word in lower for word in _SENSITIVE_COMMAND_WORDS):
+            safe.append("<redacted>")
+        elif len(str(value)) > 160:
+            safe.append(str(value)[:80] + "...<truncated>")
+        else:
+            safe.append(str(value))
+    safe.append(f"<prompt:redacted bytes={len(prompt.encode('utf-8'))} sha256={_sha256_text(prompt)}>")
+    return safe
+
+
 def sanitize_command_for_log(args: list[str]) -> list[str]:
     if not args:
         return []
@@ -259,6 +310,9 @@ def sanitize_command_for_log(args: list[str]) -> list[str]:
     for value in args[1:]:
         lower = str(value).lower()
         if any(word in lower for word in _SENSITIVE_COMMAND_WORDS):
+            safe.append("<redacted>")
+        elif ident == "opencode":
+            # Fully redact any prompt-sized argument for the opencode identity.
             safe.append("<redacted>")
         elif len(str(value)) > 160:
             safe.append(str(value)[:80] + "...<truncated>")
@@ -859,6 +913,22 @@ def _require_lossless_opencode_transport() -> None:
         raise RuntimeError(f"LOSSLESS_OPENCODE_TRANSPORT_REQUIRED: missing {', '.join(missing)}")
 
 
+def _lossless_transport_or_raise(cmd: list[str], prepared):
+    """Ensure the resolved opencode command bypasses cmd.exe for lossless transport."""
+    if isinstance(prepared, str):
+        raise PreExecutionFailure(
+            "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED",
+            "Kimi execution resolved to a single command-line string; must use node.exe+JS entrypoint",
+            {"resolved_identity": command_identity(cmd)},
+        )
+    if prepared and _runtime_command_name(str(prepared[0])) == "cmd":
+        raise PreExecutionFailure(
+            "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED",
+            "Kimi execution resolved to cmd.exe; must use node.exe+JS entrypoint",
+            {"resolved_identity": command_identity(cmd)},
+        )
+
+
 def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=None):
     report_dir = Path(cfg["install_root"]) / "reports"
     log = report_dir / f"issue-{issue_no}-cycle-{cycle}-opencode.jsonl"
@@ -867,7 +937,11 @@ def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=No
     sentinel = prompt_task_sentinel(spec["front_id"], cycle)
     prompt = make_prompt(spec, cycle, feedback)
     if sentinel not in prompt:
-        raise RuntimeError("TASK_NOT_ACKNOWLEDGED: prompt missing sentinel")
+        raise PreExecutionFailure(
+            "TASK_NOT_ACKNOWLEDGED",
+            "prompt missing sentinel",
+            {"cycle": cycle, "front": spec["front_id"]},
+        )
     event(cfg, "executor_started", front=spec["front_id"], cycle=cycle,
           command_identity="opencode", model=cfg["opencode_model"],
           prompt_bytes=len(prompt.encode("utf-8")), sentinel_in_prompt=True)
@@ -879,40 +953,51 @@ def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=No
     if session_id: cmd += ["--session", session_id]
     cmd.append(prompt)
     timeout = cfg.get("opencode_timeout_seconds")
+    prepared = command_for_subprocess(cmd)
+    _lossless_transport_or_raise(cmd, prepared)
     try:
-        prepared = command_for_subprocess(cmd)
-        if isinstance(prepared, str) or (prepared and "cmd.exe" in str(prepared[0]).lower()):
-            raise RuntimeError("LOSSLESS_OPENCODE_TRANSPORT_REQUIRED: Kimi execution must use node.exe+JS entrypoint, not cmd.exe fallback")
         p = subprocess.run(prepared, cwd=str(model_dir), env=opencode_env(cfg, model_dir), text=False,
                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
     except subprocess.TimeoutExpired as exc:
         out = (exc.output or b"").decode("utf-8", errors="replace")
         log.write_text(out, encoding="utf-8")
-        event(cfg, "executor_failed", front=spec["front_id"], cycle=cycle, error="EXECUTOR_TIMEOUT")
-        raise RuntimeError(f"EXECUTOR_TIMEOUT: opencode run exceeded {timeout}s") from exc
+        raise ExecutorAttemptConsumed(
+            "EXECUTOR_TIMEOUT",
+            f"opencode run exceeded {timeout}s",
+            {"returncode": None, "command_identity": "opencode", "cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
+        ) from exc
     out, decoding = completed_output(p)
     log.write_text(out, encoding="utf-8")
     emit_subprocess_decoding_event(cfg, ["opencode"], decoding)
     if p.returncode != 0:
         low = out.lower()
-        if "context" in low or "token" in low or "rate limit" in low:
-            event(cfg, "executor_failed", front=spec["front_id"], cycle=cycle, error="TOKEN_EXHAUSTED")
-            raise RuntimeError("TOKEN_EXHAUSTED:" + out[-3000:])
-        event(cfg, "executor_failed", front=spec["front_id"], cycle=cycle, error="COMMAND_FAILED", returncode=p.returncode)
-        raise CmdError(cmd, p.returncode, out)
+        failure_class = "TOKEN_EXHAUSTED" if ("context" in low or "token" in low or "rate limit" in low) else "COMMAND_FAILED"
+        raise ExecutorAttemptConsumed(
+            failure_class,
+            out[-3000:] if failure_class == "TOKEN_EXHAUSTED" else "opencode process exited non-zero",
+            {"returncode": p.returncode, "command_identity": "opencode", "cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
+        )
     return log, discover_session_id(model_dir, title)
 
 def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path, cycle: int, seed_hash: str | None = None) -> None:
     out = log.read_text(encoding="utf-8-sig")
     lines = [x.strip() for x in out.splitlines() if x.strip()]
     if not lines:
-        raise RuntimeError("EXECUTOR_JSONL_INVALID: empty output")
+        raise ExecutorAttemptConsumed(
+            "EXECUTOR_JSONL_INVALID",
+            "empty output",
+            {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
+        )
     parsed: list[dict] = []
     for line in lines:
         try:
             parsed.append(json.loads(line))
         except Exception as exc:
-            raise RuntimeError(f"EXECUTOR_JSONL_INVALID: {exc}") from exc
+            raise ExecutorAttemptConsumed(
+                "EXECUTOR_JSONL_INVALID",
+                f"{exc}",
+                {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
+            ) from exc
     text_parts: list[str] = []
     for item in parsed:
         if not isinstance(item, dict):
@@ -934,11 +1019,23 @@ def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path
           task_acknowledged=acknowledged, conversational_refusal=refused,
           marker_unchanged=unchanged, jsonl_events=len(parsed))
     if not acknowledged:
-        raise RuntimeError("TASK_NOT_ACKNOWLEDGED: sentinel missing from executor output")
+        raise ExecutorAttemptConsumed(
+            "TASK_NOT_ACKNOWLEDGED",
+            "sentinel missing from executor output",
+            {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
+        )
     if refused:
-        raise RuntimeError("TASK_NOT_ACKNOWLEDGED: executor issued conversational refusal")
+        raise ExecutorAttemptConsumed(
+            "TASK_NOT_ACKNOWLEDGED",
+            "executor issued conversational refusal",
+            {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
+        )
     if unchanged:
-        raise RuntimeError("NO_OUTPUT_CHANGE: executor did not modify the pilot marker")
+        raise ExecutorAttemptConsumed(
+            "NO_OUTPUT_CHANGE",
+            "executor did not modify the pilot marker",
+            {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
+        )
 
 def run_profile(cfg, spec, repo_dir) -> tuple[bool,str]:
     cmd = [str(x) for x in cfg["test_profiles"][spec["test_profile"]]]
@@ -1252,9 +1349,31 @@ def process_state(cfg, state_path):
     model_dir, seed_hashes = prepare_model_workspace(repo_dir, spec, cycle)
     marker_path = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
     marker_seed = sha256_file(marker_path) if marker_path.is_file() else None
-    log, discovered_session=run_kimi(cfg,spec,model_dir,issue,cycle,feedback,st.get("opencode_session_id"))
-    if discovered_session: st["opencode_session_id"] = discovered_session
-    validate_executor_delivery(cfg, spec, model_dir, log, cycle, seed_hash=marker_seed)
+    try:
+        log, discovered_session=run_kimi(cfg,spec,model_dir,issue,cycle,feedback,st.get("opencode_session_id"))
+        if discovered_session: st["opencode_session_id"] = discovered_session
+        validate_executor_delivery(cfg, spec, model_dir, log, cycle, seed_hash=marker_seed)
+    except ExecutorAttemptConsumed as exc:
+        event(cfg, "executor_failed", front=spec["front_id"], cycle=cycle, error=str(exc)[-3000:], failure_class=exc.failure_class,
+              local_log_path=exc.details.get("local_log_path"), returncode=exc.details.get("returncode"),
+              command_identity=exc.details.get("command_identity"))
+        st["cycles"] = cycle
+        if cycle >= int(spec["max_kimi_cycles"]):
+            st["status"] = "loop:token-exhausted"
+            st["error"] = str(exc)[-5000:]
+            st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
+            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+            event(cfg, "local_gate_failed", issue=issue, pr=prn, cycle=cycle,
+                  failure_class=exc.failure_class, cycle_before=cycle-1, cycle_after=cycle,
+                  changed_files=[], test_output_tail=bounded_tail(str(exc)),
+                  marker_hash=marker_hash(repo_dir), current_head=run(["git","rev-parse","HEAD"], cwd=repo_dir).strip(),
+                  expected_base=spec["expected_base_sha"], bad=[], test_ok=False)
+            event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
+                  failure_class=exc.failure_class, cycle=cycle, pr=prn, error=bounded_tail(str(exc)))
+            return
+        st["updated_utc"] = utc()
+        save_json(state_path, st)
+        return
     try:
         audit_and_sync_model_workspace(model_dir, repo_dir, seed_hashes, spec)
     except Exception as exc:
@@ -1341,7 +1460,6 @@ def process_state(cfg, state_path):
         return
     run(["git","commit","-m",f"fix(agent-loop): address supervisor findings cycle {cycle}"],cwd=repo_dir)
     newsha=run(["git","rev-parse","HEAD"],cwd=repo_dir).strip()
-    event(cfg, "cycle_committed", issue=issue, pr=prn, cycle=cycle, head_sha=newsha)
     final_ok, final_out = run_final_verifier(repo_dir, spec["expected_base_sha"], newsha)
     if not final_ok:
         run(["git","reset","--hard","HEAD~1"], cwd=repo_dir)
@@ -1363,6 +1481,7 @@ def process_state(cfg, state_path):
         else:
             save_json(state_path, st)
         return
+    event(cfg, "cycle_committed", issue=issue, pr=prn, cycle=cycle, head_sha=newsha)
     run(["git","push","origin",spec["work_branch"]],cwd=repo_dir)
     event(cfg, "cycle_pushed", issue=issue, pr=prn, cycle=cycle, head_sha=newsha)
     pr_after = gh_json(["pr","view",str(prn),"--repo",cfg["repo"],"--json","number,url,headRefOid"])
@@ -1673,6 +1792,9 @@ def validate_v157_event_chronology(events: list[dict]) -> list[str]:
     errors: list[str] = []
     first_terminal: dict[tuple[str, str], int] = {}
     first_local_gate: dict[tuple[str, str], int] = {}
+    first_committed: dict[tuple[str, str], int] = {}
+    first_pushed: dict[tuple[str, str], int] = {}
+    reverted_indexes: list[int] = []
     for idx, item in enumerate(events):
         kind = _event_kind(item)
         issue = str(_event_field(item, "issue") or "")
@@ -1680,16 +1802,40 @@ def validate_v157_event_chronology(events: list[dict]) -> list[str]:
         key = (issue, pr)
         if kind == "local_gate_failed":
             first_local_gate.setdefault(key, idx)
+        if kind == "cycle_committed":
+            first_committed.setdefault(key, idx)
+        if kind == "cycle_pushed":
+            first_pushed.setdefault(key, idx)
+        if kind == "cycle_commit_reverted":
+            reverted_indexes.append(idx)
         if kind == "state_terminalized":
             first_terminal.setdefault(key, idx)
             if key not in first_local_gate and _event_field(item, "failure_class") != "MAX_CYCLES_REACHED":
                 errors.append(f"state_terminalized_without_prior_local_gate:{key}")
-        if kind in {"cycle_committed", "cycle_pushed"} and key in first_terminal and idx > first_terminal[key]:
+        if kind in {"cycle_committed", "cycle_pushed", "executor_started", "cycle_commit_reverted"} and key in first_terminal and idx > first_terminal[key]:
             errors.append(f"{kind}_after_state_terminalized:{key}")
     for key, gate_idx in first_local_gate.items():
         term_idx = first_terminal.get(key)
         if term_idx is not None and term_idx < gate_idx:
             errors.append(f"state_terminalized_before_local_gate:{key}")
+    for key in set(first_committed) | set(first_pushed) | {(str(_event_field(events[rev_idx], "issue") or ""), str(_event_field(events[rev_idx], "pr") or "")) for rev_idx in reverted_indexes}:
+        committed_idx = first_committed.get(key)
+        pushed_idx = first_pushed.get(key)
+        if pushed_idx is not None and committed_idx is not None and pushed_idx < committed_idx:
+            errors.append(f"cycle_pushed_before_cycle_committed:{key}")
+        if pushed_idx is not None and key in first_terminal and pushed_idx > first_terminal[key]:
+            errors.append(f"cycle_pushed_after_state_terminalized:{key}")
+        for rev_idx in reverted_indexes:
+            rev_key = (str(_event_field(events[rev_idx], "issue") or ""), str(_event_field(events[rev_idx], "pr") or ""))
+            if rev_key != key:
+                continue
+            if committed_idx is None:
+                errors.append(f"cycle_commit_reverted_without_cycle_committed:{key}")
+            elif rev_idx < committed_idx:
+                errors.append(f"cycle_commit_reverted_before_cycle_committed:{key}")
+    for key, pushed_idx in first_pushed.items():
+        if key not in first_committed:
+            errors.append(f"cycle_pushed_without_cycle_committed:{key}")
     return errors
 
 def validate_v155_recovery_event_chronology(cfg: dict, base_sha: str, head_sha: str, repo_dir: str | None = None) -> None:

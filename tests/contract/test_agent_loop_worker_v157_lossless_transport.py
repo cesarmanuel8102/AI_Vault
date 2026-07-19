@@ -320,8 +320,8 @@ def test_kimi_rejects_cmd_fallback() -> None:
         try:
             worker.run_kimi(cfg, {"front_id": "FAIL-CLOSED-CMD"}, tmp / "model", 1, 1)
             raise AssertionError("run_kimi should reject cmd.exe fallback")
-        except RuntimeError as exc:
-            assert "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED" in str(exc) and "cmd.exe" in str(exc)
+        except worker.PreExecutionFailure as exc:
+            assert exc.failure_class == "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED", exc
         finally:
             worker.command_for_subprocess = old_command_for_subprocess
             worker.subprocess.run = old_subprocess

@@ -232,8 +232,8 @@ def test_no_command_injection() -> None:
 def test_sanitize_command_for_log_does_not_leak_prompt() -> None:
     long_prompt = "x" * 300
     safe = worker.sanitize_command_for_log(["opencode", "run", "--dir", r"C:\secret", "--model", "m", long_prompt])
-    assert any("truncated" in str(x) for x in safe), safe
-    assert len(str(safe[-1])) <= 160, safe
+    assert all(long_prompt not in str(x) for x in safe), safe
+    assert all(str(x) == "<redacted>" for x in safe[1:]), safe
 
 
 def test_command_log_redacts_sensitive_words() -> None:
