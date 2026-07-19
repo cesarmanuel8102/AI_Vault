@@ -22,10 +22,20 @@ STATE_KNOWN_TOP_LEVEL_KEYS = {
 EVENT_REQUIRED_FIELDS = {
     "executor_started": {"front", "cycle", "command_identity", "model"},
     "executor_completed": {"front", "cycle", "task_acknowledged", "jsonl_events"},
+    "executor_failed": {"front", "cycle", "error"},
+    "local_gate_failed": {"issue", "pr", "cycle", "failure_class", "cycle_before", "cycle_after"},
+    "repair_local_gate_failed": {"issue", "pr", "cycle", "failure_class", "cycle_before", "cycle_after"},
+    "cycle_committed": {"issue", "pr", "cycle", "head_sha"},
+    "cycle_pushed": {"issue", "pr", "cycle", "head_sha"},
+    "codex_review_started": {"issue", "pr", "head_sha"},
+    "codex_review_passed": {"issue", "pr", "head_sha"},
+    "codex_review_failed": {"issue", "pr", "head_sha", "error"},
+    "codex_repair_requested": {"issue", "pr", "head_sha"},
+    "supervisor_authorization_consumed": {"issue", "pr", "authorization"},
     "kimi_cycle_start": {"issue", "cycle", "front"},
     "kimi_cycle_repair_needed": {"issue", "cycle"},
     "pr_created": {"issue", "pr", "sha"},
-    "state_terminalized": {"state", "issue", "phase"},
+    "state_terminalized": {"state", "issue", "phase", "failure_class"},
     "worker_started": {"once", "worker_version", "worker_sha256"},
 }
 PHASE_LABELS = {
@@ -352,6 +362,13 @@ def save_json(path: Path, data: Any) -> None:
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
 def event(cfg, kind, **fields):
+    if kind == "repair_local_gate_failed":
+        fields.setdefault("legacy_kind", "repair_local_gate_failed")
+        kind = "local_gate_failed"
+    for key in fields:
+        if key.lower() in {"prompt", "token", "secret", "password", "credential"}:
+            raise RuntimeError(f"EVENT_CONTRACT_VIOLATION:{kind}: sensitive field {key}")
+    fields.setdefault("worker_version", WORKER_VERSION)
     record = {"timestamp_utc": utc(), "kind": kind, **fields}
     required = EVENT_REQUIRED_FIELDS.get(kind)
     if required and not required.issubset(fields):
@@ -481,6 +498,13 @@ def terminal_phase_from_labels(obj: dict) -> str | None:
 
 def state_is_terminal(st: dict) -> bool:
     return str(st.get("status", "")) in TERMINAL_LABELS
+
+def should_terminalize_failed_cycle(st: dict, spec: dict, cycle: int) -> bool:
+    return (
+        cycle >= int(spec["max_kimi_cycles"])
+        and st.get("state_schema_version") == STATE_SCHEMA_VERSION
+        and st.get("worker_version") == WORKER_VERSION
+    )
 
 def comment(repo: str, number: int, body: str):
     run(["gh", "issue", "comment", str(number), "--repo", repo, "--body", body])
@@ -1075,7 +1099,7 @@ def terminalize_state_error(cfg: dict, state_path: Path, exc: Exception) -> None
     retries = int(st.get("local_retry_count", 0)) + 1
     max_retries = int(cfg.get("max_local_retries", 2))
     st["local_retry_count"] = retries
-    st["last_error"] = str(exc)[-5000:]
+    st["error"] = str(exc)[-5000:]
     st["updated_utc"] = utc()
     if classification == "RETRY" and retries <= max_retries:
         st["status"] = "LOCAL_RETRY"
@@ -1085,7 +1109,8 @@ def terminalize_state_error(cfg: dict, state_path: Path, exc: Exception) -> None
     phase = classification if classification != "RETRY" else "loop:blocked"
     st = set_converged_phase(cfg, state_path, st, phase)
     st = publish_terminal_notification(cfg, state_path, st, phase, str(exc))
-    event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase=phase, error=str(exc))
+    event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase=phase,
+          failure_class=classification, error=str(exc))
 
 def prepare_repo(cfg, spec, issue_no):
     # Never require deletion of a previous Git checkout on Windows. Git pack files can
@@ -1215,7 +1240,8 @@ def process_state(cfg, state_path):
         st["updated_utc"] = utc()
         st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
         st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
-        event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted", error="max cycles reached")
+        event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
+              failure_class="MAX_CYCLES_REACHED", error="max cycles reached")
         return
     feedback=latest_feedback(cfg["repo"],prn,spec,pr["headRefOid"],cfg["install_root"])
     repo_dir=Path(st["repo_dir"])
@@ -1232,56 +1258,113 @@ def process_state(cfg, state_path):
     try:
         audit_and_sync_model_workspace(model_dir, repo_dir, seed_hashes, spec)
     except Exception as exc:
-        st["cycles"] = cycle
-        st["updated_utc"] = utc()
-        save_json(state_path, st)
         event(cfg, "repair_local_gate_failed", issue=issue, pr=prn, cycle=cycle,
               failure_class="MODEL_CONTENT_FAILURE", cycle_before=cycle-1, cycle_after=cycle,
               changed_files=changed_files(repo_dir, spec["expected_base_sha"]), test_output_tail=bounded_tail(str(exc)),
               marker_hash=marker_hash(repo_dir), current_head=run(["git","rev-parse","HEAD"], cwd=repo_dir).strip(),
               expected_base=spec["expected_base_sha"], bad=[], test_ok=False)
+        st["cycles"] = cycle
+        st["updated_utc"] = utc()
+        if should_terminalize_failed_cycle(st, spec, cycle):
+            st["status"] = "loop:token-exhausted"
+            st["error"] = str(exc)[-5000:]
+            st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
+            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+            event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
+                  failure_class="MODEL_CONTENT_FAILURE", cycle=cycle, pr=prn, error=bounded_tail(str(exc)))
+        else:
+            save_json(state_path, st)
         return
     content_ok, content_out = run_marker_content_check(repo_dir)
     if not content_ok:
-        st["cycles"] = cycle
-        st["updated_utc"] = utc()
-        save_json(state_path, st)
         event(cfg, "repair_local_gate_failed", issue=issue, pr=prn, cycle=cycle,
               failure_class="MODEL_CONTENT_FAILURE", cycle_before=cycle-1, cycle_after=cycle,
               changed_files=changed_files(repo_dir, spec["expected_base_sha"]), test_output_tail=bounded_tail(content_out),
               marker_hash=marker_hash(repo_dir), current_head=run(["git","rev-parse","HEAD"], cwd=repo_dir).strip(),
               expected_base=spec["expected_base_sha"], bad=[], test_ok=False)
+        st["cycles"] = cycle
+        st["updated_utc"] = utc()
+        if should_terminalize_failed_cycle(st, spec, cycle):
+            st["status"] = "loop:token-exhausted"
+            st["error"] = bounded_tail(content_out)
+            st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
+            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+            event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
+                  failure_class="MODEL_CONTENT_FAILURE", cycle=cycle, pr=prn, error=bounded_tail(content_out))
+        else:
+            save_json(state_path, st)
         return
     changes=changed_files(repo_dir,spec["expected_base_sha"])
     bad=[p for p in changes if not path_allowed(p,spec["allowed_paths"],spec["forbidden_paths"])]
     if bad:
+        terminalize = should_terminalize_failed_cycle(st, spec, cycle)
+        cycle_after = cycle if terminalize else cycle - 1
         event(cfg,"repair_local_gate_failed",issue=issue,pr=prn,cycle=cycle,
-              failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle_before=cycle-1, cycle_after=cycle-1,
+              failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle_before=cycle-1, cycle_after=cycle_after,
               changed_files=changes, test_output_tail="", marker_hash=marker_hash(repo_dir),
               current_head=run(["git","rev-parse","HEAD"], cwd=repo_dir).strip(), expected_base=spec["expected_base_sha"], bad=bad,test_ok=False)
+        st["updated_utc"] = utc()
+        if terminalize:
+            st["cycles"] = cycle
+            st["status"] = "loop:token-exhausted"
+            st["error"] = "out-of-scope files: " + json.dumps(bad)
+            st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
+            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+            event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
+                  failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle=cycle, pr=prn, error=st["error"])
+        else:
+            save_json(state_path, st)
         return
     write_executor_report(cfg,spec,repo_dir,issue,cycle,changes,True,content_out,log)
     run(["git","add","--all"],cwd=repo_dir)
     final_candidate = run(["git","diff","--cached","--name-only"], cwd=repo_dir).splitlines()
     if sorted(x for x in final_candidate if x.strip()) != sorted(PROFILE_ALLOWED_PATHS["pilot"]):
+        terminalize = should_terminalize_failed_cycle(st, spec, cycle)
+        cycle_after = cycle if terminalize else cycle - 1
         event(cfg,"repair_local_gate_failed",issue=issue,pr=prn,cycle=cycle,
-              failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle_before=cycle-1, cycle_after=cycle-1,
+              failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle_before=cycle-1, cycle_after=cycle_after,
               changed_files=final_candidate, test_output_tail="staged diff is not exactly pilot artifacts",
               marker_hash=marker_hash(repo_dir), current_head=run(["git","rev-parse","HEAD"], cwd=repo_dir).strip(),
               expected_base=spec["expected_base_sha"], bad=final_candidate,test_ok=False)
         run(["git","reset"], cwd=repo_dir)
+        st["updated_utc"] = utc()
+        if terminalize:
+            st["cycles"] = cycle
+            st["status"] = "loop:token-exhausted"
+            st["error"] = "staged diff is not exactly pilot artifacts"
+            st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
+            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+            event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
+                  failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle=cycle, pr=prn, error=st["error"])
+        else:
+            save_json(state_path, st)
         return
     run(["git","commit","-m",f"fix(agent-loop): address supervisor findings cycle {cycle}"],cwd=repo_dir)
     newsha=run(["git","rev-parse","HEAD"],cwd=repo_dir).strip()
+    event(cfg, "cycle_committed", issue=issue, pr=prn, cycle=cycle, head_sha=newsha)
     final_ok, final_out = run_final_verifier(repo_dir, spec["expected_base_sha"], newsha)
     if not final_ok:
+        run(["git","reset","--hard","HEAD~1"], cwd=repo_dir)
+        terminalize = should_terminalize_failed_cycle(st, spec, cycle)
+        cycle_after = cycle if terminalize else int(st.get("cycles", cycle - 1))
         event(cfg,"repair_local_gate_failed",issue=issue,pr=prn,cycle=cycle,
-              failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle_before=cycle-1, cycle_after=cycle-1,
+              failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle_before=cycle-1, cycle_after=cycle_after,
               changed_files=changed_files(repo_dir,spec["expected_base_sha"]), test_output_tail=bounded_tail(final_out),
               marker_hash=marker_hash(repo_dir), current_head=newsha, expected_base=spec["expected_base_sha"], bad=[],test_ok=False)
-        run(["git","reset","--hard","HEAD~1"], cwd=repo_dir)
+        st["updated_utc"] = utc()
+        if terminalize:
+            st["cycles"] = cycle
+            st["status"] = "loop:token-exhausted"
+            st["error"] = bounded_tail(final_out)
+            st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
+            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+            event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
+                  failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle=cycle, pr=prn, error=bounded_tail(final_out))
+        else:
+            save_json(state_path, st)
         return
     run(["git","push","origin",spec["work_branch"]],cwd=repo_dir)
+    event(cfg, "cycle_pushed", issue=issue, pr=prn, cycle=cycle, head_sha=newsha)
     pr_after = gh_json(["pr","view",str(prn),"--repo",cfg["repo"],"--json","number,url,headRefOid"])
     final_report = write_final_local_report(cfg, spec, issue, cycle, repo_dir, pr_after)
     st.update(cycles=cycle,last_head_sha=newsha,status="WAITING_GITHUB",final_local_report=str(final_report),worker_version=WORKER_VERSION,updated_utc=utc())
@@ -1570,7 +1653,8 @@ def _event_field(item: dict, key: str):
     return None
 
 def _event_matches(item: dict, kind: str, expected: dict) -> bool:
-    if _event_kind(item) != kind:
+    item_kind = _event_kind(item)
+    if item_kind != kind and not (kind == "repair_local_gate_failed" and item_kind == "local_gate_failed"):
         return False
     for key, value in expected.items():
         got = _event_field(item, key)
@@ -1583,6 +1667,30 @@ def _event_matches(item: dict, kind: str, expected: dict) -> bool:
         elif str(got) != str(value):
             return False
     return True
+
+def validate_v157_event_chronology(events: list[dict]) -> list[str]:
+    """Validate core v1.5.7 event ordering without requiring GitHub access."""
+    errors: list[str] = []
+    first_terminal: dict[tuple[str, str], int] = {}
+    first_local_gate: dict[tuple[str, str], int] = {}
+    for idx, item in enumerate(events):
+        kind = _event_kind(item)
+        issue = str(_event_field(item, "issue") or "")
+        pr = str(_event_field(item, "pr") or "")
+        key = (issue, pr)
+        if kind == "local_gate_failed":
+            first_local_gate.setdefault(key, idx)
+        if kind == "state_terminalized":
+            first_terminal.setdefault(key, idx)
+            if key not in first_local_gate and _event_field(item, "failure_class") != "MAX_CYCLES_REACHED":
+                errors.append(f"state_terminalized_without_prior_local_gate:{key}")
+        if kind in {"cycle_committed", "cycle_pushed"} and key in first_terminal and idx > first_terminal[key]:
+            errors.append(f"{kind}_after_state_terminalized:{key}")
+    for key, gate_idx in first_local_gate.items():
+        term_idx = first_terminal.get(key)
+        if term_idx is not None and term_idx < gate_idx:
+            errors.append(f"state_terminalized_before_local_gate:{key}")
+    return errors
 
 def validate_v155_recovery_event_chronology(cfg: dict, base_sha: str, head_sha: str, repo_dir: str | None = None) -> None:
     events = _iter_worker_events(cfg)
