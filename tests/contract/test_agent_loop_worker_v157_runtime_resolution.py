@@ -13,6 +13,8 @@ assert spec and spec.loader
 worker = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(worker)
 
+IS_WINDOWS = os.name == "nt"
+
 
 class Completed:
     def __init__(self, stdout: bytes = b"", returncode: int = 0):
@@ -74,17 +76,25 @@ def main() -> int:
             assert resolved["opencode"].endswith("opencode.CMD")
             cmd = worker.command_for_subprocess(["opencode", "run", "arg with spaces"])
             assert isinstance(cmd, list), cmd
-            assert cmd[0].endswith("node.exe")
-            assert cmd[1].endswith("opencode")
+            if IS_WINDOWS:
+                assert cmd[0].endswith("node.exe")
+                assert cmd[1].endswith("opencode")
+            else:
+                assert cmd[0].endswith("opencode.CMD"), cmd
             assert "arg with spaces" in cmd[-1]
             checks["path_empty_absolute_config_passes"] = True
             checks["lossless_node_entrypoint_used"] = True
             worker._RUNTIME_EXECUTABLES.pop("node", None)
             worker._RUNTIME_EXECUTABLES.pop("opencode_entrypoint", None)
             cmd = worker.command_for_subprocess(["opencode", "run", "arg with spaces"])
-            assert isinstance(cmd, str), cmd
-            assert cmd.endswith("cmd.exe") or "cmd.exe" in cmd
-            assert "/d /s /c" in cmd
+            if IS_WINDOWS:
+                assert isinstance(cmd, str), cmd
+                assert cmd.endswith("cmd.exe") or "cmd.exe" in cmd
+                assert "/d /s /c" in cmd
+            else:
+                assert isinstance(cmd, list), cmd
+                assert cmd[0].endswith("opencode.CMD"), cmd
+                assert "cmd.exe" not in " ".join(cmd).lower()
             assert "arg with spaces" in cmd
             checks["cmd_fallback_uses_configured_cmd"] = True
         finally:

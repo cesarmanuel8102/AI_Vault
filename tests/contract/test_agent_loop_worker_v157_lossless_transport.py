@@ -24,6 +24,8 @@ assert spec and spec.loader
 worker = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(worker)
 
+IS_WINDOWS = os.name == "nt"
+
 
 def _touch(path: Path) -> str:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -99,6 +101,23 @@ def _parse_capture(stdout: bytes) -> dict:
     return json.loads(text[idx + len(prefix):])
 
 
+def _assert_transport_args(cmd: list[str] | str, expected_args: list[str]) -> None:
+    assert isinstance(cmd, list), cmd
+    if IS_WINDOWS:
+        assert cmd[0].endswith("node.exe"), cmd
+        assert cmd[1].endswith("opencode"), cmd
+        p = _run_node_command(cmd)
+        assert p.returncode == 0, p.stderr.decode("utf-8", "ignore")
+        capture = _parse_capture(p.stdout)
+        assert [a["escaped_repr"] for a in capture.get("args", [])] == [json.dumps(x) for x in expected_args], capture
+        assert capture["args"][-1]["sha256"] == hashlib.sha256(expected_args[-1].encode("utf-8")).hexdigest()
+        assert capture["args"][-1]["length"] == len(expected_args[-1])
+    else:
+        assert "cmd.exe" not in " ".join(cmd).lower(), cmd
+        assert cmd[1:] == expected_args, cmd
+        assert hashlib.sha256(cmd[-1].encode("utf-8")).hexdigest() == hashlib.sha256(expected_args[-1].encode("utf-8")).hexdigest()
+
+
 def test_lossless_multiline_lf() -> None:
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
@@ -109,12 +128,7 @@ def test_lossless_multiline_lf() -> None:
             cmd = worker.command_for_subprocess(
                 ["opencode", "run", "--dir", r"C:\workspace", "--model", "m", "--agent", "a", "--format", "json", "--title", "t", prompt]
             )
-            assert isinstance(cmd, list), cmd
-            p = _run_node_command(cmd)
-            assert p.returncode == 0, p.stderr.decode("utf-8", "ignore")
-            capture = _parse_capture(p.stdout)
-            assert [a["escaped_repr"] for a in capture.get("args", [])] == [json.dumps(x) for x in ["run", "--dir", r"C:\workspace", "--model", "m", "--agent", "a", "--format", "json", "--title", "t", prompt]], capture
-            assert capture['args'][-1]['sha256'] == hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+            _assert_transport_args(cmd, ["run", "--dir", r"C:\workspace", "--model", "m", "--agent", "a", "--format", "json", "--title", "t", prompt])
         finally:
             worker._RUNTIME_EXECUTABLES = {}
 
@@ -127,12 +141,7 @@ def test_lossless_multiline_crlf() -> None:
         try:
             prompt = "line1\r\nline2\r\nline3"
             cmd = worker.command_for_subprocess(["opencode", "run", "--dir", r"C:\workspace", prompt])
-            assert isinstance(cmd, list)
-            p = _run_node_command(cmd)
-            assert p.returncode == 0
-            capture = _parse_capture(p.stdout)
-            assert capture['args'][-1]['escaped_repr'] == json.dumps(prompt)
-            assert capture['args'][-1]['sha256'] == hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+            _assert_transport_args(cmd, ["run", "--dir", r"C:\workspace", prompt])
         finally:
             worker._RUNTIME_EXECUTABLES = {}
 
@@ -146,13 +155,7 @@ def test_lossless_full_prompt_sentinel() -> None:
             prompt = worker.make_prompt({"front_id": "FASEB-V157-PROBE", "objective": "write marker and return sentinel"}, 1)
             assert "ACK_TASK_ID=FASEB-V157-PROBE|cycle=1" in prompt
             cmd = worker.command_for_subprocess(["opencode", "run", "--dir", r"C:\workspace", "--model", "m", prompt])
-            assert isinstance(cmd, list)
-            p = _run_node_command(cmd)
-            assert p.returncode == 0
-            capture = _parse_capture(p.stdout)
-            assert capture['args'][-1]['escaped_repr'] == json.dumps(prompt)
-            assert capture['args'][-1]['sha256'] == hashlib.sha256(prompt.encode("utf-8")).hexdigest()
-            assert capture['args'][-1]['length'] == len(prompt)
+            _assert_transport_args(cmd, ["run", "--dir", r"C:\workspace", "--model", "m", prompt])
         finally:
             worker._RUNTIME_EXECUTABLES = {}
 
@@ -167,13 +170,7 @@ def test_lossless_workspace_with_spaces() -> None:
             cmd = worker.command_for_subprocess(
                 ["opencode", "run", "--dir", r"C:\AI Vault With Spaces", "--model", "m", prompt]
             )
-            assert isinstance(cmd, list)
-            assert r"C:\AI Vault With Spaces" in cmd
-            p = _run_node_command(cmd)
-            assert p.returncode == 0
-            capture = _parse_capture(p.stdout)
-            assert capture['args'][2]['escaped_repr'] == json.dumps(r"C:\AI Vault With Spaces")
-            assert capture['args'][-1]['escaped_repr'] == json.dumps(prompt)
+            _assert_transport_args(cmd, ["run", "--dir", r"C:\AI Vault With Spaces", "--model", "m", prompt])
         finally:
             worker._RUNTIME_EXECUTABLES = {}
 
@@ -186,11 +183,7 @@ def test_lossless_metacharacters() -> None:
         try:
             prompt = 'task A & B (C) ^ D | E <F> G!H%I "quoted"'
             cmd = worker.command_for_subprocess(["opencode", "run", "--dir", r"C:\dir", "--model", "m", prompt])
-            assert isinstance(cmd, list)
-            p = _run_node_command(cmd)
-            assert p.returncode == 0
-            capture = _parse_capture(p.stdout)
-            assert capture['args'][-1]['escaped_repr'] == json.dumps(prompt)
+            _assert_transport_args(cmd, ["run", "--dir", r"C:\dir", "--model", "m", prompt])
         finally:
             worker._RUNTIME_EXECUTABLES = {}
 
@@ -202,11 +195,7 @@ def test_lossless_empty_prompt() -> None:
         worker.configure_runtime_resolution(cfg, require_config=True)
         try:
             cmd = worker.command_for_subprocess(["opencode", "run", "--dir", r"C:\dir", ""])
-            assert isinstance(cmd, list)
-            p = _run_node_command(cmd)
-            assert p.returncode == 0
-            capture = _parse_capture(p.stdout)
-            assert capture['args'][-1]['escaped_repr'] == json.dumps("")
+            _assert_transport_args(cmd, ["run", "--dir", r"C:\dir", ""])
         finally:
             worker._RUNTIME_EXECUTABLES = {}
 
@@ -219,11 +208,7 @@ def test_lossless_no_shell_injection() -> None:
         try:
             prompt = "hello && calc.exe || whoami"
             cmd = worker.command_for_subprocess(["opencode", "run", "--dir", r"C:\dir", "--model", "m", prompt])
-            assert isinstance(cmd, list)
-            p = _run_node_command(cmd)
-            assert p.returncode == 0
-            capture = _parse_capture(p.stdout)
-            assert capture['args'][-1]['escaped_repr'] == json.dumps(prompt)
+            _assert_transport_args(cmd, ["run", "--dir", r"C:\dir", "--model", "m", prompt])
         finally:
             worker._RUNTIME_EXECUTABLES = {}
 
@@ -237,8 +222,12 @@ def test_lossless_entrypoint_resolution() -> None:
             prompt = "x"
             cmd = worker.command_for_subprocess(["opencode", "run", prompt])
             assert isinstance(cmd, list)
-            assert cmd[0].endswith("node.exe")
-            assert cmd[1].endswith("opencode")
+            if IS_WINDOWS:
+                assert cmd[0].endswith("node.exe")
+                assert cmd[1].endswith("opencode")
+            else:
+                assert cmd[0].endswith("opencode.CMD")
+                assert cmd[1:] == ["run", prompt]
         finally:
             worker._RUNTIME_EXECUTABLES = {}
 
@@ -248,6 +237,9 @@ def _fake_run_for_fail_closed(args, **kwargs):
 
 
 def test_missing_node_falls_back_to_cmd_shim() -> None:
+    if not IS_WINDOWS:
+        print("SKIP: test_missing_node_falls_back_to_cmd_shim is Windows .CMD-specific")
+        return
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
         cfg = _make_workspace(tmp)
@@ -266,6 +258,9 @@ def test_missing_node_falls_back_to_cmd_shim() -> None:
 
 
 def test_missing_entrypoint_falls_back_to_cmd_shim() -> None:
+    if not IS_WINDOWS:
+        print("SKIP: test_missing_entrypoint_falls_back_to_cmd_shim is Windows .CMD-specific")
+        return
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
         cfg = _make_workspace(tmp)
@@ -348,8 +343,11 @@ def test_kimi_accepts_lossless_multiline_and_spaces() -> None:
 
         def fake_run(args, **kwargs):
             assert isinstance(args, list), args
-            assert args[0].endswith("node.exe")
-            assert args[1].endswith("opencode")
+            if IS_WINDOWS:
+                assert args[0].endswith("node.exe")
+                assert args[1].endswith("opencode")
+            else:
+                assert args[0].endswith("opencode.CMD")
             if "--help" in args:
                 return subprocess.CompletedProcess(args, returncode=0, stdout=b"Options:\n  --model\n")
             assert any(model_dir.name in str(a) for a in args)
@@ -375,22 +373,30 @@ def test_runtime_version_min_check() -> None:
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
         cfg = _make_workspace(tmp)
-        # Use real opencode and node so we can run --version through the lossless path.
-        cfg["runtime_executables"]["opencode_cmd"] = "C:/Users/cesar/AppData/Roaming/npm/opencode.CMD"
-        cfg["runtime_executables"]["node_exe"] = "C:/Program Files/nodejs/node.exe"
-        cfg["runtime_executables"]["opencode_entrypoint"] = "C:/Users/cesar/AppData/Roaming/npm/node_modules/opencode-ai/bin/opencode"
-        cfg["executable_allowlist_dirs"].extend(["C:/Program Files/nodejs", "C:/Users/cesar/AppData/Roaming/npm"])
         worker.configure_runtime_resolution(cfg, require_config=True)
+        old_subprocess = worker.subprocess.run
+
+        def fake_version(args, **kwargs):
+            assert isinstance(args, list), args
+            if IS_WINDOWS:
+                assert args[0].endswith("node.exe"), args
+                assert args[1].endswith("opencode"), args
+            else:
+                assert args[0].endswith("opencode.CMD"), args
+            assert args[-1] == "--version", args
+            return subprocess.CompletedProcess(args, returncode=0, stdout=b"1.2.27\n")
+
+        worker.subprocess.run = fake_version
         try:
             version_cmd = worker.command_for_subprocess(["opencode", "--version"])
-            import subprocess
             out, _ = worker.decode_process_output(
-                subprocess.run(version_cmd, capture_output=True, text=False, timeout=30, shell=False).stdout
+                worker.subprocess.run(version_cmd, capture_output=True, text=False, timeout=30, shell=False).stdout
             )
             assert out.strip() == "1.2.27"
             assert not worker._safe_version_at_least(out, "99.99.99")
             assert worker._safe_version_at_least(out, "1.2.27")
         finally:
+            worker.subprocess.run = old_subprocess
             worker._RUNTIME_EXECUTABLES = {}
 
 
