@@ -825,10 +825,21 @@ def audit_and_sync_model_workspace(model_dir: Path, repo_dir: Path, seed_hashes:
     shutil.copyfile(marker, destination)
     return [marker_rel]
 
+def _require_lossless_opencode_transport() -> None:
+    missing: list[str] = []
+    if not _RUNTIME_EXECUTABLES.get("node"):
+        missing.append("node_exe")
+    if not _RUNTIME_EXECUTABLES.get("opencode_entrypoint"):
+        missing.append("opencode_entrypoint")
+    if missing:
+        raise RuntimeError(f"LOSSLESS_OPENCODE_TRANSPORT_REQUIRED: missing {', '.join(missing)}")
+
+
 def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=None):
     report_dir = Path(cfg["install_root"]) / "reports"
     log = report_dir / f"issue-{issue_no}-cycle-{cycle}-opencode.jsonl"
     title = f"AI_Vault {spec['front_id']}"
+    _require_lossless_opencode_transport()
     sentinel = prompt_task_sentinel(spec["front_id"], cycle)
     prompt = make_prompt(spec, cycle, feedback)
     if sentinel not in prompt:
@@ -845,11 +856,15 @@ def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=No
     cmd.append(prompt)
     timeout = cfg.get("opencode_timeout_seconds")
     try:
-        p = subprocess.run(command_for_subprocess(cmd), cwd=str(model_dir), env=opencode_env(cfg, model_dir), text=False,
+        prepared = command_for_subprocess(cmd)
+        if isinstance(prepared, str) or (prepared and "cmd.exe" in str(prepared[0]).lower()):
+            raise RuntimeError("LOSSLESS_OPENCODE_TRANSPORT_REQUIRED: Kimi execution must use node.exe+JS entrypoint, not cmd.exe fallback")
+        p = subprocess.run(prepared, cwd=str(model_dir), env=opencode_env(cfg, model_dir), text=False,
                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
     except subprocess.TimeoutExpired as exc:
         out = (exc.output or b"").decode("utf-8", errors="replace")
         log.write_text(out, encoding="utf-8")
+        event(cfg, "executor_failed", front=spec["front_id"], cycle=cycle, error="EXECUTOR_TIMEOUT")
         raise RuntimeError(f"EXECUTOR_TIMEOUT: opencode run exceeded {timeout}s") from exc
     out, decoding = completed_output(p)
     log.write_text(out, encoding="utf-8")
@@ -857,7 +872,9 @@ def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=No
     if p.returncode != 0:
         low = out.lower()
         if "context" in low or "token" in low or "rate limit" in low:
+            event(cfg, "executor_failed", front=spec["front_id"], cycle=cycle, error="TOKEN_EXHAUSTED")
             raise RuntimeError("TOKEN_EXHAUSTED:" + out[-3000:])
+        event(cfg, "executor_failed", front=spec["front_id"], cycle=cycle, error="COMMAND_FAILED", returncode=p.returncode)
         raise CmdError(cmd, p.returncode, out)
     return log, discover_session_id(model_dir, title)
 

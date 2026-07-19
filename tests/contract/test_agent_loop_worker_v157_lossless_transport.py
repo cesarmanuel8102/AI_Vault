@@ -243,6 +243,10 @@ def test_lossless_entrypoint_resolution() -> None:
             worker._RUNTIME_EXECUTABLES = {}
 
 
+def _fake_run_for_fail_closed(args, **kwargs):
+    return subprocess.CompletedProcess(args, returncode=0, stdout=b"[]\n")
+
+
 def test_missing_node_falls_back_to_cmd_shim() -> None:
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
@@ -271,6 +275,99 @@ def test_missing_entrypoint_falls_back_to_cmd_shim() -> None:
             cmd = worker.command_for_subprocess(["opencode", "run", "prompt"])
             assert isinstance(cmd, str)
         finally:
+            worker._RUNTIME_EXECUTABLES = {}
+
+
+def test_kimi_requires_node_exe() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = _make_workspace(tmp)
+        worker.configure_runtime_resolution(cfg, require_config=True)
+        worker._RUNTIME_EXECUTABLES.pop("node", None)
+        try:
+            worker.run_kimi(cfg, {"front_id": "FAIL-CLOSED-NODE"}, tmp / "model", 1, 1)
+            raise AssertionError("run_kimi should fail closed without node_exe")
+        except RuntimeError as exc:
+            assert "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED" in str(exc) and "node_exe" in str(exc)
+        finally:
+            worker._RUNTIME_EXECUTABLES = {}
+
+
+def test_kimi_requires_opencode_entrypoint() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = _make_workspace(tmp)
+        worker.configure_runtime_resolution(cfg, require_config=True)
+        worker._RUNTIME_EXECUTABLES.pop("opencode_entrypoint", None)
+        try:
+            worker.run_kimi(cfg, {"front_id": "FAIL-CLOSED-ENTRYPOINT"}, tmp / "model", 1, 1)
+            raise AssertionError("run_kimi should fail closed without opencode_entrypoint")
+        except RuntimeError as exc:
+            assert "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED" in str(exc) and "opencode_entrypoint" in str(exc)
+        finally:
+            worker._RUNTIME_EXECUTABLES = {}
+
+
+def test_kimi_rejects_cmd_fallback() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = _make_workspace(tmp)
+        worker.configure_runtime_resolution(cfg, require_config=True)
+        # Keep node/entrypoint configured so _require_lossless_opencode_transport passes,
+        # but simulate command_for_subprocess falling back to cmd.exe (e.g. bug/regression).
+        old_command_for_subprocess = worker.command_for_subprocess
+        def cmd_fallback(args):
+            comspec = cfg["runtime_executables"]["cmd_exe"]
+            return f'{comspec} /d /s /c fake_opencode.CMD run "prompt"'
+        worker.command_for_subprocess = cmd_fallback
+        old_subprocess = worker.subprocess.run
+        worker.subprocess.run = _fake_run_for_fail_closed
+        try:
+            worker.run_kimi(cfg, {"front_id": "FAIL-CLOSED-CMD"}, tmp / "model", 1, 1)
+            raise AssertionError("run_kimi should reject cmd.exe fallback")
+        except RuntimeError as exc:
+            assert "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED" in str(exc) and "cmd.exe" in str(exc)
+        finally:
+            worker.command_for_subprocess = old_command_for_subprocess
+            worker.subprocess.run = old_subprocess
+            worker._RUNTIME_EXECUTABLES = {}
+
+
+def test_kimi_accepts_lossless_multiline_and_spaces() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = _make_workspace(tmp)
+        worker.configure_runtime_resolution(cfg, require_config=True)
+        model_dir = tmp / "AI Vault Model"
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True)
+        marker.write_text("old\n", encoding="utf-8")
+        front = "FAIL-CLOSED-OK"
+        expected = worker.pilot_marker_text(front)
+        sentinel = worker.prompt_task_sentinel(front, 1)
+
+        def fake_run(args, **kwargs):
+            assert isinstance(args, list), args
+            assert args[0].endswith("node.exe")
+            assert args[1].endswith("opencode")
+            if "--help" in args:
+                return subprocess.CompletedProcess(args, returncode=0, stdout=b"Options:\n  --model\n")
+            assert any(model_dir.name in str(a) for a in args)
+            prompt = args[-1]
+            assert sentinel in prompt
+            assert "\n" in prompt
+            marker.write_text(expected, encoding="utf-8")
+            return subprocess.CompletedProcess(args, returncode=0, stdout=(
+                json.dumps({"type": "text", "sessionID": "ses_test", "part": {"text": sentinel}}) + "\n"
+            ).encode("utf-8"))
+
+        old_subprocess = worker.subprocess.run
+        worker.subprocess.run = fake_run
+        try:
+            log, _ = worker.run_kimi(cfg, {"front_id": front}, model_dir, 1, 1)
+            worker.validate_executor_delivery(cfg, {"front_id": front}, model_dir, log, 1)
+        finally:
+            worker.subprocess.run = old_subprocess
             worker._RUNTIME_EXECUTABLES = {}
 
 
@@ -309,6 +406,10 @@ def main() -> int:
         test_lossless_entrypoint_resolution,
         test_missing_node_falls_back_to_cmd_shim,
         test_missing_entrypoint_falls_back_to_cmd_shim,
+        test_kimi_requires_node_exe,
+        test_kimi_requires_opencode_entrypoint,
+        test_kimi_rejects_cmd_fallback,
+        test_kimi_accepts_lossless_multiline_and_spaces,
         test_runtime_version_min_check,
     ]
     failed = 0
