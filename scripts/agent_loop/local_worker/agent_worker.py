@@ -1153,9 +1153,10 @@ def execute_initial(cfg, issue, spec, state_path):
     for cycle in range(1,int(spec["max_kimi_cycles"])+1):
         event(cfg,"kimi_cycle_start",issue=n,cycle=cycle,front=spec["front_id"])
         model_dir, seed_hashes = prepare_model_workspace(repo_dir, spec, cycle)
+        marker_path = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker_seed = sha256_file(marker_path) if marker_path.is_file() else None
         log, discovered_session = run_kimi(cfg,spec,model_dir,n,cycle,feedback,session_id)
         if discovered_session: session_id = discovered_session
-        marker_seed = sha256_file(model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md") if (model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md").is_file() else None
         validate_executor_delivery(cfg, spec, model_dir, log, cycle, seed_hash=marker_seed)
         try:
             audit_and_sync_model_workspace(model_dir, repo_dir, seed_hashes, spec)
@@ -1223,9 +1224,10 @@ def process_state(cfg, state_path):
     run(["git","reset","--hard",f"origin/{spec['work_branch']}"],cwd=repo_dir)
     cycle=st["cycles"]+1
     model_dir, seed_hashes = prepare_model_workspace(repo_dir, spec, cycle)
+    marker_path = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+    marker_seed = sha256_file(marker_path) if marker_path.is_file() else None
     log, discovered_session=run_kimi(cfg,spec,model_dir,issue,cycle,feedback,st.get("opencode_session_id"))
     if discovered_session: st["opencode_session_id"] = discovered_session
-    marker_seed = sha256_file(model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md") if (model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md").is_file() else None
     validate_executor_delivery(cfg, spec, model_dir, log, cycle, seed_hash=marker_seed)
     try:
         audit_and_sync_model_workspace(model_dir, repo_dir, seed_hashes, spec)

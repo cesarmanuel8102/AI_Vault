@@ -101,19 +101,37 @@ checks["credential_and_shell_boundary"] = True
 original_name = worker.os.name
 original_which = worker.shutil.which
 original_comspec = os.environ.get("COMSPEC")
+original_runtime_executables = dict(worker._RUNTIME_EXECUTABLES)
 try:
     worker.os.name = "nt"
     worker.shutil.which = lambda name: {
         "opencode": r"C:\\Tools\\opencode.cmd",
+        "other-tool": r"C:\\Tools\\other-tool.cmd",
         "cmd.exe": r"C:\\Windows\\System32\\cmd.exe",
     }.get(name)
     os.environ["COMSPEC"] = r"C:\\Windows\\System32\\cmd.exe"
-    command = worker.command_for_subprocess(["opencode", "run", "hello world"])
-    assert command[:4] == [r"C:\\Windows\\System32\\cmd.exe", "/d", "/s", "/c"]
-    assert "opencode.cmd" in command[4]
+    worker._RUNTIME_EXECUTABLES.clear()
+    worker._RUNTIME_EXECUTABLES.update({
+        "node": r"C:\\Program Files\\nodejs\\node.exe",
+        "opencode_entrypoint": r"C:\\Tools\\node_modules\\opencode-ai\\bin\\opencode",
+        "cmd": r"C:\\Windows\\System32\\cmd.exe",
+    })
+    opencode_command = worker.command_for_subprocess(["opencode", "run", "hello world"])
+    assert opencode_command == [
+        r"C:\\Program Files\\nodejs\\node.exe",
+        r"C:\\Tools\\node_modules\\opencode-ai\\bin\\opencode",
+        "run",
+        "hello world",
+    ]
+    fallback_command = worker.command_for_subprocess(["other-tool", "run", "hello world"])
+    assert isinstance(fallback_command, str)
+    assert fallback_command.startswith(r"C:\\Windows\\System32\\cmd.exe /d /s /c ")
+    assert "other-tool.cmd" in fallback_command
 finally:
     worker.os.name = original_name
     worker.shutil.which = original_which
+    worker._RUNTIME_EXECUTABLES.clear()
+    worker._RUNTIME_EXECUTABLES.update(original_runtime_executables)
     if original_comspec is None:
         os.environ.pop("COMSPEC", None)
     else:
