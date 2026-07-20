@@ -1242,10 +1242,12 @@ def test_executor_started_event_includes_issue() -> None:
         old_event = worker.event
         old_runtime = worker._RUNTIME_EXECUTABLES
         old_help = worker._OPENCODE_RUN_HELP
+        old_discover = worker.discover_session_id
         worker._OPENCODE_RUN_HELP = "Options:\n  --model\n"
         worker._RUNTIME_EXECUTABLES = {"node": r"C:\fake\node.exe", "opencode_entrypoint": r"C:\fake\opencode.js"}
         events: list[dict] = []
         worker.event = lambda _cfg, kind, **fields: events.append({"kind": kind, **fields})
+        worker.discover_session_id = lambda _repo_dir, _title: "session-test"
 
         def fake_subprocess_run(args, **kwargs):
             return worker.subprocess.CompletedProcess(args, returncode=0, stdout=b"ok")
@@ -1259,6 +1261,7 @@ def test_executor_started_event_includes_issue() -> None:
         finally:
             worker.subprocess.run = old_subprocess_run
             worker.event = old_event
+            worker.discover_session_id = old_discover
             worker._RUNTIME_EXECUTABLES = old_runtime
             worker._OPENCODE_RUN_HELP = old_help
 
