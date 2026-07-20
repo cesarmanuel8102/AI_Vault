@@ -467,7 +467,7 @@ def test_command_string_fallback_blocks_without_executor_started() -> None:
         worker._OPENCODE_RUN_HELP = ""
         worker._RUNTIME_EXECUTABLES = {"node": r"C:\fake\node.exe", "opencode_entrypoint": r"C:\fake\opencode.js"}
         worker.subprocess.run = fake_subprocess_run
-        worker.command_for_subprocess = lambda args: r'C:\System32\cmd.exe /d /s /c fake_opencode.CMD run "prompt"'
+        worker.command_for_subprocess = lambda args: r'cmd.exe /d /s /c fake_opencode.CMD run "prompt"'
         try:
             worker.process_state(_cfg(td), state_path)
             state = worker.load_json(state_path)
@@ -507,7 +507,7 @@ def test_cmd_exe_fallback_blocks_without_executor_started() -> None:
         worker._OPENCODE_RUN_HELP = ""
         worker._RUNTIME_EXECUTABLES = {"node": r"C:\fake\node.exe", "opencode_entrypoint": r"C:\fake\opencode.js"}
         worker.subprocess.run = fake_subprocess_run
-        worker.command_for_subprocess = lambda args: [r"C:\System32\cmd.exe", "/d", "/s", "/c", "fake_opencode.CMD", "run", "prompt"]
+        worker.command_for_subprocess = lambda args: ["cmd.exe", "/d", "/s", "/c", "fake_opencode.CMD", "run", "prompt"]
         try:
             worker.process_state(_cfg(td), state_path)
             state = worker.load_json(state_path)
