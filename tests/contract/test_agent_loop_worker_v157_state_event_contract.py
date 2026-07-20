@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shutil
 import tempfile
 import traceback
 from pathlib import Path
@@ -213,7 +214,7 @@ def test_state_validation_rejects_unknown_and_missing() -> None:
 def test_event_contract_enforces_required_fields_and_worker_version() -> None:
     with tempfile.TemporaryDirectory() as td:
         cfg = _cfg(td)
-        worker.event(cfg, "executor_started", front=FRONT, cycle=1, command_identity="opencode", model="m")
+        worker.event(cfg, "executor_started", front=FRONT, issue=19, cycle=1, command_identity="opencode", model="m")
         try:
             worker.event(cfg, "executor_started", front=FRONT, cycle=1)
         except RuntimeError as exc:
@@ -223,7 +224,7 @@ def test_event_contract_enforces_required_fields_and_worker_version() -> None:
         evt = _events(Path(td))[0]
         assert evt["kind"] == "executor_started"
         assert evt["worker_version"] == worker.WORKER_VERSION
-        assert {"front", "cycle", "command_identity", "model"}.issubset(evt)
+        assert {"front", "issue", "cycle", "command_identity", "model"}.issubset(evt)
 
 
 def test_event_contract_rejects_sensitive_fields() -> None:
@@ -977,6 +978,529 @@ def test_timeout_via_process_state_consumes_exactly_one_cycle() -> None:
             _restore(originals)
 
 
+def _initial_front_spec(issue_number: int = 19) -> dict:
+    spec = dict(_base_spec())
+    spec["front_id"] = "PILOT-V157-ACTIVATION-20260720-0255"
+    spec["work_branch"] = "agent/pilot-v157-activation-20260720-0255"
+    spec["max_kimi_cycles"] = 3
+    return spec
+
+
+def _make_initial_state(tmp: Path, issue_number: int = 19) -> Path:
+    spec = _initial_front_spec(issue_number)
+    state = {
+        "issue_number": issue_number,
+        "front": spec["front_id"],
+        "spec": spec,
+        "repo_dir": str(tmp / "repo"),
+        "cycles": 0,
+        "status": "LOCAL_EXECUTION",
+        "updated_utc": worker.utc(),
+        "state_schema_version": worker.STATE_SCHEMA_VERSION,
+        "worker_version": worker.WORKER_VERSION,
+    }
+    state_path = tmp / "state" / f"issue-{issue_number}.json"
+    worker.save_json(state_path, state)
+    return state_path
+
+
+def _setup_git_repo(repo_dir: Path) -> None:
+    repo_dir.mkdir(parents=True, exist_ok=True)
+    worker.subprocess.run(["git", "init"], cwd=str(repo_dir), check=True)
+    worker.subprocess.run(["git", "config", "user.name", "Test"], cwd=str(repo_dir), check=True)
+    worker.subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=str(repo_dir), check=True)
+    (repo_dir / "base.txt").write_text("base", encoding="utf-8")
+    worker.subprocess.run(["git", "add", "base.txt"], cwd=str(repo_dir), check=True)
+    worker.subprocess.run(["git", "commit", "-m", "base"], cwd=str(repo_dir), check=True)
+
+
+def _initial_attempt_patches(tmp: Path, *, pass_on_cycle: int | None = None, failure_class: str = "TASK_NOT_ACKNOWLEDGED", preexecution: bool = False):
+    repo_dir = tmp / "repo"
+    _setup_git_repo(repo_dir)
+    base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+    spec = _initial_front_spec()
+    spec["expected_base_sha"] = base_sha
+    state_path = tmp / "state" / "issue-19.json"
+    st = worker.load_json(state_path)
+    st["spec"] = spec
+    worker.save_json(state_path, st)
+
+    def fake_gh_json(args):
+        joined = " ".join(str(x) for x in args)
+        if "issue view" in joined:
+            return {"number": 19, "labels": [{"name": "agent:queued"}], "state": "OPEN", "author": {"login": "cesarmanuel8102"}}
+        return {}
+
+    old_run = worker.run
+
+    def fake_run(args, cwd=None, check=True):
+        text = " ".join(str(x) for x in args)
+        if "rev-parse HEAD" in text:
+            return old_run(["git", "rev-parse", "HEAD"], cwd=str(cwd)).strip()
+        if "diff --cached --name-only" in text:
+            return "\n".join(worker.PROFILE_ALLOWED_PATHS["pilot"])
+        if "git commit" in text and "complete" in text:
+            old_run(["git", "add", "--all"], cwd=cwd, check=True)
+            old_run(["git", "commit", "-m", f"complete {spec['front_id']}"], cwd=cwd, check=True)
+            return ""
+        if "git push" in text and "-u origin" in text:
+            return ""
+        return ""
+
+    def fake_create_pr(cfg, spec, issue_no, repo_dir):
+        return {"number": 99, "url": "https://example.invalid/pr/99", "headRefOid": old_run(["git", "rev-parse", "HEAD"], cwd=repo_dir).strip()}
+
+    def fake_prepare(repo_dir_path, spec, cycle):
+        cycle_dir = tmp / f"model-cycle-{cycle}"
+        cycle_dir.mkdir(parents=True, exist_ok=True)
+        marker = cycle_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        # Do not seed the marker; the executor must create it.
+        return cycle_dir, {}
+
+    calls: list[tuple[int, str | None]] = []
+
+    def fake_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+        calls.append((cycle, feedback))
+        if preexecution:
+            raise worker.PreExecutionFailure(
+                "PROMPT_MISSING_SENTINEL",
+                "prompt missing sentinel",
+                {"command_identity": "opencode"},
+            )
+        if pass_on_cycle is not None and cycle == pass_on_cycle:
+            log_path = tmp / f"cycle-{cycle}-opencode.jsonl"
+            front = spec["front_id"]
+            log_path.write_text(json.dumps({"type": "text", "part": {"type": "text", "text": worker.prompt_task_sentinel(front, cycle)}}) + "\n", encoding="utf-8")
+            marker = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
+            return log_path, "session-new"
+        raise worker.ExecutorAttemptConsumed(
+            failure_class,
+            "ack missing",
+            {"cycle": cycle, "command_identity": "opencode", "local_log_path": str(tmp / f"cycle-{cycle}.jsonl"), "returncode": None},
+        )
+
+    def fake_audit(model_dir_arg, repo_dir_path, seed_hashes, spec):
+        marker_dst = Path(repo_dir_path) / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker_dst.parent.mkdir(parents=True, exist_ok=True)
+        marker_src = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        shutil.copy2(marker_src, marker_dst)
+        return ["docs/agent_loop/pilot/PILOT_MARKER.md"]
+
+    def fake_profile(cfg, spec, repo_dir_path):
+        return True, "ok"
+
+    def fake_final_report(cfg, spec, issue_no, cycle, repo_dir_path, pr):
+        return tmp / "final.json"
+
+    return _patch_worker(
+        gh_json=fake_gh_json,
+        run=fake_run,
+        prepare_repo=lambda cfg, spec, issue_no: repo_dir,
+        prepare_model_workspace=fake_prepare,
+        run_kimi=fake_run_kimi,
+        audit_and_sync_model_workspace=fake_audit,
+        run_profile=fake_profile,
+        run_marker_content_check=lambda repo_dir_path: (True, "ok"),
+        changed_files=lambda repo_dir_path, base_sha: list(worker.PROFILE_ALLOWED_PATHS["pilot"]),
+        path_allowed=lambda path, allowed, forbidden: path in worker.PROFILE_ALLOWED_PATHS["pilot"],
+        marker_hash=lambda repo_dir_path: "markerhash",
+        write_executor_report=lambda *a, **k: None,
+        write_final_local_report=fake_final_report,
+        create_pr=fake_create_pr,
+        set_converged_phase=_terminal_set_phase,
+        publish_terminal_notification=_terminal_notify,
+    ), calls
+
+
+def test_initial_attempt_ack_missing_then_success() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _make_initial_state(tmp)
+        originals, calls = _initial_attempt_patches(tmp, pass_on_cycle=2)
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            events = _events(tmp)
+            kinds = [e["kind"] for e in events]
+            assert state["cycles"] == 2
+            assert state["status"] == "loop:ci"
+            assert state["pr_number"] == 99
+            assert "executor_failed" in kinds
+            assert "pr_created" in kinds
+            failed_events = [e for e in events if e["kind"] == "executor_failed"]
+            assert len(failed_events) == 1
+            assert failed_events[0]["issue"] == 19
+            assert failed_events[0].get("pr") is None
+            assert worker.validate_v157_event_chronology(events) == []
+            assert calls == [(1, None), (2, worker._TASK_NOT_ACKNOWLEDGED_FEEDBACK)]
+        finally:
+            _restore(originals)
+
+
+def test_initial_attempt_timeout_then_success() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _make_initial_state(tmp)
+        originals, calls = _initial_attempt_patches(tmp, pass_on_cycle=2, failure_class="EXECUTOR_TIMEOUT")
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            events = _events(tmp)
+            failed = [e for e in events if e["kind"] == "executor_failed"]
+            assert len(failed) == 1
+            assert failed[0]["failure_class"] == "EXECUTOR_TIMEOUT"
+            assert state["cycles"] == 2
+            assert state["status"] == "loop:ci"
+            assert worker.validate_v157_event_chronology(events) == []
+        finally:
+            _restore(originals)
+
+
+def test_initial_preexecution_failure_blocks_no_cycle() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _make_initial_state(tmp)
+        originals, _calls = _initial_attempt_patches(tmp, preexecution=True)
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            events = _events(tmp)
+            kinds = [e["kind"] for e in events]
+            assert state["cycles"] == 0
+            assert state["status"] == "loop:blocked"
+            assert "executor_preflight_failed" in kinds
+            assert "executor_started" not in kinds
+            assert "executor_failed" not in kinds
+            assert "state_terminalized" in kinds
+            assert worker.validate_v157_event_chronology(events) == []
+        finally:
+            _restore(originals)
+
+
+def test_initial_all_attempts_consumed_terminalizes() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _make_initial_state(tmp)
+        originals, _calls = _initial_attempt_patches(tmp)
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            events = _events(tmp)
+            kinds = [e["kind"] for e in events]
+            assert state["cycles"] == 3
+            assert state["status"] == "loop:token-exhausted"
+            assert kinds.count("executor_failed") == 3
+            assert "local_gate_failed" in kinds
+            assert "state_terminalized" in kinds
+            assert "pr_created" not in kinds
+            assert worker.validate_v157_event_chronology(events) == []
+        finally:
+            _restore(originals)
+
+
+def test_executor_completed_event_includes_issue_and_ack_source() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = _cfg(td)
+        front = "PILOT-V157-ACTIVATION-20260720-0255"
+        model_dir = tmp / "model"
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True)
+        marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
+        log = tmp / "opencode.jsonl"
+        log.write_text(
+            json.dumps({"type": "tool_use", "part": {"type": "tool", "tool": "write", "state": {"status": "completed"}, "parameters": {"path": "docs/agent_loop/pilot/PILOT_MARKER.md"}}}) + "\n",
+            encoding="utf-8",
+        )
+        worker.validate_executor_delivery(cfg, _artifact_spec(), model_dir, log, 1, issue_no=19, seed_hash=None)
+        events = _events(tmp)
+        completed = next(e for e in events if e["kind"] == "executor_completed")
+        assert completed["issue"] == 19
+        assert completed.get("pr") is None
+        assert completed.get("ack_source") == "verified_artifact_tool"
+
+
+def test_executor_started_event_includes_issue() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = {
+            "install_root": td,
+            "opencode_model": "ollama-cloud/kimi-k2.7-code",
+            "opencode_output_token_max": 4096,
+            "opencode_timeout_seconds": 5,
+        }
+        model_dir = tmp / "model"
+        model_dir.mkdir(parents=True)
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True)
+        marker.write_text(worker.pilot_marker_text("PILOT-V157-ACTIVATION-20260720-0255"), encoding="utf-8")
+        (tmp / "reports").mkdir(parents=True, exist_ok=True)
+        old_subprocess_run = worker.subprocess.run
+        old_event = worker.event
+        old_runtime = worker._RUNTIME_EXECUTABLES
+        old_help = worker._OPENCODE_RUN_HELP
+        worker._OPENCODE_RUN_HELP = "Options:\n  --model\n"
+        worker._RUNTIME_EXECUTABLES = {"node": r"C:\fake\node.exe", "opencode_entrypoint": r"C:\fake\opencode.js"}
+        events: list[dict] = []
+        worker.event = lambda _cfg, kind, **fields: events.append({"kind": kind, **fields})
+
+        def fake_subprocess_run(args, **kwargs):
+            return worker.subprocess.CompletedProcess(args, returncode=0, stdout=b"ok")
+
+        worker.subprocess.run = fake_subprocess_run
+        try:
+            worker.run_kimi(cfg, _artifact_spec(), model_dir, 19, 1)
+            started = next(e for e in events if e["kind"] == "executor_started")
+            assert started["issue"] == 19
+            assert started.get("pr") is None
+        finally:
+            worker.subprocess.run = old_subprocess_run
+            worker.event = old_event
+            worker._RUNTIME_EXECUTABLES = old_runtime
+            worker._OPENCODE_RUN_HELP = old_help
+
+
+def test_no_generic_issue_blocked_for_recoverable_attempt() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _make_initial_state(tmp)
+        originals, _calls = _initial_attempt_patches(tmp, pass_on_cycle=2)
+        generic_called = []
+        old_terminalize = worker.terminalize_state_error
+        def capture_terminalize(cfg, state_path_arg, exc):
+            generic_called.append(exc)
+        worker.terminalize_state_error = capture_terminalize
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            assert not generic_called, f"generic terminalize called with {generic_called}"
+        finally:
+            worker.terminalize_state_error = old_terminalize
+            _restore(originals)
+
+
+def _artifact_spec() -> dict:
+    return _initial_front_spec()
+
+
+def test_verified_artifact_tool_ack_passes_without_text_sentinel() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = _cfg(td)
+        front = "PILOT-V157-ACTIVATION-20260720-0255"
+        model_dir = tmp / "model"
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True)
+        marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
+        log = tmp / "opencode.jsonl"
+        log.write_text(
+            json.dumps({"type": "tool_use", "part": {"type": "tool", "tool": "write", "state": {"status": "completed"}, "parameters": {"path": "docs/agent_loop/pilot/PILOT_MARKER.md"}}}) + "\n",
+            encoding="utf-8",
+        )
+        worker.validate_executor_delivery(cfg, _artifact_spec(), model_dir, log, 1, issue_no=19, seed_hash=None)
+        events = _events(tmp)
+        completed = next(e for e in events if e["kind"] == "executor_completed")
+        assert completed["task_acknowledged"] is True
+        assert completed["ack_source"] == "verified_artifact_tool"
+        assert completed["issue"] == 19
+
+
+def test_verified_artifact_tool_ack_requires_exact_marker() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = _cfg(td)
+        front = "PILOT-V157-ACTIVATION-20260720-0255"
+        model_dir = tmp / "model"
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True)
+        marker.write_text("wrong content", encoding="utf-8")
+        log = tmp / "opencode.jsonl"
+        log.write_text(
+            json.dumps({"type": "tool_use", "part": {"type": "tool", "tool": "write", "state": {"status": "completed"}, "parameters": {"path": "docs/agent_loop/pilot/PILOT_MARKER.md"}}}) + "\n",
+            encoding="utf-8",
+        )
+        try:
+            worker.validate_executor_delivery(cfg, _artifact_spec(), model_dir, log, 1, issue_no=19, seed_hash=None)
+        except worker.ExecutorAttemptConsumed as exc:
+            assert exc.failure_class == "TASK_NOT_ACKNOWLEDGED"
+        else:
+            raise AssertionError("expected failure")
+
+
+def test_verified_artifact_tool_ack_requires_completed_write_tool() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = _cfg(td)
+        front = "PILOT-V157-ACTIVATION-20260720-0255"
+        model_dir = tmp / "model"
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True)
+        marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
+        log = tmp / "opencode.jsonl"
+        log.write_text(
+            json.dumps({"type": "tool_use", "part": {"type": "tool", "tool": "read", "state": {"status": "completed"}, "parameters": {"path": "docs/agent_loop/pilot/PILOT_MARKER.md"}}}) + "\n",
+            encoding="utf-8",
+        )
+        try:
+            worker.validate_executor_delivery(cfg, _artifact_spec(), model_dir, log, 1, issue_no=19, seed_hash=None)
+        except worker.ExecutorAttemptConsumed as exc:
+            assert exc.failure_class == "TASK_NOT_ACKNOWLEDGED"
+        else:
+            raise AssertionError("expected failure")
+
+
+def test_verified_artifact_tool_ack_rejects_unchanged_marker() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = _cfg(td)
+        front = "PILOT-V157-ACTIVATION-20260720-0255"
+        model_dir = tmp / "model"
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True)
+        marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
+        seed = worker.sha256_file(marker)
+        log = tmp / "opencode.jsonl"
+        log.write_text(
+            json.dumps({"type": "tool_use", "part": {"type": "tool", "tool": "write", "state": {"status": "completed"}, "parameters": {"path": "docs/agent_loop/pilot/PILOT_MARKER.md"}}}) + "\n",
+            encoding="utf-8",
+        )
+        try:
+            worker.validate_executor_delivery(cfg, _artifact_spec(), model_dir, log, 1, issue_no=19, seed_hash=seed)
+        except worker.ExecutorAttemptConsumed as exc:
+            assert exc.failure_class == "TASK_NOT_ACKNOWLEDGED"
+        else:
+            raise AssertionError("expected failure")
+
+
+def test_verified_artifact_tool_ack_rejects_extra_file() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = _cfg(td)
+        front = "PILOT-V157-ACTIVATION-20260720-0255"
+        model_dir = tmp / "model"
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True)
+        marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
+        (model_dir / "extra.txt").write_text("extra", encoding="utf-8")
+        log = tmp / "opencode.jsonl"
+        log.write_text(
+            json.dumps({"type": "tool_use", "part": {"type": "tool", "tool": "write", "state": {"status": "completed"}, "parameters": {"path": "docs/agent_loop/pilot/PILOT_MARKER.md"}}}) + "\n",
+            encoding="utf-8",
+        )
+        try:
+            worker.validate_executor_delivery(cfg, _artifact_spec(), model_dir, log, 1, issue_no=19, seed_hash=None)
+        except worker.ExecutorAttemptConsumed as exc:
+            assert exc.failure_class == "TASK_NOT_ACKNOWLEDGED"
+        else:
+            raise AssertionError("expected failure")
+
+
+def test_verified_artifact_tool_ack_rejects_session_error() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = _cfg(td)
+        front = "PILOT-V157-ACTIVATION-20260720-0255"
+        model_dir = tmp / "model"
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True)
+        marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
+        log = tmp / "opencode.jsonl"
+        log.write_text(
+            json.dumps({"type": "error"}) + "\n" +
+            json.dumps({"type": "tool_use", "part": {"type": "tool", "tool": "write", "state": {"status": "completed"}, "parameters": {"path": "docs/agent_loop/pilot/PILOT_MARKER.md"}}}) + "\n",
+            encoding="utf-8",
+        )
+        try:
+            worker.validate_executor_delivery(cfg, _artifact_spec(), model_dir, log, 1, issue_no=19, seed_hash=None)
+        except worker.ExecutorAttemptConsumed as exc:
+            assert exc.failure_class == "TASK_NOT_ACKNOWLEDGED"
+        else:
+            raise AssertionError("expected failure")
+
+
+def test_verified_artifact_tool_ack_rejects_conversational_refusal() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = _cfg(td)
+        front = "PILOT-V157-ACTIVATION-20260720-0255"
+        model_dir = tmp / "model"
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True)
+        marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
+        log = tmp / "opencode.jsonl"
+        log.write_text(
+            json.dumps({"type": "text", "part": {"type": "text", "text": "Please provide the task or instruction set."}}) + "\n" +
+            json.dumps({"type": "tool_use", "part": {"type": "tool", "tool": "write", "state": {"status": "completed"}, "parameters": {"path": "docs/agent_loop/pilot/PILOT_MARKER.md"}}}) + "\n",
+            encoding="utf-8",
+        )
+        try:
+            worker.validate_executor_delivery(cfg, _artifact_spec(), model_dir, log, 1, issue_no=19, seed_hash=None)
+        except worker.ExecutorAttemptConsumed as exc:
+            assert exc.failure_class == "TASK_NOT_ACKNOWLEDGED"
+        else:
+            raise AssertionError("expected failure")
+
+
+def test_marker_without_text_sentinel_still_rejected_when_no_tool() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = _cfg(td)
+        front = "PILOT-V157-ACTIVATION-20260720-0255"
+        model_dir = tmp / "model"
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True)
+        marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
+        log = tmp / "opencode.jsonl"
+        log.write_text("{}", encoding="utf-8")
+        try:
+            worker.validate_executor_delivery(cfg, _artifact_spec(), model_dir, log, 1, issue_no=19, seed_hash=None)
+        except worker.ExecutorAttemptConsumed as exc:
+            assert exc.failure_class == "TASK_NOT_ACKNOWLEDGED"
+        else:
+            raise AssertionError("expected failure")
+
+
+def test_initial_attempt_nondisclosure_canaries() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _make_initial_state(tmp)
+        originals, _calls = _initial_attempt_patches(tmp)
+        prompt_canary = "ULTRA_SECRET_PROMPT_CANARY_INITIAL_19"
+        stdout_canary = "ULTRA_SECRET_STDOUT_CANARY_INITIAL_19"
+        original_make_prompt = worker.make_prompt
+
+        def canary_prompt(spec, cycle, feedback=None):
+            return original_make_prompt(spec, cycle, feedback) + "\n" + prompt_canary
+
+        def fake_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+            log_path = tmp / f"cycle-{cycle}.jsonl"
+            log_path.write_text(stdout_canary, encoding="utf-8")
+            raise worker.ExecutorAttemptConsumed(
+                "COMMAND_FAILED",
+                "non-zero",
+                {"cycle": cycle, "command_identity": "opencode", "local_log_path": str(log_path), "returncode": 1},
+            )
+
+        originals2 = _patch_worker(run_kimi=fake_run_kimi, make_prompt=canary_prompt)
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            events = _events(tmp)
+            all_surfaces = [json.dumps(state), json.dumps(events), str(state.get("error", ""))]
+            for s in all_surfaces:
+                assert prompt_canary not in s
+                assert stdout_canary not in s
+            for e in events:
+                if e["kind"] == "executor_failed":
+                    assert prompt_canary not in e.get("error", "")
+                    assert stdout_canary not in e.get("error", "")
+        finally:
+            _restore(originals2)
+            _restore(originals)
+
+
 def main() -> int:
     tests = [
         test_state_schema_version_injected,
@@ -1017,6 +1541,22 @@ def main() -> int:
         test_executor_attempt_consumed_non_final_saves_state,
         test_executor_attempt_consumed_final_terminalizes,
         test_prompt_canary_absent_from_exception_and_log,
+        test_initial_attempt_ack_missing_then_success,
+        test_initial_attempt_timeout_then_success,
+        test_initial_preexecution_failure_blocks_no_cycle,
+        test_initial_all_attempts_consumed_terminalizes,
+        test_executor_completed_event_includes_issue_and_ack_source,
+        test_executor_started_event_includes_issue,
+        test_no_generic_issue_blocked_for_recoverable_attempt,
+        test_verified_artifact_tool_ack_passes_without_text_sentinel,
+        test_verified_artifact_tool_ack_requires_exact_marker,
+        test_verified_artifact_tool_ack_requires_completed_write_tool,
+        test_verified_artifact_tool_ack_rejects_unchanged_marker,
+        test_verified_artifact_tool_ack_rejects_extra_file,
+        test_verified_artifact_tool_ack_rejects_session_error,
+        test_verified_artifact_tool_ack_rejects_conversational_refusal,
+        test_marker_without_text_sentinel_still_rejected_when_no_tool,
+        test_initial_attempt_nondisclosure_canaries,
     ]
 
     failed = 0

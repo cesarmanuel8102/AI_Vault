@@ -20,9 +20,9 @@ STATE_KNOWN_TOP_LEVEL_KEYS = {
 }
 
 EVENT_REQUIRED_FIELDS = {
-    "executor_started": {"front", "cycle", "command_identity", "model"},
-    "executor_completed": {"front", "cycle", "task_acknowledged", "jsonl_events"},
-    "executor_failed": {"front", "cycle", "error"},
+    "executor_started": {"front", "issue", "cycle", "command_identity", "model"},
+    "executor_completed": {"front", "issue", "cycle", "task_acknowledged", "jsonl_events", "ack_source"},
+    "executor_failed": {"front", "issue", "cycle", "error", "failure_class"},
     "executor_preflight_failed": {"front", "issue", "pr", "cycle", "failure_class", "command_identity"},
     "local_gate_failed": {"issue", "pr", "cycle", "failure_class", "cycle_before", "cycle_after"},
     "repair_local_gate_failed": {"issue", "pr", "cycle", "failure_class", "cycle_before", "cycle_after"},
@@ -974,7 +974,7 @@ def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=No
     prepared = command_for_subprocess(cmd)
     _lossless_transport_or_raise(cmd, prepared)
     # All deterministic pre-execution validations have passed; the OpenCode process is about to start.
-    event(cfg, "executor_started", front=spec["front_id"], cycle=cycle,
+    event(cfg, "executor_started", front=spec["front_id"], issue=issue_no, cycle=cycle,
           command_identity="opencode", model=cfg["opencode_model"],
           prompt_bytes=len(prompt.encode("utf-8")), sentinel_in_prompt=True)
     try:
@@ -1005,7 +1005,47 @@ def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=No
         )
     return log, discover_session_id(model_dir, title)
 
-def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path, cycle: int, seed_hash: str | None = None) -> None:
+def _artifact_tool_completed_marker(model_dir: Path, spec: dict, parsed: list[dict]) -> bool:
+    """Return True if a completed write tool targeted the allowlisted marker and the workspace is clean."""
+    marker_rel = "docs/agent_loop/pilot/PILOT_MARKER.md"
+    marker = model_dir / marker_rel
+    if not marker.is_file() or marker.is_symlink():
+        return False
+    expected_content = pilot_marker_text(spec["front_id"])
+    actual_content = marker.read_text(encoding="utf-8-sig").replace("\r\n", "\n")
+    if actual_content != expected_content:
+        return False
+    if any(p == ".." for p in marker.relative_to(model_dir).parts):
+        return False
+    files = set(_walk_workspace_files(model_dir))
+    expected_files = set(MODEL_SEED_PATHS) | {marker_rel}
+    if files != expected_files:
+        return False
+    write_tools = {"write", "write_file", "edit_file", "create_file", "edit"}
+    for item in parsed:
+        if not isinstance(item, dict):
+            continue
+        part = item.get("part") or item
+        if not isinstance(part, dict):
+            continue
+        if item.get("type") != "tool_use" and part.get("type") != "tool":
+            continue
+        if part.get("state", {}).get("status") != "completed":
+            continue
+        if part.get("tool") not in write_tools:
+            continue
+        params = part.get("parameters", {})
+        target = params.get("path") or params.get("file_path") or params.get("target") or ""
+        try:
+            normalized = _normalize_repo_path(target)
+        except Exception:
+            continue
+        if normalized == marker_rel:
+            return True
+    return False
+
+
+def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path, cycle: int, *, issue_no: int = 0, seed_hash: str | None = None) -> None:
     out = log.read_text(encoding="utf-8-sig")
     lines = [x.strip() for x in out.splitlines() if x.strip()]
     if not lines:
@@ -1025,29 +1065,44 @@ def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path
                 {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
             ) from exc
     text_parts: list[str] = []
+    session_error_count = 0
     for item in parsed:
         if not isinstance(item, dict):
             continue
+        if item.get("type") == "error":
+            session_error_count += 1
         part = item.get("part") or item
         if isinstance(part, dict):
             text_parts.append(str(part.get("text", "")))
         text_parts.append(str(item.get("text", "")))
     full_output = "\n".join(text_parts)
     sentinel = prompt_task_sentinel(spec["front_id"], cycle)
-    acknowledged = sentinel in full_output
+    text_acknowledged = sentinel in full_output
     lowered = full_output.lower()
     refused = any(pattern in lowered for pattern in _CONVERSATIONAL_REJECTION_PATTERNS)
     marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
     unchanged = False
     if seed_hash is not None and marker.is_file():
         unchanged = sha256_file(marker) == seed_hash
-    event(cfg, "executor_completed", front=spec["front_id"], cycle=cycle,
-          task_acknowledged=acknowledged, conversational_refusal=refused,
-          marker_unchanged=unchanged, jsonl_events=len(parsed))
+    artifact_tool_completed = _artifact_tool_completed_marker(model_dir, spec, parsed)
+    artifact_acknowledged = (
+        artifact_tool_completed
+        and session_error_count == 0
+        and (seed_hash is None or sha256_file(marker) != seed_hash)
+    )
+    acknowledged = text_acknowledged or artifact_acknowledged
+    ack_source = (
+        "text_sentinel" if text_acknowledged else
+        "verified_artifact_tool" if artifact_acknowledged else
+        "none"
+    )
+    event(cfg, "executor_completed", front=spec["front_id"], issue=issue_no, cycle=cycle,
+          task_acknowledged=acknowledged, ack_source=ack_source, conversational_refusal=refused,
+          marker_unchanged=unchanged, jsonl_events=len(parsed), session_error_count=session_error_count)
     if not acknowledged:
         raise ExecutorAttemptConsumed(
             "TASK_NOT_ACKNOWLEDGED",
-            "sentinel missing from executor output",
+            "OpenCode output did not contain the required task acknowledgement and no verified artifact tool completed the allowlisted marker.",
             {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
         )
     if refused:
@@ -1292,6 +1347,9 @@ Automated pilot. No auto-merge. Kimi writes; Codex supervises read-only; human a
     pr = gh_json(["pr","view",url,"--repo",cfg["repo"],"--json","number,url,headRefOid"])
     return pr
 
+_TASK_NOT_ACKNOWLEDGED_FEEDBACK = "The prior executor attempt did not emit the required task acknowledgement. Write the exact allowlisted marker and complete the required acknowledgement. Do not create any other file."
+
+
 def execute_initial(cfg, issue, spec, state_path):
     n = issue["number"]
     set_phase(cfg["repo"], n, "loop:executing")
@@ -1303,9 +1361,56 @@ def execute_initial(cfg, issue, spec, state_path):
         model_dir, seed_hashes = prepare_model_workspace(repo_dir, spec, cycle)
         marker_path = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
         marker_seed = sha256_file(marker_path) if marker_path.is_file() else None
-        log, discovered_session = run_kimi(cfg,spec,model_dir,n,cycle,feedback,session_id)
-        if discovered_session: session_id = discovered_session
-        validate_executor_delivery(cfg, spec, model_dir, log, cycle, seed_hash=marker_seed)
+        try:
+            log, discovered_session = run_kimi(cfg,spec,model_dir,n,cycle,feedback,session_id)
+            if discovered_session: session_id = discovered_session
+            validate_executor_delivery(cfg, spec, model_dir, log, cycle, issue_no=n, seed_hash=marker_seed)
+        except PreExecutionFailure as exc:
+            safe_error = safe_executor_error(exc)
+            event(cfg, "executor_preflight_failed", front=spec["front_id"], issue=n, pr=None, cycle=cycle,
+                  failure_class=exc.failure_class, command_identity=exc.details.get("command_identity") or "opencode",
+                  local_log_path=exc.details.get("local_log_path"), worker_version=WORKER_VERSION)
+            st = load_json(state_path)
+            st.update({"issue_number": n, "front": spec["front_id"], "spec": spec, "repo_dir": str(repo_dir),
+                       "cycles": cycle - 1, "opencode_session_id": session_id, "status": "loop:blocked",
+                       "error": safe_error, "updated_utc": utc(), "worker_version": WORKER_VERSION,
+                       "state_schema_version": STATE_SCHEMA_VERSION})
+            st = set_converged_phase(cfg, state_path, st, "loop:blocked")
+            st = publish_terminal_notification(cfg, state_path, st, "loop:blocked", safe_error)
+            event(cfg, "state_terminalized", state=str(state_path), issue=n, phase="loop:blocked",
+                  failure_class=exc.failure_class, error=safe_error)
+            return
+        except ExecutorAttemptConsumed as exc:
+            safe_error = safe_executor_error(exc)
+            event(cfg, "executor_failed", front=spec["front_id"], issue=n, pr=None, cycle=cycle,
+                  error=safe_error, failure_class=exc.failure_class,
+                  local_log_path=exc.details.get("local_log_path"), returncode=exc.details.get("returncode"),
+                  command_identity=exc.details.get("command_identity") or "opencode")
+            if cycle >= int(spec["max_kimi_cycles"]):
+                st = load_json(state_path)
+                st.update({"issue_number": n, "front": spec["front_id"], "spec": spec, "repo_dir": str(repo_dir),
+                           "cycles": cycle, "opencode_session_id": session_id, "status": "loop:token-exhausted",
+                           "error": safe_error, "updated_utc": utc(), "worker_version": WORKER_VERSION,
+                           "state_schema_version": STATE_SCHEMA_VERSION})
+                st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted")
+                st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+                event(cfg, "local_gate_failed", issue=n, pr=None, cycle=cycle,
+                      failure_class=exc.failure_class, cycle_before=cycle-1, cycle_after=cycle,
+                      changed_files=[], test_output_tail=safe_error,
+                      marker_hash=marker_hash(repo_dir), current_head=run(["git","rev-parse","HEAD"], cwd=repo_dir).strip(),
+                      expected_base=spec["expected_base_sha"], bad=[], test_ok=False)
+                event(cfg, "state_terminalized", state=str(state_path), issue=n, phase="loop:token-exhausted",
+                      failure_class=exc.failure_class, cycle=cycle, error=safe_error)
+                return
+            st = load_json(state_path)
+            st.update({"issue_number": n, "front": spec["front_id"], "spec": spec, "repo_dir": str(repo_dir),
+                       "cycles": cycle, "opencode_session_id": session_id, "status": "WAITING_GITHUB",
+                       "error": safe_error, "updated_utc": utc(), "worker_version": WORKER_VERSION,
+                       "state_schema_version": STATE_SCHEMA_VERSION})
+            if exc.failure_class == "TASK_NOT_ACKNOWLEDGED":
+                feedback = _TASK_NOT_ACKNOWLEDGED_FEEDBACK
+            save_json(state_path, st)
+            continue
         try:
             audit_and_sync_model_workspace(model_dir, repo_dir, seed_hashes, spec)
         except Exception as exc:
@@ -1334,7 +1439,15 @@ def execute_initial(cfg, issue, spec, state_path):
         set_converged_phase(cfg, state_path, state, "loop:ci", pr_number=int(pr["number"]))
         event(cfg,"pr_created",issue=n,pr=pr["number"],sha=pr["headRefOid"])
         return
-    raise RuntimeError("MAX_CYCLES_EXHAUSTED: initial candidate did not pass local gates")
+    st = load_json(state_path)
+    st.update({"issue_number": n, "front": spec["front_id"], "spec": spec, "repo_dir": str(repo_dir),
+               "cycles": int(spec["max_kimi_cycles"]), "opencode_session_id": session_id,
+               "status": "loop:token-exhausted", "error": "Maximum Kimi cycles reached without success. Human audit required.",
+               "updated_utc": utc(), "worker_version": WORKER_VERSION, "state_schema_version": STATE_SCHEMA_VERSION})
+    st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted")
+    st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+    event(cfg, "state_terminalized", state=str(state_path), issue=n, phase="loop:token-exhausted",
+          failure_class="MAX_CYCLES_REACHED", error="max cycles reached")
 
 def process_state(cfg, state_path):
     st=load_json(state_path); issue=st["issue_number"]; spec=st["spec"]
@@ -1378,7 +1491,7 @@ def process_state(cfg, state_path):
     try:
         log, discovered_session=run_kimi(cfg,spec,model_dir,issue,cycle,feedback,st.get("opencode_session_id"))
         if discovered_session: st["opencode_session_id"] = discovered_session
-        validate_executor_delivery(cfg, spec, model_dir, log, cycle, seed_hash=marker_seed)
+        validate_executor_delivery(cfg, spec, model_dir, log, cycle, issue_no=issue, seed_hash=marker_seed)
     except PreExecutionFailure as exc:
         # Deterministic pre-execution failure: OpenCode/Kimi never started. Do not consume a cycle.
         safe_error = safe_executor_error(exc)
@@ -1393,7 +1506,7 @@ def process_state(cfg, state_path):
               failure_class=exc.failure_class, error=safe_error)
         return
     except ExecutorAttemptConsumed as exc:
-        event(cfg, "executor_failed", front=spec["front_id"], cycle=cycle, error=safe_executor_error(exc), failure_class=exc.failure_class,
+        event(cfg, "executor_failed", front=spec["front_id"], issue=issue, cycle=cycle, error=safe_executor_error(exc), failure_class=exc.failure_class,
               local_log_path=exc.details.get("local_log_path"), returncode=exc.details.get("returncode"),
               command_identity=exc.details.get("command_identity"))
         st["cycles"] = cycle
