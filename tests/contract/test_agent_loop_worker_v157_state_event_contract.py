@@ -1006,12 +1006,13 @@ def _make_initial_state(tmp: Path, issue_number: int = 19) -> Path:
 
 def _setup_git_repo(repo_dir: Path) -> None:
     repo_dir.mkdir(parents=True, exist_ok=True)
-    worker.subprocess.run(["git", "init"], cwd=str(repo_dir), check=True)
-    worker.subprocess.run(["git", "config", "user.name", "Test"], cwd=str(repo_dir), check=True)
-    worker.subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=str(repo_dir), check=True)
+    devnull = worker.subprocess.DEVNULL
+    worker.subprocess.run(["git", "init"], cwd=str(repo_dir), check=True, stdout=devnull, stderr=devnull)
+    worker.subprocess.run(["git", "config", "user.name", "Test"], cwd=str(repo_dir), check=True, stdout=devnull, stderr=devnull)
+    worker.subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=str(repo_dir), check=True, stdout=devnull, stderr=devnull)
     (repo_dir / "base.txt").write_text("base", encoding="utf-8")
-    worker.subprocess.run(["git", "add", "base.txt"], cwd=str(repo_dir), check=True)
-    worker.subprocess.run(["git", "commit", "-m", "base"], cwd=str(repo_dir), check=True)
+    worker.subprocess.run(["git", "add", "base.txt"], cwd=str(repo_dir), check=True, stdout=devnull, stderr=devnull)
+    worker.subprocess.run(["git", "commit", "-m", "base"], cwd=str(repo_dir), check=True, stdout=devnull, stderr=devnull)
 
 
 def _initial_attempt_patches(tmp: Path, *, pass_on_cycle: int | None = None, failure_class: str = "TASK_NOT_ACKNOWLEDGED", preexecution: bool = False):
