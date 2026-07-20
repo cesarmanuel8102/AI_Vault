@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import tempfile
+import traceback
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -316,6 +317,44 @@ def test_event_chronology_rejects_post_preflight_actions() -> None:
         {"kind": "executor_failed", "issue": 5, "pr": 6, "cycle": 1, "error": "x", "failure_class": "COMMAND_FAILED"},
     ])
     assert any("after_executor_preflight_failed" in e for e in errors), errors
+
+
+def test_event_chronology_preflight_other_issue_does_not_validate_terminalization() -> None:
+    errors = worker.validate_v157_event_chronology([
+        {"kind": "executor_preflight_failed", "issue": 5, "pr": 6, "cycle": 1, "failure_class": "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED", "command_identity": "opencode"},
+        {"kind": "state_terminalized", "issue": 9, "pr": 10, "phase": "loop:blocked", "failure_class": "MODEL_CONTENT_FAILURE"},
+    ])
+    assert any("state_terminalized_without_prior_local_gate" in e and "('9', '10')" in e for e in errors), errors
+
+
+def test_event_chronology_preflight_same_issue_validates_terminalization() -> None:
+    errors = worker.validate_v157_event_chronology([
+        {"kind": "executor_preflight_failed", "issue": 9, "pr": 10, "cycle": 1, "failure_class": "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED", "command_identity": "opencode"},
+        {"kind": "state_terminalized", "issue": 9, "pr": 10, "phase": "loop:blocked", "failure_class": "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED"},
+    ])
+    assert errors == [], errors
+
+
+def test_event_chronology_local_gate_same_issue_validates_terminalization() -> None:
+    errors = worker.validate_v157_event_chronology([
+        {"kind": "local_gate_failed", "issue": 9, "pr": 10, "cycle": 3, "failure_class": "MODEL_CONTENT_FAILURE", "cycle_before": 2, "cycle_after": 3},
+        {"kind": "state_terminalized", "issue": 9, "pr": 10, "phase": "loop:token-exhausted", "failure_class": "MODEL_CONTENT_FAILURE"},
+    ])
+    assert errors == [], errors
+
+
+def test_event_chronology_multi_front_isolation() -> None:
+    errors = worker.validate_v157_event_chronology([
+        {"kind": "executor_preflight_failed", "issue": 5, "pr": 6, "cycle": 1, "failure_class": "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED", "command_identity": "opencode"},
+        {"kind": "state_terminalized", "issue": 7, "pr": 8, "phase": "loop:blocked", "failure_class": "MODEL_CONTENT_FAILURE"},
+        {"kind": "local_gate_failed", "issue": 11, "pr": 12, "cycle": 3, "failure_class": "MODEL_CONTENT_FAILURE", "cycle_before": 2, "cycle_after": 3},
+        {"kind": "state_terminalized", "issue": 11, "pr": 12, "phase": "loop:token-exhausted", "failure_class": "MODEL_CONTENT_FAILURE"},
+        {"kind": "executor_preflight_failed", "issue": 13, "pr": 14, "cycle": 1, "failure_class": "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED", "command_identity": "opencode"},
+        {"kind": "state_terminalized", "issue": 13, "pr": 14, "phase": "loop:blocked", "failure_class": "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED"},
+    ])
+    assert any("state_terminalized_without_prior_local_gate" in e and "('7', '8')" in e for e in errors), errors
+    assert not any("state_terminalized_without_prior_local_gate" in e and "('11', '12')" in e for e in errors), errors
+    assert not any("state_terminalized_without_prior_local_gate" in e and "('13', '14')" in e for e in errors), errors
 
 
 def _assert_terminalized_without_post_actions(tmp: Path, state_path: Path) -> None:
@@ -813,6 +852,120 @@ def test_prompt_canary_not_leaked_anywhere() -> None:
             _restore(originals)
 
 
+def test_timeout_traceback_does_not_leak_prompt_or_stdout_canary() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = {
+            "install_root": td,
+            "opencode_model": "ollama-cloud/kimi-k2.7-code",
+            "opencode_output_token_max": 4096,
+            "opencode_timeout_seconds": 5,
+        }
+        model_dir = tmp / "model"
+        model_dir.mkdir(parents=True)
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True)
+        marker.write_text(worker.pilot_marker_text(FRONT), encoding="utf-8")
+        (Path(td) / "reports").mkdir(parents=True, exist_ok=True)
+        worker._OPENCODE_RUN_HELP = "Options:\n  --model\n"
+        worker._RUNTIME_EXECUTABLES = {"node": r"C:\fake\node.exe", "opencode_entrypoint": r"C:\fake\opencode.js"}
+        prompt_canary = "ULTRA_SECRET_PROMPT_CANARY_7F3A91"
+        stdout_canary = "ULTRA_SECRET_STDOUT_CANARY_4C92E8"
+        original_make_prompt = worker.make_prompt
+
+        def canary_prompt(spec, cycle, feedback=None):
+            return original_make_prompt(spec, cycle, feedback) + "\n" + prompt_canary
+
+        captured_args = None
+        def fake_subprocess_run(args, **kwargs):
+            nonlocal captured_args
+            captured_args = args
+            prompt = str(args[-1]) if isinstance(args, list) else ""
+            assert prompt_canary in prompt, "prompt canary must be in prompt for this test"
+            raise worker.subprocess.TimeoutExpired(args, timeout=1, output=(stdout_canary + " timeout output").encode("utf-8"))
+
+        old_event = worker.event
+        events_before = []
+        worker.event = lambda _cfg, kind, **fields: events_before.append({"kind": kind, **fields})
+        worker.make_prompt = canary_prompt
+        worker.subprocess.run = fake_subprocess_run
+        exc = None
+        try:
+            worker.run_kimi(cfg, _base_spec(), model_dir, 5, 1)
+        except Exception as caught:
+            exc = caught
+        finally:
+            worker.make_prompt = original_make_prompt
+            worker.subprocess.run = worker.subprocess.run
+            worker.event = old_event
+            worker._RUNTIME_EXECUTABLES = {}
+            worker._OPENCODE_RUN_HELP = None
+
+        assert exc is not None
+        assert isinstance(exc, worker.ExecutorAttemptConsumed), type(exc)
+        assert exc.failure_class == "EXECUTOR_TIMEOUT"
+        assert exc.__cause__ is None
+        trace_text = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+        assert prompt_canary not in str(exc)
+        assert prompt_canary not in trace_text
+        assert stdout_canary not in str(exc)
+        assert stdout_canary not in trace_text
+        assert any(e["kind"] == "executor_started" for e in events_before)
+        assert captured_args is not None
+        log = Path(td) / "reports" / "issue-5-cycle-1-opencode.jsonl"
+        assert log.exists()
+        assert stdout_canary in log.read_text(encoding="utf-8")
+
+
+def test_timeout_via_process_state_consumes_exactly_one_cycle() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _make_state(tmp, cycles=1)
+        originals = _preflight_process_patches(tmp)
+        old_subprocess_run = worker.subprocess.run
+        old_runtime = worker._RUNTIME_EXECUTABLES
+        old_help = worker._OPENCODE_RUN_HELP
+        prompt_canary = "ULTRA_SECRET_PROMPT_CANARY_7F3A91"
+        stdout_canary = "ULTRA_SECRET_STDOUT_CANARY_4C92E8"
+        original_make_prompt = worker.make_prompt
+
+        def canary_prompt(spec, cycle, feedback=None):
+            return original_make_prompt(spec, cycle, feedback) + "\n" + prompt_canary
+
+        def fake_subprocess_run(args, **kwargs):
+            prompt = str(args[-1]) if isinstance(args, list) else ""
+            assert prompt_canary in prompt, "prompt canary must be in prompt for this test"
+            raise worker.subprocess.TimeoutExpired(args, timeout=1, output=(stdout_canary + " timeout output").encode("utf-8"))
+
+        worker._OPENCODE_RUN_HELP = ""
+        worker._RUNTIME_EXECUTABLES = {"node": r"C:\fake\node.exe", "opencode_entrypoint": r"C:\fake\opencode.js"}
+        worker.make_prompt = canary_prompt
+        worker.subprocess.run = fake_subprocess_run
+        try:
+            worker.process_state(_cfg(td), state_path)
+            state = worker.load_json(state_path)
+            events = _events(tmp)
+            failure_event = next(e for e in events if e["kind"] == "executor_failed")
+            assert failure_event["failure_class"] == "EXECUTOR_TIMEOUT"
+            assert prompt_canary not in json.dumps(events)
+            assert prompt_canary not in json.dumps(state)
+            assert prompt_canary not in str(state.get("error", ""))
+            assert prompt_canary not in failure_event.get("error", "")
+            assert stdout_canary not in json.dumps(events)
+            assert stdout_canary not in json.dumps(state)
+            assert stdout_canary not in failure_event.get("error", "")
+            assert state["cycles"] == 2
+            log_path = Path(str(failure_event.get("local_log_path")))
+            assert log_path.exists() and stdout_canary in log_path.read_text(encoding="utf-8")
+            assert worker.validate_v157_event_chronology(events) == []
+        finally:
+            worker.subprocess.run = old_subprocess_run
+            worker.make_prompt = original_make_prompt
+            worker._RUNTIME_EXECUTABLES = old_runtime
+            worker._OPENCODE_RUN_HELP = old_help
+            _restore(originals)
+
+
 def main() -> int:
     tests = [
         test_state_schema_version_injected,
@@ -830,6 +983,10 @@ def main() -> int:
         test_event_chronology_rejects_reverted_without_committed,
         test_event_chronology_rejects_preflight_then_executor_started,
         test_event_chronology_rejects_post_preflight_actions,
+        test_event_chronology_preflight_other_issue_does_not_validate_terminalization,
+        test_event_chronology_preflight_same_issue_validates_terminalization,
+        test_event_chronology_local_gate_same_issue_validates_terminalization,
+        test_event_chronology_multi_front_isolation,
         test_command_string_fallback_blocks_without_executor_started,
         test_cmd_exe_fallback_blocks_without_executor_started,
         test_missing_node_exe_blocks_without_executor_started,
@@ -840,6 +997,8 @@ def main() -> int:
         test_token_exhausted_output_canary_not_leaked,
         test_command_failed_output_canary_not_leaked,
         test_prompt_canary_not_leaked_anywhere,
+        test_timeout_traceback_does_not_leak_prompt_or_stdout_canary,
+        test_timeout_via_process_state_consumes_exactly_one_cycle,
         test_final_cycle_audit_failure_terminalizes_same_run,
         test_final_cycle_marker_failure_terminalizes_same_run,
         test_final_cycle_out_of_scope_terminalizes_same_run,

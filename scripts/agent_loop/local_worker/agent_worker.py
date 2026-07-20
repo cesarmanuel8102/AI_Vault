@@ -987,7 +987,7 @@ def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=No
             "EXECUTOR_TIMEOUT",
             "OpenCode execution exceeded the configured timeout. See governed local log.",
             {"returncode": None, "command_identity": "opencode", "cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
-        ) from exc
+        ) from None
     out, decoding = completed_output(p)
     log.write_text(out, encoding="utf-8")
     emit_subprocess_decoding_event(cfg, ["opencode"], decoding)
@@ -1389,7 +1389,7 @@ def process_state(cfg, state_path):
         st["error"] = safe_error
         st = set_converged_phase(cfg, state_path, st, "loop:blocked", pr_number=prn)
         st = publish_terminal_notification(cfg, state_path, st, "loop:blocked", safe_error)
-        event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:blocked",
+        event(cfg, "state_terminalized", state=str(state_path), issue=issue, pr=prn, phase="loop:blocked",
               failure_class=exc.failure_class, error=safe_error)
         return
     except ExecutorAttemptConsumed as exc:
@@ -1859,7 +1859,11 @@ def validate_v157_event_chronology(events: list[dict]) -> list[str]:
         if kind == "state_terminalized":
             first_terminal.setdefault(key, idx)
             failure_class = _event_field(item, "failure_class") or ""
-            if key not in first_local_gate and failure_class != "MAX_CYCLES_REACHED" and not preflight_failed_cycles:
+            has_matching_preflight = any(
+                cycle_key[0] == issue and cycle_key[1] == pr
+                for cycle_key in preflight_failed_cycles
+            )
+            if key not in first_local_gate and failure_class != "MAX_CYCLES_REACHED" and not has_matching_preflight:
                 errors.append(f"state_terminalized_without_prior_local_gate:{key}")
         if kind in {"cycle_committed", "cycle_pushed", "executor_started", "executor_completed", "executor_failed", "cycle_commit_reverted"} and key in first_terminal and idx > first_terminal[key]:
             errors.append(f"{kind}_after_state_terminalized:{key}")
