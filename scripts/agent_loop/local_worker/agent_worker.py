@@ -17,12 +17,13 @@ STATE_KNOWN_TOP_LEVEL_KEYS = {
     "error", "terminal_notified", "notification_keys", "state_schema_version",
     "trusted_existing_pr_resume_utc", "trusted_base_advance_utc",
     "trusted_v154_resume_done", "trusted_v155_recovery_done", "trusted_v156_post_merge_recovery_done",
+    "last_failure_class",
 }
 
 EVENT_REQUIRED_FIELDS = {
-    "executor_started": {"front", "cycle", "command_identity", "model"},
-    "executor_completed": {"front", "cycle", "task_acknowledged", "jsonl_events"},
-    "executor_failed": {"front", "cycle", "error"},
+    "executor_started": {"front", "issue", "cycle", "command_identity", "model"},
+    "executor_completed": {"front", "issue", "cycle", "task_acknowledged", "jsonl_events", "ack_source"},
+    "executor_failed": {"front", "issue", "cycle", "error", "failure_class"},
     "executor_preflight_failed": {"front", "issue", "pr", "cycle", "failure_class", "command_identity"},
     "local_gate_failed": {"issue", "pr", "cycle", "failure_class", "cycle_before", "cycle_after"},
     "repair_local_gate_failed": {"issue", "pr", "cycle", "failure_class", "cycle_before", "cycle_after"},
@@ -124,6 +125,15 @@ class ExecutorAttemptConsumed(RuntimeError):
         super().__init__(message)
         self.failure_class = failure_class
         self.details = details or {}
+
+
+class ModelWorkspaceScopeViolation(RuntimeError):
+    """An out-of-scope path or trust boundary violation was detected in the model workspace."""
+
+    def __init__(self, reason_code: str, count: int = 0):
+        self.reason_code = reason_code
+        self.count = count
+        super().__init__(f"workspace_boundary violation: {reason_code}")
 
 
 class CmdError(RuntimeError):
@@ -843,8 +853,8 @@ def opencode_run_supports(flag: str, cwd: Path | None = None) -> bool:
 def _walk_workspace_files(root: Path) -> list[str]:
     files = []
     for path in root.rglob("*"):
-        if path.is_symlink():
-            raise RuntimeError(f"MODEL_WORKSPACE_SYMLINK_DENIED:{path}")
+        if _is_reparse_or_symlink(path):
+            raise ModelWorkspaceScopeViolation("MODEL_WORKSPACE_LINK_DENIED")
         if path.is_file():
             files.append(path.relative_to(root).as_posix())
     return sorted(files)
@@ -876,17 +886,22 @@ def prepare_model_workspace(repo_dir: Path, spec: dict, cycle: int) -> tuple[Pat
 def audit_and_sync_model_workspace(model_dir: Path, repo_dir: Path, seed_hashes: dict[str, str], spec: dict | None = None) -> list[str]:
     """Reject metadata/extra writes, verify exact output, then copy only allowlisted output."""
     if (model_dir / ".git").exists():
-        raise RuntimeError("MODEL_WORKSPACE_GIT_METADATA_DENIED")
-    files = set(_walk_workspace_files(model_dir))
+        raise ModelWorkspaceScopeViolation("MODEL_WORKSPACE_GIT_METADATA_DENIED")
+    try:
+        files = set(_walk_workspace_files(model_dir))
+    except ModelWorkspaceScopeViolation:
+        raise
     marker_rel = "docs/agent_loop/pilot/PILOT_MARKER.md"
     expected = set(MODEL_SEED_PATHS) | {marker_rel}
     extra = sorted(files - expected)
     missing = sorted(expected - files)
-    if extra or missing:
-        raise RuntimeError(f"MODEL_WORKSPACE_BOUNDARY_FAILED extra={extra} missing={missing}")
+    if extra:
+        raise ModelWorkspaceScopeViolation("MODEL_WORKSPACE_EXTRA_PATHS", count=len(extra))
+    if missing:
+        raise RuntimeError(f"MODEL_WORKSPACE_BOUNDARY_FAILED missing={missing}")
     for rel, expected_hash in seed_hashes.items():
         if sha256_file(model_dir / rel) != expected_hash:
-            raise RuntimeError(f"MODEL_SEED_MODIFIED:{rel}")
+            raise ModelWorkspaceScopeViolation("MODEL_WORKSPACE_SEED_MODIFIED", count=1)
     marker = model_dir / marker_rel
     content = marker.read_text(encoding="utf-8-sig").replace("\r\n", "\n")
     expected_front = (spec or {}).get("front_id", "PILOT-KIMI-CODEX-20260716-091529")
@@ -896,10 +911,10 @@ def audit_and_sync_model_workspace(model_dir: Path, repo_dir: Path, seed_hashes:
     current = repo_dir
     for part in Path(marker_rel).parts[:-1]:
         current = current / part
-        if current.exists() and current.is_symlink():
-            raise RuntimeError(f"TRUSTED_OUTPUT_PARENT_SYMLINK_DENIED:{current}")
-    if destination.exists() and destination.is_symlink():
-        raise RuntimeError(f"TRUSTED_OUTPUT_SYMLINK_DENIED:{destination}")
+        if _is_reparse_or_symlink(current):
+            raise ModelWorkspaceScopeViolation("TRUSTED_OUTPUT_PARENT_LINK_DENIED")
+    if _is_reparse_or_symlink(destination):
+        raise ModelWorkspaceScopeViolation("TRUSTED_OUTPUT_LINK_DENIED")
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(marker, destination)
     return [marker_rel]
@@ -974,7 +989,7 @@ def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=No
     prepared = command_for_subprocess(cmd)
     _lossless_transport_or_raise(cmd, prepared)
     # All deterministic pre-execution validations have passed; the OpenCode process is about to start.
-    event(cfg, "executor_started", front=spec["front_id"], cycle=cycle,
+    event(cfg, "executor_started", front=spec["front_id"], issue=issue_no, cycle=cycle,
           command_identity="opencode", model=cfg["opencode_model"],
           prompt_bytes=len(prompt.encode("utf-8")), sentinel_in_prompt=True)
     try:
@@ -1005,7 +1020,101 @@ def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=No
         )
     return log, discover_session_id(model_dir, title)
 
-def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path, cycle: int, seed_hash: str | None = None) -> None:
+def _completed_tool_name(part: dict) -> str | None:
+    if not isinstance(part, dict):
+        return None
+    return part.get("tool") if isinstance(part.get("tool"), str) else None
+
+
+def _completed_tool_input(part: dict) -> dict:
+    """Return the tool input dict from the real OpenCode tool event structure.
+
+    Issue #19 demonstrates the input lives under part.state.input."""
+    if not isinstance(part, dict):
+        return {}
+    state = part.get("state")
+    if isinstance(state, dict):
+        real_input = state.get("input")
+        if isinstance(real_input, dict):
+            return real_input
+    return {}
+
+
+def _completed_tool_target(part: dict) -> str:
+    tool_input = _completed_tool_input(part)
+    if not isinstance(tool_input, dict):
+        return ""
+    candidates = [
+        tool_input.get("filePath"),
+        tool_input.get("path"),
+        tool_input.get("file_path"),
+        tool_input.get("target"),
+    ]
+    for value in candidates:
+        if isinstance(value, str):
+            return value
+    return ""
+
+
+def _normalize_tool_target(target: str, model_dir: Path) -> str | None:
+    """Return the allowlisted marker rel-path if target points exactly at the marker.
+
+    Accepts both the exact POSIX relative path and an absolute Windows path that
+    ends exactly in docs/agent_loop/pilot/PILOT_MARKER.md under the model_dir.
+    """
+    marker_rel = "docs/agent_loop/pilot/PILOT_MARKER.md"
+    target_norm = target.replace("\\", "/").strip()
+    if target_norm == marker_rel:
+        return marker_rel
+    model_marker = str((model_dir / marker_rel).resolve()).replace("\\", "/").lower()
+    candidate_abs = str(Path(target).resolve()).replace("\\", "/").lower()
+    if candidate_abs == model_marker:
+        return marker_rel
+    return None
+
+
+def _artifact_tool_completed_marker(model_dir: Path, spec: dict, parsed: list[dict]) -> tuple[bool, str]:
+    """Return (True, input_schema) if a completed write tool targeted the allowlisted marker and the workspace is clean."""
+    marker_rel = "docs/agent_loop/pilot/PILOT_MARKER.md"
+    marker = model_dir / marker_rel
+    if not marker.is_file() or marker.is_symlink():
+        return False, ""
+    expected_content = pilot_marker_text(spec["front_id"])
+    actual_content = marker.read_text(encoding="utf-8-sig").replace("\r\n", "\n")
+    if actual_content != expected_content:
+        return False, ""
+    if any(p == ".." for p in marker.relative_to(model_dir).parts):
+        return False, ""
+    files = set(_walk_workspace_files(model_dir))
+    expected_files = set(MODEL_SEED_PATHS) | {marker_rel}
+    if files != expected_files:
+        return False, ""
+    write_tools = {"write", "write_file", "edit_file", "create_file", "edit"}
+    for item in parsed:
+        if not isinstance(item, dict):
+            continue
+        part = item.get("part") or item
+        if not isinstance(part, dict):
+            continue
+        if item.get("type") != "tool_use" and part.get("type") != "tool":
+            continue
+        state = part.get("state")
+        if not isinstance(state, dict):
+            continue
+        if state.get("status") != "completed":
+            continue
+        tool_name = _completed_tool_name(part)
+        if tool_name not in write_tools:
+            continue
+        target = _completed_tool_target(part)
+        normalized = _normalize_tool_target(target, model_dir)
+        if normalized == marker_rel:
+            schema_used = "state.input" if isinstance((part.get("state") or {}).get("input"), dict) else "parameters"
+            return True, schema_used
+    return False, ""
+
+
+def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path, cycle: int, *, issue_no: int = 0, seed_hash: str | None = None) -> None:
     out = log.read_text(encoding="utf-8-sig")
     lines = [x.strip() for x in out.splitlines() if x.strip()]
     if not lines:
@@ -1025,29 +1134,50 @@ def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path
                 {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
             ) from exc
     text_parts: list[str] = []
+    session_error_count = 0
     for item in parsed:
         if not isinstance(item, dict):
             continue
+        if item.get("type") == "error":
+            session_error_count += 1
         part = item.get("part") or item
         if isinstance(part, dict):
             text_parts.append(str(part.get("text", "")))
         text_parts.append(str(item.get("text", "")))
     full_output = "\n".join(text_parts)
     sentinel = prompt_task_sentinel(spec["front_id"], cycle)
-    acknowledged = sentinel in full_output
+    text_acknowledged = sentinel in full_output
     lowered = full_output.lower()
     refused = any(pattern in lowered for pattern in _CONVERSATIONAL_REJECTION_PATTERNS)
     marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
     unchanged = False
     if seed_hash is not None and marker.is_file():
         unchanged = sha256_file(marker) == seed_hash
-    event(cfg, "executor_completed", front=spec["front_id"], cycle=cycle,
-          task_acknowledged=acknowledged, conversational_refusal=refused,
-          marker_unchanged=unchanged, jsonl_events=len(parsed))
+    artifact_tool_completed, tool_input_schema = _artifact_tool_completed_marker(model_dir, spec, parsed)
+    artifact_acknowledged = (
+        artifact_tool_completed
+        and session_error_count == 0
+        and (seed_hash is None or sha256_file(marker) != seed_hash)
+    )
+    acknowledged = text_acknowledged or artifact_acknowledged
+    ack_source = (
+        "text_sentinel" if text_acknowledged else
+        "verified_artifact_tool" if artifact_acknowledged else
+        "none"
+    )
+    event_fields = {
+        "front": spec["front_id"], "issue": issue_no, "cycle": cycle,
+        "task_acknowledged": acknowledged, "ack_source": ack_source,
+        "conversational_refusal": refused, "marker_unchanged": unchanged,
+        "jsonl_events": len(parsed), "session_error_count": session_error_count,
+    }
+    if artifact_acknowledged and tool_input_schema:
+        event_fields["tool_input_schema"] = tool_input_schema
+    event(cfg, "executor_completed", **event_fields)
     if not acknowledged:
         raise ExecutorAttemptConsumed(
             "TASK_NOT_ACKNOWLEDGED",
-            "sentinel missing from executor output",
+            "OpenCode output did not contain the required task acknowledgement and no verified artifact tool completed the allowlisted marker.",
             {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
         )
     if refused:
@@ -1292,33 +1422,235 @@ Automated pilot. No auto-merge. Kimi writes; Codex supervises read-only; human a
     pr = gh_json(["pr","view",url,"--repo",cfg["repo"],"--json","number,url,headRefOid"])
     return pr
 
+_TASK_NOT_ACKNOWLEDGED_FEEDBACK = "The prior executor attempt did not emit the required task acknowledgement. Write the exact allowlisted marker and complete the required acknowledgement. Do not create any other file."
+
+
+def _is_within_install_root(path: Path, install_root: Path) -> bool:
+    try:
+        path.resolve().relative_to(install_root.resolve())
+        return True
+    except Exception:
+        return False
+
+
+def _is_reparse_or_symlink(path: Path) -> bool:
+    try:
+        if path.is_symlink():
+            return True
+        stat_result = os.lstat(str(path))
+    except FileNotFoundError:
+        return False
+    except OSError:
+        return True
+    return bool(getattr(stat_result, "st_reparse_tag", 0))
+
+
+def _workspace_is_trusted(repo_dir: Path, cfg: dict, spec: dict) -> bool:
+    install_root = Path(cfg["install_root"]).resolve()
+    if not repo_dir.is_dir() or _is_reparse_or_symlink(repo_dir):
+        return False
+    if not _is_within_install_root(repo_dir, install_root / "runs"):
+        return False
+    try:
+        head = run(["git", "rev-parse", "HEAD"], cwd=repo_dir).strip()
+        base = run(["git", "merge-base", "HEAD", spec["expected_base_sha"]], cwd=repo_dir).strip()
+    except Exception:
+        return False
+    if base != spec["expected_base_sha"]:
+        return False
+    changes = changed_files(repo_dir, spec["expected_base_sha"])
+    return all(path_allowed(p, spec["allowed_paths"], spec["forbidden_paths"]) for p in changes)
+
+
+def _safe_feedback_for_failure(failure_class: str) -> str | None:
+    if failure_class == "TASK_NOT_ACKNOWLEDGED":
+        return _TASK_NOT_ACKNOWLEDGED_FEEDBACK
+    if failure_class == "EXECUTOR_DELIVERY_ACCEPTED_PENDING_LOCAL_GATES":
+        return "The prior executor delivery passed governed acknowledgement. Complete the remaining allowlisted artifact and satisfy the configured test profile. Do not create any other file."
+    if failure_class == "INITIAL_WORKSPACE_AUDIT_FAILED":
+        return "The prior candidate failed the governed workspace audit. Recreate only the exact allowlisted files and marker. Do not create any other file."
+    if failure_class == "INITIAL_LOCAL_GATE_FAILED":
+        return "The prior candidate failed governed local validation. Correct only the allowlisted pilot artifacts and satisfy the configured test profile."
+    if failure_class == "INITIAL_OUT_OF_SCOPE_PATHS":
+        return "Out-of-scope changes were detected in the governed workspace. Human audit is required."
+    return None
+
+
+def _checkpoint_initial_cycle(cfg: dict, state_path: Path, issue_no: int, spec: dict, repo_dir: Path,
+                              cycle: int, session_id: str | None, failure_class: str, safe_error: str) -> None:
+    """Atomically persist that an initial cycle has started before downstream gates run."""
+    st = load_json(state_path)
+    st.update({
+        "issue_number": issue_no,
+        "front": spec["front_id"],
+        "spec": spec,
+        "repo_dir": str(repo_dir),
+        "cycles": cycle,
+        "opencode_session_id": session_id,
+        "status": "loop:executing",
+        "error": safe_error,
+        "updated_utc": utc(),
+        "worker_version": WORKER_VERSION,
+        "state_schema_version": STATE_SCHEMA_VERSION,
+        "last_failure_class": failure_class,
+    })
+    save_json(state_path, st)
+
+
 def execute_initial(cfg, issue, spec, state_path):
     n = issue["number"]
     set_phase(cfg["repo"], n, "loop:executing")
-    repo_dir = prepare_repo(cfg,spec,n)
-    feedback = None
-    session_id = None
-    for cycle in range(1,int(spec["max_kimi_cycles"])+1):
+    st = load_json(state_path)
+    persisted_cycles = int(st.get("cycles", 0))
+    session_id = st.get("opencode_session_id") or None
+    feedback = _safe_feedback_for_failure(str(st.get("last_failure_class") or ""))
+    max_cycles = int(spec["max_kimi_cycles"])
+
+    if persisted_cycles >= max_cycles:
+        safe_error = "Maximum Kimi cycles reached without success. Human audit required."
+        st.update({"issue_number": n, "front": spec["front_id"], "spec": spec,
+                   "cycles": persisted_cycles, "opencode_session_id": session_id,
+                   "status": "loop:token-exhausted", "error": safe_error,
+                   "updated_utc": utc(), "worker_version": WORKER_VERSION,
+                   "state_schema_version": STATE_SCHEMA_VERSION})
+        st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted")
+        st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", safe_error)
+        event(cfg, "state_terminalized", state=str(state_path), issue=n, phase="loop:token-exhausted",
+              failure_class="MAX_CYCLES_REACHED", error=safe_error)
+        return
+
+    repo_dir = None
+    if persisted_cycles > 0:
+        persisted_repo_dir = Path(str(st.get("repo_dir") or ""))
+        if not _workspace_is_trusted(persisted_repo_dir, cfg, spec):
+            safe_error = "Initial retry workspace is unavailable or not trustworthy; cannot resume without human audit."
+            st.update({"issue_number": n, "front": spec["front_id"], "spec": spec,
+                       "cycles": persisted_cycles, "opencode_session_id": session_id, "status": "loop:blocked",
+                       "error": safe_error, "updated_utc": utc(), "worker_version": WORKER_VERSION,
+                       "state_schema_version": STATE_SCHEMA_VERSION, "last_failure_class": "INITIAL_RETRY_WORKSPACE_UNAVAILABLE"})
+            st = set_converged_phase(cfg, state_path, st, "loop:blocked")
+            st = publish_terminal_notification(cfg, state_path, st, "loop:blocked", safe_error)
+            event(cfg, "state_terminalized", state=str(state_path), issue=n, phase="loop:blocked",
+                  failure_class="INITIAL_RETRY_WORKSPACE_UNAVAILABLE", error=safe_error)
+            return
+        repo_dir = persisted_repo_dir
+    else:
+        repo_dir = prepare_repo(cfg, spec, n)
+
+    for cycle in range(persisted_cycles + 1, max_cycles + 1):
         event(cfg,"kimi_cycle_start",issue=n,cycle=cycle,front=spec["front_id"])
         model_dir, seed_hashes = prepare_model_workspace(repo_dir, spec, cycle)
         marker_path = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
         marker_seed = sha256_file(marker_path) if marker_path.is_file() else None
-        log, discovered_session = run_kimi(cfg,spec,model_dir,n,cycle,feedback,session_id)
-        if discovered_session: session_id = discovered_session
-        validate_executor_delivery(cfg, spec, model_dir, log, cycle, seed_hash=marker_seed)
+        try:
+            log, discovered_session = run_kimi(cfg,spec,model_dir,n,cycle,feedback,session_id)
+            if discovered_session: session_id = discovered_session
+            validate_executor_delivery(cfg, spec, model_dir, log, cycle, issue_no=n, seed_hash=marker_seed)
+        except PreExecutionFailure as exc:
+            safe_error = safe_executor_error(exc)
+            event(cfg, "executor_preflight_failed", front=spec["front_id"], issue=n, pr=None, cycle=cycle,
+                  failure_class=exc.failure_class, command_identity=exc.details.get("command_identity") or "opencode",
+                  local_log_path=exc.details.get("local_log_path"), worker_version=WORKER_VERSION)
+            st = load_json(state_path)
+            st.update({"issue_number": n, "front": spec["front_id"], "spec": spec, "repo_dir": str(repo_dir),
+                       "cycles": cycle - 1, "opencode_session_id": session_id, "status": "loop:blocked",
+                       "error": safe_error, "updated_utc": utc(), "worker_version": WORKER_VERSION,
+                       "state_schema_version": STATE_SCHEMA_VERSION})
+            st = set_converged_phase(cfg, state_path, st, "loop:blocked")
+            st = publish_terminal_notification(cfg, state_path, st, "loop:blocked", safe_error)
+            event(cfg, "state_terminalized", state=str(state_path), issue=n, phase="loop:blocked",
+                  failure_class=exc.failure_class, error=safe_error)
+            return
+        except ExecutorAttemptConsumed as exc:
+            safe_error = safe_executor_error(exc)
+            event(cfg, "executor_failed", front=spec["front_id"], issue=n, pr=None, cycle=cycle,
+                  error=safe_error, failure_class=exc.failure_class,
+                  local_log_path=exc.details.get("local_log_path"), returncode=exc.details.get("returncode"),
+                  command_identity=exc.details.get("command_identity") or "opencode")
+            if cycle >= int(spec["max_kimi_cycles"]):
+                st = load_json(state_path)
+                st.update({"issue_number": n, "front": spec["front_id"], "spec": spec, "repo_dir": str(repo_dir),
+                           "cycles": cycle, "opencode_session_id": session_id, "status": "loop:token-exhausted",
+                           "error": safe_error, "updated_utc": utc(), "worker_version": WORKER_VERSION,
+                           "state_schema_version": STATE_SCHEMA_VERSION})
+                st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted")
+                st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+                event(cfg, "local_gate_failed", issue=n, pr=None, cycle=cycle,
+                      failure_class=exc.failure_class, cycle_before=cycle-1, cycle_after=cycle,
+                      changed_files=[], test_output_tail=safe_error,
+                      marker_hash=marker_hash(repo_dir), current_head=run(["git","rev-parse","HEAD"], cwd=repo_dir).strip(),
+                      expected_base=spec["expected_base_sha"], bad=[], test_ok=False)
+                event(cfg, "state_terminalized", state=str(state_path), issue=n, phase="loop:token-exhausted",
+                      failure_class=exc.failure_class, cycle=cycle, error=safe_error)
+                return
+            feedback = _safe_feedback_for_failure(exc.failure_class)
+            _checkpoint_initial_cycle(cfg, state_path, n, spec, repo_dir, cycle, session_id,
+                                      exc.failure_class, safe_error)
+            continue
+
+        _checkpoint_initial_cycle(cfg, state_path, n, spec, repo_dir, cycle, session_id,
+                                  "EXECUTOR_DELIVERY_ACCEPTED_PENDING_LOCAL_GATES",
+                                  "Executor delivery passed; governed local gates are pending.")
         try:
             audit_and_sync_model_workspace(model_dir, repo_dir, seed_hashes, spec)
-        except Exception as exc:
-            feedback = str(exc)
-            event(cfg,"kimi_cycle_repair_needed",issue=n,cycle=cycle,bad=[str(exc)],test_ok=False)
+        except ModelWorkspaceScopeViolation as exc:
+            safe_error = "Out-of-scope changes were detected in the governed workspace. Human audit is required."
+            _checkpoint_initial_cycle(cfg, state_path, n, spec, repo_dir, cycle, session_id,
+                                      "INITIAL_OUT_OF_SCOPE_PATHS", safe_error)
+            st = load_json(state_path)
+            st.update({
+                "issue_number": n, "front": spec["front_id"], "spec": spec,
+                "repo_dir": str(repo_dir), "cycles": cycle, "opencode_session_id": session_id,
+                "status": "loop:blocked", "error": safe_error, "updated_utc": utc(),
+                "worker_version": WORKER_VERSION, "state_schema_version": STATE_SCHEMA_VERSION,
+                "last_failure_class": "INITIAL_OUT_OF_SCOPE_PATHS",
+            })
+            save_json(state_path, st)
+            st = set_converged_phase(cfg, state_path, st, "loop:blocked")
+            event(cfg, "local_gate_failed", issue=n, pr=None, cycle=cycle,
+                  failure_class="INITIAL_OUT_OF_SCOPE_PATHS", cycle_before=cycle-1, cycle_after=cycle,
+                  scope_reason=exc.reason_code, bad_count=exc.count, test_ok=False)
+            st = publish_terminal_notification(cfg, state_path, st, "loop:blocked", safe_error)
+            event(cfg, "state_terminalized", state=str(state_path), issue=n, phase="loop:blocked",
+                  failure_class="INITIAL_OUT_OF_SCOPE_PATHS", error=safe_error)
+            return
+        except Exception:
+            safe_error = "The prior candidate failed the governed workspace audit."
+            feedback = _safe_feedback_for_failure("INITIAL_WORKSPACE_AUDIT_FAILED")
+            event(cfg,"kimi_cycle_repair_needed",issue=n,cycle=cycle,bad=[],test_ok=False)
+            _checkpoint_initial_cycle(cfg, state_path, n, spec, repo_dir, cycle, session_id,
+                                      "INITIAL_WORKSPACE_AUDIT_FAILED", safe_error)
             continue
         changes = changed_files(repo_dir,spec["expected_base_sha"])
         bad = [p for p in changes if not path_allowed(p,spec["allowed_paths"],spec["forbidden_paths"])]
-        # Worker owns executor report, so add it after initial path check.
+        if bad:
+            safe_error = "Out-of-scope changes were detected in the governed workspace. Human audit is required."
+            _checkpoint_initial_cycle(cfg, state_path, n, spec, repo_dir, cycle, session_id,
+                                      "INITIAL_OUT_OF_SCOPE_PATHS", safe_error)
+            st = load_json(state_path)
+            st.update({
+                "issue_number": n, "front": spec["front_id"], "spec": spec,
+                "repo_dir": str(repo_dir), "cycles": cycle, "opencode_session_id": session_id,
+                "status": "loop:blocked", "error": safe_error, "updated_utc": utc(),
+                "worker_version": WORKER_VERSION, "state_schema_version": STATE_SCHEMA_VERSION,
+                "last_failure_class": "INITIAL_OUT_OF_SCOPE_PATHS",
+            })
+            save_json(state_path, st)
+            st = set_converged_phase(cfg, state_path, st, "loop:blocked")
+            event(cfg, "local_gate_failed", issue=n, pr=None, cycle=cycle,
+                  failure_class="INITIAL_OUT_OF_SCOPE_PATHS", cycle_before=cycle-1, cycle_after=cycle,
+                  bad_count=len(bad), test_ok=False)
+            st = publish_terminal_notification(cfg, state_path, st, "loop:blocked", safe_error)
+            event(cfg, "state_terminalized", state=str(state_path), issue=n, phase="loop:blocked",
+                  failure_class="INITIAL_OUT_OF_SCOPE_PATHS", error=safe_error)
+            return
         test_ok, test_out = run_profile(cfg,spec,repo_dir)
-        if bad or not test_ok:
-            feedback = ("Out-of-scope files: " + json.dumps(bad) + "\n" if bad else "") + ("Test output:\n" + test_out[-4000:] if not test_ok else "")
-            event(cfg,"kimi_cycle_repair_needed",issue=n,cycle=cycle,bad=bad,test_ok=test_ok)
+        if not test_ok:
+            safe_error = "The prior candidate failed governed local validation."
+            feedback = _safe_feedback_for_failure("INITIAL_LOCAL_GATE_FAILED")
+            event(cfg,"kimi_cycle_repair_needed",issue=n,cycle=cycle,bad=[],test_ok=test_ok)
+            _checkpoint_initial_cycle(cfg, state_path, n, spec, repo_dir, cycle, session_id,
+                                      "INITIAL_LOCAL_GATE_FAILED", safe_error)
             continue
         write_executor_report(cfg,spec,repo_dir,n,cycle,changes,test_ok,test_out,log)
         final_changes = changed_files(repo_dir,spec["expected_base_sha"])
@@ -1334,7 +1666,16 @@ def execute_initial(cfg, issue, spec, state_path):
         set_converged_phase(cfg, state_path, state, "loop:ci", pr_number=int(pr["number"]))
         event(cfg,"pr_created",issue=n,pr=pr["number"],sha=pr["headRefOid"])
         return
-    raise RuntimeError("MAX_CYCLES_EXHAUSTED: initial candidate did not pass local gates")
+    st = load_json(state_path)
+    st.update({"issue_number": n, "front": spec["front_id"], "spec": spec, "repo_dir": str(repo_dir),
+               "cycles": int(spec["max_kimi_cycles"]), "opencode_session_id": session_id,
+               "status": "loop:token-exhausted", "error": "Maximum Kimi cycles reached without success. Human audit required.",
+               "updated_utc": utc(), "worker_version": WORKER_VERSION, "state_schema_version": STATE_SCHEMA_VERSION})
+    st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted")
+    st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+    event(cfg, "state_terminalized", state=str(state_path), issue=n, phase="loop:token-exhausted",
+          failure_class="MAX_CYCLES_REACHED", error="max cycles reached")
+
 
 def process_state(cfg, state_path):
     st=load_json(state_path); issue=st["issue_number"]; spec=st["spec"]
@@ -1378,7 +1719,7 @@ def process_state(cfg, state_path):
     try:
         log, discovered_session=run_kimi(cfg,spec,model_dir,issue,cycle,feedback,st.get("opencode_session_id"))
         if discovered_session: st["opencode_session_id"] = discovered_session
-        validate_executor_delivery(cfg, spec, model_dir, log, cycle, seed_hash=marker_seed)
+        validate_executor_delivery(cfg, spec, model_dir, log, cycle, issue_no=issue, seed_hash=marker_seed)
     except PreExecutionFailure as exc:
         # Deterministic pre-execution failure: OpenCode/Kimi never started. Do not consume a cycle.
         safe_error = safe_executor_error(exc)
@@ -1393,7 +1734,7 @@ def process_state(cfg, state_path):
               failure_class=exc.failure_class, error=safe_error)
         return
     except ExecutorAttemptConsumed as exc:
-        event(cfg, "executor_failed", front=spec["front_id"], cycle=cycle, error=safe_executor_error(exc), failure_class=exc.failure_class,
+        event(cfg, "executor_failed", front=spec["front_id"], issue=issue, cycle=cycle, error=safe_executor_error(exc), failure_class=exc.failure_class,
               local_log_path=exc.details.get("local_log_path"), returncode=exc.details.get("returncode"),
               command_identity=exc.details.get("command_identity"))
         st["cycles"] = cycle

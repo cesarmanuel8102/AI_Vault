@@ -122,7 +122,7 @@ def run_case(mode: str, objective: str = "Create the exact pilot marker.") -> tu
             seed_hash = worker.sha256_file(model / MARKER)
             if mode in {"exact", "wrong", "extra"}:
                 seed_hash = None
-            worker.validate_executor_delivery(cfg(root), spec_payload(objective), model, log, 1, seed_hash)
+            worker.validate_executor_delivery(cfg(root), spec_payload(objective), model, log, 1, issue_no=5, seed_hash=seed_hash)
             worker.audit_and_sync_model_workspace(model, root / "repo", {}, spec_payload(objective))
         finally:
             if mode == "prompt_absent":
@@ -136,8 +136,9 @@ def run_case(mode: str, objective: str = "Create the exact pilot marker.") -> tu
 checks: dict[str, bool] = {}
 
 events, _model, _log = run_case("exact")
-assert any(e["kind"] == "executor_started" for e in events)
-assert any(e["kind"] == "executor_completed" and e["task_acknowledged"] is True for e in events)
+assert any(e["kind"] == "executor_started" and e.get("issue") == 5 for e in events)
+assert any(e["kind"] == "executor_completed" and e["task_acknowledged"] is True and e.get("ack_source") == "text_sentinel" for e in events)
+
 checks["prompt_sentinel_received_and_exact_marker_passes"] = True
 
 expect_error(lambda: run_case("prompt_absent"), "prompt missing sentinel")
