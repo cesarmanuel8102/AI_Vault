@@ -17,6 +17,7 @@ STATE_KNOWN_TOP_LEVEL_KEYS = {
     "error", "terminal_notified", "notification_keys", "state_schema_version",
     "trusted_existing_pr_resume_utc", "trusted_base_advance_utc",
     "trusted_v154_resume_done", "trusted_v155_recovery_done", "trusted_v156_post_merge_recovery_done",
+    "last_failure_class",
 }
 
 EVENT_REQUIRED_FIELDS = {
@@ -1005,22 +1006,75 @@ def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=No
         )
     return log, discover_session_id(model_dir, title)
 
-def _artifact_tool_completed_marker(model_dir: Path, spec: dict, parsed: list[dict]) -> bool:
-    """Return True if a completed write tool targeted the allowlisted marker and the workspace is clean."""
+def _completed_tool_name(part: dict) -> str | None:
+    if not isinstance(part, dict):
+        return None
+    return part.get("tool") if isinstance(part.get("tool"), str) else None
+
+
+def _completed_tool_input(part: dict) -> dict:
+    """Return the tool input dict from the real OpenCode tool event structure.
+
+    Issue #19 demonstrates the input lives under part.state.input."""
+    if not isinstance(part, dict):
+        return {}
+    state = part.get("state")
+    if isinstance(state, dict):
+        real_input = state.get("input")
+        if isinstance(real_input, dict):
+            return real_input
+    return {}
+
+
+def _completed_tool_target(part: dict) -> str:
+    tool_input = _completed_tool_input(part)
+    if not isinstance(tool_input, dict):
+        return ""
+    candidates = [
+        tool_input.get("filePath"),
+        tool_input.get("path"),
+        tool_input.get("file_path"),
+        tool_input.get("target"),
+    ]
+    for value in candidates:
+        if isinstance(value, str):
+            return value
+    return ""
+
+
+def _normalize_tool_target(target: str, model_dir: Path) -> str | None:
+    """Return the allowlisted marker rel-path if target points exactly at the marker.
+
+    Accepts both the exact POSIX relative path and an absolute Windows path that
+    ends exactly in docs/agent_loop/pilot/PILOT_MARKER.md under the model_dir.
+    """
+    marker_rel = "docs/agent_loop/pilot/PILOT_MARKER.md"
+    target_norm = target.replace("\\", "/").strip()
+    if target_norm == marker_rel:
+        return marker_rel
+    model_marker = str((model_dir / marker_rel).resolve()).replace("\\", "/").lower()
+    candidate_abs = str(Path(target).resolve()).replace("\\", "/").lower()
+    if candidate_abs == model_marker:
+        return marker_rel
+    return None
+
+
+def _artifact_tool_completed_marker(model_dir: Path, spec: dict, parsed: list[dict]) -> tuple[bool, str]:
+    """Return (True, input_schema) if a completed write tool targeted the allowlisted marker and the workspace is clean."""
     marker_rel = "docs/agent_loop/pilot/PILOT_MARKER.md"
     marker = model_dir / marker_rel
     if not marker.is_file() or marker.is_symlink():
-        return False
+        return False, ""
     expected_content = pilot_marker_text(spec["front_id"])
     actual_content = marker.read_text(encoding="utf-8-sig").replace("\r\n", "\n")
     if actual_content != expected_content:
-        return False
+        return False, ""
     if any(p == ".." for p in marker.relative_to(model_dir).parts):
-        return False
+        return False, ""
     files = set(_walk_workspace_files(model_dir))
     expected_files = set(MODEL_SEED_PATHS) | {marker_rel}
     if files != expected_files:
-        return False
+        return False, ""
     write_tools = {"write", "write_file", "edit_file", "create_file", "edit"}
     for item in parsed:
         if not isinstance(item, dict):
@@ -1030,19 +1084,20 @@ def _artifact_tool_completed_marker(model_dir: Path, spec: dict, parsed: list[di
             continue
         if item.get("type") != "tool_use" and part.get("type") != "tool":
             continue
-        if part.get("state", {}).get("status") != "completed":
+        state = part.get("state")
+        if not isinstance(state, dict):
             continue
-        if part.get("tool") not in write_tools:
+        if state.get("status") != "completed":
             continue
-        params = part.get("parameters", {})
-        target = params.get("path") or params.get("file_path") or params.get("target") or ""
-        try:
-            normalized = _normalize_repo_path(target)
-        except Exception:
+        tool_name = _completed_tool_name(part)
+        if tool_name not in write_tools:
             continue
+        target = _completed_tool_target(part)
+        normalized = _normalize_tool_target(target, model_dir)
         if normalized == marker_rel:
-            return True
-    return False
+            schema_used = "state.input" if isinstance((part.get("state") or {}).get("input"), dict) else "parameters"
+            return True, schema_used
+    return False, ""
 
 
 def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path, cycle: int, *, issue_no: int = 0, seed_hash: str | None = None) -> None:
@@ -1084,7 +1139,7 @@ def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path
     unchanged = False
     if seed_hash is not None and marker.is_file():
         unchanged = sha256_file(marker) == seed_hash
-    artifact_tool_completed = _artifact_tool_completed_marker(model_dir, spec, parsed)
+    artifact_tool_completed, tool_input_schema = _artifact_tool_completed_marker(model_dir, spec, parsed)
     artifact_acknowledged = (
         artifact_tool_completed
         and session_error_count == 0
@@ -1096,9 +1151,15 @@ def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path
         "verified_artifact_tool" if artifact_acknowledged else
         "none"
     )
-    event(cfg, "executor_completed", front=spec["front_id"], issue=issue_no, cycle=cycle,
-          task_acknowledged=acknowledged, ack_source=ack_source, conversational_refusal=refused,
-          marker_unchanged=unchanged, jsonl_events=len(parsed), session_error_count=session_error_count)
+    event_fields = {
+        "front": spec["front_id"], "issue": issue_no, "cycle": cycle,
+        "task_acknowledged": acknowledged, "ack_source": ack_source,
+        "conversational_refusal": refused, "marker_unchanged": unchanged,
+        "jsonl_events": len(parsed), "session_error_count": session_error_count,
+    }
+    if artifact_acknowledged and tool_input_schema:
+        event_fields["tool_input_schema"] = tool_input_schema
+    event(cfg, "executor_completed", **event_fields)
     if not acknowledged:
         raise ExecutorAttemptConsumed(
             "TASK_NOT_ACKNOWLEDGED",
@@ -1350,13 +1411,89 @@ Automated pilot. No auto-merge. Kimi writes; Codex supervises read-only; human a
 _TASK_NOT_ACKNOWLEDGED_FEEDBACK = "The prior executor attempt did not emit the required task acknowledgement. Write the exact allowlisted marker and complete the required acknowledgement. Do not create any other file."
 
 
+def _is_within_install_root(path: Path, install_root: Path) -> bool:
+    try:
+        path.resolve().relative_to(install_root.resolve())
+        return True
+    except Exception:
+        return False
+
+
+def _is_reparse_or_symlink(path: Path) -> bool:
+    if path.is_symlink():
+        return True
+    if os.name == "nt":
+        try:
+            return bool(os.lstat(str(path)).st_reparse_tag)
+        except Exception:
+            return False
+    return False
+
+
+def _workspace_is_trusted(repo_dir: Path, cfg: dict, spec: dict) -> bool:
+    install_root = Path(cfg["install_root"]).resolve()
+    if not repo_dir.is_dir() or _is_reparse_or_symlink(repo_dir):
+        return False
+    if not _is_within_install_root(repo_dir, install_root / "runs"):
+        return False
+    try:
+        head = run(["git", "rev-parse", "HEAD"], cwd=repo_dir).strip()
+        base = run(["git", "merge-base", "HEAD", spec["expected_base_sha"]], cwd=repo_dir).strip()
+    except Exception:
+        return False
+    if base != spec["expected_base_sha"]:
+        return False
+    changes = changed_files(repo_dir, spec["expected_base_sha"])
+    return all(path_allowed(p, spec["allowed_paths"], spec["forbidden_paths"]) for p in changes)
+
+
+def _safe_feedback_for_failure(failure_class: str) -> str | None:
+    if failure_class == "TASK_NOT_ACKNOWLEDGED":
+        return _TASK_NOT_ACKNOWLEDGED_FEEDBACK
+    return None
+
+
 def execute_initial(cfg, issue, spec, state_path):
     n = issue["number"]
     set_phase(cfg["repo"], n, "loop:executing")
-    repo_dir = prepare_repo(cfg,spec,n)
-    feedback = None
-    session_id = None
-    for cycle in range(1,int(spec["max_kimi_cycles"])+1):
+    st = load_json(state_path)
+    persisted_cycles = int(st.get("cycles", 0))
+    session_id = st.get("opencode_session_id") or None
+    feedback = _safe_feedback_for_failure(str(st.get("last_failure_class") or ""))
+    max_cycles = int(spec["max_kimi_cycles"])
+    start_cycle = persisted_cycles + 1
+
+    repo_dir = None
+    if persisted_cycles > 0:
+        persisted_repo_dir = Path(str(st.get("repo_dir") or ""))
+        if not _workspace_is_trusted(persisted_repo_dir, cfg, spec):
+            safe_error = "Initial retry workspace is unavailable or not trustworthy; cannot resume without human audit."
+            st.update({"issue_number": n, "front": spec["front_id"], "spec": spec,
+                       "cycles": persisted_cycles, "opencode_session_id": session_id, "status": "loop:blocked",
+                       "error": safe_error, "updated_utc": utc(), "worker_version": WORKER_VERSION,
+                       "state_schema_version": STATE_SCHEMA_VERSION, "last_failure_class": "INITIAL_RETRY_WORKSPACE_UNAVAILABLE"})
+            st = set_converged_phase(cfg, state_path, st, "loop:blocked")
+            st = publish_terminal_notification(cfg, state_path, st, "loop:blocked", safe_error)
+            event(cfg, "state_terminalized", state=str(state_path), issue=n, phase="loop:blocked",
+                  failure_class="INITIAL_RETRY_WORKSPACE_UNAVAILABLE", error=safe_error)
+            return
+        repo_dir = persisted_repo_dir
+    else:
+        repo_dir = prepare_repo(cfg, spec, n)
+
+    if start_cycle > max_cycles:
+        safe_error = "Maximum Kimi cycles reached without success. Human audit required."
+        st.update({"issue_number": n, "front": spec["front_id"], "spec": spec, "repo_dir": str(repo_dir),
+                   "cycles": persisted_cycles, "opencode_session_id": session_id, "status": "loop:token-exhausted",
+                   "error": safe_error, "updated_utc": utc(), "worker_version": WORKER_VERSION,
+                   "state_schema_version": STATE_SCHEMA_VERSION})
+        st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted")
+        st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", safe_error)
+        event(cfg, "state_terminalized", state=str(state_path), issue=n, phase="loop:token-exhausted",
+              failure_class="MAX_CYCLES_REACHED", error=safe_error)
+        return
+
+    for cycle in range(start_cycle, max_cycles + 1):
         event(cfg,"kimi_cycle_start",issue=n,cycle=cycle,front=spec["front_id"])
         model_dir, seed_hashes = prepare_model_workspace(repo_dir, spec, cycle)
         marker_path = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
@@ -1404,9 +1541,9 @@ def execute_initial(cfg, issue, spec, state_path):
                 return
             st = load_json(state_path)
             st.update({"issue_number": n, "front": spec["front_id"], "spec": spec, "repo_dir": str(repo_dir),
-                       "cycles": cycle, "opencode_session_id": session_id, "status": "WAITING_GITHUB",
+                       "cycles": cycle, "opencode_session_id": session_id, "status": "loop:executing",
                        "error": safe_error, "updated_utc": utc(), "worker_version": WORKER_VERSION,
-                       "state_schema_version": STATE_SCHEMA_VERSION})
+                       "state_schema_version": STATE_SCHEMA_VERSION, "last_failure_class": exc.failure_class})
             if exc.failure_class == "TASK_NOT_ACKNOWLEDGED":
                 feedback = _TASK_NOT_ACKNOWLEDGED_FEEDBACK
             save_json(state_path, st)

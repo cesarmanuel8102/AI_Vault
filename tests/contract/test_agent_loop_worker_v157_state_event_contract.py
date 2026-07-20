@@ -416,12 +416,12 @@ def test_final_cycle_final_verifier_failure_terminalizes_without_push() -> None:
         state_path = _make_state(tmp)
         calls: list[str] = []
         originals = _common_process_patches(tmp, changed=list(worker.PROFILE_ALLOWED_PATHS["pilot"]), final_ok=False)
-        old_run = worker.run
+        real_run = originals.get("run", worker.run)
         def recording_run(args, cwd=None, check=True):
             text = " ".join(str(x) for x in args)
             calls.append(text)
-            return old_run(args, cwd=cwd, check=check) if text.startswith("never") else (HEAD if "rev-parse HEAD" in text else "")
-        worker.run = recording_run
+            return real_run(args, cwd=cwd, check=check) if text.startswith("never") else (HEAD if "rev-parse HEAD" in text else "")
+        originals2 = _patch_worker(run=recording_run)
         try:
             worker.process_state(_cfg(td), state_path)
             _assert_terminalized_without_post_actions(tmp, state_path)
@@ -430,8 +430,8 @@ def test_final_cycle_final_verifier_failure_terminalizes_without_push() -> None:
             assert not any(e["kind"] == "cycle_committed" for e in events)
             assert not any(e["kind"] == "cycle_pushed" for e in events)
         finally:
+            _restore(originals2)
             _restore(originals)
-            worker.run = old_run
 
 
 def test_executor_attempt_consumed_non_final_saves_state() -> None:
@@ -992,7 +992,7 @@ def _make_initial_state(tmp: Path, issue_number: int = 19) -> Path:
         "issue_number": issue_number,
         "front": spec["front_id"],
         "spec": spec,
-        "repo_dir": str(tmp / "repo"),
+        "repo_dir": str(tmp / "runs" / f"issue-{issue_number}" / "repo"),
         "cycles": 0,
         "status": "LOCAL_EXECUTION",
         "updated_utc": worker.utc(),
@@ -1007,24 +1007,31 @@ def _make_initial_state(tmp: Path, issue_number: int = 19) -> Path:
 def _setup_git_repo(repo_dir: Path) -> None:
     repo_dir.mkdir(parents=True, exist_ok=True)
     devnull = worker.subprocess.DEVNULL
-    worker.subprocess.run(["git", "init"], cwd=str(repo_dir), check=True, stdout=devnull, stderr=devnull)
+    if not (repo_dir / ".git").is_dir():
+        worker.subprocess.run(["git", "init"], cwd=str(repo_dir), check=True, stdout=devnull, stderr=devnull)
     worker.subprocess.run(["git", "config", "user.name", "Test"], cwd=str(repo_dir), check=True, stdout=devnull, stderr=devnull)
     worker.subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=str(repo_dir), check=True, stdout=devnull, stderr=devnull)
-    (repo_dir / "base.txt").write_text("base", encoding="utf-8")
-    worker.subprocess.run(["git", "add", "base.txt"], cwd=str(repo_dir), check=True, stdout=devnull, stderr=devnull)
-    worker.subprocess.run(["git", "commit", "-m", "base"], cwd=str(repo_dir), check=True, stdout=devnull, stderr=devnull)
+    base_file = repo_dir / "base.txt"
+    if not base_file.exists():
+        base_file.write_text("base", encoding="utf-8")
+        worker.subprocess.run(["git", "add", "base.txt"], cwd=str(repo_dir), check=True, stdout=devnull, stderr=devnull)
+        worker.subprocess.run(["git", "commit", "-m", "base"], cwd=str(repo_dir), check=True, stdout=devnull, stderr=devnull)
 
 
 def _initial_attempt_patches(tmp: Path, *, pass_on_cycle: int | None = None, failure_class: str = "TASK_NOT_ACKNOWLEDGED", preexecution: bool = False):
-    repo_dir = tmp / "repo"
+    repo_dir = tmp / "runs" / "issue-19" / "repo"
     _setup_git_repo(repo_dir)
     base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
-    spec = _initial_front_spec()
-    spec["expected_base_sha"] = base_sha
     state_path = tmp / "state" / "issue-19.json"
-    st = worker.load_json(state_path)
-    st["spec"] = spec
-    worker.save_json(state_path, st)
+    if state_path.exists():
+        spec = worker.load_json(state_path).get("spec") or _initial_front_spec()
+    else:
+        spec = _initial_front_spec()
+    spec["expected_base_sha"] = base_sha
+    if state_path.exists():
+        st = worker.load_json(state_path)
+        st["spec"] = spec
+        worker.save_json(state_path, st)
 
     def fake_gh_json(args):
         joined = " ".join(str(x) for x in args)
@@ -1038,6 +1045,8 @@ def _initial_attempt_patches(tmp: Path, *, pass_on_cycle: int | None = None, fai
         text = " ".join(str(x) for x in args)
         if "rev-parse HEAD" in text:
             return old_run(["git", "rev-parse", "HEAD"], cwd=str(cwd)).strip()
+        if "merge-base" in text:
+            return spec["expected_base_sha"]
         if "diff --cached --name-only" in text:
             return "\n".join(worker.PROFILE_ALLOWED_PATHS["pilot"])
         if "git commit" in text and "complete" in text:
@@ -1213,7 +1222,7 @@ def test_executor_completed_event_includes_issue_and_ack_source() -> None:
         marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
         log = tmp / "opencode.jsonl"
         log.write_text(
-            json.dumps({"type": "tool_use", "part": {"type": "tool", "tool": "write", "state": {"status": "completed"}, "parameters": {"path": "docs/agent_loop/pilot/PILOT_MARKER.md"}}}) + "\n",
+            json.dumps(_issue19_tool_event()) + "\n",
             encoding="utf-8",
         )
         worker.validate_executor_delivery(cfg, _artifact_spec(), model_dir, log, 1, issue_no=19, seed_hash=None)
@@ -1222,6 +1231,7 @@ def test_executor_completed_event_includes_issue_and_ack_source() -> None:
         assert completed["issue"] == 19
         assert completed.get("pr") is None
         assert completed.get("ack_source") == "verified_artifact_tool"
+        assert completed.get("tool_input_schema") == "state.input"
 
 
 def test_executor_started_event_includes_issue() -> None:
@@ -1289,6 +1299,28 @@ def _artifact_spec() -> dict:
     return _initial_front_spec()
 
 
+def _issue19_tool_event(target: str = "docs/agent_loop/pilot/PILOT_MARKER.md", *, status: str = "completed", tool: str = "write", content: str = "REDACTED") -> dict:
+    """Sanitized fixture matching the real OpenCode tool event schema observed in Issue #19."""
+    return {
+        "type": "tool_use",
+        "part": {
+            "id": "prt_test",
+            "sessionID": "ses_test",
+            "messageID": "msg_test",
+            "type": "tool",
+            "callID": "functions.write:0",
+            "tool": tool,
+            "state": {
+                "status": status,
+                "input": {
+                    "filePath": target,
+                    "content": content,
+                },
+            },
+        },
+    }
+
+
 def test_verified_artifact_tool_ack_passes_without_text_sentinel() -> None:
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
@@ -1300,7 +1332,7 @@ def test_verified_artifact_tool_ack_passes_without_text_sentinel() -> None:
         marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
         log = tmp / "opencode.jsonl"
         log.write_text(
-            json.dumps({"type": "tool_use", "part": {"type": "tool", "tool": "write", "state": {"status": "completed"}, "parameters": {"path": "docs/agent_loop/pilot/PILOT_MARKER.md"}}}) + "\n",
+            json.dumps(_issue19_tool_event()) + "\n",
             encoding="utf-8",
         )
         worker.validate_executor_delivery(cfg, _artifact_spec(), model_dir, log, 1, issue_no=19, seed_hash=None)
@@ -1309,6 +1341,7 @@ def test_verified_artifact_tool_ack_passes_without_text_sentinel() -> None:
         assert completed["task_acknowledged"] is True
         assert completed["ack_source"] == "verified_artifact_tool"
         assert completed["issue"] == 19
+        assert completed.get("tool_input_schema") == "state.input"
 
 
 def test_verified_artifact_tool_ack_requires_exact_marker() -> None:
@@ -1344,7 +1377,7 @@ def test_verified_artifact_tool_ack_requires_completed_write_tool() -> None:
         marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
         log = tmp / "opencode.jsonl"
         log.write_text(
-            json.dumps({"type": "tool_use", "part": {"type": "tool", "tool": "read", "state": {"status": "completed"}, "parameters": {"path": "docs/agent_loop/pilot/PILOT_MARKER.md"}}}) + "\n",
+            json.dumps(_issue19_tool_event(tool="read")) + "\n",
             encoding="utf-8",
         )
         try:
@@ -1505,6 +1538,367 @@ def test_initial_attempt_nondisclosure_canaries() -> None:
             _restore(originals)
 
 
+def _resume_state(tmp: Path, *, cycles: int = 1, repo_dir: Path | None = None, last_failure_class: str = "TASK_NOT_ACKNOWLEDGED") -> Path:
+    spec = _initial_front_spec()
+    state = {
+        "issue_number": 19,
+        "front": spec["front_id"],
+        "spec": spec,
+        "repo_dir": str(repo_dir or tmp / "runs" / "issue-19" / "repo"),
+        "cycles": cycles,
+        "status": "loop:executing",
+        "updated_utc": worker.utc(),
+        "state_schema_version": worker.STATE_SCHEMA_VERSION,
+        "worker_version": worker.WORKER_VERSION,
+        "last_failure_class": last_failure_class,
+    }
+    state_path = tmp / "state" / "issue-19.json"
+    worker.save_json(state_path, state)
+    return state_path
+
+
+def test_real_issue19_tool_schema_accepted() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = _cfg(td)
+        front = "PILOT-V157-ACTIVATION-20260720-0255"
+        model_dir = tmp / "model"
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True)
+        marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
+        log = tmp / "opencode.jsonl"
+        log.write_text(
+            json.dumps(_issue19_tool_event(target=str(marker.resolve()))) + "\n",
+            encoding="utf-8",
+        )
+        worker.validate_executor_delivery(cfg, _artifact_spec(), model_dir, log, 1, issue_no=19, seed_hash=None)
+        events = _events(tmp)
+        completed = next(e for e in events if e["kind"] == "executor_completed")
+        assert completed["ack_source"] == "verified_artifact_tool"
+        assert completed.get("tool_input_schema") == "state.input"
+
+
+def test_synthetic_parameters_only_rejected() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = _cfg(td)
+        front = "PILOT-V157-ACTIVATION-20260720-0255"
+        model_dir = tmp / "model"
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True)
+        marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
+        log = tmp / "opencode.jsonl"
+        synthetic = {"type": "tool_use", "part": {"type": "tool", "tool": "write", "state": {"status": "completed"}, "parameters": {"path": "docs/agent_loop/pilot/PILOT_MARKER.md"}}}
+        log.write_text(json.dumps(synthetic) + "\n", encoding="utf-8")
+        try:
+            worker.validate_executor_delivery(cfg, _artifact_spec(), model_dir, log, 1, issue_no=19, seed_hash=None)
+        except worker.ExecutorAttemptConsumed as exc:
+            assert exc.failure_class == "TASK_NOT_ACKNOWLEDGED"
+        else:
+            raise AssertionError("expected synthetic parameters-only fixture to fail")
+
+
+def test_completed_state_required() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = _cfg(td)
+        front = "PILOT-V157-ACTIVATION-20260720-0255"
+        model_dir = tmp / "model"
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True)
+        marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
+        for status in ("running", "pending", "error"):
+            log = tmp / f"opencode-{status}.jsonl"
+            log.write_text(json.dumps(_issue19_tool_event(status=status)) + "\n", encoding="utf-8")
+            try:
+                worker.validate_executor_delivery(cfg, _artifact_spec(), model_dir, log, 1, issue_no=19, seed_hash=None)
+            except worker.ExecutorAttemptConsumed as exc:
+                assert exc.failure_class == "TASK_NOT_ACKNOWLEDGED", status
+            else:
+                raise AssertionError(f"expected failure for status={status}")
+
+
+def test_exact_target_required() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = _cfg(td)
+        front = "PILOT-V157-ACTIVATION-20260720-0255"
+        model_dir = tmp / "model"
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True)
+        marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
+        bad_targets = [
+            "docs/agent_loop/pilot/PILOT_MARKER.md.bak",
+            "docs/agent_loop/../pilot/PILOT_MARKER.md",
+            str((model_dir / "evil").resolve()),
+            "docs/agent_loop/pilot/PILOT_MARKER.md_extra_text",
+            ["docs/agent_loop/pilot/PILOT_MARKER.md"],
+            {"path": "docs/agent_loop/pilot/PILOT_MARKER.md"},
+        ]
+        for target in bad_targets:
+            log = tmp / f"opencode-{id(target)}.jsonl"
+            log.write_text(json.dumps(_issue19_tool_event(target=str(target) if isinstance(target, str) else target)) + "\n", encoding="utf-8")
+            try:
+                worker.validate_executor_delivery(cfg, _artifact_spec(), model_dir, log, 1, issue_no=19, seed_hash=None)
+            except worker.ExecutorAttemptConsumed as exc:
+                assert exc.failure_class == "TASK_NOT_ACKNOWLEDGED", target
+            else:
+                raise AssertionError(f"expected failure for target={target!r}")
+
+
+def test_real_tool_name_required() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = _cfg(td)
+        front = "PILOT-V157-ACTIVATION-20260720-0255"
+        model_dir = tmp / "model"
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True)
+        marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
+        for tool in ("bash", "webfetch", "unknown_write"):
+            log = tmp / f"opencode-{tool}.jsonl"
+            log.write_text(json.dumps(_issue19_tool_event(tool=tool)) + "\n", encoding="utf-8")
+            try:
+                worker.validate_executor_delivery(cfg, _artifact_spec(), model_dir, log, 1, issue_no=19, seed_hash=None)
+            except worker.ExecutorAttemptConsumed as exc:
+                assert exc.failure_class == "TASK_NOT_ACKNOWLEDGED", tool
+            else:
+                raise AssertionError(f"expected failure for tool={tool}")
+
+
+def test_actual_log_structural_replay() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg = _cfg(td)
+        front = "PILOT-V157-ACTIVATION-20260720-0255"
+        model_dir = tmp / "model"
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True)
+        marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
+        log = tmp / "opencode.jsonl"
+        real_struct = {
+            "type": "tool_use",
+            "part": {
+                "id": "prt_f7d8d4d6d0019Ic5qoIiTQSGB8",
+                "sessionID": "ses_08272d956ffe4vYGnyq4gERQD1",
+                "messageID": "msg_f7d8d450a001S7hikHfAD0nCZG",
+                "type": "tool",
+                "callID": "functions.write:2",
+                "tool": "write",
+                "state": {
+                    "status": "completed",
+                    "input": {
+                        "filePath": "REDACTED_ABSOLUTE_PATH\\docs\\agent_loop\\pilot\\PILOT_MARKER.md",
+                        "content": "REDACTED_MARKER_CONTENT",
+                    }
+                }
+            }
+        }
+        log.write_text(json.dumps(real_struct) + "\n", encoding="utf-8")
+        try:
+            worker.validate_executor_delivery(cfg, _artifact_spec(), model_dir, log, 1, issue_no=19, seed_hash=None)
+        except worker.ExecutorAttemptConsumed:
+            pass
+        events = _events(tmp)
+        if events:
+            assert all(e.get("tool_input_schema") != "parameters" for e in events if e["kind"] == "executor_completed")
+
+
+def test_initial_restart_after_one_consumed_attempt() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        repo_dir = tmp / "runs" / "issue-19" / "repo"
+        _setup_git_repo(repo_dir)
+        base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+        state_path = _resume_state(tmp, cycles=1, repo_dir=repo_dir, last_failure_class="TASK_NOT_ACKNOWLEDGED")
+        st = worker.load_json(state_path)
+        st["spec"]["expected_base_sha"] = base_sha
+        worker.save_json(state_path, st)
+        originals, calls = _initial_attempt_patches(tmp, pass_on_cycle=2)
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            assert state["cycles"] == 2
+            assert state["status"] == "loop:ci"
+            assert calls == [(2, worker._TASK_NOT_ACKNOWLEDGED_FEEDBACK)]
+        finally:
+            _restore(originals)
+
+
+def test_initial_restart_after_timeout() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        repo_dir = tmp / "runs" / "issue-19" / "repo"
+        _setup_git_repo(repo_dir)
+        base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+        state_path = _resume_state(tmp, cycles=1, repo_dir=repo_dir, last_failure_class="EXECUTOR_TIMEOUT")
+        st = worker.load_json(state_path)
+        st["spec"]["expected_base_sha"] = base_sha
+        worker.save_json(state_path, st)
+        originals, calls = _initial_attempt_patches(tmp, pass_on_cycle=2, failure_class="EXECUTOR_TIMEOUT")
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            events = _events(tmp)
+            assert state["cycles"] == 2
+            assert calls == [(2, None)]
+            for e in events:
+                if e["kind"] == "executor_failed" and e["cycle"] == 1:
+                    assert "timeout output" not in e.get("error", "").lower()
+        finally:
+            _restore(originals)
+
+
+def test_initial_restart_at_max() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        repo_dir = tmp / "runs" / "issue-19" / "repo"
+        _setup_git_repo(repo_dir)
+        base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+        state_path = _resume_state(tmp, cycles=3, repo_dir=repo_dir, last_failure_class="TASK_NOT_ACKNOWLEDGED")
+        st = worker.load_json(state_path)
+        st["spec"]["expected_base_sha"] = base_sha
+        worker.save_json(state_path, st)
+        calls: list[tuple[int, str | None]] = []
+        originals = _patch_worker(
+            run_kimi=lambda *a, **k: calls.append(a[4]) or (_ for _ in ()).throw(AssertionError("run_kimi must not be called at max cycles")),
+            set_converged_phase=_terminal_set_phase,
+            publish_terminal_notification=_terminal_notify,
+        )
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            events = _events(tmp)
+            assert state["cycles"] == 3
+            assert state["status"] == "loop:token-exhausted"
+            assert calls == []
+            assert not any(e["kind"] == "executor_started" for e in events)
+        finally:
+            _restore(originals)
+
+
+def test_initial_restart_workspace_missing() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _resume_state(tmp, cycles=1, repo_dir=tmp / "missing_repo", last_failure_class="TASK_NOT_ACKNOWLEDGED")
+        st = worker.load_json(state_path)
+        worker.save_json(state_path, st)
+        originals = _patch_worker(
+            terminalize_state_error=lambda *a, **k: None,
+            set_converged_phase=_terminal_set_phase,
+            publish_terminal_notification=_terminal_notify,
+        )
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            assert state["cycles"] == 1
+            assert state["status"] == "loop:blocked"
+            assert state.get("last_failure_class") == "INITIAL_RETRY_WORKSPACE_UNAVAILABLE"
+        finally:
+            _restore(originals)
+
+
+def test_initial_restart_workspace_outside_runs() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        outside = Path(td).parent / "outside-repo"
+        outside.mkdir(parents=True, exist_ok=True)
+        state_path = _resume_state(tmp, cycles=1, repo_dir=outside, last_failure_class="TASK_NOT_ACKNOWLEDGED")
+        st = worker.load_json(state_path)
+        worker.save_json(state_path, st)
+        originals = _patch_worker(
+            set_converged_phase=_terminal_set_phase,
+            publish_terminal_notification=_terminal_notify,
+        )
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            assert state["status"] == "loop:blocked"
+            assert state.get("last_failure_class") == "INITIAL_RETRY_WORKSPACE_UNAVAILABLE"
+        finally:
+            _restore(originals)
+
+
+def test_process_restart_accounting() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        repo_dir = tmp / "runs" / "issue-19" / "repo"
+        _setup_git_repo(repo_dir)
+        base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+        state_path = _make_initial_state(tmp)
+        st = worker.load_json(state_path)
+        st["spec"]["expected_base_sha"] = base_sha
+        st["spec"]["max_kimi_cycles"] = 2
+        worker.save_json(state_path, st)
+        calls: list[tuple[int, str | None]] = []
+
+        def failing_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+            calls.append((cycle, feedback))
+            raise worker.ExecutorAttemptConsumed(
+                "TASK_NOT_ACKNOWLEDGED",
+                "ack missing",
+                {"cycle": cycle, "command_identity": "opencode", "local_log_path": str(tmp / f"cycle-{cycle}.jsonl"), "returncode": None},
+            )
+
+        originals = _initial_attempt_patches(tmp)[0]
+        originals2 = _patch_worker(run_kimi=failing_run_kimi)
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            assert calls == [(1, None), (2, worker._TASK_NOT_ACKNOWLEDGED_FEEDBACK)]
+        finally:
+            _restore(originals2)
+            _restore(originals)
+
+
+def test_crash_window_simulation() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        repo_dir = tmp / "runs" / "issue-19" / "repo"
+        _setup_git_repo(repo_dir)
+        base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+        state_path = _make_initial_state(tmp)
+        st = worker.load_json(state_path)
+        st["spec"]["expected_base_sha"] = base_sha
+        st["spec"]["max_kimi_cycles"] = 2
+        worker.save_json(state_path, st)
+        calls: list[int] = []
+
+        class SimulatedProcessCrash(Exception):
+            pass
+
+        def crash_after_save_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+            calls.append(cycle)
+            st = worker.load_json(state_path)
+            st.update({"cycles": cycle, "status": "loop:executing", "last_failure_class": "TASK_NOT_ACKNOWLEDGED"})
+            worker.save_json(state_path, st)
+            if cycle == 1:
+                raise SimulatedProcessCrash(f"crash after cycle {cycle}")
+            log_path = tmp / f"cycle-{cycle}-opencode.jsonl"
+            log_path.write_text(json.dumps({"type": "text", "part": {"type": "text", "text": worker.prompt_task_sentinel(spec["front_id"], cycle)}}) + "\n", encoding="utf-8")
+            marker = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(worker.pilot_marker_text(spec["front_id"]), encoding="utf-8")
+            return log_path, "session-new"
+
+        originals = _initial_attempt_patches(tmp)[0]
+        originals2 = _patch_worker(run_kimi=crash_after_save_run_kimi)
+        try:
+            try:
+                worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            except SimulatedProcessCrash:
+                pass
+            assert calls == [1]
+            mid = worker.load_json(state_path)
+            assert mid["cycles"] == 1
+            assert mid["status"] == "loop:executing"
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            assert calls == [1, 2]
+        finally:
+            _restore(originals2)
+            _restore(originals)
+
+
 def main() -> int:
     tests = [
         test_state_schema_version_injected,
@@ -1561,6 +1955,19 @@ def main() -> int:
         test_verified_artifact_tool_ack_rejects_conversational_refusal,
         test_marker_without_text_sentinel_still_rejected_when_no_tool,
         test_initial_attempt_nondisclosure_canaries,
+        test_real_issue19_tool_schema_accepted,
+        test_synthetic_parameters_only_rejected,
+        test_completed_state_required,
+        test_exact_target_required,
+        test_real_tool_name_required,
+        test_actual_log_structural_replay,
+        test_initial_restart_after_one_consumed_attempt,
+        test_initial_restart_after_timeout,
+        test_initial_restart_at_max,
+        test_initial_restart_workspace_missing,
+        test_initial_restart_workspace_outside_runs,
+        test_process_restart_accounting,
+        test_crash_window_simulation,
     ]
 
     failed = 0
