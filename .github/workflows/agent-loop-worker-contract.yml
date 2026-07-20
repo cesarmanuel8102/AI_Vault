@@ -18,6 +18,13 @@ on:
       - tests/contract/test_agent_loop_worker_v156_post_merge_recovery.py
       - tests/contract/test_agent_loop_worker_v156_deploy_recovery.ps1
       - tests/contract/v156_dynamic_test_support.py
+      - tests/contract/test_agent_loop_worker_v157_runtime_resolution.py
+      - tests/contract/test_agent_loop_worker_v157_real_cmd_quoting.py
+      - tests/contract/test_agent_loop_worker_v157_lossless_transport.py
+      - tests/contract/test_agent_loop_worker_v157_prompt_delivery.py
+      - tests/contract/test_agent_loop_worker_v157_state_event_contract.py
+      - tests/contract/test_agent_loop_worker_v157_codex_supervisor_contract.py
+      - tests/contract/test_agent_loop_worker_v157_deploy_recovery.ps1
       - .github/workflows/agent-loop-worker-contract.yml
 
 concurrency:
@@ -60,6 +67,12 @@ jobs:
           python -m py_compile tests/contract/test_agent_loop_worker_v155_quiescence_recovery.py
           python -m py_compile tests/contract/v156_dynamic_test_support.py
           python -m py_compile tests/contract/test_agent_loop_worker_v156_post_merge_recovery.py
+          python -m py_compile tests/contract/test_agent_loop_worker_v157_runtime_resolution.py
+          python -m py_compile tests/contract/test_agent_loop_worker_v157_real_cmd_quoting.py
+          python -m py_compile tests/contract/test_agent_loop_worker_v157_lossless_transport.py
+          python -m py_compile tests/contract/test_agent_loop_worker_v157_prompt_delivery.py
+          python -m py_compile tests/contract/test_agent_loop_worker_v157_state_event_contract.py
+          python -m py_compile tests/contract/test_agent_loop_worker_v157_codex_supervisor_contract.py
       - name: worker SHA-256 evidence
         run: python -c "import hashlib,pathlib; p=pathlib.Path('scripts/agent_loop/local_worker/agent_worker.py'); print('WORKER_SHA256='+hashlib.sha256(p.read_bytes()).hexdigest().upper())"
       - name: hardening contract
@@ -88,5 +101,21 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/contract/test_agent_loop_worker_v156_deploy_recovery.ps1
+      - name: v1.5.7 runtime resolution contract
+        run: python tests/contract/test_agent_loop_worker_v157_runtime_resolution.py
+      - name: v1.5.7 real cmd quoting contract
+        run: python tests/contract/test_agent_loop_worker_v157_real_cmd_quoting.py
+      - name: v1.5.7 lossless transport contract
+        run: python tests/contract/test_agent_loop_worker_v157_lossless_transport.py
+      - name: v1.5.7 prompt delivery contract
+        run: python tests/contract/test_agent_loop_worker_v157_prompt_delivery.py
+      - name: v1.5.7 state and event contract
+        run: python tests/contract/test_agent_loop_worker_v157_state_event_contract.py
+      - name: v1.5.7 codex supervisor contract
+        run: python tests/contract/test_agent_loop_worker_v157_codex_supervisor_contract.py
+      - name: v1.5.7 PowerShell deploy recovery contract
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/contract/test_agent_loop_worker_v157_deploy_recovery.ps1
       - name: git diff check
         run: git diff --check

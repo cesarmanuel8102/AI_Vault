@@ -14,7 +14,7 @@ HEAD = "c94fa5c995684a8db2ecbec09ceef1cfb30c55c5"
 BRANCH = "agent/pilot-20260716-091529"
 REPO = "cesarmanuel8102/AI_Vault"
 OWNER = "cesarmanuel8102"
-assert worker.WORKER_VERSION == "1.5.6"
+assert worker.WORKER_VERSION == "1.5.7"
 
 def git(args, cwd: Path) -> str:
     cp = subprocess.run(["git", *args], cwd=cwd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)

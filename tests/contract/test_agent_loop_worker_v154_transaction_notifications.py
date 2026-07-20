@@ -322,11 +322,18 @@ def run_process_state_case(mode: str):
         def fake_prepare(repo_dir, spec, cycle):
             model = root / f"model-{cycle}"
             (model / "docs/agent_loop/pilot").mkdir(parents=True)
-            (model / "docs/agent_loop/pilot/PILOT_MARKER.md").write_text(worker.pilot_marker_text(FRONT), encoding="utf-8")
+            (model / "docs/agent_loop/pilot/PILOT_MARKER.md").write_text("stale marker\n", encoding="utf-8")
             return model, {}
         def fake_run_kimi(*args, **kwargs):
             calls["kimi"] += 1
-            return root / "opencode.jsonl", None
+            spec = args[1]
+            model_dir = args[2]
+            cycle = args[4]
+            marker = model_dir / "docs/agent_loop/pilot/PILOT_MARKER.md"
+            marker.write_text(worker.pilot_marker_text(FRONT), encoding="utf-8")
+            log = root / "opencode.jsonl"
+            log.write_text(json.dumps({"text": worker.prompt_task_sentinel(spec["front_id"], cycle)}) + "\n", encoding="utf-8")
+            return log, None
         def fake_audit(*args, **kwargs):
             if mode == "model_content_failure":
                 raise RuntimeError("PILOT_MARKER_CONTENT_MISMATCH")

@@ -7,7 +7,39 @@ from pathlib import Path
 from typing import Any
 
 SPEC_RE = re.compile(r"<!--\s*AGENT_LOOP_SPEC\s*(\{.*?\})\s*AGENT_LOOP_SPEC\s*-->", re.S)
-WORKER_VERSION = "1.5.6"
+WORKER_VERSION = "1.5.7"
+STATE_SCHEMA_VERSION = 1
+
+STATE_KNOWN_TOP_LEVEL_KEYS = {
+    "issue_number", "front", "spec", "repo_dir", "pr_number", "pr_url",
+    "cycles", "last_head_sha", "opencode_session_id", "status",
+    "final_local_report", "worker_version", "updated_utc", "local_retry_count",
+    "error", "terminal_notified", "notification_keys", "state_schema_version",
+    "trusted_existing_pr_resume_utc", "trusted_base_advance_utc",
+    "trusted_v154_resume_done", "trusted_v155_recovery_done", "trusted_v156_post_merge_recovery_done",
+}
+
+EVENT_REQUIRED_FIELDS = {
+    "executor_started": {"front", "cycle", "command_identity", "model"},
+    "executor_completed": {"front", "cycle", "task_acknowledged", "jsonl_events"},
+    "executor_failed": {"front", "cycle", "error"},
+    "executor_preflight_failed": {"front", "issue", "pr", "cycle", "failure_class", "command_identity"},
+    "local_gate_failed": {"issue", "pr", "cycle", "failure_class", "cycle_before", "cycle_after"},
+    "repair_local_gate_failed": {"issue", "pr", "cycle", "failure_class", "cycle_before", "cycle_after"},
+    "cycle_committed": {"issue", "pr", "cycle", "head_sha"},
+    "cycle_pushed": {"issue", "pr", "cycle", "head_sha"},
+    "cycle_commit_reverted": {"issue", "pr", "cycle", "head_sha", "failure_class"},
+    "codex_review_started": {"issue", "pr", "head_sha"},
+    "codex_review_passed": {"issue", "pr", "head_sha"},
+    "codex_review_failed": {"issue", "pr", "head_sha", "error"},
+    "codex_repair_requested": {"issue", "pr", "head_sha"},
+    "supervisor_authorization_consumed": {"issue", "pr", "authorization"},
+    "kimi_cycle_start": {"issue", "cycle", "front"},
+    "kimi_cycle_repair_needed": {"issue", "cycle"},
+    "pr_created": {"issue", "pr", "sha"},
+    "state_terminalized": {"state", "issue", "phase", "failure_class"},
+    "worker_started": {"once", "worker_version", "worker_sha256"},
+}
 PHASE_LABELS = {
     "agent:queued", "loop:executing", "loop:ci", "loop:repairing",
     "loop:ready-human-audit", "loop:blocked", "loop:failed",
@@ -31,6 +63,26 @@ REQUIRED_FORBIDDEN_PATHS = {
 MODEL_SEED_PATHS: set[str] = set()
 _RUN_EVENT_CFG: dict | None = None
 _SENSITIVE_COMMAND_WORDS = {"auth", "token", "secret", "login", "password", "key"}
+_RUNTIME_EXECUTABLES: dict[str, str] = {}
+_EXECUTABLE_ALLOWED_EXTENSIONS = {
+    "git": {".exe"},
+    "gh": {".exe"},
+    "python": {".exe"},
+    "opencode": {".cmd", ".exe"},
+    "opencode_entrypoint": {".js"},
+    "node": {".exe"},
+    "cmd": {".exe"},
+}
+_EXECUTABLE_CONFIG_KEYS = {
+    "git": "git_exe",
+    "gh": "gh_exe",
+    "python": "python_exe",
+    "opencode": "opencode_cmd",
+    "opencode_entrypoint": "opencode_entrypoint",
+    "node": "node_exe",
+    "cmd": "cmd_exe",
+}
+_REQUIRED_EXECUTABLE_CONFIG_KEYS = {"git_exe", "gh_exe", "python_exe", "opencode_cmd", "cmd_exe"}
 PILOT_MARKER_TEMPLATE = """# Agent Loop Pilot
 WORKER_VERSION={worker_version}
 FRONT_ID={front_id}
@@ -39,30 +91,275 @@ EXECUTOR=KIMI_OPENCODE_OLLAMA
 SUPERVISOR=CODEX_GITHUB_ACTION
 """
 
+_CONVERSATIONAL_REJECTION_PATTERNS = {
+    "please provide the task",
+    "please clarify",
+    "what would you like me to do",
+    "i need more information",
+    "can you provide more details",
+    "missing instruction",
+    "no task specified",
+    "awaiting instructions",
+}
+
+def prompt_task_sentinel(front_id: str, cycle: int) -> str:
+    return f"ACK_TASK_ID={front_id}|cycle={cycle}"
+
 def pilot_marker_text(front_id: str) -> str:
     return PILOT_MARKER_TEMPLATE.format(worker_version=WORKER_VERSION, front_id=str(front_id))
 
+class PreExecutionFailure(RuntimeError):
+    """Deterministic failure before the OpenCode/Kimi process was started. Does not consume a Kimi cycle."""
+
+    def __init__(self, failure_class: str, message: str, details: dict | None = None):
+        super().__init__(message)
+        self.failure_class = failure_class
+        self.details = details or {}
+
+
+class ExecutorAttemptConsumed(RuntimeError):
+    """OpenCode/Kimi process was started and this attempt must consume exactly one Kimi cycle."""
+
+    def __init__(self, failure_class: str, message: str, details: dict | None = None):
+        super().__init__(message)
+        self.failure_class = failure_class
+        self.details = details or {}
+
+
 class CmdError(RuntimeError):
     def __init__(self, cmd, code, out):
-        super().__init__(f"command failed ({code}): {cmd}\n{out[-4000:]}")
-        self.cmd, self.code, self.out = cmd, code, out
+        redacted = _redacted_cmd_repr(cmd)
+        super().__init__(f"command failed ({code}): {redacted}\n{out[-4000:]}")
+        self.cmd, self.code, self.out = redacted, code, out
 
 def utc() -> str:
     return datetime.now(timezone.utc).isoformat()
 
-def command_for_subprocess(args: list[str]) -> list[str]:
-    """Resolve commands safely on Windows, including npm .cmd/.bat shims."""
+def _is_relative_to(path: Path, parent: Path) -> bool:
+    try:
+        path.relative_to(parent)
+        return True
+    except ValueError:
+        return False
+
+def _runtime_command_name(value: str) -> str | None:
+    base = os.path.basename(str(value)).lower()
+    if base in {"git", "git.exe"}:
+        return "git"
+    if base in {"gh", "gh.exe"}:
+        return "gh"
+    if base.startswith("python"):
+        return "python"
+    if base in {"opencode", "opencode.cmd", "opencode.exe"}:
+        return "opencode"
+    if base in {"opencode-entrypoint", "opencode_entrypoint"}:
+        return "opencode_entrypoint"
+    if base in {"node", "node.exe"}:
+        return "node"
+    if base in {"cmd", "cmd.exe"}:
+        return "cmd"
+    return None
+
+def _safe_version_at_least(actual: str, expected: str) -> bool:
+    def nums(text: str) -> tuple[int, ...]:
+        m = re.search(r"(\d+(?:\.\d+){0,3})", text or "")
+        return tuple(int(x) for x in m.group(1).split(".")) if m else (0,)
+    a, b = nums(actual), nums(expected)
+    width = max(len(a), len(b))
+    return a + (0,) * (width - len(a)) >= b + (0,) * (width - len(b))
+
+
+def _windows_short_path(path: str) -> str:
+    """Return the Windows 8.3 short path for a file or directory.
+
+    Used to avoid quoting/escaping problems when invoking .CMD/.BAT shims
+    whose absolute path contains spaces.
+    """
+    import ctypes
+    from ctypes import wintypes
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    GetShortPathNameW = kernel32.GetShortPathNameW
+    GetShortPathNameW.argtypes = [wintypes.LPCWSTR, wintypes.LPWSTR, wintypes.DWORD]
+    GetShortPathNameW.restype = wintypes.DWORD
+    buf = ctypes.create_unicode_buffer(260)
+    size = GetShortPathNameW(path, buf, 260)
+    if size == 0 or size > 260:
+        raise RuntimeError(f"short_path_failed:{path}")
+    return str(buf[:size])
+
+
+def _win_cmd_quote(arg: str) -> str:
+    """Quote an argument for cmd.exe using Windows command-line rules.
+
+    Spaces and shell metacharacters (& | < > ^ % !) force quoting.
+    Inner double quotes are doubled (CommandLineToArgvW style).
+    """
+    if not arg:
+        return '""'
+    needs_quote = ' ' in arg or '"' in arg or any(c in arg for c in "&|<>")
+    if not needs_quote and not any(c in arg for c in "^%!"):
+        return arg
+    out = '"'
+    for ch in arg:
+        if ch == '"':
+            out += '""'
+        else:
+            out += ch
+    out += '"'
+    return out
+
+
+def _opencode_node_entrypoint(opencode_cmd: str) -> str | None:
+    """Return the Node entrypoint JS for an installed opencode command.
+
+    npm installs opencode as a .CMD shim that delegates to node.exe and the
+    package's bin/opencode JS file. For lossless transport we bypass cmd.exe
+    and invoke node.exe with that JS entrypoint directly.
+    """
+    cmd_path = Path(opencode_cmd).resolve()
+    # The shim is at npm/opencode.CMD; the package lives next to it under
+    # node_modules/opencode-ai/bin/opencode.
+    candidate = cmd_path.parent / "node_modules" / "opencode-ai" / "bin" / "opencode"
+    if candidate.is_file():
+        return str(candidate)
+    # If the configured command itself is a JS file, use it.
+    if cmd_path.suffix.lower() == ".js":
+        return str(cmd_path)
+    return None
+
+
+def command_for_subprocess(args: list[str]):
+    """Resolve commands safely on Windows, including npm .cmd/.bat shims.
+
+    For .CMD/.BAT shims on Windows the function returns a single command-line
+    string suitable for passing directly to subprocess.run(..., shell=False).
+    This avoids Python's list2cmdline backslash-escaping of inner quotes, which
+    breaks cmd.exe parsing for arguments containing spaces.
+
+    For opencode we bypass cmd.exe entirely: node.exe is invoked with the
+    package's bin/opencode JS entrypoint, and every argument (including
+    multiline prompts) is passed as a list element to subprocess.run. This
+    preserves newlines, the sentinel, and shell metacharacters byte-for-byte.
+    """
     values = [str(x) for x in args]
     if not values:
         raise ValueError("empty command")
-    resolved = shutil.which(values[0])
+    command_name = _runtime_command_name(values[0])
+    resolved = _RUNTIME_EXECUTABLES.get(command_name or "")
     if resolved:
         values[0] = resolved
+    else:
+        path_resolved = shutil.which(values[0])
+        if path_resolved:
+            values[0] = path_resolved
     suffix = os.path.splitext(values[0])[1].lower()
     if os.name == "nt" and suffix in {".cmd", ".bat"}:
-        comspec = os.environ.get("COMSPEC") or shutil.which("cmd.exe") or "cmd.exe"
-        return [comspec, "/d", "/s", "/c", subprocess.list2cmdline(values)]
+        # Lossless path for opencode: call node.exe + JS entrypoint directly.
+        if command_name == "opencode":
+            node_exe = _RUNTIME_EXECUTABLES.get("node")
+            entrypoint = _RUNTIME_EXECUTABLES.get("opencode_entrypoint") or _opencode_node_entrypoint(values[0])
+            if node_exe and entrypoint:
+                return [node_exe, entrypoint, *values[1:]]
+        # Fallback for other .CMD/.BAT shims: route through cmd.exe.
+        comspec = _RUNTIME_EXECUTABLES.get("cmd") or os.environ.get("COMSPEC") or shutil.which("cmd.exe") or "cmd.exe"
+        cmd_path = values[0]
+        if ' ' in cmd_path or '"' in cmd_path:
+            try:
+                cmd_path = _windows_short_path(cmd_path)
+            except Exception:
+                pass
+        inner = " ".join(_win_cmd_quote(v) for v in [cmd_path, *values[1:]])
+        return f"{comspec} /d /s /c {inner}"
     return values
+
+def _sha256_text(text: str) -> str:
+    import hashlib
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _redacted_cmd_repr(args: list[str]) -> list[str]:
+    """Return a log/event-safe representation of a command line.
+
+    For the opencode identity the final argument is treated as the prompt and
+    is fully redacted to a stable hash/length placeholder so that prompt
+    content can never leak into exceptions, logs, events, state, or reports.
+    """
+    if not args:
+        return []
+    ident = command_identity(args)
+    if ident != "opencode" or len(args) < 2:
+        return sanitize_command_for_log(args)
+    safe: list[str] = [ident]
+    prompt = str(args[-1])
+    for value in args[1:-1]:
+        lower = str(value).lower()
+        if any(word in lower for word in _SENSITIVE_COMMAND_WORDS):
+            safe.append("<redacted>")
+        elif len(str(value)) > 160:
+            safe.append(str(value)[:80] + "...<truncated>")
+        else:
+            safe.append(str(value))
+    safe.append(f"<prompt:redacted bytes={len(prompt.encode('utf-8'))} sha256={_sha256_text(prompt)}>")
+    return safe
+
+
+def sanitize_command_for_log(args: list[str]) -> list[str]:
+    if not args:
+        return []
+    ident = command_identity(args)
+    safe: list[str] = [ident]
+    for value in args[1:]:
+        lower = str(value).lower()
+        if any(word in lower for word in _SENSITIVE_COMMAND_WORDS):
+            safe.append("<redacted>")
+        elif ident == "opencode":
+            # Fully redact any prompt-sized argument for the opencode identity.
+            safe.append("<redacted>")
+        elif len(str(value)) > 160:
+            safe.append(str(value)[:80] + "...<truncated>")
+        else:
+            safe.append(str(value))
+    return safe
+
+def resolve_runtime_executables(cfg: dict, *, require_config: bool = False) -> dict[str, str]:
+    runtime_cfg = cfg.get("runtime_executables") or {}
+    allow_dirs = [Path(x).expanduser().resolve() for x in cfg.get("executable_allowlist_dirs") or []]
+    if require_config and (not isinstance(runtime_cfg, dict) or _REQUIRED_EXECUTABLE_CONFIG_KEYS - set(runtime_cfg)):
+        raise RuntimeError("RUNTIME_EXECUTABLE_CONFIG_MISSING")
+    if require_config and not allow_dirs:
+        raise RuntimeError("RUNTIME_EXECUTABLE_ALLOWLIST_MISSING")
+    resolved: dict[str, str] = {}
+    for name, key in _EXECUTABLE_CONFIG_KEYS.items():
+        configured = runtime_cfg.get(key)
+        if not configured:
+            if require_config and key in _REQUIRED_EXECUTABLE_CONFIG_KEYS:
+                raise RuntimeError(f"RUNTIME_EXECUTABLE_MISSING:{key}")
+            found = shutil.which("opencode.cmd" if name == "opencode" else f"{name}.exe") or shutil.which(name)
+            if found:
+                resolved[name] = str(Path(found).resolve())
+            continue
+        path = Path(str(configured)).expanduser()
+        if not path.is_absolute():
+            raise RuntimeError(f"RUNTIME_EXECUTABLE_NOT_ABSOLUTE:{key}")
+        path = path.resolve()
+        if not path.is_file():
+            raise RuntimeError(f"RUNTIME_EXECUTABLE_NOT_FILE:{key}")
+        suffix = path.suffix.lower()
+        # The opencode entrypoint is a Node script; it has no extension when the
+        # npm package exposes a shebang file. Accept extensionless JS entrypoints.
+        if name == "opencode_entrypoint" and not suffix:
+            suffix = ".js"
+        if suffix not in _EXECUTABLE_ALLOWED_EXTENSIONS[name]:
+            raise RuntimeError(f"RUNTIME_EXECUTABLE_EXTENSION_DENIED:{key}:{suffix}")
+        if allow_dirs and not any(_is_relative_to(path, allowed) for allowed in allow_dirs):
+            raise RuntimeError(f"RUNTIME_EXECUTABLE_OUTSIDE_ALLOWLIST:{key}")
+        resolved[name] = str(path)
+    return resolved
+
+def configure_runtime_resolution(cfg: dict, *, require_config: bool = False) -> dict[str, str]:
+    global _RUNTIME_EXECUTABLES
+    _RUNTIME_EXECUTABLES = resolve_runtime_executables(cfg, require_config=require_config)
+    return dict(_RUNTIME_EXECUTABLES)
 
 def decode_process_output(data: bytes | str | None) -> tuple[str, str]:
     if data is None:
@@ -114,15 +411,48 @@ def load_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8-sig"))
 
 def save_json(path: Path, data: Any) -> None:
+    if isinstance(data, dict) and "issue_number" in data and "status" in data:
+        data = normalize_state(data)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
 
 def event(cfg, kind, **fields):
+    if kind == "repair_local_gate_failed":
+        fields.setdefault("legacy_kind", "repair_local_gate_failed")
+        kind = "local_gate_failed"
+    for key in fields:
+        if key.lower() in {"prompt", "token", "secret", "password", "credential"}:
+            raise RuntimeError(f"EVENT_CONTRACT_VIOLATION:{kind}: sensitive field {key}")
+    fields.setdefault("worker_version", WORKER_VERSION)
     record = {"timestamp_utc": utc(), "kind": kind, **fields}
+    required = EVENT_REQUIRED_FIELDS.get(kind)
+    if required and not required.issubset(fields):
+        raise RuntimeError(f"EVENT_CONTRACT_VIOLATION:{kind}: missing {sorted(required - set(fields))}")
     p = Path(cfg["install_root"]) / "reports" / "worker-events.jsonl"
     p.parent.mkdir(parents=True, exist_ok=True)
     with p.open("a", encoding="utf-8") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+def normalize_state(st: dict) -> dict:
+    st = dict(st)
+    st["state_schema_version"] = STATE_SCHEMA_VERSION
+    st["worker_version"] = WORKER_VERSION
+    return st
+
+def validate_state_json(st: dict) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(st, dict):
+        return ["state is not a JSON object"]
+    if st.get("state_schema_version") != STATE_SCHEMA_VERSION:
+        errors.append(f"state_schema_version must be {STATE_SCHEMA_VERSION}")
+    required = {"issue_number", "status", "updated_utc"}
+    missing = sorted(required - set(st))
+    if missing:
+        errors.append(f"missing required state keys: {missing}")
+    unknown = sorted(set(st) - STATE_KNOWN_TOP_LEVEL_KEYS)
+    if unknown:
+        errors.append(f"unknown state keys: {unknown}")
+    return errors
 
 def labels(obj) -> set[str]:
     return {x["name"] for x in obj.get("labels", [])}
@@ -223,6 +553,13 @@ def terminal_phase_from_labels(obj: dict) -> str | None:
 
 def state_is_terminal(st: dict) -> bool:
     return str(st.get("status", "")) in TERMINAL_LABELS
+
+def should_terminalize_failed_cycle(st: dict, spec: dict, cycle: int) -> bool:
+    return (
+        cycle >= int(spec["max_kimi_cycles"])
+        and st.get("state_schema_version") == STATE_SCHEMA_VERSION
+        and st.get("worker_version") == WORKER_VERSION
+    )
 
 def comment(repo: str, number: int, body: str):
     run(["gh", "issue", "comment", str(number), "--repo", repo, "--body", body])
@@ -442,7 +779,7 @@ def opencode_env(cfg: dict, repo_dir: Path) -> dict[str,str]:
             "brain-kimi-executor":{
                 "description":"Writes one exact allowlisted pilot artifact in a detached workspace.",
                 "mode":"primary", "steps":30, "temperature":0.1, "model":model,
-                "prompt":"Follow the user prompt exactly. Never use shell, network, subagents, skills, LSP, or external paths.",
+                "prompt":"Follow the user prompt exactly. The current directory is the workspace. Write files using only relative paths (docs/agent_loop/pilot/PILOT_MARKER.md). Never use absolute paths, shell, network, subagents, skills, LSP, or external paths.",
                 "permission":strict_permissions
             }
         }
@@ -469,14 +806,21 @@ def discover_session_id(repo_dir: Path, title: str) -> str | None:
     return None
 
 def make_prompt(spec: dict, cycle: int, feedback: str | None = None) -> str:
+    sentinel = prompt_task_sentinel(spec["front_id"], cycle)
     base = f"""You are the Kimi executor for {spec['front_id']}.
-Work only in the detached model workspace. It contains no Git metadata and no credentials.
+Your only job is to write exactly one file in the current workspace and then output the sentinel line.
+The current workspace is the directory passed via --dir. It contains no Git metadata and no credentials.
 Do not invoke a shell, commit, push, use gh, merge, or access external directories.
-Objective: {spec['objective']}
-Allowed output path: docs/agent_loop/pilot/PILOT_MARKER.md
-Pilot requirement: write that file with exactly this UTF-8 text:\n---\n{pilot_marker_text(spec["front_id"])}---
+Allowed output path (relative to the current workspace, no leading '/' or drive letter): docs/agent_loop/pilot/PILOT_MARKER.md
+Write that file with exactly this UTF-8 content:
+{pilot_marker_text(spec["front_id"])}
+After writing the file, output exactly this line and nothing else:
+{sentinel}
+If you cannot write the file, output exactly this line and nothing else:
+{sentinel} TASK_FAILED
+Do not ask questions, do not run tools other than read/write for the allowed file, and do not create or edit any other file.
 Do not create or edit EXECUTOR_REPORT.json; the trusted worker writes it after validation.
-Do not change the local agent policy or create any other file. This is cycle {cycle}.
+This is cycle {cycle}.
 """
     if feedback:
         base += f"\nRepair only these verified failures:\n{feedback[:6000]}\n"
@@ -560,28 +904,164 @@ def audit_and_sync_model_workspace(model_dir: Path, repo_dir: Path, seed_hashes:
     shutil.copyfile(marker, destination)
     return [marker_rel]
 
+def _require_lossless_opencode_transport() -> None:
+    missing: list[str] = []
+    if not _RUNTIME_EXECUTABLES.get("node"):
+        missing.append("node_exe")
+    if not _RUNTIME_EXECUTABLES.get("opencode_entrypoint"):
+        missing.append("opencode_entrypoint")
+    if missing:
+        raise PreExecutionFailure(
+            "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED",
+            f"LOSSLESS_OPENCODE_TRANSPORT_REQUIRED: missing {', '.join(missing)}",
+            {"command_identity": "opencode"},
+        )
+
+
+def _lossless_transport_or_raise(cmd: list[str], prepared):
+    """Ensure the resolved opencode command bypasses cmd.exe for lossless transport."""
+    if isinstance(prepared, str):
+        raise PreExecutionFailure(
+            "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED",
+            "Kimi execution resolved to a single command-line string; must use node.exe+JS entrypoint",
+            {"resolved_identity": command_identity(cmd)},
+        )
+    if prepared and _runtime_command_name(str(prepared[0])) == "cmd":
+        raise PreExecutionFailure(
+            "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED",
+            "Kimi execution resolved to cmd.exe; must use node.exe+JS entrypoint",
+            {"resolved_identity": command_identity(cmd)},
+        )
+
+
+def safe_executor_error(exc: Exception) -> str:
+    """Return a safe, fixed error description that never contains stdout, stderr, prompt, or raw argv."""
+    if isinstance(exc, ExecutorAttemptConsumed):
+        return {
+            "EXECUTOR_TIMEOUT": "OpenCode execution exceeded the configured timeout. See governed local log.",
+            "TOKEN_EXHAUSTED": "OpenCode execution ended because the runtime reported token, context, or rate-limit exhaustion. See governed local log.",
+            "COMMAND_FAILED": "OpenCode process exited non-zero. See governed local log.",
+            "EXECUTOR_JSONL_INVALID": "OpenCode produced invalid or empty JSONL output. See governed local log.",
+            "TASK_NOT_ACKNOWLEDGED": "OpenCode output did not contain the required task acknowledgement. See governed local log.",
+            "NO_OUTPUT_CHANGE": "OpenCode completed without modifying the allowlisted output file. See governed local log.",
+        }.get(exc.failure_class, "OpenCode execution failed after the process started. See governed local log.")
+    if isinstance(exc, PreExecutionFailure):
+        return f"OpenCode could not start: {exc.failure_class}. See governed local log."
+    return "OpenCode execution encountered an unexpected failure. See governed local log."
+
+
 def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=None):
     report_dir = Path(cfg["install_root"]) / "reports"
     log = report_dir / f"issue-{issue_no}-cycle-{cycle}-opencode.jsonl"
     title = f"AI_Vault {spec['front_id']}"
+    _require_lossless_opencode_transport()
+    sentinel = prompt_task_sentinel(spec["front_id"], cycle)
+    prompt = make_prompt(spec, cycle, feedback)
+    if sentinel not in prompt:
+        raise PreExecutionFailure(
+            "TASK_NOT_ACKNOWLEDGED",
+            "prompt missing sentinel",
+            {"cycle": cycle, "front": spec["front_id"]},
+        )
     cmd = ["opencode","run","--dir",str(model_dir),"--model",cfg["opencode_model"],
            "--agent","brain-kimi-executor","--format","json",
            "--title",title]
     if opencode_run_supports("--auto", cwd=model_dir):
         cmd.append("--auto")
     if session_id: cmd += ["--session", session_id]
-    cmd.append(make_prompt(spec, cycle, feedback))
-    p = subprocess.run(command_for_subprocess(cmd), cwd=str(model_dir), env=opencode_env(cfg, model_dir), text=False,
-                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    cmd.append(prompt)
+    timeout = cfg.get("opencode_timeout_seconds")
+    prepared = command_for_subprocess(cmd)
+    _lossless_transport_or_raise(cmd, prepared)
+    # All deterministic pre-execution validations have passed; the OpenCode process is about to start.
+    event(cfg, "executor_started", front=spec["front_id"], cycle=cycle,
+          command_identity="opencode", model=cfg["opencode_model"],
+          prompt_bytes=len(prompt.encode("utf-8")), sentinel_in_prompt=True)
+    try:
+        p = subprocess.run(prepared, cwd=str(model_dir), env=opencode_env(cfg, model_dir), text=False,
+                           stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        out = (exc.output or b"").decode("utf-8", errors="replace")
+        log.write_text(out, encoding="utf-8")
+        raise ExecutorAttemptConsumed(
+            "EXECUTOR_TIMEOUT",
+            "OpenCode execution exceeded the configured timeout. See governed local log.",
+            {"returncode": None, "command_identity": "opencode", "cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
+        ) from None
     out, decoding = completed_output(p)
     log.write_text(out, encoding="utf-8")
     emit_subprocess_decoding_event(cfg, ["opencode"], decoding)
     if p.returncode != 0:
         low = out.lower()
-        if "context" in low or "token" in low or "rate limit" in low:
-            raise RuntimeError("TOKEN_EXHAUSTED:" + out[-3000:])
-        raise CmdError(cmd, p.returncode, out)
+        failure_class = "TOKEN_EXHAUSTED" if ("context" in low or "token" in low or "rate limit" in low) else "COMMAND_FAILED"
+        safe = {
+            "TOKEN_EXHAUSTED": "OpenCode execution ended because the runtime reported token, context, or rate-limit exhaustion. See governed local log.",
+            "COMMAND_FAILED": "OpenCode process exited non-zero. See governed local log.",
+        }[failure_class]
+        raise ExecutorAttemptConsumed(
+            failure_class,
+            safe,
+            {"returncode": p.returncode, "command_identity": "opencode", "cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
+        )
     return log, discover_session_id(model_dir, title)
+
+def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path, cycle: int, seed_hash: str | None = None) -> None:
+    out = log.read_text(encoding="utf-8-sig")
+    lines = [x.strip() for x in out.splitlines() if x.strip()]
+    if not lines:
+        raise ExecutorAttemptConsumed(
+            "EXECUTOR_JSONL_INVALID",
+            "empty output",
+            {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
+        )
+    parsed: list[dict] = []
+    for line in lines:
+        try:
+            parsed.append(json.loads(line))
+        except Exception as exc:
+            raise ExecutorAttemptConsumed(
+                "EXECUTOR_JSONL_INVALID",
+                f"{exc}",
+                {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
+            ) from exc
+    text_parts: list[str] = []
+    for item in parsed:
+        if not isinstance(item, dict):
+            continue
+        part = item.get("part") or item
+        if isinstance(part, dict):
+            text_parts.append(str(part.get("text", "")))
+        text_parts.append(str(item.get("text", "")))
+    full_output = "\n".join(text_parts)
+    sentinel = prompt_task_sentinel(spec["front_id"], cycle)
+    acknowledged = sentinel in full_output
+    lowered = full_output.lower()
+    refused = any(pattern in lowered for pattern in _CONVERSATIONAL_REJECTION_PATTERNS)
+    marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+    unchanged = False
+    if seed_hash is not None and marker.is_file():
+        unchanged = sha256_file(marker) == seed_hash
+    event(cfg, "executor_completed", front=spec["front_id"], cycle=cycle,
+          task_acknowledged=acknowledged, conversational_refusal=refused,
+          marker_unchanged=unchanged, jsonl_events=len(parsed))
+    if not acknowledged:
+        raise ExecutorAttemptConsumed(
+            "TASK_NOT_ACKNOWLEDGED",
+            "sentinel missing from executor output",
+            {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
+        )
+    if refused:
+        raise ExecutorAttemptConsumed(
+            "TASK_NOT_ACKNOWLEDGED",
+            "executor issued conversational refusal",
+            {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
+        )
+    if unchanged:
+        raise ExecutorAttemptConsumed(
+            "NO_OUTPUT_CHANGE",
+            "executor did not modify the pilot marker",
+            {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
+        )
 
 def run_profile(cfg, spec, repo_dir) -> tuple[bool,str]:
     cmd = [str(x) for x in cfg["test_profiles"][spec["test_profile"]]]
@@ -636,9 +1116,26 @@ def sha256_file(path: Path) -> str:
 def run_preflight(cfg: dict) -> dict:
     """Validate deterministic local dependencies without spending model tokens."""
     checks = {}
-    for name in ("git", "gh", "python", "opencode"):
-        resolved = shutil.which(name) or shutil.which(name + ".cmd") or shutil.which(name + ".exe")
-        checks[name] = {"ok": bool(resolved), "path": resolved}
+    resolved = configure_runtime_resolution(cfg, require_config=True)
+    for name in ("git", "gh", "python", "opencode", "cmd"):
+        checks[name] = {"ok": name in resolved, "path": resolved.get(name)}
+    min_versions = cfg.get("runtime_min_versions") or {}
+    version_commands = {
+        "git": ["git", "--version"],
+        "gh": ["gh", "--version"],
+        "python": ["python", "--version"],
+        "opencode": ["opencode", "--version"],
+    }
+    for name, command in version_commands.items():
+        if name not in resolved:
+            continue
+        out = run(command, check=False)
+        expected = min_versions.get(name)
+        checks[f"{name}_version"] = {
+            "ok": _safe_version_at_least(out, expected) if expected else True,
+            "minimum": expected,
+            "output": bounded_tail(out, 500),
+        }
     gh_status = subprocess.run(command_for_subprocess(["gh", "auth", "status"]), text=False, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     gh_out, _ = completed_output(gh_status)
     emit_subprocess_decoding_event(cfg, ["gh", "auth", "status"], _)
@@ -725,7 +1222,7 @@ def terminalize_state_error(cfg: dict, state_path: Path, exc: Exception) -> None
     retries = int(st.get("local_retry_count", 0)) + 1
     max_retries = int(cfg.get("max_local_retries", 2))
     st["local_retry_count"] = retries
-    st["last_error"] = str(exc)[-5000:]
+    st["error"] = str(exc)[-5000:]
     st["updated_utc"] = utc()
     if classification == "RETRY" and retries <= max_retries:
         st["status"] = "LOCAL_RETRY"
@@ -735,7 +1232,8 @@ def terminalize_state_error(cfg: dict, state_path: Path, exc: Exception) -> None
     phase = classification if classification != "RETRY" else "loop:blocked"
     st = set_converged_phase(cfg, state_path, st, phase)
     st = publish_terminal_notification(cfg, state_path, st, phase, str(exc))
-    event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase=phase, error=str(exc))
+    event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase=phase,
+          failure_class=classification, error=str(exc))
 
 def prepare_repo(cfg, spec, issue_no):
     # Never require deletion of a previous Git checkout on Windows. Git pack files can
@@ -803,8 +1301,11 @@ def execute_initial(cfg, issue, spec, state_path):
     for cycle in range(1,int(spec["max_kimi_cycles"])+1):
         event(cfg,"kimi_cycle_start",issue=n,cycle=cycle,front=spec["front_id"])
         model_dir, seed_hashes = prepare_model_workspace(repo_dir, spec, cycle)
+        marker_path = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker_seed = sha256_file(marker_path) if marker_path.is_file() else None
         log, discovered_session = run_kimi(cfg,spec,model_dir,n,cycle,feedback,session_id)
         if discovered_session: session_id = discovered_session
+        validate_executor_delivery(cfg, spec, model_dir, log, cycle, seed_hash=marker_seed)
         try:
             audit_and_sync_model_workspace(model_dir, repo_dir, seed_hashes, spec)
         except Exception as exc:
@@ -862,7 +1363,8 @@ def process_state(cfg, state_path):
         st["updated_utc"] = utc()
         st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
         st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
-        event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted", error="max cycles reached")
+        event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
+              failure_class="MAX_CYCLES_REACHED", error="max cycles reached")
         return
     feedback=latest_feedback(cfg["repo"],prn,spec,pr["headRefOid"],cfg["install_root"])
     repo_dir=Path(st["repo_dir"])
@@ -871,61 +1373,157 @@ def process_state(cfg, state_path):
     run(["git","reset","--hard",f"origin/{spec['work_branch']}"],cwd=repo_dir)
     cycle=st["cycles"]+1
     model_dir, seed_hashes = prepare_model_workspace(repo_dir, spec, cycle)
-    log, discovered_session=run_kimi(cfg,spec,model_dir,issue,cycle,feedback,st.get("opencode_session_id"))
-    if discovered_session: st["opencode_session_id"] = discovered_session
+    marker_path = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+    marker_seed = sha256_file(marker_path) if marker_path.is_file() else None
+    try:
+        log, discovered_session=run_kimi(cfg,spec,model_dir,issue,cycle,feedback,st.get("opencode_session_id"))
+        if discovered_session: st["opencode_session_id"] = discovered_session
+        validate_executor_delivery(cfg, spec, model_dir, log, cycle, seed_hash=marker_seed)
+    except PreExecutionFailure as exc:
+        # Deterministic pre-execution failure: OpenCode/Kimi never started. Do not consume a cycle.
+        safe_error = safe_executor_error(exc)
+        event(cfg, "executor_preflight_failed", front=spec["front_id"], issue=issue, pr=prn, cycle=cycle,
+              failure_class=exc.failure_class, command_identity=exc.details.get("command_identity") or "opencode",
+              local_log_path=exc.details.get("local_log_path"), worker_version=WORKER_VERSION)
+        st["updated_utc"] = utc()
+        st["error"] = safe_error
+        st = set_converged_phase(cfg, state_path, st, "loop:blocked", pr_number=prn)
+        st = publish_terminal_notification(cfg, state_path, st, "loop:blocked", safe_error)
+        event(cfg, "state_terminalized", state=str(state_path), issue=issue, pr=prn, phase="loop:blocked",
+              failure_class=exc.failure_class, error=safe_error)
+        return
+    except ExecutorAttemptConsumed as exc:
+        event(cfg, "executor_failed", front=spec["front_id"], cycle=cycle, error=safe_executor_error(exc), failure_class=exc.failure_class,
+              local_log_path=exc.details.get("local_log_path"), returncode=exc.details.get("returncode"),
+              command_identity=exc.details.get("command_identity"))
+        st["cycles"] = cycle
+        if cycle >= int(spec["max_kimi_cycles"]):
+            safe_error = safe_executor_error(exc)
+            st["status"] = "loop:token-exhausted"
+            st["error"] = safe_error
+            st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
+            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+            event(cfg, "local_gate_failed", issue=issue, pr=prn, cycle=cycle,
+                  failure_class=exc.failure_class, cycle_before=cycle-1, cycle_after=cycle,
+                  changed_files=[], test_output_tail=safe_error,
+                  marker_hash=marker_hash(repo_dir), current_head=run(["git","rev-parse","HEAD"], cwd=repo_dir).strip(),
+                  expected_base=spec["expected_base_sha"], bad=[], test_ok=False)
+            event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
+                  failure_class=exc.failure_class, cycle=cycle, pr=prn, error=safe_error)
+            return
+        st["updated_utc"] = utc()
+        save_json(state_path, st)
+        return
     try:
         audit_and_sync_model_workspace(model_dir, repo_dir, seed_hashes, spec)
     except Exception as exc:
-        st["cycles"] = cycle
-        st["updated_utc"] = utc()
-        save_json(state_path, st)
         event(cfg, "repair_local_gate_failed", issue=issue, pr=prn, cycle=cycle,
               failure_class="MODEL_CONTENT_FAILURE", cycle_before=cycle-1, cycle_after=cycle,
               changed_files=changed_files(repo_dir, spec["expected_base_sha"]), test_output_tail=bounded_tail(str(exc)),
               marker_hash=marker_hash(repo_dir), current_head=run(["git","rev-parse","HEAD"], cwd=repo_dir).strip(),
               expected_base=spec["expected_base_sha"], bad=[], test_ok=False)
+        st["cycles"] = cycle
+        st["updated_utc"] = utc()
+        if should_terminalize_failed_cycle(st, spec, cycle):
+            st["status"] = "loop:token-exhausted"
+            st["error"] = str(exc)[-5000:]
+            st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
+            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+            event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
+                  failure_class="MODEL_CONTENT_FAILURE", cycle=cycle, pr=prn, error=bounded_tail(str(exc)))
+        else:
+            save_json(state_path, st)
         return
     content_ok, content_out = run_marker_content_check(repo_dir)
     if not content_ok:
-        st["cycles"] = cycle
-        st["updated_utc"] = utc()
-        save_json(state_path, st)
         event(cfg, "repair_local_gate_failed", issue=issue, pr=prn, cycle=cycle,
               failure_class="MODEL_CONTENT_FAILURE", cycle_before=cycle-1, cycle_after=cycle,
               changed_files=changed_files(repo_dir, spec["expected_base_sha"]), test_output_tail=bounded_tail(content_out),
               marker_hash=marker_hash(repo_dir), current_head=run(["git","rev-parse","HEAD"], cwd=repo_dir).strip(),
               expected_base=spec["expected_base_sha"], bad=[], test_ok=False)
+        st["cycles"] = cycle
+        st["updated_utc"] = utc()
+        if should_terminalize_failed_cycle(st, spec, cycle):
+            st["status"] = "loop:token-exhausted"
+            st["error"] = bounded_tail(content_out)
+            st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
+            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+            event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
+                  failure_class="MODEL_CONTENT_FAILURE", cycle=cycle, pr=prn, error=bounded_tail(content_out))
+        else:
+            save_json(state_path, st)
         return
     changes=changed_files(repo_dir,spec["expected_base_sha"])
     bad=[p for p in changes if not path_allowed(p,spec["allowed_paths"],spec["forbidden_paths"])]
     if bad:
+        terminalize = should_terminalize_failed_cycle(st, spec, cycle)
+        cycle_after = cycle if terminalize else cycle - 1
         event(cfg,"repair_local_gate_failed",issue=issue,pr=prn,cycle=cycle,
-              failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle_before=cycle-1, cycle_after=cycle-1,
+              failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle_before=cycle-1, cycle_after=cycle_after,
               changed_files=changes, test_output_tail="", marker_hash=marker_hash(repo_dir),
               current_head=run(["git","rev-parse","HEAD"], cwd=repo_dir).strip(), expected_base=spec["expected_base_sha"], bad=bad,test_ok=False)
+        st["updated_utc"] = utc()
+        if terminalize:
+            st["cycles"] = cycle
+            st["status"] = "loop:token-exhausted"
+            st["error"] = "out-of-scope files: " + json.dumps(bad)
+            st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
+            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+            event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
+                  failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle=cycle, pr=prn, error=st["error"])
+        else:
+            save_json(state_path, st)
         return
     write_executor_report(cfg,spec,repo_dir,issue,cycle,changes,True,content_out,log)
     run(["git","add","--all"],cwd=repo_dir)
     final_candidate = run(["git","diff","--cached","--name-only"], cwd=repo_dir).splitlines()
     if sorted(x for x in final_candidate if x.strip()) != sorted(PROFILE_ALLOWED_PATHS["pilot"]):
+        terminalize = should_terminalize_failed_cycle(st, spec, cycle)
+        cycle_after = cycle if terminalize else cycle - 1
         event(cfg,"repair_local_gate_failed",issue=issue,pr=prn,cycle=cycle,
-              failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle_before=cycle-1, cycle_after=cycle-1,
+              failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle_before=cycle-1, cycle_after=cycle_after,
               changed_files=final_candidate, test_output_tail="staged diff is not exactly pilot artifacts",
               marker_hash=marker_hash(repo_dir), current_head=run(["git","rev-parse","HEAD"], cwd=repo_dir).strip(),
               expected_base=spec["expected_base_sha"], bad=final_candidate,test_ok=False)
         run(["git","reset"], cwd=repo_dir)
+        st["updated_utc"] = utc()
+        if terminalize:
+            st["cycles"] = cycle
+            st["status"] = "loop:token-exhausted"
+            st["error"] = "staged diff is not exactly pilot artifacts"
+            st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
+            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+            event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
+                  failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle=cycle, pr=prn, error=st["error"])
+        else:
+            save_json(state_path, st)
         return
     run(["git","commit","-m",f"fix(agent-loop): address supervisor findings cycle {cycle}"],cwd=repo_dir)
     newsha=run(["git","rev-parse","HEAD"],cwd=repo_dir).strip()
     final_ok, final_out = run_final_verifier(repo_dir, spec["expected_base_sha"], newsha)
     if not final_ok:
+        run(["git","reset","--hard","HEAD~1"], cwd=repo_dir)
+        terminalize = should_terminalize_failed_cycle(st, spec, cycle)
+        cycle_after = cycle if terminalize else int(st.get("cycles", cycle - 1))
         event(cfg,"repair_local_gate_failed",issue=issue,pr=prn,cycle=cycle,
-              failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle_before=cycle-1, cycle_after=cycle-1,
+              failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle_before=cycle-1, cycle_after=cycle_after,
               changed_files=changed_files(repo_dir,spec["expected_base_sha"]), test_output_tail=bounded_tail(final_out),
               marker_hash=marker_hash(repo_dir), current_head=newsha, expected_base=spec["expected_base_sha"], bad=[],test_ok=False)
-        run(["git","reset","--hard","HEAD~1"], cwd=repo_dir)
+        st["updated_utc"] = utc()
+        if terminalize:
+            st["cycles"] = cycle
+            st["status"] = "loop:token-exhausted"
+            st["error"] = bounded_tail(final_out)
+            st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
+            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+            event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
+                  failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle=cycle, pr=prn, error=bounded_tail(final_out))
+        else:
+            save_json(state_path, st)
         return
+    event(cfg, "cycle_committed", issue=issue, pr=prn, cycle=cycle, head_sha=newsha)
     run(["git","push","origin",spec["work_branch"]],cwd=repo_dir)
+    event(cfg, "cycle_pushed", issue=issue, pr=prn, cycle=cycle, head_sha=newsha)
     pr_after = gh_json(["pr","view",str(prn),"--repo",cfg["repo"],"--json","number,url,headRefOid"])
     final_report = write_final_local_report(cfg, spec, issue, cycle, repo_dir, pr_after)
     st.update(cycles=cycle,last_head_sha=newsha,status="WAITING_GITHUB",final_local_report=str(final_report),worker_version=WORKER_VERSION,updated_utc=utc())
@@ -1214,19 +1812,93 @@ def _event_field(item: dict, key: str):
     return None
 
 def _event_matches(item: dict, kind: str, expected: dict) -> bool:
-    if _event_kind(item) != kind:
+    item_kind = _event_kind(item)
+    if item_kind != kind and not (kind == "repair_local_gate_failed" and item_kind == "local_gate_failed"):
         return False
     for key, value in expected.items():
         got = _event_field(item, key)
         if isinstance(value, int):
             try:
-                if int(got) != value:
+                if int(got or 0) != value:
                     return False
             except Exception:
                 return False
         elif str(got) != str(value):
             return False
     return True
+
+def validate_v157_event_chronology(events: list[dict]) -> list[str]:
+    """Validate core v1.5.7 event ordering without requiring GitHub access."""
+    errors: list[str] = []
+    first_terminal: dict[tuple[str, str], int] = {}
+    first_local_gate: dict[tuple[str, str], int] = {}
+    first_committed: dict[tuple[str, str], int] = {}
+    first_pushed: dict[tuple[str, str], int] = {}
+    preflight_failed_cycles: dict[tuple[str, str, str], int] = {}
+    started_cycles: dict[tuple[str, str, str], int] = {}
+    reverted_indexes: list[int] = []
+    for idx, item in enumerate(events):
+        kind = _event_kind(item)
+        issue = str(_event_field(item, "issue") or "")
+        pr = str(_event_field(item, "pr") or "")
+        key = (issue, pr)
+        cycle = _event_field(item, "cycle")
+        cycle_key = (issue, pr, str(cycle) if cycle is not None else "")
+        if kind == "local_gate_failed":
+            first_local_gate.setdefault(key, idx)
+        if kind == "cycle_committed":
+            first_committed.setdefault(key, idx)
+        if kind == "cycle_pushed":
+            first_pushed.setdefault(key, idx)
+        if kind == "cycle_commit_reverted":
+            reverted_indexes.append(idx)
+        if kind == "executor_preflight_failed" and cycle_key:
+            preflight_failed_cycles.setdefault(cycle_key, idx)
+        if kind == "executor_started" and cycle_key:
+            started_cycles.setdefault(cycle_key, idx)
+        if kind == "state_terminalized":
+            first_terminal.setdefault(key, idx)
+            failure_class = _event_field(item, "failure_class") or ""
+            has_matching_preflight = any(
+                cycle_key[0] == issue and cycle_key[1] == pr
+                for cycle_key in preflight_failed_cycles
+            )
+            if key not in first_local_gate and failure_class != "MAX_CYCLES_REACHED" and not has_matching_preflight:
+                errors.append(f"state_terminalized_without_prior_local_gate:{key}")
+        if kind in {"cycle_committed", "cycle_pushed", "executor_started", "executor_completed", "executor_failed", "cycle_commit_reverted"} and key in first_terminal and idx > first_terminal[key]:
+            errors.append(f"{kind}_after_state_terminalized:{key}")
+        if kind in {"executor_started", "executor_completed", "executor_failed", "cycle_committed", "cycle_pushed"} and cycle_key in preflight_failed_cycles and idx > preflight_failed_cycles[cycle_key]:
+            errors.append(f"{kind}_after_executor_preflight_failed:{cycle_key}")
+        if kind == "executor_preflight_failed" and cycle_key in started_cycles and idx > started_cycles[cycle_key]:
+            errors.append(f"executor_preflight_failed_after_executor_started:{cycle_key}")
+    for key, gate_idx in first_local_gate.items():
+        term_idx = first_terminal.get(key)
+        if term_idx is not None and term_idx < gate_idx:
+            errors.append(f"state_terminalized_before_local_gate:{key}")
+    for key in set(first_committed) | set(first_pushed) | {(str(_event_field(events[rev_idx], "issue") or ""), str(_event_field(events[rev_idx], "pr") or "")) for rev_idx in reverted_indexes}:
+        committed_idx = first_committed.get(key)
+        pushed_idx = first_pushed.get(key)
+        if pushed_idx is not None and committed_idx is not None and pushed_idx < committed_idx:
+            errors.append(f"cycle_pushed_before_cycle_committed:{key}")
+        if pushed_idx is not None and key in first_terminal and pushed_idx > first_terminal[key]:
+            errors.append(f"cycle_pushed_after_state_terminalized:{key}")
+        for rev_idx in reverted_indexes:
+            rev_key = (str(_event_field(events[rev_idx], "issue") or ""), str(_event_field(events[rev_idx], "pr") or ""))
+            if rev_key != key:
+                continue
+            if committed_idx is None:
+                errors.append(f"cycle_commit_reverted_without_cycle_committed:{key}")
+            elif rev_idx < committed_idx:
+                errors.append(f"cycle_commit_reverted_before_cycle_committed:{key}")
+    for key, pushed_idx in first_pushed.items():
+        if key not in first_committed:
+            errors.append(f"cycle_pushed_without_cycle_committed:{key}")
+    for cycle_key, preflight_idx in preflight_failed_cycles.items():
+        issue_pr = cycle_key[:2]
+        term_idx = first_terminal.get(issue_pr)
+        if term_idx is not None and term_idx < preflight_idx:
+            errors.append(f"state_terminalized_before_executor_preflight_failed:{cycle_key}")
+    return errors
 
 def validate_v155_recovery_event_chronology(cfg: dict, base_sha: str, head_sha: str, repo_dir: str | None = None) -> None:
     events = _iter_worker_events(cfg)
@@ -1397,7 +2069,7 @@ def trusted_v155_recover_existing_pr(cfg: dict, issue_number: int, expected_base
         raise ValueError("base mismatch")
     if expected_pr_head and st.get("last_head_sha") != expected_pr_head:
         raise ValueError("state PR HEAD mismatch")
-    validate_v155_recovery_event_chronology(cfg, expected_base_sha or spec.get("expected_base_sha"), expected_pr_head or st.get("last_head_sha"), st.get("repo_dir"))
+    validate_v155_recovery_event_chronology(cfg, str(expected_base_sha or spec.get("expected_base_sha") or ""), str(expected_pr_head or st.get("last_head_sha") or ""), st.get("repo_dir"))
     issue = gh_json(["issue", "view", "5", "--repo", cfg["repo"], "--json", "number,state,body,author,labels,url"])
     pr = gh_json(["pr", "view", "6", "--repo", cfg["repo"], "--json", "number,url,state,isDraft,headRefName,headRefOid,baseRefName,body,labels"])
     issue_spec = parse_spec(issue, cfg)
