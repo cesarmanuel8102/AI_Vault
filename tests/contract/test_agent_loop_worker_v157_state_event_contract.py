@@ -80,6 +80,20 @@ def _restore(originals):
         setattr(worker, name, value)
 
 
+def _crash_after_nth_checkpoint(target_failure_class: str, crash_cls: type, n: int = 1):
+    """Wrap _checkpoint_initial_cycle to crash after the n-th target class checkpoint."""
+    real = worker._checkpoint_initial_cycle
+    count = 0
+    def wrapper(*a, **k):
+        real(*a, **k)
+        nonlocal count
+        if len(a) > 7 and a[7] == target_failure_class:
+            count += 1
+            if count == n:
+                raise crash_cls(f"crash after {target_failure_class} checkpoint #{n}")
+    return wrapper
+
+
 def _make_state(tmp: Path, cycles: int = 2) -> Path:
     repo_dir = tmp / "repo"
     repo_dir.mkdir()
@@ -1863,29 +1877,37 @@ def test_crash_window_simulation() -> None:
         state_path = _make_initial_state(tmp)
         st = worker.load_json(state_path)
         st["spec"]["expected_base_sha"] = base_sha
-        st["spec"]["max_kimi_cycles"] = 2
+        st["spec"]["max_kimi_cycles"] = 3
         worker.save_json(state_path, st)
         calls: list[int] = []
 
-        class SimulatedProcessCrash(Exception):
+        class SimulatedProcessCrash(BaseException):
             pass
 
-        def crash_after_save_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+        def crash_after_checkpoint_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
             calls.append(cycle)
-            st = worker.load_json(state_path)
-            st.update({"cycles": cycle, "status": "loop:executing", "last_failure_class": "TASK_NOT_ACKNOWLEDGED"})
-            worker.save_json(state_path, st)
-            if cycle == 1:
-                raise SimulatedProcessCrash(f"crash after cycle {cycle}")
-            log_path = tmp / f"cycle-{cycle}-opencode.jsonl"
-            log_path.write_text(json.dumps({"type": "text", "part": {"type": "text", "text": worker.prompt_task_sentinel(spec["front_id"], cycle)}}) + "\n", encoding="utf-8")
-            marker = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
-            marker.parent.mkdir(parents=True, exist_ok=True)
-            marker.write_text(worker.pilot_marker_text(spec["front_id"]), encoding="utf-8")
-            return log_path, "session-new"
+            if cycle <= 2:
+                log_path = tmp / f"cycle-{cycle}-opencode.jsonl"
+                log_path.write_text(json.dumps({"type": "text", "part": {"type": "text", "text": worker.prompt_task_sentinel(spec["front_id"], cycle)}}) + "\n", encoding="utf-8")
+                marker = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+                marker.parent.mkdir(parents=True, exist_ok=True)
+                marker.write_text(worker.pilot_marker_text(spec["front_id"]), encoding="utf-8")
+                return log_path, "session-new"
+            raise worker.ExecutorAttemptConsumed(
+                "TASK_NOT_ACKNOWLEDGED",
+                "ack missing",
+                {"cycle": cycle, "command_identity": "opencode", "local_log_path": str(tmp / f"cycle-{cycle}.jsonl"), "returncode": None},
+            )
 
         originals = _initial_attempt_patches(tmp)[0]
-        originals2 = _patch_worker(run_kimi=crash_after_save_run_kimi)
+        real_audit = originals.get("audit_and_sync_model_workspace", worker.audit_and_sync_model_workspace)
+        def audit_wrapper(*a, **k):
+            result = real_audit(*a, **k)
+            raise SimulatedProcessCrash("crash after delivery checkpoint")
+        originals2 = _patch_worker(
+            run_kimi=crash_after_checkpoint_run_kimi,
+            audit_and_sync_model_workspace=audit_wrapper,
+        )
         try:
             try:
                 worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
@@ -1895,11 +1917,874 @@ def test_crash_window_simulation() -> None:
             mid = worker.load_json(state_path)
             assert mid["cycles"] == 1
             assert mid["status"] == "loop:executing"
-            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            assert mid.get("last_failure_class") == "EXECUTOR_DELIVERY_ACCEPTED_PENDING_LOCAL_GATES"
+            try:
+                worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            except SimulatedProcessCrash:
+                pass
             assert calls == [1, 2]
         finally:
             _restore(originals2)
             _restore(originals)
+
+
+def test_initial_delivery_checkpoint_before_audit() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        repo_dir = tmp / "runs" / "issue-19" / "repo"
+        _setup_git_repo(repo_dir)
+        base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+        state_path = _make_initial_state(tmp)
+        st = worker.load_json(state_path)
+        st["spec"]["expected_base_sha"] = base_sha
+        worker.save_json(state_path, st)
+        calls: list[int] = []
+        checkpoint = {}
+
+        class SimulatedProcessCrash(BaseException):
+            pass
+
+        def pass_delivery_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+            calls.append(cycle)
+            log_path = tmp / f"cycle-{cycle}-opencode.jsonl"
+            log_path.write_text(json.dumps({"type": "text", "part": {"type": "text", "text": worker.prompt_task_sentinel(spec["front_id"], cycle)}}) + "\n", encoding="utf-8")
+            marker = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(worker.pilot_marker_text(spec["front_id"]), encoding="utf-8")
+            return log_path, "session-new"
+
+        originals = _initial_attempt_patches(tmp)[0]
+        real_audit = originals.get("audit_and_sync_model_workspace", worker.audit_and_sync_model_workspace)
+        def capture_then_crash_audit(*a, **k):
+            checkpoint["before_audit"] = dict(worker.load_json(state_path))
+            real_audit(*a, **k)
+            raise SimulatedProcessCrash("crash after delivery checkpoint")
+
+        originals2 = _patch_worker(
+            run_kimi=pass_delivery_run_kimi,
+            audit_and_sync_model_workspace=capture_then_crash_audit,
+        )
+        try:
+            try:
+                worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            except SimulatedProcessCrash:
+                pass
+        finally:
+            _restore(originals2)
+            _restore(originals)
+        before = checkpoint["before_audit"]
+        assert before["cycles"] == 1
+        assert before["status"] == "loop:executing"
+        assert before.get("last_failure_class") == "EXECUTOR_DELIVERY_ACCEPTED_PENDING_LOCAL_GATES"
+
+
+def test_restart_after_audit_failure() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        repo_dir = tmp / "runs" / "issue-19" / "repo"
+        _setup_git_repo(repo_dir)
+        base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+        state_path = _make_initial_state(tmp)
+        st = worker.load_json(state_path)
+        st["spec"]["expected_base_sha"] = base_sha
+        worker.save_json(state_path, st)
+        calls: list[int] = []
+        attempt = 0
+
+        def pass_delivery_then_fail_audit_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+            calls.append(cycle)
+            log_path = tmp / f"cycle-{cycle}-opencode.jsonl"
+            log_path.write_text(json.dumps({"type": "text", "part": {"type": "text", "text": worker.prompt_task_sentinel(spec["front_id"], cycle)}}) + "\n", encoding="utf-8")
+            marker = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(worker.pilot_marker_text(spec["front_id"]), encoding="utf-8")
+            return log_path, "session-new"
+
+        class SimulatedProcessCrash(BaseException):
+            pass
+
+        class SimulatedProcessCrash(BaseException):
+            pass
+
+        originals = _initial_attempt_patches(tmp)[0]
+        originals2 = _patch_worker(
+            run_kimi=pass_delivery_then_fail_audit_run_kimi,
+            audit_and_sync_model_workspace=lambda *a, **k: (_ for _ in ()).throw(RuntimeError("audit fail cycle 1")),
+            _checkpoint_initial_cycle=_crash_after_nth_checkpoint("INITIAL_WORKSPACE_AUDIT_FAILED", SimulatedProcessCrash, 1),
+        )
+        try:
+            try:
+                worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            except SimulatedProcessCrash:
+                pass
+            state = worker.load_json(state_path)
+            assert state["cycles"] == 1
+            assert state.get("last_failure_class") == "INITIAL_WORKSPACE_AUDIT_FAILED"
+
+            real_audit = originals.get("audit_and_sync_model_workspace", worker.audit_and_sync_model_workspace)
+            def audit_succeed_once_then_crash(*a, **k):
+                real_audit(*a, **k)
+                raise SimulatedProcessCrash("crash after audit success on cycle 2")
+            originals3 = _patch_worker(
+                run_kimi=pass_delivery_then_fail_audit_run_kimi,
+                audit_and_sync_model_workspace=audit_succeed_once_then_crash,
+            )
+            try:
+                try:
+                    worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+                except SimulatedProcessCrash:
+                    pass
+                assert calls == [1, 2]
+            finally:
+                _restore(originals3)
+        finally:
+            _restore(originals2)
+            _restore(originals)
+
+
+def test_restart_after_local_test_failure() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        repo_dir = tmp / "runs" / "issue-19" / "repo"
+        _setup_git_repo(repo_dir)
+        base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+        state_path = _make_initial_state(tmp)
+        st = worker.load_json(state_path)
+        st["spec"]["expected_base_sha"] = base_sha
+        worker.save_json(state_path, st)
+        calls: list[int] = []
+
+        class SimulatedProcessCrash(BaseException):
+            pass
+
+        def pass_delivery_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+            calls.append(cycle)
+            log_path = tmp / f"cycle-{cycle}-opencode.jsonl"
+            log_path.write_text(json.dumps({"type": "text", "part": {"type": "text", "text": worker.prompt_task_sentinel(spec["front_id"], cycle)}}) + "\n", encoding="utf-8")
+            marker = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(worker.pilot_marker_text(spec["front_id"]), encoding="utf-8")
+            return log_path, "session-new"
+
+        originals = _initial_attempt_patches(tmp)[0]
+        originals2 = _patch_worker(
+            run_kimi=pass_delivery_run_kimi,
+            run_profile=lambda *a, **k: (False, "profile failure no prompt canary"),
+            _checkpoint_initial_cycle=_crash_after_nth_checkpoint("INITIAL_LOCAL_GATE_FAILED", SimulatedProcessCrash, 1),
+        )
+        try:
+            try:
+                worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            except SimulatedProcessCrash:
+                pass
+            state = worker.load_json(state_path)
+            assert state["cycles"] == 1
+            assert state.get("last_failure_class") == "INITIAL_LOCAL_GATE_FAILED"
+
+            originals3 = _patch_worker(
+                run_kimi=pass_delivery_run_kimi,
+                run_profile=lambda *a, **k: (_ for _ in ()).throw(SimulatedProcessCrash("crash after profile success on cycle 2")),
+            )
+            try:
+                try:
+                    worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+                except SimulatedProcessCrash:
+                    pass
+                assert calls == [1, 2]
+            finally:
+                _restore(originals3)
+        finally:
+            _restore(originals2)
+            _restore(originals)
+
+
+def test_out_of_scope_path_blocks_after_consumed_cycle() -> None:
+    """An out-of-scope path detected after delivery consumes the cycle and blocks the issue."""
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        repo_dir = tmp / "runs" / "issue-19" / "repo"
+        _setup_git_repo(repo_dir)
+        base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+        state_path = _make_initial_state(tmp)
+        st = worker.load_json(state_path)
+        st["spec"]["expected_base_sha"] = base_sha
+        worker.save_json(state_path, st)
+        calls: list[int] = []
+
+        def pass_delivery_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+            calls.append(cycle)
+            log_path = tmp / f"cycle-{cycle}-opencode.jsonl"
+            log_path.write_text(json.dumps({"type": "text", "part": {"type": "text", "text": worker.prompt_task_sentinel(spec["front_id"], cycle)}}) + "\n", encoding="utf-8")
+            marker = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(worker.pilot_marker_text(spec["front_id"]), encoding="utf-8")
+            # The executor writes an additional file into the model workspace. The
+            # patched audit copies it into the governed repo_dir, so the real
+            # changed_files() and path_allowed() detect an out-of-scope path.
+            (model_dir_arg / "evil.txt").write_text("out-of-scope", encoding="utf-8")
+            return log_path, "session-new"
+
+        originals = _initial_attempt_patches(tmp)[0]
+        # Audit is patched to sync every model file, not just the allowlisted marker,
+        # so evil.txt reaches repo_dir and the real gate sees it.
+        real_audit = originals.get("audit_and_sync_model_workspace", worker.audit_and_sync_model_workspace)
+        def permissive_audit(model_dir_arg, repo_dir_path, seed_hashes, spec):
+            for src in model_dir_arg.rglob("*"):
+                if src.is_file():
+                    rel = src.relative_to(model_dir_arg).as_posix()
+                    dst = Path(repo_dir_path) / rel
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src, dst)
+            return ["docs/agent_loop/pilot/PILOT_MARKER.md"]
+
+        # Recover the real changed_files/path_allowed/run that _initial_attempt_patches
+        # replaced, so the gate observes the actual filesystem state including evil.txt.
+        real_changed_files = originals["changed_files"]
+        real_path_allowed = originals["path_allowed"]
+        real_run = originals["run"]
+        originals2 = _patch_worker(
+            run_kimi=pass_delivery_run_kimi,
+            run=real_run,
+            audit_and_sync_model_workspace=permissive_audit,
+            changed_files=real_changed_files,
+            path_allowed=real_path_allowed,
+            set_phase=lambda repo, number, phase: None,
+            set_converged_phase=_terminal_set_phase,
+            publish_terminal_notification=_terminal_notify,
+        )
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            assert state["cycles"] == 1
+            assert state["status"] == "loop:blocked"
+            assert state.get("last_failure_class") == "INITIAL_OUT_OF_SCOPE_PATHS"
+            assert calls == [1]
+            events = _events(tmp)
+            kinds = [e["kind"] for e in events]
+            assert "local_gate_failed" in kinds
+            assert "state_terminalized" in kinds
+            assert "pr_created" not in kinds
+            assert "kimi_cycle_start" in kinds
+            assert worker.validate_v157_event_chronology(events) == []
+            assert state.get("error") == "Out-of-scope changes were detected in the governed workspace. Human audit is required."
+            assert "evil.txt" not in json.dumps(state)
+        finally:
+            _restore(originals2)
+            _restore(originals)
+
+
+def test_out_of_scope_block_survives_process_restart() -> None:
+    """A blocked out-of-scope state must not resume or duplicate events/notifications."""
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        repo_dir = tmp / "runs" / "issue-19" / "repo"
+        _setup_git_repo(repo_dir)
+        base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+        state_path = _make_initial_state(tmp)
+        st = worker.load_json(state_path)
+        st["spec"]["expected_base_sha"] = base_sha
+        worker.save_json(state_path, st)
+        calls: list[int] = []
+
+        def pass_delivery_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+            calls.append(cycle)
+            log_path = tmp / f"cycle-{cycle}-opencode.jsonl"
+            log_path.write_text(json.dumps({"type": "text", "part": {"type": "text", "text": worker.prompt_task_sentinel(spec["front_id"], cycle)}}) + "\n", encoding="utf-8")
+            marker = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(worker.pilot_marker_text(spec["front_id"]), encoding="utf-8")
+            (model_dir_arg / "evil.txt").write_text("out-of-scope", encoding="utf-8")
+            return log_path, "session-new"
+
+        originals = _initial_attempt_patches(tmp)[0]
+        real_audit = originals.get("audit_and_sync_model_workspace", worker.audit_and_sync_model_workspace)
+        def permissive_audit(model_dir_arg, repo_dir_path, seed_hashes, spec):
+            for src in model_dir_arg.rglob("*"):
+                if src.is_file():
+                    rel = src.relative_to(model_dir_arg).as_posix()
+                    dst = Path(repo_dir_path) / rel
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src, dst)
+            return ["docs/agent_loop/pilot/PILOT_MARKER.md"]
+
+        real_changed_files = originals["changed_files"]
+        real_path_allowed = originals["path_allowed"]
+        real_run = originals["run"]
+        originals2 = _patch_worker(
+            run_kimi=pass_delivery_run_kimi,
+            run=real_run,
+            audit_and_sync_model_workspace=permissive_audit,
+            changed_files=real_changed_files,
+            path_allowed=real_path_allowed,
+            set_phase=lambda repo, number, phase: None,
+            set_converged_phase=_terminal_set_phase,
+            publish_terminal_notification=_terminal_notify,
+        )
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            assert state["status"] == "loop:blocked"
+            assert state.get("last_failure_class") == "INITIAL_OUT_OF_SCOPE_PATHS"
+            assert calls == [1]
+            first_event_count = len(_events(tmp))
+
+            # A real second process would call process_state(), which checks
+            # state_is_terminal() and returns immediately without re-entering
+            # execute_initial() or emitting duplicate events.
+            worker.process_state(_cfg(td), state_path)
+            state = worker.load_json(state_path)
+            assert state["status"] == "loop:blocked"
+            assert state["cycles"] == 1
+            assert calls == [1]  # no second Kimi call
+            assert len(_events(tmp)) == first_event_count  # no duplicated terminal events
+        finally:
+            _restore(originals2)
+            _restore(originals)
+
+
+def test_out_of_scope_skips_run_profile() -> None:
+    """An out-of-scope path must block before run_profile is called."""
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        repo_dir = tmp / "runs" / "issue-19" / "repo"
+        _setup_git_repo(repo_dir)
+        base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+        state_path = _make_initial_state(tmp)
+        st = worker.load_json(state_path)
+        st["spec"]["expected_base_sha"] = base_sha
+        worker.save_json(state_path, st)
+        calls: list[int] = []
+        profile_calls: list[str] = []
+
+        def pass_delivery_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+            calls.append(cycle)
+            log_path = tmp / f"cycle-{cycle}-opencode.jsonl"
+            log_path.write_text(json.dumps({"type": "text", "part": {"type": "text", "text": worker.prompt_task_sentinel(spec["front_id"], cycle)}}) + "\n", encoding="utf-8")
+            marker = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(worker.pilot_marker_text(spec["front_id"]), encoding="utf-8")
+            return log_path, "session-new"
+
+        originals = _initial_attempt_patches(tmp)[0]
+        real_changed_files = originals["changed_files"]
+        real_run = originals["run"]
+
+        def changed_files_with_evil(repo_dir_path, base_sha):
+            real_changes = real_changed_files(repo_dir_path, base_sha)
+            if "evil.txt" not in real_changes:
+                (Path(repo_dir_path) / "evil.txt").write_text("out-of-scope", encoding="utf-8")
+                real_changes = real_changed_files(repo_dir_path, base_sha)
+            return real_changes
+
+        def run_profile_that_must_not_be_called(cfg, spec, repo_dir_path):
+            profile_calls.append(str(repo_dir_path))
+            raise AssertionError("run_profile must not be called when bad paths exist")
+
+        originals2 = _patch_worker(
+            run_kimi=pass_delivery_run_kimi,
+            run=real_run,
+            changed_files=changed_files_with_evil,
+            path_allowed=originals["path_allowed"],
+            run_profile=run_profile_that_must_not_be_called,
+            set_phase=lambda repo, number, phase: None,
+            set_converged_phase=_terminal_set_phase,
+            publish_terminal_notification=_terminal_notify,
+        )
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            assert state["status"] == "loop:blocked"
+            assert state.get("last_failure_class") == "INITIAL_OUT_OF_SCOPE_PATHS"
+            assert state["cycles"] == 1
+            assert calls == [1]
+            assert profile_calls == []
+        finally:
+            _restore(originals2)
+            _restore(originals)
+
+
+def test_model_extra_file_blocks() -> None:
+    """An extra file in the model workspace triggers scope violation, not a retry."""
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        repo_dir = tmp / "runs" / "issue-19" / "repo"
+        _setup_git_repo(repo_dir)
+        base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+        state_path = _make_initial_state(tmp)
+        st = worker.load_json(state_path)
+        st["spec"]["expected_base_sha"] = base_sha
+        worker.save_json(state_path, st)
+        calls: list[int] = []
+        profile_calls: list[str] = []
+
+        def pass_delivery_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+            calls.append(cycle)
+            log_path = tmp / f"cycle-{cycle}-opencode.jsonl"
+            log_path.write_text(json.dumps({"type": "text", "part": {"type": "text", "text": worker.prompt_task_sentinel(spec["front_id"], cycle)}}) + "\n", encoding="utf-8")
+            marker = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(worker.pilot_marker_text(spec["front_id"]), encoding="utf-8")
+            (model_dir_arg / "evil.txt").write_text("out-of-scope", encoding="utf-8")
+            return log_path, "session-new"
+
+        originals = _initial_attempt_patches(tmp)[0]
+        real_run = originals["run"]
+        real_changed_files = originals["changed_files"]
+        real_prepare = originals["prepare_model_workspace"]
+        real_audit = originals["audit_and_sync_model_workspace"]
+        real_path_allowed = originals["path_allowed"]
+
+        def run_profile_that_must_not_be_called(cfg, spec, repo_dir_path):
+            profile_calls.append(str(repo_dir_path))
+            raise AssertionError("run_profile must not be called on model scope violation")
+
+        originals2 = _patch_worker(
+            run_kimi=pass_delivery_run_kimi,
+            run=real_run,
+            prepare_model_workspace=real_prepare,
+            changed_files=real_changed_files,
+            path_allowed=real_path_allowed,
+            audit_and_sync_model_workspace=real_audit,
+            run_profile=run_profile_that_must_not_be_called,
+            set_phase=lambda repo, number, phase: None,
+            set_converged_phase=_terminal_set_phase,
+            publish_terminal_notification=_terminal_notify,
+        )
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            assert state["status"] == "loop:blocked"
+            assert state.get("last_failure_class") == "INITIAL_OUT_OF_SCOPE_PATHS"
+            assert state["cycles"] == 1
+            assert calls == [1]
+            assert profile_calls == []
+            events = _events(tmp)
+            gate_event = next(e for e in events if e["kind"] == "local_gate_failed")
+            assert gate_event.get("scope_reason") == "MODEL_WORKSPACE_EXTRA_PATHS"
+            assert gate_event.get("bad_count") == 1
+        finally:
+            _restore(originals2)
+            _restore(originals)
+
+
+def test_model_git_metadata_blocks() -> None:
+    """A .git directory inside the model workspace is a scope violation."""
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        repo_dir = tmp / "runs" / "issue-19" / "repo"
+        _setup_git_repo(repo_dir)
+        base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+        state_path = _make_initial_state(tmp)
+        st = worker.load_json(state_path)
+        st["spec"]["expected_base_sha"] = base_sha
+        worker.save_json(state_path, st)
+        calls: list[int] = []
+        profile_calls: list[str] = []
+
+        def pass_delivery_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+            calls.append(cycle)
+            log_path = tmp / f"cycle-{cycle}-opencode.jsonl"
+            log_path.write_text(json.dumps({"type": "text", "part": {"type": "text", "text": worker.prompt_task_sentinel(spec["front_id"], cycle)}}) + "\n", encoding="utf-8")
+            marker = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(worker.pilot_marker_text(spec["front_id"]), encoding="utf-8")
+            (model_dir_arg / ".git").mkdir(parents=True, exist_ok=True)
+            return log_path, "session-new"
+
+        originals = _initial_attempt_patches(tmp)[0]
+        real_run = originals["run"]
+        real_changed_files = originals["changed_files"]
+        real_prepare = originals["prepare_model_workspace"]
+        real_audit = originals["audit_and_sync_model_workspace"]
+        real_path_allowed = originals["path_allowed"]
+
+        def run_profile_that_must_not_be_called(cfg, spec, repo_dir_path):
+            profile_calls.append(str(repo_dir_path))
+            raise AssertionError("run_profile must not be called on model scope violation")
+
+        originals2 = _patch_worker(
+            run_kimi=pass_delivery_run_kimi,
+            run=real_run,
+            prepare_model_workspace=real_prepare,
+            changed_files=real_changed_files,
+            path_allowed=real_path_allowed,
+            audit_and_sync_model_workspace=real_audit,
+            run_profile=run_profile_that_must_not_be_called,
+            set_phase=lambda repo, number, phase: None,
+            set_converged_phase=_terminal_set_phase,
+            publish_terminal_notification=_terminal_notify,
+        )
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            assert state["status"] == "loop:blocked"
+            assert state.get("last_failure_class") == "INITIAL_OUT_OF_SCOPE_PATHS"
+            assert state["cycles"] == 1
+            assert calls == [1]
+            assert profile_calls == []
+        finally:
+            _restore(originals2)
+            _restore(originals)
+
+
+def test_seed_modification_blocks() -> None:
+    """Modification of a seeded allowlisted file is a scope violation."""
+
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        repo_dir = tmp / "runs" / "issue-19" / "repo"
+        _setup_git_repo(repo_dir)
+        base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+        # Seed a protected file so MODEL_SEED_PATHS is non-empty.
+        seed_file = repo_dir / "docs" / "agent_loop" / "pilot" / "SEED.md"
+        seed_file.parent.mkdir(parents=True, exist_ok=True)
+        seed_file.write_text("seed", encoding="utf-8")
+        worker.run(["git", "add", "-A"], cwd=str(repo_dir), check=True)
+        worker.run(["git", "commit", "-m", "seed"], cwd=str(repo_dir), check=True)
+        state_path = _make_initial_state(tmp)
+        st = worker.load_json(state_path)
+        st["spec"]["expected_base_sha"] = base_sha
+        worker.save_json(state_path, st)
+        calls: list[int] = []
+        profile_calls: list[str] = []
+
+        # Temporarily add the seeded path to MODEL_SEED_PATHS.
+        old_model_seed_paths = set(worker.MODEL_SEED_PATHS)
+        worker.MODEL_SEED_PATHS.add("docs/agent_loop/pilot/SEED.md")
+
+        def pass_delivery_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+            calls.append(cycle)
+            log_path = tmp / f"cycle-{cycle}-opencode.jsonl"
+            log_path.write_text(json.dumps({"type": "text", "part": {"type": "text", "text": worker.prompt_task_sentinel(spec["front_id"], cycle)}}) + "\n", encoding="utf-8")
+            marker = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(worker.pilot_marker_text(spec["front_id"]), encoding="utf-8")
+            seed_dst = model_dir_arg / "docs" / "agent_loop" / "pilot" / "SEED.md"
+            seed_dst.parent.mkdir(parents=True, exist_ok=True)
+            seed_dst.write_text("modified", encoding="utf-8")
+            return log_path, "session-new"
+
+        originals = _initial_attempt_patches(tmp)[0]
+        real_run = originals["run"]
+        real_changed_files = originals["changed_files"]
+        real_prepare = originals["prepare_model_workspace"]
+        real_audit = originals["audit_and_sync_model_workspace"]
+        real_path_allowed = originals["path_allowed"]
+
+        def run_profile_that_must_not_be_called(cfg, spec, repo_dir_path):
+            profile_calls.append(str(repo_dir_path))
+            raise AssertionError("run_profile must not be called on model scope violation")
+
+        originals2 = _patch_worker(
+            run_kimi=pass_delivery_run_kimi,
+            run=real_run,
+            prepare_model_workspace=real_prepare,
+            changed_files=real_changed_files,
+            path_allowed=real_path_allowed,
+            audit_and_sync_model_workspace=real_audit,
+            run_profile=run_profile_that_must_not_be_called,
+            set_phase=lambda repo, number, phase: None,
+            set_converged_phase=_terminal_set_phase,
+            publish_terminal_notification=_terminal_notify,
+        )
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            assert state["status"] == "loop:blocked"
+            assert state.get("last_failure_class") == "INITIAL_OUT_OF_SCOPE_PATHS"
+            assert state["cycles"] == 1
+            assert calls == [1]
+            assert profile_calls == []
+        finally:
+            _restore(originals2)
+            _restore(originals)
+            worker.MODEL_SEED_PATHS.clear()
+            worker.MODEL_SEED_PATHS.update(old_model_seed_paths)
+
+
+def test_marker_mismatch_remains_recoverable() -> None:
+    """An allowlisted marker with wrong content is recoverable within the cycle budget.
+
+    A marker content mismatch is treated as a recoverable workspace audit failure,
+    not a permanent out-of-scope block. The worker retries, but if every attempt
+    produces the wrong marker the budget is exhausted and the issue terminalizes as
+    token-exhausted rather than blocked.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        repo_dir = tmp / "runs" / "issue-19" / "repo"
+        _setup_git_repo(repo_dir)
+        base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+        state_path = _make_initial_state(tmp)
+        st = worker.load_json(state_path)
+        st["spec"]["expected_base_sha"] = base_sha
+        st["spec"]["max_kimi_cycles"] = 3
+        worker.save_json(state_path, st)
+        calls: list[int] = []
+
+        def wrong_marker_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+            calls.append(cycle)
+            log_path = tmp / f"cycle-{cycle}-opencode.jsonl"
+            log_path.write_text(json.dumps({"type": "text", "part": {"type": "text", "text": worker.prompt_task_sentinel(spec["front_id"], cycle)}}) + "\n", encoding="utf-8")
+            marker = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text("wrong", encoding="utf-8")
+            return log_path, "session-new"
+
+        originals = _initial_attempt_patches(tmp)[0]
+        real_run = originals["run"]
+        real_changed_files = originals["changed_files"]
+        real_prepare = originals["prepare_model_workspace"]
+        real_audit = originals["audit_and_sync_model_workspace"]
+        real_path_allowed = originals["path_allowed"]
+
+        originals2 = _patch_worker(
+            run_kimi=wrong_marker_run_kimi,
+            run=real_run,
+            prepare_model_workspace=real_prepare,
+            changed_files=real_changed_files,
+            path_allowed=real_path_allowed,
+            audit_and_sync_model_workspace=real_audit,
+            set_phase=lambda repo, number, phase: None,
+            set_converged_phase=_terminal_set_phase,
+            publish_terminal_notification=_terminal_notify,
+        )
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            assert state["status"] == "loop:token-exhausted"
+            assert state.get("last_failure_class") == "INITIAL_WORKSPACE_AUDIT_FAILED"
+            assert state["cycles"] == 3
+            assert calls == [1, 2, 3]
+            events = _events(tmp)
+            assert all(e.get("failure_class") != "INITIAL_OUT_OF_SCOPE_PATHS" for e in events)
+            assert worker.validate_v157_event_chronology(events) == []
+        finally:
+            _restore(originals2)
+            _restore(originals)
+
+
+def test_repo_bad_defense_in_depth() -> None:
+    """Even if audit passes, a bad path introduced into repo_dir blocks before profile."""
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        repo_dir = tmp / "runs" / "issue-19" / "repo"
+        _setup_git_repo(repo_dir)
+        base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+        state_path = _make_initial_state(tmp)
+        st = worker.load_json(state_path)
+        st["spec"]["expected_base_sha"] = base_sha
+        worker.save_json(state_path, st)
+        calls: list[int] = []
+        profile_calls: list[str] = []
+
+        def pass_delivery_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+            calls.append(cycle)
+            log_path = tmp / f"cycle-{cycle}-opencode.jsonl"
+            log_path.write_text(json.dumps({"type": "text", "part": {"type": "text", "text": worker.prompt_task_sentinel(spec["front_id"], cycle)}}) + "\n", encoding="utf-8")
+            marker = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(worker.pilot_marker_text(spec["front_id"]), encoding="utf-8")
+            return log_path, "session-new"
+
+        originals = _initial_attempt_patches(tmp)[0]
+        real_run = originals["run"]
+        real_changed_files = originals["changed_files"]
+        real_path_allowed = originals["path_allowed"]
+
+        # Audit copies marker only; after audit we inject evil.txt directly into repo_dir.
+        def marker_only_audit_then_inject_evil(model_dir_arg, repo_dir_path, seed_hashes, spec):
+            marker_dst = Path(repo_dir_path) / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+            marker_dst.parent.mkdir(parents=True, exist_ok=True)
+            marker_src = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+            shutil.copy2(marker_src, marker_dst)
+            (Path(repo_dir_path) / "evil.txt").write_text("out-of-scope", encoding="utf-8")
+            return ["docs/agent_loop/pilot/PILOT_MARKER.md"]
+
+        def run_profile_that_must_not_be_called(cfg, spec, repo_dir_path):
+            profile_calls.append(str(repo_dir_path))
+            raise AssertionError("run_profile must not be called when bad repo paths exist")
+
+        originals2 = _patch_worker(
+            run_kimi=pass_delivery_run_kimi,
+            run=real_run,
+            changed_files=real_changed_files,
+            path_allowed=real_path_allowed,
+            audit_and_sync_model_workspace=marker_only_audit_then_inject_evil,
+            run_profile=run_profile_that_must_not_be_called,
+            set_phase=lambda repo, number, phase: None,
+            set_converged_phase=_terminal_set_phase,
+            publish_terminal_notification=_terminal_notify,
+        )
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            assert state["status"] == "loop:blocked"
+            assert state.get("last_failure_class") == "INITIAL_OUT_OF_SCOPE_PATHS"
+            assert state["cycles"] == 1
+            assert calls == [1]
+            assert profile_calls == []
+        finally:
+            _restore(originals2)
+            _restore(originals)
+
+
+def test_scope_violation_nondisclosure() -> None:
+    """Out-of-scope path names and contents must not leak into state or events."""
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        repo_dir = tmp / "runs" / "issue-19" / "repo"
+        _setup_git_repo(repo_dir)
+        base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+        state_path = _make_initial_state(tmp)
+        st = worker.load_json(state_path)
+        st["spec"]["expected_base_sha"] = base_sha
+        worker.save_json(state_path, st)
+        canary_name = "EVIL_SECRET_PATH_4711"
+        canary_content = "EVIL_SECRET_CONTENT_4711"
+
+        def pass_delivery_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+            log_path = tmp / f"cycle-{cycle}-opencode.jsonl"
+            log_path.write_text(json.dumps({"type": "text", "part": {"type": "text", "text": worker.prompt_task_sentinel(spec["front_id"], cycle)}}) + "\n", encoding="utf-8")
+            marker = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(worker.pilot_marker_text(spec["front_id"]), encoding="utf-8")
+            (model_dir_arg / canary_name).write_text(canary_content, encoding="utf-8")
+            return log_path, "session-new"
+
+        originals = _initial_attempt_patches(tmp)[0]
+        real_run = originals["run"]
+        real_changed_files = originals["changed_files"]
+        real_prepare = originals["prepare_model_workspace"]
+        real_audit = originals["audit_and_sync_model_workspace"]
+        real_path_allowed = originals["path_allowed"]
+
+        originals2 = _patch_worker(
+            run_kimi=pass_delivery_run_kimi,
+            run=real_run,
+            prepare_model_workspace=real_prepare,
+            changed_files=real_changed_files,
+            path_allowed=real_path_allowed,
+            audit_and_sync_model_workspace=real_audit,
+            set_phase=lambda repo, number, phase: None,
+            set_converged_phase=_terminal_set_phase,
+            publish_terminal_notification=_terminal_notify,
+        )
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            events = _events(tmp)
+            dumped = json.dumps(state) + json.dumps(events)
+            assert canary_name not in dumped
+            assert canary_content not in dumped
+        finally:
+            _restore(originals2)
+            _restore(originals)
+
+
+def test_mixed_ack_then_timeout_feedback() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        repo_dir = tmp / "runs" / "issue-19" / "repo"
+        _setup_git_repo(repo_dir)
+        base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+        state_path = _make_initial_state(tmp)
+        st = worker.load_json(state_path)
+        st["spec"]["expected_base_sha"] = base_sha
+        st["spec"]["max_kimi_cycles"] = 3
+        worker.save_json(state_path, st)
+        calls: list[tuple[int, str | None]] = []
+
+        def mixed_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+            calls.append((cycle, feedback))
+            if cycle == 1:
+                raise worker.ExecutorAttemptConsumed(
+                    "TASK_NOT_ACKNOWLEDGED",
+                    "ack missing",
+                    {"cycle": cycle, "command_identity": "opencode", "local_log_path": str(tmp / f"cycle-{cycle}.jsonl"), "returncode": None},
+                )
+            if cycle == 2:
+                raise worker.ExecutorAttemptConsumed(
+                    "EXECUTOR_TIMEOUT",
+                    "timeout",
+                    {"cycle": cycle, "command_identity": "opencode", "local_log_path": str(tmp / f"cycle-{cycle}.jsonl"), "returncode": None},
+                )
+            log_path = tmp / f"cycle-{cycle}-opencode.jsonl"
+            log_path.write_text(json.dumps({"type": "text", "part": {"type": "text", "text": worker.prompt_task_sentinel(spec["front_id"], cycle)}}) + "\n", encoding="utf-8")
+            marker = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(worker.pilot_marker_text(spec["front_id"]), encoding="utf-8")
+            return log_path, "session-new"
+
+        originals = _initial_attempt_patches(tmp)[0]
+        originals2 = _patch_worker(run_kimi=mixed_run_kimi)
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            assert calls == [(1, None), (2, worker._TASK_NOT_ACKNOWLEDGED_FEEDBACK), (3, None)]
+        finally:
+            _restore(originals2)
+            _restore(originals)
+
+
+def test_max_cycles_with_missing_workspace() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _resume_state(tmp, cycles=3, repo_dir=tmp / "missing_repo", last_failure_class="TASK_NOT_ACKNOWLEDGED")
+        st = worker.load_json(state_path)
+        worker.save_json(state_path, st)
+        originals = _patch_worker(
+            set_phase=lambda repo, number, phase: None,
+            set_converged_phase=_terminal_set_phase,
+            publish_terminal_notification=_terminal_notify,
+        )
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+            state = worker.load_json(state_path)
+            assert state["cycles"] == 3
+            assert state["status"] == "loop:token-exhausted"
+            assert state.get("last_failure_class") != "INITIAL_RETRY_WORKSPACE_UNAVAILABLE"
+        finally:
+            _restore(originals)
+
+
+def test_audit_and_gate_output_nondisclosure() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        repo_dir = tmp / "runs" / "issue-19" / "repo"
+        _setup_git_repo(repo_dir)
+        base_sha = worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+        state_path = _make_initial_state(tmp)
+        st = worker.load_json(state_path)
+        st["spec"]["expected_base_sha"] = base_sha
+        worker.save_json(state_path, st)
+        canary = "profile failure no prompt canary"
+
+        def pass_delivery_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+            log_path = tmp / f"cycle-{cycle}-opencode.jsonl"
+            log_path.write_text(json.dumps({"type": "text", "part": {"type": "text", "text": worker.prompt_task_sentinel(spec["front_id"], cycle)}}) + "\n", encoding="utf-8")
+            marker = model_dir_arg / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(worker.pilot_marker_text(spec["front_id"]), encoding="utf-8")
+            return log_path, "session-new"
+
+        def leaky_profile(cfg, spec, repo_dir_path):
+            return False, canary
+
+        originals = _initial_attempt_patches(tmp)[0]
+        originals2 = _patch_worker(
+            run_kimi=pass_delivery_run_kimi,
+            run_profile=leaky_profile,
+            set_phase=lambda repo, number, phase: None,
+        )
+        try:
+            worker.execute_initial(_cfg(td), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+        finally:
+            _restore(originals2)
+            _restore(originals)
+        state = worker.load_json(state_path)
+        events = _events(tmp)
+        assert canary not in json.dumps(state)
+        assert canary not in json.dumps(events)
 
 
 def main() -> int:
@@ -1971,6 +2856,21 @@ def main() -> int:
         test_initial_restart_workspace_outside_runs,
         test_process_restart_accounting,
         test_crash_window_simulation,
+        test_initial_delivery_checkpoint_before_audit,
+        test_restart_after_audit_failure,
+        test_restart_after_local_test_failure,
+        test_out_of_scope_path_blocks_after_consumed_cycle,
+        test_out_of_scope_block_survives_process_restart,
+        test_out_of_scope_skips_run_profile,
+        test_model_extra_file_blocks,
+        test_model_git_metadata_blocks,
+        test_seed_modification_blocks,
+        test_marker_mismatch_remains_recoverable,
+        test_repo_bad_defense_in_depth,
+        test_scope_violation_nondisclosure,
+        test_mixed_ack_then_timeout_feedback,
+        test_max_cycles_with_missing_workspace,
+        test_audit_and_gate_output_nondisclosure,
     ]
 
     failed = 0

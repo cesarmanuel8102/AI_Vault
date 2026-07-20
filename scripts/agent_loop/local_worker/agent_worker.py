@@ -127,6 +127,15 @@ class ExecutorAttemptConsumed(RuntimeError):
         self.details = details or {}
 
 
+class ModelWorkspaceScopeViolation(RuntimeError):
+    """An out-of-scope path or trust boundary violation was detected in the model workspace."""
+
+    def __init__(self, reason_code: str, count: int = 0):
+        self.reason_code = reason_code
+        self.count = count
+        super().__init__(f"workspace_boundary violation: {reason_code}")
+
+
 class CmdError(RuntimeError):
     def __init__(self, cmd, code, out):
         redacted = _redacted_cmd_repr(cmd)
@@ -845,7 +854,13 @@ def _walk_workspace_files(root: Path) -> list[str]:
     files = []
     for path in root.rglob("*"):
         if path.is_symlink():
-            raise RuntimeError(f"MODEL_WORKSPACE_SYMLINK_DENIED:{path}")
+            raise ModelWorkspaceScopeViolation("MODEL_WORKSPACE_LINK_DENIED")
+        if os.name == "nt":
+            try:
+                if os.lstat(str(path)).st_reparse_tag:
+                    raise ModelWorkspaceScopeViolation("MODEL_WORKSPACE_LINK_DENIED")
+            except FileNotFoundError:
+                pass
         if path.is_file():
             files.append(path.relative_to(root).as_posix())
     return sorted(files)
@@ -877,17 +892,22 @@ def prepare_model_workspace(repo_dir: Path, spec: dict, cycle: int) -> tuple[Pat
 def audit_and_sync_model_workspace(model_dir: Path, repo_dir: Path, seed_hashes: dict[str, str], spec: dict | None = None) -> list[str]:
     """Reject metadata/extra writes, verify exact output, then copy only allowlisted output."""
     if (model_dir / ".git").exists():
-        raise RuntimeError("MODEL_WORKSPACE_GIT_METADATA_DENIED")
-    files = set(_walk_workspace_files(model_dir))
+        raise ModelWorkspaceScopeViolation("MODEL_WORKSPACE_GIT_METADATA_DENIED")
+    try:
+        files = set(_walk_workspace_files(model_dir))
+    except ModelWorkspaceScopeViolation:
+        raise
     marker_rel = "docs/agent_loop/pilot/PILOT_MARKER.md"
     expected = set(MODEL_SEED_PATHS) | {marker_rel}
     extra = sorted(files - expected)
     missing = sorted(expected - files)
-    if extra or missing:
-        raise RuntimeError(f"MODEL_WORKSPACE_BOUNDARY_FAILED extra={extra} missing={missing}")
+    if extra:
+        raise ModelWorkspaceScopeViolation("MODEL_WORKSPACE_EXTRA_PATHS", count=len(extra))
+    if missing:
+        raise RuntimeError(f"MODEL_WORKSPACE_BOUNDARY_FAILED missing={missing}")
     for rel, expected_hash in seed_hashes.items():
         if sha256_file(model_dir / rel) != expected_hash:
-            raise RuntimeError(f"MODEL_SEED_MODIFIED:{rel}")
+            raise ModelWorkspaceScopeViolation("MODEL_WORKSPACE_SEED_MODIFIED", count=1)
     marker = model_dir / marker_rel
     content = marker.read_text(encoding="utf-8-sig").replace("\r\n", "\n")
     expected_front = (spec or {}).get("front_id", "PILOT-KIMI-CODEX-20260716-091529")
@@ -898,9 +918,9 @@ def audit_and_sync_model_workspace(model_dir: Path, repo_dir: Path, seed_hashes:
     for part in Path(marker_rel).parts[:-1]:
         current = current / part
         if current.exists() and current.is_symlink():
-            raise RuntimeError(f"TRUSTED_OUTPUT_PARENT_SYMLINK_DENIED:{current}")
+            raise ModelWorkspaceScopeViolation("TRUSTED_OUTPUT_PARENT_LINK_DENIED")
     if destination.exists() and destination.is_symlink():
-        raise RuntimeError(f"TRUSTED_OUTPUT_SYMLINK_DENIED:{destination}")
+        raise ModelWorkspaceScopeViolation("TRUSTED_OUTPUT_LINK_DENIED")
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(marker, destination)
     return [marker_rel]
@@ -1450,7 +1470,36 @@ def _workspace_is_trusted(repo_dir: Path, cfg: dict, spec: dict) -> bool:
 def _safe_feedback_for_failure(failure_class: str) -> str | None:
     if failure_class == "TASK_NOT_ACKNOWLEDGED":
         return _TASK_NOT_ACKNOWLEDGED_FEEDBACK
+    if failure_class == "EXECUTOR_DELIVERY_ACCEPTED_PENDING_LOCAL_GATES":
+        return "The prior executor delivery passed governed acknowledgement. Complete the remaining allowlisted artifact and satisfy the configured test profile. Do not create any other file."
+    if failure_class == "INITIAL_WORKSPACE_AUDIT_FAILED":
+        return "The prior candidate failed the governed workspace audit. Recreate only the exact allowlisted files and marker. Do not create any other file."
+    if failure_class == "INITIAL_LOCAL_GATE_FAILED":
+        return "The prior candidate failed governed local validation. Correct only the allowlisted pilot artifacts and satisfy the configured test profile."
+    if failure_class == "INITIAL_OUT_OF_SCOPE_PATHS":
+        return "Out-of-scope changes were detected in the governed workspace. Human audit is required."
     return None
+
+
+def _checkpoint_initial_cycle(cfg: dict, state_path: Path, issue_no: int, spec: dict, repo_dir: Path,
+                              cycle: int, session_id: str | None, failure_class: str, safe_error: str) -> None:
+    """Atomically persist that an initial cycle has started before downstream gates run."""
+    st = load_json(state_path)
+    st.update({
+        "issue_number": issue_no,
+        "front": spec["front_id"],
+        "spec": spec,
+        "repo_dir": str(repo_dir),
+        "cycles": cycle,
+        "opencode_session_id": session_id,
+        "status": "loop:executing",
+        "error": safe_error,
+        "updated_utc": utc(),
+        "worker_version": WORKER_VERSION,
+        "state_schema_version": STATE_SCHEMA_VERSION,
+        "last_failure_class": failure_class,
+    })
+    save_json(state_path, st)
 
 
 def execute_initial(cfg, issue, spec, state_path):
@@ -1461,7 +1510,19 @@ def execute_initial(cfg, issue, spec, state_path):
     session_id = st.get("opencode_session_id") or None
     feedback = _safe_feedback_for_failure(str(st.get("last_failure_class") or ""))
     max_cycles = int(spec["max_kimi_cycles"])
-    start_cycle = persisted_cycles + 1
+
+    if persisted_cycles >= max_cycles:
+        safe_error = "Maximum Kimi cycles reached without success. Human audit required."
+        st.update({"issue_number": n, "front": spec["front_id"], "spec": spec,
+                   "cycles": persisted_cycles, "opencode_session_id": session_id,
+                   "status": "loop:token-exhausted", "error": safe_error,
+                   "updated_utc": utc(), "worker_version": WORKER_VERSION,
+                   "state_schema_version": STATE_SCHEMA_VERSION})
+        st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted")
+        st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", safe_error)
+        event(cfg, "state_terminalized", state=str(state_path), issue=n, phase="loop:token-exhausted",
+              failure_class="MAX_CYCLES_REACHED", error=safe_error)
+        return
 
     repo_dir = None
     if persisted_cycles > 0:
@@ -1481,19 +1542,7 @@ def execute_initial(cfg, issue, spec, state_path):
     else:
         repo_dir = prepare_repo(cfg, spec, n)
 
-    if start_cycle > max_cycles:
-        safe_error = "Maximum Kimi cycles reached without success. Human audit required."
-        st.update({"issue_number": n, "front": spec["front_id"], "spec": spec, "repo_dir": str(repo_dir),
-                   "cycles": persisted_cycles, "opencode_session_id": session_id, "status": "loop:token-exhausted",
-                   "error": safe_error, "updated_utc": utc(), "worker_version": WORKER_VERSION,
-                   "state_schema_version": STATE_SCHEMA_VERSION})
-        st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted")
-        st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", safe_error)
-        event(cfg, "state_terminalized", state=str(state_path), issue=n, phase="loop:token-exhausted",
-              failure_class="MAX_CYCLES_REACHED", error=safe_error)
-        return
-
-    for cycle in range(start_cycle, max_cycles + 1):
+    for cycle in range(persisted_cycles + 1, max_cycles + 1):
         event(cfg,"kimi_cycle_start",issue=n,cycle=cycle,front=spec["front_id"])
         model_dir, seed_hashes = prepare_model_workspace(repo_dir, spec, cycle)
         marker_path = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
@@ -1539,28 +1588,74 @@ def execute_initial(cfg, issue, spec, state_path):
                 event(cfg, "state_terminalized", state=str(state_path), issue=n, phase="loop:token-exhausted",
                       failure_class=exc.failure_class, cycle=cycle, error=safe_error)
                 return
-            st = load_json(state_path)
-            st.update({"issue_number": n, "front": spec["front_id"], "spec": spec, "repo_dir": str(repo_dir),
-                       "cycles": cycle, "opencode_session_id": session_id, "status": "loop:executing",
-                       "error": safe_error, "updated_utc": utc(), "worker_version": WORKER_VERSION,
-                       "state_schema_version": STATE_SCHEMA_VERSION, "last_failure_class": exc.failure_class})
-            if exc.failure_class == "TASK_NOT_ACKNOWLEDGED":
-                feedback = _TASK_NOT_ACKNOWLEDGED_FEEDBACK
-            save_json(state_path, st)
+            feedback = _safe_feedback_for_failure(exc.failure_class)
+            _checkpoint_initial_cycle(cfg, state_path, n, spec, repo_dir, cycle, session_id,
+                                      exc.failure_class, safe_error)
             continue
+
+        _checkpoint_initial_cycle(cfg, state_path, n, spec, repo_dir, cycle, session_id,
+                                  "EXECUTOR_DELIVERY_ACCEPTED_PENDING_LOCAL_GATES",
+                                  "Executor delivery passed; governed local gates are pending.")
         try:
             audit_and_sync_model_workspace(model_dir, repo_dir, seed_hashes, spec)
-        except Exception as exc:
-            feedback = str(exc)
-            event(cfg,"kimi_cycle_repair_needed",issue=n,cycle=cycle,bad=[str(exc)],test_ok=False)
+        except ModelWorkspaceScopeViolation as exc:
+            safe_error = "Out-of-scope changes were detected in the governed workspace. Human audit is required."
+            _checkpoint_initial_cycle(cfg, state_path, n, spec, repo_dir, cycle, session_id,
+                                      "INITIAL_OUT_OF_SCOPE_PATHS", safe_error)
+            st = load_json(state_path)
+            st.update({
+                "issue_number": n, "front": spec["front_id"], "spec": spec,
+                "repo_dir": str(repo_dir), "cycles": cycle, "opencode_session_id": session_id,
+                "status": "loop:blocked", "error": safe_error, "updated_utc": utc(),
+                "worker_version": WORKER_VERSION, "state_schema_version": STATE_SCHEMA_VERSION,
+                "last_failure_class": "INITIAL_OUT_OF_SCOPE_PATHS",
+            })
+            save_json(state_path, st)
+            st = set_converged_phase(cfg, state_path, st, "loop:blocked")
+            event(cfg, "local_gate_failed", issue=n, pr=None, cycle=cycle,
+                  failure_class="INITIAL_OUT_OF_SCOPE_PATHS", cycle_before=cycle-1, cycle_after=cycle,
+                  scope_reason=exc.reason_code, bad_count=exc.count, test_ok=False)
+            st = publish_terminal_notification(cfg, state_path, st, "loop:blocked", safe_error)
+            event(cfg, "state_terminalized", state=str(state_path), issue=n, phase="loop:blocked",
+                  failure_class="INITIAL_OUT_OF_SCOPE_PATHS", error=safe_error)
+            return
+        except Exception:
+            safe_error = "The prior candidate failed the governed workspace audit."
+            feedback = _safe_feedback_for_failure("INITIAL_WORKSPACE_AUDIT_FAILED")
+            event(cfg,"kimi_cycle_repair_needed",issue=n,cycle=cycle,bad=[],test_ok=False)
+            _checkpoint_initial_cycle(cfg, state_path, n, spec, repo_dir, cycle, session_id,
+                                      "INITIAL_WORKSPACE_AUDIT_FAILED", safe_error)
             continue
         changes = changed_files(repo_dir,spec["expected_base_sha"])
         bad = [p for p in changes if not path_allowed(p,spec["allowed_paths"],spec["forbidden_paths"])]
-        # Worker owns executor report, so add it after initial path check.
+        if bad:
+            safe_error = "Out-of-scope changes were detected in the governed workspace. Human audit is required."
+            _checkpoint_initial_cycle(cfg, state_path, n, spec, repo_dir, cycle, session_id,
+                                      "INITIAL_OUT_OF_SCOPE_PATHS", safe_error)
+            st = load_json(state_path)
+            st.update({
+                "issue_number": n, "front": spec["front_id"], "spec": spec,
+                "repo_dir": str(repo_dir), "cycles": cycle, "opencode_session_id": session_id,
+                "status": "loop:blocked", "error": safe_error, "updated_utc": utc(),
+                "worker_version": WORKER_VERSION, "state_schema_version": STATE_SCHEMA_VERSION,
+                "last_failure_class": "INITIAL_OUT_OF_SCOPE_PATHS",
+            })
+            save_json(state_path, st)
+            st = set_converged_phase(cfg, state_path, st, "loop:blocked")
+            event(cfg, "local_gate_failed", issue=n, pr=None, cycle=cycle,
+                  failure_class="INITIAL_OUT_OF_SCOPE_PATHS", cycle_before=cycle-1, cycle_after=cycle,
+                  bad_count=len(bad), test_ok=False)
+            st = publish_terminal_notification(cfg, state_path, st, "loop:blocked", safe_error)
+            event(cfg, "state_terminalized", state=str(state_path), issue=n, phase="loop:blocked",
+                  failure_class="INITIAL_OUT_OF_SCOPE_PATHS", error=safe_error)
+            return
         test_ok, test_out = run_profile(cfg,spec,repo_dir)
-        if bad or not test_ok:
-            feedback = ("Out-of-scope files: " + json.dumps(bad) + "\n" if bad else "") + ("Test output:\n" + test_out[-4000:] if not test_ok else "")
-            event(cfg,"kimi_cycle_repair_needed",issue=n,cycle=cycle,bad=bad,test_ok=test_ok)
+        if not test_ok:
+            safe_error = "The prior candidate failed governed local validation."
+            feedback = _safe_feedback_for_failure("INITIAL_LOCAL_GATE_FAILED")
+            event(cfg,"kimi_cycle_repair_needed",issue=n,cycle=cycle,bad=[],test_ok=test_ok)
+            _checkpoint_initial_cycle(cfg, state_path, n, spec, repo_dir, cycle, session_id,
+                                      "INITIAL_LOCAL_GATE_FAILED", safe_error)
             continue
         write_executor_report(cfg,spec,repo_dir,n,cycle,changes,test_ok,test_out,log)
         final_changes = changed_files(repo_dir,spec["expected_base_sha"])
@@ -1585,6 +1680,7 @@ def execute_initial(cfg, issue, spec, state_path):
     st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
     event(cfg, "state_terminalized", state=str(state_path), issue=n, phase="loop:token-exhausted",
           failure_class="MAX_CYCLES_REACHED", error="max cycles reached")
+
 
 def process_state(cfg, state_path):
     st=load_json(state_path); issue=st["issue_number"]; spec=st["spec"]
