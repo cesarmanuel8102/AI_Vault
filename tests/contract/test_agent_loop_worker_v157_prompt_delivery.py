@@ -135,6 +135,14 @@ def run_case(mode: str, objective: str = "Create the exact pilot marker.") -> tu
 
 checks: dict[str, bool] = {}
 
+prompt = worker.make_prompt(spec_payload(), 1)
+assert "Your first required action is to invoke the OpenCode write tool." in prompt
+assert "A text-only response is a failed attempt." in prompt
+assert "Do not output the success sentinel before the write tool reports completion." in prompt
+assert "After the tool completes, verify the exact relative path and then output the success sentinel." in prompt
+assert worker.prompt_task_failure_sentinel(FRONT, 1) in prompt
+checks["prompt_requires_write_tool_before_ack"] = True
+
 events, _model, _log = run_case("exact")
 assert any(e["kind"] == "executor_started" and e.get("issue") == 5 for e in events)
 assert any(e["kind"] == "executor_completed" and e["task_acknowledged"] is True and e.get("ack_source") == "text_sentinel" for e in events)
