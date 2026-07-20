@@ -867,11 +867,18 @@ def test_timeout_traceback_does_not_leak_prompt_or_stdout_canary() -> None:
         marker.parent.mkdir(parents=True)
         marker.write_text(worker.pilot_marker_text(FRONT), encoding="utf-8")
         (Path(td) / "reports").mkdir(parents=True, exist_ok=True)
-        worker._OPENCODE_RUN_HELP = "Options:\n  --model\n"
-        worker._RUNTIME_EXECUTABLES = {"node": r"C:\fake\node.exe", "opencode_entrypoint": r"C:\fake\opencode.js"}
         prompt_canary = "ULTRA_SECRET_PROMPT_CANARY_7F3A91"
         stdout_canary = "ULTRA_SECRET_STDOUT_CANARY_4C92E8"
-        original_make_prompt = worker.make_prompt
+
+        old_subprocess_run = worker.subprocess.run
+        old_event = worker.event
+        old_make_prompt = worker.make_prompt
+        old_runtime = worker._RUNTIME_EXECUTABLES
+        old_help = worker._OPENCODE_RUN_HELP
+        original_make_prompt = old_make_prompt
+
+        worker._OPENCODE_RUN_HELP = "Options:\n  --model\n"
+        worker._RUNTIME_EXECUTABLES = {"node": r"C:\fake\node.exe", "opencode_entrypoint": r"C:\fake\opencode.js"}
 
         def canary_prompt(spec, cycle, feedback=None):
             return original_make_prompt(spec, cycle, feedback) + "\n" + prompt_canary
@@ -884,7 +891,6 @@ def test_timeout_traceback_does_not_leak_prompt_or_stdout_canary() -> None:
             assert prompt_canary in prompt, "prompt canary must be in prompt for this test"
             raise worker.subprocess.TimeoutExpired(args, timeout=1, output=(stdout_canary + " timeout output").encode("utf-8"))
 
-        old_event = worker.event
         events_before = []
         worker.event = lambda _cfg, kind, **fields: events_before.append({"kind": kind, **fields})
         worker.make_prompt = canary_prompt
@@ -895,11 +901,11 @@ def test_timeout_traceback_does_not_leak_prompt_or_stdout_canary() -> None:
         except Exception as caught:
             exc = caught
         finally:
-            worker.make_prompt = original_make_prompt
-            worker.subprocess.run = worker.subprocess.run
+            worker.make_prompt = old_make_prompt
+            worker.subprocess.run = old_subprocess_run
             worker.event = old_event
-            worker._RUNTIME_EXECUTABLES = {}
-            worker._OPENCODE_RUN_HELP = None
+            worker._RUNTIME_EXECUTABLES = old_runtime
+            worker._OPENCODE_RUN_HELP = old_help
 
         assert exc is not None
         assert isinstance(exc, worker.ExecutorAttemptConsumed), type(exc)
@@ -915,6 +921,11 @@ def test_timeout_traceback_does_not_leak_prompt_or_stdout_canary() -> None:
         log = Path(td) / "reports" / "issue-5-cycle-1-opencode.jsonl"
         assert log.exists()
         assert stdout_canary in log.read_text(encoding="utf-8")
+        assert worker.subprocess.run is old_subprocess_run
+        assert worker.event is old_event
+        assert worker.make_prompt is old_make_prompt
+        assert worker._RUNTIME_EXECUTABLES is old_runtime
+        assert worker._OPENCODE_RUN_HELP == old_help
 
 
 def test_timeout_via_process_state_consumes_exactly_one_cycle() -> None:
