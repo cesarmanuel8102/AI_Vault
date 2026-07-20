@@ -1036,6 +1036,8 @@ def _git_template() -> tuple[Path, str]:
     root = Path(tempfile.mkdtemp(prefix="v157-git-template-"))
     devnull = worker.subprocess.DEVNULL
     worker.subprocess.run(["git", "init", "-q"], cwd=str(root), check=True, stdout=devnull, stderr=devnull)
+    worker.subprocess.run(["git", "config", "user.name", "Test"], cwd=str(root), check=True, stdout=devnull, stderr=devnull)
+    worker.subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=str(root), check=True, stdout=devnull, stderr=devnull)
     (root / "base.txt").write_text("base", encoding="utf-8")
     worker.subprocess.run(["git", "add", "base.txt"], cwd=str(root), check=True, stdout=devnull, stderr=devnull)
     worker.subprocess.run(
@@ -2830,6 +2832,8 @@ def test_git_template_isolation() -> None:
         base_b = _setup_git_repo(repo_b)
         assert base_a == base_b
         assert (repo_a / ".git").resolve() != (repo_b / ".git").resolve()
+        assert worker.run(["git", "config", "user.name"], cwd=str(repo_a)).strip() == "Test"
+        assert worker.run(["git", "config", "user.email"], cwd=str(repo_b)).strip() == "test@example.com"
 
         unique = repo_a / "a-only.txt"
         unique.write_text("isolated", encoding="utf-8")
