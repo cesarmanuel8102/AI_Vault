@@ -158,10 +158,10 @@ checks["extra_file_fails"] = True
 expect_error(lambda: run_case("invalid_jsonl"), "expecting property name")
 checks["invalid_jsonl_fails"] = True
 
-expect_error(lambda: run_case("timeout"), "opencode run exceeded")
+expect_error(lambda: run_case("timeout"), "exceeded the configured timeout")
 checks["timeout_fails"] = True
 
-expect_error(lambda: run_case("executable_failure"), "opencode process exited non-zero")
+expect_error(lambda: run_case("executable_failure"), "exited non-zero")
 checks["executable_failure_fails"] = True
 
 events, _model, _log = run_case("exact", objective="Create marker. SECRET_TOKEN_SHOULD_NOT_LEAK")

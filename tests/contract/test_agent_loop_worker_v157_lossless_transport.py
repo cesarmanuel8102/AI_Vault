@@ -282,7 +282,7 @@ def test_kimi_requires_node_exe() -> None:
         try:
             worker.run_kimi(cfg, {"front_id": "FAIL-CLOSED-NODE"}, tmp / "model", 1, 1)
             raise AssertionError("run_kimi should fail closed without node_exe")
-        except RuntimeError as exc:
+        except (RuntimeError, worker.PreExecutionFailure) as exc:
             assert "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED" in str(exc) and "node_exe" in str(exc)
         finally:
             worker._RUNTIME_EXECUTABLES = {}
@@ -297,7 +297,7 @@ def test_kimi_requires_opencode_entrypoint() -> None:
         try:
             worker.run_kimi(cfg, {"front_id": "FAIL-CLOSED-ENTRYPOINT"}, tmp / "model", 1, 1)
             raise AssertionError("run_kimi should fail closed without opencode_entrypoint")
-        except RuntimeError as exc:
+        except (RuntimeError, worker.PreExecutionFailure) as exc:
             assert "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED" in str(exc) and "opencode_entrypoint" in str(exc)
         finally:
             worker._RUNTIME_EXECUTABLES = {}

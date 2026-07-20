@@ -36,7 +36,14 @@ def _base_spec() -> dict:
 
 
 def _cfg(td: str) -> dict:
-    return {"install_root": td, "repo": "cesarmanuel8102/AI_Vault", "owner": "cesarmanuel8102"}
+    return {
+        "install_root": td,
+        "repo": "cesarmanuel8102/AI_Vault",
+        "owner": "cesarmanuel8102",
+        "opencode_model": "ollama-cloud/kimi-k2.7-code",
+        "opencode_output_token_max": 4096,
+        "opencode_timeout_seconds": 5,
+    }
 
 
 def _terminal_set_phase(cfg: dict, state_path: Path, st: dict, phase: str, *, pr_number: int | None = None) -> dict:
@@ -95,8 +102,8 @@ def _make_state(tmp: Path, cycles: int = 2) -> Path:
     return state_path
 
 
-def _common_process_patches(tmp: Path, *, audit_error: Exception | None = None, marker_ok: bool = True,
-                            changed: list[str] | None = None, final_ok: bool = True):
+def _base_process_patches(tmp: Path, *, audit_error: Exception | None = None, marker_ok: bool = True,
+                          changed: list[str] | None = None, final_ok: bool = True):
     log = tmp / "opencode.jsonl"
     log.write_text(json.dumps({"type": "text", "part": {"text": worker.prompt_task_sentinel(FRONT, 3)}}) + "\n", encoding="utf-8")
     model_dir = tmp / "model"
@@ -120,32 +127,46 @@ def _common_process_patches(tmp: Path, *, audit_error: Exception | None = None, 
     def fake_prepare(repo_dir, spec, cycle):
         return model_dir, {}
 
-    def fake_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
-        return log, "session-new"
-
     def fake_audit(model_dir_arg, repo_dir, seed_hashes, spec):
         if audit_error:
             raise audit_error
         return ["docs/agent_loop/pilot/PILOT_MARKER.md"]
 
-    return _patch_worker(
-        gh_json=fake_gh_json,
-        run=fake_run,
-        latest_feedback=lambda *a, **k: "feedback",
-        prepare_model_workspace=fake_prepare,
-        run_kimi=fake_run_kimi,
-        validate_executor_delivery=lambda *a, **k: None,
-        audit_and_sync_model_workspace=fake_audit,
-        run_marker_content_check=lambda repo_dir: (marker_ok, "marker failure" if not marker_ok else "ok"),
-        changed_files=lambda repo_dir, base_sha: list(changed if changed is not None else ["docs/agent_loop/pilot/PILOT_MARKER.md"]),
-        marker_hash=lambda repo_dir: "markerhash",
-        path_allowed=lambda path, allowed, forbidden: path in worker.PROFILE_ALLOWED_PATHS["pilot"],
-        write_executor_report=lambda *a, **k: None,
-        run_final_verifier=lambda *a, **k: (final_ok, "final verifier failure" if not final_ok else "ok"),
-        write_final_local_report=lambda *a, **k: tmp / "final.json",
-        set_converged_phase=_terminal_set_phase,
-        publish_terminal_notification=_terminal_notify,
-    )
+    return {
+        "gh_json": fake_gh_json,
+        "run": fake_run,
+        "latest_feedback": lambda *a, **k: "feedback",
+        "prepare_model_workspace": fake_prepare,
+        "validate_executor_delivery": lambda *a, **k: None,
+        "audit_and_sync_model_workspace": fake_audit,
+        "run_marker_content_check": lambda repo_dir: (marker_ok, "marker failure" if not marker_ok else "ok"),
+        "changed_files": lambda repo_dir, base_sha: list(changed if changed is not None else ["docs/agent_loop/pilot/PILOT_MARKER.md"]),
+        "marker_hash": lambda repo_dir: "markerhash",
+        "path_allowed": lambda path, allowed, forbidden: path in worker.PROFILE_ALLOWED_PATHS["pilot"],
+        "write_executor_report": lambda *a, **k: None,
+        "run_final_verifier": lambda *a, **k: (final_ok, "final verifier failure" if not final_ok else "ok"),
+        "write_final_local_report": lambda *a, **k: tmp / "final.json",
+        "set_converged_phase": _terminal_set_phase,
+        "publish_terminal_notification": _terminal_notify,
+    }
+
+
+def _common_process_patches(tmp: Path, *, audit_error: Exception | None = None, marker_ok: bool = True,
+                            changed: list[str] | None = None, final_ok: bool = True):
+    log = tmp / "opencode.jsonl"
+
+    def fake_run_kimi(cfg, spec, model_dir_arg, issue_no, cycle, feedback=None, session_id=None):
+        return log, "session-new"
+
+    replacements = _base_process_patches(tmp, audit_error=audit_error, marker_ok=marker_ok, changed=changed, final_ok=final_ok)
+    replacements["run_kimi"] = fake_run_kimi
+    return _patch_worker(**replacements)
+
+
+def _preflight_process_patches(tmp: Path, *, audit_error: Exception | None = None, marker_ok: bool = True,
+                               changed: list[str] | None = None, final_ok: bool = True):
+    replacements = _base_process_patches(tmp, audit_error=audit_error, marker_ok=marker_ok, changed=changed, final_ok=final_ok)
+    return _patch_worker(**replacements)
 
 
 def _events(tmp: Path) -> list[dict]:
@@ -281,6 +302,22 @@ def test_event_chronology_rejects_reverted_without_committed() -> None:
     )
 
 
+def test_event_chronology_rejects_preflight_then_executor_started() -> None:
+    errors = worker.validate_v157_event_chronology([
+        {"kind": "executor_started", "issue": 5, "pr": 6, "cycle": 1, "command_identity": "opencode", "model": "m"},
+        {"kind": "executor_preflight_failed", "issue": 5, "pr": 6, "cycle": 1, "failure_class": "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED", "command_identity": "opencode"},
+    ])
+    assert any("executor_preflight_failed_after_executor_started" in e for e in errors), errors
+
+
+def test_event_chronology_rejects_post_preflight_actions() -> None:
+    errors = worker.validate_v157_event_chronology([
+        {"kind": "executor_preflight_failed", "issue": 5, "pr": 6, "cycle": 1, "failure_class": "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED", "command_identity": "opencode"},
+        {"kind": "executor_failed", "issue": 5, "pr": 6, "cycle": 1, "error": "x", "failure_class": "COMMAND_FAILED"},
+    ])
+    assert any("after_executor_preflight_failed" in e for e in errors), errors
+
+
 def _assert_terminalized_without_post_actions(tmp: Path, state_path: Path) -> None:
     state = worker.load_json(state_path)
     assert state["cycles"] == 3
@@ -408,8 +445,372 @@ def test_executor_attempt_consumed_final_terminalizes() -> None:
 
 def test_prompt_canary_absent_from_exception_and_log() -> None:
     canary = "CANARY_PROMPT_CONTENT_12345"
-    safe = worker._redacted_cmd_repr(["opencode", "run", "--dir", "C:\\d", "--model", "m", canary])
+    safe = worker._redacted_cmd_repr(["opencode", "run", "--dir", "C:\d", "--model", "m", canary])
     assert all(canary not in str(x) for x in safe), safe
+
+
+def test_command_string_fallback_blocks_without_executor_started() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _make_state(tmp, cycles=1)
+        originals = _preflight_process_patches(tmp)
+        calls: list[str] = []
+        old_subprocess_run = worker.subprocess.run
+        old_command_for_subprocess = worker.command_for_subprocess
+        old_runtime = worker._RUNTIME_EXECUTABLES
+        old_help = worker._OPENCODE_RUN_HELP
+
+        def fake_subprocess_run(*args, **kwargs):
+            calls.append("subprocess.run")
+            raise AssertionError("subprocess.run must not be called for preflight failure")
+
+        worker._OPENCODE_RUN_HELP = ""
+        worker._RUNTIME_EXECUTABLES = {"node": r"C:\fake\node.exe", "opencode_entrypoint": r"C:\fake\opencode.js"}
+        worker.subprocess.run = fake_subprocess_run
+        worker.command_for_subprocess = lambda args: r'C:\System32\cmd.exe /d /s /c fake_opencode.CMD run "prompt"'
+        try:
+            worker.process_state(_cfg(td), state_path)
+            state = worker.load_json(state_path)
+            events = _events(tmp)
+            kinds = [e["kind"] for e in events]
+            assert state["cycles"] == 1
+            assert state["status"] == "loop:blocked"
+            assert "executor_preflight_failed" in kinds
+            assert "executor_started" not in kinds
+            assert "executor_failed" not in kinds
+            assert "state_terminalized" in kinds
+            assert not any("subprocess.run" in c for c in calls)
+            assert worker.validate_v157_event_chronology(events) == []
+        finally:
+            worker.subprocess.run = old_subprocess_run
+            worker.command_for_subprocess = old_command_for_subprocess
+            worker._RUNTIME_EXECUTABLES = old_runtime
+            worker._OPENCODE_RUN_HELP = old_help
+            _restore(originals)
+
+
+def test_cmd_exe_fallback_blocks_without_executor_started() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _make_state(tmp, cycles=1)
+        originals = _preflight_process_patches(tmp)
+        calls: list[str] = []
+        old_subprocess_run = worker.subprocess.run
+        old_command_for_subprocess = worker.command_for_subprocess
+        old_runtime = worker._RUNTIME_EXECUTABLES
+        old_help = worker._OPENCODE_RUN_HELP
+
+        def fake_subprocess_run(*args, **kwargs):
+            calls.append("subprocess.run")
+            raise AssertionError("subprocess.run must not be called for cmd.exe fallback")
+
+        worker._OPENCODE_RUN_HELP = ""
+        worker._RUNTIME_EXECUTABLES = {"node": r"C:\fake\node.exe", "opencode_entrypoint": r"C:\fake\opencode.js"}
+        worker.subprocess.run = fake_subprocess_run
+        worker.command_for_subprocess = lambda args: [r"C:\System32\cmd.exe", "/d", "/s", "/c", "fake_opencode.CMD", "run", "prompt"]
+        try:
+            worker.process_state(_cfg(td), state_path)
+            state = worker.load_json(state_path)
+            events = _events(tmp)
+            kinds = [e["kind"] for e in events]
+            assert state["cycles"] == 1
+            assert state["status"] == "loop:blocked"
+            assert "executor_preflight_failed" in kinds
+            assert "executor_started" not in kinds
+            assert not any("subprocess.run" in c for c in calls)
+            assert worker.validate_v157_event_chronology(events) == []
+        finally:
+            worker.subprocess.run = old_subprocess_run
+            worker.command_for_subprocess = old_command_for_subprocess
+            worker._RUNTIME_EXECUTABLES = old_runtime
+            worker._OPENCODE_RUN_HELP = old_help
+            _restore(originals)
+
+
+def test_missing_node_exe_blocks_without_executor_started() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _make_state(tmp, cycles=1)
+        originals = _preflight_process_patches(tmp)
+        old_subprocess_run = worker.subprocess.run
+        old_runtime = worker._RUNTIME_EXECUTABLES
+        old_help = worker._OPENCODE_RUN_HELP
+
+        def fake_subprocess_run(*args, **kwargs):
+            raise AssertionError("subprocess.run must not be called when node is missing")
+
+        worker._OPENCODE_RUN_HELP = ""
+        worker._RUNTIME_EXECUTABLES = {"opencode_entrypoint": r"C:\fake\opencode.js"}
+        worker.subprocess.run = fake_subprocess_run
+        try:
+            worker.process_state(_cfg(td), state_path)
+            state = worker.load_json(state_path)
+            events = _events(tmp)
+            kinds = [e["kind"] for e in events]
+            assert state["cycles"] == 1
+            assert state["status"] == "loop:blocked"
+            assert "executor_preflight_failed" in kinds
+            assert "executor_started" not in kinds
+            assert worker.validate_v157_event_chronology(events) == []
+        finally:
+            worker.subprocess.run = old_subprocess_run
+            worker._RUNTIME_EXECUTABLES = old_runtime
+            worker._OPENCODE_RUN_HELP = old_help
+            _restore(originals)
+
+
+def test_missing_entrypoint_blocks_without_executor_started() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _make_state(tmp, cycles=1)
+        originals = _preflight_process_patches(tmp)
+        old_subprocess_run = worker.subprocess.run
+        old_runtime = worker._RUNTIME_EXECUTABLES
+        old_help = worker._OPENCODE_RUN_HELP
+
+        def fake_subprocess_run(*args, **kwargs):
+            raise AssertionError("subprocess.run must not be called when entrypoint is missing")
+
+        worker._OPENCODE_RUN_HELP = ""
+        worker._RUNTIME_EXECUTABLES = {"node": r"C:\fake\node.exe"}
+        worker.subprocess.run = fake_subprocess_run
+        try:
+            worker.process_state(_cfg(td), state_path)
+            state = worker.load_json(state_path)
+            events = _events(tmp)
+            kinds = [e["kind"] for e in events]
+            assert state["cycles"] == 1
+            assert state["status"] == "loop:blocked"
+            assert "executor_preflight_failed" in kinds
+            assert "executor_started" not in kinds
+            assert worker.validate_v157_event_chronology(events) == []
+        finally:
+            worker.subprocess.run = old_subprocess_run
+            worker._RUNTIME_EXECUTABLES = old_runtime
+            worker._OPENCODE_RUN_HELP = old_help
+            _restore(originals)
+
+
+def test_prompt_missing_sentinel_blocks_without_executor_started() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _make_state(tmp, cycles=1)
+        originals = _preflight_process_patches(tmp)
+        old_subprocess_run = worker.subprocess.run
+        old_make_prompt = worker.make_prompt
+        old_runtime = worker._RUNTIME_EXECUTABLES
+        old_help = worker._OPENCODE_RUN_HELP
+
+        def fake_subprocess_run(*args, **kwargs):
+            raise AssertionError("subprocess.run must not be called when sentinel is missing")
+
+        worker._OPENCODE_RUN_HELP = ""
+        worker._RUNTIME_EXECUTABLES = {"node": r"C:\fake\node.exe", "opencode_entrypoint": r"C:\fake\opencode.js"}
+        worker.make_prompt = lambda spec, cycle, feedback=None: "prompt without sentinel"
+        worker.subprocess.run = fake_subprocess_run
+        try:
+            worker.process_state(_cfg(td), state_path)
+            state = worker.load_json(state_path)
+            events = _events(tmp)
+            kinds = [e["kind"] for e in events]
+            assert state["cycles"] == 1
+            assert state["status"] == "loop:blocked"
+            assert "executor_preflight_failed" in kinds
+            assert "executor_started" not in kinds
+            assert worker.validate_v157_event_chronology(events) == []
+        finally:
+            worker.subprocess.run = old_subprocess_run
+            worker.make_prompt = old_make_prompt
+            worker._RUNTIME_EXECUTABLES = old_runtime
+            worker._OPENCODE_RUN_HELP = old_help
+            _restore(originals)
+
+
+def test_preflight_blocked_state_does_not_retry_kimi() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _make_state(tmp, cycles=1)
+        originals = _preflight_process_patches(tmp)
+        old_subprocess_run = worker.subprocess.run
+        old_command_for_subprocess = worker.command_for_subprocess
+        old_runtime = worker._RUNTIME_EXECUTABLES
+        old_help = worker._OPENCODE_RUN_HELP
+
+        def fake_subprocess_run(*args, **kwargs):
+            raise AssertionError("no subprocess")
+
+        worker._OPENCODE_RUN_HELP = ""
+        worker._RUNTIME_EXECUTABLES = {"node": r"C:\fake\node.exe", "opencode_entrypoint": r"C:\fake\opencode.js"}
+        worker.subprocess.run = fake_subprocess_run
+        worker.command_for_subprocess = lambda args: r'C:\System32\cmd.exe /d /s /c fake_opencode.CMD run "prompt"'
+        try:
+            worker.process_state(_cfg(td), state_path)
+            before_events = len(_events(tmp))
+            worker.process_state(_cfg(td), state_path)
+            after_events = len(_events(tmp))
+            state = worker.load_json(state_path)
+            assert state["status"] == "loop:blocked"
+            assert after_events == before_events
+        finally:
+            worker.subprocess.run = old_subprocess_run
+            worker.command_for_subprocess = old_command_for_subprocess
+            worker._RUNTIME_EXECUTABLES = old_runtime
+            worker._OPENCODE_RUN_HELP = old_help
+            _restore(originals)
+
+
+def test_timeout_consumes_attempt_and_preserves_local_log_path() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _make_state(tmp, cycles=1)
+        originals = _preflight_process_patches(tmp)
+        old_subprocess_run = worker.subprocess.run
+        old_runtime = worker._RUNTIME_EXECUTABLES
+        old_help = worker._OPENCODE_RUN_HELP
+        canary = "ULTRA_SECRET_STDOUT_CANARY_4C92E8"
+
+        def fake_subprocess_run(*args, **kwargs):
+            raise worker.subprocess.TimeoutExpired(args, timeout=1, output=(canary + " timeout output").encode("utf-8"))
+
+        worker._OPENCODE_RUN_HELP = ""
+        worker._RUNTIME_EXECUTABLES = {"node": r"C:\fake\node.exe", "opencode_entrypoint": r"C:\fake\opencode.js"}
+        worker.subprocess.run = fake_subprocess_run
+        try:
+            worker.process_state(_cfg(td), state_path)
+            state = worker.load_json(state_path)
+            events = _events(tmp)
+            kinds = [e["kind"] for e in events]
+            assert state["cycles"] == 2
+            assert state["status"] == "WAITING_GITHUB"
+            assert "executor_started" in kinds
+            assert "executor_failed" in kinds
+            assert "executor_preflight_failed" not in kinds
+            log_event = next(e for e in events if e["kind"] == "executor_failed")
+            assert log_event.get("local_log_path")
+            assert canary not in json.dumps(state)
+            assert canary not in json.dumps(events)
+            assert canary not in str(state.get("error", ""))
+            assert canary not in log_event.get("error", "")
+            assert worker.validate_v157_event_chronology(events) == []
+        finally:
+            worker.subprocess.run = old_subprocess_run
+            worker._RUNTIME_EXECUTABLES = old_runtime
+            worker._OPENCODE_RUN_HELP = old_help
+            _restore(originals)
+
+
+def test_token_exhausted_output_canary_not_leaked() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _make_state(tmp, cycles=1)
+        originals = _preflight_process_patches(tmp)
+        old_subprocess_run = worker.subprocess.run
+        old_runtime = worker._RUNTIME_EXECUTABLES
+        old_help = worker._OPENCODE_RUN_HELP
+        canary = "ULTRA_SECRET_STDOUT_CANARY_4C92E8"
+
+        def fake_subprocess_run(*args, **kwargs):
+            return worker.subprocess.CompletedProcess(args, returncode=1, stdout=(canary + " token context rate limit").encode("utf-8"))
+
+        worker._OPENCODE_RUN_HELP = ""
+        worker._RUNTIME_EXECUTABLES = {"node": r"C:\fake\node.exe", "opencode_entrypoint": r"C:\fake\opencode.js"}
+        worker.subprocess.run = fake_subprocess_run
+        try:
+            worker.process_state(_cfg(td), state_path)
+            state = worker.load_json(state_path)
+            events = _events(tmp)
+            failure_event = next(e for e in events if e["kind"] == "executor_failed")
+            assert failure_event["failure_class"] == "TOKEN_EXHAUSTED"
+            assert canary not in json.dumps(state)
+            assert canary not in json.dumps(events)
+            assert canary not in str(state.get("error", ""))
+            assert canary not in failure_event.get("error", "")
+            log_path = Path(str(failure_event.get("local_log_path")))
+            assert log_path.exists() and canary in log_path.read_text(encoding="utf-8")
+            assert worker.validate_v157_event_chronology(events) == []
+        finally:
+            worker.subprocess.run = old_subprocess_run
+            worker._RUNTIME_EXECUTABLES = old_runtime
+            worker._OPENCODE_RUN_HELP = old_help
+            _restore(originals)
+
+
+def test_command_failed_output_canary_not_leaked() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _make_state(tmp, cycles=1)
+        originals = _preflight_process_patches(tmp)
+        old_subprocess_run = worker.subprocess.run
+        old_runtime = worker._RUNTIME_EXECUTABLES
+        old_help = worker._OPENCODE_RUN_HELP
+        canary = "ULTRA_SECRET_STDOUT_CANARY_4C92E8"
+
+        def fake_subprocess_run(*args, **kwargs):
+            return worker.subprocess.CompletedProcess(args, returncode=2, stdout=(canary + " generic crash").encode("utf-8"))
+
+        worker._OPENCODE_RUN_HELP = ""
+        worker._RUNTIME_EXECUTABLES = {"node": r"C:\fake\node.exe", "opencode_entrypoint": r"C:\fake\opencode.js"}
+        worker.subprocess.run = fake_subprocess_run
+        try:
+            worker.process_state(_cfg(td), state_path)
+            state = worker.load_json(state_path)
+            events = _events(tmp)
+            failure_event = next(e for e in events if e["kind"] == "executor_failed")
+            assert failure_event["failure_class"] == "COMMAND_FAILED"
+            assert canary not in json.dumps(state)
+            assert canary not in json.dumps(events)
+            assert canary not in failure_event.get("error", "")
+            log_path = Path(str(failure_event.get("local_log_path")))
+            assert log_path.exists() and canary in log_path.read_text(encoding="utf-8")
+            assert worker.validate_v157_event_chronology(events) == []
+        finally:
+            worker.subprocess.run = old_subprocess_run
+            worker._RUNTIME_EXECUTABLES = old_runtime
+            worker._OPENCODE_RUN_HELP = old_help
+            _restore(originals)
+
+
+def test_prompt_canary_not_leaked_anywhere() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        state_path = _make_state(tmp, cycles=1)
+        originals = _preflight_process_patches(tmp)
+        old_subprocess_run = worker.subprocess.run
+        old_make_prompt = worker.make_prompt
+        old_runtime = worker._RUNTIME_EXECUTABLES
+        old_help = worker._OPENCODE_RUN_HELP
+        canary = "ULTRA_SECRET_PROMPT_CANARY_7F3A91"
+
+        base_prompt = worker.make_prompt(_base_spec(), 1)
+
+        def canary_prompt(spec, cycle, feedback=None):
+            return base_prompt + "\n" + canary
+
+        def fake_subprocess_run(args, **kwargs):
+            prompt = str(args[-1]) if isinstance(args, list) else ""
+            assert canary in prompt, "canary must be in prompt for this test"
+            return worker.subprocess.CompletedProcess(args, returncode=1, stdout=b"token context rate limit")
+
+        worker._OPENCODE_RUN_HELP = ""
+        worker._RUNTIME_EXECUTABLES = {"node": r"C:\fake\node.exe", "opencode_entrypoint": r"C:\fake\opencode.js"}
+        worker.make_prompt = canary_prompt
+        worker.subprocess.run = fake_subprocess_run
+        try:
+            worker.process_state(_cfg(td), state_path)
+            state = worker.load_json(state_path)
+            events = _events(tmp)
+            prompt_arg = canary_prompt(_base_spec(), 1)
+            safe_log = worker.sanitize_command_for_log(["opencode", "run", "--dir", "C:\d", "--model", "m", prompt_arg])
+            redacted_log = worker._redacted_cmd_repr(["opencode", "run", "--dir", "C:\d", "--model", "m", prompt_arg])
+            all_surfaces = [json.dumps(state), json.dumps(events), json.dumps(safe_log), json.dumps(redacted_log), str(state.get("error", ""))]
+            assert all(canary not in s for s in all_surfaces), all_surfaces
+            assert worker.validate_v157_event_chronology(events) == []
+        finally:
+            worker.subprocess.run = old_subprocess_run
+            worker.make_prompt = old_make_prompt
+            worker._RUNTIME_EXECUTABLES = old_runtime
+            worker._OPENCODE_RUN_HELP = old_help
+            _restore(originals)
 
 
 def main() -> int:
@@ -427,6 +828,18 @@ def main() -> int:
         test_event_chronology_rejects_committed_pushed_after_terminalized,
         test_event_chronology_rejects_executor_started_after_terminalized,
         test_event_chronology_rejects_reverted_without_committed,
+        test_event_chronology_rejects_preflight_then_executor_started,
+        test_event_chronology_rejects_post_preflight_actions,
+        test_command_string_fallback_blocks_without_executor_started,
+        test_cmd_exe_fallback_blocks_without_executor_started,
+        test_missing_node_exe_blocks_without_executor_started,
+        test_missing_entrypoint_blocks_without_executor_started,
+        test_prompt_missing_sentinel_blocks_without_executor_started,
+        test_preflight_blocked_state_does_not_retry_kimi,
+        test_timeout_consumes_attempt_and_preserves_local_log_path,
+        test_token_exhausted_output_canary_not_leaked,
+        test_command_failed_output_canary_not_leaked,
+        test_prompt_canary_not_leaked_anywhere,
         test_final_cycle_audit_failure_terminalizes_same_run,
         test_final_cycle_marker_failure_terminalizes_same_run,
         test_final_cycle_out_of_scope_terminalizes_same_run,
@@ -435,6 +848,7 @@ def main() -> int:
         test_executor_attempt_consumed_final_terminalizes,
         test_prompt_canary_absent_from_exception_and_log,
     ]
+
     failed = 0
     for test in tests:
         try:

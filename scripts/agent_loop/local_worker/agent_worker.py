@@ -23,6 +23,7 @@ EVENT_REQUIRED_FIELDS = {
     "executor_started": {"front", "cycle", "command_identity", "model"},
     "executor_completed": {"front", "cycle", "task_acknowledged", "jsonl_events"},
     "executor_failed": {"front", "cycle", "error"},
+    "executor_preflight_failed": {"front", "issue", "pr", "cycle", "failure_class", "command_identity"},
     "local_gate_failed": {"issue", "pr", "cycle", "failure_class", "cycle_before", "cycle_after"},
     "repair_local_gate_failed": {"issue", "pr", "cycle", "failure_class", "cycle_before", "cycle_after"},
     "cycle_committed": {"issue", "pr", "cycle", "head_sha"},
@@ -910,7 +911,11 @@ def _require_lossless_opencode_transport() -> None:
     if not _RUNTIME_EXECUTABLES.get("opencode_entrypoint"):
         missing.append("opencode_entrypoint")
     if missing:
-        raise RuntimeError(f"LOSSLESS_OPENCODE_TRANSPORT_REQUIRED: missing {', '.join(missing)}")
+        raise PreExecutionFailure(
+            "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED",
+            f"LOSSLESS_OPENCODE_TRANSPORT_REQUIRED: missing {', '.join(missing)}",
+            {"command_identity": "opencode"},
+        )
 
 
 def _lossless_transport_or_raise(cmd: list[str], prepared):
@@ -929,6 +934,22 @@ def _lossless_transport_or_raise(cmd: list[str], prepared):
         )
 
 
+def safe_executor_error(exc: Exception) -> str:
+    """Return a safe, fixed error description that never contains stdout, stderr, prompt, or raw argv."""
+    if isinstance(exc, ExecutorAttemptConsumed):
+        return {
+            "EXECUTOR_TIMEOUT": "OpenCode execution exceeded the configured timeout. See governed local log.",
+            "TOKEN_EXHAUSTED": "OpenCode execution ended because the runtime reported token, context, or rate-limit exhaustion. See governed local log.",
+            "COMMAND_FAILED": "OpenCode process exited non-zero. See governed local log.",
+            "EXECUTOR_JSONL_INVALID": "OpenCode produced invalid or empty JSONL output. See governed local log.",
+            "TASK_NOT_ACKNOWLEDGED": "OpenCode output did not contain the required task acknowledgement. See governed local log.",
+            "NO_OUTPUT_CHANGE": "OpenCode completed without modifying the allowlisted output file. See governed local log.",
+        }.get(exc.failure_class, "OpenCode execution failed after the process started. See governed local log.")
+    if isinstance(exc, PreExecutionFailure):
+        return f"OpenCode could not start: {exc.failure_class}. See governed local log."
+    return "OpenCode execution encountered an unexpected failure. See governed local log."
+
+
 def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=None):
     report_dir = Path(cfg["install_root"]) / "reports"
     log = report_dir / f"issue-{issue_no}-cycle-{cycle}-opencode.jsonl"
@@ -942,9 +963,6 @@ def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=No
             "prompt missing sentinel",
             {"cycle": cycle, "front": spec["front_id"]},
         )
-    event(cfg, "executor_started", front=spec["front_id"], cycle=cycle,
-          command_identity="opencode", model=cfg["opencode_model"],
-          prompt_bytes=len(prompt.encode("utf-8")), sentinel_in_prompt=True)
     cmd = ["opencode","run","--dir",str(model_dir),"--model",cfg["opencode_model"],
            "--agent","brain-kimi-executor","--format","json",
            "--title",title]
@@ -955,6 +973,10 @@ def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=No
     timeout = cfg.get("opencode_timeout_seconds")
     prepared = command_for_subprocess(cmd)
     _lossless_transport_or_raise(cmd, prepared)
+    # All deterministic pre-execution validations have passed; the OpenCode process is about to start.
+    event(cfg, "executor_started", front=spec["front_id"], cycle=cycle,
+          command_identity="opencode", model=cfg["opencode_model"],
+          prompt_bytes=len(prompt.encode("utf-8")), sentinel_in_prompt=True)
     try:
         p = subprocess.run(prepared, cwd=str(model_dir), env=opencode_env(cfg, model_dir), text=False,
                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
@@ -963,7 +985,7 @@ def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=No
         log.write_text(out, encoding="utf-8")
         raise ExecutorAttemptConsumed(
             "EXECUTOR_TIMEOUT",
-            f"opencode run exceeded {timeout}s",
+            "OpenCode execution exceeded the configured timeout. See governed local log.",
             {"returncode": None, "command_identity": "opencode", "cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
         ) from exc
     out, decoding = completed_output(p)
@@ -972,9 +994,13 @@ def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=No
     if p.returncode != 0:
         low = out.lower()
         failure_class = "TOKEN_EXHAUSTED" if ("context" in low or "token" in low or "rate limit" in low) else "COMMAND_FAILED"
+        safe = {
+            "TOKEN_EXHAUSTED": "OpenCode execution ended because the runtime reported token, context, or rate-limit exhaustion. See governed local log.",
+            "COMMAND_FAILED": "OpenCode process exited non-zero. See governed local log.",
+        }[failure_class]
         raise ExecutorAttemptConsumed(
             failure_class,
-            out[-3000:] if failure_class == "TOKEN_EXHAUSTED" else "opencode process exited non-zero",
+            safe,
             {"returncode": p.returncode, "command_identity": "opencode", "cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
         )
     return log, discover_session_id(model_dir, title)
@@ -1353,23 +1379,37 @@ def process_state(cfg, state_path):
         log, discovered_session=run_kimi(cfg,spec,model_dir,issue,cycle,feedback,st.get("opencode_session_id"))
         if discovered_session: st["opencode_session_id"] = discovered_session
         validate_executor_delivery(cfg, spec, model_dir, log, cycle, seed_hash=marker_seed)
+    except PreExecutionFailure as exc:
+        # Deterministic pre-execution failure: OpenCode/Kimi never started. Do not consume a cycle.
+        safe_error = safe_executor_error(exc)
+        event(cfg, "executor_preflight_failed", front=spec["front_id"], issue=issue, pr=prn, cycle=cycle,
+              failure_class=exc.failure_class, command_identity=exc.details.get("command_identity") or "opencode",
+              local_log_path=exc.details.get("local_log_path"), worker_version=WORKER_VERSION)
+        st["updated_utc"] = utc()
+        st["error"] = safe_error
+        st = set_converged_phase(cfg, state_path, st, "loop:blocked", pr_number=prn)
+        st = publish_terminal_notification(cfg, state_path, st, "loop:blocked", safe_error)
+        event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:blocked",
+              failure_class=exc.failure_class, error=safe_error)
+        return
     except ExecutorAttemptConsumed as exc:
-        event(cfg, "executor_failed", front=spec["front_id"], cycle=cycle, error=str(exc)[-3000:], failure_class=exc.failure_class,
+        event(cfg, "executor_failed", front=spec["front_id"], cycle=cycle, error=safe_executor_error(exc), failure_class=exc.failure_class,
               local_log_path=exc.details.get("local_log_path"), returncode=exc.details.get("returncode"),
               command_identity=exc.details.get("command_identity"))
         st["cycles"] = cycle
         if cycle >= int(spec["max_kimi_cycles"]):
+            safe_error = safe_executor_error(exc)
             st["status"] = "loop:token-exhausted"
-            st["error"] = str(exc)[-5000:]
+            st["error"] = safe_error
             st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
             st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
             event(cfg, "local_gate_failed", issue=issue, pr=prn, cycle=cycle,
                   failure_class=exc.failure_class, cycle_before=cycle-1, cycle_after=cycle,
-                  changed_files=[], test_output_tail=bounded_tail(str(exc)),
+                  changed_files=[], test_output_tail=safe_error,
                   marker_hash=marker_hash(repo_dir), current_head=run(["git","rev-parse","HEAD"], cwd=repo_dir).strip(),
                   expected_base=spec["expected_base_sha"], bad=[], test_ok=False)
             event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
-                  failure_class=exc.failure_class, cycle=cycle, pr=prn, error=bounded_tail(str(exc)))
+                  failure_class=exc.failure_class, cycle=cycle, pr=prn, error=safe_error)
             return
         st["updated_utc"] = utc()
         save_json(state_path, st)
@@ -1779,7 +1819,7 @@ def _event_matches(item: dict, kind: str, expected: dict) -> bool:
         got = _event_field(item, key)
         if isinstance(value, int):
             try:
-                if int(got) != value:
+                if int(got or 0) != value:
                     return False
             except Exception:
                 return False
@@ -1794,12 +1834,16 @@ def validate_v157_event_chronology(events: list[dict]) -> list[str]:
     first_local_gate: dict[tuple[str, str], int] = {}
     first_committed: dict[tuple[str, str], int] = {}
     first_pushed: dict[tuple[str, str], int] = {}
+    preflight_failed_cycles: dict[tuple[str, str, str], int] = {}
+    started_cycles: dict[tuple[str, str, str], int] = {}
     reverted_indexes: list[int] = []
     for idx, item in enumerate(events):
         kind = _event_kind(item)
         issue = str(_event_field(item, "issue") or "")
         pr = str(_event_field(item, "pr") or "")
         key = (issue, pr)
+        cycle = _event_field(item, "cycle")
+        cycle_key = (issue, pr, str(cycle) if cycle is not None else "")
         if kind == "local_gate_failed":
             first_local_gate.setdefault(key, idx)
         if kind == "cycle_committed":
@@ -1808,12 +1852,21 @@ def validate_v157_event_chronology(events: list[dict]) -> list[str]:
             first_pushed.setdefault(key, idx)
         if kind == "cycle_commit_reverted":
             reverted_indexes.append(idx)
+        if kind == "executor_preflight_failed" and cycle_key:
+            preflight_failed_cycles.setdefault(cycle_key, idx)
+        if kind == "executor_started" and cycle_key:
+            started_cycles.setdefault(cycle_key, idx)
         if kind == "state_terminalized":
             first_terminal.setdefault(key, idx)
-            if key not in first_local_gate and _event_field(item, "failure_class") != "MAX_CYCLES_REACHED":
+            failure_class = _event_field(item, "failure_class") or ""
+            if key not in first_local_gate and failure_class != "MAX_CYCLES_REACHED" and not preflight_failed_cycles:
                 errors.append(f"state_terminalized_without_prior_local_gate:{key}")
-        if kind in {"cycle_committed", "cycle_pushed", "executor_started", "cycle_commit_reverted"} and key in first_terminal and idx > first_terminal[key]:
+        if kind in {"cycle_committed", "cycle_pushed", "executor_started", "executor_completed", "executor_failed", "cycle_commit_reverted"} and key in first_terminal and idx > first_terminal[key]:
             errors.append(f"{kind}_after_state_terminalized:{key}")
+        if kind in {"executor_started", "executor_completed", "executor_failed", "cycle_committed", "cycle_pushed"} and cycle_key in preflight_failed_cycles and idx > preflight_failed_cycles[cycle_key]:
+            errors.append(f"{kind}_after_executor_preflight_failed:{cycle_key}")
+        if kind == "executor_preflight_failed" and cycle_key in started_cycles and idx > started_cycles[cycle_key]:
+            errors.append(f"executor_preflight_failed_after_executor_started:{cycle_key}")
     for key, gate_idx in first_local_gate.items():
         term_idx = first_terminal.get(key)
         if term_idx is not None and term_idx < gate_idx:
@@ -1836,6 +1889,11 @@ def validate_v157_event_chronology(events: list[dict]) -> list[str]:
     for key, pushed_idx in first_pushed.items():
         if key not in first_committed:
             errors.append(f"cycle_pushed_without_cycle_committed:{key}")
+    for cycle_key, preflight_idx in preflight_failed_cycles.items():
+        issue_pr = cycle_key[:2]
+        term_idx = first_terminal.get(issue_pr)
+        if term_idx is not None and term_idx < preflight_idx:
+            errors.append(f"state_terminalized_before_executor_preflight_failed:{cycle_key}")
     return errors
 
 def validate_v155_recovery_event_chronology(cfg: dict, base_sha: str, head_sha: str, repo_dir: str | None = None) -> None:
@@ -2007,7 +2065,7 @@ def trusted_v155_recover_existing_pr(cfg: dict, issue_number: int, expected_base
         raise ValueError("base mismatch")
     if expected_pr_head and st.get("last_head_sha") != expected_pr_head:
         raise ValueError("state PR HEAD mismatch")
-    validate_v155_recovery_event_chronology(cfg, expected_base_sha or spec.get("expected_base_sha"), expected_pr_head or st.get("last_head_sha"), st.get("repo_dir"))
+    validate_v155_recovery_event_chronology(cfg, str(expected_base_sha or spec.get("expected_base_sha") or ""), str(expected_pr_head or st.get("last_head_sha") or ""), st.get("repo_dir"))
     issue = gh_json(["issue", "view", "5", "--repo", cfg["repo"], "--json", "number,state,body,author,labels,url"])
     pr = gh_json(["pr", "view", "6", "--repo", cfg["repo"], "--json", "number,url,state,isDraft,headRefName,headRefOid,baseRefName,body,labels"])
     issue_spec = parse_spec(issue, cfg)
