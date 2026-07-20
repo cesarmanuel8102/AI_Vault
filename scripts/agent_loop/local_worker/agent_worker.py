@@ -853,14 +853,8 @@ def opencode_run_supports(flag: str, cwd: Path | None = None) -> bool:
 def _walk_workspace_files(root: Path) -> list[str]:
     files = []
     for path in root.rglob("*"):
-        if path.is_symlink():
+        if _is_reparse_or_symlink(path):
             raise ModelWorkspaceScopeViolation("MODEL_WORKSPACE_LINK_DENIED")
-        if os.name == "nt":
-            try:
-                if os.lstat(str(path)).st_reparse_tag:
-                    raise ModelWorkspaceScopeViolation("MODEL_WORKSPACE_LINK_DENIED")
-            except FileNotFoundError:
-                pass
         if path.is_file():
             files.append(path.relative_to(root).as_posix())
     return sorted(files)
@@ -917,9 +911,9 @@ def audit_and_sync_model_workspace(model_dir: Path, repo_dir: Path, seed_hashes:
     current = repo_dir
     for part in Path(marker_rel).parts[:-1]:
         current = current / part
-        if current.exists() and current.is_symlink():
+        if _is_reparse_or_symlink(current):
             raise ModelWorkspaceScopeViolation("TRUSTED_OUTPUT_PARENT_LINK_DENIED")
-    if destination.exists() and destination.is_symlink():
+    if _is_reparse_or_symlink(destination):
         raise ModelWorkspaceScopeViolation("TRUSTED_OUTPUT_LINK_DENIED")
     destination.parent.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(marker, destination)
@@ -1440,14 +1434,15 @@ def _is_within_install_root(path: Path, install_root: Path) -> bool:
 
 
 def _is_reparse_or_symlink(path: Path) -> bool:
-    if path.is_symlink():
+    try:
+        if path.is_symlink():
+            return True
+        stat_result = os.lstat(str(path))
+    except FileNotFoundError:
+        return False
+    except OSError:
         return True
-    if os.name == "nt":
-        try:
-            return bool(os.lstat(str(path)).st_reparse_tag)
-        except Exception:
-            return False
-    return False
+    return bool(getattr(stat_result, "st_reparse_tag", 0))
 
 
 def _workspace_is_trusted(repo_dir: Path, cfg: dict, spec: dict) -> bool:

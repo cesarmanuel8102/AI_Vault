@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import atexit
 import importlib.util
 import json
 import shutil
@@ -18,6 +19,8 @@ spec.loader.exec_module(worker)
 FRONT = "PILOT-KIMI-CODEX-20260716-091529"
 BASE = "a" * 40
 HEAD = "b" * 40
+_GIT_TEMPLATE_ROOT: Path | None = None
+_GIT_TEMPLATE_BASE_SHA: str | None = None
 
 
 def _base_spec() -> dict:
@@ -1018,18 +1021,49 @@ def _make_initial_state(tmp: Path, issue_number: int = 19) -> Path:
     return state_path
 
 
-def _setup_git_repo(repo_dir: Path) -> None:
-    repo_dir.mkdir(parents=True, exist_ok=True)
+def _cleanup_git_template() -> None:
+    global _GIT_TEMPLATE_ROOT
+    if _GIT_TEMPLATE_ROOT is not None:
+        shutil.rmtree(_GIT_TEMPLATE_ROOT, ignore_errors=True)
+        _GIT_TEMPLATE_ROOT = None
+
+
+def _git_template() -> tuple[Path, str]:
+    global _GIT_TEMPLATE_ROOT, _GIT_TEMPLATE_BASE_SHA
+    if _GIT_TEMPLATE_ROOT is not None and _GIT_TEMPLATE_BASE_SHA is not None:
+        return _GIT_TEMPLATE_ROOT, _GIT_TEMPLATE_BASE_SHA
+
+    root = Path(tempfile.mkdtemp(prefix="v157-git-template-"))
     devnull = worker.subprocess.DEVNULL
-    if not (repo_dir / ".git").is_dir():
-        worker.subprocess.run(["git", "init"], cwd=str(repo_dir), check=True, stdout=devnull, stderr=devnull)
-    worker.subprocess.run(["git", "config", "user.name", "Test"], cwd=str(repo_dir), check=True, stdout=devnull, stderr=devnull)
-    worker.subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=str(repo_dir), check=True, stdout=devnull, stderr=devnull)
-    base_file = repo_dir / "base.txt"
-    if not base_file.exists():
-        base_file.write_text("base", encoding="utf-8")
-        worker.subprocess.run(["git", "add", "base.txt"], cwd=str(repo_dir), check=True, stdout=devnull, stderr=devnull)
-        worker.subprocess.run(["git", "commit", "-m", "base"], cwd=str(repo_dir), check=True, stdout=devnull, stderr=devnull)
+    worker.subprocess.run(["git", "init", "-q"], cwd=str(root), check=True, stdout=devnull, stderr=devnull)
+    (root / "base.txt").write_text("base", encoding="utf-8")
+    worker.subprocess.run(["git", "add", "base.txt"], cwd=str(root), check=True, stdout=devnull, stderr=devnull)
+    worker.subprocess.run(
+        ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-q", "-m", "base"],
+        cwd=str(root),
+        check=True,
+        stdout=devnull,
+        stderr=devnull,
+    )
+    base_sha = worker.subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=str(root),
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    _GIT_TEMPLATE_ROOT = root
+    _GIT_TEMPLATE_BASE_SHA = base_sha
+    atexit.register(_cleanup_git_template)
+    return root, base_sha
+
+
+def _setup_git_repo(repo_dir: Path) -> str:
+    if (repo_dir / ".git").is_dir():
+        return worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_dir)).strip()
+    template, base_sha = _git_template()
+    shutil.copytree(template, repo_dir, dirs_exist_ok=True)
+    return base_sha
 
 
 def _initial_attempt_patches(tmp: Path, *, pass_on_cycle: int | None = None, failure_class: str = "TASK_NOT_ACKNOWLEDGED", preexecution: bool = False):
@@ -2787,6 +2821,111 @@ def test_audit_and_gate_output_nondisclosure() -> None:
         assert canary not in json.dumps(events)
 
 
+def test_git_template_isolation() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        repo_a = root / "repo-a"
+        repo_b = root / "repo-b"
+        base_a = _setup_git_repo(repo_a)
+        base_b = _setup_git_repo(repo_b)
+        assert base_a == base_b
+        assert (repo_a / ".git").resolve() != (repo_b / ".git").resolve()
+
+        unique = repo_a / "a-only.txt"
+        unique.write_text("isolated", encoding="utf-8")
+        worker.run(["git", "add", "a-only.txt"], cwd=str(repo_a))
+        worker.run(
+            ["git", "-c", "user.name=Test", "-c", "user.email=test@example.com", "commit", "-q", "-m", "repo-a-only"],
+            cwd=str(repo_a),
+        )
+
+        assert worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_a)).strip() != base_a
+        assert worker.run(["git", "rev-parse", "HEAD"], cwd=str(repo_b)).strip() == base_b
+        assert not (repo_b / unique.name).exists()
+
+
+def test_model_reparse_point_blocked() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        blocked = root / "blocked.txt"
+        blocked.write_text("blocked", encoding="utf-8")
+        originals = _patch_worker(_is_reparse_or_symlink=lambda path: path == blocked)
+        try:
+            try:
+                worker._walk_workspace_files(root)
+                raise AssertionError("model reparse point must be blocked")
+            except worker.ModelWorkspaceScopeViolation as exc:
+                assert exc.reason_code == "MODEL_WORKSPACE_LINK_DENIED"
+        finally:
+            _restore(originals)
+
+
+def test_trusted_output_parent_reparse_blocked() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        model_dir = root / "model"
+        repo_dir = root / "repo"
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True)
+        marker.write_text(worker.pilot_marker_text(FRONT), encoding="utf-8")
+        repo_dir.mkdir()
+        blocked_parent = repo_dir / "docs"
+        originals = _patch_worker(_is_reparse_or_symlink=lambda path: path == blocked_parent)
+        try:
+            try:
+                worker.audit_and_sync_model_workspace(model_dir, repo_dir, {}, {"front_id": FRONT})
+                raise AssertionError("trusted output parent reparse point must be blocked")
+            except worker.ModelWorkspaceScopeViolation as exc:
+                assert exc.reason_code == "TRUSTED_OUTPUT_PARENT_LINK_DENIED"
+        finally:
+            _restore(originals)
+
+
+def test_trusted_output_destination_reparse_blocked() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        model_dir = root / "model"
+        repo_dir = root / "repo"
+        marker_rel = Path("docs/agent_loop/pilot/PILOT_MARKER.md")
+        marker = model_dir / marker_rel
+        marker.parent.mkdir(parents=True)
+        marker.write_text(worker.pilot_marker_text(FRONT), encoding="utf-8")
+        repo_dir.mkdir()
+        blocked_destination = repo_dir / marker_rel
+        originals = _patch_worker(_is_reparse_or_symlink=lambda path: path == blocked_destination)
+        try:
+            try:
+                worker.audit_and_sync_model_workspace(model_dir, repo_dir, {}, {"front_id": FRONT})
+                raise AssertionError("trusted output destination reparse point must be blocked")
+            except worker.ModelWorkspaceScopeViolation as exc:
+                assert exc.reason_code == "TRUSTED_OUTPUT_LINK_DENIED"
+        finally:
+            _restore(originals)
+
+
+def test_lstat_error_fails_closed() -> None:
+    class FakePath:
+        def is_symlink(self) -> bool:
+            return False
+
+        def __str__(self) -> str:
+            return "unreadable-path"
+
+    original_lstat = worker.os.lstat
+    worker.os.lstat = lambda _path: (_ for _ in ()).throw(PermissionError("denied"))
+    try:
+        assert worker._is_reparse_or_symlink(FakePath())
+    finally:
+        worker.os.lstat = original_lstat
+
+
+def test_normal_file_not_reparse() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        path = Path(td) / "normal.txt"
+        path.write_text("normal", encoding="utf-8")
+        assert not worker._is_reparse_or_symlink(path)
+
+
 def main() -> int:
     tests = [
         test_state_schema_version_injected,
@@ -2871,16 +3010,23 @@ def main() -> int:
         test_mixed_ack_then_timeout_feedback,
         test_max_cycles_with_missing_workspace,
         test_audit_and_gate_output_nondisclosure,
+        test_git_template_isolation,
+        test_model_reparse_point_blocked,
+        test_trusted_output_parent_reparse_blocked,
+        test_trusted_output_destination_reparse_blocked,
+        test_lstat_error_fails_closed,
+        test_normal_file_not_reparse,
     ]
 
     failed = 0
     for test in tests:
         try:
             test()
-            print(f"PASS: {test.__name__}")
         except Exception as exc:
             failed += 1
             print(f"FAIL: {test.__name__}: {type(exc).__name__}: {exc}")
+    if failed == 0:
+        print(f"PASS: {len(tests)} state/event contracts")
     print(json.dumps({"status": "PASS" if failed == 0 else "FAIL", "passed": len(tests) - failed, "failed": failed}, indent=2))
     return 0 if failed == 0 else 1
 
