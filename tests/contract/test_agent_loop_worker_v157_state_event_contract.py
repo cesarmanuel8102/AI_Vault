@@ -1762,6 +1762,7 @@ def test_initial_restart_at_max() -> None:
         calls: list[tuple[int, str | None]] = []
         originals = _patch_worker(
             run_kimi=lambda *a, **k: calls.append(a[4]) or (_ for _ in ()).throw(AssertionError("run_kimi must not be called at max cycles")),
+            set_phase=lambda repo, number, phase: None,
             set_converged_phase=_terminal_set_phase,
             publish_terminal_notification=_terminal_notify,
         )
@@ -1785,6 +1786,7 @@ def test_initial_restart_workspace_missing() -> None:
         worker.save_json(state_path, st)
         originals = _patch_worker(
             terminalize_state_error=lambda *a, **k: None,
+            set_phase=lambda repo, number, phase: None,
             set_converged_phase=_terminal_set_phase,
             publish_terminal_notification=_terminal_notify,
         )
@@ -1807,6 +1809,7 @@ def test_initial_restart_workspace_outside_runs() -> None:
         st = worker.load_json(state_path)
         worker.save_json(state_path, st)
         originals = _patch_worker(
+            set_phase=lambda repo, number, phase: None,
             set_converged_phase=_terminal_set_phase,
             publish_terminal_notification=_terminal_notify,
         )
