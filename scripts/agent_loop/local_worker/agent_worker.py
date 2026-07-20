@@ -106,6 +106,24 @@ _CONVERSATIONAL_REJECTION_PATTERNS = {
 def prompt_task_sentinel(front_id: str, cycle: int) -> str:
     return f"ACK_TASK_ID={front_id}|cycle={cycle}"
 
+def prompt_task_failure_sentinel(front_id: str, cycle: int) -> str:
+    return f"{prompt_task_sentinel(front_id, cycle)} TASK_FAILED"
+
+_WRITE_RETRY_FAILURE_CLASSES = {
+    "NO_WRITE_TOOL_CALL",
+    "WRITE_TOOL_FAILED",
+    "WRITE_TOOL_NO_EFFECT",
+    "EXECUTOR_DECLARED_WRITE_FAILURE",
+    "NO_OUTPUT_CHANGE",
+}
+
+_WRITE_FAILURE_FEEDBACK = {
+    "NO_WRITE_TOOL_CALL": "The prior attempt returned text without invoking the required write tool. Use the OpenCode write tool to create docs/agent_loop/pilot/PILOT_MARKER.md with the exact requested content. Do not emit the success acknowledgement until the write tool has completed.",
+    "WRITE_TOOL_FAILED": "The prior write-tool invocation failed. Retry using the OpenCode write tool with the exact relative allowlisted path and exact requested content. Do not use shell or absolute paths.",
+    "WRITE_TOOL_NO_EFFECT": "The prior write-tool invocation completed without changing the allowlisted marker. Rewrite the exact marker using the OpenCode write tool, then emit the success acknowledgement.",
+    "EXECUTOR_DECLARED_WRITE_FAILURE": "The prior executor declared that it could not write the marker. Retry once using the OpenCode write tool and the exact relative allowlisted path.",
+}
+
 def pilot_marker_text(front_id: str) -> str:
     return PILOT_MARKER_TEMPLATE.format(worker_version=WORKER_VERSION, front_id=str(front_id))
 
@@ -817,6 +835,7 @@ def discover_session_id(repo_dir: Path, title: str) -> str | None:
 
 def make_prompt(spec: dict, cycle: int, feedback: str | None = None) -> str:
     sentinel = prompt_task_sentinel(spec["front_id"], cycle)
+    failure_sentinel = prompt_task_failure_sentinel(spec["front_id"], cycle)
     base = f"""You are the Kimi executor for {spec['front_id']}.
 Your only job is to write exactly one file in the current workspace and then output the sentinel line.
 The current workspace is the directory passed via --dir. It contains no Git metadata and no credentials.
@@ -824,10 +843,14 @@ Do not invoke a shell, commit, push, use gh, merge, or access external directori
 Allowed output path (relative to the current workspace, no leading '/' or drive letter): docs/agent_loop/pilot/PILOT_MARKER.md
 Write that file with exactly this UTF-8 content:
 {pilot_marker_text(spec["front_id"])}
+Your first required action is to invoke the OpenCode write tool.
+A text-only response is a failed attempt.
+Do not output the success sentinel before the write tool reports completion.
+After the tool completes, verify the exact relative path and then output the success sentinel.
 After writing the file, output exactly this line and nothing else:
 {sentinel}
-If you cannot write the file, output exactly this line and nothing else:
-{sentinel} TASK_FAILED
+If the write tool is unavailable or fails, output only this line:
+{failure_sentinel}
 Do not ask questions, do not run tools other than read/write for the allowed file, and do not create or edit any other file.
 Do not create or edit EXECUTOR_REPORT.json; the trusted worker writes it after validation.
 This is cycle {cycle}.
@@ -959,6 +982,10 @@ def safe_executor_error(exc: Exception) -> str:
             "EXECUTOR_JSONL_INVALID": "OpenCode produced invalid or empty JSONL output. See governed local log.",
             "TASK_NOT_ACKNOWLEDGED": "OpenCode output did not contain the required task acknowledgement. See governed local log.",
             "NO_OUTPUT_CHANGE": "OpenCode completed without modifying the allowlisted output file. See governed local log.",
+            "NO_WRITE_TOOL_CALL": "OpenCode completed without invoking the required write tool. See governed local log.",
+            "WRITE_TOOL_FAILED": "The required OpenCode write-tool invocation failed. See governed local log.",
+            "WRITE_TOOL_NO_EFFECT": "The OpenCode write tool completed without changing the allowlisted output. See governed local log.",
+            "EXECUTOR_DECLARED_WRITE_FAILURE": "OpenCode declared that it could not write the allowlisted output. See governed local log.",
         }.get(exc.failure_class, "OpenCode execution failed after the process started. See governed local log.")
     if isinstance(exc, PreExecutionFailure):
         return f"OpenCode could not start: {exc.failure_class}. See governed local log."
@@ -1114,6 +1141,54 @@ def _artifact_tool_completed_marker(model_dir: Path, spec: dict, parsed: list[di
     return False, ""
 
 
+def _executor_text_lines(parsed: list[dict]) -> list[str]:
+    """Return normalized lines from model text parts only."""
+    lines: list[str] = []
+    for item in parsed:
+        if not isinstance(item, dict):
+            continue
+        part = item.get("part")
+        if not isinstance(part, dict):
+            text = item.get("text")
+            if isinstance(text, str):
+                lines.extend(line.strip() for line in text.splitlines() if line.strip())
+            continue
+        if (part.get("type") or item.get("type")) != "text":
+            continue
+        text = part.get("text")
+        if isinstance(text, str):
+            lines.extend(line.strip() for line in text.splitlines() if line.strip())
+    return lines
+
+
+def _write_tool_summary(model_dir: Path, parsed: list[dict]) -> dict:
+    write_tools = {"write", "write_file", "edit_file", "create_file", "edit"}
+    total = completed = failed = exact_targets = 0
+    for item in parsed:
+        if not isinstance(item, dict):
+            continue
+        part = item.get("part") or item
+        if not isinstance(part, dict) or part.get("type") != "tool":
+            continue
+        if _completed_tool_name(part) not in write_tools:
+            continue
+        total += 1
+        state = part.get("state") if isinstance(part.get("state"), dict) else {}
+        status = str(state.get("status") or "").lower()
+        if status == "completed":
+            completed += 1
+        elif status in {"error", "failed"}:
+            failed += 1
+        if _normalize_tool_target(_completed_tool_target(part), model_dir):
+            exact_targets += 1
+    return {
+        "write_tool_events": total,
+        "write_tool_completed": completed,
+        "write_tool_failed": failed,
+        "write_tool_exact_targets": exact_targets,
+    }
+
+
 def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path, cycle: int, *, issue_no: int = 0, seed_hash: str | None = None) -> None:
     out = log.read_text(encoding="utf-8-sig")
     lines = [x.strip() for x in out.splitlines() if x.strip()]
@@ -1133,20 +1208,18 @@ def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path
                 f"{exc}",
                 {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
             ) from exc
-    text_parts: list[str] = []
     session_error_count = 0
     for item in parsed:
         if not isinstance(item, dict):
             continue
         if item.get("type") == "error":
             session_error_count += 1
-        part = item.get("part") or item
-        if isinstance(part, dict):
-            text_parts.append(str(part.get("text", "")))
-        text_parts.append(str(item.get("text", "")))
-    full_output = "\n".join(text_parts)
     sentinel = prompt_task_sentinel(spec["front_id"], cycle)
-    text_acknowledged = sentinel in full_output
+    failure_sentinel = prompt_task_failure_sentinel(spec["front_id"], cycle)
+    text_lines = _executor_text_lines(parsed)
+    text_acknowledged = sentinel in text_lines
+    declared_write_failure = failure_sentinel in text_lines
+    full_output = "\n".join(text_lines)
     lowered = full_output.lower()
     refused = any(pattern in lowered for pattern in _CONVERSATIONAL_REJECTION_PATTERNS)
     marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
@@ -1159,8 +1232,11 @@ def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path
         and session_error_count == 0
         and (seed_hash is None or sha256_file(marker) != seed_hash)
     )
-    acknowledged = text_acknowledged or artifact_acknowledged
+    write_summary = _write_tool_summary(model_dir, parsed)
+    output_changed = marker.is_file() and (seed_hash is None or sha256_file(marker) != seed_hash)
+    acknowledged = not declared_write_failure and (text_acknowledged or artifact_acknowledged)
     ack_source = (
+        "declared_write_failure" if declared_write_failure else
         "text_sentinel" if text_acknowledged else
         "verified_artifact_tool" if artifact_acknowledged else
         "none"
@@ -1170,10 +1246,18 @@ def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path
         "task_acknowledged": acknowledged, "ack_source": ack_source,
         "conversational_refusal": refused, "marker_unchanged": unchanged,
         "jsonl_events": len(parsed), "session_error_count": session_error_count,
+        "declared_write_failure": declared_write_failure,
+        **write_summary,
     }
     if artifact_acknowledged and tool_input_schema:
         event_fields["tool_input_schema"] = tool_input_schema
     event(cfg, "executor_completed", **event_fields)
+    if declared_write_failure:
+        raise ExecutorAttemptConsumed(
+            "EXECUTOR_DECLARED_WRITE_FAILURE",
+            "executor declared write failure",
+            {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
+        )
     if not acknowledged:
         raise ExecutorAttemptConsumed(
             "TASK_NOT_ACKNOWLEDGED",
@@ -1186,9 +1270,15 @@ def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path
             "executor issued conversational refusal",
             {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
         )
-    if unchanged:
+    if not output_changed:
+        if write_summary["write_tool_events"] == 0:
+            failure_class = "NO_WRITE_TOOL_CALL"
+        elif write_summary["write_tool_failed"]:
+            failure_class = "WRITE_TOOL_FAILED"
+        else:
+            failure_class = "WRITE_TOOL_NO_EFFECT"
         raise ExecutorAttemptConsumed(
-            "NO_OUTPUT_CHANGE",
+            failure_class,
             "executor did not modify the pilot marker",
             {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)},
         )
@@ -1463,6 +1553,10 @@ def _workspace_is_trusted(repo_dir: Path, cfg: dict, spec: dict) -> bool:
 
 
 def _safe_feedback_for_failure(failure_class: str) -> str | None:
+    if failure_class in _WRITE_FAILURE_FEEDBACK:
+        return _WRITE_FAILURE_FEEDBACK[failure_class]
+    if failure_class == "NO_OUTPUT_CHANGE":
+        return _WRITE_FAILURE_FEEDBACK["NO_WRITE_TOOL_CALL"]
     if failure_class == "TASK_NOT_ACKNOWLEDGED":
         return _TASK_NOT_ACKNOWLEDGED_FEEDBACK
     if failure_class == "EXECUTOR_DELIVERY_ACCEPTED_PENDING_LOCAL_GATES":
@@ -1474,6 +1568,10 @@ def _safe_feedback_for_failure(failure_class: str) -> str | None:
     if failure_class == "INITIAL_OUT_OF_SCOPE_PATHS":
         return "Out-of-scope changes were detected in the governed workspace. Human audit is required."
     return None
+
+
+def _failure_requires_fresh_session(failure_class: str) -> bool:
+    return failure_class in _WRITE_RETRY_FAILURE_CLASSES
 
 
 def _checkpoint_initial_cycle(cfg: dict, state_path: Path, issue_no: int, spec: dict, repo_dir: Path,
@@ -1503,7 +1601,10 @@ def execute_initial(cfg, issue, spec, state_path):
     st = load_json(state_path)
     persisted_cycles = int(st.get("cycles", 0))
     session_id = st.get("opencode_session_id") or None
-    feedback = _safe_feedback_for_failure(str(st.get("last_failure_class") or ""))
+    last_failure_class = str(st.get("last_failure_class") or "")
+    if _failure_requires_fresh_session(last_failure_class):
+        session_id = None
+    feedback = _safe_feedback_for_failure(last_failure_class)
     max_cycles = int(spec["max_kimi_cycles"])
 
     if persisted_cycles >= max_cycles:
@@ -1584,6 +1685,8 @@ def execute_initial(cfg, issue, spec, state_path):
                       failure_class=exc.failure_class, cycle=cycle, error=safe_error)
                 return
             feedback = _safe_feedback_for_failure(exc.failure_class)
+            if _failure_requires_fresh_session(exc.failure_class):
+                session_id = None
             _checkpoint_initial_cycle(cfg, state_path, n, spec, repo_dir, cycle, session_id,
                                       exc.failure_class, safe_error)
             continue
@@ -1738,6 +1841,9 @@ def process_state(cfg, state_path):
               local_log_path=exc.details.get("local_log_path"), returncode=exc.details.get("returncode"),
               command_identity=exc.details.get("command_identity"))
         st["cycles"] = cycle
+        st["last_failure_class"] = exc.failure_class
+        if _failure_requires_fresh_session(exc.failure_class):
+            st["opencode_session_id"] = None
         if cycle >= int(spec["max_kimi_cycles"]):
             safe_error = safe_executor_error(exc)
             st["status"] = "loop:token-exhausted"

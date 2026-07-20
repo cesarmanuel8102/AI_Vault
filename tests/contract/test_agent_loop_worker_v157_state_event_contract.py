@@ -1371,6 +1371,184 @@ def _issue19_tool_event(target: str = "docs/agent_loop/pilot/PILOT_MARKER.md", *
     }
 
 
+def _text_event(text: str) -> dict:
+    return {"type": "text", "part": {"type": "text", "text": text}}
+
+
+def _delivery_fixture(tmp: Path, *, seed: str = "old marker\n") -> tuple[dict, dict, Path, Path, str]:
+    cfg = _cfg(str(tmp))
+    spec = _artifact_spec()
+    model_dir = tmp / "model"
+    marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+    marker.parent.mkdir(parents=True)
+    marker.write_text(seed, encoding="utf-8")
+    return cfg, spec, model_dir, marker, worker.sha256_file(marker)
+
+
+def _delivery_failure(tmp: Path, events: list[dict], expected: str) -> list[dict]:
+    cfg, spec, model_dir, _marker, seed = _delivery_fixture(tmp)
+    log = tmp / "opencode.jsonl"
+    log.write_text("\n".join(json.dumps(event) for event in events) + "\n", encoding="utf-8")
+    try:
+        worker.validate_executor_delivery(cfg, spec, model_dir, log, 1, issue_no=21, seed_hash=seed)
+    except worker.ExecutorAttemptConsumed as exc:
+        assert exc.failure_class == expected
+    else:
+        raise AssertionError(f"expected {expected}")
+    return _events(tmp)
+
+
+def test_task_failed_is_not_success_ack() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        failure = worker.prompt_task_failure_sentinel(_artifact_spec()["front_id"], 1)
+        events = _delivery_failure(tmp, [_text_event(failure)], "EXECUTOR_DECLARED_WRITE_FAILURE")
+        completed = next(event for event in events if event["kind"] == "executor_completed")
+        assert completed["task_acknowledged"] is False
+        assert completed["ack_source"] == "declared_write_failure"
+
+
+def test_sentinel_substring_is_not_ack() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        sentinel = worker.prompt_task_sentinel(_artifact_spec()["front_id"], 1)
+        events = _delivery_failure(tmp, [_text_event("prefix " + sentinel + " suffix")], "TASK_NOT_ACKNOWLEDGED")
+        completed = next(event for event in events if event["kind"] == "executor_completed")
+        assert completed["task_acknowledged"] is False
+
+
+def test_success_sentinel_exact_line_accepted() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        cfg, spec, model_dir, marker, seed = _delivery_fixture(tmp)
+        marker.write_text(worker.pilot_marker_text(spec["front_id"]), encoding="utf-8")
+        log = tmp / "opencode.jsonl"
+        log.write_text(json.dumps(_text_event(worker.prompt_task_sentinel(spec["front_id"], 1))) + "\n", encoding="utf-8")
+        worker.validate_executor_delivery(cfg, spec, model_dir, log, 1, issue_no=21, seed_hash=seed)
+        completed = next(event for event in _events(tmp) if event["kind"] == "executor_completed")
+        assert completed["task_acknowledged"] is True
+        assert completed["ack_source"] == "text_sentinel"
+
+
+def test_no_write_tool_call_classified() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        sentinel = worker.prompt_task_sentinel(_artifact_spec()["front_id"], 1)
+        events = _delivery_failure(tmp, [_text_event(sentinel)], "NO_WRITE_TOOL_CALL")
+        completed = next(event for event in events if event["kind"] == "executor_completed")
+        assert completed["write_tool_events"] == 0
+
+
+def test_failed_write_tool_classified() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        sentinel = worker.prompt_task_sentinel(_artifact_spec()["front_id"], 1)
+        events = _delivery_failure(tmp, [_issue19_tool_event(status="error"), _text_event(sentinel)], "WRITE_TOOL_FAILED")
+        completed = next(event for event in events if event["kind"] == "executor_completed")
+        assert completed["write_tool_failed"] == 1
+        assert completed["write_tool_exact_targets"] == 1
+
+
+def test_completed_write_without_change_classified() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        tmp = Path(td)
+        sentinel = worker.prompt_task_sentinel(_artifact_spec()["front_id"], 1)
+        events = _delivery_failure(tmp, [_issue19_tool_event(), _text_event(sentinel)], "WRITE_TOOL_NO_EFFECT")
+        completed = next(event for event in events if event["kind"] == "executor_completed")
+        assert completed["write_tool_completed"] == 1
+
+
+def test_no_write_tool_call_feedback_present() -> None:
+    assert worker._safe_feedback_for_failure("NO_WRITE_TOOL_CALL") == (
+        "The prior attempt returned text without invoking the required write tool. Use the OpenCode write tool to create docs/agent_loop/pilot/PILOT_MARKER.md with the exact requested content. Do not emit the success acknowledgement until the write tool has completed."
+    )
+
+
+def _initial_write_retry_flow(tmp: Path, first_failure: str) -> tuple[dict, list[tuple[int, str | None, str | None]]]:
+    state_path = _make_initial_state(tmp)
+    originals, _calls = _initial_attempt_patches(tmp)
+    calls: list[tuple[int, str | None, str | None]] = []
+
+    def fake_run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=None):
+        calls.append((cycle, feedback, session_id))
+        log = tmp / f"cycle-{cycle}-opencode.jsonl"
+        if cycle == 1:
+            sentinel = (
+                worker.prompt_task_failure_sentinel(spec["front_id"], cycle)
+                if first_failure == "EXECUTOR_DECLARED_WRITE_FAILURE"
+                else worker.prompt_task_sentinel(spec["front_id"], cycle)
+            )
+            log.write_text(json.dumps(_text_event(sentinel)) + "\n", encoding="utf-8")
+            return log, "session-old"
+        marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker.parent.mkdir(parents=True, exist_ok=True)
+        marker.write_text(worker.pilot_marker_text(spec["front_id"]), encoding="utf-8")
+        log.write_text(
+            json.dumps(_issue19_tool_event(content="REDACTED")) + "\n" +
+            json.dumps(_text_event(worker.prompt_task_sentinel(spec["front_id"], cycle))) + "\n",
+            encoding="utf-8",
+        )
+        return log, "session-new"
+
+    original_run_kimi = worker.run_kimi
+    worker.run_kimi = fake_run_kimi
+    try:
+        worker.execute_initial(_cfg(str(tmp)), {"number": 19}, worker.load_json(state_path)["spec"], state_path)
+        return worker.load_json(state_path), calls
+    finally:
+        worker.run_kimi = original_run_kimi
+        _restore(originals)
+
+
+def test_retry_clears_session() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        state, calls = _initial_write_retry_flow(Path(td), "NO_WRITE_TOOL_CALL")
+        assert calls[0][2] is None
+        assert calls[1][2] is None
+        assert calls[1][1] == worker._WRITE_FAILURE_FEEDBACK["NO_WRITE_TOOL_CALL"]
+        assert state["status"] == "loop:ci"
+
+
+def test_first_no_write_then_success() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        state, calls = _initial_write_retry_flow(Path(td), "NO_WRITE_TOOL_CALL")
+        assert state["cycles"] == 2
+        assert state["pr_number"] == 99
+        assert state["status"] == "loop:ci"
+        assert len(calls) == 2
+
+
+def test_failure_sentinel_then_success() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        state, calls = _initial_write_retry_flow(Path(td), "EXECUTOR_DECLARED_WRITE_FAILURE")
+        assert state["cycles"] == 2
+        assert state["pr_number"] == 99
+        assert calls[1][2] is None
+        assert calls[1][1] == worker._WRITE_FAILURE_FEEDBACK["EXECUTOR_DECLARED_WRITE_FAILURE"]
+
+
+def test_prompt_requires_write_tool() -> None:
+    prompt = worker.make_prompt(_artifact_spec(), 1)
+    required = (
+        "Your first required action is to invoke the OpenCode write tool.",
+        "A text-only response is a failed attempt.",
+        "Do not output the success sentinel before the write tool reports completion.",
+        "After the tool completes, verify the exact relative path and then output the success sentinel.",
+    )
+    assert all(text in prompt for text in required)
+    assert worker.prompt_task_failure_sentinel(_artifact_spec()["front_id"], 1) in prompt
+
+
+def test_write_failure_nondisclosure() -> None:
+    canary = "SECRET_MODEL_STDOUT_CANARY_21"
+    for failure_class in worker._WRITE_RETRY_FAILURE_CLASSES:
+        feedback = worker._safe_feedback_for_failure(failure_class)
+        assert feedback is not None
+        assert canary not in feedback
+        exc = worker.ExecutorAttemptConsumed(failure_class, canary, {})
+        assert canary not in worker.safe_executor_error(exc)
+
+
 def test_verified_artifact_tool_ack_passes_without_text_sentinel() -> None:
     with tempfile.TemporaryDirectory() as td:
         tmp = Path(td)
@@ -2977,6 +3155,18 @@ def main() -> int:
         test_executor_completed_event_includes_issue_and_ack_source,
         test_executor_started_event_includes_issue,
         test_no_generic_issue_blocked_for_recoverable_attempt,
+        test_task_failed_is_not_success_ack,
+        test_sentinel_substring_is_not_ack,
+        test_success_sentinel_exact_line_accepted,
+        test_no_write_tool_call_classified,
+        test_failed_write_tool_classified,
+        test_completed_write_without_change_classified,
+        test_no_write_tool_call_feedback_present,
+        test_retry_clears_session,
+        test_first_no_write_then_success,
+        test_failure_sentinel_then_success,
+        test_prompt_requires_write_tool,
+        test_write_failure_nondisclosure,
         test_verified_artifact_tool_ack_passes_without_text_sentinel,
         test_verified_artifact_tool_ack_requires_exact_marker,
         test_verified_artifact_tool_ack_requires_completed_write_tool,
