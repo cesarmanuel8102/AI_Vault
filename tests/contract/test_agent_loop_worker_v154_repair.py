@@ -77,6 +77,28 @@ with tempfile.TemporaryDirectory() as td:
         assert "PILOT_MARKER_CONTENT_MISMATCH" in str(exc)
 
 with tempfile.TemporaryDirectory() as td:
+    root = Path(td); repo = init_repo(root)
+    deepseek_front = "PILOT-V157-DEEPSEEK-ACTIVATION-20260720-192619"
+    model = root / "model" / "docs/agent_loop/pilot"; model.mkdir(parents=True)
+    expected = worker.pilot_marker_text(deepseek_front)
+    (model / "PILOT_MARKER.md").write_bytes(expected.removesuffix("\n").encode("utf-8"))
+    changed = worker.audit_and_sync_model_workspace(
+        root / "model", repo, {}, {"front_id": deepseek_front}
+    )
+    assert changed == ["docs/agent_loop/pilot/PILOT_MARKER.md"]
+    assert (repo / "docs/agent_loop/pilot/PILOT_MARKER.md").read_bytes() == expected.encode("utf-8")
+
+with tempfile.TemporaryDirectory() as td:
+    root = Path(td); repo = init_repo(root)
+    model = root / "model" / "docs/agent_loop/pilot"; model.mkdir(parents=True)
+    (model / "PILOT_MARKER.md").write_text(worker.pilot_marker_text(FRONT) + "\n", encoding="utf-8")
+    try:
+        worker.audit_and_sync_model_workspace(root / "model", repo, {}, {"front_id": FRONT})
+        raise AssertionError("an extra terminal blank line must fail")
+    except Exception as exc:
+        assert "PILOT_MARKER_CONTENT_MISMATCH" in str(exc)
+
+with tempfile.TemporaryDirectory() as td:
     cfg = {"install_root": td, "repo": "cesarmanuel8102/AI_Vault", "owner":"cesarmanuel8102", "base_branch":"codex/own-capital-sustainable-return", "max_kimi_cycles_default": 3, "test_profiles":{"pilot":[]}}
     state_dir = Path(td) / "state"; state_dir.mkdir(parents=True)
     state = state_dir / "issue-5.json"
