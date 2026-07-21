@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parents[2]
 MODULE = ROOT / "scripts/agent_loop/local_worker/agent_worker.py"
 spec = importlib.util.spec_from_file_location("worker153", MODULE)
 worker = importlib.util.module_from_spec(spec); spec.loader.exec_module(worker)
+FRONT = "PILOT-KIMI-CODEX-20260716-091529"
 
 def assert_raises(fn, text):
     try: fn()
@@ -46,14 +47,14 @@ with tempfile.TemporaryDirectory() as td:
     subprocess.run(["git","config","user.email","test@example.invalid"], cwd=repo, check=True)
     pv = repo / "scripts/agent_loop/pilot_verify.py"; pv.parent.mkdir(parents=True); pv.write_text((ROOT/"scripts/agent_loop/pilot_verify.py").read_text(encoding='utf-8'), encoding='utf-8')
     marker = repo / "docs/agent_loop/pilot/PILOT_MARKER.md"; marker.parent.mkdir(parents=True)
-    marker.write_text("# Agent Loop Pilot\nWORKER_VERSION=1.5.2\nSTATUS=PASS\nEXECUTOR=KIMI_OPENCODE_OLLAMA\nSUPERVISOR=CODEX_GITHUB_ACTION\n", encoding='utf-8')
+    marker.write_text(f"# Agent Loop Pilot\nWORKER_VERSION=1.5.2\nFRONT_ID={FRONT}\nSTATUS=PASS\nEXECUTOR=OPENCODE_OLLAMA_TOOL_EXECUTOR\nSUPERVISOR=CODEX_GITHUB_ACTION\n", encoding='utf-8')
     (marker.parent/"EXECUTOR_REPORT.json").write_text(json.dumps({"worker_version":"1.5.2"}), encoding='utf-8')
     subprocess.run(["git","add","."], cwd=repo, check=True); subprocess.run(["git","commit","-m","old"], cwd=repo, check=True, stdout=subprocess.DEVNULL)
-    marker.write_text(worker.pilot_marker_text("PILOT-KIMI-CODEX-20260716-091529"), encoding='utf-8')
-    p = subprocess.run([sys.executable, str(pv), "--local"], cwd=repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    marker.write_text(worker.pilot_marker_text(FRONT), encoding='utf-8')
+    p = subprocess.run([sys.executable, str(pv), "--local", "--expected-front-id", FRONT], cwd=repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     assert p.returncode == 0, p.stdout
     marker.write_text("bad marker\n", encoding='utf-8')
-    p = subprocess.run([sys.executable, str(pv), "--local"], cwd=repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    p = subprocess.run([sys.executable, str(pv), "--local", "--expected-front-id", FRONT], cwd=repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     assert p.returncode != 0 and "marker" in p.stdout.lower()
 
 cfg = {"repo":"cesarmanuel8102/AI_Vault","owner":"cesarmanuel8102","base_branch":"codex/own-capital-sustainable-return","install_root":"X","max_local_retries":1,"max_kimi_cycles_default":3,"test_profiles":{"pilot":{}}}

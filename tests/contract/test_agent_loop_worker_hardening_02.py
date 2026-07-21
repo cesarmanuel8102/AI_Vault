@@ -88,7 +88,7 @@ try:
     assert permission["bash"] == "deny"
     assert permission["external_directory"] == "deny"
     assert permission["lsp"] == "deny" and permission["skill"] == "deny"
-    inline = json.loads(env["OPENCODE_CONFIG_CONTENT"])["agent"]["brain-kimi-executor"]
+    inline = json.loads(env["OPENCODE_CONFIG_CONTENT"])["agent"]["brain-opencode-executor"]
     assert inline["permission"]["bash"] == "deny" and inline["permission"]["edit"] == "allow"
 finally:
     for key, value in old_env.items():
@@ -191,12 +191,16 @@ with tempfile.TemporaryDirectory() as td:
     worker.write_executor_report(cfg2, payload, repo, 2, 1, ["docs/agent_loop/pilot/PILOT_MARKER.md"], True, "PASS", log)
     report = json.loads((repo / "docs/agent_loop/pilot/EXECUTOR_REPORT.json").read_text(encoding="utf-8"))
     assert set(report["changed_files"]) == worker.PROFILE_ALLOWED_PATHS["pilot"]
+    assert report["executor"] == "OpenCode/Ollama tool executor"
+    assert report["agent"] == "brain-opencode-executor"
+    assert report["model"] == cfg["opencode_model"]
+    assert report["front_id"] == payload["front_id"]
 checks["executor_report_consistency"] = True
 
 with tempfile.TemporaryDirectory() as td:
     repo = Path(td) / "repo"; repo.mkdir()
     (repo / ".git").mkdir()
-    agent = repo / ".opencode/agents/brain-kimi-executor.md"
+    agent = repo / ".opencode/agents/brain-opencode-executor.md"
     agent.parent.mkdir(parents=True); agent.write_text("policy\n", encoding="utf-8")
     old_marker = repo / "docs/agent_loop/pilot/PILOT_MARKER.md"
     old_marker.parent.mkdir(parents=True); old_marker.write_text("old\n", encoding="utf-8")
@@ -212,7 +216,7 @@ with tempfile.TemporaryDirectory() as td:
 with tempfile.TemporaryDirectory() as td:
     repo = Path(td) / "repo"; repo.mkdir()
     (repo / ".git").mkdir()
-    agent = repo / ".opencode/agents/brain-kimi-executor.md"
+    agent = repo / ".opencode/agents/brain-opencode-executor.md"
     agent.parent.mkdir(parents=True); agent.write_text("policy\n", encoding="utf-8")
     model, seed_hashes = worker.prepare_model_workspace(repo, valid_spec(), 1)
     malicious = model / ".git/hooks/pre-commit"
@@ -236,9 +240,85 @@ with tempfile.TemporaryDirectory() as td:
     subprocess.run(["git", "add", "."], cwd=repo, check=True)
     subprocess.run(["git", "commit", "-m", "old pilot"], cwd=repo, check=True, stdout=subprocess.DEVNULL)
     marker.write_text(worker.pilot_marker_text("PILOT-KIMI-CODEX-20260716-091529"), encoding="utf-8")
-    local = subprocess.run([sys.executable, str(verifier), "--local"], cwd=repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    local = subprocess.run([sys.executable, str(verifier), "--local", "--expected-front-id", "PILOT-KIMI-CODEX-20260716-091529"], cwd=repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     assert local.returncode == 0, local.stdout
 checks["repeatable_local_pilot"] = True
+
+with tempfile.TemporaryDirectory() as td:
+    repo = Path(td) / "exact-front"; repo.mkdir()
+    subprocess.run(["git", "init"], cwd=repo, check=True, stdout=subprocess.DEVNULL)
+    subprocess.run(["git", "config", "user.name", "test"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=repo, check=True)
+    verifier = repo / "scripts/agent_loop/pilot_verify.py"
+    verifier.parent.mkdir(parents=True); verifier.write_text((ROOT / "scripts/agent_loop/pilot_verify.py").read_text(encoding="utf-8"), encoding="utf-8")
+    front = "PILOT-V157-DEEPSEEK-ACTIVATION-20260720-192619"
+    marker = repo / "docs/agent_loop/pilot/PILOT_MARKER.md"
+    marker.parent.mkdir(parents=True); marker.write_text("old marker\n", encoding="utf-8")
+    report = repo / "docs/agent_loop/pilot/EXECUTOR_REPORT.json"
+    neutral_report = {
+        "worker_version":"1.5.7", "front_id":front,
+        "executor":"OpenCode/Ollama tool executor", "agent":"brain-opencode-executor",
+        "model":"ollama-cloud/deepseek-v4-pro", "local_test_passed":True,
+        "merge_performed":False, "canonical_local_sync":False,
+    }
+    report.write_text(json.dumps({"worker_version":"1.5.4"}), encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-m", "seed"], cwd=repo, check=True, stdout=subprocess.DEVNULL)
+    marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
+    report.write_text(json.dumps(neutral_report), encoding="utf-8")
+
+    def verify(*args: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run([sys.executable, str(verifier), *args], cwd=repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+    exact = verify("--local", "--content-only", "--expected-front-id", front)
+    assert exact.returncode == 0, exact.stdout
+    deepseek = verify("--expected-front-id", front)
+    assert deepseek.returncode == 0, deepseek.stdout
+    wrong = verify("--local", "--content-only", "--expected-front-id", "PILOT-V157-DEEPSEEK-ACTIVATION-20260720-192620")
+    assert wrong.returncode != 0 and "marker front id mismatch" in wrong.stdout
+    missing = verify("--local", "--content-only")
+    assert missing.returncode != 0 and "expected front id required" in missing.stdout
+    for invalid in ("badfront", "PILOT BAD", "PILOT/bad", "PILOT..BAD"):
+        rejected = verify("--local", "--content-only", "--expected-front-id", invalid)
+        assert rejected.returncode != 0 and "expected front id invalid" in rejected.stdout, (invalid, rejected.stdout)
+
+    legacy_marker = worker.pilot_marker_text(front).replace("OPENCODE_OLLAMA_TOOL_EXECUTOR", "KIMI_OPENCODE_OLLAMA")
+    marker.write_text(legacy_marker, encoding="utf-8")
+    rejected = verify("--local", "--content-only", "--expected-front-id", front)
+    assert rejected.returncode != 0 and "marker executor mismatch" in rejected.stdout
+    marker.write_text(worker.pilot_marker_text(front), encoding="utf-8")
+
+    legacy = json.loads(report.read_text(encoding="utf-8")); legacy["executor"] = "Kimi via OpenCode/Ollama"
+    report.write_text(json.dumps(legacy), encoding="utf-8")
+    rejected = verify("--expected-front-id", front)
+    assert rejected.returncode != 0 and "executor identity mismatch" in rejected.stdout
+    legacy["executor"] = "OpenCode/Ollama tool executor"; legacy["front_id"] = "PILOT-V157-DEEPSEEK-ACTIVATION-20260720-192620"
+    report.write_text(json.dumps(legacy), encoding="utf-8")
+    rejected = verify("--expected-front-id", front)
+    assert rejected.returncode != 0 and "executor report front id mismatch" in rejected.stdout
+checks["executor_neutral_exact_front_contract"] = True
+
+original_subprocess_run = worker.subprocess.run
+captured_commands = []
+try:
+    class Result:
+        returncode = 0
+        stdout = b"ok"
+
+    def capture(command, **kwargs):
+        captured_commands.append(list(command))
+        return Result()
+
+    worker.subprocess.run = capture
+    front = "PILOT-V157-DEEPSEEK-ACTIVATION-20260720-192619"
+    profile_cfg = {"test_profiles":{"pilot":[sys.executable,"scripts/agent_loop/pilot_verify.py","--local"]}}
+    worker.run_profile(profile_cfg, {"test_profile":"pilot","front_id":front}, ROOT)
+    worker.run_marker_content_check(ROOT, front)
+    worker.run_final_verifier(ROOT, "a" * 40, "b" * 40, front)
+    assert all(cmd[-2:] == ["--expected-front-id", front] for cmd in captured_commands)
+finally:
+    worker.subprocess.run = original_subprocess_run
+checks["expected_front_propagation"] = True
 
 assert contract["worker_version"] == worker.WORKER_VERSION == "1.5.7"
 assert contract["pilot_only"] is True and contract["general_fronts_supported"] is False

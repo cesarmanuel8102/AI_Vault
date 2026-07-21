@@ -136,6 +136,9 @@ def run_case(mode: str, objective: str = "Create the exact pilot marker.") -> tu
 checks: dict[str, bool] = {}
 
 prompt = worker.make_prompt(spec_payload(), 1)
+assert f"You are the OpenCode filesystem executor for {FRONT}." in prompt
+assert "You are the Kimi executor" not in prompt
+assert "EXECUTOR=OPENCODE_OLLAMA_TOOL_EXECUTOR" in prompt
 assert "Your first required action is to invoke the OpenCode write tool." in prompt
 assert "A text-only response is a failed attempt." in prompt
 assert "Do not output the success sentinel before the write tool reports completion." in prompt
@@ -145,6 +148,7 @@ checks["prompt_requires_write_tool_before_ack"] = True
 
 events, _model, _log = run_case("exact")
 assert any(e["kind"] == "executor_started" and e.get("issue") == 5 for e in events)
+assert any(e["kind"] == "executor_started" and e.get("model") == "ollama-cloud/kimi-k2.7-code" for e in events)
 assert any(e["kind"] == "executor_completed" and e["task_acknowledged"] is True and e.get("ack_source") == "text_sentinel" for e in events)
 
 checks["prompt_sentinel_received_and_exact_marker_passes"] = True

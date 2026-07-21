@@ -18,7 +18,7 @@ assert worker.pilot_marker_text(FRONT) == """# Agent Loop Pilot
 WORKER_VERSION=1.5.7
 FRONT_ID=PILOT-KIMI-CODEX-20260716-091529
 STATUS=PASS
-EXECUTOR=KIMI_OPENCODE_OLLAMA
+EXECUTOR=OPENCODE_OLLAMA_TOOL_EXECUTOR
 SUPERVISOR=CODEX_GITHUB_ACTION
 """
 
@@ -33,7 +33,7 @@ def init_repo(root: Path):
     pv = repo / "scripts/agent_loop/pilot_verify.py"; pv.parent.mkdir(parents=True)
     pv.write_text((ROOT / "scripts/agent_loop/pilot_verify.py").read_text(encoding="utf-8"), encoding="utf-8")
     pilot = repo / "docs/agent_loop/pilot"; pilot.mkdir(parents=True)
-    (pilot / "PILOT_MARKER.md").write_text("# Agent Loop Pilot\nWORKER_VERSION=1.5.2\nSTATUS=PASS\nEXECUTOR=KIMI_OPENCODE_OLLAMA\nSUPERVISOR=CODEX_GITHUB_ACTION\n", encoding="utf-8")
+    (pilot / "PILOT_MARKER.md").write_text(f"# Agent Loop Pilot\nWORKER_VERSION=1.5.2\nFRONT_ID={FRONT}\nSTATUS=PASS\nEXECUTOR=OPENCODE_OLLAMA_TOOL_EXECUTOR\nSUPERVISOR=CODEX_GITHUB_ACTION\n", encoding="utf-8")
     (pilot / "EXECUTOR_REPORT.json").write_text(json.dumps({
         "schema_version": 1, "front_id": FRONT, "issue_number": 5, "cycle": 2,
         "base_sha": "4722de72388c9d4d1bd2659dfc8cbfe214c1772e",
@@ -45,25 +45,29 @@ def init_repo(root: Path):
 
 with tempfile.TemporaryDirectory() as td:
     root = Path(td); repo = init_repo(root)
-    p = subprocess.run([sys.executable, "scripts/agent_loop/pilot_verify.py", "--local"], cwd=repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    assert p.returncode != 0 and "marker worker version too old" in p.stdout and "FRONT_ID" in p.stdout
+    p = subprocess.run([sys.executable, "scripts/agent_loop/pilot_verify.py", "--local", "--expected-front-id", FRONT], cwd=repo, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    assert p.returncode != 0 and "marker worker version too old" in p.stdout
     model = root / "model" / "docs/agent_loop/pilot"; model.mkdir(parents=True)
     (model / "PILOT_MARKER.md").write_text(worker.pilot_marker_text(FRONT), encoding="utf-8")
     changed = worker.audit_and_sync_model_workspace(root / "model", repo, {}, {"front_id": FRONT})
     assert changed == ["docs/agent_loop/pilot/PILOT_MARKER.md"]
-    ok, out = worker.run_marker_content_check(repo)
+    ok, out = worker.run_marker_content_check(repo, FRONT)
     assert ok, out
     changes = worker.changed_files(repo, sh(["git", "rev-parse", "HEAD"], repo))
     worker.write_executor_report({"opencode_model":"ollama-cloud/kimi-k2.7-code"}, {"front_id":FRONT,"expected_base_sha":BASE,"test_profile":"pilot"}, repo, 5, 3, changes, True, out, root / "opencode.jsonl")
     report = json.loads((repo / "docs/agent_loop/pilot/EXECUTOR_REPORT.json").read_text(encoding="utf-8"))
     assert report["worker_version"] == worker.WORKER_VERSION
+    assert report["executor"] == "OpenCode/Ollama tool executor"
+    assert report["agent"] == "brain-opencode-executor"
+    assert report["model"] == "ollama-cloud/kimi-k2.7-code"
+    assert report["front_id"] == FRONT
     assert report["base_sha"] == BASE
     assert report["issue_number"] == 5 and report["cycle"] == 3
     assert report["changed_files"] == sorted(["docs/agent_loop/pilot/PILOT_MARKER.md", "docs/agent_loop/pilot/EXECUTOR_REPORT.json"])
     sh(["git", "add", "docs/agent_loop/pilot/PILOT_MARKER.md", "docs/agent_loop/pilot/EXECUTOR_REPORT.json"], repo)
     sh(["git", "commit", "-m", "repair fixture"], repo)
     head = sh(["git", "rev-parse", "HEAD"], repo)
-    ok, final = worker.run_final_verifier(repo, "HEAD~1", head)
+    ok, final = worker.run_final_verifier(repo, "HEAD~1", head, FRONT)
     assert ok, final
 
 with tempfile.TemporaryDirectory() as td:

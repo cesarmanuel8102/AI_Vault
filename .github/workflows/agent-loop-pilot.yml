@@ -29,11 +29,46 @@ jobs:
           python-version: '3.11'
       - name: Verify hardened worker contract
         run: python tests/contract/test_agent_loop_worker_hardening_02.py
+      - name: Derive trusted pilot metadata
+        id: pilot_meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          subject="$(git log -1 --format=%s)"
+          prefix='test(agent-loop): complete '
+          if [[ "$subject" != "$prefix"* ]]; then
+            echo 'HEAD subject does not contain the required pilot completion prefix' >&2
+            exit 1
+          fi
+          front_id="${subject#"$prefix"}"
+          if [[ ! "$front_id" =~ ^[A-Z0-9][A-Z0-9._-]{5,127}$ || "$front_id" == *'..'* ]]; then
+            echo 'HEAD subject contains an invalid front id' >&2
+            exit 1
+          fi
+          python - "$front_id" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          front_id = sys.argv[1]
+          report_path = Path('docs/agent_loop/pilot/EXECUTOR_REPORT.json')
+          if not report_path.is_file():
+              raise SystemExit('executor report missing')
+          report = json.loads(report_path.read_text(encoding='utf-8-sig'))
+          if report.get('front_id') != front_id:
+              raise SystemExit('executor report front id mismatch')
+          if report.get('executor') != 'OpenCode/Ollama tool executor':
+              raise SystemExit('executor identity mismatch')
+          if not isinstance(report.get('model'), str) or not report['model']:
+              raise SystemExit('executor model missing')
+          PY
+          echo "front_id=$front_id" >> "$GITHUB_OUTPUT"
       - name: Verify pilot scope and reports
         run: |
           python scripts/agent_loop/pilot_verify.py \
             --base-sha "${{ github.event.pull_request.base.sha }}" \
             --head-sha "${{ github.event.pull_request.head.sha }}" \
+            --expected-front-id "${{ steps.pilot_meta.outputs.front_id }}" \
             --report-path "$RUNNER_TEMP/pilot-deterministic-report.json"
       - uses: actions/upload-artifact@v4
         with:
@@ -128,7 +163,7 @@ jobs:
             if (parsed.verdict === 'PASS' && parsed.head_sha === process.env.HEAD_SHA) {
               await github.rest.issues.addLabels({owner, repo, issue_number, labels:['loop:ready-human-audit']});
               await github.rest.issues.createComment({owner, repo, issue_number,
-                body:`[AGENT-LOOP][READY_FOR_HUMAN_AUDIT][HEAD: ${process.env.HEAD_SHA}]\n\n@${process.env.OWNER_LOGIN} Kimi local gates, GitHub deterministic CI and Codex read-only supervision are PASS on the same HEAD. No merge was performed. Independent human reauditing is required.`});
+                body:`[AGENT-LOOP][READY_FOR_HUMAN_AUDIT][HEAD: ${process.env.HEAD_SHA}]\n\n@${process.env.OWNER_LOGIN} OpenCode executor local gates, GitHub deterministic CI and Codex read-only supervision are PASS on the same HEAD. No merge was performed. Independent human reauditing is required.`});
             } else if (parsed.verdict === 'CHANGES_REQUESTED') {
               await github.rest.issues.addLabels({owner, repo, issue_number, labels:['loop:repairing']});
             } else {
@@ -144,4 +179,3 @@ jobs:
           name: agent-loop-state-report
           path: agent-loop-state-report.json
           if-no-files-found: warn
-

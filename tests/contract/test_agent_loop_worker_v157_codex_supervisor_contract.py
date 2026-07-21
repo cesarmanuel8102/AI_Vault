@@ -37,6 +37,9 @@ def test_supervisor_prompt_requires_v157_worker_version() -> None:
     assert "v1.5.7" in text
     assert "WORKER_VERSION=1.5.7" in text
     assert "worker_version >= 1.5.7" in text
+    assert "EXECUTOR=OPENCODE_OLLAMA_TOOL_EXECUTOR" in text
+    assert "OpenCode/Ollama tool executor" in text
+    assert "Kimi" not in text
 
 
 def test_supervisor_prompt_requires_prompt_delivery_ack() -> None:
@@ -117,6 +120,23 @@ def test_workflow_head_mismatch_cannot_pass() -> None:
     assert "HEAD_SHA: ${{ github.event.pull_request.head.sha }}" in publish
 
 
+def test_workflow_derives_exact_front_from_commit_and_cross_checks_report() -> None:
+    deterministic = _job_block(_workflow(), "deterministic")
+    assert "git log -1 --format=%s" in deterministic
+    assert "test(agent-loop): complete " in deterministic
+    assert "front_id=\"${subject#\"$prefix\"}\"" in deterministic
+    assert "report.get('front_id') != front_id" in deterministic
+    assert "OpenCode/Ollama tool executor" in deterministic
+    assert "--expected-front-id \"${{ steps.pilot_meta.outputs.front_id }}\"" in deterministic
+    assert "PILOT_MARKER.md" not in deterministic.split("Derive trusted pilot metadata", 1)[1].split("Verify pilot scope", 1)[0]
+
+
+def test_publish_uses_executor_neutral_language() -> None:
+    publish = _job_block(_workflow(), "publish")
+    assert "OpenCode executor local gates" in publish
+    assert "Kimi local gates" not in publish
+
+
 def main() -> int:
     tests = [
         test_supervisor_prompt_requires_v157_worker_version,
@@ -129,6 +149,8 @@ def main() -> int:
         test_workflow_verdict_transitions_are_explicit,
         test_workflow_has_no_merge_push_or_write_credentials,
         test_workflow_head_mismatch_cannot_pass,
+        test_workflow_derives_exact_front_from_commit_and_cross_checks_report,
+        test_publish_uses_executor_neutral_language,
     ]
     failed = 0
     for test in tests:
