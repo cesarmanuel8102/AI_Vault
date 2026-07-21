@@ -343,8 +343,14 @@ def run_process_state_case(mode: str):
         worker.prepare_model_workspace = fake_prepare
         worker.run_kimi = fake_run_kimi
         worker.audit_and_sync_model_workspace = fake_audit
-        worker.run_marker_content_check = lambda repo_dir: (True, "content ok")
-        worker.run_final_verifier = lambda repo_dir, base, head: (False, "final verifier failed") if mode == "trusted_verifier_failure" else (True, "final ok")
+        def fake_marker_content_check(repo_dir, expected_front_id):
+            assert expected_front_id == FRONT
+            return True, "content ok"
+        def fake_final_verifier(repo_dir, base, head, expected_front_id):
+            assert expected_front_id == FRONT
+            return (False, "final verifier failed") if mode == "trusted_verifier_failure" else (True, "final ok")
+        worker.run_marker_content_check = fake_marker_content_check
+        worker.run_final_verifier = fake_final_verifier
         worker.run = fake_run
         worker.set_phase = lambda repo_name, number, phase: calls["phase"].append((int(number), phase))
         read_counts = {"issue": 0, "pr": 0}

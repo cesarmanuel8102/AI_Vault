@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Allowlisted local Kimi/OpenCode worker for a single trusted GitHub repository."""
+"""Allowlisted local OpenCode worker for a single trusted GitHub repository."""
 from __future__ import annotations
 import argparse, json, os, re, shutil, subprocess, sys, time, traceback, tempfile
 from datetime import datetime, timezone
@@ -88,9 +88,15 @@ PILOT_MARKER_TEMPLATE = """# Agent Loop Pilot
 WORKER_VERSION={worker_version}
 FRONT_ID={front_id}
 STATUS=PASS
-EXECUTOR=KIMI_OPENCODE_OLLAMA
+EXECUTOR=OPENCODE_OLLAMA_TOOL_EXECUTOR
 SUPERVISOR=CODEX_GITHUB_ACTION
 """
+_FRONT_ID_RE = re.compile(r"[A-Z0-9][A-Z0-9._-]{5,127}")
+
+
+def valid_front_id(value: object) -> bool:
+    text = str(value)
+    return bool(_FRONT_ID_RE.fullmatch(text)) and ".." not in text
 
 _CONVERSATIONAL_REJECTION_PATTERNS = {
     "please provide the task",
@@ -128,7 +134,7 @@ def pilot_marker_text(front_id: str) -> str:
     return PILOT_MARKER_TEMPLATE.format(worker_version=WORKER_VERSION, front_id=str(front_id))
 
 class PreExecutionFailure(RuntimeError):
-    """Deterministic failure before the OpenCode/Kimi process was started. Does not consume a Kimi cycle."""
+    """Deterministic failure before the OpenCode process was started. Does not consume an executor cycle."""
 
     def __init__(self, failure_class: str, message: str, details: dict | None = None):
         super().__init__(message)
@@ -137,7 +143,7 @@ class PreExecutionFailure(RuntimeError):
 
 
 class ExecutorAttemptConsumed(RuntimeError):
-    """OpenCode/Kimi process was started and this attempt must consume exactly one Kimi cycle."""
+    """OpenCode was started and this attempt must consume exactly one executor cycle."""
 
     def __init__(self, failure_class: str, message: str, details: dict | None = None):
         super().__init__(message)
@@ -749,7 +755,7 @@ def parse_spec(issue: dict, cfg: dict) -> dict:
         raise ValueError(f"missing fields: {missing}")
     if spec["schema_version"] != 1:
         raise ValueError("unsupported schema_version")
-    if not re.fullmatch(r"[A-Z0-9][A-Z0-9._-]{5,127}", str(spec["front_id"])):
+    if not valid_front_id(spec["front_id"]):
         raise ValueError("invalid front_id")
     if spec["repo"] != cfg["repo"] or spec["owner"] != cfg["owner"]:
         raise ValueError("repo/owner mismatch")
@@ -804,7 +810,7 @@ def opencode_env(cfg: dict, repo_dir: Path) -> dict[str,str]:
         "model":model,
         "permission":strict_permissions,
         "agent":{
-            "brain-kimi-executor":{
+            "brain-opencode-executor":{
                 "description":"Writes one exact allowlisted pilot artifact in a detached workspace.",
                 "mode":"primary", "steps":30, "temperature":0.1, "model":model,
                 "prompt":"Follow the user prompt exactly. The current directory is the workspace. Write files using only relative paths (docs/agent_loop/pilot/PILOT_MARKER.md). Never use absolute paths, shell, network, subagents, skills, LSP, or external paths.",
@@ -836,7 +842,7 @@ def discover_session_id(repo_dir: Path, title: str) -> str | None:
 def make_prompt(spec: dict, cycle: int, feedback: str | None = None) -> str:
     sentinel = prompt_task_sentinel(spec["front_id"], cycle)
     failure_sentinel = prompt_task_failure_sentinel(spec["front_id"], cycle)
-    base = f"""You are the Kimi executor for {spec['front_id']}.
+    base = f"""You are the OpenCode filesystem executor for {spec['front_id']}.
 Your only job is to write exactly one file in the current workspace and then output the sentinel line.
 The current workspace is the directory passed via --dir. It contains no Git metadata and no credentials.
 Do not invoke a shell, commit, push, use gh, merge, or access external directories.
@@ -883,7 +889,7 @@ def _walk_workspace_files(root: Path) -> list[str]:
     return sorted(files)
 
 def prepare_model_workspace(repo_dir: Path, spec: dict, cycle: int) -> tuple[Path, dict[str, str]]:
-    """Create a no-.git workspace for Kimi and seed only trusted, non-secret files."""
+    """Create a no-.git workspace for the executor and seed only trusted, non-secret files."""
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     model_dir = repo_dir.parent / f"model-cycle-{cycle}-{stamp}-{os.getpid()}"
     model_dir.mkdir(parents=True, exist_ok=False)
@@ -966,13 +972,13 @@ def _lossless_transport_or_raise(cmd: list[str], prepared):
     if isinstance(prepared, str):
         raise PreExecutionFailure(
             "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED",
-            "Kimi execution resolved to a single command-line string; must use node.exe+JS entrypoint",
+            "OpenCode execution resolved to a single command-line string; must use node.exe+JS entrypoint",
             {"resolved_identity": command_identity(cmd)},
         )
     if prepared and _runtime_command_name(str(prepared[0])) == "cmd":
         raise PreExecutionFailure(
             "LOSSLESS_OPENCODE_TRANSPORT_REQUIRED",
-            "Kimi execution resolved to cmd.exe; must use node.exe+JS entrypoint",
+            "OpenCode execution resolved to cmd.exe; must use node.exe+JS entrypoint",
             {"resolved_identity": command_identity(cmd)},
         )
 
@@ -998,6 +1004,7 @@ def safe_executor_error(exc: Exception) -> str:
 
 
 def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=None):
+    # Legacy function/event/schema names remain for v1.5.7 compatibility; they do not identify the configured model.
     report_dir = Path(cfg["install_root"]) / "reports"
     log = report_dir / f"issue-{issue_no}-cycle-{cycle}-opencode.jsonl"
     title = f"AI_Vault {spec['front_id']}"
@@ -1011,7 +1018,7 @@ def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=No
             {"cycle": cycle, "front": spec["front_id"]},
         )
     cmd = ["opencode","run","--dir",str(model_dir),"--model",cfg["opencode_model"],
-           "--agent","brain-kimi-executor","--format","json",
+           "--agent","brain-opencode-executor","--format","json",
            "--title",title]
     if opencode_run_supports("--auto", cwd=model_dir):
         cmd.append("--auto")
@@ -1290,6 +1297,8 @@ def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path
 
 def run_profile(cfg, spec, repo_dir) -> tuple[bool,str]:
     cmd = [str(x) for x in cfg["test_profiles"][spec["test_profile"]]]
+    if spec["test_profile"] == "pilot":
+        cmd += ["--expected-front-id", str(spec["front_id"])]
     p = subprocess.run(command_for_subprocess(cmd), cwd=str(repo_dir), text=False,
                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     out, _ = completed_output(p)
@@ -1303,15 +1312,17 @@ def marker_hash(repo_dir: Path) -> str | None:
     marker = repo_dir / "docs/agent_loop/pilot/PILOT_MARKER.md"
     return sha256_file(marker) if marker.is_file() else None
 
-def run_marker_content_check(repo_dir: Path) -> tuple[bool, str]:
-    cmd = [sys.executable, "scripts/agent_loop/pilot_verify.py", "--local", "--content-only"]
+def run_marker_content_check(repo_dir: Path, expected_front_id: str) -> tuple[bool, str]:
+    cmd = [sys.executable, "scripts/agent_loop/pilot_verify.py", "--local", "--content-only",
+           "--expected-front-id", str(expected_front_id)]
     p = subprocess.run(command_for_subprocess(cmd), cwd=str(repo_dir), text=False,
                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     out, _ = completed_output(p)
     return p.returncode == 0, out
 
-def run_final_verifier(repo_dir: Path, base_sha: str, head_sha: str) -> tuple[bool, str]:
-    cmd = [sys.executable, "scripts/agent_loop/pilot_verify.py", "--base-sha", base_sha, "--head-sha", head_sha]
+def run_final_verifier(repo_dir: Path, base_sha: str, head_sha: str, expected_front_id: str) -> tuple[bool, str]:
+    cmd = [sys.executable, "scripts/agent_loop/pilot_verify.py", "--base-sha", base_sha, "--head-sha", head_sha,
+           "--expected-front-id", str(expected_front_id)]
     p = subprocess.run(command_for_subprocess(cmd), cwd=str(repo_dir), text=False,
                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     out, _ = completed_output(p)
@@ -1322,7 +1333,8 @@ def write_executor_report(cfg, spec, repo_dir, issue_no, cycle, changes, test_ok
     p.parent.mkdir(parents=True, exist_ok=True)
     data = {
         "schema_version":1,"worker_version":WORKER_VERSION,"front_id":spec["front_id"],"issue_number":issue_no,
-        "cycle":cycle,"executor":"Kimi via OpenCode/Ollama","model":cfg["opencode_model"],
+        "cycle":cycle,"executor":"OpenCode/Ollama tool executor","agent":"brain-opencode-executor",
+        "model":cfg["opencode_model"],
         "base_sha":spec["expected_base_sha"],"changed_files":sorted({"docs/agent_loop/pilot/PILOT_MARKER.md", "docs/agent_loop/pilot/EXECUTOR_REPORT.json"}),
         "local_test_profile":spec["test_profile"],"local_test_passed":test_ok,
         "local_test_tail":bounded_tail(test_out),"opencode_log_local":str(log_path),
@@ -1477,7 +1489,7 @@ def prepare_repo(cfg, spec, issue_no):
     if remote_sha != spec["expected_base_sha"]:
         raise ValueError(f"base moved: expected {spec['expected_base_sha']} actual {remote_sha}")
     run(["git","checkout","-B",spec["work_branch"],remote_sha], cwd=repo_dir)
-    run(["git","config","user.name","AI Vault Kimi Worker"],cwd=repo_dir)
+    run(["git","config","user.name","AI Vault OpenCode Worker"],cwd=repo_dir)
     run(["git","config","user.email","ai-vault-worker@users.noreply.github.com"],cwd=repo_dir)
     return repo_dir
 
@@ -1509,8 +1521,9 @@ def create_pr(cfg, spec, issue_no, repo_dir):
     body = f"""AGENT_LOOP_FRONT: {spec['front_id']}
 AGENT_LOOP_ISSUE: #{issue_no}
 EXPECTED_BASE_SHA: {spec['expected_base_sha']}
+EXECUTOR_MODEL: {cfg['opencode_model']}
 
-Automated pilot. No auto-merge. Kimi writes; Codex supervises read-only; human audit is final.
+Automated pilot. No auto-merge. The configured OpenCode/Ollama executor writes; Codex supervises read-only; human audit is final.
 """
     url = run(["gh","pr","create","--repo",cfg["repo"],"--base",spec["base_branch"],"--head",spec["work_branch"],
                "--draft","--title",f"test(agent-loop): {spec['front_id']}","--body",body],cwd=repo_dir).strip()
@@ -1613,7 +1626,7 @@ def execute_initial(cfg, issue, spec, state_path):
     max_cycles = int(spec["max_kimi_cycles"])
 
     if persisted_cycles >= max_cycles:
-        safe_error = "Maximum Kimi cycles reached without success. Human audit required."
+        safe_error = "Maximum executor cycles reached without success. Human audit required."
         st.update({"issue_number": n, "front": spec["front_id"], "spec": spec,
                    "cycles": persisted_cycles, "opencode_session_id": session_id,
                    "status": "loop:token-exhausted", "error": safe_error,
@@ -1680,7 +1693,7 @@ def execute_initial(cfg, issue, spec, state_path):
                            "error": safe_error, "updated_utc": utc(), "worker_version": WORKER_VERSION,
                            "state_schema_version": STATE_SCHEMA_VERSION})
                 st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted")
-                st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+                st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum executor cycles reached. Human audit required.")
                 event(cfg, "local_gate_failed", issue=n, pr=None, cycle=cycle,
                       failure_class=exc.failure_class, cycle_before=cycle-1, cycle_after=cycle,
                       changed_files=[], test_output_tail=safe_error,
@@ -1777,10 +1790,10 @@ def execute_initial(cfg, issue, spec, state_path):
     st = load_json(state_path)
     st.update({"issue_number": n, "front": spec["front_id"], "spec": spec, "repo_dir": str(repo_dir),
                "cycles": int(spec["max_kimi_cycles"]), "opencode_session_id": session_id,
-               "status": "loop:token-exhausted", "error": "Maximum Kimi cycles reached without success. Human audit required.",
+               "status": "loop:token-exhausted", "error": "Maximum executor cycles reached without success. Human audit required.",
                "updated_utc": utc(), "worker_version": WORKER_VERSION, "state_schema_version": STATE_SCHEMA_VERSION})
     st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted")
-    st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+    st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum executor cycles reached. Human audit required.")
     event(cfg, "state_terminalized", state=str(state_path), issue=n, phase="loop:token-exhausted",
           failure_class="MAX_CYCLES_REACHED", error="max cycles reached")
 
@@ -1811,7 +1824,7 @@ def process_state(cfg, state_path):
         st["status"] = "loop:token-exhausted"
         st["updated_utc"] = utc()
         st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
-        st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+        st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum executor cycles reached. Human audit required.")
         event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
               failure_class="MAX_CYCLES_REACHED", error="max cycles reached")
         return
@@ -1829,7 +1842,7 @@ def process_state(cfg, state_path):
         if discovered_session: st["opencode_session_id"] = discovered_session
         validate_executor_delivery(cfg, spec, model_dir, log, cycle, issue_no=issue, seed_hash=marker_seed)
     except PreExecutionFailure as exc:
-        # Deterministic pre-execution failure: OpenCode/Kimi never started. Do not consume a cycle.
+        # Deterministic pre-execution failure: OpenCode never started. Do not consume a cycle.
         safe_error = safe_executor_error(exc)
         event(cfg, "executor_preflight_failed", front=spec["front_id"], issue=issue, pr=prn, cycle=cycle,
               failure_class=exc.failure_class, command_identity=exc.details.get("command_identity") or "opencode",
@@ -1854,7 +1867,7 @@ def process_state(cfg, state_path):
             st["status"] = "loop:token-exhausted"
             st["error"] = safe_error
             st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
-            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum executor cycles reached. Human audit required.")
             event(cfg, "local_gate_failed", issue=issue, pr=prn, cycle=cycle,
                   failure_class=exc.failure_class, cycle_before=cycle-1, cycle_after=cycle,
                   changed_files=[], test_output_tail=safe_error,
@@ -1880,13 +1893,13 @@ def process_state(cfg, state_path):
             st["status"] = "loop:token-exhausted"
             st["error"] = str(exc)[-5000:]
             st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
-            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum executor cycles reached. Human audit required.")
             event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
                   failure_class="MODEL_CONTENT_FAILURE", cycle=cycle, pr=prn, error=bounded_tail(str(exc)))
         else:
             save_json(state_path, st)
         return
-    content_ok, content_out = run_marker_content_check(repo_dir)
+    content_ok, content_out = run_marker_content_check(repo_dir, spec["front_id"])
     if not content_ok:
         event(cfg, "repair_local_gate_failed", issue=issue, pr=prn, cycle=cycle,
               failure_class="MODEL_CONTENT_FAILURE", cycle_before=cycle-1, cycle_after=cycle,
@@ -1899,7 +1912,7 @@ def process_state(cfg, state_path):
             st["status"] = "loop:token-exhausted"
             st["error"] = bounded_tail(content_out)
             st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
-            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum executor cycles reached. Human audit required.")
             event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
                   failure_class="MODEL_CONTENT_FAILURE", cycle=cycle, pr=prn, error=bounded_tail(content_out))
         else:
@@ -1920,7 +1933,7 @@ def process_state(cfg, state_path):
             st["status"] = "loop:token-exhausted"
             st["error"] = "out-of-scope files: " + json.dumps(bad)
             st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
-            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum executor cycles reached. Human audit required.")
             event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
                   failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle=cycle, pr=prn, error=st["error"])
         else:
@@ -1944,15 +1957,15 @@ def process_state(cfg, state_path):
             st["status"] = "loop:token-exhausted"
             st["error"] = "staged diff is not exactly pilot artifacts"
             st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
-            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum executor cycles reached. Human audit required.")
             event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
                   failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle=cycle, pr=prn, error=st["error"])
         else:
             save_json(state_path, st)
         return
-    run(["git","commit","-m",f"fix(agent-loop): address supervisor findings cycle {cycle}"],cwd=repo_dir)
+    run(["git","commit","-m",f"test(agent-loop): complete {spec['front_id']}"],cwd=repo_dir)
     newsha=run(["git","rev-parse","HEAD"],cwd=repo_dir).strip()
-    final_ok, final_out = run_final_verifier(repo_dir, spec["expected_base_sha"], newsha)
+    final_ok, final_out = run_final_verifier(repo_dir, spec["expected_base_sha"], newsha, spec["front_id"])
     if not final_ok:
         run(["git","reset","--hard","HEAD~1"], cwd=repo_dir)
         terminalize = should_terminalize_failed_cycle(st, spec, cycle)
@@ -1967,7 +1980,7 @@ def process_state(cfg, state_path):
             st["status"] = "loop:token-exhausted"
             st["error"] = bounded_tail(final_out)
             st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
-            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
+            st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum executor cycles reached. Human audit required.")
             event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
                   failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle=cycle, pr=prn, error=bounded_tail(final_out))
         else:
@@ -2175,7 +2188,7 @@ def trusted_base_advance_existing_pr(
         run(["git", "fetch", "origin", spec["base_branch"], expected_work_branch], cwd=repo_dir)
         run(["git", "checkout", expected_work_branch], cwd=repo_dir)
         run(["git", "reset", "--hard", expected_old_pr_head], cwd=repo_dir)
-        run(["git", "config", "user.name", "AI Vault Kimi Worker"], cwd=repo_dir)
+        run(["git", "config", "user.name", "AI Vault OpenCode Worker"], cwd=repo_dir)
         run(["git", "config", "user.email", "ai-vault-worker@users.noreply.github.com"], cwd=repo_dir)
         run(["git", "merge", "--no-edit", approved_new_base_sha], cwd=repo_dir)
         new_head = run(["git", "rev-parse", "HEAD"], cwd=repo_dir).strip()
@@ -2558,6 +2571,7 @@ def trusted_v155_recover_existing_pr(cfg: dict, issue_number: int, expected_base
     if installed.exists(): shutil.copy2(installed, worker_backup)
     mutated = False
     try:
+        # Preserve the exact historical v1.5.4 comment body solely for notification-ledger migration.
         st = seed_terminal_notification_keys_from_comments(cfg, st, "loop:token-exhausted", "Maximum Kimi cycles reached. Human audit required.")
         st.update({"cycles": 2, "status": "WAITING_GITHUB", "last_head_sha": head_sha,
                    "local_retry_count": 0, "terminal_notified": False,
