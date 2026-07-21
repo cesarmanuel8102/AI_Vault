@@ -246,12 +246,12 @@ function Test-RollbackOnSmokeFailure {
       -StopTask { param($Name) } `
       -DisableTask { param($Name) } `
       -GetTaskState { param($Name) "Disabled" } `
-      -BeforeSmokeHook { param($Root) (Get-Content -LiteralPath (Join-Path $Root "worker\agent_worker.py") -Raw).Replace('WORKER_VERSION = "1.5.7"', 'WORKER_VERSION = "0.0.0"') | Set-Content -LiteralPath (Join-Path $Root "worker\agent_worker.py") -Encoding UTF8 } `
+      -BeforeSmokeHook { param($Root) $Path = Join-Path $Root "worker\agent_worker.py"; $Content = (Get-Content -LiteralPath $Path -Raw).Replace('WORKER_VERSION = "1.5.7"', 'WORKER_VERSION = "0.0.0"'); [System.IO.File]::WriteAllText($Path, $Content, (New-Object System.Text.UTF8Encoding($false))) } `
       -WriteLine { param($Message) } | Out-Null
     throw "expected installed worker smoke failure"
   }
   catch {
-    if ($_.Exception.Message -notmatch "native command failed: worker version smoke") { throw }
+    if ($_.Exception.Message -ne "Installed worker smoke failed: 0.0.0") { throw }
   }
   Assert-InstallPreserved -Install $install -BeforeWorker $beforeWorker -BeforeConfig $beforeConfig -BeforeWorkerContract $beforeContract
 }
