@@ -927,8 +927,13 @@ def audit_and_sync_model_workspace(model_dir: Path, repo_dir: Path, seed_hashes:
             raise ModelWorkspaceScopeViolation("MODEL_WORKSPACE_SEED_MODIFIED", count=1)
     marker = model_dir / marker_rel
     content = marker.read_text(encoding="utf-8-sig").replace("\r\n", "\n")
+    # OpenCode write tools may omit the final newline while preserving every
+    # contractual marker line. Canonicalize only that EOF representation.
+    if not content.endswith("\n"):
+        content += "\n"
     expected_front = (spec or {}).get("front_id", "PILOT-KIMI-CODEX-20260716-091529")
-    if content != pilot_marker_text(expected_front):
+    expected_content = pilot_marker_text(expected_front)
+    if content != expected_content:
         raise RuntimeError("PILOT_MARKER_CONTENT_MISMATCH")
     destination = repo_dir / marker_rel
     current = repo_dir
@@ -939,7 +944,7 @@ def audit_and_sync_model_workspace(model_dir: Path, repo_dir: Path, seed_hashes:
     if _is_reparse_or_symlink(destination):
         raise ModelWorkspaceScopeViolation("TRUSTED_OUTPUT_LINK_DENIED")
     destination.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(marker, destination)
+    destination.write_bytes(expected_content.encode("utf-8"))
     return [marker_rel]
 
 def _require_lossless_opencode_transport() -> None:
