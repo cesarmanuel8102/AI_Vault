@@ -12,6 +12,22 @@ $validateStage={param($stage) if(!(Test-Path (Join-Path $stage 'operator_proxy.t
 try {
     Invoke-OperatorProxyInstall -Repo $root -InstallRoot $install -ApprovedCommit $head -ValidateStaging $validateStage -ValidateInstalled {param($p)} | Out-Null
     if([Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes((Join-Path $install 'operator_proxy.ts'))) -eq 'old-runtime'){throw 'install did not replace runtime'}
+    $capturedArgs=Join-Path $tmp 'runner-args.txt'
+    $shim="@echo off`r`n> `"$capturedArgs`" echo %~1`r`n>> `"$capturedArgs`" echo %~2`r`n>> `"$capturedArgs`" echo %~3`r`nexit /b 0`r`n"
+    [IO.File]::WriteAllText((Join-Path $install 'node_modules\.bin\tsx.cmd'),$shim,[Text.Encoding]::ASCII)
+    $foreignCwd=Join-Path $tmp 'foreign-cwd';New-Item $foreignCwd -ItemType Directory|Out-Null
+    $runner=(Join-Path $install 'Run-OperatorProxy.ps1').Replace("'","''")
+    $escapedInstall=$install.Replace("'","''")
+    $escapedCwd=$foreignCwd.Replace("'","''")
+    $childCommand="Set-Location '$escapedCwd'; & '$runner' -InstallRoot '$escapedInstall' -Once -DryRun"
+    $encoded=[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($childCommand))
+    $shell=(Get-Process -Id $PID).Path
+    & $shell -NoProfile -NonInteractive -EncodedCommand $encoded
+    $runnerExit=$LASTEXITCODE
+    if($runnerExit -ne 0){throw "runner failed from unrelated cwd: $runnerExit"}
+    $actualArgs=[IO.File]::ReadAllLines($capturedArgs)|ForEach-Object{$_.Trim()}
+    $expectedArgs=@((Join-Path $install 'operator_proxy.ts'),'--once','--dry-run')
+    if((Compare-Object $expectedArgs $actualArgs -SyncWindow 0)){throw 'runner did not use absolute install entrypoint'}
     try { Invoke-OperatorProxyInstall -Repo $root -InstallRoot $install -ApprovedCommit ('0'*40) -ValidateStaging $validateStage | Out-Null; throw 'bad sha accepted' } catch { if($_.Exception.Message -eq 'bad sha accepted'){throw} }
     [IO.File]::WriteAllBytes((Join-Path $install 'operator_proxy.ts'),$old)
     try { Invoke-OperatorProxyInstall -Repo $root -InstallRoot $install -ApprovedCommit $head -ValidateStaging $validateStage -ValidateInstalled {param($p) throw 'post-install validation failure'} | Out-Null; throw 'post failure accepted' } catch { if($_.Exception.Message -eq 'post failure accepted'){throw} }
