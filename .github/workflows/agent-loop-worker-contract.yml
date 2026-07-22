@@ -25,6 +25,7 @@ on:
       - tests/contract/test_agent_loop_worker_v157_state_event_contract.py
       - tests/contract/test_agent_loop_worker_v157_codex_supervisor_contract.py
       - tests/contract/test_agent_loop_worker_v157_deploy_recovery.ps1
+      - tests/contract/test_agent_loop_worker_r1_1_roadmap_manifest.py
       - .github/workflows/agent-loop-worker-contract.yml
 
 concurrency:
@@ -73,6 +74,7 @@ jobs:
           python -m py_compile tests/contract/test_agent_loop_worker_v157_prompt_delivery.py
           python -m py_compile tests/contract/test_agent_loop_worker_v157_state_event_contract.py
           python -m py_compile tests/contract/test_agent_loop_worker_v157_codex_supervisor_contract.py
+          python -m py_compile tests/contract/test_agent_loop_worker_r1_1_roadmap_manifest.py
       - name: worker SHA-256 evidence
         run: python -c "import hashlib,pathlib; p=pathlib.Path('scripts/agent_loop/local_worker/agent_worker.py'); print('WORKER_SHA256='+hashlib.sha256(p.read_bytes()).hexdigest().upper())"
       - name: hardening contract
@@ -117,5 +119,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File tests/contract/test_agent_loop_worker_v157_deploy_recovery.ps1
+      - name: R1.1 roadmap manifest contract
+        run: python tests/contract/test_agent_loop_worker_r1_1_roadmap_manifest.py
       - name: git diff check
         run: git diff --check
