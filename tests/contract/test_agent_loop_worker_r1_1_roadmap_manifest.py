@@ -6,6 +6,7 @@ import base64
 import hashlib
 import importlib.util
 import json
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -19,8 +20,19 @@ assert module_spec and module_spec.loader
 worker = importlib.util.module_from_spec(module_spec)
 module_spec.loader.exec_module(worker)
 
-manifest_bytes = MANIFEST_PATH.read_bytes()
-roadmap_bytes = ROADMAP_PATH.read_bytes()
+def git_blob(path):
+    relative = path.relative_to(ROOT).as_posix()
+    result = subprocess.run(
+        ["git", "show", f"HEAD:{relative}"],
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+    )
+    return result.stdout
+
+
+manifest_bytes = git_blob(MANIFEST_PATH)
+roadmap_bytes = git_blob(ROADMAP_PATH)
 manifest = json.loads(manifest_bytes.decode("utf-8"))
 roadmap_hash = hashlib.sha256(roadmap_bytes).hexdigest()
 
