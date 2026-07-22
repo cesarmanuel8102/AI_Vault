@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "9f7a5c722b25ccd909ee9be4ea1e69f1935bc48cc9aac48f2fa06759543b2f16",
+  "roadmap_sha256": "6d855928a00249210c7bd5ee3dbebd684639cc2411b15e9e88a761eae821d678",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -29,11 +29,13 @@
   "rebaseline_source_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
   "current_integration_head_at_audit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
   "adoption_pr_number": 35,
-  "adoption_pr_head": "aba597e92007b878171be27ba750c83352b3ef77",
-  "adoption_pr_head_semantics": "PR head observed before the evidence-binding repair commit; resolve the live head through adoption_pr_number",
-  "adoption_merge_commit": null,
+  "adoption_pr_head": "a605c4d88510acd477cf26d2787bc38b1c02af48",
+  "adoption_pr_head_semantics": "Final PR head reviewed and authorized by the human owner",
+  "adoption_merge_commit": "5b9f101a6d5ec5b314d9413cc5c12d66fec6d94f",
+  "adopted_at_utc": "2026-07-22T14:02:16Z",
   "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
-  "approval_status": "PENDING_HUMAN_ADOPTION",
+  "approval_status": "HUMAN_ADOPTED",
+  "r0_status": "CLOSED_HUMAN_ADOPTED",
   "current_phase": "R0",
   "human_final_authority": true,
   "auto_merge": false,
@@ -47,5 +49,5 @@
     "R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9",
     "R10", "R11", "R12", "R13", "R14", "R15", "R16", "R17", "R18", "R19"
   ],
-  "next_gate": "Human review and merge of corrected R0 documentation Draft PR #35"
+  "next_gate": "Human authorization to begin R1.1 roadmap manifest validation"
 }

@@ -923,14 +923,18 @@ No se crean Issues R1+ dentro de R0. Tras el merge humano de este Draft PR, crea
 
 Cada Issue debe declarar roadmap/version, phase/item, dependencies, base SHA, paths permitidos/prohibidos, gates, rollback, autoridad humana y prohibiciones de auto-merge/canonical sync/live trading.
 
-## 13.8 Gate de adopción
+## 13.8 Cierre de adopción
 
 ```text
-STATUS: READY_FOR_BRAIN_101_ROADMAP_ADOPTION
-R0_STATUS: READY_FOR_HUMAN_ADOPTION
+STATUS: R0_CLOSED_ROADMAP_ADOPTED
+R0_STATUS: CLOSED_HUMAN_ADOPTED
+ADOPTION_PR: 35
+ADOPTION_PR_HEAD: a605c4d88510acd477cf26d2787bc38b1c02af48
+ADOPTION_MERGE_COMMIT: 5b9f101a6d5ec5b314d9413cc5c12d66fec6d94f
 LIVE_TRADING_ENABLED: false
 AUTO_MERGE: false
 CANONICAL_LOCAL_SYNC: false
 HUMAN_FINAL_AUTHORITY: true
-NEXT_GATE: Human review and merge of the R0 documentation Draft PR
+R1_STARTED: false
+NEXT_GATE: Human authorization to begin R1.1 roadmap manifest validation
 ```
