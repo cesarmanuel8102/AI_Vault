@@ -52,7 +52,22 @@ PROFILE_ALLOWED_PATHS = {
     "pilot": {
         "docs/agent_loop/pilot/PILOT_MARKER.md",
         "docs/agent_loop/pilot/EXECUTOR_REPORT.json",
-    }
+    },
+    "roadmap-doc": set(),
+    "test-only": set(),
+}
+PROFILE_PATH_PREFIXES = {
+    "roadmap-doc": ("docs/roadmap/",),
+    "test-only": ("tests/",),
+}
+PROFILE_EXACT_PATHS = {
+    "roadmap-doc": {"ROADMAP_STATUS.json"},
+    "test-only": set(),
+}
+PROFILE_BRANCH_PREFIXES = {
+    "pilot": "agent/pilot-",
+    "roadmap-doc": "agent/roadmap-doc-",
+    "test-only": "agent/test-only-",
 }
 REQUIRED_FORBIDDEN_PATHS = {
     "memory/semantic/",
@@ -99,6 +114,35 @@ _FRONT_ID_RE = re.compile(r"[A-Z0-9][A-Z0-9._-]{5,127}")
 def valid_front_id(value: object) -> bool:
     text = str(value)
     return bool(_FRONT_ID_RE.fullmatch(text)) and ".." not in text
+
+
+def profile_paths_are_trusted(profile: str, paths: set[str]) -> bool:
+    if profile == "pilot":
+        return paths == PROFILE_ALLOWED_PATHS["pilot"]
+    prefixes = PROFILE_PATH_PREFIXES.get(profile, ())
+    exact = PROFILE_EXACT_PATHS.get(profile, set())
+    return bool(paths) and len(paths) <= 20 and all(
+        path in exact or any(path.startswith(prefix) for prefix in prefixes)
+        for path in paths
+    )
+
+
+def profile_command_is_trusted(profile: str, command: object) -> bool:
+    if not isinstance(command, list) or not command or not all(isinstance(x, str) and x for x in command):
+        return False
+    executable = Path(command[0]).name.lower()
+    if any(any(token in arg for token in (";", "&&", "||", ">", "<", "`")) for arg in command):
+        return False
+    if profile == "roadmap-doc":
+        return executable in {"git", "git.exe"} and command[1:] == ["diff", "--check"]
+    if profile == "test-only":
+        if executable not in {"python", "python.exe"}:
+            return False
+        return command[1:] == [] or (
+            command[1:3] == ["-m", "pytest"]
+            and all(arg.startswith("-") for arg in command[3:])
+        )
+    return False
 
 _CONVERSATIONAL_REJECTION_PATTERNS = {
     "please provide the task",
@@ -922,11 +966,16 @@ def parse_spec(issue: dict, cfg: dict) -> dict:
         raise ValueError("base branch mismatch")
     if not re.fullmatch(r"[0-9a-fA-F]{40}", str(spec["expected_base_sha"])):
         raise ValueError("expected_base_sha must be a full 40-character commit SHA")
-    if not spec["work_branch"].startswith("agent/pilot-"):
-        raise ValueError("pilot worker only accepts agent/pilot-* branches")
     profile = str(spec["test_profile"])
     if profile not in cfg["test_profiles"] or profile not in PROFILE_ALLOWED_PATHS:
         raise ValueError("unknown test profile")
+    if profile != "pilot" and not profile_command_is_trusted(profile, cfg["test_profiles"][profile]):
+        raise ValueError("unsafe or empty test profile command")
+    branch_prefix = PROFILE_BRANCH_PREFIXES[profile]
+    if not spec["work_branch"].startswith(branch_prefix):
+        if profile == "pilot":
+            raise ValueError("pilot worker only accepts agent/pilot-* branches")
+        raise ValueError(f"work branch must start with {branch_prefix}")
     if not (1 <= int(spec["max_kimi_cycles"]) <= int(cfg["max_kimi_cycles_default"])):
         raise ValueError("invalid max cycles")
     if not isinstance(spec["allowed_paths"], list) or not all(isinstance(x, str) for x in spec["allowed_paths"]):
@@ -934,8 +983,9 @@ def parse_spec(issue: dict, cfg: dict) -> dict:
     if not isinstance(spec["forbidden_paths"], list) or not all(isinstance(x, str) for x in spec["forbidden_paths"]):
         raise ValueError("forbidden_paths must be a string list")
     allowed = {_normalize_repo_path(x) for x in spec["allowed_paths"]}
-    expected_allowed = PROFILE_ALLOWED_PATHS[profile]
-    if allowed != expected_allowed:
+    if len(allowed) != len(spec["allowed_paths"]):
+        raise ValueError("allowed_paths must not contain duplicates")
+    if not profile_paths_are_trusted(profile, allowed):
         raise ValueError(f"allowed_paths do not match trusted profile {profile}")
     forbidden = {str(x).replace("\\", "/").strip().lstrip("./") for x in spec["forbidden_paths"]}
     if not REQUIRED_FORBIDDEN_PATHS.issubset(forbidden):
@@ -955,7 +1005,7 @@ def changed_files(repo_dir: Path, base_sha: str) -> list[str]:
     untracked = run(["git", "ls-files", "--others", "--exclude-standard"], cwd=repo_dir)
     return sorted({x.strip() for x in (out + "\n" + untracked).splitlines() if x.strip()})
 
-def opencode_env(cfg: dict, repo_dir: Path) -> dict[str,str]:
+def opencode_env(cfg: dict, repo_dir: Path, spec: dict | None = None) -> dict[str,str]:
     model = cfg["opencode_model"]
     # Preserve the user's existing OpenCode provider/auth configuration.
     # Override only the selected model and the worker permission boundary.
@@ -964,15 +1014,19 @@ def opencode_env(cfg: dict, repo_dir: Path) -> dict[str,str]:
         "bash":"deny", "task":"deny", "external_directory":"deny", "webfetch":"deny",
         "websearch":"deny", "lsp":"deny", "skill":"deny", "question":"deny", "todowrite":"deny"
     }
+    allowed_hint = ", ".join(sorted(str(x) for x in (spec or {}).get("allowed_paths", [])))
+    agent_prompt = "Follow the user prompt exactly. The current directory is the workspace. Write files using only relative paths. Never use absolute paths, shell, network, subagents, skills, LSP, or external paths."
+    if allowed_hint:
+        agent_prompt += f" Allowed paths: {allowed_hint}."
     conf = {
         "$schema":"https://opencode.ai/config.json",
         "model":model,
         "permission":strict_permissions,
         "agent":{
             "brain-opencode-executor":{
-                "description":"Writes one exact allowlisted pilot artifact in a detached workspace.",
+                "description":"Writes exact allowlisted artifacts in a detached workspace.",
                 "mode":"primary", "steps":30, "temperature":0.1, "model":model,
-                "prompt":"Follow the user prompt exactly. The current directory is the workspace. Write files using only relative paths (docs/agent_loop/pilot/PILOT_MARKER.md). Never use absolute paths, shell, network, subagents, skills, LSP, or external paths.",
+                "prompt":agent_prompt,
                 "permission":strict_permissions
             }
         }
@@ -1001,6 +1055,26 @@ def discover_session_id(repo_dir: Path, title: str) -> str | None:
 def make_prompt(spec: dict, cycle: int, feedback: str | None = None) -> str:
     sentinel = prompt_task_sentinel(spec["front_id"], cycle)
     failure_sentinel = prompt_task_failure_sentinel(spec["front_id"], cycle)
+    if spec.get("test_profile", "pilot") != "pilot":
+        allowed = "\n".join(f"- {path}" for path in spec["allowed_paths"])
+        base = f"""You are the OpenCode filesystem executor for {spec['front_id']}.
+Complete only this objective: {spec['objective']}
+The current workspace contains only explicitly allowlisted files and no Git metadata or credentials.
+You may create or modify exactly these relative paths:
+{allowed}
+Do not create, delete, rename, or access any other path.
+Your first required action is a write or edit tool call to an allowlisted path.
+Make a real change to every allowlisted path and do not emit the acknowledgement before all writes complete.
+Do not invoke shell, network, Git, GitHub, subagents, skills, LSP, or external directories.
+After all write tools complete, output exactly this line and nothing else:
+{sentinel}
+If the write tool is unavailable or fails, output only this line:
+{failure_sentinel}
+This is cycle {cycle}.
+"""
+        if feedback:
+            base += f"\nRepair only these verified failures:\n{feedback[:6000]}\n"
+        return base
     base = f"""You are the OpenCode filesystem executor for {spec['front_id']}.
 Your only job is to write exactly one file in the current workspace and then output the sentinel line.
 The current workspace is the directory passed via --dir. It contains no Git metadata and no credentials.
@@ -1053,20 +1127,26 @@ def prepare_model_workspace(repo_dir: Path, spec: dict, cycle: int) -> tuple[Pat
     model_dir = repo_dir.parent / f"model-cycle-{cycle}-{stamp}-{os.getpid()}"
     model_dir.mkdir(parents=True, exist_ok=False)
     seed_hashes: dict[str, str] = {}
-    for rel in sorted(MODEL_SEED_PATHS):
+    seed_paths = set(MODEL_SEED_PATHS)
+    if spec.get("test_profile", "pilot") != "pilot":
+        seed_paths.update(rel for rel in spec["allowed_paths"] if (repo_dir / rel).is_file())
+    for rel in sorted(seed_paths):
         src = repo_dir / rel
         if not src.is_file():
             raise RuntimeError(f"MODEL_SEED_MISSING:{rel}")
+        if _is_reparse_or_symlink(src):
+            raise ModelWorkspaceScopeViolation("MODEL_SEED_LINK_DENIED")
         dst = model_dir / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dst)
         seed_hashes[rel] = sha256_file(dst)
-    marker_rel = "docs/agent_loop/pilot/PILOT_MARKER.md"
-    marker_src = repo_dir / marker_rel
-    if marker_src.is_file():
-        marker_dst = model_dir / marker_rel
-        marker_dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(marker_src, marker_dst)
+    if spec.get("test_profile", "pilot") == "pilot":
+        marker_rel = "docs/agent_loop/pilot/PILOT_MARKER.md"
+        marker_src = repo_dir / marker_rel
+        if marker_src.is_file():
+            marker_dst = model_dir / marker_rel
+            marker_dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(marker_src, marker_dst)
     if (model_dir / ".git").exists():
         raise RuntimeError("MODEL_WORKSPACE_GIT_METADATA_PRESENT")
     return model_dir, seed_hashes
@@ -1079,6 +1159,32 @@ def audit_and_sync_model_workspace(model_dir: Path, repo_dir: Path, seed_hashes:
         files = set(_walk_workspace_files(model_dir))
     except ModelWorkspaceScopeViolation:
         raise
+    if spec and spec.get("test_profile", "pilot") != "pilot":
+        allowed = set(spec["allowed_paths"])
+        extra = sorted(files - allowed)
+        missing = sorted(set(seed_hashes) - files)
+        if extra:
+            raise ModelWorkspaceScopeViolation("MODEL_WORKSPACE_EXTRA_PATHS", count=len(extra))
+        if missing:
+            raise ModelWorkspaceScopeViolation("MODEL_WORKSPACE_DELETION_DENIED", count=len(missing))
+        changed = sorted(
+            rel for rel in files
+            if rel not in seed_hashes or sha256_file(model_dir / rel) != seed_hashes[rel]
+        )
+        if set(changed) != allowed:
+            raise ModelWorkspaceScopeViolation("MODEL_WORKSPACE_EXACT_DIFF_REQUIRED", count=len(changed))
+        for rel in changed:
+            destination = repo_dir / rel
+            current = repo_dir
+            for part in Path(rel).parts[:-1]:
+                current = current / part
+                if _is_reparse_or_symlink(current):
+                    raise ModelWorkspaceScopeViolation("TRUSTED_OUTPUT_PARENT_LINK_DENIED")
+            if _is_reparse_or_symlink(destination):
+                raise ModelWorkspaceScopeViolation("TRUSTED_OUTPUT_LINK_DENIED")
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes((model_dir / rel).read_bytes())
+        return changed
     marker_rel = "docs/agent_loop/pilot/PILOT_MARKER.md"
     expected = set(MODEL_SEED_PATHS) | {marker_rel}
     extra = sorted(files - expected)
@@ -1191,7 +1297,7 @@ def run_kimi(cfg, spec, model_dir, issue_no, cycle, feedback=None, session_id=No
           command_identity="opencode", model=cfg["opencode_model"],
           prompt_bytes=len(prompt.encode("utf-8")), sentinel_in_prompt=True)
     try:
-        p = subprocess.run(prepared, cwd=str(model_dir), env=opencode_env(cfg, model_dir), text=False,
+        p = subprocess.run(prepared, cwd=str(model_dir), env=opencode_env(cfg, model_dir, spec), text=False,
                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
     except subprocess.TimeoutExpired as exc:
         out = (exc.output or b"").decode("utf-8", errors="replace")
@@ -1269,6 +1375,34 @@ def _normalize_tool_target(target: str, model_dir: Path) -> str | None:
     if candidate_abs == model_marker:
         return marker_rel
     return None
+
+
+def _normalize_allowed_tool_target(target: str, model_dir: Path, allowed: set[str]) -> str | None:
+    target_norm = target.replace("\\", "/").strip()
+    for rel in allowed:
+        if target_norm == rel:
+            return rel
+        candidate = str(Path(target).resolve()).replace("\\", "/").lower()
+        expected = str((model_dir / rel).resolve()).replace("\\", "/").lower()
+        if candidate == expected:
+            return rel
+    return None
+
+
+def _completed_write_targets(model_dir: Path, parsed: list[dict], allowed: set[str]) -> set[str]:
+    write_tools = {"write", "write_file", "edit_file", "create_file", "edit"}
+    completed: set[str] = set()
+    for item in parsed:
+        part = item.get("part") or item if isinstance(item, dict) else {}
+        if not isinstance(part, dict) or part.get("type") != "tool":
+            continue
+        state = part.get("state") if isinstance(part.get("state"), dict) else {}
+        if state.get("status") != "completed" or _completed_tool_name(part) not in write_tools:
+            continue
+        normalized = _normalize_allowed_tool_target(_completed_tool_target(part), model_dir, allowed)
+        if normalized:
+            completed.add(normalized)
+    return completed
 
 
 def _artifact_tool_completed_marker(model_dir: Path, spec: dict, parsed: list[dict]) -> tuple[bool, str]:
@@ -1393,6 +1527,26 @@ def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path
     full_output = "\n".join(text_lines)
     lowered = full_output.lower()
     refused = any(pattern in lowered for pattern in _CONVERSATIONAL_REJECTION_PATTERNS)
+    if spec.get("test_profile", "pilot") != "pilot":
+        allowed = set(spec["allowed_paths"])
+        completed_targets = _completed_write_targets(model_dir, parsed, allowed)
+        workspace_files = set(_walk_workspace_files(model_dir))
+        acknowledged = sentinel in text_lines and not declared_write_failure
+        event(cfg, "executor_completed", front=spec["front_id"], issue=issue_no, cycle=cycle,
+              task_acknowledged=acknowledged, ack_source="text_sentinel" if acknowledged else "none",
+              conversational_refusal=refused, jsonl_events=len(parsed),
+              session_error_count=session_error_count, declared_write_failure=declared_write_failure,
+              write_tool_completed=len(completed_targets), write_tool_exact_targets=len(completed_targets))
+        if declared_write_failure:
+            raise ExecutorAttemptConsumed("EXECUTOR_DECLARED_WRITE_FAILURE", "executor declared write failure",
+                                          {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)})
+        if not acknowledged or refused or session_error_count:
+            raise ExecutorAttemptConsumed("TASK_NOT_ACKNOWLEDGED", "executor did not complete the governed profile task",
+                                          {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)})
+        if workspace_files != allowed or completed_targets != allowed:
+            raise ExecutorAttemptConsumed("PROFILE_WRITE_CONTRACT_FAILED", "executor did not write every exact allowlisted profile path",
+                                          {"cycle": cycle, "front": spec["front_id"], "local_log_path": str(log)})
+        return
     marker = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
     unchanged = False
     if seed_hash is not None and marker.is_file():
@@ -1458,11 +1612,27 @@ def run_profile(cfg, spec, repo_dir) -> tuple[bool,str]:
     cmd = [str(x) for x in cfg["test_profiles"][spec["test_profile"]]]
     if spec["test_profile"] == "pilot":
         cmd += ["--expected-front-id", str(spec["front_id"])]
-    p = subprocess.run(command_for_subprocess(cmd), cwd=str(repo_dir), text=False,
-                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    out, _ = completed_output(p)
-    emit_subprocess_decoding_event(cfg, cmd, _)
-    return p.returncode == 0, out
+    elif spec["test_profile"] == "roadmap-doc":
+        cmd += [spec["expected_base_sha"], "--", *spec["allowed_paths"]]
+    elif spec["test_profile"] == "test-only" and len(cmd) > 1:
+        cmd += list(spec["allowed_paths"])
+    commands = [cmd]
+    if spec["test_profile"] == "test-only" and len(cmd) == 1:
+        commands = [cmd + [path] for path in spec["allowed_paths"]]
+    outputs: list[str] = []
+    timeout = int(cfg.get("profile_timeout_seconds", 300))
+    for current in commands:
+        try:
+            p = subprocess.run(command_for_subprocess(current), cwd=str(repo_dir), text=False,
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
+        except subprocess.TimeoutExpired:
+            return False, "PROFILE_COMMAND_TIMEOUT"
+        out, decoding = completed_output(p)
+        outputs.append(out)
+        emit_subprocess_decoding_event(cfg, current, decoding)
+        if p.returncode != 0:
+            return False, "\n".join(outputs)
+    return True, "\n".join(outputs)
 
 def bounded_tail(text: str, limit: int = 3000) -> str:
     return (text or "")[-limit:]
@@ -1744,8 +1914,9 @@ def create_pr(cfg, spec, issue_no, repo_dir):
 AGENT_LOOP_ISSUE: #{issue_no}
 EXPECTED_BASE_SHA: {spec['expected_base_sha']}
 EXECUTOR_MODEL: {cfg['opencode_model']}
+AGENT_LOOP_PROFILE: {spec['test_profile']}
 
-Automated pilot. No auto-merge. The configured OpenCode/Ollama executor writes; Codex supervises read-only; human audit is final.
+Automated governed change. No auto-merge. The configured OpenCode/Ollama executor writes; Codex supervises read-only; human audit is final.
 """
     url = run(["gh","pr","create","--repo",cfg["repo"],"--base",spec["base_branch"],"--head",spec["work_branch"],
                "--draft","--title",f"test(agent-loop): {spec['front_id']}","--body",body],cwd=repo_dir).strip()
@@ -1881,8 +2052,10 @@ def execute_initial(cfg, issue, spec, state_path):
     for cycle in range(persisted_cycles + 1, max_cycles + 1):
         event(cfg,"kimi_cycle_start",issue=n,cycle=cycle,front=spec["front_id"])
         model_dir, seed_hashes = prepare_model_workspace(repo_dir, spec, cycle)
-        marker_path = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
-        marker_seed = sha256_file(marker_path) if marker_path.is_file() else None
+        marker_seed = None
+        if spec["test_profile"] == "pilot":
+            marker_path = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+            marker_seed = sha256_file(marker_path) if marker_path.is_file() else None
         try:
             log, discovered_session = run_kimi(cfg,spec,model_dir,n,cycle,feedback,session_id)
             if discovered_session: session_id = discovered_session
@@ -1997,10 +2170,13 @@ def execute_initial(cfg, issue, spec, state_path):
             continue
         state = load_json(state_path)
         validate_persisted_roadmap_binding(state)
-        write_executor_report(cfg,spec,repo_dir,n,cycle,changes,test_ok,test_out,log,state=state)
+        if spec["test_profile"] == "pilot":
+            write_executor_report(cfg,spec,repo_dir,n,cycle,changes,test_ok,test_out,log,state=state)
         final_changes = changed_files(repo_dir,spec["expected_base_sha"])
         bad2 = [p for p in final_changes if not path_allowed(p,spec["allowed_paths"],spec["forbidden_paths"])]
         if bad2: raise RuntimeError(f"worker report path not allowlisted or extra changes: {bad2}")
+        if set(final_changes) != set(spec["allowed_paths"]):
+            raise RuntimeError("candidate diff does not exactly match allowed profile paths")
         run(["git","add","--all"],cwd=repo_dir)
         run(["git","commit","-m",f"test(agent-loop): complete {spec['front_id']}"] ,cwd=repo_dir)
         pr = create_pr(cfg,spec,n,repo_dir)
@@ -2067,8 +2243,10 @@ def process_state(cfg, state_path):
     run(["git","reset","--hard",f"origin/{spec['work_branch']}"],cwd=repo_dir)
     cycle=st["cycles"]+1
     model_dir, seed_hashes = prepare_model_workspace(repo_dir, spec, cycle)
-    marker_path = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
-    marker_seed = sha256_file(marker_path) if marker_path.is_file() else None
+    marker_seed = None
+    if spec["test_profile"] == "pilot":
+        marker_path = model_dir / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+        marker_seed = sha256_file(marker_path) if marker_path.is_file() else None
     try:
         log, discovered_session=run_kimi(cfg,spec,model_dir,issue,cycle,feedback,st.get("opencode_session_id"))
         if discovered_session: st["opencode_session_id"] = discovered_session
@@ -2131,7 +2309,9 @@ def process_state(cfg, state_path):
         else:
             save_json(state_path, st)
         return
-    content_ok, content_out = run_marker_content_check(repo_dir, spec["front_id"])
+    content_ok, content_out = (True, "PROFILE_CONTENT_VALIDATED")
+    if spec["test_profile"] == "pilot":
+        content_ok, content_out = run_marker_content_check(repo_dir, spec["front_id"])
     if not content_ok:
         event(cfg, "repair_local_gate_failed", issue=issue, pr=prn, cycle=cycle,
               failure_class="MODEL_CONTENT_FAILURE", cycle_before=cycle-1, cycle_after=cycle,
@@ -2172,15 +2352,16 @@ def process_state(cfg, state_path):
             save_json(state_path, st)
         return
     validate_persisted_roadmap_binding(st)
-    write_executor_report(cfg,spec,repo_dir,issue,cycle,changes,True,content_out,log,state=st)
+    if spec["test_profile"] == "pilot":
+        write_executor_report(cfg,spec,repo_dir,issue,cycle,changes,True,content_out,log,state=st)
     run(["git","add","--all"],cwd=repo_dir)
     final_candidate = run(["git","diff","--cached","--name-only"], cwd=repo_dir).splitlines()
-    if sorted(x for x in final_candidate if x.strip()) != sorted(PROFILE_ALLOWED_PATHS["pilot"]):
+    if sorted(x for x in final_candidate if x.strip()) != sorted(spec["allowed_paths"]):
         terminalize = should_terminalize_failed_cycle(st, spec, cycle)
         cycle_after = cycle if terminalize else cycle - 1
         event(cfg,"repair_local_gate_failed",issue=issue,pr=prn,cycle=cycle,
               failure_class="TRUSTED_VERIFIER_OR_WORKER_INTERNAL_FAILURE", cycle_before=cycle-1, cycle_after=cycle_after,
-              changed_files=final_candidate, test_output_tail="staged diff is not exactly pilot artifacts",
+              changed_files=final_candidate, test_output_tail="staged diff is not exactly profile artifacts",
               marker_hash=marker_hash(repo_dir), current_head=run(["git","rev-parse","HEAD"], cwd=repo_dir).strip(),
               expected_base=spec["expected_base_sha"], bad=final_candidate,test_ok=False)
         run(["git","reset"], cwd=repo_dir)
@@ -2188,7 +2369,7 @@ def process_state(cfg, state_path):
         if terminalize:
             st["cycles"] = cycle
             st["status"] = "loop:token-exhausted"
-            st["error"] = "staged diff is not exactly pilot artifacts"
+            st["error"] = "staged diff is not exactly profile artifacts"
             st = set_converged_phase(cfg, state_path, st, "loop:token-exhausted", pr_number=prn)
             st = publish_terminal_notification(cfg, state_path, st, "loop:token-exhausted", "Maximum executor cycles reached. Human audit required.")
             event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
@@ -2198,7 +2379,10 @@ def process_state(cfg, state_path):
         return
     run(["git","commit","-m",f"test(agent-loop): complete {spec['front_id']}"],cwd=repo_dir)
     newsha=run(["git","rev-parse","HEAD"],cwd=repo_dir).strip()
-    final_ok, final_out = run_final_verifier(repo_dir, spec["expected_base_sha"], newsha, spec["front_id"])
+    if spec["test_profile"] == "pilot":
+        final_ok, final_out = run_final_verifier(repo_dir, spec["expected_base_sha"], newsha, spec["front_id"])
+    else:
+        final_ok, final_out = run_profile(cfg, spec, repo_dir)
     if not final_ok:
         run(["git","reset","--hard","HEAD~1"], cwd=repo_dir)
         terminalize = should_terminalize_failed_cycle(st, spec, cycle)
