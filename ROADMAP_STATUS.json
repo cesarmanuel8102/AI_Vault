@@ -4756,4 +4756,25 @@
     ],
     "evidence_path": "tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01",
     "next_recommended_front": "FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01"
-  }}
+  },
+  "brain_101": {
+    "schema_version": 1,
+    "roadmap_id": "BRAIN-101",
+    "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
+    "status": "READY_FOR_BRAIN_101_ROADMAP_ADOPTION",
+    "approval_status": "PENDING_HUMAN_ADOPTION",
+    "current_phase": "R0",
+    "rebaseline_source_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+    "adoption_pr": 35,
+    "adoption_pr_head": "aba597e92007b878171be27ba750c83352b3ef77",
+    "adoption_pr_head_semantics": "PR head observed before the evidence-binding repair commit; resolve the live head through adoption_pr",
+    "adoption_merge_commit": null,
+    "score": {
+      "base": 41,
+      "resilience_bonus": 0,
+      "auditability": "PROVISIONAL_PENDING_EVIDENCE_BINDING"
+    },
+    "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
+    "next_phase_after_adoption": "R1"
+  }
+}

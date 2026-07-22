@@ -9043,3 +9043,34 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 
 ### Evidence Path
 `tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/`
+
+---
+
+## BRAIN-101 R0 — Current Rebaseline And Canonicalization (2026-07-22)
+
+### Scope
+- Documentation/control-plane reconciliation only.
+- Baseline audit: `759edfb` (GLM 5.2, 2026-07-16).
+- Rebased remote integration HEAD: `53da8ae93158cc3f9a06468c64d955816044c6d2`.
+- Delta reviewed: 93 commits, 60 files, 13,283 insertions, 298 deletions.
+
+### Factual Result
+- Agent Loop v1.5.7 has runtime evidence: installed worker/config hashes, active scheduled worker, Issue #33, and Draft PR #34 with deterministic/Codex/publish and baseline CI successful.
+- Security, Agent V2, routing decomposition, traces, and dashboard are materially ahead of the GLM baseline.
+- Critical functional gaps remain: roadmap-aware Agent Loop, single memory ownership, ProviderGateway, financial runtime wiring, PortfolioManager, Compliance, certified local Validation Lab, 30-day paper soak, and disabled LiveTradingGate implementation.
+- `main.py` remains 2,164 LOC with 30 direct endpoints; `session.py` remains 3,052 LOC; legacy `agent/tools.py` and `agent/loop.py` remain.
+- Corrected auditable score: 41/100. The Agent Loop technical foundation is runtime-verified; R1 roadmap-aware implementation remains open at 25%.
+- Historical `ROADMAP_STATUS.json` fields and 166 `completed_fronts` are preserved; BRAIN-101 is additive under `brain_101`.
+
+### Canonical Artifacts
+- `docs/roadmap/BRAIN_101_ROADMAP.md`
+- `docs/roadmap/BRAIN_101_MANIFEST.json`
+- `docs/roadmap/BRAIN_101_SCORECARD.json`
+- `docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json`
+- `ROADMAP_STATUS.json`
+
+### Governance
+- Status: `READY_FOR_BRAIN_101_ROADMAP_ADOPTION`.
+- R0 is not closed until human review and merge of the documentation Draft PR.
+- No production code, trading, risk limits, auto-merge, or canonical local sync changed.
+- Next gate after adoption: R1, Agent Loop roadmap-aware.
