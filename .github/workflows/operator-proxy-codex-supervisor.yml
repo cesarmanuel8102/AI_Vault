@@ -15,7 +15,8 @@ jobs:
         run: |
           grep -q 'builder_session!==e.review_session' scripts/operator_proxy/policy_engine.ts
           grep -q 'ESCALATE_TO_OWNER' scripts/operator_proxy/policy_engine.ts
-          grep -q -- '--match-head-commit' scripts/operator_proxy/github_bus.ts
+          grep -q 'HEAD:refs/heads' scripts/operator_proxy/github_bus.ts
+          grep -q '\["pr","ready".*"--undo"' scripts/operator_proxy/github_bus.ts
           ! grep -RniE '(--auto-merge|--squash|--rebase|--force-with-lease|push --force)' scripts/operator_proxy/*.ts
       - name: Independent Codex read-only review
         id: codex
