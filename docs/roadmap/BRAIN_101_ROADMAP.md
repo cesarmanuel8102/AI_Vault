@@ -1,18 +1,18 @@
 # BRAIN LAB / AI_VAULT — ROADMAP MAESTRO CANÓNICO AL 101%
 
-**Roadmap ID:** `BRAIN-101`  
-**Versión:** `1.0.0-reconstructed-glm-harmonized`  
-**Destinatario operativo:** Codex  
-**Propietario constitucional:** César Manuel  
-**Repositorio:** `cesarmanuel8102/AI_Vault`  
-**Rama de integración:** `codex/own-capital-sustainable-return`  
-**Arquitectura objetivo inmediata:** modular monolith estricto  
-**Agent Loop:** iniciado técnicamente, pero todavía no roadmap-aware  
-**Ejecutor preferido:** `ollama-cloud/kimi-k2.7-code`  
-**Supervisor:** Codex  
-**Autoridad humana final:** obligatoria  
-**Auto-merge:** prohibido  
-**Canonical local sync:** prohibido salvo autorización explícita  
+**Roadmap ID:** `BRAIN-101`
+**Versión:** `1.0.0-reconstructed-glm-harmonized`
+**Destinatario operativo:** Codex
+**Propietario constitucional:** César Manuel
+**Repositorio:** `cesarmanuel8102/AI_Vault`
+**Rama de integración:** `codex/own-capital-sustainable-return`
+**Arquitectura objetivo inmediata:** modular monolith estricto
+**Agent Loop:** iniciado técnicamente, pero todavía no roadmap-aware
+**Ejecutor preferido:** `ollama-cloud/kimi-k2.7-code`
+**Supervisor:** Codex
+**Autoridad humana final:** obligatoria
+**Auto-merge:** prohibido
+**Canonical local sync:** prohibido salvo autorización explícita
 **Capital real:** no autorizado por este documento
 
 ---
