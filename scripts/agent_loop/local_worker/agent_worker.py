@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Allowlisted local OpenCode worker for a single trusted GitHub repository."""
 from __future__ import annotations
-import argparse, json, os, re, shutil, subprocess, sys, time, traceback, tempfile
+import argparse, copy, json, os, re, shutil, subprocess, sys, time, traceback, tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -1477,7 +1477,7 @@ def run_final_verifier(repo_dir: Path, base_sha: str, head_sha: str, expected_fr
     out, _ = completed_output(p)
     return p.returncode == 0, out
 
-def write_executor_report(cfg, spec, repo_dir, issue_no, cycle, changes, test_ok, test_out, log_path):
+def write_executor_report(cfg, spec, repo_dir, issue_no, cycle, changes, test_ok, test_out, log_path, state=None):
     p = repo_dir / "docs/agent_loop/pilot/EXECUTOR_REPORT.json"
     p.parent.mkdir(parents=True, exist_ok=True)
     executor_evidence = build_executor_review_evidence(log_path, spec, cycle)
@@ -1489,8 +1489,28 @@ def write_executor_report(cfg, spec, repo_dir, issue_no, cycle, changes, test_ok
         "local_test_profile":spec["test_profile"],"local_test_passed":test_ok,
         "local_test_tail":bounded_tail(test_out),"opencode_log_local":str(log_path),
         "executor_evidence":executor_evidence,
-        "generated_utc":utc(),"merge_performed":False,"canonical_local_sync":False
+        "generated_utc":utc(),"merge_performed":False,"canonical_local_sync":False,
+        "live_trading_enabled":False,
     }
+    roadmap_fields = {
+        "roadmap_id", "roadmap_version", "roadmap_sha256", "roadmap_item_id",
+        "dependencies", "human_final_authority",
+    }
+    if any(field in spec for field in roadmap_fields):
+        if not isinstance(state, dict):
+            raise ValueError("validated roadmap state required for executor report")
+        validate_persisted_roadmap_binding(state)
+        if state["spec"].get("human_final_authority") is not True:
+            raise ValueError("human final authority must be true")
+        binding = state["roadmap_binding"]
+        data["roadmap_binding"] = {
+            key: copy.deepcopy(binding[key])
+            for key in (
+                "roadmap_id", "roadmap_version", "roadmap_item_id", "roadmap_sha256",
+                "manifest_sha256", "base_sha", "dependencies",
+            )
+        }
+        data["human_final_authority"] = state["spec"]["human_final_authority"]
     save_json(p, data)
 
 
@@ -1964,7 +1984,9 @@ def execute_initial(cfg, issue, spec, state_path):
             _checkpoint_initial_cycle(cfg, state_path, n, spec, repo_dir, cycle, session_id,
                                       "INITIAL_LOCAL_GATE_FAILED", safe_error)
             continue
-        write_executor_report(cfg,spec,repo_dir,n,cycle,changes,test_ok,test_out,log)
+        state = load_json(state_path)
+        validate_persisted_roadmap_binding(state)
+        write_executor_report(cfg,spec,repo_dir,n,cycle,changes,test_ok,test_out,log,state=state)
         final_changes = changed_files(repo_dir,spec["expected_base_sha"])
         bad2 = [p for p in final_changes if not path_allowed(p,spec["allowed_paths"],spec["forbidden_paths"])]
         if bad2: raise RuntimeError(f"worker report path not allowlisted or extra changes: {bad2}")
@@ -1972,9 +1994,16 @@ def execute_initial(cfg, issue, spec, state_path):
         run(["git","commit","-m",f"test(agent-loop): complete {spec['front_id']}"] ,cwd=repo_dir)
         pr = create_pr(cfg,spec,n,repo_dir)
         final_report = write_final_local_report(cfg, spec, n, cycle, repo_dir, pr)
-        state={"issue_number":n,"front":spec["front_id"],"spec":spec,"repo_dir":str(repo_dir),"pr_number":pr["number"],
-               "pr_url":pr["url"],"cycles":cycle,"last_head_sha":pr["headRefOid"],"opencode_session_id":session_id,
-               "status":"WAITING_GITHUB","final_local_report":str(final_report),"worker_version":WORKER_VERSION,"updated_utc":utc()}
+        state = load_json(state_path)
+        state.update({
+            "issue_number": n, "front": spec["front_id"], "spec": spec, "repo_dir": str(repo_dir),
+            "pr_number": pr["number"], "pr_url": pr["url"], "cycles": cycle,
+            "last_head_sha": pr["headRefOid"], "opencode_session_id": session_id,
+            "status": "WAITING_GITHUB", "final_local_report": str(final_report),
+            "worker_version": WORKER_VERSION, "state_schema_version": STATE_SCHEMA_VERSION,
+            "updated_utc": utc(),
+        })
+        validate_persisted_roadmap_binding(state)
         set_converged_phase(cfg, state_path, state, "loop:ci", pr_number=int(pr["number"]))
         event(cfg,"pr_created",issue=n,pr=pr["number"],sha=pr["headRefOid"])
         return
@@ -2131,7 +2160,8 @@ def process_state(cfg, state_path):
         else:
             save_json(state_path, st)
         return
-    write_executor_report(cfg,spec,repo_dir,issue,cycle,changes,True,content_out,log)
+    validate_persisted_roadmap_binding(st)
+    write_executor_report(cfg,spec,repo_dir,issue,cycle,changes,True,content_out,log,state=st)
     run(["git","add","--all"],cwd=repo_dir)
     final_candidate = run(["git","diff","--cached","--name-only"], cwd=repo_dir).splitlines()
     if sorted(x for x in final_candidate if x.strip()) != sorted(PROFILE_ALLOWED_PATHS["pilot"]):
@@ -2231,7 +2261,19 @@ def process_once(cfg):
         except Exception as e:
             msg=str(e)
             label="loop:token-exhausted" if ("TOKEN_EXHAUSTED" in msg or "MAX_CYCLES" in msg) else "loop:blocked"
-            st = {"issue_number":issue["number"],"front":spec.get("front_id") if isinstance(spec, dict) else None,"spec":spec if isinstance(spec, dict) else {},"status":label,"worker_version":WORKER_VERSION,"error":msg[-5000:],"updated_utc":utc()}
+            st = load_json(state_path) if state_path.exists() else {}
+            st.update({
+                "issue_number": issue["number"],
+                "front": spec.get("front_id") if isinstance(spec, dict) else None,
+                "spec": spec if isinstance(spec, dict) else {},
+                "status": label,
+                "worker_version": WORKER_VERSION,
+                "state_schema_version": STATE_SCHEMA_VERSION,
+                "error": msg[-5000:],
+                "updated_utc": utc(),
+            })
+            if st.get("roadmap_binding") is not None:
+                validate_persisted_roadmap_binding(st)
             st = set_converged_phase(cfg, state_path, st, label)
             publish_terminal_notification(cfg, state_path, st, label, msg)
             event(cfg,"issue_blocked",issue=issue["number"],error=msg,trace=traceback.format_exc()[-5000:])

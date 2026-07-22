@@ -12,6 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 WORKER_PATH = ROOT / "scripts/agent_loop/local_worker/agent_worker.py"
+VERIFY_PATH = ROOT / "scripts/agent_loop/pilot_verify.py"
 MANIFEST_PATH = ROOT / "docs/roadmap/BRAIN_101_MANIFEST.json"
 ROADMAP_PATH = ROOT / "docs/roadmap/BRAIN_101_ROADMAP.md"
 
@@ -19,6 +20,10 @@ module_spec = importlib.util.spec_from_file_location("agent_worker_r1_1", WORKER
 assert module_spec and module_spec.loader
 worker = importlib.util.module_from_spec(module_spec)
 module_spec.loader.exec_module(worker)
+verify_spec = importlib.util.spec_from_file_location("pilot_verify_r1_1", VERIFY_PATH)
+assert verify_spec and verify_spec.loader
+pilot_verify = importlib.util.module_from_spec(verify_spec)
+verify_spec.loader.exec_module(pilot_verify)
 
 def git_blob(path):
     relative = path.relative_to(ROOT).as_posix()
@@ -200,6 +205,43 @@ with tempfile.TemporaryDirectory() as td:
 with tempfile.TemporaryDirectory() as td:
     runtime_cfg = cfg(install_root=td)
     issue = {
+        "number": 104,
+        "title": "R1.1 failure preservation",
+        "body": "",
+        "author": {"login": "cesarmanuel8102"},
+        "labels": [{"name": "agent:queued"}],
+        "url": "https://example.invalid/104",
+    }
+    originals = {
+        name: getattr(worker, name)
+        for name in ("gh_json", "parse_spec", "execute_initial", "event", "set_converged_phase", "publish_terminal_notification")
+    }
+    try:
+        worker.gh_json = lambda args: [issue] if args[:2] == ["issue", "list"] else (_ for _ in ()).throw(AssertionError(args))
+        worker.parse_spec = lambda *_args: valid_spec()
+        worker.execute_initial = lambda *_args: (_ for _ in ()).throw(RuntimeError("post-admission failure"))
+        worker.event = lambda *_args, **_kwargs: None
+
+        def preserve_phase(_cfg, path, current, phase, **_kwargs):
+            current = copy.deepcopy(current)
+            current["status"] = phase
+            worker.save_json(path, current)
+            return current
+
+        worker.set_converged_phase = preserve_phase
+        worker.publish_terminal_notification = lambda _cfg, _path, current, _phase, _message: current
+        worker.process_once(runtime_cfg)
+        saved = json.loads((Path(td) / "state" / "issue-104.json").read_text(encoding="utf-8"))
+        assert saved["status"] == "loop:blocked"
+        assert saved["roadmap_binding"] == binding
+        assert saved["state_schema_version"] == worker.STATE_SCHEMA_VERSION
+    finally:
+        for name, value in originals.items():
+            setattr(worker, name, value)
+
+with tempfile.TemporaryDirectory() as td:
+    runtime_cfg = cfg(install_root=td)
+    issue = {
         "number": 102,
         "title": "Invalid R1.1",
         "body": "",
@@ -245,5 +287,108 @@ with tempfile.TemporaryDirectory() as td:
     finally:
         for name, value in originals.items():
             setattr(worker, name, value)
+
+with tempfile.TemporaryDirectory() as td:
+    root = Path(td)
+    repo = root / "repo"
+    repo.mkdir()
+    model = root / "model"
+    (model / "docs/agent_loop/pilot").mkdir(parents=True)
+    (model / "docs/agent_loop/pilot/PILOT_MARKER.md").write_text(
+        worker.pilot_marker_text(valid_spec()["front_id"]), encoding="utf-8"
+    )
+    log = root / "opencode.jsonl"
+    log.write_text("\n".join(json.dumps(item) for item in [
+        {"type": "tool_use", "part": {"type": "tool", "tool": "write", "state": {
+            "status": "completed", "input": {"filePath": "docs/agent_loop/pilot/PILOT_MARKER.md"}}}},
+        {"type": "text", "part": {"type": "text", "text": worker.prompt_task_sentinel(valid_spec()["front_id"], 1)}},
+    ]) + "\n", encoding="utf-8")
+    state_path = root / "state" / "issue-103.json"
+    initial_state = {
+        "issue_number": 103,
+        "front": valid_spec()["front_id"],
+        "spec": valid_spec(),
+        "roadmap_binding": copy.deepcopy(binding),
+        "cycles": 0,
+        "status": "LOCAL_EXECUTION",
+        "local_retry_count": 17,
+        "state_schema_version": worker.STATE_SCHEMA_VERSION,
+        "worker_version": worker.WORKER_VERSION,
+        "updated_utc": worker.utc(),
+    }
+    worker.save_json(state_path, initial_state)
+    runtime_cfg = cfg(install_root=td)
+    runtime_cfg["opencode_model"] = "ollama-cloud/deepseek-v4-pro"
+    issue = {"number": 103}
+    originals = {
+        name: getattr(worker, name)
+        for name in (
+            "set_phase", "prepare_repo", "event", "prepare_model_workspace", "run_kimi",
+            "validate_executor_delivery", "audit_and_sync_model_workspace", "changed_files",
+            "path_allowed", "run_profile", "run", "create_pr", "write_final_local_report",
+            "set_converged_phase",
+        )
+    }
+    try:
+        worker.set_phase = lambda *_a, **_k: None
+        worker.prepare_repo = lambda *_a, **_k: repo
+        worker.event = lambda *_a, **_k: None
+        worker.prepare_model_workspace = lambda *_a, **_k: (model, {})
+        worker.run_kimi = lambda *_a, **_k: (log, "session-r1")
+        worker.validate_executor_delivery = lambda *_a, **_k: None
+        worker.audit_and_sync_model_workspace = lambda *_a, **_k: None
+        worker.changed_files = lambda *_a, **_k: (
+            sorted(worker.PROFILE_ALLOWED_PATHS["pilot"])
+            if (repo / "docs/agent_loop/pilot/EXECUTOR_REPORT.json").exists()
+            else ["docs/agent_loop/pilot/PILOT_MARKER.md"]
+        )
+        worker.path_allowed = lambda path, *_a, **_k: path in worker.PROFILE_ALLOWED_PATHS["pilot"]
+        worker.run_profile = lambda *_a, **_k: (True, "PASS")
+        worker.run = lambda *_a, **_k: ""
+        worker.create_pr = lambda *_a, **_k: {
+            "number": 39, "url": "https://example.invalid/pr/39", "headRefOid": "b" * 40,
+        }
+        worker.write_final_local_report = lambda *_a, **_k: root / "final.json"
+
+        def converge(_cfg, path, current, phase, *, pr_number=None):
+            assert phase == "loop:ci" and pr_number == 39
+            current = copy.deepcopy(current)
+            current["status"] = phase
+            worker.save_json(path, current)
+            return current
+
+        worker.set_converged_phase = converge
+        worker.execute_initial(runtime_cfg, issue, valid_spec(), state_path)
+    finally:
+        for name, value in originals.items():
+            setattr(worker, name, value)
+
+    saved = json.loads(state_path.read_text(encoding="utf-8"))
+    assert saved["status"] == "loop:ci"
+    assert saved["cycles"] == 1 and saved["pr_number"] == 39
+    assert saved["state_schema_version"] == worker.STATE_SCHEMA_VERSION
+    assert saved["roadmap_binding"] == binding
+    assert saved["local_retry_count"] == 17
+    report = json.loads((repo / "docs/agent_loop/pilot/EXECUTOR_REPORT.json").read_text(encoding="utf-8"))
+    assert report["roadmap_binding"] == {
+        key: binding[key]
+        for key in (
+            "roadmap_id", "roadmap_version", "roadmap_item_id", "roadmap_sha256",
+            "manifest_sha256", "base_sha", "dependencies",
+        )
+    }
+    assert report["human_final_authority"] is True
+    assert report["live_trading_enabled"] is False
+    assert report["merge_performed"] is False
+    assert report["canonical_local_sync"] is False
+
+    missing = copy.deepcopy(report)
+    del missing["roadmap_binding"]
+    assert pilot_verify.validate_roadmap_governance(report) == []
+    assert "roadmap binding missing" in pilot_verify.validate_roadmap_governance(missing)
+    unsafe = copy.deepcopy(report); unsafe["live_trading_enabled"] = True
+    assert "live_trading_enabled must be false" in pilot_verify.validate_roadmap_governance(unsafe)
+    mismatch = copy.deepcopy(report); mismatch["roadmap_binding"]["base_sha"] = "c" * 40
+    assert "roadmap binding base_sha mismatch" in pilot_verify.validate_roadmap_governance(mismatch)
 
 print("PASS: Agent Loop R1.1 roadmap manifest validation")

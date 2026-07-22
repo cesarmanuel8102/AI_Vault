@@ -68,6 +68,10 @@ def test_supervisor_prompt_preserves_no_merge_no_canonical_sync() -> None:
     text = _prompt()
     assert "merge_performed=false" in text
     assert "canonical_local_sync=false" in text
+    assert "live_trading_enabled=false" in text
+    assert "roadmap_binding" in text
+    assert "human_final_authority=true" in text
+    assert "Missing or internally mismatched roadmap governance evidence is BLOCKED" in text
 
 
 def test_review_schema_is_strict_json_schema() -> None:
