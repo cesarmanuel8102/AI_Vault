@@ -6,6 +6,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
       - run: |
           ! git grep -nE '(gho_|github_pat_|OPENAI_API_KEY=)' -- scripts/operator_proxy tests/contract/operator_proxy
           ! git grep -nE '(reset --hard|push --force|--squash|--rebase|EnableAutoMerge)' -- scripts/operator_proxy

@@ -1,13 +1,46 @@
 name: Operator Proxy Codex Supervisor
-on: {pull_request: {paths: ['scripts/operator_proxy/**','tests/contract/operator_proxy/**','docs/operator_proxy/**']}}
+on: {pull_request: {paths: ['scripts/operator_proxy/**','tests/contract/operator_proxy/**','docs/operator_proxy/**','.github/codex/operator-proxy-**','.github/workflows/operator-proxy-**']}}
 permissions: {contents: read}
 jobs:
-  boundary:
+  review:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.actor == 'cesarmanuel8102'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - run: |
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify deterministic safety boundary
+        run: |
           grep -q 'builder_session!==e.review_session' scripts/operator_proxy/policy_engine.ts
           grep -q 'ESCALATE_TO_OWNER' scripts/operator_proxy/policy_engine.ts
           grep -q -- '--match-head-commit' scripts/operator_proxy/github_bus.ts
           ! grep -RniE '(--auto-merge|--squash|--rebase|--force-with-lease|push --force)' scripts/operator_proxy/*.ts
+      - name: Independent Codex read-only review
+        id: codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: .github/codex/operator-proxy-supervisor.md
+          output-file: operator-proxy-codex-review.json
+          codex-args: '["--ephemeral", "--output-schema", ".github/codex/operator-proxy-review-schema.json"]'
+          sandbox: read-only
+          allow-users: cesarmanuel8102
+      - name: Require PASS on reviewed HEAD
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python - <<'PY'
+          import json, os
+          data = json.load(open('operator-proxy-codex-review.json', encoding='utf-8'))
+          if data.get('verdict') != 'PASS':
+              raise SystemExit('independent Codex review did not PASS')
+          if data.get('head_sha') != os.environ['EXPECTED_HEAD']:
+              raise SystemExit('independent Codex review HEAD mismatch')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: operator-proxy-codex-review
+          path: operator-proxy-codex-review.json
+          if-no-files-found: error
