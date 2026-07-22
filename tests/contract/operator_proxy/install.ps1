@@ -16,9 +16,15 @@ try {
     $shim="@echo off`r`n> `"$capturedArgs`" echo %~1`r`n>> `"$capturedArgs`" echo %~2`r`n>> `"$capturedArgs`" echo %~3`r`nexit /b 0`r`n"
     [IO.File]::WriteAllText((Join-Path $install 'node_modules\.bin\tsx.cmd'),$shim,[Text.Encoding]::ASCII)
     $foreignCwd=Join-Path $tmp 'foreign-cwd';New-Item $foreignCwd -ItemType Directory|Out-Null
-    Push-Location $foreignCwd
-    try { & (Join-Path $install 'Run-OperatorProxy.ps1') -InstallRoot $install -Once -DryRun } finally { Pop-Location }
-    if($LASTEXITCODE -ne 0){throw 'runner failed from unrelated cwd'}
+    $runner=(Join-Path $install 'Run-OperatorProxy.ps1').Replace("'","''")
+    $escapedInstall=$install.Replace("'","''")
+    $escapedCwd=$foreignCwd.Replace("'","''")
+    $childCommand="Set-Location '$escapedCwd'; & '$runner' -InstallRoot '$escapedInstall' -Once -DryRun"
+    $encoded=[Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($childCommand))
+    $shell=(Get-Process -Id $PID).Path
+    & $shell -NoProfile -NonInteractive -EncodedCommand $encoded
+    $runnerExit=$LASTEXITCODE
+    if($runnerExit -ne 0){throw "runner failed from unrelated cwd: $runnerExit"}
     $actualArgs=[IO.File]::ReadAllLines($capturedArgs)|ForEach-Object{$_.Trim()}
     $expectedArgs=@((Join-Path $install 'operator_proxy.ts'),'--once','--dry-run')
     if((Compare-Object $expectedArgs $actualArgs -SyncWindow 0)){throw 'runner did not use absolute install entrypoint'}
