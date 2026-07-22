@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
+  "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
+  "roadmap_sha256": "bd0467dd271cbe2b2c7c37cc10ec25503c12458c8e8640a9a1a33ce07fb4a7ed",
+  "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
+  "repository": "cesarmanuel8102/AI_Vault",
+  "integration_branch": "codex/own-capital-sustainable-return",
+  "baseline_audit": {
+    "auditor": "GLM 5.2",
+    "date": "2026-07-16",
+    "head": "759edfb",
+    "mode": "read-only"
+  },
+  "r0_rebaseline": {
+    "date": "2026-07-22",
+    "base_head": "759edfb",
+    "current_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+    "commits_reviewed": 93,
+    "files_changed": 60,
+    "insertions": 13283,
+    "deletions": 298,
+    "mode": "documentation-only",
+    "production_modified": false,
+    "canonical_local_sync": false,
+    "trading_executed": false
+  },
+  "current_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+  "approval_status": "PENDING_HUMAN_ADOPTION",
+  "current_phase": "R0",
+  "human_final_authority": true,
+  "auto_merge": false,
+  "canonical_local_sync": false,
+  "live_trading_enabled": false,
+  "executor_model": "ollama-cloud/kimi-k2.7-code",
+  "supervisor": "Codex",
+  "required_first_status": "READY_FOR_BRAIN_101_ROADMAP_ADOPTION",
+  "certification_status": "NOT_CERTIFIED",
+  "phase_order": [
+    "R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9",
+    "R10", "R11", "R12", "R13", "R14", "R15", "R16", "R17", "R18", "R19"
+  ],
+  "next_gate": "Human review and merge of the R0 documentation Draft PR"
+}
