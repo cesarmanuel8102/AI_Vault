@@ -46,12 +46,12 @@ function Invoke-OperatorProxyInstall {
         if (Test-Path $InstallRoot) {
             foreach ($name in $managed) { $p=Join-Path $InstallRoot $name; if(Test-Path $p){Copy-Item $p (Join-Path $backup $name) -Recurse -Force} }
         } else { New-Item $InstallRoot -ItemType Directory | Out-Null }
+        $installed = $true
         foreach ($name in $managed) {
             $target=Join-Path $InstallRoot $name
             if(Test-Path $target){Remove-Item $target -Recurse -Force}
             Copy-Item (Join-Path $stage $name) $target -Recurse -Force
         }
-        $installed = $true
         if ($ValidateInstalled) { & $ValidateInstalled $InstallRoot }
         Write-Output 'OPERATOR_PROXY_INSTALL_PASS'
     } catch {

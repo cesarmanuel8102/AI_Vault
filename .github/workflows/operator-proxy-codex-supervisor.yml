@@ -27,6 +27,12 @@ jobs:
           codex-args: '["--ephemeral", "--output-schema", ".github/codex/operator-proxy-review-schema.json"]'
           sandbox: read-only
           allow-users: cesarmanuel8102
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: operator-proxy-codex-review
+          path: operator-proxy-codex-review.json
+          if-no-files-found: error
       - name: Require PASS on reviewed HEAD
         env:
           EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
@@ -39,8 +45,3 @@ jobs:
           if data.get('head_sha') != os.environ['EXPECTED_HEAD']:
               raise SystemExit('independent Codex review HEAD mismatch')
           PY
-      - uses: actions/upload-artifact@v4
-        with:
-          name: operator-proxy-codex-review
-          path: operator-proxy-codex-review.json
-          if-no-files-found: error
