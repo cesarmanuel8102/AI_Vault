@@ -373,8 +373,9 @@ with tempfile.TemporaryDirectory() as td:
     assert report["roadmap_binding"] == {
         key: binding[key]
         for key in (
+            "repository", "integration_branch", "approval_status", "r0_status",
             "roadmap_id", "roadmap_version", "roadmap_item_id", "roadmap_sha256",
-            "manifest_sha256", "base_sha", "dependencies",
+            "roadmap_item_status", "manifest_sha256", "base_sha", "dependencies",
         )
     }
     assert report["human_final_authority"] is True
@@ -417,6 +418,16 @@ with tempfile.TemporaryDirectory() as td:
     mismatch("manifest_sha256", "0" * 64, "roadmap binding manifest_sha256 mismatch")
     mismatch("dependencies", [], "roadmap binding dependencies mismatch")
     mismatch("dependencies", ["R0", "R0"], "roadmap binding dependencies invalid")
+    mismatch("repository", "other/repo", "roadmap binding repository mismatch")
+    mismatch("integration_branch", "other", "roadmap binding integration_branch mismatch")
+    mismatch("approval_status", "PENDING", "roadmap binding approval_status mismatch")
+    mismatch("r0_status", "OPEN", "roadmap binding r0_status mismatch")
+    mismatch("roadmap_item_status", "BLOCKED", "roadmap binding item status mismatch")
+
+    for field in ("repository", "integration_branch", "approval_status", "r0_status", "roadmap_item_status"):
+        candidate = copy.deepcopy(canonical_report)
+        del candidate["roadmap_binding"][field]
+        assert field in " ".join(errors(candidate)), (field, errors(candidate))
 
     modified_manifest = copy.deepcopy(manifest)
     modified_manifest["roadmap_items"]["R1.1"]["status"] = "BLOCKED_PENDING_R1_1"

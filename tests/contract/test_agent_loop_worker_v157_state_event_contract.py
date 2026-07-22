@@ -3125,9 +3125,14 @@ def test_r1_ready_human_audit_poll_converges_without_executor() -> None:
         })
         binding = {
             "schema_version": 1,
+            "repository": "cesarmanuel8102/AI_Vault",
+            "integration_branch": "codex/own-capital-sustainable-return",
+            "approval_status": "HUMAN_ADOPTED",
+            "r0_status": "CLOSED_HUMAN_ADOPTED",
             "roadmap_id": roadmap_spec["roadmap_id"],
             "roadmap_version": roadmap_spec["roadmap_version"],
             "roadmap_item_id": roadmap_spec["roadmap_item_id"],
+            "roadmap_item_status": "AUTHORIZED_ACTIVE",
             "manifest_path": worker.ROADMAP_MANIFEST_PATH,
             "manifest_sha256": "d" * 64,
             "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",

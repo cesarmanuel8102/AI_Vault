@@ -62,8 +62,9 @@ def validate_roadmap_governance(d: dict, base_sha: str | None = None, root: Path
     if not isinstance(binding,dict):
         return ['roadmap binding missing']
     required={
+        'repository','integration_branch','approval_status','r0_status',
         'roadmap_id','roadmap_version','roadmap_item_id','roadmap_sha256',
-        'manifest_sha256','base_sha','dependencies',
+        'roadmap_item_status','manifest_sha256','base_sha','dependencies',
     }
     missing=sorted(required-set(binding))
     if missing: errors.append(f'roadmap binding fields missing: {missing}')
@@ -100,6 +101,10 @@ def validate_roadmap_governance(d: dict, base_sha: str | None = None, root: Path
     if manifest.get('r0_status')!='CLOSED_HUMAN_ADOPTED': errors.append('canonical manifest r0 status mismatch')
     if manifest.get('human_final_authority') is not True: errors.append('canonical manifest human authority mismatch')
     if manifest.get('roadmap_sha256')!=roadmap_sha: errors.append('canonical roadmap bytes hash mismatch')
+    if binding.get('repository')!=manifest.get('repository'): errors.append('roadmap binding repository mismatch')
+    if binding.get('integration_branch')!=manifest.get('integration_branch'): errors.append('roadmap binding integration_branch mismatch')
+    if binding.get('approval_status')!=manifest.get('approval_status'): errors.append('roadmap binding approval_status mismatch')
+    if binding.get('r0_status')!=manifest.get('r0_status'): errors.append('roadmap binding r0_status mismatch')
     if binding.get('roadmap_id')!=manifest.get('roadmap_id'): errors.append('roadmap binding roadmap_id mismatch')
     if binding.get('roadmap_version')!=manifest.get('roadmap_version'): errors.append('roadmap binding roadmap_version mismatch')
     if binding.get('roadmap_sha256')!=roadmap_sha: errors.append('roadmap binding roadmap_sha256 mismatch')
@@ -110,6 +115,7 @@ def validate_roadmap_governance(d: dict, base_sha: str | None = None, root: Path
         errors.append('roadmap binding item not registered')
     else:
         if item.get('status')!='AUTHORIZED_ACTIVE': errors.append('roadmap binding item not authorized active')
+        if binding.get('roadmap_item_status')!=item.get('status'): errors.append('roadmap binding item status mismatch')
         if binding.get('dependencies')!=item.get('dependencies'): errors.append('roadmap binding dependencies mismatch')
     return errors
 
