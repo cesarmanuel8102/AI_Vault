@@ -68,6 +68,9 @@
     "v157_codex_supervisor_contract_tests": true,
     "v157_worker_contract_workflow_updated": true,
     "v157_deploy_recovery_powershell_contract": true,
-    "v157_installed_worker_symbol_validation": true
+    "v157_installed_worker_symbol_validation": true,
+    "r1_roadmap_manifest_validation": true,
+    "r1_exact_roadmap_hash_binding": true,
+    "r1_registered_item_dependency_gate": true
   }
 }

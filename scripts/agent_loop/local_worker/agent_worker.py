@@ -17,10 +17,11 @@ STATE_KNOWN_TOP_LEVEL_KEYS = {
     "error", "terminal_notified", "notification_keys", "state_schema_version",
     "trusted_existing_pr_resume_utc", "trusted_base_advance_utc",
     "trusted_v154_resume_done", "trusted_v155_recovery_done", "trusted_v156_post_merge_recovery_done",
-    "last_failure_class",
+    "last_failure_class", "roadmap_binding",
 }
 
 EVENT_REQUIRED_FIELDS = {
+    "roadmap_manifest_validated": {"issue", "roadmap_id", "roadmap_version", "roadmap_item_id", "manifest_sha256", "roadmap_sha256", "base_sha"},
     "executor_started": {"front", "issue", "cycle", "command_identity", "model"},
     "executor_completed": {"front", "issue", "cycle", "task_acknowledged", "jsonl_events", "ack_source"},
     "executor_failed": {"front", "issue", "cycle", "error", "failure_class"},
@@ -62,6 +63,7 @@ REQUIRED_FORBIDDEN_PATHS = {
     "tmp_agent/brain_v9/core/session.py",
 }
 MODEL_SEED_PATHS: set[str] = set()
+ROADMAP_MANIFEST_PATH = "docs/roadmap/BRAIN_101_MANIFEST.json"
 _RUN_EVENT_CFG: dict | None = None
 _SENSITIVE_COMMAND_WORDS = {"auth", "token", "secret", "login", "password", "key"}
 _RUNTIME_EXECUTABLES: dict[str, str] = {}
@@ -739,6 +741,124 @@ def _normalize_repo_path(value: str) -> str:
     if any(p == ".." for p in parts):
         raise ValueError(f"path traversal is not allowed: {value!r}")
     return "/".join(parts)
+
+
+def _github_file_bytes(cfg: dict, repo_path: str, ref: str) -> bytes:
+    import base64
+    path = _normalize_repo_path(repo_path)
+    data = gh_json(["api", f"repos/{cfg['repo']}/contents/{path}?ref={ref}"])
+    if not isinstance(data, dict) or data.get("type") != "file" or not isinstance(data.get("content"), str):
+        raise ValueError(f"roadmap source unavailable: {path}")
+    try:
+        return base64.b64decode(data["content"].replace("\n", ""), validate=True)
+    except Exception as exc:
+        raise ValueError(f"roadmap source encoding invalid: {path}") from exc
+
+
+def _sha256_bytes(data: bytes) -> str:
+    import hashlib
+    return hashlib.sha256(data).hexdigest()
+
+
+def _roadmap_source(cfg: dict, spec: dict) -> tuple[dict, bytes, bytes]:
+    loader = cfg.get("_roadmap_manifest_loader")
+    if loader is not None:
+        if not callable(loader):
+            raise ValueError("roadmap loader must be callable")
+        manifest, manifest_bytes, roadmap_bytes = loader(spec)
+        return manifest, bytes(manifest_bytes), bytes(roadmap_bytes)
+    manifest_bytes = _github_file_bytes(cfg, ROADMAP_MANIFEST_PATH, spec["expected_base_sha"])
+    try:
+        manifest = json.loads(manifest_bytes.decode("utf-8-sig"))
+    except Exception as exc:
+        raise ValueError("roadmap manifest is not valid UTF-8 JSON") from exc
+    if not isinstance(manifest, dict):
+        raise ValueError("roadmap manifest must be an object")
+    roadmap_path = _normalize_repo_path(str(manifest.get("roadmap_path") or ""))
+    roadmap_bytes = _github_file_bytes(cfg, roadmap_path, spec["expected_base_sha"])
+    return manifest, manifest_bytes, roadmap_bytes
+
+
+def validate_roadmap_contract(cfg: dict, spec: dict) -> dict:
+    required = ["roadmap_id", "roadmap_version", "roadmap_sha256", "roadmap_item_id", "dependencies", "human_final_authority"]
+    missing = [key for key in required if key not in spec]
+    if missing:
+        raise ValueError(f"roadmap contract missing fields: {missing}")
+    if spec["human_final_authority"] is not True:
+        raise ValueError("human_final_authority must be true")
+    claimed_hash = str(spec["roadmap_sha256"])
+    if not re.fullmatch(r"[0-9a-f]{64}", claimed_hash):
+        raise ValueError("roadmap_sha256 must be a lowercase 64-character SHA-256")
+    if not isinstance(spec["dependencies"], list) or not all(isinstance(value, str) for value in spec["dependencies"]):
+        raise ValueError("dependencies must be a string list")
+
+    manifest, manifest_bytes, roadmap_bytes = _roadmap_source(cfg, spec)
+    if manifest.get("repository") != cfg["repo"] or manifest.get("integration_branch") != cfg["base_branch"]:
+        raise ValueError("roadmap manifest repository binding mismatch")
+    if manifest.get("approval_status") != "HUMAN_ADOPTED" or manifest.get("r0_status") != "CLOSED_HUMAN_ADOPTED":
+        raise ValueError("roadmap manifest is not human-adopted")
+    if spec["roadmap_id"] != manifest.get("roadmap_id"):
+        raise ValueError("roadmap id mismatch")
+    if spec["roadmap_version"] != manifest.get("roadmap_version"):
+        raise ValueError("roadmap version mismatch")
+    actual_roadmap_hash = _sha256_bytes(roadmap_bytes)
+    if manifest.get("roadmap_sha256") != actual_roadmap_hash:
+        raise ValueError("roadmap manifest hash does not match roadmap bytes")
+    if claimed_hash != actual_roadmap_hash:
+        raise ValueError("roadmap hash mismatch")
+
+    items = manifest.get("roadmap_items")
+    if not isinstance(items, dict):
+        raise ValueError("roadmap item registry missing")
+    item_id = str(spec["roadmap_item_id"])
+    item = items.get(item_id)
+    if not isinstance(item, dict):
+        raise ValueError("roadmap item is not registered")
+    if item.get("status") != "AUTHORIZED_ACTIVE":
+        raise ValueError("roadmap item is not authorized active")
+    expected_dependencies = item.get("dependencies")
+    if not isinstance(expected_dependencies, list) or not all(isinstance(value, str) for value in expected_dependencies):
+        raise ValueError("roadmap item dependencies are invalid")
+    if sorted(spec["dependencies"]) != sorted(expected_dependencies):
+        raise ValueError("roadmap dependency declaration mismatch")
+    for dependency in expected_dependencies:
+        if dependency == "R0":
+            closed = manifest.get("r0_status") == "CLOSED_HUMAN_ADOPTED"
+        else:
+            dependency_item = items.get(dependency)
+            closed = isinstance(dependency_item, dict) and str(dependency_item.get("status", "")).startswith("CLOSED")
+        if not closed:
+            raise ValueError(f"roadmap dependency open: {dependency}")
+    return {
+        "schema_version": 1,
+        "roadmap_id": manifest["roadmap_id"],
+        "roadmap_version": manifest["roadmap_version"],
+        "roadmap_item_id": item_id,
+        "manifest_path": ROADMAP_MANIFEST_PATH,
+        "manifest_sha256": _sha256_bytes(manifest_bytes),
+        "roadmap_path": manifest["roadmap_path"],
+        "roadmap_sha256": actual_roadmap_hash,
+        "base_sha": spec["expected_base_sha"],
+        "dependencies": sorted(expected_dependencies),
+    }
+
+
+def validate_persisted_roadmap_binding(st: dict) -> None:
+    binding = st.get("roadmap_binding")
+    if binding is None:
+        return  # Pre-R1 state retained for backward-compatible recovery only.
+    if not isinstance(binding, dict) or binding.get("schema_version") != 1:
+        raise ValueError("persisted roadmap binding invalid")
+    spec = st.get("spec") or {}
+    expected = {
+        "roadmap_id": spec.get("roadmap_id"),
+        "roadmap_version": spec.get("roadmap_version"),
+        "roadmap_item_id": spec.get("roadmap_item_id"),
+        "roadmap_sha256": spec.get("roadmap_sha256"),
+        "base_sha": spec.get("expected_base_sha"),
+    }
+    if any(binding.get(key) != value for key, value in expected.items()):
+        raise ValueError("persisted roadmap binding mismatch")
 
 def parse_spec(issue: dict, cfg: dict) -> dict:
     author = (issue.get("author") or {}).get("login")
@@ -1844,6 +1964,7 @@ def process_state(cfg, state_path):
     st=load_json(state_path); issue=st["issue_number"]; spec=st["spec"]
     if state_is_terminal(st):
         return
+    validate_persisted_roadmap_binding(st)
     if not st.get("pr_number"):
         issue_obj=gh_json(["issue","view",str(issue),"--repo",cfg["repo"],"--json","number,title,body,author,labels,url"])
         execute_initial(cfg,issue_obj,spec,state_path)
@@ -2074,7 +2195,9 @@ def process_once(cfg):
         spec = None
         try:
             spec=parse_spec(issue,cfg)
-            save_json(state_path,{"issue_number":issue["number"],"front":spec["front_id"],"spec":spec,"status":"LOCAL_EXECUTION","updated_utc":utc()})
+            roadmap_binding = validate_roadmap_contract(cfg, spec)
+            save_json(state_path,{"issue_number":issue["number"],"front":spec["front_id"],"spec":spec,"roadmap_binding":roadmap_binding,"status":"LOCAL_EXECUTION","updated_utc":utc(),"state_schema_version":STATE_SCHEMA_VERSION})
+            event(cfg, "roadmap_manifest_validated", issue=issue["number"], **{key: roadmap_binding[key] for key in ("roadmap_id", "roadmap_version", "roadmap_item_id", "manifest_sha256", "roadmap_sha256", "base_sha")})
             execute_initial(cfg,issue,spec,state_path)
         except Exception as e:
             msg=str(e)
