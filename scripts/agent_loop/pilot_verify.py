@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-import argparse, json, re, subprocess, sys
+import argparse, hashlib, json, re, subprocess, sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -49,7 +49,14 @@ def collect_changed(base_sha=None, head_sha=None):
     untracked=run(['git','ls-files','--others','--exclude-standard'])
     return sorted({x for x in (tracked+'\n'+untracked).splitlines() if x})
 
-def validate_roadmap_governance(d: dict) -> list[str]:
+def canonical_blob(base_sha: str, path: str, root: Path) -> bytes:
+    p=subprocess.run(['git','show',f'{base_sha}:{path}'],cwd=root,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+    if p.returncode:
+        raise RuntimeError(f'canonical roadmap source unavailable: {path}')
+    return p.stdout
+
+def validate_roadmap_governance(d: dict, base_sha: str | None = None, root: Path | None = None,
+                                blob_loader=None) -> list[str]:
     errors=[]
     binding=d.get('roadmap_binding')
     if not isinstance(binding,dict):
@@ -72,6 +79,38 @@ def validate_roadmap_governance(d: dict) -> list[str]:
         errors.append('roadmap binding dependencies invalid')
     if d.get('human_final_authority') is not True: errors.append('human_final_authority must be true')
     if d.get('live_trading_enabled') is not False: errors.append('live_trading_enabled must be false')
+    if not isinstance(base_sha,str) or not re.fullmatch(r'[0-9a-f]{40}',base_sha):
+        errors.append('canonical roadmap base sha required')
+        return errors
+    if binding.get('base_sha')!=base_sha or d.get('base_sha')!=base_sha:
+        errors.append('canonical roadmap base sha mismatch')
+    try:
+        loader=blob_loader or (lambda sha,path: canonical_blob(sha,path,root or Path.cwd()))
+        manifest_bytes=loader(base_sha,'docs/roadmap/BRAIN_101_MANIFEST.json')
+        roadmap_bytes=loader(base_sha,'docs/roadmap/BRAIN_101_ROADMAP.md')
+        manifest=json.loads(manifest_bytes.decode('utf-8'))
+    except Exception as exc:
+        errors.append(f'canonical roadmap evidence unavailable: {exc}')
+        return errors
+    manifest_sha=hashlib.sha256(manifest_bytes).hexdigest()
+    roadmap_sha=hashlib.sha256(roadmap_bytes).hexdigest()
+    if manifest.get('repository')!='cesarmanuel8102/AI_Vault': errors.append('canonical manifest repository mismatch')
+    if manifest.get('integration_branch')!='codex/own-capital-sustainable-return': errors.append('canonical manifest integration branch mismatch')
+    if manifest.get('approval_status')!='HUMAN_ADOPTED': errors.append('canonical manifest approval status mismatch')
+    if manifest.get('r0_status')!='CLOSED_HUMAN_ADOPTED': errors.append('canonical manifest r0 status mismatch')
+    if manifest.get('human_final_authority') is not True: errors.append('canonical manifest human authority mismatch')
+    if manifest.get('roadmap_sha256')!=roadmap_sha: errors.append('canonical roadmap bytes hash mismatch')
+    if binding.get('roadmap_id')!=manifest.get('roadmap_id'): errors.append('roadmap binding roadmap_id mismatch')
+    if binding.get('roadmap_version')!=manifest.get('roadmap_version'): errors.append('roadmap binding roadmap_version mismatch')
+    if binding.get('roadmap_sha256')!=roadmap_sha: errors.append('roadmap binding roadmap_sha256 mismatch')
+    if binding.get('manifest_sha256')!=manifest_sha: errors.append('roadmap binding manifest_sha256 mismatch')
+    items=manifest.get('roadmap_items')
+    item=items.get(binding.get('roadmap_item_id')) if isinstance(items,dict) else None
+    if not isinstance(item,dict):
+        errors.append('roadmap binding item not registered')
+    else:
+        if item.get('status')!='AUTHORIZED_ACTIVE': errors.append('roadmap binding item not authorized active')
+        if binding.get('dependencies')!=item.get('dependencies'): errors.append('roadmap binding dependencies mismatch')
     return errors
 
 def main():
@@ -113,7 +152,7 @@ def main():
                 if d.get('merge_performed') is not False: errors.append('merge_performed must be false')
                 if d.get('canonical_local_sync') is not False: errors.append('canonical_local_sync must be false')
                 roadmap_aware=str(d.get('front_id','')).startswith('BRAIN-101-') or 'roadmap_binding' in d
-                if roadmap_aware: errors.extend(validate_roadmap_governance(d))
+                if roadmap_aware: errors.extend(validate_roadmap_governance(d,a.base_sha,root))
                 if version_tuple(d.get('worker_version')) < MIN_WORKER_VERSION: errors.append('worker_version must be >= 1.5.4')
             except Exception as e: errors.append(f'executor report invalid: {e}')
     changed=[] if a.content_only else collect_changed(a.base_sha,a.head_sha)

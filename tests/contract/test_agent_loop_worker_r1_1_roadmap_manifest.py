@@ -382,13 +382,59 @@ with tempfile.TemporaryDirectory() as td:
     assert report["merge_performed"] is False
     assert report["canonical_local_sync"] is False
 
-    missing = copy.deepcopy(report)
-    del missing["roadmap_binding"]
-    assert pilot_verify.validate_roadmap_governance(report) == []
-    assert "roadmap binding missing" in pilot_verify.validate_roadmap_governance(missing)
-    unsafe = copy.deepcopy(report); unsafe["live_trading_enabled"] = True
-    assert "live_trading_enabled must be false" in pilot_verify.validate_roadmap_governance(unsafe)
-    mismatch = copy.deepcopy(report); mismatch["roadmap_binding"]["base_sha"] = "c" * 40
-    assert "roadmap binding base_sha mismatch" in pilot_verify.validate_roadmap_governance(mismatch)
+    canonical_base = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
+    canonical_report = copy.deepcopy(report)
+    canonical_report["base_sha"] = canonical_base
+    canonical_report["roadmap_binding"].update({
+        "base_sha": canonical_base,
+        "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
+        "roadmap_sha256": hashlib.sha256(roadmap_bytes).hexdigest(),
+    })
+
+    def errors(candidate, manifest_override=None, roadmap_override=None):
+        if manifest_override is None and roadmap_override is None:
+            return pilot_verify.validate_roadmap_governance(candidate, canonical_base, ROOT)
+
+        def loader(_sha, path):
+            return (manifest_override if manifest_override is not None else manifest_bytes) \
+                if path.endswith("MANIFEST.json") else (roadmap_override if roadmap_override is not None else roadmap_bytes)
+        return pilot_verify.validate_roadmap_governance(candidate, canonical_base, ROOT, loader)
+
+    def mismatch(field, value, expected_error):
+        candidate = copy.deepcopy(canonical_report)
+        candidate["roadmap_binding"][field] = value
+        assert expected_error in errors(candidate), (field, errors(candidate))
+
+    assert errors(canonical_report) == []
+    missing = copy.deepcopy(canonical_report); del missing["roadmap_binding"]
+    assert "roadmap binding missing" in errors(missing)
+    unsafe = copy.deepcopy(canonical_report); unsafe["live_trading_enabled"] = True
+    assert "live_trading_enabled must be false" in errors(unsafe)
+    mismatch("roadmap_id", "OTHER", "roadmap binding roadmap_id mismatch")
+    mismatch("roadmap_version", "0", "roadmap binding roadmap_version mismatch")
+    mismatch("roadmap_item_id", "R9.9", "roadmap binding item not registered")
+    mismatch("roadmap_sha256", "0" * 64, "roadmap binding roadmap_sha256 mismatch")
+    mismatch("manifest_sha256", "0" * 64, "roadmap binding manifest_sha256 mismatch")
+    mismatch("dependencies", [], "roadmap binding dependencies mismatch")
+    mismatch("dependencies", ["R0", "R0"], "roadmap binding dependencies invalid")
+
+    modified_manifest = copy.deepcopy(manifest)
+    modified_manifest["roadmap_items"]["R1.1"]["status"] = "BLOCKED_PENDING_R1_1"
+    modified_manifest_bytes = json.dumps(modified_manifest, indent=2).encode("utf-8")
+    assert "roadmap binding item not authorized active" in errors(canonical_report, manifest_override=modified_manifest_bytes)
+    modified_manifest = copy.deepcopy(manifest); modified_manifest["approval_status"] = "PENDING"
+    modified_manifest_bytes = json.dumps(modified_manifest, indent=2).encode("utf-8")
+    assert "canonical manifest approval status mismatch" in errors(canonical_report, manifest_override=modified_manifest_bytes)
+    modified_manifest = copy.deepcopy(manifest); modified_manifest["repository"] = "other/repo"
+    assert "canonical manifest repository mismatch" in errors(
+        canonical_report, manifest_override=json.dumps(modified_manifest).encode("utf-8"))
+    modified_manifest = copy.deepcopy(manifest); modified_manifest["integration_branch"] = "other"
+    assert "canonical manifest integration branch mismatch" in errors(
+        canonical_report, manifest_override=json.dumps(modified_manifest).encode("utf-8"))
+    modified_manifest = copy.deepcopy(manifest); modified_manifest["r0_status"] = "OPEN"
+    assert "canonical manifest r0 status mismatch" in errors(
+        canonical_report, manifest_override=json.dumps(modified_manifest).encode("utf-8"))
+    assert "canonical roadmap bytes hash mismatch" in errors(canonical_report, roadmap_override=roadmap_bytes + b"\nchanged")
+    assert "roadmap binding manifest_sha256 mismatch" in errors(canonical_report, manifest_override=manifest_bytes + b" ")
 
 print("PASS: Agent Loop R1.1 roadmap manifest validation")
