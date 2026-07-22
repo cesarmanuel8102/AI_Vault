@@ -3108,6 +3108,88 @@ def test_normal_file_not_reparse() -> None:
         assert not worker._is_reparse_or_symlink(path)
 
 
+def test_r1_ready_human_audit_poll_converges_without_executor() -> None:
+    with tempfile.TemporaryDirectory() as td:
+        root = Path(td)
+        repo = root / "repo"
+        repo.mkdir()
+        roadmap_spec = _base_spec()
+        roadmap_spec.update({
+            "front_id": "BRAIN-101-R1.1-ASYNC-POLL",
+            "roadmap_id": "BRAIN-101",
+            "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
+            "roadmap_sha256": "c" * 64,
+            "roadmap_item_id": "R1.1",
+            "dependencies": ["R0"],
+            "human_final_authority": True,
+        })
+        binding = {
+            "schema_version": 1,
+            "roadmap_id": roadmap_spec["roadmap_id"],
+            "roadmap_version": roadmap_spec["roadmap_version"],
+            "roadmap_item_id": roadmap_spec["roadmap_item_id"],
+            "manifest_path": worker.ROADMAP_MANIFEST_PATH,
+            "manifest_sha256": "d" * 64,
+            "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "roadmap_sha256": roadmap_spec["roadmap_sha256"],
+            "base_sha": roadmap_spec["expected_base_sha"],
+            "dependencies": ["R0"],
+        }
+        state_path = root / "state" / "issue-101.json"
+        original_state = {
+            "issue_number": 101,
+            "front": roadmap_spec["front_id"],
+            "spec": roadmap_spec,
+            "roadmap_binding": binding,
+            "repo_dir": str(repo),
+            "pr_number": 39,
+            "pr_url": "https://example.invalid/pr/39",
+            "cycles": 1,
+            "last_head_sha": HEAD,
+            "status": "loop:ci",
+            "state_schema_version": worker.STATE_SCHEMA_VERSION,
+            "worker_version": worker.WORKER_VERSION,
+            "updated_utc": worker.utc(),
+        }
+        worker.save_json(state_path, original_state)
+        convergence = []
+
+        def fake_gh(args):
+            assert args[:2] == ["pr", "view"]
+            return {
+                "number": 39, "url": "https://example.invalid/pr/39", "headRefOid": HEAD,
+                "labels": [{"name": "loop:ready-human-audit"}], "state": "OPEN",
+            }
+
+        def converge(_cfg, path, current, phase, *, pr_number=None):
+            convergence.append((phase, pr_number))
+            current = dict(current)
+            current["status"] = phase
+            worker.save_json(path, current)
+            return current
+
+        def forbidden(*_a, **_k):
+            raise AssertionError("executor must not run during async convergence poll")
+
+        originals = _patch_worker(
+            gh_json=fake_gh,
+            set_converged_phase=converge,
+            execute_initial=forbidden,
+            run_kimi=forbidden,
+        )
+        try:
+            worker.process_state(_cfg(td), state_path)
+        finally:
+            _restore(originals)
+
+        saved = json.loads(state_path.read_text(encoding="utf-8"))
+        assert convergence == [("loop:ready-human-audit", 39)]
+        assert saved["status"] == "loop:ready-human-audit"
+        assert saved["cycles"] == 1
+        assert saved["last_head_sha"] == HEAD
+        assert saved["roadmap_binding"] == binding
+
+
 def main() -> int:
     tests = [
         test_state_schema_version_injected,
@@ -3210,6 +3292,7 @@ def main() -> int:
         test_trusted_output_destination_reparse_blocked,
         test_lstat_error_fails_closed,
         test_normal_file_not_reparse,
+        test_r1_ready_human_audit_poll_converges_without_executor,
     ]
 
     failed = 0

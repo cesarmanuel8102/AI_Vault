@@ -68,6 +68,13 @@ def test_supervisor_prompt_preserves_no_merge_no_canonical_sync() -> None:
     text = _prompt()
     assert "merge_performed=false" in text
     assert "canonical_local_sync=false" in text
+    assert "live_trading_enabled=false" in text
+    assert "roadmap_binding" in text
+    assert "human_final_authority=true" in text
+    assert "git show <PR base SHA>:docs/roadmap/BRAIN_101_MANIFEST.json" in text
+    assert "git show <PR base SHA>:docs/roadmap/BRAIN_101_ROADMAP.md" in text
+    assert "Reading HEAD or merely checking internal consistency is insufficient" in text
+    assert "Missing or mismatched canonical roadmap governance evidence is BLOCKED" in text
 
 
 def test_review_schema_is_strict_json_schema() -> None:
