@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
+  "roadmap_item_id": "R1.1",
+  "status": "CLOSED_RUNTIME_VERIFIED",
+  "pilot": {
+    "issue": 44,
+    "pr": 45,
+    "base_sha": "1c5115ee72ac3d79fb1e28afe37f2893ba505c1e",
+    "head_sha": "66de7603865b9b59dfee6da1e46ce4d3cf477080",
+    "draft": true,
+    "changed_files": [
+      "docs/agent_loop/pilot/EXECUTOR_REPORT.json",
+      "docs/agent_loop/pilot/PILOT_MARKER.md"
+    ],
+    "cycles": 1,
+    "final_state": "loop:ready-human-audit",
+    "roadmap_binding_persisted": true,
+    "deterministic_gate": "PASS",
+    "codex_verdict": "PASS",
+    "publish": "PASS",
+    "convergence_executor_delta": 0,
+    "convergence_head_unchanged": true
+  },
+  "binding": {
+    "manifest_sha256": "82fee40adf83f33a21ebffdeaa776ed0cd0a6ed5ef8b4fd7e6d1e0aa1dcb60eb",
+    "roadmap_sha256": "6d855928a00249210c7bd5ee3dbebd684639cc2411b15e9e88a761eae821d678",
+    "dependencies": ["R0"],
+    "human_final_authority": true
+  },
+  "worker": {
+    "version": "1.5.7",
+    "installed_sha256": "f9fe51f789520936e5a01dfabc34165bade5148b0d72fc58b6b8a5dde1059b28"
+  },
+  "operator_proxy": {
+    "implementation_pr": 46,
+    "implementation_merge": "f19f023b7b836fffed96d2915867b81312196b89",
+    "runner_fix_pr": 47,
+    "runner_fix_merge": "7134393351810e64fd1a418dfdd986b53531ff46",
+    "installed_hashes_match": true,
+    "scheduled_task_enabled": true,
+    "controlled_poll": "PASS",
+    "closeout_decision_source": "append-only external Operator Proxy ledger",
+    "closeout_decision_id": null
+  },
+  "closeout_artifacts": {
+    "roadmap_sha256": "5326be5c05f67be25ebd84cd8abec0e2a1d017b69d5cac0609b491890c49575b",
+    "manifest_sha256": "5423a77a5a38748e3512a060a02dfb9e76c411a7454f77829073a6745ff57bfc"
+  },
+  "safety": {
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading_enabled": false,
+    "real_money": false,
+    "r2_started": false
+  },
+  "observed_at_utc": "2026-07-22T20:54:48Z"
+}

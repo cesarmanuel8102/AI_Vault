@@ -923,10 +923,16 @@ No se crean Issues R1+ dentro de R0. Tras el merge humano de este Draft PR, crea
 
 Cada Issue debe declarar roadmap/version, phase/item, dependencies, base SHA, paths permitidos/prohibidos, gates, rollback, autoridad humana y prohibiciones de auto-merge/canonical sync/live trading.
 
-## 13.8 Cierre de adopción
+## 13.8 Cierre runtime de R1.1
+
+R1.1 quedó verificado en runtime con el worker v1.5.7 y el piloto gobernado Issue #44 / Draft PR #45. El piloto persistió el binding canónico de roadmap, modificó únicamente los dos artefactos permitidos, completó deterministic gate, revisión Codex y publish, y convergió en una segunda iteración sin ejecutar otro ciclo ni cambiar el HEAD. El Operator Proxy fue integrado e instalado como transporte gobernado para las decisiones siguientes.
+
+Evidencia machine-readable: `docs/roadmap/evidence/BRAIN_101_R1_1_RUNTIME_CLOSEOUT.json`.
+
+## 13.9 Estado vigente
 
 ```text
-STATUS: R0_CLOSED_ROADMAP_ADOPTED
+STATUS: R1_1_CLOSED_RUNTIME_VERIFIED
 R0_STATUS: CLOSED_HUMAN_ADOPTED
 ADOPTION_PR: 35
 ADOPTION_PR_HEAD: a605c4d88510acd477cf26d2787bc38b1c02af48
@@ -935,6 +941,8 @@ LIVE_TRADING_ENABLED: false
 AUTO_MERGE: false
 CANONICAL_LOCAL_SYNC: false
 HUMAN_FINAL_AUTHORITY: true
-R1_STARTED: false
-NEXT_GATE: Human authorization to begin R1.1 roadmap manifest validation
+R1_STARTED: true
+R1_1_STATUS: CLOSED_RUNTIME_VERIFIED
+R1_2_STATUS: AUTHORIZED_ACTIVE
+NEXT_GATE: Execute R1.2 roadmap-doc and test-only profiles through Operator Proxy
 ```
