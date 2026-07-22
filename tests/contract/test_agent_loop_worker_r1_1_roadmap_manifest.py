@@ -40,6 +40,9 @@ manifest_bytes = git_blob(MANIFEST_PATH)
 roadmap_bytes = git_blob(ROADMAP_PATH)
 manifest = json.loads(manifest_bytes.decode("utf-8"))
 roadmap_hash = hashlib.sha256(roadmap_bytes).hexdigest()
+ACTIVE_ITEM_ID = "R1.2"
+ACTIVE_DEPENDENCIES = ["R1.1"]
+CLOSED_ITEM_ID = "R1.1"
 
 
 def source(current_manifest=None, current_roadmap=None):
@@ -65,7 +68,7 @@ def cfg(loader=None, install_root="X"):
 def valid_spec():
     return {
         "schema_version": 1,
-        "front_id": "BRAIN-101-R1.1-TEST",
+        "front_id": "BRAIN-101-R1.2-TEST",
         "repo": "cesarmanuel8102/AI_Vault",
         "owner": "cesarmanuel8102",
         "base_branch": "codex/own-capital-sustainable-return",
@@ -79,8 +82,8 @@ def valid_spec():
         "roadmap_id": manifest["roadmap_id"],
         "roadmap_version": manifest["roadmap_version"],
         "roadmap_sha256": roadmap_hash,
-        "roadmap_item_id": "R1.1",
-        "dependencies": ["R0"],
+        "roadmap_item_id": ACTIVE_ITEM_ID,
+        "dependencies": ACTIVE_DEPENDENCIES,
         "human_final_authority": True,
     }
 
@@ -105,7 +108,7 @@ def expect_persisted_error(state, contains):
 
 binding = worker.validate_roadmap_contract(cfg(), valid_spec())
 assert binding["roadmap_id"] == "BRAIN-101"
-assert binding["roadmap_item_id"] == "R1.1"
+assert binding["roadmap_item_id"] == ACTIVE_ITEM_ID
 assert binding["roadmap_sha256"] == roadmap_hash
 assert binding["base_sha"] == "a" * 40
 
@@ -119,7 +122,7 @@ bad = valid_spec(); bad["roadmap_version"] = "0"; expect_error(bad, "roadmap ver
 bad = valid_spec(); bad["roadmap_sha256"] = "0" * 64; expect_error(bad, "roadmap hash mismatch")
 bad = valid_spec(); bad["roadmap_sha256"] = "A" * 64; expect_error(bad, "lowercase 64-character")
 bad = valid_spec(); bad["roadmap_item_id"] = "R9.9"; expect_error(bad, "not registered")
-bad = valid_spec(); bad["roadmap_item_id"] = "R1.2"; bad["dependencies"] = ["R1.1"]; expect_error(bad, "not authorized active")
+bad = valid_spec(); bad["roadmap_item_id"] = CLOSED_ITEM_ID; bad["dependencies"] = ["R0"]; expect_error(bad, "not authorized active")
 bad = valid_spec(); bad["dependencies"] = []; expect_error(bad, "dependency declaration mismatch")
 bad = valid_spec(); bad["human_final_authority"] = False; expect_error(bad, "must be true")
 
@@ -127,7 +130,7 @@ bad_manifest = copy.deepcopy(manifest)
 bad_manifest["roadmap_sha256"] = "0" * 64
 expect_error(valid_spec(), "manifest hash", cfg(source(bad_manifest)))
 bad_manifest = copy.deepcopy(manifest)
-bad_manifest["roadmap_items"]["R1.1"]["dependencies"] = ["R9.9"]
+bad_manifest["roadmap_items"][ACTIVE_ITEM_ID]["dependencies"] = ["R9.9"]
 bad = valid_spec(); bad["dependencies"] = ["R9.9"]
 expect_error(bad, "dependency open", cfg(source(bad_manifest)))
 expect_error(valid_spec(), "manifest hash", cfg(source(current_roadmap=roadmap_bytes + b"\nchanged")))
@@ -159,7 +162,7 @@ expect_persisted_error({"spec": valid_spec()}, "persisted roadmap binding missin
 state = {"spec": valid_spec(), "roadmap_binding": copy.deepcopy(binding)}
 worker.validate_persisted_roadmap_binding(state)
 mutated = copy.deepcopy(state)
-mutated["spec"]["roadmap_item_id"] = "R1.2"
+mutated["spec"]["roadmap_item_id"] = CLOSED_ITEM_ID
 expect_persisted_error(mutated, "binding mismatch")
 mutated = copy.deepcopy(state)
 mutated["spec"]["dependencies"] = ["R9.9"]
@@ -179,7 +182,7 @@ with tempfile.TemporaryDirectory() as td:
     runtime_cfg = cfg(install_root=td)
     issue = {
         "number": 101,
-        "title": "R1.1",
+        "title": "R1.2",
         "body": "",
         "author": {"login": "cesarmanuel8102"},
         "labels": [{"name": "agent:queued"}],
@@ -195,7 +198,7 @@ with tempfile.TemporaryDirectory() as td:
         worker.process_once(runtime_cfg)
         state_path = Path(td) / "state" / "issue-101.json"
         saved = json.loads(state_path.read_text(encoding="utf-8"))
-        assert saved["roadmap_binding"]["roadmap_item_id"] == "R1.1"
+        assert saved["roadmap_binding"]["roadmap_item_id"] == ACTIVE_ITEM_ID
         assert calls[0][0] == "roadmap_manifest_validated"
         assert calls[1] == "execute"
     finally:
@@ -206,7 +209,7 @@ with tempfile.TemporaryDirectory() as td:
     runtime_cfg = cfg(install_root=td)
     issue = {
         "number": 104,
-        "title": "R1.1 failure preservation",
+        "title": "R1.2 failure preservation",
         "body": "",
         "author": {"login": "cesarmanuel8102"},
         "labels": [{"name": "agent:queued"}],
@@ -243,7 +246,7 @@ with tempfile.TemporaryDirectory() as td:
     runtime_cfg = cfg(install_root=td)
     issue = {
         "number": 102,
-        "title": "Invalid R1.1",
+        "title": "Invalid R1.2",
         "body": "",
         "author": {"login": "cesarmanuel8102"},
         "labels": [{"name": "agent:queued"}],
@@ -430,7 +433,7 @@ with tempfile.TemporaryDirectory() as td:
         assert field in " ".join(errors(candidate)), (field, errors(candidate))
 
     modified_manifest = copy.deepcopy(manifest)
-    modified_manifest["roadmap_items"]["R1.1"]["status"] = "BLOCKED_PENDING_R1_1"
+    modified_manifest["roadmap_items"][ACTIVE_ITEM_ID]["status"] = "BLOCKED_PENDING_R1_1"
     modified_manifest_bytes = json.dumps(modified_manifest, indent=2).encode("utf-8")
     assert "roadmap binding item not authorized active" in errors(canonical_report, manifest_override=modified_manifest_bytes)
     modified_manifest = copy.deepcopy(manifest); modified_manifest["approval_status"] = "PENDING"

@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "6d855928a00249210c7bd5ee3dbebd684639cc2411b15e9e88a761eae821d678",
+  "roadmap_sha256": "5326be5c05f67be25ebd84cd8abec0e2a1d017b69d5cac0609b491890c49575b",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -36,7 +36,7 @@
   "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
   "approval_status": "HUMAN_ADOPTED",
   "r0_status": "CLOSED_HUMAN_ADOPTED",
-  "current_phase": "R0",
+  "current_phase": "R1",
   "human_final_authority": true,
   "auto_merge": false,
   "canonical_local_sync": false,
@@ -52,14 +52,25 @@
   "roadmap_items": {
     "R1.1": {
       "title": "Add roadmap manifest validation to Agent Loop",
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "dependencies": ["R0"]
     },
     "R1.2": {
       "title": "Add roadmap-doc and test-only profiles",
-      "status": "BLOCKED_PENDING_R1_1",
+      "status": "AUTHORIZED_ACTIVE",
       "dependencies": ["R1.1"]
     }
   },
-  "next_gate": "Human authorization to begin R1.1 roadmap manifest validation"
+  "r1_1_runtime_closeout": {
+    "evidence_path": "docs/roadmap/evidence/BRAIN_101_R1_1_RUNTIME_CLOSEOUT.json",
+    "issue": 44,
+    "draft_pr": 45,
+    "pilot_head": "66de7603865b9b59dfee6da1e46ce4d3cf477080",
+    "pilot_base": "1c5115ee72ac3d79fb1e28afe37f2893ba505c1e",
+    "worker_version": "1.5.7",
+    "cycles": 1,
+    "final_state": "loop:ready-human-audit",
+    "operator_proxy_merge": "7134393351810e64fd1a418dfdd986b53531ff46"
+  },
+  "next_gate": "Execute R1.2 roadmap-doc and test-only profiles through Operator Proxy"
 }

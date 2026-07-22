@@ -2,11 +2,11 @@
   "schema_version": 1,
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-  "status": "R0_CLOSED_ROADMAP_ADOPTED",
+  "status": "R1_1_CLOSED_RUNTIME_VERIFIED",
   "audit_baseline_head": "759edfb",
   "rebaseline_source_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
   "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
-  "base_score": 41,
+  "base_score": 42,
   "resilience_bonus": 0,
   "certified_score": null,
   "score_cap_applied": 69,
@@ -37,8 +37,8 @@
       "evidence": [{"claim": "TraceStore, SSE lifecycle, dashboard trace enrichment, and timeline UI are wired.", "classification": "CONTRACT_VERIFIED", "paths": ["tmp_agent/brain_v9/core/agent_kernel_v2/trace.py", "tmp_agent/brain_v9/dashboard/dashboard_routes.py", "tmp_agent/brain_v9/dashboard/static/app.js"], "symbols": ["TraceStore", "stream_chat", "agent_v2_trace"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": 29886467842, "command": null, "result": "Dashboard / Trace Tests passed; unified event ownership and full cost accounting remain open.", "observed_at_utc": "2026-07-22T13:37:51Z"}]
     },
     {
-      "domain": "agent_loop", "score": 5, "weight": 8,
-      "evidence": [{"claim": "Agent Loop v1.5.7 completed a governed executor/Codex pilot.", "classification": "RUNTIME_VERIFIED", "paths": ["scripts/agent_loop/local_worker/agent_worker.py", "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json"], "symbols": ["process_state"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": 33, "pr": 34, "workflow_run": 29886467817, "command": null, "result": "Pilot is open/draft at loop:ready-human-audit with deterministic, Codex, and publish success.", "observed_at_utc": "2026-07-22T13:37:51Z"}]
+      "domain": "agent_loop", "score": 6, "weight": 8,
+      "evidence": [{"claim": "Agent Loop v1.5.7 persisted and independently verified the canonical BRAIN-101 R1.1 roadmap binding.", "classification": "RUNTIME_VERIFIED", "paths": ["scripts/agent_loop/local_worker/agent_worker.py", "docs/roadmap/evidence/BRAIN_101_R1_1_RUNTIME_CLOSEOUT.json"], "symbols": ["process_state", "validate_persisted_roadmap_binding"], "commit": "1c5115ee72ac3d79fb1e28afe37f2893ba505c1e", "issue": 44, "pr": 45, "workflow_run": 29952330799, "command": "two governed worker --once iterations", "result": "One executor cycle produced the exact two-file pilot; deterministic, Codex, and publish passed; convergence added no cycle and preserved PR HEAD.", "observed_at_utc": "2026-07-22T19:48:49Z"}]
     },
     {
       "domain": "provider_curated", "score": 2, "weight": 5,
@@ -75,9 +75,9 @@
   ],
   "phases": [
     {"id": "R0", "percent": 100, "status": "CLOSED_HUMAN_ADOPTED", "evidence": [{"claim": "R0 artifacts and historical reconciliation were adopted by human-authorized merge.", "classification": "MERGE_VERIFIED", "paths": ["docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json"], "symbols": [], "commit": "5b9f101a6d5ec5b314d9413cc5c12d66fec6d94f", "issue": null, "pr": 35, "workflow_run": null, "command": "gh pr merge 35 --merge", "result": "PR #35 merged by normal merge commit with reviewed head a605c4d88510acd477cf26d2787bc38b1c02af48.", "observed_at_utc": "2026-07-22T14:02:16Z"}]},
-    {"id": "R1", "percent": 25, "status": "FOUNDATION_RUNTIME_VERIFIED_REQUIREMENTS_OPEN", "evidence": [
-      {"claim": "Agent Loop technical foundation completed a governed pilot.", "classification": "RUNTIME_VERIFIED", "paths": ["scripts/agent_loop/local_worker/agent_worker.py", "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json"], "symbols": ["process_state"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": 33, "pr": 34, "workflow_run": 29886467817, "command": null, "result": "Technical foundation verified independently of R1 requirements.", "observed_at_utc": "2026-07-22T13:37:51Z"},
-      {"claim": "Roadmap manifest/hash/dependency enforcement and roadmap-aware profiles are absent.", "classification": "MISSING", "paths": ["scripts/agent_loop/local_worker/agent_worker.py"], "symbols": [], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": null, "command": "R0 static inspection of Agent Loop roadmap enforcement", "result": "R1 implementation remains open.", "observed_at_utc": "2026-07-22T13:37:51Z"}
+    {"id": "R1", "percent": 50, "status": "R1_1_CLOSED_R1_2_AUTHORIZED", "evidence": [
+      {"claim": "R1.1 canonical manifest, hash, dependency, persistence, CI, and convergence contracts passed in the real installed worker.", "classification": "RUNTIME_VERIFIED", "paths": ["scripts/agent_loop/local_worker/agent_worker.py", "docs/roadmap/evidence/BRAIN_101_R1_1_RUNTIME_CLOSEOUT.json"], "symbols": ["process_state", "validate_persisted_roadmap_binding"], "commit": "1c5115ee72ac3d79fb1e28afe37f2893ba505c1e", "issue": 44, "pr": 45, "workflow_run": 29952330799, "command": "two governed worker --once iterations", "result": "R1.1 closed runtime-verified; R1.2 is authorized but not yet implemented.", "observed_at_utc": "2026-07-22T19:48:49Z"},
+      {"claim": "R1.2 roadmap-doc and test-only profiles remain to be implemented through Operator Proxy.", "classification": "MISSING", "paths": ["scripts/agent_loop/local_worker/agent_worker.py"], "symbols": [], "commit": null, "issue": null, "pr": null, "workflow_run": null, "command": null, "result": "R1.2 authorized active; no R2 work authorized.", "observed_at_utc": "2026-07-22T20:54:48Z"}
     ]},
     {"id": "R2", "percent": 50, "status": "PARTIALLY_CLOSED", "evidence": [{"claim": "Auth/RBAC/signed approval contracts exist; complete constitutional adversarial coverage does not.", "classification": "CONTRACT_VERIFIED", "paths": ["tmp_agent/brain_v9/api_security.py", "tmp_agent/brain_v9/governance/signed_approvals.py", "tests/integration/test_endpoints_auth.py"], "symbols": ["require_strict_operator_access", "verify_approval_token"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": 29886467842, "command": null, "result": "Partial R2 evidence only.", "observed_at_utc": "2026-07-22T13:37:51Z"}]},
     {"id": "R3", "percent": 60, "status": "PARTIALLY_CLOSED", "evidence": [{"claim": "CI and recovery contracts exist; the required E2E matrix is incomplete.", "classification": "CONTRACT_VERIFIED", "paths": [".github/workflows", "tests/contract", "tests/e2e"], "symbols": [], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": 34, "workflow_run": 29886467842, "command": null, "result": "Baseline checks pass, but R3 closure target is unmet.", "observed_at_utc": "2026-07-22T13:37:51Z"}]},
