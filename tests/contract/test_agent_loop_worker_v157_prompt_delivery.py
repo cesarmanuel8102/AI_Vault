@@ -182,6 +182,39 @@ started = next(e for e in events if e["kind"] == "executor_started")
 assert "SECRET_TOKEN_SHOULD_NOT_LEAK" not in json.dumps(started)
 checks["secret_absent_from_command_log"] = True
 
+with tempfile.TemporaryDirectory() as td:
+    root = Path(td)
+    log = root / "opencode.jsonl"
+    sentinel = worker.prompt_task_sentinel(FRONT, 1)
+    tool_event = {
+        "type": "tool_use",
+        "part": {
+            "type": "tool", "tool": "write",
+            "state": {"status": "completed", "input": {"filePath": MARKER}},
+        },
+    }
+    text_event = {"type": "text", "part": {"type": "text", "text": sentinel}}
+    log.write_text("\n".join(json.dumps(x) for x in (tool_event, text_event)) + "\n", encoding="utf-8")
+    evidence = worker.build_executor_review_evidence(log, spec_payload(), 1)
+    assert evidence == {
+        "source": "worker_parsed_opencode_jsonl",
+        "log_sha256": worker.sha256_file(log),
+        "task_acknowledged": True,
+        "task_ack": sentinel,
+        "ack_source": "text_sentinel",
+        "write_tool_completed": True,
+        "write_tool_name": "write",
+        "write_tool_target": MARKER,
+        "write_tool_target_kind": "relative",
+    }
+
+    tool_event["part"]["state"]["input"]["filePath"] = "C:/absolute/PILOT_MARKER.md"
+    log.write_text("\n".join(json.dumps(x) for x in (tool_event, text_event)) + "\n", encoding="utf-8")
+    rejected = worker.build_executor_review_evidence(log, spec_payload(), 1)
+    assert rejected["write_tool_completed"] is False
+    assert rejected["write_tool_target_kind"] == "none"
+checks["reviewable_executor_evidence_is_exact_and_relative"] = True
+
 failed = [name for name, ok in checks.items() if not ok]
 print(json.dumps({"status": "PASS" if not failed else "FAIL", "checks": checks, "failed": failed}, indent=2))
 raise SystemExit(0 if not failed else 1)

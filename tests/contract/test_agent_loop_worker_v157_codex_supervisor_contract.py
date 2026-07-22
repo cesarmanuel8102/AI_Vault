@@ -45,7 +45,9 @@ def test_supervisor_prompt_requires_v157_worker_version() -> None:
 def test_supervisor_prompt_requires_prompt_delivery_ack() -> None:
     text = _prompt()
     assert "ACK_TASK_ID=" in text
-    assert "prompt-delivery contract" in text.lower()
+    assert "worker_parsed_opencode_jsonl" in text
+    assert "task_acknowledged=true" in text
+    assert "log_sha256" in text
 
 
 def test_supervisor_prompt_requires_relative_workspace_path() -> None:
@@ -53,6 +55,8 @@ def test_supervisor_prompt_requires_relative_workspace_path() -> None:
     assert "relative path" in text.lower()
     assert "docs/agent_loop/pilot/PILOT_MARKER.md" in text
     assert "absolute paths" in text.lower()
+    assert "write_tool_completed=true" in text
+    assert "write_tool_target_kind=relative" in text
 
 
 def test_supervisor_prompt_requires_deterministic_transport() -> None:

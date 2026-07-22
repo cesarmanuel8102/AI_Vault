@@ -70,6 +70,20 @@ def main():
                 if d.get('agent')!='brain-opencode-executor': errors.append('executor agent mismatch')
                 if not isinstance(d.get('model'),str) or not d.get('model'): errors.append('executor model missing')
                 if d.get('front_id')!=a.expected_front_id: errors.append('executor report front id mismatch')
+                evidence=d.get('executor_evidence')
+                expected_ack=f"ACK_TASK_ID={a.expected_front_id}|cycle={d.get('cycle')}"
+                if not isinstance(evidence,dict):
+                    errors.append('executor evidence missing')
+                else:
+                    if evidence.get('source')!='worker_parsed_opencode_jsonl': errors.append('executor evidence source mismatch')
+                    if evidence.get('task_acknowledged') is not True: errors.append('executor task acknowledgement missing')
+                    if evidence.get('task_ack')!=expected_ack: errors.append('executor task acknowledgement mismatch')
+                    if evidence.get('ack_source')!='text_sentinel': errors.append('executor acknowledgement source mismatch')
+                    if evidence.get('write_tool_completed') is not True: errors.append('executor write tool completion missing')
+                    if evidence.get('write_tool_name') not in {'write','write_file','edit_file','create_file','edit'}: errors.append('executor write tool name invalid')
+                    if evidence.get('write_tool_target')!=MARKER: errors.append('executor write tool target mismatch')
+                    if evidence.get('write_tool_target_kind')!='relative': errors.append('executor write tool target must be relative')
+                    if not re.fullmatch(r'[0-9a-f]{64}',str(evidence.get('log_sha256',''))): errors.append('executor log sha256 invalid')
                 if d.get('local_test_passed') is not True: errors.append('local test not passed')
                 if d.get('merge_performed') is not False: errors.append('merge_performed must be false')
                 if d.get('canonical_local_sync') is not False: errors.append('canonical_local_sync must be false')
