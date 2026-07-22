@@ -185,9 +185,13 @@ with tempfile.TemporaryDirectory() as td:
     marker = repo / "docs/agent_loop/pilot/PILOT_MARKER.md"
     marker.parent.mkdir(parents=True)
     marker.write_text("# Agent Loop Pilot\n", encoding="utf-8")
-    log = Path(td) / "opencode.jsonl"; log.write_text("{}\n", encoding="utf-8")
+    log = Path(td) / "opencode.jsonl"
     cfg2 = dict(cfg, install_root=str(Path(td) / "install"))
     payload = valid_spec(); payload["expected_base_sha"] = base
+    log.write_text("\n".join(json.dumps(item) for item in [
+        {"type":"tool_use","part":{"type":"tool","tool":"write","state":{"status":"completed","input":{"filePath":"docs/agent_loop/pilot/PILOT_MARKER.md"}}}},
+        {"type":"text","part":{"type":"text","text":worker.prompt_task_sentinel(payload["front_id"],1)}},
+    ]) + "\n", encoding="utf-8")
     worker.write_executor_report(cfg2, payload, repo, 2, 1, ["docs/agent_loop/pilot/PILOT_MARKER.md"], True, "PASS", log)
     report = json.loads((repo / "docs/agent_loop/pilot/EXECUTOR_REPORT.json").read_text(encoding="utf-8"))
     assert set(report["changed_files"]) == worker.PROFILE_ALLOWED_PATHS["pilot"]
@@ -195,6 +199,8 @@ with tempfile.TemporaryDirectory() as td:
     assert report["agent"] == "brain-opencode-executor"
     assert report["model"] == cfg["opencode_model"]
     assert report["front_id"] == payload["front_id"]
+    assert report["executor_evidence"]["task_acknowledged"] is True
+    assert report["executor_evidence"]["write_tool_completed"] is True
 checks["executor_report_consistency"] = True
 
 with tempfile.TemporaryDirectory() as td:
@@ -256,10 +262,17 @@ with tempfile.TemporaryDirectory() as td:
     marker.parent.mkdir(parents=True); marker.write_text("old marker\n", encoding="utf-8")
     report = repo / "docs/agent_loop/pilot/EXECUTOR_REPORT.json"
     neutral_report = {
-        "worker_version":"1.5.7", "front_id":front,
+        "worker_version":"1.5.7", "front_id":front, "cycle":1,
         "executor":"OpenCode/Ollama tool executor", "agent":"brain-opencode-executor",
         "model":"ollama-cloud/deepseek-v4-pro", "local_test_passed":True,
         "merge_performed":False, "canonical_local_sync":False,
+        "executor_evidence":{
+            "source":"worker_parsed_opencode_jsonl", "log_sha256":"a" * 64,
+            "task_acknowledged":True, "task_ack":f"ACK_TASK_ID={front}|cycle=1",
+            "ack_source":"text_sentinel", "write_tool_completed":True,
+            "write_tool_name":"write", "write_tool_target":"docs/agent_loop/pilot/PILOT_MARKER.md",
+            "write_tool_target_kind":"relative",
+        },
     }
     report.write_text(json.dumps({"worker_version":"1.5.4"}), encoding="utf-8")
     subprocess.run(["git", "add", "."], cwd=repo, check=True)
@@ -296,6 +309,18 @@ with tempfile.TemporaryDirectory() as td:
     report.write_text(json.dumps(legacy), encoding="utf-8")
     rejected = verify("--expected-front-id", front)
     assert rejected.returncode != 0 and "executor report front id mismatch" in rejected.stdout
+
+    missing_evidence = dict(neutral_report); missing_evidence.pop("executor_evidence")
+    report.write_text(json.dumps(missing_evidence), encoding="utf-8")
+    rejected = verify("--expected-front-id", front)
+    assert rejected.returncode != 0 and "executor evidence missing" in rejected.stdout
+
+    wrong_evidence = json.loads(json.dumps(neutral_report))
+    wrong_evidence["executor_evidence"]["write_tool_target"] = "C:/absolute/PILOT_MARKER.md"
+    wrong_evidence["executor_evidence"]["write_tool_target_kind"] = "absolute"
+    report.write_text(json.dumps(wrong_evidence), encoding="utf-8")
+    rejected = verify("--expected-front-id", front)
+    assert rejected.returncode != 0 and "executor write tool target mismatch" in rejected.stdout
 checks["executor_neutral_exact_front_contract"] = True
 
 original_subprocess_run = worker.subprocess.run

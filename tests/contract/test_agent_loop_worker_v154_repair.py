@@ -54,7 +54,12 @@ with tempfile.TemporaryDirectory() as td:
     ok, out = worker.run_marker_content_check(repo, FRONT)
     assert ok, out
     changes = worker.changed_files(repo, sh(["git", "rev-parse", "HEAD"], repo))
-    worker.write_executor_report({"opencode_model":"ollama-cloud/kimi-k2.7-code"}, {"front_id":FRONT,"expected_base_sha":BASE,"test_profile":"pilot"}, repo, 5, 3, changes, True, out, root / "opencode.jsonl")
+    log = root / "opencode.jsonl"
+    log.write_text("\n".join(json.dumps(item) for item in [
+        {"type":"tool_use","part":{"type":"tool","tool":"write","state":{"status":"completed","input":{"filePath":"docs/agent_loop/pilot/PILOT_MARKER.md"}}}},
+        {"type":"text","part":{"type":"text","text":worker.prompt_task_sentinel(FRONT,3)}},
+    ]) + "\n", encoding="utf-8")
+    worker.write_executor_report({"opencode_model":"ollama-cloud/kimi-k2.7-code"}, {"front_id":FRONT,"expected_base_sha":BASE,"test_profile":"pilot"}, repo, 5, 3, changes, True, out, log)
     report = json.loads((repo / "docs/agent_loop/pilot/EXECUTOR_REPORT.json").read_text(encoding="utf-8"))
     assert report["worker_version"] == worker.WORKER_VERSION
     assert report["executor"] == "OpenCode/Ollama tool executor"
@@ -63,6 +68,8 @@ with tempfile.TemporaryDirectory() as td:
     assert report["front_id"] == FRONT
     assert report["base_sha"] == BASE
     assert report["issue_number"] == 5 and report["cycle"] == 3
+    assert report["executor_evidence"]["task_ack"] == worker.prompt_task_sentinel(FRONT, 3)
+    assert report["executor_evidence"]["write_tool_target_kind"] == "relative"
     assert report["changed_files"] == sorted(["docs/agent_loop/pilot/PILOT_MARKER.md", "docs/agent_loop/pilot/EXECUTOR_REPORT.json"])
     sh(["git", "add", "docs/agent_loop/pilot/PILOT_MARKER.md", "docs/agent_loop/pilot/EXECUTOR_REPORT.json"], repo)
     sh(["git", "commit", "-m", "repair fixture"], repo)

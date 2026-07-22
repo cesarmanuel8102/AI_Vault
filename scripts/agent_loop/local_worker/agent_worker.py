@@ -1331,6 +1331,7 @@ def run_final_verifier(repo_dir: Path, base_sha: str, head_sha: str, expected_fr
 def write_executor_report(cfg, spec, repo_dir, issue_no, cycle, changes, test_ok, test_out, log_path):
     p = repo_dir / "docs/agent_loop/pilot/EXECUTOR_REPORT.json"
     p.parent.mkdir(parents=True, exist_ok=True)
+    executor_evidence = build_executor_review_evidence(log_path, spec, cycle)
     data = {
         "schema_version":1,"worker_version":WORKER_VERSION,"front_id":spec["front_id"],"issue_number":issue_no,
         "cycle":cycle,"executor":"OpenCode/Ollama tool executor","agent":"brain-opencode-executor",
@@ -1338,9 +1339,50 @@ def write_executor_report(cfg, spec, repo_dir, issue_no, cycle, changes, test_ok
         "base_sha":spec["expected_base_sha"],"changed_files":sorted({"docs/agent_loop/pilot/PILOT_MARKER.md", "docs/agent_loop/pilot/EXECUTOR_REPORT.json"}),
         "local_test_profile":spec["test_profile"],"local_test_passed":test_ok,
         "local_test_tail":bounded_tail(test_out),"opencode_log_local":str(log_path),
+        "executor_evidence":executor_evidence,
         "generated_utc":utc(),"merge_performed":False,"canonical_local_sync":False
     }
     save_json(p, data)
+
+
+def build_executor_review_evidence(log_path: Path, spec: dict, cycle: int) -> dict:
+    """Extract bounded, reviewable proof from the governed OpenCode JSONL log."""
+    parsed: list[dict] = []
+    for line in Path(log_path).read_text(encoding="utf-8-sig").splitlines():
+        if line.strip():
+            parsed.append(json.loads(line))
+
+    sentinel = prompt_task_sentinel(spec["front_id"], cycle)
+    text_acknowledged = sentinel in _executor_text_lines(parsed)
+    marker_rel = "docs/agent_loop/pilot/PILOT_MARKER.md"
+    write_tools = {"write", "write_file", "edit_file", "create_file", "edit"}
+    relative_write_completed = False
+    completed_tool = ""
+    for item in parsed:
+        if not isinstance(item, dict):
+            continue
+        part = item.get("part") or item
+        if not isinstance(part, dict) or part.get("type") != "tool":
+            continue
+        state = part.get("state") if isinstance(part.get("state"), dict) else {}
+        tool_name = _completed_tool_name(part) or ""
+        target = _completed_tool_target(part).replace("\\", "/").strip()
+        if state.get("status") == "completed" and tool_name in write_tools and target == marker_rel:
+            relative_write_completed = True
+            completed_tool = tool_name
+            break
+
+    return {
+        "source": "worker_parsed_opencode_jsonl",
+        "log_sha256": sha256_file(Path(log_path)),
+        "task_acknowledged": text_acknowledged,
+        "task_ack": sentinel if text_acknowledged else "",
+        "ack_source": "text_sentinel" if text_acknowledged else "none",
+        "write_tool_completed": relative_write_completed,
+        "write_tool_name": completed_tool,
+        "write_tool_target": marker_rel if relative_write_completed else "",
+        "write_tool_target_kind": "relative" if relative_write_completed else "none",
+    }
 
 def sha256_file(path: Path) -> str:
     import hashlib
