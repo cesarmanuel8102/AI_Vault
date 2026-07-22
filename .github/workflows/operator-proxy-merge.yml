@@ -1,0 +1,71 @@
+name: Operator Proxy Governed Merge
+run-name: operator-proxy-merge-${{ inputs.decision_id }}
+on:
+  workflow_dispatch:
+    inputs:
+      decision_id: {required: true, type: string}
+      pr: {required: true, type: string}
+      expected_base: {required: true, type: string}
+      expected_head: {required: true, type: string}
+      authorization_id: {required: true, type: string}
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  merge:
+    if: github.actor == 'cesarmanuel8102'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.expected_base }}
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Revalidate and merge exact parents
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ inputs.pr }}
+          EXPECTED_BASE: ${{ inputs.expected_base }}
+          EXPECTED_HEAD: ${{ inputs.expected_head }}
+          AUTHORIZATION_ID: ${{ inputs.authorization_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$AUTHORIZATION_ID" = 'CESAR-BRAIN-101-OPERATOR-PROXY-20260722-01'
+          gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json baseRefName,baseRefOid,headRefName,headRefOid,isDraft,state,mergeable,statusCheckRollup > "$RUNNER_TEMP/pr.json"
+          python - "$RUNNER_TEMP/pr.json" "$EXPECTED_BASE" "$EXPECTED_HEAD" <<'PY'
+          import json, sys
+          p=json.load(open(sys.argv[1],encoding='utf-8'))
+          if p.get('baseRefOid')!=sys.argv[2] or p.get('headRefOid')!=sys.argv[3] or p.get('state')!='OPEN' or p.get('isDraft') is not True or p.get('mergeable')!='MERGEABLE':
+              raise SystemExit('PR identity mismatch')
+          required={'Phase 1 baseline (Windows)','Brain Agent V2 Hygiene Baseline','Security Smoke Tests','Dashboard / Trace Tests','Memory / Retrieval Regression','Roadmap / Policy Regression','Agent V2 Boundary Contracts','Financial Autonomy Dry-Run Contract','Hygiene Guard'}
+          checks=p.get('statusCheckRollup') or []
+          by_name={c.get('name'):c for c in checks}
+          if any(by_name.get(n,{}).get('conclusion')!='SUCCESS' for n in required):
+              raise SystemExit('required checks not successful')
+          allowed_skips={'deterministic','codex','publish'} if not p.get('headRefName','').startswith('agent/pilot-') else set()
+          for c in checks:
+              if c.get('status')!='COMPLETED': raise SystemExit('check not terminal')
+              if c.get('conclusion')=='SUCCESS': continue
+              if c.get('name') in allowed_skips and c.get('conclusion')=='SKIPPED': continue
+              raise SystemExit(f"non-success check: {c.get('name')}")
+          PY
+          git fetch --no-tags origin "+refs/heads/$(python -c "import json;print(json.load(open('$RUNNER_TEMP/pr.json'))['headRefName'])"):refs/remotes/origin/operator-head"
+          test "$(git rev-parse HEAD)" = "$EXPECTED_BASE"
+          test "$(git rev-parse refs/remotes/origin/operator-head)" = "$EXPECTED_HEAD"
+          git config user.name 'AI Vault Operator Proxy'
+          git config user.email 'operator-proxy@users.noreply.github.com'
+          git merge --no-ff --no-edit "$EXPECTED_HEAD"
+          read -r merge parent1 parent2 extra <<<"$(git rev-list --parents -n 1 HEAD)"
+          test "$parent1" = "$EXPECTED_BASE"
+          test "$parent2" = "$EXPECTED_HEAD"
+          test -z "${extra:-}"
+          ready=0
+          cleanup() { if [ "$ready" = 1 ]; then gh pr ready "$PR" --undo --repo "$GITHUB_REPOSITORY" || true; fi; }
+          trap cleanup ERR
+          gh pr ready "$PR" --repo "$GITHUB_REPOSITORY"
+          ready=1
+          git push origin "HEAD:refs/heads/codex/own-capital-sustainable-return"
+          ready=0
+          trap - ERR
+          echo "merge_commit=$merge" >> "$GITHUB_OUTPUT"
