@@ -831,9 +831,14 @@ def validate_roadmap_contract(cfg: dict, spec: dict) -> dict:
             raise ValueError(f"roadmap dependency open: {dependency}")
     return {
         "schema_version": 1,
+        "repository": manifest["repository"],
+        "integration_branch": manifest["integration_branch"],
+        "approval_status": manifest["approval_status"],
+        "r0_status": manifest["r0_status"],
         "roadmap_id": manifest["roadmap_id"],
         "roadmap_version": manifest["roadmap_version"],
         "roadmap_item_id": item_id,
+        "roadmap_item_status": item["status"],
         "manifest_path": ROADMAP_MANIFEST_PATH,
         "manifest_sha256": _sha256_bytes(manifest_bytes),
         "roadmap_path": manifest["roadmap_path"],
@@ -875,9 +880,14 @@ def validate_persisted_roadmap_binding(st: dict) -> None:
     if not isinstance(manifest_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", manifest_sha256):
         raise ValueError("persisted roadmap binding manifest hash invalid")
     expected = {
+        "repository": "cesarmanuel8102/AI_Vault",
+        "integration_branch": "codex/own-capital-sustainable-return",
+        "approval_status": "HUMAN_ADOPTED",
+        "r0_status": "CLOSED_HUMAN_ADOPTED",
         "roadmap_id": spec.get("roadmap_id"),
         "roadmap_version": spec.get("roadmap_version"),
         "roadmap_item_id": spec.get("roadmap_item_id"),
+        "roadmap_item_status": "AUTHORIZED_ACTIVE",
         "roadmap_sha256": spec.get("roadmap_sha256"),
         "base_sha": spec.get("expected_base_sha"),
         "dependencies": sorted(spec_dependencies),
@@ -1506,8 +1516,9 @@ def write_executor_report(cfg, spec, repo_dir, issue_no, cycle, changes, test_ok
         data["roadmap_binding"] = {
             key: copy.deepcopy(binding[key])
             for key in (
+                "repository", "integration_branch", "approval_status", "r0_status",
                 "roadmap_id", "roadmap_version", "roadmap_item_id", "roadmap_sha256",
-                "manifest_sha256", "base_sha", "dependencies",
+                "roadmap_item_status", "manifest_sha256", "base_sha", "dependencies",
             )
         }
         data["human_final_authority"] = state["spec"]["human_final_authority"]

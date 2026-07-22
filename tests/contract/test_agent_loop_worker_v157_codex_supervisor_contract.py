@@ -77,6 +77,12 @@ def test_supervisor_prompt_preserves_no_merge_no_canonical_sync() -> None:
     assert "Missing or mismatched canonical roadmap governance evidence is BLOCKED" in text
 
 
+def test_supervisor_requires_explicit_canonical_governance_binding_fields() -> None:
+    text = _prompt()
+    for field in ("repository", "integration_branch", "approval_status", "r0_status", "roadmap_item_status"):
+        assert f"`{field}`" in text
+
+
 def test_review_schema_is_strict_json_schema() -> None:
     schema = _schema()
     assert schema["type"] == "object"
@@ -155,6 +161,7 @@ def main() -> int:
         test_supervisor_prompt_requires_relative_workspace_path,
         test_supervisor_prompt_requires_deterministic_transport,
         test_supervisor_prompt_preserves_no_merge_no_canonical_sync,
+        test_supervisor_requires_explicit_canonical_governance_binding_fields,
         test_review_schema_is_strict_json_schema,
         test_workflow_deterministic_codex_publish_topology,
         test_workflow_verdict_transitions_are_explicit,
