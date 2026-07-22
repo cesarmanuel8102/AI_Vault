@@ -844,20 +844,49 @@ def validate_roadmap_contract(cfg: dict, spec: dict) -> dict:
 
 
 def validate_persisted_roadmap_binding(st: dict) -> None:
+    spec = st.get("spec") or {}
+    roadmap_spec_fields = {
+        "roadmap_id",
+        "roadmap_version",
+        "roadmap_sha256",
+        "roadmap_item_id",
+        "dependencies",
+        "human_final_authority",
+    }
     binding = st.get("roadmap_binding")
     if binding is None:
+        if any(field in spec for field in roadmap_spec_fields):
+            raise ValueError("persisted roadmap binding missing")
         return  # Pre-R1 state retained for backward-compatible recovery only.
     if not isinstance(binding, dict) or binding.get("schema_version") != 1:
         raise ValueError("persisted roadmap binding invalid")
-    spec = st.get("spec") or {}
+
+    spec_dependencies = spec.get("dependencies")
+    binding_dependencies = binding.get("dependencies")
+    for dependencies in (spec_dependencies, binding_dependencies):
+        if (
+            not isinstance(dependencies, list)
+            or not all(isinstance(value, str) for value in dependencies)
+            or len(dependencies) != len(set(dependencies))
+        ):
+            raise ValueError("persisted roadmap binding dependencies invalid")
+
+    manifest_sha256 = binding.get("manifest_sha256")
+    if not isinstance(manifest_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", manifest_sha256):
+        raise ValueError("persisted roadmap binding manifest hash invalid")
     expected = {
         "roadmap_id": spec.get("roadmap_id"),
         "roadmap_version": spec.get("roadmap_version"),
         "roadmap_item_id": spec.get("roadmap_item_id"),
         "roadmap_sha256": spec.get("roadmap_sha256"),
         "base_sha": spec.get("expected_base_sha"),
+        "dependencies": sorted(spec_dependencies),
+        "manifest_path": ROADMAP_MANIFEST_PATH,
+        "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
     }
-    if any(binding.get(key) != value for key, value in expected.items()):
+    actual = dict(binding)
+    actual["dependencies"] = sorted(binding_dependencies)
+    if any(actual.get(key) != value for key, value in expected.items()):
         raise ValueError("persisted roadmap binding mismatch")
 
 def parse_spec(issue: dict, cfg: dict) -> dict:

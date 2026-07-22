@@ -89,6 +89,15 @@ def expect_error(spec, contains, current_cfg=None):
         raise AssertionError(f"expected error containing {contains!r}")
 
 
+def expect_persisted_error(state, contains):
+    try:
+        worker.validate_persisted_roadmap_binding(state)
+    except Exception as exc:
+        assert contains.lower() in str(exc).lower(), (contains, str(exc))
+    else:
+        raise AssertionError(f"expected persisted error containing {contains!r}")
+
+
 binding = worker.validate_roadmap_contract(cfg(), valid_spec())
 assert binding["roadmap_id"] == "BRAIN-101"
 assert binding["roadmap_item_id"] == "R1.1"
@@ -139,15 +148,27 @@ try:
 finally:
     worker.gh_json = original_gh_json
 
-state = {"spec": valid_spec(), "roadmap_binding": binding}
+worker.validate_persisted_roadmap_binding({"spec": {"front_id": "PRE-R1"}})
+expect_persisted_error({"spec": valid_spec()}, "persisted roadmap binding missing")
+
+state = {"spec": valid_spec(), "roadmap_binding": copy.deepcopy(binding)}
 worker.validate_persisted_roadmap_binding(state)
-state["spec"]["roadmap_item_id"] = "R1.2"
-try:
-    worker.validate_persisted_roadmap_binding(state)
-except ValueError as exc:
-    assert "binding mismatch" in str(exc)
-else:
-    raise AssertionError("persisted binding mutation was accepted")
+mutated = copy.deepcopy(state)
+mutated["spec"]["roadmap_item_id"] = "R1.2"
+expect_persisted_error(mutated, "binding mismatch")
+mutated = copy.deepcopy(state)
+mutated["spec"]["dependencies"] = ["R9.9"]
+expect_persisted_error(mutated, "binding mismatch")
+mutated = copy.deepcopy(state)
+del mutated["roadmap_binding"]["manifest_sha256"]
+expect_persisted_error(mutated, "manifest hash invalid")
+for invalid_hash in ("A" * 64, "not-a-sha"):
+    mutated = copy.deepcopy(state)
+    mutated["roadmap_binding"]["manifest_sha256"] = invalid_hash
+    expect_persisted_error(mutated, "manifest hash invalid")
+mutated = copy.deepcopy(state)
+mutated["roadmap_binding"]["dependencies"] = ["R0", "R0"]
+expect_persisted_error(mutated, "dependencies invalid")
 
 with tempfile.TemporaryDirectory() as td:
     runtime_cfg = cfg(install_root=td)
@@ -172,6 +193,55 @@ with tempfile.TemporaryDirectory() as td:
         assert saved["roadmap_binding"]["roadmap_item_id"] == "R1.1"
         assert calls[0][0] == "roadmap_manifest_validated"
         assert calls[1] == "execute"
+    finally:
+        for name, value in originals.items():
+            setattr(worker, name, value)
+
+with tempfile.TemporaryDirectory() as td:
+    runtime_cfg = cfg(install_root=td)
+    issue = {
+        "number": 102,
+        "title": "Invalid R1.1",
+        "body": "",
+        "author": {"login": "cesarmanuel8102"},
+        "labels": [{"name": "agent:queued"}],
+        "url": "https://example.invalid/102",
+    }
+    invalid_spec = valid_spec()
+    invalid_spec["roadmap_sha256"] = "0" * 64
+    calls = []
+    saved_statuses = []
+    originals = {
+        name: getattr(worker, name)
+        for name in ("gh_json", "parse_spec", "execute_initial", "event", "save_json", "set_converged_phase", "publish_terminal_notification")
+    }
+    try:
+        worker.gh_json = lambda args: [issue] if args[:2] == ["issue", "list"] else (_ for _ in ()).throw(AssertionError(args))
+        worker.parse_spec = lambda *_args: invalid_spec
+        worker.execute_initial = lambda *_args: calls.append("execute")
+        worker.event = lambda _cfg, kind, **fields: calls.append((kind, fields))
+
+        def save_state(path, current):
+            saved_statuses.append(current.get("status"))
+            originals["save_json"](path, current)
+
+        worker.save_json = save_state
+
+        def set_phase(_cfg, state_path, current, phase, **_kwargs):
+            current = dict(current)
+            current["status"] = phase
+            worker.save_json(state_path, current)
+            return current
+
+        worker.set_converged_phase = set_phase
+        worker.publish_terminal_notification = lambda _cfg, _state_path, current, _phase, _message: current
+        worker.process_once(runtime_cfg)
+        state_path = Path(td) / "state" / "issue-102.json"
+        saved = json.loads(state_path.read_text(encoding="utf-8"))
+        assert saved["status"] == "loop:blocked"
+        assert "LOCAL_EXECUTION" not in saved_statuses
+        assert "execute" not in calls
+        assert not any(isinstance(call, tuple) and call[0] == "roadmap_manifest_validated" for call in calls)
     finally:
         for name, value in originals.items():
             setattr(worker, name, value)
