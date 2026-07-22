@@ -4761,20 +4761,22 @@
     "schema_version": 1,
     "roadmap_id": "BRAIN-101",
     "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-    "status": "READY_FOR_BRAIN_101_ROADMAP_ADOPTION",
-    "approval_status": "PENDING_HUMAN_ADOPTION",
+    "status": "R0_CLOSED_ROADMAP_ADOPTED",
+    "approval_status": "HUMAN_ADOPTED",
     "current_phase": "R0",
     "rebaseline_source_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
     "adoption_pr": 35,
-    "adoption_pr_head": "aba597e92007b878171be27ba750c83352b3ef77",
-    "adoption_pr_head_semantics": "PR head observed before the evidence-binding repair commit; resolve the live head through adoption_pr",
-    "adoption_merge_commit": null,
+    "adoption_pr_head": "a605c4d88510acd477cf26d2787bc38b1c02af48",
+    "adoption_pr_head_semantics": "Final PR head reviewed and authorized by the human owner",
+    "adoption_merge_commit": "5b9f101a6d5ec5b314d9413cc5c12d66fec6d94f",
+    "adopted_at_utc": "2026-07-22T14:02:16Z",
     "score": {
       "base": 41,
       "resilience_bonus": 0,
-      "auditability": "PROVISIONAL_PENDING_EVIDENCE_BINDING"
+      "auditability": "R0_EVIDENCE_BOUND_AND_ADOPTED"
     },
     "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
-    "next_phase_after_adoption": "R1"
+    "next_phase_after_adoption": "R1",
+    "next_gate": "Human authorization to begin R1.1 roadmap manifest validation"
   }
 }

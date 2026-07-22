@@ -9070,7 +9070,7 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - `ROADMAP_STATUS.json`
 
 ### Governance
-- Status: `READY_FOR_BRAIN_101_ROADMAP_ADOPTION`.
-- R0 is not closed until human review and merge of the documentation Draft PR.
+- Status: `R0_CLOSED_ROADMAP_ADOPTED`.
+- R0 closed through human-authorized normal merge of PR #35 at `5b9f101a6d5ec5b314d9413cc5c12d66fec6d94f`; the reviewed PR head was `a605c4d88510acd477cf26d2787bc38b1c02af48`.
 - No production code, trading, risk limits, auto-merge, or canonical local sync changed.
-- Next gate after adoption: R1, Agent Loop roadmap-aware.
+- R1 has not started. Next gate: human authorization for R1.1, Agent Loop roadmap manifest validation.
