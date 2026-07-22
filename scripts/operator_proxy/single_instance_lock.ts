@@ -1,0 +1,1 @@
+import {openSync,closeSync,unlinkSync} from "node:fs";export function lock(path:string){let fd:number;try{fd=openSync(path,"wx");}catch{throw new Error("operator proxy lock occupied");}return()=>{closeSync(fd);try{unlinkSync(path);}catch{}};}

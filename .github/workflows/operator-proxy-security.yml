@@ -1,0 +1,12 @@
+name: Operator Proxy Security
+on: {pull_request: {paths: ['scripts/operator_proxy/**','tests/contract/operator_proxy/**','.github/workflows/operator-proxy-**']}}
+permissions: {contents: read}
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: |
+          ! git grep -nE '(gho_|github_pat_|OPENAI_API_KEY=)' -- scripts/operator_proxy tests/contract/operator_proxy
+          ! git grep -nE '(reset --hard|push --force|--squash|--rebase|EnableAutoMerge)' -- scripts/operator_proxy
+          git diff --check ${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}

@@ -1,0 +1,1 @@
+import {execFileSync} from "node:child_process";export function runReviewer(codex:string,prompt:string,cwd:string,session:string){return execFileSync(codex,["exec","--sandbox","read-only","-C",cwd,prompt],{encoding:"utf8",env:{...process.env,OPERATOR_PROXY_SESSION:session}});}

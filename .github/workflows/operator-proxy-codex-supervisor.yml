@@ -1,0 +1,13 @@
+name: Operator Proxy Codex Supervisor
+on: {pull_request: {paths: ['scripts/operator_proxy/**','tests/contract/operator_proxy/**','docs/operator_proxy/**']}}
+permissions: {contents: read}
+jobs:
+  boundary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: |
+          grep -q 'builder_session!==e.review_session' scripts/operator_proxy/policy_engine.ts
+          grep -q 'ESCALATE_TO_OWNER' scripts/operator_proxy/policy_engine.ts
+          grep -q -- '--match-head-commit' scripts/operator_proxy/github_bus.ts
+          ! grep -RniE '(--auto-merge|--squash|--rebase|--force-with-lease|push --force)' scripts/operator_proxy/*.ts

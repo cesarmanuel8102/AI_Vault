@@ -1,0 +1,1 @@
+{"name":"ai-vault-operator-proxy","version":"0.1.0","private":true,"type":"module","scripts":{"typecheck":"tsc --noEmit","test":"tsx --test ../../tests/contract/operator_proxy/*.test.ts","doctor":"tsx operator_proxy.ts --doctor"},"devDependencies":{"@types/node":"26.1.1","tsx":"4.23.1","typescript":"7.0.2"}}
