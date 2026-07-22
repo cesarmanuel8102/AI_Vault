@@ -1,40 +1,4780 @@
 {
-  "schema_version": 2,
-  "roadmap_id": "BRAIN-101",
-  "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-  "status": "READY_FOR_BRAIN_101_ROADMAP_ADOPTION",
-  "approval_status": "PENDING_HUMAN_ADOPTION",
-  "current_phase": "R0",
-  "current_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
-  "integration_branch": "codex/own-capital-sustainable-return",
-  "documentation_branch": "codex/brain-101-r0-rebaseline",
-  "baseline_audit_head": "759edfb",
-  "score": {
-    "base": 49,
-    "resilience_bonus": 0,
-    "certified": null
+  "current_head": "3f6fc8d",
+  "current_remote_head": "pending_push",
+  "branch": "codex/own-capital-sustainable-return",
+  "migration_status": "agent_v2_total_operational_excellence_closeout_ready",
+  "last_applied_checkpoint": "BRAIN-AGENT-V2-TOTAL-OPERATIONAL-EXCELLENCE-CLOSEOUT-01",
+  "completed_fronts": [
+    "BL-01",
+    "B3_fake_grounded_dashboard_runtime",
+    "N1_fabricated_metrics_fix",
+    "F1_security_validation_suite",
+    "P2-F_GitHubSourceConnector",
+    "N2_auto_approval_bypass_hardening",
+    "Agent_Visual_Trace_Console",
+    "TOOL01_governed_filesystem_read_write",
+    "GAK_natural_language_governed_actions",
+    "B7_session_py_dedup_and_heuristic_audit",
+    "B1_routing_authority_mitigation",
+    "B2_orphan_modules_audit",
+    "N5_import_path_test_hygiene",
+    "MRC-01A_post_GAK_ledger_reconciliation",
+    "VTC_v1_trace_redaction_hardening_and_closeout",
+    "VTC_F1_operator_access_runbook",
+    "VTC_F2_sse_e2e_automated_test",
+    "Phase0_Security",
+    "Chat_Ops",
+    "PUSH_SYNC_01",
+    "PROMOTION_GATE_V1_CONTRACT",
+    "PROMOTION_GATE_V1_DRY_RUN_COORDINATOR",
+    "RUNTIME_READONLY_LOOKUP",
+    "RUNTIME_READONLY_LOOKUP_ENDPOINTS",
+    "RUNTIME_READONLY_LOOKUP_CHAT_COMMAND",
+    "RUNTIME_READONLY_LOOKUP_DEMO_SEARCH_ENDPOINT",
+    "EXTERNAL_SOURCE_CONNECTIVITY_SMOKE",
+    "EXTERNAL_SOURCE_INGESTION_DRY_RUN_REAL_SOURCE",
+    "EXTERNAL_SOURCE_CANDIDATE_REVIEW_GATE_DRY_RUN",
+    "EXTERNAL_SOURCE_OPERATOR_REVIEW_QUEUE_DRY_RUN",
+    "EXTERNAL_SOURCE_PROMOTION_PLAN_DRY_RUN",
+    "EXTERNAL_SOURCE_LEARNING_RESULTS_REPORT_DRY_RUN",
+    "RUNTIME_READONLY_EXTERNAL_KNOWLEDGE_RESULTS_ENDPOINT_DRY_RUN",
+    "SELF_IMPROVEMENT_FIRST_FIVE_LEARNING_FRONTS_DRY_RUN",
+    "SELF_IMPROVEMENT_FIRST_FIVE_UTILITY_EVALUATION_DRY_RUN",
+    "SELF_IMPROVEMENT_FIRST_FIVE_LIVE_SOURCE_VALIDATION_DRY_RUN",
+    "SELF_IMPROVEMENT_FIRST_FIVE_BENCHMARK_DESIGN_DRY_RUN",
+    "SELF_IMPROVEMENT_FIRST_FIVE_BENCHMARK_HARNESS_DRY_RUN",
+    "SELF_IMPROVEMENT_FIRST_FIVE_PATCH_RECOMMENDATION_DRY_RUN",
+    "SELF_IMPROVEMENT_FIRST_FIVE_PATCH_PLAN_DRY_RUN",
+    "SELF_IMPROVEMENT_FIRST_FIVE_PATCH_PLAN_REVIEW_DRY_RUN",
+    "SELF_IMPROVEMENT_FIRST_FIVE_PATCH_GENERATION_DRY_RUN",
+    "SELF-IMPROVEMENT-FIRST-FIVE-PATCH-GENERATION-REVIEW-DRY-RUN-01",
+    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-DRY-RUN-01",
+    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-REVIEW-DRY-RUN-01",
+    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-PLAN-REVIEW-DRY-RUN-02",
+    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-IMPLEMENTATION-PLAN-DRY-RUN-01",
+    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-IMPLEMENTATION-PLAN-REVIEW-DRY-RUN-01",
+    "RUNTIME-DASHBOARD-CHAT-RECOVERY-01",
+    "RUNTIME-DASHBOARD-CHAT-RECOVERY-SMOKE-FIX-01",
+    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-DRY-RUN-01",
+    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-PLAN-REVIEW-DRY-RUN-01",
+    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-DRY-RUN-01",
+    "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-REVIEW-DRY-RUN-01",
+    "FRONT-SEC-01",
+    "FRONT-SEC-01-SECRET-HYGIENE",
+    "FRONT-SEC-02",
+    "FRONT-SEC-03",
+    "FRONT-TEST-01",
+    "FRONT-TEST-02",
+    "FRONT-TEST-03",
+    "FRONT-REAL-CANARY-PLAN-01",
+    "FRONT-REAL-CANARY-EXEC-FINAL-GO-NOGO-01",
+    "FRONT-REAL-CANARY-EXEC-01",
+    "FRONT-REAL-CANARY-POST-AUDIT-01",
+    "FRONT-REAL-CANARY-RETENTION-01",
+    "FRONT-INFRA-03",
+    "FRONT-REAL-READ-VERIFY-01",
+    "FRONT-REAL-READ-LOOKUP-ADAPTER-01",
+    "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-01",
+    "FRONT-MAIN-PY-DIRTY-TRIAGE-01",
+    "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01",
+    "FRONT-MAIN-PY-DIRTY-COMMIT-01",
+    "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01",
+    "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01",
+    "FRONT-BRAIN-KNOWLEDGE-READ-API-01",
+    "FRONT-REAL-MEMORY-FAISS-PROMOTION-01",
+    "FRONT-REAL-PATCH-MATERIALIZATION-01",
+    "FRONT-EXTERNAL-AUDIT-DELTA-RECONCILIATION-01",
+    "FRONT-SECURITY-PHASE0-REVERIFY-01",
+    "FRONT-SECURITY-RBAC-MINIMAL-01",
+    "FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01",
+    "FRONT-INGESTION-REGISTRY-01",
+    "FRONT-INGESTION-DRY-RUN-01",
+    "FRONT-INGESTION-OPERATOR-REVIEW-01",
+    "FRONT-INGESTION-APPROVAL-DECISION-DRY-RUN-01",
+    "FRONT-INGESTION-REVIEWED-DRY-RUN-EXECUTION-01",
+    "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01",
+    "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-02",
+    "FRONT-RUNTIME-RECOVERY-REAL-EXECUTION-GATE-01",
+    "FRONT-RUNTIME-ACTUAL-STARTUP-VERIFY-01",
+    "FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01",
+    "FRONT-FIRST-REAL-LOCAL-MEMORY-FAISS-CANARY-01",
+    "FRONT-BRAIN-LEARNING-VERIFICATION-CHAT-AND-DIRECT-01",
+    "FRONT-FIRST-REAL-LOCAL-INGESTION-CONTROLLED-BATCH-01",
+    "FRONT-CONTROLLED-BATCH-RETRIEVAL-QUALITY-EVAL-01",
+    "FRONT-CHAT-ROUTE-LATENCY-STABILIZATION-01",
+    "FRONT-CHAT-ROUTE-LEARNING-RETRIEVAL-INTEGRATION-VERIFY-01",
+    "FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-AUTHORIZATION-01",
+    "FRONT-CHAT-ROUTE-RETRIEVAL-INJECTION-PATCH-01",
+    "FRONT-CHAT-RETRIEVAL-INJECTION-REPAIR-01",
+    "FRONT-CHAT-RETRIEVAL-EVIDENCE-TRACE-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-AGENTIC-SYSTEMS-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-EVALUATION-BENCHMARKING-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-MEMORY-RAG-KNOWLEDGE-ARCHITECTURE-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-SECURITY-GOVERNANCE-SANDBOXING-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-AUTONOMOUS-CODING-PATCH-GENERATION-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-USAGE-REPAIR-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-RUNTIME-PATCH-01",
+    "FRONT-CHAT-UI-LIVE-RUNTIME-SOURCE-RECOVERY-AND-CURATED-WIRING-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-EXECUTE-SECURITY-GOVERNANCE-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-POST-INGESTION-VERIFY-SECURITY-GOVERNANCE-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-RETRIEVAL-EVAL-SECURITY-GOVERNANCE-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-PREP-SECURITY-GOVERNANCE-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-EXECUTE-SECURITY-GOVERNANCE-01",
+    "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-POST-PROMOTION-VERIFY-SECURITY-GOVERNANCE-01",
+    "FRONT-RUNTIME-PATH-ALIGNMENT-CANONICAL-VERIFY-01",
+    "FRONT-LEGACY-PATH-CLEANUP-PLAN-01",
+    "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01",
+    "FRONT-LEGACY-PATH-CLEANUP-RETRY-POST-REBOOT-01",
+    "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
+    "FRONT-LEGACY-LOCK-RELEASE-AND-QUARANTINE-RETRY-01",
+    "FRONT-CHAT-UI-E2E-FAILURE-DIAGNOSTIC-01",
+    "FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01",
+    "FRONT-CHAT-ROUTER-PRESERVATION-ENTRYPOINT-01",
+    "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01",
+    "FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01",
+    "FRONT-CODEX-TO-BRAIN-GOVERNED-SELF-IMPROVEMENT-CYCLE-01",
+    "FRONT-BRAIN-V9-LLM-TIMEOUT-QUALITY-STABILIZATION-01",
+    "FRONT-CODEX-TO-BRAIN-EVALUATION-HARNESS-V2-01",
+    "FRONT-CHAT-UI-BRAIN-PROVIDER-CONFIG-8091-01",
+    "FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01",
+    "FRONT-CEI-FDOT-EVALUATION-PACK-01",
+    "FRONT-FINANCIAL-RESEARCH-SAFETY-PACK-01",
+    "FRONT-MEMORY-FAISS-RETRIEVAL-QUALITY-PACK-01",
+    "FRONT-BRAIN-AUTONOMOUS-OBSERVER-REPORTS-01",
+    "FRONT-BRAIN-GOVERNED-AUTONOMY-WALKER-V1",
+    "FRONT-BRAIN-TIMEOUT-GENERATION-QUALITY-FIX-01",
+    "FRONT-BRAIN-LLM-PROVIDER-CHAIN-OPTIMIZATION-01",
+    "FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01",
+    "MACRO-FRONT-BRAIN-FINAL-AUTONOMY-ACCELERATION-CYCLE-01",
+    "FRONT-KIMI-K2-6-LIVE-CHAT-PROBE-AND-SAFETY-FILTER-01",
+    "MACRO-FRONT-BRAIN-AGGRESSIVE-GOVERNED-AUTONOMY-EXCELLENCE-01",
+    "MEGA-FRONT-BRAIN-SELF-TRAINING-AUTONOMY-MAXIMIZATION-200CYCLES-01",
+    "MEGA-FRONT-BRAIN-PERSISTENT-AUTONOMY-REAL-MEMORY-CHAT-DASHBOARD-01",
+    "FRONT-BRAIN-SCHEDULER-ENABLEMENT-AND-CONTINUOUS-AUTONOMY-01",
+    "FRONT-BRAIN-OPERATOR-DASHBOARD-UX-AND-AUTONOMY-VISIBILITY-01",
+    "FRONT-BRAIN-PREFLIGHT-JOURNAL-CLEANUP-THEN-RERUN-STABILITY-CYCLES-01",
+    "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01-RETRY-AFTER-ADMIN-STOP",
+    "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-RERUN-01",
+    "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-SCALEUP-01",
+    "FRONT-BRAIN-PROVIDER-RELIABILITY-ROOTCAUSE-01",
+    "RESTART-BRAIN-8091-LOAD-PATCHED-PROVIDER-ROUTE-01",
+    "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-01",
+    "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
+    "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-02",
+    "FRONT-BRAIN-LLM-GROUNDED-MEMORY-PROMOTION-AUDIT-01",
+    "FRONT-BRAIN-MEMORY-PROMOTION-REVIEW-AND-APPROVE-ALL-PASSING-01",
+    "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-EXECUTE-APPROVED-01",
+    "FRONT-BRAIN-CANONICAL-MEMORY-POST-PROMOTION-QUALITY-EVAL-01",
+    "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
+    "FRONT-BRAIN-CODEX-TRAINING-MEMORY-MUTATION-FORENSIC-CLOSEOUT-01",
+    "BRAIN_AGENT_V2_TOTAL_OPERATIONAL_EXCELLENCE_CLOSEOUT"
+  ],
+  "open_fronts": [],
+  "blocked_fronts": [
+    "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
+    "FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01",
+    "FRONT-LEGACY-LOCK-HANDLE-TOOL-INSTALL-OR-SAFE-MODE-PLAN-01",
+    "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
+    "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-01",
+    "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
+    "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-KIMI-MITIGATION-01"
+  ],
+  "protected_out_of_scope": [
+    "memory/semantic",
+    "tmp_agent/strategies",
+    "tmp_agent/reports"
+  ],
+  "recommended_next_front": {
+    "name": "FRONT-BRAIN-CODEX-PURE-BRAIN-TRAINING-EXPANSION-02",
+    "status": "recommended_next",
+    "reason": "Codex-to-Brain autonomous training completed with pending drain and canonical promotion metrics."
   },
-  "invariants": {
-    "human_final_authority": true,
-    "auto_merge": false,
-    "canonical_local_sync": false,
-    "live_trading_enabled": false,
-    "production_modified_by_r0": false,
-    "trading_executed_by_r0": false
+  "ready_for_next_front": true,
+  "last_updated": "2026-06-16T00:01:39.703+00:00",
+  "phase0_security": {
+    "status": "done",
+    "commits": [
+      "35fc676c",
+      "53ca0f16",
+      "0dcce5bd"
+    ],
+    "remote_synced": true,
+    "validation": {
+      "phase0_tests": "14 passed",
+      "py_compile": "passed"
+    },
+    "notes": [
+      ".dev_auth no trackeado y cubierto por .gitignore",
+      "GOD P3 guardrail aplicado",
+      "dev endpoints default OFF",
+      "selfdev protected paths aplicado"
+    ]
   },
-  "agent_loop_runtime_evidence": {
-    "worker_sha256": "5261A8EDA5EEA8A2851F2088454BD4A129BE4072D06AD7F8621F6C176DEEA79A",
-    "config_sha256": "AF6515841140487EADAA66B2BD2D647FC899E570446EDA88857401C8221C0D25",
-    "scheduled_task": "AI_Vault_Kimi_GitHub_Worker",
-    "task_state": "Running",
-    "active_worker_count": 1,
-    "pilot_issue": 33,
-    "pilot_pr": 34,
-    "pilot_pr_head": "8b9c08b417992b8bcc883f4c7690e4e04d4fdc83",
-    "pilot_status": "loop:ready-human-audit",
-    "pilot_draft": true,
-    "pilot_checks": "SUCCESS"
+  "chat_ops": {
+    "status": "done",
+    "commit": "347eb1a5",
+    "remote_synced": true,
+    "validation": {
+      "sequence_control": "passed",
+      "tool01_git_status_permission": "passed",
+      "tool01_git_diff_permission": "passed",
+      "last_result_followup": "passed"
+    },
+    "notes": [
+      "inline sequence fixed",
+      "continua no LLM",
+      "git.diff analysis real"
+    ]
   },
-  "next_gate": "Human review and merge of the R0 documentation Draft PR",
-  "next_phase_after_adoption": "R1"
+  "push_sync": {
+    "status": "done",
+    "remote_before": "f389b164",
+    "remote_after": "347eb1a5",
+    "push_type": "normal",
+    "force_push": false,
+    "merge_rebase": false
+  },
+  "promotion_gate_v1_contract": {
+    "status": "done",
+    "commit": "ddfec7aa",
+    "remote_synced": true,
+    "tests": "33 passed",
+    "real_write_allowed": false,
+    "files": [
+      "brain/promotion_gate_v1.py",
+      "tests/unit/test_promotion_gate_v1_contract.py",
+      "tests/unit/test_promotion_gate_v1_no_go.py"
+    ],
+    "notes": [
+      "Contract and validator implementation",
+      "Dry-run only, no real writes",
+      "33 tests passing"
+    ]
+  },
+  "promotion_gate_v1_dry_run_coordinator": {
+    "status": "done",
+    "commit": "69f70127",
+    "remote_synced": true,
+    "files": [
+      "brain/promotion_gate_v1_coordinator.py",
+      "tests/unit/test_promotion_gate_v1_coordinator.py",
+      "tests/smoke/smoke_promotion_gate_v1_coordinator_dry_run.py"
+    ],
+    "tests": {
+      "coordinator_smoke": "15 passed",
+      "gate_existing": "33 passed",
+      "total": "48 passed"
+    },
+    "guarantees": {
+      "no_runtime_modified": true,
+      "no_memory_semantic_modified": true,
+      "no_trading_touched": true,
+      "no_b8_touched": true,
+      "real_write_allowed": false,
+      "faiss_write_allowed": false,
+      "dry_run_verified_is_not_real_promotion": true
+    }
+  },
+  "real_write_status": {
+    "status": "blocked",
+    "reason": "runtime lookup module, endpoints, and explicit chat command are read-only; rollback fixture and production write gate not implemented"
+  },
+  "runtime_readonly_lookup": {
+    "status": "done",
+    "commit": "05cf8f79",
+    "remote_synced": true,
+    "files": [
+      "brain/curated_runtime_lookup.py",
+      "tests/unit/test_curated_runtime_lookup.py",
+      "tests/smoke/smoke_curated_runtime_lookup_readonly.py",
+      "tests/fixtures/readonly_lookup_index.jsonl"
+    ],
+    "tests": {
+      "unit_tests": "20 passed",
+      "smoke_tests": "8 passed",
+      "total": "28 passed"
+    },
+    "guarantees": {
+      "no_runtime_modified": true,
+      "no_memory_semantic_modified": true,
+      "no_trading_touched": true,
+      "no_b8_touched": true,
+      "real_write_allowed": false,
+      "faiss_write_allowed": false,
+      "dry_run_verified_is_not_real_promotion": true,
+      "module_is_read_only": true
+    },
+    "endpoints": {
+      "status": "done",
+      "commit": "0e0eaadf",
+      "remote_synced": true,
+      "routes": [
+        "GET /brain/curated-knowledge/status",
+        "POST /brain/curated-knowledge/search"
+      ],
+      "files": [
+        "tmp_agent/brain_v9/main.py",
+        "tests/smoke/smoke_runtime_readonly_lookup_endpoints.py"
+      ],
+      "tests": {
+        "py_compile": "PASS",
+        "isolated_smoke": "12 passed",
+        "full_validation": "40 passed"
+      },
+      "guarantees": {
+        "operator_access": true,
+        "no_llm_fallback": true,
+        "no_real_writes": true,
+        "no_faiss_writes": true,
+        "no_memory_semantic_write": true,
+        "no_trading_b8_touched": true,
+        "evidence_not_committed": true
+      },
+      "limitations": {
+        "chat_command_implemented": true,
+        "external_curated_ingestion_dry_run_executed": false,
+        "real_writes": "blocked",
+        "automatic_context_injection": "blocked"
+      }
+    },
+    "chat_command": {
+      "status": "done",
+      "commit": "affc6614",
+      "remote_synced": true,
+      "route": "curated_lookup_readonly",
+      "triggers": [
+        "busca en conocimiento curado: <query>",
+        "quÃÆÃÂ© aprendiste sobre <query>",
+        "que aprendiste sobre <query>",
+        "usa curated knowledge para responder <query>",
+        "usa conocimiento curado para responder <query>"
+      ],
+      "files": [
+        "tmp_agent/brain_v9/core/session.py",
+        "tests/smoke/smoke_runtime_readonly_lookup_chat_command.py"
+      ],
+      "tests": {
+        "py_compile": "PASS",
+        "isolated_smoke": "13 passed",
+        "curated_suite": "53 passed"
+      },
+      "guarantees": {
+        "explicit_command_only": true,
+        "label_required": "verified_curated_readonly",
+        "no_llm_fallback": true,
+        "no_save_turn_in_curated_route": true,
+        "no_real_writes": true,
+        "no_faiss_writes": true,
+        "no_memory_semantic_write": true,
+        "no_automatic_context_injection": true,
+        "no_chain_of_thought_exposure": true
+      },
+      "limitations": {
+        "external_curated_ingestion_dry_run_executed": false,
+        "real_writes": "blocked",
+        "automatic_context_injection": "blocked",
+        "promotion_to_real_memory": "blocked"
+      }
+    },
+    "demo_search_endpoint": {
+      "status": "done",
+      "commit": "99450804",
+      "remote_synced": true,
+      "route": "POST /brain/curated-knowledge/demo-search",
+      "request_model": "CuratedKnowledgeDemoSearchRequest",
+      "path_policy_helper": "_resolve_demo_curated_index_path",
+      "files": [
+        "tmp_agent/brain_v9/main.py",
+        "tests/smoke/smoke_runtime_readonly_lookup_demo_search_endpoint.py"
+      ],
+      "tests": {
+        "py_compile": "PASS",
+        "isolated_smoke": "14 passed",
+        "curated_suite": "67 passed"
+      },
+      "guarantees": {
+        "operator_access_required": true,
+        "demo_mode_required": true,
+        "path_must_be_under_tmp_agent": true,
+        "jsonl_only": true,
+        "rejects_memory_semantic": true,
+        "rejects_tmp_agent_strategies": true,
+        "rejects_git_paths": true,
+        "rejects_urls": true,
+        "rejects_path_traversal": true,
+        "uses_search_curated_candidates_index_path": true,
+        "response_label": "verified_curated_readonly_demo",
+        "no_default_lookup_index_mutation": true,
+        "no_global_env_override": true,
+        "no_chat_path_argument": true,
+        "no_real_writes": true,
+        "no_faiss_writes": true,
+        "no_memory_semantic_write": true
+      },
+      "limitations": {
+        "real_writes": "blocked",
+        "automatic_context_injection": "blocked",
+        "promotion_to_real_memory": "blocked",
+        "chat_demo_path": "not implemented by design"
+      }
+    }
+  },
+  "trading_phase299": {
+    "status": "deferred_final_integration",
+    "note": "User will continue trading/QC work separately and provide results later for integration."
+  },
+  "b8": {
+    "status": "paused",
+    "note": "Do not resume until explicitly approved."
+  },
+  "next_recommended_fronts": [
+    "RUNTIME_READONLY_LOOKUP_CHAT_COMMAND_PLAN_01",
+    "EXTERNAL-CURATED-INGESTION-DRY-RUN-DEMO-02",
+    "Curated ingestion / learning promotion audit-hardening",
+    "Persistent autonomy loop hardening",
+    "Governed self-rewrite hardening",
+    "Visual Trace Console MVP",
+    "main.py / repo hygiene",
+    "Trading final integration"
+  ],
+  "external_source_connectivity_smoke": {
+    "status": "done",
+    "commit": "5853ddaa",
+    "remote_synced": true,
+    "files": [
+      "brain/external_sources/__init__.py",
+      "brain/external_sources/connectivity_smoke.py",
+      "tests/smoke/smoke_external_source_connectivity.py"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "12 passed",
+      "github_authenticated_smoke_previously_passed": true,
+      "sec_smoke_previously_passed": true,
+      "docs_smoke_previously_passed": true,
+      "fred_deferred": true
+    },
+    "guarantees": {
+      "credential_aware": true,
+      "no_token_committed": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_curated_promotion": true
+    },
+    "limitations": {
+      "fred_api_key_missing": true,
+      "production_ingestion_not_enabled": true,
+      "promotion_to_memory_blocked": true
+    }
+  },
+  "external_source_ingestion_dry_run_real_source": {
+    "status": "done",
+    "commit": "2d449301",
+    "remote_synced": true,
+    "files": [
+      "brain/external_sources/real_source_ingestion_dry_run.py",
+      "tests/smoke/smoke_external_source_ingestion_dry_run.py"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "21 passed",
+      "dry_run_executed": true,
+      "candidate_gating_fixed": true,
+      "failed_http_sources_do_not_generate_candidates": true,
+      "all_candidates_http_200": true,
+      "candidates_only_from_passed_providers": true
+    },
+    "results": {
+      "normalized_records_count": 5,
+      "curated_candidates_count": 3,
+      "github_candidates_count": 1,
+      "sec_candidates_count": 1,
+      "docs_candidates_count": 1,
+      "fred_candidates_count": 0,
+      "openbb_candidates_count": 0,
+      "providers_passed": [
+        "github",
+        "sec",
+        "docs"
+      ],
+      "providers_deferred": [
+        "fred",
+        "openbb"
+      ]
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "credential_aware": true,
+      "no_token_committed": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_curated_promotion": true,
+      "no_candidate_from_failed_http_source": true
+    },
+    "limitations": {
+      "fred_api_key_missing": true,
+      "openbb_provider_planned": true,
+      "production_ingestion_not_enabled": true,
+      "promotion_to_memory_blocked": true,
+      "operator_review_required_before_promotion": true
+    }
+  },
+  "external_source_candidate_review_gate_dry_run": {
+    "status": "done",
+    "commit": "19bb3217",
+    "remote_synced": true,
+    "files": [
+      "brain/external_sources/candidate_review_gate_dry_run.py",
+      "tests/smoke/smoke_external_source_candidate_review_gate_dry_run.py"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "18 passed",
+      "review_gate_dry_run": "PASS",
+      "candidates_reviewed": 3,
+      "approved_for_operator_review": 3,
+      "operator_review_queue_count": 3
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "no_token_committed": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "operator_review_required_before_promotion": true
+    },
+    "decisions": {
+      "approved_for_operator_review": 3,
+      "needs_more_evidence": 0,
+      "rejected_low_quality": 0,
+      "rejected_policy_or_safety": 0,
+      "rejected_missing_provenance": 0
+    },
+    "limitations": {
+      "production_promotion_not_enabled": true,
+      "memory_write_still_blocked": true,
+      "faiss_write_still_blocked": true,
+      "operator_review_required": true
+    }
+  },
+  "external_source_operator_review_queue_dry_run": {
+    "status": "done",
+    "commit": "9e9ba861",
+    "remote_synced": true,
+    "queue_items": 3,
+    "approved_candidates_seen": 3,
+    "rejected_or_deferred_excluded": 0,
+    "operator_status": "pending_operator_review",
+    "files": [
+      "brain/external_sources/operator_review_queue_dry_run.py",
+      "tests/smoke/smoke_external_source_operator_review_queue_dry_run.py"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "26 passed",
+      "dry_run": "PASS",
+      "queue_items": 3,
+      "token_leak_detected": false
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "operator_review_required_before_promotion": true
+    },
+    "limitations": {
+      "production_promotion_not_enabled": true,
+      "memory_write_still_blocked": true,
+      "faiss_write_still_blocked": true,
+      "operator_decision_required": true
+    }
+  },
+  "external_source_promotion_plan_dry_run": {
+    "status": "done",
+    "commit": "2ee7af7b",
+    "remote_synced": true,
+    "promotion_plan_items": 3,
+    "eligible_for_future_operator_approval": 3,
+    "files": [
+      "brain/external_sources/promotion_plan_dry_run.py",
+      "tests/smoke/smoke_external_source_promotion_plan_dry_run.py"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "28 passed",
+      "dry_run": "PASS",
+      "promotion_plan_items": 3,
+      "token_leak_detected": false
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "no_runtime_integration": true,
+      "no_trading_use": true,
+      "no_b8_touch": true
+    },
+    "limitations": {
+      "requires_explicit_operator_approval_before_any_write": true,
+      "production_promotion_not_enabled": true,
+      "memory_write_still_blocked": true,
+      "faiss_write_still_blocked": true
+    }
+  },
+  "external_source_learning_results_report_dry_run": {
+    "status": "done",
+    "commit": "c742fcb0",
+    "remote_synced": true,
+    "learning_result_cards": 3,
+    "queue_items": 3,
+    "promotion_plan_items": 3,
+    "sources_seen": 5,
+    "records_normalized": 5,
+    "candidates_created": 3,
+    "candidates_approved": 3,
+    "files": [
+      "brain/external_sources/learning_results_report_dry_run.py",
+      "tests/smoke/smoke_external_source_learning_results_report_dry_run.py"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "23 passed",
+      "dry_run": "PASS",
+      "learning_result_cards": 3,
+      "token_leak_detected": false
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "operator_visible_results_available": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "no_runtime_chat_integration": true,
+      "no_trading_use": true,
+      "no_b8_touch": true
+    },
+    "limitations": {
+      "runtime_results_endpoint_not_implemented": true,
+      "production_promotion_not_enabled": true,
+      "memory_write_still_blocked": true,
+      "faiss_write_still_blocked": true
+    }
+  },
+  "runtime_readonly_external_knowledge_results_endpoint_dry_run": {
+    "status": "done",
+    "commit": "634040db",
+    "remote_synced": true,
+    "files": [
+      "brain/external_sources/learning_results_runtime_readonly.py",
+      "tests/smoke/smoke_external_source_learning_results_runtime_readonly.py"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "23 passed",
+      "readonly_response": "PASS",
+      "cards_loaded": 3,
+      "search_works": true,
+      "github_search_results": 2
+    },
+    "guarantees": {
+      "readonly": true,
+      "no_network_calls": true,
+      "no_llm": true,
+      "no_embeddings": true,
+      "no_faiss_write": true,
+      "no_memory_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "no_runtime_mutation": true,
+      "no_main_py_touch": true,
+      "no_session_py_touch": true,
+      "no_trading_use": true,
+      "no_b8_touch": true
+    },
+    "limitations": {
+      "chat_command_not_integrated": true,
+      "runtime_http_endpoint_not_integrated": true,
+      "memory_write_still_blocked": true,
+      "faiss_write_still_blocked": true,
+      "promotion_still_blocked": true
+    }
+  },
+  "self_improvement_first_five_learning_fronts_dry_run": {
+    "status": "done",
+    "commit": "fb26a30c",
+    "remote_synced": true,
+    "attempted_fronts": 5,
+    "fronts_enumerated": 5,
+    "candidates_generated": 5,
+    "useful_candidates": 5,
+    "needs_more_evidence": 0,
+    "rejected": 0,
+    "deferred_sources": [
+      {
+        "front_id": "MULTI_AGENT_SYSTEMS_ORCHESTRATION",
+        "provider": "live_external_fetch",
+        "status": "deferred",
+        "reason": "dry_run_offline_no_network_or_credentials_required"
+      },
+      {
+        "front_id": "EVALUATION_BENCHMARKS_QUALITY_GATES",
+        "provider": "live_external_fetch",
+        "status": "deferred",
+        "reason": "dry_run_offline_no_network_or_credentials_required"
+      },
+      {
+        "front_id": "MEMORY_RAG_KNOWLEDGE_STRUCTURE",
+        "provider": "live_external_fetch",
+        "status": "deferred",
+        "reason": "dry_run_offline_no_network_or_credentials_required"
+      },
+      {
+        "front_id": "SECURITY_SANDBOXING_SUPPLY_CHAIN",
+        "provider": "live_external_fetch",
+        "status": "deferred",
+        "reason": "dry_run_offline_no_network_or_credentials_required"
+      },
+      {
+        "front_id": "AUTO_CODING_AGENTS_PATCH_GENERATION",
+        "provider": "live_external_fetch",
+        "status": "deferred",
+        "reason": "dry_run_offline_no_network_or_credentials_required"
+      }
+    ],
+    "files": [
+      "brain/external_sources/self_improvement_first_five_ingestion_dry_run.py",
+      "tests/smoke/smoke_self_improvement_first_five_ingestion_dry_run.py"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "34 passed",
+      "dry_run": "PASS",
+      "token_leak_check": "PASS"
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "no_runtime_chat_integration": true,
+      "no_trading_use": true,
+      "no_b8_touch": true
+    },
+    "limitations": {
+      "live_external_fetch_deferred": true,
+      "utility_evaluation_not_run_yet": true,
+      "memory_write_still_blocked": true,
+      "promotion_still_blocked": true
+    }
+  },
+  "self_improvement_first_five_utility_evaluation_dry_run": {
+    "status": "done",
+    "commit": "ddad084a",
+    "remote_synced": true,
+    "candidates_evaluated": 5,
+    "utility_evaluations": 5,
+    "actionability_matrix_rows": 5,
+    "decisions": {
+      "not_actionable_yet": 3,
+      "ready_for_live_source_validation": 2
+    },
+    "ready_for_live_source_validation": 2,
+    "useful_but_needs_live_evidence": 0,
+    "useful_but_needs_benchmark": 0,
+    "rejected": 0,
+    "live_source_validation_required": 2,
+    "benchmark_required": 0,
+    "files": [
+      "brain/external_sources/self_improvement_first_five_utility_evaluation_dry_run.py",
+      "tests/smoke/smoke_self_improvement_first_five_utility_evaluation_dry_run.py"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "31 passed",
+      "dry_run": "PASS",
+      "token_leak_check": "PASS"
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "no_runtime_chat_integration": true,
+      "no_trading_use": true,
+      "no_b8_touch": true
+    },
+    "limitations": {
+      "live_source_validation_not_run_yet": true,
+      "benchmark_design_not_run_yet": true,
+      "memory_write_still_blocked": true,
+      "promotion_still_blocked": true
+    }
+  },
+  "self_improvement_first_five_live_source_validation_dry_run": {
+    "status": "done",
+    "commit": "af3febd5",
+    "remote_synced": true,
+    "candidates_selected": 2,
+    "validation_results": 2,
+    "validated_live_source": 0,
+    "partially_validated": 2,
+    "deferred_missing_credentials": 0,
+    "deferred_no_network": 0,
+    "not_found": 0,
+    "failed_safely": 0,
+    "files": [
+      "brain/external_sources/self_improvement_first_five_live_source_validation_dry_run.py",
+      "tests/smoke/smoke_self_improvement_first_five_live_source_validation_dry_run.py"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "38 passed",
+      "dry_run": "PASS",
+      "token_leak_check": "PASS",
+      "no_mutation_validation": "PASS"
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "no_raw_body_saved": true,
+      "no_token_logged": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "no_runtime_chat_integration": true,
+      "no_trading_use": true,
+      "no_b8_touch": true
+    },
+    "limitations": {
+      "github_api_requires_github_token": true,
+      "benchmark_design_not_run_yet": true,
+      "memory_write_still_blocked": true,
+      "promotion_still_blocked": true
+    }
+  },
+  "self_improvement_first_five_benchmark_design_dry_run": {
+    "status": "done",
+    "commit": "be98ee99",
+    "remote_synced": true,
+    "benchmark_designs": 5,
+    "execution_plan_created": true,
+    "execution_allowed_now": false,
+    "next_safe_front": "SELF-IMPROVEMENT-FIRST-FIVE-BENCHMARK-HARNESS-DRY-RUN-01",
+    "files": [
+      "brain/external_sources/self_improvement_first_five_benchmark_design_dry_run.py",
+      "tests/smoke/smoke_self_improvement_first_five_benchmark_design_dry_run.py"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "41 passed",
+      "dry_run": "PASS",
+      "token_leak_check": "PASS",
+      "no_mutation_validation": "PASS"
+    },
+    "guarantees": {
+      "dry_run_design_only": true,
+      "execution_allowed_now": false,
+      "no_benchmarks_executed": true,
+      "no_raw_body_saved": true,
+      "no_token_logged": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "no_runtime_chat_integration": true,
+      "no_trading_use": true,
+      "no_b8_touch": true
+    },
+    "limitations": {
+      "benchmark_harness_not_implemented": true,
+      "benchmark_execution_not_allowed_yet": true,
+      "memory_write_still_blocked": true,
+      "promotion_still_blocked": true
+    }
+  },
+  "self_improvement_first_five_benchmark_harness_dry_run": {
+    "status": "done",
+    "commit": "fb11e6d6",
+    "remote_synced": true,
+    "benchmark_runs": 5,
+    "scorecard_entries": 5,
+    "passed_count": 1,
+    "failed_count": 4,
+    "average_score": 0.7968,
+    "weaknesses_identified": 4,
+    "execution_dry_run_only": true,
+    "patches_generated": false,
+    "files": [
+      "brain/external_sources/self_improvement_first_five_benchmark_harness_dry_run.py",
+      "tests/smoke/smoke_self_improvement_first_five_benchmark_harness_dry_run.py"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "44 passed",
+      "dry_run": "PASS",
+      "token_leak_check": "PASS",
+      "no_mutation_validation": "PASS"
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "synthetic_fixtures_only": true,
+      "patches_generated": false,
+      "no_raw_body_saved": true,
+      "no_token_logged": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "no_runtime_chat_integration": true,
+      "no_trading_use": true,
+      "no_b8_touch": true
+    },
+    "limitations": {
+      "patch_recommendations_not_generated_yet": true,
+      "real_benchmark_execution_not_allowed_yet": true,
+      "memory_write_still_blocked": true,
+      "promotion_still_blocked": true
+    }
+  },
+  "self_improvement_first_five_patch_recommendation_dry_run": {
+    "status": "done",
+    "commit": "1a5f9801",
+    "remote_synced": true,
+    "recommendations_count": 4,
+    "high_priority_count": 0,
+    "medium_priority_count": 4,
+    "low_priority_count": 0,
+    "execution_allowed_now": false,
+    "patches_generated": false,
+    "patches_applied": false,
+    "next_safe_front": "SELF-IMPROVEMENT-FIRST-FIVE-PATCH-PLAN-DRY-RUN-01",
+    "files": [
+      "brain/external_sources/self_improvement_first_five_patch_recommendation_dry_run.py",
+      "tests/smoke/smoke_self_improvement_first_five_patch_recommendation_dry_run.py"
+    ],
+    "outputs": [
+      "first_five_patch_recommendations.json",
+      "first_five_patch_recommendations.jsonl",
+      "first_five_patch_recommendation_summary.json",
+      "first_five_patch_recommendation_roadmap.json",
+      "first_five_patch_recommendation_report.md"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "55 passed",
+      "dry_run": "PASS",
+      "token_leak_check": "PASS",
+      "no_mutation_validation": "PASS"
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "recommendations_only": true,
+      "patches_generated": false,
+      "patches_applied": false,
+      "applicable_diffs_generated": false,
+      "no_raw_body_saved": true,
+      "no_token_logged": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "no_runtime_chat_integration": true,
+      "no_trading_use": true,
+      "no_b8_touch": true
+    },
+    "limitations": {
+      "patch_plan_not_created_yet": true,
+      "patch_application_not_allowed_yet": true,
+      "memory_write_still_blocked": true,
+      "promotion_still_blocked": true
+    }
+  },
+  "self_improvement_first_five_patch_plan_dry_run": {
+    "status": "done",
+    "commit": "c864b4c6",
+    "remote_synced": true,
+    "plan_items": 4,
+    "high_priority_count": 0,
+    "medium_priority_count": 4,
+    "low_priority_count": 0,
+    "governance_status": "plan_only_not_executable",
+    "execution_allowed_now": false,
+    "patches_generated": false,
+    "patches_applied": false,
+    "next_safe_front": "SELF-IMPROVEMENT-FIRST-FIVE-PATCH-PLAN-REVIEW-DRY-RUN-01",
+    "files": [
+      "brain/external_sources/self_improvement_first_five_patch_plan_dry_run.py",
+      "tests/smoke/smoke_self_improvement_first_five_patch_plan_dry_run.py"
+    ],
+    "outputs": [
+      "first_five_patch_plan_items.json",
+      "first_five_patch_plan_items.jsonl",
+      "first_five_patch_plan_execution_order.json",
+      "first_five_patch_plan_governance.json",
+      "first_five_patch_plan_summary.json",
+      "first_five_patch_plan_report.md"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "71 passed",
+      "dry_run": "PASS",
+      "token_leak_check": "PASS",
+      "no_mutation_validation": "PASS"
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "plan_only_not_executable": true,
+      "applicable_diffs_generated": false,
+      "patches_generated": false,
+      "patches_applied": false,
+      "no_raw_body_saved": true,
+      "no_token_logged": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "no_runtime_chat_integration": true,
+      "no_trading_use": true,
+      "no_b8_touch": true,
+      "must_separate_code_and_ledger_commits": true,
+      "must_preserve_dirty_preexisting_files": true
+    },
+    "limitations": {
+      "patch_plan_review_not_completed_yet": true,
+      "patch_application_not_allowed_yet": true,
+      "memory_write_still_blocked": true,
+      "promotion_still_blocked": true
+    }
+  },
+  "self_improvement_first_five_patch_plan_review_dry_run": {
+    "status": "done",
+    "commit": "b08ef619",
+    "remote_synced": true,
+    "reviews_count": 4,
+    "approved_candidates": 3,
+    "request_more_evidence": 0,
+    "request_scope_reduction": 0,
+    "rejected": 1,
+    "governance_status": "review_only_not_executable",
+    "execution_allowed_now": false,
+    "patch_generation_allowed_now": false,
+    "patches_generated": false,
+    "patches_applied": false,
+    "next_safe_front": "SELF-IMPROVEMENT-FIRST-FIVE-PATCH-GENERATION-DRY-RUN-01",
+    "files": [
+      "brain/external_sources/self_improvement_first_five_patch_plan_review_dry_run.py",
+      "tests/smoke/smoke_self_improvement_first_five_patch_plan_review_dry_run.py"
+    ],
+    "outputs": [
+      "first_five_patch_plan_reviews.json",
+      "first_five_patch_plan_reviews.jsonl",
+      "first_five_patch_candidate_queue.json",
+      "first_five_patch_plan_review_governance.json",
+      "first_five_patch_plan_review_summary.json",
+      "first_five_patch_plan_review_report.md"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "73 passed",
+      "dry_run": "PASS",
+      "token_leak_check": "PASS",
+      "no_mutation_validation": "PASS"
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "review_only_not_executable": true,
+      "patch_generation_allowed_now": false,
+      "applicable_diffs_generated": false,
+      "patches_generated": false,
+      "patches_applied": false,
+      "no_raw_body_saved": true,
+      "no_token_logged": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "no_runtime_chat_integration": true,
+      "no_trading_use": true,
+      "no_b8_touch": true,
+      "must_keep_code_and_ledger_commits_separate": true,
+      "must_preserve_dirty_preexisting_files": true
+    },
+    "limitations": {
+      "patch_generation_dry_run_not_completed_yet": true,
+      "patch_application_not_allowed_yet": true,
+      "memory_write_still_blocked": true,
+      "promotion_still_blocked": true
+    }
+  },
+  "self_improvement_first_five_patch_generation_dry_run": {
+    "status": "done",
+    "commit": "15c0202a",
+    "remote_synced": true,
+    "approved_candidates": 3,
+    "proposals_count": 3,
+    "pseudo_diffs_created": 3,
+    "operator_review_required": true,
+    "execution_allowed_now": false,
+    "patch_application_allowed_now": false,
+    "patches_applied": false,
+    "patches_staged": false,
+    "next_safe_front": "SELF-IMPROVEMENT-FIRST-FIVE-PATCH-GENERATION-REVIEW-DRY-RUN-01",
+    "files": [
+      "brain/external_sources/self_improvement_first_five_patch_generation_dry_run.py",
+      "tests/smoke/smoke_self_improvement_first_five_patch_generation_dry_run.py"
+    ],
+    "outputs": [
+      "first_five_patch_generation_proposals.json",
+      "first_five_patch_generation_proposals.jsonl",
+      "first_five_patch_generation_summary.json",
+      "first_five_patch_generation_operator_review_packet.json",
+      "first_five_patch_generation_report.md",
+      "pseudo_diffs/<patch_proposal_id>.txt"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "72 passed",
+      "dry_run": "PASS",
+      "token_leak_check": "PASS",
+      "no_mutation_validation": "PASS"
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "proposal_only": true,
+      "pseudo_diffs_non_applicable": true,
+      "pseudo_diffs_not_git_applyable": true,
+      "operator_review_required": true,
+      "execution_allowed_now": false,
+      "patch_application_allowed_now": false,
+      "patches_applied": false,
+      "patches_staged": false,
+      "target_files_modified": false,
+      "no_raw_body_saved": true,
+      "no_token_logged": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "no_runtime_chat_integration": true,
+      "no_trading_use": true,
+      "no_b8_touch": true,
+      "must_keep_code_and_ledger_commits_separate": true,
+      "must_preserve_dirty_preexisting_files": true
+    },
+    "limitations": {
+      "patch_generation_review_not_completed_yet": true,
+      "patch_application_not_allowed_yet": true,
+      "memory_write_still_blocked": true,
+      "promotion_still_blocked": true
+    }
+  },
+  "self_improvement_first_five_real_patch_generation_dry_run": {
+    "status": "done",
+    "commit": "3929aab7",
+    "remote_synced": true,
+    "generated_patch_drafts_count": 3,
+    "patch_generation_allowed_now": false,
+    "diff_generation_allowed_now": false,
+    "patch_application_allowed_now": false,
+    "real_patch_application_allowed_now": false,
+    "patches_generated_for_application": false,
+    "patches_applied": false,
+    "patches_staged": false,
+    "next_safe_front": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-GENERATION-REVIEW-DRY-RUN-01",
+    "files": [
+      "brain/external_sources/self_improvement_first_five_real_patch_generation_dry_run.py",
+      "tests/smoke/smoke_self_improvement_first_five_real_patch_generation_dry_run.py"
+    ],
+    "outputs": [
+      "first_five_real_patch_drafts.json",
+      "first_five_real_patch_drafts.jsonl",
+      "first_five_real_patch_generation_governance.json",
+      "first_five_real_patch_generation_summary.json",
+      "first_five_real_patch_generation_report.md"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "83 passed",
+      "dry_run": "PASS",
+      "token_leak_check": "PASS",
+      "no_mutation_validation": "PASS"
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "inert_patch_drafts_only": true,
+      "no_patch_files_generated": true,
+      "no_git_apply_executed": true,
+      "operator_review_required": true,
+      "patch_generation_allowed_now": false,
+      "diff_generation_allowed_now": false,
+      "patch_application_allowed_now": false,
+      "real_patch_application_allowed_now": false,
+      "patches_generated_for_application": false,
+      "patches_applied": false,
+      "patches_staged": false,
+      "target_files_modified": false,
+      "no_raw_body_saved": true,
+      "no_token_logged": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "no_runtime_chat_integration": true,
+      "no_trading_use": true,
+      "no_b8_touch": true,
+      "must_keep_code_and_ledger_commits_separate": true,
+      "must_preserve_dirty_preexisting_files": true,
+      "must_not_create_patch_files": true,
+      "must_not_run_git_apply": true
+    },
+    "limitations": {
+      "patch_generation_review_not_completed_yet": true,
+      "patch_application_not_allowed_yet": true,
+      "memory_write_still_blocked": true,
+      "promotion_still_blocked": true
+    }
+  },
+  "self_improvement_first_five_real_patch_generation_review_dry_run": {
+    "status": "done",
+    "commit": "556f9ace",
+    "remote_synced": true,
+    "reviews_count": 3,
+    "approved_for_materialization_planning": 3,
+    "patch_generation_allowed_now": false,
+    "diff_generation_allowed_now": false,
+    "patch_application_allowed_now": false,
+    "real_patch_application_allowed_now": false,
+    "patches_generated_for_application": false,
+    "patches_applied": false,
+    "patches_staged": false,
+    "next_safe_front": "SELF-IMPROVEMENT-FIRST-FIVE-REAL-PATCH-MATERIALIZATION-PLAN-DRY-RUN-01",
+    "files": [
+      "brain/external_sources/self_improvement_first_five_real_patch_generation_review_dry_run.py",
+      "tests/smoke/smoke_self_improvement_first_five_real_patch_generation_review_dry_run.py"
+    ],
+    "outputs": [
+      "first_five_real_patch_generation_reviews.json",
+      "first_five_real_patch_generation_reviews.jsonl",
+      "first_five_real_patch_materialization_planning_queue.json",
+      "first_five_real_patch_generation_review_governance.json",
+      "first_five_real_patch_generation_review_summary.json",
+      "first_five_real_patch_generation_review_report.md"
+    ],
+    "validations": {
+      "py_compile": "PASS",
+      "pytest": "88 passed",
+      "dry_run": "PASS",
+      "token_leak_check": "PASS",
+      "no_mutation_validation": "PASS"
+    },
+    "guarantees": {
+      "dry_run_only": true,
+      "inert_patch_generation_review_only": true,
+      "no_patch_files_generated": true,
+      "no_git_apply_executed": true,
+      "operator_review_required": true,
+      "patch_generation_allowed_now": false,
+      "diff_generation_allowed_now": false,
+      "patch_application_allowed_now": false,
+      "real_patch_application_allowed_now": false,
+      "patches_generated_for_application": false,
+      "patches_applied": false,
+      "patches_staged": false,
+      "target_files_modified": false,
+      "no_raw_body_saved": true,
+      "no_token_logged": true,
+      "no_memory_write": true,
+      "no_faiss_write": true,
+      "no_real_write": true,
+      "no_promotion": true,
+      "no_runtime_chat_integration": true,
+      "no_trading_use": true,
+      "no_b8_touch": true,
+      "must_keep_code_and_ledger_commits_separate": true,
+      "must_preserve_dirty_preexisting_files": true,
+      "must_not_create_patch_files": true,
+      "must_not_run_git_apply": true
+    },
+    "limitations": {
+      "materialization_planning_not_completed_yet": true,
+      "patch_application_not_allowed_yet": true,
+      "memory_write_still_blocked": true,
+      "promotion_still_blocked": true
+    }
+  },
+  "front_real_canary_exec_01": {
+    "status": "done",
+    "commit": "849dd43d",
+    "remote_synced": true,
+    "real_canary_write_executed": true,
+    "records_written": 1,
+    "target_store": "memory/semantic/semantic_memory.jsonl",
+    "canary_record_id": "canary-00000000-0000-0000-0000-000000000001",
+    "backup_created": true,
+    "backup_verified": true,
+    "post_write_verified": true,
+    "rollback_readiness_verified": true,
+    "rollback_executed": false,
+    "no_faiss_write": true,
+    "no_promotion": true,
+    "no_patch_application": true,
+    "no_trading_b8": true,
+    "tests_passed": true,
+    "patch_materialization_pipeline_remains_paused": true,
+    "files": [
+      "memory/semantic/semantic_memory.jsonl",
+      "tests/smoke/smoke_front_real_canary_exec_01.py"
+    ],
+    "next_recommended_front": "FRONT-REAL-CANARY-POST-AUDIT-01  post-canary audit and rollback decision OR FRONT-INFRA-03  startup/runbook reproducibility"
+  },
+  "front_real_canary_post_audit_01": {
+    "status": "done",
+    "commit": "93b9c2ba",
+    "remote_synced": true,
+    "purpose": "post-canary audit and retention decision",
+    "canary_record_id": "canary-00000000-0000-0000-0000-000000000001",
+    "canary_exists_exactly_once": true,
+    "canary_is_last_line": true,
+    "faiss_index_unchanged": true,
+    "commit_scope_clean": true,
+    "roadmap_ledger_consistent": true,
+    "rollback_executed": false,
+    "decision": "KEEP_CANARY",
+    "tests_passed": true,
+    "files": [
+      "docs/FRONT_REAL_CANARY_POST_AUDIT_01.md",
+      "tests/smoke/smoke_front_real_canary_post_audit_01.py"
+    ],
+    "next_recommended_front": "FRONT-REAL-CANARY-RETENTION-01  permanent canary retention OR FRONT-INFRA-03  startup/runbook reproducibility"
+  },
+  "front_real_canary_retention_01": {
+    "status": "done",
+    "commit": "4c5f3c3d",
+    "remote_synced": true,
+    "purpose": "formal canary retention decision",
+    "decision": "KEEP_CANARY_PERMANENT_MARKER",
+    "canary_record_id": "canary-00000000-0000-0000-0000-000000000001",
+    "target_store": "memory/semantic/semantic_memory.jsonl",
+    "new_records_written": 0,
+    "rollback_executed": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "canary_stable": true,
+    "faiss_index_unchanged": true,
+    "tests_passed": true,
+    "files": [
+      "docs/FRONT_REAL_CANARY_RETENTION_01.md",
+      "tests/smoke/smoke_front_real_canary_retention_01.py"
+    ],
+    "next_recommended_front": "FRONT-INFRA-03  startup/runbook reproducibility OR FRONT-REAL-READ-VERIFY-01  runtime read-only retrieval verification"
+  },
+  "front_infra_03": {
+    "status": "done",
+    "commit": "eb7bbe83",
+    "remote_synced": true,
+    "purpose": "startup/runbook reproducibility",
+    "runbook_created": true,
+    "runtime_started": false,
+    "runtime_stopped": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "tests_passed": true,
+    "files": [
+      "docs/FRONT_INFRA_03_STARTUP_RUNBOOK.md",
+      "tests/smoke/smoke_front_infra_03_startup_runbook.py"
+    ],
+    "next_recommended_front": "FRONT-REAL-READ-VERIFY-01  runtime read-only retrieval verification OR FRONT-INFRA-04  Dockerfile/container reproducibility"
+  },
+  "front_real_read_verify_01": {
+    "status": "done",
+    "commit": "b60feae2",
+    "remote_synced": true,
+    "purpose": "runtime read-only retrieval verification",
+    "decision": "NEED_READ_ONLY_LOOKUP_ADAPTER",
+    "runtime_started_by_this_front": false,
+    "runtime_stopped_by_this_front": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "canary_stable": true,
+    "hashes_unchanged": true,
+    "tests_passed": true,
+    "files": [
+      "docs/FRONT_REAL_READ_VERIFY_01.md",
+      "tests/smoke/smoke_front_real_read_verify_01.py"
+    ],
+    "next_recommended_front": "FRONT-REAL-READ-LOOKUP-ADAPTER-01  implement or verify read-only lookup adapter"
+  },
+  "front_real_read_lookup_adapter_01": {
+    "status": "done",
+    "commit": "82bc5aef",
+    "remote_synced": true,
+    "purpose": "read-only semantic memory canary lookup adapter",
+    "decision": "READ_ONLY_LOOKUP_ADAPTER_READY",
+    "adapter_path": "brain/semantic_memory_canary_lookup_read_only.py",
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "faiss_imported": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "canary_lookup_success": true,
+    "hashes_unchanged": true,
+    "tests_passed": true,
+    "files": [
+      "brain/semantic_memory_canary_lookup_read_only.py",
+      "docs/FRONT_REAL_READ_LOOKUP_ADAPTER_01.md",
+      "tests/smoke/smoke_front_real_read_lookup_adapter_01.py"
+    ],
+    "next_recommended_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-PLAN-01  expose adapter through safe read-only runtime endpoint"
+  },
+  "front_real_runtime_lookup_endpoint_01": {
+    "status": "done",
+    "commit": "e46cc0ee",
+    "remote_synced": true,
+    "purpose": "safe read-only runtime canary lookup router",
+    "decision": "RUNTIME_LOOKUP_ROUTER_READY",
+    "router_path": "tmp_agent/brain_v9/routes/canary_lookup_read_only.py",
+    "integrated_into_main": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "faiss_imported": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "canary_lookup_success": true,
+    "hashes_unchanged": true,
+    "tests_passed": true
+  },
+  "front_main_py_dirty_triage_01": {
+    "status": "done",
+    "commit": "2b5c622d",
+    "remote_synced": true,
+    "purpose": "diagnostic-only triage of preexisting main.py dirty state",
+    "decision": "NEED_HUMAN_REVIEW",
+    "main_py_dirty": true,
+    "diff_lines": 8833,
+    "diff_insertions": 4413,
+    "diff_deletions": 4325,
+    "risk_level": "HIGH",
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "main_py_modified_by_this_front": false,
+    "main_py_staged": false,
+    "main_py_committed": false,
+    "main_py_reset_or_checkouted": false,
+    "cleanup_executed": false,
+    "tests_passed": true,
+    "files": [
+      "docs/FRONT_MAIN_PY_DIRTY_TRIAGE_01.md",
+      "tests/smoke/smoke_front_main_py_dirty_triage_01.py",
+      "tmp_agent/front_main_py_dirty_triage_01/main_py_diff.patch.txt",
+      "tmp_agent/front_main_py_dirty_triage_01/main_py_diff_stat.txt",
+      "tmp_agent/front_main_py_dirty_triage_01/main_py_diff_numstat.txt",
+      "tmp_agent/front_main_py_dirty_triage_01/main_py_diff_unified0.txt",
+      "tmp_agent/front_main_py_dirty_triage_01/main_py_diff_classification.json",
+      "tmp_agent/front_main_py_dirty_triage_01/main_py_diff_classification.md",
+      "tmp_agent/front_main_py_dirty_triage_01/security_check.json",
+      "tmp_agent/front_main_py_dirty_triage_01/no_mutation_validation.json"
+    ],
+    "recommended_next_front": "FRONT-MAIN-PY-DIRTY-HUMAN-REVIEW-01  operator review of preexisting main.py dirty state OR FRONT-MAIN-PY-DIRTY-COMMIT-01  commit preexisting changes OR FRONT-MAIN-PY-DIRTY-DISCARD-PLAN-01  plan to discard changes",
+    "blocked_fronts_after_this": [
+      "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01"
+    ],
+    "diagnostic_only": true
+  },
+  "front_main_py_dirty_human_review_01": {
+    "status": "done",
+    "commit": "72637951",
+    "remote_synced": true,
+    "purpose": "operator-assisted review of preexisting main.py dirty state",
+    "decision": "KEEP_AND_COMMIT_MAIN_PY_CHANGES",
+    "risk_level": "LOW",
+    "main_py_dirty": true,
+    "main_py_modified_by_this_front": false,
+    "main_py_staged": false,
+    "cleanup_executed": false,
+    "diagnostic_only": true,
+    "operator_assisted_review": true,
+    "tests_passed": true,
+    "files": [
+      "docs/FRONT_MAIN_PY_DIRTY_HUMAN_REVIEW_01.md",
+      "tests/smoke/smoke_front_main_py_dirty_human_review_01.py",
+      "tmp_agent/front_main_py_dirty_human_review_01/main_py_review_sections.json",
+      "tmp_agent/front_main_py_dirty_human_review_01/main_py_review_sections.md",
+      "tmp_agent/front_main_py_dirty_human_review_01/main_py_formatting_vs_functional.json",
+      "tmp_agent/front_main_py_dirty_human_review_01/main_py_head_vs_worktree_summary.md",
+      "tmp_agent/front_main_py_dirty_human_review_01/precise_route_function_diff.txt",
+      "tmp_agent/front_main_py_dirty_human_review_01/security_check.json",
+      "tmp_agent/front_main_py_dirty_human_review_01/no_mutation_validation.json"
+    ],
+    "recommended_next_front": "FRONT-MAIN-PY-DIRTY-COMMIT-01  commit preexisting main.py monitoring endpoints and chat fastpath (requires operator approval)",
+    "blocked_fronts_after_this": [
+      "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01"
+    ],
+    "next_recommended_fronts": [
+      "FRONT-MAIN-PY-DIRTY-COMMIT-01",
+      "FRONT-MAIN-PY-DIRTY-DISCARD-PLAN-01"
+    ]
+  },
+  "front_main_py_dirty_commit_01": {
+    "status": "done",
+    "commit": "1d9a0800",
+    "remote_synced": true,
+    "purpose": "commit preexisting main.py monitoring endpoints and chat fastpath",
+    "decision": "MAIN_PY_PREEXISTING_CHANGES_COMMITTED",
+    "main_py_commit": "1d9a0800",
+    "main_py_clean_after_commit": true,
+    "routes_committed": [
+      "GET /healthz",
+      "GET /v1/agent/healthz",
+      "GET /v1/agent/status"
+    ],
+    "function_committed": "_trivial_chat_fastpath(message: str)",
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "tests_passed": true,
+    "files": [
+      "tmp_agent/brain_v9/main.py"
+    ],
+    "recommended_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-INTEGRATION-01  integrate read-only canary router into main app",
+    "blocked_fronts_after_this": []
+  },
+  "front_real_runtime_lookup_endpoint_integration_01": {
+    "status": "done",
+    "commit": "e659ef4b",
+    "remote_synced": true,
+    "purpose": "integrate read-only canary lookup endpoint into main app",
+    "decision": "RUNTIME_LOOKUP_ENDPOINT_INTEGRATED",
+    "integrated_into_main": true,
+    "endpoint": "GET /brain/read-only/canary",
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "faiss_imported": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "canary_lookup_success": true,
+    "hashes_unchanged": true,
+    "tests_passed": true,
+    "files": [
+      "tmp_agent/brain_v9/main.py",
+      "docs/FRONT_REAL_RUNTIME_LOOKUP_ENDPOINT_INTEGRATION_01.md",
+      "tests/smoke/smoke_front_real_runtime_lookup_endpoint_integration_01.py"
+    ],
+    "recommended_next_front": "FRONT-REAL-RUNTIME-LOOKUP-ENDPOINT-LIVE-SMOKE-01  local runtime smoke for integrated endpoint"
+  },
+  "front_real_runtime_lookup_endpoint_live_smoke_01": {
+    "status": "done",
+    "commit": "59b70578",
+    "remote_synced": false,
+    "purpose": "live runtime smoke test for integrated read-only canary lookup endpoint",
+    "decision": "LIVE_SMOKE_PASSED",
+    "endpoint": "GET /brain/read-only/canary",
+    "runtime_started_by_this_front": true,
+    "runtime_stopped_by_this_front": true,
+    "port_8090_closed": true,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "faiss_imported": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "canary_lookup_success": true,
+    "hashes_unchanged": true,
+    "tests_passed": true,
+    "files": [
+      "docs/FRONT_REAL_RUNTIME_LOOKUP_ENDPOINT_LIVE_SMOKE_01.md",
+      "tests/smoke/smoke_front_real_runtime_lookup_endpoint_live_smoke_01.py"
+    ],
+    "recommended_next_front": "FRONT-BRAIN-KNOWLEDGE-READ-API-01  create real knowledge read API"
+  },
+  "front_brain_knowledge_read_api_01": {
+    "status": "done",
+    "commit": "18ae7873",
+    "remote_synced": false,
+    "purpose": "create real knowledge read API with search, filters, and pagination",
+    "decision": "KNOWLEDGE_READ_API_READY",
+    "endpoint": "GET /brain/knowledge/read",
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "faiss_imported": false,
+    "promotion_executed": false,
+    "patch_application_executed": false,
+    "tests_passed": true,
+    "files": [
+      "brain/knowledge_read_api.py",
+      "tmp_agent/brain_v9/routes/knowledge_read_api.py",
+      "docs/FRONT_BRAIN_KNOWLEDGE_READ_API_01.md",
+      "tests/smoke/smoke_front_brain_knowledge_read_api_01.py"
+    ],
+    "recommended_next_front": "FRONT-REAL-MEMORY-FAISS-PROMOTION-01  controlled memory to FAISS promotion"
+  },
+  "front_real_memory_faiss_promotion_01": {
+    "status": "done",
+    "commit": "5c2b9e33",
+    "remote_synced": true,
+    "purpose": "controlled canary promotion to FAISS index",
+    "decision": "PROMOTED_CANARY_TO_FAISS",
+    "canary_id": "canary-00000000-0000-0000-0000-000000000001",
+    "semantic_memory_jsonl_unchanged": true,
+    "faiss_write_executed": true,
+    "promotion_executed": true,
+    "faiss_index_before": 1606,
+    "faiss_index_after": 1607,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "backups_created": true,
+    "rollback_available": true,
+    "tests_passed": true,
+    "files": [
+      "brain/semantic_memory_faiss_promotion.py",
+      "memory/semantic/semantic_memory_faiss.index",
+      "memory/semantic/semantic_memory_faiss_ids.json",
+      "docs/FRONT_REAL_MEMORY_FAISS_PROMOTION_01.md",
+      "tests/smoke/smoke_front_real_memory_faiss_promotion_01.py"
+    ],
+    "recommended_next_front": "FRONT-REAL-PATCH-MATERIALIZATION-01  first governed patch artifact materialization"
+  },
+  "front_real_patch_materialization_01": {
+    "status": "done",
+    "commit": "c9441899",
+    "remote_synced": false,
+    "purpose": "first governed patch artifact materialization",
+    "decision": "MATERIALIZED_NOT_APPLIED",
+    "patch_file": "tmp_agent/materialized_patches/front_real_patch_materialization_01/proposed.patch",
+    "target_files": [
+      "docs/PROPOSED_KNOWLEDGE_READ_API_USAGE.md"
+    ],
+    "git_apply_executed": false,
+    "patch_application_executed": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "human_review_required": true,
+    "tests_passed": true,
+    "files": [
+      "tmp_agent/materialized_patches/front_real_patch_materialization_01/proposed.patch",
+      "tmp_agent/materialized_patches/front_real_patch_materialization_01/patch_manifest.json",
+      "tmp_agent/materialized_patches/front_real_patch_materialization_01/patch_summary.md",
+      "tmp_agent/materialized_patches/front_real_patch_materialization_01/governance_decision.json",
+      "docs/FRONT_REAL_PATCH_MATERIALIZATION_01.md",
+      "tests/smoke/smoke_front_real_patch_materialization_01.py"
+    ],
+    "recommended_next_front": "FRONT-EXTERNAL-AUDIT-DELTA-RECONCILIATION-01"
+  },
+  "front_external_audit_delta_reconciliation_01": {
+    "status": "done",
+    "commit": "09554bc4",
+    "remote_synced": false,
+    "purpose": "reconcile external audit delta against current real brain state",
+    "decision": "AUDIT_DELTA_RECONCILED",
+    "closed_findings_count": 4,
+    "partial_findings_count": 3,
+    "open_findings_count": 3,
+    "critical_blockers_count": 2,
+    "recommended_next_fronts": [
+      "FRONT-SECURITY-PHASE0-REVERIFY-01",
+      "FRONT-INGESTION-REGISTRY-01",
+      "FRONT-TESTING-CORE-BASELINE-01",
+      "FRONT-VISUAL-TRACE-CONSOLE-MVP-01",
+      "FRONT-ARCHITECTURE-STRANGLER-NEXT-01"
+    ],
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "tests_passed": true,
+    "files": [
+      "docs/FRONT_EXTERNAL_AUDIT_DELTA_RECONCILIATION_01.md",
+      "tests/smoke/smoke_front_external_audit_delta_reconciliation_01.py"
+    ],
+    "recommended_next_front": "FRONT-SECURITY-PHASE0-REVERIFY-01"
+  },
+  "front_security_phase0_reverify_01": {
+    "status": "done",
+    "commit": "0c5c904c",
+    "remote_synced": false,
+    "purpose": "reverify critical security phase 0 blockers after real applicable batch",
+    "decision": "SECURITY_PHASE0_REVERIFIED",
+    "secrets_status": "CLOSED",
+    "god_p3_status": "CLOSED",
+    "selfdev_governance_status": "PARTIAL",
+    "dev_endpoints_status": "CLOSED",
+    "rbac_status": "NOT_IMPLEMENTED",
+    "patch_application_status": "CLOSED",
+    "critical_blockers_count": 0,
+    "recommended_next_fronts": [
+      "FRONT-INGESTION-REGISTRY-01",
+      "FRONT-INGESTION-DRY-RUN-01",
+      "FRONT-TESTING-CORE-BASELINE-01",
+      "FRONT-VISUAL-TRACE-CONSOLE-MVP-01",
+      "FRONT-ARCHITECTURE-STRANGLER-NEXT-01"
+    ],
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "docs/FRONT_SECURITY_PHASE0_REVERIFY_01.md",
+      "tests/smoke/smoke_front_security_phase0_reverify_01.py"
+    ],
+    "recommended_next_front": "FRONT-INGESTION-REGISTRY-01"
+  },
+  "front_security_rbac_minimal_01": {
+    "status": "done",
+    "commit": "40bee60f",
+    "remote_synced": false,
+    "purpose": "implement minimal rbac permissions (viewer/operator/admin)",
+    "decision": "MINIMAL_RBAC_IMPLEMENTED",
+    "roles": [
+      "viewer",
+      "operator",
+      "admin"
+    ],
+    "rbac_status": "CLOSED",
+    "p3_auto_approval": false,
+    "protected_paths_override": false,
+    "unsafe_dev_endpoints_enabled_by_rbac": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "tmp_agent/brain_v9/security/rbac.py",
+      "tmp_agent/brain_v9/security/__init__.py",
+      "tmp_agent/brain_v9/api_security.py",
+      "tmp_agent/__init__.py",
+      "docs/FRONT_SECURITY_RBAC_MINIMAL_01.md",
+      "tests/smoke/smoke_front_security_rbac_minimal_01.py"
+    ],
+    "recommended_next_front": "FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01"
+  },
+  "front_security_selfdev_governance_block_01": {
+    "status": "done",
+    "commit": "b1bc071f",
+    "remote_synced": false,
+    "purpose": "harden self-dev protections with centralized protected_paths module and extended coverage",
+    "decision": "SELFDEV_GOVERNANCE_BLOCK_IMPLEMENTED",
+    "selfdev_governance_status": "CLOSED",
+    "extended_paths_covered": [
+      ".env",
+      ".dev_auth",
+      "memory/semantic",
+      "tmp_agent/brain_v9/core/session.py",
+      "brain/curated_runtime_lookup.py",
+      "trading",
+      "strategies",
+      "b8"
+    ],
+    "god_mode_cannot_override": true,
+    "rbac_admin_cannot_override": true,
+    "selfdev_bypass_cannot_override": true,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "tmp_agent/brain_v9/governance/protected_paths.py",
+      "tmp_agent/brain_v9/governance/execution_gate.py",
+      "tests/smoke/smoke_front_security_selfdev_governance_block_01.py",
+      "tests/unit/test_selfdev_protected_paths.py",
+      "docs/FRONT_SECURITY_SELFDEV_GOVERNANCE_BLOCK_01.md"
+    ],
+    "recommended_next_front": "FRONT-INGESTION-REGISTRY-01"
+  },
+  "front_ingestion_registry_01": {
+    "status": "done",
+    "commit": "c79ac340",
+    "remote_synced": false,
+    "purpose": "create read-only ingestion source registry",
+    "decision": "INGESTION_REGISTRY_CREATED_READ_ONLY",
+    "registry_records_count": 6,
+    "source_types_count": 7,
+    "risk_levels_count": 4,
+    "can_write_semantic_memory": false,
+    "can_promote_faiss": false,
+    "ingestion_executed": false,
+    "dry_run_executed": false,
+    "network_called": false,
+    "connector_called": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "brain/ingestion_registry.py",
+      "tests/smoke/smoke_front_ingestion_registry_01.py",
+      "docs/FRONT_INGESTION_REGISTRY_01.md"
+    ],
+    "recommended_next_front": "FRONT-INGESTION-DRY-RUN-01"
+  },
+  "front_ingestion_dry_run_01": {
+    "status": "done",
+    "commit": "d8d5a364",
+    "remote_synced": false,
+    "purpose": "create controlled dry-run ingestion planner",
+    "decision": "INGESTION_DRY_RUN_PLANNER_CREATED",
+    "dry_run_candidates_count": 1,
+    "blocked_count": 1,
+    "invalid_count": 0,
+    "operator_review_required_count": 3,
+    "ingestion_executed": false,
+    "content_read": false,
+    "can_write_semantic_memory": false,
+    "can_promote_faiss": false,
+    "network_called": false,
+    "connector_called": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "brain/ingestion_dry_run.py",
+      "tests/smoke/smoke_front_ingestion_dry_run_01.py",
+      "docs/FRONT_INGESTION_DRY_RUN_01.md"
+    ],
+    "recommended_next_front": "FRONT-INGESTION-OPERATOR-REVIEW-01"
+  },
+  "front_ingestion_operator_review_01": {
+    "status": "done",
+    "commit": "c9504dd6",
+    "remote_synced": false,
+    "purpose": "create operator review queue for dry-run ingestion candidates",
+    "decision": "INGESTION_OPERATOR_REVIEW_QUEUE_CREATED",
+    "pending_operator_review_count": 4,
+    "blocked_count": 1,
+    "registry_only_count": 1,
+    "invalid_count": 0,
+    "approval_authorizes_real_ingestion": false,
+    "ingestion_executed": false,
+    "content_read": false,
+    "can_write_semantic_memory": false,
+    "can_promote_faiss": false,
+    "network_called": false,
+    "connector_called": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "brain/ingestion_operator_review.py",
+      "tests/smoke/smoke_front_ingestion_operator_review_01.py",
+      "docs/FRONT_INGESTION_OPERATOR_REVIEW_01.md"
+    ],
+    "recommended_next_front": "FRONT-INGESTION-APPROVAL-DECISION-DRY-RUN-01"
+  },
+  "front_ingestion_approval_decision_dry_run_01": {
+    "status": "done",
+    "commit": "5fbad3c6",
+    "remote_synced": false,
+    "purpose": "create approval decision dry-run simulator",
+    "decision": "INGESTION_APPROVAL_DECISION_DRY_RUN_CREATED",
+    "accepted_for_future_dry_run_count": 0,
+    "rejected_count": 0,
+    "more_context_required_count": 4,
+    "kept_blocked_count": 1,
+    "no_action_count": 1,
+    "approval_authorizes_real_ingestion": false,
+    "ingestion_executed": false,
+    "content_read": false,
+    "can_write_semantic_memory": false,
+    "can_promote_faiss": false,
+    "network_called": false,
+    "connector_called": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "brain/ingestion_approval_decision_dry_run.py",
+      "tests/smoke/smoke_front_ingestion_approval_decision_dry_run_01.py",
+      "docs/FRONT_INGESTION_APPROVAL_DECISION_DRY_RUN_01.md"
+    ],
+    "recommended_next_front": "FRONT-INGESTION-REVIEWED-DRY-RUN-EXECUTION-01"
+  },
+  "front_ingestion_reviewed_dry_run_execution_01": {
+    "status": "done",
+    "commit": "02e7845e",
+    "remote_synced": false,
+    "purpose": "create reviewed dry-run execution planner with zero default approvals",
+    "decision": "INGESTION_REVIEWED_DRY_RUN_EXECUTION_PLANNER_CREATED",
+    "reviewed_dry_run_planned_count": 0,
+    "reviewed_dry_run_skipped_no_approval_count": 4,
+    "blocked_count": 1,
+    "no_action_count": 1,
+    "rejected_count": 0,
+    "invalid_count": 0,
+    "ingestion_executed": false,
+    "content_read": false,
+    "can_write_semantic_memory": false,
+    "can_promote_faiss": false,
+    "network_called": false,
+    "connector_called": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "brain/ingestion_reviewed_dry_run_execution.py",
+      "tests/smoke/smoke_front_ingestion_reviewed_dry_run_execution_01.py",
+      "docs/FRONT_INGESTION_REVIEWED_DRY_RUN_EXECUTION_01.md"
+    ],
+    "recommended_next_front": "FRONT-INGESTION-MANUAL-APPROVAL-SAMPLE-01"
+  },
+  "front_ingestion_manual_approval_sample_01": {
+    "status": "done",
+    "commit": "daf8146a",
+    "remote_synced": true,
+    "purpose": "create end-to-end manual approval sample demonstrating full ingestion pipeline with synthetic approval/rejection",
+    "decision": "MANUAL_APPROVAL_SAMPLE_COMPLETE",
+    "synthetic_approved_count": 1,
+    "synthetic_denied_count": 1,
+    "reviewed_dry_run_planned_count": 1,
+    "reviewed_dry_run_skipped_no_approval_count": 0,
+    "rejected_count": 1,
+    "ingestion_executed": false,
+    "content_read": false,
+    "can_write_semantic_memory": false,
+    "can_promote_faiss": false,
+    "network_called": false,
+    "connector_called": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "brain/ingestion_manual_approval_sample.py",
+      "tests/smoke/smoke_front_ingestion_manual_approval_sample_01.py",
+      "docs/FRONT_INGESTION_MANUAL_APPROVAL_SAMPLE_01.md"
+    ],
+    "recommended_next_front": "FRONT-INGESTION-MANUAL-APPROVAL-PERSISTENT-QUEUE-01"
+  },
+  "front_ingestion_manual_approval_sample_02": {
+    "status": "done",
+    "commit": "1264102e",
+    "remote_synced": true,
+    "purpose": "create multi-source synthetic manual approval batch sample with mixed decisions",
+    "decision": "INGESTION_MANUAL_APPROVAL_BATCH_SAMPLE_CREATED",
+    "approved_count": 1,
+    "rejected_count": 1,
+    "more_context_required_count": 2,
+    "kept_blocked_count": 1,
+    "no_action_count": 1,
+    "reviewed_dry_run_planned_count": 1,
+    "reviewed_dry_run_skipped_no_approval_count": 2,
+    "ingestion_executed": false,
+    "content_read": false,
+    "can_write_semantic_memory": false,
+    "can_promote_faiss": false,
+    "network_called": false,
+    "connector_called": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "brain/ingestion_manual_approval_batch_sample.py",
+      "tests/smoke/smoke_front_ingestion_manual_approval_sample_02.py",
+      "docs/FRONT_INGESTION_MANUAL_APPROVAL_SAMPLE_02.md"
+    ],
+    "recommended_next_front": "FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01"
+  },
+  "front_runtime_recovery_real_execution_gate_01": {
+    "status": "done",
+    "commit": "9468cb61",
+    "remote_synced": true,
+    "purpose": "recover runtime observability and create real execution readiness gate",
+    "decision": "RUNTIME_RECOVERY_AND_REAL_EXECUTION_GATE_CREATED",
+    "dashboard_recovery_status": "documented_startup_required",
+    "brain_server_status": "documented_startup_required",
+    "ollama_status": "up",
+    "real_execution_allowed": false,
+    "semantic_memory_write_allowed": false,
+    "faiss_write_allowed": false,
+    "ingestion_executed": false,
+    "content_read": false,
+    "network_called": false,
+    "connector_called": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "brain/real_execution_gate.py",
+      "tests/smoke/smoke_front_runtime_recovery_real_execution_gate_01.py",
+      "scripts/ops/runtime_health_check.ps1",
+      "docs/RUNTIME_RECOVERY_RUNBOOK.md",
+      "docs/REAL_EXECUTION_POLICY.md"
+    ],
+    "recommended_next_front": "FRONT-RUNTIME-ACTUAL-STARTUP-VERIFY-01"
+  },
+  "front_runtime_actual_startup_verify_01": {
+    "status": "done",
+    "commit": "5d5ff60f",
+    "remote_synced": true,
+    "purpose": "start brain v9 server, verify live health, evaluate real execution gate with running runtime",
+    "decision": "RUNTIME_UP_AND_REAL_EXECUTION_GATE_VERIFIED_LIVE",
+    "brain_server_status": "up_on_8090",
+    "dashboard_status": "up_fallback_to_8090",
+    "ollama_status": "up",
+    "openwebui_status": "down_docker_not_running",
+    "real_execution_allowed": false,
+    "semantic_memory_write_allowed": false,
+    "faiss_write_allowed": false,
+    "ingestion_executed": false,
+    "content_read": false,
+    "network_called": false,
+    "connector_called": false,
+    "memory_write_executed": false,
+    "faiss_write_executed": false,
+    "patch_application_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "docs/FRONT_RUNTIME_ACTUAL_STARTUP_VERIFY_01.md",
+      "tests/smoke/smoke_front_runtime_actual_startup_verify_01.py",
+      "tmp_agent/brain_v9/start_safe_server.py",
+      "tmp_agent/brain_v9/start_full_server.py"
+    ],
+    "recommended_next_front": "FRONT-FIRST-REAL-LOCAL-MEMORY-CANARY-WRITE-01"
+  },
+  "front_first_real_local_ingestion_dry_run_01": {
+    "status": "done",
+    "commit": "c8d104e6",
+    "remote_synced": true,
+    "purpose": "execute first real local file read dry-run with operator approval",
+    "decision": "FIRST_REAL_LOCAL_FILE_READ_DRY_RUN_EXECUTED",
+    "source_path": "docs/REAL_EXECUTION_POLICY.md",
+    "source_size_bytes": 1923,
+    "sha256": "b493b364185a60c2c9ad116907a347e69890c9978ec6fa6bb18c7bee0ae1801d",
+    "read_executed": true,
+    "semantic_memory_write_executed": false,
+    "faiss_write_executed": false,
+    "network_called": false,
+    "connector_called": false,
+    "promotion_executed": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "brain/first_real_local_ingestion_dry_run.py",
+      "tests/smoke/smoke_front_first_real_local_ingestion_dry_run_01.py",
+      "docs/FRONT_FIRST_REAL_LOCAL_INGESTION_DRY_RUN_01.md"
+    ],
+    "recommended_next_front": "FRONT-FIRST-REAL-LOCAL-MEMORY-CANARY-WRITE-01"
+  },
+  "front_first_real_local_memory_faiss_canary_01": {
+    "status": "done",
+    "commit": "4a6b4d3c",
+    "remote_synced": true,
+    "purpose": "write first controlled semantic memory canary record and promote to FAISS",
+    "decision": "FIRST_REAL_LOCAL_SEMANTIC_MEMORY_AND_FAISS_CANARY_WRITTEN",
+    "canary_id": "front_first_real_local_memory_faiss_canary_01",
+    "source_front": "FRONT-FIRST-REAL-LOCAL-INGESTION-DRY-RUN-01",
+    "source_path": "docs/REAL_EXECUTION_POLICY.md",
+    "source_sha256": "b493b364185a60c2c9ad116907a347e69890c9978ec6fa6bb18c7bee0ae1801d",
+    "semantic_memory_write_executed": true,
+    "faiss_write_executed": true,
+    "network_called": false,
+    "connector_called": false,
+    "promotion_executed": true,
+    "trading_executed": false,
+    "b8_touched": false,
+    "memory_canary_count": 1,
+    "faiss_canary_count": 1,
+    "env_modified": false,
+    "tests_passed": true,
+    "files": [
+      "brain/first_real_local_memory_faiss_canary.py",
+      "tests/smoke/smoke_front_first_real_local_memory_faiss_canary_01.py",
+      "docs/FRONT_FIRST_REAL_LOCAL_MEMORY_FAISS_CANARY_01.md",
+      "memory/semantic/semantic_memory.jsonl",
+      "memory/semantic/semantic_memory_faiss.index",
+      "memory/semantic/semantic_memory_faiss_ids.json"
+    ],
+    "recommended_next_front": "FRONT-FIRST-REAL-LOCAL-INGESTION-CONTROLLED-BATCH-01"
+  },
+  "front_brain_learning_verification_chat_and_direct_01": {
+    "status": "done",
+    "commit": "02387a1d",
+    "remote_synced": true,
+    "purpose": "verify Brain learned the canary through direct memory, FAISS, and semantic API queries",
+    "decision": "BRAIN_LEARNING_VERIFIED_AFTER_MEMORY_FAISS_CANARY",
+    "direct_memory_verified": true,
+    "direct_faiss_verified": true,
+    "direct_retrieval_verified": true,
+    "semantic_api_verified": true,
+    "chat_verified": false,
+    "chat_status": "CHAT_ENDPOINT_TIMEOUT",
+    "final_status": "PARTIAL_CHAT_NOT_AVAILABLE_DIRECT_VERIFIED",
+    "learned_fact": "first real local policy document read was written to semantic memory and promoted to FAISS as canary",
+    "improvement": "retrieval-backed governance evidence and operational memory readiness",
+    "network_called": false,
+    "connector_called": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "tests_passed": true,
+    "files": [
+      "tests/smoke/smoke_front_brain_learning_verification_chat_and_direct_01.py",
+      "docs/FRONT_BRAIN_LEARNING_VERIFICATION_CHAT_AND_DIRECT_01.md"
+    ],
+    "recommended_next_front": "FRONT-FIRST-REAL-LOCAL-INGESTION-CONTROLLED-BATCH-01"
+  },
+  "front_first_real_local_ingestion_controlled_batch_01": {
+    "status": "done",
+    "commit": "525f1240",
+    "remote_synced": true,
+    "purpose": "execute first controlled real local batch ingestion of 3 whitelisted documents to semantic memory and FAISS",
+    "decision": "FIRST_CONTROLLED_LOCAL_BATCH_INGESTION_COMPLETED",
+    "attempted_count": 3,
+    "ready_source_count": 3,
+    "skipped_count": 0,
+    "memory_written_count": 3,
+    "faiss_promoted_count": 3,
+    "already_complete_count": 0,
+    "failed_count": 0,
+    "network_called": false,
+    "connector_called": false,
+    "trading_executed": false,
+    "b8_touched": false,
+    "retrieval_verified": true,
+    "tests_passed": true,
+    "files": [
+      "brain/first_real_local_ingestion_controlled_batch.py",
+      "tests/smoke/smoke_front_first_real_local_ingestion_controlled_batch_01.py",
+      "docs/FRONT_FIRST_REAL_LOCAL_INGESTION_CONTROLLED_BATCH_01.md",
+      "memory/semantic/semantic_memory.jsonl",
+      "memory/semantic/semantic_memory_faiss.index",
+      "memory/semantic/semantic_memory_faiss_ids.json"
+    ],
+    "recommended_next_front": "FRONT-CONTROLLED-BATCH-RETRIEVAL-QUALITY-EVAL-01"
+  },
+  "front_external_curated_learning_agentic_systems_01": {
+    "status": "done",
+    "commit": "a3cc81b",
+    "remote_synced": true,
+    "purpose": "Create first canonical curated source plan for Brain to learn Agentic Systems safely",
+    "decision": "EXTERNAL_CURATED_LEARNING_AGENTIC_SYSTEMS_PLAN_CREATED",
+    "domain": "agentic_systems",
+    "source_count": 21,
+    "taxonomy_count": 14,
+    "source_groups": [
+      "paper",
+      "repo",
+      "docs",
+      "benchmark"
+    ],
+    "accepted_count": 19,
+    "hold_count": 1,
+    "rejected_count": 1,
+    "ingestion_status": "dry_run_only",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "tests_passed": true,
+    "files": [
+      "brain/external_curated_learning_agentic_systems.py",
+      "tests/smoke/smoke_front_external_curated_learning_agentic_systems_01.py",
+      "docs/FRONT_EXTERNAL_CURATED_LEARNING_AGENTIC_SYSTEMS_01.md"
+    ],
+    "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-EVALUATION-BENCHMARKING-01"
+  },
+  "front_external_curated_learning_evaluation_benchmarking_01": {
+    "status": "done",
+    "commit": "68ba828",
+    "remote_synced": true,
+    "purpose": "Create canonical curated source plan for Brain to learn Evaluation and Benchmarking safely",
+    "decision": "EXTERNAL_CURATED_LEARNING_EVALUATION_BENCHMARKING_PLAN_CREATED",
+    "domain": "evaluation_benchmarking",
+    "source_count": 24,
+    "taxonomy_count": 15,
+    "capability_map_count": 12,
+    "source_groups": [
+      "paper",
+      "repo",
+      "docs",
+      "benchmark"
+    ],
+    "accepted_count": 22,
+    "hold_count": 1,
+    "rejected_count": 1,
+    "ingestion_status": "dry_run_only",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "tests_passed": true,
+    "files": [
+      "brain/external_curated_learning_evaluation_benchmarking.py",
+      "tests/smoke/smoke_front_external_curated_learning_evaluation_benchmarking_01.py",
+      "docs/FRONT_EXTERNAL_CURATED_LEARNING_EVALUATION_BENCHMARKING_01.md"
+    ],
+    "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-MEMORY-RAG-KNOWLEDGE-ARCHITECTURE-01"
+  },
+  "front_external_curated_learning_memory_rag_knowledge_architecture_01": {
+    "status": "done",
+    "commit": "9a48b14",
+    "remote_synced": true,
+    "purpose": "Create canonical curated source plan for Brain to learn Memory / RAG / Knowledge Architecture safely",
+    "decision": "EXTERNAL_CURATED_LEARNING_MEMORY_RAG_KNOWLEDGE_ARCHITECTURE_PLAN_CREATED",
+    "domain": "memory_rag_knowledge_architecture",
+    "source_count": 28,
+    "taxonomy_count": 20,
+    "capability_map_count": 16,
+    "source_groups": [
+      "paper",
+      "repo",
+      "docs",
+      "benchmark"
+    ],
+    "accepted_count": 25,
+    "hold_count": 2,
+    "rejected_count": 1,
+    "ingestion_status": "dry_run_only",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "tests_passed": true,
+    "files": [
+      "brain/external_curated_learning_memory_rag_knowledge_architecture.py",
+      "tests/smoke/smoke_front_external_curated_learning_memory_rag_knowledge_architecture_01.py",
+      "docs/FRONT_EXTERNAL_CURATED_LEARNING_MEMORY_RAG_KNOWLEDGE_ARCHITECTURE_01.md"
+    ],
+    "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-SECURITY-GOVERNANCE-SANDBOXING-01"
+  },
+  "front_external_curated_learning_security_governance_sandboxing_01": {
+    "status": "done",
+    "commit": "ea44a3b",
+    "remote_synced": true,
+    "purpose": "Create canonical curated source plan for Brain to learn Security / Governance / Sandboxing safely",
+    "decision": "EXTERNAL_CURATED_LEARNING_SECURITY_GOVERNANCE_SANDBOXING_PLAN_CREATED",
+    "domain": "security_governance_sandboxing",
+    "source_count": 25,
+    "taxonomy_count": 22,
+    "capability_map_count": 18,
+    "source_groups": [
+      "paper",
+      "standard",
+      "repo",
+      "docs",
+      "framework"
+    ],
+    "accepted_count": 24,
+    "hold_count": 0,
+    "rejected_count": 1,
+    "ingestion_status": "dry_run_only",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "tests_passed": true,
+    "files": [
+      "brain/external_curated_learning_security_governance_sandboxing.py",
+      "tests/smoke/smoke_front_external_curated_learning_security_governance_sandboxing_01.py",
+      "docs/FRONT_EXTERNAL_CURATED_LEARNING_SECURITY_GOVERNANCE_SANDBOXING_01.md"
+    ],
+    "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-AUTONOMOUS-CODING-PATCH-GENERATION-01"
+  },
+  "front_external_curated_learning_autonomous_coding_patch_generation_01": {
+    "status": "done",
+    "commit": "ac1d51e",
+    "remote_synced": true,
+    "purpose": "Create canonical curated source plan for Brain to learn Autonomous Coding and Patch Generation safely",
+    "decision": "EXTERNAL_CURATED_LEARNING_AUTONOMOUS_CODING_PATCH_GENERATION_PLAN_CREATED",
+    "domain": "autonomous_coding_patch_generation",
+    "source_count": 24,
+    "taxonomy_count": 25,
+    "capability_map_count": 20,
+    "source_groups": [
+      "paper",
+      "benchmark",
+      "repo",
+      "docs",
+      "framework"
+    ],
+    "accepted_count": 23,
+    "hold_count": 0,
+    "rejected_count": 1,
+    "ingestion_status": "dry_run_only",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "tests_passed": true,
+    "files": [
+      "brain/external_curated_learning_autonomous_coding_patch_generation.py",
+      "tests/smoke/smoke_front_external_curated_learning_autonomous_coding_patch_generation_01.py",
+      "tmp_agent/front_external_curated_learning_autonomous_coding_patch_generation_01/canonical_curated_learning_plan.json"
+    ],
+    "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-FINANCIAL-MOTOR-TRADING-INTELLIGENCE-01"
+  },
+  "front_external_curated_learning_financial_motor_trading_intelligence_01": {
+    "status": "done",
+    "commit": "811265c",
+    "remote_synced": true,
+    "purpose": "Create canonical curated source plan for Brain to learn Financial Motor / Trading Intelligence safely",
+    "decision": "EXTERNAL_CURATED_LEARNING_FINANCIAL_MOTOR_TRADING_INTELLIGENCE_PLAN_CREATED",
+    "domain": "financial_motor_trading_intelligence",
+    "source_count": 28,
+    "taxonomy_count": 32,
+    "capability_map_count": 24,
+    "source_groups": [
+      "academic_paper",
+      "book_metadata",
+      "regulatory",
+      "repo",
+      "docs",
+      "framework",
+      "internal_reference",
+      "standard"
+    ],
+    "accepted_count": 27,
+    "hold_count": 0,
+    "rejected_count": 1,
+    "ingestion_status": "dry_run_only",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "tests_passed": true,
+    "files": [
+      "brain/external_curated_learning_financial_motor_trading_intelligence.py",
+      "tests/smoke/smoke_front_external_curated_learning_financial_motor_trading_intelligence_01.py",
+      "docs/FRONT_EXTERNAL_CURATED_LEARNING_FINANCIAL_MOTOR_TRADING_INTELLIGENCE_01.md"
+    ],
+    "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-CONTROLLED-INGESTION-AUTHORIZATION-01"
+  },
+  "front_external_curated_learning_controlled_ingestion_authorization_01": {
+    "status": "done",
+    "commit": "3290960",
+    "remote_synced": true,
+    "purpose": "Create controlled ingestion authorization plan before any memory/FAISS mutation",
+    "decision": "EXTERNAL_CURATED_LEARNING_CONTROLLED_INGESTION_AUTHORIZATION_CREATED",
+    "domain": "controlled_ingestion_authorization",
+    "authorization_status": "authorization_plan_created_no_mutation",
+    "actual_memory_mutation_authorized": false,
+    "actual_faiss_mutation_authorized": false,
+    "first_canary_domain": "security_governance_sandboxing",
+    "first_canary_record_min": 3,
+    "first_canary_record_max": 5,
+    "financial_domain_locked": true,
+    "autonomous_coding_domain_locked": true,
+    "requires_future_user_approval_for_mutation": true,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "tests_passed": true,
+    "files": [
+      "brain/external_curated_learning_controlled_ingestion_authorization.py",
+      "tests/smoke/smoke_front_external_curated_learning_controlled_ingestion_authorization_01.py",
+      "docs/FRONT_EXTERNAL_CURATED_LEARNING_CONTROLLED_INGESTION_AUTHORIZATION_01.md"
+    ],
+    "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-INGESTION-PREP-SECURITY-GOVERNANCE-01"
+  },
+  "front_external_curated_learning_chat_ui_usage_repair_01": {
+    "status": "done",
+    "commit": "4b34255",
+    "remote_synced": true,
+    "purpose": "Repair chat/UI/agent ability to answer curated learning probes correctly without memory/FAISS mutation",
+    "decision": "CHAT_UI_CURATED_LEARNING_ACCESS_HELPER_CREATED",
+    "domain": "chat_ui_usage_repair_curated_learning",
+    "status_detail": "CHAT_UI_USAGE_HELPER_CREATED_RUNTIME_PATCH_REQUIRED",
+    "canonical_total_sources": 152,
+    "canonical_total_accepted": 142,
+    "canonical_total_hold": 4,
+    "canonical_total_rejected": 6,
+    "count_mismatch_detected": true,
+    "count_mismatch_notes": [
+      "security_governance_sandboxing: computed src=23 acc=22 vs prev src=25 acc=24",
+      "financial_motor_trading_intelligence: computed src=32 acc=31 vs prev src=28 acc=27"
+    ],
+    "q01_direct_probe_passed": true,
+    "q02_direct_probe_passed": true,
+    "q03_direct_probe_passed": true,
+    "q04_direct_probe_passed": true,
+    "q05_direct_probe_passed": true,
+    "direct_helper_working": true,
+    "current_chat_route_uses_helper": false,
+    "current_ui_can_answer_q01_without_pasted_context": false,
+    "runtime_patch_required": true,
+    "likely_runtime_file_required": "tmp_agent/brain_v9/core/session.py or equivalent chat route handler",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "tests_passed": true,
+    "files": [
+      "brain/curated_learning_chat_access.py",
+      "tests/smoke/smoke_front_external_curated_learning_chat_ui_usage_repair_01.py",
+      "docs/FRONT_EXTERNAL_CURATED_LEARNING_CHAT_UI_USAGE_REPAIR_01.md"
+    ],
+    "recommended_next_front": "FRONT-EXTERNAL-CURATED-LEARNING-CHAT-UI-RUNTIME-PATCH-01"
+  },
+  "front_external_curated_learning_canary_faiss_promotion_prep_security_governance_01": {
+    "status": "FAISS_PROMOTION_PREP_PACKAGE_CREATED_NO_FAISS_MUTATION",
+    "batch_id": "SEC_GOV_CANARY_001",
+    "candidates_count": 5,
+    "memory_line_count": 1715,
+    "faiss_ids_count_before": 1611,
+    "expected_faiss_ids_after_if_approved": 1616,
+    "faiss_mutated": false,
+    "embeddings_created": false,
+    "faiss_index_mutation_authorized_now": false,
+    "faiss_ids_mutation_authorized_now": false,
+    "embeddings_creation_authorized_now": false,
+    "approval_phrase_required": "APPROVE_SECURITY_GOVERNANCE_CANARY_FAISS_PROMOTION_BATCH_SEC_GOV_CANARY_001",
+    "denial_phrase": "DENY_SECURITY_GOVERNANCE_CANARY_FAISS_PROMOTION_BATCH_SEC_GOV_CANARY_001",
+    "tests_passed": true,
+    "functional_commit": "ac8883b",
+    "next_front_locked": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-PROMOTION-EXECUTE-SECURITY-GOVERNANCE-01"
+  },
+  "front_external_curated_learning_canary_faiss_promotion_execute_security_governance_01": {
+    "status": "FAISS_PROMOTION_EXECUTED_SECURITY_GOVERNANCE_CANARY",
+    "batch_id": "SEC_GOV_CANARY_001",
+    "promoted_count": 5,
+    "memory_line_count": 1715,
+    "faiss_ids_before": 1611,
+    "faiss_ids_after": 1616,
+    "semantic_memory_mutated": false,
+    "faiss_mutated": true,
+    "embeddings_created": true,
+    "retrieval_eval_passed": true,
+    "negative_contamination_detected": false,
+    "rollback_available": true,
+    "approval_phrase_used": true,
+    "functional_commit": "edd455a",
+    "next_front_locked": "FRONT-EXTERNAL-CURATED-LEARNING-CANARY-FAISS-POST-PROMOTION-VERIFY-SECURITY-GOVERNANCE-01"
+  },
+  "front_external_curated_learning_canary_faiss_post_promotion_verify_security_governance_01": {
+    "status": "FAISS_POST_PROMOTION_VERIFY_PASSED_WITH_QUALITY_WARNING",
+    "batch_id": "SEC_GOV_CANARY_001",
+    "faiss_ids_count": 1616,
+    "semantic_memory_lines": 1715,
+    "promoted_ids_verified": true,
+    "retrieval_top_5_hit_rate": 1.0,
+    "domain_precision": 0.725,
+    "contamination_detected": false,
+    "quality_warning_domain_precision_below_target": true,
+    "legacy_path_audit_status": true,
+    "legacy_runtime_points_to_legacy": true,
+    "tests_passed": true,
+    "functional_commit": "0b5f2a5",
+    "next_front_locked": "FRONT-RUNTIME-PATH-ALIGNMENT-CANONICAL-VERIFY-01"
+  },
+  "front_runtime_path_alignment_canonical_verify_01": {
+    "status": "RUNTIME_PATH_ALIGNMENT_CANONICAL_VERIFY_PASSED",
+    "previous_base_path": "C:\\AI_VAULT",
+    "canonical_base_path": "C:\\AI_VAULT_CANONICAL",
+    "config_file_modified": "tmp_agent/brain_v9/config.py",
+    "canonical_faiss_ids_count": 1616,
+    "canonical_semantic_memory_lines": 1715,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "legacy_mutated_preexisting": true,
+    "runtime_probe_status": "CHAT_RUNTIME_PROBE_SKIPPED_SERVER_NOT_RUNNING",
+    "tests_passed": true,
+    "functional_commit": "ee99821",
+    "next_front_locked": "FRONT-LEGACY-PATH-CLEANUP-PLAN-01"
+  },
+  "front_legacy_path_cleanup_plan_01": {
+    "status": "LEGACY_PATH_CLEANUP_PLAN_CREATED_READ_ONLY",
+    "canonical_path": "C:\\AI_VAULT_CANONICAL",
+    "legacy_path": "C:\\AI_VAULT",
+    "legacy_exists": true,
+    "legacy_mutated_preexisting": true,
+    "cleanup_risk_level": "MEDIUM",
+    "preferred_strategy": "quarantine_rename_plan",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "deletion_authorized": false,
+    "move_authorized": false,
+    "copy_authorized": false,
+    "tests_passed": true,
+    "functional_commit": "bcced50",
+    "next_front_locked": "FRONT-LEGACY-PATH-CLEANUP-EXECUTE-01"
+  },
+  "front_legacy_path_cleanup_execute_01": {
+    "status": "LEGACY_PATH_CLEANUP_EXECUTED_QUARANTINE_RENAME_BLOCKED",
+    "canonical_path": "C:\\AI_VAULT_CANONICAL",
+    "original_legacy_path": "C:\\AI_VAULT",
+    "quarantine_target": "C:\\AI_VAULT_LEGACY_QUARANTINE_20260611_220646",
+    "rename_performed": false,
+    "rename_blocked_reason": "WINDOWS_FILE_LOCK_ACTIVE_PROCESS",
+    "deletion_authorized": false,
+    "deletion_performed": false,
+    "rollback_possible": true,
+    "canonical_memory_mutated": false,
+    "canonical_faiss_mutated": false,
+    "tests_passed": true,
+    "functional_commit": "c99b453",
+    "next_front_locked": "FRONT-CANONICAL-RUNTIME-SMOKE-VERIFY-01"
+  },
+  "legacy_path_cleanup_retry_post_reboot": {
+    "front": "FRONT-LEGACY-PATH-CLEANUP-RETRY-POST-REBOOT-01",
+    "status": "FAILED_QUARANTINE_RENAME_WINDOWS_FILE_LOCK_CANONICAL_UNCHANGED_RETRY",
+    "canonical_path": "C:\\AI_VAULT_CANONICAL",
+    "original_legacy_path": "C:\\AI_VAULT",
+    "quarantine_target": "C:\\AI_VAULT_LEGACY_QUARANTINE_20260611_223045",
+    "deletion_performed": false,
+    "copy_performed": false,
+    "sync_performed": false,
+    "rename_attempted": true,
+    "rename_success": false,
+    "rollback_possible": false,
+    "current_rollback_required": false,
+    "canonical_memory_mutated": false,
+    "canonical_faiss_mutated": false,
+    "canonical_baseline": {
+      "semantic_memory_lines": 1715,
+      "faiss_ids": 1616,
+      "faiss_ntotal": 1616,
+      "base_path": "C:\\AI_VAULT_CANONICAL"
+    },
+    "tests_passed": true,
+    "test_count": 22,
+    "functional_commit": "fd1b56e",
+    "next_front_locked": "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
+    "notes": [
+      "Second rename attempt failed with WinError 32.",
+      "No force action taken and no process killed.",
+      "Canonical memory and FAISS remained unchanged.",
+      "Legacy path still exists; next step is manual lock diagnostic, not another blind retry."
+    ]
+  },
+  "legacy_lock_diagnostic_manual_steps": {
+    "front": "FRONT-LEGACY-LOCK-DIAGNOSTIC-MANUAL-STEPS-01",
+    "status": "LEGACY_LOCK_DIAGNOSTIC_MANUAL_STEPS_CREATED",
+    "canonical_path": "C:\\AI_VAULT_CANONICAL",
+    "legacy_path": "C:\\AI_VAULT",
+    "repeated_rename_failures": true,
+    "failure_reason": "WinError 32 file lock",
+    "lock_source_detected": "unknown",
+    "likely_lock_sources": [
+      "python_pid_244420_port_8090",
+      "python_pid_265004_qc_runner_legacy_path",
+      "unknown_file_handle_owner"
+    ],
+    "delete_performed": false,
+    "rename_performed": false,
+    "copy_performed": false,
+    "sync_performed": false,
+    "canonical_memory_mutated": false,
+    "canonical_faiss_mutated": false,
+    "process_killed": false,
+    "force_action_used": false,
+    "tests_passed": true,
+    "test_count": 16,
+    "functional_commit": "5a50d40",
+    "next_front_locked": "FRONT-LEGACY-PATH-CLEANUP-RETRY-AFTER-LOCK-RELEASE-01",
+    "manual_action_required": true,
+    "recommended_manual_action": "Use Resource Monitor or Process Explorer to identify the C:\\AI_VAULT handle owner; close only safe non-critical apps manually; retry only after handles disappear and explicit approval is renewed."
+  },
+  "legacy_lock_release_and_quarantine_retry": {
+    "front": "FRONT-LEGACY-LOCK-RELEASE-AND-QUARANTINE-RETRY-01",
+    "status": "NO_SAFE_LOCK_PROCESS_CANDIDATE_FOUND",
+    "canonical_path": "C:\\AI_VAULT_CANONICAL",
+    "legacy_path": "C:\\AI_VAULT",
+    "quarantine_target": "C:\\AI_VAULT_LEGACY_QUARANTINE_NOT_CREATED_NO_SAFE_CANDIDATE",
+    "candidate_processes_detected": 10,
+    "processes_closed": [],
+    "process_killed_count": 0,
+    "rename_attempted": false,
+    "rename_success": false,
+    "delete_performed": false,
+    "copy_performed": false,
+    "sync_performed": false,
+    "canonical_memory_mutated": false,
+    "canonical_faiss_mutated": false,
+    "tests_passed": true,
+    "test_count": 25,
+    "functional_commit": "c2c802e",
+    "next_front_locked": "FRONT-LEGACY-LOCK-HANDLE-TOOL-INSTALL-OR-SAFE-MODE-PLAN-01",
+    "reason": "No process met strict high-confidence criteria for safe close/kill; handle.exe unavailable; rename not attempted."
+  },
+  "front_chat_ui_e2e_failure_diagnostic_01": {
+    "status": "CHAT_UI_E2E_FAILURE_DIAGNOSTIC_COMPLETED",
+    "functional_commit": "d1332e2",
+    "canonical_path": "C:\\AI_VAULT_CANONICAL",
+    "chat_ui_status": "failing",
+    "primary_failure": "UI_NOT_REACHABLE",
+    "secondary_failures": [
+      "OPENAI_COMPATIBILITY_MISSING",
+      "TIMEOUT",
+      "STREAMING_SSE_MISMATCH",
+      "RETRIEVAL_INJECTION_FAILURE",
+      "CANONICAL_PATH_OK_BUT_UI_NOT_CONNECTED"
+    ],
+    "recommended_fix_front": "FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01",
+    "direct_backend_chat_status": "failed",
+    "open_webui_status": "not_reachable",
+    "open_webui_provider_status": "OPEN_WEBUI_CONFIG_NOT_AVAILABLE",
+    "retrieval_injection_status": "failed",
+    "streaming_status": "incompatible_or_unavailable",
+    "backend_reachable": true,
+    "ollama_reachable": true,
+    "openapi_available": true,
+    "openai_compatible_endpoint_exists": false,
+    "canonical_memory_mutated": false,
+    "canonical_faiss_mutated": false,
+    "semantic_memory_lines": 1715,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "tests_passed": true,
+    "test_count": 22,
+    "evidence_dir": "tmp_agent/front_chat_ui_e2e_failure_diagnostic_01",
+    "docs": "docs/FRONT_CHAT_UI_E2E_FAILURE_DIAGNOSTIC_01.md",
+    "smoke_test": "tests/smoke/smoke_front_chat_ui_e2e_failure_diagnostic_01.py",
+    "next_front_locked": "FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01",
+    "updated_at_utc": "2026-06-12T04:22:55.224150+00:00"
+  },
+  "front_chat_ui_docker_networking_fix_01": {
+    "front": "FRONT-CHAT-UI-DOCKER-NETWORKING-FIX-01",
+    "status": "UI_RESTORED_BUT_BRAIN_OPENAI_COMPAT_MISSING",
+    "canonical_path": "C:\\AI_VAULT_CANONICAL",
+    "functional_commit": "1d192c9",
+    "open_webui_reachable_before": false,
+    "open_webui_reachable_after": true,
+    "ollama_reachable": true,
+    "ollama_reachable_from_container": true,
+    "brain_backend_reachable": true,
+    "ui_layer_restored": true,
+    "brain_provider_ready": false,
+    "needs_openai_compat_adapter": true,
+    "action_taken": "docker_start_existing",
+    "open_webui_container_id": "61edccb48634",
+    "open_webui_image": "ghcr.io/open-webui/open-webui:main",
+    "canonical_memory_mutated": false,
+    "canonical_faiss_mutated": false,
+    "semantic_memory_lines": 1715,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "tests_passed": true,
+    "test_count": 20,
+    "documentation": "docs/FRONT_CHAT_UI_DOCKER_NETWORKING_FIX_01.md",
+    "smoke_test": "tests/smoke/smoke_front_chat_ui_docker_networking_fix_01.py",
+    "next_front_locked": "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-01",
+    "updated_at_utc": "2026-06-12T04:34:01.845383+00:00"
+  },
+  "front_chat_router_preservation_entrypoint_01": {
+    "front": "FRONT-CHAT-ROUTER-PRESERVATION-ENTRYPOINT-01",
+    "status": "CHAT_ROUTER_PRESERVATION_ENTRYPOINT_CREATED",
+    "canonical_path": "C:\\AI_VAULT_CANONICAL",
+    "functional_commit": "dc62119",
+    "intent_detector_called": true,
+    "canonical_entrypoint_created": true,
+    "entrypoint_file": "tmp_agent/brain_v9/core/router_entrypoint.py",
+    "native_chat_wired": true,
+    "router_bypass_risk_reduced": true,
+    "naive_adapter_blocked": true,
+    "openai_adapter_next": true,
+    "runtime_probe": "SERVER_RESTART_REQUIRED",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "raw_cot_exposed": false,
+    "semantic_memory_lines": 1715,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "semantic_memory_sha256": "ce81fbe1f97e257e2b124d7a929f0b2af86ce61e9ff1d8d832fdb5da1f69e64e",
+    "faiss_index_sha256": "adbb6051f79ecbeab0223d631a6013939c00bcc13216fbae437efe83047efa21",
+    "faiss_ids_sha256": "43736047db548caf9b26dfa61cdffe40e179c738bc8e8c295891f29cedd69102",
+    "tests_passed": true,
+    "test_count": 23,
+    "documentation": "docs/FRONT_CHAT_ROUTER_PRESERVATION_ENTRYPOINT_01.md",
+    "smoke_test": "tests/smoke/smoke_front_chat_router_preservation_entrypoint_01.py",
+    "next_front_locked": "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01",
+    "updated_at_utc": "2026-06-12T06:34:00.711778+00:00"
+  },
+  "front_chat_openai_compatibility_adapter_preserve_router_01": {
+    "front": "FRONT-CHAT-OPENAI-COMPATIBILITY-ADAPTER-PRESERVE-ROUTER-01",
+    "status": "CHAT_OPENAI_COMPATIBILITY_ADAPTER_PRESERVE_ROUTER_APPLIED_PARTIAL_RUNTIME_LOAD_PENDING",
+    "canonical_path": "C:\\AI_VAULT_CANONICAL",
+    "functional_commit": "2c11a37",
+    "remote_synced": true,
+    "openai_models_endpoint_source": true,
+    "openai_chat_completions_endpoint_source": true,
+    "testclient_models_passed": true,
+    "testclient_chat_passed": true,
+    "adapter_calls_handle_user_message": true,
+    "adapter_direct_llm_query": false,
+    "direct_client_created": true,
+    "dialogue_probe_created": true,
+    "dialogue_probe_ran": false,
+    "dialogue_probe_skip_reason": "SERVER_RESTART_REQUIRED_FOR_ADAPTER",
+    "dialogue_probe_preliminary_score": 0.0,
+    "runtime_restart_performed": false,
+    "runtime_restart_status": "RUNTIME_RESTART_SKIPPED_UNSAFE_PORT_OWNER",
+    "runtime_models_passed": false,
+    "runtime_chat_passed": false,
+    "runtime_load_pending": true,
+    "container_to_brain_passed": false,
+    "unexpected_import_side_effect_detected": true,
+    "unexpected_import_side_effect_reverted": true,
+    "unexpected_side_effect_path": "tmp_agent/knowledge/external/github",
+    "unexpected_side_effect_evidence": "tmp_agent/front_chat_openai_compatibility_adapter_preserve_router_01/unexpected_github_knowledge_side_effect.diff",
+    "recommended_side_effect_front": "FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "tests_passed": true,
+    "test_count": 34,
+    "semantic_memory_lines": 1715,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "files": [
+      "tmp_agent/brain_v9/api/__init__.py",
+      "tmp_agent/brain_v9/api/openai_compat.py",
+      "tmp_agent/brain_v9/main.py",
+      "tmp_agent/brain_v9/evolution/direct_brain_client.py",
+      "tmp_agent/brain_v9/evolution/codex_brain_dialogue_probe.py",
+      "tests/smoke/smoke_front_chat_openai_compatibility_adapter_preserve_router_01.py",
+      "docs/FRONT_CHAT_OPENAI_COMPATIBILITY_ADAPTER_PRESERVE_ROUTER_01.md"
+    ],
+    "next_front_locked": "FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01",
+    "updated_at_utc": "2026-06-12T07:07:54.188223+00:00"
+  },
+  "front_brain_v9_adapter_runtime_load_fix_01": {
+    "front": "FRONT-BRAIN-V9-ADAPTER-RUNTIME-LOAD-FIX-01",
+    "status": "BRAIN_V9_ADAPTER_RUNTIME_LOADED_ON_ALTERNATE_PORT_8091",
+    "canonical_path": "C:\\AI_VAULT_CANONICAL",
+    "selected_runtime_port": 8091,
+    "safe_restart_performed": false,
+    "alternate_port_used": true,
+    "health_ok": true,
+    "runtime_models_passed": true,
+    "runtime_chat_passed": true,
+    "stream_behavior_ok": true,
+    "adapter_calls_handle_user_message": true,
+    "codex_to_brain_dialogue_ran": true,
+    "dialogue_success_count": 5,
+    "intent_metadata_present": true,
+    "route_metadata_present": true,
+    "governance_metadata_present": true,
+    "no_cot_ok": true,
+    "canonical_path_ok": true,
+    "preliminary_score": 1.0,
+    "container_to_brain_passed": true,
+    "openwebui_provider_base_url": "http://host.docker.internal:8091/v1",
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "raw_cot_exposed": false,
+    "secrets_exposed": false,
+    "semantic_memory_lines": 1715,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "tests_passed": true,
+    "test_count": 16,
+    "functional_commit": "3d81691",
+    "runtime_8090_status": "existing process left untouched because owner was not safely classifiable",
+    "runtime_8091_pid_note": "see tmp_agent/front_brain_v9_adapter_runtime_load_fix_01/runtime_start_8091.json",
+    "documentation": "docs/FRONT_BRAIN_V9_ADAPTER_RUNTIME_LOAD_FIX_01.md",
+    "smoke_test": "tests/smoke/smoke_front_brain_v9_adapter_runtime_load_fix_01.py",
+    "next_front_locked": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
+    "updated_at_utc": "2026-06-12T07:23:42.808547+00:00"
+  },
+  "front_codex_to_brain_governed_self_improvement_cycle_01": {
+    "front": "FRONT-CODEX-TO-BRAIN-GOVERNED-SELF-IMPROVEMENT-CYCLE-01",
+    "status": "CODEX_TO_BRAIN_GOVERNED_SELF_IMPROVEMENT_CYCLE_COMPLETED",
+    "runtime_used": 8091,
+    "endpoint_used": "http://127.0.0.1:8091/v1/chat/completions",
+    "prompts_attempted": 24,
+    "successful_responses": 24,
+    "average_score": 0.583,
+    "metadata_full_rate": 1.0,
+    "timeout_fallback_count": 20,
+    "top_gaps_count": 10,
+    "proposals_created": 9,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "raw_cot_exposed": false,
+    "secrets_exposed": false,
+    "semantic_memory_lines": 1715,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "tests_passed": true,
+    "test_count": 12,
+    "functional_commit": "0a1f7fc",
+    "documentation": "docs/FRONT_CODEX_TO_BRAIN_GOVERNED_SELF_IMPROVEMENT_CYCLE_01.md",
+    "smoke_test": "tests/smoke/smoke_front_codex_to_brain_governed_self_improvement_cycle_01.py",
+    "next_front_locked": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
+    "alternate_quality_front": "FRONT-BRAIN-V9-LLM-TIMEOUT-QUALITY-STABILIZATION-01",
+    "updated_at_utc": "2026-06-12T07:48:31.342931+00:00"
+  },
+  "front_brain_v9_llm_timeout_quality_stabilization_01": {
+    "front": "FRONT-BRAIN-V9-LLM-TIMEOUT-QUALITY-STABILIZATION-01",
+    "status": "BRAIN_V9_LLM_TIMEOUT_QUALITY_STABILIZED",
+    "functional_commit": "68b87ff",
+    "runtime_used": 8091,
+    "mini_suite": {
+      "prompts_attempted": 8,
+      "successful_responses": 8,
+      "timeout_fallback_count": 0,
+      "metadata_full_rate": 1.0,
+      "raw_cot_count": 0,
+      "passed": true
+    },
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "tests_passed": true,
+    "test_count": 6,
+    "next_front_locked": "FRONT-CODEX-TO-BRAIN-EVALUATION-HARNESS-V2-01",
+    "updated_at_utc": "2026-06-12T08:35:25.164933+00:00"
+  },
+  "front_codex_to_brain_evaluation_harness_v2_01": {
+    "front": "FRONT-CODEX-TO-BRAIN-EVALUATION-HARNESS-V2-01",
+    "status": "CODEX_TO_BRAIN_EVALUATION_HARNESS_V2_CREATED",
+    "functional_commit": "1bec62e",
+    "runtime_used": 8091,
+    "suite_prompts": 24,
+    "mini_prompts": 8,
+    "tests_passed": true,
+    "test_count": 4,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "next_front_locked": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
+    "updated_at_utc": "2026-06-12T08:41:47.978628+00:00"
+  },
+  "front_brain_v9_runtime_switchover_8091_to_8090_01": {
+    "front": "FRONT-BRAIN-V9-RUNTIME-SWITCHOVER-8091-TO-8090-01",
+    "status": "SWITCHOVER_BLOCKED_UNSAFE_8090_OWNER",
+    "functional_commit": "0a16a95",
+    "safe_to_stop_8090": false,
+    "switchover_performed": false,
+    "runtime_8091_remains_active": true,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "tests_passed": true,
+    "test_count": 4,
+    "next_front_locked": "FRONT-CHAT-UI-BRAIN-PROVIDER-CONFIG-8091-01",
+    "updated_at_utc": "2026-06-12T08:45:22.544170+00:00"
+  },
+  "front_chat_ui_brain_provider_config_8091_01": {
+    "front": "FRONT-CHAT-UI-BRAIN-PROVIDER-CONFIG-8091-01",
+    "status": "OPENWEBUI_BRAIN_PROVIDER_8091_RUNBOOK_CREATED",
+    "functional_commit": "1d831b1",
+    "provider_base_url": "http://host.docker.internal:8091/v1",
+    "container_to_brain_passed": true,
+    "tests_passed": true,
+    "test_count": 3,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "next_front_locked": "FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01",
+    "updated_at_utc": "2026-06-12T08:47:04.684745+00:00"
+  },
+  "front_brain_v9_import_side_effects_hardening_01": {
+    "front": "FRONT-BRAIN-V9-IMPORT-SIDE-EFFECTS-HARDENING-01",
+    "status": "IMPORT_TESTCLIENT_SIDE_EFFECT_GUARD_CREATED",
+    "functional_commit": "2c0f8c5",
+    "remote_synced": true,
+    "runtime_used": "TestClient import only",
+    "side_effect_reproduced": false,
+    "github_knowledge_diff_after_import": false,
+    "files": [
+      "docs/FRONT_BRAIN_V9_IMPORT_SIDE_EFFECTS_HARDENING_01.md",
+      "tests/smoke/smoke_front_brain_v9_import_side_effects_hardening_01.py"
+    ],
+    "tests_passed": true,
+    "test_count": 2,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "raw_cot_exposed": false,
+    "secrets_exposed": false,
+    "evidence_path": "tmp_agent/front_brain_v9_import_side_effects_hardening_01",
+    "next_front_locked": "FRONT-CEI-FDOT-EVALUATION-PACK-01",
+    "updated_at_utc": "2026-06-12T08:52:30.921176+00:00"
+  },
+  "front_cei_fdot_evaluation_pack_01": {
+    "front": "FRONT-CEI-FDOT-EVALUATION-PACK-01",
+    "status": "CEI_FDOT_EVALUATION_PACK_CREATED",
+    "functional_commit": "20704bd",
+    "remote_synced": true,
+    "prompts": 12,
+    "tests_passed": true,
+    "test_count": 5,
+    "internet_used": false,
+    "official_fdot_facts_embedded": false,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched_only_authorized_cleanup": true,
+    "files": [
+      "docs/FRONT_CEI_FDOT_EVALUATION_PACK_01.md",
+      "tests/fixtures/cei_fdot_eval_pack_v1.json",
+      "tests/smoke/smoke_front_cei_fdot_evaluation_pack_01.py"
+    ],
+    "evidence_path": "tmp_agent/front_cei_fdot_evaluation_pack_01",
+    "next_front_locked": "FRONT-FINANCIAL-RESEARCH-SAFETY-PACK-01",
+    "updated_at_utc": "2026-06-12T09:03:28.681576+00:00"
+  },
+  "front_financial_research_safety_pack_01": {
+    "front": "FRONT-FINANCIAL-RESEARCH-SAFETY-PACK-01",
+    "status": "FINANCIAL_RESEARCH_SAFETY_PACK_CREATED",
+    "functional_commit": "06f0c82",
+    "remote_synced": true,
+    "prompts": 10,
+    "tests_passed": true,
+    "test_count": 5,
+    "broker_api_used": false,
+    "live_trading": false,
+    "paper_trading": false,
+    "strategy_execution": false,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "files": [
+      "docs/FRONT_FINANCIAL_RESEARCH_SAFETY_PACK_01.md",
+      "tests/fixtures/financial_research_safety_pack_v1.json",
+      "tests/smoke/smoke_front_financial_research_safety_pack_01.py"
+    ],
+    "evidence_path": "tmp_agent/front_financial_research_safety_pack_01",
+    "next_front_locked": "FRONT-MEMORY-FAISS-RETRIEVAL-QUALITY-PACK-01",
+    "updated_at_utc": "2026-06-12T09:05:23.719459+00:00"
+  },
+  "front_memory_faiss_retrieval_quality_pack_01": {
+    "front": "FRONT-MEMORY-FAISS-RETRIEVAL-QUALITY-PACK-01",
+    "status": "MEMORY_FAISS_RETRIEVAL_QUALITY_PACK_CREATED",
+    "functional_commit": "2d22c65",
+    "remote_synced": true,
+    "tests_passed": true,
+    "test_count": 4,
+    "semantic_memory_write_allowed": false,
+    "faiss_write_allowed": false,
+    "embedding_creation_allowed": false,
+    "reindex_allowed": false,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "files": [
+      "docs/FRONT_MEMORY_FAISS_RETRIEVAL_QUALITY_PACK_01.md",
+      "tests/fixtures/memory_faiss_retrieval_quality_pack_v1.json",
+      "tests/smoke/smoke_front_memory_faiss_retrieval_quality_pack_01.py"
+    ],
+    "evidence_path": "tmp_agent/front_memory_faiss_retrieval_quality_pack_01",
+    "next_front_locked": "FRONT-BRAIN-AUTONOMOUS-OBSERVER-REPORTS-01",
+    "updated_at_utc": "2026-06-12T09:07:05.155923+00:00"
+  },
+  "front_brain_autonomous_observer_reports_01": {
+    "front": "FRONT-BRAIN-AUTONOMOUS-OBSERVER-REPORTS-01",
+    "status": "AUTONOMOUS_OBSERVER_REPORT_SCHEMA_CREATED",
+    "functional_commit": "053869d",
+    "remote_synced": true,
+    "tests_passed": true,
+    "test_count": 4,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "raw_cot_exposed": false,
+    "secrets_exposed": false,
+    "files": [
+      "docs/BRAIN_AUTONOMOUS_OBSERVER_REPORT_SCHEMA.md",
+      "tests/fixtures/autonomous_observer_report_example.json",
+      "tests/smoke/smoke_front_brain_autonomous_observer_reports_01.py"
+    ],
+    "evidence_path": "tmp_agent/front_brain_autonomous_observer_reports_01",
+    "next_recommended_front": "FRONT-CODEX-TO-BRAIN-EVALUATION-RUN-01",
+    "updated_at_utc": "2026-06-12T09:08:39.040900+00:00"
+  },
+  "front_brain_governed_autonomy_walker_v1": {
+    "front": "FRONT-BRAIN-GOVERNED-AUTONOMY-WALKER-V1",
+    "status": "BRAIN_GOVERNED_AUTONOMY_WALKER_V1_COMPLETED_WITH_TIMEOUT_QUALITY_CAVEAT",
+    "selected_runtime_port": 8091,
+    "runtime_recovered": true,
+    "actions_applied": [
+      "teacher_student_training_scaffold",
+      "timeout_fallback_classification_in_harness",
+      "domain_evaluation_run",
+      "observer_report_helper",
+      "openwebui_runbook_refresh"
+    ],
+    "actions_blocked": [
+      "memory_faiss_mutation",
+      "trading_execution",
+      "broker_api_integration",
+      "raw_chain_of_thought_exposure",
+      "direct_session_timeout_patch_deferred_pending_root_cause"
+    ],
+    "training_cycles_run": 3,
+    "lesson_cards_created": 3,
+    "mistake_entries_created": 3,
+    "promotion_gates_created": 9,
+    "timeout_fallback_before": "20/24",
+    "timeout_fallback_after": 8,
+    "score_before": 0.583,
+    "score_after": 0.667,
+    "metadata_full_rate_after": 1.0,
+    "no_cot_rate_after": 1.0,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "raw_cot_exposed": false,
+    "secrets_exposed": false,
+    "tests_passed": true,
+    "integrated_test_count": 28,
+    "functional_commits": [
+      "027e5a7",
+      "d28196b",
+      "fad74d6"
+    ],
+    "files": [
+      "tmp_agent/brain_v9/training/*",
+      "tmp_agent/brain_v9/evaluation/*",
+      "tmp_agent/brain_v9/reports/autonomous_observer_report.py",
+      "docs/OPENWEBUI_BRAIN_PROVIDER_RUNBOOK.md",
+      "tests/smoke/smoke_front_brain_training_scaffold_01.py",
+      "tests/smoke/smoke_front_codex_to_brain_evaluation_harness_v2_01.py",
+      "tests/smoke/smoke_front_brain_autonomous_observer_reports_01.py",
+      "tests/smoke/smoke_front_openwebui_brain_provider_runbook_01.py"
+    ],
+    "evidence_path": "tmp_agent/front_brain_governed_autonomy_walker_v1",
+    "recovery_evidence_path": "tmp_agent/recover_brain_8091_and_rerun_autonomy_walker_v1",
+    "next_front_locked": "FRONT-BRAIN-TIMEOUT-GENERATION-QUALITY-ROOT-CAUSE-01",
+    "updated_at_utc": "2026-06-12T17:27:58.364915+00:00"
+  },
+  "front_brain_timeout_generation_quality_fix_01": {
+    "front": "FRONT-BRAIN-TIMEOUT-GENERATION-QUALITY-FIX-01",
+    "status": "BRAIN_TIMEOUT_GENERATION_QUALITY_FIX_PARTIAL_PROVIDER_SLOW",
+    "functional_commit": "fa51d51",
+    "remote_synced": true,
+    "runtime_used": 8091,
+    "memory_cleanup_performed": true,
+    "memory_cleanup_command": "git restore --worktree -- memory/semantic/semantic_memory.jsonl",
+    "memory_cleanup_scope": "exactly one probe-added semantic_memory.jsonl line removed after diff and FAISS baseline validation",
+    "read_only_eval_guard_added": true,
+    "openai_compat_dry_run_supported": true,
+    "eval_harness_dry_run_default": true,
+    "eval_harness_live_requires_explicit_flag": "--live",
+    "timeout_default_before_s": 30,
+    "timeout_default_after_s": 90,
+    "timeout_fallback_metadata_added": true,
+    "quality_eval": {
+      "before_historical": {
+        "prompts_attempted": 24,
+        "timeout_fallback_count": 20,
+        "average_score": 0.583
+      },
+      "before_pre_fix_mini": {
+        "prompts_attempted": 8,
+        "timeout_fallback_count": 8,
+        "average_score": 0.667
+      },
+      "after_dry_run_mini": {
+        "prompts_attempted": 8,
+        "successful_responses": 8,
+        "timeout_fallback_count": 0,
+        "average_score": 1.0,
+        "metadata_full_rate": 1.0,
+        "no_cot_rate": 1.0
+      },
+      "direct_llm_probe_90s": {
+        "success": true,
+        "latency_s": 52.917,
+        "model_used": "llama3.1:8b",
+        "fallback_from_kimi_cloud": true,
+        "provider_status": "partial_slow"
+      }
+    },
+    "immutability": {
+      "memory_mutated_after_fix": false,
+      "faiss_mutated_after_fix": false,
+      "semantic_memory_lines": 1715,
+      "faiss_ids": 1616,
+      "faiss_ntotal": 1616,
+      "semantic_memory_sha256": "ce81fbe1f97e257e2b124d7a929f0b2af86ce61e9ff1d8d832fdb5da1f69e64e",
+      "faiss_index_sha256": "adbb6051f79ecbeab0223d631a6013939c00bcc13216fbae437efe83047efa21",
+      "faiss_ids_sha256": "43736047db548caf9b26dfa61cdffe40e179c738bc8e8c295891f29cedd69102"
+    },
+    "files": [
+      "tmp_agent/brain_v9/api/openai_compat.py",
+      "tmp_agent/brain_v9/core/session.py",
+      "tmp_agent/brain_v9/evaluation/codex_brain_eval_harness.py",
+      "tests/smoke/smoke_front_brain_timeout_generation_quality_fix_01.py"
+    ],
+    "tests_passed": true,
+    "test_count": 16,
+    "runtime_restarted_8091": true,
+    "runtime_8090_touched": false,
+    "trading_touched": false,
+    "legacy_touched": false,
+    "raw_cot_exposed": false,
+    "secrets_exposed": false,
+    "evidence_path": "tmp_agent/front_brain_timeout_generation_quality_fix_01",
+    "next_front_locked": "FRONT-BRAIN-LOCAL-LLM-PROVIDER-OPTIMIZATION-01",
+    "updated_at_utc": "2026-06-12T18:10:48.373244+00:00"
+  },
+  "front_brain_llm_provider_chain_optimization_01": {
+    "front": "FRONT-BRAIN-LLM-PROVIDER-CHAIN-OPTIMIZATION-01",
+    "status": "BRAIN_LLM_PROVIDER_CHAIN_OPTIMIZATION_PARTIAL_KIMI_CONFIG_MISSING",
+    "functional_commit": "9367f8d",
+    "remote_synced": true,
+    "primary_provider": "kimi_k2_6_cloud",
+    "primary_model_id": "kimi-k2.6",
+    "secondary_provider": "codex",
+    "tertiary_provider": "local_ollama",
+    "kimi_status": "CONFIG_MISSING",
+    "codex_status": "EXECUTOR_AVAILABLE_NOT_SELF_BENCHMARKED",
+    "local_status": "AVAILABLE",
+    "provider_selected_for_chat": "kimi_k2_6_cloud when configured, else codex, else llama8b/deepseek14b",
+    "provider_selected_for_coding": "kimi_k2_6_cloud when configured, else codex, else qwen2.5-coder:14b",
+    "provider_selected_for_autonomy": "kimi_k2_6_cloud when configured, else codex, else llama8b/deepseek14b",
+    "local_fallback_model": "llama3.1:8b",
+    "disabled_or_demoted_providers": [
+      "kimi-k2.5:cloud removed from primary chains because it returned empty on autonomy probe"
+    ],
+    "direct_latency_before": {
+      "llama3.1:8b_previous_probe_s": 52.917,
+      "fallback_from_kimi_cloud": true
+    },
+    "direct_latency_after": {
+      "llama3.1:8b_tiny_s": 29.523,
+      "llama3.1:8b_short_s": 21.389,
+      "llama3.1:8b_autonomy_s": 29.941,
+      "kimi-k2.5-cloud_tiny_s": 4.131,
+      "kimi-k2.5-cloud_autonomy_status": "kimi_cloud: Ollama devolvio respuesta vacia"
+    },
+    "dry_run_eval_score": 1.0,
+    "fallback_count": 0,
+    "provider_status": "PARTIAL_KIMI_CONFIG_MISSING_LOCAL_HARDWARE_LIMITED",
+    "patches": {
+      "provider_priority_chain": "Kimi K2.6 cloud -> Codex -> local Ollama",
+      "empty_response_is_failure": true,
+      "chain_continues_after_empty_response": true,
+      "budget_skip_uses_effective_cap": true,
+      "provider_metadata_exposed": true,
+      "dry_run_guard_preserved": true
+    },
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "semantic_memory_lines": 1715,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "trading_touched": false,
+    "raw_cot_exposed": false,
+    "secrets_exposed": false,
+    "tests_passed": true,
+    "test_count": 27,
+    "runtime_8091_restarted": true,
+    "runtime_8090_touched": false,
+    "files": [
+      "tmp_agent/brain_v9/core/llm.py",
+      "tmp_agent/brain_v9/api/openai_compat.py",
+      "tests/smoke/smoke_front_brain_llm_provider_chain_optimization_01.py"
+    ],
+    "evidence_path": "tmp_agent/front_brain_llm_provider_chain_optimization_01",
+    "next_front_locked": "FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01",
+    "updated_at_utc": "2026-06-12T18:48:29.343514+00:00"
+  },
+  "front_kimi_k2_6_cloud_provider_config_runbook_01": {
+    "front": "FRONT-KIMI-K2-6-CLOUD-PROVIDER-CONFIG-RUNBOOK-01",
+    "status": "KIMI_K2_6_CLOUD_PROVIDER_CONFIG_RUNBOOK_COMPLETED",
+    "functional_commit": "228372e",
+    "remote_synced": true,
+    "provider_route": "ollama_cloud",
+    "kimi_status": "KIMI_CONFIG_MISSING",
+    "configured_model_tag": "kimi-k2.6:cloud",
+    "kimi_k2_5_cloud_present": true,
+    "kimi_k2_6_cloud_present": false,
+    "ollama_reachable": true,
+    "brain_models_status": "AVAILABLE",
+    "setup_script_created": true,
+    "verify_script_created": true,
+    "runbook_created": true,
+    "secrets_exposed": false,
+    "env_values_printed": false,
+    "env_file_written": false,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "semantic_memory_lines": 1715,
+    "faiss_ids": 1616,
+    "faiss_ntotal": 1616,
+    "trading_touched": false,
+    "tests_passed": true,
+    "test_count": 23,
+    "files": [
+      "docs/KIMI_K2_6_CLOUD_PROVIDER_SETUP_RUNBOOK.md",
+      "tools/setup_kimi_k2_6_provider_user_env.ps1",
+      "tools/verify_kimi_k2_6_provider_config.ps1",
+      "tests/smoke/smoke_front_kimi_k2_6_cloud_provider_config_runbook_01.py",
+      "tmp_agent/brain_v9/core/llm.py",
+      "tests/smoke/smoke_front_brain_llm_provider_chain_optimization_01.py"
+    ],
+    "manual_user_action_if_needed": "To target K2.6, make kimi-k2.6:cloud available in Ollama Cloud and optionally run tools/setup_kimi_k2_6_provider_user_env.ps1 -Mode User -ModelTag kimi-k2.6:cloud. For temporary K2.5 testing, use -ModelTag kimi-k2.5:cloud explicitly.",
+    "evidence_path": "tmp_agent/front_kimi_k2_6_cloud_provider_config_runbook_01",
+    "next_front_locked": "FRONT-KIMI-K2-6-OLLAMA-CLOUD-MODEL-ENABLEMENT-01",
+    "updated_at_utc": "2026-06-12T19:00:19.000875+00:00"
+  },
+  "macro_front_brain_final_autonomy_acceleration_cycle_01": {
+    "status": "BRAIN_FINAL_AUTONOMY_ACCELERATION_PARTIAL_KIMI_K2_6_UNAVAILABLE",
+    "commits": {
+      "provider_health_and_routing": "0b364d1",
+      "training_artifacts": "74e8796",
+      "chat_readiness_docs": "2e2546d"
+    },
+    "provider_state": {
+      "kimi_k2_6_cloud_present": false,
+      "kimi_k2_5_cloud_present": true,
+      "kimi_k2_5_probe": "empty_response",
+      "codex_provider_available": true,
+      "local_llama_available": true
+    },
+    "artifacts": {
+      "provider_health_module": "tmp_agent/brain_v9/provider_health/provider_health.py",
+      "training_curriculum": "docs/BRAIN_TRAINING_CURRICULUM.md",
+      "chat_readiness": "docs/BRAIN_CHAT_READINESS_FINAL.md",
+      "macro_smoke": "tests/smoke/smoke_macro_front_brain_final_autonomy_acceleration_cycle_01.py"
+    },
+    "validation": {
+      "macro_smoke_and_relevant_suite": "58 passed, 2 warnings",
+      "provider_health_commit_tests": "14 passed",
+      "training_commit_tests": "8 passed",
+      "docs_commit_tests": "5 passed",
+      "eval_prompts_attempted": 8,
+      "eval_successful_responses": 8,
+      "eval_average_score": 1.0,
+      "metadata_full_rate": 1.0,
+      "no_cot_rate": 1.0
+    },
+    "immutability": {
+      "memory_semantic_unchanged": true,
+      "semantic_memory_lines": 1715,
+      "faiss_ids": 1616,
+      "faiss_ntotal": 1616,
+      "real_writes": false,
+      "faiss_writes": false
+    },
+    "runtime_decision": {
+      "port_8090": "not_listening_during_macro_check",
+      "port_8091": "healthy_200",
+      "decision": "KEEP_8090_UNTOUCHED_USE_8091_FOR_SAFE_RUNTIME"
+    },
+    "out_of_scope_preserved": {
+      "trading": true,
+      "b8": true,
+      "tmp_agent_strategies": true,
+      "secrets": true
+    }
+  },
+  "front_kimi_k2_6_live_chat_probe_and_safety_filter_01": {
+    "status": "KIMI_K2_6_LIVE_CHAT_PROBE_AND_SAFETY_FILTER_COMPLETED",
+    "functional_commit": "a046b94",
+    "kimi_k2_6_core_verified": true,
+    "kimi_k2_6_chat_endpoint_verified": true,
+    "route": "provider_probe",
+    "provider_selected": "kimi_k2_6_cloud",
+    "model_selected": "kimi-k2.6:cloud",
+    "provider_status": "FAST_SUCCESS",
+    "latency_ms": 1236.04,
+    "provider_latency_ms": 1060.738,
+    "content_preview": "OK",
+    "thinking_stripped": false,
+    "no_cot_leak": true,
+    "local_fallback_used": false,
+    "fallback_used": false,
+    "safety": {
+      "tools_blocked": true,
+      "memory_writes_blocked": true,
+      "faiss_writes_blocked": true,
+      "external_side_effects_blocked": true,
+      "memory_mutated": false,
+      "faiss_mutated": false,
+      "semantic_memory_lines": 1715,
+      "faiss_ids": 1616,
+      "faiss_ntotal": 1616,
+      "trading_touched": false,
+      "secrets_exposed": false
+    },
+    "tests": {
+      "front_smoke": "11 passed",
+      "macro_smoke": "3 passed",
+      "provider_chain_smoke": "11 passed",
+      "timeout_quality_smoke": "7 passed, 2 warnings"
+    },
+    "next_front_locked": "FRONT-BRAIN-GOVERNED-AUTONOMY-OPERATIONS-MODE-01"
+  },
+  "macro_front_brain_aggressive_governed_autonomy_excellence_01": {
+    "front": "MACRO-FRONT-BRAIN-AGGRESSIVE-GOVERNED-AUTONOMY-EXCELLENCE-01",
+    "status": "BRAIN_AGGRESSIVE_GOVERNED_AUTONOMY_EXCELLENCE_PARTIAL",
+    "functional_commits": [
+      {
+        "hash": "3a0627b",
+        "message": "feat: add Brain aggressive autonomy teaching loop"
+      },
+      {
+        "hash": "0998806",
+        "message": "feat: add Brain operational learning and excellence scoring"
+      },
+      {
+        "hash": "688c401",
+        "message": "feat: add governed operations status and domain excellence packs"
+      },
+      {
+        "hash": "741779d",
+        "message": "test: add aggressive autonomy excellence smoke coverage"
+      },
+      {
+        "hash": "b4046ed",
+        "message": "docs: add Brain autonomy excellence doctrine"
+      }
+    ],
+    "runtime_used": 8091,
+    "provider": {
+      "preflight_provider_probe": {
+        "provider_selected": "kimi_k2_6_cloud",
+        "model_selected": "kimi-k2.6:cloud",
+        "status": "FAST_SUCCESS",
+        "content_preview": "OK",
+        "no_cot_leak": true
+      },
+      "open_autonomy_prompt_result": {
+        "kimi_status": "EMPTY_RESPONSE",
+        "fallback_provider": "codex",
+        "fallback_model": "gpt-5.5",
+        "all_provider_kimi": false,
+        "reason": "Kimi K2.6 provider_probe short prompt works, but open autonomy prompts returned empty responses and fell through to Codex."
+      }
+    },
+    "autonomy_cycles_run": 3,
+    "brain_codex_dialogues_run": 5,
+    "cycle_improvements_proposed": 3,
+    "cycle_improvements_implemented": 0,
+    "cycle_improvements_blocked": 3,
+    "codex_artifacts_implemented": [
+      "token conservation policy",
+      "teacher/student autonomy loop",
+      "operational non-semantic learning registries",
+      "excellence scoring and scorecard",
+      "domain excellence packs",
+      "governed operations status tooling",
+      "macro smoke coverage",
+      "autonomy excellence doctrine"
+    ],
+    "operational_learning": {
+      "lessons_created": 3,
+      "mistakes_recorded": 1,
+      "promotion_candidates_created": 2,
+      "semantic_memory_write": false,
+      "faiss_write": false
+    },
+    "excellence_score": {
+      "before": 0.804,
+      "after": 0.869,
+      "delta": 0.065,
+      "weakest_after": [
+        "cei_fdot_usefulness",
+        "coding_reliability",
+        "token_efficiency"
+      ]
+    },
+    "token_policy_created": true,
+    "operations_status_created": true,
+    "domain_excellence_packs": [
+      "cei_fdot_excellence",
+      "financial_research_safety_excellence",
+      "brain_development_excellence",
+      "chat_ux_excellence"
+    ],
+    "tests": {
+      "macro_smoke": "11 passed",
+      "kimi_live_probe_smoke": "11 passed",
+      "final_autonomy_macro_smoke": "3 passed",
+      "provider_chain_smoke": "11 passed",
+      "timeout_quality_smoke": "7 passed, 2 warnings",
+      "tests_passed": true
+    },
+    "immutability": {
+      "memory_mutated": false,
+      "faiss_mutated": false,
+      "semantic_memory_lines": 1715,
+      "faiss_ids": 1616,
+      "faiss_ntotal": 1616,
+      "trading_touched": false,
+      "b8_touched": false,
+      "secrets_exposed": false
+    },
+    "evidence_path": "tmp_agent/macro_front_brain_aggressive_governed_autonomy_excellence_01",
+    "next_front_locked": "FRONT-BRAIN-AUTONOMY-GAP-CLOSURE-01",
+    "updated_at_utc": "2026-06-12T22:52:57.848701+00:00"
+  },
+  "mega_front_brain_self_training_autonomy_maximization_200cycles_01": {
+    "front": "MEGA-FRONT-BRAIN-SELF-TRAINING-AUTONOMY-MAXIMIZATION-200CYCLES-01",
+    "status": "BRAIN_SELF_TRAINING_AUTONOMY_MAXIMIZATION_COMPLETED",
+    "cycles_targeted": 200,
+    "cycles_completed": 200,
+    "batches_completed": 20,
+    "provider_success_rate": 0.75,
+    "kimi_open_dialogue_stability": "KIMI_OPEN_AUTONOMY_DIALOGUE_STABLE",
+    "stable_prompt_profiles": [
+      "exact_output",
+      "bullet_only",
+      "json_only",
+      "role_compressed",
+      "one_sentence_proposal",
+      "critic"
+    ],
+    "fallback_rate": 0.25,
+    "implemented_improvements": 120,
+    "blocked_improvements": 0,
+    "lessons_created": 20,
+    "mistakes_recorded": 5,
+    "promotion_candidates_created": 5,
+    "evidence_lessons_created": 120,
+    "evidence_mistakes_created": 6,
+    "evidence_promotion_candidates_created": 12,
+    "tests_added": [
+      "tests/smoke/smoke_mega_front_brain_self_training_autonomy_maximization_200cycles_01.py",
+      "tests/smoke/smoke_front_kimi_open_autonomy_dialogue_calibration_01.py"
+    ],
+    "score_before": 0.869,
+    "score_after": 0.94,
+    "score_delta": 0.071,
+    "daily_dryrun_ready": true,
+    "memory_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "b8_touched": false,
+    "secrets_exposed": false,
+    "functional_commits": [
+      {
+        "hash": "c37f36c",
+        "message": "feat: add Kimi autonomy dialogue calibration"
+      },
+      {
+        "hash": "5394f1f",
+        "message": "feat: add Brain mega autonomy cycle runner"
+      },
+      {
+        "hash": "54e47ed",
+        "message": "feat: improve Brain operational learning and excellence scoring"
+      },
+      {
+        "hash": "9140eb6",
+        "message": "feat: add Brain daily autonomous dry-run tooling"
+      },
+      {
+        "hash": "f716bce",
+        "message": "test: add mega autonomy maximization smoke coverage"
+      }
+    ],
+    "tests": {
+      "required_suite": "57 passed, 2 warnings",
+      "py_compile": "PASS"
+    },
+    "evidence_path": "tmp_agent/mega_front_brain_self_training_autonomy_maximization_200cycles_01",
+    "next_front_locked": "FRONT-BRAIN-DAILY-AUTONOMOUS-OPERATIONS-DRYRUN-01",
+    "updated_at_utc": "2026-06-12T23:16:14.737065+00:00"
+  },
+  "mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01": {
+    "front": "MEGA-FRONT-BRAIN-PERSISTENT-AUTONOMY-REAL-MEMORY-CHAT-DASHBOARD-01",
+    "status": "BRAIN_PERSISTENT_AUTONOMY_REAL_MEMORY_PARTIAL",
+    "persistent_autonomy_created": true,
+    "scheduled_task_tooling_created": true,
+    "scheduled_task_created": false,
+    "scheduled_task_enabled": false,
+    "run_once_verified": true,
+    "status_verified": true,
+    "cycles_run": 3,
+    "memory_events_written": 8,
+    "promotion_candidates_created": 5,
+    "semantic_staging_created": true,
+    "semantic_staging_count": 5,
+    "canonical_semantic_promoted": false,
+    "promoted_count": 0,
+    "canonical_promotion_blocker": "Deferred to dedicated scale-up gate; canonical FAISS/semantic promotion requires snapshot, retrieval smoke and rollback review in a separate front.",
+    "old_semantic_lines": 1715,
+    "new_semantic_lines": 1715,
+    "old_faiss_ntotal": 1616,
+    "new_faiss_ntotal": 1616,
+    "dashboard_status": "running_on_8092",
+    "chat_status": "proxy_route_implemented_to_8091_provider_probe",
+    "dashboard_url": "http://127.0.0.1:8092/",
+    "provider_success_rate": "not_remeasured_batch; 8091 provider_probe kimi_k2_6_cloud passed",
+    "fallback_rate": "visible_in_dashboard_chat_response",
+    "rollback_available": true,
+    "tests_passed": true,
+    "test_result": "44 passed",
+    "memory_mutated": true,
+    "canonical_semantic_mutated": false,
+    "faiss_mutated": false,
+    "trading_touched": false,
+    "b8_touched": false,
+    "secrets_exposed": false,
+    "functional_commits": [
+      {
+        "hash": "523098b",
+        "message": "feat: add persistent Brain autonomy supervisor"
+      },
+      {
+        "hash": "a8baddb",
+        "message": "feat: add Brain real memory promotion pipeline"
+      },
+      {
+        "hash": "6722bf3",
+        "message": "feat: add Brain chat dashboard recovery"
+      },
+      {
+        "hash": "380b2cb",
+        "message": "feat: add Brain autonomy monitoring and correction queue"
+      },
+      {
+        "hash": "9a783d7",
+        "message": "test: add persistent autonomy memory dashboard smoke coverage"
+      }
+    ],
+    "evidence_path": "tmp_agent/mega_front_brain_persistent_autonomy_real_memory_chat_dashboard_01",
+    "next_front_locked": "FRONT-BRAIN-SCHEDULER-ENABLEMENT-02",
+    "updated_at_utc": "2026-06-12T23:49:30.075936+00:00",
+    "dashboard_pid": 45172,
+    "dashboard_health": {
+      "ok": true,
+      "dashboard": "brain_persistent_autonomy",
+      "port": 8092
+    }
+  },
+  "mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_01": {
+    "front": "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-01",
+    "status": "BRAIN_AUTONOMY_STABILITY_STATUS_FIX_AND_VERIFIABLE_CYCLES_PARTIAL",
+    "journal_cleanup_commit": "4459870",
+    "functional_commits": [
+      {
+        "hash": "a56419c",
+        "message": "fix: stabilize Brain dashboard status endpoint"
+      },
+      {
+        "hash": "cd304f2",
+        "message": "test: add autonomy stability status cycle smoke coverage"
+      },
+      {
+        "hash": "8d55412",
+        "message": "docs: add Brain autonomy stability cycle reports"
+      },
+      {
+        "hash": "3cd67c6",
+        "message": "memory: record governed autonomy post-run journal events"
+      }
+    ],
+    "dashboard": {
+      "status_endpoint_fixed_source": true,
+      "status_endpoint_fixed_live": false,
+      "live_blocker": "8092 old dashboard process classified by HTTP root content; Stop-Process denied Access is denied; live /brain-dashboard/status still returned HTTP 500/timeout.",
+      "root_ok": true,
+      "no_window_verified": true
+    },
+    "autonomy": {
+      "scheduler_enabled": true,
+      "autonomy_stopped": false,
+      "autonomy_paused": false,
+      "cycles_targeted": 120,
+      "cycles_completed": 0,
+      "batches_completed": 0,
+      "cycles_skipped_reason": "Live status endpoint did not satisfy required HTTP 200 <5s gate."
+    },
+    "learning": {
+      "lessons_created": 0,
+      "mistakes_recorded": 0,
+      "promotion_candidates_created": 0,
+      "journal_count_before": 71,
+      "journal_count_after": 71
+    },
+    "score": {
+      "before": 0.94,
+      "after": 0.945,
+      "delta": 0.005
+    },
+    "immutability": {
+      "semantic_memory_lines": 1715,
+      "faiss_ids": 1616,
+      "faiss_ntotal": 1616,
+      "canonical_semantic_mutated": false,
+      "faiss_mutated": false,
+      "trading_touched": false,
+      "b8_touched": false,
+      "tmp_agent_strategies_touched": false,
+      "secrets_exposed": false,
+      "raw_cot_exposed": false
+    },
+    "tests": {
+      "py_compile": "PASS",
+      "focused_smoke": "6 passed"
+    },
+    "evidence_path": "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_01",
+    "next_front_locked": "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01",
+    "updated_at_utc": "2026-06-13T18:09:54.801967+00:00",
+    "post_run_journal_commit": "3cd67c6",
+    "post_run_journal_added_records": 3,
+    "post_run_journal_safe": true
+  },
+  "front_brain_dashboard_status_endpoint_rootcause_repair_01": {
+    "front": "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01",
+    "status": "BRAIN_DASHBOARD_STATUS_ENDPOINT_ROOTCAUSE_REPAIR_NEEDS_ADMIN_ACTION",
+    "pid_8092": 43364,
+    "classified_as_brain_dashboard": true,
+    "stop_attempted": true,
+    "stop_success": false,
+    "taskkill_attempted": true,
+    "taskkill_success": false,
+    "restart_success": false,
+    "needs_admin_action": true,
+    "manual_admin_command": "Open PowerShell as Administrator and run: Stop-Process -Id 43364 -Force; or taskkill /PID 43364 /T /F",
+    "dashboard": {
+      "root_ok": true,
+      "status_ok": false,
+      "status_http": null,
+      "status_latency_ms": 4440.78,
+      "activity_ok": true,
+      "scheduler_ok": true,
+      "safety_ok": true,
+      "promotion_queue_ok": true,
+      "chat_ok": true,
+      "no_window_verified": true
+    },
+    "autonomy": {
+      "scheduler_state": 3,
+      "scheduler_enabled": true,
+      "autonomy_stopped": false,
+      "autonomy_paused": false,
+      "heartbeat_status": "idle",
+      "journal_count": 74
+    },
+    "immutability": {
+      "semantic_memory_lines": 1715,
+      "faiss_ids": 1616,
+      "faiss_ntotal": 1616,
+      "canonical_semantic_mutated": false,
+      "faiss_mutated": false,
+      "trading_touched": false,
+      "b8_touched": false,
+      "tmp_agent_strategies_touched": false,
+      "secrets_exposed": false,
+      "raw_cot_exposed": false
+    },
+    "tests": {
+      "py_compile": "PASS",
+      "focused_smoke": "6 passed"
+    },
+    "evidence_path": "tmp_agent/front_brain_dashboard_status_endpoint_rootcause_repair_01",
+    "next_front_locked": "MANUAL-ADMIN-STOP-OLD-8092-DASHBOARD-PROCESS",
+    "updated_at_utc": "2026-06-13T18:20:19.862186+00:00"
+  },
+  "front_brain_dashboard_status_endpoint_rootcause_repair_01_retry_after_admin_stop": {
+    "front": "FRONT-BRAIN-DASHBOARD-STATUS-ENDPOINT-ROOTCAUSE-REPAIR-01-RETRY-AFTER-ADMIN-STOP",
+    "status": "BRAIN_DASHBOARD_STATUS_ENDPOINT_ROOTCAUSE_REPAIR_COMPLETED",
+    "previous_old_pid_stopped_by_admin": true,
+    "port_free_before_start": true,
+    "started_pid": 89832,
+    "restart_success": true,
+    "dashboard": {
+      "root_ok": true,
+      "status_ok": true,
+      "status_http": 200,
+      "status_latency_ms": 12.525,
+      "activity_ok": true,
+      "scheduler_ok": true,
+      "safety_ok": true,
+      "promotion_queue_ok": true,
+      "chat_ok": true,
+      "no_window_verified": true,
+      "max_status_latency_ms_60s": 176.926,
+      "max_scheduler_latency_ms_60s": 3079.883
+    },
+    "autonomy": {
+      "scheduler_state": 3,
+      "scheduler_enabled": true,
+      "autonomy_stopped": false,
+      "autonomy_paused": false,
+      "heartbeat_status": "idle",
+      "journal_count": 74
+    },
+    "immutability": {
+      "semantic_memory_lines": 1715,
+      "faiss_ids": 1616,
+      "faiss_ntotal": 1616,
+      "canonical_semantic_mutated": false,
+      "faiss_mutated": false,
+      "trading_touched": false,
+      "b8_touched": false,
+      "tmp_agent_strategies_touched": false,
+      "secrets_exposed": false,
+      "raw_cot_exposed": false
+    },
+    "tests": {
+      "py_compile": "PASS",
+      "focused_smoke": "4 passed"
+    },
+    "evidence_path": "tmp_agent/front_brain_dashboard_status_endpoint_rootcause_repair_01_retry_after_admin_stop",
+    "next_front_locked": "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-RERUN-01",
+    "updated_at_utc": "2026-06-13T18:30:52.393761+00:00"
+  },
+  "mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01": {
+    "front": "MEGA-FRONT-BRAIN-AUTONOMY-STABILITY-STATUS-FIX-AND-VERIFIABLE-CYCLES-RERUN-01",
+    "status": "BRAIN_AUTONOMY_STABILITY_STATUS_FIX_AND_VERIFIABLE_CYCLES_RERUN_COMPLETED",
+    "cycles_targeted": 120,
+    "cycles_completed": 120,
+    "batches_completed": 12,
+    "stop_reason": "completed_minimum_120_cycles_stop_by_design",
+    "provider": {
+      "runner_success_rate": 1.0,
+      "fallback_rate": 0.058,
+      "timeout_count": 0,
+      "empty_response_count": 0,
+      "kimi_success_rate": "control_plane_available_not_invoked_per_cycle"
+    },
+    "learning": {
+      "lessons_created": 60,
+      "mistakes_recorded": 4,
+      "promotion_candidates_created": 12,
+      "journal_count_before": 74,
+      "journal_count_after": 194,
+      "semantic_staging_count": 8,
+      "canonical_promotions": 0
+    },
+    "score": {
+      "before": 0.903,
+      "after": 0.927,
+      "delta": 0.024
+    },
+    "immutability": {
+      "semantic_memory_lines": 1715,
+      "faiss_ids": 1616,
+      "faiss_ntotal": 1616,
+      "canonical_semantic_mutated": false,
+      "faiss_mutated": false,
+      "trading_touched": false,
+      "b8_touched": false,
+      "tmp_agent_strategies_touched": false,
+      "secrets_exposed": false,
+      "raw_cot_exposed": false
+    },
+    "tests": {
+      "py_compile": "PASS",
+      "focused_smoke": "5 passed"
+    },
+    "evidence_path": "tmp_agent/mega_front_brain_autonomy_stability_status_fix_and_verifiable_cycles_rerun_01",
+    "next_front_locked": "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-SCALEUP-01",
+    "updated_at_utc": "2026-06-13T18:42:14.596111+00:00"
+  },
+  "front_brain_canonical_memory_promotion_scaleup_01": {
+    "front": "FRONT-BRAIN-CANONICAL-MEMORY-PROMOTION-SCALEUP-01",
+    "status": "BRAIN_CANONICAL_MEMORY_PROMOTION_SCALEUP_NO_PROMOTION_NEEDED",
+    "background_journal_commit": "950778c",
+    "journal_events_reviewed": 197,
+    "promotion_queue_reviewed": 12,
+    "semantic_staging_reviewed": 8,
+    "rejected": 20,
+    "approved": 0,
+    "promoted": 0,
+    "canonical_promotion_performed": false,
+    "reason": "Reviewed candidates were safe but low-value/redundant deterministic runner templates; no durable canonical memory item met threshold.",
+    "memory": {
+      "semantic_lines_before": 1715,
+      "semantic_lines_after": 1715,
+      "faiss_ids_before": 1616,
+      "faiss_ids_after": 1616,
+      "faiss_ntotal_before": 1616,
+      "faiss_ntotal_after": 1616
+    },
+    "safety": {
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "trading_touched": false,
+      "b8_touched": false,
+      "strategies_touched": false,
+      "canonical_semantic_mutated": false,
+      "faiss_mutated": false
+    },
+    "tests": {
+      "py_compile": "PASS",
+      "focused_smoke": "5 passed"
+    },
+    "evidence_path": "tmp_agent/front_brain_canonical_memory_promotion_scaleup_01",
+    "next_front_locked": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
+    "updated_at_utc": "2026-06-13T19:37:06.002440+00:00"
+  },
+  "front_brain_llm_grounded_autonomy_cycles_01": {
+    "front": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-01",
+    "status": "FAILED_PROVIDER_STABILITY_GATE",
+    "start_head": "669e2a1",
+    "provider_probe_required_for_llm_grounded_route": true,
+    "route_limitation": "Normal 8091 route returned dry-run canonical router; provider_probe:true was required to reach real provider responses.",
+    "cycles_targeted": 30,
+    "cycles_completed": 10,
+    "batches_completed": 2,
+    "stop_reason": "fallback_rate_above_0_50_after_10_cycles",
+    "provider": {
+      "primary_provider": "kimi_k2_6_cloud",
+      "kimi_used": true,
+      "provider_success_rate": 1.0,
+      "fallback_rate": 0.8,
+      "timeout_count": 0,
+      "empty_response_count": 0,
+      "avg_latency_ms": 16581.5,
+      "avg_quality_score": 0.944
+    },
+    "learning": {
+      "lessons_created": 10,
+      "mistakes_recorded": 0,
+      "promotion_candidates_created": 9,
+      "journal_count_before": 329,
+      "journal_count_after": 339,
+      "semantic_staging_count": 20,
+      "canonical_promotions": 0
+    },
+    "immutability": {
+      "semantic_memory_lines_before": 1715,
+      "semantic_memory_lines_after": 1715,
+      "faiss_ids_before": 1616,
+      "faiss_ids_after": 1616,
+      "faiss_ntotal_before": 1616,
+      "faiss_ntotal_after": 1616,
+      "canonical_semantic_mutated": false,
+      "faiss_mutated": false,
+      "trading_touched": false,
+      "b8_touched": false,
+      "strategies_touched": false,
+      "secrets_exposed": false,
+      "raw_cot_exposed": false
+    },
+    "tests": {
+      "py_compile": "PASS",
+      "focused_smoke": "6 passed"
+    },
+    "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_01",
+    "next_front_locked": "FRONT-BRAIN-PROVIDER-RELIABILITY-ROOTCAUSE-01",
+    "updated_at_utc": "2026-06-15T15:14:11.506590+00:00"
+  },
+  "front_brain_provider_reliability_rootcause_01": {
+    "front": "FRONT-BRAIN-PROVIDER-RELIABILITY-ROOTCAUSE-01",
+    "status": "BRAIN_PROVIDER_RELIABILITY_ROOTCAUSE_COMPLETED_WITH_PATCH",
+    "start_head": "2cb4575",
+    "root_cause_classification": [
+      "ROUTE_SEMANTICS_BUG",
+      "DRY_RUN_GUARD_OVERMATCH",
+      "KIMI_CLOUD_INSTABILITY"
+    ],
+    "primary_cause": "ROUTE_SEMANTICS_BUG / DRY_RUN_GUARD_OVERMATCH",
+    "secondary_cause": "KIMI_CLOUD_INSTABILITY: direct Kimi had 1/3 empty response; Brain provider_probe had 1/5 fallback; post-patch had 1/5 fallback.",
+    "patch_applied": true,
+    "files_changed": [
+      "tmp_agent/brain_v9/api/openai_compat.py",
+      "tmp_agent/brain_v9/core/router_entrypoint.py"
+    ],
+    "before_patch_metrics": {
+      "total_calls_excluding_tags": 15,
+      "kimi_direct_success_rate": 0.667,
+      "brain_provider_probe_kimi_success_rate": 0.8,
+      "brain_provider_probe_fallback_rate": 0.2,
+      "brain_normal_route_real_llm_rate": 0.0,
+      "brain_normal_route_dry_run_rate": 1.0,
+      "avg_latency_by_route": {
+        "direct_kimi": 1611.3,
+        "provider_probe": 4570.2,
+        "normal_route": 14.6,
+        "dashboard_chat": 2027.0
+      },
+      "timeout_count": 0,
+      "empty_response_count": 1,
+      "fallback_count": 1,
+      "error_types": [],
+      "kimi_tag_visible": true
+    },
+    "after_patch_metrics": {
+      "post_patch_calls": 5,
+      "normal_llm_grounded_route_real_llm_rate": 1.0,
+      "normal_llm_grounded_route_dry_run_rate": 0.0,
+      "kimi_success_rate": 0.8,
+      "fallback_rate": 0.2,
+      "timeout_count": 0,
+      "empty_response_count": 0,
+      "avg_latency_ms": 6017.2
+    },
+    "safety": {
+      "semantic_lines_before": 1715,
+      "semantic_lines_after": 1715,
+      "faiss_ids_before": 1616,
+      "faiss_ids_after": 1616,
+      "faiss_ntotal_before": 1616,
+      "faiss_ntotal_after": 1616,
+      "semantic_hash_unchanged": true,
+      "faiss_index_hash_unchanged": true,
+      "faiss_ids_hash_unchanged": true,
+      "canonical_semantic_mutated": false,
+      "faiss_mutated": false,
+      "env_touched": false,
+      "trading_touched": false,
+      "b8_touched": false,
+      "strategies_touched": false,
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "dashboard_status_final_ok": true,
+      "dashboard_status_latency_ms": 19
+    },
+    "tests": {
+      "py_compile": "PASS",
+      "focused_smoke": "7 passed"
+    },
+    "evidence_path": "tmp_agent/front_brain_provider_reliability_rootcause_01",
+    "next_front_locked": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02",
+    "updated_at_utc": "2026-06-15T15:32:34.759912+00:00"
+  },
+  "restart_brain_8091_load_patched_provider_route_01": {
+    "front": "RESTART-BRAIN-8091-LOAD-PATCHED-PROVIDER-ROUTE-01",
+    "status": "BRAIN_8091_PATCHED_PROVIDER_ROUTE_RELOAD_COMPLETED",
+    "old_pid": 46620,
+    "new_pid": 50624,
+    "restart_success": true,
+    "route": "llm_grounded_provider_eval",
+    "dry_run": false,
+    "provider_selected": "kimi_k2_6_cloud",
+    "model_selected": "kimi-k2.6:cloud",
+    "fallback_rate_probe": 0,
+    "content_non_empty_count": 3,
+    "probe_count": 4,
+    "safe_mode": true,
+    "safety": {
+      "semantic_lines_before": 1715,
+      "semantic_lines_after": 1715,
+      "faiss_ids_before": 1616,
+      "faiss_ids_after": 1616,
+      "faiss_ntotal_before": 1616,
+      "faiss_ntotal_after": 1616,
+      "canonical_semantic_mutated": false,
+      "faiss_mutated": false,
+      "trading_touched": false,
+      "b8_touched": false,
+      "strategies_touched": false,
+      "secrets_exposed": false,
+      "raw_cot_exposed": false
+    },
+    "evidence_path": "tmp_agent/restart_brain_8091_load_patched_provider_route_01",
+    "updated_at_utc": "2026-06-15T16:04:33.268191+00:00",
+    "next_front_locked": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-8091-RELOAD"
+  },
+  "front_brain_llm_grounded_autonomy_cycles_02_retry_after_8091_reload": {
+    "front": "FRONT-BRAIN-LLM-GROUNDED-AUTONOMY-CYCLES-02-RETRY-AFTER-8091-RELOAD",
+    "status": "FAILED_PROVIDER_STABILITY_GATE",
+    "cycles_targeted": 30,
+    "cycles_completed": 15,
+    "batches_completed": 3,
+    "stop_reason": "provider_success_rate_below_0_60_after_10_cycles",
+    "route": {
+      "normal_route_used": true,
+      "provider_probe_used_for_cycles": false,
+      "dry_run_count": 0,
+      "route_regression_detected": false
+    },
+    "provider": {
+      "primary_provider": "kimi_k2_6_cloud",
+      "kimi_used": true,
+      "provider_success_rate": 0.533,
+      "kimi_success_rate": 0.533,
+      "fallback_rate": 0.067,
+      "timeout_count": 0,
+      "empty_response_count": 7,
+      "empty_response_rate": 0.467,
+      "avg_latency_ms": 28598.3,
+      "avg_quality_score": 0.65
+    },
+    "learning": {
+      "lessons_created": 7,
+      "mistakes_recorded": 7,
+      "promotion_candidates_created": 7,
+      "journal_count_before": 342,
+      "journal_count_after": 349,
+      "semantic_staging_count": 7,
+      "canonical_promotions": 0
+    },
+    "dashboard": {
+      "status_final_ok": true,
+      "status_latency_ms": 20,
+      "scheduler_ok": true,
+      "safety_ok": true
+    },
+    "safety": {
+      "timestamp": "2026-06-15T16:38:39.088956+00:00",
+      "semantic_lines_before": 1715,
+      "semantic_lines_after": 1715,
+      "faiss_ids_before": 1616,
+      "faiss_ids_after": 1616,
+      "faiss_ntotal_before": 1616,
+      "faiss_ntotal_after": 1616,
+      "semantic_hash_unchanged": true,
+      "faiss_index_hash_unchanged": true,
+      "faiss_ids_hash_unchanged": true,
+      "canonical_semantic_mutated": false,
+      "faiss_mutated": false,
+      "env_touched": false,
+      "trading_touched": false,
+      "b8_touched": false,
+      "strategies_touched": false,
+      "raw_cot_exposed": false,
+      "secrets_exposed": false,
+      "dashboard_status_final_ok": true,
+      "dashboard_status_latency_ms": 20,
+      "scheduler_ok": true,
+      "safety_ok": true,
+      "normal_route_dry_run_count": 0,
+      "tracked_status": [
+        " M memory/autonomous_journal.jsonl"
+      ],
+      "staged": []
+    },
+    "evidence_path": "tmp_agent/front_brain_llm_grounded_autonomy_cycles_02_retry_after_8091_reload",
+    "next_front_locked": "FRONT-BRAIN-KIMI-CLOUD-STABILITY-MITIGATION-02",
+    "updated_at_utc": "2026-06-15T16:39:36.843283+00:00"
+  },
+  "codex_pure_brain_training_pending_drain": {
+    "status": "done",
+    "started_utc": "2026-06-16T15:57:33.420302Z",
+    "completed_utc": "2026-06-16T17:00:51.829118Z",
+    "interactions_completed": 18,
+    "domains_trained": [
+      "cei_fdot",
+      "brain_architecture",
+      "memory_faiss_governance",
+      "finance_trading_research",
+      "flatbed_trucking",
+      "english_career"
+    ],
+    "pending_found": 93,
+    "unresolved_pending_after_review": 0,
+    "candidate_lessons_extracted": 18,
+    "candidates_approved": 6,
+    "candidates_promoted": 6,
+    "semantic_lines_delta": 6,
+    "faiss_ids_delta": 6,
+    "faiss_ntotal_delta": 6,
+    "safety_regression": false,
+    "rollback_snapshot": "memory/rollback_snapshots/codex_pure_brain_training_and_pending_drain_01_20260616_163155"
+  },
+  "front_brain_codex_current_run_keep_knowledge_add_missing_core_01": {
+    "status": "done_pending_commit",
+    "front": "HOTFIX-CURRENT-RUN-KEEP-KNOWLEDGE-ADD-MISSING-CORE-DOMAINS",
+    "started_utc": "2026-06-16T17:24:41.271800Z",
+    "completed_utc": "2026-06-16T17:25:17.607526Z",
+    "policy": "keep useful auxiliary knowledge and add missing Brain core domains",
+    "core_domains_added": [
+      "external_source_learning_pipeline_github_repo_docs_official_sources",
+      "autonomy_dashboard_visual_trace_self_improvement_governance"
+    ],
+    "auxiliary_domains_kept": [
+      "flatbed_trucking_dispatcher_automation_business_operations",
+      "english_career_professional_communication"
+    ],
+    "promoted_count": 6,
+    "semantic_lines_delta": 6,
+    "faiss_ids_delta": 6,
+    "faiss_ntotal_delta": 6,
+    "rollback_snapshot": "memory/rollback_snapshots/codex_current_run_keep_knowledge_add_missing_core_01_20260616_172442",
+    "journal_append_authorization": {
+      "autonomous_journal_append_included": true,
+      "append_only_verified": true,
+      "jsonl_valid": true,
+      "added_lines": 3,
+      "removed_json_lines": 0,
+      "no_secrets": true,
+      "no_raw_chain_of_thought": true,
+      "no_trading_execution": true,
+      "semantic_faiss_effect": false,
+      "reason": "required to achieve clean post-push lock without deleting valid operational journal events",
+      "added_event_ids": [
+        "auto_mem_f76061a5051f",
+        "auto_mem_db3110c4cee7",
+        "auto_mem_2e6bd57c1200"
+      ],
+      "keyword_hits": []
+    },
+    "evidence_path": "tmp_agent/front_brain_codex_current_run_keep_knowledge_add_missing_core_01",
+    "next_recommended_front": "FRONT-BRAIN-CODEX-CURRENT-RUN-CORE-DOMAIN-RETRIEVAL-EVAL-01"
+  },
+  "front_brain_codex_current_run_core_domain_retrieval_eval_01": {
+    "status": "done_pending_commit",
+    "front": "FRONT-BRAIN-CODEX-CURRENT-RUN-CORE-DOMAIN-RETRIEVAL-EVAL-01",
+    "started_utc": "2026-06-16T17:54:39.722892Z",
+    "completed_utc": "2026-06-16T18:18:12.250430Z",
+    "evaluation_only": true,
+    "semantic_faiss_mutated": false,
+    "promotion_queue_mutated": false,
+    "semantic_staging_mutated": false,
+    "lesson_tests": 36,
+    "lesson_top1_hit_rate": 1.0,
+    "lesson_top3_hit_rate": 1.0,
+    "core_domain_hit_rate": 1.0,
+    "auxiliary_classification_hit_rate": 1.0,
+    "answer_questions_tested": 20,
+    "answer_average_score": 10.9,
+    "provider_valid_answer_questions": 13,
+    "provider_invalid_answer_questions": 7,
+    "safety_regression": true,
+    "evidence_path": "tmp_agent/front_brain_codex_current_run_core_domain_retrieval_eval_01",
+    "next_recommended_front": "FRONT-BRAIN-CODEX-CURRENT-RUN-MEMORY-USE-ALIGNMENT-PLAN-01"
+  },
+  "front_brain_agent_full_rebuild_langgraph_recursive_closeout_01": {
+    "status": "done_pending_commit",
+    "agent_v2_canonical": true,
+    "langgraph_used": true,
+    "benchmark_passed": true,
+    "live_endpoint_restart_required": true,
+    "memory_faiss_unchanged": true,
+    "evidence_path": "tmp_agent/front_brain_agent_full_rebuild_langgraph_recursive_closeout_01",
+    "next": "RESTART-BRAIN-8091-LOAD-AGENT-V2-ROUTES-01"
+  },
+  "agent_v2_total_operational_excellence": {
+    "status": "verified_committed_pending_push",
+    "primary_model": "kimi-k2.6:cloud",
+    "kimi_used": true,
+    "benchmark": "20/20",
+    "non_template_answers": 20,
+    "kimi_finalized_answers": 17,
+    "live_8091_verified": true,
+    "live_8092_agent_v2_route": "hard_blocked_404_old_process_reload_issue",
+    "semantic_faiss_unchanged": true,
+    "unauthorized_writes": 0,
+    "raw_cot": 0,
+    "secrets": 0,
+    "updated_utc": "2026-06-16T23:31:51.603391Z",
+    "functional_commit": "3f6fc8d"
+  },
+  "front_brain_agent_v2_8092_dashboard_dogfood_closeout_01": {
+    "status": "done_pending_commit",
+    "front": "FRONT-BRAIN-AGENT-V2-8092-DASHBOARD-DOGFOOD-CLOSEOUT-01",
+    "blocker_closed": false,
+    "blocker_documented": true,
+    "blocker_type": "windows_tcp_socket_zombie",
+    "blocker_details": {
+      "port": 8092,
+      "pid": 183024,
+      "pid_exists": false,
+      "socket_status": "LISTENING",
+      "code_has_route": true,
+      "process_executes_old_code": true,
+      "solution": "windows_reboot_or_netsh_reset_required"
+    },
+    "canonical_for_agent_v2": "8091",
+    "8091_status": {
+      "health": "200",
+      "v2_agent_status": "200",
+      "v2_agent_capabilities": "200",
+      "v2_chat_agent": "200",
+      "brain_dashboard_agent_v2_status": "200"
+    },
+    "8092_status": {
+      "health": "200",
+      "brain_dashboard_status": "200",
+      "brain_dashboard_agent_v2_status": "404_zombie"
+    },
+    "dogfood_test": {
+      "run_id": "agv2_4e81f46dc2022b4b",
+      "model": "kimi-k2.6:cloud",
+      "provider_degraded": false,
+      "success": true
+    },
+    "memory_faiss": {
+      "semantic_lines_before": 1732,
+      "semantic_lines_after": 1732,
+      "faiss_ntotal_before": 1633,
+      "faiss_ntotal_after": 1633,
+      "hashes_unchanged": true
+    },
+    "scripts_created": [
+      "scripts/brain/restart_brain_8091_agent_v2.ps1",
+      "scripts/brain/restart_dashboard_8092_agent_v2.ps1",
+      "scripts/brain/probe_agent_v2_live.ps1",
+      "scripts/brain/probe_dashboard_8092_agent_v2.ps1",
+      "scripts/brain/start_brain_stack_agent_v2.ps1"
+    ],
+    "docs_created": [
+      "docs/BRAIN_AGENT_8092_DASHBOARD_CLOSEOUT.md"
+    ],
+    "recommendation": "Reiniciar Windows para liberar socket TCP fantasma en 8092, luego ejecutar scripts/restart_dashboard_8092_agent_v2.ps1",
+    "evidence_path": "tmp_agent/front_brain_agent_v2_8092_dashboard_dogfood_closeout_01"
+  },
+  "front_brain_agent_v2_mandatory_multitool_planner_hotfix_01": {
+    "status": "done_pending_commit",
+    "front": "FRONT-BRAIN-AGENT-V2-MANDATORY-MULTITOOL-PLANNER-HOTFIX-01",
+    "root_cause": "planner_keyword_misclassification_no_mandatory_multitool_class",
+    "fix": {
+      "mandatory_parser": "tmp_agent/brain_v9/core/agent_kernel_v2/mandatory_tools.py - deterministic regex parser",
+      "planner_override": "mandatory_detected=true forces classification=mandatory_multitool and one step per requested check",
+      "finalizer_evidence_contract": "requested vs scheduled vs executed tool distinction added to prompt",
+      "tools_distinction": "Do NOT say unavailable unless gateway lacks capability"
+    },
+    "exact_retest": {
+      "run_id": "agv2_712d10fd65b3bfe5",
+      "classification": "mandatory_multitool",
+      "model_used": "kimi-k2.6:cloud",
+      "provider_degraded": false,
+      "tools_executed": 7,
+      "raw_cot": false,
+      "unauthorized_writes": 0
+    },
+    "regression": {
+      "tasks_total": 8,
+      "tasks_passed": 7,
+      "tasks_blocked": 1,
+      "threshold_met": true,
+      "kimi_used_count": 8,
+      "provider_degraded_count": 0
+    },
+    "memory_faiss": {
+      "semantic_lines": 1732,
+      "faiss_ids": 1633,
+      "faiss_ntotal": 1633,
+      "unchanged": true
+    },
+    "scripts_created": [],
+    "docs_created": [
+      "docs/BRAIN_AGENT_RUNTIME_CONTRACT_V2.md"
+    ],
+    "evidence_path": "tmp_agent/front_brain_agent_v2_mandatory_multitool_planner_hotfix_01",
+    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-TRACE-EVENT-PERSISTENCE-01"
+  },
+  "front_brain_worktree_hygiene_untracked_forensic_cleanup_01": {
+    "status": "done_pending_commit",
+    "front": "FRONT-BRAIN-WORKTREE-HYGIENE-UNTRACKED-FORENSIC-CLEANUP-01",
+    "start_head": "291d8ab",
+    "end_head": "PENDING_PUSH",
+    "actions": {
+      "root_junk_quarantined": ["dry_run", "evaluation", "read_only", "stream"],
+      "logfile_note": "$LogFile is Windows system file (0 bytes), documented only",
+      "post_push_verification_committed": "tmp_agent/front_brain_agent_v2_mandatory_multitool_planner_hotfix_01/post_push_verification.json",
+      "runtime_artifacts_excluded": ["tmp_agent/agent_kernel_v2/runs/", "tmp_agent/evolution_runs/", "tmp_agent/brain_v9/start_8091_wrapper.py"],
+      "old_front_policy": "LEAVE_UNTRACKED_DOCUMENTED",
+      "memory_autonomous_journal_decision": "LEAVE_UNSTAGED_DOCUMENTED",
+      "memory_faiss_status": "unchanged_1732_1633_1633"
+    },
+    "known_blocker_remaining": "8092 Windows TCP zombie requires OS reboot",
+    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-TRACE-EVENT-PERSISTENCE-01",
+    "evidence_path": "tmp_agent/front_brain_worktree_hygiene_untracked_forensic_cleanup_01"
+  },
+  "front_brain_agent_v2_trace_event_persistence_01": {
+    "status": "done_pending_commit",
+    "front": "FRONT-BRAIN-AGENT-V2-TRACE-EVENT-PERSISTENCE-01",
+    "start_head": "828c8a6",
+    "end_head": "PENDING_PUSH",
+    "root_cause": "CLIENT_KEY_MISMATCH_NOT_PERSISTENCE_FAILURE",
+    "findings": {
+      "trace_write_path": "tmp_agent/agent_kernel_v2/runs/{run_id}/trace.jsonl",
+      "trace_read_path": "tmp_agent/agent_kernel_v2/runs/{run_id}/trace.jsonl",
+      "trace_jsonl_exists": true,
+      "trace_jsonl_lines": 20,
+      "api_endpoint": "GET /v2/agent/runs/{run_id}/trace",
+      "api_response_key": "trace",
+      "client_error": "Client test used 'events' key instead of 'trace' key",
+      "persistence_issue": false,
+      "endpoint_schema_issue": false,
+      "runtime_restart_persistence": true
+    },
+    "fix": {
+      "trace_jsonl_path": "tmp_agent/agent_kernel_v2/runs/{run_id}/trace.jsonl",
+      "trace_endpoint_contract": "GET /v2/agent/runs/{run_id}/trace returns {ok, run_id, trace: [...], event_count: N}",
+      "events_persisted": ["run_created", "plan_created", "tool_call_started", "tool_call_completed", "memory_retrieval_started", "memory_retrieval_completed", "approval_required", "final_answer_created", "run_completed"],
+      "backwards_compatibility": "trace key is canonical; no breaking changes"
+    },
+    "live_retests": {
+      "simple_run_id": "agv2_04e37c38fc218689",
+      "simple_event_count": 6,
+      "mandatory_run_id": "agv2_0ed236dfce903e82",
+      "mandatory_classification": "mandatory_multitool",
+      "mandatory_event_count": 20,
+      "mandatory_tools_in_trace": ["route_probe", "repo_status_read", "grep_search", "semantic_retrieve"],
+      "blocked_run_id": "agv2_e5211211014a8b60",
+      "blocked_or_approval_event_present": true,
+      "raw_cot_found": false,
+      "secrets_found": false
+    },
+    "memory_faiss": {
+      "semantic_lines": 1732,
+      "faiss_ids": 1633,
+      "faiss_ntotal": 1633,
+      "unchanged": true
+    },
+    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-8092-REBOOT-RECOVERY-DASHBOARD-CONSOLIDATION-01",
+    "evidence_path": "tmp_agent/front_brain_agent_v2_trace_event_persistence_01"
+  },
+  "front_brain_agent_v2_8092_reboot_recovery_dashboard_consolidation_01": {
+    "status": "done_pending_commit",
+    "front": "FRONT-BRAIN-AGENT-V2-8092-REBOOT-RECOVERY-DASHBOARD-CONSOLIDATION-01",
+    "start_head": "c6b8669",
+    "end_head": "PENDING_PUSH",
+    "zombie_resolved": true,
+    "zombie_resolution": "PORT_FREE_socket_timeout_or_prior_cleanup",
+    "pre_reboot_state": {
+      "port_8092": "FREE",
+      "reboot_required": false,
+      "reboot_performed": false
+    },
+    "8091_status": {
+      "health": "200",
+      "agent_status": "200",
+      "capabilities": "200",
+      "chat_agent": "200",
+      "trace": "200"
+    },
+    "8092_status": {
+      "root": "200_HTML",
+      "dashboard_status": "200",
+      "agent_v2_status": "200",
+      "blocker_closed": true
+    },
+    "operator_test": {
+      "run_id": "agv2_acbd7a116976f3a3",
+      "model_used": "kimi-k2.6:cloud",
+      "provider_degraded": false,
+      "trace_event_count": 16
+    },
+    "memory_faiss": {
+      "semantic_lines": 1732,
+      "faiss_ids": 1633,
+      "faiss_ntotal": 1633,
+      "unchanged": true
+    },
+    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-MANDATORY-MULTITOOL-DEPLOYMENT-01",
+    "evidence_path": "tmp_agent/front_brain_agent_v2_8092_reboot_recovery_dashboard_consolidation_01"
+  },
+  "front_brain_agent_v2_8092_recovery_micro_closeout_01": {
+    "status": "done_pending_commit",
+    "front": "FRONT-BRAIN-AGENT-V2-8092-RECOVERY-MICRO-CLOSEOUT-01",
+    "start_head": "9f96cca",
+    "end_head": "PENDING_PUSH",
+    "purpose": "Complete missing evidence and document git add -A incident from previous front",
+    "previous_front": "FRONT-BRAIN-AGENT-V2-8092-REBOOT-RECOVERY-DASHBOARD-CONSOLIDATION-01",
+    "evidence_completed": {
+      "reboot_decision": true,
+      "post_reboot_stack_start": true,
+      "dashboard_consolidation_audit": true,
+      "memory_faiss_final": true,
+      "smoke_results": true,
+      "post_push_verification": true
+    },
+    "git_incident": {
+      "add_a_used": true,
+      "corrected_before_push": true,
+      "old_bulk_artifacts_pushed": false,
+      "rule_added": "Never use git add -A; always explicit-path stage only"
+    },
+    "8092_blocker_closed": true,
+    "8091_8092_operational": true,
+    "memory_faiss": {
+      "semantic_lines": 1732,
+      "faiss_ids": 1633,
+      "faiss_ntotal": 1633,
+      "unchanged": true
+    },
+    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-MANDATORY-MULTITOOL-DEPLOYMENT-01",
+    "evidence_path": "tmp_agent/front_brain_agent_v2_8092_recovery_micro_closeout_01"
+  },
+  "front_brain_agent_v2_mandatory_multitool_deployment_01": {
+    "status": "done_pending_commit",
+    "front": "FRONT-BRAIN-AGENT-V2-MANDATORY-MULTITOOL-DEPLOYMENT-01",
+    "start_head": "93aef94",
+    "end_head": "PENDING_PUSH",
+    "operator_presets": {
+      "count": 8,
+      "registry_created": true,
+      "route_created": true,
+      "presets": [
+        "operator_status_audit",
+        "repo_health_audit",
+        "memory_faiss_safety_audit",
+        "dashboard_health_audit",
+        "mandatory_multitool_selftest",
+        "trace_health_audit",
+        "governance_block_test",
+        "daily_operator_summary"
+      ]
+    },
+    "live_preset_execution": {
+      "total": 8,
+      "passed": 8,
+      "kimi_used": 8,
+      "provider_degraded": 0,
+      "unauthorized_writes": 0,
+      "raw_cot_exposed": 0
+    },
+    "governance_verdict": "COMPLIANT",
+    "memory_faiss": {
+      "semantic_lines": 1732,
+      "faiss_ids": 1633,
+      "faiss_ntotal": 1633,
+      "unchanged": true
+    },
+    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-MANDATORY-INLINE-NUMBERED-CHECK-PARSER-FIX-01",
+    "evidence_path": "tmp_agent/front_brain_agent_v2_mandatory_multitool_deployment_01"
+  },
+  "front_brain_agent_v2_mandatory_inline_numbered_check_parser_fix_01": {
+    "status": "done",
+    "front": "FRONT-BRAIN-AGENT-V2-MANDATORY-INLINE-NUMBERED-CHECK-PARSER-FIX-01",
+    "start_head": "406866a",
+    "end_head": "TBD",
+    "parser_fix": {
+      "bug": "Inline compact numbered lists parsed as single check instead of multiple",
+      "root_cause": "_extract_checks split by newlines only; single-line input created single segment; re.search matched first pattern only; break exited after first match",
+      "files_modified": [
+        "tmp_agent/brain_v9/core/agent_kernel_v2/mandatory_tools.py",
+        "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py"
+      ],
+      "formats_now_supported": [
+        "newline_numbered_list",
+        "inline_dot_numbered",
+        "inline_paren_numbered",
+        "semicolon_separated",
+        "dash_bullet_list"
+      ],
+      "final_answer_obligation_handled": true
+    },
+    "direct_tests": {
+      "total": 10,
+      "passed": 10,
+      "formats_tested": [
+        "multiline_numbered_list",
+        "inline_dot_numbered",
+        "inline_paren_numbered",
+        "semicolon_separated",
+        "dash_bullet_list",
+        "url_preservation",
+        "two_route_probe_extracted",
+        "repo_status_extracted",
+        "final_answer_obligation",
+        "parser_metadata"
+      ]
+    },
+    "live_exact_retest": {
+      "run_id": "agv2_aa74216da33bc4cd",
+      "classification": "mandatory_multitool",
+      "requested_checks": 4,
+      "scheduled_tool_checks": 3,
+      "executed_tool_checks": 3,
+      "trace_event_count": 10,
+      "route_probe_8091": true,
+      "route_probe_8092": true,
+      "repo_status_read": true,
+      "final_answer_obligation": true,
+      "model_used": "deepseek-v4-pro:cloud",
+      "provider_degraded": true,
+      "fallback_reason": "primary_failed:provider_output_raw_cot_marker_blocked"
+    },
+    "regression_retest": {
+      "older_prompt_passed": true,
+      "requested_checks": 7,
+      "scheduled_tool_checks": 7,
+      "executed_tool_checks": 7,
+      "model_used": "deepseek-v4-pro:cloud",
+      "provider_degraded": true
+    },
+    "memory_faiss": {
+      "semantic_lines": 1732,
+      "faiss_ids": 1633,
+      "faiss_ntotal": 1633,
+      "unchanged": true
+    },
+    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01",
+    "evidence_path": "tmp_agent/front_brain_agent_v2_mandatory_inline_numbered_check_parser_fix_01"
+  },
+  "front_brain_agent_v2_spanish_parser_preflight_closeout_01": {
+    "status": "done",
+    "front": "FRONT-BRAIN-AGENT-V2-SPANISH-PARSER-PREFLIGHT-CLOSEOUT-01",
+    "start_head": "b90f752",
+    "end_head": "TBD",
+    "blockers_resolved": [
+      "semantic_memory.jsonl +1 line drift documented (NOT staged, NOT removed)",
+      "mandatory_tools.py Spanish hotfix completed and tested"
+    ],
+    "spanish_parser_fixes": {
+      "quote_sanitization": true,
+      "endpoint_path_normalization": true,
+      "indirect_file_reference_skip": true,
+      "spanish_final_answer_obligation": true,
+      "inline_numbered_extraction": true,
+      "spanish_mandatory_triggers": true
+    },
+    "direct_tests": {
+      "total": 6,
+      "passed": 6,
+      "failed": 0
+    },
+    "live_retest": {
+      "run_id": "agv2_23df4ef07d0807e4",
+      "classification": "mandatory_multitool",
+      "checks_extracted": 4,
+      "final_answer_obligation": true,
+      "model_used": "kimi-k2.6:cloud",
+      "provider_degraded": false,
+      "trace_event_count": 12
+    },
+    "memory_faiss": {
+      "semantic_lines": 1733,
+      "faiss_ntotal": 1633,
+      "unchanged": true,
+      "semantic_staged": false
+    },
+    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-UI-CHAT-ROUTING-UNIFICATION-01",
+    "additional_requirement_for_next_front": {
+      "visual_execution_trace_panel": true,
+      "requirements": [
+        "Every visible chat must show sanitized execution trace panel",
+        "run_id, classification, status, model_used, provider_used, provider_degraded, fallback_reason, raw_cot_exposed, trace_url, event_count",
+        "tools_requested, tools_scheduled, tools_executed, tools_failed, tools_blocked",
+        "evidence_summary, governance_summary, omitted_or_unscheduled_checks, final_decision",
+        "For every tool call show: tool name, started/completed/blocked, sanitized input, summarized output, error if any",
+        "Collapsible panel 'Execution Trace' with subsections: Plan, Tools, Evidence, Governance, Provider, Trace Events",
+        "Button 'Open Full Trace' linking to canonical trace endpoint",
+        "8092 proxy: GET /brain-dashboard/agent-v2/runs/{run_id}/trace",
+        "No UI chat is complete without final_answer + sanitized execution trace"
+      ]
+    },
+    "evidence_path": "tmp_agent/front_brain_agent_v2_spanish_parser_preflight_closeout_01"
+  },
+  "front_brain_agent_v2_ui_chat_routing_unification_01": {
+    "status": "done",
+    "front": "FRONT-BRAIN-AGENT-V2-UI-CHAT-ROUTING-UNIFICATION-01",
+    "start_head": "0615875",
+    "end_head": "TBD",
+    "routing_changes": {
+      "8091_ui": {
+        "endpoint_changed": "/v2/chat/agent (from /agent or /chat)",
+        "agent_orav_default_removed": true,
+        "canonical_display": true,
+        "execution_trace_panel": true
+      },
+      "8092_dashboard": {
+        "proxy_target_changed": "http://127.0.0.1:8091/v2/chat/agent (from /v1/chat/completions)",
+        "trace_proxy_added": "/brain-dashboard/agent-v2/runs/{run_id}/trace",
+        "brain_api_unreachable_resolved": true,
+        "canonical_display": true
+      }
+    },
+    "live_tests": {
+      "direct_api_baseline": "agv2_bd91ced5ff66e089 (mandatory_multitool, kimi-k2.6:cloud)",
+      "8092_dashboard_chat": "agv2_ed78e393da394685 (canonical=true, trace_url present)",
+      "8092_trace_proxy": "6 events, run_created→run_completed"
+    },
+    "memory_faiss": {
+      "semantic_lines": 1733,
+      "faiss_ntotal": 1633,
+      "unchanged": true,
+      "semantic_staged": false
+    },
+    "files_modified": [
+      "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+      "tmp_agent/brain_v9/dashboard/static/app.js",
+      "tmp_agent/brain_v9/ui/index.html"
+    ],
+    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01",
+    "evidence_path": "tmp_agent/front_brain_agent_v2_ui_chat_routing_unification_01"
+  },
+  "front_brain_agent_v2_ui_metadata_trace_panel_cleanup_01": {
+    "status": "done",
+    "front": "FRONT-BRAIN-AGENT-V2-UI-METADATA-TRACE-PANEL-CLEANUP-01",
+    "start_head": "25dacac",
+    "end_head": "TBD",
+    "fixes": {
+      "8092_metadata_header": "Fixed to show Agent V2 metadata: canonical_agent_v2, model_used, provider_used, provider_degraded, raw_cot_exposed, fallback_reason, classification, status",
+      "8092_execution_trace_panel": "Added collapsible Execution Trace panel with Plan/Tools/Evidence/Governance/Provider sections and async trace fetch",
+      "8091_regression": "8091/ui not modified. Baseline Brain Chat V9 preserved.",
+      "planner_gap": "Deferred to FRONT-BRAIN-AGENT-V2-SPECIFIC-TOOL-SCHEDULING-FIX-01"
+    },
+    "live_tests": {
+      "8092_dashboard_chat": "agv2_6c0d4d402e3a33e1 (canonical=true, general_reasoning)",
+      "8092_trace_proxy": "6 events via /brain-dashboard/agent-v2/runs/{run_id}/trace"
+    },
+    "memory_faiss": {
+      "semantic_lines": 1733,
+      "faiss_ntotal": 1633,
+      "unchanged": true,
+      "semantic_staged": false
+    },
+    "files_modified": [
+      "tmp_agent/brain_v9/dashboard/static/app.js",
+      "tmp_agent/brain_v9/dashboard/static/styles.css"
+    ],
+    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-SPECIFIC-TOOL-SCHEDULING-FIX-01",
+    "evidence_path": "tmp_agent/front_brain_agent_v2_ui_metadata_trace_panel_cleanup_01"
+  },
+  "front_brain_agent_v2_specific_tool_scheduling_fix_01": {
+    "status": "done",
+    "front": "FRONT-BRAIN-AGENT-V2-SPECIFIC-TOOL-SCHEDULING-FIX-01",
+    "start_head": "843abb2",
+    "end_head": "TBD",
+    "fixes": {
+      "explicit_tool_patterns": "Added EXPLICIT_TOOL_PATTERNS regex for Spanish/English explicit tool requests, with snake_case validation and deduplication",
+      "diagnostic_phrases": "Added DIAGNOSTIC_PHRASES mapping for autonomy_heartbeat, recent_changes, git_history to safe equivalents",
+      "tool_resolution": "Added _resolve_tool() mapping missing tools (list_recent_brain_changes, get_live_autonomy_status, etc.) to available safe equivalents",
+      "plan_building": "Added _build_explicit_tool_plan() for explicit/diagnostic routing before keyword fallback",
+      "misclassification_fix": "Prevented 'programa X tool' from being classified as safe_patch_dry_run when tool name contains 'patch'"
+    },
+    "direct_tests": {
+      "file": "tests/smoke/smoke_front_brain_agent_v2_specific_tool_scheduling_fix_01.py",
+      "total": 39,
+      "passed": 39,
+      "categories": [
+        "explicit_tool_detection",
+        "diagnostic_phrase_detection",
+        "tool_resolution",
+        "goal_classification",
+        "plan_building",
+        "determinism",
+        "read_only_safety"
+      ]
+    },
+    "live_retests": [
+      {
+        "test": "A: Recent kernel changes",
+        "run_id": "agv2_e20e7721f7c293c9",
+        "classification": "recent_changes",
+        "scheduled_tools": ["repo_history_read", "repo_status_read", "grep_search"]
+      },
+      {
+        "test": "B: Explicit tool request",
+        "run_id": "agv2_a9869f65260f8d72",
+        "classification": "explicit_tool_request",
+        "scheduled_tools": ["repo_history_read", "repo_status_read", "grep_search"]
+      },
+      {
+        "test": "C: Autonomy heartbeat",
+        "run_id": "agv9_f9df1bd5b2250a27",
+        "classification": "autonomy_heartbeat",
+        "scheduled_tools": ["route_probe", "repo_status_read"]
+      }
+    ],
+    "memory_faiss": {
+      "semantic_lines": 1733,
+      "faiss_ntotal": 1633,
+      "unchanged": true,
+      "semantic_staged": false
+    },
+    "files_modified": [
+      "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py"
+    ],
+    "files_created": [
+      "tests/smoke/smoke_front_brain_agent_v2_specific_tool_scheduling_fix_01.py"
+    ],
+    "evidence_path": "tmp_agent/front_brain_agent_v2_specific_tool_scheduling_fix_01",
+    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01"
+  },
+  "last_functional_agent_v2_closeout_commit": "3f6fc8d"
+
+  ,
+  "front_brain_agent_v2_chat_mode_switch_read_build_auto_01": {
+    "status": "done",
+    "front": "FRONT-BRAIN-AGENT-V2-CHAT-MODE-SWITCH-READ-BUILD-AUTO-01",
+    "start_head": "c22838c",
+    "end_head": "TBD",
+    "fixes": {
+      "read_build_auto_modes": "Added explicit READ/BUILD/AUTO chat modes with mode escalation and governance",
+      "backend_mode_enforcement": "ToolGatewayV2 blocks write tools in read_only/auto modes",
+      "mode_escalation": "NativeAgentRuntimeV2 detects build intent and returns mode_escalation_required",
+      "ui_mode_selector": "8091 UI shows READ/BUILD/AUTO dropdown",
+      "dashboard_proxy_mode": "8092 dashboard passes mode through chat proxy",
+      "trace_mode_fields": "Trace records mode_requested, mode_effective, auto_decision, mode_escalation_required"
+    },
+    "direct_tests": {
+      "file": "tests/smoke/smoke_front_brain_agent_v2_chat_mode_switch_read_build_auto_01.py",
+      "total": 20,
+      "passed": 20
+    },
+    "live_tests": {
+      "read_mode": "mode_test_read - escalation false, read_only effective",
+      "read_blocks_build": "mode_test_read_blocks_build - escalation true, blocked file_patch_dry_run",
+      "auto_read": "mode_test_auto_read - auto_decision read, no escalation",
+      "auto_build_gate": "mode_test_auto_build_gate - auto_decision build_required, escalation true",
+      "controlled_build": "mode_test_build_controlled - build effective, no escalation, blocked_tools empty"
+    },
+    "memory_faiss": {
+      "semantic_lines": 1733,
+      "faiss_ntotal": 1633,
+      "unchanged": true
+    },
+    "files_modified": [
+      "tmp_agent/brain_v9/core/agent_kernel_v2/schemas.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/native_runtime.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/api_adapter.py",
+      "tmp_agent/brain_v9/ui/index.html",
+      "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+      "tests/smoke/smoke_front_brain_agent_v2_chat_mode_switch_read_build_auto_01.py"
+    ],
+    "evidence_path": "tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01",
+    "next_recommended_front": "FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01"
+  },
+  "brain_101": {
+    "schema_version": 1,
+    "roadmap_id": "BRAIN-101",
+    "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
+    "status": "READY_FOR_BRAIN_101_ROADMAP_ADOPTION",
+    "approval_status": "PENDING_HUMAN_ADOPTION",
+    "current_phase": "R0",
+    "rebaseline_source_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+    "adoption_pr": 35,
+    "adoption_pr_head": "aba597e92007b878171be27ba750c83352b3ef77",
+    "adoption_pr_head_semantics": "PR head observed before the evidence-binding repair commit; resolve the live head through adoption_pr",
+    "adoption_merge_commit": null,
+    "score": {
+      "base": 41,
+      "resilience_bonus": 0,
+      "auditability": "PROVISIONAL_PENDING_EVIDENCE_BINDING"
+    },
+    "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
+    "next_phase_after_adoption": "R1"
+  }
 }

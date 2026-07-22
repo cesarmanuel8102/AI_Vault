@@ -895,7 +895,7 @@ Esta evidencia cierra la pregunta de si existe un loop técnico gobernado. No ci
 
 ## 13.5 Scorecard factual
 
-El score base R0 es **49/100**, con resiliencia **0/1** y certificación **no emitida**. Se aplica el cap de 69 por bloqueadores críticos funcionales abiertos. No se aplica como hallazgo nuevo un cap por bypass de governance: R0 no encontró evidencia suficiente para afirmar un bypass activo, pero R2 aún debe ejecutar la auditoría adversarial completa.
+El score base R0 corregido es **41/100**, con resiliencia **0/1** y certificación **no emitida**. El valor separa presencia, verificación estática, contratos y evidencia runtime; R1 puntúa solo por sus requisitos roadmap-aware, no por el piloto técnico genérico. Se aplica el cap de 69 por bloqueadores críticos funcionales abiertos. No se aplica como hallazgo nuevo un cap por bypass de governance: R0 no encontró evidencia suficiente para afirmar un bypass activo, pero R2 aún debe ejecutar la auditoría adversarial completa.
 
 El detalle machine-readable está en `docs/roadmap/BRAIN_101_SCORECARD.json`.
 

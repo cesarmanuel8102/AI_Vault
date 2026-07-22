@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "observed_at_utc": "2026-07-22T13:37:51Z",
+  "source": "Codex R0 local preflight",
+  "evidence_scope": "local_observation",
+  "freshness": "snapshot_not_live_state",
+  "worker_sha256": "5261A8EDA5EEA8A2851F2088454BD4A129BE4072D06AD7F8621F6C176DEEA79A",
+  "config_sha256": "AF6515841140487EADAA66B2BD2D647FC899E570446EDA88857401C8221C0D25",
+  "scheduled_task": "AI_Vault_Kimi_GitHub_Worker",
+  "task_state": "Running",
+  "active_worker_count": 1,
+  "pilot_issue": 33,
+  "pilot_issue_state": "OPEN",
+  "pilot_issue_label": "loop:ready-human-audit",
+  "pilot_pr": 34,
+  "pilot_pr_state": "OPEN",
+  "pilot_pr_draft": true,
+  "pilot_pr_label": "loop:ready-human-audit",
+  "pilot_pr_head": "8b9c08b417992b8bcc883f4c7690e4e04d4fdc83"
+}
