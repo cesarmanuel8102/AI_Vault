@@ -36,8 +36,8 @@ const criticalConceptPatterns = [
   /\b(?:enable|execute|activate)\s+(?:live|real[- ]money)\s+trading\b/i,
   /\b(?:production\s+broker|IBKR|real[- ]money|real\s+capital)\b/i,
   /\b(?:changes?|changed|changing|increases?|increased|increasing|modify|modifies|modified|modifying)\s+(?:financial|risk|capital)\s+limits?\b/i,
-  /\bcanonical(?:\s+local)?\s+(?:syncs?|syncing|access|writes?|writing|mutations?)\b/i,
-  /\bFAISS\s+(?:writes?|writing|rebuilds?|rebuilding|mutations?)\b/i,
+  /\bcanonical(?:\s+local)?\s+(?:sync(?:s|ed|ing)?|access(?:es|ed|ing)?|writ(?:e|es|ing|ten)|wrote|mutat(?:e|es|ed|ing|ions?))\b/i,
+  /\bFAISS\s+(?:writ(?:e|es|ing|ten)|wrote|rebuild(?:s|ing)?|rebuilt|mutat(?:e|es|ed|ing|ions?))\b/i,
 ];
 
 export function classify(spec:ProxySpec):Risk {
