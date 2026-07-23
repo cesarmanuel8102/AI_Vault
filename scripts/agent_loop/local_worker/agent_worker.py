@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Allowlisted local OpenCode worker for a single trusted GitHub repository."""
 from __future__ import annotations
-import argparse, copy, json, os, re, shutil, subprocess, sys, time, traceback, tempfile
+import argparse, ast, copy, json, os, re, shutil, subprocess, sys, time, traceback, tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -138,10 +138,7 @@ def profile_command_is_trusted(profile: str, command: object) -> bool:
     if profile == "test-only":
         if executable not in {"python", "python.exe"}:
             return False
-        return command[1:] == [] or (
-            command[1:3] == ["-m", "pytest"]
-            and all(arg.startswith("-") for arg in command[3:])
-        )
+        return command[1:] == ["-m", "py_compile"]
     return False
 
 _CONVERSATIONAL_REJECTION_PATTERNS = {
@@ -1614,11 +1611,21 @@ def run_profile(cfg, spec, repo_dir) -> tuple[bool,str]:
         cmd += ["--expected-front-id", str(spec["front_id"])]
     elif spec["test_profile"] == "roadmap-doc":
         cmd += [spec["expected_base_sha"], "--", *spec["allowed_paths"]]
-    elif spec["test_profile"] == "test-only" and len(cmd) > 1:
-        cmd += list(spec["allowed_paths"])
+    elif spec["test_profile"] == "test-only":
+        # Never execute model-authored tests on the worker host. Behavioral
+        # execution belongs to the isolated CI and Codex review boundary.
+        validated: list[str] = []
+        for rel in spec["allowed_paths"]:
+            path = Path(repo_dir) / rel
+            if not path.is_file() or _is_reparse_or_symlink(path):
+                return False, "TEST_ONLY_SOURCE_INVALID"
+            try:
+                ast.parse(path.read_text(encoding="utf-8"), filename=rel)
+            except (OSError, UnicodeError, SyntaxError) as exc:
+                return False, f"TEST_ONLY_SYNTAX_INVALID:{rel}:{type(exc).__name__}"
+            validated.append(rel)
+        return True, f"TEST_ONLY_AST_VALIDATED:{len(validated)}"
     commands = [cmd]
-    if spec["test_profile"] == "test-only" and len(cmd) == 1:
-        commands = [cmd + [path] for path in spec["allowed_paths"]]
     outputs: list[str] = []
     timeout = int(cfg.get("profile_timeout_seconds", 300))
     for current in commands:

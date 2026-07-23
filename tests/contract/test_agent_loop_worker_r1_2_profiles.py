@@ -17,7 +17,7 @@ module_spec.loader.exec_module(worker)
 
 
 def config(profile: str, command: list[str] | None = None) -> dict:
-    default_command = ["git", "diff", "--check"] if profile == "roadmap-doc" else [sys.executable]
+    default_command = ["git", "diff", "--check"] if profile == "roadmap-doc" else [sys.executable, "-m", "py_compile"]
     return {
         "repo": "cesarmanuel8102/AI_Vault",
         "owner": "cesarmanuel8102",
@@ -76,8 +76,9 @@ assert worker.profile_paths_are_trusted("roadmap-doc", set(roadmap_paths))
 assert worker.profile_paths_are_trusted("test-only", set(test_paths))
 assert not worker.profile_paths_are_trusted("test-only", {"tests/ok.py", "docs/not-ok.md"})
 assert worker.profile_command_is_trusted("roadmap-doc", ["git", "diff", "--check"])
-assert worker.profile_command_is_trusted("test-only", [sys.executable])
-assert worker.profile_command_is_trusted("test-only", [sys.executable, "-m", "pytest", "-q"])
+assert worker.profile_command_is_trusted("test-only", [sys.executable, "-m", "py_compile"])
+assert not worker.profile_command_is_trusted("test-only", [sys.executable])
+assert not worker.profile_command_is_trusted("test-only", [sys.executable, "-m", "pytest", "-q"])
 assert not worker.profile_command_is_trusted("test-only", [sys.executable, "-c", "print('bad')"])
 assert not worker.profile_command_is_trusted("test-only", ["powershell.exe", "-Command", "Write-Host bad"])
 
@@ -150,11 +151,14 @@ with tempfile.TemporaryDirectory() as td:
     target = Path(td) / test_paths[0]
     target.parent.mkdir(parents=True)
     target.write_text("print('PASS')\n", encoding="utf-8")
-    ok, _ = worker.run_profile(config("test-only"), parsed_test, Path(td))
-    assert ok
+    ok, output = worker.run_profile(config("test-only"), parsed_test, Path(td))
+    assert ok and output == "TEST_ONLY_AST_VALIDATED:1"
     target.write_text("raise SystemExit(7)\n", encoding="utf-8")
-    ok, _ = worker.run_profile(config("test-only"), parsed_test, Path(td))
-    assert not ok
+    ok, output = worker.run_profile(config("test-only"), parsed_test, Path(td))
+    assert ok and output == "TEST_ONLY_AST_VALIDATED:1", "valid model-authored code must not execute"
+    target.write_text("def broken(:\n", encoding="utf-8")
+    ok, output = worker.run_profile(config("test-only"), parsed_test, Path(td))
+    assert not ok and output.startswith("TEST_ONLY_SYNTAX_INVALID:")
 
 with tempfile.TemporaryDirectory() as td:
     multi_paths = ["tests/contract/one.py", "tests/contract/two.py"]
@@ -164,7 +168,21 @@ with tempfile.TemporaryDirectory() as td:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text("print('PASS')\n", encoding="utf-8")
     ok, output = worker.run_profile(config("test-only"), multi_spec, Path(td))
-    assert ok and output.count("PASS") == 2
+    assert ok and output == "TEST_ONLY_AST_VALIDATED:2"
+
+with tempfile.TemporaryDirectory() as td:
+    target = Path(td) / test_paths[0]
+    target.parent.mkdir(parents=True)
+    target.write_text("print('PASS')\n", encoding="utf-8")
+    calls: list[object] = []
+    original_subprocess_run = worker.subprocess.run
+    worker.subprocess.run = lambda *_a, **_k: calls.append((_a, _k)) or (_ for _ in ()).throw(AssertionError("must not execute"))
+    try:
+        ok, output = worker.run_profile(config("test-only"), parsed_test, Path(td))
+        assert ok and output == "TEST_ONLY_AST_VALIDATED:1"
+        assert calls == []
+    finally:
+        worker.subprocess.run = original_subprocess_run
 
 captured: list[list[str]] = []
 original_run, original_gh_json = worker.run, worker.gh_json
