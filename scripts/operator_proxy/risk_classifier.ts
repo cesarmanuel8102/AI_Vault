@@ -7,7 +7,7 @@ const criticalPathPatterns = [
   /(^|\/)\.github\/(?:CODEOWNERS|workflows\/)/i,
   /(^|\/)scripts\/operator_proxy(?:\/|$)/i,
   /(^|\/)(?:install|deploy|repair)[^/]*\.(?:ps1|py|ts|js)$/i,
-  /(^|\/)(?:trading|financial_autonomy|broker|ibkr|faiss)(?:\/|$)/i,
+  /(^|\/)(?:[^/]*[._-])?(?:trading|financial[_-]?autonomy|broker|ibkr|faiss)(?:[._/-]|$)/i,
   /(^|\/)memory\/semantic(?:\/|$)/i,
   /(^|\/)canonical(?:\/|$)/i,
 ];
