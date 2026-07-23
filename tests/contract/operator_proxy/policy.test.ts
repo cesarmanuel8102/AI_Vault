@@ -11,10 +11,10 @@ test("sensitive path escalates",()=>assert.equal(decide({...spec,allowed_paths:[
 for(const phrase of ["model-authored Python is never executed","roadmap item is AUTHORIZED_ACTIVE","human authority preserved","authorization consumed"]){
  test(`ordinary authority wording remains low: ${phrase}`,()=>assert.equal(classify({...spec,acceptance:[phrase]}),"LOW"));
 }
-for(const phrase of ["authentication change","rotate credentials","permission change","authorization policy update","branch protection update","constitutional authority modification","access-control change","force push","enable live trading","canonical local sync","FAISS rebuild"]){
+for(const phrase of ["authentication change","change auth rules","rotate credentials","credential-free API-key rotation","permission change","authorization policy update","branch protection update","GitHub Actions workflow change","constitutional authority modification","access-control change","force push","production deployment","deploy to production","enable scheduled task","UAC required","enable live trading","canonical local sync","FAISS rebuild"]){
  test(`critical concept escalates: ${phrase}`,()=>assert.equal(classify({...spec,acceptance:[phrase]}),"CRITICAL"));
 }
-for(const path of ["auth/policy.py","memory/semantic/index.py","financial_autonomy/live.py","faiss/index.bin",".env"]){
+for(const path of ["auth/policy.py","memory/semantic/index.py","financial_autonomy/live.py","faiss/index.bin",".env",".env.production","config/credentials.json","keys/api_key.txt",".github/workflows/deploy.yml","scripts/operator_proxy/risk_classifier.ts","scripts/Deploy-Worker.ps1"]){
  test(`critical path escalates: ${path}`,()=>assert.equal(classify({...spec,allowed_paths:[path]}),"CRITICAL"));
 }
 test("state machine rejects invalid",()=>assert.throws(()=>transition("completed","building")));
