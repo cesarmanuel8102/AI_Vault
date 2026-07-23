@@ -4761,7 +4761,7 @@
     "schema_version": 1,
     "roadmap_id": "BRAIN-101",
     "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-    "status": "R1_1_CLOSED_RUNTIME_VERIFIED",
+    "status": "R1_AUTONOMOUS_CONTROL_PLANE_BUILDING",
     "approval_status": "HUMAN_ADOPTED",
     "current_phase": "R1",
     "rebaseline_source_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
@@ -4781,8 +4781,10 @@
     "r1_1_issue": 44,
     "r1_1_pr": 45,
     "r1_1_pilot_head": "66de7603865b9b59dfee6da1e46ce4d3cf477080",
-    "r1_2_status": "AUTHORIZED_ACTIVE",
+    "r1_2_status": "PAUSED_PENDING_AUTONOMOUS_CONTROL_PLANE",
     "operator_proxy_merge": "7134393351810e64fd1a418dfdd986b53531ff46",
-    "next_gate": "Execute R1.2 roadmap-doc and test-only profiles through Operator Proxy"
+    "r1_control_plane_issue": 62,
+    "r1_control_plane_status": "BUILDING",
+    "next_gate": "Certify autonomous roadmap control-plane E2E before resuming R1.2"
   }
 }

@@ -4,8 +4,13 @@ const evidence:Evidence={issue:1,pr:2,base_sha:"a".repeat(40),head_sha:"b".repea
 test("approve exact low risk",()=>{const d=decide(spec,evidence);assert.equal(d.policy_decision,"APPROVE");assert.equal(d.allowed_action,"MERGE")});
 for(const [name,patch] of [["fork",{from_fork:true}],["pending",{checks_terminal:false}],["failed",{checks_green:false}],["head review",{review:"BLOCKED"}],["same session",{review_session:"builder-1"}],["outside scope",{changed_files:["x"]}],["p1",{review_p0_p1:true}]] as const)test(`block ${name}`,()=>assert.equal(decide(spec,{...evidence,...patch} as Evidence).policy_decision,"BLOCK"));
 test("repair bounded",()=>assert.equal(decide(spec,{...evidence,review:"CHANGES_REQUESTED"}).policy_decision,"REPAIR"));
+test("P2 reviewer finding is repairable",()=>assert.equal(decide(spec,{...evidence,review:"CHANGES_REQUESTED",review_p0_p1:false}).policy_decision,"REPAIR"));
+test("P0 or P1 reviewer finding blocks repair",()=>assert.equal(decide(spec,{...evidence,review:"CHANGES_REQUESTED",review_p0_p1:true}).policy_decision,"BLOCK"));
 test("untrusted repair blocked",()=>assert.equal(decide(spec,{...evidence,author:"attacker",review:"CHANGES_REQUESTED"}).policy_decision,"BLOCK"));
 test("non-draft blocked",()=>assert.equal(decide(spec,{...evidence,draft:false}).policy_decision,"BLOCK"));
+test("directory allowlist uses bounded prefix semantics",()=>assert.equal(decide({...spec,allowed_paths:["docs/"]},evidence).policy_decision,"APPROVE"));
+test("empty diff never qualifies for merge",()=>assert.equal(decide(spec,{...evidence,changed_files:[]}).policy_decision,"BLOCK"));
+test("lookalike directory prefix remains outside scope",()=>assert.equal(decide({...spec,allowed_paths:["docs/"]},{...evidence,changed_files:["docs-evil/x.md"]}).policy_decision,"BLOCK"));
 test("critical escalates",()=>assert.equal(decide({...spec,risk:"CRITICAL"},evidence).policy_decision,"ESCALATE_TO_OWNER"));
 test("sensitive path escalates",()=>assert.equal(decide({...spec,allowed_paths:["trading/live.py"]},evidence).policy_decision,"ESCALATE_TO_OWNER"));
 for(const phrase of ["model-authored Python is never executed","roadmap item is AUTHORIZED_ACTIVE","human authority preserved","authorization consumed"]){

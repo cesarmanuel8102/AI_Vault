@@ -15,6 +15,10 @@
 **Canonical local sync:** prohibido salvo autorización explícita
 **Capital real:** no autorizado por este documento
 
+## R1 autonomous control-plane priority correction
+
+R1.2 runtime activation is paused until a synthetic documentation-only flow proves the complete autonomous chain: canonical discovery, governed Issue, isolated builder, Draft PR, CI, independent review, policy, governed merge, documentary closeout, and next-item discovery. The bootstrap item is `R1.0`; it does not implement R1.2 or start R2. The sequencer and runtime actors cannot edit the roadmap sources directly. Only the separately reviewed closeout PR may close `R1.0` and restore `R1.2` as the next authorized item.
+
 ---
 
 ## 0. MANDATO A CODEX

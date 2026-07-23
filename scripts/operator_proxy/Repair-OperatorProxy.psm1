@@ -26,7 +26,7 @@ function Invoke-OperatorProxyInstall {
     $stamp = Get-Date -Format 'yyyyMMddTHHmmssfffZ'
     $stage = Join-Path $parent ".operator-proxy-stage-$stamp"
     $backup = Join-Path $parent ".operator-proxy-backup-$stamp"
-    $managed = @('schemas','action_executor.ts','codex_builder.ts','codex_reviewer.ts','decision_ledger.ts','evidence_collector.ts','github_bus.ts','operator_proxy.ts','policy_engine.ts','risk_classifier.ts','single_instance_lock.ts','state_machine.ts','types.ts','package.json','package-lock.json','tsconfig.json','Run-OperatorProxy.ps1')
+    $managed = @('schemas','action_executor.ts','autonomous_flow.ts','autonomous_runtime.ts','codex_builder.ts','codex_reviewer.ts','decision_ledger.ts','evidence_collector.ts','github_bus.ts','governed_builder.ts','lifecycle_store.ts','operator_proxy.ts','policy_engine.ts','production_effects.ts','request_coordinator.ts','risk_classifier.ts','roadmap_sequencer.ts','single_instance_lock.ts','spec_contract.ts','state_machine.ts','types.ts','package.json','package-lock.json','tsconfig.json','Run-OperatorProxy.ps1')
     $installed = $false
     try {
         New-Item $stage -ItemType Directory | Out-Null

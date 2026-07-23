@@ -1,0 +1,44 @@
+import {execFileSync} from "node:child_process";
+import {existsSync,lstatSync,mkdirSync,realpathSync} from "node:fs";
+import {join,resolve} from "node:path";
+import type {ProxySpec} from "./types.js";
+import {runBuilder} from "./codex_builder.js";
+
+export interface BuilderBus {
+  findPrByBranch(branch:string):{number:number;head_sha:string}|undefined;
+  remoteBranchHead(branch:string):string|undefined;
+  createDraftPr(branch:string,base:string,title:string,body:string):number;
+  bindPrToIssue(issue:number,pr:number):void;
+  repairPrompt(issue:number):string;
+}
+
+const git=(repo:string,args:string[])=>execFileSync(process.env.GIT_PATH??"git",["-C",repo,...args],{encoding:"utf8",timeout:120000,windowsHide:true}).trim();
+const allowed=(path:string,spec:ProxySpec)=>spec.allowed_paths.some(p=>p.endsWith("/")?path.startsWith(p):path===p)&&!spec.forbidden_paths.some(p=>path===p||path.startsWith(p.endsWith("/")?p:`${p}/`));
+function changed(repo:string){const tracked=git(repo,["diff","--name-only","HEAD"]);const staged=git(repo,["diff","--cached","--name-only"]);const untracked=git(repo,["ls-files","--others","--exclude-standard"]);return [...new Set([tracked,staged,untracked].flatMap(x=>x?x.split(/\r?\n/):[]).filter(Boolean))].sort();}
+function committed(repo:string,base:string){const output=git(repo,["diff","--name-only",`${base}..HEAD`]);return output?output.split(/\r?\n/).filter(Boolean).sort():[];}
+function validateFiles(files:string[],spec:ProxySpec){if(files.length===0)throw new Error("builder produced no changes");if(!files.every(path=>allowed(path,spec)))throw new Error("builder changed path outside scope");}
+export function parseTestCommand(command:string):[string,string[]]{if(/[;&|><`$]/.test(command))throw new Error("test command contains shell syntax");const argv=command.match(/(?:[^\s"]+|"[^"]*")+/g)?.map(x=>x.startsWith('"')?x.slice(1,-1):x)??[];const [file,...args]=argv;const exe=(file??"").toLowerCase();const safeArg=(x:string)=>!x.includes("..")&&!/^[A-Za-z]:[\\/]/.test(x)&&!x.includes("\\");if(!args.every(safeArg))throw new Error("test argument path denied");if(["git","git.exe"].includes(exe)&&args.length===2&&args[0]==="diff"&&args[1]==="--check")return [file,args];if(["npm","npm.cmd"].includes(exe)&&(args.length===1&&args[0]==="test"||args.length===2&&args[0]==="run"&&/^[a-z0-9:_-]+$/i.test(args[1])))return [file,args];if(["python","python.exe"].includes(exe)){if(args[0]==="-m"&&args[1]==="pytest"&&args.slice(2).every(x=>x.startsWith("tests/")||["-q","-v","--maxfail=1"].includes(x)))return [file,args];if(/^tests\/[A-Za-z0-9_./-]+\.py$/.test(args[0]??"")&&args.slice(1).every(x=>/^[A-Za-z0-9_.:/=-]+$/.test(x)))return [file,args];}if(["pwsh","pwsh.exe","powershell","powershell.exe"].includes(exe)){const index=args.findIndex(x=>x.toLowerCase()==="-file");if(index>=0&&args.slice(0,index).every(x=>["-NoProfile","-NonInteractive"].includes(x))&&/^tests\/[A-Za-z0-9_./-]+\.ps1$/.test(args[index+1]??"")&&args.slice(index+2).every(x=>/^[A-Za-z0-9_.:/=-]+$/.test(x)))return [file,args];}throw new Error("test command denied");}
+export function runDeclaredTests(repo:string,commands:string[]){for(const command of commands){const [file,args]=parseTestCommand(command);execFileSync(file,args,{cwd:repo,stdio:"inherit",timeout:900000,windowsHide:true});}}
+
+export class GovernedBuilder {
+  constructor(readonly sourceRepo:string,readonly worktreeRoot:string,readonly bus:BuilderBus,readonly codex=process.env.CODEX_PATH??"codex"){}
+  build(spec:ProxySpec,issue:number,session:string,repairCycle:number){
+    if(!spec.front_id||!spec.work_branch||!spec.objective)throw new Error("builder metadata missing");
+    const existing=this.bus.findPrByBranch(spec.work_branch);if(existing&&repairCycle===0){this.bus.bindPrToIssue(issue,existing.number);return {pr:existing.number,head_sha:existing.head_sha,session};}
+    const orphanHead=!existing&&repairCycle===0?this.bus.remoteBranchHead(spec.work_branch):undefined;if(orphanHead){const pr=this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nRecovered published builder branch.\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:orphanHead,session};}
+    mkdirSync(this.worktreeRoot,{recursive:true});const root=realpathSync(this.worktreeRoot);if(lstatSync(root).isSymbolicLink())throw new Error("worktree root symlink denied");
+    const worktree=resolve(root,spec.front_id);if(!worktree.startsWith(`${root}\\`)&&!worktree.startsWith(`${root}/`))throw new Error("worktree escaped root");
+    if(!existsSync(worktree)){if(existing){execFileSync(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"fetch","origin",spec.work_branch],{stdio:"inherit",timeout:120000,windowsHide:true});try{execFileSync(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add",worktree,spec.work_branch],{stdio:"inherit",timeout:120000,windowsHide:true});}catch{execFileSync(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","-b",spec.work_branch,worktree,`origin/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});}}else execFileSync(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","-b",spec.work_branch,worktree,spec.expected_base_sha],{stdio:"inherit",timeout:120000,windowsHide:true});}
+    if(realpathSync(worktree).toLowerCase()!==worktree.toLowerCase())throw new Error("worktree path identity mismatch");const branch=git(worktree,["branch","--show-current"]);if(branch!==spec.work_branch)throw new Error("worktree branch mismatch");const initialStatus=git(worktree,["status","--porcelain","--untracked-files=all"]);const initialHead=git(worktree,["rev-parse","HEAD"]);const expectedHead=existing?.head_sha??spec.expected_base_sha;
+    if(initialHead!==expectedHead){if(initialStatus)throw new Error("advanced builder worktree is dirty");try{git(worktree,["merge-base","--is-ancestor",expectedHead,initialHead]);}catch{throw new Error("builder worktree head is not a descendant of expected head");}if(git(worktree,["log","-1","--format=%s"])!==`feat(control-plane): complete ${spec.front_id}`)throw new Error("recovered builder commit subject mismatch");validateFiles(committed(worktree,expectedHead),spec);runDeclaredTests(worktree,spec.test_commands);execFileSync(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${expectedHead}..${initialHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});execFileSync(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});const pr=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nRecovered local builder commit.\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:initialHead,session};}
+    const repair=repairCycle>0?this.bus.repairPrompt(issue):"";if(repairCycle>0&&!repair)throw new Error("repair findings missing");
+    const prompt=[`Build governed front ${spec.front_id}.`,`Objective: ${spec.objective}`,`Repair cycle: ${repairCycle}.`,repair?`Correct only these independent-review findings:\n${repair}`:"",`Allowed paths only: ${spec.allowed_paths.join(", ")}.`,`Forbidden paths: ${spec.forbidden_paths.join(", ")}.`,`Acceptance: ${spec.acceptance.join(" | ")}.`,`Do not commit, push, open a PR, merge, deploy, or inspect paths outside this worktree.`].filter(Boolean).join("\n");
+    if(!initialStatus){if(spec.executor==="codex_control_plane")runBuilder(this.codex,prompt,worktree,session);else throw new Error("agent_loop builder adapter unavailable");}
+    const files=changed(worktree);validateFiles(files,spec);
+    runDeclaredTests(worktree,spec.test_commands);execFileSync(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check"],{stdio:"inherit",timeout:120000,windowsHide:true});
+    execFileSync(process.env.GIT_PATH??"git",["-C",worktree,"add","--",...files],{stdio:"inherit",timeout:120000,windowsHide:true});
+    execFileSync(process.env.GIT_PATH??"git",["-C",worktree,"commit","-m",`feat(control-plane): complete ${spec.front_id}`],{stdio:"inherit",timeout:120000,windowsHide:true});
+    const head=git(worktree,["rev-parse","HEAD"]);execFileSync(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
+    const pr=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${session}\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:head,session};
+  }
+}

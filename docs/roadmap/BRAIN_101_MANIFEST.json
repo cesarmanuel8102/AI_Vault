@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "5326be5c05f67be25ebd84cd8abec0e2a1d017b69d5cac0609b491890c49575b",
+  "roadmap_sha256": "5ec0b9229af205895f7c326857dc7b253348e6f563f7ec497d216d26a57cc58d",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -57,8 +57,36 @@
     },
     "R1.2": {
       "title": "Add roadmap-doc and test-only profiles",
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "PAUSED_PENDING_AUTONOMOUS_CONTROL_PLANE",
       "dependencies": ["R1.1"]
+    },
+    "R1.0": {
+      "title": "Certify autonomous roadmap control-plane flow",
+      "status": "AUTHORIZED_ACTIVE",
+      "dependencies": ["R1.1"],
+      "automation": {
+        "front_id": "BRAIN-101-R1-CONTROL-PLANE-E2E-01",
+        "objective": "Create the isolated documentation payload proving the autonomous roadmap flow",
+        "work_branch": "control-plane/brain-101-autonomous-flow-e2e",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": ["docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_PAYLOAD.md"],
+        "forbidden_paths": [".env", ".github/", "memory/", "trading/", "financial_autonomy/", "tmp_agent/", "scripts/"],
+        "acceptance": ["Create one deterministic documentation-only payload", "Do not modify runtime or governance files", "Keep live trading disabled"],
+        "test_commands": ["git diff --check"],
+        "deployment_mode": "NO_DEPLOY",
+        "closeout": {
+          "front_id": "BRAIN-101-R1-CONTROL-PLANE-E2E-CLOSEOUT-01",
+          "objective": "Record the successful autonomous E2E, close R1.0, and restore R1.2 as the next authorized item",
+          "work_branch": "control-plane/brain-101-autonomous-flow-e2e-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_CLOSEOUT.json"],
+          "forbidden_paths": [".env", ".github/", "memory/", "trading/", "financial_autonomy/", "tmp_agent/", "scripts/"],
+          "acceptance": ["Record exact Issue PR decision merge and lifecycle evidence", "Set R1.0 to CLOSED_RUNTIME_VERIFIED", "Set R1.2 to AUTHORIZED_ACTIVE only after the E2E passes", "Preserve human final authority and disabled live trading"],
+          "test_commands": ["git diff --check"]
+        }
+      }
     }
   },
   "r1_1_runtime_closeout": {
@@ -72,5 +100,5 @@
     "final_state": "loop:ready-human-audit",
     "operator_proxy_merge": "7134393351810e64fd1a418dfdd986b53531ff46"
   },
-  "next_gate": "Execute R1.2 roadmap-doc and test-only profiles through Operator Proxy"
+  "next_gate": "Certify the autonomous roadmap control-plane E2E before resuming R1.2"
 }
