@@ -27,6 +27,16 @@ def config(profile: str, command: list[str] | None = None) -> dict:
     }
 
 
+def legacy_config() -> dict:
+    return {
+        "repo": "cesarmanuel8102/AI_Vault",
+        "owner": "cesarmanuel8102",
+        "base_branch": "codex/own-capital-sustainable-return",
+        "max_kimi_cycles_default": 3,
+        "test_profiles": {"pilot": [sys.executable, "scripts/agent_loop/pilot_verify.py", "--local"]},
+    }
+
+
 def issue(profile: str, allowed: list[str], branch: str | None = None) -> dict:
     spec = {
         "schema_version": 1,
@@ -62,13 +72,16 @@ roadmap_paths = ["ROADMAP_STATUS.json", "docs/roadmap/evidence/R1_2.md"]
 test_paths = ["tests/contract/test_r1_2_example.py"]
 parsed_roadmap = worker.parse_spec(issue("roadmap-doc", roadmap_paths), config("roadmap-doc"))
 parsed_test = worker.parse_spec(issue("test-only", test_paths), config("test-only"))
+legacy_roadmap = worker.parse_spec(issue("roadmap-doc", roadmap_paths), legacy_config())
+legacy_test = worker.parse_spec(issue("test-only", test_paths), legacy_config())
 assert parsed_roadmap["allowed_paths"] == sorted(roadmap_paths)
 assert parsed_test["allowed_paths"] == test_paths
+assert legacy_roadmap["allowed_paths"] == sorted(roadmap_paths)
+assert legacy_test["allowed_paths"] == test_paths
 
 expect_parse_error(issue("roadmap-doc", roadmap_paths, "agent/test-only-wrong"), config("roadmap-doc"), "work branch")
 expect_parse_error(issue("test-only", ["scripts/unsafe.py"]), config("test-only"), "trusted profile")
 expect_parse_error(issue("roadmap-doc", ["docs/roadmap/../unsafe.md"]), config("roadmap-doc"), "traversal")
-expect_parse_error(issue("test-only", test_paths), config("test-only", ["cmd.exe", "/c", "echo bad"]), "unsafe")
 expect_parse_error(issue("roadmap-doc", []), config("roadmap-doc"), "trusted profile")
 expect_parse_error(issue("test-only", [test_paths[0], test_paths[0]]), config("test-only"), "duplicates")
 
@@ -183,6 +196,15 @@ with tempfile.TemporaryDirectory() as td:
         assert calls == []
     finally:
         worker.subprocess.run = original_subprocess_run
+
+with tempfile.TemporaryDirectory() as td:
+    target = Path(td) / test_paths[0]
+    target.parent.mkdir(parents=True)
+    target.write_text("print('PASS')\n", encoding="utf-8")
+    hostile = legacy_config()
+    hostile["test_profiles"]["test-only"] = ["cmd.exe", "/c", "echo unsafe"]
+    ok, output = worker.run_profile(hostile, legacy_test, Path(td))
+    assert ok and output == "TEST_ONLY_AST_VALIDATED:1"
 
 captured: list[list[str]] = []
 original_run, original_gh_json = worker.run, worker.gh_json

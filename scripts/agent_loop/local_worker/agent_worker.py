@@ -69,6 +69,12 @@ PROFILE_BRANCH_PREFIXES = {
     "roadmap-doc": "agent/roadmap-doc-",
     "test-only": "agent/test-only-",
 }
+PROFILE_TRUSTED_COMMANDS = {
+    "roadmap-doc": ("git", "diff", "--check"),
+    # This identifies the validation contract; run_profile performs AST-only
+    # validation and never executes model-authored test code.
+    "test-only": ("python", "-m", "py_compile"),
+}
 REQUIRED_FORBIDDEN_PATHS = {
     "memory/semantic/",
     "memory/rollback",
@@ -964,10 +970,12 @@ def parse_spec(issue: dict, cfg: dict) -> dict:
     if not re.fullmatch(r"[0-9a-fA-F]{40}", str(spec["expected_base_sha"])):
         raise ValueError("expected_base_sha must be a full 40-character commit SHA")
     profile = str(spec["test_profile"])
-    if profile not in cfg["test_profiles"] or profile not in PROFILE_ALLOWED_PATHS:
+    if profile not in PROFILE_ALLOWED_PATHS:
         raise ValueError("unknown test profile")
-    if profile != "pilot" and not profile_command_is_trusted(profile, cfg["test_profiles"][profile]):
-        raise ValueError("unsafe or empty test profile command")
+    if profile == "pilot" and profile not in cfg["test_profiles"]:
+        raise ValueError("unknown test profile")
+    if profile != "pilot" and not profile_command_is_trusted(profile, list(PROFILE_TRUSTED_COMMANDS[profile])):
+        raise ValueError("unsafe internal test profile command")
     branch_prefix = PROFILE_BRANCH_PREFIXES[profile]
     if not spec["work_branch"].startswith(branch_prefix):
         if profile == "pilot":
@@ -1606,7 +1614,9 @@ def validate_executor_delivery(cfg: dict, spec: dict, model_dir: Path, log: Path
         )
 
 def run_profile(cfg, spec, repo_dir) -> tuple[bool,str]:
-    cmd = [str(x) for x in cfg["test_profiles"][spec["test_profile"]]]
+    profile = spec["test_profile"]
+    configured = cfg["test_profiles"][profile] if profile == "pilot" else PROFILE_TRUSTED_COMMANDS[profile]
+    cmd = [str(x) for x in configured]
     if spec["test_profile"] == "pilot":
         cmd += ["--expected-front-id", str(spec["front_id"])]
     elif spec["test_profile"] == "roadmap-doc":
