@@ -19,7 +19,7 @@ test("subprocess stdout and stderr errors are redacted before propagation",()=>{
 
 test("state and ledger persist only redacted data",()=>{
   const root=mkdtempSync(join(tmpdir(),"redaction-"));const store=new LifecycleStore(join(root,"state"));const record:any={schema_version:1,front_id:"BRAIN-101-REDACTION-01",roadmap_item_id:"R1.1",state:"BLOCKED",base_sha:"a".repeat(40),repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:[],last_error:`password=hunter2`,updated_utc:new Date().toISOString()};store.save(record);const stateBytes=readFileSync(store.path(record.front_id),"utf8");assert.equal(stateBytes.includes("hunter2"),false);
-  const ledger=new Ledger(join(root,"ledger"));const decision:any={schema_version:1,decision_id:crypto.randomUUID(),created_utc:new Date().toISOString(),head_sha:"b".repeat(40),policy_decision:"BLOCK",debug:`Authorization: Bearer abc.DEF_123456789`};ledger.record(decision);const bytes=readFileSync(join(root,"ledger","events.jsonl"),"utf8");assert.equal(bytes.includes("abc.DEF_123456789"),false);
+  const ledger=new Ledger(join(root,"ledger"));const decision:any={schema_version:1,decision_key:"e".repeat(64),decision_id:crypto.randomUUID(),created_utc:new Date().toISOString(),head_sha:"b".repeat(40),policy_decision:"BLOCK",debug:`Authorization: Bearer abc.DEF_123456789`};ledger.record(decision);const bytes=readFileSync(join(root,"ledger","events.jsonl"),"utf8");assert.equal(bytes.includes("abc.DEF_123456789"),false);
 });
 
 test("GitHub comments and repair feedback are redacted before output",()=>{
