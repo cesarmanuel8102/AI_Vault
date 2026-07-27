@@ -6,6 +6,7 @@ export interface BuildResult {pr:number;head_sha:string;session:string}
 export type CiResult="PENDING"|"PASS"|"FAIL";
 export interface PolicyResult {outcome:"APPROVE"|"REPAIR"|"BLOCK"|"ESCALATE_TO_OWNER";decision_id:string}
 export interface AutonomousEffects {
+  bindLifecycle(spec:ProxySpec,state:LifecycleRecord):void;
   ensureIssue(spec:ProxySpec):number;
   ensureBuild(spec:ProxySpec,issue:number,session:string,repairCycle:number,previousHead?:string):BuildResult|"PENDING";
   ci(pr:number,head:string):CiResult;
@@ -32,7 +33,7 @@ export class AutonomousFlow {
   step(spec:ProxySpec):LifecycleRecord {
     if(!spec.front_id)throw new Error("front id required");
     let state=this.store.load(spec.front_id)??newLifecycle(spec); if(!this.store.load(spec.front_id))this.store.save(state);
-    if(state.base_sha!==spec.expected_base_sha||state.roadmap_item_id!==spec.roadmap_item_id)throw new Error("persisted lifecycle binding mismatch");
+    if(state.base_sha!==spec.expected_base_sha||state.roadmap_item_id!==spec.roadmap_item_id)throw new Error("persisted lifecycle binding mismatch");this.effects.bindLifecycle(spec,state);
     switch(state.state){
       case "DISCOVERED": return this.store.advance(state,"ADMITTED");
       case "ADMITTED": {const issue=this.effects.ensureIssue(spec); state=this.store.effect(state,`issue:${issue}`); return this.store.advance(state,"ISSUE_CREATED",{issue});}

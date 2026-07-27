@@ -1,2 +1,17 @@
-import type {Decision} from "./types.js";import {GitHubBus} from "./github_bus.js";import {Ledger} from "./decision_ledger.js";
-export function execute(bus:GitHubBus,ledger:Ledger,d:Decision,dry:boolean){if(dry||d.policy_decision!=="APPROVE"||d.allowed_action!=="MERGE")return;if(ledger.hasHead(d.head_sha)){ledger.ensureConsumed(d);return;}const current=bus.json(["pr","view",String(d.pr),"--json","baseRefOid,headRefOid,isDraft,state,mergeable"]);if(current.state==="MERGED")bus.verifyMerged(d.pr,d.head_sha,d.base_sha);else{if(current.baseRefOid!==d.base_sha||current.headRefOid!==d.head_sha||current.state!=="OPEN"||current.isDraft!==true||current.mergeable!=="MERGEABLE")throw new Error("PR identity changed after decision");bus.merge(d.pr,d.head_sha,d.base_sha,d.decision_id);}ledger.ensureConsumed(d);bus.comment(d.issue,`[OPERATOR-PROXY][AUTHORIZATION-CONSUMED]\n\nauthorization_id=${d.authorization_id}\ndecision_id=${d.decision_id}\nissue=${d.issue}\npr=${d.pr}\nbase_sha=${d.base_sha}\nhead_sha=${d.head_sha}\naction=MERGE\npolicy_sha256=${d.policy_sha256}`);}
+import type {Decision} from "./types.js";
+import {GitHubBus} from "./github_bus.js";
+import {Ledger} from "./decision_ledger.js";
+
+export function execute(bus:GitHubBus,ledger:Ledger,d:Decision,dry:boolean){
+  if(dry||d.policy_decision!=="APPROVE"||d.allowed_action!=="MERGE")return;
+  if(d.codex_review!=="PASS"||d.review_consistent!==true||d.review_findings_count!==0)throw new Error("merge denied by inconsistent reviewer decision");
+  if(ledger.hasHead(d.head_sha)){ledger.ensureConsumed(d);return;}
+  const current=bus.json(["pr","view",String(d.pr),"--json","baseRefOid,headRefOid,isDraft,state,mergeable"]);
+  if(current.state==="MERGED")bus.verifyMerged(d.pr,d.head_sha,d.base_sha);
+  else {
+    if(current.baseRefOid!==d.base_sha||current.headRefOid!==d.head_sha||current.state!=="OPEN"||current.isDraft!==true||current.mergeable!=="MERGEABLE")throw new Error("PR identity changed after decision");
+    bus.merge(d.pr,d.head_sha,d.base_sha,d.decision_id);
+  }
+  ledger.ensureConsumed(d);
+  bus.comment(d.issue,`[OPERATOR-PROXY][AUTHORIZATION-CONSUMED]\n\nauthorization_id=${d.authorization_id}\ndecision_id=${d.decision_id}\nissue=${d.issue}\npr=${d.pr}\nbase_sha=${d.base_sha}\nhead_sha=${d.head_sha}\naction=MERGE\npolicy_sha256=${d.policy_sha256}`);
+}

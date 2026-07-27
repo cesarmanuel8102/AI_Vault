@@ -1,10 +1,12 @@
 import type {ProxySpec} from "./types.js";
 import {AUTH,REPO} from "./policy_engine.js";
+import {containsSensitiveData} from "./redaction.js";
 
 const validStrings=(value:unknown)=>Array.isArray(value)&&value.every(x=>typeof x==="string"&&x.length>0)&&new Set(value).size===value.length;
 const invalidPath=(path:string)=>path.includes("\\")||path.startsWith("/")||/^[A-Za-z]:/.test(path)||path.split("/").includes("..")||path.includes("//");
 
 export function validateSpec(spec:ProxySpec,requireAutomation=false):ProxySpec {
+  if(containsSensitiveData(spec))throw new Error("operator proxy spec contains sensitive data");
   const arrays=[spec.allowed_paths,spec.forbidden_paths,spec.acceptance,spec.test_commands];
   const validArrays=arrays.every(validStrings);
   if(spec.schema_version!==1||spec.authorization_id!==AUTH||spec.repository!==REPO||spec.roadmap_id!=="BRAIN-101"||!/^\d+\.\d+\.\d+(?:-[a-z0-9.-]+)?$/i.test(spec.roadmap_version)||!/^R\d+(?:\.\d+)?$/.test(spec.roadmap_item_id)||!/^[0-9a-f]{40}$/.test(spec.expected_base_sha)||!["agent_loop","codex_control_plane"].includes(spec.executor)||!["LOW","MEDIUM","HIGH","CRITICAL"].includes(spec.risk)||spec.deployment_allowed!==false||!validArrays)throw new Error("operator proxy spec invalid");

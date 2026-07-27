@@ -2,6 +2,7 @@ import {appendFileSync, existsSync, mkdirSync, readFileSync, renameSync, writeFi
 import {join} from "node:path";
 import type {LifecycleRecord, LifecycleState} from "./types.js";
 import {transitionLifecycle} from "./state_machine.js";
+import {redactSensitiveData,safeJson} from "./redaction.js";
 
 const safeFront = (front: string) => {
   if (!/^[A-Z0-9][A-Z0-9._-]{5,127}$/.test(front)) throw new Error("front id invalid");
@@ -18,9 +19,10 @@ export class LifecycleStore {
     return record;
   }
   save(record: LifecycleRecord) {
+    record=redactSensitiveData(record);
     const path=this.path(record.front_id); const tmp=`${path}.${process.pid}.tmp`;
     writeFileSync(tmp,`${JSON.stringify(record,null,2)}\n`,{flag:"wx"}); renameSync(tmp,path);
-    appendFileSync(join(this.root,"events.jsonl"),`${JSON.stringify({event:"lifecycle_saved",front_id:record.front_id,state:record.state,updated_utc:record.updated_utc})}\n`);
+    appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_saved",front_id:record.front_id,state:record.state,updated_utc:record.updated_utc})}\n`);
   }
   advance(record: LifecycleRecord, next: LifecycleState, patch: Partial<LifecycleRecord>={}): LifecycleRecord {
     const updated={...record,...patch,state:transitionLifecycle(record.state,next),updated_utc:new Date().toISOString()}; this.save(updated); return updated;

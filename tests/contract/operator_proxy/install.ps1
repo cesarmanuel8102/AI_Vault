@@ -8,7 +8,7 @@ New-Item $install -ItemType Directory -Force|Out-Null
 $old=[Text.Encoding]::UTF8.GetBytes('old-runtime')
 [IO.File]::WriteAllBytes((Join-Path $install 'operator_proxy.ts'),$old)
 $taskState=Join-Path $tmp 'task-state.txt';[IO.File]::WriteAllText($taskState,'Disabled')
-$validateStage={param($stage) if(!(Test-Path (Join-Path $stage 'operator_proxy.ts'))){throw 'staging missing'};New-Item (Join-Path $stage 'node_modules\.bin') -ItemType Directory -Force|Out-Null;[IO.File]::WriteAllText((Join-Path $stage 'node_modules\.bin\tsx.cmd'),'@echo off')}
+$validateStage={param($stage) foreach($required in @('operator_proxy.ts','external_effect_guard.ts','redaction.ts','review_contract.ts')){if(!(Test-Path (Join-Path $stage $required))){throw "staging missing $required"}};New-Item (Join-Path $stage 'node_modules\.bin') -ItemType Directory -Force|Out-Null;[IO.File]::WriteAllText((Join-Path $stage 'node_modules\.bin\tsx.cmd'),'@echo off')}
 try {
     Invoke-OperatorProxyInstall -Repo $root -InstallRoot $install -ApprovedCommit $head -ValidateStaging $validateStage -ValidateInstalled {param($p)} | Out-Null
     if([Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes((Join-Path $install 'operator_proxy.ts'))) -eq 'old-runtime'){throw 'install did not replace runtime'}
