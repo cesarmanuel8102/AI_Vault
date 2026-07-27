@@ -35,6 +35,12 @@
     {
       "allOf": [
         {"$ref": "#/$defs/common"},
+        {"type": "object", "additionalProperties": false, "required": ["decision_key", "review_findings_count", "review_consistent"], "properties": {"schema_version": {"const": 1}, "decision_key": {"pattern": "^[0-9a-f]{64}$"}, "decision_id": {}, "authorization_id": {}, "repository": {}, "issue": {}, "pr": {}, "base_sha": {}, "head_sha": {}, "roadmap_id": {}, "roadmap_item_id": {}, "risk": {}, "deterministic_gate": {}, "codex_review": {}, "review_findings_count": {"type": "integer", "minimum": 0}, "review_consistent": {"type": "boolean"}, "policy_decision": {}, "allowed_action": {}, "policy_sha256": {}, "evidence_sha256": {}, "created_utc": {}}}
+      ]
+    },
+    {
+      "allOf": [
+        {"$ref": "#/$defs/common"},
         {"type": "object", "additionalProperties": false, "required": ["decision_key", "review_findings_count", "review_consistent"], "properties": {"schema_version": {"const": 2}, "decision_key": {"pattern": "^[0-9a-f]{64}$"}, "decision_id": {}, "authorization_id": {}, "repository": {}, "issue": {}, "pr": {}, "base_sha": {}, "head_sha": {}, "roadmap_id": {}, "roadmap_item_id": {}, "risk": {}, "deterministic_gate": {}, "codex_review": {}, "review_findings_count": {"type": "integer", "minimum": 0}, "review_consistent": {"type": "boolean"}, "policy_decision": {}, "allowed_action": {}, "policy_sha256": {}, "evidence_sha256": {}, "created_utc": {}}}
       ]
     }

@@ -1,7 +1,7 @@
 import {createHash} from "node:crypto";
 import {appendFileSync,existsSync,mkdirSync,readFileSync,readdirSync,renameSync,rmSync,writeFileSync} from "node:fs";
 import {basename,join} from "node:path";
-import type {Decision,LegacyDecisionV1,NormalizedDecision} from "./types.js";
+import type {Decision,LegacyDecisionV1,NormalizedDecision,TransitionalKeyedDecisionV1} from "./types.js";
 import {redactSensitiveData,safeJson} from "./redaction.js";
 
 const sha40=/^[0-9a-f]{40}$/,sha64=/^[0-9a-f]{64}$/,uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -16,12 +16,16 @@ function exactKeys(value:any,expected:string[]){return value&&typeof value==="ob
 function validCommon(v:any){return uuid.test(v.decision_id)&&typeof v.authorization_id==="string"&&v.authorization_id.length>0&&typeof v.repository==="string"&&v.repository.length>0&&Number.isInteger(v.issue)&&v.issue>0&&Number.isInteger(v.pr)&&v.pr>0&&sha40.test(v.base_sha)&&sha40.test(v.head_sha)&&typeof v.roadmap_id==="string"&&v.roadmap_id.length>0&&typeof v.roadmap_item_id==="string"&&v.roadmap_item_id.length>0&&["LOW","MEDIUM","HIGH","CRITICAL"].includes(v.risk)&&["PASS","FAIL"].includes(v.deterministic_gate)&&["PASS","CHANGES_REQUESTED","BLOCKED"].includes(v.codex_review)&&["APPROVE","REPAIR","BLOCK","ESCALATE_TO_OWNER"].includes(v.policy_decision)&&["NONE","MARK_READY","MERGE","REQUEST_REPAIR","DEPLOY"].includes(v.allowed_action)&&sha64.test(v.policy_sha256)&&sha64.test(v.evidence_sha256)&&!Number.isNaN(Date.parse(v.created_utc));}
 function parseJson(bytes:Buffer,message:string){try{return JSON.parse(bytes.toString("utf8"));}catch{throw new Error(message);}}
 export function parseLegacyDecisionV1(bytes:Buffer):LegacyDecisionV1{const v=parseJson(bytes,"decision ledger entry corrupt");if(v.schema_version!==1||"decision_key" in v||!exactKeys(v,legacyKeys)||!validCommon(v))throw new Error("decision ledger legacy schema invalid");return v;}
+export function historicalDecisionKey(v:LegacyDecisionV1){return hash(canonical({authorization_id:v.authorization_id,base_sha:v.base_sha,head_sha:v.head_sha,issue:v.issue,policy_sha256:v.policy_sha256,pr:v.pr,repository:v.repository,roadmap_id:v.roadmap_id,roadmap_item_id:v.roadmap_item_id}));}
+export function historicalStableDecisionId(key:string){return `${key.slice(0,8)}-${key.slice(8,12)}-4${key.slice(13,16)}-${((parseInt(key[16],16)&3)|8).toString(16)}${key.slice(17,20)}-${key.slice(20,32)}`;}
+export function parseTransitionalKeyedDecisionV1(bytes:Buffer):TransitionalKeyedDecisionV1{const v=parseJson(bytes,"decision ledger entry corrupt");if(v.schema_version!==1||!exactKeys(v,keyedKeys)||!validCommon(v)||!sha64.test(v.decision_key)||!Number.isInteger(v.review_findings_count)||v.review_findings_count<0||typeof v.review_consistent!=="boolean")throw new Error("decision ledger transitional schema invalid");if(v.decision_key!==historicalDecisionKey(v))throw new Error("transitional decision key mismatch");if(v.decision_id!==historicalStableDecisionId(v.decision_key))throw new Error("transitional decision id mismatch");return v;}
 export function parseKeyedDecisionV2(bytes:Buffer):Decision{const v=parseJson(bytes,"decision ledger entry corrupt");if(v.schema_version!==2||!exactKeys(v,keyedKeys)||!validCommon(v)||!sha64.test(v.decision_key)||!Number.isInteger(v.review_findings_count)||v.review_findings_count<0||typeof v.review_consistent!=="boolean")throw new Error("decision ledger keyed schema invalid");return v;}
 export function deriveLegacyDecisionKey(v:LegacyDecisionV1){return hash(canonical({identity_schema:"legacy-decision-v1",repository:v.repository,authorization_id:v.authorization_id,roadmap_id:v.roadmap_id,roadmap_item_id:v.roadmap_item_id,issue:v.issue,pr:v.pr,base_sha:v.base_sha,head_sha:v.head_sha,policy_sha256:v.policy_sha256,decision_id:v.decision_id}));}
 function logicalIdentity(v:NormalizedDecision|Decision){return hash(canonical(Object.fromEntries(governedFields.map(field=>[field,v[field]]))));}
 function compatible(a:NormalizedDecision|Decision,b:NormalizedDecision|Decision){return governedFields.every(field=>a[field]===b[field])&&outcomeFields.every(field=>a[field]===b[field]);}
 
-type RecordView={decision:NormalizedDecision;legacy:boolean;filename:string;sourceSha:string};
+type RecordFormat="legacy-unkeyed-v1"|"transitional-keyed-v1"|"keyed-v2";
+type RecordView={decision:NormalizedDecision;format:RecordFormat;filename:string;sourceSha:string};
 type Sidecar={migration_schema_version:2;legacy_filename:string;legacy_source_sha256:string;legacy_decision_id:string;derived_decision_key:string;normalized_identity_hash:string;created_utc:string;migration_tool_version:string};
 
 export class Ledger {
@@ -42,20 +46,32 @@ export class Ledger {
     try{renameSync(temp,path);}catch(error){rmSync(temp,{force:true});if(!existsSync(path))throw error;verify(parseJson(readFileSync(path),"legacy decision sidecar corrupt"));}
     return sourceSha;
   }
+  private ensureTransitionalSidecar(filename:string,bytes:Buffer,value:TransitionalKeyedDecisionV1,create:boolean){
+    const sourceSha=hash(bytes),dir=join(this.root,"transitional-index-v2"),path=join(dir,`${sourceSha}.json`),temp=`${path}.tmp`;
+    const expected={migration_schema_version:2,source_format:"TransitionalKeyedDecisionV1",source_filename:filename,source_sha256:sourceSha,decision_key:value.decision_key,decision_id:value.decision_id,normalized_identity_hash:logicalIdentity(value),migration_tool_version:"operator-proxy-ledger-v2"};
+    const verify=(candidate:any)=>{const keys=[...Object.keys(expected),"created_utc"].sort();if(!exactKeys(candidate,keys)||Object.entries(expected).some(([k,v])=>candidate[k]!==v)||Number.isNaN(Date.parse(candidate.created_utc)))throw new Error("transitional decision sidecar conflict");};
+    if(existsSync(path)){verify(parseJson(readFileSync(path),"transitional decision sidecar corrupt"));return sourceSha;}
+    if(existsSync(temp)){verify(parseJson(readFileSync(temp),"transitional decision sidecar corrupt"));if(create)renameSync(temp,path);return sourceSha;}
+    if(!create)return sourceSha;
+    mkdirSync(dir,{recursive:true});const sidecar={...expected,created_utc:new Date().toISOString()};writeFileSync(temp,`${JSON.stringify(sidecar,null,2)}\n`,{flag:"wx"});
+    try{renameSync(temp,path);}catch(error){rmSync(temp,{force:true});if(!existsSync(path))throw error;verify(parseJson(readFileSync(path),"transitional decision sidecar corrupt"));}
+    return sourceSha;
+  }
   private records():RecordView[]{
     const records:RecordView[]=[];
     for(const filename of readdirSync(this.root).filter(name=>name.endsWith(".json")&&!name.startsWith("review-"))){
       const bytes=readFileSync(join(this.root,filename)),raw=parseJson(bytes,"decision ledger entry corrupt");
-      if(raw.schema_version===1&&!Object.prototype.hasOwnProperty.call(raw,"decision_key")){const legacy=parseLegacyDecisionV1(bytes),key=deriveLegacyDecisionKey(legacy),sourceSha=this.ensureSidecar(filename,bytes,legacy,key,false);records.push({decision:{...legacy,decision_key:key,legacy_source_sha256:sourceSha},legacy:true,filename,sourceSha});}
-      else if(raw.schema_version===2&&Object.prototype.hasOwnProperty.call(raw,"decision_key")){const decision=parseKeyedDecisionV2(bytes);if(filename!==basename(this.decisionPath(decision.decision_key)))throw new Error("decision ledger filename mismatch");records.push({decision,legacy:false,filename,sourceSha:hash(bytes)});}
+      if(raw.schema_version===1&&!Object.prototype.hasOwnProperty.call(raw,"decision_key")){const legacy=parseLegacyDecisionV1(bytes),key=deriveLegacyDecisionKey(legacy),sourceSha=this.ensureSidecar(filename,bytes,legacy,key,false);records.push({decision:{...legacy,decision_key:key,legacy_source_sha256:sourceSha},format:"legacy-unkeyed-v1",filename,sourceSha});}
+      else if(raw.schema_version===1&&Object.prototype.hasOwnProperty.call(raw,"decision_key")){const decision=parseTransitionalKeyedDecisionV1(bytes),sourceSha=this.ensureTransitionalSidecar(filename,bytes,decision,false);if(filename!==basename(this.decisionPath(decision.decision_key)))throw new Error("decision ledger filename mismatch");records.push({decision,format:"transitional-keyed-v1",filename,sourceSha});}
+      else if(raw.schema_version===2&&Object.prototype.hasOwnProperty.call(raw,"decision_key")){const decision=parseKeyedDecisionV2(bytes);if(filename!==basename(this.decisionPath(decision.decision_key)))throw new Error("decision ledger filename mismatch");records.push({decision,format:"keyed-v2",filename,sourceSha:hash(bytes)});}
       else throw new Error("decision ledger schema invalid");
     }
     const byHead=new Map<string,RecordView[]>();for(const record of records)byHead.set(record.decision.head_sha,[...(byHead.get(record.decision.head_sha)??[]),record]);
-    for(const group of byHead.values()){if(group.filter(record=>record.legacy).length>1||group.filter(record=>!record.legacy).length>1)throw new Error("duplicate decisions for head");for(let i=1;i<group.length;i++)if(!compatible(group[0].decision,group[i].decision))throw new Error("DECISION_IDENTITY_CONFLICT");}
-    for(const record of records.filter(item=>item.legacy)){const path=join(this.root,record.filename),bytes=readFileSync(path),legacy=parseLegacyDecisionV1(bytes);this.ensureSidecar(record.filename,bytes,legacy,record.decision.decision_key,true);if(hash(readFileSync(path))!==record.sourceSha)throw new Error("legacy decision bytes changed");}
+    for(const group of byHead.values()){for(const format of ["legacy-unkeyed-v1","transitional-keyed-v1","keyed-v2"] as RecordFormat[])if(group.filter(record=>record.format===format).length>1)throw new Error("duplicate decisions for head");for(let i=1;i<group.length;i++)if(!compatible(group[0].decision,group[i].decision))throw new Error("DECISION_IDENTITY_CONFLICT");}
+    for(const record of records.filter(item=>item.format!=="keyed-v2")){const path=join(this.root,record.filename),bytes=readFileSync(path);if(record.format==="legacy-unkeyed-v1"){const legacy=parseLegacyDecisionV1(bytes);this.ensureSidecar(record.filename,bytes,legacy,record.decision.decision_key,true);}else this.ensureTransitionalSidecar(record.filename,bytes,parseTransitionalKeyedDecisionV1(bytes),true);if(hash(readFileSync(path))!==record.sourceSha)throw new Error("historical decision bytes changed");}
     return records;
   }
-  private logical(records=this.records()){const groups=new Map<string,RecordView[]>();for(const record of records){const key=logicalIdentity(record.decision);groups.set(key,[...(groups.get(key)??[]),record]);}return [...groups.values()].map(group=>{if(group.filter(record=>record.legacy).length>1||group.filter(record=>!record.legacy).length>1)throw new Error("DECISION_IDENTITY_CONFLICT");for(let i=1;i<group.length;i++)if(!compatible(group[0].decision,group[i].decision))throw new Error("DECISION_IDENTITY_CONFLICT");return group.find(record=>record.legacy)??group[0];});}
+  private logical(records=this.records()){const groups=new Map<string,RecordView[]>();for(const record of records){const key=logicalIdentity(record.decision);groups.set(key,[...(groups.get(key)??[]),record]);}return [...groups.values()].map(group=>{for(const format of ["legacy-unkeyed-v1","transitional-keyed-v1","keyed-v2"] as RecordFormat[])if(group.filter(record=>record.format===format).length>1)throw new Error("DECISION_IDENTITY_CONFLICT");for(let i=1;i<group.length;i++)if(!compatible(group[0].decision,group[i].decision))throw new Error("DECISION_IDENTITY_CONFLICT");return group.find(record=>record.format==="legacy-unkeyed-v1")??group.find(record=>record.format==="transitional-keyed-v1")??group[0];});}
   private eventMatches(value:any,d:NormalizedDecision){if(value.decision_key===d.decision_key)return true;if(value.decision_id===d.decision_id&&value.head_sha===d.head_sha&&value.policy_sha256===d.policy_sha256)return true;const historical=["authorization_id","issue","pr","base_sha","head_sha","policy_sha256"] as const;return historical.every(field=>value[field]===d[field])&&(!("action" in value)||value.action===d.allowed_action);}
   private ensureEvent(d:NormalizedDecision){const eventPath=join(this.root,"events.jsonl");let found=0;if(existsSync(eventPath))for(const line of readFileSync(eventPath,"utf8").split(/\r?\n/).filter(Boolean)){const value=parseJson(Buffer.from(line),"decision event ledger corrupt");if(String(value.event).startsWith("operator_policy_")&&this.eventMatches(value,d))found++;}if(found>1)throw new Error("duplicate decision events");if(found===0)appendFileSync(eventPath,`${safeJson({event:"operator_policy_"+d.policy_decision.toLowerCase(),...d,schema_version:2})}\n`);}
   decisions(){return this.logical().map(record=>record.decision);}
