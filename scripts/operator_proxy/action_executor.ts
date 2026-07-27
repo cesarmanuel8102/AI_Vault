@@ -5,6 +5,7 @@ import {historicalDecisionKey,historicalStableDecisionId,Ledger} from "./decisio
 export function execute(bus:GitHubBus,ledger:Ledger,d:NormalizedDecision,dry:boolean){
   if(dry||d.policy_decision!=="APPROVE"||d.allowed_action!=="MERGE")return undefined;
   const transitionalValid=d.schema_version===1&&"review_consistent" in d&&d.decision_key===historicalDecisionKey(d)&&d.decision_id===historicalStableDecisionId(d.decision_key);
+  if(!["LOW","MEDIUM"].includes(d.risk)||d.deterministic_gate!=="PASS")throw new Error("merge denied by policy outcome invariants");
   if(!(d.schema_version===2||transitionalValid)||!("review_consistent" in d)||d.codex_review!=="PASS"||d.review_consistent!==true||d.review_findings_count!==0)throw new Error("merge denied by inconsistent reviewer decision");
   let merge:string;if(ledger.hasHead(d.head_sha)){ledger.ensureConsumed(d);merge=bus.verifyMerged(d.pr,d.head_sha,d.base_sha);}else {const current=bus.json(["pr","view",String(d.pr),"--json","baseRefOid,headRefOid,isDraft,state,mergeable"]);if(current.state==="MERGED")merge=bus.verifyMerged(d.pr,d.head_sha,d.base_sha);else {if(current.baseRefOid!==d.base_sha||current.headRefOid!==d.head_sha||current.state!=="OPEN"||current.isDraft!==true||current.mergeable!=="MERGEABLE")throw new Error("PR identity changed after decision");merge=bus.merge(d.pr,d.head_sha,d.base_sha,d.decision_id);}ledger.ensureConsumed(d);}return merge;
 }
