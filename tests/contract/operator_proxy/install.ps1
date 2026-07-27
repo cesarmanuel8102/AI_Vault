@@ -1,4 +1,16 @@
 $ErrorActionPreference='Stop'
+function Get-ContractPathIdentity {
+    param([Parameter(Mandatory=$true)][string]$Path)
+    $resolved=(Resolve-Path -LiteralPath $Path).Path
+    $full=[IO.Path]::GetFullPath($resolved)
+    $root=[IO.Path]::GetPathRoot($full)
+    if($full.Length -gt $root.Length){$full=$full.TrimEnd([IO.Path]::DirectorySeparatorChar,[IO.Path]::AltDirectorySeparatorChar)}
+    return $full
+}
+function Test-SameContractPath {
+    param([Parameter(Mandatory=$true)][string]$Left,[Parameter(Mandatory=$true)][string]$Right)
+    return (Get-ContractPathIdentity $Left).Equals((Get-ContractPathIdentity $Right),[StringComparison]::OrdinalIgnoreCase)
+}
 $root=(Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
 Import-Module (Join-Path $root 'scripts\operator_proxy\Repair-OperatorProxy.psm1') -Force
 $tmp=Join-Path $env:TEMP ('operator-proxy-'+[guid]::NewGuid())
@@ -40,7 +52,8 @@ try {
 
     # Synthetic repositories exercise physical/Git identity without touching the canonical checkout.
     $verified=Assert-TrustedOperatorProxyRepository $synthetic $syntheticHead
-    if($verified.Repo -ne (Resolve-Path $synthetic).Path){throw 'legitimate repository rejected'}
+    if(-not (Test-SameContractPath $verified.Repo $synthetic)){throw 'legitimate repository rejected'}
+    foreach($equivalent in @($synthetic.ToUpperInvariant(),$synthetic.Replace('\','/'),($synthetic+[IO.Path]::DirectorySeparatorChar))){if(-not (Test-SameContractPath $verified.Repo $equivalent)){throw "equivalent path identity rejected: $equivalent"}}
     $unexpected=Join-Path $synthetic 'scripts\operator_proxy\unexpected.txt';[IO.File]::WriteAllText($unexpected,'unexpected')
     try{Assert-TrustedOperatorProxyRepository $synthetic $syntheticHead|Out-Null;throw 'dirty source accepted'}catch{if($_.Exception.Message -eq 'dirty source accepted'){throw}}finally{Remove-Item -LiteralPath $unexpected}
     try{Assert-TrustedOperatorProxyRepository $synthetic ('0'*40)|Out-Null;throw 'wrong HEAD accepted'}catch{if($_.Exception.Message -eq 'wrong HEAD accepted'){throw}}

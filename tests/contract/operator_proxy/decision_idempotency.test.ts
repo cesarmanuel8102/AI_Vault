@@ -10,7 +10,7 @@ import {GitHubBus} from "../../../scripts/operator_proxy/github_bus.js";
 import {execute,reconcileAuthorizationComment} from "../../../scripts/operator_proxy/action_executor.js";
 
 const head="b".repeat(40),base="a".repeat(40),key="e".repeat(64),id="eeeeeeee-eeee-4eee-aeee-eeeeeeeeeeee";
-const decision=(policy="APPROVE")=>({schema_version:1 as const,decision_key:key,decision_id:id,authorization_id:"CESAR-BRAIN-101-OPERATOR-PROXY-20260722-01",repository:"cesarmanuel8102/AI_Vault",issue:63,pr:63,base_sha:base,head_sha:head,roadmap_id:"BRAIN-101",roadmap_item_id:"R1.1",risk:"LOW" as const,deterministic_gate:"PASS" as const,codex_review:"PASS" as const,review_findings_count:0,review_consistent:true,policy_decision:policy as any,allowed_action:policy==="APPROVE"?"MERGE" as const:"NONE" as const,policy_sha256:"c".repeat(64),evidence_sha256:"d".repeat(64),created_utc:"2026-07-27T00:00:00.000Z"});
+const decision=(policy="APPROVE")=>({schema_version:2 as const,decision_key:key,decision_id:id,authorization_id:"CESAR-BRAIN-101-OPERATOR-PROXY-20260722-01",repository:"cesarmanuel8102/AI_Vault",issue:63,pr:63,base_sha:base,head_sha:head,roadmap_id:"BRAIN-101",roadmap_item_id:"R1.1",risk:"LOW" as const,deterministic_gate:"PASS" as const,codex_review:"PASS" as const,review_findings_count:0,review_consistent:true,policy_decision:policy as any,allowed_action:policy==="APPROVE"?"MERGE" as const:"NONE" as const,policy_sha256:"c".repeat(64),evidence_sha256:"d".repeat(64),created_utc:"2026-07-27T00:00:00.000Z"});
 const lines=(path:string)=>readFileSync(path,"utf8").trim().split(/\r?\n/).filter(Boolean);
 
 test("identical retries create one decision and one policy event for every outcome",()=>{

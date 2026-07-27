@@ -1,43 +1,73 @@
+import {createHash} from "node:crypto";
 import {appendFileSync,existsSync,mkdirSync,readFileSync,readdirSync,renameSync,rmSync,writeFileSync} from "node:fs";
-import {join} from "node:path";
-import type {Decision} from "./types.js";
+import {basename,join} from "node:path";
+import type {Decision,LegacyDecisionV1,NormalizedDecision} from "./types.js";
 import {redactSensitiveData,safeJson} from "./redaction.js";
 
-const sha64=/^[0-9a-f]{64}$/;
-const identityFields=["decision_key","decision_id","authorization_id","repository","issue","pr","base_sha","head_sha","roadmap_id","roadmap_item_id","policy_sha256"] as const;
+const sha40=/^[0-9a-f]{40}$/,sha64=/^[0-9a-f]{64}$/,uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const legacyKeys=["schema_version","decision_id","authorization_id","repository","issue","pr","base_sha","head_sha","roadmap_id","roadmap_item_id","risk","deterministic_gate","codex_review","policy_decision","allowed_action","policy_sha256","evidence_sha256","created_utc"].sort();
+const keyedKeys=[...legacyKeys,"decision_key","review_findings_count","review_consistent"].sort();
+const governedFields=["authorization_id","repository","issue","pr","base_sha","head_sha","roadmap_id","roadmap_item_id","policy_sha256"] as const;
+const outcomeFields=["risk","deterministic_gate","codex_review","policy_decision","allowed_action","evidence_sha256"] as const;
 
-function parseDecision(path:string){
-  let value:Decision;
-  try{value=JSON.parse(readFileSync(path,"utf8")) as Decision;}catch{throw new Error("decision ledger entry corrupt");}
-  if(value.schema_version!==1||!sha64.test(value.decision_key))throw new Error("decision ledger schema invalid");
-  return value;
-}
-function sameIdentity(a:Decision,b:Decision){return identityFields.every(field=>a[field]===b[field]);}
+function canonical(value:unknown):string{return JSON.stringify(value,(_key,item)=>item&&typeof item==="object"&&!Array.isArray(item)?Object.fromEntries(Object.entries(item).sort(([a],[b])=>a.localeCompare(b))):item);}
+function hash(value:string|Buffer){return createHash("sha256").update(value).digest("hex");}
+function exactKeys(value:any,expected:string[]){return value&&typeof value==="object"&&!Array.isArray(value)&&JSON.stringify(Object.keys(value).sort())===JSON.stringify(expected);}
+function validCommon(v:any){return uuid.test(v.decision_id)&&typeof v.authorization_id==="string"&&v.authorization_id.length>0&&typeof v.repository==="string"&&v.repository.length>0&&Number.isInteger(v.issue)&&v.issue>0&&Number.isInteger(v.pr)&&v.pr>0&&sha40.test(v.base_sha)&&sha40.test(v.head_sha)&&typeof v.roadmap_id==="string"&&v.roadmap_id.length>0&&typeof v.roadmap_item_id==="string"&&v.roadmap_item_id.length>0&&["LOW","MEDIUM","HIGH","CRITICAL"].includes(v.risk)&&["PASS","FAIL"].includes(v.deterministic_gate)&&["PASS","CHANGES_REQUESTED","BLOCKED"].includes(v.codex_review)&&["APPROVE","REPAIR","BLOCK","ESCALATE_TO_OWNER"].includes(v.policy_decision)&&["NONE","MARK_READY","MERGE","REQUEST_REPAIR","DEPLOY"].includes(v.allowed_action)&&sha64.test(v.policy_sha256)&&sha64.test(v.evidence_sha256)&&!Number.isNaN(Date.parse(v.created_utc));}
+function parseJson(bytes:Buffer,message:string){try{return JSON.parse(bytes.toString("utf8"));}catch{throw new Error(message);}}
+export function parseLegacyDecisionV1(bytes:Buffer):LegacyDecisionV1{const v=parseJson(bytes,"decision ledger entry corrupt");if(v.schema_version!==1||"decision_key" in v||!exactKeys(v,legacyKeys)||!validCommon(v))throw new Error("decision ledger legacy schema invalid");return v;}
+export function parseKeyedDecisionV2(bytes:Buffer):Decision{const v=parseJson(bytes,"decision ledger entry corrupt");if(v.schema_version!==2||!exactKeys(v,keyedKeys)||!validCommon(v)||!sha64.test(v.decision_key)||!Number.isInteger(v.review_findings_count)||v.review_findings_count<0||typeof v.review_consistent!=="boolean")throw new Error("decision ledger keyed schema invalid");return v;}
+export function deriveLegacyDecisionKey(v:LegacyDecisionV1){return hash(canonical({identity_schema:"legacy-decision-v1",repository:v.repository,authorization_id:v.authorization_id,roadmap_id:v.roadmap_id,roadmap_item_id:v.roadmap_item_id,issue:v.issue,pr:v.pr,base_sha:v.base_sha,head_sha:v.head_sha,policy_sha256:v.policy_sha256,decision_id:v.decision_id}));}
+function logicalIdentity(v:NormalizedDecision|Decision){return hash(canonical(Object.fromEntries(governedFields.map(field=>[field,v[field]]))));}
+function compatible(a:NormalizedDecision|Decision,b:NormalizedDecision|Decision){return governedFields.every(field=>a[field]===b[field])&&outcomeFields.every(field=>a[field]===b[field]);}
+
+type RecordView={decision:NormalizedDecision;legacy:boolean;filename:string;sourceSha:string};
+type Sidecar={migration_schema_version:2;legacy_filename:string;legacy_source_sha256:string;legacy_decision_id:string;derived_decision_key:string;normalized_identity_hash:string;created_utc:string;migration_tool_version:string};
 
 export class Ledger {
   constructor(readonly root:string){mkdirSync(root,{recursive:true});}
   private decisionPath(key:string){if(!sha64.test(key))throw new Error("decision key invalid");return join(this.root,`decision-${key}.json`);}
   private claimPath(key:string){return join(this.root,`claim-${key}`);}
-  private withClaim<T>(key:string,fn:()=>T):T{
-    const claim=this.claimPath(key);let acquired=false;for(let attempt=0;attempt<200;attempt++){try{mkdirSync(claim);acquired=true;break;}catch{Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,10);}}if(!acquired)throw new Error("decision claim timeout");
-    try{return fn();}finally{rmSync(claim,{recursive:true,force:true});}
+  private withClaim<T>(key:string,fn:()=>T):T{const claim=this.claimPath(key);let acquired=false;for(let attempt=0;attempt<200;attempt++){try{mkdirSync(claim);acquired=true;break;}catch{Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,10);}}if(!acquired)throw new Error("decision claim timeout");try{return fn();}finally{rmSync(claim,{recursive:true,force:true});}}
+  private ensureSidecar(filename:string,bytes:Buffer,legacy:LegacyDecisionV1,key:string,create:boolean){
+    const sourceSha=hash(bytes),dir=join(this.root,"legacy-index-v2"),path=join(dir,`${sourceSha}.json`),temp=`${path}.tmp`;
+    const identityHash=logicalIdentity({...legacy,decision_key:key,legacy_source_sha256:sourceSha});
+    const expected={migration_schema_version:2,legacy_filename:filename,legacy_source_sha256:sourceSha,legacy_decision_id:legacy.decision_id,derived_decision_key:key,normalized_identity_hash:identityHash,migration_tool_version:"operator-proxy-ledger-v2"};
+    const verify=(candidate:any)=>{const keys=[...Object.keys(expected),"created_utc"].sort();if(!exactKeys(candidate,keys)||Object.entries(expected).some(([k,v])=>candidate[k]!==v)||Number.isNaN(Date.parse(candidate.created_utc)))throw new Error("legacy decision sidecar conflict");};
+    if(existsSync(path)){verify(parseJson(readFileSync(path),"legacy decision sidecar corrupt"));return sourceSha;}
+    if(existsSync(temp)){verify(parseJson(readFileSync(temp),"legacy decision sidecar corrupt"));if(create)renameSync(temp,path);return sourceSha;}
+    if(!create)return sourceSha;
+    mkdirSync(dir,{recursive:true});
+    const sidecar:Sidecar={...expected,migration_schema_version:2,created_utc:new Date().toISOString()};writeFileSync(temp,`${JSON.stringify(sidecar,null,2)}\n`,{flag:"wx"});
+    try{renameSync(temp,path);}catch(error){rmSync(temp,{force:true});if(!existsSync(path))throw error;verify(parseJson(readFileSync(path),"legacy decision sidecar corrupt"));}
+    return sourceSha;
   }
-  private ensureEvent(d:Decision){
-    const eventPath=join(this.root,"events.jsonl");let found=0;
-    if(existsSync(eventPath))for(const line of readFileSync(eventPath,"utf8").split(/\r?\n/).filter(Boolean)){let value:any;try{value=JSON.parse(line);}catch{throw new Error("decision event ledger corrupt");}if(value.decision_key===d.decision_key&&String(value.event).startsWith("operator_policy_"))found++;}
-    if(found>1)throw new Error("duplicate decision events");
-    if(found===0)appendFileSync(eventPath,`${safeJson({event:"operator_policy_"+d.policy_decision.toLowerCase(),...d})}\n`);
+  private records():RecordView[]{
+    const records:RecordView[]=[];
+    for(const filename of readdirSync(this.root).filter(name=>name.endsWith(".json")&&!name.startsWith("review-"))){
+      const bytes=readFileSync(join(this.root,filename)),raw=parseJson(bytes,"decision ledger entry corrupt");
+      if(raw.schema_version===1&&!Object.prototype.hasOwnProperty.call(raw,"decision_key")){const legacy=parseLegacyDecisionV1(bytes),key=deriveLegacyDecisionKey(legacy),sourceSha=this.ensureSidecar(filename,bytes,legacy,key,false);records.push({decision:{...legacy,decision_key:key,legacy_source_sha256:sourceSha},legacy:true,filename,sourceSha});}
+      else if(raw.schema_version===2&&Object.prototype.hasOwnProperty.call(raw,"decision_key")){const decision=parseKeyedDecisionV2(bytes);if(filename!==basename(this.decisionPath(decision.decision_key)))throw new Error("decision ledger filename mismatch");records.push({decision,legacy:false,filename,sourceSha:hash(bytes)});}
+      else throw new Error("decision ledger schema invalid");
+    }
+    const byHead=new Map<string,RecordView[]>();for(const record of records)byHead.set(record.decision.head_sha,[...(byHead.get(record.decision.head_sha)??[]),record]);
+    for(const group of byHead.values()){if(group.filter(record=>record.legacy).length>1||group.filter(record=>!record.legacy).length>1)throw new Error("duplicate decisions for head");for(let i=1;i<group.length;i++)if(!compatible(group[0].decision,group[i].decision))throw new Error("DECISION_IDENTITY_CONFLICT");}
+    for(const record of records.filter(item=>item.legacy)){const path=join(this.root,record.filename),bytes=readFileSync(path),legacy=parseLegacyDecisionV1(bytes);this.ensureSidecar(record.filename,bytes,legacy,record.decision.decision_key,true);if(hash(readFileSync(path))!==record.sourceSha)throw new Error("legacy decision bytes changed");}
+    return records;
   }
-  decisions(){return readdirSync(this.root).filter(n=>n.endsWith(".json")&&!n.startsWith("review-")).map(n=>parseDecision(join(this.root,n)));}
-  findByKey(key:string){this.decisionPath(key);const matches=this.decisions().filter(d=>d.decision_key===key);if(matches.length>1)throw new Error("duplicate decisions for key");return matches[0];}
+  private logical(records=this.records()){const groups=new Map<string,RecordView[]>();for(const record of records){const key=logicalIdentity(record.decision);groups.set(key,[...(groups.get(key)??[]),record]);}return [...groups.values()].map(group=>{if(group.filter(record=>record.legacy).length>1||group.filter(record=>!record.legacy).length>1)throw new Error("DECISION_IDENTITY_CONFLICT");for(let i=1;i<group.length;i++)if(!compatible(group[0].decision,group[i].decision))throw new Error("DECISION_IDENTITY_CONFLICT");return group.find(record=>record.legacy)??group[0];});}
+  private eventMatches(value:any,d:NormalizedDecision){if(value.decision_key===d.decision_key)return true;if(value.decision_id===d.decision_id&&value.head_sha===d.head_sha&&value.policy_sha256===d.policy_sha256)return true;const historical=["authorization_id","issue","pr","base_sha","head_sha","policy_sha256"] as const;return historical.every(field=>value[field]===d[field])&&(!("action" in value)||value.action===d.allowed_action);}
+  private ensureEvent(d:NormalizedDecision){const eventPath=join(this.root,"events.jsonl");let found=0;if(existsSync(eventPath))for(const line of readFileSync(eventPath,"utf8").split(/\r?\n/).filter(Boolean)){const value=parseJson(Buffer.from(line),"decision event ledger corrupt");if(String(value.event).startsWith("operator_policy_")&&this.eventMatches(value,d))found++;}if(found>1)throw new Error("duplicate decision events");if(found===0)appendFileSync(eventPath,`${safeJson({event:"operator_policy_"+d.policy_decision.toLowerCase(),...d,schema_version:2})}\n`);}
+  decisions(){return this.logical().map(record=>record.decision);}
+  findByKey(key:string){this.decisionPath(key);const records=this.records(),matches=records.filter(record=>record.decision.decision_key===key);if(matches.length>1&&!matches.every(record=>compatible(matches[0].decision,record.decision)))throw new Error("duplicate decisions for key");if(!matches.length)return undefined;const identity=logicalIdentity(matches[0].decision);return (this.logical(records).find(record=>logicalIdentity(record.decision)===identity)??matches[0]).decision;}
   findByHead(head:string){const matches=this.decisions().filter(d=>d.head_sha===head);if(matches.length>1)throw new Error("duplicate decisions for head");return matches[0];}
-  loadOrCreate(key:string,factory:()=>Decision){return this.withClaim(key,()=>{const path=this.decisionPath(key),existing=this.findByKey(key);if(existing){this.ensureEvent(existing);return {decision:existing,created:false};}const d=redactSensitiveData(factory()) as Decision;if(d.decision_key!==key)throw new Error("DECISION_IDENTITY_CONFLICT");const temp=`${path}.${process.pid}.tmp`;writeFileSync(temp,`${JSON.stringify(d,null,2)}\n`,{flag:"wx"});renameSync(temp,path);this.ensureEvent(d);return {decision:d,created:true};});}
-  loadOrCreateReview<T extends object>(key:string,factory:()=>T){if(!sha64.test(key))throw new Error("decision key invalid");const reviewClaim=`review-${key}`;return this.withClaim(reviewClaim,()=>{const path=join(this.root,`review-${key}.json`);if(existsSync(path)){let value:T;try{value=JSON.parse(readFileSync(path,"utf8")) as T;}catch{throw new Error("review receipt corrupt");}return {review:value,created:false};}const value=redactSensitiveData(factory()) as T;const temp=`${path}.${process.pid}.tmp`;writeFileSync(temp,`${JSON.stringify(value,null,2)}\n`,{flag:"wx"});renameSync(temp,path);return {review:value,created:true};});}
-  recordOrLoad(value:Decision){const d=redactSensitiveData(value) as Decision;const result=this.loadOrCreate(d.decision_key,()=>d);if(!sameIdentity(result.decision,d)||safeJson(result.decision)!==safeJson(d))throw new Error("DECISION_IDENTITY_CONFLICT");return result;}
+  loadOrCreate(key:string,factory:()=>Decision){return this.withClaim(key,()=>{const existing=this.findByKey(key);if(existing){this.ensureEvent(existing);return {decision:existing,created:false};}const d=redactSensitiveData(factory()) as Decision;if(d.decision_key!==key)throw new Error("DECISION_IDENTITY_CONFLICT");parseKeyedDecisionV2(Buffer.from(JSON.stringify(d)));const prior=this.findByHead(d.head_sha);if(prior){if(!compatible(prior,d))throw new Error("DECISION_IDENTITY_CONFLICT");this.ensureEvent(prior);return {decision:prior,created:false};}const path=this.decisionPath(key),temp=`${path}.${process.pid}.tmp`;writeFileSync(temp,`${JSON.stringify(d,null,2)}\n`,{flag:"wx"});renameSync(temp,path);this.ensureEvent(d);return {decision:d,created:true};});}
+  loadOrCreateReview<T extends object>(key:string,factory:()=>T){if(!sha64.test(key))throw new Error("decision key invalid");const reviewClaim=`review-${key}`;return this.withClaim(reviewClaim,()=>{const path=join(this.root,`review-${key}.json`);if(existsSync(path)){let value:T;try{value=JSON.parse(readFileSync(path,"utf8")) as T;}catch{throw new Error("review receipt corrupt");}return {review:value,created:false};}const value=redactSensitiveData(factory()) as T,temp=`${path}.${process.pid}.tmp`;writeFileSync(temp,`${JSON.stringify(value,null,2)}\n`,{flag:"wx"});renameSync(temp,path);return {review:value,created:true};});}
+  recordOrLoad(value:Decision){const d=redactSensitiveData(value) as Decision,result=this.loadOrCreate(d.decision_key,()=>d);if(!compatible(result.decision,d)||(result.decision.schema_version===2&&safeJson(result.decision)!==safeJson(d)))throw new Error("DECISION_IDENTITY_CONFLICT");return result;}
   record(value:Decision){return this.recordOrLoad(value).decision;}
-  load(id:string){const matches=this.decisions().filter(d=>d.decision_id===id);if(matches.length!==1)throw new Error("decision ledger entry missing or duplicate");return matches[0];}
+  load(id:string){const records=this.records(),matches=records.filter(record=>record.decision.decision_id===id);if(matches.length!==1)throw new Error("decision ledger entry missing or duplicate");const identity=logicalIdentity(matches[0].decision);return (this.logical(records).find(record=>logicalIdentity(record.decision)===identity)??matches[0]).decision;}
   hasHead(h:string){return existsSync(join(this.root,`head-${h}.done`));}
-  private ensureConsumptionEvent(d:Decision){const path=join(this.root,"events.jsonl");let count=0;if(existsSync(path))for(const line of readFileSync(path,"utf8").split(/\r?\n/).filter(Boolean)){let value:any;try{value=JSON.parse(line);}catch{throw new Error("decision event ledger corrupt");}if(value.event==="supervisor_authorization_consumed"&&value.decision_key===d.decision_key)count++;}if(count>1)throw new Error("duplicate authorization receipts");if(count===0)appendFileSync(path,`${safeJson({event:"supervisor_authorization_consumed",decision_key:d.decision_key,authorization_id:d.authorization_id,decision_id:d.decision_id,issue:d.issue,pr:d.pr,base_sha:d.base_sha,head_sha:d.head_sha,action:d.allowed_action,policy_sha256:d.policy_sha256})}\n`);}
-  consume(d:Decision){writeFileSync(join(this.root,`head-${d.head_sha}.done`),d.decision_id,{flag:"wx"});this.ensureConsumptionEvent(d);}
-  ensureConsumed(d:Decision){this.withClaim(d.decision_key,()=>{const path=join(this.root,`head-${d.head_sha}.done`);if(!existsSync(path))writeFileSync(path,d.decision_id,{flag:"wx"});else if(readFileSync(path,"utf8")!==d.decision_id)throw new Error("head consumed by different decision");this.ensureConsumptionEvent(d);});}
+  private ensureConsumptionEvent(d:NormalizedDecision){const path=join(this.root,"events.jsonl");let count=0;if(existsSync(path))for(const line of readFileSync(path,"utf8").split(/\r?\n/).filter(Boolean)){const value=parseJson(Buffer.from(line),"decision event ledger corrupt");if(value.event==="supervisor_authorization_consumed"&&this.eventMatches(value,d))count++;}if(count>1)throw new Error("duplicate authorization receipts");if(count===0)appendFileSync(path,`${safeJson({event:"supervisor_authorization_consumed",decision_key:d.decision_key,authorization_id:d.authorization_id,decision_id:d.decision_id,issue:d.issue,pr:d.pr,base_sha:d.base_sha,head_sha:d.head_sha,action:d.allowed_action,policy_sha256:d.policy_sha256})}\n`);}
+  consume(d:NormalizedDecision){writeFileSync(join(this.root,`head-${d.head_sha}.done`),d.decision_id,{flag:"wx"});this.ensureConsumptionEvent(d);}
+  ensureConsumed(d:NormalizedDecision){this.withClaim(d.decision_key,()=>{const path=join(this.root,`head-${d.head_sha}.done`),equivalentIds=[d.decision_id,...this.records().filter(record=>compatible(record.decision,d)).map(record=>record.decision.decision_id)];if(!existsSync(path))writeFileSync(path,d.decision_id,{flag:"wx"});else if(!equivalentIds.includes(readFileSync(path,"utf8")))throw new Error("head consumed by different decision");this.ensureConsumptionEvent(d);});}
 }
