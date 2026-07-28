@@ -11,7 +11,7 @@ import {runReviewer} from "./codex_reviewer.js";
 import {execute,reconcileAuthorizationComment} from "./action_executor.js";
 import {issueBody,parseIssue} from "./spec_contract.js";
 import {AutonomousFlow} from "./autonomous_flow.js";
-import {LifecycleStore} from "./lifecycle_store.js";
+import {LifecycleStore,validBlockedCiEffectChain} from "./lifecycle_store.js";
 import type {ExternalEffectBoundary} from "./external_effect_guard.js";
 import {normalizeReviewerOutput} from "./review_contract.js";
 import {safeJson} from "./redaction.js";
@@ -43,7 +43,7 @@ export class ProductionEffects implements AutonomousEffects {
   }
   reconcileBlockedCiBase(spec:ProxySpec,state:import("./types.js").LifecycleRecord,store:LifecycleStore){
     if(state.base_sha===spec.expected_base_sha)return state;
-    const exact=state.state==="BLOCKED"&&state.last_error==="CI_FAILED"&&Number.isInteger(state.issue)&&Number.isInteger(state.pr)&&state.repair_cycles===0&&!!state.head_sha&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&state.completed_effects.length===2&&state.completed_effects[0]===`issue:${state.issue}`&&state.completed_effects[1]===`build:${state.head_sha}`;
+    const exact=state.state==="BLOCKED"&&state.last_error==="CI_FAILED"&&Number.isInteger(state.issue)&&Number.isInteger(state.pr)&&state.repair_cycles===0&&!!state.head_sha&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&validBlockedCiEffectChain(state);
     if(!exact||!this.bus.isAncestor(state.base_sha,spec.expected_base_sha))throw new Error("blocked CI base reconciliation denied");
     const snapshot=this.bus.issueSnapshot(state.issue!);if(snapshot.state!=="OPEN"||snapshot.labels.length!==1||snapshot.labels[0]!=="operator:building")throw new Error("blocked CI Issue state invalid");
     const oldSpec={...spec,expected_base_sha:state.base_sha},oldBody=`${issueBody(oldSpec).trim()}\n\nOPERATOR_PROXY_PR: ${state.pr}\n`,nextBody=`${issueBody(spec).trim()}\n\nOPERATOR_PROXY_PR: ${state.pr}\n`,parsed=parseIssue(snapshot.body);
@@ -56,9 +56,7 @@ export class ProductionEffects implements AutonomousEffects {
   }
   reconcileBlockedCiChecks(spec:ProxySpec,state:import("./types.js").LifecycleRecord,store:LifecycleStore){
     if(state.base_sha!==spec.expected_base_sha)throw new Error("blocked CI check binding mismatch");
-    const initial=state.completed_effects.length===2&&state.completed_effects[1]===`build:${state.head_sha}`;
-    const synchronized=state.completed_effects.length===3&&/^build:[0-9a-f]{40}$/.test(state.completed_effects[1]??"")&&state.completed_effects[2]===`base-sync:${state.head_sha}`;
-    const exact=state.state==="BLOCKED"&&state.last_error==="CI_FAILED"&&Number.isInteger(state.issue)&&Number.isInteger(state.pr)&&state.repair_cycles===0&&!!state.head_sha&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&state.completed_effects[0]===`issue:${state.issue}`&&(initial||synchronized);
+    const exact=state.state==="BLOCKED"&&state.last_error==="CI_FAILED"&&Number.isInteger(state.issue)&&Number.isInteger(state.pr)&&state.repair_cycles===0&&!!state.head_sha&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&validBlockedCiEffectChain(state);
     if(!exact)throw new Error("blocked CI check reconciliation denied");
     const snapshot=this.bus.issueSnapshot(state.issue!);const expectedBody=`${issueBody(spec).trim()}\n\nOPERATOR_PROXY_PR: ${state.pr}\n`;
     if(snapshot.state!=="OPEN"||snapshot.labels.length!==1||snapshot.labels[0]!=="operator:building"||snapshot.body!==expectedBody)throw new Error("blocked CI check Issue identity invalid");
