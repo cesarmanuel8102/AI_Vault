@@ -9,12 +9,14 @@ export interface AgentLoopBus {
   createGovernedIssue(title:string,body:string,label?:string):number;
   issueSnapshot(issue:number):{state:string;body:string;labels:string[]};
   reconcileLabel(kind:"issue"|"pr",n:number,add:string,remove?:string[]):void;
-  findPrByBranch(branch:string):{number:number;head_sha:string}|undefined;
+  prCandidatesByBranch(branch:string):any[];
   prIdentity(pr:number):any;
   bindPrToIssue(issue:number,pr:number):void;
 }
 
 function exactLine(body:string,value:string){return body.split(/\r?\n/).filter(line=>line.trim()===value).length===1;}
+const REPO="cesarmanuel8102/AI_Vault",BASE="codex/own-capital-sustainable-return";
+function trustedIdentity(value:any,spec:ProxySpec){return value?.isCrossRepository===false&&value?.headRepository?.nameWithOwner===REPO&&value?.author?.login==="cesarmanuel8102"&&value?.headRefName===spec.work_branch&&value?.baseRefName===BASE&&value?.baseRefOid===spec.expected_base_sha&&value?.state==="OPEN"&&value?.isDraft===true&&/^[0-9a-f]{40}$/.test(String(value?.headRefOid??""));}
 
 export class AgentLoopBuilderAdapter {
   constructor(readonly bus:AgentLoopBus){}
@@ -40,13 +42,14 @@ export class AgentLoopBuilderAdapter {
   }
   observe(spec:ProxySpec,issue:number,repairCycle:number,previousHead?:string):BuildResult|"PENDING"{
     if(spec.executor!=="agent_loop"||!spec.work_branch)throw new Error("agent loop adapter metadata missing");
-    this.validateIssue(spec,issue);
-    const existing=this.bus.findPrByBranch(spec.work_branch);if(!existing)return "PENDING";
-    const pr=this.bus.prIdentity(existing.number);
-    if(pr.state!=="OPEN"||pr.isDraft!==true||pr.baseRefName!=="codex/own-capital-sustainable-return"||pr.baseRefOid!==spec.expected_base_sha||pr.headRefName!==spec.work_branch||pr.headRefOid!==existing.head_sha)throw new Error("agent loop PR identity mismatch");
+    const phases=this.validateIssue(spec,issue),candidates=this.bus.prCandidatesByBranch(spec.work_branch);
+    const trusted=candidates.filter(candidate=>trustedIdentity(candidate,spec));
+    if(trusted.length!==1){if(candidates.length===0&&!phases.some(phase=>phase==="loop:ci"||phase==="loop:repairing"))return "PENDING";throw new Error(`agent loop trusted PR candidate count invalid: ${trusted.length}`);}
+    const selected=trusted[0],pr=this.bus.prIdentity(Number(selected.number));
+    if(!trustedIdentity(pr,spec)||Number(selected.number)!==Number(pr.number??selected.number)||pr.headRefOid!==selected.headRefOid)throw new Error("agent loop PR identity mismatch");
     if(!exactLine(String(pr.body??""),`AGENT_LOOP_FRONT: ${spec.front_id}`)||!exactLine(String(pr.body??""),`AGENT_LOOP_ISSUE: #${issue}`))throw new Error("agent loop PR evidence mismatch");
-    if(repairCycle>0&&existing.head_sha===previousHead)return "PENDING";
-    this.bus.bindPrToIssue(issue,existing.number);
-    return {pr:existing.number,head_sha:existing.head_sha,session:`agent-loop-builder-${existing.head_sha}`};
+    if(repairCycle>0&&pr.headRefOid===previousHead)return "PENDING";
+    this.bus.bindPrToIssue(issue,Number(selected.number));
+    return {pr:Number(selected.number),head_sha:String(pr.headRefOid),session:`agent-loop-builder-${pr.headRefOid}`};
   }
 }
