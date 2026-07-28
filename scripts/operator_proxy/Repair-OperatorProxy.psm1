@@ -25,10 +25,16 @@ function Resolve-TrustedOperatorProxyPath {
     if($Path.StartsWith('\\')){throw 'UNC path denied'}
     if([Management.Automation.WildcardPattern]::ContainsWildcardCharacters($Path)){throw 'wildcard path denied'}
     if($Path -split '[\\/]' | Where-Object {$_ -eq '..'}){throw 'parent traversal denied'}
-    $full=[IO.Path]::GetFullPath($Path).TrimEnd([IO.Path]::DirectorySeparatorChar,[IO.Path]::AltDirectorySeparatorChar)
+    $full=[IO.Path]::GetFullPath($Path)
+    $root=[IO.Path]::GetPathRoot($full)
+    if($full.Length -gt $root.Length){$full=$full.TrimEnd([IO.Path]::DirectorySeparatorChar,[IO.Path]::AltDirectorySeparatorChar)}
     if($MustExist -and -not (Test-Path -LiteralPath $full)){throw 'required path missing'}
     Assert-NoReparsePoint $full
-    if(Test-Path -LiteralPath $full){$full=(Resolve-Path -LiteralPath $full).Path.TrimEnd([IO.Path]::DirectorySeparatorChar,[IO.Path]::AltDirectorySeparatorChar)}
+    if(Test-Path -LiteralPath $full){
+        $full=(Resolve-Path -LiteralPath $full).Path
+        $root=[IO.Path]::GetPathRoot($full)
+        if($full.Length -gt $root.Length){$full=$full.TrimEnd([IO.Path]::DirectorySeparatorChar,[IO.Path]::AltDirectorySeparatorChar)}
+    }
     return $full
 }
 
