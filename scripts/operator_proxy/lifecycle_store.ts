@@ -44,6 +44,12 @@ export class LifecycleStore {
     appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_prebuild_base_rebound",front_id:record.front_id,issue:record.issue,old_base_sha:record.base_sha,new_base_sha:nextBase,updated_utc:updated.updated_utc})}\n`);
     this.save(updated);return updated;
   }
+  invalidatePostBuildBase(record:LifecycleRecord):LifecycleRecord {
+    const exact=["CI_PENDING","REVIEWING"].includes(record.state)&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&record.repair_cycles===0&&!!record.builder_session&&!record.reviewer_session&&!record.decision_id&&/^[0-9a-f]{40}$/.test(record.head_sha??"")&&validBlockedCiEffectChain(record);
+    if(!exact)throw new Error("post-build base invalidation denied");
+    const updated={...record,state:transitionLifecycle(record.state,"BLOCKED"),last_error:"CI_FAILED",updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_postbuild_base_invalidated",front_id:record.front_id,issue:record.issue,pr:record.pr,base_sha:record.base_sha,head_sha:record.head_sha,prior_state:record.state,updated_utc:updated.updated_utc})}\n`);return updated;
+  }
   recoverBlockedCiBase(record:LifecycleRecord,nextBase:string,nextHead:string):LifecycleRecord {
     const exact=record.state==="BLOCKED"&&record.last_error==="CI_FAILED"&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&record.repair_cycles===0&&!!record.builder_session&&!record.reviewer_session&&!record.decision_id&&/^[0-9a-f]{40}$/.test(record.head_sha??"")&&validBlockedCiEffectChain(record);
     if(!exact||!/^[0-9a-f]{40}$/.test(nextBase)||!/^[0-9a-f]{40}$/.test(nextHead)||record.base_sha===nextBase||record.head_sha===nextHead)throw new Error("blocked CI base recovery denied");
