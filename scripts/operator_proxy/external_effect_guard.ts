@@ -41,7 +41,7 @@ export class ExternalEffectBoundary {
       if((context.issue??state.issue)!==recovery.issue||(context.pr??state.pr)!==recovery.pr||this.bus.issuePaused(recovery.issue))throw new Error("blocked CI recovery identity changed");
       const current=this.bus.prIdentity(recovery.pr);
       if(effect==="push"&&!recovery.nextHead&&/^[0-9a-f]{40}$/.test(context.expected_head??"")&&context.expected_head!==recovery.oldHead&&current.headRefOid===recovery.oldHead)return;
-      if(effect==="issue_modify"&&recovery.nextHead&&(!context.expected_head||context.expected_head===recovery.nextHead)&&current.headRefOid===recovery.nextHead)return;
+      if(effect==="issue_modify"&&recovery.nextHead&&context.expected_head===recovery.nextHead&&current.headRefOid===recovery.nextHead)return;
       throw new Error("external effect denied by lifecycle state");
     }
     if(state.state==="ESCALATED")throw new Error("external effect denied by lifecycle state");

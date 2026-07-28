@@ -37,7 +37,7 @@ test("blocked CI recovery permits only the exact push then Issue update",()=>{
   assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:nextHead}),/lifecycle state/);
   boundary.beginBlockedCiRecovery(nextSpec,blocked);boundary.assert("push",{issue:63,pr:63,expected_head:nextHead});
   for(const effect of EXTERNAL_EFFECT_REGISTRY.filter(x=>x!=="push"))assert.throws(()=>boundary.assert(effect,{issue:63,pr:63,expected_head:nextHead}),/lifecycle state/);
-  currentHead=nextHead;boundary.bindBlockedCiRecoveryHead(nextHead);boundary.assert("issue_modify",{issue:63,pr:63,expected_head:nextHead});
+  currentHead=nextHead;boundary.bindBlockedCiRecoveryHead(nextHead);assert.throws(()=>boundary.assert("issue_modify",{issue:63,pr:63}),/lifecycle state/);assert.throws(()=>boundary.assert("issue_modify",{issue:63,pr:63,expected_head:"e".repeat(40)}),/lifecycle state/);boundary.assert("issue_modify",{issue:63,pr:63,expected_head:nextHead});
   assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:nextHead}),/lifecycle state/);paused=true;assert.throws(()=>boundary.assert("issue_modify",{issue:63,pr:63,expected_head:nextHead}),/identity changed/);paused=false;currentBase="e".repeat(40);assert.throws(()=>boundary.assert("issue_modify",{issue:63,pr:63,expected_head:nextHead}),/base changed/);
   boundary.endBlockedCiRecovery();currentBase=nextBase;assert.throws(()=>boundary.assert("issue_modify",{issue:63,pr:63,expected_head:nextHead}),/lifecycle state/);
 });
