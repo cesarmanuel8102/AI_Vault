@@ -30,6 +30,18 @@ test("lost lease, changed base or head, and blocked lifecycle fail closed",()=>{
   lease=false;assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:head}),/lease lost/);lease=true;currentBase="c".repeat(40);assert.throws(()=>boundary.assert("push",{issue:63}),/base changed/);currentBase=base;currentHead="d".repeat(40);assert.throws(()=>boundary.assert("merge",{issue:63,pr:63,expected_head:head}),/head changed/);currentHead=head;boundary.bind(spec,{...lifecycle,state:"BLOCKED"});assert.throws(()=>boundary.assert("comment_publish",{issue:63}),/lifecycle state/);
 });
 
+test("blocked CI recovery permits only the exact push then Issue update",()=>{
+  const root=mkdtempSync(join(tmpdir(),"effect-boundary-"));mkdirSync(join(root,"state"));const nextBase="c".repeat(40),nextHead="d".repeat(40);let currentBase=nextBase,currentHead=head,paused=false;
+  const nextSpec={...spec,expected_base_sha:nextBase};const blocked:LifecycleRecord={...lifecycle,state:"BLOCKED",last_error:"CI_FAILED",base_sha:base,head_sha:head,builder_session:"builder-one",completed_effects:["issue:63",`build:${head}`]};
+  const bus:any={branchHead:()=>currentBase,issuePaused:()=>paused,prIdentity:()=>({headRefOid:currentHead})};const boundary=new ExternalEffectBoundary(root,bus,()=>true);boundary.bind(nextSpec,blocked);
+  assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:nextHead}),/lifecycle state/);
+  boundary.beginBlockedCiRecovery(nextSpec,blocked);boundary.assert("push",{issue:63,pr:63,expected_head:nextHead});
+  for(const effect of EXTERNAL_EFFECT_REGISTRY.filter(x=>x!=="push"))assert.throws(()=>boundary.assert(effect,{issue:63,pr:63,expected_head:nextHead}),/lifecycle state/);
+  currentHead=nextHead;boundary.bindBlockedCiRecoveryHead(nextHead);boundary.assert("issue_modify",{issue:63,pr:63,expected_head:nextHead});
+  assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:nextHead}),/lifecycle state/);paused=true;assert.throws(()=>boundary.assert("issue_modify",{issue:63,pr:63,expected_head:nextHead}),/identity changed/);paused=false;currentBase="e".repeat(40);assert.throws(()=>boundary.assert("issue_modify",{issue:63,pr:63,expected_head:nextHead}),/base changed/);
+  boundary.endBlockedCiRecovery();currentBase=nextBase;assert.throws(()=>boundary.assert("issue_modify",{issue:63,pr:63,expected_head:nextHead}),/lifecycle state/);
+});
+
 test("GitHub mutation families invoke the central guard immediately before mutation",()=>{
   let mutations=0;const bus=new GitHubBus("gh");bus.setMutationGuard(()=>{throw new Error("external effect paused by GitHub label");});(bus as any).call=()=>{mutations++;return "https://github.test/1";};(bus as any).json=(args:string[])=>args[0]==="issue"?{body:"governed"}:args[0]==="run"?[]:{baseRefName:"codex/own-capital-sustainable-return",baseRefOid:base,headRefOid:head,isDraft:true,state:"OPEN",mergeable:"MERGEABLE"};
   const actions=[()=>bus.createGovernedIssue("t","b"),()=>bus.createDraftPr("control-plane/x","codex/own-capital-sustainable-return","t","b"),()=>bus.bindPrToIssue(63,63),()=>bus.comment(63,"x"),()=>bus.prComment(63,"x"),()=>bus.label("issue",63,"operator:building"),()=>bus.merge(63,head,base,"decision")];
