@@ -110,7 +110,7 @@ function Invoke-OperatorProxyInstall {
     $backup=Join-Path $parent ".operator-proxy-backup-$stamp"
     if((Test-Path -LiteralPath $stage) -or (Test-Path -LiteralPath $backup)){throw 'transaction path collision'}
     if($install -eq $stage -or $install -eq $backup){throw 'transaction root collision'}
-    $managed=@('schemas','action_executor.ts','autonomous_flow.ts','autonomous_runtime.ts','codex_builder.ts','codex_reviewer.ts','decision_ledger.ts','evidence_collector.ts','external_effect_guard.ts','github_bus.ts','governed_builder.ts','lifecycle_store.ts','operator_proxy.ts','policy_engine.ts','production_effects.ts','redaction.ts','request_coordinator.ts','review_contract.ts','risk_classifier.ts','roadmap_sequencer.ts','single_instance_lock.ts','spec_contract.ts','state_machine.ts','types.ts','package.json','package-lock.json','tsconfig.json','Run-OperatorProxy.ps1')
+    $managed=@('schemas','action_executor.ts','agent_loop_builder_adapter.ts','autonomous_flow.ts','autonomous_runtime.ts','codex_builder.ts','codex_reviewer.ts','decision_ledger.ts','evidence_collector.ts','external_effect_guard.ts','github_bus.ts','governed_builder.ts','lifecycle_store.ts','operator_proxy.ts','policy_engine.ts','production_effects.ts','redaction.ts','request_coordinator.ts','review_contract.ts','risk_classifier.ts','roadmap_sequencer.ts','single_instance_lock.ts','spec_contract.ts','state_machine.ts','types.ts','package.json','package-lock.json','tsconfig.json','Run-OperatorProxy.ps1')
     $installed=$false
     try {
         Assert-TransactionIdentity $identity $install $stage $backup

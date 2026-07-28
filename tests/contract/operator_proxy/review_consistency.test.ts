@@ -12,7 +12,8 @@ test("review verdict consistency matrix",()=>{
   assert.equal(normalizeReviewerOutput(review("PASS",[p1]),head).verdict,"BLOCKED");
   assert.equal(normalizeReviewerOutput(review("CHANGES_REQUESTED",[]),head).verdict,"BLOCKED");
   assert.equal(normalizeReviewerOutput(review("CHANGES_REQUESTED",[p2]),head).verdict,"CHANGES_REQUESTED");
-  assert.equal(normalizeReviewerOutput(review("CHANGES_REQUESTED",[p2,p1]),head).verdict,"BLOCKED");
+  assert.equal(normalizeReviewerOutput(review("CHANGES_REQUESTED",[p2,p1]),head).verdict,"CHANGES_REQUESTED");
+  assert.equal(normalizeReviewerOutput(review("CHANGES_REQUESTED",[{...p1,severity:"P0"}]),head).verdict,"BLOCKED");
   assert.equal(normalizeReviewerOutput(review("BLOCKED",[p2]),head).verdict,"BLOCKED");
   assert.throws(()=>normalizeReviewerOutput(review("UNKNOWN",[]),head),/invalid/);
   assert.throws(()=>normalizeReviewerOutput(review("PASS",[] ,"c".repeat(40)),head),/invalid/);

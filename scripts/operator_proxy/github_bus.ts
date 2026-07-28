@@ -12,9 +12,10 @@ export class GitHubBus {
   queued(){return this.json(["issue","list","--state","open","--label","operator:queued","--json","number,title,body,labels"]);}
   branchHead(branch:string){return this.call(["api",`repos/${this.repo}/commits/${branch}`,"--jq",".sha"]).trim();}
   issuePaused(issue:number){const labels=this.json(["issue","view",String(issue),"--json","labels"]).labels??[];return labels.some((x:any)=>x.name==="operator:pause");}
-  prIdentity(pr:number){return this.json(["pr","view",String(pr),"--json","baseRefOid,headRefOid,isDraft,state,mergeable"]);}
+  prIdentity(pr:number){return this.json(["pr","view",String(pr),"--json","baseRefName,baseRefOid,body,headRefName,headRefOid,isDraft,state,mergeable"]);}
   findOpenFront(front:string){const issues=this.json(["issue","list","--state","open","--limit","1000","--json","number,body"]);return issues.filter((x:any)=>String(x.body??"").split(/\r?\n/).some(line=>line.trim()===`FRONT_ID: ${front}`)||String(x.body??"").includes(`\"front_id\": \"${front}\"`)).map((x:any)=>Number(x.number));}
   issueBody(issue:number){return String(this.json(["issue","view",String(issue),"--json","body"]).body??"");}
+  issueSnapshot(issue:number){const value=this.json(["issue","view",String(issue),"--json","body,labels,state"]);return {state:String(value.state??""),body:String(value.body??""),labels:(value.labels??[]).map((x:any)=>String(x.name))};}
   findPrByBranch(branch:string){const prs=this.json(["pr","list","--state","open","--head",branch,"--json","number,headRefOid"]);if(prs.length>1)throw new Error("duplicate PRs for work branch");return prs.length===1?{number:Number(prs[0].number),head_sha:String(prs[0].headRefOid)}:undefined;}
   remoteBranchHead(branch:string){try{const head=this.call(["api",`repos/${this.repo}/git/ref/heads/${branch}`,"--jq",".object.sha"]).trim();return /^[0-9a-f]{40}$/.test(head)?head:undefined;}catch{return undefined;}}
   createDraftPr(branch:string,base:string,title:string,body:string){this.guard("pr_create");const url=this.call(["pr","create","--repo",this.repo,"--draft","--head",branch,"--base",base,"--title",redactString(title),"--body",redactString(body)]).trim();const match=url.match(/\/pull\/(\d+)$/);if(!match)throw new Error("draft PR creation result invalid");return Number(match[1]);}
