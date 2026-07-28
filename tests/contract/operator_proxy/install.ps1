@@ -28,6 +28,10 @@ $validateStage={param($stage) foreach($required in @('operator_proxy.ts','extern
 try {
     Invoke-OperatorProxyInstall -Repo $synthetic -InstallRoot $install -ApprovedCommit $syntheticHead -ValidateStaging $validateStage -ValidateInstalled {param($p)} | Out-Null
     if([Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes((Join-Path $install 'operator_proxy.ts'))) -eq 'old-runtime'){throw 'install did not replace runtime'}
+    if(& git -C $synthetic status --porcelain --untracked-files=all){throw 'install dirtied source repository'}
+    if(Get-ChildItem $synthetic -Force -Filter '.operator-proxy-*'){throw 'transaction artifact created inside source repository'}
+    $backupRoot=Join-Path $tmp 'AI_VAULT_OPERATOR_PROXY_BACKUPS'
+    if(@(Get-ChildItem $backupRoot -Directory -Filter 'operator-proxy-backup-*').Count -ne 1){throw 'backup not isolated under transaction backup root'}
     $capturedArgs=Join-Path $tmp 'runner-args.txt'
     $shim="@echo off`r`n> `"$capturedArgs`" echo %~1`r`n>> `"$capturedArgs`" echo %~2`r`n>> `"$capturedArgs`" echo %~3`r`nexit /b 0`r`n"
     [IO.File]::WriteAllText((Join-Path $install 'node_modules\.bin\tsx.cmd'),$shim,[Text.Encoding]::ASCII)
