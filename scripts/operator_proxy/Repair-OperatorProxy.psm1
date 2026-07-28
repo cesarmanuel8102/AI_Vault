@@ -25,10 +25,16 @@ function Resolve-TrustedOperatorProxyPath {
     if($Path.StartsWith('\\')){throw 'UNC path denied'}
     if([Management.Automation.WildcardPattern]::ContainsWildcardCharacters($Path)){throw 'wildcard path denied'}
     if($Path -split '[\\/]' | Where-Object {$_ -eq '..'}){throw 'parent traversal denied'}
-    $full=[IO.Path]::GetFullPath($Path).TrimEnd([IO.Path]::DirectorySeparatorChar,[IO.Path]::AltDirectorySeparatorChar)
+    $full=[IO.Path]::GetFullPath($Path)
+    $root=[IO.Path]::GetPathRoot($full)
+    if($full.Length -gt $root.Length){$full=$full.TrimEnd([IO.Path]::DirectorySeparatorChar,[IO.Path]::AltDirectorySeparatorChar)}
     if($MustExist -and -not (Test-Path -LiteralPath $full)){throw 'required path missing'}
     Assert-NoReparsePoint $full
-    if(Test-Path -LiteralPath $full){$full=(Resolve-Path -LiteralPath $full).Path.TrimEnd([IO.Path]::DirectorySeparatorChar,[IO.Path]::AltDirectorySeparatorChar)}
+    if(Test-Path -LiteralPath $full){
+        $full=(Resolve-Path -LiteralPath $full).Path
+        $root=[IO.Path]::GetPathRoot($full)
+        if($full.Length -gt $root.Length){$full=$full.TrimEnd([IO.Path]::DirectorySeparatorChar,[IO.Path]::AltDirectorySeparatorChar)}
+    }
     return $full
 }
 
@@ -72,6 +78,15 @@ function Assert-SafeInstallRoot {
     return $resolved
 }
 
+function Get-OperatorProxyTransactionParent {
+    param([Parameter(Mandatory=$true)][string]$InstallRoot)
+    $parent=[IO.Path]::GetDirectoryName($InstallRoot)
+    $root=[IO.Path]::GetPathRoot($InstallRoot)
+    if($parent -and $root -and $parent -eq $root.TrimEnd([IO.Path]::DirectorySeparatorChar,[IO.Path]::AltDirectorySeparatorChar)){$parent=$root}
+    if(-not $parent -or -not [IO.Path]::IsPathRooted($parent)){throw 'install transaction parent invalid'}
+    return $parent
+}
+
 function Assert-TransactionIdentity {
     param($Identity,[string]$InstallRoot,[string]$Stage,[string]$Backup)
     $current=Assert-TrustedOperatorProxyRepository $Identity.Repo $Identity.Head
@@ -102,12 +117,16 @@ function Invoke-OperatorProxyInstall {
     $ErrorActionPreference='Stop'
     $identity=Assert-TrustedOperatorProxyRepository $Repo $ApprovedCommit
     $install=Assert-SafeInstallRoot $InstallRoot $identity.Repo
-    $parent=Split-Path $install -Parent
+    $parent=Get-OperatorProxyTransactionParent $install
     if(-not (Test-Path -LiteralPath $parent)){New-Item -Path $parent -ItemType Directory -Force|Out-Null}
     $parent=Resolve-TrustedOperatorProxyPath $parent -MustExist
+    $backupParent=Join-Path $parent 'AI_VAULT_OPERATOR_PROXY_BACKUPS'
+    if(-not (Test-Path -LiteralPath $backupParent)){New-Item -Path $backupParent -ItemType Directory -Force|Out-Null}
+    $backupParent=Resolve-TrustedOperatorProxyPath $backupParent -MustExist
     $stamp=Get-Date -Format 'yyyyMMddTHHmmssfffZ'
     $stage=Join-Path $parent ".operator-proxy-stage-$stamp"
-    $backup=Join-Path $parent ".operator-proxy-backup-$stamp"
+    $backup=Join-Path $backupParent "operator-proxy-backup-$stamp"
+    if((Test-PathWithin $stage $identity.Repo) -or (Test-PathWithin $backup $identity.Repo)){throw 'transaction artifacts overlap repository'}
     if((Test-Path -LiteralPath $stage) -or (Test-Path -LiteralPath $backup)){throw 'transaction path collision'}
     if($install -eq $stage -or $install -eq $backup){throw 'transaction root collision'}
     $managed=@('schemas','action_executor.ts','agent_loop_builder_adapter.ts','autonomous_flow.ts','autonomous_runtime.ts','codex_builder.ts','codex_reviewer.ts','decision_ledger.ts','evidence_collector.ts','external_effect_guard.ts','github_bus.ts','governed_builder.ts','lifecycle_store.ts','operator_proxy.ts','policy_engine.ts','production_effects.ts','redaction.ts','request_coordinator.ts','review_contract.ts','risk_classifier.ts','roadmap_sequencer.ts','single_instance_lock.ts','spec_contract.ts','state_machine.ts','types.ts','package.json','package-lock.json','tsconfig.json','Run-OperatorProxy.ps1')
@@ -126,6 +145,7 @@ function Invoke-OperatorProxyInstall {
         foreach($name in $managed){Assert-TransactionIdentity $identity $install $stage $backup;$target=Join-Path $install $name;Assert-SafeManagedTarget $target $install;if(Test-Path -LiteralPath $target){Remove-Item -LiteralPath $target -Recurse -Force};Copy-Item -LiteralPath (Join-Path $stage $name) -Destination $target -Recurse -Force}
         if($ValidateInstalled){& $ValidateInstalled $install}
         Assert-TransactionIdentity $identity $install $stage $backup
+        if(Get-TrustedGitValue $identity.Repo @('status','--porcelain','--untracked-files=all') 'git repository cleanliness verification'){throw 'repository changed during installation'}
         Write-Output 'OPERATOR_PROXY_INSTALL_PASS'
     } catch {
         if($installed){
@@ -137,4 +157,4 @@ function Invoke-OperatorProxyInstall {
         if(Test-Path -LiteralPath $stage){Assert-SafeManagedTarget $stage $parent;Remove-Item -LiteralPath $stage -Recurse -Force}
     }
 }
-Export-ModuleMember -Function Invoke-OperatorProxyInstall,Invoke-CheckedNative,Resolve-TrustedOperatorProxyPath,Assert-NoReparsePoint,Assert-TrustedOperatorProxyRepository,Assert-SafeInstallRoot
+Export-ModuleMember -Function Invoke-OperatorProxyInstall,Invoke-CheckedNative,Resolve-TrustedOperatorProxyPath,Assert-NoReparsePoint,Assert-TrustedOperatorProxyRepository,Assert-SafeInstallRoot,Get-OperatorProxyTransactionParent
