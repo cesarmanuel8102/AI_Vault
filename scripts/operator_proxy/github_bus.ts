@@ -13,7 +13,13 @@ export class GitHubBus {
   branchHead(branch:string){return this.call(["api",`repos/${this.repo}/commits/${branch}`,"--jq",".sha"]).trim();}
   isAncestor(older:string,newer:string){if(!/^[0-9a-f]{40}$/.test(older)||!/^[0-9a-f]{40}$/.test(newer)||older===newer)return false;return this.call(["api",`repos/${this.repo}/compare/${older}...${newer}`,"--jq",".status"]).trim()==="ahead";}
   issuePaused(issue:number){const labels=this.json(["issue","view",String(issue),"--json","labels"]).labels??[];return labels.some((x:any)=>x.name==="operator:pause");}
-  prIdentity(pr:number){return this.json(["pr","view",String(pr),"--json","author,baseRefName,baseRefOid,body,headRefName,headRefOid,headRepository,isCrossRepository,isDraft,state,mergeable"]);}
+  prIdentity(pr:number){return this.json(["pr","view",String(pr),"--json","author,baseRefName,baseRefOid,body,files,headRefName,headRefOid,headRepository,isCrossRepository,isDraft,state,mergeable"]);}
+  commitCheckRuns(head:string){
+    if(!/^[0-9a-f]{40}$/.test(head))throw new Error("commit check head invalid");
+    const result=JSON.parse(this.call(["api",`repos/${this.repo}/commits/${head}/check-runs?per_page=100`]));
+    if(!Number.isInteger(result?.total_count)||!Array.isArray(result?.check_runs)||result.total_count!==result.check_runs.length)throw new Error("commit check response incomplete");
+    return result.check_runs;
+  }
   findOpenFront(front:string){const issues=this.json(["issue","list","--state","open","--limit","1000","--json","number,body"]);return issues.filter((x:any)=>String(x.body??"").split(/\r?\n/).some(line=>line.trim()===`FRONT_ID: ${front}`)||String(x.body??"").includes(`\"front_id\": \"${front}\"`)).map((x:any)=>Number(x.number));}
   issueBody(issue:number){return String(this.json(["issue","view",String(issue),"--json","body"]).body??"");}
   replaceIssueBodyExact(issue:number,expected:string,replacement:string){if(this.issueBody(issue)!==expected)throw new Error("governed Issue changed before base reconciliation");this.guard("issue_modify",{issue});this.call(["issue","edit",String(issue),"--repo",this.repo,"--body",redactString(replacement)]);if(this.issueBody(issue)!==replacement)throw new Error("governed Issue base reconciliation readback failed");}
