@@ -29,8 +29,9 @@ export class GovernedBuilder {
   synchronizeBlockedCiBase(spec:ProxySpec,state:LifecycleRecord){
     if(state.state!=="BLOCKED"||state.last_error!=="CI_FAILED"||!state.issue||!state.pr||!state.head_sha||!state.builder_session||state.repair_cycles!==0||state.reviewer_session||state.decision_id||!spec.work_branch||state.base_sha===spec.expected_base_sha)throw new Error("blocked CI branch synchronization denied");
     const pr=this.bus.prIdentity(state.pr),files=(pr.files??[]).map((x:any)=>String(x.path));
-    // GitHub preserves the PR's original base OID while its target branch advances.
-    if(pr.author?.login!=="cesarmanuel8102"||pr.baseRefName!=="codex/own-capital-sustainable-return"||pr.baseRefOid!==state.base_sha||pr.headRefName!==spec.work_branch||pr.headRepository?.nameWithOwner!=="cesarmanuel8102/AI_Vault"||pr.isCrossRepository!==false||pr.isDraft!==true||pr.state!=="OPEN"||pr.mergeable!=="MERGEABLE"||files.length===0||!files.every((path:string)=>allowed(path,spec)))throw new Error("blocked CI PR identity invalid");
+    // GitHub may expose either the PR's original base OID or the advanced target OID.
+    const trustedBase=pr.baseRefOid===state.base_sha||pr.baseRefOid===spec.expected_base_sha;
+    if(pr.author?.login!=="cesarmanuel8102"||pr.baseRefName!=="codex/own-capital-sustainable-return"||!trustedBase||pr.headRefName!==spec.work_branch||pr.headRepository?.nameWithOwner!=="cesarmanuel8102/AI_Vault"||pr.isCrossRepository!==false||pr.isDraft!==true||pr.state!=="OPEN"||pr.mergeable!=="MERGEABLE"||files.length===0||!files.every((path:string)=>allowed(path,spec)))throw new Error("blocked CI PR identity invalid");
     const remote=this.bus.remoteBranchHead(spec.work_branch);if(!remote||pr.headRefOid!==remote)throw new Error("blocked CI remote branch missing or inconsistent");
     mkdirSync(this.worktreeRoot,{recursive:true});const root=realpathSync(this.worktreeRoot),worktree=resolve(root,spec.front_id!);if(!worktree.startsWith(`${root}\\`)&&!worktree.startsWith(`${root}/`)||!existsSync(worktree)||realpathSync(worktree).toLowerCase()!==worktree.toLowerCase())throw new Error("blocked CI worktree identity invalid");
     native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"fetch","origin","codex/own-capital-sustainable-return",spec.work_branch],{stdio:"inherit",timeout:120000,windowsHide:true});
