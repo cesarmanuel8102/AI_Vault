@@ -40,8 +40,10 @@ manifest_bytes = git_blob(MANIFEST_PATH)
 roadmap_bytes = git_blob(ROADMAP_PATH)
 manifest = json.loads(manifest_bytes.decode("utf-8"))
 roadmap_hash = hashlib.sha256(roadmap_bytes).hexdigest()
-ACTIVE_ITEM_ID = "R1.2"
-ACTIVE_DEPENDENCIES = ["R1.1"]
+active_items = [item_id for item_id, item in manifest["roadmap_items"].items() if item.get("status") == "AUTHORIZED_ACTIVE"]
+assert len(active_items) == 1, active_items
+ACTIVE_ITEM_ID = active_items[0]
+ACTIVE_DEPENDENCIES = manifest["roadmap_items"][ACTIVE_ITEM_ID]["dependencies"]
 CLOSED_ITEM_ID = "R1.1"
 
 
@@ -68,7 +70,7 @@ def cfg(loader=None, install_root="X"):
 def valid_spec():
     return {
         "schema_version": 1,
-        "front_id": "BRAIN-101-R1.2-TEST",
+        "front_id": f"BRAIN-101-{ACTIVE_ITEM_ID}-TEST",
         "repo": "cesarmanuel8102/AI_Vault",
         "owner": "cesarmanuel8102",
         "base_branch": "codex/own-capital-sustainable-return",

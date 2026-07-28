@@ -9041,6 +9041,16 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 ### Next Recommended Front
 FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 
+---
+
+## BRAIN-101 R1 autonomous control-plane bootstrap (2026-07-22)
+
+- Owner authorization paused R1.2 runtime activation pending autonomous control-plane certification.
+- Bootstrap front: `BRAIN-101-R1-CONTROL-PLANE-AUTONOMOUS-FLOW-01`.
+- Synthetic canonical item: `R1.0`, documentation-only, LOW primary change and MEDIUM closeout.
+- Required chain: manifest -> sequencer -> Issue -> builder -> Draft PR -> CI -> independent reviewer -> policy -> governed merge -> closeout -> next item discovery.
+- R2, live trading, canonical local sync, auto-merge, and R1.2 deployment remain disabled.
+
 ### Evidence Path
 `tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/`
 

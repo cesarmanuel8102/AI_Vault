@@ -34,15 +34,18 @@ jobs:
           name: operator-proxy-codex-review
           path: operator-proxy-codex-review.json
           if-no-files-found: error
-      - name: Require PASS on reviewed HEAD
+      - name: Require bounded verdict on reviewed HEAD
         env:
           EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
           python - <<'PY'
           import json, os
           data = json.load(open('operator-proxy-codex-review.json', encoding='utf-8'))
-          if data.get('verdict') != 'PASS':
-              raise SystemExit('independent Codex review did not PASS')
+          if data.get('verdict') not in {'PASS', 'CHANGES_REQUESTED'}:
+              raise SystemExit('independent Codex review was unavailable or blocked')
+          findings = data.get('findings') or []
+          if data.get('verdict') == 'CHANGES_REQUESTED' and (not findings or any(f.get('severity') not in {'P1', 'P2'} for f in findings)):
+              raise SystemExit('only bounded technical P1/P2 findings may enter the repair loop')
           if data.get('head_sha') != os.environ['EXPECTED_HEAD']:
               raise SystemExit('independent Codex review HEAD mismatch')
           PY
