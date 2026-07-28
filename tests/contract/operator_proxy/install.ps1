@@ -14,6 +14,9 @@ function Test-SameContractPath {
 $root=(Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
 Import-Module (Join-Path $root 'scripts\operator_proxy\Repair-OperatorProxy.psm1') -Force
 $tmp=Join-Path $env:TEMP ('operator-proxy-'+[guid]::NewGuid())
+$driveRoot=[IO.Path]::GetPathRoot($tmp)
+$rootChild=Join-Path $driveRoot 'AI_VAULT_OPERATOR_PROXY_INSTALL_ROOT_TEST'
+if((Get-OperatorProxyTransactionParent $rootChild) -ne $driveRoot){throw 'drive-root transaction parent was not normalized'}
 $synthetic=Join-Path $tmp 'synthetic-repo';New-Item $synthetic -ItemType Directory -Force|Out-Null
 New-Item (Join-Path $synthetic 'scripts') -ItemType Directory|Out-Null
 Copy-Item -LiteralPath (Join-Path $root 'scripts\operator_proxy') -Destination (Join-Path $synthetic 'scripts\operator_proxy') -Recurse

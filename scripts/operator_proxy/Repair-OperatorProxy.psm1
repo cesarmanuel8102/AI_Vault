@@ -72,6 +72,15 @@ function Assert-SafeInstallRoot {
     return $resolved
 }
 
+function Get-OperatorProxyTransactionParent {
+    param([Parameter(Mandatory=$true)][string]$InstallRoot)
+    $parent=[IO.Path]::GetDirectoryName($InstallRoot)
+    $root=[IO.Path]::GetPathRoot($InstallRoot)
+    if($parent -and $root -and $parent -eq $root.TrimEnd([IO.Path]::DirectorySeparatorChar,[IO.Path]::AltDirectorySeparatorChar)){$parent=$root}
+    if(-not $parent -or -not [IO.Path]::IsPathRooted($parent)){throw 'install transaction parent invalid'}
+    return $parent
+}
+
 function Assert-TransactionIdentity {
     param($Identity,[string]$InstallRoot,[string]$Stage,[string]$Backup)
     $current=Assert-TrustedOperatorProxyRepository $Identity.Repo $Identity.Head
@@ -102,8 +111,7 @@ function Invoke-OperatorProxyInstall {
     $ErrorActionPreference='Stop'
     $identity=Assert-TrustedOperatorProxyRepository $Repo $ApprovedCommit
     $install=Assert-SafeInstallRoot $InstallRoot $identity.Repo
-    $parent=[IO.Path]::GetDirectoryName($install)
-    if(-not $parent){throw 'install transaction parent missing'}
+    $parent=Get-OperatorProxyTransactionParent $install
     if(-not (Test-Path -LiteralPath $parent)){New-Item -Path $parent -ItemType Directory -Force|Out-Null}
     $parent=Resolve-TrustedOperatorProxyPath $parent -MustExist
     $backupParent=Join-Path $parent 'AI_VAULT_OPERATOR_PROXY_BACKUPS'
@@ -143,4 +151,4 @@ function Invoke-OperatorProxyInstall {
         if(Test-Path -LiteralPath $stage){Assert-SafeManagedTarget $stage $parent;Remove-Item -LiteralPath $stage -Recurse -Force}
     }
 }
-Export-ModuleMember -Function Invoke-OperatorProxyInstall,Invoke-CheckedNative,Resolve-TrustedOperatorProxyPath,Assert-NoReparsePoint,Assert-TrustedOperatorProxyRepository,Assert-SafeInstallRoot
+Export-ModuleMember -Function Invoke-OperatorProxyInstall,Invoke-CheckedNative,Resolve-TrustedOperatorProxyPath,Assert-NoReparsePoint,Assert-TrustedOperatorProxyRepository,Assert-SafeInstallRoot,Get-OperatorProxyTransactionParent
