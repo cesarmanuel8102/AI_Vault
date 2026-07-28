@@ -17,6 +17,14 @@ $tmp=Join-Path $env:TEMP ('operator-proxy-'+[guid]::NewGuid())
 $driveRoot=[IO.Path]::GetPathRoot($tmp)
 $rootChild=Join-Path $driveRoot 'AI_VAULT_OPERATOR_PROXY_INSTALL_ROOT_TEST'
 if((Get-OperatorProxyTransactionParent $rootChild) -ne $driveRoot){throw 'drive-root transaction parent was not normalized'}
+$foreignCwd=Join-Path $env:TEMP ('operator-proxy-cwd-'+[guid]::NewGuid());New-Item $foreignCwd -ItemType Directory|Out-Null
+Push-Location $foreignCwd
+try {
+    if((Resolve-TrustedOperatorProxyPath $driveRoot -MustExist) -ne $driveRoot){throw 'drive root became drive-relative during trusted resolution'}
+} finally {
+    Pop-Location
+    Remove-Item -LiteralPath $foreignCwd -Recurse -Force
+}
 $synthetic=Join-Path $tmp 'synthetic-repo';New-Item $synthetic -ItemType Directory -Force|Out-Null
 New-Item (Join-Path $synthetic 'scripts') -ItemType Directory|Out-Null
 Copy-Item -LiteralPath (Join-Path $root 'scripts\operator_proxy') -Destination (Join-Path $synthetic 'scripts\operator_proxy') -Recurse
