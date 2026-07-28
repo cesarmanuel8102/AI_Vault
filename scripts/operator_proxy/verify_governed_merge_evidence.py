@@ -37,7 +37,8 @@ def verify(pr: dict, hygiene_runs: list[dict], expected_base: str, expected_head
         raise ValueError("required PR checks not successful")
 
     hygiene = by_name.get(HYGIENE_CHECK)
-    if not hygiene or hygiene.get("conclusion") != "SUCCESS":
+    fallback_hygiene_validated = False
+    if not hygiene or hygiene.get("conclusion") == "SKIPPED":
         exact_runs = [run for run in hygiene_runs if run.get("headSha") == expected_head]
         if not exact_runs:
             raise ValueError("exact-head hygiene evidence missing")
@@ -49,12 +50,17 @@ def verify(pr: dict, hygiene_runs: list[dict], expected_base: str, expected_head
             or latest.get("conclusion") != "success"
         ):
             raise ValueError("latest exact-head hygiene run not successful")
+        fallback_hygiene_validated = True
+    elif hygiene.get("conclusion") != "SUCCESS":
+        raise ValueError("attached hygiene check not successful")
 
     allowed_skips = set() if str(pr.get("headRefName", "")).startswith("agent/pilot-") else ALLOWED_SKIPS
     for check in checks:
         if check.get("status") != "COMPLETED":
             raise ValueError("check not terminal")
         if check.get("conclusion") == "SUCCESS":
+            continue
+        if check.get("name") == HYGIENE_CHECK and fallback_hygiene_validated and check.get("conclusion") == "SKIPPED":
             continue
         if check.get("name") in allowed_skips and check.get("conclusion") == "SKIPPED":
             continue
