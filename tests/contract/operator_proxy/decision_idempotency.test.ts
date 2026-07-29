@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {mkdtempSync,readdirSync,readFileSync,writeFileSync} from "node:fs";
+import {existsSync,mkdtempSync,mkdirSync,readdirSync,readFileSync,writeFileSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {pathToFileURL} from "node:url";
@@ -26,6 +26,21 @@ test("two processes claim one decision and execute the factory once",async()=>{
 
 test("crash after reviewer reuses the same review receipt",()=>{
   const root=mkdtempSync(join(tmpdir(),"review-retry-"));let reviews=0;const first=new Ledger(root).loadOrCreateReview(key,()=>{reviews++;return {issue:63,pr:63,base_sha:base,head_sha:head,verdict:"PASS"};});assert.equal(first.created,true);const resumed=new Ledger(root).loadOrCreateReview(key,()=>{reviews++;return {issue:63,pr:63,base_sha:base,head_sha:head,verdict:"BLOCKED"};});assert.equal(resumed.created,false);assert.equal(resumed.review.verdict,"PASS");assert.equal(reviews,1);
+});
+
+test("legacy empty and crashed review claims recover through append-only epochs",async()=>{
+  const legacyRoot=mkdtempSync(join(tmpdir(),"review-legacy-"));mkdirSync(join(legacyRoot,`claim-review-${key}`));let legacyCalls=0;
+  const legacy=new Ledger(legacyRoot).loadOrCreateReview(key,()=>{legacyCalls++;return {issue:63,pr:63,base_sha:base,head_sha:head,verdict:"PASS"};});
+  assert.equal(legacy.created,true);assert.equal(legacyCalls,1);
+
+  const root=mkdtempSync(join(tmpdir(),"review-crash-")),signal=join(root,"factory-entered"),moduleUrl=pathToFileURL(join(process.cwd(),"decision_ledger.ts")).href;
+  const source=`import {writeFileSync} from 'node:fs';import {Ledger} from ${JSON.stringify(moduleUrl)};new Ledger(${JSON.stringify(root)}).loadOrCreateReview(${JSON.stringify(key)},()=>{writeFileSync(${JSON.stringify(signal)},'entered');Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,60000);return {verdict:'PASS'};});`;
+  const child=spawn(process.execPath,["--import","tsx","--input-type=module","--eval",source],{cwd:process.cwd(),stdio:"pipe"});
+  for(let attempt=0;attempt<100&&!existsSync(signal);attempt++)await new Promise(resolve=>setTimeout(resolve,20));
+  assert.equal(existsSync(signal),true);child.kill();await new Promise<void>((resolve,reject)=>{child.once("exit",()=>resolve());child.once("error",reject);});
+  let resumedCalls=0;const resumed=new Ledger(root).loadOrCreateReview(key,()=>{resumedCalls++;return {issue:63,pr:63,base_sha:base,head_sha:head,verdict:"PASS"};});
+  assert.equal(resumed.created,true);assert.equal(resumedCalls,1);assert.equal(resumed.review.verdict,"PASS");
+  const entries=readdirSync(join(root,`claim-review-${key}`));assert.equal(entries.filter(name=>name.endsWith(".json")&&!name.includes("release")).length,2);assert.equal(entries.filter(name=>name.endsWith(".release.json")).length,1);
 });
 
 test("incompatible, corrupt, and duplicate historical decisions fail closed",()=>{
