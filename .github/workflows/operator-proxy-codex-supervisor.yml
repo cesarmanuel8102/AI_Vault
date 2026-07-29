@@ -1,5 +1,5 @@
 name: Operator Proxy Codex Supervisor
-on: {pull_request: {paths: ['scripts/operator_proxy/**','tests/contract/operator_proxy/**','docs/operator_proxy/**','.github/codex/operator-proxy-**','.github/workflows/operator-proxy-**']}}
+on: {pull_request: {paths: ['scripts/operator_proxy/**','tests/contract/operator_proxy/**','docs/operator_proxy/**','docs/roadmap/**','ROADMAP_STATUS.json','docs/MIGRATION_CONTROL_LEDGER.md','.github/codex/operator-proxy-**','.github/workflows/operator-proxy-**']}}
 permissions: {contents: read}
 jobs:
   review:
@@ -18,6 +18,16 @@ jobs:
           grep -q 'operator-proxy-merge.yml' scripts/operator_proxy/github_bus.ts
           grep -q 'GH_TOKEN:.*github.token' .github/workflows/operator-proxy-merge.yml
           ! grep -RniE '(--auto-merge|--squash|--rebase|--force-with-lease|push --force)' scripts/operator_proxy/*.ts
+      - name: Bind immutable PR review range
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test "$(git merge-base "$BASE_SHA" "$HEAD_SHA")" = "$BASE_SHA"
+          printf 'BASE_SHA=%s\nHEAD_SHA=%s\n' "$BASE_SHA" "$HEAD_SHA" > operator-proxy-review-context.txt
       - name: Independent Codex read-only review
         id: codex
         uses: openai/codex-action@v1
@@ -34,15 +44,18 @@ jobs:
           name: operator-proxy-codex-review
           path: operator-proxy-codex-review.json
           if-no-files-found: error
-      - name: Require PASS on reviewed HEAD
+      - name: Require bounded verdict on reviewed HEAD
         env:
           EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
         run: |
           python - <<'PY'
           import json, os
           data = json.load(open('operator-proxy-codex-review.json', encoding='utf-8'))
-          if data.get('verdict') != 'PASS':
-              raise SystemExit('independent Codex review did not PASS')
+          if data.get('verdict') not in {'PASS', 'CHANGES_REQUESTED'}:
+              raise SystemExit('independent Codex review was unavailable or blocked')
+          findings = data.get('findings') or []
+          if data.get('verdict') == 'CHANGES_REQUESTED' and (not findings or any(f.get('severity') not in {'P1', 'P2'} for f in findings)):
+              raise SystemExit('only bounded technical P1/P2 findings may enter the repair loop')
           if data.get('head_sha') != os.environ['EXPECTED_HEAD']:
               raise SystemExit('independent Codex review HEAD mismatch')
           PY

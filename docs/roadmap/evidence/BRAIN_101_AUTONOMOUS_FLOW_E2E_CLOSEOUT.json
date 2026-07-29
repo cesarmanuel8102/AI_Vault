@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
+  "front_id": "BRAIN-101-R1-CONTROL-PLANE-E2E-CLOSEOUT-01",
+  "closed_item": "R1.0",
+  "next_authorized_item": "R1.2",
+  "status": "CLOSED_RUNTIME_VERIFIED",
+  "observed_at_utc": "2026-07-29T15:55:27Z",
+  "source_e2e": {
+    "front_id": "BRAIN-101-R1-CONTROL-PLANE-E2E-01",
+    "roadmap_item_id": "R1.0",
+    "umbrella_control_plane_issue": 62,
+    "source_e2e_issue": 65,
+    "source_e2e_pr": 68,
+    "pull_request_url": "https://github.com/cesarmanuel8102/AI_Vault/pull/68",
+    "builder_session": "builder-d7ba0447-9a4e-49a9-a149-8a74bfb18691",
+    "base_branch": "codex/own-capital-sustainable-return",
+    "base_sha": "71efa0481fe6bc7f2d53a52fc93a573008b8b82e",
+    "head_branch": "control-plane/brain-101-autonomous-flow-e2e",
+    "head_sha": "f3c610971a261341915bab0baabbf4df7d292d2c",
+    "payload_commit": "2e00f6318b10fe7e05580b207493b6662c6255a6",
+    "payload_path": "docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_PAYLOAD.md",
+    "changed_files": ["docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_PAYLOAD.md"],
+    "additions": 61,
+    "deletions": 0
+  },
+  "ci_evidence": [
+    {
+      "workflow_run": 30461856452,
+      "name": "phase1-ci",
+      "status": "completed",
+      "conclusion": "success",
+      "job": "Phase 1 baseline (Windows)"
+    },
+    {
+      "workflow_run": 30461856531,
+      "name": "nontrading-smoke-regression",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        "Memory / Retrieval Regression",
+        "Roadmap / Policy Regression",
+        "Agent V2 Boundary Contracts",
+        "Dashboard / Trace Tests",
+        "Financial Autonomy Dry-Run Contract",
+        "Security Smoke Tests",
+        "Hygiene Guard"
+      ]
+    },
+    {
+      "workflow_run": 30461864715,
+      "name": "Agent Loop Pilot - Deterministic Gate and Codex Supervisor",
+      "status": "completed",
+      "conclusion": "skipped",
+      "jobs": ["deterministic", "codex", "publish"],
+      "reason": "No Agent Loop pilot payload was required for this documentation-only control-plane PR."
+    }
+  ],
+  "decision_and_merge": {
+    "policy_decision": "APPROVE",
+    "allowed_action": "MERGE",
+    "merge_actor": "AI Vault Operator Proxy",
+    "merge_commit": "9fde35227982a89c1af6b31051ff44f131128430",
+    "merged_at_utc": "2026-07-29T14:52:29Z",
+    "merge_message": "Merge commit 'f3c610971a261341915bab0baabbf4df7d292d2c' into HEAD",
+    "auto_merge": false,
+    "squash_merge": false,
+    "rebase_merge": false
+  },
+  "acceptance": {
+    "record_exact_issue_pr_decision_merge_and_lifecycle_evidence": true,
+    "r1_0_status": "CLOSED_RUNTIME_VERIFIED",
+    "r1_2_status": "AUTHORIZED_ACTIVE",
+    "r1_2_authorized_only_after_e2e_passed": true,
+    "human_final_authority": true,
+    "live_trading_enabled": false,
+    "canonical_local_sync": false,
+    "deployment_mode": "NO_DEPLOY"
+  },
+  "scope": {
+    "runtime_files_modified": false,
+    "governance_runtime_modified": false,
+    "authentication_modified": false,
+    "response_shape_modified": false,
+    "side_effects_modified": false,
+    "error_codes_modified": false,
+    "rollback_behavior_modified": false,
+    "trading_modified": false,
+    "financial_autonomy_modified": false,
+    "memory_semantic_faiss_modified": false
+  },
+  "next_gate": "Execute R1.2 roadmap-doc and test-only profiles through Operator Proxy."
+}

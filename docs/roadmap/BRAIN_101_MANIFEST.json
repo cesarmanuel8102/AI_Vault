@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "5326be5c05f67be25ebd84cd8abec0e2a1d017b69d5cac0609b491890c49575b",
+  "roadmap_sha256": "d1b7041ef8380759744cf1897b044fca442183f5f32b6cd6cf026e98a255340f",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -58,7 +58,59 @@
     "R1.2": {
       "title": "Add roadmap-doc and test-only profiles",
       "status": "AUTHORIZED_ACTIVE",
-      "dependencies": ["R1.1"]
+      "dependencies": ["R1.1"],
+      "automation": {
+        "front_id": "BRAIN-101-R1-2-RUNTIME-PROFILES-01",
+        "objective": "Add immutable roadmap-doc and test-only Agent Loop profiles using the existing isolated R1.2 implementation",
+        "work_branch": "control-plane/r1-2-runtime-profile-contract",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "allowed_paths": ["scripts/agent_loop/local_worker/agent_worker.py", "tests/contract/test_agent_loop_worker_r1_2_profiles.py"],
+        "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/"],
+        "acceptance": ["Use immutable internal trusted commands for roadmap-doc and test-only profiles", "Preserve legacy worker configuration compatibility without accepting configured non-pilot commands", "Keep live trading, real money, canonical local sync, and auto-merge disabled"],
+        "test_commands": ["python tests/contract/test_agent_loop_worker_r1_2_profiles.py", "git diff --check"],
+        "deployment_mode": "INSTALL_ONLY",
+        "install_target": "agent_loop_worker",
+        "closeout": {
+          "front_id": "BRAIN-101-R1-2-RUNTIME-PROFILES-CLOSEOUT-01",
+          "objective": "Record R1.2 runtime evidence, close R1.2, and authorize one isolated Agent Loop OpenCode Kimi E2E item",
+          "work_branch": "control-plane/r1-2-runtime-profile-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R1_2_RUNTIME_CLOSEOUT.json"],
+          "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+          "acceptance": ["Record exact R1.2 Issue PR decision merge installation and runtime evidence", "Set R1.2 to CLOSED_RUNTIME_VERIFIED only after the transactional installation passes", "Create exactly one AUTHORIZED_ACTIVE synthetic LOW or MEDIUM agent_loop item using roadmap-doc or test-only with NO_DEPLOY", "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"],
+          "test_commands": ["git diff --check"]
+        }
+      }
+    },
+    "R1.0": {
+      "title": "Certify autonomous roadmap control-plane flow",
+      "status": "CLOSED_RUNTIME_VERIFIED",
+      "dependencies": ["R1.1"],
+      "automation": {
+        "front_id": "BRAIN-101-R1-CONTROL-PLANE-E2E-01",
+        "objective": "Create the isolated documentation payload proving the autonomous roadmap flow",
+        "work_branch": "control-plane/brain-101-autonomous-flow-e2e",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": ["docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_PAYLOAD.md"],
+        "forbidden_paths": [".env", ".github/", "memory/", "trading/", "financial_autonomy/", "tmp_agent/", "scripts/"],
+        "acceptance": ["Create one deterministic documentation-only payload", "Do not modify runtime or governance files", "Keep live trading disabled"],
+        "test_commands": ["git diff --check"],
+        "deployment_mode": "NO_DEPLOY",
+        "closeout": {
+          "front_id": "BRAIN-101-R1-CONTROL-PLANE-E2E-CLOSEOUT-01",
+          "objective": "Record the successful autonomous E2E, close R1.0, and restore R1.2 as the next authorized item",
+          "work_branch": "control-plane/brain-101-autonomous-flow-e2e-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_CLOSEOUT.json"],
+          "forbidden_paths": [".env", ".github/", "memory/", "trading/", "financial_autonomy/", "tmp_agent/", "scripts/"],
+          "acceptance": ["Record exact Issue PR decision merge and lifecycle evidence", "Set R1.0 to CLOSED_RUNTIME_VERIFIED", "Set R1.2 to AUTHORIZED_ACTIVE only after the E2E passes", "Preserve human final authority and disabled live trading"],
+          "test_commands": ["git diff --check"]
+        }
+      }
     }
   },
   "r1_1_runtime_closeout": {
@@ -71,6 +123,20 @@
     "cycles": 1,
     "final_state": "loop:ready-human-audit",
     "operator_proxy_merge": "7134393351810e64fd1a418dfdd986b53531ff46"
+  },
+  "r1_0_autonomous_flow_closeout": {
+    "evidence_path": "docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_CLOSEOUT.json",
+    "umbrella_control_plane_issue": 62,
+    "source_e2e_issue": 65,
+    "source_e2e_pr": 68,
+    "base_sha": "71efa0481fe6bc7f2d53a52fc93a573008b8b82e",
+    "head_sha": "f3c610971a261341915bab0baabbf4df7d292d2c",
+    "payload_commit": "2e00f6318b10fe7e05580b207493b6662c6255a6",
+    "merge_commit": "9fde35227982a89c1af6b31051ff44f131128430",
+    "merged_at_utc": "2026-07-29T14:52:29Z",
+    "phase1_ci_run": 30461856452,
+    "nontrading_smoke_run": 30461856531,
+    "final_state": "R1_0_CLOSED_RUNTIME_VERIFIED_R1_2_AUTHORIZED_ACTIVE"
   },
   "next_gate": "Execute R1.2 roadmap-doc and test-only profiles through Operator Proxy"
 }

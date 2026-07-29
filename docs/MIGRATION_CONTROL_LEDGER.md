@@ -9041,6 +9041,16 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 ### Next Recommended Front
 FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 
+---
+
+## BRAIN-101 R1 autonomous control-plane bootstrap (2026-07-22)
+
+- Owner authorization paused R1.2 runtime activation pending autonomous control-plane certification.
+- Bootstrap front: `BRAIN-101-R1-CONTROL-PLANE-AUTONOMOUS-FLOW-01`.
+- Synthetic canonical item: `R1.0`, documentation-only, LOW primary change and MEDIUM closeout.
+- Required chain: manifest -> sequencer -> Issue -> builder -> Draft PR -> CI -> independent reviewer -> policy -> governed merge -> closeout -> next item discovery.
+- R2, live trading, canonical local sync, auto-merge, and R1.2 deployment remain disabled.
+
 ### Evidence Path
 `tmp_agent/front_brain_agent_v2_chat_mode_switch_read_build_auto_01/`
 
@@ -9074,3 +9084,24 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - R0 closed through human-authorized normal merge of PR #35 at `5b9f101a6d5ec5b314d9413cc5c12d66fec6d94f`; the reviewed PR head was `a605c4d88510acd477cf26d2787bc38b1c02af48`.
 - No production code, trading, risk limits, auto-merge, or canonical local sync changed.
 - R1 has not started. Next gate: human authorization for R1.1, Agent Loop roadmap manifest validation.
+
+## BRAIN-101 R1.0 — Autonomous Control-Plane E2E Closeout (2026-07-29)
+
+- Front: `BRAIN-101-R1-CONTROL-PLANE-E2E-CLOSEOUT-01`.
+- Umbrella control-plane Issue: #62, which tracks the broader implementation and multi-actor certification program.
+- Sequencer-created source E2E Issue: #65.
+- Source E2E PR: #68, `feat(control-plane): Create the isolated documentation payload proving the autonomous roadmap flow`.
+- Builder session: `builder-d7ba0447-9a4e-49a9-a149-8a74bfb18691`.
+- Base branch: `codex/own-capital-sustainable-return`.
+- Base SHA: `71efa0481fe6bc7f2d53a52fc93a573008b8b82e`.
+- PR head: `f3c610971a261341915bab0baabbf4df7d292d2c`.
+- Payload commit: `2e00f6318b10fe7e05580b207493b6662c6255a6`.
+- Merge commit: `9fde35227982a89c1af6b31051ff44f131128430`.
+- Merged at: `2026-07-29T14:52:29Z`.
+- Decision: Operator Proxy policy `APPROVE`, allowed action `MERGE`; no auto-merge, squash, rebase, force-push, deploy, canonical local sync, or live trading.
+- CI evidence: `phase1-ci` run `30461856452` success; `nontrading-smoke-regression` run `30461856531` success; Agent Loop pilot workflow run `30461864715` skipped because this was documentation-only and did not require an Agent Loop pilot payload.
+- Scope result: one payload file only in PR #68, `docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_PAYLOAD.md`, 61 additions and 0 deletions.
+- Closeout evidence: `docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_CLOSEOUT.json`.
+- Status: `R1.0` set to `CLOSED_RUNTIME_VERIFIED`; `R1.2` restored to `AUTHORIZED_ACTIVE`.
+- Preserved controls: human final authority true, live trading disabled, auto-merge disabled, canonical local sync disabled.
+- Next gate: execute `R1.2` roadmap-doc and test-only profiles through Operator Proxy.

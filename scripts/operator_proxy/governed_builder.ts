@@ -1,0 +1,72 @@
+import {execFileSync as rawExecFileSync} from "node:child_process";
+import {existsSync,lstatSync,mkdirSync,realpathSync} from "node:fs";
+import {join,resolve} from "node:path";
+import type {LifecycleRecord,ProxySpec} from "./types.js";
+import type {EffectAssertion} from "./external_effect_guard.js";
+import {redactedError} from "./redaction.js";
+import {runBuilder} from "./codex_builder.js";
+
+export interface BuilderBus {
+  findPrByBranch(branch:string):{number:number;head_sha:string}|undefined;
+  remoteBranchHead(branch:string):string|undefined;
+  createDraftPr(branch:string,base:string,title:string,body:string):number;
+  bindPrToIssue(issue:number,pr:number):void;
+  repairPrompt(issue:number):string;
+  prIdentity(pr:number):any;
+}
+
+function native(file:string,args:string[],options:any={}){try{return rawExecFileSync(file,args,{...options,encoding:"utf8",stdio:"pipe"});}catch(error){throw new Error(redactedError(error));}}
+const git=(repo:string,args:string[])=>native(process.env.GIT_PATH??"git",["-C",repo,...args],{encoding:"utf8",timeout:120000,windowsHide:true}).trim();
+const allowed=(path:string,spec:ProxySpec)=>spec.allowed_paths.some(p=>p.endsWith("/")?path.startsWith(p):path===p)&&!spec.forbidden_paths.some(p=>path===p||path.startsWith(p.endsWith("/")?p:`${p}/`));
+function changed(repo:string){const tracked=git(repo,["diff","--name-only","HEAD"]);const staged=git(repo,["diff","--cached","--name-only"]);const untracked=git(repo,["ls-files","--others","--exclude-standard"]);return [...new Set([tracked,staged,untracked].flatMap(x=>x?x.split(/\r?\n/):[]).filter(Boolean))].sort();}
+function committed(repo:string,base:string){const output=git(repo,["diff","--name-only",`${base}..HEAD`]);return output?output.split(/\r?\n/).filter(Boolean).sort():[];}
+function validateFiles(files:string[],spec:ProxySpec){if(files.length===0)throw new Error("builder produced no changes");if(!files.every(path=>allowed(path,spec)))throw new Error("builder changed path outside scope");}
+export function parseTestCommand(command:string):[string,string[]]{if(/[;&|><`$]/.test(command))throw new Error("test command contains shell syntax");const argv=command.match(/(?:[^\s"]+|"[^"]*")+/g)?.map(x=>x.startsWith('"')?x.slice(1,-1):x)??[];const [file,...args]=argv;const exe=(file??"").toLowerCase();const safeArg=(x:string)=>!x.includes("..")&&!/^[A-Za-z]:[\\/]/.test(x)&&!x.includes("\\");if(!args.every(safeArg))throw new Error("test argument path denied");if(["git","git.exe"].includes(exe)&&args.length===2&&args[0]==="diff"&&args[1]==="--check")return [file,args];if(["npm","npm.cmd"].includes(exe)&&(args.length===1&&args[0]==="test"||args.length===2&&args[0]==="run"&&/^[a-z0-9:_-]+$/i.test(args[1])))return [file,args];if(["python","python.exe"].includes(exe)){if(args[0]==="-m"&&args[1]==="pytest"&&args.slice(2).every(x=>x.startsWith("tests/")||["-q","-v","--maxfail=1"].includes(x)))return [file,args];if(/^tests\/[A-Za-z0-9_./-]+\.py$/.test(args[0]??"")&&args.slice(1).every(x=>/^[A-Za-z0-9_.:/=-]+$/.test(x)))return [file,args];}if(["pwsh","pwsh.exe","powershell","powershell.exe"].includes(exe)){const index=args.findIndex(x=>x.toLowerCase()==="-file");if(index>=0&&args.slice(0,index).every(x=>["-NoProfile","-NonInteractive"].includes(x))&&/^tests\/[A-Za-z0-9_./-]+\.ps1$/.test(args[index+1]??"")&&args.slice(index+2).every(x=>/^[A-Za-z0-9_.:/=-]+$/.test(x)))return [file,args];}throw new Error("test command denied");}
+export function runDeclaredTests(repo:string,commands:string[]){for(const command of commands){const [file,args]=parseTestCommand(command);native(file,args,{cwd:repo,stdio:"inherit",timeout:900000,windowsHide:true});}}
+
+export class GovernedBuilder {
+  constructor(readonly sourceRepo:string,readonly worktreeRoot:string,readonly bus:BuilderBus,readonly assertEffect:EffectAssertion,readonly codex=process.env.CODEX_PATH??"codex"){}
+  synchronizeBlockedCiBase(spec:ProxySpec,state:LifecycleRecord){
+    if(state.state!=="BLOCKED"||state.last_error!=="CI_FAILED"||!state.issue||!state.pr||!state.head_sha||!state.builder_session||state.repair_cycles!==0||state.reviewer_session||state.decision_id||!spec.work_branch||state.base_sha===spec.expected_base_sha)throw new Error("blocked CI branch synchronization denied");
+    const pr=this.bus.prIdentity(state.pr),files=(pr.files??[]).map((x:any)=>String(x.path));
+    // GitHub may expose either the PR's original base OID or the advanced target OID.
+    const trustedBase=pr.baseRefOid===state.base_sha||pr.baseRefOid===spec.expected_base_sha;
+    if(pr.author?.login!=="cesarmanuel8102"||pr.baseRefName!=="codex/own-capital-sustainable-return"||!trustedBase||pr.headRefName!==spec.work_branch||pr.headRepository?.nameWithOwner!=="cesarmanuel8102/AI_Vault"||pr.isCrossRepository!==false||pr.isDraft!==true||pr.state!=="OPEN"||pr.mergeable!=="MERGEABLE"||files.length===0||!files.every((path:string)=>allowed(path,spec)))throw new Error("blocked CI PR identity invalid");
+    const remote=this.bus.remoteBranchHead(spec.work_branch);if(!remote||pr.headRefOid!==remote)throw new Error("blocked CI remote branch missing or inconsistent");
+    mkdirSync(this.worktreeRoot,{recursive:true});const root=realpathSync(this.worktreeRoot),worktree=resolve(root,spec.front_id!);if(!worktree.startsWith(`${root}\\`)&&!worktree.startsWith(`${root}/`)||!existsSync(worktree)||realpathSync(worktree).toLowerCase()!==worktree.toLowerCase())throw new Error("blocked CI worktree identity invalid");
+    native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"fetch","origin","codex/own-capital-sustainable-return",spec.work_branch],{stdio:"inherit",timeout:120000,windowsHide:true});
+    if(git(worktree,["branch","--show-current"])!==spec.work_branch||git(worktree,["status","--porcelain","--untracked-files=all"]))throw new Error("blocked CI worktree state invalid");const localHeadBefore=git(worktree,["rev-parse","HEAD"]);
+    try{git(worktree,["merge-base","--is-ancestor",state.base_sha,spec.expected_base_sha]);git(worktree,["merge-base","--is-ancestor",state.base_sha,state.head_sha]);}catch{throw new Error("blocked CI ancestry invalid");}
+    if(localHeadBefore===state.head_sha)validateFiles(committed(worktree,state.base_sha),spec);else if(localHeadBefore!==remote)throw new Error("blocked CI local branch drift");
+    let nextHead=remote;
+    if(remote===state.head_sha){
+      const tree=git(worktree,["merge-tree","--write-tree",state.head_sha,spec.expected_base_sha]);if(!/^[0-9a-f]{40}$/.test(tree))throw new Error("blocked CI merge tree invalid");
+      nextHead=git(worktree,["commit-tree",tree,"-p",state.head_sha,"-p",spec.expected_base_sha,"-m",`chore(control-plane): synchronize ${spec.front_id} base`]);if(!/^[0-9a-f]{40}$/.test(nextHead))throw new Error("blocked CI merge commit invalid");
+    }
+    const parents=git(worktree,["rev-list","--parents","-n","1",nextHead]).split(/\s+/);if(parents.length!==3||parents[0]!==nextHead||parents[1]!==state.head_sha||parents[2]!==spec.expected_base_sha)throw new Error("blocked CI merge parents invalid");
+    const nextFiles=git(worktree,["diff","--name-only",`${spec.expected_base_sha}..${nextHead}`]).split(/\r?\n/).filter(Boolean).sort();validateFiles(nextFiles,spec);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${spec.expected_base_sha}..${nextHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});
+    if(remote===state.head_sha){this.assertEffect("push",{issue:state.issue,expected_head:nextHead});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`${nextHead}:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});if(this.bus.remoteBranchHead(spec.work_branch)!==nextHead)throw new Error("blocked CI branch push readback failed");}
+    const localHead=git(worktree,["rev-parse","HEAD"]);if(localHead===state.head_sha)native(process.env.GIT_PATH??"git",["-C",worktree,"merge","--ff-only",nextHead],{stdio:"inherit",timeout:120000,windowsHide:true});else if(localHead!==nextHead)throw new Error("blocked CI local branch drift");
+    if(git(worktree,["rev-parse","HEAD"])!==nextHead||git(worktree,["status","--porcelain","--untracked-files=all"]))throw new Error("blocked CI worktree synchronization failed");return nextHead;
+  }
+  build(spec:ProxySpec,issue:number,session:string,repairCycle:number){
+    if(!spec.front_id||!spec.work_branch||!spec.objective)throw new Error("builder metadata missing");
+    const existing=this.bus.findPrByBranch(spec.work_branch);if(existing&&repairCycle===0){this.bus.bindPrToIssue(issue,existing.number);return {pr:existing.number,head_sha:existing.head_sha,session};}
+    const orphanHead=!existing&&repairCycle===0?this.bus.remoteBranchHead(spec.work_branch):undefined;if(orphanHead){const pr=this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nRecovered published builder branch.\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:orphanHead,session};}
+    mkdirSync(this.worktreeRoot,{recursive:true});const root=realpathSync(this.worktreeRoot);if(lstatSync(root).isSymbolicLink())throw new Error("worktree root symlink denied");
+    const worktree=resolve(root,spec.front_id);if(!worktree.startsWith(`${root}\\`)&&!worktree.startsWith(`${root}/`))throw new Error("worktree escaped root");
+    if(!existsSync(worktree)){this.assertEffect("branch_create",{issue});if(existing){native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"fetch","origin",spec.work_branch],{stdio:"inherit",timeout:120000,windowsHide:true});try{native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add",worktree,spec.work_branch],{stdio:"inherit",timeout:120000,windowsHide:true});}catch{native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","-b",spec.work_branch,worktree,`origin/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});}}else native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","-b",spec.work_branch,worktree,spec.expected_base_sha],{stdio:"inherit",timeout:120000,windowsHide:true});}
+    if(realpathSync(worktree).toLowerCase()!==worktree.toLowerCase())throw new Error("worktree path identity mismatch");const branch=git(worktree,["branch","--show-current"]);if(branch!==spec.work_branch)throw new Error("worktree branch mismatch");let initialStatus=git(worktree,["status","--porcelain","--untracked-files=all"]);let initialHead=git(worktree,["rev-parse","HEAD"]);const expectedHead=existing?.head_sha??spec.expected_base_sha;
+    if(!existing&&initialHead!==expectedHead&&!initialStatus){let canFastForward=false;try{git(worktree,["merge-base","--is-ancestor",initialHead,expectedHead]);canFastForward=true;}catch{}if(canFastForward){native(process.env.GIT_PATH??"git",["-C",worktree,"merge","--ff-only",expectedHead],{stdio:"inherit",timeout:120000,windowsHide:true});initialHead=git(worktree,["rev-parse","HEAD"]);initialStatus=git(worktree,["status","--porcelain","--untracked-files=all"]);if(initialHead!==expectedHead||initialStatus)throw new Error("builder worktree base fast-forward failed");}}
+    if(initialHead!==expectedHead){if(initialStatus)throw new Error("advanced builder worktree is dirty");try{git(worktree,["merge-base","--is-ancestor",expectedHead,initialHead]);}catch{throw new Error("builder worktree head is not a descendant of expected head");}if(git(worktree,["log","-1","--format=%s"])!==`feat(control-plane): complete ${spec.front_id}`)throw new Error("recovered builder commit subject mismatch");validateFiles(committed(worktree,expectedHead),spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${expectedHead}..${initialHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});this.assertEffect("push",{issue,expected_head:initialHead});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});const pr=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nRecovered local builder commit.\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:initialHead,session};}
+    const repair=repairCycle>0?this.bus.repairPrompt(issue):"";if(repairCycle>0&&!repair)throw new Error("repair findings missing");
+    const prompt=[`Build governed front ${spec.front_id}.`,`Objective: ${spec.objective}`,`Repair cycle: ${repairCycle}.`,repair?`Correct only these independent-review findings:\n${repair}`:"",`Allowed paths only: ${spec.allowed_paths.join(", ")}.`,`Forbidden paths: ${spec.forbidden_paths.join(", ")}.`,`Acceptance: ${spec.acceptance.join(" | ")}.`,`Do not commit, push, open a PR, merge, deploy, or inspect paths outside this worktree.`].filter(Boolean).join("\n");
+    if(!initialStatus){if(spec.executor==="codex_control_plane"){this.assertEffect("builder_execute",{issue});runBuilder(this.codex,prompt,worktree,session);}else throw new Error("agent_loop builder adapter unavailable");}
+    const files=changed(worktree);validateFiles(files,spec);
+    runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check"],{stdio:"inherit",timeout:120000,windowsHide:true});
+    this.assertEffect("commit_create",{issue});native(process.env.GIT_PATH??"git",["-C",worktree,"add","--",...files],{stdio:"inherit",timeout:120000,windowsHide:true});
+    native(process.env.GIT_PATH??"git",["-C",worktree,"commit","-m",`feat(control-plane): complete ${spec.front_id}`],{stdio:"inherit",timeout:120000,windowsHide:true});
+    const head=git(worktree,["rev-parse","HEAD"]);this.assertEffect("push",{issue,expected_head:head});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
+    const pr=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${session}\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:head,session};
+  }
+}

@@ -4761,7 +4761,7 @@
     "schema_version": 1,
     "roadmap_id": "BRAIN-101",
     "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-    "status": "R1_1_CLOSED_RUNTIME_VERIFIED",
+    "status": "R1_0_CLOSED_RUNTIME_VERIFIED_R1_2_AUTHORIZED_ACTIVE",
     "approval_status": "HUMAN_ADOPTED",
     "current_phase": "R1",
     "rebaseline_source_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
@@ -4783,6 +4783,17 @@
     "r1_1_pilot_head": "66de7603865b9b59dfee6da1e46ce4d3cf477080",
     "r1_2_status": "AUTHORIZED_ACTIVE",
     "operator_proxy_merge": "7134393351810e64fd1a418dfdd986b53531ff46",
+    "r1_control_plane_issue": 62,
+    "r1_control_plane_status": "CLOSED_RUNTIME_VERIFIED",
+    "r1_0_status": "CLOSED_RUNTIME_VERIFIED",
+    "r1_0_umbrella_control_plane_issue": 62,
+    "r1_0_source_e2e_issue": 65,
+    "r1_0_source_e2e_pr": 68,
+    "r1_0_pr_head": "f3c610971a261341915bab0baabbf4df7d292d2c",
+    "r1_0_payload_commit": "2e00f6318b10fe7e05580b207493b6662c6255a6",
+    "r1_0_merge_commit": "9fde35227982a89c1af6b31051ff44f131128430",
+    "r1_0_merged_at_utc": "2026-07-29T14:52:29Z",
+    "r1_0_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_CLOSEOUT.json",
     "next_gate": "Execute R1.2 roadmap-doc and test-only profiles through Operator Proxy"
   }
 }
