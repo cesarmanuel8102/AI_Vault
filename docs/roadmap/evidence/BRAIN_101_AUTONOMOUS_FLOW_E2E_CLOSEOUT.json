@@ -10,8 +10,9 @@
   "source_e2e": {
     "front_id": "BRAIN-101-R1-CONTROL-PLANE-E2E-01",
     "roadmap_item_id": "R1.0",
-    "issue": 62,
-    "pull_request": 68,
+    "umbrella_control_plane_issue": 62,
+    "source_e2e_issue": 65,
+    "source_e2e_pr": 68,
     "pull_request_url": "https://github.com/cesarmanuel8102/AI_Vault/pull/68",
     "builder_session": "builder-d7ba0447-9a4e-49a9-a149-8a74bfb18691",
     "base_branch": "codex/own-capital-sustainable-return",

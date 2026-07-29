@@ -9088,8 +9088,9 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 ## BRAIN-101 R1.0 — Autonomous Control-Plane E2E Closeout (2026-07-29)
 
 - Front: `BRAIN-101-R1-CONTROL-PLANE-E2E-CLOSEOUT-01`.
-- Issue: #62.
-- PR: #68, `feat(control-plane): Create the isolated documentation payload proving the autonomous roadmap flow`.
+- Umbrella control-plane Issue: #62, which tracks the broader implementation and multi-actor certification program.
+- Sequencer-created source E2E Issue: #65.
+- Source E2E PR: #68, `feat(control-plane): Create the isolated documentation payload proving the autonomous roadmap flow`.
 - Builder session: `builder-d7ba0447-9a4e-49a9-a149-8a74bfb18691`.
 - Base branch: `codex/own-capital-sustainable-return`.
 - Base SHA: `71efa0481fe6bc7f2d53a52fc93a573008b8b82e`.

@@ -17,7 +17,7 @@
 
 ## R1 autonomous control-plane priority correction
 
-R1.2 runtime activation was paused until a synthetic documentation-only flow proved the complete autonomous chain: canonical discovery, governed Issue, isolated builder, Draft PR, CI, independent review, policy, governed merge, documentary closeout, and next-item discovery. The bootstrap item `R1.0` is now `CLOSED_RUNTIME_VERIFIED` by Issue #62, PR #68, and Operator Proxy merge `9fde35227982a89c1af6b31051ff44f131128430`. `R1.2` is restored as `AUTHORIZED_ACTIVE`. R2, live trading, canonical local sync, auto-merge, and deployment remain unauthorized.
+R1.2 runtime activation was paused until a synthetic documentation-only flow proved the complete autonomous chain: canonical discovery, governed Issue, isolated builder, Draft PR, CI, independent review, policy, governed merge, documentary closeout, and next-item discovery. Issue #62 is the umbrella for the broader control-plane implementation and multi-actor certification program. The sequencer created operational Issue #65 for bootstrap item `R1.0`, and PR #68 carried its isolated payload. `R1.0` is now `CLOSED_RUNTIME_VERIFIED` by that flow and Operator Proxy merge `9fde35227982a89c1af6b31051ff44f131128430`. `R1.2` is restored as `AUTHORIZED_ACTIVE`. R2, live trading, canonical local sync, auto-merge, and deployment remain unauthorized.
 
 ---
 
@@ -935,7 +935,7 @@ Evidencia machine-readable: `docs/roadmap/evidence/BRAIN_101_R1_1_RUNTIME_CLOSEO
 
 ## 13.9 Cierre runtime de R1.0
 
-R1.0 quedó verificado con el E2E autónomo de control-plane. Issue #62 produjo el frente `BRAIN-101-R1-CONTROL-PLANE-E2E-01`; PR #68 creó el payload documental aislado en `docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_PAYLOAD.md`; el HEAD revisado fue `f3c610971a261341915bab0baabbf4df7d292d2c`; CI `phase1-ci` run `30461856452` y `nontrading-smoke-regression` run `30461856531` finalizaron en success; el Operator Proxy realizó el merge gobernado `9fde35227982a89c1af6b31051ff44f131128430` el `2026-07-29T14:52:29Z`.
+R1.0 quedó verificado con el E2E autónomo de control-plane. Issue #62 es el umbrella del programa general de implementación y certificación multi-actor. El sequencer creó el Issue operativo #65 para el frente `BRAIN-101-R1-CONTROL-PLANE-E2E-01`; PR #68 creó el payload documental aislado en `docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_PAYLOAD.md`; el HEAD revisado fue `f3c610971a261341915bab0baabbf4df7d292d2c`; CI `phase1-ci` run `30461856452` y `nontrading-smoke-regression` run `30461856531` finalizaron en success; el Operator Proxy realizó el merge gobernado `9fde35227982a89c1af6b31051ff44f131128430` el `2026-07-29T14:52:29Z`.
 
 El closeout machine-readable está en `docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_CLOSEOUT.json`. Este cierre no modifica runtime, autenticación, response shapes, rollback, memoria, FAISS, trading, QC, IBKR ni financial autonomy.
 
@@ -954,8 +954,9 @@ HUMAN_FINAL_AUTHORITY: true
 R1_STARTED: true
 R1_1_STATUS: CLOSED_RUNTIME_VERIFIED
 R1_0_STATUS: CLOSED_RUNTIME_VERIFIED
-R1_0_ISSUE: 62
-R1_0_PR: 68
+R1_0_UMBRELLA_CONTROL_PLANE_ISSUE: 62
+R1_0_SOURCE_E2E_ISSUE: 65
+R1_0_SOURCE_E2E_PR: 68
 R1_0_PR_HEAD: f3c610971a261341915bab0baabbf4df7d292d2c
 R1_0_MERGE_COMMIT: 9fde35227982a89c1af6b31051ff44f131128430
 R1_2_STATUS: AUTHORIZED_ACTIVE
