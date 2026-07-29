@@ -53,6 +53,16 @@ test("blocked CI recovery permits only the exact push then Issue update",()=>{
   boundary.endBlockedCiRecovery();currentBase=nextBase;assert.throws(()=>boundary.assert("issue_modify",{issue:63,pr:63,expected_head:nextHead}),/lifecycle state/);
 });
 
+test("negated-risk escalation recovery permits only exact branch sync and Issue update",()=>{
+  const root=mkdtempSync(join(tmpdir(),"effect-negated-risk-"));mkdirSync(join(root,"state"));const nextBase="c".repeat(40),nextHead="d".repeat(40);let currentBase=nextBase,currentHead=head;
+  const nextSpec={...spec,expected_base_sha:nextBase,risk:"MEDIUM" as const,acceptance:["Keep canonical local sync disabled"]};const escalated:LifecycleRecord={...lifecycle,state:"ESCALATED",last_error:"OWNER_AUTHORITY_REQUIRED",base_sha:base,head_sha:head,builder_session:"builder-one",reviewer_session:"reviewer-one",decision_id:"11111111-1111-4111-8111-111111111111",completed_effects:["issue:63",`build:${head}`]};
+  const bus:any={branchHead:()=>currentBase,issuePaused:()=>false,prIdentity:()=>({headRefOid:currentHead})};const boundary=new ExternalEffectBoundary(root,bus,()=>true);boundary.bind(nextSpec,escalated);
+  assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:nextHead}),/lifecycle state/);boundary.beginNegatedRiskRecovery(nextSpec,escalated);boundary.assert("push",{issue:63,pr:63,expected_head:nextHead});
+  currentHead=nextHead;boundary.bindBlockedCiRecoveryHead(nextHead);boundary.assert("issue_modify",{issue:63,pr:63,expected_head:nextHead});
+  for(const effect of EXTERNAL_EFFECT_REGISTRY.filter(x=>x!=="issue_modify"))assert.throws(()=>boundary.assert(effect,{issue:63,pr:63,expected_head:nextHead}),/lifecycle state/);
+  boundary.endBlockedCiRecovery();assert.throws(()=>boundary.assert("issue_modify",{issue:63,pr:63,expected_head:nextHead}),/lifecycle state/);
+});
+
 test("GitHub mutation families invoke the central guard immediately before mutation",()=>{
   let mutations=0;const bus=new GitHubBus("gh");bus.setMutationGuard(()=>{throw new Error("external effect paused by GitHub label");});(bus as any).call=()=>{mutations++;return "https://github.test/1";};(bus as any).json=(args:string[])=>args[0]==="issue"?{body:"governed"}:args[0]==="run"?[]:{baseRefName:"codex/own-capital-sustainable-return",baseRefOid:base,headRefOid:head,isDraft:true,state:"OPEN",mergeable:"MERGEABLE"};
   const actions=[()=>bus.createGovernedIssue("t","b"),()=>bus.createDraftPr("control-plane/x","codex/own-capital-sustainable-return","t","b"),()=>bus.bindPrToIssue(63,63),()=>bus.comment(63,"x"),()=>bus.prComment(63,"x"),()=>bus.label("issue",63,"operator:building"),()=>bus.merge(63,head,base,"decision")];
