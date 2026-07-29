@@ -27,5 +27,5 @@ test("GitHub comments and repair feedback are redacted before output",()=>{
 });
 
 test("sensitive installation receipt fails closed without propagation",()=>{
-  const root=mkdtempSync(join(tmpdir(),"receipt-")),sha="a".repeat(40);const coordinator=new RequestCoordinator(root,()=>{});coordinator.install(sha);writeFileSync(join(root,"receipts",`install-${sha}.json`),JSON.stringify({schema_version:1,kind:"install",sha,status:"PASS",access_token:"synthetic-access"}));assert.throws(()=>coordinator.install(sha),/receipt invalid|sensitive/);
+  const root=mkdtempSync(join(tmpdir(),"receipt-")),sha="a".repeat(40),artifact="b".repeat(64),front="BRAIN-101-REDACTION-INSTALL-01",spec:any={schema_version:1,repository:"cesarmanuel8102/AI_Vault",roadmap_item_id:"R1.2",front_id:front,install_target:"agent_loop_worker"};const coordinator=new RequestCoordinator(root,()=>{}),name=`install-${front}-${sha}.json`;coordinator.install(spec,sha,artifact);writeFileSync(join(root,"receipts",name),JSON.stringify({schema_version:2,kind:"install",sha,status:"PASS",access_token:"synthetic-access"}));assert.throws(()=>coordinator.install(spec,sha,artifact),/receipt invalid|sensitive/);
 });

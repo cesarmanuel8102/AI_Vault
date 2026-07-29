@@ -13,7 +13,7 @@ export interface AutonomousEffects {
   review(pr:number,head:string,session:string):ReviewerOutput;
   policy(spec:ProxySpec,issue:number,pr:number,head:string,review:ReviewerOutput,builderSession:string,reviewerSession:string,repairCycles:number):PolicyResult;
   ensureMerge(pr:number,head:string,base:string,decisionId:string):string;
-  ensureInstall(merge:string):"PASS"|"LOCAL_PRIVILEGE_REQUIRED";
+  ensureInstall(spec:ProxySpec,merge:string):"PASS"|"LOCAL_PRIVILEGE_REQUIRED";
   ensureRuntimePilot(spec:ProxySpec,merge:string):"PASS"|"PENDING";
   ensureCloseout(spec:ProxySpec,merge:string):"PASS"|"PENDING";
   discoverNext(completedItem:string):void;
@@ -46,7 +46,7 @@ export class AutonomousFlow {
       case "READY_TO_MERGE": return this.store.advance(state,"MERGING");
       case "MERGING": {if(!state.pr||!state.head_sha||!state.decision_id)throw new Error("merge evidence missing");const merge=this.effects.ensureMerge(state.pr,state.head_sha,state.base_sha,state.decision_id);if(!/^[0-9a-f]{40}$/.test(merge))throw new Error("merge evidence invalid");state=this.store.effect(state,`merge:${merge}`);return this.store.advance(state,"MERGED",{head_sha:merge});}
       case "MERGED": if(spec.closeout_only)return this.store.advance(state,"TERMINAL_COMPLETED");else if(state.deployment_mode==="INSTALL_ONLY"||state.deployment_mode==="INSTALL_AND_RUNTIME_PILOT")return this.store.advance(state,"INSTALL_PENDING");else if(state.deployment_mode==="DOCUMENTATION_CLOSEOUT")return this.store.advance(state,"CLOSEOUT_PENDING");else return this.store.advance(state,"RUNTIME_VERIFIED");
-      case "INSTALL_PENDING": {const result=this.effects.ensureInstall(state.head_sha!);if(result==="LOCAL_PRIVILEGE_REQUIRED")return this.store.advance(state,"ESCALATED",{last_error:"LOCAL_PRIVILEGE_REQUIRED"});state=this.store.effect(state,`install:${state.head_sha}`);return this.store.advance(state,"INSTALLING");}
+      case "INSTALL_PENDING": {const result=this.effects.ensureInstall(spec,state.head_sha!);if(result==="LOCAL_PRIVILEGE_REQUIRED")return this.store.advance(state,"ESCALATED",{last_error:"LOCAL_PRIVILEGE_REQUIRED"});state=this.store.effect(state,`install:${state.head_sha}`);return this.store.advance(state,"INSTALLING");}
       case "INSTALLING": return this.store.advance(state,state.deployment_mode==="INSTALL_AND_RUNTIME_PILOT"?"RUNTIME_PILOT_PENDING":"RUNTIME_VERIFIED");
       case "RUNTIME_PILOT_PENDING": return this.store.advance(state,"RUNTIME_PILOT_RUNNING");
       case "RUNTIME_PILOT_RUNNING": {const result=this.effects.ensureRuntimePilot(spec,state.head_sha!);if(result==="PENDING")return state;state=this.store.effect(state,`pilot:${state.head_sha}`);return this.store.advance(state,"RUNTIME_VERIFIED");}

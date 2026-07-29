@@ -58,7 +58,31 @@
     "R1.2": {
       "title": "Add roadmap-doc and test-only profiles",
       "status": "AUTHORIZED_ACTIVE",
-      "dependencies": ["R1.1"]
+      "dependencies": ["R1.1"],
+      "automation": {
+        "front_id": "BRAIN-101-R1-2-RUNTIME-PROFILES-01",
+        "objective": "Add immutable roadmap-doc and test-only Agent Loop profiles using the existing isolated R1.2 implementation",
+        "work_branch": "control-plane/r1-2-runtime-profile-contract",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "allowed_paths": ["scripts/agent_loop/local_worker/agent_worker.py", "tests/contract/test_agent_loop_worker_r1_2_profiles.py"],
+        "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/"],
+        "acceptance": ["Use immutable internal trusted commands for roadmap-doc and test-only profiles", "Preserve legacy worker configuration compatibility without accepting configured non-pilot commands", "Keep live trading, real money, canonical local sync, and auto-merge disabled"],
+        "test_commands": ["python tests/contract/test_agent_loop_worker_r1_2_profiles.py", "git diff --check"],
+        "deployment_mode": "INSTALL_ONLY",
+        "install_target": "agent_loop_worker",
+        "closeout": {
+          "front_id": "BRAIN-101-R1-2-RUNTIME-PROFILES-CLOSEOUT-01",
+          "objective": "Record R1.2 runtime evidence, close R1.2, and authorize one isolated Agent Loop OpenCode Kimi E2E item",
+          "work_branch": "control-plane/r1-2-runtime-profile-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R1_2_RUNTIME_CLOSEOUT.json"],
+          "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+          "acceptance": ["Record exact R1.2 Issue PR decision merge installation and runtime evidence", "Set R1.2 to CLOSED_RUNTIME_VERIFIED only after the transactional installation passes", "Create exactly one AUTHORIZED_ACTIVE synthetic LOW or MEDIUM agent_loop item using roadmap-doc or test-only with NO_DEPLOY", "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"],
+          "test_commands": ["git diff --check"]
+        }
+      }
     },
     "R1.0": {
       "title": "Certify autonomous roadmap control-plane flow",

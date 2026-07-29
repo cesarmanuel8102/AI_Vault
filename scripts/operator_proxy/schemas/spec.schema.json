@@ -22,6 +22,7 @@
     "work_branch": {"type": "string"},
     "dependencies": {"type": "array", "uniqueItems": true, "items": {"type": "string"}},
     "deployment_mode": {"enum": ["NO_DEPLOY", "INSTALL_ONLY", "INSTALL_AND_RUNTIME_PILOT", "DOCUMENTATION_CLOSEOUT"]},
+    "install_target": {"const": "agent_loop_worker"},
     "front_id": {"type": "string"},
     "roadmap_sha256": {"pattern": "^[0-9a-f]{64}$"},
     "manifest_sha256": {"pattern": "^[0-9a-f]{64}$"},
