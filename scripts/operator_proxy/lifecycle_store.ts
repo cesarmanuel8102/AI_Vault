@@ -44,6 +44,14 @@ export class LifecycleStore {
     appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_prebuild_base_rebound",front_id:record.front_id,issue:record.issue,old_base_sha:record.base_sha,new_base_sha:nextBase,updated_utc:updated.updated_utc})}\n`);
     this.save(updated);return updated;
   }
+  rebindPostMergeBase(record:LifecycleRecord,nextBase:string):LifecycleRecord {
+    const postMerge=new Set(["MERGED","INSTALL_PENDING","INSTALLING","RUNTIME_PILOT_PENDING","RUNTIME_PILOT_RUNNING","RUNTIME_VERIFIED","CLOSEOUT_PENDING","CLOSEOUT_MERGED","TERMINAL_COMPLETED"]);
+    const exact=postMerge.has(record.state)&&/^[0-9a-f]{40}$/.test(record.head_sha??"")&&record.completed_effects.includes(`merge:${record.head_sha}`);
+    if(!exact||!/^[0-9a-f]{40}$/.test(nextBase)||record.base_sha===nextBase)throw new Error("post-merge lifecycle base rebind denied");
+    const updated={...record,base_sha:nextBase,updated_utc:new Date().toISOString()};
+    appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_postmerge_base_rebound",front_id:record.front_id,old_base_sha:record.base_sha,new_base_sha:nextBase,merge_sha:record.head_sha,state:record.state,updated_utc:updated.updated_utc})}\n`);
+    this.save(updated);return updated;
+  }
   invalidatePostBuildBase(record:LifecycleRecord):LifecycleRecord {
     const exact=["CI_PENDING","REVIEWING"].includes(record.state)&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&record.repair_cycles===0&&!!record.builder_session&&!record.reviewer_session&&!record.decision_id&&/^[0-9a-f]{40}$/.test(record.head_sha??"")&&validBlockedCiEffectChain(record);
     if(!exact)throw new Error("post-build base invalidation denied");
