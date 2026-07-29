@@ -1,5 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import {resolve} from "node:path";
 import {normalizeReviewerOutput} from "../../../scripts/operator_proxy/review_contract.js";
 import {execute} from "../../../scripts/operator_proxy/action_executor.js";
 import {historicalDecisionKey,historicalStableDecisionId} from "../../../scripts/operator_proxy/decision_ledger.js";
@@ -32,4 +34,16 @@ test("transitional decisions cannot bypass risk or deterministic policy gates",(
   const make=(changes:any)=>{const value={...seed,...changes},key=historicalDecisionKey(value);return {...value,decision_key:key,decision_id:historicalStableDecisionId(key)};};
   for(const changes of [{risk:"HIGH"},{risk:"CRITICAL"},{deterministic_gate:"FAIL"}])assert.throws(()=>execute(bus,ledger,make(changes),false),/policy outcome invariants/);
   assert.equal(merged,0);
+});
+
+test("independent reviewer is bound to immutable PR base and head",()=>{
+  const workflow=readFileSync(resolve(process.cwd(),"../../.github/workflows/operator-proxy-codex-supervisor.yml"),"utf8");
+  const prompt=readFileSync(resolve(process.cwd(),"../../.github/codex/operator-proxy-supervisor.md"),"utf8");
+  assert.match(workflow,/BASE_SHA: \$\{\{ github\.event\.pull_request\.base\.sha \}\}/);
+  assert.match(workflow,/HEAD_SHA: \$\{\{ github\.event\.pull_request\.head\.sha \}\}/);
+  assert.match(workflow,/git merge-base \"\$BASE_SHA\" \"\$HEAD_SHA\"/);
+  assert.match(workflow,/operator-proxy-review-context\.txt/);
+  assert.match(prompt,/git diff --name-status BASE_SHA\.\.\.HEAD_SHA/);
+  assert.match(prompt,/complete `git diff BASE_SHA\.\.\.HEAD_SHA`/);
+  assert.doesNotMatch(prompt,/Compare the checked-out HEAD with its first parent/);
 });
