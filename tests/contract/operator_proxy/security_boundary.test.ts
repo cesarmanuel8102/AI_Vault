@@ -10,6 +10,8 @@ import {RequestCoordinator} from "../../../scripts/operator_proxy/request_coordi
 
 const base="a".repeat(40),head="b".repeat(40);
 const spec:ProxySpec={schema_version:1,authorization_id:"CESAR-BRAIN-101-OPERATOR-PROXY-20260722-01",repository:"cesarmanuel8102/AI_Vault",roadmap_id:"BRAIN-101",roadmap_version:"1.0.0",roadmap_item_id:"R1.1",expected_base_sha:base,executor:"codex_control_plane",risk:"LOW",allowed_paths:["docs/x.md"],forbidden_paths:["trading/"],acceptance:["pass"],test_commands:["git diff --check"],deployment_allowed:false,front_id:"BRAIN-101-R1-SECURITY-BOUNDARY-01",deployment_mode:"NO_DEPLOY"};
+const installSpec:ProxySpec={...spec,deployment_mode:"INSTALL_ONLY",install_target:"agent_loop_worker"},artifact="c".repeat(64),config="d".repeat(64);
+const installReceipt=()=>({schema_version:2,kind:"install",sha:base,repository:spec.repository,front_id:spec.front_id,roadmap_item_id:spec.roadmap_item_id,install_target:"agent_loop_worker",installer_profile:"agent_loop_v157_transaction",artifact_path:"scripts/agent_loop/local_worker/agent_worker.py",artifact_sha256:artifact,source_sha256:artifact,installed_sha256:artifact,config_sha256_before:config,config_sha256_after:config,task_state:"Disabled",transaction_marker:"V157_DEPLOY_RECOVERY_CONTRACT_PASS",status:"PASS"});
 const lifecycle:LifecycleRecord={schema_version:1,front_id:spec.front_id!,roadmap_item_id:spec.roadmap_item_id,state:"REVIEWING",issue:63,pr:63,base_sha:base,head_sha:head,repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:[],updated_utc:new Date().toISOString()};
 const expected=["issue_create","issue_modify","label_modify","comment_publish","branch_create","builder_execute","commit_create","push","pr_create","workflow_dispatch","reviewer_execute","decision_persist","findings_publish","repair_request","merge","installation_request","installation_receipt","pilot_request","pilot_receipt","closeout_create","next_item_activate"];
 
@@ -59,6 +61,6 @@ test("GitHub mutation families invoke the central guard immediately before mutat
 
 test("coordination requests and receipts remain resumable across pause",()=>{
   const root=mkdtempSync(join(tmpdir(),"effect-coordination-"));let paused=true;const coordinator=new RequestCoordinator(root,()=>{if(paused)throw new Error("paused");});
-  assert.throws(()=>coordinator.install(base),/paused/);assert.equal(existsSync(join(root,"requests",`install-${base}.json`)),false);
-  paused=false;assert.equal(coordinator.install(base),"LOCAL_PRIVILEGE_REQUIRED");paused=true;writeFileSync(join(root,"receipts",`install-${base}.json`),JSON.stringify({schema_version:1,kind:"install",sha:base,status:"PASS"}));assert.throws(()=>coordinator.install(base),/paused/);paused=false;assert.equal(coordinator.install(base),"PASS");
+  const name=`install-${spec.front_id}-${base}.json`;assert.throws(()=>coordinator.install(installSpec,base,artifact),/paused/);assert.equal(existsSync(join(root,"requests",name)),false);
+  paused=false;assert.equal(coordinator.install(installSpec,base,artifact),"LOCAL_PRIVILEGE_REQUIRED");paused=true;writeFileSync(join(root,"receipts",name),JSON.stringify(installReceipt()));assert.throws(()=>coordinator.install(installSpec,base,artifact),/paused/);paused=false;assert.equal(coordinator.install(installSpec,base,artifact),"PASS");
 });

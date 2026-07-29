@@ -70,6 +70,7 @@
         "acceptance": ["Use immutable internal trusted commands for roadmap-doc and test-only profiles", "Preserve legacy worker configuration compatibility without accepting configured non-pilot commands", "Keep live trading, real money, canonical local sync, and auto-merge disabled"],
         "test_commands": ["python tests/contract/test_agent_loop_worker_r1_2_profiles.py", "git diff --check"],
         "deployment_mode": "INSTALL_ONLY",
+        "install_target": "agent_loop_worker",
         "closeout": {
           "front_id": "BRAIN-101-R1-2-RUNTIME-PROFILES-CLOSEOUT-01",
           "objective": "Record R1.2 runtime evidence, close R1.2, and authorize one isolated Agent Loop OpenCode Kimi E2E item",

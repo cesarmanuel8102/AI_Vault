@@ -15,6 +15,8 @@ export function validateSpec(spec:ProxySpec,requireAutomation=false):ProxySpec {
   if(spec.dependencies){if(!Array.isArray(spec.dependencies)||!spec.dependencies.every(x=>/^R\d+(?:\.\d+)?$/.test(x))||new Set(spec.dependencies).size!==spec.dependencies.length)throw new Error("operator proxy dependencies invalid");}
   if([...spec.allowed_paths,...spec.forbidden_paths].some(invalidPath))throw new Error("operator proxy path invalid");
   if(requireAutomation&&(!spec.front_id||!spec.work_branch||!spec.objective||!spec.deployment_mode))throw new Error("operator proxy automation metadata missing");
+  const installs=spec.deployment_mode==="INSTALL_ONLY"||spec.deployment_mode==="INSTALL_AND_RUNTIME_PILOT";
+  if(installs!==!!spec.install_target||spec.install_target&&spec.install_target!=="agent_loop_worker")throw new Error("operator proxy install target invalid");
   if(spec.front_id&&!/^[A-Z0-9][A-Z0-9._-]{5,127}$/.test(spec.front_id))throw new Error("operator proxy front id invalid");
   if(spec.work_branch&&!validWorkBranch(spec))throw new Error("operator proxy work branch invalid");
   if(spec.closeout){
