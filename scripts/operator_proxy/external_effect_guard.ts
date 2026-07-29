@@ -46,7 +46,9 @@ export class ExternalEffectBoundary {
       throw new Error("external effect denied by lifecycle state");
     }
     if(state.state==="ESCALATED")throw new Error("external effect denied by lifecycle state");
-    const expectedBase=POST_MERGE.has(state.state)&&state.head_sha?state.head_sha:spec.expected_base_sha;
+    const persistedMerge=POST_MERGE.has(state.state)&&!!state.head_sha&&state.completed_effects.includes(`merge:${state.head_sha}`);
+    if(persistedMerge&&state.base_sha!==spec.expected_base_sha)throw new Error("external effect post-merge binding changed");
+    const expectedBase=POST_MERGE.has(state.state)&&state.head_sha&&!persistedMerge?state.head_sha:spec.expected_base_sha;
     if(this.bus.branchHead("codex/own-capital-sustainable-return")!==expectedBase)throw new Error("external effect base changed");
     const issue=context.issue??state.issue;if(issue&&this.bus.issuePaused(issue))throw new Error("external effect paused by GitHub label");
     const pr=context.pr??state.pr;const expectedHead=context.expected_head??(!POST_MERGE.has(state.state)?state.head_sha:undefined);
