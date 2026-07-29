@@ -42,6 +42,8 @@ const criticalConceptPatterns = [
 
 export function classify(spec:ProxySpec):Risk {
   if(spec.allowed_paths.some(path=>criticalPathPatterns.some(pattern=>pattern.test(path))))return "CRITICAL";
-  const acceptance=spec.acceptance.join(" ");
+  // Safety invariants describe prohibited effects; they must not be mistaken for requests to perform them.
+  const safetyInvariant=/^(?:(?:keep|preserve)\b.+\b(?:disabled|false|prohibited|denied)|.+\bremains?\s+(?:disabled|false|prohibited|denied))[.!]?$/i;
+  const acceptance=spec.acceptance.filter(item=>!safetyInvariant.test(item.trim())).join(" ");
   return criticalConceptPatterns.some(pattern=>pattern.test(acceptance))?"CRITICAL":spec.risk;
 }

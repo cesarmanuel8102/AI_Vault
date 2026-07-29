@@ -16,6 +16,7 @@ import type {ExternalEffectBoundary} from "./external_effect_guard.js";
 import {normalizeReviewerOutput} from "./review_contract.js";
 import {safeJson} from "./redaction.js";
 import {AgentLoopBuilderAdapter} from "./agent_loop_builder_adapter.js";
+import {classify} from "./risk_classifier.js";
 
 export interface LocalCoordinator {
   install(spec:ProxySpec,merge:string,artifactSha256:string):"PASS"|"LOCAL_PRIVILEGE_REQUIRED";
@@ -53,6 +54,19 @@ export class ProductionEffects implements AutonomousEffects {
     try {
       const nextHead=this.builder.synchronizeBlockedCiBase(spec,state);this.boundary.bindBlockedCiRecoveryHead(nextHead);if(snapshot.body===oldBody)this.bus.replaceIssueBodyExact(state.issue!,oldBody,nextBody,nextHead);
       const updated=store.recoverBlockedCiBase(state,spec.expected_base_sha,nextHead);this.bindLifecycle(spec,updated);return updated;
+    } finally {this.boundary.endBlockedCiRecovery();}
+  }
+  reconcileNegatedRiskEscalation(spec:ProxySpec,state:import("./types.js").LifecycleRecord,store:LifecycleStore){
+    const decision=state.decision_id?this.ledger.load(state.decision_id):undefined;
+    const exact=decision&&state.state==="ESCALATED"&&state.last_error==="OWNER_AUTHORITY_REQUIRED"&&decision.authorization_id===spec.authorization_id&&decision.repository===spec.repository&&decision.issue===state.issue&&decision.pr===state.pr&&decision.base_sha===state.base_sha&&decision.head_sha===state.head_sha&&decision.roadmap_id===spec.roadmap_id&&decision.roadmap_item_id===spec.roadmap_item_id&&decision.risk==="CRITICAL"&&decision.deterministic_gate==="PASS"&&decision.codex_review==="PASS"&&("review_findings_count" in decision&&decision.review_findings_count===0&&decision.review_consistent===true)&&decision.policy_decision==="ESCALATE_TO_OWNER"&&decision.allowed_action==="NONE"&&classify(spec)!=="CRITICAL"&&classify(spec)!=="HIGH"&&state.base_sha!==spec.expected_base_sha&&this.bus.isAncestor(state.base_sha,spec.expected_base_sha);
+    if(!exact)throw new Error("negated risk escalation identity invalid");
+    const snapshot=this.bus.issueSnapshot(state.issue!);const oldSpec={...spec,expected_base_sha:state.base_sha},oldBody=`${issueBody(oldSpec).trim()}\n\nOPERATOR_PROXY_PR: ${state.pr}\n`,nextBody=`${issueBody(spec).trim()}\n\nOPERATOR_PROXY_PR: ${state.pr}\n`,parsed=parseIssue(snapshot.body);
+    if(snapshot.state!=="OPEN"||snapshot.labels.length!==1||snapshot.labels[0]!=="operator:building"||parsed.pr!==state.pr||JSON.stringify(parsed.spec)!==JSON.stringify(snapshot.body===oldBody?oldSpec:spec)||snapshot.body!==oldBody&&snapshot.body!==nextBody)throw new Error("negated risk escalation Issue identity invalid");
+    this.boundary.beginNegatedRiskRecovery(spec,state);
+    try {
+      const branchState={...state,state:"BLOCKED" as const,last_error:"CI_FAILED",reviewer_session:undefined,decision_id:undefined};
+      const nextHead=this.builder.synchronizeBlockedCiBase(spec,branchState);this.boundary.bindBlockedCiRecoveryHead(nextHead);if(snapshot.body===oldBody)this.bus.replaceIssueBodyExact(state.issue!,oldBody,nextBody,nextHead);
+      const updated=store.recoverNegatedRiskEscalation(state,spec.expected_base_sha,nextHead);this.bindLifecycle(spec,updated);return updated;
     } finally {this.boundary.endBlockedCiRecovery();}
   }
   reconcileBlockedCiChecks(spec:ProxySpec,state:import("./types.js").LifecycleRecord,store:LifecycleStore){
