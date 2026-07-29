@@ -40,8 +40,26 @@ const criticalConceptPatterns = [
   /\bFAISS\s+(?:writ(?:e|es|ing|ten)|wrote|rebuild(?:s|ing)?|rebuilt|mutat(?:e|es|ed|ing|ions?))\b/i,
 ];
 
+const safetySubjects=new Set(["human final authority","live trading","real money","canonical local sync","auto-merge","deployment"]);
+
+function isSafetyList(value:string):boolean {
+  const entries=value.replace(/[.!]$/," ").trim().split(/\s*,\s*(?:and\s+)?|\s+and\s+/i).map(item=>item.trim().toLowerCase()).filter(Boolean);
+  return entries.length>0&&entries.every(item=>safetySubjects.has(item));
+}
+
+function isPureSafetyInvariant(value:string):boolean {
+  const text=value.trim();
+  const directed=/^(?:keep|preserve)\s+(.+?)(?:\s+as)?\s+(?:disabled|false|prohibited|denied)[.!]?$/i.exec(text);
+  if(directed)return isSafetyList(directed[1]);
+  const stated=/^(.+?)\s+remains?\s+(?:disabled|false|prohibited|denied)[.!]?$/i.exec(text);
+  if(stated)return isSafetyList(stated[1]);
+  const authority=/^preserve\s+human\s+final\s+authority\s+and\s+disabled\s+(.+?)[.!]?$/i.exec(text);
+  return !!authority&&isSafetyList(authority[1]);
+}
+
 export function classify(spec:ProxySpec):Risk {
   if(spec.allowed_paths.some(path=>criticalPathPatterns.some(pattern=>pattern.test(path))))return "CRITICAL";
-  const acceptance=spec.acceptance.join(" ");
+  // Safety invariants describe prohibited effects; they must not be mistaken for requests to perform them.
+  const acceptance=spec.acceptance.filter(item=>!isPureSafetyInvariant(item)).join(" ");
   return criticalConceptPatterns.some(pattern=>pattern.test(acceptance))?"CRITICAL":spec.risk;
 }

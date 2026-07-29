@@ -11,7 +11,7 @@ export interface EffectContext {issue?:number;pr?:number;expected_head?:string}
 export type EffectAssertion=(effect:ExternalEffect,context?:EffectContext)=>void;
 
 interface BlockedCiRecovery {
-  frontId:string;issue:number;pr:number;oldBase:string;newBase:string;oldHead:string;nextHead?:string;
+  frontId:string;issue:number;pr:number;oldBase:string;newBase:string;oldHead:string;priorState:"BLOCKED"|"ESCALATED";nextHead?:string;
 }
 
 const POST_MERGE=new Set(["MERGED","INSTALL_PENDING","INSTALLING","RUNTIME_PILOT_PENDING","RUNTIME_PILOT_RUNNING","RUNTIME_VERIFIED","CLOSEOUT_PENDING","CLOSEOUT_MERGED","TERMINAL_COMPLETED"]);
@@ -24,7 +24,12 @@ export class ExternalEffectBoundary {
   beginBlockedCiRecovery(spec:ProxySpec,state:LifecycleRecord){
     const exact=state.state==="BLOCKED"&&state.last_error==="CI_FAILED"&&Number.isInteger(state.issue)&&state.issue!>0&&Number.isInteger(state.pr)&&state.pr!>0&&state.repair_cycles===0&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&/^[0-9a-f]{40}$/.test(state.base_sha)&&/^[0-9a-f]{40}$/.test(state.head_sha??"")&&state.base_sha!==spec.expected_base_sha&&validBlockedCiEffectChain(state);
     if(!exact||state.front_id!==spec.front_id||state.roadmap_item_id!==spec.roadmap_item_id)throw new Error("blocked CI recovery boundary denied");
-    this.bind(spec,state);this.blockedCiRecovery={frontId:state.front_id,issue:state.issue!,pr:state.pr!,oldBase:state.base_sha,newBase:spec.expected_base_sha,oldHead:state.head_sha!};
+    this.bind(spec,state);this.blockedCiRecovery={frontId:state.front_id,issue:state.issue!,pr:state.pr!,oldBase:state.base_sha,newBase:spec.expected_base_sha,oldHead:state.head_sha!,priorState:"BLOCKED"};
+  }
+  beginNegatedRiskRecovery(spec:ProxySpec,state:LifecycleRecord){
+    const exact=state.state==="ESCALATED"&&state.last_error==="OWNER_AUTHORITY_REQUIRED"&&Number.isInteger(state.issue)&&state.issue!>0&&Number.isInteger(state.pr)&&state.pr!>0&&state.repair_cycles===0&&!!state.builder_session&&!!state.reviewer_session&&!!state.decision_id&&/^[0-9a-f]{40}$/.test(state.base_sha)&&/^[0-9a-f]{40}$/.test(state.head_sha??"")&&state.base_sha!==spec.expected_base_sha&&validBlockedCiEffectChain(state);
+    if(!exact||state.front_id!==spec.front_id||state.roadmap_item_id!==spec.roadmap_item_id)throw new Error("negated risk recovery boundary denied");
+    this.bind(spec,state);this.blockedCiRecovery={frontId:state.front_id,issue:state.issue!,pr:state.pr!,oldBase:state.base_sha,newBase:spec.expected_base_sha,oldHead:state.head_sha!,priorState:"ESCALATED"};
   }
   bindBlockedCiRecoveryHead(nextHead:string){if(!this.blockedCiRecovery||!/^[0-9a-f]{40}$/.test(nextHead)||nextHead===this.blockedCiRecovery.oldHead)throw new Error("blocked CI recovery head denied");this.blockedCiRecovery.nextHead=nextHead;}
   endBlockedCiRecovery(){this.blockedCiRecovery=undefined;}
@@ -35,9 +40,9 @@ export class ExternalEffectBoundary {
     if(!this.leaseOwned())throw new Error("external effect lease lost");
     if(existsSync(join(this.root,"state","PAUSE")))throw new Error("external effect paused locally");
     if(spec.authorization_id!==AUTH||spec.repository!==REPO||state.front_id!==spec.front_id||state.roadmap_item_id!==spec.roadmap_item_id)throw new Error("external effect authorization invalid");
-    if(state.state==="BLOCKED"){
+    if(state.state==="BLOCKED"||state.state==="ESCALATED"){
       const recovery=this.blockedCiRecovery;
-      if(!recovery||recovery.frontId!==state.front_id||recovery.issue!==state.issue||recovery.pr!==state.pr||recovery.oldBase!==state.base_sha||recovery.newBase!==spec.expected_base_sha||recovery.oldHead!==state.head_sha)throw new Error("external effect denied by lifecycle state");
+      if(!recovery||recovery.priorState!==state.state||recovery.frontId!==state.front_id||recovery.issue!==state.issue||recovery.pr!==state.pr||recovery.oldBase!==state.base_sha||recovery.newBase!==spec.expected_base_sha||recovery.oldHead!==state.head_sha)throw new Error("external effect denied by lifecycle state");
       if(this.bus.branchHead("codex/own-capital-sustainable-return")!==recovery.newBase)throw new Error("external effect base changed");
       if((context.issue??state.issue)!==recovery.issue||(context.pr??state.pr)!==recovery.pr||this.bus.issuePaused(recovery.issue))throw new Error("blocked CI recovery identity changed");
       const current=this.bus.prIdentity(recovery.pr);
@@ -45,7 +50,6 @@ export class ExternalEffectBoundary {
       if(effect==="issue_modify"&&recovery.nextHead&&context.expected_head===recovery.nextHead&&current.headRefOid===recovery.nextHead)return;
       throw new Error("external effect denied by lifecycle state");
     }
-    if(state.state==="ESCALATED")throw new Error("external effect denied by lifecycle state");
     const persistedMerge=POST_MERGE.has(state.state)&&!!state.head_sha&&state.completed_effects.includes(`merge:${state.head_sha}`);
     if(persistedMerge&&state.base_sha!==spec.expected_base_sha)throw new Error("external effect post-merge binding changed");
     const expectedBase=POST_MERGE.has(state.state)&&state.head_sha&&!persistedMerge?state.head_sha:spec.expected_base_sha;
