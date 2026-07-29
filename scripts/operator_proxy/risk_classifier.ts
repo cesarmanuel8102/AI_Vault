@@ -40,16 +40,21 @@ const criticalConceptPatterns = [
   /\bFAISS\s+(?:writ(?:e|es|ing|ten)|wrote|rebuild(?:s|ing)?|rebuilt|mutat(?:e|es|ed|ing|ions?))\b/i,
 ];
 
+const safetySubjects=new Set(["human final authority","live trading","real money","canonical local sync","auto-merge","deployment"]);
+
+function isSafetyList(value:string):boolean {
+  const entries=value.replace(/[.!]$/," ").trim().split(/\s*,\s*(?:and\s+)?|\s+and\s+/i).map(item=>item.trim().toLowerCase()).filter(Boolean);
+  return entries.length>0&&entries.every(item=>safetySubjects.has(item));
+}
+
 function isPureSafetyInvariant(value:string):boolean {
   const text=value.trim();
-  let subject:string|undefined;
-  const directed=/^(?:keep|preserve)\s+(.+?)\s+(?:disabled|false|prohibited|denied)[.!]?$/i.exec(text);
+  const directed=/^(?:keep|preserve)\s+(.+?)(?:\s+as)?\s+(?:disabled|false|prohibited|denied)[.!]?$/i.exec(text);
+  if(directed)return isSafetyList(directed[1]);
   const stated=/^(.+?)\s+remains?\s+(?:disabled|false|prohibited|denied)[.!]?$/i.exec(text);
-  subject=(directed??stated)?.[1];
-  if(!subject||/[;:]|\b(?:but|then|while|except|unless|however|although)\b/i.test(subject))return false;
-  // An affirmative verb/state inside the subject makes this a mixed action, not a safety invariant.
-  if(/\b(?:enable[sd]?|enabling|active|activate[sd]?|activating|allow(?:ed|ing)?|permit(?:ted|ting)?|execute[sd]?|executing|perform(?:ed|ing)?|deploy(?:ed|ing)?|change[sd]?|changing|update[sd]?|updating|modif(?:y|ies|ied|ying)|rotat(?:e|es|ed|ing)|increase[sd]?|increasing|writ(?:e|es|ing|ten)|wrote|sync(?:ed|ing)|access(?:ed|ing)|mutat(?:e|es|ed|ing)|rebuild(?:s|ing)?|rebuilt|on)\b/i.test(subject))return false;
-  return criticalConceptPatterns.some(pattern=>pattern.test(subject));
+  if(stated)return isSafetyList(stated[1]);
+  const authority=/^preserve\s+human\s+final\s+authority\s+and\s+disabled\s+(.+?)[.!]?$/i.exec(text);
+  return !!authority&&isSafetyList(authority[1]);
 }
 
 export function classify(spec:ProxySpec):Risk {
