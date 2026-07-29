@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "5ec0b9229af205895f7c326857dc7b253348e6f563f7ec497d216d26a57cc58d",
+  "roadmap_sha256": "2966c7da0fcdceb9aeb4775f7064417003c3b2481e29fb7f47cdc0c42ffb751a",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -57,12 +57,12 @@
     },
     "R1.2": {
       "title": "Add roadmap-doc and test-only profiles",
-      "status": "PAUSED_PENDING_AUTONOMOUS_CONTROL_PLANE",
+      "status": "AUTHORIZED_ACTIVE",
       "dependencies": ["R1.1"]
     },
     "R1.0": {
       "title": "Certify autonomous roadmap control-plane flow",
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "dependencies": ["R1.1"],
       "automation": {
         "front_id": "BRAIN-101-R1-CONTROL-PLANE-E2E-01",
@@ -100,5 +100,18 @@
     "final_state": "loop:ready-human-audit",
     "operator_proxy_merge": "7134393351810e64fd1a418dfdd986b53531ff46"
   },
-  "next_gate": "Certify the autonomous roadmap control-plane E2E before resuming R1.2"
+  "r1_0_autonomous_flow_closeout": {
+    "evidence_path": "docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_CLOSEOUT.json",
+    "issue": 62,
+    "pull_request": 68,
+    "base_sha": "71efa0481fe6bc7f2d53a52fc93a573008b8b82e",
+    "head_sha": "f3c610971a261341915bab0baabbf4df7d292d2c",
+    "payload_commit": "2e00f6318b10fe7e05580b207493b6662c6255a6",
+    "merge_commit": "9fde35227982a89c1af6b31051ff44f131128430",
+    "merged_at_utc": "2026-07-29T14:52:29Z",
+    "phase1_ci_run": 30461856452,
+    "nontrading_smoke_run": 30461856531,
+    "final_state": "R1_0_CLOSED_RUNTIME_VERIFIED_R1_2_AUTHORIZED_ACTIVE"
+  },
+  "next_gate": "Execute R1.2 roadmap-doc and test-only profiles through Operator Proxy"
 }
