@@ -3,6 +3,7 @@ import {appendFileSync,existsSync,mkdirSync,readFileSync,readdirSync,renameSync,
 import {basename,join} from "node:path";
 import type {Decision,LegacyDecisionV1,NormalizedDecision,TransitionalKeyedDecisionV1} from "./types.js";
 import {redactSensitiveData,safeJson} from "./redaction.js";
+import {lock} from "./single_instance_lock.js";
 
 const sha40=/^[0-9a-f]{40}$/,sha64=/^[0-9a-f]{64}$/,uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const legacyKeys=["schema_version","decision_id","authorization_id","repository","issue","pr","base_sha","head_sha","roadmap_id","roadmap_item_id","risk","deterministic_gate","codex_review","policy_decision","allowed_action","policy_sha256","evidence_sha256","created_utc"].sort();
@@ -32,7 +33,7 @@ export class Ledger {
   constructor(readonly root:string){mkdirSync(root,{recursive:true});}
   private decisionPath(key:string){if(!sha64.test(key))throw new Error("decision key invalid");return join(this.root,`decision-${key}.json`);}
   private claimPath(key:string){return join(this.root,`claim-${key}`);}
-  private withClaim<T>(key:string,fn:()=>T):T{const claim=this.claimPath(key);let acquired=false;for(let attempt=0;attempt<200;attempt++){try{mkdirSync(claim);acquired=true;break;}catch{Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,10);}}if(!acquired)throw new Error("decision claim timeout");try{return fn();}finally{rmSync(claim,{recursive:true,force:true});}}
+  private withClaim<T>(key:string,fn:()=>T):T{let release:ReturnType<typeof lock>|undefined;for(let attempt=0;attempt<200;attempt++){try{release=lock(this.claimPath(key));break;}catch(error){if(!(error instanceof Error)||error.message!=="operator proxy lock occupied")throw error;Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,10);}}if(!release)throw new Error("decision claim timeout");try{return fn();}finally{release();}}
   private ensureSidecar(filename:string,bytes:Buffer,legacy:LegacyDecisionV1,key:string,create:boolean){
     const sourceSha=hash(bytes),dir=join(this.root,"legacy-index-v2"),path=join(dir,`${sourceSha}.json`),temp=`${path}.tmp`;
     const identityHash=logicalIdentity({...legacy,decision_key:key,legacy_source_sha256:sourceSha});
