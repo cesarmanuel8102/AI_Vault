@@ -40,10 +40,21 @@ const criticalConceptPatterns = [
   /\bFAISS\s+(?:writ(?:e|es|ing|ten)|wrote|rebuild(?:s|ing)?|rebuilt|mutat(?:e|es|ed|ing|ions?))\b/i,
 ];
 
+function isPureSafetyInvariant(value:string):boolean {
+  const text=value.trim();
+  let subject:string|undefined;
+  const directed=/^(?:keep|preserve)\s+(.+?)\s+(?:disabled|false|prohibited|denied)[.!]?$/i.exec(text);
+  const stated=/^(.+?)\s+remains?\s+(?:disabled|false|prohibited|denied)[.!]?$/i.exec(text);
+  subject=(directed??stated)?.[1];
+  if(!subject||/[;:]|\b(?:but|then|while|except|unless|however|although)\b/i.test(subject))return false;
+  // An affirmative verb/state inside the subject makes this a mixed action, not a safety invariant.
+  if(/\b(?:enable[sd]?|enabling|active|activate[sd]?|activating|allow(?:ed|ing)?|permit(?:ted|ting)?|execute[sd]?|executing|perform(?:ed|ing)?|deploy(?:ed|ing)?|change[sd]?|changing|update[sd]?|updating|modif(?:y|ies|ied|ying)|rotat(?:e|es|ed|ing)|increase[sd]?|increasing|writ(?:e|es|ing|ten)|wrote|sync(?:ed|ing)|access(?:ed|ing)|mutat(?:e|es|ed|ing)|rebuild(?:s|ing)?|rebuilt|on)\b/i.test(subject))return false;
+  return criticalConceptPatterns.some(pattern=>pattern.test(subject));
+}
+
 export function classify(spec:ProxySpec):Risk {
   if(spec.allowed_paths.some(path=>criticalPathPatterns.some(pattern=>pattern.test(path))))return "CRITICAL";
   // Safety invariants describe prohibited effects; they must not be mistaken for requests to perform them.
-  const safetyInvariant=/^(?:(?:keep|preserve)\b.+\b(?:disabled|false|prohibited|denied)|.+\bremains?\s+(?:disabled|false|prohibited|denied))[.!]?$/i;
-  const acceptance=spec.acceptance.filter(item=>!safetyInvariant.test(item.trim())).join(" ");
+  const acceptance=spec.acceptance.filter(item=>!isPureSafetyInvariant(item)).join(" ");
   return criticalConceptPatterns.some(pattern=>pattern.test(acceptance))?"CRITICAL":spec.risk;
 }
