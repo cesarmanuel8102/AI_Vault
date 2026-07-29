@@ -1,5 +1,5 @@
 import test from "node:test";import assert from "node:assert/strict";
-import {queryOptionalBranchRef} from "../../../scripts/operator_proxy/github_bus.js";
+import {GitHubBus,queryOptionalBranchRef} from "../../../scripts/operator_proxy/github_bus.js";
 
 const repo="cesarmanuel8102/AI_Vault",branch="control-plane/verified-branch",sha="a".repeat(40);
 const headers=(status:number,body:unknown,extra="")=>`HTTP/2.0 ${status} ${status===200?"OK":"Error"}\r\nContent-Type: application/json; charset=utf-8\r\nX-GitHub-Request-Id: TEST:123\r\n${extra}\r\n${typeof body==="string"?body:JSON.stringify(body)}`;
@@ -24,3 +24,4 @@ test("HTTP 404 printed by a successful process fails closed",()=>assert.throws((
 test("nonzero process with empty stderr fails closed",()=>assert.throws(()=>queryOptionalBranchRef("gh",repo,branch,run({status:1,signal:null,stdout:"",stderr:""}))));
 test("HTTP 404 carrying a SHA fails closed",()=>assert.throws(()=>queryOptionalBranchRef("gh",repo,branch,run(result(1,404,{object:{sha}})))));
 for(const invalid of ["","lower space","control-plane/../x","control-plane//x","control-plane/x.lock","control-plane/x\narg","control-plane/x?arg"])test(`unsafe branch is rejected: ${JSON.stringify(invalid)}`,()=>assert.throws(()=>queryOptionalBranchRef("gh",repo,invalid,()=>{throw new Error("runner must not execute");})));
+test("front lookup matches only the canonical top-level FRONT_ID line",()=>{const bus=new GitHubBus("gh");(bus as any).json=()=>[{number:1,body:'FRONT_ID: PARENT-FRONT\n{"front_id": "CHILD-CLOSEOUT"}'},{number:2,body:'FRONT_ID: CHILD-CLOSEOUT\n{}'},{number:3,body:'prefix FRONT_ID: CHILD-CLOSEOUT'}];assert.deepEqual(bus.findOpenFront("CHILD-CLOSEOUT"),[2]);assert.deepEqual(bus.findOpenFront("PARENT-FRONT"),[1]);});
