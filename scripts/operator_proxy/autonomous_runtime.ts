@@ -14,7 +14,7 @@ const POST_MERGE_STATES=new Set(["MERGED","INSTALL_PENDING","INSTALLING","RUNTIM
 
 export function validatePostMergeBaseAdvance(spec:ProxySpec,state:LifecycleRecord,isAncestor:(oldSha:string,newSha:string)=>boolean){
   if(!POST_MERGE_STATES.has(state.state))return false;
-  if(!state.head_sha||!state.completed_effects.includes(`merge:${state.head_sha}`)||!isAncestor(state.head_sha,spec.expected_base_sha))throw new Error("post-merge base identity invalid");
+  if(!state.head_sha||!state.completed_effects.includes(`merge:${state.head_sha}`)||state.head_sha!==spec.expected_base_sha&&!isAncestor(state.head_sha,spec.expected_base_sha))throw new Error("post-merge base identity invalid");
   return true;
 }
 
