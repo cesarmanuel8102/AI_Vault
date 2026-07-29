@@ -63,6 +63,17 @@ test("negated-risk escalation recovery permits only exact branch sync and Issue 
   boundary.endBlockedCiRecovery();assert.throws(()=>boundary.assert("issue_modify",{issue:63,pr:63,expected_head:nextHead}),/lifecycle state/);
 });
 
+test("privileged install resume permits only the exact receipt under the persisted escalation",()=>{
+  const root=mkdtempSync(join(tmpdir(),"effect-install-resume-"));mkdirSync(join(root,"state"));const merge="c".repeat(40);let currentBase=base,paused=false;
+  const escalated:LifecycleRecord={...lifecycle,state:"ESCALATED",last_error:"LOCAL_PRIVILEGE_REQUIRED",deployment_mode:"INSTALL_ONLY",head_sha:merge,completed_effects:[`merge:${merge}`]};
+  const bus:any={branchHead:()=>currentBase,issuePaused:()=>paused,prIdentity:()=>({headRefOid:head})};const boundary=new ExternalEffectBoundary(root,bus,()=>true);
+  assert.throws(()=>boundary.assert("installation_receipt"),/context missing/);boundary.beginPrivilegedInstallResume(installSpec,escalated);boundary.assert("installation_receipt");
+  for(const effect of EXTERNAL_EFFECT_REGISTRY.filter(x=>x!=="installation_receipt"))assert.throws(()=>boundary.assert(effect),/lifecycle state/);
+  paused=true;assert.throws(()=>boundary.assert("installation_receipt"),/paused by GitHub/);paused=false;currentBase="d".repeat(40);assert.throws(()=>boundary.assert("installation_receipt"),/base changed/);currentBase=base;
+  boundary.endPrivilegedInstallResume();assert.throws(()=>boundary.assert("installation_receipt"),/lifecycle state/);
+  for(const mutation of [{last_error:"OTHER"},{head_sha:undefined},{completed_effects:[]},{deployment_mode:"NO_DEPLOY"}])assert.throws(()=>boundary.beginPrivilegedInstallResume(installSpec,{...escalated,...mutation} as LifecycleRecord),/boundary denied/);
+});
+
 test("GitHub mutation families invoke the central guard immediately before mutation",()=>{
   let mutations=0;const bus=new GitHubBus("gh");bus.setMutationGuard(()=>{throw new Error("external effect paused by GitHub label");});(bus as any).call=()=>{mutations++;return "https://github.test/1";};(bus as any).json=(args:string[])=>args[0]==="issue"?{body:"governed"}:args[0]==="run"?[]:{baseRefName:"codex/own-capital-sustainable-return",baseRefOid:base,headRefOid:head,isDraft:true,state:"OPEN",mergeable:"MERGEABLE"};
   const actions=[()=>bus.createGovernedIssue("t","b"),()=>bus.createDraftPr("control-plane/x","codex/own-capital-sustainable-return","t","b"),()=>bus.bindPrToIssue(63,63),()=>bus.comment(63,"x"),()=>bus.prComment(63,"x"),()=>bus.label("issue",63,"operator:building"),()=>bus.merge(63,head,base,"decision")];
