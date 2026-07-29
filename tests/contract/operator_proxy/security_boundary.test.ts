@@ -30,6 +30,15 @@ test("lost lease, changed base or head, and blocked lifecycle fail closed",()=>{
   lease=false;assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:head}),/lease lost/);lease=true;currentBase="c".repeat(40);assert.throws(()=>boundary.assert("push",{issue:63}),/base changed/);currentBase=base;currentHead="d".repeat(40);assert.throws(()=>boundary.assert("merge",{issue:63,pr:63,expected_head:head}),/head changed/);currentHead=head;boundary.bind(spec,{...lifecycle,state:"BLOCKED"});assert.throws(()=>boundary.assert("comment_publish",{issue:63}),/lifecycle state/);
 });
 
+test("post-merge boundary distinguishes immediate merge effects from rebound closeout",()=>{
+  const root=mkdtempSync(join(tmpdir(),"effect-postmerge-"));mkdirSync(join(root,"state"));const merge="c".repeat(40),tip="d".repeat(40);let currentBase=merge;
+  const bus:any={branchHead:()=>currentBase,issuePaused:()=>false,prIdentity:()=>({headRefOid:head})};const boundary=new ExternalEffectBoundary(root,bus,()=>true);
+  boundary.bind(spec,lifecycle);boundary.bindPostMerge(merge);boundary.assert("comment_publish",{issue:63});
+  const reboundSpec={...spec,expected_base_sha:tip},rebound:LifecycleRecord={...lifecycle,state:"CLOSEOUT_PENDING",base_sha:tip,head_sha:merge,completed_effects:[`merge:${merge}`]};currentBase=tip;boundary.bind(reboundSpec,rebound);boundary.assert("closeout_create");
+  boundary.bind(reboundSpec,{...rebound,base_sha:"e".repeat(40)});assert.throws(()=>boundary.assert("closeout_create"),/post-merge binding changed/);
+  boundary.bind(reboundSpec,rebound);currentBase="e".repeat(40);assert.throws(()=>boundary.assert("closeout_create"),/base changed/);
+});
+
 test("blocked CI recovery permits only the exact push then Issue update",()=>{
   const root=mkdtempSync(join(tmpdir(),"effect-boundary-"));mkdirSync(join(root,"state"));const nextBase="c".repeat(40),nextHead="d".repeat(40);let currentBase=nextBase,currentHead=head,paused=false;
   const nextSpec={...spec,expected_base_sha:nextBase};const blocked:LifecycleRecord={...lifecycle,state:"BLOCKED",last_error:"CI_FAILED",base_sha:base,head_sha:head,builder_session:"builder-one",completed_effects:["issue:63",`build:${head}`]};
