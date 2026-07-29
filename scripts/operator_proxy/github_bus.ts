@@ -20,7 +20,7 @@ export class GitHubBus {
     if(!Number.isInteger(result?.total_count)||!Array.isArray(result?.check_runs)||result.total_count!==result.check_runs.length)throw new Error("commit check response incomplete");
     return result.check_runs;
   }
-  findOpenFront(front:string){const issues=this.json(["issue","list","--state","open","--limit","1000","--json","number,body"]);return issues.filter((x:any)=>String(x.body??"").split(/\r?\n/).some(line=>line.trim()===`FRONT_ID: ${front}`)||String(x.body??"").includes(`\"front_id\": \"${front}\"`)).map((x:any)=>Number(x.number));}
+  findOpenFront(front:string){const issues=this.json(["issue","list","--state","open","--limit","1000","--json","number,body"]);return issues.filter((x:any)=>String(x.body??"").split(/\r?\n/).some(line=>line.trim()===`FRONT_ID: ${front}`)).map((x:any)=>Number(x.number));}
   issueBody(issue:number){return String(this.json(["issue","view",String(issue),"--json","body"]).body??"");}
   replaceIssueBodyExact(issue:number,expected:string,replacement:string,expectedHead?:string){if(this.issueBody(issue)!==expected)throw new Error("governed Issue changed before base reconciliation");this.guard("issue_modify",{issue,expected_head:expectedHead});this.call(["issue","edit",String(issue),"--repo",this.repo,"--body",redactString(replacement)]);if(this.issueBody(issue)!==replacement)throw new Error("governed Issue base reconciliation readback failed");}
   issueSnapshot(issue:number){const value=this.json(["issue","view",String(issue),"--json","body,labels,state"]);return {state:String(value.state??""),body:String(value.body??""),labels:(value.labels??[]).map((x:any)=>String(x.name))};}
