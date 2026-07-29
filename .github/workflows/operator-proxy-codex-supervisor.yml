@@ -18,6 +18,16 @@ jobs:
           grep -q 'operator-proxy-merge.yml' scripts/operator_proxy/github_bus.ts
           grep -q 'GH_TOKEN:.*github.token' .github/workflows/operator-proxy-merge.yml
           ! grep -RniE '(--auto-merge|--squash|--rebase|--force-with-lease|push --force)' scripts/operator_proxy/*.ts
+      - name: Bind immutable PR review range
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          test "$(git merge-base "$BASE_SHA" "$HEAD_SHA")" = "$BASE_SHA"
+          printf 'BASE_SHA=%s\nHEAD_SHA=%s\n' "$BASE_SHA" "$HEAD_SHA" > operator-proxy-review-context.txt
       - name: Independent Codex read-only review
         id: codex
         uses: openai/codex-action@v1
