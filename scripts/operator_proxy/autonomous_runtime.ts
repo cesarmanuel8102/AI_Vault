@@ -32,12 +32,22 @@ export function resumePrivilegedInstall(bus:GitHubBus,boundary:ExternalEffectBou
   }finally{boundary.endPrivilegedInstallResume();}
 }
 
+export function reconcilePersistedRoadmapState(bus:GitHubBus,effects:ProductionEffects,store:LifecycleStore,spec:ProxySpec,persisted?:LifecycleRecord){
+  if(!persisted)return persisted;
+  if(persisted.state==="ESCALATED"&&persisted.last_error==="OWNER_AUTHORITY_REQUIRED"&&persisted.base_sha!==spec.expected_base_sha)return effects.reconcileNegatedRiskEscalation(spec,persisted,store);
+  if(persisted.state==="BLOCKED"&&persisted.last_error==="CI_FAILED")return persisted.base_sha!==spec.expected_base_sha?effects.reconcileBlockedCiBase(spec,persisted,store):effects.reconcileBlockedCiChecks(spec,persisted,store);
+  if(persisted.base_sha===spec.expected_base_sha)return persisted;
+  if(["DISCOVERED","ADMITTED"].includes(persisted.state))return store.rebindUnstartedBase(persisted,spec.expected_base_sha);
+  if(["CI_PENDING","REVIEWING"].includes(persisted.state))return effects.reconcileBlockedCiBase(spec,store.invalidatePostBuildBase(persisted),store);
+  if(persisted.state==="MERGING")return effects.reconcileBlockedCiBase(spec,effects.invalidateFailedMerge(spec,persisted,store),store);
+  if(validatePostMergeBaseAdvance(spec,persisted,((oldSha,newSha)=>bus.isAncestor(oldSha,newSha))))return store.rebindPostMergeBase(persisted,spec.expected_base_sha);
+  return effects.reconcilePreBuildBase(spec,persisted,store);
+}
+
 export function runAutonomousRoadmapTick(bus:GitHubBus,root:string,reviewerRepo:string,boundary:ExternalEffectBoundary){
   const sequenced=sequenceRoadmap(bus);const store=new LifecycleStore(join(root,"lifecycle"));const ledgerRoot=join(root,"decisions");const coordinator=new RequestCoordinator(join(root,"coordination"),boundary.assert.bind(boundary));
   const effects=new ProductionEffects(bus,new Ledger(ledgerRoot),reviewerRepo,root,boundary,coordinator);const flow=new AutonomousFlow(store,effects);let persisted=store.load(sequenced.spec.front_id!);
-  if(persisted?.state==="ESCALATED"&&persisted.last_error==="OWNER_AUTHORITY_REQUIRED"&&persisted.base_sha!==sequenced.spec.expected_base_sha)persisted=effects.reconcileNegatedRiskEscalation(sequenced.spec,persisted,store);
-  else if(persisted?.state==="BLOCKED"&&persisted.last_error==="CI_FAILED")persisted=persisted.base_sha!==sequenced.spec.expected_base_sha?effects.reconcileBlockedCiBase(sequenced.spec,persisted,store):effects.reconcileBlockedCiChecks(sequenced.spec,persisted,store);
-  else if(persisted&&persisted.base_sha!==sequenced.spec.expected_base_sha){if(["CI_PENDING","REVIEWING"].includes(persisted.state)){persisted=store.invalidatePostBuildBase(persisted);persisted=effects.reconcileBlockedCiBase(sequenced.spec,persisted,store);}else if(persisted.state==="MERGING"){persisted=effects.invalidateFailedMerge(sequenced.spec,persisted,store);persisted=effects.reconcileBlockedCiBase(sequenced.spec,persisted,store);}else if(validatePostMergeBaseAdvance(sequenced.spec,persisted,((oldSha,newSha)=>bus.isAncestor(oldSha,newSha))))persisted=store.rebindPostMergeBase(persisted,sequenced.spec.expected_base_sha);else persisted=effects.reconcilePreBuildBase(sequenced.spec,persisted,store);}
+  persisted=reconcilePersistedRoadmapState(bus,effects,store,sequenced.spec,persisted);
   if(persisted?.state==="ESCALATED"&&persisted.last_error==="LOCAL_PRIVILEGE_REQUIRED")persisted=resumePrivilegedInstall(bus,boundary,coordinator,flow,sequenced.spec,persisted);
   let state=flow.step(sequenced.spec);for(let i=0;i<24;i++){if(["CI_PENDING","BUILDING","RUNTIME_PILOT_RUNNING","CLOSEOUT_PENDING","BLOCKED","ESCALATED","TERMINAL_COMPLETED"].includes(state.state))break;state=flow.step(sequenced.spec);}
   return state;
