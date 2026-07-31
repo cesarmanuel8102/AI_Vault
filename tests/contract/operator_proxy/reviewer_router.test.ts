@@ -1,12 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {mkdtempSync} from "node:fs";
+import {mkdtempSync,readFileSync,writeFileSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import type {ReviewerBackend,ReviewerInput} from "../../../scripts/operator_proxy/reviewer_backend.js";
 import {ReviewerBackendError} from "../../../scripts/operator_proxy/reviewer_backend.js";
 import {REVIEWER_MODELS,requiredBuilderModel,reviewerRoute,verifiedAgentLoopCommitModel,verifiedBuilderModel} from "../../../scripts/operator_proxy/reviewer_config.js";
-import {ReviewerRouter} from "../../../scripts/operator_proxy/reviewer_router.js";
+import {ReviewerRouter,validateReviewerEnvelope} from "../../../scripts/operator_proxy/reviewer_router.js";
 
 const head="b".repeat(40),base="a".repeat(40);
 const input=(overrides:Partial<ReviewerInput>={}):ReviewerInput=>({repository:"cesarmanuel8102/AI_Vault",repositoryRoot:"C:\\repo",pr:99,baseSha:base,headSha:head,risk:"MEDIUM",changedFiles:["scripts/operator_proxy/operator_proxy.ts"],builderSession:"builder-1",...overrides});
@@ -63,4 +63,20 @@ test("verifier-only P0 is preserved for owner escalation",()=>{
 test("material reviewer disagreement invokes arbiter and never auto-approves",()=>{
   let calls=0;const factory=(model:string):ReviewerBackend=>model===REVIEWER_MODELS.nemotron?pass(model):calls++===0?pass(model):{model,review:(_value,session)=>({...pass(model).review(input(),session),output:{verdict:"CHANGES_REQUESTED",head_sha:head,summary:"finding",findings:[{severity:"P2",title:"gap",evidence:"line",required_correction:"fix"}]}})};
   const result=new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory).review(input());assert.equal(result.output.verdict,"BLOCKED");assert.equal(result.arbiter?.model,REVIEWER_MODELS.nemotron);
+});
+
+test("cached router receipt cannot bypass route, qualification, or builder exclusion",()=>{
+  for(const mutate of [
+    (value:any)=>{value.model=REVIEWER_MODELS.deepseekPro;},
+    (value:any)=>{value.model=REVIEWER_MODELS.glm;value.identity.builderModel=REVIEWER_MODELS.glm;},
+    (value:any)=>{value.verifier.model=value.model;},
+  ]){
+    const root=mkdtempSync(join(tmpdir(),"router-cache-")),router=new ReviewerRouter(root,model=>pass(model)),request=input(),run=router.review(request),path=join(root,"reviews",`review-${run.receipt_key}.json`),value=JSON.parse(readFileSync(path,"utf8"));mutate(value);writeFileSync(path,JSON.stringify(value));assert.throws(()=>router.review(request),/review receipt/);
+  }
+});
+
+test("outer ledger receipt is bound to complete validated router evidence",()=>{
+  const request=input({builderModel:"codex-local"}),run=new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-envelope-")),model=>pass(model)).review(request),expected={issue:65,pr:99,base_sha:base,head_sha:head,front_id:"FRONT-R1-TEST",builder_session:request.builderSession,builder_model:"codex-local"},envelope={schema_version:1,...expected,session:run.session,router_run:run,result:run.output},persisted=()=>JSON.parse(JSON.stringify(envelope));
+  assert.equal(validateReviewerEnvelope(persisted(),expected,request).session,run.session);
+  for(const mutate of [(value:any)=>{delete value.router_run;},(value:any)=>{value.builder_model=REVIEWER_MODELS.glm;},(value:any)=>{value.router_run.model=REVIEWER_MODELS.deepseekPro;},(value:any)=>{value.result.summary="tampered";}]){const value=persisted();mutate(value);assert.throws(()=>validateReviewerEnvelope(value,expected,request),/review receipt/);}
 });

@@ -28,6 +28,11 @@ test("crash after reviewer reuses the same review receipt",()=>{
   const root=mkdtempSync(join(tmpdir(),"review-retry-"));let reviews=0;const first=new Ledger(root).loadOrCreateReview(key,()=>{reviews++;return {issue:63,pr:63,base_sha:base,head_sha:head,verdict:"PASS"};});assert.equal(first.created,true);const resumed=new Ledger(root).loadOrCreateReview(key,()=>{reviews++;return {issue:63,pr:63,base_sha:base,head_sha:head,verdict:"BLOCKED"};});assert.equal(resumed.created,false);assert.equal(resumed.review.verdict,"PASS");assert.equal(reviews,1);
 });
 
+test("cached review receipt is validated before reuse",()=>{
+  const root=mkdtempSync(join(tmpdir(),"review-validation-")),ledger=new Ledger(root);ledger.loadOrCreateReview(key,()=>({head_sha:head,verdict:"PASS"}));
+  let factoryCalls=0;assert.throws(()=>ledger.loadOrCreateReview(key,()=>{factoryCalls++;return {head_sha:head,verdict:"PASS"};},value=>{if(value.head_sha!==base)throw new Error("cached review binding mismatch");}),/cached review binding mismatch/);assert.equal(factoryCalls,0);
+});
+
 test("legacy empty and crashed review claims recover through append-only epochs",async()=>{
   const legacyRoot=mkdtempSync(join(tmpdir(),"review-legacy-"));mkdirSync(join(legacyRoot,`claim-review-${key}`));let legacyCalls=0;
   const legacy=new Ledger(legacyRoot).loadOrCreateReview(key,()=>{legacyCalls++;return {issue:63,pr:63,base_sha:base,head_sha:head,verdict:"PASS"};});
