@@ -143,9 +143,12 @@
       ".env",
       ".github/",
       "memory/",
+      "memory/semantic/",
+      "memory/rollback",
       "tmp_agent/brain_v9/trading/",
       "financial_autonomy/",
       "tmp_agent/state/",
+      "tmp_agent/brain_v9/core/session.py",
       "scripts/"
     ]
   },
