@@ -1,4 +1,4 @@
-name: Agent Loop Pilot — Deterministic Gate and Codex Supervisor
+name: Agent Loop Pilot — Deterministic Gate and Local Reviewer Boundary
 
 on:
   pull_request:
@@ -82,28 +82,29 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    outputs:
-      final_message: ${{ steps.codex.outputs.final-message }}
     steps:
-      - uses: actions/checkout@v5
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Codex read-only supervision
-        id: codex
-        uses: openai/codex-action@v1
-        with:
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          prompt-file: .github/codex/prompts/agent-loop-supervisor.md
-          output-file: codex-output.json
-          codex-args: '["--ephemeral", "--output-schema", ".github/codex/review-schema.json"]'
-          sandbox: read-only
-          allow-users: cesarmanuel8102
+      - name: Declare local intelligent reviewer boundary
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          python - <<'PY'
+          import json, os
+          with open('local-review-boundary.json', 'w', encoding='utf-8') as fh:
+              json.dump({
+                  'schema_version': 1,
+                  'gate': 'DETERMINISTIC_BOUNDARY_ONLY',
+                  'intelligent_review': False,
+                  'required_runtime_reviewer': 'opencode_ollama_reviewer_router',
+                  'base_sha': os.environ['BASE_SHA'],
+                  'head_sha': os.environ['HEAD_SHA'],
+              }, fh, sort_keys=True)
+              fh.write('\n')
+          PY
       - uses: actions/upload-artifact@v4
         with:
-          name: codex-supervisor-report
-          path: codex-output.json
+          name: local-review-boundary
+          path: local-review-boundary.json
           if-no-files-found: error
 
   publish:
@@ -114,17 +115,16 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - name: Publish verdict and terminal labels
+      - name: Publish deterministic state only
         uses: actions/github-script@v7
         env:
           DETERMINISTIC_RESULT: ${{ needs.deterministic.result }}
-          CODEX_RESULT: ${{ needs.codex.result }}
-          CODEX_MESSAGE: ${{ needs.codex.outputs.final_message }}
-          OWNER_LOGIN: cesarmanuel8102
+          BOUNDARY_RESULT: ${{ needs.codex.result }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         with:
           github-token: ${{ github.token }}
           script: |
+            const fs = require('fs');
             const issue_number = context.payload.pull_request.number;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
@@ -137,41 +137,21 @@ jobs:
             }
             if (process.env.DETERMINISTIC_RESULT !== 'success') {
               await github.rest.issues.addLabels({owner, repo, issue_number, labels:['loop:repairing']});
-              require('fs').writeFileSync('agent-loop-state-report.json', JSON.stringify({status:'REPAIRING',reason:'DETERMINISTIC_FAILURE',head_sha:process.env.HEAD_SHA},null,2));
+              fs.writeFileSync('agent-loop-state-report.json', JSON.stringify({status:'REPAIRING',reason:'DETERMINISTIC_FAILURE',head_sha:process.env.HEAD_SHA},null,2));
               return;
             }
-            if (process.env.CODEX_RESULT !== 'success') {
+            if (process.env.BOUNDARY_RESULT !== 'success') {
               await github.rest.issues.addLabels({owner, repo, issue_number, labels:['loop:blocked']});
-              require('fs').writeFileSync('agent-loop-state-report.json', JSON.stringify({status:'BLOCKED',reason:'CODEX_ACTION_FAILURE',head_sha:process.env.HEAD_SHA},null,2));
-              await github.rest.issues.createComment({owner, repo, issue_number,
-                body:`[AGENT-LOOP][BLOCKED][HEAD: ${process.env.HEAD_SHA}]\n\n@${process.env.OWNER_LOGIN} Codex action did not complete successfully. Inspect the codex job and secret configuration.`});
+              fs.writeFileSync('agent-loop-state-report.json', JSON.stringify({status:'BLOCKED',reason:'LOCAL_REVIEW_BOUNDARY_FAILURE',head_sha:process.env.HEAD_SHA},null,2));
               return;
             }
-            let raw = process.env.CODEX_MESSAGE || '';
-            let parsed;
-            try {
-              raw = raw.replace(/^```(?:json)?\s*/,'').replace(/\s*```$/,'').trim();
-              parsed = JSON.parse(raw);
-            } catch (e) {
-              await github.rest.issues.addLabels({owner, repo, issue_number, labels:['loop:blocked']});
-              require('fs').writeFileSync('agent-loop-state-report.json', JSON.stringify({status:'BLOCKED',reason:'INVALID_CODEX_JSON',head_sha:process.env.HEAD_SHA,raw:raw.slice(0,4000)},null,2));
-              await github.rest.issues.createComment({owner, repo, issue_number,
-                body:`[AGENT-LOOP][BLOCKED][HEAD: ${process.env.HEAD_SHA}]\n\n@${process.env.OWNER_LOGIN} Codex output was not valid schema JSON. See the workflow artifact.`});
-              return;
+            await github.rest.issues.addLabels({owner, repo, issue_number, labels:['loop:ci']});
+            fs.writeFileSync('agent-loop-state-report.json', JSON.stringify({status:'AWAITING_LOCAL_REVIEWER',head_sha:process.env.HEAD_SHA,intelligent_review:false,required_runtime_reviewer:'opencode_ollama_reviewer_router'},null,2));
+            const marker = `[AGENT-LOOP][AWAITING_LOCAL_REVIEWER][HEAD: ${process.env.HEAD_SHA}]`;
+            const comments = await github.rest.issues.listComments({owner, repo, issue_number, per_page:100});
+            if (!comments.data.some(c => (c.body || '').includes(marker))) {
+              await github.rest.issues.createComment({owner, repo, issue_number, body:`${marker}\n\nDeterministic gates passed. The installed local OpenCode/Ollama Reviewer Router must independently review this exact HEAD before policy or merge.`});
             }
-            require('fs').writeFileSync('agent-loop-state-report.json', JSON.stringify({status:parsed.verdict,head_sha:process.env.HEAD_SHA,codex:parsed,deterministic:'PASS'},null,2));
-            if (parsed.verdict === 'PASS' && parsed.head_sha === process.env.HEAD_SHA) {
-              await github.rest.issues.addLabels({owner, repo, issue_number, labels:['loop:ready-human-audit']});
-              await github.rest.issues.createComment({owner, repo, issue_number,
-                body:`[AGENT-LOOP][READY_FOR_HUMAN_AUDIT][HEAD: ${process.env.HEAD_SHA}]\n\n@${process.env.OWNER_LOGIN} OpenCode executor local gates, GitHub deterministic CI and Codex read-only supervision are PASS on the same HEAD. No merge was performed. Independent human reauditing is required.`});
-            } else if (parsed.verdict === 'CHANGES_REQUESTED') {
-              await github.rest.issues.addLabels({owner, repo, issue_number, labels:['loop:repairing']});
-            } else {
-              await github.rest.issues.addLabels({owner, repo, issue_number, labels:['loop:blocked']});
-              await github.rest.issues.createComment({owner, repo, issue_number,
-                body:`[AGENT-LOOP][BLOCKED][HEAD: ${process.env.HEAD_SHA}]\n\n@${process.env.OWNER_LOGIN} Codex returned BLOCKED. Human decision required.`});
-            }
-
       - name: Upload aggregate loop state report
         if: always()
         uses: actions/upload-artifact@v4

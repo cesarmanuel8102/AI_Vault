@@ -1910,16 +1910,16 @@ def latest_feedback(repo: str, pr_no: int, spec: dict, head_sha: str, install_ro
     if not run_item:
         return "GitHub gate requested repair but no completed workflow run was found for the current HEAD."
     run_id = str(run_item["databaseId"])
-    temp = Path(tempfile.mkdtemp(prefix="codex-feedback-", dir=str(Path(install_root)/"reports")))
+    temp = Path(tempfile.mkdtemp(prefix="deterministic-feedback-", dir=str(Path(install_root)/"reports")))
     try:
-        p = subprocess.run(command_for_subprocess(["gh","run","download",run_id,"--repo",repo,"--name","codex-supervisor-report","--dir",str(temp)]),
+        p = subprocess.run(command_for_subprocess(["gh","run","download",run_id,"--repo",repo,"--name","pilot-deterministic-report","--dir",str(temp)]),
                            text=False,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
         _, decoding = completed_output(p)
         emit_subprocess_decoding_event({"install_root": install_root}, ["gh", "run", "download"], decoding)
         if p.returncode == 0:
-            candidates=list(temp.rglob("codex-output.json"))
+            candidates=list(temp.rglob("pilot-deterministic-report.json"))
             if candidates:
-                return "CODEX SUPERVISOR REPORT:\n" + candidates[0].read_text(encoding="utf-8-sig")[:8000]
+                return "DETERMINISTIC GATE REPORT:\n" + candidates[0].read_text(encoding="utf-8-sig")[:8000]
         logs = run(["gh","run","view",run_id,"--repo",repo,"--log-failed"],check=False)
         return "GITHUB FAILED CHECK LOGS:\n" + logs[-8000:]
     finally:
@@ -1933,7 +1933,7 @@ EXPECTED_BASE_SHA: {spec['expected_base_sha']}
 EXECUTOR_MODEL: {cfg['opencode_model']}
 AGENT_LOOP_PROFILE: {spec['test_profile']}
 
-Automated governed change. No auto-merge. The configured OpenCode/Ollama executor writes; Codex supervises read-only; human audit is final.
+    Automated governed change. No auto-merge. The configured OpenCode/Ollama executor writes; the independent local reviewer panel supervises read-only; human authority is final.
 """
     url = run(["gh","pr","create","--repo",cfg["repo"],"--base",spec["base_branch"],"--head",spec["work_branch"],
                "--draft","--title",f"test(agent-loop): {spec['front_id']}","--body",body],cwd=repo_dir).strip()

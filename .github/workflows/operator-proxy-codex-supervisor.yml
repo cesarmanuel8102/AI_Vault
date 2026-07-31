@@ -18,6 +18,10 @@ jobs:
           grep -q 'operator-proxy-merge.yml' scripts/operator_proxy/github_bus.ts
           grep -q 'GH_TOKEN:.*github.token' .github/workflows/operator-proxy-merge.yml
           ! grep -RniE '(--auto-merge|--squash|--rebase|--force-with-lease|push --force)' scripts/operator_proxy/*.ts
+          codex_action='openai/codex'; codex_action="${codex_action}-action"
+          ! grep -Rni "$codex_action" .github/workflows/operator-proxy-codex-supervisor.yml scripts/operator_proxy/reviewer_*.ts scripts/operator_proxy/opencode_reviewer.ts
+          api_key_input='openai-api'; api_key_input="${api_key_input}-key:"
+          ! grep -Rni "$api_key_input" .github/workflows/operator-proxy-codex-supervisor.yml scripts/operator_proxy/reviewer_*.ts scripts/operator_proxy/opencode_reviewer.ts
       - name: Bind immutable PR review range
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -27,35 +31,28 @@ jobs:
           [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
           test "$(git rev-parse HEAD)" = "$HEAD_SHA"
           test "$(git merge-base "$BASE_SHA" "$HEAD_SHA")" = "$BASE_SHA"
-          printf 'BASE_SHA=%s\nHEAD_SHA=%s\n' "$BASE_SHA" "$HEAD_SHA" > operator-proxy-review-context.txt
-      - name: Independent Codex read-only review
-        id: codex
-        uses: openai/codex-action@v1
-        with:
-          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
-          prompt-file: .github/codex/operator-proxy-supervisor.md
-          output-file: operator-proxy-codex-review.json
-          codex-args: '["--ephemeral", "--output-schema", ".github/codex/operator-proxy-review-schema.json"]'
-          sandbox: read-only
-          allow-users: cesarmanuel8102
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: operator-proxy-codex-review
-          path: operator-proxy-codex-review.json
-          if-no-files-found: error
-      - name: Require bounded verdict on reviewed HEAD
-        env:
-          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
-        run: |
           python - <<'PY'
           import json, os
-          data = json.load(open('operator-proxy-codex-review.json', encoding='utf-8'))
-          if data.get('verdict') not in {'PASS', 'CHANGES_REQUESTED'}:
-              raise SystemExit('independent Codex review was unavailable or blocked')
-          findings = data.get('findings') or []
-          if data.get('verdict') == 'CHANGES_REQUESTED' and (not findings or any(f.get('severity') not in {'P1', 'P2'} for f in findings)):
-              raise SystemExit('only bounded technical P1/P2 findings may enter the repair loop')
-          if data.get('head_sha') != os.environ['EXPECTED_HEAD']:
-              raise SystemExit('independent Codex review HEAD mismatch')
+          receipt = {
+              "schema_version": 1,
+              "gate": "DETERMINISTIC_BOUNDARY_ONLY",
+              "intelligent_review": False,
+              "required_runtime_reviewer": "opencode_ollama_reviewer_router",
+              "base_sha": os.environ["BASE_SHA"],
+              "head_sha": os.environ["HEAD_SHA"],
+          }
+          with open("operator-proxy-review-boundary.json", "w", encoding="utf-8") as fh:
+              json.dump(receipt, fh, sort_keys=True)
+              fh.write("\n")
           PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: operator-proxy-review-boundary
+          path: operator-proxy-review-boundary.json
+          if-no-files-found: error
+      - name: Require local intelligent reviewer contract
+        run: |
+          grep -q 'class ReviewerRouter' scripts/operator_proxy/reviewer_router.ts
+          grep -q 'OpenCodeReviewerBackend' scripts/operator_proxy/opencode_reviewer.ts
+          grep -q 'BLOCKED_EXTERNAL_REVIEWER' scripts/operator_proxy/reviewer_router.ts
+          grep -q 'REVIEWER_WRITE_ATTEMPT' scripts/operator_proxy/opencode_reviewer.ts
