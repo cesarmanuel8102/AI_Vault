@@ -27,9 +27,11 @@ export function newLifecycle(spec:ProxySpec):LifecycleRecord {
 
 export class AutonomousFlow {
   constructor(readonly store:LifecycleStore,readonly effects:AutonomousEffects){}
+  assertPrivilegedInstallState(expected:LifecycleRecord):LifecycleRecord {
+    const state=this.store.load(expected.front_id);if(!state||JSON.stringify(state)!==JSON.stringify(expected)||state.state!=="ESCALATED"||state.last_error!=="LOCAL_PRIVILEGE_REQUIRED")throw new Error("privileged install resume not authorized by persisted state");return state;
+  }
   resumePrivilegedInstall(expected:LifecycleRecord):LifecycleRecord {
-    const state=this.store.load(expected.front_id);const exact=state&&state.schema_version===expected.schema_version&&state.front_id===expected.front_id&&state.roadmap_item_id===expected.roadmap_item_id&&state.state===expected.state&&state.issue===expected.issue&&state.pr===expected.pr&&state.base_sha===expected.base_sha&&state.head_sha===expected.head_sha&&state.builder_session===expected.builder_session&&state.reviewer_session===expected.reviewer_session&&state.decision_id===expected.decision_id&&state.repair_cycles===expected.repair_cycles&&state.deployment_mode===expected.deployment_mode&&state.last_error===expected.last_error&&JSON.stringify(state.completed_effects)===JSON.stringify(expected.completed_effects);
-    if(!exact||state.state!=="ESCALATED"||state.last_error!=="LOCAL_PRIVILEGE_REQUIRED")throw new Error("privileged install resume not authorized by persisted state");
+    const state=this.assertPrivilegedInstallState(expected);
     return this.store.advance(state,"INSTALL_PENDING",{last_error:undefined});
   }
   step(spec:ProxySpec):LifecycleRecord {

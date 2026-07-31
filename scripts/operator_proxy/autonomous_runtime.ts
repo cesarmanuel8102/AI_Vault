@@ -21,6 +21,7 @@ export function validatePostMergeBaseAdvance(spec:ProxySpec,state:LifecycleRecor
 export function resumePrivilegedInstall(bus:GitHubBus,boundary:ExternalEffectBoundary,coordinator:RequestCoordinator,flow:AutonomousFlow,spec:ProxySpec,state:LifecycleRecord){
   boundary.beginPrivilegedInstallResume(spec,state);
   try{
+    flow.assertPrivilegedInstallState(state);
     boundary.assertPrivilegedInstallResumeReady();
     if(!coordinator.installReceiptPresent(spec,state.head_sha!))return state;
     const path=spec.install_target==="agent_loop_worker"?"scripts/agent_loop/local_worker/agent_worker.py":undefined;
