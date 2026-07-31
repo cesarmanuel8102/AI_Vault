@@ -98,7 +98,7 @@
         "test_profile": "roadmap-doc",
         "max_executor_cycles": 2,
         "allowed_paths": ["docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md"],
-        "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+        "forbidden_paths": [".env", ".github/", "memory/", "memory/semantic/", "memory/rollback", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "tmp_agent/brain_v9/core/session.py", "scripts/"],
         "acceptance": ["Create one deterministic roadmap evidence document", "Use the roadmap-doc profile only", "Do not deploy, activate worker tasks, run live trading, use real money, perform canonical local sync, or auto-merge"],
         "test_commands": ["git diff --check"],
         "deployment_mode": "NO_DEPLOY",
