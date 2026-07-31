@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "d1b7041ef8380759744cf1897b044fca442183f5f32b6cd6cf026e98a255340f",
+  "roadmap_sha256": "0b332c71883c84e04577e7080c0d5ec7f07f9731b29c41d9216b6c5154def1ca",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -57,7 +57,7 @@
     },
     "R1.2": {
       "title": "Add roadmap-doc and test-only profiles",
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "dependencies": ["R1.1"],
       "automation": {
         "front_id": "BRAIN-101-R1-2-RUNTIME-PROFILES-01",
@@ -82,6 +82,25 @@
           "acceptance": ["Record exact R1.2 Issue PR decision merge installation and runtime evidence", "Set R1.2 to CLOSED_RUNTIME_VERIFIED only after the transactional installation passes", "Create exactly one AUTHORIZED_ACTIVE synthetic LOW or MEDIUM agent_loop item using roadmap-doc or test-only with NO_DEPLOY", "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"],
           "test_commands": ["git diff --check"]
         }
+      }
+    },
+    "R1.3": {
+      "title": "Run isolated Agent Loop OpenCode Kimi roadmap-doc E2E",
+      "status": "AUTHORIZED_ACTIVE",
+      "dependencies": ["R1.2"],
+      "automation": {
+        "front_id": "BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-01",
+        "objective": "Run one isolated Agent Loop OpenCode Kimi E2E using the roadmap-doc profile without deployment",
+        "work_branch": "agent/roadmap-doc-brain-101-r1-3-kimi-e2e",
+        "executor": "opencode_kimi",
+        "risk": "LOW",
+        "domain": "agent_loop",
+        "test_profile": "roadmap-doc",
+        "allowed_paths": ["docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md"],
+        "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+        "acceptance": ["Create one deterministic roadmap evidence document", "Use the roadmap-doc profile only", "Do not deploy, activate worker tasks, run live trading, use real money, perform canonical local sync, or auto-merge"],
+        "test_commands": ["git diff --check"],
+        "deployment_mode": "NO_DEPLOY"
       }
     },
     "R1.0": {
@@ -138,5 +157,20 @@
     "nontrading_smoke_run": 30461856531,
     "final_state": "R1_0_CLOSED_RUNTIME_VERIFIED_R1_2_AUTHORIZED_ACTIVE"
   },
-  "next_gate": "Execute R1.2 roadmap-doc and test-only profiles through Operator Proxy"
+  "r1_2_runtime_closeout": {
+    "evidence_path": "docs/roadmap/evidence/BRAIN_101_R1_2_RUNTIME_CLOSEOUT.json",
+    "issue": 56,
+    "implementation_pr": 57,
+    "implementation_head": "2e1201ac8c5d27ebac5f6f6f00a01cce8640b3e1",
+    "implementation_merge_commit": "3ec640e317cbe8c6cae8aff91684179144b2fd1e",
+    "runtime_activation_issue": 59,
+    "runtime_activation_pr": 58,
+    "runtime_activation_head": "c9a58aa52595d58eb6154822f0202817a7246adf",
+    "runtime_activation_merge_commit": "40343a308b7833ee948ea8dbdaf8b8aed334f13d",
+    "final_install_repair_pr": 102,
+    "final_install_repair_merge_commit": "afbeadcc354e3cb74747c694269c50efdb620ccf",
+    "closed_at_utc": "2026-07-31T21:30:17Z",
+    "final_state": "R1_2_CLOSED_RUNTIME_VERIFIED_R1_3_AUTHORIZED_ACTIVE"
+  },
+  "next_gate": "Execute R1.3 isolated Agent Loop OpenCode Kimi roadmap-doc E2E with NO_DEPLOY"
 }

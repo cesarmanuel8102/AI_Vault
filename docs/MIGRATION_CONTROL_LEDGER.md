@@ -9105,3 +9105,22 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Status: `R1.0` set to `CLOSED_RUNTIME_VERIFIED`; `R1.2` restored to `AUTHORIZED_ACTIVE`.
 - Preserved controls: human final authority true, live trading disabled, auto-merge disabled, canonical local sync disabled.
 - Next gate: execute `R1.2` roadmap-doc and test-only profiles through Operator Proxy.
+
+## BRAIN-101 R1.2 — Runtime Profiles Closeout (2026-07-31)
+
+- Front: `BRAIN-101-R1-2-RUNTIME-PROFILES-CLOSEOUT-01`.
+- Implementation Issue: #56, `[BRAIN-101][R1.2] Add roadmap-doc and test-only profiles`.
+- Implementation PR: #57, `feat(agent-loop): add roadmap-doc and test-only profiles`.
+- Implementation base/head: `e3a6897621618a8879ebdb4da75d1106fadec427` -> `2e1201ac8c5d27ebac5f6f6f00a01cce8640b3e1`.
+- Implementation decisions: `BLOCK` `ffc526bf-253a-4ed3-ba45-86494a6eb80e` for `a4f2db5fb03c03cfcdf78fc1ec987835e4aeb26f`, then `APPROVE` `32236b92-b501-4603-85e9-9c7eff22f6a3` for `2e1201ac8c5d27ebac5f6f6f00a01cce8640b3e1`.
+- Implementation merge commit: `3ec640e317cbe8c6cae8aff91684179144b2fd1e`, merged at `2026-07-23T00:38:32Z`.
+- Runtime activation Issue: #59, `[BRAIN-101][R1.2] Make runtime profile commands immutable`.
+- Runtime activation PR: #58, `fix(agent-loop): make R1.2 profile commands immutable`.
+- Runtime activation merge commit: `40343a308b7833ee948ea8dbdaf8b8aed334f13d`, merged at `2026-07-29T20:44:04Z`.
+- Transactional installation evidence: privileged install receipt resume repaired through PR #96, #97, #98, #99, #101, and #102; final repair PR #102 merged as `afbeadcc354e3cb74747c694269c50efdb620ccf` at `2026-07-31T21:30:17Z`.
+- Runtime result: `roadmap-doc` and `test-only` use immutable reviewed worker constants; legacy pilot behavior and byte-identical installed worker config are preserved; `test-only` remains AST-only and does not execute model-authored tests on the worker host.
+- Status: `R1.2` set to `CLOSED_RUNTIME_VERIFIED`.
+- Closeout evidence: `docs/roadmap/evidence/BRAIN_101_R1_2_RUNTIME_CLOSEOUT.json`.
+- Authorized next item: exactly one synthetic `R1.3`, LOW, domain `agent_loop`, executor `opencode_kimi`, profile `roadmap-doc`, `NO_DEPLOY`, allowed only for `docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md`.
+- Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, worker `--once` disabled, tasks disabled, workers 0.
+- Next gate: execute `R1.3` isolated Agent Loop OpenCode Kimi roadmap-doc E2E with `NO_DEPLOY`.

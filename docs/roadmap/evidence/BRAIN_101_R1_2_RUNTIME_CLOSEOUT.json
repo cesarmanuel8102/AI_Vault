@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
+  "roadmap_item_id": "R1.2",
+  "front_id": "BRAIN-101-R1-2-RUNTIME-PROFILES-CLOSEOUT-01",
+  "status": "CLOSED_RUNTIME_VERIFIED",
+  "closed_at_utc": "2026-07-31T21:30:17Z",
+  "repository": "cesarmanuel8102/AI_Vault",
+  "base_branch": "codex/own-capital-sustainable-return",
+  "implementation": {
+    "issue": 56,
+    "issue_url": "https://github.com/cesarmanuel8102/AI_Vault/issues/56",
+    "pr": 57,
+    "pr_url": "https://github.com/cesarmanuel8102/AI_Vault/pull/57",
+    "base_sha": "e3a6897621618a8879ebdb4da75d1106fadec427",
+    "head_sha": "2e1201ac8c5d27ebac5f6f6f00a01cce8640b3e1",
+    "merge_commit": "3ec640e317cbe8c6cae8aff91684179144b2fd1e",
+    "merged_at_utc": "2026-07-23T00:38:32Z",
+    "decision_sequence": [
+      {
+        "decision_id": "ffc526bf-253a-4ed3-ba45-86494a6eb80e",
+        "policy_decision": "BLOCK",
+        "head": "a4f2db5fb03c03cfcdf78fc1ec987835e4aeb26f",
+        "observed_at_utc": "2026-07-22T23:56:14Z"
+      },
+      {
+        "decision_id": "32236b92-b501-4603-85e9-9c7eff22f6a3",
+        "policy_decision": "APPROVE",
+        "head": "2e1201ac8c5d27ebac5f6f6f00a01cce8640b3e1",
+        "observed_at_utc": "2026-07-23T00:38:48Z"
+      }
+    ],
+    "authorization_consumed": {
+      "authorization_id": "CESAR-BRAIN-101-OPERATOR-PROXY-20260722-01",
+      "decision_id": "32236b92-b501-4603-85e9-9c7eff22f6a3",
+      "issue": 56,
+      "pr": 57,
+      "action": "MERGE",
+      "policy_sha256": "18d599689df667fac42160337a304062f47a15fd23f7d94d38fbe11ac6834781"
+    },
+    "changed_files": [
+      "scripts/agent_loop/local_worker/agent_worker.py",
+      "tests/contract/test_agent_loop_worker_r1_2_profiles.py"
+    ],
+    "result": "Initial R1.2 implementation added fail-closed roadmap-doc and test-only profiles with no deploy, no worker --once, no scheduled-task mutation, no trading, no financial autonomy, no memory/FAISS, no secrets, and no canonical sync."
+  },
+  "runtime_activation_repair": {
+    "issue": 59,
+    "issue_url": "https://github.com/cesarmanuel8102/AI_Vault/issues/59",
+    "pr": 58,
+    "pr_url": "https://github.com/cesarmanuel8102/AI_Vault/pull/58",
+    "base_sha": "a88644acebaba8e7ce03f94b49030bd086ebf3a2",
+    "head_sha": "c9a58aa52595d58eb6154822f0202817a7246adf",
+    "merge_commit": "40343a308b7833ee948ea8dbdaf8b8aed334f13d",
+    "merged_at_utc": "2026-07-29T20:44:04Z",
+    "operator_proxy_decision": {
+      "decision_id": "17883ebe-b74a-4716-b90c-b0a6e2a0da86",
+      "policy_decision": "ESCALATE_TO_OWNER",
+      "head": "ee9c51697c8a7031f190e6f686bb602392d17718",
+      "observed_at_utc": "2026-07-23T01:22:16Z"
+    },
+    "changed_files": [
+      "scripts/agent_loop/local_worker/agent_worker.py",
+      "tests/contract/test_agent_loop_worker_r1_2_profiles.py"
+    ],
+    "result": "Runtime activation repair made roadmap-doc and test-only immutable reviewed worker constants, preserved worker.json byte-for-byte, preserved pilot behavior, and kept test-only AST-only so model-authored tests are never executed on the worker host."
+  },
+  "transactional_installation_evidence": {
+    "install_target": "agent_loop_worker",
+    "deployment_mode": "INSTALL_ONLY",
+    "installation_result": "PASSED_AFTER_PRIVILEGED_INSTALL_RECEIPT_VALIDATION",
+    "install_mode": "LOCAL_PRIVILEGE_REQUIRED",
+    "receipt_state": "artifact-bound receipt produced before final privileged-install resume repair",
+    "final_repair_pr": 102,
+    "final_repair_pr_url": "https://github.com/cesarmanuel8102/AI_Vault/pull/102",
+    "final_repair_head": "6c82a08acad0cd003b4d7c85ed29f5cbe579daa3",
+    "final_repair_merge_commit": "afbeadcc354e3cb74747c694269c50efdb620ccf",
+    "final_repair_merged_at_utc": "2026-07-31T21:30:17Z",
+    "repair_chain": [
+      {
+        "pr": 96,
+        "merge_commit": "eade50547667adfa4ccb7127fb7af34d86ba2667",
+        "purpose": "Recover negated safety-invariant risk classification while preserving disabled live trading, real money, canonical sync, and auto-merge."
+      },
+      {
+        "pr": 97,
+        "merge_commit": "a88644acebaba8e7ce03f94b49030bd086ebf3a2",
+        "purpose": "Recover exact governed detached R1.2 worktree without mutating the historical worktree."
+      },
+      {
+        "pr": 98,
+        "merge_commit": "33597df0420e297c01fa79d59ee007167e6de82c",
+        "purpose": "Accept exact recorded PR #58 merge SHA as post-merge base while preserving merge evidence."
+      },
+      {
+        "pr": 99,
+        "merge_commit": "eeab73518b08bda2e99a7001fd59b23a4443ad52",
+        "purpose": "Bind LOCAL_PRIVILEGE_REQUIRED privileged install receipt resume with external-effect denials preserved."
+      },
+      {
+        "pr": 101,
+        "merge_commit": "ce24fea84c896676ac8ee2b1d718e17417bd05ee",
+        "purpose": "Resume privileged install after base advance with runtime contract 22/22 PASS and full Operator Proxy contracts 297/297 PASS."
+      },
+      {
+        "pr": 102,
+        "merge_commit": "afbeadcc354e3cb74747c694269c50efdb620ccf",
+        "purpose": "Centralize exact privileged install effect-chain validation with targeted contracts 32/32 PASS and full contracts 298/298 PASS."
+      }
+    ],
+    "runtime_controls": {
+      "tasks_disabled": true,
+      "workers": 0,
+      "deploy_executed": false,
+      "worker_once_executed": false,
+      "live_trading_enabled": false,
+      "real_money_enabled": false,
+      "canonical_local_sync": false,
+      "auto_merge": false
+    }
+  },
+  "closed_item": {
+    "id": "R1.2",
+    "title": "Add roadmap-doc and test-only profiles",
+    "status": "CLOSED_RUNTIME_VERIFIED"
+  },
+  "authorized_next_item": {
+    "id": "R1.3",
+    "title": "Run isolated Agent Loop OpenCode Kimi roadmap-doc E2E",
+    "status": "AUTHORIZED_ACTIVE",
+    "risk": "LOW",
+    "domain": "agent_loop",
+    "executor": "opencode_kimi",
+    "test_profile": "roadmap-doc",
+    "deployment_mode": "NO_DEPLOY",
+    "front_id": "BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-01",
+    "allowed_paths": [
+      "docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md"
+    ],
+    "forbidden_paths": [
+      ".env",
+      ".github/",
+      "memory/",
+      "tmp_agent/brain_v9/trading/",
+      "financial_autonomy/",
+      "tmp_agent/state/",
+      "scripts/"
+    ]
+  },
+  "preserved_authority": {
+    "human_final_authority": true,
+    "auto_merge": false,
+    "canonical_local_sync": false,
+    "live_trading_enabled": false,
+    "real_money_enabled": false,
+    "deploy_authorized": false
+  }
+}
