@@ -21,11 +21,12 @@ export function validatePostMergeBaseAdvance(spec:ProxySpec,state:LifecycleRecor
 export function resumePrivilegedInstall(bus:GitHubBus,boundary:ExternalEffectBoundary,coordinator:RequestCoordinator,flow:AutonomousFlow,spec:ProxySpec,state:LifecycleRecord){
   boundary.beginPrivilegedInstallResume(spec,state);
   try{
+    boundary.assertPrivilegedInstallResumeReady();
     if(!coordinator.installReceiptPresent(spec,state.head_sha!))return state;
     const path=spec.install_target==="agent_loop_worker"?"scripts/agent_loop/local_worker/agent_worker.py":undefined;
     if(!path)throw new Error("install artifact target invalid");
     const artifactSha256=createHash("sha256").update(Buffer.from(bus.fileAt(path,state.head_sha!),"utf8")).digest("hex");
-    return coordinator.install(spec,state.head_sha!,artifactSha256)==="PASS"?flow.resumePrivilegedInstall(state.front_id):state;
+    return coordinator.install(spec,state.head_sha!,artifactSha256)==="PASS"?flow.resumePrivilegedInstall(state):state;
   }finally{boundary.endPrivilegedInstallResume();}
 }
 
