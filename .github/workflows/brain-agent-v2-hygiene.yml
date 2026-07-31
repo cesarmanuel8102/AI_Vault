@@ -81,6 +81,9 @@ on:
       - "tests/smoke/test_front_brain_ui_chat_backend_streaming_events_04.py"
       - "tests/smoke/test_dashboard_trading_live_readonly_01.py"
       - "tests/smoke/test_front_brain_ui_dashboard_load_performance_05a.py"
+      - "docs/roadmap/**"
+      - "ROADMAP_STATUS.json"
+      - "docs/MIGRATION_CONTROL_LEDGER.md"
       - ".github/workflows/brain-agent-v2-hygiene.yml"
   push:
     branches:
@@ -163,6 +166,9 @@ on:
       - "tests/smoke/test_front_brain_ui_chat_backend_streaming_events_04.py"
       - "tests/smoke/test_dashboard_trading_live_readonly_01.py"
       - "tests/smoke/test_front_brain_ui_dashboard_load_performance_05a.py"
+      - "docs/roadmap/**"
+      - "ROADMAP_STATUS.json"
+      - "docs/MIGRATION_CONTROL_LEDGER.md"
       - ".github/workflows/brain-agent-v2-hygiene.yml"
 
 jobs:
@@ -522,4 +528,3 @@ jobs:
             tests/contract/test_agent_v2_boundary_contracts_02.py \
             tests/smoke/test_front_brain_ui_token_preflight_01.py
           echo "OK: boundary tests compile"
-
