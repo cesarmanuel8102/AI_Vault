@@ -1,4 +1,4 @@
-import {createHash} from "node:crypto";import type {Decision,Evidence,ProxySpec} from "./types.js";import {classify} from "./risk_classifier.js";
+import {createHash} from "node:crypto";import type {Decision,Evidence,NormalizedDecision,ProxySpec} from "./types.js";import {classify} from "./risk_classifier.js";
 export const AUTH="CESAR-BRAIN-101-OPERATOR-PROXY-20260722-01";export const REPO="cesarmanuel8102/AI_Vault";
 export const POLICY="v2:exact-repo;active-item;stable-shas;green-ci;independent-review;allowlist;no-sensitive;no-fork;no-p0;bounded-p1p2-repair;merge-commit-only;human-escalation";
 export const sha=(v:unknown)=>createHash("sha256").update(typeof v==="string"?v:JSON.stringify(v,Object.keys(v as object).sort())).digest("hex");
@@ -6,6 +6,8 @@ export const POLICY_SHA256=sha(POLICY);
 const canonical=(value:Record<string,unknown>)=>JSON.stringify(Object.fromEntries(Object.entries(value).sort(([a],[b])=>a.localeCompare(b))));
 export function decisionKey(spec:ProxySpec,issue:number,pr:number,base_sha:string,head_sha:string){return sha(canonical({authorization_id:spec.authorization_id,base_sha,head_sha,issue,policy_sha256:POLICY_SHA256,pr,repository:spec.repository,roadmap_id:spec.roadmap_id,roadmap_item_id:spec.roadmap_item_id}));}
 export function stableDecisionId(key:string){return `${key.slice(0,8)}-${key.slice(8,12)}-4${key.slice(13,16)}-${((parseInt(key[16],16)&3)|8).toString(16)}${key.slice(17,20)}-${key.slice(20,32)}`;}
+const replayFields=["decision_key","decision_id","authorization_id","repository","issue","pr","base_sha","head_sha","roadmap_id","roadmap_item_id","risk","deterministic_gate","codex_review","review_findings_count","review_consistent","policy_decision","allowed_action","policy_sha256","evidence_sha256"] as const;
+export function decisionMatchesCandidate(persisted:NormalizedDecision,candidate:Decision){return "review_consistent" in persisted&&replayFields.every(field=>persisted[field]===candidate[field]);}
 const pathMatches=(file:string,rule:string)=>rule.endsWith("/")?file.startsWith(rule):file===rule;
 export function decide(spec:ProxySpec,e:Evidence):Decision {let pd:Decision["policy_decision"]="BLOCK", action:Decision["allowed_action"]="NONE";const risk=classify(spec);const scope=e.changed_files.length>0&&e.changed_files.every(f=>spec.allowed_paths.some(p=>pathMatches(f,p))&&!spec.forbidden_paths.some(p=>pathMatches(f,p)));const immutable=spec.authorization_id===AUTH&&spec.repository===REPO&&e.base_sha===spec.expected_base_sha&&e.base_branch==="codex/own-capital-sustainable-return";const independent=e.builder_session!==e.review_session;
  const trusted=e.author==="cesarmanuel8102"&&(spec.work_branch?e.head_branch===spec.work_branch:e.head_branch.startsWith("control-plane/"))&&e.state==="OPEN"&&e.draft;const admissible=immutable&&trusted&&e.item_authorized&&scope&&!e.from_fork&&e.sensitive_files.length===0;

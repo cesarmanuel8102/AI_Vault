@@ -5,7 +5,7 @@ import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {pathToFileURL} from "node:url";
 import {spawn} from "node:child_process";
-import {Ledger} from "../../../scripts/operator_proxy/decision_ledger.js";
+import {historicalStableDecisionId,Ledger} from "../../../scripts/operator_proxy/decision_ledger.js";
 import {GitHubBus} from "../../../scripts/operator_proxy/github_bus.js";
 import {execute,reconcileAuthorizationComment} from "../../../scripts/operator_proxy/action_executor.js";
 
@@ -28,6 +28,11 @@ test("crash after reviewer reuses the same review receipt",()=>{
   const root=mkdtempSync(join(tmpdir(),"review-retry-"));let reviews=0;const first=new Ledger(root).loadOrCreateReview(key,()=>{reviews++;return {issue:63,pr:63,base_sha:base,head_sha:head,verdict:"PASS"};});assert.equal(first.created,true);const resumed=new Ledger(root).loadOrCreateReview(key,()=>{reviews++;return {issue:63,pr:63,base_sha:base,head_sha:head,verdict:"BLOCKED"};});assert.equal(resumed.created,false);assert.equal(resumed.review.verdict,"PASS");assert.equal(reviews,1);
 });
 
+test("cached review receipt is validated before reuse",()=>{
+  const root=mkdtempSync(join(tmpdir(),"review-validation-")),ledger=new Ledger(root);ledger.loadOrCreateReview(key,()=>({head_sha:head,verdict:"PASS"}));
+  let factoryCalls=0;assert.throws(()=>ledger.loadOrCreateReview(key,()=>{factoryCalls++;return {head_sha:head,verdict:"PASS"};},value=>{if(value.head_sha!==base)throw new Error("cached review binding mismatch");}),/cached review binding mismatch/);assert.equal(factoryCalls,0);
+});
+
 test("legacy empty and crashed review claims recover through append-only epochs",async()=>{
   const legacyRoot=mkdtempSync(join(tmpdir(),"review-legacy-"));mkdirSync(join(legacyRoot,`claim-review-${key}`));let legacyCalls=0;
   const legacy=new Ledger(legacyRoot).loadOrCreateReview(key,()=>{legacyCalls++;return {issue:63,pr:63,base_sha:base,head_sha:head,verdict:"PASS"};});
@@ -46,7 +51,11 @@ test("legacy empty and crashed review claims recover through append-only epochs"
 test("incompatible, corrupt, and duplicate historical decisions fail closed",()=>{
   const root=mkdtempSync(join(tmpdir(),"decision-conflict-")),ledger=new Ledger(root),d=decision();ledger.record(d);assert.throws(()=>ledger.recordOrLoad({...d,evidence_sha256:"f".repeat(64)}),/DECISION_IDENTITY_CONFLICT/);
   const corrupt=mkdtempSync(join(tmpdir(),"decision-corrupt-"));writeFileSync(join(corrupt,`decision-${key}.json`),"{");assert.throws(()=>new Ledger(corrupt).findByKey(key),/corrupt/);
-  const duplicate=mkdtempSync(join(tmpdir(),"decision-duplicate-"));const a={...d,decision_key:"1".repeat(64)},b={...d,decision_key:"2".repeat(64),decision_id:"22222222-2222-4222-a222-222222222222"};writeFileSync(join(duplicate,`decision-${a.decision_key}.json`),JSON.stringify(a));writeFileSync(join(duplicate,`decision-${b.decision_key}.json`),JSON.stringify(b));assert.throws(()=>new Ledger(duplicate).findByHead(head),/duplicate decisions/);
+  const duplicate=mkdtempSync(join(tmpdir(),"decision-duplicate-"));const a={...d,decision_key:"1".repeat(64),decision_id:historicalStableDecisionId("1".repeat(64))},b={...d,decision_key:"2".repeat(64),decision_id:historicalStableDecisionId("2".repeat(64))};writeFileSync(join(duplicate,`decision-${a.decision_key}.json`),JSON.stringify(a));writeFileSync(join(duplicate,`decision-${b.decision_key}.json`),JSON.stringify(b));assert.throws(()=>new Ledger(duplicate).findByHead(head),/duplicate decisions/);
+});
+
+test("schema v2 decision id is deterministically bound to its key",()=>{
+  const root=mkdtempSync(join(tmpdir(),"decision-id-binding-")),d=decision();writeFileSync(join(root,`decision-${key}.json`),JSON.stringify({...d,decision_id:"11111111-1111-4111-8111-111111111111"}));assert.throws(()=>new Ledger(root).findByKey(key),/keyed schema invalid/);
 });
 
 test("decision comments and labels reconcile without duplicates",()=>{

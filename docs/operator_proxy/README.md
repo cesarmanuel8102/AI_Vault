@@ -1,21 +1,13 @@
-# Operator Proxy
+# Operator Proxy Reviewer Router
 
-Governed GitHub bus for BRAIN-101. Builder and reviewer use independent sessions; a deterministic policy decides APPROVE, REPAIR, BLOCK, or ESCALATE_TO_OWNER. Auto-merge, squash, rebase, force-push, canonical sync, trading, credentials, and HIGH/CRITICAL autonomous actions are forbidden. Decisions are immutable and keyed by reviewed HEAD. Local `state/PAUSE` or `operator:pause` stops all work.
+The production review path is local and fail-closed. `ReviewerRouter` invokes independent Ollama Cloud models through the lossless Node.js/OpenCode JavaScript transport. It never requires `OPENAI_API_KEY` and never grants the reviewer write, shell, network, GitHub-token, merge, or policy authority.
 
-Install transactionally with `Install-OperatorProxy.ps1`, keep the task disabled, run `npm run doctor`, `npm run typecheck`, `npm test`, then `Run-OperatorProxy.ps1 -Once -DryRun` before one controlled real poll.
+Routing is risk-aware and excludes the known builder model. Low-risk changes use Qwen then GLM; medium/control-plane changes use GLM then Qwen; Agent Loop changes use GLM then Nemotron. A second independent verifier is mandatory. Transport or provider failures use a bounded three-model fallback. P0 findings and material verdict disagreements require a third qualified independent arbiter and always escalate as `BLOCKED`.
 
-## Autonomous roadmap flow
+The 2026-07-29 five-case qualification admitted GLM 5.2, Qwen 3.5 397B, Nemotron 3 Ultra, and Kimi K2.7 Code at 5/5. DeepSeek V4 Flash (3/5) and DeepSeek V4 Pro (4/5) remain explicitly unqualified and are not used in production routing. Qualification evidence is stored outside the repository under the Operator Proxy qualification root.
 
-The proxy reads the manifest and roadmap from the immutable remote integration HEAD. Exactly one `AUTHORIZED_ACTIVE` item with complete automation and closeout metadata is required. The persisted lifecycle advances through discovery, admission, isolated building, CI, independent review, bounded repair, governed merge, optional install/runtime pilot, documentary closeout, and next-item discovery.
+Every review is bound to repository, PR, base SHA, head SHA, builder session, and a unique reviewer session. The Router creates a detached temporary worktree, verifies a clean exact HEAD before and after review, injects the complete trusted Git diff, and stores an append-only idempotent receipt. Any write attempt, invalid output, identity mismatch, unavailable reviewer pool, or ambiguous result blocks policy and merge.
 
-External effects are idempotent: an existing Issue, remote branch, Draft PR, decision, or merge is reconciled rather than recreated. Builder and reviewer session IDs must differ. P0/P1 findings block; bounded P2 findings may use at most two fresh builder repair sessions. Installation and runtime pilots use SHA-bound local requests and receipts so UAC pauses resume the same lifecycle.
+The GitHub workflow named `Operator Proxy Codex Supervisor` now validates only the deterministic immutable boundary and uploads a receipt explicitly marked `intelligent_review=false`. It is not an intelligent reviewer and cannot authorize merge. Intelligent review evidence must come from the installed local Router.
 
-The sequencer never writes the manifest, roadmap, scorecard, ledger, or status files. Those files may change only through the separately scoped and reviewed closeout PR declared by canonical metadata. Missing metadata, multiple active items, open dependencies, base drift, unsafe test commands, unexpected paths, unavailable actors, or malformed receipts fail closed.
-## Decision ledger compatibility
-
-The decision ledger has two explicit, non-overlapping formats:
-
-- `LegacyDecisionV1` is `schema_version: 1` and has no `decision_key` or modern reviewer-consistency fields.
-- `KeyedDecisionV2` is `schema_version: 2` and requires a deterministic `decision_key`, `review_findings_count`, and `review_consistent`.
-
-Legacy files are never rewritten or renamed. On first validated scan, the runtime derives a version-separated key in memory and atomically creates `legacy-index-v2/<source_sha256>.json`. The sidecar binds the original filename, source hash, original decision ID, derived key, and normalized governed identity. Existing sidecars must match exactly; corrupt or conflicting source, sidecar, event, receipt, or same-head identity data fails closed. Existing v1 and v2 records with equivalent governed identity are treated as one logical decision, while new decisions are written only as v2.
+`codex_reviewer.ts` remains solely for the one-time bootstrap review of the Router itself through the locally authenticated Codex CLI. It is not the production review dependency.

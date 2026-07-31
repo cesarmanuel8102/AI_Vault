@@ -93,7 +93,7 @@ def test_review_schema_is_strict_json_schema() -> None:
     assert schema["properties"]["head_sha"]["pattern"] == "^[0-9a-f]{7,40}$"
 
 
-def test_workflow_deterministic_codex_publish_topology() -> None:
+def test_workflow_deterministic_local_reviewer_boundary_topology() -> None:
     text = _workflow()
     assert "deterministic:" in text
     assert "codex:" in text
@@ -102,11 +102,13 @@ def test_workflow_deterministic_codex_publish_topology() -> None:
     publish = _job_block(text, "publish")
     assert "needs: deterministic" in codex
     assert "if: needs.deterministic.result == 'success'" in codex
-    assert "sandbox: read-only" in codex
     assert "contents: read" in codex
     assert "issues: write" not in codex
     assert "pull-requests: write" not in codex
-    assert "--output-schema" in codex and ".github/codex/review-schema.json" in codex
+    assert "intelligent_review" in codex and "False" in codex
+    assert "opencode_ollama_reviewer_router" in codex
+    assert "openai/codex-action" not in codex
+    assert "openai-api-key:" not in codex
     assert "needs: [deterministic, codex]" in publish
     assert "issues: write" in publish and "pull-requests: write" in publish
 
@@ -115,12 +117,10 @@ def test_workflow_verdict_transitions_are_explicit() -> None:
     text = _workflow()
     publish = _job_block(text, "publish")
     assert "DETERMINISTIC_FAILURE" in publish and "loop:repairing" in publish
-    assert "CODEX_ACTION_FAILURE" in publish and "loop:blocked" in publish
-    assert "INVALID_CODEX_JSON" in publish and "loop:blocked" in publish
-    assert "parsed.verdict === 'PASS' && parsed.head_sha === process.env.HEAD_SHA" in publish
-    assert "loop:ready-human-audit" in publish
-    assert "parsed.verdict === 'CHANGES_REQUESTED'" in publish and "loop:repairing" in publish
-    assert "Codex returned BLOCKED" in publish and "loop:blocked" in publish
+    assert "LOCAL_REVIEW_BOUNDARY_FAILURE" in publish and "loop:blocked" in publish
+    assert "AWAITING_LOCAL_REVIEWER" in publish and "loop:ci" in publish
+    assert "labels:['loop:ready-human-audit']" not in publish
+    assert "required_runtime_reviewer:'opencode_ollama_reviewer_router'" in publish
 
 
 def test_workflow_has_no_merge_push_or_write_credentials() -> None:
@@ -131,9 +131,10 @@ def test_workflow_has_no_merge_push_or_write_credentials() -> None:
     assert "persist-credentials: false" in text
 
 
-def test_workflow_head_mismatch_cannot_pass() -> None:
+def test_workflow_head_is_bound_for_local_review() -> None:
+    codex = _job_block(_workflow(), "codex")
     publish = _job_block(_workflow(), "publish")
-    assert "parsed.head_sha === process.env.HEAD_SHA" in publish
+    assert "HEAD_SHA: ${{ github.event.pull_request.head.sha }}" in codex
     assert "HEAD_SHA: ${{ github.event.pull_request.head.sha }}" in publish
 
 
@@ -150,7 +151,7 @@ def test_workflow_derives_exact_front_from_commit_and_cross_checks_report() -> N
 
 def test_publish_uses_executor_neutral_language() -> None:
     publish = _job_block(_workflow(), "publish")
-    assert "OpenCode executor local gates" in publish
+    assert "OpenCode/Ollama Reviewer Router" in publish
     assert "Kimi local gates" not in publish
 
 
@@ -163,10 +164,10 @@ def main() -> int:
         test_supervisor_prompt_preserves_no_merge_no_canonical_sync,
         test_supervisor_requires_explicit_canonical_governance_binding_fields,
         test_review_schema_is_strict_json_schema,
-        test_workflow_deterministic_codex_publish_topology,
+        test_workflow_deterministic_local_reviewer_boundary_topology,
         test_workflow_verdict_transitions_are_explicit,
         test_workflow_has_no_merge_push_or_write_credentials,
-        test_workflow_head_mismatch_cannot_pass,
+        test_workflow_head_is_bound_for_local_review,
         test_workflow_derives_exact_front_from_commit_and_cross_checks_report,
         test_publish_uses_executor_neutral_language,
     ]

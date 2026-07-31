@@ -36,13 +36,17 @@ test("transitional decisions cannot bypass risk or deterministic policy gates",(
   assert.equal(merged,0);
 });
 
-test("independent reviewer is bound to immutable PR base and head",()=>{
+test("deterministic workflow boundary is immutable and delegates intelligence locally",()=>{
   const workflow=readFileSync(resolve(process.cwd(),"../../.github/workflows/operator-proxy-codex-supervisor.yml"),"utf8");
   const prompt=readFileSync(resolve(process.cwd(),"../../.github/codex/operator-proxy-supervisor.md"),"utf8");
   assert.match(workflow,/BASE_SHA: \$\{\{ github\.event\.pull_request\.base\.sha \}\}/);
   assert.match(workflow,/HEAD_SHA: \$\{\{ github\.event\.pull_request\.head\.sha \}\}/);
   assert.match(workflow,/git merge-base \"\$BASE_SHA\" \"\$HEAD_SHA\"/);
-  assert.match(workflow,/operator-proxy-review-context\.txt/);
+  assert.match(workflow,/operator-proxy-review-boundary\.json/);
+  assert.match(workflow,/"intelligent_review": False/);
+  assert.match(workflow,/opencode_ollama_reviewer_router/);
+  assert.doesNotMatch(workflow,/uses: openai\/codex-action/);
+  assert.doesNotMatch(workflow,/openai-api-key:/);
   assert.match(prompt,/git diff --name-status BASE_SHA\.\.\.HEAD_SHA/);
   assert.match(prompt,/complete `git diff BASE_SHA\.\.\.HEAD_SHA`/);
   assert.doesNotMatch(prompt,/Compare the checked-out HEAD with its first parent/);
