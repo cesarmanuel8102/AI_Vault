@@ -3,7 +3,7 @@ import {join} from "node:path";
 import type {LifecycleRecord,ProxySpec} from "./types.js";
 import type {GitHubBus} from "./github_bus.js";
 import {AUTH,REPO} from "./policy_engine.js";
-import {validBlockedCiEffectChain} from "./lifecycle_store.js";
+import {validBlockedCiEffectChain,validPrivilegedInstallEffectChain} from "./lifecycle_store.js";
 
 export const EXTERNAL_EFFECT_REGISTRY=["issue_create","issue_modify","label_modify","comment_publish","branch_create","builder_execute","commit_create","push","pr_create","workflow_dispatch","reviewer_execute","decision_persist","findings_publish","repair_request","merge","installation_request","installation_receipt","pilot_request","pilot_receipt","closeout_create","next_item_activate"] as const;
 export type ExternalEffect=typeof EXTERNAL_EFFECT_REGISTRY[number];
@@ -15,12 +15,6 @@ interface BlockedCiRecovery {
 }
 
 const POST_MERGE=new Set(["MERGED","INSTALL_PENDING","INSTALLING","RUNTIME_PILOT_PENDING","RUNTIME_PILOT_RUNNING","RUNTIME_VERIFIED","CLOSEOUT_PENDING","CLOSEOUT_MERGED","TERMINAL_COMPLETED"]);
-
-function validPrivilegedInstallEffectChain(state:LifecycleRecord){
-  const effects=state.completed_effects;
-  if(!state.issue||!state.head_sha||effects.length<3||effects.length>11||effects[0]!==`issue:${state.issue}`||!/^build:[0-9a-f]{40}$/.test(effects[1]??"")||effects.at(-1)!==`merge:${state.head_sha}`||new Set(effects).size!==effects.length)return false;
-  return effects.slice(2,-1).every(effect=>/^base-sync:[0-9a-f]{40}$/.test(effect));
-}
 
 export class ExternalEffectBoundary {
   private spec?:ProxySpec;private lifecycle?:LifecycleRecord;

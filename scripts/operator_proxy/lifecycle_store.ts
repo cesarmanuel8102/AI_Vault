@@ -13,6 +13,11 @@ export function validBlockedCiEffectChain(record:LifecycleRecord){
   if(effects.length===2)return effects[1]===`build:${record.head_sha}`;
   return effects.slice(2).every(effect=>/^base-sync:[0-9a-f]{40}$/.test(effect))&&effects.at(-1)===`base-sync:${record.head_sha}`;
 }
+export function validPrivilegedInstallEffectChain(record:LifecycleRecord){
+  const effects=record.completed_effects;
+  if(!record.issue||!record.head_sha||effects.length<3||effects.length>11||effects[0]!==`issue:${record.issue}`||!/^build:[0-9a-f]{40}$/.test(effects[1]??"")||effects.at(-1)!==`merge:${record.head_sha}`||new Set(effects).size!==effects.length)return false;
+  return effects.slice(2,-1).every(effect=>/^base-sync:[0-9a-f]{40}$/.test(effect));
+}
 
 export class LifecycleStore {
   constructor(readonly root: string) { mkdirSync(root, {recursive:true}); }
@@ -46,7 +51,8 @@ export class LifecycleStore {
   }
   rebindPostMergeBase(record:LifecycleRecord,nextBase:string):LifecycleRecord {
     const postMerge=new Set(["MERGED","INSTALL_PENDING","INSTALLING","RUNTIME_PILOT_PENDING","RUNTIME_PILOT_RUNNING","RUNTIME_VERIFIED","CLOSEOUT_PENDING","CLOSEOUT_MERGED","TERMINAL_COMPLETED"]);
-    const exact=postMerge.has(record.state)&&/^[0-9a-f]{40}$/.test(record.head_sha??"")&&record.completed_effects.includes(`merge:${record.head_sha}`);
+    const privilegedInstallPending=record.state==="ESCALATED"&&record.last_error==="LOCAL_PRIVILEGE_REQUIRED"&&["INSTALL_ONLY","INSTALL_AND_RUNTIME_PILOT"].includes(record.deployment_mode)&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&record.repair_cycles===0&&!!record.builder_session&&!!record.reviewer_session&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(record.decision_id??"")&&validPrivilegedInstallEffectChain(record);
+    const exact=(postMerge.has(record.state)||privilegedInstallPending)&&/^[0-9a-f]{40}$/.test(record.head_sha??"")&&record.completed_effects.includes(`merge:${record.head_sha}`);
     if(!exact||!/^[0-9a-f]{40}$/.test(nextBase)||record.base_sha===nextBase)throw new Error("post-merge lifecycle base rebind denied");
     const updated={...record,base_sha:nextBase,updated_utc:new Date().toISOString()};
     appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_postmerge_base_rebound",front_id:record.front_id,old_base_sha:record.base_sha,new_base_sha:nextBase,merge_sha:record.head_sha,state:record.state,updated_utc:updated.updated_utc})}\n`);
