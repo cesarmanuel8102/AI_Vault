@@ -5,7 +5,7 @@ import {tmpdir} from "node:os";
 import {join} from "node:path";
 import type {ReviewerBackend,ReviewerInput} from "../../../scripts/operator_proxy/reviewer_backend.js";
 import {ReviewerBackendError} from "../../../scripts/operator_proxy/reviewer_backend.js";
-import {REVIEWER_MODELS,requiredBuilderModel,reviewerRoute} from "../../../scripts/operator_proxy/reviewer_config.js";
+import {REVIEWER_MODELS,requiredBuilderModel,reviewerRoute,verifiedBuilderModel} from "../../../scripts/operator_proxy/reviewer_config.js";
 import {ReviewerRouter} from "../../../scripts/operator_proxy/reviewer_router.js";
 
 const head="b".repeat(40),base="a".repeat(40);
@@ -18,6 +18,10 @@ test("routes by risk and agent-loop scope while excluding builder model",()=>{
   assert.ok(!reviewerRoute(input({builderModel:REVIEWER_MODELS.glm})).includes(REVIEWER_MODELS.glm));
   assert.equal(requiredBuilderModel({OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),REVIEWER_MODELS.glm);
   assert.throws(()=>requiredBuilderModel({} as NodeJS.ProcessEnv),/builder model identity/);
+  assert.equal(verifiedBuilderModel("agent_loop",{model:REVIEWER_MODELS.glm},{OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),REVIEWER_MODELS.glm);
+  assert.throws(()=>verifiedBuilderModel("agent_loop",undefined,{OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),/report model identity/);
+  assert.throws(()=>verifiedBuilderModel("agent_loop",{model:REVIEWER_MODELS.qwen},{OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),/report model identity/);
+  assert.equal(verifiedBuilderModel("codex_control_plane"),"codex-local");
 });
 
 test("falls back after transient backend failure and persists idempotent receipt",()=>{

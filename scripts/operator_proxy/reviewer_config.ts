@@ -26,6 +26,13 @@ export function requiredBuilderModel(env=process.env):string{
   return model;
 }
 
+export function verifiedBuilderModel(executor:"agent_loop"|"codex_control_plane",report?:unknown,env=process.env):string{
+  if(executor==="codex_control_plane")return "codex-local";
+  const configured=requiredBuilderModel(env),candidate=report as {model?:unknown}|undefined;
+  if(!candidate||candidate.model!==configured)throw new Error("Agent Loop report model identity missing or mismatched");
+  return configured;
+}
+
 const agentLoopPath=(path:string)=>path.startsWith("scripts/agent_loop/")||path.startsWith("tests/contract/test_agent_loop_");
 
 export function reviewerRoute(input:ReviewerInput):string[]{
