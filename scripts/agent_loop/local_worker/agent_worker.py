@@ -1902,7 +1902,69 @@ def prepare_repo(cfg, spec, issue_no):
     run(["git","config","user.email","ai-vault-worker@users.noreply.github.com"],cwd=repo_dir)
     return repo_dir
 
-def latest_feedback(repo: str, pr_no: int, spec: dict, head_sha: str, install_root: str) -> str:
+def _stable_decision_id(decision_key: str) -> str:
+    return (
+        f"{decision_key[:8]}-{decision_key[8:12]}-4{decision_key[13:16]}-"
+        f"{format((int(decision_key[16], 16) & 3) | 8, 'x')}{decision_key[17:20]}-"
+        f"{decision_key[20:32]}"
+    )
+
+
+def operator_proxy_repair_feedback(repo: str, issue_no: int, head_sha: str) -> str | None:
+    """Return reviewer findings only from one exact, owner-authored repair receipt."""
+    if not re.fullmatch(r"[0-9a-f]{40}", head_sha):
+        raise ValueError("repair feedback head invalid")
+    pattern = re.compile(
+        r"\A\[OPERATOR-PROXY\]\[REPAIR\]\n\n"
+        r"decision_key=([0-9a-f]{64})\n"
+        r"decision_id=([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\n"
+        r"head=([0-9a-f]{40})\nfindings=(\[.*\])\Z",
+        re.S | re.I,
+    )
+    matches = []
+    for item in issue_comments(repo, issue_no):
+        if str((item.get("user") or {}).get("login") or "") != "cesarmanuel8102":
+            continue
+        body = str(item.get("body") or "").replace("\r\n", "\n").rstrip("\n")
+        match = pattern.fullmatch(body)
+        if not match or match.group(3) != head_sha:
+            continue
+        decision_key, decision_id, _, encoded_findings = match.groups()
+        if decision_id.lower() != _stable_decision_id(decision_key.lower()):
+            raise ValueError("repair feedback decision identity invalid")
+        try:
+            findings = json.loads(encoded_findings)
+        except json.JSONDecodeError as exc:
+            raise ValueError("repair feedback findings invalid") from exc
+        if not isinstance(findings, list) or not findings or len(findings) > 20:
+            raise ValueError("repair feedback findings invalid")
+        expected_keys = {"severity", "title", "evidence", "required_correction"}
+        for finding in findings:
+            if (
+                not isinstance(finding, dict)
+                or set(finding) != expected_keys
+                or finding.get("severity") not in {"P1", "P2"}
+                or any(not isinstance(finding.get(key), str) or not finding[key].strip()
+                       for key in expected_keys - {"severity"})
+            ):
+                raise ValueError("repair feedback finding schema invalid")
+        matches.append((decision_key.lower(), findings))
+    if not matches:
+        return None
+    if len(matches) != 1:
+        raise ValueError("repair feedback ambiguous")
+    decision_key, findings = matches[0]
+    return (
+        "INDEPENDENT REVIEW FINDINGS:\n"
+        f"decision_key={decision_key}\n"
+        + json.dumps(findings, ensure_ascii=True, separators=(",", ":"))
+    )
+
+
+def latest_feedback(repo: str, issue_no: int, pr_no: int, spec: dict, head_sha: str, install_root: str) -> str:
+    reviewer_feedback = operator_proxy_repair_feedback(repo, issue_no, head_sha)
+    if reviewer_feedback is not None:
+        return reviewer_feedback
     runs = gh_json(["run","list","--repo",repo,"--workflow","agent-loop-pilot.yml",
                     "--branch",spec["work_branch"],"--event","pull_request","--limit","20",
                     "--json","databaseId,headSha,status,conclusion,createdAt,url"])
@@ -2253,7 +2315,7 @@ def process_state(cfg, state_path):
         event(cfg, "state_terminalized", state=str(state_path), issue=issue, phase="loop:token-exhausted",
               failure_class="MAX_CYCLES_REACHED", error="max cycles reached")
         return
-    feedback=latest_feedback(cfg["repo"],prn,spec,pr["headRefOid"],cfg["install_root"])
+    feedback=latest_feedback(cfg["repo"],issue,prn,spec,pr["headRefOid"],cfg["install_root"])
     repo_dir=Path(st["repo_dir"])
     run(["git","fetch","origin",spec["work_branch"]],cwd=repo_dir)
     run(["git","checkout",spec["work_branch"]],cwd=repo_dir)
