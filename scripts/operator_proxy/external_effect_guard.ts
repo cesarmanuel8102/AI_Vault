@@ -16,11 +16,27 @@ interface BlockedCiRecovery {
 
 const POST_MERGE=new Set(["MERGED","INSTALL_PENDING","INSTALLING","RUNTIME_PILOT_PENDING","RUNTIME_PILOT_RUNNING","RUNTIME_VERIFIED","CLOSEOUT_PENDING","CLOSEOUT_MERGED","TERMINAL_COMPLETED"]);
 
+function validPrivilegedInstallEffectChain(state:LifecycleRecord){
+  const effects=state.completed_effects;
+  if(!state.issue||!state.head_sha||effects.length<3||effects.length>11||effects[0]!==`issue:${state.issue}`||!/^build:[0-9a-f]{40}$/.test(effects[1]??"")||effects.at(-1)!==`merge:${state.head_sha}`||new Set(effects).size!==effects.length)return false;
+  return effects.slice(2,-1).every(effect=>/^base-sync:[0-9a-f]{40}$/.test(effect));
+}
+
 export class ExternalEffectBoundary {
   private spec?:ProxySpec;private lifecycle?:LifecycleRecord;
   private blockedCiRecovery?:BlockedCiRecovery;
+  private privilegedInstallResume=false;
   constructor(readonly root:string,readonly bus:GitHubBus,readonly leaseOwned:()=>boolean){}
-  bind(spec:ProxySpec,lifecycle:LifecycleRecord){this.spec=spec;this.lifecycle=lifecycle;this.blockedCiRecovery=undefined;}
+  bind(spec:ProxySpec,lifecycle:LifecycleRecord){this.spec=spec;this.lifecycle=lifecycle;this.blockedCiRecovery=undefined;this.privilegedInstallResume=false;}
+  beginPrivilegedInstallResume(spec:ProxySpec,state:LifecycleRecord){
+    const exact=state.state==="ESCALATED"&&state.last_error==="LOCAL_PRIVILEGE_REQUIRED"&&spec.install_target==="agent_loop_worker"&&["INSTALL_ONLY","INSTALL_AND_RUNTIME_PILOT"].includes(spec.deployment_mode??"")&&state.deployment_mode===spec.deployment_mode&&state.front_id===spec.front_id&&state.roadmap_item_id===spec.roadmap_item_id&&state.base_sha===spec.expected_base_sha&&Number.isInteger(state.issue)&&state.issue!>0&&Number.isInteger(state.pr)&&state.pr!>0&&state.repair_cycles===0&&!!state.builder_session&&!!state.reviewer_session&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(state.decision_id??"")&&/^[0-9a-f]{40}$/.test(state.head_sha??"")&&validPrivilegedInstallEffectChain(state);
+    if(!exact)throw new Error("privileged install receipt boundary denied");
+    if(this.bus.branchHead("codex/own-capital-sustainable-return")!==spec.expected_base_sha)throw new Error("external effect base changed");
+    if(this.bus.issuePaused(state.issue!))throw new Error("external effect paused by GitHub label");
+    this.bind(spec,state);this.privilegedInstallResume=true;
+  }
+  assertPrivilegedInstallResumeReady(){if(!this.privilegedInstallResume)throw new Error("privileged install receipt boundary denied");this.assert("installation_receipt");}
+  endPrivilegedInstallResume(){this.privilegedInstallResume=false;}
   beginBlockedCiRecovery(spec:ProxySpec,state:LifecycleRecord){
     const exact=state.state==="BLOCKED"&&state.last_error==="CI_FAILED"&&Number.isInteger(state.issue)&&state.issue!>0&&Number.isInteger(state.pr)&&state.pr!>0&&state.repair_cycles===0&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&/^[0-9a-f]{40}$/.test(state.base_sha)&&/^[0-9a-f]{40}$/.test(state.head_sha??"")&&state.base_sha!==spec.expected_base_sha&&validBlockedCiEffectChain(state);
     if(!exact||state.front_id!==spec.front_id||state.roadmap_item_id!==spec.roadmap_item_id)throw new Error("blocked CI recovery boundary denied");
@@ -41,6 +57,11 @@ export class ExternalEffectBoundary {
     if(existsSync(join(this.root,"state","PAUSE")))throw new Error("external effect paused locally");
     if(spec.authorization_id!==AUTH||spec.repository!==REPO||state.front_id!==spec.front_id||state.roadmap_item_id!==spec.roadmap_item_id)throw new Error("external effect authorization invalid");
     if(state.state==="BLOCKED"||state.state==="ESCALATED"){
+      if(this.privilegedInstallResume&&state.state==="ESCALATED"&&state.last_error==="LOCAL_PRIVILEGE_REQUIRED"&&effect==="installation_receipt"){
+        if(this.bus.branchHead("codex/own-capital-sustainable-return")!==spec.expected_base_sha)throw new Error("external effect base changed");
+        if(state.issue&&this.bus.issuePaused(state.issue))throw new Error("external effect paused by GitHub label");
+        return;
+      }
       const recovery=this.blockedCiRecovery;
       if(!recovery||recovery.priorState!==state.state||recovery.frontId!==state.front_id||recovery.issue!==state.issue||recovery.pr!==state.pr||recovery.oldBase!==state.base_sha||recovery.newBase!==spec.expected_base_sha||recovery.oldHead!==state.head_sha)throw new Error("external effect denied by lifecycle state");
       if(this.bus.branchHead("codex/own-capital-sustainable-return")!==recovery.newBase)throw new Error("external effect base changed");

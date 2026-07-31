@@ -23,11 +23,16 @@ export class RequestCoordinator implements LocalCoordinator {
   readonly requests:string;readonly receipts:string;
   constructor(readonly root:string,readonly assertEffect:EffectAssertion){this.requests=join(root,"requests");this.receipts=join(root,"receipts");mkdirSync(this.requests,{recursive:true});mkdirSync(this.receipts,{recursive:true});}
   private paths(kind:Kind,sha:string,front?:string){if(!SHA40.test(sha))throw new Error("coordinator SHA invalid");const suffix=kind==="install"?`${front}-${sha}`:sha;if(kind==="install"&&!front)throw new Error("coordinator install front missing");return {request:join(this.requests,`${kind}-${suffix}.json`),receipt:join(this.receipts,`${kind}-${suffix}.json`)};}
+  validatedInstallReceiptDigest(spec:ProxySpec,sha:string){
+    if(spec.install_target!==AGENT_LOOP_INSTALL_PROFILE.install_target||!spec.front_id)throw new Error("coordinator install identity invalid");const path=this.paths("install",sha,spec.front_id).receipt;if(!existsSync(path))return undefined;
+    const value=JSON.parse(readFileSync(path,"utf8"));if(containsSensitiveData(value))throw new Error("coordinator receipt contains sensitive data");
+    const expectedKeys=["artifact_path","artifact_sha256","config_sha256_after","config_sha256_before","front_id","install_target","installed_sha256","installer_profile","kind","repository","roadmap_item_id","schema_version","sha","source_sha256","status","task_state","transaction_marker"].sort(),identity={sha,repository:spec.repository,front_id:spec.front_id,roadmap_item_id:spec.roadmap_item_id,...AGENT_LOOP_INSTALL_PROFILE};
+    if(value.schema_version!==2||value.kind!=="install"||value.status!=="PASS"||JSON.stringify(Object.keys(value).sort())!==JSON.stringify(expectedKeys)||Object.entries(identity).some(([key,expected])=>value[key]!==expected)||!SHA256.test(value.artifact_sha256)||value.source_sha256!==value.artifact_sha256||value.installed_sha256!==value.artifact_sha256||!SHA256.test(value.config_sha256_before)||value.config_sha256_before!==value.config_sha256_after||value.task_state!=="Disabled")throw new Error("coordinator receipt invalid");
+    return value.artifact_sha256 as string;
+  }
   private installReceipt(spec:ProxySpec,sha:string,artifactSha256:string){
-    const identity=installIdentity(spec,sha,artifactSha256),paths=this.paths("install",sha,spec.front_id);if(!existsSync(paths.receipt))return false;
-    this.assertEffect("installation_receipt");const value=JSON.parse(readFileSync(paths.receipt,"utf8"));if(containsSensitiveData(value))throw new Error("coordinator receipt contains sensitive data");
-    const expectedKeys=["artifact_path","artifact_sha256","config_sha256_after","config_sha256_before","front_id","install_target","installed_sha256","installer_profile","kind","repository","roadmap_item_id","schema_version","sha","source_sha256","status","task_state","transaction_marker"].sort();
-    if(value.schema_version!==2||value.kind!=="install"||value.status!=="PASS"||JSON.stringify(Object.keys(value).sort())!==JSON.stringify(expectedKeys)||Object.entries(identity).some(([key,expected])=>value[key]!==expected)||value.source_sha256!==artifactSha256||value.installed_sha256!==artifactSha256||value.config_sha256_before!==value.config_sha256_after||!SHA256.test(value.config_sha256_before)||value.task_state!=="Disabled")throw new Error("coordinator receipt invalid");
+    const digest=this.validatedInstallReceiptDigest(spec,sha);if(!digest)return false;
+    this.assertEffect("installation_receipt");if(digest!==artifactSha256)throw new Error("coordinator receipt invalid");
     return true;
   }
   private installRequest(spec:ProxySpec,sha:string,artifactSha256:string){const identity=installIdentity(spec,sha,artifactSha256),path=this.paths("install",sha,spec.front_id).request;if(!existsSync(path)){this.assertEffect("installation_request");const value=redactSensitiveData({schema_version:2,kind:"install",...identity,created_utc:new Date().toISOString()});writeFileSync(path,`${JSON.stringify(value,null,2)}\n`,{flag:"wx"});}}

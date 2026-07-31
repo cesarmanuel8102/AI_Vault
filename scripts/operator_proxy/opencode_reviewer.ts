@@ -63,9 +63,10 @@ export class OpenCodeReviewerBackend implements ReviewerBackend {
         }},
       };
       writeFileSync(configPath,JSON.stringify(config));
+      const promptPath=join(temp,"review-prompt.txt");writeFileSync(promptPath,reviewPrompt(input,diff),"utf8");
       const env:NodeJS.ProcessEnv={...process.env,OPENCODE_CONFIG:configPath};delete env.OPENAI_API_KEY;delete env.GH_TOKEN;delete env.GITHUB_TOKEN;
       let stdout:string;
-      try{stdout=this.runner(runtime.node,[runtime.entrypoint,"run","--dir",workspace,"--model",this.model,"--agent","brain-opencode-reviewer","--format","json","--title",session,"--thinking","false",reviewPrompt(input,diff)],{cwd:workspace,env,timeout:900000,maxBuffer:64*1024*1024});}
+      try{stdout=this.runner(runtime.node,[runtime.entrypoint,"run","--dir",workspace,"--model",this.model,"--agent","brain-opencode-reviewer","--format","json","--title",session,"--thinking","false","Review the attached immutable diff and return the required JSON.","--file",promptPath],{cwd:workspace,env,timeout:900000,maxBuffer:64*1024*1024});}
       catch(error){throw new ReviewerBackendError(redactedError(error),"REVIEWER_TRANSPORT_FAILURE",true);}
       assertImmutable(this.runner,workspace,input);
       const parsed=parseJsonl(stdout,input.headSha);return {output:parsed.output,providerSession:parsed.providerSession,backend:"opencode_ollama",model:this.model,session,startedUtc,completedUtc:new Date().toISOString()};

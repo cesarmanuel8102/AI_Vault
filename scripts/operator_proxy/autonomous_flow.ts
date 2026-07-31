@@ -27,8 +27,11 @@ export function newLifecycle(spec:ProxySpec):LifecycleRecord {
 
 export class AutonomousFlow {
   constructor(readonly store:LifecycleStore,readonly effects:AutonomousEffects){}
-  resumePrivilegedInstall(frontId:string):LifecycleRecord {
-    const state=this.store.load(frontId);if(!state||state.state!=="ESCALATED"||state.last_error!=="LOCAL_PRIVILEGE_REQUIRED")throw new Error("privileged install resume not authorized by persisted state");
+  assertPrivilegedInstallState(expected:LifecycleRecord):LifecycleRecord {
+    const state=this.store.load(expected.front_id);if(!state||JSON.stringify(state)!==JSON.stringify(expected)||state.state!=="ESCALATED"||state.last_error!=="LOCAL_PRIVILEGE_REQUIRED")throw new Error("privileged install resume not authorized by persisted state");return state;
+  }
+  resumePrivilegedInstall(expected:LifecycleRecord):LifecycleRecord {
+    const state=this.assertPrivilegedInstallState(expected);
     return this.store.advance(state,"INSTALL_PENDING",{last_error:undefined});
   }
   step(spec:ProxySpec):LifecycleRecord {
