@@ -3195,8 +3195,94 @@ def test_r1_ready_human_audit_poll_converges_without_executor() -> None:
         assert saved["roadmap_binding"] == binding
 
 
+def _repair_comment(head: str = HEAD, *, decision_key: str = "d" * 64,
+                    severity: str = "P2", author: str = "cesarmanuel8102") -> dict:
+    decision_id = worker._stable_decision_id(decision_key)
+    findings = [{
+        "severity": severity,
+        "title": "Repair exact finding",
+        "evidence": "Bound evidence",
+        "required_correction": "Apply the bounded correction",
+    }]
+    return {
+        "user": {"login": author},
+        "body": (
+            "[OPERATOR-PROXY][REPAIR]\n\n"
+            f"decision_key={decision_key}\n"
+            f"decision_id={decision_id}\n"
+            f"head={head}\n"
+            f"findings={json.dumps(findings, separators=(',', ':'))}"
+        ),
+    }
+
+
+def test_operator_proxy_feedback_is_exact_head_and_identity_bound() -> None:
+    original = worker.issue_comments
+    worker.issue_comments = lambda repo, issue: [_repair_comment()]
+    try:
+        feedback = worker.operator_proxy_repair_feedback("cesarmanuel8102/AI_Vault", 65, HEAD)
+    finally:
+        worker.issue_comments = original
+    assert feedback is not None
+    assert feedback.startswith("INDEPENDENT REVIEW FINDINGS:\ndecision_key=" + "d" * 64)
+    assert "Repair exact finding" in feedback
+
+
+def test_operator_proxy_feedback_rejects_wrong_identity_and_ambiguity() -> None:
+    original = worker.issue_comments
+    invalid_id = _repair_comment()
+    invalid_id["body"] = invalid_id["body"].replace(
+        worker._stable_decision_id("d" * 64), worker._stable_decision_id("e" * 64)
+    )
+    try:
+        worker.issue_comments = lambda repo, issue: [invalid_id]
+        try:
+            worker.operator_proxy_repair_feedback("cesarmanuel8102/AI_Vault", 65, HEAD)
+            raise AssertionError("mismatched decision identity accepted")
+        except ValueError as exc:
+            assert str(exc) == "repair feedback decision identity invalid"
+        worker.issue_comments = lambda repo, issue: [_repair_comment(), _repair_comment()]
+        try:
+            worker.operator_proxy_repair_feedback("cesarmanuel8102/AI_Vault", 65, HEAD)
+            raise AssertionError("ambiguous repair feedback accepted")
+        except ValueError as exc:
+            assert str(exc) == "repair feedback ambiguous"
+    finally:
+        worker.issue_comments = original
+
+
+def test_operator_proxy_feedback_ignores_untrusted_or_wrong_head_comments() -> None:
+    original = worker.issue_comments
+    worker.issue_comments = lambda repo, issue: [
+        _repair_comment(author="attacker"),
+        _repair_comment(head="c" * 40),
+    ]
+    try:
+        assert worker.operator_proxy_repair_feedback("cesarmanuel8102/AI_Vault", 65, HEAD) is None
+    finally:
+        worker.issue_comments = original
+
+
+def test_latest_feedback_prefers_reviewer_receipt_without_workflow_lookup() -> None:
+    originals = _patch_worker(
+        issue_comments=lambda repo, issue: [_repair_comment()],
+        gh_json=lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("workflow lookup must not run")),
+    )
+    try:
+        feedback = worker.latest_feedback(
+            "cesarmanuel8102/AI_Vault", 65, 68, _base_spec(), HEAD, str(ROOT)
+        )
+    finally:
+        _restore(originals)
+    assert "INDEPENDENT REVIEW FINDINGS" in feedback
+
+
 def main() -> int:
     tests = [
+        test_operator_proxy_feedback_is_exact_head_and_identity_bound,
+        test_operator_proxy_feedback_rejects_wrong_identity_and_ambiguity,
+        test_operator_proxy_feedback_ignores_untrusted_or_wrong_head_comments,
+        test_latest_feedback_prefers_reviewer_receipt_without_workflow_lookup,
         test_state_schema_version_injected,
         test_terminalize_state_error_generates_schema_valid_state,
         test_state_validation_rejects_unknown_and_missing,
