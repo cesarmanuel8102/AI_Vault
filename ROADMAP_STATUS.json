@@ -4761,7 +4761,7 @@
     "schema_version": 1,
     "roadmap_id": "BRAIN-101",
     "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-    "status": "R1_0_CLOSED_RUNTIME_VERIFIED_R1_2_AUTHORIZED_ACTIVE",
+    "status": "R1_2_CLOSED_RUNTIME_VERIFIED_R1_3_AUTHORIZED_ACTIVE",
     "approval_status": "HUMAN_ADOPTED",
     "current_phase": "R1",
     "rebaseline_source_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
@@ -4781,7 +4781,18 @@
     "r1_1_issue": 44,
     "r1_1_pr": 45,
     "r1_1_pilot_head": "66de7603865b9b59dfee6da1e46ce4d3cf477080",
-    "r1_2_status": "AUTHORIZED_ACTIVE",
+    "r1_2_status": "CLOSED_RUNTIME_VERIFIED",
+    "r1_2_implementation_issue": 56,
+    "r1_2_implementation_pr": 57,
+    "r1_2_implementation_head": "2e1201ac8c5d27ebac5f6f6f00a01cce8640b3e1",
+    "r1_2_implementation_merge_commit": "3ec640e317cbe8c6cae8aff91684179144b2fd1e",
+    "r1_2_runtime_activation_issue": 59,
+    "r1_2_runtime_activation_pr": 58,
+    "r1_2_runtime_activation_head": "c9a58aa52595d58eb6154822f0202817a7246adf",
+    "r1_2_runtime_activation_merge_commit": "40343a308b7833ee948ea8dbdaf8b8aed334f13d",
+    "r1_2_final_install_repair_pr": 102,
+    "r1_2_final_install_repair_merge_commit": "afbeadcc354e3cb74747c694269c50efdb620ccf",
+    "r1_2_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_R1_2_RUNTIME_CLOSEOUT.json",
     "operator_proxy_merge": "7134393351810e64fd1a418dfdd986b53531ff46",
     "r1_control_plane_issue": 62,
     "r1_control_plane_status": "CLOSED_RUNTIME_VERIFIED",
@@ -4794,6 +4805,16 @@
     "r1_0_merge_commit": "9fde35227982a89c1af6b31051ff44f131128430",
     "r1_0_merged_at_utc": "2026-07-29T14:52:29Z",
     "r1_0_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_CLOSEOUT.json",
-    "next_gate": "Execute R1.2 roadmap-doc and test-only profiles through Operator Proxy"
+    "r1_3_status": "AUTHORIZED_ACTIVE",
+    "r1_3_front_id": "BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-01",
+    "r1_3_risk": "LOW",
+    "r1_3_domain": "agent_loop",
+    "r1_3_executor": "opencode_kimi",
+    "r1_3_test_profile": "roadmap-doc",
+    "r1_3_deployment_mode": "NO_DEPLOY",
+    "r1_3_allowed_paths": [
+      "docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md"
+    ],
+    "next_gate": "Execute R1.3 isolated Agent Loop OpenCode Kimi roadmap-doc E2E with NO_DEPLOY"
   }
 }
