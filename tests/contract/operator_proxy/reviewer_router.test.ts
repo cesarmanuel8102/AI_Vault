@@ -5,7 +5,7 @@ import {tmpdir} from "node:os";
 import {join} from "node:path";
 import type {ReviewerBackend,ReviewerInput} from "../../../scripts/operator_proxy/reviewer_backend.js";
 import {ReviewerBackendError} from "../../../scripts/operator_proxy/reviewer_backend.js";
-import {REVIEWER_MODELS,reviewerRoute} from "../../../scripts/operator_proxy/reviewer_config.js";
+import {REVIEWER_MODELS,requiredBuilderModel,reviewerRoute} from "../../../scripts/operator_proxy/reviewer_config.js";
 import {ReviewerRouter} from "../../../scripts/operator_proxy/reviewer_router.js";
 
 const head="b".repeat(40),base="a".repeat(40);
@@ -16,6 +16,8 @@ test("routes by risk and agent-loop scope while excluding builder model",()=>{
   assert.deepEqual(reviewerRoute(input({risk:"LOW"})),[REVIEWER_MODELS.qwen,REVIEWER_MODELS.glm,REVIEWER_MODELS.nemotron]);
   assert.deepEqual(reviewerRoute(input({changedFiles:["scripts/agent_loop/local_worker/agent_worker.py"]})),[REVIEWER_MODELS.glm,REVIEWER_MODELS.nemotron,REVIEWER_MODELS.qwen]);
   assert.ok(!reviewerRoute(input({builderModel:REVIEWER_MODELS.glm})).includes(REVIEWER_MODELS.glm));
+  assert.equal(requiredBuilderModel({OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),REVIEWER_MODELS.glm);
+  assert.throws(()=>requiredBuilderModel({} as NodeJS.ProcessEnv),/builder model identity/);
 });
 
 test("falls back after transient backend failure and persists idempotent receipt",()=>{
@@ -38,6 +40,14 @@ test("P0 invokes a third qualified independent arbiter and remains BLOCKED",()=>
   assert.equal(result.output.verdict,"BLOCKED");assert.equal(result.arbiter?.model,REVIEWER_MODELS.nemotron);
   assert.deepEqual((arbiterInput?.panelEvidence as any).primary.output.findings[0].severity,"P0");
   assert.equal((arbiterInput?.panelEvidence as any).verifier.output.verdict,"BLOCKED");
+});
+
+test("verifier-only P0 is preserved for owner escalation",()=>{
+  let calls=0;
+  const p0={severity:"P0" as const,title:"authority",evidence:"verifier evidence",required_correction:"owner review"};
+  const factory=(model:string):ReviewerBackend=>model===REVIEWER_MODELS.nemotron?pass(model):calls++===0?pass(model):{model,review:(_value,session)=>({...pass(model).review(input(),session),output:{verdict:"BLOCKED",head_sha:head,summary:"p0",findings:[p0]}})};
+  const result=new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory).review(input());
+  assert.equal(result.output.verdict,"BLOCKED");assert.deepEqual(result.output.findings,[p0]);
 });
 
 test("material reviewer disagreement invokes arbiter and never auto-approves",()=>{

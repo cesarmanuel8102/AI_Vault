@@ -8,6 +8,7 @@ import {collect} from "./evidence_collector.js";
 import {decide,decisionKey,POLICY_SHA256} from "./policy_engine.js";
 import {resolveReviewerRepository} from "./codex_reviewer.js";
 import {ReviewerRouter} from "./reviewer_router.js";
+import {requiredBuilderModel} from "./reviewer_config.js";
 import {execute,reconcileAuthorizationComment} from "./action_executor.js";
 import {parseIssue} from "./spec_contract.js";
 import {runAutonomousRoadmapTick} from "./autonomous_runtime.js";
@@ -21,7 +22,7 @@ const dry=args.has("--dry-run");
 
 function review(cwd:string,pr:number,base:string,head:string,risk:import("./types.js").Risk,changedFiles:string[],builderSession:string){
   const requestedSession=`reviewer-${randomUUID()}`;
-  try {const run=new ReviewerRouter(join(root,"reviewer-router")).review({repository:"cesarmanuel8102/AI_Vault",repositoryRoot:cwd,pr,baseSha:base,headSha:head,risk,changedFiles,builderSession});return {result:run.output,session:run.session,requestedSession,reviewer:{backend:run.backend,model:run.model,verifier:run.verifier,attempts:run.attempts,receipt_key:run.receipt_key,arbiter:run.arbiter}};}
+  try {const run=new ReviewerRouter(join(root,"reviewer-router")).review({repository:"cesarmanuel8102/AI_Vault",repositoryRoot:cwd,pr,baseSha:base,headSha:head,risk,changedFiles,builderSession,builderModel:requiredBuilderModel()});return {result:run.output,session:run.session,requestedSession,reviewer:{backend:run.backend,model:run.model,verifier:run.verifier,attempts:run.attempts,receipt_key:run.receipt_key,arbiter:run.arbiter}};}
   catch{return {result:{verdict:"BLOCKED" as const,head_sha:head,summary:"reviewer unavailable or invalid",findings:[{severity:"P1" as const,title:"review unavailable",evidence:"fail closed",required_correction:"restore independent reviewer"}]},session:requestedSession};}
 }
 

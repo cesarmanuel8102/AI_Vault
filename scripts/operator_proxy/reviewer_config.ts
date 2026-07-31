@@ -18,6 +18,14 @@ export const REVIEWER_QUALIFICATION={
   [REVIEWER_MODELS.deepseekPro]:{qualified:false,passed:4,total:5},
 } as const;
 
+const safeModel=/^ollama-cloud\/[a-z0-9][a-z0-9.:-]{2,127}$/;
+
+export function requiredBuilderModel(env=process.env):string{
+  const model=env.OPERATOR_PROXY_BUILDER_MODEL;
+  if(!model||!safeModel.test(model))throw new Error("builder model identity missing or invalid");
+  return model;
+}
+
 const agentLoopPath=(path:string)=>path.startsWith("scripts/agent_loop/")||path.startsWith("tests/contract/test_agent_loop_");
 
 export function reviewerRoute(input:ReviewerInput):string[]{
