@@ -18,13 +18,24 @@ export function validatePostMergeBaseAdvance(spec:ProxySpec,state:LifecycleRecor
   return true;
 }
 
+export function resumePrivilegedInstall(bus:GitHubBus,boundary:ExternalEffectBoundary,coordinator:RequestCoordinator,flow:AutonomousFlow,spec:ProxySpec,state:LifecycleRecord){
+  boundary.beginPrivilegedInstallResume(spec,state);
+  try{
+    if(!coordinator.installReceiptPresent(spec,state.head_sha!))return state;
+    const path=spec.install_target==="agent_loop_worker"?"scripts/agent_loop/local_worker/agent_worker.py":undefined;
+    if(!path)throw new Error("install artifact target invalid");
+    const artifactSha256=createHash("sha256").update(Buffer.from(bus.fileAt(path,state.head_sha!),"utf8")).digest("hex");
+    return coordinator.install(spec,state.head_sha!,artifactSha256)==="PASS"?flow.resumePrivilegedInstall(state.front_id):state;
+  }finally{boundary.endPrivilegedInstallResume();}
+}
+
 export function runAutonomousRoadmapTick(bus:GitHubBus,root:string,reviewerRepo:string,boundary:ExternalEffectBoundary){
   const sequenced=sequenceRoadmap(bus);const store=new LifecycleStore(join(root,"lifecycle"));const ledgerRoot=join(root,"decisions");const coordinator=new RequestCoordinator(join(root,"coordination"),boundary.assert.bind(boundary));
   const effects=new ProductionEffects(bus,new Ledger(ledgerRoot),reviewerRepo,root,boundary,coordinator);const flow=new AutonomousFlow(store,effects);let persisted=store.load(sequenced.spec.front_id!);
   if(persisted?.state==="ESCALATED"&&persisted.last_error==="OWNER_AUTHORITY_REQUIRED"&&persisted.base_sha!==sequenced.spec.expected_base_sha)persisted=effects.reconcileNegatedRiskEscalation(sequenced.spec,persisted,store);
   else if(persisted?.state==="BLOCKED"&&persisted.last_error==="CI_FAILED")persisted=persisted.base_sha!==sequenced.spec.expected_base_sha?effects.reconcileBlockedCiBase(sequenced.spec,persisted,store):effects.reconcileBlockedCiChecks(sequenced.spec,persisted,store);
   else if(persisted&&persisted.base_sha!==sequenced.spec.expected_base_sha){if(["CI_PENDING","REVIEWING"].includes(persisted.state)){persisted=store.invalidatePostBuildBase(persisted);persisted=effects.reconcileBlockedCiBase(sequenced.spec,persisted,store);}else if(persisted.state==="MERGING"){persisted=effects.invalidateFailedMerge(sequenced.spec,persisted,store);persisted=effects.reconcileBlockedCiBase(sequenced.spec,persisted,store);}else if(validatePostMergeBaseAdvance(sequenced.spec,persisted,((oldSha,newSha)=>bus.isAncestor(oldSha,newSha))))persisted=store.rebindPostMergeBase(persisted,sequenced.spec.expected_base_sha);else persisted=effects.reconcilePreBuildBase(sequenced.spec,persisted,store);}
-  if(persisted?.state==="ESCALATED"&&persisted.last_error==="LOCAL_PRIVILEGE_REQUIRED"&&persisted.head_sha){const path=sequenced.spec.install_target==="agent_loop_worker"?"scripts/agent_loop/local_worker/agent_worker.py":undefined;if(!path)throw new Error("install artifact target invalid");const artifactSha256=createHash("sha256").update(Buffer.from(bus.fileAt(path,persisted.head_sha),"utf8")).digest("hex");boundary.beginPrivilegedInstallResume(sequenced.spec,persisted);try{if(coordinator.install(sequenced.spec,persisted.head_sha,artifactSha256)==="PASS")persisted=flow.resumePrivilegedInstall(persisted.front_id);}finally{boundary.endPrivilegedInstallResume();}}
+  if(persisted?.state==="ESCALATED"&&persisted.last_error==="LOCAL_PRIVILEGE_REQUIRED")persisted=resumePrivilegedInstall(bus,boundary,coordinator,flow,sequenced.spec,persisted);
   let state=flow.step(sequenced.spec);for(let i=0;i<24;i++){if(["CI_PENDING","BUILDING","RUNTIME_PILOT_RUNNING","CLOSEOUT_PENDING","BLOCKED","ESCALATED","TERMINAL_COMPLETED"].includes(state.state))break;state=flow.step(sequenced.spec);}
   return state;
 }

@@ -65,13 +65,13 @@ test("negated-risk escalation recovery permits only exact branch sync and Issue 
 
 test("privileged install resume permits only the exact receipt under the persisted escalation",()=>{
   const root=mkdtempSync(join(tmpdir(),"effect-install-resume-"));mkdirSync(join(root,"state"));const merge="c".repeat(40);let currentBase=base,paused=false;
-  const escalated:LifecycleRecord={...lifecycle,state:"ESCALATED",last_error:"LOCAL_PRIVILEGE_REQUIRED",deployment_mode:"INSTALL_ONLY",head_sha:merge,completed_effects:[`merge:${merge}`]};
+  const escalated:LifecycleRecord={...lifecycle,state:"ESCALATED",last_error:"LOCAL_PRIVILEGE_REQUIRED",deployment_mode:"INSTALL_ONLY",head_sha:merge,builder_session:"builder-one",reviewer_session:"reviewer-one",decision_id:"11111111-1111-4111-8111-111111111111",completed_effects:["issue:63",`build:${head}`,`merge:${merge}`]};
   const bus:any={branchHead:()=>currentBase,issuePaused:()=>paused,prIdentity:()=>({headRefOid:head})};const boundary=new ExternalEffectBoundary(root,bus,()=>true);
   assert.throws(()=>boundary.assert("installation_receipt"),/context missing/);boundary.beginPrivilegedInstallResume(installSpec,escalated);boundary.assert("installation_receipt");
   for(const effect of EXTERNAL_EFFECT_REGISTRY.filter(x=>x!=="installation_receipt"))assert.throws(()=>boundary.assert(effect),/lifecycle state/);
   paused=true;assert.throws(()=>boundary.assert("installation_receipt"),/paused by GitHub/);paused=false;currentBase="d".repeat(40);assert.throws(()=>boundary.assert("installation_receipt"),/base changed/);currentBase=base;
   boundary.endPrivilegedInstallResume();assert.throws(()=>boundary.assert("installation_receipt"),/lifecycle state/);
-  for(const mutation of [{last_error:"OTHER"},{head_sha:undefined},{completed_effects:[]},{deployment_mode:"NO_DEPLOY"}])assert.throws(()=>boundary.beginPrivilegedInstallResume(installSpec,{...escalated,...mutation} as LifecycleRecord),/boundary denied/);
+  for(const mutation of [{last_error:"OTHER"},{head_sha:undefined},{completed_effects:[]},{completed_effects:["issue:63",`merge:${merge}`]},{completed_effects:["issue:63",`build:${head}`,"base-sync:"+"d".repeat(40)]},{deployment_mode:"INSTALL_AND_RUNTIME_PILOT"},{issue:undefined},{pr:undefined},{builder_session:undefined},{reviewer_session:undefined},{decision_id:undefined}])assert.throws(()=>boundary.beginPrivilegedInstallResume(installSpec,{...escalated,...mutation} as LifecycleRecord),/boundary denied/);
 });
 
 test("GitHub mutation families invoke the central guard immediately before mutation",()=>{

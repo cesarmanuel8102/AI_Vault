@@ -16,6 +16,12 @@ interface BlockedCiRecovery {
 
 const POST_MERGE=new Set(["MERGED","INSTALL_PENDING","INSTALLING","RUNTIME_PILOT_PENDING","RUNTIME_PILOT_RUNNING","RUNTIME_VERIFIED","CLOSEOUT_PENDING","CLOSEOUT_MERGED","TERMINAL_COMPLETED"]);
 
+function validPrivilegedInstallEffectChain(state:LifecycleRecord){
+  const effects=state.completed_effects;
+  if(!state.issue||!state.head_sha||effects.length<3||effects.length>11||effects[0]!==`issue:${state.issue}`||!/^build:[0-9a-f]{40}$/.test(effects[1]??"")||effects.at(-1)!==`merge:${state.head_sha}`||new Set(effects).size!==effects.length)return false;
+  return effects.slice(2,-1).every(effect=>/^base-sync:[0-9a-f]{40}$/.test(effect));
+}
+
 export class ExternalEffectBoundary {
   private spec?:ProxySpec;private lifecycle?:LifecycleRecord;
   private blockedCiRecovery?:BlockedCiRecovery;
@@ -23,8 +29,10 @@ export class ExternalEffectBoundary {
   constructor(readonly root:string,readonly bus:GitHubBus,readonly leaseOwned:()=>boolean){}
   bind(spec:ProxySpec,lifecycle:LifecycleRecord){this.spec=spec;this.lifecycle=lifecycle;this.blockedCiRecovery=undefined;this.privilegedInstallResume=false;}
   beginPrivilegedInstallResume(spec:ProxySpec,state:LifecycleRecord){
-    const exact=state.state==="ESCALATED"&&state.last_error==="LOCAL_PRIVILEGE_REQUIRED"&&spec.install_target==="agent_loop_worker"&&["INSTALL_ONLY","INSTALL_AND_RUNTIME_PILOT"].includes(state.deployment_mode)&&state.front_id===spec.front_id&&state.roadmap_item_id===spec.roadmap_item_id&&state.base_sha===spec.expected_base_sha&&/^[0-9a-f]{40}$/.test(state.head_sha??"")&&state.completed_effects.includes(`merge:${state.head_sha}`);
+    const exact=state.state==="ESCALATED"&&state.last_error==="LOCAL_PRIVILEGE_REQUIRED"&&spec.install_target==="agent_loop_worker"&&["INSTALL_ONLY","INSTALL_AND_RUNTIME_PILOT"].includes(spec.deployment_mode??"")&&state.deployment_mode===spec.deployment_mode&&state.front_id===spec.front_id&&state.roadmap_item_id===spec.roadmap_item_id&&state.base_sha===spec.expected_base_sha&&Number.isInteger(state.issue)&&state.issue!>0&&Number.isInteger(state.pr)&&state.pr!>0&&state.repair_cycles===0&&!!state.builder_session&&!!state.reviewer_session&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(state.decision_id??"")&&/^[0-9a-f]{40}$/.test(state.head_sha??"")&&validPrivilegedInstallEffectChain(state);
     if(!exact)throw new Error("privileged install receipt boundary denied");
+    if(this.bus.branchHead("codex/own-capital-sustainable-return")!==spec.expected_base_sha)throw new Error("external effect base changed");
+    if(this.bus.issuePaused(state.issue!))throw new Error("external effect paused by GitHub label");
     this.bind(spec,state);this.privilegedInstallResume=true;
   }
   endPrivilegedInstallResume(){this.privilegedInstallResume=false;}

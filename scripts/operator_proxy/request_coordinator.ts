@@ -23,6 +23,7 @@ export class RequestCoordinator implements LocalCoordinator {
   readonly requests:string;readonly receipts:string;
   constructor(readonly root:string,readonly assertEffect:EffectAssertion){this.requests=join(root,"requests");this.receipts=join(root,"receipts");mkdirSync(this.requests,{recursive:true});mkdirSync(this.receipts,{recursive:true});}
   private paths(kind:Kind,sha:string,front?:string){if(!SHA40.test(sha))throw new Error("coordinator SHA invalid");const suffix=kind==="install"?`${front}-${sha}`:sha;if(kind==="install"&&!front)throw new Error("coordinator install front missing");return {request:join(this.requests,`${kind}-${suffix}.json`),receipt:join(this.receipts,`${kind}-${suffix}.json`)};}
+  installReceiptPresent(spec:ProxySpec,sha:string){if(spec.install_target!==AGENT_LOOP_INSTALL_PROFILE.install_target||!spec.front_id)throw new Error("coordinator install identity invalid");return existsSync(this.paths("install",sha,spec.front_id).receipt);}
   private installReceipt(spec:ProxySpec,sha:string,artifactSha256:string){
     const identity=installIdentity(spec,sha,artifactSha256),paths=this.paths("install",sha,spec.front_id);if(!existsSync(paths.receipt))return false;
     this.assertEffect("installation_receipt");const value=JSON.parse(readFileSync(paths.receipt,"utf8"));if(containsSensitiveData(value))throw new Error("coordinator receipt contains sensitive data");
