@@ -46,8 +46,9 @@ test("fails closed when every backend is unavailable",()=>{
 test("P0 invokes a third qualified independent arbiter and remains BLOCKED",()=>{
   let arbiterInput:ReviewerInput|undefined;
   const factory=(model:string):ReviewerBackend=>model===REVIEWER_MODELS.nemotron?{...pass(model),review:(value,session)=>{arbiterInput=value;return pass(model).review(value,session);}}:{model,review:(_value,session)=>({...pass(model).review(input(),session),output:{verdict:"BLOCKED",head_sha:head,summary:"p0",findings:[{severity:"P0",title:"authority",evidence:"unsafe",required_correction:"owner review"}]}})};
-  const result=new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory).review(input());
+  const router=new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory),result=router.review(input()),resumed=router.review(input());
   assert.equal(result.output.verdict,"BLOCKED");assert.equal(result.arbiter?.model,REVIEWER_MODELS.nemotron);
+  assert.equal(resumed.output.verdict,"BLOCKED");assert.equal(resumed.arbiter?.verdict,"PASS");
   assert.deepEqual((arbiterInput?.panelEvidence as any).primary.output.findings[0].severity,"P0");
   assert.equal((arbiterInput?.panelEvidence as any).verifier.output.verdict,"BLOCKED");
 });
@@ -62,7 +63,12 @@ test("verifier-only P0 is preserved for owner escalation",()=>{
 
 test("material reviewer disagreement invokes arbiter and never auto-approves",()=>{
   let calls=0;const factory=(model:string):ReviewerBackend=>model===REVIEWER_MODELS.nemotron?pass(model):calls++===0?pass(model):{model,review:(_value,session)=>({...pass(model).review(input(),session),output:{verdict:"CHANGES_REQUESTED",head_sha:head,summary:"finding",findings:[{severity:"P2",title:"gap",evidence:"line",required_correction:"fix"}]}})};
-  const result=new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory).review(input());assert.equal(result.output.verdict,"BLOCKED");assert.equal(result.arbiter?.model,REVIEWER_MODELS.nemotron);
+  const router=new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory),result=router.review(input()),resumed=router.review(input());assert.equal(result.output.verdict,"BLOCKED");assert.equal(result.arbiter?.model,REVIEWER_MODELS.nemotron);assert.equal(resumed.output.verdict,"BLOCKED");assert.equal(resumed.arbiter?.verdict,"PASS");
+});
+
+test("cached escalated receipt cannot be downgraded to PASS",()=>{
+  const p0={severity:"P0" as const,title:"authority",evidence:"unsafe",required_correction:"owner review"},root=mkdtempSync(join(tmpdir(),"router-downgrade-")),factory=(model:string):ReviewerBackend=>model===REVIEWER_MODELS.nemotron?pass(model):{model,review:(_value,session)=>({...pass(model).review(input(),session),output:{verdict:"BLOCKED",head_sha:head,summary:"p0",findings:[p0]}})},router=new ReviewerRouter(root,factory),request=input(),run=router.review(request),path=join(root,"reviews",`review-${run.receipt_key}.json`),value=JSON.parse(readFileSync(path,"utf8"));
+  value.output={verdict:"PASS",head_sha:head,summary:"tampered",findings:[]};value.verifier.verdict="PASS";delete value.arbiter;writeFileSync(path,JSON.stringify(value));assert.throws(()=>router.review(request),/review receipt/);
 });
 
 test("cached router receipt cannot bypass route, qualification, or builder exclusion",()=>{
