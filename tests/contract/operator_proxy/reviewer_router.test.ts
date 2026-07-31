@@ -5,7 +5,7 @@ import {tmpdir} from "node:os";
 import {join} from "node:path";
 import type {ReviewerBackend,ReviewerInput} from "../../../scripts/operator_proxy/reviewer_backend.js";
 import {ReviewerBackendError} from "../../../scripts/operator_proxy/reviewer_backend.js";
-import {REVIEWER_MODELS,requiredBuilderModel,reviewerRoute,verifiedBuilderModel} from "../../../scripts/operator_proxy/reviewer_config.js";
+import {REVIEWER_MODELS,requiredBuilderModel,reviewerRoute,verifiedAgentLoopCommitModel,verifiedBuilderModel} from "../../../scripts/operator_proxy/reviewer_config.js";
 import {ReviewerRouter} from "../../../scripts/operator_proxy/reviewer_router.js";
 
 const head="b".repeat(40),base="a".repeat(40);
@@ -22,6 +22,12 @@ test("routes by risk and agent-loop scope while excluding builder model",()=>{
   assert.throws(()=>verifiedBuilderModel("agent_loop",undefined,{OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),/report model identity/);
   assert.throws(()=>verifiedBuilderModel("agent_loop",{model:REVIEWER_MODELS.qwen},{OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),/report model identity/);
   assert.equal(verifiedBuilderModel("codex_control_plane"),"codex-local");
+  const message=`test(agent-loop): complete FRONT-R1-TEST\n\nAGENT_LOOP_EXECUTOR_MODEL=${REVIEWER_MODELS.glm}`;
+  assert.equal(verifiedAgentLoopCommitModel(message,"FRONT-R1-TEST",undefined,{OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),REVIEWER_MODELS.glm);
+  assert.equal(verifiedAgentLoopCommitModel(message,"FRONT-R1-TEST",REVIEWER_MODELS.glm,{OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),REVIEWER_MODELS.glm);
+  assert.throws(()=>verifiedAgentLoopCommitModel(message,"FRONT-R1-OTHER",undefined,{OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),/subject identity/);
+  assert.throws(()=>verifiedAgentLoopCommitModel(message,"FRONT-R1-TEST",REVIEWER_MODELS.qwen,{OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),/receipt mismatch/);
+  assert.throws(()=>verifiedAgentLoopCommitModel(`test(agent-loop): complete FRONT-R1-TEST`,"FRONT-R1-TEST",undefined,{OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),/receipt missing/);
 });
 
 test("falls back after transient backend failure and persists idempotent receipt",()=>{

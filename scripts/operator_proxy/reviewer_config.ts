@@ -33,6 +33,17 @@ export function verifiedBuilderModel(executor:"agent_loop"|"codex_control_plane"
   return configured;
 }
 
+export function verifiedAgentLoopCommitModel(message:string,frontId:string,reportModel?:unknown,env=process.env):string{
+  if(!/^[A-Z0-9][A-Z0-9._-]{5,127}$/.test(frontId))throw new Error("Agent Loop front identity invalid");
+  const lines=message.replace(/\r\n/g,"\n").split("\n"),subject=`test(agent-loop): complete ${frontId}`,prefix="AGENT_LOOP_EXECUTOR_MODEL=";
+  if(lines[0]!==subject)throw new Error("Agent Loop commit subject identity mismatch");
+  const trailers=lines.slice(1).filter(line=>line.startsWith(prefix));
+  if(trailers.length!==1)throw new Error("Agent Loop executor model receipt missing or ambiguous");
+  const model=trailers[0].slice(prefix.length),configured=requiredBuilderModel(env);
+  if(model!==configured||reportModel!==undefined&&reportModel!==model)throw new Error("Agent Loop executor model receipt mismatch");
+  return model;
+}
+
 const agentLoopPath=(path:string)=>path.startsWith("scripts/agent_loop/")||path.startsWith("tests/contract/test_agent_loop_");
 
 export function reviewerRoute(input:ReviewerInput):string[]{

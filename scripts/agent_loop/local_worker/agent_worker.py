@@ -2195,7 +2195,7 @@ def execute_initial(cfg, issue, spec, state_path):
         if set(final_changes) != set(spec["allowed_paths"]):
             raise RuntimeError("candidate diff does not exactly match allowed profile paths")
         run(["git","add","--all"],cwd=repo_dir)
-        run(["git","commit","-m",f"test(agent-loop): complete {spec['front_id']}"] ,cwd=repo_dir)
+        run(["git","commit","-m",f"test(agent-loop): complete {spec['front_id']}","-m",f"AGENT_LOOP_EXECUTOR_MODEL={cfg['opencode_model']}"] ,cwd=repo_dir)
         pr = create_pr(cfg,spec,n,repo_dir)
         final_report = write_final_local_report(cfg, spec, n, cycle, repo_dir, pr)
         state = load_json(state_path)
@@ -2394,7 +2394,7 @@ def process_state(cfg, state_path):
         else:
             save_json(state_path, st)
         return
-    run(["git","commit","-m",f"test(agent-loop): complete {spec['front_id']}"],cwd=repo_dir)
+    run(["git","commit","-m",f"test(agent-loop): complete {spec['front_id']}","-m",f"AGENT_LOOP_EXECUTOR_MODEL={cfg['opencode_model']}"],cwd=repo_dir)
     newsha=run(["git","rev-parse","HEAD"],cwd=repo_dir).strip()
     if spec["test_profile"] == "pilot":
         final_ok, final_out = run_final_verifier(repo_dir, spec["expected_base_sha"], newsha, spec["front_id"])
