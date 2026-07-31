@@ -92,15 +92,27 @@
         "front_id": "BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-01",
         "objective": "Run one isolated Agent Loop OpenCode Kimi E2E using the roadmap-doc profile without deployment",
         "work_branch": "agent/roadmap-doc-brain-101-r1-3-kimi-e2e",
-        "executor": "opencode_kimi",
+        "executor": "agent_loop",
         "risk": "LOW",
         "domain": "agent_loop",
         "test_profile": "roadmap-doc",
+        "max_executor_cycles": 2,
         "allowed_paths": ["docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md"],
         "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
         "acceptance": ["Create one deterministic roadmap evidence document", "Use the roadmap-doc profile only", "Do not deploy, activate worker tasks, run live trading, use real money, perform canonical local sync, or auto-merge"],
         "test_commands": ["git diff --check"],
-        "deployment_mode": "NO_DEPLOY"
+        "deployment_mode": "NO_DEPLOY",
+        "closeout": {
+          "front_id": "BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-CLOSEOUT-01",
+          "objective": "Record the R1.3 Agent Loop E2E evidence and close the synthetic certification item",
+          "work_branch": "control-plane/r1-3-agent-loop-kimi-e2e-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E_CLOSEOUT.json"],
+          "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+          "acceptance": ["Record exact R1.3 Issue PR decision merge and Agent Loop evidence", "Set R1.3 to CLOSED_RUNTIME_VERIFIED only after the E2E passes", "Preserve exactly one authorized next roadmap item", "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"],
+          "test_commands": ["git diff --check"]
+        }
       }
     },
     "R1.0": {

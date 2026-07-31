@@ -131,8 +131,9 @@
     "status": "AUTHORIZED_ACTIVE",
     "risk": "LOW",
     "domain": "agent_loop",
-    "executor": "opencode_kimi",
+    "executor": "agent_loop",
     "test_profile": "roadmap-doc",
+    "max_executor_cycles": 2,
     "deployment_mode": "NO_DEPLOY",
     "front_id": "BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-01",
     "allowed_paths": [
