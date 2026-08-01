@@ -71,6 +71,9 @@ def expect_parse_error(candidate: dict, cfg: dict, contains: str) -> None:
 roadmap_paths = ["ROADMAP_STATUS.json", "docs/roadmap/evidence/R1_2.md"]
 test_paths = ["tests/contract/test_r1_2_example.py"]
 parsed_roadmap = worker.parse_spec(issue("roadmap-doc", roadmap_paths), config("roadmap-doc"))
+roadmap_prompt = worker.make_prompt(parsed_roadmap, 1)
+assert "Do not end any generated line with spaces or tabs." in roadmap_prompt
+assert "trusted gate runs git diff --check" in roadmap_prompt
 parsed_test = worker.parse_spec(issue("test-only", test_paths), config("test-only"))
 legacy_roadmap = worker.parse_spec(issue("roadmap-doc", roadmap_paths), legacy_config())
 legacy_test = worker.parse_spec(issue("test-only", test_paths), legacy_config())
