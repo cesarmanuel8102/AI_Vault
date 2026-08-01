@@ -53,6 +53,17 @@ test("blocked CI recovery permits only the exact push then Issue update",()=>{
   boundary.endBlockedCiRecovery();currentBase=nextBase;assert.throws(()=>boundary.assert("issue_modify",{issue:63,pr:63,expected_head:nextHead}),/lifecycle state/);
 });
 
+test("blocked Agent Loop recovery permits only an exact observed descendant chain head",()=>{
+  const root=mkdtempSync(join(tmpdir(),"effect-chain-boundary-"));mkdirSync(join(root,"state"));const nextBase="c".repeat(40),observed="d".repeat(40),nextHead="e".repeat(40);let currentHead=observed,ancestor=true;
+  const nextSpec={...spec,executor:"agent_loop" as const,expected_base_sha:nextBase};const blocked:LifecycleRecord={...lifecycle,state:"BLOCKED",last_error:"CI_FAILED",base_sha:base,head_sha:head,builder_session:"builder-one",completed_effects:["issue:63",`build:${head}`]};
+  const bus:any={branchHead:()=>nextBase,issuePaused:()=>false,prIdentity:()=>({headRefOid:currentHead}),isAncestor:(older:string,newer:string)=>ancestor&&older===head&&newer===observed};const boundary=new ExternalEffectBoundary(root,bus,()=>true);boundary.beginBlockedCiRecovery(nextSpec,blocked);
+  assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:nextHead}),/lifecycle state/);
+  assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:nextHead,observed_head:"f".repeat(40)}),/lifecycle state/);
+  ancestor=false;assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:nextHead,observed_head:observed}),/lifecycle state/);ancestor=true;
+  boundary.assert("push",{issue:63,pr:63,expected_head:nextHead,observed_head:observed});
+  boundary.beginBlockedCiRecovery({...nextSpec,executor:"codex_control_plane"},blocked);assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:nextHead,observed_head:observed}),/lifecycle state/);
+});
+
 test("negated-risk escalation recovery permits only exact branch sync and Issue update",()=>{
   const root=mkdtempSync(join(tmpdir(),"effect-negated-risk-"));mkdirSync(join(root,"state"));const nextBase="c".repeat(40),nextHead="d".repeat(40);let currentBase=nextBase,currentHead=head;
   const nextSpec={...spec,expected_base_sha:nextBase,risk:"MEDIUM" as const,acceptance:["Keep canonical local sync disabled"]};const escalated:LifecycleRecord={...lifecycle,state:"ESCALATED",last_error:"OWNER_AUTHORITY_REQUIRED",base_sha:base,head_sha:head,builder_session:"builder-one",reviewer_session:"reviewer-one",decision_id:"11111111-1111-4111-8111-111111111111",completed_effects:["issue:63",`build:${head}`]};
