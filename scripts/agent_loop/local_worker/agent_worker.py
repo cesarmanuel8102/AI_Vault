@@ -1185,6 +1185,7 @@ You may create or modify exactly these relative paths:
 Do not create, delete, rename, or access any other path.
 Your first required action is a write or edit tool call to an allowlisted path.
 Make a real change to every allowlisted path and do not emit the acknowledgement before all writes complete.
+Do not end any generated line with spaces or tabs. Markdown hard breaks made from trailing spaces are forbidden because the trusted gate runs git diff --check.
 Do not invoke shell, network, Git, GitHub, subagents, skills, LSP, or external directories.
 After all write tools complete, output exactly this line and nothing else:
 {sentinel}
