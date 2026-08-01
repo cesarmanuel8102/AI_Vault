@@ -5,7 +5,7 @@ import {tmpdir} from "node:os";
 import {join} from "node:path";
 import type {ReviewerBackend,ReviewerInput} from "../../../scripts/operator_proxy/reviewer_backend.js";
 import {ReviewerBackendError} from "../../../scripts/operator_proxy/reviewer_backend.js";
-import {REVIEWER_MODELS,requiredBuilderModel,reviewerRoute,verifiedAgentLoopCommitModel,verifiedBuilderModel} from "../../../scripts/operator_proxy/reviewer_config.js";
+import {inspectAgentLoopCommitModel,REVIEWER_MODELS,requiredBuilderModel,reviewerRoute,verifiedAgentLoopCommitModel,verifiedBuilderModel} from "../../../scripts/operator_proxy/reviewer_config.js";
 import {ReviewerRouter,validateReviewerEnvelope} from "../../../scripts/operator_proxy/reviewer_router.js";
 
 const head="b".repeat(40),base="a".repeat(40);
@@ -28,6 +28,9 @@ test("routes by risk and agent-loop scope while excluding builder model",()=>{
   assert.throws(()=>verifiedAgentLoopCommitModel(message,"FRONT-R1-OTHER",undefined,{OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),/subject identity/);
   assert.throws(()=>verifiedAgentLoopCommitModel(message,"FRONT-R1-TEST",REVIEWER_MODELS.qwen,{OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),/receipt mismatch/);
   assert.throws(()=>verifiedAgentLoopCommitModel(`test(agent-loop): complete FRONT-R1-TEST`,"FRONT-R1-TEST",undefined,{OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),/receipt missing/);
+  assert.deepEqual(inspectAgentLoopCommitModel(`test(agent-loop): complete FRONT-R1-TEST`,"FRONT-R1-TEST",undefined,{OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),{status:"MISSING",model:REVIEWER_MODELS.glm});
+  assert.throws(()=>inspectAgentLoopCommitModel(`${message}\nAGENT_LOOP_EXECUTOR_MODEL=${REVIEWER_MODELS.glm}`,"FRONT-R1-TEST",undefined,{OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),/receipt ambiguous/);
+  assert.throws(()=>inspectAgentLoopCommitModel(`test(agent-loop): complete FRONT-R1-TEST`,"FRONT-R1-TEST",REVIEWER_MODELS.qwen,{OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),/receipt mismatch/);
 });
 
 test("falls back after transient backend failure and persists idempotent receipt",()=>{
