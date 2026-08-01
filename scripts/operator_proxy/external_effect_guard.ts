@@ -7,7 +7,7 @@ import {validBlockedCiEffectChain,validPrivilegedInstallEffectChain} from "./lif
 
 export const EXTERNAL_EFFECT_REGISTRY=["issue_create","issue_modify","label_modify","comment_publish","branch_create","builder_execute","commit_create","push","pr_create","workflow_dispatch","reviewer_execute","decision_persist","findings_publish","repair_request","merge","installation_request","installation_receipt","pilot_request","pilot_receipt","closeout_create","next_item_activate"] as const;
 export type ExternalEffect=typeof EXTERNAL_EFFECT_REGISTRY[number];
-export interface EffectContext {issue?:number;pr?:number;expected_head?:string}
+export interface EffectContext {issue?:number;pr?:number;expected_head?:string;observed_head?:string}
 export type EffectAssertion=(effect:ExternalEffect,context?:EffectContext)=>void;
 
 interface BlockedCiRecovery {
@@ -61,7 +61,11 @@ export class ExternalEffectBoundary {
       if(this.bus.branchHead("codex/own-capital-sustainable-return")!==recovery.newBase)throw new Error("external effect base changed");
       if((context.issue??state.issue)!==recovery.issue||(context.pr??state.pr)!==recovery.pr||this.bus.issuePaused(recovery.issue))throw new Error("blocked CI recovery identity changed");
       const current=this.bus.prIdentity(recovery.pr);
-      if(effect==="push"&&!recovery.nextHead&&/^[0-9a-f]{40}$/.test(context.expected_head??"")&&context.expected_head!==recovery.oldHead&&current.headRefOid===recovery.oldHead)return;
+      if(effect==="push"&&!recovery.nextHead&&/^[0-9a-f]{40}$/.test(context.expected_head??"")&&context.expected_head!==recovery.oldHead){
+        if(current.headRefOid===recovery.oldHead&&!context.observed_head)return;
+        const observed=context.observed_head;
+        if(spec.executor==="agent_loop"&&/^[0-9a-f]{40}$/.test(observed??"")&&observed!==context.expected_head&&current.headRefOid===observed&&this.bus.isAncestor(recovery.oldHead,observed!))return;
+      }
       if(effect==="issue_modify"&&recovery.nextHead&&context.expected_head===recovery.nextHead&&current.headRefOid===recovery.nextHead)return;
       throw new Error("external effect denied by lifecycle state");
     }
