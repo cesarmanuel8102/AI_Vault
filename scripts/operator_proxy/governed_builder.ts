@@ -51,7 +51,7 @@ export class GovernedBuilder {
     // Historical governed branches may be checked out elsewhere; recover without moving or mutating that worktree.
     if(!existsSync(worktree))native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","--detach",worktree,remote],{stdio:"inherit",timeout:120000,windowsHide:true});
     if(realpathSync(worktree).toLowerCase()!==worktree.toLowerCase()||git(worktree,["status","--porcelain","--untracked-files=all"]))throw new Error("blocked CI worktree state invalid");const localHeadBefore=git(worktree,["rev-parse","HEAD"]),localBranch=git(worktree,["branch","--show-current"]);
-    if(localBranch!==spec.work_branch&&(localBranch!==""||localHeadBefore!==remote))throw new Error("blocked CI worktree state invalid");
+    if(localBranch!==spec.work_branch&&(localBranch!==""||!([state.head_sha,remote].includes(localHeadBefore))))throw new Error("blocked CI worktree state invalid");
     try{git(worktree,["merge-base","--is-ancestor",state.base_sha,spec.expected_base_sha]);git(worktree,["merge-base","--is-ancestor",state.base_sha,state.head_sha]);}catch{throw new Error("blocked CI ancestry invalid");}
     if(localHeadBefore===state.head_sha){const priorFiles=committed(worktree,state.base_sha);validateFiles(priorFiles,spec);if(spec.executor==="agent_loop"&&JSON.stringify(priorFiles)!==JSON.stringify(files))throw new Error("blocked CI Agent Loop candidate files inconsistent");}else if(localHeadBefore!==remote)throw new Error("blocked CI local branch drift");
     let nextHead=remote;
