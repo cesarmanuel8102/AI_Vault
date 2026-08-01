@@ -212,7 +212,17 @@ with tempfile.TemporaryDirectory() as td:
     new_base = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
     subprocess.run(["git", "-C", str(repo), "push", "origin", f"HEAD:refs/heads/codex/own-capital-sustainable-return"], check=True, capture_output=True)
     subprocess.run(["git", "-C", str(repo), "checkout", old_spec["work_branch"]], check=True, capture_output=True)
-    subprocess.run(["git", "-C", str(repo), "merge", "--no-ff", "--no-edit", new_base], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "merge", "--no-ff", "-m", f"chore(control-plane): synchronize {old_spec['front_id']} base", new_base], check=True, capture_output=True)
+    first_sync = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
+    subprocess.run(["git", "-C", str(repo), "checkout", "-b", "base-latest", new_base], check=True, capture_output=True)
+    (repo / "BASE_LATEST.md").write_bytes(b"latest\n")
+    subprocess.run(["git", "-C", str(repo), "add", "BASE_LATEST.md"], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-m", "latest base"], check=True, capture_output=True)
+    new_base = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
+    subprocess.run(["git", "-C", str(repo), "push", "origin", f"HEAD:refs/heads/codex/own-capital-sustainable-return"], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "checkout", old_spec["work_branch"]], check=True, capture_output=True)
+    assert subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip() == first_sync
+    subprocess.run(["git", "-C", str(repo), "merge", "--no-ff", "-m", f"chore(control-plane): synchronize {old_spec['front_id']} base", new_base], check=True, capture_output=True)
     sync_head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
     subprocess.run(["git", "-C", str(repo), "push", "origin", f"HEAD:refs/heads/{old_spec['work_branch']}"], check=True, capture_output=True)
     subprocess.run(["git", "-C", str(repo), "reset", "--hard", old_head], check=True, capture_output=True)
@@ -261,7 +271,7 @@ with tempfile.TemporaryDirectory() as td:
         merged_head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
         parents = subprocess.run(["git", "-C", str(repo), "rev-list", "--parents", "-n", "1", merged_head], check=True, capture_output=True, text=True).stdout.split()
         assert merged_head == sync_head
-        assert parents == [sync_head, old_head, new_base]
+        assert parents == [sync_head, first_sync, new_base]
         assert updated["last_head_sha"] == sync_head
         assert events and events[-1][0] == "roadmap_repair_base_rebound"
     finally:
