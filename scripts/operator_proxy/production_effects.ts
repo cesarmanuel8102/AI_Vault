@@ -10,7 +10,7 @@ import {decide,decisionKey,decisionMatchesCandidate,POLICY_SHA256} from "./polic
 import {ReviewerRouter,validateReviewerEnvelope} from "./reviewer_router.js";
 import {inspectAgentLoopCommitModel,verifiedBuilderModel} from "./reviewer_config.js";
 import {execute,reconcileAuthorizationComment} from "./action_executor.js";
-import {issueBody,parseIssue} from "./spec_contract.js";
+import {agentLoopIssueBody,issueBody,parseAgentLoopIssue,parseIssue} from "./spec_contract.js";
 import {AutonomousFlow} from "./autonomous_flow.js";
 import {LifecycleStore,validBlockedCiEffectChain} from "./lifecycle_store.js";
 import type {ExternalEffectBoundary} from "./external_effect_guard.js";
@@ -28,6 +28,8 @@ export interface LocalCoordinator {
 const failClosedCoordinator:LocalCoordinator={install:()=>"LOCAL_PRIVILEGE_REQUIRED",pilot:()=>"PENDING",closeout:()=>"PENDING",discoverNext:()=>{}};
 const installArtifactPath=(spec:ProxySpec)=>spec.install_target==="agent_loop_worker"?"scripts/agent_loop/local_worker/agent_worker.py":undefined;
 const pathAllowed=(path:string,spec:ProxySpec)=>spec.allowed_paths.some(p=>p.endsWith("/")?path.startsWith(p):path===p)&&!spec.forbidden_paths.some(p=>path===p||path.startsWith(p.endsWith("/")?p:`${p}/`));
+const boundIssueBody=(spec:ProxySpec,pr:number)=>`${(spec.executor==="agent_loop"?agentLoopIssueBody(spec):issueBody(spec)).trim()}\n\nOPERATOR_PROXY_PR: ${pr}\n`;
+const blockedCiIssuePhase=(spec:ProxySpec)=>spec.executor==="agent_loop"?"loop:ci":"operator:building";
 
 export class ProductionEffects implements AutonomousEffects {
   readonly builder:GovernedBuilder;readonly agentLoopBuilder:AgentLoopBuilderAdapter;
@@ -48,9 +50,10 @@ export class ProductionEffects implements AutonomousEffects {
     if(state.base_sha===spec.expected_base_sha)return state;
     const exact=state.state==="BLOCKED"&&state.last_error==="CI_FAILED"&&Number.isInteger(state.issue)&&Number.isInteger(state.pr)&&state.repair_cycles===0&&!!state.head_sha&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&validBlockedCiEffectChain(state);
     if(!exact||!this.bus.isAncestor(state.base_sha,spec.expected_base_sha))throw new Error("blocked CI base reconciliation denied");
-    const snapshot=this.bus.issueSnapshot(state.issue!);if(snapshot.state!=="OPEN"||snapshot.labels.length!==1||snapshot.labels[0]!=="operator:building")throw new Error("blocked CI Issue state invalid");
-    const oldSpec={...spec,expected_base_sha:state.base_sha},oldBody=`${issueBody(oldSpec).trim()}\n\nOPERATOR_PROXY_PR: ${state.pr}\n`,nextBody=`${issueBody(spec).trim()}\n\nOPERATOR_PROXY_PR: ${state.pr}\n`,parsed=parseIssue(snapshot.body);
+    const snapshot=this.bus.issueSnapshot(state.issue!);if(snapshot.state!=="OPEN"||snapshot.labels.length!==1||snapshot.labels[0]!==blockedCiIssuePhase(spec))throw new Error("blocked CI Issue state invalid");
+    const oldSpec={...spec,expected_base_sha:state.base_sha},oldBody=boundIssueBody(oldSpec,state.pr!),nextBody=boundIssueBody(spec,state.pr!),parsed=parseIssue(snapshot.body);
     if(parsed.pr!==state.pr||JSON.stringify(parsed.spec)!==JSON.stringify(snapshot.body===oldBody?oldSpec:spec)||snapshot.body!==oldBody&&snapshot.body!==nextBody)throw new Error("blocked CI Issue contract mismatch");
+    if(spec.executor==="agent_loop")parseAgentLoopIssue(snapshot.body,snapshot.body===oldBody?oldSpec:spec);
     this.boundary.beginBlockedCiRecovery(spec,state);
     try {
       const nextHead=this.builder.synchronizeBlockedCiBase(spec,state);this.boundary.bindBlockedCiRecoveryHead(nextHead);if(snapshot.body===oldBody)this.bus.replaceIssueBodyExact(state.issue!,oldBody,nextBody,nextHead);
@@ -74,8 +77,9 @@ export class ProductionEffects implements AutonomousEffects {
     if(state.base_sha!==spec.expected_base_sha)throw new Error("blocked CI check binding mismatch");
     const exact=state.state==="BLOCKED"&&state.last_error==="CI_FAILED"&&Number.isInteger(state.issue)&&Number.isInteger(state.pr)&&state.repair_cycles===0&&!!state.head_sha&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&validBlockedCiEffectChain(state);
     if(!exact)throw new Error("blocked CI check reconciliation denied");
-    const snapshot=this.bus.issueSnapshot(state.issue!);const expectedBody=`${issueBody(spec).trim()}\n\nOPERATOR_PROXY_PR: ${state.pr}\n`;
-    if(snapshot.state!=="OPEN"||snapshot.labels.length!==1||snapshot.labels[0]!=="operator:building"||snapshot.body!==expectedBody)throw new Error("blocked CI check Issue identity invalid");
+    const snapshot=this.bus.issueSnapshot(state.issue!);const expectedBody=boundIssueBody(spec,state.pr!);
+    if(snapshot.state!=="OPEN"||snapshot.labels.length!==1||snapshot.labels[0]!==blockedCiIssuePhase(spec)||snapshot.body!==expectedBody)throw new Error("blocked CI check Issue identity invalid");
+    if(spec.executor==="agent_loop")parseAgentLoopIssue(snapshot.body,spec);
     const pr=this.bus.prIdentity(state.pr!),files=(pr.files??[]).map((x:any)=>String(x.path));
     if(pr.author?.login!=="cesarmanuel8102"||pr.baseRefName!=="codex/own-capital-sustainable-return"||pr.baseRefOid!==state.base_sha||pr.headRefName!==spec.work_branch||pr.headRefOid!==state.head_sha||pr.headRepository?.nameWithOwner!=="cesarmanuel8102/AI_Vault"||pr.isCrossRepository!==false||pr.isDraft!==true||pr.state!=="OPEN"||pr.mergeable!=="MERGEABLE"||files.length===0||!files.every((path:string)=>pathAllowed(path,spec))||this.bus.remoteBranchHead(spec.work_branch!)!==state.head_sha)throw new Error("blocked CI check PR identity invalid");
     if(this.ci(state.pr!,state.head_sha!)!=="PASS")throw new Error("blocked CI checks not green");

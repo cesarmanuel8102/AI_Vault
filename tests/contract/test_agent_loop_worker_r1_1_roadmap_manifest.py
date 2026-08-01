@@ -181,6 +181,93 @@ mutated["roadmap_binding"]["dependencies"] = ["R0", "R0"]
 expect_persisted_error(mutated, "dependencies invalid")
 
 with tempfile.TemporaryDirectory() as td:
+    root = Path(td)
+    remote = root / "remote.git"
+    repo = root / "repo"
+    subprocess.run(["git", "init", "--bare", str(remote)], check=True, capture_output=True)
+    subprocess.run(["git", "init", str(repo)], check=True, capture_output=True)
+    for args in (["config", "user.name", "test"], ["config", "user.email", "test@example.invalid"], ["config", "core.autocrlf", "false"]):
+        subprocess.run(["git", "-C", str(repo), *args], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "remote", "add", "origin", str(remote)], check=True)
+    marker = repo / "docs" / "agent_loop" / "pilot" / "PILOT_MARKER.md"
+    report = repo / "docs" / "agent_loop" / "pilot" / "EXECUTOR_REPORT.json"
+    marker.parent.mkdir(parents=True)
+    marker.write_bytes(b"base\n")
+    report.write_bytes(b"{}\n")
+    subprocess.run(["git", "-C", str(repo), "add", "."], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-m", "base"], check=True, capture_output=True)
+    old_base = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
+    old_spec = valid_spec()
+    old_spec["expected_base_sha"] = old_base
+    subprocess.run(["git", "-C", str(repo), "branch", "-M", old_spec["work_branch"]], check=True)
+    marker.write_bytes(b"candidate\n")
+    subprocess.run(["git", "-C", str(repo), "add", marker.relative_to(repo).as_posix()], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-m", f"test(agent-loop): complete {old_spec['front_id']}"], check=True, capture_output=True)
+    old_head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
+    subprocess.run(["git", "-C", str(repo), "push", "origin", f"HEAD:refs/heads/{old_spec['work_branch']}"], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "checkout", "-b", "base-next", old_base], check=True, capture_output=True)
+    (repo / "BASE_NEXT.md").write_bytes(b"next\n")
+    subprocess.run(["git", "-C", str(repo), "add", "BASE_NEXT.md"], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-m", "next base"], check=True, capture_output=True)
+    new_base = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
+    subprocess.run(["git", "-C", str(repo), "push", "origin", f"HEAD:refs/heads/codex/own-capital-sustainable-return"], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "checkout", old_spec["work_branch"]], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "merge", "--no-ff", "--no-edit", new_base], check=True, capture_output=True)
+    sync_head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
+    subprocess.run(["git", "-C", str(repo), "push", "origin", f"HEAD:refs/heads/{old_spec['work_branch']}"], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "reset", "--hard", old_head], check=True, capture_output=True)
+
+    next_spec = copy.deepcopy(old_spec)
+    next_spec["expected_base_sha"] = new_base
+    issue_body = f"<!-- AGENT_LOOP_SPEC\n{json.dumps(next_spec, indent=2)}\nAGENT_LOOP_SPEC -->"
+    issue_obj = {"number": 112, "body": issue_body, "author": {"login": "cesarmanuel8102"}, "labels": [{"name": "loop:repairing"}], "state": "OPEN"}
+    pr_obj = {"number": 113, "headRefOid": sync_head, "labels": [{"name": "loop:repairing"}], "state": "OPEN"}
+    state_path = root / "issue-112.json"
+    state = {"issue_number": 112, "pr_number": 113, "front": old_spec["front_id"], "status": "WAITING_GITHUB", "cycles": 1,
+             "last_head_sha": old_head, "repo_dir": str(repo), "spec": old_spec,
+             "roadmap_binding": worker.validate_roadmap_contract(cfg(), old_spec), "updated_utc": "2026-01-01T00:00:00Z"}
+    worker.save_json(state_path, state)
+    original_gh_json, original_event = worker.gh_json, worker.event
+    events = []
+    try:
+        def repair_gh_json(args):
+            endpoint = args[1] if args and args[0] == "api" else ""
+            if endpoint.endswith("/pulls/113"):
+                return {"state": "open", "draft": True, "user": {"login": "cesarmanuel8102"},
+                        "head": {"sha": sync_head, "ref": old_spec["work_branch"], "repo": {"full_name": "cesarmanuel8102/AI_Vault"}},
+                        "base": {"sha": old_base, "ref": "codex/own-capital-sustainable-return"}}
+            if "/git/ref/heads/" in endpoint:
+                return {"object": {"sha": new_base}}
+            if "/compare/" in endpoint:
+                return {"status": "ahead"}
+            raise AssertionError(args)
+
+        worker.gh_json = repair_gh_json
+        worker.event = lambda _cfg, kind, **fields: events.append((kind, fields))
+        before_state = state_path.read_bytes()
+        denied_issue = copy.deepcopy(issue_obj); denied_issue["labels"] = [{"name": "loop:ci"}]
+        try:
+            worker.rebind_roadmap_repair_base(cfg(), state_path, state, denied_issue, pr_obj)
+        except Exception as exc:
+            assert "phase mismatch" in str(exc)
+        else:
+            raise AssertionError("wrong Issue phase must fail closed")
+        assert state_path.read_bytes() == before_state
+        assert subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip() == old_head
+
+        updated = worker.rebind_roadmap_repair_base(cfg(), state_path, state, issue_obj, pr_obj)
+        assert updated["spec"]["expected_base_sha"] == new_base
+        assert updated["roadmap_binding"]["base_sha"] == new_base
+        merged_head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], check=True, capture_output=True, text=True).stdout.strip()
+        parents = subprocess.run(["git", "-C", str(repo), "rev-list", "--parents", "-n", "1", merged_head], check=True, capture_output=True, text=True).stdout.split()
+        assert merged_head == sync_head
+        assert parents == [sync_head, old_head, new_base]
+        assert updated["last_head_sha"] == sync_head
+        assert events and events[-1][0] == "roadmap_repair_base_rebound"
+    finally:
+        worker.gh_json, worker.event = original_gh_json, original_event
+
+with tempfile.TemporaryDirectory() as td:
     runtime_cfg = cfg(install_root=td)
     issue = {
         "number": 101,
