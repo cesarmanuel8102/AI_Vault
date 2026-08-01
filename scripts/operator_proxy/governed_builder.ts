@@ -41,7 +41,7 @@ export class GovernedBuilder {
   constructor(readonly sourceRepo:string,readonly worktreeRoot:string,readonly bus:BuilderBus,readonly assertEffect:EffectAssertion,readonly codex=process.env.CODEX_PATH??"codex"){}
   synchronizeBlockedCiBase(spec:ProxySpec,state:LifecycleRecord){
     if(state.state!=="BLOCKED"||state.last_error!=="CI_FAILED"||!state.issue||!state.pr||!state.head_sha||!state.builder_session||state.repair_cycles!==0||state.reviewer_session||state.decision_id||!spec.work_branch||state.base_sha===spec.expected_base_sha)throw new Error("blocked CI branch synchronization denied");
-    const pr=this.bus.prIdentity(state.pr),files=(pr.files??[]).map((x:any)=>String(x.path));
+    const pr=this.bus.prIdentity(state.pr),files=(pr.files??[]).map((x:any)=>String(x.path)).sort();
     // GitHub may expose either the PR's original base OID or the advanced target OID.
     const trustedBase=pr.baseRefOid===state.base_sha||pr.baseRefOid===spec.expected_base_sha;
     if(pr.author?.login!=="cesarmanuel8102"||pr.baseRefName!=="codex/own-capital-sustainable-return"||!trustedBase||pr.headRefName!==spec.work_branch||pr.headRepository?.nameWithOwner!=="cesarmanuel8102/AI_Vault"||pr.isCrossRepository!==false||pr.isDraft!==true||pr.state!=="OPEN"||pr.mergeable!=="MERGEABLE"||files.length===0||!files.every((path:string)=>allowed(path,spec)))throw new Error("blocked CI PR identity invalid");
@@ -53,14 +53,16 @@ export class GovernedBuilder {
     if(realpathSync(worktree).toLowerCase()!==worktree.toLowerCase()||git(worktree,["status","--porcelain","--untracked-files=all"]))throw new Error("blocked CI worktree state invalid");const localHeadBefore=git(worktree,["rev-parse","HEAD"]),localBranch=git(worktree,["branch","--show-current"]);
     if(localBranch!==spec.work_branch&&(localBranch!==""||localHeadBefore!==remote))throw new Error("blocked CI worktree state invalid");
     try{git(worktree,["merge-base","--is-ancestor",state.base_sha,spec.expected_base_sha]);git(worktree,["merge-base","--is-ancestor",state.base_sha,state.head_sha]);}catch{throw new Error("blocked CI ancestry invalid");}
-    if(localHeadBefore===state.head_sha)validateFiles(committed(worktree,state.base_sha),spec);else if(localHeadBefore!==remote)throw new Error("blocked CI local branch drift");
+    if(localHeadBefore===state.head_sha){const priorFiles=committed(worktree,state.base_sha);validateFiles(priorFiles,spec);if(spec.executor==="agent_loop"&&JSON.stringify(priorFiles)!==JSON.stringify(files))throw new Error("blocked CI Agent Loop candidate files inconsistent");}else if(localHeadBefore!==remote)throw new Error("blocked CI local branch drift");
     let nextHead=remote;
     if(remote===state.head_sha){
       const tree=git(worktree,["merge-tree","--write-tree",state.head_sha,spec.expected_base_sha]);if(!/^[0-9a-f]{40}$/.test(tree))throw new Error("blocked CI merge tree invalid");
       nextHead=git(worktree,["commit-tree",tree,"-p",state.head_sha,"-p",spec.expected_base_sha,"-m",`chore(control-plane): synchronize ${spec.front_id} base`]);if(!/^[0-9a-f]{40}$/.test(nextHead))throw new Error("blocked CI merge commit invalid");
     }
     const parents=git(worktree,["rev-list","--parents","-n","1",nextHead]).split(/\s+/);if(parents.length!==3||parents[0]!==nextHead||parents[1]!==state.head_sha||parents[2]!==spec.expected_base_sha)throw new Error("blocked CI merge parents invalid");
-    const nextFiles=git(worktree,["diff","--name-only",`${spec.expected_base_sha}..${nextHead}`]).split(/\r?\n/).filter(Boolean).sort();validateFiles(nextFiles,spec);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${spec.expected_base_sha}..${nextHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});
+    const nextFiles=git(worktree,["diff","--name-only",`${spec.expected_base_sha}..${nextHead}`]).split(/\r?\n/).filter(Boolean).sort();validateFiles(nextFiles,spec);
+    // Agent Loop must preserve the existing candidate bytes until its mandatory receipt repair creates a new head.
+    if(spec.executor==="agent_loop"){if(JSON.stringify(nextFiles)!==JSON.stringify(files))throw new Error("blocked CI Agent Loop tree changed during synchronization");}else native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${spec.expected_base_sha}..${nextHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});
     if(remote===state.head_sha){this.assertEffect("push",{issue:state.issue,expected_head:nextHead});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`${nextHead}:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});if(this.bus.remoteBranchHead(spec.work_branch)!==nextHead)throw new Error("blocked CI branch push readback failed");}
     const localHead=git(worktree,["rev-parse","HEAD"]);if(localHead===state.head_sha)native(process.env.GIT_PATH??"git",["-C",worktree,"merge","--ff-only",nextHead],{stdio:"inherit",timeout:120000,windowsHide:true});else if(localHead!==nextHead)throw new Error("blocked CI local branch drift");
     if(git(worktree,["rev-parse","HEAD"])!==nextHead||git(worktree,["status","--porcelain","--untracked-files=all"]))throw new Error("blocked CI worktree synchronization failed");return nextHead;

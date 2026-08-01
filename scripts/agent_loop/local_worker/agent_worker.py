@@ -998,6 +998,105 @@ def parse_spec(issue: dict, cfg: dict) -> dict:
     spec["allowed_paths"] = sorted(allowed)
     return spec
 
+
+def rebind_roadmap_repair_base(cfg: dict, state_path: Path, st: dict, issue_obj: dict, pr_obj: dict) -> dict:
+    """Rebind an exact governed repair to an advanced canonical base.
+
+    The Operator Proxy updates both persisted Issue contracts before requesting
+    repair. The worker accepts only that single-field change and keeps the base
+    merge local until the configured executor produces a newly receipted head.
+    """
+    current_spec = st["spec"]
+    issue_spec = parse_spec(issue_obj, cfg)
+    if issue_spec == current_spec:
+        return st
+    current_without_base = {key: value for key, value in current_spec.items() if key != "expected_base_sha"}
+    issue_without_base = {key: value for key, value in issue_spec.items() if key != "expected_base_sha"}
+    old_base = str(current_spec.get("expected_base_sha") or "")
+    new_base = str(issue_spec.get("expected_base_sha") or "")
+    if current_without_base != issue_without_base or not re.fullmatch(r"[0-9a-f]{40}", old_base) or not re.fullmatch(r"[0-9a-f]{40}", new_base) or old_base == new_base:
+        raise ValueError("roadmap repair base rebind contract mismatch")
+    pr_number = int(st.get("pr_number") or 0)
+    repo_dir = Path(str(st.get("repo_dir") or ""))
+    exact_local = (
+        st.get("status") == "WAITING_GITHUB"
+        and pr_number > 0
+        and re.fullmatch(r"[0-9a-f]{40}", str(st.get("last_head_sha") or "")) is not None
+        and re.fullmatch(r"[0-9a-f]{40}", str(pr_obj.get("headRefOid") or "")) is not None
+        and st.get("last_head_sha") != pr_obj.get("headRefOid")
+        and repo_dir.is_dir()
+    )
+    if not exact_local:
+        raise ValueError("roadmap repair base rebind state invalid")
+    assert_exact_phase(issue_obj, "loop:repairing", "Issue")
+    assert_exact_phase(pr_obj, "loop:repairing", "PR")
+    if issue_obj.get("state") != "OPEN" or pr_obj.get("state") != "OPEN":
+        raise ValueError("roadmap repair base rebind object state invalid")
+
+    live_pr = gh_json(["api", f"repos/{cfg['repo']}/pulls/{pr_number}"])
+    head = live_pr.get("head") or {}
+    base = live_pr.get("base") or {}
+    trusted_pr = (
+        live_pr.get("state") == "open"
+        and live_pr.get("draft") is True
+        and (live_pr.get("user") or {}).get("login") == cfg["owner"]
+        and head.get("sha") == pr_obj.get("headRefOid")
+        and head.get("ref") == current_spec.get("work_branch")
+        and (head.get("repo") or {}).get("full_name") == cfg["repo"]
+        and base.get("ref") == cfg["base_branch"]
+        and base.get("sha") in {old_base, new_base}
+    )
+    if not trusted_pr:
+        raise ValueError("roadmap repair base rebind PR identity invalid")
+    branch = gh_json(["api", f"repos/{cfg['repo']}/git/ref/heads/{cfg['base_branch']}"])
+    if ((branch.get("object") or {}).get("sha")) != new_base:
+        raise ValueError("roadmap repair base rebind canonical tip mismatch")
+    verify_commit_contains(cfg, old_base, new_base)
+    next_binding = validate_roadmap_contract(cfg, issue_spec)
+
+    if run(["git", "status", "--porcelain", "--untracked-files=all"], cwd=repo_dir):
+        raise ValueError("roadmap repair base rebind worktree dirty")
+    if run(["git", "branch", "--show-current"], cwd=repo_dir).strip() != current_spec["work_branch"]:
+        raise ValueError("roadmap repair base rebind branch mismatch")
+    original_head = run(["git", "rev-parse", "HEAD"], cwd=repo_dir).strip()
+    sync_head = str(pr_obj["headRefOid"])
+    if original_head != st.get("last_head_sha"):
+        raise ValueError("roadmap repair base rebind head mismatch")
+    run(["git", "fetch", "origin", cfg["base_branch"], current_spec["work_branch"]], cwd=repo_dir)
+    if run(["git", "rev-parse", f"origin/{current_spec['work_branch']}"], cwd=repo_dir).strip() != sync_head:
+        raise ValueError("roadmap repair base rebind remote head mismatch")
+    if run(["git", "rev-parse", f"origin/{cfg['base_branch']}"], cwd=repo_dir).strip() != new_base:
+        raise ValueError("roadmap repair base rebind fetched tip mismatch")
+    for ancestor, descendant in ((old_base, original_head), (old_base, new_base)):
+        if run(["git", "merge-base", ancestor, descendant], cwd=repo_dir).strip() != old_base:
+            raise ValueError("roadmap repair base rebind ancestry invalid")
+
+    advanced = False
+    try:
+        parents = run(["git", "rev-list", "--parents", "-n", "1", sync_head], cwd=repo_dir).split()
+        if parents != [sync_head, original_head, new_base]:
+            raise ValueError("roadmap repair base rebind merge identity invalid")
+        run(["git", "merge", "--ff-only", sync_head], cwd=repo_dir)
+        advanced = True
+        changes = changed_files(repo_dir, new_base)
+        if not changes or any(not path_allowed(path, issue_spec["allowed_paths"], issue_spec["forbidden_paths"]) for path in changes):
+            raise ValueError("roadmap repair base rebind changed paths invalid")
+        run(["git", "diff", "--check", f"{new_base}..{sync_head}"], cwd=repo_dir)
+        updated = dict(st)
+        updated["spec"] = issue_spec
+        updated["roadmap_binding"] = next_binding
+        updated["last_head_sha"] = sync_head
+        updated["updated_utc"] = utc()
+        event(cfg, "roadmap_repair_base_rebound", issue=updated["issue_number"], pr=pr_number,
+              front=issue_spec["front_id"], old_base_sha=old_base, new_base_sha=new_base,
+              old_head_sha=original_head, synchronized_head_sha=sync_head)
+        save_json(state_path, updated)
+        return updated
+    except Exception:
+        if advanced:
+            run(["git", "reset", "--hard", original_head], cwd=repo_dir, check=False)
+        raise
+
 def path_allowed(path: str, allowed: list[str], forbidden: list[str]) -> bool:
     norm = path.replace("\\", "/").lstrip("./")
     for f in forbidden:
@@ -2304,6 +2403,16 @@ def process_state(cfg, state_path):
             set_converged_phase(cfg, state_path, st, phase, pr_number=prn)
         return
     if "loop:repairing" not in labs: return
+    if st.get("roadmap_binding") is not None:
+        issue_obj=gh_json(["issue","view",str(issue),"--repo",cfg["repo"],"--json","number,title,body,author,labels,state,url"])
+        issue_match=SPEC_RE.search(str(issue_obj.get("body") or ""))
+        if issue_match:
+            try:
+                declared_base=json.loads(issue_match.group(1)).get("expected_base_sha")
+            except Exception as exc:
+                raise ValueError("repair Issue spec invalid") from exc
+            if declared_base != spec.get("expected_base_sha"):
+                st=rebind_roadmap_repair_base(cfg,state_path,st,issue_obj,pr);spec=st["spec"]
     if pr["headRefOid"] != st.get("last_head_sha"):
         # A new head may already be under review; avoid duplicate repair.
         st["last_head_sha"]=pr["headRefOid"]; save_json(state_path,st); return
