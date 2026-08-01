@@ -2403,15 +2403,16 @@ def process_state(cfg, state_path):
             set_converged_phase(cfg, state_path, st, phase, pr_number=prn)
         return
     if "loop:repairing" not in labs: return
-    issue_obj=gh_json(["issue","view",str(issue),"--repo",cfg["repo"],"--json","number,title,body,author,labels,state,url"])
-    issue_match=SPEC_RE.search(str(issue_obj.get("body") or ""))
-    if issue_match:
-        try:
-            declared_base=json.loads(issue_match.group(1)).get("expected_base_sha")
-        except Exception as exc:
-            raise ValueError("repair Issue spec invalid") from exc
-        if declared_base != spec.get("expected_base_sha"):
-            st=rebind_roadmap_repair_base(cfg,state_path,st,issue_obj,pr);spec=st["spec"]
+    if st.get("roadmap_binding") is not None:
+        issue_obj=gh_json(["issue","view",str(issue),"--repo",cfg["repo"],"--json","number,title,body,author,labels,state,url"])
+        issue_match=SPEC_RE.search(str(issue_obj.get("body") or ""))
+        if issue_match:
+            try:
+                declared_base=json.loads(issue_match.group(1)).get("expected_base_sha")
+            except Exception as exc:
+                raise ValueError("repair Issue spec invalid") from exc
+            if declared_base != spec.get("expected_base_sha"):
+                st=rebind_roadmap_repair_base(cfg,state_path,st,issue_obj,pr);spec=st["spec"]
     if pr["headRefOid"] != st.get("last_head_sha"):
         # A new head may already be under review; avoid duplicate repair.
         st["last_head_sha"]=pr["headRefOid"]; save_json(state_path,st); return
