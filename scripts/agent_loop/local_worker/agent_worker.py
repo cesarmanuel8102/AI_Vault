@@ -999,6 +999,26 @@ def parse_spec(issue: dict, cfg: dict) -> dict:
     return spec
 
 
+def validate_roadmap_sync_chain(repo_dir: Path, original_head: str, sync_head: str, new_base: str, front: str) -> list[str]:
+    current, depth = sync_head, 0
+    while current != original_head:
+        depth += 1
+        if depth > 8:
+            raise ValueError("roadmap repair base rebind chain too deep")
+        parents = run(["git", "rev-list", "--parents", "-n", "1", current], cwd=repo_dir).split()
+        if len(parents) != 3 or parents[0] != current or run(["git", "show", "-s", "--format=%s", current], cwd=repo_dir).strip() != f"chore(control-plane): synchronize {front} base":
+            raise ValueError("roadmap repair base rebind merge identity invalid")
+        if run(["git", "merge-base", parents[2], new_base], cwd=repo_dir).strip() != parents[2]:
+            raise ValueError("roadmap repair base rebind chain ancestry invalid")
+        current = parents[1]
+    top = run(["git", "rev-list", "--parents", "-n", "1", sync_head], cwd=repo_dir).split()
+    if len(top) != 3 or top[2] != new_base:
+        raise ValueError("roadmap repair base rebind current base missing")
+    changes = sorted(filter(None, run(["git", "diff", "--name-only", f"{new_base}..{sync_head}"], cwd=repo_dir).splitlines()))
+    if any(run(["git", "diff", "--name-only", f"{original_head}..{sync_head}", "--", path], cwd=repo_dir) for path in changes):
+        raise ValueError("roadmap repair base rebind candidate bytes changed")
+    return changes
+
 def rebind_roadmap_repair_base(cfg: dict, state_path: Path, st: dict, issue_obj: dict, pr_obj: dict) -> dict:
     """Rebind an exact governed repair to an advanced canonical base.
 
@@ -1073,15 +1093,11 @@ def rebind_roadmap_repair_base(cfg: dict, state_path: Path, st: dict, issue_obj:
 
     advanced = False
     try:
-        parents = run(["git", "rev-list", "--parents", "-n", "1", sync_head], cwd=repo_dir).split()
-        if parents != [sync_head, original_head, new_base]:
-            raise ValueError("roadmap repair base rebind merge identity invalid")
+        changes = validate_roadmap_sync_chain(repo_dir, original_head, sync_head, new_base, issue_spec["front_id"])
         run(["git", "merge", "--ff-only", sync_head], cwd=repo_dir)
         advanced = True
-        changes = changed_files(repo_dir, new_base)
         if not changes or any(not path_allowed(path, issue_spec["allowed_paths"], issue_spec["forbidden_paths"]) for path in changes):
             raise ValueError("roadmap repair base rebind changed paths invalid")
-        run(["git", "diff", "--check", f"{new_base}..{sync_head}"], cwd=repo_dir)
         updated = dict(st)
         updated["spec"] = issue_spec
         updated["roadmap_binding"] = next_binding
