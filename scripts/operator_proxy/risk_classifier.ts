@@ -41,6 +41,7 @@ const criticalConceptPatterns = [
 ];
 
 const safetySubjects=new Set(["human final authority","live trading","real money","canonical local sync","auto-merge","deployment"]);
+const prohibitedSafetyActions=new Set(["deploy","activate worker tasks","activate scheduled tasks","run live trading","use real money","perform canonical local sync","auto-merge"]);
 
 function isSafetyList(value:string):boolean {
   const entries=value.replace(/[.!]$/," ").trim().split(/\s*,\s*(?:and\s+)?|\s+and\s+/i).map(item=>item.trim().toLowerCase()).filter(Boolean);
@@ -49,6 +50,8 @@ function isSafetyList(value:string):boolean {
 
 function isPureSafetyInvariant(value:string):boolean {
   const text=value.trim();
+  const prohibited=/^do not\s+(.+?)[.!]?$/i.exec(text);
+  if(prohibited){const entries=prohibited[1].split(/\s*,\s*(?:and\s+|or\s+)?|\s+(?:and|or)\s+/i).map(item=>item.trim().toLowerCase()).filter(Boolean);if(entries.length>0&&entries.every(item=>prohibitedSafetyActions.has(item)))return true;}
   const directed=/^(?:keep|preserve)\s+(.+?)(?:\s+as)?\s+(?:disabled|false|prohibited|denied)[.!]?$/i.exec(text);
   if(directed)return isSafetyList(directed[1]);
   const stated=/^(.+?)\s+remains?\s+(?:disabled|false|prohibited|denied)[.!]?$/i.exec(text);
