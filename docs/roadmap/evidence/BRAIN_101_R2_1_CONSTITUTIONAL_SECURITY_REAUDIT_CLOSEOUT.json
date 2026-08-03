@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R2.1",
+  "front_id": "BRAIN-101-R2-1-CONSTITUTIONAL-SECURITY-REAUDIT-CLOSEOUT-01",
+  "objective": "Record R2.1 constitutional security re-audit evidence and close or route the next governed roadmap item",
+  "parent_lifecycle_evidence": {
+    "schema_version": 1,
+    "parent_front_id": "BRAIN-101-R2-1-CONSTITUTIONAL-SECURITY-REAUDIT-01",
+    "roadmap_id": "BRAIN-101",
+    "roadmap_item_id": "R2.1",
+    "issue": 138,
+    "pr": 139,
+    "decision_id": "54b78608-dd14-48db-b05e-290adb1238f8",
+    "base_sha": "5a532698afcd7ff20c7c789746d61a6a0d960654",
+    "closeout_base_sha": "677213a8e0d4d46a5a72a9ef5edad00740c9a2f0",
+    "head_sha": "94f4ab44b460cbbd9e40dfb10e7a308c8460d9a2",
+    "merge_commit": "677213a8e0d4d46a5a72a9ef5edad00740c9a2f0",
+    "builder_session": "builder-ee0bdbda-9626-433c-99ab-12b728e16be9",
+    "reviewer_session": "reviewer:opencode_ollama:ollama-cloud/glm-5.2:a6e1da65-5e08-4e0b-a81d-57bd483e332c"
+  },
+  "security_reaudit_evidence": {
+    "path": "docs/roadmap/evidence/BRAIN_101_R2_1_CONSTITUTIONAL_SECURITY_REAUDIT.md",
+    "classification_result": "R2_REMAINS_PARTIALLY_CLOSED",
+    "critical_regression_found": false,
+    "r2_can_close_now": false,
+    "next_required_security_state": "GOVERNANCE_FAIL_CLOSED",
+    "blocker_matrix_counts": {
+      "closed_with_runtime_evidence": 2,
+      "partially_closed": 7,
+      "open": 3,
+      "regressed": 0,
+      "superseded": 0
+    },
+    "adversarial_test_matrix_counts": {
+      "closed_with_runtime_evidence": 4,
+      "partially_closed": 4,
+      "open": 5,
+      "regressed": 0,
+      "superseded": 0
+    },
+    "remaining_r2_blockers": [
+      "complete five-role RBAC",
+      "full one-use approval replay prevention",
+      "unified gate ownership",
+      "endpoint-by-endpoint lifecycle protection",
+      "rate limiting",
+      "session isolation",
+      "path traversal denial",
+      "symlink/reparse denial",
+      "prompt injection denial",
+      "cross-room isolation",
+      "cross-user isolation",
+      "append-only audit coverage across security actions",
+      "final threat model"
+    ]
+  },
+  "preserved_controls": {
+    "human_final_authority": true,
+    "live_trading_enabled": false,
+    "real_money_enabled": false,
+    "canonical_local_sync": false,
+    "auto_merge": false,
+    "deployment_mode": "NO_DEPLOY",
+    "runtime_files_modified": false,
+    "authentication_modified": false,
+    "response_shape_modified": false,
+    "side_effects_modified": false,
+    "error_codes_modified": false,
+    "rollback_behavior_modified": false
+  },
+  "status_transition": {
+    "from": "AUTHORIZED_ACTIVE",
+    "to": "CLOSED_RUNTIME_VERIFIED",
+    "reason": "The R2.1 documentation-only constitutional security re-audit evidence is merged at the recorded parent merge commit."
+  },
+  "next_authorized_item": {
+    "roadmap_item_id": "R2.2",
+    "front_id": "BRAIN-101-R2-2-CONSTITUTIONAL-SECURITY-REMEDIATION-PLAN-01",
+    "executor": "codex_control_plane",
+    "work_branch": "control-plane/r2-2-constitutional-security-remediation-plan",
+    "risk": "MEDIUM",
+    "domain": "security_governance",
+    "deployment_mode": "NO_DEPLOY",
+    "allowed_paths": [
+      "docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN.md"
+    ],
+    "closeout": {
+      "front_id": "BRAIN-101-R2-2-CONSTITUTIONAL-SECURITY-REMEDIATION-PLAN-CLOSEOUT-01",
+      "executor": "codex_control_plane",
+      "work_branch": "control-plane/r2-2-constitutional-security-remediation-plan-closeout",
+      "allowed_paths": [
+        "docs/roadmap/BRAIN_101_MANIFEST.json",
+        "docs/roadmap/BRAIN_101_ROADMAP.md",
+        "docs/roadmap/BRAIN_101_SCORECARD.json",
+        "ROADMAP_STATUS.json",
+        "docs/MIGRATION_CONTROL_LEDGER.md",
+        "docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN_CLOSEOUT.json"
+      ],
+      "test_commands": [
+        "git diff --check"
+      ]
+    }
+  },
+  "closed_at_utc": "2026-08-03T21:00:47Z",
+  "final_state": "R2_1_CLOSED_RUNTIME_VERIFIED_R2_2_AUTHORIZED_ACTIVE"
+}
