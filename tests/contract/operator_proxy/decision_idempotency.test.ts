@@ -61,6 +61,19 @@ test("schema v2 decision id is deterministically bound to its key",()=>{
 test("decision comments and labels reconcile without duplicates",()=>{
   const bus=new GitHubBus("gh");let comments:string[]=[],labels=["operator:queued"],mutations=0;bus.setMutationGuard(()=>{});(bus as any).call=(args:string[])=>{mutations++;if(args.includes("--body"))comments.push(args[args.indexOf("--body")+1]);if(args.includes("--remove-label"))labels=labels.filter(x=>x!==args[args.indexOf("--remove-label")+1]);if(args.includes("--add-label"))labels.push(args[args.indexOf("--add-label")+1]);return "";};(bus as any).json=(args:string[])=>args.includes("comments")?{comments:comments.map(body=>({body}))}:{labels:labels.map(name=>({name}))};const marker=`decision_key=${key}`;bus.commentOnce("pr",63,marker,`${marker}\nbody`);bus.commentOnce("pr",63,marker,`${marker}\nbody`);bus.reconcileLabel("issue",63,"operator:completed",["operator:queued"]);bus.reconcileLabel("issue",63,"operator:completed",["operator:queued"]);assert.equal(comments.length,1);assert.deepEqual(labels,["operator:completed"]);assert.equal(mutations,3);
 });
+test("owner-authorized merge evidence requires one exact Owner comment and a two-parent merge",()=>{
+  const merge="f".repeat(40),body=["[OWNER][CONSTITUTIONAL-MERGE-AUTHORIZED]","PR: #63",`AUTHORIZED_HEAD: ${head}`,`BASE: ${base}`,`MERGE_COMMIT: ${merge}`,"MERGE_METHOD: merge commit","CI: PASS","REVIEWER_PRIMARY: PASS","REVIEWER_VERIFIER: PASS","FINDINGS: 0","AUTO_MERGE: false","LIVE_TRADING: false","REAL_MONEY: false","CANONICAL_LOCAL_SYNC: false"].join("\n"),bus=new GitHubBus("gh");
+  (bus as any).verifyMerged=()=>merge;(bus as any).json=()=>({comments:[{author:{login:"cesarmanuel8102"},body}]});
+  assert.equal(bus.verifyOwnerAuthorizedMerge(63,63,head,base,merge),merge);
+  const invalidComments=[
+    [],
+    [{author:{login:"attacker"},body}],
+    [{author:{login:"cesarmanuel8102"},body},{author:{login:"cesarmanuel8102"},body}],
+    [{author:{login:"cesarmanuel8102"},body:body.replace("FINDINGS: 0","FINDINGS: 1")}],
+  ];
+  for(const comments of invalidComments){(bus as any).json=()=>({comments});assert.throws(()=>bus.verifyOwnerAuthorizedMerge(63,63,head,base,merge),/owner authorization evidence/);}
+  (bus as any).verifyMerged=()=>"e".repeat(40);assert.throws(()=>bus.verifyOwnerAuthorizedMerge(63,63,head,base,merge),/identity mismatch/);
+});
 
 test("post-merge retry creates one receipt and one authorization comment",()=>{
   const root=mkdtempSync(join(tmpdir(),"decision-merge-")),ledger=new Ledger(root),d=decision();ledger.record(d);let comments=0,published=false;const bus:any={json:()=>({state:"MERGED"}),verifyMerged:()=>"f".repeat(40),commentOnce:()=>{if(published)return false;published=true;comments++;return true;}};execute(bus,ledger,d,false);reconcileAuthorizationComment(bus,d);execute(bus,ledger,d,false);reconcileAuthorizationComment(bus,d);assert.equal(lines(join(root,"events.jsonl")).filter(x=>x.includes("supervisor_authorization_consumed")).length,1);assert.equal(comments,1);assert.equal(readFileSync(join(root,`head-${head}.done`),"utf8"),id);
