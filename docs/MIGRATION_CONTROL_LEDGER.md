@@ -9212,3 +9212,18 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Authorized next item: exactly one `R2.4`, MEDIUM, domain `security_governance`, executor `codex_control_plane`, work branch `control-plane/r2-4-unified-governance-gate`, `NO_DEPLOY`, with complete closeout metadata.
 - Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched by closeout, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
 - Next gate: execute `R2.4` unified governance gate with `NO_DEPLOY`.
+
+## BRAIN-101 R2.4 — Unified Governance Gate Closeout (2026-08-03)
+
+- Front: `BRAIN-101-R2-4-UNIFIED-GOVERNANCE-GATE-CLOSEOUT-01`.
+- Parent unified governance gate front: `BRAIN-101-R2-4-UNIFIED-GOVERNANCE-GATE-01`.
+- Unified gate evidence path: `docs/roadmap/evidence/BRAIN_101_R2_4_UNIFIED_GOVERNANCE_GATE.md`.
+- Governed parent lifecycle: Issue #152 / PR #153, decision `82df3921-80a3-43f5-8fc3-2a13a245795c`, authorization mode `OWNER_CONSTITUTIONAL`, base `d5b608d1d208717d1cf556b0d948fcd80654662c`, closeout base `c96b6a6a9d52f3ab2570488bb639cc37e515fd0d`, head `03e326a7da27386c64e3cbb0158762af13448014`, merge commit `4da21f268e339f83b6acfe49fb091087196f2085`.
+- Builder session: `builder-cfa6b39b-75f2-4c51-92a1-4a1749530348`.
+- Reviewer session: `reviewer:opencode_ollama:ollama-cloud/qwen3.5:397b:1f00efe1-f9b3-4448-87e2-435376e354ef`.
+- Unified gate result: governance, execution, patch, dev, lifecycle, and approval operations route through one authoritative fail-closed gate model; missing, malformed, stale, unavailable, inconsistent, and forged decisions fail closed; P3 denial and human final authority remain preserved.
+- Closeout evidence: `docs/roadmap/evidence/BRAIN_101_R2_4_UNIFIED_GOVERNANCE_GATE_CLOSEOUT.json`.
+- Status: `R2.4` set to `CLOSED_RUNTIME_VERIFIED`; R2 remains partially closed.
+- Authorized next item: exactly one `R2.5`, MEDIUM, domain `security_governance`, executor `codex_control_plane`, work branch `control-plane/r2-5-five-role-rbac-matrix`, `NO_DEPLOY`, with complete closeout metadata.
+- Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched by closeout, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
+- Next gate: execute `R2.5` five-role RBAC matrix with `NO_DEPLOY`.
