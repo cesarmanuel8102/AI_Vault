@@ -17,6 +17,12 @@ export interface BuilderBus {
 
 function native(file:string,args:string[],options:any={}){try{return rawExecFileSync(file,args,{...options,encoding:"utf8",stdio:"pipe"});}catch(error){throw new Error(redactedError(error));}}
 const git=(repo:string,args:string[])=>native(process.env.GIT_PATH??"git",["-C",repo,...args],{encoding:"utf8",timeout:120000,windowsHide:true}).trim();
+function ensureCommit(repo:string,sha:string){
+  if(!/^[a-f0-9]{40}$/.test(sha))throw new Error("builder base commit identity invalid");
+  try{git(repo,["cat-file","-e",`${sha}^{commit}`]);return;}catch{}
+  try{git(repo,["fetch","--no-tags","--no-write-fetch-head","origin",sha]);git(repo,["cat-file","-e",`${sha}^{commit}`]);}
+  catch{throw new Error("builder base commit unavailable");}
+}
 const allowed=(path:string,spec:ProxySpec)=>spec.allowed_paths.some(p=>p.endsWith("/")?path.startsWith(p):path===p)&&!spec.forbidden_paths.some(p=>path===p||path.startsWith(p.endsWith("/")?p:`${p}/`));
 function changed(repo:string){const tracked=git(repo,["diff","--name-only","HEAD"]);const staged=git(repo,["diff","--cached","--name-only"]);const untracked=git(repo,["ls-files","--others","--exclude-standard"]);return [...new Set([tracked,staged,untracked].flatMap(x=>x?x.split(/\r?\n/):[]).filter(Boolean))].sort();}
 function committed(repo:string,base:string){const output=git(repo,["diff","--name-only",`${base}..HEAD`]);return output?output.split(/\r?\n/).filter(Boolean).sort():[];}
@@ -72,6 +78,7 @@ export class GovernedBuilder {
     if(!spec.front_id||!spec.work_branch||!spec.objective)throw new Error("builder metadata missing");
     const existing=this.bus.findPrByBranch(spec.work_branch);if(existing&&repairCycle===0){this.bus.bindPrToIssue(issue,existing.number);return {pr:existing.number,head_sha:existing.head_sha,session};}
     const orphanHead=!existing&&repairCycle===0?this.bus.remoteBranchHead(spec.work_branch):undefined;if(orphanHead){const pr=this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nRecovered published builder branch.\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:orphanHead,session};}
+    ensureCommit(this.sourceRepo,spec.expected_base_sha);
     mkdirSync(this.worktreeRoot,{recursive:true});const root=realpathSync(this.worktreeRoot);if(lstatSync(root).isSymbolicLink())throw new Error("worktree root symlink denied");
     const worktree=resolve(root,spec.front_id);if(!worktree.startsWith(`${root}\\`)&&!worktree.startsWith(`${root}/`))throw new Error("worktree escaped root");
     if(!existsSync(worktree)){this.assertEffect("branch_create",{issue});if(existing){native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"fetch","origin",spec.work_branch],{stdio:"inherit",timeout:120000,windowsHide:true});try{native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add",worktree,spec.work_branch],{stdio:"inherit",timeout:120000,windowsHide:true});}catch{native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","-b",spec.work_branch,worktree,`origin/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});}}else native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","-b",spec.work_branch,worktree,spec.expected_base_sha],{stdio:"inherit",timeout:120000,windowsHide:true});}
