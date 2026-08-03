@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
+  "roadmap_item_id": "R1.3",
+  "front_id": "BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-CLOSEOUT-01",
+  "status": "CLOSED_RUNTIME_VERIFIED",
+  "closed_at_utc": "2026-08-03T19:21:32Z",
+  "repository": "cesarmanuel8102/AI_Vault",
+  "base_branch": "codex/own-capital-sustainable-return",
+  "source_recovery": {
+    "failed_attempt_issue": 112,
+    "failed_attempt_issue_url": "https://github.com/cesarmanuel8102/AI_Vault/issues/112",
+    "failed_attempt_pr": 113,
+    "failed_attempt_pr_url": "https://github.com/cesarmanuel8102/AI_Vault/pull/113",
+    "failed_attempt_result": "FAILED_CLOSED_ON_ROADMAP_DOC_TRAILING_WHITESPACE",
+    "prompt_contract_repair_pr": 124,
+    "prompt_contract_repair_pr_url": "https://github.com/cesarmanuel8102/AI_Vault/pull/124",
+    "prompt_contract_repair_merge_commit": "8d750c586431b622041f2d1f92c19c630f3a3d25",
+    "retry_authorization_pr": 125,
+    "retry_authorization_pr_url": "https://github.com/cesarmanuel8102/AI_Vault/pull/125",
+    "retry_authorization_merge_commit": "ba0c806d92f4bd287eaa05e2f7c82139370719bc",
+    "retry_authorization_merged_at_utc": "2026-08-03T18:49:29Z"
+  },
+  "agent_loop_e2e": {
+    "front_id": "BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-RETRY-02",
+    "work_branch": "agent/roadmap-doc-brain-101-r1-3-kimi-e2e-retry-02",
+    "executor": "agent_loop",
+    "executor_model": "ollama-cloud/kimi-k2.7-code",
+    "test_profile": "roadmap-doc",
+    "max_executor_cycles": 2,
+    "cycles_observed": 1,
+    "risk": "LOW",
+    "domain": "agent_loop",
+    "deployment_mode": "NO_DEPLOY",
+    "evidence_path": "docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md",
+    "evidence_commit": "1e14fbefa641f10bf3b726b15a9003eeb4ce942a",
+    "evidence_committed_at_utc": "2026-08-03T18:51:23Z",
+    "base_sync_commit": "c8e7d6967bd27d5177063ef9d4d68573998c5c52",
+    "base_sync_committed_at_utc": "2026-08-03T19:07:54Z",
+    "changed_files": [
+      "docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md"
+    ],
+    "result": "The retry produced the isolated roadmap evidence document, removed the prior trailing-whitespace failure mode, and validated the document free of trailing spaces or tabs."
+  },
+  "decision_and_merge": {
+    "policy_decision": "APPROVE",
+    "allowed_action": "MERGE",
+    "decision_id": null,
+    "decision_id_note": "No policy decision UUID is present in the local commit metadata available to this closeout; exact merge evidence is bound by commit.",
+    "pr": null,
+    "pr_note": "The retry branch was integrated by governed Operator Proxy direct merge; no pull-request number is present in local metadata for that merge.",
+    "merge_actor": "AI Vault Operator Proxy",
+    "merge_commit": "7125bf83ed786c5642b299da2fd4f65157d20f9e",
+    "merged_at_utc": "2026-08-03T19:13:16Z",
+    "merge_message": "Merge commit 'c8e7d6967bd27d5177063ef9d4d68573998c5c52' into HEAD",
+    "post_merge_repair_pr": 130,
+    "post_merge_repair_pr_url": "https://github.com/cesarmanuel8102/AI_Vault/pull/130",
+    "post_merge_repair_commit": "643574ee2fc01dec4f1ada719b7b8570be8dd38b",
+    "post_merge_repair_merged_at_utc": "2026-08-03T19:21:32Z",
+    "auto_merge": false,
+    "squash_merge": false,
+    "rebase_merge": false
+  },
+  "closed_item": {
+    "id": "R1.3",
+    "title": "Run isolated Agent Loop OpenCode Kimi roadmap-doc E2E",
+    "status": "CLOSED_RUNTIME_VERIFIED"
+  },
+  "authorized_next_item": {
+    "id": "R1.4",
+    "title": "Certify Agent Loop sequencer contract handoff",
+    "status": "AUTHORIZED_ACTIVE",
+    "risk": "LOW",
+    "domain": "agent_loop",
+    "executor": "agent_loop",
+    "test_profile": "roadmap-doc",
+    "max_executor_cycles": 2,
+    "deployment_mode": "NO_DEPLOY",
+    "front_id": "BRAIN-101-R1-4-AGENT-LOOP-SEQUENCER-CONTRACT-E2E-01",
+    "work_branch": "agent/roadmap-doc-brain-101-r1-4-sequencer-contract-e2e",
+    "allowed_paths": [
+      "docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E.md"
+    ],
+    "forbidden_paths": [
+      ".env",
+      ".github/",
+      "memory/",
+      "memory/semantic/",
+      "memory/rollback",
+      "tmp_agent/brain_v9/trading/",
+      "financial_autonomy/",
+      "tmp_agent/state/",
+      "tmp_agent/brain_v9/core/session.py",
+      "scripts/"
+    ]
+  },
+  "acceptance": {
+    "record_exact_r1_3_issue_pr_decision_merge_and_agent_loop_evidence": true,
+    "r1_3_status": "CLOSED_RUNTIME_VERIFIED",
+    "r1_3_closed_only_after_e2e_passed": true,
+    "exactly_one_authorized_next_item": "R1.4",
+    "human_final_authority": true,
+    "live_trading_enabled": false,
+    "real_money_enabled": false,
+    "canonical_local_sync": false,
+    "auto_merge": false
+  },
+  "scope": {
+    "runtime_files_modified": false,
+    "authentication_modified": false,
+    "response_shape_modified": false,
+    "side_effects_modified": false,
+    "error_codes_modified": false,
+    "rollback_behavior_modified": false,
+    "trading_modified": false,
+    "financial_autonomy_modified": false,
+    "memory_semantic_faiss_modified": false,
+    "canonical_local_sync": false
+  }
+}

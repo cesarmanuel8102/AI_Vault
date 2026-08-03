@@ -17,7 +17,7 @@
 
 ## R1 autonomous control-plane priority correction
 
-R1.2 runtime activation was paused until a synthetic documentation-only flow proved the complete autonomous chain: canonical discovery, governed Issue, isolated builder, Draft PR, CI, independent review, policy, governed merge, documentary closeout, and next-item discovery. Issue #62 is the umbrella for the broader control-plane implementation and multi-actor certification program. The sequencer created operational Issue #65 for bootstrap item `R1.0`, and PR #68 carried its isolated payload. `R1.0` is now `CLOSED_RUNTIME_VERIFIED` by that flow and Operator Proxy merge `9fde35227982a89c1af6b31051ff44f131128430`. `R1.2` is now `CLOSED_RUNTIME_VERIFIED` after Issue #56 / PR #57, Issue #59 / PR #58, and the privileged-install receipt repair chain through PR #102. Exactly one next synthetic Agent Loop item, `R1.3`, is `AUTHORIZED_ACTIVE` for an isolated OpenCode Kimi `roadmap-doc` E2E with `NO_DEPLOY`. R2, live trading, real money, canonical local sync, auto-merge, and deployment remain unauthorized.
+R1.2 runtime activation was paused until a synthetic documentation-only flow proved the complete autonomous chain: canonical discovery, governed Issue, isolated builder, Draft PR, CI, independent review, policy, governed merge, documentary closeout, and next-item discovery. Issue #62 is the umbrella for the broader control-plane implementation and multi-actor certification program. The sequencer created operational Issue #65 for bootstrap item `R1.0`, and PR #68 carried its isolated payload. `R1.0` is now `CLOSED_RUNTIME_VERIFIED` by that flow and Operator Proxy merge `9fde35227982a89c1af6b31051ff44f131128430`. `R1.2` is now `CLOSED_RUNTIME_VERIFIED` after Issue #56 / PR #57, Issue #59 / PR #58, and the privileged-install receipt repair chain through PR #102. `R1.3` is now `CLOSED_RUNTIME_VERIFIED` after the isolated Agent Loop OpenCode Kimi `roadmap-doc` retry, evidence commit `1e14fbefa641f10bf3b726b15a9003eeb4ce942a`, and Operator Proxy merge `7125bf83ed786c5642b299da2fd4f65157d20f9e`. Exactly one next synthetic Agent Loop item, `R1.4`, is `AUTHORIZED_ACTIVE` for a sequencer-contract `roadmap-doc` E2E with `NO_DEPLOY`. R2, live trading, real money, canonical local sync, auto-merge, and deployment remain unauthorized.
 
 ---
 
@@ -945,7 +945,7 @@ R1.2 quedó cerrado en runtime con la cadena gobernada de perfiles Agent Loop. I
 
 Issue #59 / PR #58 reparó la activación runtime para que el worker instalado con configuración legacy pilot-only admitiera los perfiles `roadmap-doc` y `test-only` mediante comandos internos inmutables, preservando `worker.json` byte-for-byte y manteniendo `test-only` como validación AST-only. PR #58 fue mergeado como `40343a308b7833ee948ea8dbdaf8b8aed334f13d` el `2026-07-29T20:44:04Z`. La validación final de instalación privilegiada quedó reparada por la cadena PR #96, #97, #98, #99, #101 y #102; el último merge fue `afbeadcc354e3cb74747c694269c50efdb620ccf` el `2026-07-31T21:30:17Z`, con tareas deshabilitadas, cero workers, sin deploy, sin worker `--once`, sin trading, sin real money, sin canonical local sync y sin auto-merge.
 
-El closeout machine-readable está en `docs/roadmap/evidence/BRAIN_101_R1_2_RUNTIME_CLOSEOUT.json`. R1.2 queda `CLOSED_RUNTIME_VERIFIED`. Se autoriza exactamente un siguiente item sintético: `R1.3`, `LOW`, dominio `agent_loop`, ejecutor `opencode_kimi`, perfil `roadmap-doc`, `NO_DEPLOY`, permitido solo para `docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md`.
+El closeout machine-readable está en `docs/roadmap/evidence/BRAIN_101_R1_2_RUNTIME_CLOSEOUT.json`. R1.2 queda `CLOSED_RUNTIME_VERIFIED`. Se autoriza exactamente un siguiente item sintético: `R1.3`, `LOW`, dominio `agent_loop`, ejecutor `agent_loop`, modelo OpenCode Kimi, perfil `roadmap-doc`, `NO_DEPLOY`, permitido solo para `docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md`.
 
 ## 13.11 Recuperación gobernada del primer intento R1.3
 
@@ -953,10 +953,16 @@ El primer intento quedó preservado en Issue #112 y Draft PR #113. El ejecutor O
 
 Se preserva el intento fallido como evidencia inmutable y se autoriza un único reemplazo append-only: `BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-RETRY-02`, rama `agent/roadmap-doc-brain-101-r1-3-kimi-e2e-retry-02`, mismo perfil `roadmap-doc`, mismo path permitido y `NO_DEPLOY`. No se reabre ni edita el estado terminal anterior.
 
-## 13.12 Estado vigente
+## 13.12 Cierre runtime de R1.3
+
+R1.3 quedó cerrado en runtime con el retry aislado `BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-RETRY-02`. PR #125 autorizó el reemplazo append-only y fue fusionado como `ba0c806d92f4bd287eaa05e2f7c82139370719bc` el `2026-08-03T18:49:29Z`. El ejecutor Agent Loop produjo el documento `docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md` en el commit `1e14fbefa641f10bf3b726b15a9003eeb4ce942a`, con `AGENT_LOOP_EXECUTOR_MODEL=ollama-cloud/kimi-k2.7-code`, perfil `roadmap-doc`, un ciclo observado y sin espacios ni tabs finales. La rama fue sincronizada en `c8e7d6967bd27d5177063ef9d4d68573998c5c52` y el Operator Proxy la integró mediante merge gobernado `7125bf83ed786c5642b299da2fd4f65157d20f9e` el `2026-08-03T19:13:16Z`. PR #130 cerró la reparación posterior de fetch del builder en `643574ee2fc01dec4f1ada719b7b8570be8dd38b` el `2026-08-03T19:21:32Z`.
+
+El closeout machine-readable está en `docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E_CLOSEOUT.json`. R1.3 queda `CLOSED_RUNTIME_VERIFIED`. Se autoriza exactamente un siguiente item sintético: `R1.4`, `LOW`, dominio `agent_loop`, ejecutor `agent_loop`, rama `agent/roadmap-doc-brain-101-r1-4-sequencer-contract-e2e`, perfil `roadmap-doc`, `max_executor_cycles=2`, `NO_DEPLOY`, permitido solo para `docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E.md`. El closeout de R1.4 queda predeclarado con ejecutor `codex_control_plane` y metadatos completos. R2, live trading, real money, canonical local sync, auto-merge y deploy siguen no autorizados.
+
+## 13.13 Estado vigente
 
 ```text
-STATUS: R1_2_CLOSED_RUNTIME_VERIFIED_R1_3_AUTHORIZED_ACTIVE
+STATUS: R1_3_CLOSED_RUNTIME_VERIFIED_R1_4_AUTHORIZED_ACTIVE
 R0_STATUS: CLOSED_HUMAN_ADOPTED
 ADOPTION_PR: 35
 ADOPTION_PR_HEAD: a605c4d88510acd477cf26d2787bc38b1c02af48
@@ -979,12 +985,21 @@ R1_2_IMPLEMENTATION_PR: 57
 R1_2_RUNTIME_REPAIR_ISSUE: 59
 R1_2_RUNTIME_REPAIR_PR: 58
 R1_2_FINAL_INSTALL_REPAIR_PR: 102
-R1_3_STATUS: AUTHORIZED_ACTIVE
+R1_3_STATUS: CLOSED_RUNTIME_VERIFIED
 R1_3_RISK: LOW
 R1_3_PROFILE: roadmap-doc
 R1_3_DEPLOYMENT_MODE: NO_DEPLOY
 R1_3_FAILED_ATTEMPT_ISSUE: 112
 R1_3_FAILED_ATTEMPT_PR: 113
 R1_3_RETRY_FRONT: BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-RETRY-02
-NEXT_GATE: Execute R1.3 isolated Agent Loop OpenCode Kimi roadmap-doc E2E with NO_DEPLOY
+R1_3_EVIDENCE_COMMIT: 1e14fbefa641f10bf3b726b15a9003eeb4ce942a
+R1_3_MERGE_COMMIT: 7125bf83ed786c5642b299da2fd4f65157d20f9e
+R1_4_STATUS: AUTHORIZED_ACTIVE
+R1_4_FRONT: BRAIN-101-R1-4-AGENT-LOOP-SEQUENCER-CONTRACT-E2E-01
+R1_4_EXECUTOR: agent_loop
+R1_4_WORK_BRANCH: agent/roadmap-doc-brain-101-r1-4-sequencer-contract-e2e
+R1_4_PROFILE: roadmap-doc
+R1_4_MAX_EXECUTOR_CYCLES: 2
+R1_4_DEPLOYMENT_MODE: NO_DEPLOY
+NEXT_GATE: Execute R1.4 isolated Agent Loop sequencer contract roadmap-doc E2E with NO_DEPLOY
 ```

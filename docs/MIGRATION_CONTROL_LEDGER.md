@@ -9121,6 +9121,27 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Runtime result: `roadmap-doc` and `test-only` use immutable reviewed worker constants; legacy pilot behavior and byte-identical installed worker config are preserved; `test-only` remains AST-only and does not execute model-authored tests on the worker host.
 - Status: `R1.2` set to `CLOSED_RUNTIME_VERIFIED`.
 - Closeout evidence: `docs/roadmap/evidence/BRAIN_101_R1_2_RUNTIME_CLOSEOUT.json`.
-- Authorized next item: exactly one synthetic `R1.3`, LOW, domain `agent_loop`, executor `opencode_kimi`, profile `roadmap-doc`, `NO_DEPLOY`, allowed only for `docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md`.
+- Authorized next item: exactly one synthetic `R1.3`, LOW, domain `agent_loop`, executor `agent_loop`, OpenCode Kimi model, profile `roadmap-doc`, `NO_DEPLOY`, allowed only for `docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md`.
 - Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, worker `--once` disabled, tasks disabled, workers 0.
 - Next gate: execute `R1.3` isolated Agent Loop OpenCode Kimi roadmap-doc E2E with `NO_DEPLOY`.
+
+## BRAIN-101 R1.3 — Agent Loop OpenCode Kimi Roadmap-Doc E2E Closeout (2026-08-03)
+
+- Front: `BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-CLOSEOUT-01`.
+- Failed attempt preserved: Issue #112 and Draft PR #113; it failed closed on `git diff --check` trailing whitespace.
+- Prompt contract repair: PR #124 merged as `8d750c586431b622041f2d1f92c19c630f3a3d25`.
+- Retry authorization: PR #125 merged as `ba0c806d92f4bd287eaa05e2f7c82139370719bc` at `2026-08-03T18:49:29Z`.
+- Agent Loop retry front: `BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-RETRY-02`.
+- Agent Loop branch: `agent/roadmap-doc-brain-101-r1-3-kimi-e2e-retry-02`.
+- Executor/profile/cycles: `agent_loop`, `roadmap-doc`, `max_executor_cycles=2`; one cycle observed.
+- Evidence commit: `1e14fbefa641f10bf3b726b15a9003eeb4ce942a`, with `AGENT_LOOP_EXECUTOR_MODEL=ollama-cloud/kimi-k2.7-code`.
+- Evidence path: `docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md`.
+- Base sync commit: `c8e7d6967bd27d5177063ef9d4d68573998c5c52`.
+- Governed merge: Operator Proxy integrated the retry via merge commit `7125bf83ed786c5642b299da2fd4f65157d20f9e` at `2026-08-03T19:13:16Z`.
+- Post-merge repair: PR #130 merged as `643574ee2fc01dec4f1ada719b7b8570be8dd38b` at `2026-08-03T19:21:32Z`.
+- Closeout evidence: `docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E_CLOSEOUT.json`.
+- Status: `R1.3` set to `CLOSED_RUNTIME_VERIFIED`.
+- Authorized next item: exactly one synthetic `R1.4`, LOW, domain `agent_loop`, executor `agent_loop`, work branch `agent/roadmap-doc-brain-101-r1-4-sequencer-contract-e2e`, profile `roadmap-doc`, `max_executor_cycles=2`, `NO_DEPLOY`, allowed only for `docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E.md`.
+- R1.4 closeout metadata: executor `codex_control_plane`, branch `control-plane/r1-4-agent-loop-sequencer-contract-closeout`, closeout evidence path `docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E_CLOSEOUT.json`.
+- Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, worker task activation disabled.
+- Next gate: execute `R1.4` isolated Agent Loop sequencer contract roadmap-doc E2E with `NO_DEPLOY`.
