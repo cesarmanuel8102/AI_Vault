@@ -12,8 +12,8 @@ from __future__ import annotations
 from typing import Dict, Optional, Any
 from pathlib import Path
 
-from brain_v9.governance.capability_policy import CapabilityPolicy, Capability
-from brain_v9.governance.protected_paths import is_protected_path
+from .capability_policy import CapabilityPolicy, Capability
+from .protected_paths import is_protected_path
 
 
 class SelfDevSandbox:

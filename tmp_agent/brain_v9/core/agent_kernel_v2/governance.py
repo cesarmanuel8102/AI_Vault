@@ -2,6 +2,7 @@ from __future__ import annotations
 from pathlib import Path
 from .state import FORBIDDEN_PATH_PARTS, RAW_COT_MARKERS
 from .schemas import LEGACY_MODE_MAP
+from ...governance.unified_gate import evaluate_governed_operation
 
 
 MODE_COMMAND_PATTERNS = [
@@ -143,13 +144,33 @@ def escalate_auto_mode_effective(mode_requested: str, escalation_required: bool,
 
 def write_allowed(mode: str, approval_token: str | None = None) -> bool:
     """Check if write is allowed with valid approval token."""
-    return mode == "build" and bool(approval_token and approval_token.startswith("AGENTV2_APPROVED_"))
+    decision = evaluate_governed_operation(
+        operation_class="approval",
+        operation="write_allowed",
+        mode=mode,
+        risk_level="P2",
+        approval_token=approval_token,
+        args={"approval_token": approval_token or ""},
+    )
+    return validate_mode(mode) == "build" and decision.allowed
 
 
 def selfdev_governance_blocked(path: str) -> bool:
     """Check if a self-dev path targets governance-critical files."""
     p = normalize_path(path)
-    return any(protected in p for protected in GOVERNANCE_PROTECTED_PATHS)
+    if any(protected in p for protected in GOVERNANCE_PROTECTED_PATHS):
+        return True
+    decision = evaluate_governed_operation(
+        operation_class="governance",
+        operation="selfdev_governance_path_check",
+        mode="build",
+        risk_level="P2",
+        target=p,
+        args={"path": p},
+        authenticated=True,
+        role="operator",
+    )
+    return not decision.allowed and decision.error == "governance_file_modification_denied_by_default"
 
 
 def contains_forbidden_request_fields(args: dict) -> bool:

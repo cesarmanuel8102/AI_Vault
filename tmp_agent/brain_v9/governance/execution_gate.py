@@ -41,12 +41,13 @@ from brain_v9.config import BASE_PATH
 # FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01
 # Delegate protected path checks to centralized module for extended coverage
 # (.env, memory/semantic/, trading/, strategies/, B8/, session.py, etc.)
-from brain_v9.governance.protected_paths import is_protected_path
-from brain_v9.governance.signed_approvals import verify_approval_token
+from .protected_paths import is_protected_path
+from .signed_approvals import verify_approval_token
+from .unified_gate import evaluate_governed_operation
 
 # FRONT-BRAIN-AUTONOMY-SELFDEV-SANDBOX-02
 # Runtime sandbox for self-dev autonomy constraints
-from brain_v9.governance.selfdev_sandbox import evaluate_selfdev_action
+from .selfdev_sandbox import evaluate_selfdev_action
 
 log = logging.getLogger("governance.execution_gate")
 
@@ -528,6 +529,35 @@ class ExecutionGate:
         # GOD MODE: explicit session_id O contexto async (PAD session)
         active_session = session_id or _active_chat_session.get()
         active_god = session_id or _active_god_session.get()
+        candidate_paths = _extract_candidate_paths(tool_name, args or {})
+
+        unified_decision = evaluate_governed_operation(
+            operation_class="execution",
+            operation=tool_name,
+            mode=self._mode,
+            risk_level=f"P{risk}",
+            actor="agent",
+            role="operator",
+            target=candidate_paths[0] if candidate_paths else "",
+            args=args or {},
+            authenticated=bool(active_session),
+        )
+        legacy_deferred_errors = {
+            "approval_required",
+            "p3_denied",
+            "governance_file_modification_denied_by_default",
+        }
+        if not unified_decision.allowed and unified_decision.error not in legacy_deferred_errors:
+            self._audit_log(tool_name, risk, "unified_gate_blocked", unified_decision.reason)
+            return {
+                "allowed": False,
+                "risk": unified_decision.risk_level,
+                "reason": unified_decision.reason,
+                "action": "blocked",
+                "pending_id": None,
+                "write_performed": False,
+                "unified_gate": unified_decision.to_dict(),
+            }
 
         # FRONT-BRAIN-AUTONOMY-RUNTIME-INTEGRATION-03: SelfDevSandbox evaluation
         # Runs FIRST for filesystem write tools - provides structured deny with audit_event.

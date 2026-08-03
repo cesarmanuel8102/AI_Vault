@@ -1164,8 +1164,61 @@ def _chat_session_runtime_payload() -> Dict[str, Any]:
 configure_chat_runtime_provider(_chat_session_runtime_payload)
 
 
+def _request_model_dict(model: Any) -> Dict[str, Any]:
+    if hasattr(model, "model_dump"):
+        return model.model_dump()
+    if hasattr(model, "dict"):
+        return model.dict()
+    return dict(model or {})
+
+
+def _unified_route_gate(
+    *,
+    operation_class: str,
+    operation: str,
+    risk_level: str = "P2",
+    target: str = "",
+    payload: Optional[Dict[str, Any]] = None,
+    success_key: str = "ok",
+    mode: str = "build",
+    authenticated: bool = True,
+    role: str = "operator",
+) -> Optional[Dict[str, Any]]:
+    """Return a route-shaped denial payload, or None when the gate allows."""
+    from brain_v9.governance.unified_gate import evaluate_governed_operation
+
+    body = dict(payload or {})
+    decision = evaluate_governed_operation(
+        operation_class=operation_class,
+        operation=operation,
+        mode=mode,
+        risk_level=risk_level,
+        target=target,
+        args=body,
+        approval_token=body.get("approval_token"),
+        authenticated=authenticated,
+        role=role,
+        context={"unsafe_dev_endpoints_enabled": BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS},
+    )
+    if decision.allowed:
+        return None
+    return {
+        success_key: False,
+        "error": decision.error or "unified_gate_denied",
+        "gate": decision.to_dict(),
+    }
+
+
 @app.post("/brain/maintenance/action")
 async def brain_maintenance_action(payload: MaintenanceActionRequest, _operator: OperatorAccess):
+    gate_denial = _unified_route_gate(
+        operation_class="lifecycle",
+        operation="maintenance_action",
+        payload=_request_model_dict(payload),
+        success_key="success",
+    )
+    if gate_denial:
+        return gate_denial
     result = _brain_maintenance_action_result(payload.service, payload.action)
     return {
         **result,
@@ -1288,6 +1341,15 @@ configure_chat_service_runtime_provider(_build_chat_entrypoint_runtime)
 @app.post("/brain/learned/patterns/{pattern_id}/disable")
 async def brain_learned_pattern_disable(pattern_id: str, _operator: StrictOperatorAccess):
     try:
+        gate_denial = _unified_route_gate(
+            operation_class="lifecycle",
+            operation="learned_pattern_disable",
+            payload={"pattern_id": pattern_id},
+            success_key="success",
+            role="admin",
+        )
+        if gate_denial:
+            return gate_denial
         from brain_v9.agent.failure_learner import FailureLearner
         learner = FailureLearner.get()
         ok = learner.disable(pattern_id)
@@ -1303,6 +1365,15 @@ async def brain_learned_pattern_disable(pattern_id: str, _operator: StrictOperat
 @app.delete("/brain/learned/patterns/{pattern_id}")
 async def brain_learned_pattern_delete(pattern_id: str, _operator: StrictOperatorAccess):
     try:
+        gate_denial = _unified_route_gate(
+            operation_class="lifecycle",
+            operation="learned_pattern_delete",
+            payload={"pattern_id": pattern_id},
+            success_key="success",
+            role="admin",
+        )
+        if gate_denial:
+            return gate_denial
         from brain_v9.agent.failure_learner import FailureLearner
         learner = FailureLearner.get()
         ok = learner.delete(pattern_id)
@@ -1328,6 +1399,16 @@ async def brain_learned_test_simulate(_operator: StrictOperatorAccess, payload: 
       4. learner.add_validated() if test passes
     Returns trace dict with each step's outcome.
     """
+    gate_denial = _unified_route_gate(
+        operation_class="dev",
+        operation="learned_test_simulate",
+        target=str((payload or {}).get("file_path", "")),
+        payload=payload,
+        success_key="success",
+        role="admin",
+    )
+    if gate_denial:
+        return gate_denial
     tool = str(payload.get("tool", "")).strip()
     args_orig = payload.get("args", {}) or {}
     error_text = str(payload.get("error_text", "")).strip()
@@ -1414,6 +1495,15 @@ async def brain_learned_test_simulate(_operator: StrictOperatorAccess, payload: 
 async def brain_mutation_rollback(mutation_id: str, _operator: StrictOperatorAccess, reason: str = "manual"):
     """Rollback a mutation to its backup."""
     try:
+        gate_denial = _unified_route_gate(
+            operation_class="lifecycle",
+            operation="mutation_rollback",
+            payload={"mutation_id": mutation_id, "reason": reason},
+            success_key="success",
+            role="admin",
+        )
+        if gate_denial:
+            return gate_denial
         from brain_v9.agent.code_mutator import CodeMutator
         mutator = CodeMutator.get()
         success, msg = mutator.rollback(mutation_id, reason)
@@ -1443,6 +1533,16 @@ async def brain_mutations_test_apply(
     }
     """
     try:
+        gate_denial = _unified_route_gate(
+            operation_class="patch",
+            operation="mutation_test_apply",
+            target=str((payload or {}).get("file_path", "")),
+            payload=payload,
+            success_key="success",
+            role="admin",
+        )
+        if gate_denial:
+            return gate_denial
         from brain_v9.agent.code_mutator import CodeMutator, EditProposal
         mutator = CodeMutator.get()
 
@@ -1484,6 +1584,15 @@ async def brain_mutations_test_apply(
 async def brain_llm_cb_reset(_operator: StrictOperatorAccess, model: Optional[str] = None):
     """Reset circuit breaker for a model or all models."""
     try:
+        gate_denial = _unified_route_gate(
+            operation_class="lifecycle",
+            operation="llm_circuit_breaker_reset",
+            payload={"model": model or ""},
+            success_key="ok",
+            role="admin",
+        )
+        if gate_denial:
+            return gate_denial
         from brain_v9.core.llm import LLMManager
         mgr = LLMManager()
         cb_state = getattr(mgr, "_cb_state", {}) or {}
@@ -1504,6 +1613,15 @@ async def brain_ce_proposal_reject(
     payload: Dict = Body(default={}),
 ):
     try:
+        gate_denial = _unified_route_gate(
+            operation_class="lifecycle",
+            operation="chat_excellence_reject",
+            payload={"proposal_id": proposal_id, **(payload or {})},
+            success_key="ok",
+            role="admin",
+        )
+        if gate_denial:
+            return gate_denial
         from brain_v9.autonomy.chat_excellence_executor import reject_proposal
         reason = (payload or {}).get("reason", "manual")
         rec = reject_proposal(proposal_id, reason=reason)
@@ -1536,6 +1654,16 @@ async def brain_ce_proposal_apply(
         audit_only = bool(payload.get("audit_only", False))
         by   = payload.get("by", "manual")
         note = payload.get("note", "")
+        gate_denial = _unified_route_gate(
+            operation_class="patch" if not audit_only else "lifecycle",
+            operation="chat_excellence_apply_dry_run" if dry_run else "chat_excellence_apply",
+            payload={"proposal_id": proposal_id, **payload, "dry_run": dry_run},
+            success_key="ok",
+            mode="read_only" if dry_run else "build",
+            role="admin",
+        )
+        if gate_denial:
+            return gate_denial
 
         if audit_only:
             from brain_v9.autonomy.chat_excellence_executor import mark_applied
@@ -1576,6 +1704,14 @@ async def brain_ce_proposal_rollback(proposal_id: str, payload: Dict = Body(defa
     """R10.2b: restaura los ficheros desde los backups generados durante
     apply. Cambia status -> 'rolled_back'. Operador debe reiniciar brain."""
     try:
+        gate_denial = _unified_route_gate(
+            operation_class="lifecycle",
+            operation="chat_excellence_rollback",
+            payload={"proposal_id": proposal_id, **(payload or {})},
+            success_key="ok",
+        )
+        if gate_denial:
+            return gate_denial
         from brain_v9.autonomy.chat_excellence_patcher import rollback_proposal
         reason = (payload or {}).get("reason", "manual")
         result = rollback_proposal(proposal_id, reason=reason)
@@ -1617,6 +1753,15 @@ async def brain_ce_proposals_apply_batch(payload: Dict = Body(default={})):
         dry_run = bool(payload.get("dry_run", True))
         by      = payload.get("by", "manual")
         note    = payload.get("note", "")
+        gate_denial = _unified_route_gate(
+            operation_class="patch",
+            operation="chat_excellence_apply_batch_dry_run" if dry_run else "chat_excellence_apply_batch",
+            payload=payload,
+            success_key="ok",
+            mode="read_only" if dry_run else "build",
+        )
+        if gate_denial:
+            return gate_denial
 
         if dry_run:
             # For dry-run: iterate dry_run_proposal per id, NO apply
@@ -1659,6 +1804,14 @@ async def brain_ce_proposals_evaluate(payload: Dict = Body(default={})):
     Returns: {ok, summary, results[]} or single result if proposal_id given."""
     try:
         payload = payload or {}
+        gate_denial = _unified_route_gate(
+            operation_class="lifecycle",
+            operation="chat_excellence_evaluate",
+            payload=payload,
+            success_key="ok",
+        )
+        if gate_denial:
+            return gate_denial
         kwargs = {
             "min_age_minutes": int(payload.get("min_age_minutes", 30)),
             "regression_threshold": float(payload.get("regression_threshold", 0.20)),
@@ -1679,6 +1832,14 @@ async def brain_ce_proposals_evaluate(payload: Dict = Body(default={})):
 
 @app.post("/brain/utility/refresh")
 async def brain_utility_refresh(_operator: OperatorAccess):
+    gate_denial = _unified_route_gate(
+        operation_class="governance",
+        operation="utility_refresh",
+        payload={},
+        success_key="ok",
+    )
+    if gate_denial:
+        return gate_denial
     result = write_utility_snapshots()
     utility_governance = refresh_utility_governance_status()
     governance = promote_roadmap_if_ready()
@@ -1781,6 +1942,14 @@ async def brain_autonomy_execute_top_action(_operator: OperatorAccess, force: bo
     top_action = (result.get("meta_governance") or {}).get("top_action") or result["next_actions"].get("top_action")
     if not top_action:
       return {"ok": False, "error": "No hay top_action disponible"}
+    gate_denial = _unified_route_gate(
+        operation_class="execution",
+        operation="autonomy_execute_top_action",
+        payload={"force": force, "top_action": top_action},
+        success_key="ok",
+    )
+    if gate_denial:
+        return gate_denial
     action_result = await execute_action(top_action, force=force)
     return {"ok": True, "top_action": top_action, "execution": action_result}
 
@@ -1808,6 +1977,14 @@ async def brain_ibkr_ingester_status():
 async def brain_ibkr_trigger_snapshot(_operator: OperatorAccess):
     """P7-03: Trigger an immediate IBKR market data snapshot."""
     try:
+        gate_denial = _unified_route_gate(
+            operation_class="execution",
+            operation="ibkr_marketdata_snapshot",
+            payload={"marketdata_snapshot": True},
+            success_key="ok",
+        )
+        if gate_denial:
+            return gate_denial
         from brain_v9.trading.ibkr_data_ingester import run_ibkr_snapshot_async
         result = await run_ibkr_snapshot_async()
         connected = result.get("connected", False)
@@ -1876,6 +2053,14 @@ async def brain_learning_refresh(
     req: LearningRefreshRequest,
     _operator: OperatorAccess,
 ):
+    gate_denial = _unified_route_gate(
+        operation_class="lifecycle",
+        operation="learning_refresh",
+        payload=_request_model_dict(req),
+        success_key="ok",
+    )
+    if gate_denial:
+        return gate_denial
     return run_learning_refresh(
         actor=req.actor,
         reason=req.reason,
@@ -1890,6 +2075,14 @@ async def brain_learning_proposal_transition(
     req: LearningProposalTransitionRequest,
     _operator: OperatorAccess,
 ):
+    gate_denial = _unified_route_gate(
+        operation_class="lifecycle",
+        operation="learning_proposal_transition",
+        payload={"proposal_id": proposal_id, **_request_model_dict(req)},
+        success_key="ok",
+    )
+    if gate_denial:
+        return gate_denial
     return transition_proposal_state(
         proposal_id,
         req.target_state,
@@ -1904,6 +2097,14 @@ async def brain_learning_proposal_sandbox_run(
     req: LearningProposalSandboxRequest,
     _operator: OperatorAccess,
 ):
+    gate_denial = _unified_route_gate(
+        operation_class="dev",
+        operation="learning_proposal_sandbox_run",
+        payload={"proposal_id": proposal_id, **_request_model_dict(req)},
+        success_key="ok",
+    )
+    if gate_denial:
+        return gate_denial
     return execute_sandbox_run(
         proposal_id,
         actor=req.actor,
@@ -1917,6 +2118,14 @@ async def brain_learning_proposal_evaluate(
     req: LearningProposalEvaluateRequest,
     _operator: OperatorAccess,
 ):
+    gate_denial = _unified_route_gate(
+        operation_class="lifecycle",
+        operation="learning_proposal_evaluate",
+        payload={"proposal_id": proposal_id, **_request_model_dict(req)},
+        success_key="ok",
+    )
+    if gate_denial:
+        return gate_denial
     return evaluate_proposal(
         proposal_id,
         actor=req.actor,
@@ -1937,25 +2146,65 @@ async def brain_strategy_engine_simulation_gate(strategy_id: str):
 
 @app.post("/brain/strategy-engine/refresh")
 async def brain_strategy_engine_refresh(_operator: OperatorAccess):
+    gate_denial = _unified_route_gate(
+        operation_class="execution",
+        operation="strategy_engine_refresh",
+        payload={},
+        success_key="ok",
+    )
+    if gate_denial:
+        return gate_denial
     return refresh_strategy_engine()
 
 @app.post("/brain/strategy-engine/execute-top-candidate")
 async def brain_strategy_engine_execute_top_candidate(_operator: OperatorAccess):
+    gate_denial = _unified_route_gate(
+        operation_class="execution",
+        operation="strategy_engine_execute_top_candidate",
+        payload={},
+        success_key="ok",
+    )
+    if gate_denial:
+        return gate_denial
     return await execute_top_candidate()
 
 
 @app.post("/brain/strategy-engine/execute-candidate/{strategy_id}")
 async def brain_strategy_engine_execute_candidate(strategy_id: str, _operator: OperatorAccess):
+    gate_denial = _unified_route_gate(
+        operation_class="execution",
+        operation="strategy_engine_execute_candidate",
+        payload={"strategy_id": strategy_id},
+        success_key="ok",
+    )
+    if gate_denial:
+        return gate_denial
     return await execute_candidate(strategy_id)
 
 
 @app.post("/brain/strategy-engine/execute-batch/{strategy_id}")
 async def brain_strategy_engine_execute_batch(strategy_id: str, _operator: OperatorAccess, iterations: int | None = None):
+    gate_denial = _unified_route_gate(
+        operation_class="execution",
+        operation="strategy_engine_execute_batch",
+        payload={"strategy_id": strategy_id, "iterations": iterations},
+        success_key="ok",
+    )
+    if gate_denial:
+        return gate_denial
     return await execute_candidate_batch(strategy_id, iterations)
 
 
 @app.post("/brain/strategy-engine/execute-comparison-cycle")
 async def brain_strategy_engine_execute_comparison_cycle(_operator: OperatorAccess, max_candidates: int = 2, iterations_per_candidate: int | None = None):
+    gate_denial = _unified_route_gate(
+        operation_class="execution",
+        operation="strategy_engine_execute_comparison_cycle",
+        payload={"max_candidates": max_candidates, "iterations_per_candidate": iterations_per_candidate},
+        success_key="ok",
+    )
+    if gate_denial:
+        return gate_denial
     return await execute_comparison_cycle(max_candidates=max_candidates, iterations_per_candidate=iterations_per_candidate)
 
 
