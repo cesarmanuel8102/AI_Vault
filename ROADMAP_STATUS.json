@@ -2496,7 +2496,7 @@
     "faiss_ids_count": 1616,
     "semantic_memory_lines": 1715,
     "promoted_ids_verified": true,
-    "retrieval_top_5_hit_rate": 1.0,
+    "retrieval_top_5_hit_rate": 1,
     "domain_precision": 0.725,
     "contamination_detected": false,
     "quality_warning_domain_precision_below_target": true,
@@ -2747,7 +2747,7 @@
     "dialogue_probe_created": true,
     "dialogue_probe_ran": false,
     "dialogue_probe_skip_reason": "SERVER_RESTART_REQUIRED_FOR_ADAPTER",
-    "dialogue_probe_preliminary_score": 0.0,
+    "dialogue_probe_preliminary_score": 0,
     "runtime_restart_performed": false,
     "runtime_restart_status": "RUNTIME_RESTART_SKIPPED_UNSAFE_PORT_OWNER",
     "runtime_models_passed": false,
@@ -2799,7 +2799,7 @@
     "governance_metadata_present": true,
     "no_cot_ok": true,
     "canonical_path_ok": true,
-    "preliminary_score": 1.0,
+    "preliminary_score": 1,
     "container_to_brain_passed": true,
     "openwebui_provider_base_url": "http://host.docker.internal:8091/v1",
     "memory_mutated": false,
@@ -2829,7 +2829,7 @@
     "prompts_attempted": 24,
     "successful_responses": 24,
     "average_score": 0.583,
-    "metadata_full_rate": 1.0,
+    "metadata_full_rate": 1,
     "timeout_fallback_count": 20,
     "top_gaps_count": 10,
     "proposals_created": 9,
@@ -2860,7 +2860,7 @@
       "prompts_attempted": 8,
       "successful_responses": 8,
       "timeout_fallback_count": 0,
-      "metadata_full_rate": 1.0,
+      "metadata_full_rate": 1,
       "raw_cot_count": 0,
       "passed": true
     },
@@ -3062,8 +3062,8 @@
     "timeout_fallback_after": 8,
     "score_before": 0.583,
     "score_after": 0.667,
-    "metadata_full_rate_after": 1.0,
-    "no_cot_rate_after": 1.0,
+    "metadata_full_rate_after": 1,
+    "no_cot_rate_after": 1,
     "memory_mutated": false,
     "faiss_mutated": false,
     "trading_touched": false,
@@ -3123,9 +3123,9 @@
         "prompts_attempted": 8,
         "successful_responses": 8,
         "timeout_fallback_count": 0,
-        "average_score": 1.0,
-        "metadata_full_rate": 1.0,
-        "no_cot_rate": 1.0
+        "average_score": 1,
+        "metadata_full_rate": 1,
+        "no_cot_rate": 1
       },
       "direct_llm_probe_90s": {
         "success": true,
@@ -3193,7 +3193,7 @@
       "kimi-k2.5-cloud_tiny_s": 4.131,
       "kimi-k2.5-cloud_autonomy_status": "kimi_cloud: Ollama devolvio respuesta vacia"
     },
-    "dry_run_eval_score": 1.0,
+    "dry_run_eval_score": 1,
     "fallback_count": 0,
     "provider_status": "PARTIAL_KIMI_CONFIG_MISSING_LOCAL_HARDWARE_LIMITED",
     "patches": {
@@ -3291,9 +3291,9 @@
       "docs_commit_tests": "5 passed",
       "eval_prompts_attempted": 8,
       "eval_successful_responses": 8,
-      "eval_average_score": 1.0,
-      "metadata_full_rate": 1.0,
-      "no_cot_rate": 1.0
+      "eval_average_score": 1,
+      "metadata_full_rate": 1,
+      "no_cot_rate": 1
     },
     "immutability": {
       "memory_semantic_unchanged": true,
@@ -3773,7 +3773,7 @@
     "batches_completed": 12,
     "stop_reason": "completed_minimum_120_cycles_stop_by_design",
     "provider": {
-      "runner_success_rate": 1.0,
+      "runner_success_rate": 1,
       "fallback_rate": 0.058,
       "timeout_count": 0,
       "empty_response_count": 0,
@@ -3863,7 +3863,7 @@
     "provider": {
       "primary_provider": "kimi_k2_6_cloud",
       "kimi_used": true,
-      "provider_success_rate": 1.0,
+      "provider_success_rate": 1,
       "fallback_rate": 0.8,
       "timeout_count": 0,
       "empty_response_count": 0,
@@ -3923,13 +3923,13 @@
       "kimi_direct_success_rate": 0.667,
       "brain_provider_probe_kimi_success_rate": 0.8,
       "brain_provider_probe_fallback_rate": 0.2,
-      "brain_normal_route_real_llm_rate": 0.0,
-      "brain_normal_route_dry_run_rate": 1.0,
+      "brain_normal_route_real_llm_rate": 0,
+      "brain_normal_route_dry_run_rate": 1,
       "avg_latency_by_route": {
         "direct_kimi": 1611.3,
         "provider_probe": 4570.2,
         "normal_route": 14.6,
-        "dashboard_chat": 2027.0
+        "dashboard_chat": 2027
       },
       "timeout_count": 0,
       "empty_response_count": 1,
@@ -3939,8 +3939,8 @@
     },
     "after_patch_metrics": {
       "post_patch_calls": 5,
-      "normal_llm_grounded_route_real_llm_rate": 1.0,
-      "normal_llm_grounded_route_dry_run_rate": 0.0,
+      "normal_llm_grounded_route_real_llm_rate": 1,
+      "normal_llm_grounded_route_dry_run_rate": 0,
       "kimi_success_rate": 0.8,
       "fallback_rate": 0.2,
       "timeout_count": 0,
@@ -4156,10 +4156,10 @@
     "promotion_queue_mutated": false,
     "semantic_staging_mutated": false,
     "lesson_tests": 36,
-    "lesson_top1_hit_rate": 1.0,
-    "lesson_top3_hit_rate": 1.0,
-    "core_domain_hit_rate": 1.0,
-    "auxiliary_classification_hit_rate": 1.0,
+    "lesson_top1_hit_rate": 1,
+    "lesson_top3_hit_rate": 1,
+    "core_domain_hit_rate": 1,
+    "auxiliary_classification_hit_rate": 1,
     "answer_questions_tested": 20,
     "answer_average_score": 10.9,
     "provider_valid_answer_questions": 13,
@@ -4294,10 +4294,19 @@
     "start_head": "291d8ab",
     "end_head": "PENDING_PUSH",
     "actions": {
-      "root_junk_quarantined": ["dry_run", "evaluation", "read_only", "stream"],
+      "root_junk_quarantined": [
+        "dry_run",
+        "evaluation",
+        "read_only",
+        "stream"
+      ],
       "logfile_note": "$LogFile is Windows system file (0 bytes), documented only",
       "post_push_verification_committed": "tmp_agent/front_brain_agent_v2_mandatory_multitool_planner_hotfix_01/post_push_verification.json",
-      "runtime_artifacts_excluded": ["tmp_agent/agent_kernel_v2/runs/", "tmp_agent/evolution_runs/", "tmp_agent/brain_v9/start_8091_wrapper.py"],
+      "runtime_artifacts_excluded": [
+        "tmp_agent/agent_kernel_v2/runs/",
+        "tmp_agent/evolution_runs/",
+        "tmp_agent/brain_v9/start_8091_wrapper.py"
+      ],
       "old_front_policy": "LEAVE_UNTRACKED_DOCUMENTED",
       "memory_autonomous_journal_decision": "LEAVE_UNSTAGED_DOCUMENTED",
       "memory_faiss_status": "unchanged_1732_1633_1633"
@@ -4327,7 +4336,17 @@
     "fix": {
       "trace_jsonl_path": "tmp_agent/agent_kernel_v2/runs/{run_id}/trace.jsonl",
       "trace_endpoint_contract": "GET /v2/agent/runs/{run_id}/trace returns {ok, run_id, trace: [...], event_count: N}",
-      "events_persisted": ["run_created", "plan_created", "tool_call_started", "tool_call_completed", "memory_retrieval_started", "memory_retrieval_completed", "approval_required", "final_answer_created", "run_completed"],
+      "events_persisted": [
+        "run_created",
+        "plan_created",
+        "tool_call_started",
+        "tool_call_completed",
+        "memory_retrieval_started",
+        "memory_retrieval_completed",
+        "approval_required",
+        "final_answer_created",
+        "run_completed"
+      ],
       "backwards_compatibility": "trace key is canonical; no breaking changes"
     },
     "live_retests": {
@@ -4336,7 +4355,12 @@
       "mandatory_run_id": "agv2_0ed236dfce903e82",
       "mandatory_classification": "mandatory_multitool",
       "mandatory_event_count": 20,
-      "mandatory_tools_in_trace": ["route_probe", "repo_status_read", "grep_search", "semantic_retrieve"],
+      "mandatory_tools_in_trace": [
+        "route_probe",
+        "repo_status_read",
+        "grep_search",
+        "semantic_retrieve"
+      ],
       "blocked_run_id": "agv2_e5211211014a8b60",
       "blocked_or_approval_event_present": true,
       "raw_cot_found": false,
@@ -4681,19 +4705,30 @@
         "test": "A: Recent kernel changes",
         "run_id": "agv2_e20e7721f7c293c9",
         "classification": "recent_changes",
-        "scheduled_tools": ["repo_history_read", "repo_status_read", "grep_search"]
+        "scheduled_tools": [
+          "repo_history_read",
+          "repo_status_read",
+          "grep_search"
+        ]
       },
       {
         "test": "B: Explicit tool request",
         "run_id": "agv2_a9869f65260f8d72",
         "classification": "explicit_tool_request",
-        "scheduled_tools": ["repo_history_read", "repo_status_read", "grep_search"]
+        "scheduled_tools": [
+          "repo_history_read",
+          "repo_status_read",
+          "grep_search"
+        ]
       },
       {
         "test": "C: Autonomy heartbeat",
         "run_id": "agv9_f9df1bd5b2250a27",
         "classification": "autonomy_heartbeat",
-        "scheduled_tools": ["route_probe", "repo_status_read"]
+        "scheduled_tools": [
+          "route_probe",
+          "repo_status_read"
+        ]
       }
     ],
     "memory_faiss": {
@@ -4711,9 +4746,7 @@
     "evidence_path": "tmp_agent/front_brain_agent_v2_specific_tool_scheduling_fix_01",
     "next_recommended_front": "FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01"
   },
-  "last_functional_agent_v2_closeout_commit": "3f6fc8d"
-
-  ,
+  "last_functional_agent_v2_closeout_commit": "3f6fc8d",
   "front_brain_agent_v2_chat_mode_switch_read_build_auto_01": {
     "status": "done",
     "front": "FRONT-BRAIN-AGENT-V2-CHAT-MODE-SWITCH-READ-BUILD-AUTO-01",
@@ -4761,7 +4794,7 @@
     "schema_version": 1,
     "roadmap_id": "BRAIN-101",
     "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-    "status": "R2_2_CLOSED_RUNTIME_VERIFIED_R2_3_AUTHORIZED_ACTIVE",
+    "status": "R2_3_CLOSED_RUNTIME_VERIFIED_R2_4_AUTHORIZED_ACTIVE",
     "approval_status": "HUMAN_ADOPTED",
     "current_phase": "R2",
     "human_final_authority": true,
@@ -5084,7 +5117,7 @@
     "r2_2_closed_at_utc": "2026-08-03T21:28:44Z",
     "r2_2_routing_result": "R2_REMAINS_PARTIALLY_CLOSED",
     "r2_2_remediation_plan_evidence": "docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN.md",
-    "r2_3_status": "AUTHORIZED_ACTIVE",
+    "r2_3_status": "CLOSED_RUNTIME_VERIFIED",
     "r2_3_front_id": "BRAIN-101-R2-3-CONSTITUTIONAL-THREAT-MODEL-01",
     "r2_3_risk": "MEDIUM",
     "r2_3_domain": "security_governance",
@@ -5145,6 +5178,111 @@
         "git diff --check"
       ]
     },
-    "next_gate": "Execute R2.3 documentation-only constitutional threat model with NO_DEPLOY"
+    "next_gate": "Execute R2.4 unified governance gate with NO_DEPLOY",
+    "r2_3_issue": 148,
+    "r2_3_pr": 149,
+    "r2_3_decision_id": "4c1949cd-f851-4a1e-a5cc-481b6c1a0a97",
+    "r2_3_base_sha": "965af308cdf272159bdbc99eabef5257ea7c859d",
+    "r2_3_closeout_base_sha": "3ddd5a8355a565d5fe8062152769b6a11f676f9d",
+    "r2_3_head": "45263b9eeaf0e2fc92b595ae39ab68db77785ee0",
+    "r2_3_merge_commit": "3ddd5a8355a565d5fe8062152769b6a11f676f9d",
+    "r2_3_parent_lifecycle_evidence": {
+      "schema_version": 1,
+      "parent_front_id": "BRAIN-101-R2-3-CONSTITUTIONAL-THREAT-MODEL-01",
+      "roadmap_id": "BRAIN-101",
+      "roadmap_item_id": "R2.3",
+      "issue": 148,
+      "pr": 149,
+      "decision_id": "4c1949cd-f851-4a1e-a5cc-481b6c1a0a97",
+      "base_sha": "965af308cdf272159bdbc99eabef5257ea7c859d",
+      "closeout_base_sha": "3ddd5a8355a565d5fe8062152769b6a11f676f9d",
+      "head_sha": "45263b9eeaf0e2fc92b595ae39ab68db77785ee0",
+      "merge_commit": "3ddd5a8355a565d5fe8062152769b6a11f676f9d",
+      "builder_session": "builder-f5f49530-a13f-4db0-af60-cbd4d057c9c6",
+      "reviewer_session": "reviewer:opencode_ollama:ollama-cloud/glm-5.2:fb9df671-469a-4565-8ac0-366df2f4a673"
+    },
+    "r2_3_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL_CLOSEOUT.json",
+    "r2_3_evidence_commit": "45263b9eeaf0e2fc92b595ae39ab68db77785ee0",
+    "r2_3_closed_at_utc": "2026-08-03T21:50:13Z",
+    "r2_3_threat_model_evidence": "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL.md",
+    "r2_3_runtime_controls_closed_by_this_packet": false,
+    "r2_3_explicit_test_obligations": [
+      "R2-PI-001 prompt injection denial",
+      "R2-PT-001 path traversal denial",
+      "R2-SR-001 symlink/reparse denial",
+      "R2-CR-001 cross-room isolation",
+      "R2-CU-001 cross-user isolation"
+    ],
+    "r2_4_status": "AUTHORIZED_ACTIVE",
+    "r2_4_front_id": "BRAIN-101-R2-4-UNIFIED-GOVERNANCE-GATE-01",
+    "r2_4_risk": "MEDIUM",
+    "r2_4_domain": "security_governance",
+    "r2_4_executor": "codex_control_plane",
+    "r2_4_work_branch": "control-plane/r2-4-unified-governance-gate",
+    "r2_4_deployment_mode": "NO_DEPLOY",
+    "r2_4_allowed_paths": [
+      "tmp_agent/brain_v9/governance/",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+      "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+      "tmp_agent/brain_v9/main.py",
+      "tests/contract/test_brain_101_r2_4_unified_governance_gate.py",
+      "docs/roadmap/evidence/BRAIN_101_R2_4_UNIFIED_GOVERNANCE_GATE.md"
+    ],
+    "r2_4_forbidden_paths": [
+      ".env",
+      ".github/",
+      "memory/",
+      "memory/semantic/",
+      "memory/rollback",
+      "tmp_agent/brain_v9/trading/",
+      "financial_autonomy/",
+      "tmp_agent/state/",
+      "scripts/"
+    ],
+    "r2_4_acceptance": [
+      "Route governance, execution, patch, dev, lifecycle, and approval operations through one authoritative fail-closed gate model",
+      "Fail closed on missing, malformed, stale, unavailable, or invalid gate decisions while preserving P3 denial",
+      "Preserve authentication, response shape, side effects, error codes, and rollback behavior unless this front explicitly records a scoped change",
+      "Do not modify memory, semantic/FAISS state, trading, financial autonomy, CI, environment files, scripts, runtime state, or canonical local state",
+      "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+    ],
+    "r2_4_test_commands": [
+      "python -m pytest tests/contract/test_brain_101_r2_4_unified_governance_gate.py",
+      "git diff --check"
+    ],
+    "r2_4_closeout": {
+      "front_id": "BRAIN-101-R2-4-UNIFIED-GOVERNANCE-GATE-CLOSEOUT-01",
+      "objective": "Record R2.4 unified governance gate evidence and authorize the next single governed R2 security item",
+      "work_branch": "control-plane/r2-4-unified-governance-gate-closeout",
+      "executor": "codex_control_plane",
+      "risk": "MEDIUM",
+      "allowed_paths": [
+        "docs/roadmap/BRAIN_101_MANIFEST.json",
+        "docs/roadmap/BRAIN_101_ROADMAP.md",
+        "docs/roadmap/BRAIN_101_SCORECARD.json",
+        "ROADMAP_STATUS.json",
+        "docs/MIGRATION_CONTROL_LEDGER.md",
+        "docs/roadmap/evidence/BRAIN_101_R2_4_UNIFIED_GOVERNANCE_GATE_CLOSEOUT.json"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/",
+        "scripts/"
+      ],
+      "acceptance": [
+        "Record exact R2.4 Issue PR decision merge and unified governance gate evidence",
+        "Set R2.4 to CLOSED_RUNTIME_VERIFIED only after the unified gate evidence is merged",
+        "Preserve exactly one authorized next roadmap item",
+        "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge",
+        "Preserve authentication, response shape, side effects, error codes, and rollback behavior unless explicitly authorized by the R2.4 implementation front"
+      ],
+      "test_commands": [
+        "git diff --check"
+      ]
+    }
   }
 }

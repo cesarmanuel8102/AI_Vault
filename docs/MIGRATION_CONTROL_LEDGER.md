@@ -9197,3 +9197,18 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Authorized next item: exactly one `R2.3`, MEDIUM, domain `security_governance`, executor `codex_control_plane`, work branch `control-plane/r2-3-constitutional-threat-model`, `NO_DEPLOY`, allowed only for `docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL.md`, with complete closeout metadata.
 - Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
 - Next gate: execute `R2.3` documentation-only constitutional threat model with `NO_DEPLOY`.
+
+## BRAIN-101 R2.3 — Constitutional Threat Model Closeout (2026-08-03)
+
+- Front: `BRAIN-101-R2-3-CONSTITUTIONAL-THREAT-MODEL-CLOSEOUT-01`.
+- Parent threat model front: `BRAIN-101-R2-3-CONSTITUTIONAL-THREAT-MODEL-01`.
+- Threat model evidence path: `docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL.md`.
+- Governed parent lifecycle: Issue #148 / PR #149, decision `4c1949cd-f851-4a1e-a5cc-481b6c1a0a97`, base `965af308cdf272159bdbc99eabef5257ea7c859d`, closeout base `3ddd5a8355a565d5fe8062152769b6a11f676f9d`, head `45263b9eeaf0e2fc92b595ae39ab68db77785ee0`, merge commit `3ddd5a8355a565d5fe8062152769b6a11f676f9d`.
+- Builder session: `builder-f5f49530-a13f-4db0-af60-cbd4d057c9c6`.
+- Reviewer session: `reviewer:opencode_ollama:ollama-cloud/glm-5.2:fb9df671-469a-4565-8ac0-366df2f4a673`.
+- Threat model result: assets, trust boundaries, actors, abuse cases, failure modes, and explicit open test obligations are recorded for prompt injection, path traversal, symlink/reparse, cross-room isolation, and cross-user isolation.
+- Closeout evidence: `docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL_CLOSEOUT.json`.
+- Status: `R2.3` set to `CLOSED_RUNTIME_VERIFIED`; R2 remains partially closed.
+- Authorized next item: exactly one `R2.4`, MEDIUM, domain `security_governance`, executor `codex_control_plane`, work branch `control-plane/r2-4-unified-governance-gate`, `NO_DEPLOY`, with complete closeout metadata.
+- Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched by closeout, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
+- Next gate: execute `R2.4` unified governance gate with `NO_DEPLOY`.

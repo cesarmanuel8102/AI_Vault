@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "0c0db3582b92ae8f87d6262c249523c81ce0f177f36049cc1e524d6fdb7bd362",
+  "roadmap_sha256": "1f378f693c59470b463be9aa697c8e77dbe6ecbae50aa514368e16944452bb34",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -47,29 +47,68 @@
   "required_first_status": "READY_FOR_BRAIN_101_ROADMAP_ADOPTION",
   "certification_status": "NOT_CERTIFIED",
   "phase_order": [
-    "R0", "R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9",
-    "R10", "R11", "R12", "R13", "R14", "R15", "R16", "R17", "R18", "R19"
+    "R0",
+    "R1",
+    "R2",
+    "R3",
+    "R4",
+    "R5",
+    "R6",
+    "R7",
+    "R8",
+    "R9",
+    "R10",
+    "R11",
+    "R12",
+    "R13",
+    "R14",
+    "R15",
+    "R16",
+    "R17",
+    "R18",
+    "R19"
   ],
   "roadmap_items": {
     "R1.1": {
       "title": "Add roadmap manifest validation to Agent Loop",
       "status": "CLOSED_RUNTIME_VERIFIED",
-      "dependencies": ["R0"]
+      "dependencies": [
+        "R0"
+      ]
     },
     "R1.2": {
       "title": "Add roadmap-doc and test-only profiles",
       "status": "CLOSED_RUNTIME_VERIFIED",
-      "dependencies": ["R1.1"],
+      "dependencies": [
+        "R1.1"
+      ],
       "automation": {
         "front_id": "BRAIN-101-R1-2-RUNTIME-PROFILES-01",
         "objective": "Add immutable roadmap-doc and test-only Agent Loop profiles using the existing isolated R1.2 implementation",
         "work_branch": "control-plane/r1-2-runtime-profile-contract",
         "executor": "codex_control_plane",
         "risk": "MEDIUM",
-        "allowed_paths": ["scripts/agent_loop/local_worker/agent_worker.py", "tests/contract/test_agent_loop_worker_r1_2_profiles.py"],
-        "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/"],
-        "acceptance": ["Use immutable internal trusted commands for roadmap-doc and test-only profiles", "Preserve legacy worker configuration compatibility without accepting configured non-pilot commands", "Keep live trading, real money, canonical local sync, and auto-merge disabled"],
-        "test_commands": ["python tests/contract/test_agent_loop_worker_r1_2_profiles.py", "git diff --check"],
+        "allowed_paths": [
+          "scripts/agent_loop/local_worker/agent_worker.py",
+          "tests/contract/test_agent_loop_worker_r1_2_profiles.py"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Use immutable internal trusted commands for roadmap-doc and test-only profiles",
+          "Preserve legacy worker configuration compatibility without accepting configured non-pilot commands",
+          "Keep live trading, real money, canonical local sync, and auto-merge disabled"
+        ],
+        "test_commands": [
+          "python tests/contract/test_agent_loop_worker_r1_2_profiles.py",
+          "git diff --check"
+        ],
         "deployment_mode": "INSTALL_ONLY",
         "install_target": "agent_loop_worker",
         "closeout": {
@@ -78,17 +117,41 @@
           "work_branch": "control-plane/r1-2-runtime-profile-closeout",
           "executor": "codex_control_plane",
           "risk": "MEDIUM",
-          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R1_2_RUNTIME_CLOSEOUT.json"],
-          "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
-          "acceptance": ["Record exact R1.2 Issue PR decision merge installation and runtime evidence", "Set R1.2 to CLOSED_RUNTIME_VERIFIED only after the transactional installation passes", "Create exactly one AUTHORIZED_ACTIVE synthetic LOW or MEDIUM agent_loop item using roadmap-doc or test-only with NO_DEPLOY", "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"],
-          "test_commands": ["git diff --check"]
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R1_2_RUNTIME_CLOSEOUT.json"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R1.2 Issue PR decision merge installation and runtime evidence",
+            "Set R1.2 to CLOSED_RUNTIME_VERIFIED only after the transactional installation passes",
+            "Create exactly one AUTHORIZED_ACTIVE synthetic LOW or MEDIUM agent_loop item using roadmap-doc or test-only with NO_DEPLOY",
+            "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+          ],
+          "test_commands": [
+            "git diff --check"
+          ]
         }
       }
     },
     "R1.3": {
       "title": "Run isolated Agent Loop OpenCode Kimi roadmap-doc E2E",
       "status": "CLOSED_RUNTIME_VERIFIED",
-      "dependencies": ["R1.2"],
+      "dependencies": [
+        "R1.2"
+      ],
       "automation": {
         "front_id": "BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-RETRY-02",
         "objective": "Retry one isolated Agent Loop OpenCode Kimi E2E after the first attempt failed closed on roadmap-doc trailing whitespace",
@@ -98,10 +161,29 @@
         "domain": "agent_loop",
         "test_profile": "roadmap-doc",
         "max_executor_cycles": 2,
-        "allowed_paths": ["docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md"],
-        "forbidden_paths": [".env", ".github/", "memory/", "memory/semantic/", "memory/rollback", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "tmp_agent/brain_v9/core/session.py", "scripts/"],
-        "acceptance": ["Create one deterministic roadmap evidence document", "Use the roadmap-doc profile only", "Do not deploy, activate worker tasks, run live trading, use real money, perform canonical local sync, or auto-merge"],
-        "test_commands": ["git diff --check"],
+        "allowed_paths": [
+          "docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "memory/semantic/",
+          "memory/rollback",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "tmp_agent/brain_v9/core/session.py",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Create one deterministic roadmap evidence document",
+          "Use the roadmap-doc profile only",
+          "Do not deploy, activate worker tasks, run live trading, use real money, perform canonical local sync, or auto-merge"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ],
         "deployment_mode": "NO_DEPLOY",
         "closeout": {
           "front_id": "BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-CLOSEOUT-01",
@@ -109,17 +191,41 @@
           "work_branch": "control-plane/r1-3-agent-loop-kimi-e2e-closeout",
           "executor": "codex_control_plane",
           "risk": "MEDIUM",
-          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E_CLOSEOUT.json"],
-          "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
-          "acceptance": ["Record exact R1.3 Issue PR decision merge and Agent Loop evidence", "Set R1.3 to CLOSED_RUNTIME_VERIFIED only after the E2E passes", "Preserve exactly one authorized next roadmap item", "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"],
-          "test_commands": ["git diff --check"]
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E_CLOSEOUT.json"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R1.3 Issue PR decision merge and Agent Loop evidence",
+            "Set R1.3 to CLOSED_RUNTIME_VERIFIED only after the E2E passes",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+          ],
+          "test_commands": [
+            "git diff --check"
+          ]
         }
       }
     },
     "R1.4": {
       "title": "Certify Agent Loop sequencer contract handoff",
       "status": "CLOSED_RUNTIME_VERIFIED",
-      "dependencies": ["R1.3"],
+      "dependencies": [
+        "R1.3"
+      ],
       "automation": {
         "front_id": "BRAIN-101-R1-4-AGENT-LOOP-SEQUENCER-CONTRACT-E2E-01",
         "objective": "Create one isolated roadmap evidence document proving the current sequencer contract for AUTHORIZED_ACTIVE items",
@@ -129,10 +235,29 @@
         "domain": "agent_loop",
         "test_profile": "roadmap-doc",
         "max_executor_cycles": 2,
-        "allowed_paths": ["docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E.md"],
-        "forbidden_paths": [".env", ".github/", "memory/", "memory/semantic/", "memory/rollback", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "tmp_agent/brain_v9/core/session.py", "scripts/"],
-        "acceptance": ["Create one deterministic roadmap evidence document validating the AUTHORIZED_ACTIVE sequencer contract", "Use the roadmap-doc profile only", "Do not deploy, activate worker tasks, run live trading, use real money, perform canonical local sync, or auto-merge"],
-        "test_commands": ["git diff --check"],
+        "allowed_paths": [
+          "docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E.md"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "memory/semantic/",
+          "memory/rollback",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "tmp_agent/brain_v9/core/session.py",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Create one deterministic roadmap evidence document validating the AUTHORIZED_ACTIVE sequencer contract",
+          "Use the roadmap-doc profile only",
+          "Do not deploy, activate worker tasks, run live trading, use real money, perform canonical local sync, or auto-merge"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ],
         "deployment_mode": "NO_DEPLOY",
         "closeout": {
           "front_id": "BRAIN-101-R1-4-AGENT-LOOP-SEQUENCER-CONTRACT-E2E-CLOSEOUT-01",
@@ -140,17 +265,41 @@
           "work_branch": "control-plane/r1-4-agent-loop-sequencer-contract-closeout",
           "executor": "codex_control_plane",
           "risk": "MEDIUM",
-          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E_CLOSEOUT.json"],
-          "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
-          "acceptance": ["Record exact R1.4 Issue PR decision merge and Agent Loop evidence", "Set R1.4 to CLOSED_RUNTIME_VERIFIED only after the E2E passes", "Preserve exactly one authorized next roadmap item", "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"],
-          "test_commands": ["git diff --check"]
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E_CLOSEOUT.json"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R1.4 Issue PR decision merge and Agent Loop evidence",
+            "Set R1.4 to CLOSED_RUNTIME_VERIFIED only after the E2E passes",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+          ],
+          "test_commands": [
+            "git diff --check"
+          ]
         }
       }
     },
     "R2.1": {
       "title": "Reaudit constitutional security blockers",
       "status": "CLOSED_RUNTIME_VERIFIED",
-      "dependencies": ["R1.4"],
+      "dependencies": [
+        "R1.4"
+      ],
       "automation": {
         "front_id": "BRAIN-101-R2-1-CONSTITUTIONAL-SECURITY-REAUDIT-01",
         "objective": "Create one documentation-only constitutional security re-audit evidence packet against the current roadmap baseline",
@@ -158,10 +307,28 @@
         "executor": "codex_control_plane",
         "risk": "MEDIUM",
         "domain": "security_governance",
-        "allowed_paths": ["docs/roadmap/evidence/BRAIN_101_R2_1_CONSTITUTIONAL_SECURITY_REAUDIT.md"],
-        "forbidden_paths": [".env", ".github/", "memory/", "memory/semantic/", "memory/rollback", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
-        "acceptance": ["Reaudit constitutional security blockers without modifying runtime code", "Classify each R2 blocker as OPEN, PARTIALLY_CLOSED, CLOSED_WITH_RUNTIME_EVIDENCE, REGRESSED, or SUPERSEDED with evidence", "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"],
-        "test_commands": ["git diff --check"],
+        "allowed_paths": [
+          "docs/roadmap/evidence/BRAIN_101_R2_1_CONSTITUTIONAL_SECURITY_REAUDIT.md"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "memory/semantic/",
+          "memory/rollback",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Reaudit constitutional security blockers without modifying runtime code",
+          "Classify each R2 blocker as OPEN, PARTIALLY_CLOSED, CLOSED_WITH_RUNTIME_EVIDENCE, REGRESSED, or SUPERSEDED with evidence",
+          "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ],
         "deployment_mode": "NO_DEPLOY",
         "closeout": {
           "front_id": "BRAIN-101-R2-1-CONSTITUTIONAL-SECURITY-REAUDIT-CLOSEOUT-01",
@@ -169,17 +336,41 @@
           "work_branch": "control-plane/r2-1-constitutional-security-reaudit-closeout",
           "executor": "codex_control_plane",
           "risk": "MEDIUM",
-          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R2_1_CONSTITUTIONAL_SECURITY_REAUDIT_CLOSEOUT.json"],
-          "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
-          "acceptance": ["Record exact R2.1 Issue PR decision merge and security re-audit evidence", "Set R2.1 to CLOSED_RUNTIME_VERIFIED only after the re-audit evidence is merged", "Preserve exactly one authorized next roadmap item", "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"],
-          "test_commands": ["git diff --check"]
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R2_1_CONSTITUTIONAL_SECURITY_REAUDIT_CLOSEOUT.json"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R2.1 Issue PR decision merge and security re-audit evidence",
+            "Set R2.1 to CLOSED_RUNTIME_VERIFIED only after the re-audit evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+          ],
+          "test_commands": [
+            "git diff --check"
+          ]
         }
       }
     },
     "R2.2": {
       "title": "Plan constitutional security remediation sequence",
       "status": "CLOSED_RUNTIME_VERIFIED",
-      "dependencies": ["R2.1"],
+      "dependencies": [
+        "R2.1"
+      ],
       "automation": {
         "front_id": "BRAIN-101-R2-2-CONSTITUTIONAL-SECURITY-REMEDIATION-PLAN-01",
         "objective": "Create one documentation-only remediation plan that routes the open and partial R2.1 constitutional blockers into governed implementation and verification fronts",
@@ -187,10 +378,29 @@
         "executor": "codex_control_plane",
         "risk": "MEDIUM",
         "domain": "security_governance",
-        "allowed_paths": ["docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN.md"],
-        "forbidden_paths": [".env", ".github/", "memory/", "memory/semantic/", "memory/rollback", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
-        "acceptance": ["Route every OPEN or PARTIALLY_CLOSED R2.1 blocker into explicit governed remediation fronts", "Preserve the R2.1 CLOSED_RUNTIME_VERIFIED evidence without declaring R2 closed", "Do not modify runtime code, tests, governance logic, memory, FAISS, trading, financial autonomy, CI, environment files, or canonical local state", "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"],
-        "test_commands": ["git diff --check"],
+        "allowed_paths": [
+          "docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN.md"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "memory/semantic/",
+          "memory/rollback",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Route every OPEN or PARTIALLY_CLOSED R2.1 blocker into explicit governed remediation fronts",
+          "Preserve the R2.1 CLOSED_RUNTIME_VERIFIED evidence without declaring R2 closed",
+          "Do not modify runtime code, tests, governance logic, memory, FAISS, trading, financial autonomy, CI, environment files, or canonical local state",
+          "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ],
         "deployment_mode": "NO_DEPLOY",
         "closeout": {
           "front_id": "BRAIN-101-R2-2-CONSTITUTIONAL-SECURITY-REMEDIATION-PLAN-CLOSEOUT-01",
@@ -198,17 +408,41 @@
           "work_branch": "control-plane/r2-2-constitutional-security-remediation-plan-closeout",
           "executor": "codex_control_plane",
           "risk": "MEDIUM",
-          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN_CLOSEOUT.json"],
-          "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
-          "acceptance": ["Record exact R2.2 Issue PR decision merge and remediation routing evidence", "Set R2.2 to CLOSED_RUNTIME_VERIFIED only after the remediation plan evidence is merged", "Preserve exactly one authorized next roadmap item", "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"],
-          "test_commands": ["git diff --check"]
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN_CLOSEOUT.json"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R2.2 Issue PR decision merge and remediation routing evidence",
+            "Set R2.2 to CLOSED_RUNTIME_VERIFIED only after the remediation plan evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+          ],
+          "test_commands": [
+            "git diff --check"
+          ]
         }
       }
     },
     "R2.3": {
       "title": "Produce constitutional security threat model",
-      "status": "AUTHORIZED_ACTIVE",
-      "dependencies": ["R2.2"],
+      "status": "CLOSED_RUNTIME_VERIFIED",
+      "dependencies": [
+        "R2.2"
+      ],
       "automation": {
         "front_id": "BRAIN-101-R2-3-CONSTITUTIONAL-THREAT-MODEL-01",
         "objective": "Produce the final R2 constitutional threat model with assets, trust boundaries, actors, abuse cases, failure modes, and explicit test obligations",
@@ -216,10 +450,29 @@
         "executor": "codex_control_plane",
         "risk": "MEDIUM",
         "domain": "security_governance",
-        "allowed_paths": ["docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL.md"],
-        "forbidden_paths": [".env", ".github/", "memory/", "memory/semantic/", "memory/rollback", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
-        "acceptance": ["Create the final R2 constitutional threat model covering assets, trust boundaries, actors, abuse cases, and failure modes", "Bind explicit test obligations for prompt injection, path traversal, symlink/reparse, cross-room isolation, and cross-user isolation without declaring those controls closed", "Do not modify runtime code, tests, governance logic, memory, FAISS, trading, financial autonomy, CI, environment files, or canonical local state", "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"],
-        "test_commands": ["git diff --check"],
+        "allowed_paths": [
+          "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL.md"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "memory/semantic/",
+          "memory/rollback",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Create the final R2 constitutional threat model covering assets, trust boundaries, actors, abuse cases, and failure modes",
+          "Bind explicit test obligations for prompt injection, path traversal, symlink/reparse, cross-room isolation, and cross-user isolation without declaring those controls closed",
+          "Do not modify runtime code, tests, governance logic, memory, FAISS, trading, financial autonomy, CI, environment files, or canonical local state",
+          "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ],
         "deployment_mode": "NO_DEPLOY",
         "closeout": {
           "front_id": "BRAIN-101-R2-3-CONSTITUTIONAL-THREAT-MODEL-CLOSEOUT-01",
@@ -227,27 +480,147 @@
           "work_branch": "control-plane/r2-3-constitutional-threat-model-closeout",
           "executor": "codex_control_plane",
           "risk": "MEDIUM",
-          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL_CLOSEOUT.json"],
-          "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
-          "acceptance": ["Record exact R2.3 Issue PR decision merge and threat model evidence", "Set R2.3 to CLOSED_RUNTIME_VERIFIED only after the threat model evidence is merged", "Preserve exactly one authorized next roadmap item", "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"],
-          "test_commands": ["git diff --check"]
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL_CLOSEOUT.json"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R2.3 Issue PR decision merge and threat model evidence",
+            "Set R2.3 to CLOSED_RUNTIME_VERIFIED only after the threat model evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+          ],
+          "test_commands": [
+            "git diff --check"
+          ]
+        }
+      }
+    },
+    "R2.4": {
+      "title": "Implement unified constitutional governance gate",
+      "status": "AUTHORIZED_ACTIVE",
+      "dependencies": [
+        "R2.3"
+      ],
+      "automation": {
+        "front_id": "BRAIN-101-R2-4-UNIFIED-GOVERNANCE-GATE-01",
+        "objective": "Define and implement one authoritative fail-closed gate model for governance, execution, patch, dev, lifecycle, and approval paths",
+        "work_branch": "control-plane/r2-4-unified-governance-gate",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "security_governance",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/governance/",
+          "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+          "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+          "tmp_agent/brain_v9/main.py",
+          "tests/contract/test_brain_101_r2_4_unified_governance_gate.py",
+          "docs/roadmap/evidence/BRAIN_101_R2_4_UNIFIED_GOVERNANCE_GATE.md"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "memory/semantic/",
+          "memory/rollback",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Route governance, execution, patch, dev, lifecycle, and approval operations through one authoritative fail-closed gate model",
+          "Fail closed on missing, malformed, stale, unavailable, or invalid gate decisions while preserving P3 denial",
+          "Preserve authentication, response shape, side effects, error codes, and rollback behavior unless this front explicitly records a scoped change",
+          "Do not modify memory, semantic/FAISS state, trading, financial autonomy, CI, environment files, scripts, runtime state, or canonical local state",
+          "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+        ],
+        "test_commands": [
+          "python -m pytest tests/contract/test_brain_101_r2_4_unified_governance_gate.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "closeout": {
+          "front_id": "BRAIN-101-R2-4-UNIFIED-GOVERNANCE-GATE-CLOSEOUT-01",
+          "objective": "Record R2.4 unified governance gate evidence and authorize the next single governed R2 security item",
+          "work_branch": "control-plane/r2-4-unified-governance-gate-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R2_4_UNIFIED_GOVERNANCE_GATE_CLOSEOUT.json"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R2.4 Issue PR decision merge and unified governance gate evidence",
+            "Set R2.4 to CLOSED_RUNTIME_VERIFIED only after the unified gate evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge",
+            "Preserve authentication, response shape, side effects, error codes, and rollback behavior unless explicitly authorized by the R2.4 implementation front"
+          ],
+          "test_commands": [
+            "git diff --check"
+          ]
         }
       }
     },
     "R1.0": {
       "title": "Certify autonomous roadmap control-plane flow",
       "status": "CLOSED_RUNTIME_VERIFIED",
-      "dependencies": ["R1.1"],
+      "dependencies": [
+        "R1.1"
+      ],
       "automation": {
         "front_id": "BRAIN-101-R1-CONTROL-PLANE-E2E-01",
         "objective": "Create the isolated documentation payload proving the autonomous roadmap flow",
         "work_branch": "control-plane/brain-101-autonomous-flow-e2e",
         "executor": "codex_control_plane",
         "risk": "LOW",
-        "allowed_paths": ["docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_PAYLOAD.md"],
-        "forbidden_paths": [".env", ".github/", "memory/", "trading/", "financial_autonomy/", "tmp_agent/", "scripts/"],
-        "acceptance": ["Create one deterministic documentation-only payload", "Do not modify runtime or governance files", "Keep live trading disabled"],
-        "test_commands": ["git diff --check"],
+        "allowed_paths": [
+          "docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_PAYLOAD.md"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "trading/",
+          "financial_autonomy/",
+          "tmp_agent/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Create one deterministic documentation-only payload",
+          "Do not modify runtime or governance files",
+          "Keep live trading disabled"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ],
         "deployment_mode": "NO_DEPLOY",
         "closeout": {
           "front_id": "BRAIN-101-R1-CONTROL-PLANE-E2E-CLOSEOUT-01",
@@ -255,10 +628,32 @@
           "work_branch": "control-plane/brain-101-autonomous-flow-e2e-closeout",
           "executor": "codex_control_plane",
           "risk": "MEDIUM",
-          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_CLOSEOUT.json"],
-          "forbidden_paths": [".env", ".github/", "memory/", "trading/", "financial_autonomy/", "tmp_agent/", "scripts/"],
-          "acceptance": ["Record exact Issue PR decision merge and lifecycle evidence", "Set R1.0 to CLOSED_RUNTIME_VERIFIED", "Set R1.2 to AUTHORIZED_ACTIVE only after the E2E passes", "Preserve human final authority and disabled live trading"],
-          "test_commands": ["git diff --check"]
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_CLOSEOUT.json"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "trading/",
+            "financial_autonomy/",
+            "tmp_agent/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact Issue PR decision merge and lifecycle evidence",
+            "Set R1.0 to CLOSED_RUNTIME_VERIFIED",
+            "Set R1.2 to AUTHORIZED_ACTIVE only after the E2E passes",
+            "Preserve human final authority and disabled live trading"
+          ],
+          "test_commands": [
+            "git diff --check"
+          ]
         }
       }
     }
@@ -388,5 +783,30 @@
     "closed_at_utc": "2026-08-03T21:28:44Z",
     "final_state": "R2_2_CLOSED_RUNTIME_VERIFIED_R2_3_AUTHORIZED_ACTIVE"
   },
-  "next_gate": "Execute R2.3 documentation-only constitutional threat model with NO_DEPLOY"
+  "next_gate": "Execute R2.4 unified governance gate with NO_DEPLOY",
+  "r2_3_constitutional_threat_model_closeout": {
+    "evidence_path": "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL_CLOSEOUT.json",
+    "schema_version": 1,
+    "parent_front_id": "BRAIN-101-R2-3-CONSTITUTIONAL-THREAT-MODEL-01",
+    "roadmap_id": "BRAIN-101",
+    "roadmap_item_id": "R2.3",
+    "issue": 148,
+    "pr": 149,
+    "decision_id": "4c1949cd-f851-4a1e-a5cc-481b6c1a0a97",
+    "base_sha": "965af308cdf272159bdbc99eabef5257ea7c859d",
+    "closeout_base_sha": "3ddd5a8355a565d5fe8062152769b6a11f676f9d",
+    "head_sha": "45263b9eeaf0e2fc92b595ae39ab68db77785ee0",
+    "merge_commit": "3ddd5a8355a565d5fe8062152769b6a11f676f9d",
+    "builder_session": "builder-f5f49530-a13f-4db0-af60-cbd4d057c9c6",
+    "reviewer_session": "reviewer:opencode_ollama:ollama-cloud/glm-5.2:fb9df671-469a-4565-8ac0-366df2f4a673",
+    "threat_model_evidence_path": "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL.md",
+    "threat_model_created": true,
+    "runtime_controls_closed_by_this_packet": false,
+    "r2_current_status": "PARTIALLY_CLOSED",
+    "r2_can_close_now": false,
+    "next_authorized_item": "R2.4",
+    "next_authorized_front_id": "BRAIN-101-R2-4-UNIFIED-GOVERNANCE-GATE-01",
+    "closed_at_utc": "2026-08-03T21:50:13Z",
+    "final_state": "R2_3_CLOSED_RUNTIME_VERIFIED_R2_4_AUTHORIZED_ACTIVE"
+  }
 }
