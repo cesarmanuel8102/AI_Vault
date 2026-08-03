@@ -947,7 +947,13 @@ Issue #59 / PR #58 reparó la activación runtime para que el worker instalado c
 
 El closeout machine-readable está en `docs/roadmap/evidence/BRAIN_101_R1_2_RUNTIME_CLOSEOUT.json`. R1.2 queda `CLOSED_RUNTIME_VERIFIED`. Se autoriza exactamente un siguiente item sintético: `R1.3`, `LOW`, dominio `agent_loop`, ejecutor `opencode_kimi`, perfil `roadmap-doc`, `NO_DEPLOY`, permitido solo para `docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md`.
 
-## 13.11 Estado vigente
+## 13.11 Recuperación gobernada del primer intento R1.3
+
+El primer intento quedó preservado en Issue #112 y Draft PR #113. El ejecutor OpenCode/Kimi completó una escritura exacta, pero el gate local `git diff --check` rechazó espacios finales usados como hard breaks Markdown; el ciclo final terminó en `loop:token-exhausted` sin commit ni push de reparación. El contrato del prompt fue corregido y fusionado mediante PR #124 en `8d750c586431b622041f2d1f92c19c630f3a3d25`, manteniendo el gate estricto y sin normalizar silenciosamente contenido del modelo.
+
+Se preserva el intento fallido como evidencia inmutable y se autoriza un único reemplazo append-only: `BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-RETRY-02`, rama `agent/roadmap-doc-brain-101-r1-3-kimi-e2e-retry-02`, mismo perfil `roadmap-doc`, mismo path permitido y `NO_DEPLOY`. No se reabre ni edita el estado terminal anterior.
+
+## 13.12 Estado vigente
 
 ```text
 STATUS: R1_2_CLOSED_RUNTIME_VERIFIED_R1_3_AUTHORIZED_ACTIVE
@@ -977,5 +983,8 @@ R1_3_STATUS: AUTHORIZED_ACTIVE
 R1_3_RISK: LOW
 R1_3_PROFILE: roadmap-doc
 R1_3_DEPLOYMENT_MODE: NO_DEPLOY
+R1_3_FAILED_ATTEMPT_ISSUE: 112
+R1_3_FAILED_ATTEMPT_PR: 113
+R1_3_RETRY_FRONT: BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-RETRY-02
 NEXT_GATE: Execute R1.3 isolated Agent Loop OpenCode Kimi roadmap-doc E2E with NO_DEPLOY
 ```
