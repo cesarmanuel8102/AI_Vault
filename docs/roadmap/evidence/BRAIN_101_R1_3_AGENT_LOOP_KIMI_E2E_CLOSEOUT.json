@@ -5,7 +5,7 @@
   "roadmap_item_id": "R1.3",
   "front_id": "BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-CLOSEOUT-01",
   "status": "CLOSED_RUNTIME_VERIFIED",
-  "closed_at_utc": "2026-08-03T19:21:32Z",
+  "closed_at_utc": "2026-08-03T19:35:07Z",
   "repository": "cesarmanuel8102/AI_Vault",
   "base_branch": "codex/own-capital-sustainable-return",
   "source_recovery": {
@@ -46,13 +46,14 @@
   "decision_and_merge": {
     "policy_decision": "APPROVE",
     "allowed_action": "MERGE",
-    "decision_id": null,
-    "decision_id_note": "No policy decision UUID is present in the local commit metadata available to this closeout; exact merge evidence is bound by commit.",
-    "pr": null,
-    "pr_note": "The retry branch was integrated by governed Operator Proxy direct merge; no pull-request number is present in local metadata for that merge.",
+    "issue": 126,
+    "pr": 127,
+    "decision_id": "f330634b-4803-4638-af03-58e5ee876cbe",
+    "base_sha": "4e7588250ac149de4735f4c876bec86185f5e630",
+    "head_sha": "c8e7d6967bd27d5177063ef9d4d68573998c5c52",
     "merge_actor": "AI Vault Operator Proxy",
     "merge_commit": "7125bf83ed786c5642b299da2fd4f65157d20f9e",
-    "merged_at_utc": "2026-08-03T19:13:16Z",
+    "merged_at_utc": "2026-08-03T19:13:19Z",
     "merge_message": "Merge commit 'c8e7d6967bd27d5177063ef9d4d68573998c5c52' into HEAD",
     "post_merge_repair_pr": 130,
     "post_merge_repair_pr_url": "https://github.com/cesarmanuel8102/AI_Vault/pull/130",
@@ -61,6 +62,15 @@
     "auto_merge": false,
     "squash_merge": false,
     "rebase_merge": false
+  },
+  "closeout_transaction": {
+    "issue": 129,
+    "pr": 131,
+    "decision_id": "d0a67f07-dc24-4e86-8c07-7374fec5b0b6",
+    "base_sha": "643574ee2fc01dec4f1ada719b7b8570be8dd38b",
+    "head_sha": "a21171c7fe22678daa6173530fb2a7fa2ed15d36",
+    "merge_commit": "02209e4ecf80065ac31da7e71c206b27f2a7ae31",
+    "merged_at_utc": "2026-08-03T19:35:07Z"
   },
   "closed_item": {
     "id": "R1.3",
