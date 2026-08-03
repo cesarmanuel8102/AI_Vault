@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Mapping, Optional
 from uuid import uuid4
 
-from brain_v9.governance.protected_paths import classify_path_protection, is_protected_path
+from .protected_paths import classify_path_protection, is_protected_path
 
 
 SCHEMA_VERSION = "unified_governance_gate_v1"

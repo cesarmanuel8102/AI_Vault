@@ -1,6 +1,6 @@
 """Governance modules for Brain V9."""
 
-from brain_v9.governance.unified_gate import (
+from .unified_gate import (
     SCHEMA_VERSION as UNIFIED_GATE_SCHEMA_VERSION,
     UnifiedGateDecision,
     UnifiedGateRequest,

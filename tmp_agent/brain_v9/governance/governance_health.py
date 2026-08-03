@@ -20,7 +20,7 @@ from brain_v9.brain.self_improvement import get_self_improvement_ledger
 from brain_v9.brain.utility import read_utility_state, write_utility_snapshots
 from brain_v9.config import STATE_PATH
 from brain_v9.core.state_io import read_json, write_json
-from brain_v9.governance.change_validation import build_change_validation_status, read_change_validation_status
+from .change_validation import build_change_validation_status, read_change_validation_status
 from brain_v9.trading.post_trade_hypotheses import read_post_trade_hypothesis_snapshot
 from brain_v9.trading.strategy_engine import read_edge_validation_state
 

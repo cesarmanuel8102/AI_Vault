@@ -82,6 +82,17 @@ def test_tool_gateway_uses_unified_gate_for_patch_and_forbidden_fields():
     assert governance_dry_run.blocked is True
     assert governance_dry_run.error == "governance_file_modification_denied_by_default"
 
+    legacy_protected_dry_run = gateway.call(
+        ToolCallRequest(
+            tool_name="file_patch_dry_run",
+            args={"path": "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py"},
+            mode="build",
+        )
+    )
+    assert legacy_protected_dry_run.ok is False
+    assert legacy_protected_dry_run.blocked is True
+    assert legacy_protected_dry_run.error == "governance_file_modification_denied_by_default"
+
     bypass_attempt = gateway.call(
         ToolCallRequest(
             tool_name="repo_status_read",

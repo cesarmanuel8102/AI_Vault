@@ -2,7 +2,7 @@ from __future__ import annotations
 from pathlib import Path
 from .state import FORBIDDEN_PATH_PARTS, RAW_COT_MARKERS
 from .schemas import LEGACY_MODE_MAP
-from brain_v9.governance.unified_gate import evaluate_governed_operation
+from ...governance.unified_gate import evaluate_governed_operation
 
 
 MODE_COMMAND_PATTERNS = [

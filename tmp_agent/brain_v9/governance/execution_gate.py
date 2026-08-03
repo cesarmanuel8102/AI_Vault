@@ -41,13 +41,13 @@ from brain_v9.config import BASE_PATH
 # FRONT-SECURITY-SELFDEV-GOVERNANCE-BLOCK-01
 # Delegate protected path checks to centralized module for extended coverage
 # (.env, memory/semantic/, trading/, strategies/, B8/, session.py, etc.)
-from brain_v9.governance.protected_paths import is_protected_path
-from brain_v9.governance.signed_approvals import verify_approval_token
-from brain_v9.governance.unified_gate import evaluate_governed_operation
+from .protected_paths import is_protected_path
+from .signed_approvals import verify_approval_token
+from .unified_gate import evaluate_governed_operation
 
 # FRONT-BRAIN-AUTONOMY-SELFDEV-SANDBOX-02
 # Runtime sandbox for self-dev autonomy constraints
-from brain_v9.governance.selfdev_sandbox import evaluate_selfdev_action
+from .selfdev_sandbox import evaluate_selfdev_action
 
 log = logging.getLogger("governance.execution_gate")
 
@@ -542,7 +542,12 @@ class ExecutionGate:
             args=args or {},
             authenticated=bool(active_session),
         )
-        if not unified_decision.allowed and unified_decision.error not in {"approval_required", "p3_denied"}:
+        legacy_deferred_errors = {
+            "approval_required",
+            "p3_denied",
+            "governance_file_modification_denied_by_default",
+        }
+        if not unified_decision.allowed and unified_decision.error not in legacy_deferred_errors:
             self._audit_log(tool_name, risk, "unified_gate_blocked", unified_decision.reason)
             return {
                 "allowed": False,

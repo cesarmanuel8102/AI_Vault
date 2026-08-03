@@ -29,6 +29,15 @@ _PROTECTED_PATH_PATTERNS: Tuple[str, ...] = (
     "session.py",
     "brain/curated_runtime_lookup.py",
     "curated_runtime_lookup.py",
+    # Preserve the Agent V2 self-development protections that predate the
+    # unified gate. These are exact repo paths, not broad directory blocks.
+    "tmp_agent/brain_v9/core/agent_kernel_v2/tool_gateway.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+    "scripts/git_hygiene/check_no_sensitive_paths_staged.py",
+    "tests/smoke/_accepted_runtime_baseline.py",
+    "tests/smoke/test_agent_v2_auth_endpoints_01.py",
+    "tests/smoke/test_governance_rbac_dev_god_hardening_01.py",
+    ".gitignore",
 )
 
 # Exact basenames that are always protected regardless of directory

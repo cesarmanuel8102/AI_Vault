@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 from .governance import path_is_blocked, validate_mode, write_allowed
 from .schemas import AgentCapability, ToolCallRequest, ToolCallResult, to_dict
-from brain_v9.governance.unified_gate import evaluate_governed_operation
+from ...governance.unified_gate import evaluate_governed_operation
 
 ROOT = Path(__file__).resolve().parents[4]
 MAX_FILE_READ_BYTES = 128_000
