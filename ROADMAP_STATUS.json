@@ -4761,9 +4761,9 @@
     "schema_version": 1,
     "roadmap_id": "BRAIN-101",
     "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-    "status": "R1_3_CLOSED_RUNTIME_VERIFIED_R1_4_AUTHORIZED_ACTIVE",
+    "status": "R1_4_CLOSED_RUNTIME_VERIFIED_R2_1_AUTHORIZED_ACTIVE",
     "approval_status": "HUMAN_ADOPTED",
-    "current_phase": "R1",
+    "current_phase": "R2",
     "rebaseline_source_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
     "adoption_pr": 35,
     "adoption_pr_head": "a605c4d88510acd477cf26d2787bc38b1c02af48",
@@ -4771,7 +4771,7 @@
     "adoption_merge_commit": "5b9f101a6d5ec5b314d9413cc5c12d66fec6d94f",
     "adopted_at_utc": "2026-07-22T14:02:16Z",
     "score": {
-      "base": 41,
+      "base": 44,
       "resilience_bonus": 0,
       "auditability": "R0_EVIDENCE_BOUND_AND_ADOPTED"
     },
@@ -4833,7 +4833,7 @@
     "r1_3_closeout_decision_id": "d0a67f07-dc24-4e86-8c07-7374fec5b0b6",
     "r1_3_closeout_merge_commit": "02209e4ecf80065ac31da7e71c206b27f2a7ae31",
     "r1_3_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E_CLOSEOUT.json",
-    "r1_4_status": "AUTHORIZED_ACTIVE",
+    "r1_4_status": "CLOSED_RUNTIME_VERIFIED",
     "r1_4_front_id": "BRAIN-101-R1-4-AGENT-LOOP-SEQUENCER-CONTRACT-E2E-01",
     "r1_4_risk": "LOW",
     "r1_4_domain": "agent_loop",
@@ -4896,6 +4896,85 @@
         "git diff --check"
       ]
     },
-    "next_gate": "Execute R1.4 isolated Agent Loop sequencer contract roadmap-doc E2E with NO_DEPLOY"
+    "r1_4_parent_lifecycle_evidence": {
+      "schema_version": 1,
+      "parent_front_id": "BRAIN-101-R1-4-AGENT-LOOP-SEQUENCER-CONTRACT-E2E-01",
+      "roadmap_id": "BRAIN-101",
+      "roadmap_item_id": "R1.4",
+      "issue": 133,
+      "pr": 134,
+      "decision_id": "c7dc0260-12ec-4566-b032-9a79601c431e",
+      "base_sha": "325c199cf11dc50599a1a2f4a486f51e50222869",
+      "closeout_base_sha": "d4411ae9719dbfe16db9d07cf2bfeffaca89bf47",
+      "head_sha": "569eb283e05479640cb374aec81f2ae6d8f51705",
+      "merge_commit": "d4411ae9719dbfe16db9d07cf2bfeffaca89bf47",
+      "builder_session": "agent-loop-builder-569eb283e05479640cb374aec81f2ae6d8f51705",
+      "reviewer_session": "reviewer:opencode_ollama:ollama-cloud/qwen3.5:397b:4336219e-98a8-4a1f-a704-6aec3ace4db1"
+    },
+    "r1_4_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E_CLOSEOUT.json",
+    "r1_4_evidence_commit": "569eb283e05479640cb374aec81f2ae6d8f51705",
+    "r1_4_merge_commit": "d4411ae9719dbfe16db9d07cf2bfeffaca89bf47",
+    "r1_4_closed_at_utc": "2026-08-03T20:34:49Z",
+    "r2_1_status": "AUTHORIZED_ACTIVE",
+    "r2_1_front_id": "BRAIN-101-R2-1-CONSTITUTIONAL-SECURITY-REAUDIT-01",
+    "r2_1_risk": "MEDIUM",
+    "r2_1_domain": "security_governance",
+    "r2_1_executor": "codex_control_plane",
+    "r2_1_work_branch": "control-plane/r2-1-constitutional-security-reaudit",
+    "r2_1_deployment_mode": "NO_DEPLOY",
+    "r2_1_allowed_paths": [
+      "docs/roadmap/evidence/BRAIN_101_R2_1_CONSTITUTIONAL_SECURITY_REAUDIT.md"
+    ],
+    "r2_1_forbidden_paths": [
+      ".env",
+      ".github/",
+      "memory/",
+      "memory/semantic/",
+      "memory/rollback",
+      "tmp_agent/brain_v9/trading/",
+      "financial_autonomy/",
+      "tmp_agent/state/",
+      "scripts/"
+    ],
+    "r2_1_acceptance": [
+      "Reaudit constitutional security blockers without modifying runtime code",
+      "Classify each R2 blocker as OPEN, PARTIALLY_CLOSED, CLOSED_WITH_RUNTIME_EVIDENCE, REGRESSED, or SUPERSEDED with evidence",
+      "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+    ],
+    "r2_1_test_commands": [
+      "git diff --check"
+    ],
+    "r2_1_closeout": {
+      "front_id": "BRAIN-101-R2-1-CONSTITUTIONAL-SECURITY-REAUDIT-CLOSEOUT-01",
+      "executor": "codex_control_plane",
+      "work_branch": "control-plane/r2-1-constitutional-security-reaudit-closeout",
+      "allowed_paths": [
+        "docs/roadmap/BRAIN_101_MANIFEST.json",
+        "docs/roadmap/BRAIN_101_ROADMAP.md",
+        "docs/roadmap/BRAIN_101_SCORECARD.json",
+        "ROADMAP_STATUS.json",
+        "docs/MIGRATION_CONTROL_LEDGER.md",
+        "docs/roadmap/evidence/BRAIN_101_R2_1_CONSTITUTIONAL_SECURITY_REAUDIT_CLOSEOUT.json"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/",
+        "scripts/"
+      ],
+      "acceptance": [
+        "Record exact R2.1 Issue PR decision merge and security re-audit evidence",
+        "Set R2.1 to CLOSED_RUNTIME_VERIFIED only after the re-audit evidence is merged",
+        "Preserve exactly one authorized next roadmap item",
+        "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+      ],
+      "test_commands": [
+        "git diff --check"
+      ]
+    },
+    "next_gate": "Execute R2.1 documentation-only constitutional security re-audit with NO_DEPLOY"
   }
 }
