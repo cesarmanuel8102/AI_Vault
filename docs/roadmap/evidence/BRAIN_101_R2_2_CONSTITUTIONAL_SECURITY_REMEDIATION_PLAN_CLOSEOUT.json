@@ -6,6 +6,7 @@
   "objective": "Record R2.2 remediation routing evidence and authorize the next single governed R2 security item",
   "status": "CLOSED_RUNTIME_VERIFIED",
   "closed_at_utc": "2026-08-03T21:28:44Z",
+  "scorecard_diff_normalized": true,
   "parent_lifecycle_evidence": {
     "schema_version": 1,
     "parent_front_id": "BRAIN-101-R2-2-CONSTITUTIONAL-SECURITY-REMEDIATION-PLAN-01",
