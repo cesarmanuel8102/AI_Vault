@@ -2,8 +2,9 @@ from __future__ import annotations
 import json, re, subprocess, urllib.request
 from pathlib import Path
 from typing import Any, Dict, List
-from .governance import path_is_blocked, validate_mode, write_allowed, selfdev_governance_blocked
+from .governance import path_is_blocked, validate_mode, write_allowed
 from .schemas import AgentCapability, ToolCallRequest, ToolCallResult, to_dict
+from brain_v9.governance.unified_gate import evaluate_governed_operation
 
 ROOT = Path(__file__).resolve().parents[4]
 MAX_FILE_READ_BYTES = 128_000
@@ -48,21 +49,11 @@ class ToolGatewayV2:
         from .governance import validate_mode, READ_ONLY_TOOL_NAMES, WRITE_TOOL_NAMES
         mode = validate_mode(req.mode)
         name = req.tool_name
+        args = req.args or {}
 
-        # Block write tools in read_only mode
-        if mode == "read_only" and name in WRITE_TOOL_NAMES:
-            return ToolCallResult(name, ok=False, blocked=True, error="write_tool_blocked_in_read_only_mode")
-
-        # Block write tools in auto mode without explicit approval
-        if mode == "auto" and name in WRITE_TOOL_NAMES:
-            return ToolCallResult(name, ok=False, blocked=True, approval_required=True, error="build_requires_explicit_approval")
-
-        # Require approval for approval-required tools in build mode
-        if name in {"file_patch_apply_approval_required", "git_commit_approval_required"}:
-            if mode not in {"build", "write_allowed"}:
-                return ToolCallResult(name, ok=False, blocked=True, approval_required=True, error="build_mode_required")
-            if not write_allowed(mode, req.approval_token):
-                return ToolCallResult(name, ok=False, blocked=True, approval_required=True, error="approval_required")
+        gate_result = self._unified_gate_for_tool(name, args, mode, req.approval_token)
+        if gate_result is not None:
+            return gate_result
 
         if name == "repo_status_read":
             return self._repo_status(name)
@@ -96,14 +87,6 @@ class ToolGatewayV2:
                 from ...memory.promotion_candidate_promoter import _rejected_report
                 result = _rejected_report(str(req.args.get("candidate_id", "")), ["approval_token_invalid"], [])
                 return ToolCallResult(name, ok=False, blocked=True, approval_required=True, result=result, error="approval_required")
-        # CONTRACT D: Self-dev governance file protection
-        if name in {"file_patch_apply_approval_required", "file_patch_dry_run", "report_writer"}:
-            target_path = str(req.args.get("path", ""))
-            if selfdev_governance_blocked(target_path):
-                gov_token = str(req.args.get("governance_token", ""))
-                gov_confirm = str(req.args.get("confirm_phrase", ""))
-                if gov_token != "AGENTV2_APPROVED_GOVERNANCE_CHANGE" or gov_confirm != "APPROVE_GOVERNANCE_SECURITY_CHANGE":
-                    return ToolCallResult(name, ok=False, blocked=True, error="governance_file_modification_denied_by_default")
         if name == "promotion_candidate_promote":
             from ...memory.promotion_candidate_promoter import promote_candidate
             from pathlib import Path
@@ -132,6 +115,76 @@ class ToolGatewayV2:
             result = dispatch_evidence_tool(name, req.args)
             return ToolCallResult(name, ok=result.get("ok", False), result=result.get("evidence", {}), error=result.get("error"))
         return ToolCallResult(name, ok=False, error="unknown_tool")
+
+    def _unified_gate_for_tool(
+        self,
+        name: str,
+        args: Dict[str, Any],
+        mode: str,
+        approval_token: str | None,
+    ) -> ToolCallResult | None:
+        from .governance import WRITE_TOOL_NAMES
+
+        if name in {"file_patch_apply_approval_required", "git_commit_approval_required"}:
+            operation_class = "patch" if name.startswith("file_patch") else "approval"
+            operation = name
+            risk_level = "P2"
+        elif name in {"file_patch_dry_run", "report_writer"}:
+            operation_class = "patch"
+            operation = name
+            risk_level = "P1"
+        elif name in WRITE_TOOL_NAMES or name == "promotion_candidate_promote":
+            operation_class = "execution"
+            operation = name
+            risk_level = "P2"
+        else:
+            operation_class = "read"
+            operation = name or "unknown_tool"
+            risk_level = "P0"
+
+        if mode == "read_only" and name in WRITE_TOOL_NAMES:
+            return ToolCallResult(name, ok=False, blocked=True, error="write_tool_blocked_in_read_only_mode")
+        if mode == "auto" and name in WRITE_TOOL_NAMES:
+            return ToolCallResult(name, ok=False, blocked=True, approval_required=True, error="build_requires_explicit_approval")
+
+        decision = evaluate_governed_operation(
+            operation_class=operation_class,
+            operation=operation,
+            mode=mode,
+            risk_level=risk_level,
+            target=str(args.get("path", "")),
+            args=args,
+            approval_token=approval_token or str(args.get("approval_token", "")),
+            authenticated=False,
+            role="agent",
+        )
+
+        if decision.allowed:
+            return None
+
+        error = decision.error or "unified_gate_denied"
+        if name in {"file_patch_apply_approval_required", "git_commit_approval_required"}:
+            if error not in {"approval_required", "build_mode_required", "governance_file_modification_denied_by_default"}:
+                error = "approval_required" if decision.approval_required else error
+            return ToolCallResult(name, ok=False, blocked=True, approval_required=True, error=error)
+
+        if name in {"file_patch_dry_run", "report_writer"}:
+            return ToolCallResult(
+                name,
+                ok=False,
+                blocked=True,
+                approval_required=decision.approval_required,
+                error=error,
+            )
+
+        return ToolCallResult(
+            name,
+            ok=False,
+            blocked=True,
+            approval_required=decision.approval_required,
+            error=error,
+            result={"gate": decision.to_dict()},
+        )
 
     def _repo_history(self, name, args):
         def run(cmd):
