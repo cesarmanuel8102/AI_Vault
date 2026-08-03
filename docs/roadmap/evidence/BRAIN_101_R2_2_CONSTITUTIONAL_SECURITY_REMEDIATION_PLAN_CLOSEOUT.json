@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R2.2",
+  "front_id": "BRAIN-101-R2-2-CONSTITUTIONAL-SECURITY-REMEDIATION-PLAN-CLOSEOUT-01",
+  "objective": "Record R2.2 remediation routing evidence and authorize the next single governed R2 security item",
+  "status": "CLOSED_RUNTIME_VERIFIED",
+  "closed_at_utc": "2026-08-03T21:28:44Z",
+  "scorecard_diff_normalized": true,
+  "parent_lifecycle_evidence": {
+    "schema_version": 1,
+    "parent_front_id": "BRAIN-101-R2-2-CONSTITUTIONAL-SECURITY-REMEDIATION-PLAN-01",
+    "roadmap_id": "BRAIN-101",
+    "roadmap_item_id": "R2.2",
+    "issue": 143,
+    "pr": 144,
+    "decision_id": "9656a9b9-6c3c-43e4-a0e2-824a088c96b3",
+    "base_sha": "bb87f26a3415a1a858937b9fda21cbbcbff2785d",
+    "closeout_base_sha": "704cbbae808ecf2643e46699abe8340d0afc6b10",
+    "head_sha": "57b8d5d61c883d5d44fb2af2ca3b951810c5d5ff",
+    "merge_commit": "704cbbae808ecf2643e46699abe8340d0afc6b10",
+    "builder_session": "builder-5a75d593-5805-49d8-8746-5311b4bedf5a",
+    "reviewer_session": "reviewer:opencode_ollama:ollama-cloud/glm-5.2:7a25edb2-b8d3-46fb-92e4-67a6b5ce0cf2"
+  },
+  "remediation_routing_evidence": {
+    "evidence_path": "docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN.md",
+    "parent_front_id": "BRAIN-101-R2-2-CONSTITUTIONAL-SECURITY-REMEDIATION-PLAN-01",
+    "mode": "documentation-only",
+    "deployment_mode": "NO_DEPLOY",
+    "runtime_files_modified": false,
+    "r2_1_closeout_preserved": "CLOSED_RUNTIME_VERIFIED",
+    "r2_current_status": "PARTIALLY_CLOSED",
+    "r2_can_close_now": false,
+    "next_required_security_state": "GOVERNANCE_FAIL_CLOSED",
+    "routed_fronts": [
+      "BRAIN-101-R2-3-CONSTITUTIONAL-THREAT-MODEL-01",
+      "BRAIN-101-R2-4-UNIFIED-GOVERNANCE-GATE-01",
+      "BRAIN-101-R2-5-FIVE-ROLE-RBAC-MATRIX-01",
+      "BRAIN-101-R2-6-APPROVAL-TOKEN-REPLAY-HARDENING-01",
+      "BRAIN-101-R2-7-LIFECYCLE-ENDPOINT-PROTECTION-01",
+      "BRAIN-101-R2-8-PATH-BOUNDARY-HARDENING-01",
+      "BRAIN-101-R2-9-SESSION-ISOLATION-RATE-LIMIT-01",
+      "BRAIN-101-R2-10-PROMPT-INJECTION-GOVERNANCE-DENIAL-01",
+      "BRAIN-101-R2-11-SECRET-HISTORY-ROTATION-AUDIT-01",
+      "BRAIN-101-R2-12-APPEND-ONLY-AUDIT-COVERAGE-01",
+      "BRAIN-101-R2-13-CONSTITUTIONAL-SECURITY-INTEGRATION-CLOSEOUT-01"
+    ],
+    "first_routed_front": "BRAIN-101-R2-3-CONSTITUTIONAL-THREAT-MODEL-01",
+    "blocked_until_prior_fronts_close": "BRAIN-101-R2-13-CONSTITUTIONAL-SECURITY-INTEGRATION-CLOSEOUT-01"
+  },
+  "next_authorized_item": {
+    "roadmap_item_id": "R2.3",
+    "front_id": "BRAIN-101-R2-3-CONSTITUTIONAL-THREAT-MODEL-01",
+    "title": "Produce constitutional security threat model",
+    "status": "AUTHORIZED_ACTIVE",
+    "executor": "codex_control_plane",
+    "work_branch": "control-plane/r2-3-constitutional-threat-model",
+    "risk": "MEDIUM",
+    "domain": "security_governance",
+    "deployment_mode": "NO_DEPLOY",
+    "allowed_paths": [
+      "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL.md"
+    ],
+    "forbidden_paths": [
+      ".env",
+      ".github/",
+      "memory/",
+      "memory/semantic/",
+      "memory/rollback",
+      "tmp_agent/brain_v9/trading/",
+      "financial_autonomy/",
+      "tmp_agent/state/",
+      "scripts/"
+    ],
+    "test_commands": [
+      "git diff --check"
+    ],
+    "closeout": {
+      "front_id": "BRAIN-101-R2-3-CONSTITUTIONAL-THREAT-MODEL-CLOSEOUT-01",
+      "executor": "codex_control_plane",
+      "work_branch": "control-plane/r2-3-constitutional-threat-model-closeout",
+      "evidence_path": "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL_CLOSEOUT.json"
+    }
+  },
+  "preserved_controls": {
+    "human_final_authority": true,
+    "live_trading_enabled": false,
+    "real_money_enabled": false,
+    "canonical_local_sync": false,
+    "auto_merge": false,
+    "deployment_authorized": false,
+    "runtime_files_modified": false,
+    "authentication_changed": false,
+    "response_shape_changed": false,
+    "side_effects_changed": false,
+    "error_codes_changed": false,
+    "rollback_behavior_changed": false
+  },
+  "final_state": "R2_2_CLOSED_RUNTIME_VERIFIED_R2_3_AUTHORIZED_ACTIVE"
+}

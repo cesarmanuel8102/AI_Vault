@@ -9181,3 +9181,19 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Authorized next item: exactly one `R2.2`, MEDIUM, domain `security_governance`, executor `codex_control_plane`, work branch `control-plane/r2-2-constitutional-security-remediation-plan`, `NO_DEPLOY`, allowed only for `docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN.md`, with complete closeout metadata.
 - Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
 - Next gate: execute `R2.2` documentation-only constitutional security remediation planning with `NO_DEPLOY`.
+
+## BRAIN-101 R2.2 — Constitutional Security Remediation Plan Closeout (2026-08-03)
+
+- Front: `BRAIN-101-R2-2-CONSTITUTIONAL-SECURITY-REMEDIATION-PLAN-CLOSEOUT-01`.
+- Parent remediation plan front: `BRAIN-101-R2-2-CONSTITUTIONAL-SECURITY-REMEDIATION-PLAN-01`.
+- Remediation plan evidence path: `docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN.md`.
+- Governed parent lifecycle: Issue #143 / PR #144, decision `9656a9b9-6c3c-43e4-a0e2-824a088c96b3`, base `bb87f26a3415a1a858937b9fda21cbbcbff2785d`, closeout base `704cbbae808ecf2643e46699abe8340d0afc6b10`, head `57b8d5d61c883d5d44fb2af2ca3b951810c5d5ff`, merge commit `704cbbae808ecf2643e46699abe8340d0afc6b10`.
+- Builder session: `builder-5a75d593-5805-49d8-8746-5311b4bedf5a`.
+- Reviewer session: `reviewer:opencode_ollama:ollama-cloud/glm-5.2:7a25edb2-b8d3-46fb-92e4-67a6b5ce0cf2`.
+- Routing result: R2.2 preserved R2.1 as `CLOSED_RUNTIME_VERIFIED`, kept R2 as `PARTIALLY_CLOSED`, and routed every R2.1 `OPEN` or `PARTIALLY_CLOSED` constitutional security blocker into explicit governed fronts R2.3 through R2.13.
+- First routed front: `BRAIN-101-R2-3-CONSTITUTIONAL-THREAT-MODEL-01`.
+- Closeout evidence: `docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN_CLOSEOUT.json`.
+- Status: `R2.2` set to `CLOSED_RUNTIME_VERIFIED`; R2 remains partially closed.
+- Authorized next item: exactly one `R2.3`, MEDIUM, domain `security_governance`, executor `codex_control_plane`, work branch `control-plane/r2-3-constitutional-threat-model`, `NO_DEPLOY`, allowed only for `docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL.md`, with complete closeout metadata.
+- Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
+- Next gate: execute `R2.3` documentation-only constitutional threat model with `NO_DEPLOY`.

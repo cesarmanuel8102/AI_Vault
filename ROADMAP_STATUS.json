@@ -4761,7 +4761,7 @@
     "schema_version": 1,
     "roadmap_id": "BRAIN-101",
     "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-    "status": "R2_1_CLOSED_RUNTIME_VERIFIED_R2_2_AUTHORIZED_ACTIVE",
+    "status": "R2_2_CLOSED_RUNTIME_VERIFIED_R2_3_AUTHORIZED_ACTIVE",
     "approval_status": "HUMAN_ADOPTED",
     "current_phase": "R2",
     "human_final_authority": true,
@@ -5002,7 +5002,7 @@
     "r2_1_reaudit_result": "R2_REMAINS_PARTIALLY_CLOSED",
     "r2_critical_regression_found": false,
     "r2_can_close_now": false,
-    "r2_2_status": "AUTHORIZED_ACTIVE",
+    "r2_2_status": "CLOSED_RUNTIME_VERIFIED",
     "r2_2_front_id": "BRAIN-101-R2-2-CONSTITUTIONAL-SECURITY-REMEDIATION-PLAN-01",
     "r2_2_risk": "MEDIUM",
     "r2_2_domain": "security_governance",
@@ -5063,6 +5063,88 @@
         "git diff --check"
       ]
     },
-    "next_gate": "Execute R2.2 documentation-only constitutional security remediation planning with NO_DEPLOY"
+    "r2_2_parent_lifecycle_evidence": {
+      "schema_version": 1,
+      "parent_front_id": "BRAIN-101-R2-2-CONSTITUTIONAL-SECURITY-REMEDIATION-PLAN-01",
+      "roadmap_id": "BRAIN-101",
+      "roadmap_item_id": "R2.2",
+      "issue": 143,
+      "pr": 144,
+      "decision_id": "9656a9b9-6c3c-43e4-a0e2-824a088c96b3",
+      "base_sha": "bb87f26a3415a1a858937b9fda21cbbcbff2785d",
+      "closeout_base_sha": "704cbbae808ecf2643e46699abe8340d0afc6b10",
+      "head_sha": "57b8d5d61c883d5d44fb2af2ca3b951810c5d5ff",
+      "merge_commit": "704cbbae808ecf2643e46699abe8340d0afc6b10",
+      "builder_session": "builder-5a75d593-5805-49d8-8746-5311b4bedf5a",
+      "reviewer_session": "reviewer:opencode_ollama:ollama-cloud/glm-5.2:7a25edb2-b8d3-46fb-92e4-67a6b5ce0cf2"
+    },
+    "r2_2_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN_CLOSEOUT.json",
+    "r2_2_evidence_commit": "57b8d5d61c883d5d44fb2af2ca3b951810c5d5ff",
+    "r2_2_merge_commit": "704cbbae808ecf2643e46699abe8340d0afc6b10",
+    "r2_2_closed_at_utc": "2026-08-03T21:28:44Z",
+    "r2_2_routing_result": "R2_REMAINS_PARTIALLY_CLOSED",
+    "r2_2_remediation_plan_evidence": "docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN.md",
+    "r2_3_status": "AUTHORIZED_ACTIVE",
+    "r2_3_front_id": "BRAIN-101-R2-3-CONSTITUTIONAL-THREAT-MODEL-01",
+    "r2_3_risk": "MEDIUM",
+    "r2_3_domain": "security_governance",
+    "r2_3_executor": "codex_control_plane",
+    "r2_3_work_branch": "control-plane/r2-3-constitutional-threat-model",
+    "r2_3_deployment_mode": "NO_DEPLOY",
+    "r2_3_allowed_paths": [
+      "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL.md"
+    ],
+    "r2_3_forbidden_paths": [
+      ".env",
+      ".github/",
+      "memory/",
+      "memory/semantic/",
+      "memory/rollback",
+      "tmp_agent/brain_v9/trading/",
+      "financial_autonomy/",
+      "tmp_agent/state/",
+      "scripts/"
+    ],
+    "r2_3_acceptance": [
+      "Create the final R2 constitutional threat model covering assets, trust boundaries, actors, abuse cases, and failure modes",
+      "Bind explicit test obligations for prompt injection, path traversal, symlink/reparse, cross-room isolation, and cross-user isolation without declaring those controls closed",
+      "Do not modify runtime code, tests, governance logic, memory, FAISS, trading, financial autonomy, CI, environment files, or canonical local state",
+      "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+    ],
+    "r2_3_test_commands": [
+      "git diff --check"
+    ],
+    "r2_3_closeout": {
+      "front_id": "BRAIN-101-R2-3-CONSTITUTIONAL-THREAT-MODEL-CLOSEOUT-01",
+      "executor": "codex_control_plane",
+      "work_branch": "control-plane/r2-3-constitutional-threat-model-closeout",
+      "allowed_paths": [
+        "docs/roadmap/BRAIN_101_MANIFEST.json",
+        "docs/roadmap/BRAIN_101_ROADMAP.md",
+        "docs/roadmap/BRAIN_101_SCORECARD.json",
+        "ROADMAP_STATUS.json",
+        "docs/MIGRATION_CONTROL_LEDGER.md",
+        "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL_CLOSEOUT.json"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/",
+        "scripts/"
+      ],
+      "acceptance": [
+        "Record exact R2.3 Issue PR decision merge and threat model evidence",
+        "Set R2.3 to CLOSED_RUNTIME_VERIFIED only after the threat model evidence is merged",
+        "Preserve exactly one authorized next roadmap item",
+        "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+      ],
+      "test_commands": [
+        "git diff --check"
+      ]
+    },
+    "next_gate": "Execute R2.3 documentation-only constitutional threat model with NO_DEPLOY"
   }
 }
