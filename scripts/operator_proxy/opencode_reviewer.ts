@@ -19,6 +19,12 @@ export function resolveOpenCodeRuntime(env=process.env){
 }
 
 function git(runner:NativeRunner,repo:string,args:string[]){return runner(process.env.GIT_PATH??"git",["-C",repo,...args],{timeout:60000,maxBuffer:64*1024*1024}).trim();}
+function ensureReviewCommit(runner:NativeRunner,repo:string,sha:string){
+  if(!/^[a-f0-9]{40}$/.test(sha))throw new ReviewerBackendError("review commit identity invalid","REVIEW_IDENTITY_MISMATCH");
+  try{git(runner,repo,["cat-file","-e",`${sha}^{commit}`]);return;}catch{}
+  try{git(runner,repo,["fetch","--no-tags","--no-write-fetch-head","origin",sha]);git(runner,repo,["cat-file","-e",`${sha}^{commit}`]);}
+  catch{throw new ReviewerBackendError("review commit unavailable","REVIEW_IDENTITY_MISMATCH");}
+}
 function assertImmutable(runner:NativeRunner,repo:string,input:ReviewerInput){
   if(git(runner,repo,["rev-parse","HEAD"])!==input.headSha)throw new ReviewerBackendError("review HEAD mismatch","REVIEW_IDENTITY_MISMATCH");
   if(git(runner,repo,["merge-base",input.baseSha,input.headSha])!==input.baseSha)throw new ReviewerBackendError("review base mismatch","REVIEW_IDENTITY_MISMATCH");
@@ -52,8 +58,13 @@ export class OpenCodeReviewerBackend implements ReviewerBackend {
   constructor(readonly model:string,private readonly runner:NativeRunner=native){if(!safeModel.test(model))throw new Error("reviewer model invalid");}
   review(input:ReviewerInput,session:string):ReviewerAttempt{
     const startedUtc=new Date().toISOString(),runtime=resolveOpenCodeRuntime(),temp=mkdtempSync(join(tmpdir(),"operator-review-")),workspace=join(temp,"workspace");
+    let worktreeAdded=false;
     try{
+      if(!/^[a-f0-9]{40}$/.test(input.baseSha)||!/^[a-f0-9]{40}$/.test(input.headSha))throw new ReviewerBackendError("review commit identity invalid","REVIEW_IDENTITY_MISMATCH");
+      ensureReviewCommit(this.runner,input.repositoryRoot,input.baseSha);
+      ensureReviewCommit(this.runner,input.repositoryRoot,input.headSha);
       this.runner(process.env.GIT_PATH??"git",["-C",input.repositoryRoot,"worktree","add","--detach",workspace,input.headSha],{timeout:120000,maxBuffer:32*1024*1024});
+      worktreeAdded=true;
       assertImmutable(this.runner,workspace,input);
       const diff=git(this.runner,workspace,["diff","--no-ext-diff","--binary",`${input.baseSha}...${input.headSha}`]);
       const configPath=join(temp,"opencode.json"),config={
@@ -71,7 +82,7 @@ export class OpenCodeReviewerBackend implements ReviewerBackend {
       assertImmutable(this.runner,workspace,input);
       const parsed=parseJsonl(stdout,input.headSha);return {output:parsed.output,providerSession:parsed.providerSession,backend:"opencode_ollama",model:this.model,session,startedUtc,completedUtc:new Date().toISOString()};
     } finally {
-      try{this.runner(process.env.GIT_PATH??"git",["-C",input.repositoryRoot,"worktree","remove","--force",workspace],{timeout:120000,maxBuffer:32*1024*1024});}catch{}
+      if(worktreeAdded)try{this.runner(process.env.GIT_PATH??"git",["-C",input.repositoryRoot,"worktree","remove","--force",workspace],{timeout:120000,maxBuffer:32*1024*1024});}catch{}
       if(temp.startsWith(tmpdir()))rmSync(temp,{recursive:true,force:true});
     }
   }
