@@ -229,9 +229,16 @@
     "agent_loop_evidence_commit": "1e14fbefa641f10bf3b726b15a9003eeb4ce942a",
     "agent_loop_base_sync_commit": "c8e7d6967bd27d5177063ef9d4d68573998c5c52",
     "operator_proxy_merge_commit": "7125bf83ed786c5642b299da2fd4f65157d20f9e",
+    "operator_proxy_issue": 126,
+    "operator_proxy_pr": 127,
+    "operator_proxy_decision_id": "f330634b-4803-4638-af03-58e5ee876cbe",
     "post_merge_repair_pr": 130,
     "post_merge_repair_commit": "643574ee2fc01dec4f1ada719b7b8570be8dd38b",
-    "closed_at_utc": "2026-08-03T19:21:32Z",
+    "closeout_issue": 129,
+    "closeout_pr": 131,
+    "closeout_decision_id": "d0a67f07-dc24-4e86-8c07-7374fec5b0b6",
+    "closeout_merge_commit": "02209e4ecf80065ac31da7e71c206b27f2a7ae31",
+    "closed_at_utc": "2026-08-03T19:35:07Z",
     "final_state": "R1_3_CLOSED_RUNTIME_VERIFIED_R1_4_AUTHORIZED_ACTIVE"
   },
   "next_gate": "Execute R1.4 isolated Agent Loop sequencer contract roadmap-doc E2E with NO_DEPLOY"
