@@ -17,7 +17,7 @@
 
 ## R1 autonomous control-plane priority correction
 
-R1.2 runtime activation was paused until a synthetic documentation-only flow proved the complete autonomous chain: canonical discovery, governed Issue, isolated builder, Draft PR, CI, independent review, policy, governed merge, documentary closeout, and next-item discovery. Issue #62 is the umbrella for the broader control-plane implementation and multi-actor certification program. The sequencer created operational Issue #65 for bootstrap item `R1.0`, and PR #68 carried its isolated payload. `R1.0` is now `CLOSED_RUNTIME_VERIFIED` by that flow and Operator Proxy merge `9fde35227982a89c1af6b31051ff44f131128430`. `R1.2` is now `CLOSED_RUNTIME_VERIFIED` after Issue #56 / PR #57, Issue #59 / PR #58, and the privileged-install receipt repair chain through PR #102. `R1.3` is now `CLOSED_RUNTIME_VERIFIED` after the isolated Agent Loop OpenCode Kimi `roadmap-doc` retry, evidence commit `1e14fbefa641f10bf3b726b15a9003eeb4ce942a`, and Operator Proxy merge `7125bf83ed786c5642b299da2fd4f65157d20f9e`. Exactly one next synthetic Agent Loop item, `R1.4`, is `AUTHORIZED_ACTIVE` for a sequencer-contract `roadmap-doc` E2E with `NO_DEPLOY`. R2, live trading, real money, canonical local sync, auto-merge, and deployment remain unauthorized.
+R1.2 runtime activation was paused until a synthetic documentation-only flow proved the complete autonomous chain: canonical discovery, governed Issue, isolated builder, Draft PR, CI, independent review, policy, governed merge, documentary closeout, and next-item discovery. Issue #62 is the umbrella for the broader control-plane implementation and multi-actor certification program. The sequencer created operational Issue #65 for bootstrap item `R1.0`, and PR #68 carried its isolated payload. `R1.0` is now `CLOSED_RUNTIME_VERIFIED` by that flow and Operator Proxy merge `9fde35227982a89c1af6b31051ff44f131128430`. `R1.2` is now `CLOSED_RUNTIME_VERIFIED` after Issue #56 / PR #57, Issue #59 / PR #58, and the privileged-install receipt repair chain through PR #102. `R1.3` is now `CLOSED_RUNTIME_VERIFIED` after the isolated Agent Loop OpenCode Kimi `roadmap-doc` retry, evidence commit `1e14fbefa641f10bf3b726b15a9003eeb4ce942a`, and Operator Proxy merge `7125bf83ed786c5642b299da2fd4f65157d20f9e`. `R1.4` is now `CLOSED_RUNTIME_VERIFIED` after the Agent Loop sequencer-contract `roadmap-doc` E2E in Issue #133 / PR #134, decision `c7dc0260-12ec-4566-b032-9a79601c431e`, head `569eb283e05479640cb374aec81f2ae6d8f51705`, and merge `d4411ae9719dbfe16db9d07cf2bfeffaca89bf47`. Exactly one next item, `R2.1`, is `AUTHORIZED_ACTIVE` as a documentation-only constitutional security re-audit with `NO_DEPLOY`. Live trading, real money, canonical local sync, auto-merge, and deployment remain unauthorized.
 
 ---
 
@@ -959,10 +959,18 @@ R1.3 quedó cerrado en runtime con el retry aislado `BRAIN-101-R1-3-AGENT-LOOP-K
 
 El closeout machine-readable está en `docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E_CLOSEOUT.json`. R1.3 queda `CLOSED_RUNTIME_VERIFIED`. Se autoriza exactamente un siguiente item sintético: `R1.4`, `LOW`, dominio `agent_loop`, ejecutor `agent_loop`, rama `agent/roadmap-doc-brain-101-r1-4-sequencer-contract-e2e`, perfil `roadmap-doc`, `max_executor_cycles=2`, `NO_DEPLOY`, permitido solo para `docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E.md`. El closeout de R1.4 queda predeclarado con ejecutor `codex_control_plane` y metadatos completos. R2, live trading, real money, canonical local sync, auto-merge y deploy siguen no autorizados.
 
-## 13.13 Estado vigente
+## 13.13 Cierre runtime de R1.4
+
+R1.4 quedó cerrado en runtime con el E2E aislado `BRAIN-101-R1-4-AGENT-LOOP-SEQUENCER-CONTRACT-E2E-01`. El ejecutor Agent Loop produjo el documento `docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E.md` en el commit `569eb283e05479640cb374aec81f2ae6d8f51705`, usando la rama `agent/roadmap-doc-brain-101-r1-4-sequencer-contract-e2e`, perfil `roadmap-doc`, `max_executor_cycles=2`, y `NO_DEPLOY`. El documento registra el contrato vigente: solo los items `AUTHORIZED_ACTIVE` entran a la cola del sequencer, los estados no activos se rechazan con auditoría, el orden admitido es determinístico, no hay duplicidad en la cola activa y el sequencer no muta lifecycle state.
+
+La evidencia de lifecycle parent se registra de forma inmutable y exacta: `parent_front_id` `BRAIN-101-R1-4-AGENT-LOOP-SEQUENCER-CONTRACT-E2E-01`, Issue #133, PR #134, decisión `c7dc0260-12ec-4566-b032-9a79601c431e`, base `325c199cf11dc50599a1a2f4a486f51e50222869`, closeout base `d4411ae9719dbfe16db9d07cf2bfeffaca89bf47`, head `569eb283e05479640cb374aec81f2ae6d8f51705`, merge `d4411ae9719dbfe16db9d07cf2bfeffaca89bf47`, builder session `agent-loop-builder-569eb283e05479640cb374aec81f2ae6d8f51705`, y reviewer session `reviewer:opencode_ollama:ollama-cloud/qwen3.5:397b:4336219e-98a8-4a1f-a704-6aec3ace4db1`.
+
+El closeout machine-readable está en `docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E_CLOSEOUT.json`. R1.4 queda `CLOSED_RUNTIME_VERIFIED`. Se autoriza exactamente un siguiente item: `R2.1`, `MEDIUM`, dominio `security_governance`, ejecutor `codex_control_plane`, rama `control-plane/r2-1-constitutional-security-reaudit`, `NO_DEPLOY`, permitido solo para `docs/roadmap/evidence/BRAIN_101_R2_1_CONSTITUTIONAL_SECURITY_REAUDIT.md`, con closeout completo predeclarado. Live trading, real money, canonical local sync, auto-merge y deploy siguen no autorizados.
+
+## 13.14 Estado vigente
 
 ```text
-STATUS: R1_3_CLOSED_RUNTIME_VERIFIED_R1_4_AUTHORIZED_ACTIVE
+STATUS: R1_4_CLOSED_RUNTIME_VERIFIED_R2_1_AUTHORIZED_ACTIVE
 R0_STATUS: CLOSED_HUMAN_ADOPTED
 ADOPTION_PR: 35
 ADOPTION_PR_HEAD: a605c4d88510acd477cf26d2787bc38b1c02af48
@@ -972,6 +980,7 @@ AUTO_MERGE: false
 CANONICAL_LOCAL_SYNC: false
 HUMAN_FINAL_AUTHORITY: true
 R1_STARTED: true
+CURRENT_PHASE: R2
 R1_1_STATUS: CLOSED_RUNTIME_VERIFIED
 R1_0_STATUS: CLOSED_RUNTIME_VERIFIED
 R1_0_UMBRELLA_CONTROL_PLANE_ISSUE: 62
@@ -994,12 +1003,23 @@ R1_3_FAILED_ATTEMPT_PR: 113
 R1_3_RETRY_FRONT: BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-RETRY-02
 R1_3_EVIDENCE_COMMIT: 1e14fbefa641f10bf3b726b15a9003eeb4ce942a
 R1_3_MERGE_COMMIT: 7125bf83ed786c5642b299da2fd4f65157d20f9e
-R1_4_STATUS: AUTHORIZED_ACTIVE
+R1_4_STATUS: CLOSED_RUNTIME_VERIFIED
 R1_4_FRONT: BRAIN-101-R1-4-AGENT-LOOP-SEQUENCER-CONTRACT-E2E-01
 R1_4_EXECUTOR: agent_loop
 R1_4_WORK_BRANCH: agent/roadmap-doc-brain-101-r1-4-sequencer-contract-e2e
 R1_4_PROFILE: roadmap-doc
 R1_4_MAX_EXECUTOR_CYCLES: 2
 R1_4_DEPLOYMENT_MODE: NO_DEPLOY
-NEXT_GATE: Execute R1.4 isolated Agent Loop sequencer contract roadmap-doc E2E with NO_DEPLOY
+R1_4_ISSUE: 133
+R1_4_PR: 134
+R1_4_DECISION_ID: c7dc0260-12ec-4566-b032-9a79601c431e
+R1_4_HEAD: 569eb283e05479640cb374aec81f2ae6d8f51705
+R1_4_MERGE_COMMIT: d4411ae9719dbfe16db9d07cf2bfeffaca89bf47
+R1_4_CLOSEOUT_EVIDENCE: docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E_CLOSEOUT.json
+R2_1_STATUS: AUTHORIZED_ACTIVE
+R2_1_FRONT: BRAIN-101-R2-1-CONSTITUTIONAL-SECURITY-REAUDIT-01
+R2_1_EXECUTOR: codex_control_plane
+R2_1_WORK_BRANCH: control-plane/r2-1-constitutional-security-reaudit
+R2_1_DEPLOYMENT_MODE: NO_DEPLOY
+NEXT_GATE: Execute R2.1 documentation-only constitutional security re-audit with NO_DEPLOY
 ```

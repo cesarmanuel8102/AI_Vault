@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
+  "roadmap_item_id": "R1.4",
+  "front_id": "BRAIN-101-R1-4-AGENT-LOOP-SEQUENCER-CONTRACT-E2E-CLOSEOUT-01",
+  "status": "CLOSED_RUNTIME_VERIFIED",
+  "closed_at_utc": "2026-08-03T20:34:49Z",
+  "repository": "cesarmanuel8102/AI_Vault",
+  "base_branch": "codex/own-capital-sustainable-return",
+  "parent_lifecycle_evidence": {
+    "schema_version": 1,
+    "parent_front_id": "BRAIN-101-R1-4-AGENT-LOOP-SEQUENCER-CONTRACT-E2E-01",
+    "roadmap_id": "BRAIN-101",
+    "roadmap_item_id": "R1.4",
+    "issue": 133,
+    "pr": 134,
+    "decision_id": "c7dc0260-12ec-4566-b032-9a79601c431e",
+    "base_sha": "325c199cf11dc50599a1a2f4a486f51e50222869",
+    "closeout_base_sha": "d4411ae9719dbfe16db9d07cf2bfeffaca89bf47",
+    "head_sha": "569eb283e05479640cb374aec81f2ae6d8f51705",
+    "merge_commit": "d4411ae9719dbfe16db9d07cf2bfeffaca89bf47",
+    "builder_session": "agent-loop-builder-569eb283e05479640cb374aec81f2ae6d8f51705",
+    "reviewer_session": "reviewer:opencode_ollama:ollama-cloud/qwen3.5:397b:4336219e-98a8-4a1f-a704-6aec3ace4db1"
+  },
+  "agent_loop_e2e": {
+    "front_id": "BRAIN-101-R1-4-AGENT-LOOP-SEQUENCER-CONTRACT-E2E-01",
+    "work_branch": "agent/roadmap-doc-brain-101-r1-4-sequencer-contract-e2e",
+    "executor": "agent_loop",
+    "executor_model": "ollama-cloud/kimi-k2.7-code",
+    "test_profile": "roadmap-doc",
+    "max_executor_cycles": 2,
+    "cycles_observed": 2,
+    "risk": "LOW",
+    "domain": "agent_loop",
+    "deployment_mode": "NO_DEPLOY",
+    "evidence_path": "docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E.md",
+    "evidence_commit": "569eb283e05479640cb374aec81f2ae6d8f51705",
+    "changed_files": [
+      "docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E.md"
+    ],
+    "result": "The isolated roadmap-doc E2E evidence document records the current sequencer contract admitting only AUTHORIZED_ACTIVE items, preserving deterministic ordering, preventing duplicate active membership, leaving lifecycle mutation to the lifecycle manager, and auditing rejected non-active states."
+  },
+  "decision_and_merge": {
+    "policy_decision": "APPROVE",
+    "allowed_action": "MERGE",
+    "issue": 133,
+    "pr": 134,
+    "decision_id": "c7dc0260-12ec-4566-b032-9a79601c431e",
+    "base_sha": "325c199cf11dc50599a1a2f4a486f51e50222869",
+    "head_sha": "569eb283e05479640cb374aec81f2ae6d8f51705",
+    "merge_actor": "AI Vault Operator Proxy",
+    "merge_commit": "d4411ae9719dbfe16db9d07cf2bfeffaca89bf47",
+    "auto_merge": false,
+    "squash_merge": false,
+    "rebase_merge": false
+  },
+  "closed_item": {
+    "id": "R1.4",
+    "title": "Certify Agent Loop sequencer contract handoff",
+    "status": "CLOSED_RUNTIME_VERIFIED"
+  },
+  "authorized_next_item": {
+    "id": "R2.1",
+    "title": "Reaudit constitutional security blockers",
+    "status": "AUTHORIZED_ACTIVE",
+    "risk": "MEDIUM",
+    "domain": "security_governance",
+    "executor": "codex_control_plane",
+    "deployment_mode": "NO_DEPLOY",
+    "front_id": "BRAIN-101-R2-1-CONSTITUTIONAL-SECURITY-REAUDIT-01",
+    "work_branch": "control-plane/r2-1-constitutional-security-reaudit",
+    "allowed_paths": [
+      "docs/roadmap/evidence/BRAIN_101_R2_1_CONSTITUTIONAL_SECURITY_REAUDIT.md"
+    ],
+    "forbidden_paths": [
+      ".env",
+      ".github/",
+      "memory/",
+      "memory/semantic/",
+      "memory/rollback",
+      "tmp_agent/brain_v9/trading/",
+      "financial_autonomy/",
+      "tmp_agent/state/",
+      "scripts/"
+    ]
+  },
+  "acceptance": {
+    "record_exact_r1_4_issue_pr_decision_merge_and_agent_loop_evidence": true,
+    "r1_4_status": "CLOSED_RUNTIME_VERIFIED",
+    "r1_4_closed_only_after_e2e_passed": true,
+    "exactly_one_authorized_next_item": "R2.1",
+    "human_final_authority": true,
+    "live_trading_enabled": false,
+    "real_money_enabled": false,
+    "canonical_local_sync": false,
+    "auto_merge": false
+  },
+  "scope": {
+    "runtime_files_modified": false,
+    "authentication_modified": false,
+    "response_shape_modified": false,
+    "side_effects_modified": false,
+    "error_codes_modified": false,
+    "rollback_behavior_modified": false,
+    "trading_modified": false,
+    "financial_autonomy_modified": false,
+    "memory_semantic_faiss_modified": false,
+    "canonical_local_sync": false
+  }
+}
