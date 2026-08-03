@@ -4761,7 +4761,7 @@
     "schema_version": 1,
     "roadmap_id": "BRAIN-101",
     "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-    "status": "R1_2_CLOSED_RUNTIME_VERIFIED_R1_3_AUTHORIZED_ACTIVE",
+    "status": "R1_3_CLOSED_RUNTIME_VERIFIED_R1_4_AUTHORIZED_ACTIVE",
     "approval_status": "HUMAN_ADOPTED",
     "current_phase": "R1",
     "rebaseline_source_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
@@ -4805,16 +4805,90 @@
     "r1_0_merge_commit": "9fde35227982a89c1af6b31051ff44f131128430",
     "r1_0_merged_at_utc": "2026-07-29T14:52:29Z",
     "r1_0_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_CLOSEOUT.json",
-    "r1_3_status": "AUTHORIZED_ACTIVE",
-    "r1_3_front_id": "BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-01",
+    "r1_3_status": "CLOSED_RUNTIME_VERIFIED",
+    "r1_3_front_id": "BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-RETRY-02",
     "r1_3_risk": "LOW",
     "r1_3_domain": "agent_loop",
-    "r1_3_executor": "opencode_kimi",
+    "r1_3_executor": "agent_loop",
     "r1_3_test_profile": "roadmap-doc",
+    "r1_3_max_executor_cycles": 2,
     "r1_3_deployment_mode": "NO_DEPLOY",
     "r1_3_allowed_paths": [
       "docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md"
     ],
-    "next_gate": "Execute R1.3 isolated Agent Loop OpenCode Kimi roadmap-doc E2E with NO_DEPLOY"
+    "r1_3_failed_attempt_issue": 112,
+    "r1_3_failed_attempt_pr": 113,
+    "r1_3_retry_authorization_pr": 125,
+    "r1_3_retry_authorization_merge_commit": "ba0c806d92f4bd287eaa05e2f7c82139370719bc",
+    "r1_3_evidence_commit": "1e14fbefa641f10bf3b726b15a9003eeb4ce942a",
+    "r1_3_base_sync_commit": "c8e7d6967bd27d5177063ef9d4d68573998c5c52",
+    "r1_3_operator_proxy_merge_commit": "7125bf83ed786c5642b299da2fd4f65157d20f9e",
+    "r1_3_post_merge_repair_pr": 130,
+    "r1_3_post_merge_repair_commit": "643574ee2fc01dec4f1ada719b7b8570be8dd38b",
+    "r1_3_closeout_evidence": "docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E_CLOSEOUT.json",
+    "r1_4_status": "AUTHORIZED_ACTIVE",
+    "r1_4_front_id": "BRAIN-101-R1-4-AGENT-LOOP-SEQUENCER-CONTRACT-E2E-01",
+    "r1_4_risk": "LOW",
+    "r1_4_domain": "agent_loop",
+    "r1_4_executor": "agent_loop",
+    "r1_4_work_branch": "agent/roadmap-doc-brain-101-r1-4-sequencer-contract-e2e",
+    "r1_4_test_profile": "roadmap-doc",
+    "r1_4_max_executor_cycles": 2,
+    "r1_4_deployment_mode": "NO_DEPLOY",
+    "r1_4_allowed_paths": [
+      "docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E.md"
+    ],
+    "r1_4_forbidden_paths": [
+      ".env",
+      ".github/",
+      "memory/",
+      "memory/semantic/",
+      "memory/rollback",
+      "tmp_agent/brain_v9/trading/",
+      "financial_autonomy/",
+      "tmp_agent/state/",
+      "tmp_agent/brain_v9/core/session.py",
+      "scripts/"
+    ],
+    "r1_4_acceptance": [
+      "Create one deterministic roadmap evidence document validating the AUTHORIZED_ACTIVE sequencer contract",
+      "Use the roadmap-doc profile only",
+      "Do not deploy, activate worker tasks, run live trading, use real money, perform canonical local sync, or auto-merge"
+    ],
+    "r1_4_test_commands": [
+      "git diff --check"
+    ],
+    "r1_4_closeout": {
+      "front_id": "BRAIN-101-R1-4-AGENT-LOOP-SEQUENCER-CONTRACT-E2E-CLOSEOUT-01",
+      "executor": "codex_control_plane",
+      "work_branch": "control-plane/r1-4-agent-loop-sequencer-contract-closeout",
+      "allowed_paths": [
+        "docs/roadmap/BRAIN_101_MANIFEST.json",
+        "docs/roadmap/BRAIN_101_ROADMAP.md",
+        "docs/roadmap/BRAIN_101_SCORECARD.json",
+        "ROADMAP_STATUS.json",
+        "docs/MIGRATION_CONTROL_LEDGER.md",
+        "docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E_CLOSEOUT.json"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/",
+        "scripts/"
+      ],
+      "acceptance": [
+        "Record exact R1.4 Issue PR decision merge and Agent Loop evidence",
+        "Set R1.4 to CLOSED_RUNTIME_VERIFIED only after the E2E passes",
+        "Preserve exactly one authorized next roadmap item",
+        "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+      ],
+      "test_commands": [
+        "git diff --check"
+      ]
+    },
+    "next_gate": "Execute R1.4 isolated Agent Loop sequencer contract roadmap-doc E2E with NO_DEPLOY"
   }
 }

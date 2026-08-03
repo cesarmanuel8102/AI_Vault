@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "fce505021ff781b8abcc2f35bf300eb6916956023fb418a604743f75d8c0d6e0",
+  "roadmap_sha256": "0a633d6ff662ecf3efdb95f74ff1015f06013b6adcebb94dd7a037bc9d8b5bb3",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -86,7 +86,7 @@
     },
     "R1.3": {
       "title": "Run isolated Agent Loop OpenCode Kimi roadmap-doc E2E",
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "dependencies": ["R1.2"],
       "automation": {
         "front_id": "BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-RETRY-02",
@@ -111,6 +111,37 @@
           "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E_CLOSEOUT.json"],
           "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
           "acceptance": ["Record exact R1.3 Issue PR decision merge and Agent Loop evidence", "Set R1.3 to CLOSED_RUNTIME_VERIFIED only after the E2E passes", "Preserve exactly one authorized next roadmap item", "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"],
+          "test_commands": ["git diff --check"]
+        }
+      }
+    },
+    "R1.4": {
+      "title": "Certify Agent Loop sequencer contract handoff",
+      "status": "AUTHORIZED_ACTIVE",
+      "dependencies": ["R1.3"],
+      "automation": {
+        "front_id": "BRAIN-101-R1-4-AGENT-LOOP-SEQUENCER-CONTRACT-E2E-01",
+        "objective": "Create one isolated roadmap evidence document proving the current sequencer contract for AUTHORIZED_ACTIVE items",
+        "work_branch": "agent/roadmap-doc-brain-101-r1-4-sequencer-contract-e2e",
+        "executor": "agent_loop",
+        "risk": "LOW",
+        "domain": "agent_loop",
+        "test_profile": "roadmap-doc",
+        "max_executor_cycles": 2,
+        "allowed_paths": ["docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E.md"],
+        "forbidden_paths": [".env", ".github/", "memory/", "memory/semantic/", "memory/rollback", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "tmp_agent/brain_v9/core/session.py", "scripts/"],
+        "acceptance": ["Create one deterministic roadmap evidence document validating the AUTHORIZED_ACTIVE sequencer contract", "Use the roadmap-doc profile only", "Do not deploy, activate worker tasks, run live trading, use real money, perform canonical local sync, or auto-merge"],
+        "test_commands": ["git diff --check"],
+        "deployment_mode": "NO_DEPLOY",
+        "closeout": {
+          "front_id": "BRAIN-101-R1-4-AGENT-LOOP-SEQUENCER-CONTRACT-E2E-CLOSEOUT-01",
+          "objective": "Record the R1.4 Agent Loop sequencer contract evidence and close the synthetic certification item",
+          "work_branch": "control-plane/r1-4-agent-loop-sequencer-contract-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": ["docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json", "docs/MIGRATION_CONTROL_LEDGER.md", "docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E_CLOSEOUT.json"],
+          "forbidden_paths": [".env", ".github/", "memory/", "tmp_agent/brain_v9/trading/", "financial_autonomy/", "tmp_agent/state/", "scripts/"],
+          "acceptance": ["Record exact R1.4 Issue PR decision merge and Agent Loop evidence", "Set R1.4 to CLOSED_RUNTIME_VERIFIED only after the E2E passes", "Preserve exactly one authorized next roadmap item", "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"],
           "test_commands": ["git diff --check"]
         }
       }
@@ -184,5 +215,24 @@
     "closed_at_utc": "2026-07-31T21:30:17Z",
     "final_state": "R1_2_CLOSED_RUNTIME_VERIFIED_R1_3_AUTHORIZED_ACTIVE"
   },
-  "next_gate": "Execute R1.3 isolated Agent Loop OpenCode Kimi roadmap-doc E2E with NO_DEPLOY"
+  "r1_3_agent_loop_kimi_e2e_closeout": {
+    "evidence_path": "docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E_CLOSEOUT.json",
+    "failed_attempt_issue": 112,
+    "failed_attempt_pr": 113,
+    "retry_authorization_pr": 125,
+    "retry_authorization_merge_commit": "ba0c806d92f4bd287eaa05e2f7c82139370719bc",
+    "agent_loop_front_id": "BRAIN-101-R1-3-AGENT-LOOP-KIMI-ROADMAP-DOC-E2E-RETRY-02",
+    "agent_loop_work_branch": "agent/roadmap-doc-brain-101-r1-3-kimi-e2e-retry-02",
+    "agent_loop_executor": "agent_loop",
+    "agent_loop_test_profile": "roadmap-doc",
+    "agent_loop_max_executor_cycles": 2,
+    "agent_loop_evidence_commit": "1e14fbefa641f10bf3b726b15a9003eeb4ce942a",
+    "agent_loop_base_sync_commit": "c8e7d6967bd27d5177063ef9d4d68573998c5c52",
+    "operator_proxy_merge_commit": "7125bf83ed786c5642b299da2fd4f65157d20f9e",
+    "post_merge_repair_pr": 130,
+    "post_merge_repair_commit": "643574ee2fc01dec4f1ada719b7b8570be8dd38b",
+    "closed_at_utc": "2026-08-03T19:21:32Z",
+    "final_state": "R1_3_CLOSED_RUNTIME_VERIFIED_R1_4_AUTHORIZED_ACTIVE"
+  },
+  "next_gate": "Execute R1.4 isolated Agent Loop sequencer contract roadmap-doc E2E with NO_DEPLOY"
 }
