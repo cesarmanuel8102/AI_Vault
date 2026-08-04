@@ -13,6 +13,7 @@ from typing import Any, Dict, Mapping, Optional
 from uuid import uuid4
 
 from .protected_paths import classify_path_protection, is_protected_path
+from ..security.rbac import authorize_governed_operation
 
 
 SCHEMA_VERSION = "unified_governance_gate_v1"
@@ -387,8 +388,46 @@ class UnifiedGovernanceGate:
                     metadata={"target": target, "protection": protection},
                 )
 
+        approval_token_valid = _legacy_approval_valid(req.approval_token or args.get("approval_token"))
+        should_apply_rbac = not (
+            operation_class in {"approval", "patch"} and approval_token_valid
+        )
+        if should_apply_rbac:
+            rbac = authorize_governed_operation(
+                role=role,
+                operation_class=operation_class,
+                operation=operation,
+                actor=req.actor,
+                authenticated=req.authenticated,
+                scopes=req.context.get("scopes", args.get("scopes")),
+                args=args,
+                context=req.context,
+            )
+            if not rbac.allowed:
+                return _decision(
+                    normalized_req,
+                    allowed=False,
+                    action="blocked",
+                    error=rbac.error or "rbac_denied",
+                    approval_required=rbac.error in {
+                        "authentication_required",
+                        "rbac_permission_denied",
+                        "scope_denied",
+                    },
+                    fail_closed=True,
+                    reason=rbac.reason,
+                    metadata={
+                        "rbac": {
+                            "role": rbac.role,
+                            "permission": rbac.permission,
+                            "scope": rbac.scope,
+                            **rbac.metadata,
+                        }
+                    },
+                )
+
         if operation_class == "approval":
-            if not _legacy_approval_valid(req.approval_token):
+            if not approval_token_valid:
                 return _decision(
                     normalized_req,
                     allowed=False,
