@@ -1,1 +1,1 @@
-copilot build
+ollama build
