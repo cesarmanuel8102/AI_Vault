@@ -52,7 +52,7 @@ function builderRepo(){
 }
 
 function fakeBackendScript(mark:string,exitCode=0){
-  return `const fs=require("fs"),path=require("path"),{execFileSync}=require("child_process");const a=process.argv;let cwd=a[a.indexOf("-C")+1];if(!cwd||cwd.endsWith(".exe")||cwd.endsWith(".js")){const idx=a.indexOf("--dir");cwd=idx>=0?a[idx+1]:a[a.length-1];}fs.mkdirSync(path.join(cwd,"docs"),{recursive:true});fs.writeFileSync(path.join(cwd,"docs","x.md"),"${mark} build\\n");execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"add","docs/x.md"]);execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"commit","-m","feat(control-plane): complete BRAIN-101-R1-SYNTHETIC-01"]);const head=execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"rev-parse","HEAD"],{encoding:"utf8"}).trim();console.log("HEAD_SHA="+head);process.exit(${exitCode});`;
+  return `const fs=require("fs"),path=require("path"),{execFileSync}=require("child_process");function isWorktreeRoot(d){if(!d)return false;try{execFileSync(process.env.GIT_PATH||"git",["-C",d,"rev-parse","--is-inside-work-tree"],{stdio:"pipe",timeout:10000});return true;}catch{return false;}}function findWorktree(a){let idx=a.indexOf("-C");if(idx<0)idx=a.indexOf("--dir");if(idx>=0){const d=a[idx+1];if(isWorktreeRoot(d))return d;}for(let i=a.length-1;i>=2;i--){const d=a[i];if(isWorktreeRoot(d))return d;}return process.cwd();}const cwd=findWorktree(process.argv);fs.mkdirSync(path.join(cwd,"docs"),{recursive:true});fs.writeFileSync(path.join(cwd,"docs","x.md"),"${mark} build\\n");execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"add","docs/x.md"]);execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"commit","-m","feat(control-plane): complete BRAIN-101-R1-SYNTHETIC-01"]);const head=execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"rev-parse","HEAD"],{encoding:"utf8"}).trim();console.log("HEAD_SHA="+head);process.exit(${exitCode});`;
 }
 
 function currentHead(cwd:string){
@@ -173,15 +173,22 @@ test("OPERATOR_PROXY_BUILDER_BACKEND override skips router order",async()=>{
 test("ineligible failure fails closed without fallback",async()=>{
   const r=builderRepo();
   const entry=join(r.source,"fake-codex-scope.js");
+  const fakeOpenCode=join(r.source,"fake-opencode-should-not-run.js");
   const priorEntry=process.env.CODEX_ENTRYPOINT;
   const priorPath=process.env.CODEX_PATH;
-  writeFileSync(entry,`const fs=require("fs"),path=require("path"),{execFileSync}=require("child_process");const a=process.argv;let cwd=a[a.indexOf("-C")+1];if(!cwd||cwd.endsWith(".exe")||cwd.endsWith(".js")){const idx=a.indexOf("--dir");cwd=idx>=0?a[idx+1]:a[a.length-1];}fs.mkdirSync(path.join(cwd,"docs"),{recursive:true});fs.writeFileSync(path.join(cwd,"docs","y.md"),"out of scope\\n");execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"add","docs/y.md"]);execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"commit","-m","feat(control-plane): complete BRAIN-101-R1-SYNTHETIC-01"]);const head=execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"rev-parse","HEAD"],{encoding:"utf8"}).trim();console.log("HEAD_SHA="+head);`);
+  const priorOpenCode=process.env.OPEN_CODE_PATH;
+  const isWorktree=`function isWorktreeRoot(d){if(!d)return false;try{require("child_process").execFileSync(process.env.GIT_PATH||"git",["-C",d,"rev-parse","--is-inside-work-tree"],{stdio:"pipe",timeout:10000});return true;}catch{return false;}}`;
+  const findWorktree=`function findWorktree(a){let idx=a.indexOf("-C");if(idx<0)idx=a.indexOf("--dir");if(idx>=0){const d=a[idx+1];if(isWorktreeRoot(d))return d;}for(let i=a.length-1;i>=2;i--){const d=a[i];if(isWorktreeRoot(d))return d;}return process.cwd();}`;
+  writeFileSync(entry,`const fs=require("fs"),path=require("path"),{execFileSync}=require("child_process");${isWorktree}${findWorktree}const cwd=findWorktree(process.argv);fs.mkdirSync(path.join(cwd,"docs"),{recursive:true});fs.writeFileSync(path.join(cwd,"docs","y.md"),"out of scope\\n");execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"add","docs/y.md"]);execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"commit","-m","feat(control-plane): complete BRAIN-101-R1-SYNTHETIC-01"]);const head=execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"rev-parse","HEAD"],{encoding:"utf8"}).trim();console.log("HEAD_SHA="+head);`);
+  writeFileSync(fakeOpenCode,`console.error("OpenCode should not run for ineligible failure");process.exit(1);`);
   process.env.CODEX_ENTRYPOINT=entry;
   process.env.CODEX_PATH=process.execPath;
+  process.env.OPEN_CODE_PATH=fakeOpenCode;
   try{
     await assert.rejects(routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree),/forbidden paths/);
   }finally{
     if(priorEntry===undefined)delete process.env.CODEX_ENTRYPOINT;else process.env.CODEX_ENTRYPOINT=priorEntry;
     if(priorPath===undefined)delete process.env.CODEX_PATH;else process.env.CODEX_PATH=priorPath;
+    if(priorOpenCode===undefined)delete process.env.OPEN_CODE_PATH;else process.env.OPEN_CODE_PATH=priorOpenCode;
   }
 });
