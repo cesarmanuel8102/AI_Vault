@@ -1,1 +1,1 @@
-codex build
+copilot build
