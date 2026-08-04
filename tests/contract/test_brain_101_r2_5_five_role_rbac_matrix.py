@@ -9,7 +9,9 @@ if str(TMP_AGENT) not in sys.path:
     sys.path.insert(0, str(TMP_AGENT))
 
 from brain_v9.governance.unified_gate import evaluate_governed_operation
+from brain_v9.api_security import get_request_role
 from brain_v9.security.rbac import Permission, Role, has_permission, role_permissions
+from starlette.requests import Request
 
 
 def _decision(
@@ -142,3 +144,17 @@ def test_unified_gate_preserves_disabled_constitutional_invariants():
     assert decision.real_money_disabled is True
     assert decision.canonical_sync_disabled is True
     assert decision.auto_merge_disabled is True
+
+
+def test_admin_token_cannot_assume_owner_authority(monkeypatch):
+    monkeypatch.setenv("BRAIN_ADMIN_TOKEN", "contract-admin-token")
+    request = Request({"type": "http", "client": ("203.0.113.10", 443)})
+
+    role = get_request_role(
+        request,
+        x_brain_token="contract-admin-token",
+        x_brain_role="owner",
+    )
+
+    assert role is Role.ADMIN
+    assert has_permission(role, Permission.MODIFY_GOVERNANCE) is False

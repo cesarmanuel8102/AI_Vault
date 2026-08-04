@@ -96,7 +96,7 @@ def get_request_role(
     """
     Determine the RBAC role for a request.
 
-    - Valid admin token -> ADMIN by default, or OWNER/lesser requested role
+    - Valid admin token -> ADMIN by default, or a non-owner delegated role
     - Localhost -> OPERATOR (backward compatible with existing behavior)
     - Everything else -> VIEWER (legacy read-only authority)
     """
@@ -110,7 +110,6 @@ def get_request_role(
         return base_role
     requested_role = normalize_role(x_brain_role)
     if admin_token_valid and requested_role in {
-        Role.OWNER,
         Role.ADMIN,
         Role.OPERATOR,
         Role.REVIEWER,
