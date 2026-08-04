@@ -12,6 +12,11 @@ from brain_v9.governance.unified_gate import evaluate_governed_operation
 from brain_v9.api_security import get_request_role
 from brain_v9.security.rbac import Permission, Role, has_permission, role_permissions
 from starlette.requests import Request
+from tmp_agent.brain_v9.security.rbac import (
+    Permission as ApiPermission,
+    Role as ApiRole,
+    has_permission as api_has_permission,
+)
 
 
 def _decision(
@@ -156,5 +161,5 @@ def test_admin_token_cannot_assume_owner_authority(monkeypatch):
         x_brain_role="owner",
     )
 
-    assert role is Role.ADMIN
-    assert has_permission(role, Permission.MODIFY_GOVERNANCE) is False
+    assert role is ApiRole.ADMIN
+    assert api_has_permission(role, ApiPermission.MODIFY_GOVERNANCE) is False
