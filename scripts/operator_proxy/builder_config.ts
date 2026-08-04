@@ -26,12 +26,18 @@ function opencodeExecutable(env = process.env): string {
     if (!isAbsolute(env.OPEN_CODE_PATH) || !existsSync(env.OPEN_CODE_PATH)) throw new Error("OpenCode path invalid");
     return env.OPEN_CODE_PATH;
   }
+  const localAppData = env.LOCALAPPDATA ?? "";
+  const appData = env.APPDATA ?? "";
+  const home = env.USERPROFILE ?? env.HOME ?? "";
   const candidates = [
-    "C:\\Users\\cesar\\AppData\\Roaming\\npm\\node_modules\\opencode-ai\\node_modules\\opencode-windows-x64\\bin\\opencode.exe",
-    "C:\\Users\\cesar\\AppData\\Roaming\\npm\\node_modules\\opencode-ai\\node_modules\\opencode-windows-x64-baseline\\bin\\opencode.exe",
+    localAppData ? `${localAppData}\\opencode-ai\\bin\\opencode.exe` : "",
+    appData ? `${appData}\\npm\\node_modules\\opencode-ai\\node_modules\\opencode-windows-x64\\bin\\opencode.exe` : "",
+    appData ? `${appData}\\npm\\node_modules\\opencode-ai\\node_modules\\opencode-windows-x64-baseline\\bin\\opencode.exe` : "",
+    home ? `${home}\\AppData\\Roaming\\npm\\node_modules\\opencode-ai\\node_modules\\opencode-windows-x64\\bin\\opencode.exe` : "",
+    home ? `${home}\\AppData\\Roaming\\npm\\node_modules\\opencode-ai\\node_modules\\opencode-windows-x64-baseline\\bin\\opencode.exe` : "",
   ];
-  for (const c of candidates) if (existsSync(c)) return c;
-  throw new Error("OpenCode executable not found");
+  for (const c of candidates) if (c && existsSync(c)) return c;
+  throw new Error("OpenCode executable not found: set OPEN_CODE_PATH");
 }
 
 export function copilotModelForRisk(risk: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL", env = process.env): string {

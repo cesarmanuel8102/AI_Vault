@@ -105,17 +105,17 @@ function sameFileSystemObject(a: string, b: string): boolean {
   }
 }
 
-export function validateWorktree(worktree: string, expectedBase: string, forbiddenRoots: string[]) {
-  const top = execFileSync(process.env.GIT_PATH ?? "git", ["-C", worktree, "rev-parse", "--show-toplevel"], { encoding: "utf8", timeout: 30000 }).trim();
+export function validateWorktree(worktree: string, expectedBase: string, forbiddenRoots: string[], env: NodeJS.ProcessEnv = process.env) {
+  const top = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "rev-parse", "--show-toplevel"], { encoding: "utf8", timeout: 30000 }).trim();
   const resolvedTop = realpathSync(top), resolvedWorktree = realpathSync(worktree);
   if (!sameFileSystemObject(resolvedTop, resolvedWorktree)) throw new Error("builder worktree identity mismatch");
   for (const root of forbiddenRoots) {
     if (top.toLowerCase().startsWith(root.toLowerCase())) throw new Error("builder worktree root denied");
   }
-  const head = execFileSync(process.env.GIT_PATH ?? "git", ["-C", worktree, "rev-parse", "HEAD"], { encoding: "utf8", timeout: 30000 }).trim();
+  const head = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "rev-parse", "HEAD"], { encoding: "utf8", timeout: 30000 }).trim();
   if (!/^[0-9a-f]{40}$/.test(head)) throw new Error("builder worktree head invalid");
   if (head !== expectedBase) throw new Error("builder worktree base mismatch");
-  const status = execFileSync(process.env.GIT_PATH ?? "git", ["-C", worktree, "status", "--porcelain", "--untracked-files=all"], { encoding: "utf8", timeout: 30000 }).trim();
+  const status = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "status", "--porcelain", "--untracked-files=all"], { encoding: "utf8", timeout: 30000 }).trim();
   if (status) throw new Error("builder worktree dirty");
 }
 

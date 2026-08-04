@@ -8,24 +8,33 @@ import { randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { redactedError } from "./redaction.js";
 import { existsSync, mkdirSync, readdirSync, realpathSync, statSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 
 
-const FORBIDDEN_WORKTREE_ROOTS = [
-  "C:\\Windows\\System32",
-  "C:\\AI_VAULT",
-];
+function forbiddenWorktreeRoots(env = process.env): string[] {
+  const configured = env.OPERATOR_PROXY_FORBIDDEN_ROOTS;
+  if (configured) return configured.split(/[,;]/).map(s => s.trim()).filter(Boolean);
+  if (process.platform === "win32") return ["C:\\Windows\\System32", "C:\\AI_VAULT"];
+  return ["/mnt/c/Windows/System32", "/mnt/c/AI_VAULT", "/AI_VAULT"];
+}
+
+function operatorProxyRoot(env = process.env): string {
+  const root = env.OPERATOR_PROXY_ROOT;
+  if (!root) throw new Error("OPERATOR_PROXY_ROOT is required");
+  if (!isAbsolute(root)) throw new Error("OPERATOR_PROXY_ROOT must be absolute");
+  return root;
+}
 
 export interface RouterOptions {
   env?: NodeJS.ProcessEnv;
   forceBackend?: "codex_cli_openai" | "opencode_github_copilot" | "opencode_ollama";
 }
 
-function buildInputFromSpec(spec: ProxySpec, issue: number, session: string, repairCycle: number, prompt: string, worktree?: string): BuilderInput {
+function buildInputFromSpec(spec: ProxySpec, issue: number, session: string, repairCycle: number, prompt: string, env: NodeJS.ProcessEnv, worktree?: string): BuilderInput {
   if (!spec.front_id || !spec.work_branch || !spec.expected_base_sha) throw new Error("builder spec incomplete");
   return {
     repository: spec.repository,
-    worktree: worktree ?? join(process.env.OPERATOR_PROXY_ROOT ?? "C:\\AI_VAULT_CODEX_BRIDGE", "worktrees", spec.front_id),
+    worktree: worktree ?? join(operatorProxyRoot(env), "worktrees", spec.front_id),
     front_id: spec.front_id,
     issue,
     base_sha: spec.expected_base_sha,
@@ -72,8 +81,9 @@ function sameFileSystemObject(a: string, b: string): boolean {
   }
 }
 
-function validateWorktreeIdentity(worktree: string, forbiddenRoots: string[]) {
-  const top = execFileSync(process.env.GIT_PATH ?? "git", ["-C", worktree, "rev-parse", "--show-toplevel"], { encoding: "utf8", timeout: 30000 }).trim();
+function validateWorktreeIdentity(worktree: string, env: NodeJS.ProcessEnv) {
+  const forbiddenRoots = forbiddenWorktreeRoots(env);
+  const top = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "rev-parse", "--show-toplevel"], { encoding: "utf8", timeout: 30000 }).trim();
   const resolvedTop = realpathSync(top), resolvedWorktree = realpathSync(worktree);
   if (!sameFileSystemObject(resolvedTop, resolvedWorktree)) throw new Error("builder worktree identity mismatch");
   for (const root of forbiddenRoots) {
@@ -82,7 +92,7 @@ function validateWorktreeIdentity(worktree: string, forbiddenRoots: string[]) {
 }
 
 async function validateBuilderOutput(input: BuilderInput, result: BuilderResult, env: NodeJS.ProcessEnv): Promise<void> {
-  validateWorktreeIdentity(input.worktree, FORBIDDEN_WORKTREE_ROOTS);
+  validateWorktreeIdentity(input.worktree, env);
   const head = execFileSync(env.GIT_PATH ?? "git", ["-C", input.worktree, "rev-parse", "HEAD"], { encoding: "utf8", timeout: 30000 }).trim();
   if (head !== result.head_sha) throw new Error("builder result head mismatch");
   const committedFiles = execFileSync(env.GIT_PATH ?? "git", ["-C", input.worktree, "diff", "--name-only", `${input.base_sha}..${head}`], { encoding: "utf8", timeout: 30000 }).split(/\r?\n/).filter(Boolean);
@@ -94,9 +104,13 @@ async function validateBuilderOutput(input: BuilderInput, result: BuilderResult,
 }
 
 function recordHealth(healthDir: string, record: { backend: string; model: string; failure_class: string; attempt: number; front_id: string; base_sha: string; created_utc: string }) {
-  mkdirSync(healthDir, { recursive: true });
-  const path = join(healthDir, `${record.backend}-${record.attempt}-${Date.now()}.json`);
-  writeFileSync(path, `${JSON.stringify(record)}\n`);
+  try {
+    mkdirSync(healthDir, { recursive: true });
+    const path = join(healthDir, `${record.backend}-${record.attempt}-${Date.now()}.json`);
+    writeFileSync(path, `${JSON.stringify(record)}\n`);
+  } catch {
+    // health logging is best-effort; do not block build flow
+  }
 }
 
 const ALLOWED_BACKENDS: BuilderTransport[] = ["codex_cli_openai", "opencode_github_copilot", "opencode_ollama"];
@@ -111,9 +125,9 @@ function resolveForceBackend(env: NodeJS.ProcessEnv, option?: BuilderTransport):
 export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, prompt: string, repairCycle: number, options: RouterOptions = {}, worktree?: string): Promise<BuilderResult> {
   const env = options.env ?? process.env;
   const session = `builder-${randomUUID()}`;
-  const input = buildInputFromSpec(spec, issue, session, repairCycle, prompt, worktree);
-  const healthDir = join(process.env.OPERATOR_PROXY_ROOT ?? "C:\\AI_VAULT_CODEX_BRIDGE", "state", "builder-health");
-  validateWorktree(input.worktree, input.base_sha, FORBIDDEN_WORKTREE_ROOTS);
+  const input = buildInputFromSpec(spec, issue, session, repairCycle, prompt, env, worktree);
+  const healthDir = join(operatorProxyRoot(env), "state", "builder-health");
+  validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
 
   const forceBackend = resolveForceBackend(env, options.forceBackend);
   const attemptOrder: BuilderTransport[] = forceBackend ? [forceBackend] : ["codex_cli_openai", "opencode_github_copilot", "opencode_ollama"];
@@ -153,6 +167,8 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
       }
 
       if (transient && cfg.maxRetries > 0) {
+        const backoffMs = Math.min(1000 * Math.pow(2, index), 8000);
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
         try {
           const retryResult = await buildFn({ ...backendInput, session: `${backendSession}-retry` });
           await validateBuilderOutput({ ...backendInput, session: `${backendSession}-retry` }, retryResult, env);
@@ -172,9 +188,10 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
   throw new Error("BUILDER_ROUTER_BLOCKED: all backends exhausted");
 }
 
-export function listBuilderBackendHealth(healthDir = join(process.env.OPERATOR_PROXY_ROOT ?? "C:\\AI_VAULT_CODEX_BRIDGE", "state", "builder-health")) {
+export function listBuilderBackendHealth(healthDir?: string, env: NodeJS.ProcessEnv = process.env) {
   try {
-    return readdirSync(healthDir).filter(f => f.endsWith(".json"));
+    const dir = healthDir ?? join(operatorProxyRoot(env), "state", "builder-health");
+    return readdirSync(dir).filter(f => f.endsWith(".json"));
   } catch {
     return [];
   }

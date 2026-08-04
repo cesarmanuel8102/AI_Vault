@@ -95,13 +95,18 @@ export class GovernedBuilder {
         const useRouter=process.env.OPERATOR_PROXY_BUILDER_ROUTER!=="disabled";
         if(useRouter){
           const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{},worktree);
+          if(result.executor_role!=="codex_control_plane"||!result.builder_backend||!result.builder_model||!result.builder_session||!result.provider_session||result.base_sha!==initialHead||!/^[0-9a-f]{40}$/.test(result.head_sha)||result.builder_backend==="codex_cli_openai"&&result.fallback_reason)throw new Error("builder router result contract invalid");
+          if(result.fallback_reason&&result.builder_backend==="codex_cli_openai")throw new Error("primary builder fallback receipt invalid");
           const head=result.head_sha;
           const files=changed(worktree);validateFiles(files,spec);
           runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check"],{stdio:"inherit",timeout:120000,windowsHide:true});
           this.assertEffect("commit_create",{issue});native(process.env.GIT_PATH??"git",["-C",worktree,"add","--",...files],{stdio:"inherit",timeout:120000,windowsHide:true});
           native(process.env.GIT_PATH??"git",["-C",worktree,"commit","-m",`feat(control-plane): complete ${spec.front_id}\n\nBUILDER_BACKEND=${result.builder_backend}\nBUILDER_MODEL=${result.builder_model}\nPROVIDER_SESSION=${result.provider_session}${result.fallback_reason?`\nFALLBACK_REASON=${result.fallback_reason}`:""}`],{stdio:"inherit",timeout:120000,windowsHide:true});
           const committedHead=git(worktree,["rev-parse","HEAD"]);
-          if(committedHead!==head&&head!==initialHead)throw new Error("builder router head mismatch");
+          // The router may return the pre-build base (backend only wrote files) or the post-build commit (backend committed).
+          // Either is valid as long as the committed HEAD is a descendant of the expected base and differs from it.
+          if(committedHead===initialHead)throw new Error("builder produced no changes");
+          if(head!==initialHead&&committedHead!==head)throw new Error("builder router head mismatch");
           this.assertEffect("push",{issue,expected_head:committedHead});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
           const prNumber=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${session}\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,prNumber);return {pr:prNumber,head_sha:committedHead,session};
         }

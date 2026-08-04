@@ -10,12 +10,18 @@ function resolveOpenCodeExecutable(env: NodeJS.ProcessEnv): string {
     if (!isAbsolute(env.OPEN_CODE_PATH) || !existsSync(env.OPEN_CODE_PATH)) throw new Error("OpenCode path invalid");
     return env.OPEN_CODE_PATH;
   }
+  const localAppData = env.LOCALAPPDATA ?? "";
+  const appData = env.APPDATA ?? "";
+  const home = env.USERPROFILE ?? env.HOME ?? "";
   const candidates = [
-    "C:\\Users\\cesar\\AppData\\Roaming\\npm\\node_modules\\opencode-ai\\node_modules\\opencode-windows-x64\\bin\\opencode.exe",
-    "C:\\Users\\cesar\\AppData\\Roaming\\npm\\node_modules\\opencode-ai\\node_modules\\opencode-windows-x64-baseline\\bin\\opencode.exe",
+    localAppData ? `${localAppData}\\opencode-ai\\bin\\opencode.exe` : "",
+    appData ? `${appData}\\npm\\node_modules\\opencode-ai\\node_modules\\opencode-windows-x64\\bin\\opencode.exe` : "",
+    appData ? `${appData}\\npm\\node_modules\\opencode-ai\\node_modules\\opencode-windows-x64-baseline\\bin\\opencode.exe` : "",
+    home ? `${home}\\AppData\\Roaming\\npm\\node_modules\\opencode-ai\\node_modules\\opencode-windows-x64\\bin\\opencode.exe` : "",
+    home ? `${home}\\AppData\\Roaming\\npm\\node_modules\\opencode-ai\\node_modules\\opencode-windows-x64-baseline\\bin\\opencode.exe` : "",
   ];
-  for (const c of candidates) if (existsSync(c)) return c;
-  throw new Error("OpenCode executable not found");
+  for (const c of candidates) if (c && existsSync(c)) return c;
+  throw new Error("OpenCode executable not found: set OPEN_CODE_PATH");
 }
 
 function parseOpenCodeOutput(output: string): { headSha?: string; providerSession?: string } {
@@ -46,8 +52,12 @@ export async function runOpenCodeBuilder(input: BuilderInput, config: BackendCon
     throw new Error(redactedError(error));
   }
   const parsed = parseOpenCodeOutput(stdout);
-  const head = parsed.headSha ?? env.OPENCODE_OVERRIDE_HEAD;
+  const override = env.OPENCODE_OVERRIDE_HEAD;
+  if (override !== undefined && !/^[0-9a-f]{40}$/.test(override)) throw new Error("OpenCode override HEAD invalid");
+  const head = parsed.headSha ?? override;
   if (!head || !/^[0-9a-f]{40}$/.test(head)) throw new Error("OpenCode builder did not produce HEAD_SHA");
+  const actualHead = execFileSync(env.GIT_PATH ?? "git", ["-C", input.worktree, "rev-parse", "HEAD"], { encoding: "utf8", timeout: 30000 }).trim();
+  if (actualHead !== head) throw new Error("OpenCode builder HEAD mismatch");
   return {
     executor_role: "codex_control_plane",
     builder_backend: config.transport,

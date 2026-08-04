@@ -64,9 +64,11 @@ test("primary Codex backend succeeds and reports codex_cli_openai",async()=>{
   const entry=join(r.source,"fake-codex.js");
   const priorEntry=process.env.CODEX_ENTRYPOINT;
   const priorPath=process.env.CODEX_PATH;
+  const priorRoot=process.env.OPERATOR_PROXY_ROOT;
   writeFileSync(entry,fakeBackendScript("codex",0));
   process.env.CODEX_ENTRYPOINT=entry;
   process.env.CODEX_PATH=process.execPath;
+  process.env.OPERATOR_PROXY_ROOT=mkdtempSync(join(tmpdir(),"builder-health-"));
   try{
     const result=await routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree);
     assert.equal(result.builder_backend,"codex_cli_openai");
@@ -75,6 +77,7 @@ test("primary Codex backend succeeds and reports codex_cli_openai",async()=>{
   }finally{
     if(priorEntry===undefined)delete process.env.CODEX_ENTRYPOINT;else process.env.CODEX_ENTRYPOINT=priorEntry;
     if(priorPath===undefined)delete process.env.CODEX_PATH;else process.env.CODEX_PATH=priorPath;
+    if(priorRoot===undefined)delete process.env.OPERATOR_PROXY_ROOT;else process.env.OPERATOR_PROXY_ROOT=priorRoot;
   }
 });
 
@@ -91,14 +94,15 @@ test("fallback to Copilot when Codex reports credit exhaustion",async()=>{
   process.env.CODEX_PATH=process.execPath;
   process.env.OPEN_CODE_PATH=opencodeEntry;
   const priorRoot=process.env.OPERATOR_PROXY_ROOT;
-  process.env.OPERATOR_PROXY_ROOT=mkdtempSync(join(tmpdir(),"builder-health-"));
+  const root=mkdtempSync(join(tmpdir(),"builder-health-"));
+  process.env.OPERATOR_PROXY_ROOT=root;
   try{
     const result=await routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree);
     assert.equal(result.builder_backend,"opencode_github_copilot");
     assert.equal(result.fallback_reason,"CODEX_CREDIT_LIMIT");
     assert.equal(result.head_sha,currentHead(r.worktree));
     assert.equal(execFileSync("git",["-C",r.worktree,"show",`${result.head_sha}:docs/x.md`],{encoding:"utf8"}),"copilot build\n");
-    assert.ok(listBuilderBackendHealth(join(process.env.OPERATOR_PROXY_ROOT!,"state","builder-health")).some(f=>f.includes("codex_cli_openai")));
+    assert.ok(listBuilderBackendHealth(join(root,"state","builder-health")).some(f=>f.includes("codex_cli_openai")));
   }finally{
     if(priorCodexEntry===undefined)delete process.env.CODEX_ENTRYPOINT;else process.env.CODEX_ENTRYPOINT=priorCodexEntry;
     if(priorCodexPath===undefined)delete process.env.CODEX_PATH;else process.env.CODEX_PATH=priorCodexPath;
@@ -126,7 +130,8 @@ test("fallback to Ollama when Codex and Copilot are unavailable",async()=>{
   const priorOllamaPath=process.env.OPEN_CODE_OLLAMA_PATH;
   process.env.OPEN_CODE_OLLAMA_PATH=ollamaEntry;
   const priorRoot=process.env.OPERATOR_PROXY_ROOT;
-  process.env.OPERATOR_PROXY_ROOT=mkdtempSync(join(tmpdir(),"builder-health-ollama-"));
+  const root=mkdtempSync(join(tmpdir(),"builder-health-ollama-"));
+  process.env.OPERATOR_PROXY_ROOT=root;
   try{
     const result=await routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree);
     assert.equal(result.builder_backend,"opencode_ollama");
@@ -151,12 +156,14 @@ test("OPERATOR_PROXY_BUILDER_BACKEND override skips router order",async()=>{
   const priorCodexPath=process.env.CODEX_PATH;
   const priorOpenCode=process.env.OPEN_CODE_PATH;
   const priorBackend=process.env.OPERATOR_PROXY_BUILDER_BACKEND;
+  const priorRoot=process.env.OPERATOR_PROXY_ROOT;
   writeFileSync(codexEntry,`console.error("codex should not run");process.exit(1);`);
   writeFileSync(opencodeEntry,fakeBackendScript("override",0));
   process.env.CODEX_ENTRYPOINT=codexEntry;
   process.env.CODEX_PATH=process.execPath;
   process.env.OPEN_CODE_PATH=opencodeEntry;
   process.env.OPERATOR_PROXY_BUILDER_BACKEND="opencode_github_copilot";
+  process.env.OPERATOR_PROXY_ROOT=mkdtempSync(join(tmpdir(),"builder-health-override-"));
   try{
     const result=await routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree);
     assert.equal(result.builder_backend,"opencode_github_copilot");
@@ -167,6 +174,7 @@ test("OPERATOR_PROXY_BUILDER_BACKEND override skips router order",async()=>{
     if(priorCodexPath===undefined)delete process.env.CODEX_PATH;else process.env.CODEX_PATH=priorCodexPath;
     if(priorOpenCode===undefined)delete process.env.OPEN_CODE_PATH;else process.env.OPEN_CODE_PATH=priorOpenCode;
     if(priorBackend===undefined)delete process.env.OPERATOR_PROXY_BUILDER_BACKEND;else process.env.OPERATOR_PROXY_BUILDER_BACKEND=priorBackend;
+    if(priorRoot===undefined)delete process.env.OPERATOR_PROXY_ROOT;else process.env.OPERATOR_PROXY_ROOT=priorRoot;
   }
 });
 
@@ -177,6 +185,7 @@ test("ineligible failure fails closed without fallback",async()=>{
   const priorEntry=process.env.CODEX_ENTRYPOINT;
   const priorPath=process.env.CODEX_PATH;
   const priorOpenCode=process.env.OPEN_CODE_PATH;
+  const priorRoot=process.env.OPERATOR_PROXY_ROOT;
   const isWorktree=`function isWorktreeRoot(d){if(!d)return false;try{require("child_process").execFileSync(process.env.GIT_PATH||"git",["-C",d,"rev-parse","--is-inside-work-tree"],{stdio:"pipe",timeout:10000});return true;}catch{return false;}}`;
   const findWorktree=`function findWorktree(a){let idx=a.indexOf("-C");if(idx<0)idx=a.indexOf("--dir");if(idx>=0){const d=a[idx+1];if(isWorktreeRoot(d))return d;}for(let i=a.length-1;i>=2;i--){const d=a[i];if(isWorktreeRoot(d))return d;}return process.cwd();}`;
   writeFileSync(entry,`const fs=require("fs"),path=require("path"),{execFileSync}=require("child_process");${isWorktree}${findWorktree}const cwd=findWorktree(process.argv);fs.mkdirSync(path.join(cwd,"docs"),{recursive:true});fs.writeFileSync(path.join(cwd,"docs","y.md"),"out of scope\\n");execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"add","docs/y.md"]);execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"commit","-m","feat(control-plane): complete BRAIN-101-R1-SYNTHETIC-01"]);const head=execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"rev-parse","HEAD"],{encoding:"utf8"}).trim();console.log("HEAD_SHA="+head);`);
@@ -184,11 +193,42 @@ test("ineligible failure fails closed without fallback",async()=>{
   process.env.CODEX_ENTRYPOINT=entry;
   process.env.CODEX_PATH=process.execPath;
   process.env.OPEN_CODE_PATH=fakeOpenCode;
+  process.env.OPERATOR_PROXY_ROOT=mkdtempSync(join(tmpdir(),"builder-health-ineligible-"));
   try{
     await assert.rejects(routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree),/forbidden paths/);
   }finally{
     if(priorEntry===undefined)delete process.env.CODEX_ENTRYPOINT;else process.env.CODEX_ENTRYPOINT=priorEntry;
     if(priorPath===undefined)delete process.env.CODEX_PATH;else process.env.CODEX_PATH=priorPath;
     if(priorOpenCode===undefined)delete process.env.OPEN_CODE_PATH;else process.env.OPEN_CODE_PATH=priorOpenCode;
+    if(priorRoot===undefined)delete process.env.OPERATOR_PROXY_ROOT;else process.env.OPERATOR_PROXY_ROOT=priorRoot;
+  }
+});
+
+test("OPERATOR_PROXY_ROOT is required and must be absolute",async()=>{
+  const r=builderRepo(),prior=process.env.OPERATOR_PROXY_ROOT;
+  try{
+    delete process.env.OPERATOR_PROXY_ROOT;
+    await assert.rejects(routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree),/OPERATOR_PROXY_ROOT is required/);
+    process.env.OPERATOR_PROXY_ROOT="relative-root";
+    await assert.rejects(routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree),/OPERATOR_PROXY_ROOT must be absolute/);
+  }finally{if(prior===undefined)delete process.env.OPERATOR_PROXY_ROOT;else process.env.OPERATOR_PROXY_ROOT=prior;}
+});
+
+test("health ledger failure does not block eligible fallback",async()=>{
+  const r=builderRepo(),codexEntry=join(r.source,"fake-codex-credit.js"),opencodeEntry=join(r.source,"fake-opencode.js"),rootFile=join(r.root,"root-file");
+  const priorCodexEntry=process.env.CODEX_ENTRYPOINT,priorCodexPath=process.env.CODEX_PATH,priorOpenCode=process.env.OPEN_CODE_PATH,priorRoot=process.env.OPERATOR_PROXY_ROOT;
+  writeFileSync(codexEntry,`console.error("usage limit: credits exhausted");process.exit(1);`);
+  writeFileSync(opencodeEntry,fakeBackendScript("health fallback",0));
+  writeFileSync(rootFile,"not a directory\n");
+  process.env.CODEX_ENTRYPOINT=codexEntry;process.env.CODEX_PATH=process.execPath;process.env.OPEN_CODE_PATH=opencodeEntry;process.env.OPERATOR_PROXY_ROOT=rootFile;
+  try{
+    const result=await routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree);
+    assert.equal(result.builder_backend,"opencode_github_copilot");
+    assert.equal(result.fallback_reason,"CODEX_CREDIT_LIMIT");
+  }finally{
+    if(priorCodexEntry===undefined)delete process.env.CODEX_ENTRYPOINT;else process.env.CODEX_ENTRYPOINT=priorCodexEntry;
+    if(priorCodexPath===undefined)delete process.env.CODEX_PATH;else process.env.CODEX_PATH=priorCodexPath;
+    if(priorOpenCode===undefined)delete process.env.OPEN_CODE_PATH;else process.env.OPEN_CODE_PATH=priorOpenCode;
+    if(priorRoot===undefined)delete process.env.OPERATOR_PROXY_ROOT;else process.env.OPERATOR_PROXY_ROOT=priorRoot;
   }
 });
