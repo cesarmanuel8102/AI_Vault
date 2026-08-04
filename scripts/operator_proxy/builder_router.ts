@@ -1,6 +1,6 @@
 import type {ProxySpec} from "./types.js";
-import type {BuilderInput, BuilderResult, BuilderTransport, ControlPlaneBuilderBackend} from "./builder_backend.js";
-import { isEligibleFallback, validateWorktree, scopeViolations, INELIGIBLE_FALLBACK_FAILURES, ELIGIBLE_FALLBACK_FAILURES } from "./builder_backend.js";
+import type {BuilderInput, BuilderResult, BuilderTransport} from "./builder_backend.js";
+import { isEligibleFallback, validateWorktree, scopeViolations, ELIGIBLE_FALLBACK_FAILURES, INELIGIBLE_FALLBACK_FAILURES } from "./builder_backend.js";
 import { resolveCodexConfig, resolveCopilotConfig, resolveOllamaConfig, type BackendConfig } from "./builder_config.js";
 import { runCodexBuilder } from "./codex_builder.js";
 import { runOpenCodeBuilder } from "./opencode_builder.js";
@@ -105,53 +105,54 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
   const healthDir = join(process.env.OPERATOR_PROXY_ROOT ?? "C:\\AI_VAULT_CODEX_BRIDGE", "state", "builder-health");
   validateWorktree(input.worktree, input.base_sha, FORBIDDEN_WORKTREE_ROOTS);
 
-  const codexCfg = resolveCodexConfig(env);
-  const copilotCfg = resolveCopilotConfig(spec.risk, env);
-  const ollamaCfg = resolveOllamaConfig(env);
-
-  const backends: ControlPlaneBuilderBackend[] = [
-    { id: "codex_cli_openai", model: codexCfg.model, build: (i) => runCodexBuilder(i, env) },
-    { id: "opencode_github_copilot", model: copilotCfg.model, build: (i) => runOpenCodeBuilder(i, copilotCfg, env) },
-    { id: "opencode_ollama", model: ollamaCfg.model, build: (i) => runOpenCodeBuilder(i, ollamaCfg, env) },
-  ];
-
   const forceBackend = resolveForceBackend(env, options.forceBackend);
-  const attemptOrder = forceBackend ? backends.filter(b => b.id === forceBackend) : backends;
+  const attemptOrder: BuilderTransport[] = forceBackend ? [forceBackend] : ["codex_cli_openai", "opencode_github_copilot", "opencode_ollama"];
   let fallbackReason: string | undefined;
 
   for (let index = 0; index < attemptOrder.length; index++) {
-    const backend = attemptOrder[index];
-    const backendSession = `${session}-${backend.id}`;
+    const backendId = attemptOrder[index];
+    const backendSession = `${session}-${backendId}`;
     const backendInput = { ...input, session: backendSession };
-    const cfg: BackendConfig = backend.id === "codex_cli_openai" ? codexCfg : backend.id === "opencode_github_copilot" ? copilotCfg : ollamaCfg;
+    let cfg: BackendConfig;
+    let buildFn: (i: BuilderInput) => Promise<BuilderResult>;
+    if (backendId === "codex_cli_openai") {
+      cfg = resolveCodexConfig(env);
+      buildFn = (i) => runCodexBuilder(i, env);
+    } else if (backendId === "opencode_github_copilot") {
+      cfg = resolveCopilotConfig(spec.risk, env);
+      buildFn = (i) => runOpenCodeBuilder(i, cfg, env);
+    } else {
+      cfg = resolveOllamaConfig(env);
+      buildFn = (i) => runOpenCodeBuilder(i, cfg, env);
+    }
 
     try {
-      const result = await backend.build(backendInput);
+      const result = await buildFn(backendInput);
       await validateBuilderOutput(backendInput, result, env);
       result.builder_session = session;
-      result.provider_session = `${backend.id}-${randomUUID()}`;
+      result.provider_session = `${backendId}-${randomUUID()}`;
       if (fallbackReason) result.fallback_reason = fallbackReason;
       return result;
     } catch (error) {
       const { eligible, failure_class, transient } = isEligibleFallback(error);
-      recordHealth(healthDir, { backend: backend.id, model: backend.model, failure_class, attempt: index + 1, front_id: spec.front_id!, base_sha: spec.expected_base_sha, created_utc: new Date().toISOString() });
+      recordHealth(healthDir, { backend: backendId, model: cfg.model, failure_class, attempt: index + 1, front_id: spec.front_id!, base_sha: spec.expected_base_sha, created_utc: new Date().toISOString() });
 
       if (!eligible) throw error;
       if (index === attemptOrder.length - 1) {
-        throw new Error(`BUILDER_ROUTER_BLOCKED: ${failure_class}; attempts=${attemptOrder.map(b => b.id).join(",")}`);
+        throw new Error(`BUILDER_ROUTER_BLOCKED: ${failure_class}; attempts=${attemptOrder.join(",")}`);
       }
 
       if (transient && cfg.maxRetries > 0) {
         try {
-          const retryResult = await backend.build({ ...backendInput, session: `${backendSession}-retry` });
+          const retryResult = await buildFn({ ...backendInput, session: `${backendSession}-retry` });
           await validateBuilderOutput({ ...backendInput, session: `${backendSession}-retry` }, retryResult, env);
           retryResult.builder_session = session;
-          retryResult.provider_session = `${backend.id}-${randomUUID()}`;
+          retryResult.provider_session = `${backendId}-${randomUUID()}`;
           if (fallbackReason) retryResult.fallback_reason = fallbackReason;
           return retryResult;
         } catch (retryError) {
           const { failure_class: retryClass } = isEligibleFallback(retryError);
-          recordHealth(healthDir, { backend: backend.id, model: backend.model, failure_class: `retry:${retryClass}`, attempt: index + 1, front_id: spec.front_id!, base_sha: spec.expected_base_sha, created_utc: new Date().toISOString() });
+          recordHealth(healthDir, { backend: backendId, model: cfg.model, failure_class: `retry:${retryClass}`, attempt: index + 1, front_id: spec.front_id!, base_sha: spec.expected_base_sha, created_utc: new Date().toISOString() });
         }
       }
 
