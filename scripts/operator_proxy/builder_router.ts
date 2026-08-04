@@ -6,7 +6,7 @@ import { runCodexBuilder } from "./codex_builder.js";
 import { runOpenCodeBuilder } from "./opencode_builder.js";
 import { randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { redactedError } from "./redaction.js";
+import { redactedError, redactString } from "./redaction.js";
 import { existsSync, mkdirSync, readdirSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
 
@@ -103,11 +103,14 @@ async function validateBuilderOutput(input: BuilderInput, result: BuilderResult,
   if (violations.length > 0) throw new Error(`builder changed forbidden paths: ${violations.join(", ")}`);
 }
 
+const safeModel = /^[a-z0-9][a-z0-9._:/-]{2,127}$/;
+const safeFront = /^[A-Z0-9][A-Z0-9._-]{5,127}$/;
 function recordHealth(healthDir: string, record: { backend: string; model: string; failure_class: string; attempt: number; front_id: string; base_sha: string; created_utc: string }) {
   try {
+    if (!ALLOWED_BACKENDS.includes(record.backend as BuilderTransport) || !safeModel.test(record.model) || !ELIGIBLE_FALLBACK_FAILURES.has(record.failure_class.replace(/^retry:/, "")) && !INELIGIBLE_FALLBACK_FAILURES.has(record.failure_class.replace(/^retry:/, "")) && record.failure_class !== "UNKNOWN_BUILD_FAILURE" || !safeFront.test(record.front_id) || !/^[0-9a-f]{40}$/.test(record.base_sha) || !Number.isInteger(record.attempt) || record.attempt < 1 || record.attempt > 3 || Number.isNaN(Date.parse(record.created_utc))) return;
     mkdirSync(healthDir, { recursive: true });
     const path = join(healthDir, `${record.backend}-${record.attempt}-${Date.now()}.json`);
-    writeFileSync(path, `${JSON.stringify(record)}\n`);
+    writeFileSync(path, `${JSON.stringify({schema_version:1,...record})}\n`);
   } catch {
     // health logging is best-effort; do not block build flow
   }
@@ -153,6 +156,9 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
     try {
       const result = await buildFn(backendInput);
       await validateBuilderOutput(backendInput, result, env);
+      if (result.executor_role !== "codex_control_plane" || result.base_sha !== input.base_sha || result.builder_backend !== backendId || !result.builder_model || !result.provider_session || !/^[0-9a-f]{40}$/.test(result.head_sha)) throw new Error("builder result contract invalid");
+      if (result.fallback_reason !== undefined) throw new Error("builder backend must not set fallback_reason");
+      if (fallbackReason && backendId === "codex_cli_openai") throw new Error("primary Codex result cannot be an automatic fallback");
       result.builder_session = session;
       result.provider_session = `${backendId}-${randomUUID()}`;
       if (fallbackReason) result.fallback_reason = fallbackReason;
@@ -161,7 +167,7 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
       const { eligible, failure_class, transient } = isEligibleFallback(error);
       recordHealth(healthDir, { backend: backendId, model: cfg.model, failure_class, attempt: index + 1, front_id: spec.front_id!, base_sha: spec.expected_base_sha, created_utc: new Date().toISOString() });
 
-      if (!eligible) throw error;
+      if (!eligible) throw new Error(redactString(String(error instanceof Error ? error.message : error)));
       if (index === attemptOrder.length - 1) {
         throw new Error(`BUILDER_ROUTER_BLOCKED: ${failure_class}; attempts=${attemptOrder.join(",")}`);
       }
@@ -174,7 +180,7 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
           await validateBuilderOutput({ ...backendInput, session: `${backendSession}-retry` }, retryResult, env);
           retryResult.builder_session = session;
           retryResult.provider_session = `${backendId}-${randomUUID()}`;
-          if (fallbackReason) retryResult.fallback_reason = fallbackReason;
+          if (retryResult.fallback_reason !== undefined) throw new Error("builder backend must not set fallback_reason");
           return retryResult;
         } catch (retryError) {
           const { failure_class: retryClass } = isEligibleFallback(retryError);

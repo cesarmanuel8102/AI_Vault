@@ -24,10 +24,13 @@ function resolveOpenCodeExecutable(env: NodeJS.ProcessEnv): string {
   throw new Error("OpenCode executable not found: set OPEN_CODE_PATH");
 }
 
-function parseOpenCodeOutput(output: string): { headSha?: string; providerSession?: string } {
-  const headMatch = output.match(/HEAD_SHA=([0-9a-f]{40})/);
+export function parseOpenCodeOutput(output: string): { headSha?: string; providerSession?: string } {
+  const headMatches = [...output.matchAll(/^HEAD_SHA=([^\r\n]*)$/gm)];
+  if (headMatches.length > 1) throw new Error("OpenCode builder HEAD_SHA receipt ambiguous");
+  const headMatch = headMatches[0]?.[1];
+  if (headMatch !== undefined && !/^[0-9a-f]{40}$/.test(headMatch)) throw new Error("OpenCode builder HEAD_SHA receipt invalid");
   const sessionMatch = output.match(/PROVIDER_SESSION=([a-zA-Z0-9_-]+)/);
-  return { headSha: headMatch?.[1], providerSession: sessionMatch?.[1] };
+  return { headSha: headMatch, providerSession: sessionMatch?.[1] };
 }
 
 export async function runOpenCodeBuilder(input: BuilderInput, config: BackendConfig, env: NodeJS.ProcessEnv = process.env, fallbackReason?: string): Promise<BuilderResult> {
@@ -54,6 +57,7 @@ export async function runOpenCodeBuilder(input: BuilderInput, config: BackendCon
   const parsed = parseOpenCodeOutput(stdout);
   const override = env.OPENCODE_OVERRIDE_HEAD;
   if (override !== undefined && !/^[0-9a-f]{40}$/.test(override)) throw new Error("OpenCode override HEAD invalid");
+  if (parsed.headSha && override && parsed.headSha !== override) throw new Error("OpenCode builder HEAD override conflicts with receipt");
   const head = parsed.headSha ?? override;
   if (!head || !/^[0-9a-f]{40}$/.test(head)) throw new Error("OpenCode builder did not produce HEAD_SHA");
   const actualHead = execFileSync(env.GIT_PATH ?? "git", ["-C", input.worktree, "rev-parse", "HEAD"], { encoding: "utf8", timeout: 30000 }).trim();

@@ -95,8 +95,7 @@ export class GovernedBuilder {
         const useRouter=process.env.OPERATOR_PROXY_BUILDER_ROUTER!=="disabled";
         if(useRouter){
           const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{},worktree);
-          if(result.executor_role!=="codex_control_plane"||!result.builder_backend||!result.builder_model||!result.builder_session||!result.provider_session||result.base_sha!==initialHead||!/^[0-9a-f]{40}$/.test(result.head_sha)||result.builder_backend==="codex_cli_openai"&&result.fallback_reason)throw new Error("builder router result contract invalid");
-          if(result.fallback_reason&&result.builder_backend==="codex_cli_openai")throw new Error("primary builder fallback receipt invalid");
+          if(result.executor_role!=="codex_control_plane"||!result.builder_backend||!result.builder_model||!result.builder_session||!result.provider_session||result.base_sha!==initialHead||!/^[0-9a-f]{40}$/.test(result.head_sha))throw new Error("builder router result contract invalid");
           const head=result.head_sha;
           const files=changed(worktree);validateFiles(files,spec);
           runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check"],{stdio:"inherit",timeout:120000,windowsHide:true});

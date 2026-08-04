@@ -5,6 +5,8 @@ import {mkdirSync,mkdtempSync,writeFileSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join,resolve} from "node:path";
 import {routeControlPlaneBuild,listBuilderBackendHealth} from "../../../scripts/operator_proxy/builder_router.js";
+import {isEligibleFallback} from "../../../scripts/operator_proxy/builder_backend.js";
+import {parseOpenCodeOutput} from "../../../scripts/operator_proxy/opencode_builder.js";
 import type {ProxySpec} from "../../../scripts/operator_proxy/types.js";
 
 const spec:ProxySpec={
@@ -72,6 +74,7 @@ test("primary Codex backend succeeds and reports codex_cli_openai",async()=>{
   try{
     const result=await routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree);
     assert.equal(result.builder_backend,"codex_cli_openai");
+    assert.equal(result.fallback_reason,undefined);
     assert.equal(result.head_sha,currentHead(r.worktree));
     assert.equal(execFileSync("git",["-C",r.worktree,"show",`${result.head_sha}:docs/x.md`],{encoding:"utf8"}),"codex build\n");
   }finally{
@@ -168,6 +171,7 @@ test("OPERATOR_PROXY_BUILDER_BACKEND override skips router order",async()=>{
     const result=await routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree);
     assert.equal(result.builder_backend,"opencode_github_copilot");
     assert.equal(result.head_sha,currentHead(r.worktree));
+    assert.equal(result.fallback_reason,undefined);
     assert.equal(execFileSync("git",["-C",r.worktree,"show",`${result.head_sha}:docs/x.md`],{encoding:"utf8"}),"override build\n");
   }finally{
     if(priorCodexEntry===undefined)delete process.env.CODEX_ENTRYPOINT;else process.env.CODEX_ENTRYPOINT=priorCodexEntry;
@@ -231,4 +235,21 @@ test("health ledger failure does not block eligible fallback",async()=>{
     if(priorOpenCode===undefined)delete process.env.OPEN_CODE_PATH;else process.env.OPEN_CODE_PATH=priorOpenCode;
     if(priorRoot===undefined)delete process.env.OPERATOR_PROXY_ROOT;else process.env.OPERATOR_PROXY_ROOT=priorRoot;
   }
+});
+
+test("fallback classification is deterministic for representative backend and governance failures",()=>{
+  const cases:[string,boolean,string][]=[
+    ["usage limit: credits exhausted",true,"CODEX_CREDIT_LIMIT"], ["quota exceeded",true,"CODEX_QUOTA_EXHAUSTED"], ["rate limit",true,"RATE_LIMIT"],
+    ["model unavailable",true,"MODEL_UNAVAILABLE"], ["auth session expired",true,"AUTH_SESSION_EXPIRED"], ["protocol violation",true,"PROVIDER_PROTOCOL_FAILURE"], ["provider unavailable",true,"PROVIDER_UNAVAILABLE"], ["spawnSync codex ENOENT",true,"EXECUTABLE_NOT_FOUND"],
+    ["builder changed forbidden paths: docs/y.md",false,"FORBIDDEN_PATH"], ["builder worktree base mismatch",false,"WRONG_BASE"],
+    ["git conflict",false,"GIT_CONFLICT"], ["test failed",false,"TEST_FAILURE"],
+  ];
+  for(const [message,eligible,failureClass] of cases){const result=isEligibleFallback(new Error(message));assert.equal(result.eligible,eligible,message);assert.equal(result.failure_class,failureClass,message);}
+});
+
+test("OpenCode output requires one canonical HEAD_SHA receipt",()=>{
+  const head="a".repeat(40);
+  assert.deepEqual(parseOpenCodeOutput(`HEAD_SHA=${head}\nPROVIDER_SESSION=session-1\n`),{headSha:head,providerSession:"session-1"});
+  assert.throws(()=>parseOpenCodeOutput(`HEAD_SHA=${head}\nHEAD_SHA=${head}\n`),/ambiguous/);
+  assert.throws(()=>parseOpenCodeOutput("HEAD_SHA=not-a-sha\n"),/invalid/);
 });

@@ -33,6 +33,10 @@ export const INELIGIBLE_FALLBACK_FAILURES = new Set([
   "OWNER_AUTHORITY_REQUIRED",
 ]);
 
+export class BuilderBackendError extends Error {
+  constructor(message: string, readonly failureClass: string, readonly transient = false) { super(message); }
+}
+
 export interface BuilderInput {
   repository: string;
   worktree: string;
@@ -75,24 +79,33 @@ export interface ControlPlaneBuilderBackend {
 }
 
 export function isEligibleFallback(error: unknown): { eligible: boolean; failure_class: string; transient: boolean } {
+  if (error instanceof BuilderBackendError) return { eligible: ELIGIBLE_FALLBACK_FAILURES.has(error.failureClass), failure_class: error.failureClass, transient: error.transient };
   const message = String(error instanceof Error ? error.message : error);
   const classes: { pattern: RegExp; failure_class: string; transient: boolean }[] = [
-    { pattern: /usage limit|credit|out of credits|billing|payment/i, failure_class: "CODEX_CREDIT_LIMIT", transient: false },
-    { pattern: /quota|rate limit|too many requests/i, failure_class: "CODEX_QUOTA_EXHAUSTED", transient: true },
+    { pattern: /usage limit|credit limit|out of credits/i, failure_class: "CODEX_CREDIT_LIMIT", transient: false },
+    { pattern: /quota exceeded|quota exhausted/i, failure_class: "CODEX_QUOTA_EXHAUSTED", transient: true },
+    { pattern: /rate limit|too many requests|429/i, failure_class: "RATE_LIMIT", transient: true },
     { pattern: /spawnSync.*ENOENT|ENOENT.*codex|executable not found/i, failure_class: "EXECUTABLE_NOT_FOUND", transient: false },
     { pattern: /spawnSync.*EINVAL|spawn error|process launch|spawn/i, failure_class: "PROCESS_SPAWN_FAILURE", transient: true },
     { pattern: /timeout|timed out|ETIMEDOUT/i, failure_class: "TRANSPORT_TIMEOUT", transient: true },
-    { pattern: /provider unavailable|model unavailable|service unavailable|503|502|504/i, failure_class: "PROVIDER_UNAVAILABLE", transient: true },
+    { pattern: /model unavailable|model not found/i, failure_class: "MODEL_UNAVAILABLE", transient: true },
+    { pattern: /provider unavailable|service unavailable|503|502|504/i, failure_class: "PROVIDER_UNAVAILABLE", transient: true },
     { pattern: /auth.*expir|session.*expir|unauthorized|401/i, failure_class: "AUTH_SESSION_EXPIRED", transient: false },
-    { pattern: /protocol|network|ECONNREFUSED|ECONNRESET|EPIPE/i, failure_class: "TRANSPORT_FAILURE", transient: true },
+    { pattern: /protocol/i, failure_class: "PROVIDER_PROTOCOL_FAILURE", transient: false },
+    { pattern: /network|ECONNREFUSED|ECONNRESET|EPIPE/i, failure_class: "TRANSPORT_FAILURE", transient: true },
   ];
   for (const cls of classes) {
     if (cls.pattern.test(message)) return { eligible: true, failure_class: cls.failure_class, transient: cls.transient };
   }
   if (INELIGIBLE_FALLBACK_FAILURES.has(message)) return { eligible: false, failure_class: message, transient: false };
-  if (/forbidden paths|builder produced no changes|scope violation|invalid spec|policy block|review finding|semantic build failure|git conflict|owner authority required|wrong base|wrong head|dirty worktree/i.test(message)) {
-    return { eligible: false, failure_class: "SCOPE_VIOLATION", transient: false };
-  }
+  const ineligible: [RegExp, string][] = [
+    [/test (failed|failure)|npm ERR!/i, "TEST_FAILURE"], [/forbidden paths|path outside scope/i, "FORBIDDEN_PATH"],
+    [/scope violation/i, "SCOPE_VIOLATION"], [/invalid spec/i, "INVALID_SPEC"], [/policy block/i, "POLICY_BLOCK"],
+    [/review finding/i, "REVIEW_FINDING"], [/semantic build failure/i, "SEMANTIC_BUILD_FAILURE"], [/git conflict/i, "GIT_CONFLICT"],
+    [/owner authority required/i, "OWNER_AUTHORITY_REQUIRED"], [/wrong base|base mismatch/i, "WRONG_BASE"],
+    [/wrong head|head mismatch/i, "WRONG_HEAD"], [/dirty worktree/i, "DIRTY_WORKTREE"], [/builder produced no changes/i, "SCOPE_VIOLATION"],
+  ];
+  for (const [pattern, failureClass] of ineligible) if (pattern.test(message)) return { eligible: false, failure_class: failureClass, transient: false };
   return { eligible: false, failure_class: "UNKNOWN_BUILD_FAILURE", transient: false };
 }
 
