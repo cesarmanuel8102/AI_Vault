@@ -511,7 +511,7 @@
     },
     "R2.4": {
       "title": "Implement unified constitutional governance gate",
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "dependencies": [
         "R2.3"
       ],
@@ -582,6 +582,87 @@
             "Preserve exactly one authorized next roadmap item",
             "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge",
             "Preserve authentication, response shape, side effects, error codes, and rollback behavior unless explicitly authorized by the R2.4 implementation front"
+          ],
+          "test_commands": [
+            "git diff --check"
+          ]
+        }
+      }
+    },
+    "R2.5": {
+      "title": "Complete constitutional five-role RBAC matrix",
+      "status": "AUTHORIZED_ACTIVE",
+      "dependencies": [
+        "R2.4"
+      ],
+      "automation": {
+        "front_id": "BRAIN-101-R2-5-FIVE-ROLE-RBAC-MATRIX-01",
+        "objective": "Complete constitutional RBAC for owner, operator, reviewer, executor, and read-only roles",
+        "work_branch": "control-plane/r2-5-five-role-rbac-matrix",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "security_governance",
+        "allowed_paths": [
+          "tmp_agent/brain_v9/security/rbac.py",
+          "tmp_agent/brain_v9/api_security.py",
+          "tmp_agent/brain_v9/governance/",
+          "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+          "tmp_agent/brain_v9/main.py",
+          "tests/contract/test_brain_101_r2_5_five_role_rbac_matrix.py",
+          "docs/roadmap/evidence/BRAIN_101_R2_5_FIVE_ROLE_RBAC_MATRIX.md"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "memory/semantic/",
+          "memory/rollback",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Complete the per-role, per-route, per-resource RBAC allow and deny matrix for owner, operator, reviewer, executor, and read-only roles",
+          "Prove wrong role, wrong actor, wrong scope, anonymous access, and privilege escalation are denied under the unified governance gate",
+          "Preserve authentication, response shape, side effects, error codes, and rollback behavior unless this front explicitly records a scoped change",
+          "Do not modify memory, semantic/FAISS state, trading, financial autonomy, CI, environment files, scripts, runtime state, or canonical local state",
+          "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+        ],
+        "test_commands": [
+          "python -m pytest tests/contract/test_brain_101_r2_5_five_role_rbac_matrix.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "closeout": {
+          "front_id": "BRAIN-101-R2-5-FIVE-ROLE-RBAC-MATRIX-CLOSEOUT-01",
+          "objective": "Record R2.5 five-role RBAC matrix evidence and authorize the next single governed R2 security item",
+          "work_branch": "control-plane/r2-5-five-role-rbac-matrix-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R2_5_FIVE_ROLE_RBAC_MATRIX_CLOSEOUT.json"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R2.5 Issue PR decision merge and five-role RBAC matrix evidence",
+            "Set R2.5 to CLOSED_RUNTIME_VERIFIED only after the RBAC matrix evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge",
+            "Preserve authentication, response shape, side effects, error codes, and rollback behavior unless explicitly authorized by the R2.5 implementation front"
           ],
           "test_commands": [
             "git diff --check"
@@ -783,7 +864,7 @@
     "closed_at_utc": "2026-08-03T21:28:44Z",
     "final_state": "R2_2_CLOSED_RUNTIME_VERIFIED_R2_3_AUTHORIZED_ACTIVE"
   },
-  "next_gate": "Execute R2.4 unified governance gate with NO_DEPLOY",
+  "next_gate": "Execute R2.5 five-role RBAC matrix with NO_DEPLOY",
   "r2_3_constitutional_threat_model_closeout": {
     "evidence_path": "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL_CLOSEOUT.json",
     "schema_version": 1,
@@ -808,5 +889,31 @@
     "next_authorized_front_id": "BRAIN-101-R2-4-UNIFIED-GOVERNANCE-GATE-01",
     "closed_at_utc": "2026-08-03T21:50:13Z",
     "final_state": "R2_3_CLOSED_RUNTIME_VERIFIED_R2_4_AUTHORIZED_ACTIVE"
+  },
+  "r2_4_unified_governance_gate_closeout": {
+    "evidence_path": "docs/roadmap/evidence/BRAIN_101_R2_4_UNIFIED_GOVERNANCE_GATE_CLOSEOUT.json",
+    "schema_version": 1,
+    "parent_front_id": "BRAIN-101-R2-4-UNIFIED-GOVERNANCE-GATE-01",
+    "roadmap_id": "BRAIN-101",
+    "roadmap_item_id": "R2.4",
+    "issue": 152,
+    "pr": 153,
+    "decision_id": "82df3921-80a3-43f5-8fc3-2a13a245795c",
+    "authorization_mode": "OWNER_CONSTITUTIONAL",
+    "base_sha": "d5b608d1d208717d1cf556b0d948fcd80654662c",
+    "closeout_base_sha": "c96b6a6a9d52f3ab2570488bb639cc37e515fd0d",
+    "head_sha": "03e326a7da27386c64e3cbb0158762af13448014",
+    "merge_commit": "4da21f268e339f83b6acfe49fb091087196f2085",
+    "builder_session": "builder-cfa6b39b-75f2-4c51-92a1-4a1749530348",
+    "reviewer_session": "reviewer:opencode_ollama:ollama-cloud/qwen3.5:397b:1f00efe1-f9b3-4448-87e2-435376e354ef",
+    "unified_governance_gate_evidence_path": "docs/roadmap/evidence/BRAIN_101_R2_4_UNIFIED_GOVERNANCE_GATE.md",
+    "unified_gate_created": true,
+    "runtime_controls_closed_by_this_packet": true,
+    "r2_current_status": "PARTIALLY_CLOSED",
+    "r2_can_close_now": false,
+    "next_authorized_item": "R2.5",
+    "next_authorized_front_id": "BRAIN-101-R2-5-FIVE-ROLE-RBAC-MATRIX-01",
+    "closed_at_utc": "2026-08-03T23:53:18Z",
+    "final_state": "R2_4_CLOSED_RUNTIME_VERIFIED_R2_5_AUTHORIZED_ACTIVE"
   }
 }
