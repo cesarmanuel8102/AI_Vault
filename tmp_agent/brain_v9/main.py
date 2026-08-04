@@ -1188,6 +1188,9 @@ def _unified_route_gate(
     from brain_v9.governance.unified_gate import evaluate_governed_operation
 
     body = dict(payload or {})
+    # Actor identity is derived from the authenticated role, never request data.
+    actor = role
+    scopes = body.get("scopes")
     decision = evaluate_governed_operation(
         operation_class=operation_class,
         operation=operation,
@@ -1198,7 +1201,11 @@ def _unified_route_gate(
         approval_token=body.get("approval_token"),
         authenticated=authenticated,
         role=role,
-        context={"unsafe_dev_endpoints_enabled": BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS},
+        actor=actor,
+        context={
+            "unsafe_dev_endpoints_enabled": BRAIN_ENABLE_UNSAFE_DEV_ENDPOINTS,
+            "scopes": scopes,
+        },
     )
     if decision.allowed:
         return None
