@@ -1,7 +1,6 @@
 import type {ProxySpec} from "./types.js";
 import {execFileSync} from "node:child_process";
 import {realpathSync} from "node:fs";
-import {relative} from "node:path";
 
 export type BuilderTransport = "codex_cli_openai" | "opencode_github_copilot" | "opencode_ollama";
 
@@ -97,10 +96,14 @@ export function isEligibleFallback(error: unknown): { eligible: boolean; failure
   return { eligible: false, failure_class: "UNKNOWN_BUILD_FAILURE", transient: false };
 }
 
+function samePath(a: string, b: string): boolean {
+  return a.localeCompare(b, undefined, { sensitivity: "accent" }) === 0;
+}
+
 export function validateWorktree(worktree: string, expectedBase: string, forbiddenRoots: string[]) {
   const top = execFileSync(process.env.GIT_PATH ?? "git", ["-C", worktree, "rev-parse", "--show-toplevel"], { encoding: "utf8", timeout: 30000 }).trim();
   const resolvedTop = realpathSync(top), resolvedWorktree = realpathSync(worktree);
-  if (relative(resolvedTop, resolvedWorktree) !== "") throw new Error("builder worktree identity mismatch");
+  if (!samePath(resolvedTop, resolvedWorktree)) throw new Error("builder worktree identity mismatch");
   for (const root of forbiddenRoots) {
     if (top.toLowerCase().startsWith(root.toLowerCase())) throw new Error("builder worktree root denied");
   }

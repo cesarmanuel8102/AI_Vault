@@ -8,7 +8,7 @@ import { randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { redactedError } from "./redaction.js";
 import { existsSync, mkdirSync, readdirSync, realpathSync, writeFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join } from "node:path";
 
 
 const FORBIDDEN_WORKTREE_ROOTS = [
@@ -63,10 +63,14 @@ function specFromInput(input: BuilderInput): ProxySpec {
   };
 }
 
+function samePath(a: string, b: string): boolean {
+  return a.localeCompare(b, undefined, { sensitivity: "accent" }) === 0;
+}
+
 function validateWorktreeIdentity(worktree: string, forbiddenRoots: string[]) {
   const top = execFileSync(process.env.GIT_PATH ?? "git", ["-C", worktree, "rev-parse", "--show-toplevel"], { encoding: "utf8", timeout: 30000 }).trim();
   const resolvedTop = realpathSync(top), resolvedWorktree = realpathSync(worktree);
-  if (relative(resolvedTop, resolvedWorktree) !== "") throw new Error("builder worktree identity mismatch");
+  if (!samePath(resolvedTop, resolvedWorktree)) throw new Error("builder worktree identity mismatch");
   for (const root of forbiddenRoots) {
     if (top.toLowerCase().startsWith(root.toLowerCase())) throw new Error("builder worktree root denied");
   }
