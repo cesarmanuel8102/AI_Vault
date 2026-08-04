@@ -4,7 +4,8 @@ import {join,resolve} from "node:path";
 import type {LifecycleRecord,ProxySpec} from "./types.js";
 import type {EffectAssertion} from "./external_effect_guard.js";
 import {redactedError} from "./redaction.js";
-import {runBuilder} from "./codex_builder.js";
+//import {runBuilder} from "./codex_builder.js";
+import {routeControlPlaneBuild} from "./builder_router.js";
 
 export interface BuilderBus {
   findPrByBranch(branch:string):{number:number;head_sha:string}|undefined;
@@ -74,7 +75,7 @@ export class GovernedBuilder {
     const localHead=git(worktree,["rev-parse","HEAD"]);if(localHead!==nextHead){try{git(worktree,["merge-base","--is-ancestor",localHead,nextHead]);}catch{throw new Error("blocked CI local branch drift");}native(process.env.GIT_PATH??"git",["-C",worktree,"merge","--ff-only",nextHead],{stdio:"inherit",timeout:120000,windowsHide:true});}
     if(git(worktree,["rev-parse","HEAD"])!==nextHead||git(worktree,["status","--porcelain","--untracked-files=all"]))throw new Error("blocked CI worktree synchronization failed");return nextHead;
   }
-  build(spec:ProxySpec,issue:number,session:string,repairCycle:number){
+  async build(spec:ProxySpec,issue:number,session:string,repairCycle:number){
     if(!spec.front_id||!spec.work_branch||!spec.objective)throw new Error("builder metadata missing");
     const existing=this.bus.findPrByBranch(spec.work_branch);if(existing&&repairCycle===0){this.bus.bindPrToIssue(issue,existing.number);return {pr:existing.number,head_sha:existing.head_sha,session};}
     const orphanHead=!existing&&repairCycle===0?this.bus.remoteBranchHead(spec.work_branch):undefined;if(orphanHead){const pr=this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nRecovered published builder branch.\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:orphanHead,session};}
@@ -88,7 +89,25 @@ export class GovernedBuilder {
     if(initialHead!==expectedHead){if(initialStatus)throw new Error("advanced builder worktree is dirty");try{git(worktree,["merge-base","--is-ancestor",expectedHead,initialHead]);}catch{throw new Error("builder worktree head is not a descendant of expected head");}if(git(worktree,["log","-1","--format=%s"])!==`feat(control-plane): complete ${spec.front_id}`)throw new Error("recovered builder commit subject mismatch");validateFiles(committed(worktree,expectedHead),spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${expectedHead}..${initialHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});this.assertEffect("push",{issue,expected_head:initialHead});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});const pr=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nRecovered local builder commit.\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:initialHead,session};}
     const repair=repairCycle>0?this.bus.repairPrompt(issue):"";if(repairCycle>0&&!repair)throw new Error("repair findings missing");
     const prompt=builderPrompt(spec,repairCycle,repair);
-    if(!initialStatus){if(spec.executor==="codex_control_plane"){this.assertEffect("builder_execute",{issue});runBuilder(this.codex,prompt,worktree,session);}else throw new Error("agent_loop builder adapter unavailable");}
+    if(!initialStatus){
+      if(spec.executor==="codex_control_plane"){
+        this.assertEffect("builder_execute",{issue});
+        const useRouter=process.env.OPERATOR_PROXY_BUILDER_ROUTER!=="disabled";
+        if(useRouter){
+          const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{},worktree);
+          const head=result.head_sha;
+          const files=changed(worktree);validateFiles(files,spec);
+          runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check"],{stdio:"inherit",timeout:120000,windowsHide:true});
+          this.assertEffect("commit_create",{issue});native(process.env.GIT_PATH??"git",["-C",worktree,"add","--",...files],{stdio:"inherit",timeout:120000,windowsHide:true});
+          native(process.env.GIT_PATH??"git",["-C",worktree,"commit","-m",`feat(control-plane): complete ${spec.front_id}\n\nBUILDER_BACKEND=${result.builder_backend}\nBUILDER_MODEL=${result.builder_model}\nPROVIDER_SESSION=${result.provider_session}${result.fallback_reason?`\nFALLBACK_REASON=${result.fallback_reason}`:""}`],{stdio:"inherit",timeout:120000,windowsHide:true});
+          const committedHead=git(worktree,["rev-parse","HEAD"]);
+          if(committedHead!==head&&head!==initialHead)throw new Error("builder router head mismatch");
+          this.assertEffect("push",{issue,expected_head:committedHead});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
+          const prNumber=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${session}\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,prNumber);return {pr:prNumber,head_sha:committedHead,session};
+        }
+        throw new Error("codex builder direct mode disabled; use router");
+      } else throw new Error("agent_loop builder adapter unavailable");
+    }
     const files=changed(worktree);validateFiles(files,spec);
     runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check"],{stdio:"inherit",timeout:120000,windowsHide:true});
     this.assertEffect("commit_create",{issue});native(process.env.GIT_PATH??"git",["-C",worktree,"add","--",...files],{stdio:"inherit",timeout:120000,windowsHide:true});
