@@ -163,3 +163,25 @@ def test_admin_token_cannot_assume_owner_authority(monkeypatch):
 
     assert role is ApiRole.ADMIN
     assert api_has_permission(role, ApiPermission.MODIFY_GOVERNANCE) is False
+
+
+def test_route_actor_is_not_client_controlled():
+    source = (ROOT / "tmp_agent" / "brain_v9" / "main.py").read_text(encoding="utf-8")
+    assert "actor = role" in source
+    assert 'body.get("actor")' not in source
+
+
+def test_legacy_approval_token_is_an_explicit_capability_exception():
+    decision = evaluate_governed_operation(
+        operation_class="patch",
+        operation="file_patch_apply",
+        mode="build",
+        risk_level="P2",
+        actor="anonymous",
+        role="read-only",
+        approval_token="AGENTV2_APPROVED_CONTRACT",
+        authenticated=False,
+    )
+
+    assert decision.allowed is True
+    assert decision.reason == "Approved patch operation."

@@ -27,13 +27,21 @@ Legacy `admin` and `viewer` names remain available for backward compatibility. `
 
 ## Unified Gate Deny Proofs
 
-The contract test proves the unified governance gate denies:
+The contract test proves the unified governance gate denies ordinary role-based requests:
 
 - Wrong role: reviewer cannot execute.
-- Wrong actor: reviewer actor cannot operate through operator role.
+- Wrong actor: direct gate calls cannot mismatch actor and role. Route-level actor identity is derived from the authenticated role and ignores client payload values.
 - Wrong scope: read scope cannot run execution operations.
 - Anonymous access: unauthenticated non-read governed operations fail closed.
 - Privilege escalation: executor cannot request owner authority.
+
+### Legacy approval capability exception
+
+A valid legacy `AGENTV2_APPROVED_...` token remains an explicit capability gate for
+`approval` and `patch` operations. This backward-compatible exception bypasses the
+five-role matrix only for those two operation classes; the contract test records the
+behavior directly. Protected-target, mode, token, and constitutional invariant checks
+remain in force. The token does not grant owner role or `modify_governance`.
 
 ## Preserved Invariants
 
@@ -48,4 +56,7 @@ The unified gate still preserves:
 
 ## Scoped Behavior Change
 
-`_unified_route_gate` now passes route payload `actor` and optional `scopes` into the unified gate. Existing route defaults remain `actor=operator`, `role=operator`, `authenticated=True`, preserving previous local/operator route behavior while making wrong actor and wrong scope denials enforceable at the shared gate.
+`_unified_route_gate` derives actor from the authenticated role and passes optional
+payload `scopes` into the unified gate. Existing defaults remain `role=operator` and
+`authenticated=True`, preserving previous local/operator route behavior without
+trusting a client-supplied actor identity.

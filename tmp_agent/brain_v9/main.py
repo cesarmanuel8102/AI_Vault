@@ -1188,7 +1188,8 @@ def _unified_route_gate(
     from brain_v9.governance.unified_gate import evaluate_governed_operation
 
     body = dict(payload or {})
-    actor = str(body.get("actor") or role)
+    # Actor identity is derived from the authenticated role, never request data.
+    actor = role
     scopes = body.get("scopes")
     decision = evaluate_governed_operation(
         operation_class=operation_class,
