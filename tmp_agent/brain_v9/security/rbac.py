@@ -181,7 +181,11 @@ def role_rank(role: Role | str) -> int:
 
 
 def role_can_act_as(role: Role | str, requested_role: Role | str) -> bool:
-    return role_rank(role) >= role_rank(requested_role)
+    actual_permissions = _ROLE_PERMISSIONS.get(normalize_role(role), frozenset())
+    requested_permissions = _ROLE_PERMISSIONS.get(
+        normalize_role(requested_role), frozenset()
+    )
+    return actual_permissions.issuperset(requested_permissions)
 
 
 def normalize_scope_values(value: Any) -> FrozenSet[str]:

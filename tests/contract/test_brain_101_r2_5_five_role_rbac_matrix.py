@@ -10,7 +10,13 @@ if str(TMP_AGENT) not in sys.path:
 
 from brain_v9.governance.unified_gate import evaluate_governed_operation
 from brain_v9.api_security import get_request_role
-from brain_v9.security.rbac import Permission, Role, has_permission, role_permissions
+from brain_v9.security.rbac import (
+    Permission,
+    Role,
+    has_permission,
+    role_can_act_as,
+    role_permissions,
+)
 from starlette.requests import Request
 from tmp_agent.brain_v9.security.rbac import (
     Permission as ApiPermission,
@@ -55,6 +61,14 @@ def test_five_constitutional_roles_have_distinct_permission_sets():
         Permission.READ_HEALTH,
         Permission.READ_KNOWLEDGE,
     })
+
+
+def test_incomparable_reviewer_and_executor_roles_cannot_assume_each_other():
+    assert role_can_act_as(Role.REVIEWER, Role.EXECUTOR) is False
+    assert role_can_act_as(Role.EXECUTOR, Role.REVIEWER) is False
+    assert role_can_act_as(Role.OWNER, Role.REVIEWER) is True
+    assert role_can_act_as(Role.OWNER, Role.EXECUTOR) is True
+    assert role_can_act_as(Role.ADMIN, Role.OWNER) is False
 
 
 def test_unified_gate_allows_only_the_expected_role_resource_matrix():
