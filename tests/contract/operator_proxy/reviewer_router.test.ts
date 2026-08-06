@@ -61,7 +61,7 @@ test("P0 invokes a third qualified independent arbiter and remains BLOCKED",()=>
 test("verifier-only P0 is preserved for owner escalation",()=>{
   let calls=0;
   const p0={severity:"P0" as const,title:"authority",evidence:"verifier evidence",required_correction:"owner review"};
-  const factory=(model:string):ReviewerBackend=>model===REVIEWER_MODELS.deepseekPro?{model,review:(_value,session)=>({...pass(model).review(input(),session),output:{verdict:"BLOCKED",head_sha:head,summary:"p0",findings:[p0]}})}:pass(model);
+  const factory=(model:string):ReviewerBackend=>model===REVIEWER_MODELS.deepseekFlash?pass(model):calls++===0?pass(model):{model,review:(_value,session)=>({...pass(model).review(input(),session),output:{verdict:"BLOCKED",head_sha:head,summary:"p0",findings:[p0]}})};
   const result=new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory).review(input());
   assert.equal(result.output.verdict,"BLOCKED");assert.deepEqual(result.output.findings,[p0]);
 });
