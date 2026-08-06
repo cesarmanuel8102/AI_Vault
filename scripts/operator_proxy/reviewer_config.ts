@@ -10,12 +10,12 @@ export const REVIEWER_MODELS={
 } as const;
 
 export const REVIEWER_QUALIFICATION={
-  [REVIEWER_MODELS.glm]:{qualified:true,passed:5,total:5},
+  [REVIEWER_MODELS.glm]:{qualified:false,passed:0,total:5},
   [REVIEWER_MODELS.qwen]:{qualified:true,passed:5,total:5},
-  [REVIEWER_MODELS.nemotron]:{qualified:true,passed:5,total:5},
+  [REVIEWER_MODELS.nemotron]:{qualified:false,passed:0,total:5},
   [REVIEWER_MODELS.kimi]:{qualified:true,passed:5,total:5},
-  [REVIEWER_MODELS.deepseekFlash]:{qualified:false,passed:3,total:5},
-  [REVIEWER_MODELS.deepseekPro]:{qualified:false,passed:4,total:5},
+  [REVIEWER_MODELS.deepseekFlash]:{qualified:true,passed:5,total:5},
+  [REVIEWER_MODELS.deepseekPro]:{qualified:true,passed:5,total:5},
 } as const;
 
 const safeModel=/^ollama-cloud\/[a-z0-9][a-z0-9.:-]{2,127}$/;
@@ -56,13 +56,13 @@ const agentLoopPath=(path:string)=>path.startsWith("scripts/agent_loop/")||path.
 
 export function reviewerRoute(input:ReviewerInput):string[]{
   const models=input.changedFiles.some(agentLoopPath)
-    ? [REVIEWER_MODELS.glm,REVIEWER_MODELS.nemotron,REVIEWER_MODELS.qwen]
+    ? [REVIEWER_MODELS.qwen,REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.deepseekFlash]
     : input.risk==="LOW"
-      ? [REVIEWER_MODELS.qwen,REVIEWER_MODELS.glm,REVIEWER_MODELS.nemotron]
-      : [REVIEWER_MODELS.glm,REVIEWER_MODELS.qwen,REVIEWER_MODELS.nemotron];
-  return models.filter(model=>model!==input.builderModel).slice(0,3);
+      ? [REVIEWER_MODELS.qwen,REVIEWER_MODELS.deepseekFlash,REVIEWER_MODELS.deepseekPro]
+      : [REVIEWER_MODELS.qwen,REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.deepseekFlash];
+  return models.filter(model=>REVIEWER_QUALIFICATION[model].qualified&&model!==input.builderModel).slice(0,3);
 }
 
 export function reviewerArbiter(input:ReviewerInput,used:string[]):string|undefined{
-  return [REVIEWER_MODELS.nemotron,REVIEWER_MODELS.qwen,REVIEWER_MODELS.glm,REVIEWER_MODELS.kimi].find(model=>model!==input.builderModel&&!used.includes(model));
+  return [REVIEWER_MODELS.deepseekFlash,REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.qwen].find(model=>REVIEWER_QUALIFICATION[model].qualified&&model!==input.builderModel&&!used.includes(model));
 }
