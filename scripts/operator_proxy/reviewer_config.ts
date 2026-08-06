@@ -11,9 +11,9 @@ export const REVIEWER_MODELS={
 
 export const REVIEWER_QUALIFICATION={
   [REVIEWER_MODELS.glm]:{qualified:false,passed:0,total:5},
-  [REVIEWER_MODELS.qwen]:{qualified:true,passed:5,total:5},
+  [REVIEWER_MODELS.qwen]:{qualified:false,passed:3,total:5},
   [REVIEWER_MODELS.nemotron]:{qualified:false,passed:0,total:5},
-  [REVIEWER_MODELS.kimi]:{qualified:true,passed:5,total:5},
+  [REVIEWER_MODELS.kimi]:{qualified:false,passed:0,total:5},
   [REVIEWER_MODELS.deepseekFlash]:{qualified:true,passed:5,total:5},
   [REVIEWER_MODELS.deepseekPro]:{qualified:true,passed:5,total:5},
 } as const;
@@ -56,13 +56,13 @@ const agentLoopPath=(path:string)=>path.startsWith("scripts/agent_loop/")||path.
 
 export function reviewerRoute(input:ReviewerInput):string[]{
   const models=input.changedFiles.some(agentLoopPath)
-    ? [REVIEWER_MODELS.qwen,REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.deepseekFlash]
+    ? [REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.deepseekFlash]
     : input.risk==="LOW"
-      ? [REVIEWER_MODELS.qwen,REVIEWER_MODELS.deepseekFlash,REVIEWER_MODELS.deepseekPro]
-      : [REVIEWER_MODELS.qwen,REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.deepseekFlash];
-  return models.filter(model=>REVIEWER_QUALIFICATION[model].qualified&&model!==input.builderModel).slice(0,3);
+      ? [REVIEWER_MODELS.deepseekFlash,REVIEWER_MODELS.deepseekPro]
+      : [REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.deepseekFlash];
+  return models.filter(model=>REVIEWER_QUALIFICATION[model].qualified&&model!==input.builderModel).slice(0,2);
 }
 
 export function reviewerArbiter(input:ReviewerInput,used:string[]):string|undefined{
-  return [REVIEWER_MODELS.deepseekFlash,REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.qwen].find(model=>REVIEWER_QUALIFICATION[model].qualified&&model!==input.builderModel&&!used.includes(model));
+  return [REVIEWER_MODELS.deepseekFlash,REVIEWER_MODELS.deepseekPro].find(model=>REVIEWER_QUALIFICATION[model].qualified&&model!==input.builderModel&&!used.includes(model));
 }
