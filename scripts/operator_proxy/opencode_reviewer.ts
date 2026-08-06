@@ -42,7 +42,7 @@ function reviewPrompt(input:ReviewerInput,diff:string){return [
 ].join("\n");}
 const READ_ONLY_TOOLS=new Set(["read","glob","grep"]),MAX_READ_ONLY_TOOLS=16;
 function insideWorkspace(workspace:string,value:string,existing:boolean){
-  if(value.includes("\0")||/^\\\\[?.*|^\\\\\?\\|^\\\\\.\\|^[a-z]:/i.test(value)&&!isAbsolute(value))throw new ReviewerBackendError("reviewer path invalid","REVIEWER_WRITE_ATTEMPT");
+  if(value.includes("\0"))throw new ReviewerBackendError("reviewer path invalid","REVIEWER_WRITE_ATTEMPT");
   const root=realpathSync(workspace);let target:string;
   try{target=existing?realpathSync(value):resolve(root,value);}catch{throw new ReviewerBackendError("reviewer path outside workspace","REVIEWER_WRITE_ATTEMPT");}
   const rel=relative(root,target);
@@ -52,7 +52,7 @@ function insideWorkspace(workspace:string,value:string,existing:boolean){
 function validateTool(part:any,workspace:string){
   const tool=String(part?.tool??""),state=part?.state,input=state?.input;
   if(!READ_ONLY_TOOLS.has(tool))throw new ReviewerBackendError("reviewer attempted a tool call","REVIEWER_WRITE_ATTEMPT");
-  if(!state||typeof state.status!=="string"||!/[a-z]/i.test(state.status)||!input||typeof input!=="object"||Array.isArray(input))throw new ReviewerBackendError("reviewer tool evidence invalid","REVIEWER_INVALID_TRANSPORT");
+  if(!state||typeof state.status!=="string"||!["completed","error","cancelled"].includes(state.status)||!input||typeof input!=="object"||Array.isArray(input))throw new ReviewerBackendError("reviewer tool evidence invalid","REVIEWER_INVALID_TRANSPORT");
   const keys=Object.keys(input).sort(),allowed=tool==="read"?["filePath","limit","offset"]:tool==="glob"?["path","pattern"]:["include","path","pattern"];
   if(keys.some(key=>!allowed.includes(key)))throw new ReviewerBackendError("reviewer tool arguments invalid","REVIEWER_WRITE_ATTEMPT");
   if(tool==="read"){

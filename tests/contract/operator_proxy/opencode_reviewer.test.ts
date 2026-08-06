@@ -59,5 +59,6 @@ test("validates captured read glob grep tool events and rejects list, escapes, a
   assert.throws(()=>parseJsonl(`${event("list",{path:"scripts"})}\n${final}\n`,head,workspace),/tool call/);
   assert.throws(()=>parseJsonl(`${event("read",{filePath:join(f.root,"outside")})}\n${final}\n`,head,workspace),/outside workspace/);
   assert.throws(()=>parseJsonl(`${event("glob",{pattern:"../**/*"})}\n${final}\n`,head,workspace),/pattern invalid/);
+  assert.throws(()=>parseJsonl(`${JSON.stringify({type:"tool_use",sessionID:"provider",part:{tool:"read",state:{status:"malicious",input:{filePath:file}}}})}\n${final}\n`,head,workspace),/tool evidence invalid/);
   assert.throws(()=>parseJsonl(`${Array.from({length:17},()=>event("glob",{pattern:"**/*.ts"})).join("\n")}\n${final}\n`,head,workspace),/limit exceeded/);
 });
