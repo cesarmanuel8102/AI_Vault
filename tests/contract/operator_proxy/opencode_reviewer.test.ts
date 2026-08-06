@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {mkdirSync,mkdtempSync,readFileSync,writeFileSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
-import {OpenCodeReviewerBackend} from "../../../scripts/operator_proxy/opencode_reviewer.js";
+import {OpenCodeReviewerBackend,parseJsonl} from "../../../scripts/operator_proxy/opencode_reviewer.js";
 
 const head="b".repeat(40),base="a".repeat(40);
 function fixture(){const root=mkdtempSync(join(tmpdir(),"opencode-review-")),entry=join(root,"opencode");writeFileSync(entry,"");return {root,entry};}
@@ -48,4 +48,17 @@ test("rejects an invalid review SHA before native Git or model execution",()=>{
   const f=fixture(),oldNode=process.env.OPERATOR_PROXY_NODE_PATH,oldEntry=process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT;process.env.OPERATOR_PROXY_NODE_PATH=process.execPath;process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=f.entry;let calls=0;
   try{assert.throws(()=>new OpenCodeReviewerBackend("ollama-cloud/glm-5.2",()=>{calls++;return "";}).review({repository:"qualification",repositoryRoot:f.root,pr:1,baseSha:base,headSha:"not-a-sha",risk:"LOW",changedFiles:["a"],builderSession:"builder"},"invalid"),/review commit identity invalid/);assert.equal(calls,0);}
   finally{oldNode===undefined?delete process.env.OPERATOR_PROXY_NODE_PATH:process.env.OPERATOR_PROXY_NODE_PATH=oldNode;oldEntry===undefined?delete process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT:process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=oldEntry;}
+});
+
+test("validates captured read glob grep tool events and rejects list, escapes, and over-limit calls",()=>{
+  const f=fixture(),workspace=join(f.root,"workspace"),file=join(workspace,"scripts","a.ts");mkdirSync(join(workspace,"scripts"),{recursive:true});writeFileSync(file,"safe\n");
+  const final=JSON.stringify({type:"text",sessionID:"provider",part:{text:JSON.stringify({verdict:"PASS",head_sha:head,summary:"ok",findings:[]})}});
+  const event=(tool:string,input:object)=>JSON.stringify({type:"tool_use",sessionID:"provider",part:{tool,state:{status:"completed",input}}});
+  assert.equal(parseJsonl(`${event("read",{filePath:file,offset:0,limit:1})}\n${final}\n`,head,workspace).output.verdict,"PASS");
+  assert.equal(parseJsonl(`${event("glob",{pattern:"scripts/**/*.ts"})}\n${event("grep",{pattern:"safe",path:"scripts",include:"*.ts"})}\n${final}\n`,head,workspace).output.verdict,"PASS");
+  assert.throws(()=>parseJsonl(`${event("list",{path:"scripts"})}\n${final}\n`,head,workspace),/tool call/);
+  assert.throws(()=>parseJsonl(`${event("read",{filePath:join(f.root,"outside")})}\n${final}\n`,head,workspace),/outside workspace/);
+  assert.throws(()=>parseJsonl(`${event("glob",{pattern:"../**/*"})}\n${final}\n`,head,workspace),/pattern invalid/);
+  assert.throws(()=>parseJsonl(`${JSON.stringify({type:"tool_use",sessionID:"provider",part:{tool:"read",state:{status:"malicious",input:{filePath:file}}}})}\n${final}\n`,head,workspace),/tool evidence invalid/);
+  assert.throws(()=>parseJsonl(`${Array.from({length:17},()=>event("glob",{pattern:"**/*.ts"})).join("\n")}\n${final}\n`,head,workspace),/limit exceeded/);
 });
