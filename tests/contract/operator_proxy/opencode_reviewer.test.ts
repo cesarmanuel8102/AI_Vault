@@ -71,6 +71,7 @@ test("validates captured read glob grep tool events and rejects list, escapes, a
   assert.throws(()=>parseJsonl(`${event("read",{filePath:"../outside.ts"})}\n${final}\n`,head,workspace),/outside workspace/);
   assert.throws(()=>parseJsonl(`${event("read",{filePath:"scripts/\u0000a.ts"})}\n${final}\n`,head,workspace),/path invalid/);
   assert.throws(()=>parseJsonl(`${event("glob",{pattern:"../**/*"})}\n${final}\n`,head,workspace),/pattern invalid/);
+  assert.throws(()=>parseJsonl(`${event("grep",{pattern:"safe",include:"*.ts\u0000"})}\n${final}\n`,head,workspace),(err:unknown)=>err instanceof ReviewerBackendError&&err.message.includes("include invalid")&&err.failureClass==="REVIEWER_WRITE_ATTEMPT");
   assert.throws(()=>parseJsonl(`${JSON.stringify({type:"tool_use",sessionID:"provider",part:{tool:"read",state:{status:"malicious",input:{filePath:file}}}})}\n${final}\n`,head,workspace),/tool evidence invalid/);
   assert.throws(()=>parseJsonl(`${Array.from({length:17},()=>event("glob",{pattern:"**/*.ts"})).join("\n")}\n${final}\n`,head,workspace),/limit exceeded/);
 });
