@@ -6,7 +6,7 @@ import {isAbsolute,join,relative,resolve} from "node:path";
 import type {ReviewerBackend,ReviewerAttempt,ReviewerInput} from "./reviewer_backend.js";
 import {ReviewerBackendError} from "./reviewer_backend.js";
 import {normalizeReviewerOutput} from "./review_contract.js";
-import {redactedError,redactSensitiveData} from "./redaction.js";
+import {redactedError,redactSensitiveData,redactString} from "./redaction.js";
 
 type NativeRunner=(file:string,args:string[],options:{cwd?:string;env?:NodeJS.ProcessEnv;timeout:number;maxBuffer:number})=>string;
 const native:NativeRunner=(file,args,options)=>execFileSync(file,args,{...options,encoding:"utf8"});
@@ -64,7 +64,11 @@ export function canonicalizeEvidence(value:unknown):unknown{
       try{
         const entries=Object.entries(v as Record<string,unknown>).sort(([a],[b])=>a.localeCompare(b));
         const out:Record<string,unknown>={};
-        for(const [k,val] of entries){out[k]=visit(val,path?`${path}.${k}`:k);}
+        for(const [k,val] of entries){
+          const checked=redactString(k);
+          if(checked!==k)throw new ReviewerBackendError("panel evidence key contains sensitive data","REVIEWER_INVALID_INPUT");
+          out[k]=visit(val,path?`${path}.${k}`:k);
+        }
         return out;
       }finally{stack.delete(v);}
     }

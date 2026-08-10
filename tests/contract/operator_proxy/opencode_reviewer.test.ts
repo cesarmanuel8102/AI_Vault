@@ -7,6 +7,8 @@ import {join} from "node:path";
 import {OpenCodeReviewerBackend,parseJsonl,projectPanelEvidence,canonicalizeEvidence} from "../../../scripts/operator_proxy/opencode_reviewer.js";
 import {ReviewerBackendError} from "../../../scripts/operator_proxy/reviewer_backend.js";
 
+function assertReviewerInvalidInput(err:unknown):boolean{return err instanceof ReviewerBackendError&&err.failureClass==="REVIEWER_INVALID_INPUT";}
+
 const hashString=(value:string)=>createHash("sha256").update(value,"utf8").digest("hex");
 
 const head="b".repeat(40),base="a".repeat(40);
@@ -228,6 +230,90 @@ test("hash regression: different secrets produce different complete_evidence_sha
   assert.ok(!pb.projection.includes("secretB"));
   assert.ok(pa.projection.includes("[REDACTED:PASSWORD]"));
   assert.ok(pb.projection.includes("[REDACTED:PASSWORD]"));
+});
+
+test("rejects secret-bearing object key names fail-closed without projection",()=>{
+  const bearerKey={primary:{"Bearer ghp_supersecret123456789012345678901234":{head:head,verdict:"PASS"}}};
+  const openaiKey={primary:{"sk-openaiTokenValue12345":{head:head,verdict:"PASS"}}};
+  const githubKey={primary:{"github_pat_zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz":{head:head,verdict:"PASS"}}};
+  const authorizationKey={primary:{"authorization: Bearer ghp_leakedtokenvalue12345":{head:head,verdict:"PASS"}}};
+  const passwordKey={primary:{"password=hunter2":{head:head,verdict:"PASS"}}};
+  const urlKey={primary:{"https://admin:superpass@git.example.com/repo.git":{head:head,verdict:"PASS"}}};
+  for(const panel of [bearerKey,openaiKey,githubKey,authorizationKey,passwordKey,urlKey]){
+    let caught:unknown;
+    try{projectPanelEvidence(panel);}catch(err){caught=err;}
+    assert.ok(caught instanceof ReviewerBackendError,"expected ReviewerBackendError for secret-bearing key");
+    assert.equal((caught as ReviewerBackendError).failureClass,"REVIEWER_INVALID_INPUT");
+    assert.throws(()=>canonicalizeEvidence(panel),(err:unknown)=>assertReviewerInvalidInput(err));
+  }
+});
+
+test("ordinary schema key names remain accepted and their values are redacted",()=>{
+  const panel={
+    summary:"ok",
+    primary:{head:head,head_sha:head,verdict:"PASS",finding_count:0,model:"m",session:"s"},
+    safe_schema:{summary:{text:"summary",password:"hunter2",passwd:"pw",api_key:"sk-openaiTokenValue12345",authorization:"Bearer ghp_supersecret123456789012345678901234",access_token:"at",refresh_token:"rt",client_secret:"cs",connection_string:"conn",plain:"keep"}},
+    required_correction:"fix",
+    classification:"PASS",
+    adjudication:"ACCEPT",
+    observation:"note",
+    evidence:"e",
+    runtime_reproduction_sha256:"rsha",
+    codex_evidence_sha256:"esha",
+    complete_evidence_sha256:"cesha"
+  };
+  const {projection,sha256}=projectPanelEvidence(panel);
+  const parsed=JSON.parse(projection);
+  assert.equal(parsed.complete_evidence_sha256,sha256);
+  assert.equal(parsed.projection_version,1);
+  assert.ok(Array.isArray(parsed.facts));
+  const byPath=new Map<string,any>(parsed.facts.map((fact:any)=>[fact.path,fact.value]));
+  assert.equal(byPath.get("summary"),"ok");
+  assert.equal(byPath.get("primary.head"),head);
+  assert.equal(byPath.get("primary.head_sha"),head);
+  assert.equal(byPath.get("primary.verdict"),"PASS");
+  assert.equal(byPath.get("primary.finding_count"),0);
+  assert.equal(byPath.get("primary.model"),"m");
+  assert.equal(byPath.get("primary.session"),"s");
+  assert.equal(byPath.get("safe_schema.summary.text"),"summary");
+  assert.equal(byPath.get("safe_schema.summary.password"),"[REDACTED:PASSWORD]");
+  assert.equal(byPath.get("safe_schema.summary.passwd"),"[REDACTED:PASSWORD]");
+  assert.equal(byPath.get("safe_schema.summary.api_key"),"[REDACTED:TOKEN]");
+  assert.equal(byPath.get("safe_schema.summary.authorization"),"[REDACTED:TOKEN]");
+  assert.equal(byPath.get("safe_schema.summary.access_token"),"[REDACTED:TOKEN]");
+  assert.equal(byPath.get("safe_schema.summary.refresh_token"),"[REDACTED:TOKEN]");
+  assert.equal(byPath.get("safe_schema.summary.client_secret"),"[REDACTED:TOKEN]");
+  assert.equal(byPath.get("safe_schema.summary.connection_string"),"[REDACTED:TOKEN]");
+  assert.equal(byPath.get("safe_schema.summary.plain"),"keep");
+  assert.equal(byPath.get("required_correction"),"fix");
+  assert.equal(byPath.get("classification"),"PASS");
+  assert.equal(byPath.get("adjudication"),"ACCEPT");
+  assert.equal(byPath.get("observation"),"note");
+  assert.equal(byPath.get("evidence"),"e");
+  assert.equal(byPath.get("runtime_reproduction_sha256"),"rsha");
+  assert.equal(byPath.get("codex_evidence_sha256"),"esha");
+  assert.equal(byPath.get("complete_evidence_sha256"),"cesha");
+  assert.ok(!projection.includes("hunter2"));
+  assert.ok(!projection.includes("sk-openaiTokenValue12345"));
+  assert.ok(!projection.includes("ghp_supersecret123456789012345678901234"));
+  assert.ok(projection.includes("[REDACTED:PASSWORD]"));
+  assert.ok(projection.includes("[REDACTED:TOKEN]"));
+  const safePaths=parsed.facts.map((fact:any)=>fact.path);
+  assert.ok(safePaths.includes("safe_schema.summary.password"));
+  assert.ok(safePaths.includes("safe_schema.summary.api_key"));
+  assert.ok(safePaths.includes("safe_schema.summary.authorization"));
+});
+
+test("OpenCodeReviewerBackend rejects secret-bearing key before model transport",()=>{
+  const f=fixture(),oldNode=process.env.OPERATOR_PROXY_NODE_PATH,oldEntry=process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT;process.env.OPERATOR_PROXY_NODE_PATH=process.execPath;process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=f.entry;
+  let modelCalled=false;
+  const panel={primary:{"password=hunter2":{head:head,verdict:"PASS"}}};
+  const runner=(file:string,args:string[])=>{if(file===process.execPath){modelCalled=true;return "";}if(args.includes("worktree")&&args.includes("add")){mkdirSync(args[args.indexOf("--detach")+1],{recursive:true});return "";}if(args.includes("rev-parse"))return head;if(args.includes("merge-base"))return base;if(args.includes("status"))return "";if(args.includes("diff"))return "safe";return "";},
+    cleanup=()=>{oldNode===undefined?delete process.env.OPERATOR_PROXY_NODE_PATH:process.env.OPERATOR_PROXY_NODE_PATH=oldNode;oldEntry===undefined?delete process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT:process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=oldEntry;};
+  try{
+    assert.throws(()=>new OpenCodeReviewerBackend("ollama-cloud/glm-5.2",runner).review({repository:"qualification",repositoryRoot:f.root,pr:1,baseSha:base,headSha:head,risk:"LOW",changedFiles:["a"],builderSession:"builder",panelEvidence:panel},"session"),(err:unknown)=>assertReviewerInvalidInput(err));
+    assert.equal(modelCalled,false);
+  }finally{cleanup();}
 });
 
 test("same evidence in different object insertion order yields identical projection and hash",()=>{
