@@ -148,7 +148,10 @@ const READ_ONLY_TOOLS=new Set(["read","glob","grep"]),MAX_READ_ONLY_TOOLS=16;
 function insideWorkspace(workspace:string,value:string,existing:boolean){
   if(value.includes("\0"))throw new ReviewerBackendError("reviewer path invalid","REVIEWER_WRITE_ATTEMPT");
   const root=realpathSync(workspace);let target:string;
-  try{target=existing?realpathSync(value):resolve(root,value);}catch{throw new ReviewerBackendError("reviewer path outside workspace","REVIEWER_WRITE_ATTEMPT");}
+  try{
+    const candidate=isAbsolute(value)?value:resolve(root,value);
+    target=existing?realpathSync(candidate):candidate;
+  }catch{throw new ReviewerBackendError("reviewer path outside workspace","REVIEWER_WRITE_ATTEMPT");}
   const rel=relative(root,target);
   if(rel===""||!rel.startsWith("..")&&!isAbsolute(rel))return;
   throw new ReviewerBackendError("reviewer path outside workspace","REVIEWER_WRITE_ATTEMPT");
@@ -164,8 +167,8 @@ function validateTool(part:any,workspace:string){
     insideWorkspace(workspace,input.filePath,true);
   } else {
     if(typeof input.pattern!=="string"||input.pattern.length<1||input.pattern.length>4096||input.pattern.includes("\0")||/(^|[\\/])\.\.([\\/]|$)|^(?:[a-z]:|\\\\|\/)/i.test(input.pattern))throw new ReviewerBackendError("reviewer pattern invalid","REVIEWER_WRITE_ATTEMPT");
-    if(input.path!==undefined){if(typeof input.path!=="string"||input.path.length>4096)throw new ReviewerBackendError("reviewer path invalid","REVIEWER_WRITE_ATTEMPT");insideWorkspace(workspace,input.path,false);}
-    if(tool==="grep"&&input.include!==undefined&&(typeof input.include!=="string"||input.include.length<1||input.include.length>4096||/(^|[\\/])\.\.([\\/]|$)|^(?:[a-z]:|\\\\|\/)/i.test(input.include)))throw new ReviewerBackendError("reviewer include invalid","REVIEWER_WRITE_ATTEMPT");
+    if(input.path!==undefined){if(typeof input.path!=="string"||input.path.length>4096)throw new ReviewerBackendError("reviewer path invalid","REVIEWER_WRITE_ATTEMPT");insideWorkspace(workspace,input.path,true);}
+    if(tool==="grep"&&input.include!==undefined&&(typeof input.include!=="string"||input.include.length<1||input.include.length>4096||input.include.includes("\0")||/(^|[\\/])\.\.([\\/]|$)|^(?:[a-z]:|\\\\|\/)/i.test(input.include)))throw new ReviewerBackendError("reviewer include invalid","REVIEWER_WRITE_ATTEMPT");
   }
 }
 export function parseJsonl(stdout:string,head:string,workspace:string){

@@ -1,9 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
-import {mkdirSync,mkdtempSync,readFileSync,writeFileSync} from "node:fs";
+import {execFileSync} from "node:child_process";
+import {mkdirSync,mkdtempSync,readFileSync,rmSync,symlinkSync,writeFileSync} from "node:fs";
 import {tmpdir} from "node:os";
-import {join} from "node:path";
+import {dirname,join} from "node:path";
 import {OpenCodeReviewerBackend,parseJsonl,projectPanelEvidence,canonicalizeEvidence} from "../../../scripts/operator_proxy/opencode_reviewer.js";
 import {ReviewerBackendError} from "../../../scripts/operator_proxy/reviewer_backend.js";
 
@@ -61,12 +62,87 @@ test("validates captured read glob grep tool events and rejects list, escapes, a
   const final=JSON.stringify({type:"text",sessionID:"provider",part:{text:JSON.stringify({verdict:"PASS",head_sha:head,summary:"ok",findings:[]})}});
   const event=(tool:string,input:object)=>JSON.stringify({type:"tool_use",sessionID:"provider",part:{tool,state:{status:"completed",input}}});
   assert.equal(parseJsonl(`${event("read",{filePath:file,offset:0,limit:1})}\n${final}\n`,head,workspace).output.verdict,"PASS");
-  assert.equal(parseJsonl(`${event("glob",{pattern:"scripts/**/*.ts"})}\n${event("grep",{pattern:"safe",path:"scripts",include:"*.ts"})}\n${final}\n`,head,workspace).output.verdict,"PASS");
+  assert.equal(parseJsonl(`${event("read",{filePath:"scripts/a.ts",offset:0,limit:1})}\n${final}\n`,head,workspace).output.verdict,"PASS");
+  assert.equal(parseJsonl(`${event("glob",{pattern:"scripts/**/*.ts",path:"scripts"})}\n${event("grep",{pattern:"safe",path:"scripts",include:"*.ts"})}\n${final}\n`,head,workspace).output.verdict,"PASS");
+  assert.equal(parseJsonl(`${event("glob",{pattern:"**/*.ts"})}\n${final}\n`,head,workspace).output.verdict,"PASS");
+  assert.equal(parseJsonl(`${event("grep",{pattern:"safe",include:"*.ts"})}\n${final}\n`,head,workspace).output.verdict,"PASS");
   assert.throws(()=>parseJsonl(`${event("list",{path:"scripts"})}\n${final}\n`,head,workspace),/tool call/);
   assert.throws(()=>parseJsonl(`${event("read",{filePath:join(f.root,"outside")})}\n${final}\n`,head,workspace),/outside workspace/);
+  assert.throws(()=>parseJsonl(`${event("read",{filePath:"../outside.ts"})}\n${final}\n`,head,workspace),/outside workspace/);
+  assert.throws(()=>parseJsonl(`${event("read",{filePath:"scripts/\u0000a.ts"})}\n${final}\n`,head,workspace),/path invalid/);
   assert.throws(()=>parseJsonl(`${event("glob",{pattern:"../**/*"})}\n${final}\n`,head,workspace),/pattern invalid/);
+  assert.throws(()=>parseJsonl(`${event("grep",{pattern:"safe",include:"*.ts\u0000"})}\n${final}\n`,head,workspace),(err:unknown)=>err instanceof ReviewerBackendError&&err.message.includes("include invalid")&&err.failureClass==="REVIEWER_WRITE_ATTEMPT");
   assert.throws(()=>parseJsonl(`${JSON.stringify({type:"tool_use",sessionID:"provider",part:{tool:"read",state:{status:"malicious",input:{filePath:file}}}})}\n${final}\n`,head,workspace),/tool evidence invalid/);
   assert.throws(()=>parseJsonl(`${Array.from({length:17},()=>event("glob",{pattern:"**/*.ts"})).join("\n")}\n${final}\n`,head,workspace),/limit exceeded/);
+});
+
+test("resolves relative reviewer reads against detached workspace even when process CWD differs",()=>{
+  const workspace=mkdtempSync(join(tmpdir(),"opencode-relative-workspace-")),scripts=join(workspace,"scripts"),file=join(scripts,"a.ts");mkdirSync(scripts,{recursive:true});writeFileSync(file,"safe\n");
+  const outside=mkdtempSync(join(tmpdir(),"opencode-process-cwd-"));
+  const final=JSON.stringify({type:"text",sessionID:"provider",part:{text:JSON.stringify({verdict:"PASS",head_sha:head,summary:"ok",findings:[]})}});
+  const event=JSON.stringify({type:"tool_use",sessionID:"provider",part:{tool:"read",state:{status:"completed",input:{filePath:"scripts/a.ts",offset:0,limit:1}}}});
+  const original=process.cwd();
+  process.chdir(outside);
+  try{assert.equal(parseJsonl(`${event}\n${final}\n`,head,workspace).output.verdict,"PASS");}
+  finally{process.chdir(original);rmSync(workspace,{recursive:true,force:true});rmSync(outside,{recursive:true,force:true});}
+});
+
+test("rejects symlink targeting outside workspace when supported",()=>{
+  const workspace=mkdtempSync(join(tmpdir(),"opencode-symlink-workspace-")),outside=mkdtempSync(join(tmpdir(),"opencode-symlink-outside-")),target=join(outside,"secret.ts");writeFileSync(target,"secret\n");
+  const link=join(workspace,"leak.ts");let platformNote:string|undefined;
+  function isPrivilegeError(e:any){
+    if(e?.code==="EPERM"||e?.code==="EACCES")return true;
+    const text=String(e?.stderr??e?.message??"").toLowerCase();
+    return /privilege|administrator|operation not permitted|access is denied/.test(text);
+  }
+  try{
+    if(process.platform==="win32"){
+      try{execFileSync("cmd",["/c","mklink",link,target],{encoding:"utf8",windowsHide:true});}
+      catch(first:any){
+        if(isPrivilegeError(first))throw first;
+        try{execFileSync("cmd",["/c","mklink","/J",link,dirname(target)],{encoding:"utf8",windowsHide:true});}
+        catch(second:any){if(isPrivilegeError(second))throw second;else throw second;}
+      }
+    }else{symlinkSync(target,link);}
+    const final=JSON.stringify({type:"text",sessionID:"provider",part:{text:JSON.stringify({verdict:"PASS",head_sha:head,summary:"ok",findings:[]})}});
+    const event=JSON.stringify({type:"tool_use",sessionID:"provider",part:{tool:"read",state:{status:"completed",input:{filePath:"leak.ts",offset:0,limit:1}}}});
+    assert.throws(()=>parseJsonl(`${event}\n${final}\n`,head,workspace),/outside workspace/);
+  }catch(e:any){
+    if(isPrivilegeError(e)){
+      platformNote=`${process.platform} symlink/junction creation requires elevated privileges; containment logic validated by traversal tests`;
+    }else{throw e;}
+  }finally{
+    rmSync(workspace,{recursive:true,force:true});rmSync(outside,{recursive:true,force:true});
+    if(platformNote)console.log(platformNote);
+  }
+});
+
+test("rejects directory symlink or junction escaping workspace for glob and grep",()=>{
+  const workspace=mkdtempSync(join(tmpdir(),"opencode-escape-workspace-")),outside=mkdtempSync(join(tmpdir(),"opencode-escape-outside-")),outsideFile=join(outside,"secret.ts");writeFileSync(outsideFile,"secret\n");
+  const link=join(workspace,"escape-dir");let platformNote:string|undefined;
+  function isPrivilegeError(e:any){
+    if(e?.code==="EPERM"||e?.code==="EACCES")return true;
+    const text=String(e?.stderr??e?.message??"").toLowerCase();
+    return /privilege|administrator|operation not permitted|access is denied/.test(text);
+  }
+  try{
+    if(process.platform==="win32"){
+      try{execFileSync("cmd",["/c","mklink","/J",link,outside],{encoding:"utf8",windowsHide:true});}
+      catch(e:any){if(isPrivilegeError(e))throw e;else throw e;}
+    }else{symlinkSync(outside,link,"dir");}
+    const final=JSON.stringify({type:"text",sessionID:"provider",part:{text:JSON.stringify({verdict:"PASS",head_sha:head,summary:"ok",findings:[]})}});
+    const globEvent=JSON.stringify({type:"tool_use",sessionID:"provider",part:{tool:"glob",state:{status:"completed",input:{path:"escape-dir",pattern:"**/*.ts"}}}});
+    const grepEvent=JSON.stringify({type:"tool_use",sessionID:"provider",part:{tool:"grep",state:{status:"completed",input:{path:"escape-dir",pattern:"secret",include:"*.ts"}}}});
+    assert.throws(()=>parseJsonl(`${globEvent}\n${final}\n`,head,workspace),/outside workspace/);
+    assert.throws(()=>parseJsonl(`${grepEvent}\n${final}\n`,head,workspace),/outside workspace/);
+  }catch(e:any){
+    if(isPrivilegeError(e)){
+      platformNote=`PLATFORM_NOT_APPLICABLE ${process.platform} directory junction/symlink creation requires elevated privileges; containment logic validated by traversal tests`;
+    }else{throw e;}
+  }finally{
+    rmSync(workspace,{recursive:true,force:true});rmSync(outside,{recursive:true,force:true});
+    if(platformNote)console.log(platformNote);
+  }
 });
 
 function setupReview(diff:string="safe"){
