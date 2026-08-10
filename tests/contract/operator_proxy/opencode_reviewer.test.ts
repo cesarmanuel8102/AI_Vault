@@ -1,10 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import {createHash} from "node:crypto";
 import {mkdirSync,mkdtempSync,readFileSync,writeFileSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
-import {OpenCodeReviewerBackend,parseJsonl,projectPanelEvidence} from "../../../scripts/operator_proxy/opencode_reviewer.js";
+import {OpenCodeReviewerBackend,parseJsonl,projectPanelEvidence,canonicalizeEvidence} from "../../../scripts/operator_proxy/opencode_reviewer.js";
 import {ReviewerBackendError} from "../../../scripts/operator_proxy/reviewer_backend.js";
+
+const hashString=(value:string)=>createHash("sha256").update(value,"utf8").digest("hex");
 
 const head="b".repeat(40),base="a".repeat(40);
 function fixture(){const root=mkdtempSync(join(tmpdir(),"opencode-review-")),entry=join(root,"opencode");writeFileSync(entry,"");return {root,entry};}
@@ -144,6 +147,87 @@ test("projection emits required facts and excludes raw panel evidence",()=>{
     cleanup=()=>{oldNode===undefined?delete process.env.OPERATOR_PROXY_NODE_PATH:process.env.OPERATOR_PROXY_NODE_PATH=oldNode;oldEntry===undefined?delete process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT:process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=oldEntry;};
   try{new OpenCodeReviewerBackend("ollama-cloud/glm-5.2",runner).review({repository:"qualification",repositoryRoot:f.root,pr:1,baseSha:base,headSha:head,risk:"LOW",changedFiles:["a"],builderSession:"builder",panelEvidence:panel},"session");assert.ok(prompt);assert.match(prompt!,/PANEL_EVIDENCE_SHA256/);assert.match(prompt!,/PANEL_EVIDENCE_PROJECTION/);const projectionMatch=prompt!.match(/PANEL_EVIDENCE_PROJECTION=([^\n]+)/);assert.ok(projectionMatch);const projection=JSON.parse(projectionMatch![1]);assert.equal(projection.projection_version,1);assert.equal(typeof projection.complete_evidence_sha256,"string");assert.ok(Array.isArray(projection.facts));const paths=projection.facts.map((fact:any)=>fact.path);    assert.ok(paths.includes("primary.head"));assert.ok(paths.includes("primary.head_sha"));assert.ok(paths.includes("primary.reviewed_head"));assert.ok(paths.includes("primary.model"));assert.ok(paths.includes("primary.session"));assert.ok(paths.includes("primary.verdict"));assert.ok(paths.includes("primary.finding_count"));assert.ok(paths.includes("verifier.classification"));assert.ok(paths.includes("verifier.adjudication"));assert.ok(paths.includes("verifier.model"));assert.ok(paths.includes("verifier.session"));assert.ok(paths.includes("verifier.findings[0].severity"));assert.ok(paths.includes("verifier.findings[0].evidence"));assert.ok(paths.includes("verifier.findings[0].observation"));assert.ok(paths.includes("primary.source.sha256"));assert.ok(paths.includes("primary.source.runtime_reproduction_sha256"));assert.ok(paths.includes("primary.source.codex_evidence_sha256"));assert.ok(paths.includes("primary.source.fresh_codex_session"));assert.equal(projection.facts.some((fact:any)=>fact.path.includes("extra")),false);assert.equal(prompt!.includes(JSON.stringify(panel)),false);}
   finally{cleanup();}
+});
+
+test("secrets are redacted from projection and prompt while original hash is preserved",()=>{
+  const f=fixture(),oldNode=process.env.OPERATOR_PROXY_NODE_PATH,oldEntry=process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT;process.env.OPERATOR_PROXY_NODE_PATH=process.execPath;process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=f.entry;
+  const bearer="Bearer ghp_supersecret123456789012345678901234";
+  const openaiToken="sk-openaiTokenValue12345";
+  const githubToken="github_pat_zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz";
+  const basicValue="Basic c2VjcmV0OmdhdGVz";
+  const urlCred="https://admin:superpass@git.example.com/repo.git";
+  const summaryObj:any={text:"summary",password:"hunter2",authorization:basicValue,nested:{apiKey:openaiToken},plain:"keep"};
+  const panel={
+    summary:bearer,
+    primary:{head:head,head_sha:head,verdict:"PASS",findings:[],finding_count:0,model:"m",session:"s",source:{runtime_reproduction_sha256:"rsha",codex_evidence_sha256:"esha",complete_evidence_sha256:"cesha"}},
+    verifier:{model:"m2",session:"s2",classification:"CHANGES_REQUESTED",adjudication:"ACCEPT",findings:[{severity:"P2",title:"title",evidence:openaiToken,required_correction:`password=hunter2 authorization:${basicValue} repo:${urlCred}`,observation:`token ${githubToken}`}],summary:summaryObj},
+    extra:{authorization:basicValue,apiKey:openaiToken},
+    url:{repo:"https://user:pass@example.com/repo.git",safe:"keep-me"}
+  };
+  const raw=JSON.stringify(panel);
+  let prompt:string|undefined;
+  const runner=(file:string,args:string[])=>{const promptIndex=args.indexOf("--file");if(promptIndex>=0)prompt=readFileSync(args[promptIndex+1],"utf8");if(args.includes("worktree")&&args.includes("add")){mkdirSync(args[args.indexOf("--detach")+1],{recursive:true});return "";};if(args.includes("rev-parse"))return head;if(args.includes("merge-base"))return base;if(args.includes("status"))return "";if(args.includes("diff"))return "safe";if(file===process.execPath)return modelLine({verdict:"PASS",head_sha:head,summary:"ok",findings:[]});return "";},
+    cleanup=()=>{oldNode===undefined?delete process.env.OPERATOR_PROXY_NODE_PATH:process.env.OPERATOR_PROXY_NODE_PATH=oldNode;oldEntry===undefined?delete process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT:process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=oldEntry;};
+  try{
+    const result=new OpenCodeReviewerBackend("ollama-cloud/glm-5.2",runner).review({repository:"qualification",repositoryRoot:f.root,pr:1,baseSha:base,headSha:head,risk:"LOW",changedFiles:["a"],builderSession:"builder",panelEvidence:panel},"session");
+    const sha256=hashString(JSON.stringify(canonicalizeEvidence(panel)));
+    assert.equal(result.output.verdict,"PASS");
+    assert.ok(prompt);
+    const projectionMatch=prompt!.match(/PANEL_EVIDENCE_PROJECTION=([^\n]+)/);assert.ok(projectionMatch);
+    const projection=JSON.parse(projectionMatch![1]);
+    assert.equal(projection.projection_version,1);
+    assert.equal(projection.complete_evidence_sha256,sha256);
+    assert.ok(Array.isArray(projection.facts));
+    const projectionStr=JSON.stringify(projection);
+    for(const secret of [bearer,openaiToken,githubToken,"hunter2",basicValue,urlCred,"superpass","https://user:pass@example.com/repo.git","sk-openaiTokenValue12345"]){
+      assert.ok(!projectionStr.includes(secret),`secret leaked into projection: ${secret.slice(0,20)}`);
+      assert.ok(!prompt!.includes(secret),`secret leaked into prompt: ${secret.slice(0,20)}`);
+    }
+    assert.ok(!prompt!.includes(raw),"raw panel object leaked into prompt");
+    assert.ok(projectionStr.includes("[REDACTED:TOKEN]"),"expected TOKEN redaction marker");
+    assert.ok(projectionStr.includes("[REDACTED:PASSWORD]"),"expected PASSWORD redaction marker");
+    const byPath=new Map<string,any>(projection.facts.map((fact:any)=>[fact.path,fact.value]));
+    assert.equal(byPath.get("summary"),"Bearer [REDACTED:TOKEN]");
+    assert.equal(byPath.get("primary.head"),head);
+    assert.equal(byPath.get("primary.head_sha"),head);
+    assert.equal(byPath.get("primary.verdict"),"PASS");
+    assert.equal(byPath.get("primary.finding_count"),0);
+    assert.equal(byPath.get("primary.model"),"m");
+    assert.equal(byPath.get("primary.session"),"s");
+    assert.equal(byPath.get("primary.source.runtime_reproduction_sha256"),"rsha");
+    assert.equal(byPath.get("primary.source.codex_evidence_sha256"),"esha");
+    assert.equal(byPath.get("primary.source.complete_evidence_sha256"),"cesha");
+    assert.equal(byPath.get("verifier.classification"),"CHANGES_REQUESTED");
+    assert.equal(byPath.get("verifier.adjudication"),"ACCEPT");
+    assert.equal(byPath.get("verifier.findings[0].severity"),"P2");
+    assert.equal(byPath.get("verifier.findings[0].evidence"),"[REDACTED:TOKEN]");
+    assert.equal(byPath.get("verifier.findings[0].observation").includes(githubToken),false);
+    assert.ok(byPath.get("verifier.findings[0].observation").includes("[REDACTED:TOKEN]"));
+    assert.equal(byPath.get("verifier.summary.text"),"summary");
+    assert.equal(byPath.get("verifier.summary.password"),"[REDACTED:PASSWORD]");
+    assert.equal(byPath.get("verifier.summary.authorization"),"[REDACTED:TOKEN]");
+    assert.equal(byPath.get("verifier.summary.nested.apiKey"),"[REDACTED:TOKEN]");
+    assert.equal(byPath.get("verifier.summary.plain"),"keep");
+    const requiredFact=byPath.get("verifier.findings[0].required_correction");
+    assert.ok(typeof requiredFact==="string");
+    assert.ok(!requiredFact.includes("hunter2"));
+    assert.ok(!requiredFact.includes(basicValue));
+    assert.ok(!requiredFact.includes(urlCred));
+    assert.ok(requiredFact.includes("[REDACTED:PASSWORD]"));
+    assert.ok(requiredFact.includes("[REDACTED:TOKEN]"));
+  }finally{cleanup();}
+});
+
+test("hash regression: different secrets produce different complete_evidence_sha256 despite identical redaction",()=>{
+  const a={primary:{head:head,verdict:"PASS",finding_count:0,model:"m",session:"s",evidence:"password=secretA"}};
+  const b={primary:{head:head,verdict:"PASS",finding_count:0,model:"m",session:"s",evidence:"password=secretB"}};
+  const pa=projectPanelEvidence(a);
+  const pb=projectPanelEvidence(b);
+  assert.notEqual(pa.sha256,pb.sha256);
+  assert.ok(!pa.projection.includes("secretA"));
+  assert.ok(!pb.projection.includes("secretB"));
+  assert.ok(pa.projection.includes("[REDACTED:PASSWORD]"));
+  assert.ok(pb.projection.includes("[REDACTED:PASSWORD]"));
 });
 
 test("same evidence in different object insertion order yields identical projection and hash",()=>{

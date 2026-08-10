@@ -6,7 +6,7 @@ import {isAbsolute,join,relative,resolve} from "node:path";
 import type {ReviewerBackend,ReviewerAttempt,ReviewerInput} from "./reviewer_backend.js";
 import {ReviewerBackendError} from "./reviewer_backend.js";
 import {normalizeReviewerOutput} from "./review_contract.js";
-import {redactedError} from "./redaction.js";
+import {redactedError,redactSensitiveData} from "./redaction.js";
 
 type NativeRunner=(file:string,args:string[],options:{cwd?:string;env?:NodeJS.ProcessEnv;timeout:number;maxBuffer:number})=>string;
 const native:NativeRunner=(file,args,options)=>execFileSync(file,args,{...options,encoding:"utf8"});
@@ -44,7 +44,7 @@ const MAX_FINDING_COUNT=6;
 
 function hashString(value:string){return createHash("sha256").update(value,"utf8").digest("hex");}
 
-function canonicalizeEvidence(value:unknown):unknown{
+export function canonicalizeEvidence(value:unknown):unknown{
   const stack=new Set<unknown>();
   function visit(v:unknown,path:string):unknown{
     if(v===null)return null;
@@ -109,7 +109,8 @@ export function projectPanelEvidence(evidence:unknown):{projection:string;sha256
   const rawCanonical=JSON.stringify(canonical);
   if(Buffer.byteLength(rawCanonical,"utf8")>MAX_EVIDENCE_UNPROJECTED_SIZE)throw new ReviewerBackendError("panel evidence too large to project","REVIEWER_INVALID_INPUT");
   const sha256=hashString(rawCanonical);
-  const facts=collectRelevantFacts(canonical);
+  const redacted=redactSensitiveData(canonical);
+  const facts=collectRelevantFacts(redacted);
   if(facts.length>MAX_EVIDENCE_FACTS)throw new ReviewerBackendError("panel evidence fact count overflow","REVIEWER_INVALID_INPUT");
   const projectionObj={projection_version:1,complete_evidence_sha256:sha256,facts};
   const projection=JSON.stringify(projectionObj);
