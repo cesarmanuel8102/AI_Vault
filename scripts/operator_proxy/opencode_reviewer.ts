@@ -1,3 +1,4 @@
+import {createHash} from "node:crypto";
 import {execFileSync} from "node:child_process";
 import {existsSync,mkdtempSync,readFileSync,realpathSync,rmSync,statSync,writeFileSync} from "node:fs";
 import {tmpdir} from "node:os";
@@ -30,16 +31,114 @@ function assertImmutable(runner:NativeRunner,repo:string,input:ReviewerInput){
   if(git(runner,repo,["merge-base",input.baseSha,input.headSha])!==input.baseSha)throw new ReviewerBackendError("review base mismatch","REVIEW_IDENTITY_MISMATCH");
   if(git(runner,repo,["status","--porcelain","--untracked-files=all"]))throw new ReviewerBackendError("review workspace mutated","REVIEWER_WRITE_ATTEMPT");
 }
-function reviewPrompt(input:ReviewerInput,diff:string){return [
-  "You are an independent read-only code reviewer. Analyze the complete immutable diff below.",
-  `REPOSITORY=${input.repository}`,`PR=${input.pr}`,`BASE_SHA=${input.baseSha}`,`HEAD_SHA=${input.headSha}`,`RISK=${input.risk}`,
-  `BUILDER_SESSION=${input.builderSession}`,`CHANGED_FILES=${JSON.stringify(input.changedFiles)}`,
-  ...(input.panelEvidence?[`PANEL_EVIDENCE=${JSON.stringify(input.panelEvidence)}`,"Act as the independent arbiter. Evaluate the diff and the conflicting panel evidence; do not merely vote."]:[]),
-  "Return exactly one bare JSON object with keys verdict, head_sha, summary, findings.",
-  "verdict must be PASS only with zero findings; CHANGES_REQUESTED only for repairable P1/P2; BLOCKED for P0, authority uncertainty, or invalid evidence.",
-  "Each finding must have severity, title, evidence, required_correction. Do not use Markdown. The immutable diff is embedded; inspection is optional. Only read, glob, and grep may inspect the detached workspace. Do not use list, mutate files, execute commands, create tasks, access networks, or access external directories.",
-  "BEGIN_COMPLETE_DIFF",diff,"END_COMPLETE_DIFF",
-].join("\n");}
+const MAX_SUMMARY=200;
+const MAX_PROMPT_SIZE=256*1024;
+const MAX_EVIDENCE_PROJECTION_SIZE=4*1024;
+const MAX_EVIDENCE_UNPROJECTED_SIZE=16*1024;
+const MAX_EVIDENCE_FACTS=256;
+const MAX_EVIDENCE_FACT_VALUE_SIZE=1024;
+const MAX_FINDING_TITLE=60;
+const MAX_FINDING_EVIDENCE=200;
+const MAX_FINDING_CORRECTION=120;
+const MAX_FINDING_COUNT=6;
+
+function hashString(value:string){return createHash("sha256").update(value,"utf8").digest("hex");}
+
+function canonicalizeEvidence(value:unknown):unknown{
+  const stack=new Set<unknown>();
+  function visit(v:unknown,path:string):unknown{
+    if(v===null)return null;
+    const t=typeof v;
+    if(t==="string"||t==="number"||t==="boolean"){
+      if(t==="number"&&(!Number.isFinite(v as number)))throw new ReviewerBackendError(`non-JSON number at ${path}`,"REVIEWER_INVALID_INPUT");
+      return v;
+    }
+    if(Array.isArray(v)){
+      if(stack.has(v))throw new ReviewerBackendError(`cycle at ${path}`,"REVIEWER_INVALID_INPUT");
+      stack.add(v);
+      try{return v.map((item,i)=>visit(item,`${path}[${i}]`));}finally{stack.delete(v);}
+    }
+    if(t==="object"){
+      if(stack.has(v))throw new ReviewerBackendError(`cycle at ${path}`,"REVIEWER_INVALID_INPUT");
+      stack.add(v);
+      try{
+        const entries=Object.entries(v as Record<string,unknown>).sort(([a],[b])=>a.localeCompare(b));
+        const out:Record<string,unknown>={};
+        for(const [k,val] of entries){out[k]=visit(val,path?`${path}.${k}`:k);}
+        return out;
+      }finally{stack.delete(v);}
+    }
+    throw new ReviewerBackendError(`non-JSON value at ${path}`,"REVIEWER_INVALID_INPUT");
+  }
+  return visit(value,"");
+}
+
+const RELEVANT_PATH_KEYS=new Set(["type","head","head_sha","reviewed_head","verdict","classification","adjudication","status","finding_count","severity","title","evidence","required_correction","observation","observations","summary"]);
+const SAFE_SUFFIXES=["_sha256","_model","_session","_head","_head_sha"];
+const EXACT_SAFE_KEYS=new Set(["sha256","model","session"]);
+const RELEVANT_NAME_PARTS=/\b(classification|adjudication|observation|finding_count)\b/;
+function isRelevantPath(path:string){
+  const segments=path.split(/[\.\[\]]+/).filter(Boolean);
+  return segments.some(k=>RELEVANT_PATH_KEYS.has(k)||EXACT_SAFE_KEYS.has(k)||SAFE_SUFFIXES.some(s=>k.endsWith(s))||RELEVANT_NAME_PARTS.test(k));
+}
+
+function collectRelevantFacts(canonical:unknown):{path:string;value:unknown}[]{
+  const facts:{path:string;value:unknown}[]=[];
+  function walk(v:unknown,path:string){
+    if(v===null||typeof v!=="object"){
+      if(isRelevantPath(path)){
+        const serialized=JSON.stringify(v);
+        if(Buffer.byteLength(serialized,"utf8")>MAX_EVIDENCE_FACT_VALUE_SIZE)throw new ReviewerBackendError("panel evidence fact value too large","REVIEWER_INVALID_INPUT");
+        facts.push({path,value:v});
+      }
+      return;
+    }
+    if(Array.isArray(v)){
+      v.forEach((item,i)=>walk(item,`${path}[${i}]`));
+    }else{
+      for(const [k,val] of Object.entries(v as Record<string,unknown>)){walk(val,path?`${path}.${k}`:k);}
+    }
+  }
+  walk(canonical,"");
+  facts.sort((a,b)=>a.path.localeCompare(b.path));
+  return facts;
+}
+
+export function projectPanelEvidence(evidence:unknown):{projection:string;sha256:string}{
+  const canonical=canonicalizeEvidence(evidence);
+  const rawCanonical=JSON.stringify(canonical);
+  if(Buffer.byteLength(rawCanonical,"utf8")>MAX_EVIDENCE_UNPROJECTED_SIZE)throw new ReviewerBackendError("panel evidence too large to project","REVIEWER_INVALID_INPUT");
+  const sha256=hashString(rawCanonical);
+  const facts=collectRelevantFacts(canonical);
+  if(facts.length>MAX_EVIDENCE_FACTS)throw new ReviewerBackendError("panel evidence fact count overflow","REVIEWER_INVALID_INPUT");
+  const projectionObj={projection_version:1,complete_evidence_sha256:sha256,facts};
+  const projection=JSON.stringify(projectionObj);
+  if(Buffer.byteLength(projection,"utf8")>MAX_EVIDENCE_PROJECTION_SIZE)throw new ReviewerBackendError("panel evidence projection overflow","REVIEWER_INVALID_INPUT");
+  return {projection,sha256};
+}
+function reviewPrompt(input:ReviewerInput,diff:string){
+  const staticLines:string[]=[
+    "You are an independent read-only code reviewer. Return exactly one bare JSON object with keys verdict, head_sha, summary, findings.",
+    "verdict must be exactly PASS only if findings=[]; CHANGES_REQUESTED only for repairable P1/P2; BLOCKED for P0, uncertainty, or invalid input.",
+    "summary must be a concise plain-text sentence under 200 characters. No Markdown.",
+    "findings is an array, maximum 6 entries. Each finding has severity (P0|P1|P2), title (max 60 chars), evidence (max 200 chars), required_correction (max 120 chars).",
+    "Return exactly one bare JSON object. Do not wrap it in Markdown code fences, code blocks, or prose. The response must be only JSON.",
+    `REPOSITORY=${input.repository}`,`PR=${input.pr}`,`BASE_SHA=${input.baseSha}`,`HEAD_SHA=${input.headSha}`,`RISK=${input.risk}`,
+    `BUILDER_SESSION=${input.builderSession}`,`CHANGED_FILES=${JSON.stringify(input.changedFiles)}`,
+  ];
+  let projectionLine:string|undefined;
+  if(input.panelEvidence!==undefined){
+    const {projection,sha256}=projectPanelEvidence(input.panelEvidence);
+    projectionLine=`PANEL_EVIDENCE_SHA256=${sha256}\nPANEL_EVIDENCE_PROJECTION=${projection}\nUse the projection as the only panel evidence; do not invent, restate, or quote it.`;
+  }
+  const staticPart=staticLines.join("\n");
+  const parts=[staticPart];
+  if(projectionLine)parts.push(projectionLine);
+  parts.push("BEGIN_COMPLETE_DIFF",diff,"END_COMPLETE_DIFF");
+  const prompt=parts.join("\n");
+  if(Buffer.byteLength(prompt,"utf8")>MAX_PROMPT_SIZE)throw new ReviewerBackendError("review prompt exceeds bounded budget","REVIEWER_INVALID_INPUT");
+  return prompt;
+}
 const READ_ONLY_TOOLS=new Set(["read","glob","grep"]),MAX_READ_ONLY_TOOLS=16;
 function insideWorkspace(workspace:string,value:string,existing:boolean){
   if(value.includes("\0"))throw new ReviewerBackendError("reviewer path invalid","REVIEWER_WRITE_ATTEMPT");
@@ -66,18 +165,37 @@ function validateTool(part:any,workspace:string){
 }
 export function parseJsonl(stdout:string,head:string,workspace:string){
   const texts:string[]=[],sessions=new Set<string>();
-  let tools=0;
+  let tools=0,truncated=false;
   for(const line of stdout.split(/\r?\n/).filter(Boolean)){
     let event:any;try{event=JSON.parse(line);}catch{throw new ReviewerBackendError("OpenCode JSONL invalid","REVIEWER_INVALID_TRANSPORT");}
     const session=typeof event?.sessionID==="string"?event.sessionID:typeof event?.part?.sessionID==="string"?event.part.sessionID:"";
     if(session)sessions.add(session);
     if(event?.type==="text"&&typeof event?.part?.text==="string"&&event.part.text.trim())texts.push(event.part.text.trim());
+    if(event?.type==="step_finish"&&event?.part?.reason==="length")truncated=true;
+    if(event?.type==="step-finish"&&event?.part?.reason==="length")truncated=true;
+    if(event?.info?.finish==="length")truncated=true;
     if(event?.type==="tool_use"){if(++tools>MAX_READ_ONLY_TOOLS)throw new ReviewerBackendError("reviewer tool call limit exceeded","REVIEWER_WRITE_ATTEMPT");validateTool(event.part,workspace);}
   }
+  if(truncated)throw new ReviewerBackendError("OpenCode response truncated by length","REVIEWER_OUTPUT_TRUNCATED",true);
   if(texts.length!==1||sessions.size!==1)throw new ReviewerBackendError("reviewer final response ambiguous","REVIEWER_INVALID_OUTPUT");
   const raw=texts[0],fenced=raw.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i),payload=fenced?fenced[1]:raw;
   let value:unknown;try{value=JSON.parse(payload);}catch{throw new ReviewerBackendError("reviewer JSON invalid","REVIEWER_INVALID_OUTPUT");}
+  enforceReviewerResponseBounds(value);
   try{return {output:normalizeReviewerOutput(value,head),providerSession:[...sessions][0]};}catch(error){throw new ReviewerBackendError(redactedError(error),"REVIEWER_INVALID_OUTPUT");}
+}
+function enforceReviewerResponseBounds(value:unknown){
+  if(!value||typeof value!=="object")throw new ReviewerBackendError("reviewer output invalid","REVIEWER_INVALID_OUTPUT");
+  const candidate=value as Record<string,unknown>;
+  if(typeof candidate.summary!=="string"||candidate.summary.length===0||candidate.summary.length>MAX_SUMMARY)throw new ReviewerBackendError("reviewer summary invalid","REVIEWER_INVALID_OUTPUT");
+  if(!Array.isArray(candidate.findings)||candidate.findings.length>MAX_FINDING_COUNT)throw new ReviewerBackendError("reviewer findings invalid","REVIEWER_INVALID_OUTPUT");
+  for(const finding of candidate.findings){
+    if(!finding||typeof finding!=="object"||Array.isArray(finding))throw new ReviewerBackendError("reviewer finding invalid","REVIEWER_INVALID_OUTPUT");
+    const f=finding as Record<string,unknown>;
+    if(typeof f.title!=="string"||f.title.length===0||f.title.length>MAX_FINDING_TITLE)throw new ReviewerBackendError("reviewer finding title invalid","REVIEWER_INVALID_OUTPUT");
+    if(typeof f.evidence!=="string"||f.evidence.length===0||f.evidence.length>MAX_FINDING_EVIDENCE)throw new ReviewerBackendError("reviewer finding evidence invalid","REVIEWER_INVALID_OUTPUT");
+    if(typeof f.required_correction!=="string"||f.required_correction.length===0||f.required_correction.length>MAX_FINDING_CORRECTION)throw new ReviewerBackendError("reviewer finding required_correction invalid","REVIEWER_INVALID_OUTPUT");
+  }
+  if(candidate.verdict==="PASS"&&candidate.findings.length>0)throw new ReviewerBackendError("reviewer PASS with findings invalid","REVIEWER_INVALID_OUTPUT");
 }
 
 export class OpenCodeReviewerBackend implements ReviewerBackend {

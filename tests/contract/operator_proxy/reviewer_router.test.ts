@@ -84,3 +84,19 @@ test("outer ledger receipt is bound to complete validated router evidence",()=>{
   assert.equal(validateReviewerEnvelope(persisted(),expected,request).session,run.session);
   for(const mutate of [(value:any)=>{delete value.router_run;},(value:any)=>{value.builder_model=REVIEWER_MODELS.glm;},(value:any)=>{value.router_run.primary_output.summary="tampered-primary-output";},(value:any)=>{value.result.summary="tampered";}]){const value=persisted(),before=JSON.stringify(value);mutate(value);assert.notEqual(JSON.stringify(value),before,"tampering mutation must modify the persisted envelope");assert.throws(()=>validateReviewerEnvelope(value,expected,request),/review receipt/);}
 });
+
+test("transient truncation retried once then PASS",()=>{
+  let truncated=false;
+  const factory=(model:string):ReviewerBackend=>model===REVIEWER_MODELS.deepseekFlash?{model,review:(value,session)=>{if(!truncated){truncated=true;throw new ReviewerBackendError("truncated","REVIEWER_OUTPUT_TRUNCATED",true);}return pass(model).review(value,session);}}:pass(model);
+  const run=new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-truncation-")),factory).review(input({risk:"LOW"}));
+  assert.equal(run.output.verdict,"PASS");assert.equal(run.attempts.length,3);
+  const failed=run.attempts.filter(a=>a.status==="FAILED");assert.equal(failed.length,1);assert.equal(failed[0].failure_class,"REVIEWER_OUTPUT_TRUNCATED");assert.equal(failed[0].model,REVIEWER_MODELS.deepseekFlash);
+  const passed=run.attempts.filter(a=>a.status==="PASS");assert.equal(passed.length,2);
+  assert.notEqual(passed[0].session,passed[1].session);assert.equal(passed.find(a=>a.model===REVIEWER_MODELS.deepseekFlash)?.session,run.session);assert.equal(run.model,REVIEWER_MODELS.deepseekFlash);
+  assert.equal(run.verifier.model,REVIEWER_MODELS.deepseekPro);assert.ok(!run.arbiter);
+});
+
+test("transient truncation twice on same model is blocked",()=>{
+  const factory=(model:string):ReviewerBackend=>model===REVIEWER_MODELS.deepseekPro?{model,review:()=>{throw new ReviewerBackendError("truncated","REVIEWER_OUTPUT_TRUNCATED",true);}}:pass(model);
+  assert.throws(()=>new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-truncation-twice-")),factory).review(input()),/independent reviewer quorum unavailable/);
+});
