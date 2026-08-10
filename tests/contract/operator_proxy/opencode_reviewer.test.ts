@@ -57,7 +57,9 @@ test("validates captured read glob grep tool events and rejects list, escapes, a
   const event=(tool:string,input:object)=>JSON.stringify({type:"tool_use",sessionID:"provider",part:{tool,state:{status:"completed",input}}});
   assert.equal(parseJsonl(`${event("read",{filePath:file,offset:0,limit:1})}\n${final}\n`,head,workspace).output.verdict,"PASS");
   assert.equal(parseJsonl(`${event("read",{filePath:"scripts/a.ts",offset:0,limit:1})}\n${final}\n`,head,workspace).output.verdict,"PASS");
-  assert.equal(parseJsonl(`${event("glob",{pattern:"scripts/**/*.ts"})}\n${event("grep",{pattern:"safe",path:"scripts",include:"*.ts"})}\n${final}\n`,head,workspace).output.verdict,"PASS");
+  assert.equal(parseJsonl(`${event("glob",{pattern:"scripts/**/*.ts",path:"scripts"})}\n${event("grep",{pattern:"safe",path:"scripts",include:"*.ts"})}\n${final}\n`,head,workspace).output.verdict,"PASS");
+  assert.equal(parseJsonl(`${event("glob",{pattern:"**/*.ts"})}\n${final}\n`,head,workspace).output.verdict,"PASS");
+  assert.equal(parseJsonl(`${event("grep",{pattern:"safe",include:"*.ts"})}\n${final}\n`,head,workspace).output.verdict,"PASS");
   assert.throws(()=>parseJsonl(`${event("list",{path:"scripts"})}\n${final}\n`,head,workspace),/tool call/);
   assert.throws(()=>parseJsonl(`${event("read",{filePath:join(f.root,"outside")})}\n${final}\n`,head,workspace),/outside workspace/);
   assert.throws(()=>parseJsonl(`${event("read",{filePath:"../outside.ts"})}\n${final}\n`,head,workspace),/outside workspace/);
@@ -101,6 +103,34 @@ test("rejects symlink targeting outside workspace when supported",()=>{
   }catch(e:any){
     if(isPrivilegeError(e)){
       platformNote=`${process.platform} symlink/junction creation requires elevated privileges; containment logic validated by traversal tests`;
+    }else{throw e;}
+  }finally{
+    rmSync(workspace,{recursive:true,force:true});rmSync(outside,{recursive:true,force:true});
+    if(platformNote)console.log(platformNote);
+  }
+});
+
+test("rejects directory symlink or junction escaping workspace for glob and grep",()=>{
+  const workspace=mkdtempSync(join(tmpdir(),"opencode-escape-workspace-")),outside=mkdtempSync(join(tmpdir(),"opencode-escape-outside-")),outsideFile=join(outside,"secret.ts");writeFileSync(outsideFile,"secret\n");
+  const link=join(workspace,"escape-dir");let platformNote:string|undefined;
+  function isPrivilegeError(e:any){
+    if(e?.code==="EPERM"||e?.code==="EACCES")return true;
+    const text=String(e?.stderr??e?.message??"").toLowerCase();
+    return /privilege|administrator|operation not permitted|access is denied/.test(text);
+  }
+  try{
+    if(process.platform==="win32"){
+      try{execFileSync("cmd",["/c","mklink","/J",link,outside],{encoding:"utf8",windowsHide:true});}
+      catch(e:any){if(isPrivilegeError(e))throw e;else throw e;}
+    }else{symlinkSync(outside,link,"dir");}
+    const final=JSON.stringify({type:"text",sessionID:"provider",part:{text:JSON.stringify({verdict:"PASS",head_sha:head,summary:"ok",findings:[]})}});
+    const globEvent=JSON.stringify({type:"tool_use",sessionID:"provider",part:{tool:"glob",state:{status:"completed",input:{path:"escape-dir",pattern:"**/*.ts"}}}});
+    const grepEvent=JSON.stringify({type:"tool_use",sessionID:"provider",part:{tool:"grep",state:{status:"completed",input:{path:"escape-dir",pattern:"secret",include:"*.ts"}}}});
+    assert.throws(()=>parseJsonl(`${globEvent}\n${final}\n`,head,workspace),/outside workspace/);
+    assert.throws(()=>parseJsonl(`${grepEvent}\n${final}\n`,head,workspace),/outside workspace/);
+  }catch(e:any){
+    if(isPrivilegeError(e)){
+      platformNote=`PLATFORM_NOT_APPLICABLE ${process.platform} directory junction/symlink creation requires elevated privileges; containment logic validated by traversal tests`;
     }else{throw e;}
   }finally{
     rmSync(workspace,{recursive:true,force:true});rmSync(outside,{recursive:true,force:true});

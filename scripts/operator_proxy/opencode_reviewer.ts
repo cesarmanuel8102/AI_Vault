@@ -63,7 +63,7 @@ function validateTool(part:any,workspace:string){
     insideWorkspace(workspace,input.filePath,true);
   } else {
     if(typeof input.pattern!=="string"||input.pattern.length<1||input.pattern.length>4096||input.pattern.includes("\0")||/(^|[\\/])\.\.([\\/]|$)|^(?:[a-z]:|\\\\|\/)/i.test(input.pattern))throw new ReviewerBackendError("reviewer pattern invalid","REVIEWER_WRITE_ATTEMPT");
-    if(input.path!==undefined){if(typeof input.path!=="string"||input.path.length>4096)throw new ReviewerBackendError("reviewer path invalid","REVIEWER_WRITE_ATTEMPT");insideWorkspace(workspace,input.path,false);}
+    if(input.path!==undefined){if(typeof input.path!=="string"||input.path.length>4096)throw new ReviewerBackendError("reviewer path invalid","REVIEWER_WRITE_ATTEMPT");insideWorkspace(workspace,input.path,true);}
     if(tool==="grep"&&input.include!==undefined&&(typeof input.include!=="string"||input.include.length<1||input.include.length>4096||/(^|[\\/])\.\.([\\/]|$)|^(?:[a-z]:|\\\\|\/)/i.test(input.include)))throw new ReviewerBackendError("reviewer include invalid","REVIEWER_WRITE_ATTEMPT");
   }
 }
