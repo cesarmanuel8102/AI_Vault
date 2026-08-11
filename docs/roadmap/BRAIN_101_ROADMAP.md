@@ -1001,10 +1001,18 @@ La evidencia de lifecycle parent se registra de forma inmutable y exacta: `paren
 
 El closeout machine-readable está en `docs/roadmap/evidence/BRAIN_101_R2_4_UNIFIED_GOVERNANCE_GATE_CLOSEOUT.json`. R2.4 queda `CLOSED_RUNTIME_VERIFIED`, pero R2 no queda cerrado. Se autoriza exactamente un siguiente item: `R2.5`, `MEDIUM`, dominio `security_governance`, ejecutor `codex_control_plane`, rama `control-plane/r2-5-five-role-rbac-matrix`, `NO_DEPLOY`, permitido para la matriz RBAC constitucional de owner, operator, reviewer, executor y read-only, con closeout completo predeclarado. Live trading, real money, canonical local sync, auto-merge y deploy siguen no autorizados.
 
-## 13.18 Estado vigente
+## 13.18 Cierre runtime de R2.5
+
+R2.5 quedó cerrado en runtime con la matriz RBAC constitucional de cinco roles `BRAIN-101-R2-5-FIVE-ROLE-RBAC-MATRIX-01`. El paquete `docs/roadmap/evidence/BRAIN_101_R2_5_FIVE_ROLE_RBAC_MATRIX.md` registra la matriz completa de permisos allow/deny por rol, por ruta y por recurso para owner, operator, reviewer, executor y read-only; prueba que rol incorrecto, actor incorrecto, scope incorrecto, acceso anónimo y escalación de privilegios son denegados bajo el gate de gobernanza unificado; y preserva la denegación P3, autoridad humana final, live trading deshabilitado, real money deshabilitado, canonical local sync deshabilitado y auto-merge deshabilitado.
+
+La evidencia de lifecycle parent se registra de forma inmutable y exacta: `parent_front_id` `BRAIN-101-R2-5-FIVE-ROLE-RBAC-MATRIX-01`, Issue #158, PR #159, decisión `9d011c42-59c3-4609-a785-fc20172938a3`, modo de autorización `OWNER_CONSTITUTIONAL`, base `e7cd91b7c7d8f61e25bcbef4eed5c93d658d87d2`, closeout base `f48140ee80388fb1b9cd0ebbbf37fa40ebe4c085`, head `5ebf73c0a6a177840cdc04530940f86964b47f4d`, merge `f48140ee80388fb1b9cd0ebbbf37fa40ebe4c085`, builder session `builder-271f38c2-0bcf-4a49-97f5-f4d0655307c2`, y reviewer session `reviewer:opencode_ollama:ollama-cloud/qwen3.5:397b:4df48fbb-c390-430d-a80f-490297a904da`.
+
+El closeout machine-readable está en `docs/roadmap/evidence/BRAIN_101_R2_5_FIVE_ROLE_RBAC_MATRIX_CLOSEOUT.json`. R2.5 queda `CLOSED_RUNTIME_VERIFIED`, pero R2 no queda cerrado. Se autoriza exactamente un siguiente item: `R3.1`, `MEDIUM`, dominio `testing_ci_recovery`, ejecutor `codex_control_plane`, rama `control-plane/r3-1-contract-e2e-gap-matrix`, `NO_DEPLOY`, permitido solo para `docs/roadmap/evidence/BRAIN_101_R3_1_CONTRACT_E2E_GAP_MATRIX.md`, con closeout completo predeclarado. Live trading, real money, canonical local sync, auto-merge y deploy siguen no autorizados.
+
+## 13.19 Estado vigente
 
 ```text
-STATUS: R2_4_CLOSED_RUNTIME_VERIFIED_R2_5_AUTHORIZED_ACTIVE
+STATUS: R2_5_CLOSED_RUNTIME_VERIFIED_R3_1_AUTHORIZED_ACTIVE
 R0_STATUS: CLOSED_HUMAN_ADOPTED
 ADOPTION_PR: 35
 ADOPTION_PR_HEAD: a605c4d88510acd477cf26d2787bc38b1c02af48
@@ -1096,10 +1104,22 @@ R2_4_AUTHORIZATION_MODE: OWNER_CONSTITUTIONAL
 R2_4_HEAD: 03e326a7da27386c64e3cbb0158762af13448014
 R2_4_MERGE_COMMIT: 4da21f268e339f83b6acfe49fb091087196f2085
 R2_4_CLOSEOUT_EVIDENCE: docs/roadmap/evidence/BRAIN_101_R2_4_UNIFIED_GOVERNANCE_GATE_CLOSEOUT.json
-R2_5_STATUS: AUTHORIZED_ACTIVE
+R2_5_STATUS: CLOSED_RUNTIME_VERIFIED
 R2_5_FRONT: BRAIN-101-R2-5-FIVE-ROLE-RBAC-MATRIX-01
 R2_5_EXECUTOR: codex_control_plane
 R2_5_WORK_BRANCH: control-plane/r2-5-five-role-rbac-matrix
 R2_5_DEPLOYMENT_MODE: NO_DEPLOY
-NEXT_GATE: Execute R2.5 five-role RBAC matrix with NO_DEPLOY
+R2_5_ISSUE: 158
+R2_5_PR: 159
+R2_5_DECISION_ID: 9d011c42-59c3-4609-a785-fc20172938a3
+R2_5_AUTHORIZATION_MODE: OWNER_CONSTITUTIONAL
+R2_5_HEAD: 5ebf73c0a6a177840cdc04530940f86964b47f4d
+R2_5_MERGE_COMMIT: f48140ee80388fb1b9cd0ebbbf37fa40ebe4c085
+R2_5_CLOSEOUT_EVIDENCE: docs/roadmap/evidence/BRAIN_101_R2_5_FIVE_ROLE_RBAC_MATRIX_CLOSEOUT.json
+R3_1_STATUS: AUTHORIZED_ACTIVE
+R3_1_FRONT: BRAIN-101-R3-1-CONTRACT-E2E-GAP-MATRIX-01
+R3_1_EXECUTOR: codex_control_plane
+R3_1_WORK_BRANCH: control-plane/r3-1-contract-e2e-gap-matrix
+R3_1_DEPLOYMENT_MODE: NO_DEPLOY
+NEXT_GATE: Execute R3.1 contract/E2E gap matrix with NO_DEPLOY
 ```
