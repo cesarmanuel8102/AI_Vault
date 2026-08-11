@@ -35,14 +35,20 @@ New-Item $install -ItemType Directory -Force|Out-Null
 $old=[Text.Encoding]::UTF8.GetBytes('old-runtime')
 [IO.File]::WriteAllBytes((Join-Path $install 'operator_proxy.ts'),$old)
 $taskState=Join-Path $tmp 'task-state.txt';[IO.File]::WriteAllText($taskState,'Disabled')
-$validateStage={param($stage) foreach($required in @('operator_proxy.ts','external_effect_guard.ts','redaction.ts','review_contract.ts','builder_router.ts','opencode_builder.ts')){if(!(Test-Path (Join-Path $stage $required))){throw "staging missing $required"}};New-Item (Join-Path $stage 'node_modules\.bin') -ItemType Directory -Force|Out-Null;[IO.File]::WriteAllText((Join-Path $stage 'node_modules\.bin\tsx.cmd'),'@echo off')}
+$validateStage={param($stage) foreach($required in @('operator_proxy.ts','external_effect_guard.ts','redaction.ts','review_contract.ts','builder_backend.ts','builder_config.ts','builder_router.ts','opencode_builder.ts')){if(!(Test-Path (Join-Path $stage $required))){throw "staging missing $required"}};New-Item (Join-Path $stage 'node_modules\.bin') -ItemType Directory -Force|Out-Null;[IO.File]::WriteAllText((Join-Path $stage 'node_modules\.bin\tsx.cmd'),'@echo off')}
 try {
+    $compiledInstall=Join-Path $tmp 'compiled-install'
+    $compiledOutput=@(Invoke-OperatorProxyInstall -Repo $synthetic -InstallRoot $compiledInstall -ApprovedCommit $syntheticHead)
+    if($compiledOutput -notcontains 'OPERATOR_PROXY_INSTALL_PASS'){throw 'compiled staging did not pass'}
+    foreach($required in @('builder_backend.ts','builder_config.ts','builder_router.ts','opencode_builder.ts')){
+        if(-not (Test-Path -LiteralPath (Join-Path $compiledInstall $required))){throw "compiled install missing $required"}
+    }
     Invoke-OperatorProxyInstall -Repo $synthetic -InstallRoot $install -ApprovedCommit $syntheticHead -ValidateStaging $validateStage -ValidateInstalled {param($p)} | Out-Null
     if([Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes((Join-Path $install 'operator_proxy.ts'))) -eq 'old-runtime'){throw 'install did not replace runtime'}
     if(& git -C $synthetic status --porcelain --untracked-files=all){throw 'install dirtied source repository'}
     if(Get-ChildItem $synthetic -Force -Filter '.operator-proxy-*'){throw 'transaction artifact created inside source repository'}
     $backupRoot=Join-Path $tmp 'AI_VAULT_OPERATOR_PROXY_BACKUPS'
-    if(@(Get-ChildItem $backupRoot -Directory -Filter 'operator-proxy-backup-*').Count -ne 1){throw 'backup not isolated under transaction backup root'}
+    if(@(Get-ChildItem $backupRoot -Directory -Filter 'operator-proxy-backup-*').Count -ne 2){throw 'backups not isolated under transaction backup root'}
     $capturedArgs=Join-Path $tmp 'runner-args.txt'
     $shim="@echo off`r`n> `"$capturedArgs`" echo %~1`r`n>> `"$capturedArgs`" echo %~2`r`n>> `"$capturedArgs`" echo %~3`r`nexit /b 0`r`n"
     [IO.File]::WriteAllText((Join-Path $install 'node_modules\.bin\tsx.cmd'),$shim,[Text.Encoding]::ASCII)

@@ -105,6 +105,10 @@ function Assert-SafeManagedTarget {
     Assert-NoReparsePoint $resolved
 }
 
+function Get-ManagedOperatorProxyFiles {
+    return @('schemas','action_executor.ts','agent_loop_builder_adapter.ts','autonomous_flow.ts','autonomous_runtime.ts','builder_backend.ts','builder_config.ts','builder_router.ts','codex_builder.ts','codex_reviewer.ts','decision_ledger.ts','evidence_collector.ts','external_effect_guard.ts','github_bus.ts','governed_builder.ts','lifecycle_store.ts','opencode_builder.ts','opencode_reviewer.ts','operator_proxy.ts','policy_engine.ts','production_effects.ts','redaction.ts','request_coordinator.ts','review_contract.ts','reviewer_backend.ts','reviewer_config.ts','reviewer_router.ts','risk_classifier.ts','roadmap_sequencer.ts','single_instance_lock.ts','spec_contract.ts','state_machine.ts','types.ts','package.json','package-lock.json','tsconfig.json','Run-OperatorProxy.ps1')
+}
+
 function Invoke-OperatorProxyInstall {
     [CmdletBinding()]
     param(
@@ -129,7 +133,7 @@ function Invoke-OperatorProxyInstall {
     if((Test-PathWithin $stage $identity.Repo) -or (Test-PathWithin $backup $identity.Repo)){throw 'transaction artifacts overlap repository'}
     if((Test-Path -LiteralPath $stage) -or (Test-Path -LiteralPath $backup)){throw 'transaction path collision'}
     if($install -eq $stage -or $install -eq $backup){throw 'transaction root collision'}
-    $managed=@('schemas','action_executor.ts','agent_loop_builder_adapter.ts','autonomous_flow.ts','autonomous_runtime.ts','builder_router.ts','codex_builder.ts','codex_reviewer.ts','decision_ledger.ts','evidence_collector.ts','external_effect_guard.ts','github_bus.ts','governed_builder.ts','lifecycle_store.ts','opencode_builder.ts','opencode_reviewer.ts','operator_proxy.ts','policy_engine.ts','production_effects.ts','redaction.ts','request_coordinator.ts','review_contract.ts','reviewer_backend.ts','reviewer_config.ts','reviewer_router.ts','risk_classifier.ts','roadmap_sequencer.ts','single_instance_lock.ts','spec_contract.ts','state_machine.ts','types.ts','package.json','package-lock.json','tsconfig.json','Run-OperatorProxy.ps1')
+    $managed=@(Get-ManagedOperatorProxyFiles)
     $installed=$false
     try {
         Assert-TransactionIdentity $identity $install $stage $backup
@@ -157,4 +161,4 @@ function Invoke-OperatorProxyInstall {
         if(Test-Path -LiteralPath $stage){Assert-SafeManagedTarget $stage $parent;Remove-Item -LiteralPath $stage -Recurse -Force}
     }
 }
-Export-ModuleMember -Function Invoke-OperatorProxyInstall,Invoke-CheckedNative,Resolve-TrustedOperatorProxyPath,Assert-NoReparsePoint,Assert-TrustedOperatorProxyRepository,Assert-SafeInstallRoot,Get-OperatorProxyTransactionParent
+Export-ModuleMember -Function Invoke-OperatorProxyInstall,Invoke-CheckedNative,Resolve-TrustedOperatorProxyPath,Assert-NoReparsePoint,Assert-TrustedOperatorProxyRepository,Assert-SafeInstallRoot,Get-OperatorProxyTransactionParent,Get-ManagedOperatorProxyFiles
