@@ -5,7 +5,7 @@ import {tmpdir} from "node:os";
 import {join} from "node:path";
 import type {ReviewerBackend,ReviewerInput} from "../../../scripts/operator_proxy/reviewer_backend.js";
 import {ReviewerBackendError} from "../../../scripts/operator_proxy/reviewer_backend.js";
-import {inspectAgentLoopCommitModel,REVIEWER_MODELS,requiredBuilderModel,reviewerRoute,verifiedAgentLoopCommitModel,verifiedBuilderModel} from "../../../scripts/operator_proxy/reviewer_config.js";
+import {inspectAgentLoopCommitModel,REVIEWER_MODELS,REVIEWER_QUALIFICATION,requiredBuilderModel,reviewerRoute,verifiedAgentLoopCommitModel,verifiedBuilderModel} from "../../../scripts/operator_proxy/reviewer_config.js";
 import {ReviewerRouter,validateReviewerEnvelope} from "../../../scripts/operator_proxy/reviewer_router.js";
 
 const head="b".repeat(40),base="a".repeat(40);
@@ -15,9 +15,10 @@ const pass=(model:string):ReviewerBackend=>({model,review:(_input,session)=>({ba
 test("routes by risk and agent-loop scope while excluding builder model",()=>{
   assert.deepEqual(reviewerRoute(input({risk:"LOW"})),[REVIEWER_MODELS.deepseekFlash,REVIEWER_MODELS.deepseekPro]);
   assert.deepEqual(reviewerRoute(input({changedFiles:["scripts/agent_loop/local_worker/agent_worker.py"]})),[REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.deepseekFlash]);
-  assert.deepEqual(reviewerRoute(input({builderModel:REVIEWER_MODELS.deepseekPro})),[REVIEWER_MODELS.deepseekFlash]);
+  assert.deepEqual(reviewerRoute(input({builderModel:REVIEWER_MODELS.deepseekPro})),[REVIEWER_MODELS.deepseekFlash,REVIEWER_MODELS.nemotron]);
+  assert.deepEqual(reviewerRoute(input({builderModel:REVIEWER_MODELS.deepseekFlash})),[REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.nemotron]);
   assert.ok(!reviewerRoute(input()).includes(REVIEWER_MODELS.glm));
-  assert.ok(!reviewerRoute(input()).includes(REVIEWER_MODELS.nemotron));
+  assert.deepEqual(REVIEWER_QUALIFICATION[REVIEWER_MODELS.nemotron],{qualified:true,passed:5,total:5});
   assert.equal(requiredBuilderModel({OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),REVIEWER_MODELS.glm);
   assert.throws(()=>requiredBuilderModel({} as NodeJS.ProcessEnv),/builder model identity/);
   assert.equal(verifiedBuilderModel("agent_loop",{model:REVIEWER_MODELS.glm},{OPERATOR_PROXY_BUILDER_MODEL:REVIEWER_MODELS.glm} as NodeJS.ProcessEnv),REVIEWER_MODELS.glm);
@@ -48,20 +49,25 @@ test("fails closed when every backend is unavailable",()=>{
   assert.throws(()=>new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory).review(input()),/independent reviewer quorum unavailable/);
 });
 
-test("P0 fails closed without an independent third arbiter",()=>{
+test("P0 is escalated through the independent third arbiter",()=>{
   const factory=(model:string):ReviewerBackend=>model===REVIEWER_MODELS.deepseekPro?{model,review:(_value,session)=>({...pass(model).review(input(),session),output:{verdict:"BLOCKED",head_sha:head,summary:"p0",findings:[{severity:"P0",title:"authority",evidence:"unsafe",required_correction:"owner review"}]}})}:pass(model);
-  assert.throws(()=>new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory).review(input()),(error:any)=>error instanceof ReviewerBackendError&&error.failureClass==="P0_ARBITER_UNAVAILABLE");
+  const run=new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory).review(input());assert.equal(run.output.verdict,"BLOCKED");assert.equal(run.arbiter?.model,REVIEWER_MODELS.nemotron);
 });
 
-test("verifier P0 fails closed without an arbiter",()=>{
+test("verifier P0 is escalated through the independent third arbiter",()=>{
   const p0={severity:"P0" as const,title:"authority",evidence:"verifier evidence",required_correction:"owner review"};
   const factory=(model:string):ReviewerBackend=>model===REVIEWER_MODELS.deepseekFlash?{model,review:(_value,session)=>({...pass(model).review(input(),session),output:{verdict:"BLOCKED",head_sha:head,summary:"p0",findings:[p0]}})}:pass(model);
-  assert.throws(()=>new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory).review(input()),(error:any)=>error instanceof ReviewerBackendError&&error.failureClass==="P0_ARBITER_UNAVAILABLE");
+  const run=new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory).review(input());assert.equal(run.output.verdict,"BLOCKED");assert.equal(run.arbiter?.model,REVIEWER_MODELS.nemotron);
 });
 
-test("material reviewer disagreement fails closed without an arbiter",()=>{
+test("material reviewer disagreement is escalated through the independent third arbiter",()=>{
   const factory=(model:string):ReviewerBackend=>model===REVIEWER_MODELS.deepseekFlash?{model,review:(_value,session)=>({...pass(model).review(input(),session),output:{verdict:"CHANGES_REQUESTED",head_sha:head,summary:"finding",findings:[{severity:"P2",title:"gap",evidence:"line",required_correction:"fix"}]}})}:pass(model);
-  assert.throws(()=>new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory).review(input()),(error:any)=>error instanceof ReviewerBackendError&&error.failureClass==="P0_ARBITER_UNAVAILABLE");
+  const run=new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory).review(input());assert.equal(run.output.verdict,"BLOCKED");assert.equal(run.arbiter?.model,REVIEWER_MODELS.nemotron);
+});
+
+test("builder in reviewer pool still fails closed on disagreement without a fourth actor",()=>{
+  const factory=(model:string):ReviewerBackend=>model===REVIEWER_MODELS.deepseekFlash?{model,review:(_value,session)=>({...pass(model).review(input(),session),output:{verdict:"CHANGES_REQUESTED",head_sha:head,summary:"finding",findings:[{severity:"P2",title:"gap",evidence:"line",required_correction:"fix"}]}})}:pass(model);
+  assert.throws(()=>new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory).review(input({builderModel:REVIEWER_MODELS.deepseekPro})),(error:any)=>error instanceof ReviewerBackendError&&error.failureClass==="P0_ARBITER_UNAVAILABLE");
 });
 
 test("cached escalated receipt cannot be downgraded to PASS",()=>{
