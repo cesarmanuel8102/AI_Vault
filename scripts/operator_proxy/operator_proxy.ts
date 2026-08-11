@@ -29,7 +29,7 @@ const reviewerRepo=resolveReviewerRepository();mkdirSync(join(root,"state"),{rec
 try {
   if(existsSync(join(root,"state","PAUSE"))){console.log(JSON.stringify({status:"PAUSED"}));process.exit(0);}
   const bus=new GitHubBus(process.env.GH_PATH??"gh");const boundary=new ExternalEffectBoundary(root,bus,release.owns);const ledger=new Ledger(join(root,"decisions"));let autonomous:any={status:"SKIPPED_DRY_RUN"};
-  if(!dry){try{autonomous={status:"PASS",state:runAutonomousRoadmapTick(bus,root,reviewerRepo,boundary)};}catch(error){autonomous={status:"BLOCKED",error:redactString(error instanceof Error?error.message:String(error))};}}
+  if(!dry){try{autonomous={status:"PASS",state:await runAutonomousRoadmapTick(bus,root,reviewerRepo,boundary)};}catch(error){autonomous={status:"BLOCKED",error:redactString(error instanceof Error?error.message:String(error))};}}
   const queued=bus.queued();const results=[];
   for(const issue of queued){
     try {
