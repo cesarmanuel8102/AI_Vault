@@ -60,6 +60,17 @@ export class ProductionEffects implements AutonomousEffects {
       const updated=store.recoverBlockedCiBase(state,spec.expected_base_sha,nextHead);this.bindLifecycle(spec,updated);return updated;
     } finally {this.boundary.endBlockedCiRecovery();}
   }
+  reconcileRepairBase(spec:ProxySpec,state:import("./types.js").LifecycleRecord,store:LifecycleStore){
+    const decision=state.decision_id?this.ledger.load(state.decision_id):undefined;
+    const exact=decision&&state.state==="BUILDING"&&state.repair_cycles>0&&state.repair_cycles<=2&&Number.isInteger(state.issue)&&Number.isInteger(state.pr)&&!!state.head_sha&&!!state.builder_session&&!!state.reviewer_session&&validBlockedCiEffectChain(state)&&decision.authorization_id===spec.authorization_id&&decision.repository===spec.repository&&decision.issue===state.issue&&decision.pr===state.pr&&decision.base_sha===state.base_sha&&decision.head_sha===state.head_sha&&decision.roadmap_id===spec.roadmap_id&&decision.roadmap_item_id===spec.roadmap_item_id&&decision.policy_decision==="REPAIR"&&decision.allowed_action==="REQUEST_REPAIR"&&state.base_sha!==spec.expected_base_sha&&this.bus.isAncestor(state.base_sha,spec.expected_base_sha);
+    if(!exact)throw new Error("repair base reconciliation denied");
+    const snapshot=this.bus.issueSnapshot(state.issue!),oldSpec={...spec,expected_base_sha:state.base_sha},oldBody=boundIssueBody(oldSpec,state.pr!),nextBody=boundIssueBody(spec,state.pr!),parsed=parseIssue(snapshot.body);
+    if(snapshot.state!=="OPEN"||snapshot.labels.length!==1||snapshot.labels[0]!==blockedCiIssuePhase(spec)||parsed.pr!==state.pr||JSON.stringify(parsed.spec)!==JSON.stringify(snapshot.body===oldBody?oldSpec:spec)||snapshot.body!==oldBody&&snapshot.body!==nextBody)throw new Error("repair base Issue identity invalid");
+    const branchState={...state,state:"BLOCKED" as const,last_error:"CI_FAILED",repair_cycles:0,reviewer_session:undefined,decision_id:undefined};
+    this.boundary.beginBlockedCiRecovery(spec,branchState);
+    try {const nextHead=this.builder.synchronizeBlockedCiBase(spec,branchState);this.boundary.bindBlockedCiRecoveryHead(nextHead);if(snapshot.body===oldBody)this.bus.replaceIssueBodyExact(state.issue!,oldBody,nextBody,nextHead);const updated=store.recoverRepairBase(state,spec.expected_base_sha,nextHead);this.bindLifecycle(spec,updated);return updated;}
+    finally {this.boundary.endBlockedCiRecovery();}
+  }
   reconcileNegatedRiskEscalation(spec:ProxySpec,state:import("./types.js").LifecycleRecord,store:LifecycleStore){
     const decision=state.decision_id?this.ledger.load(state.decision_id):undefined;
     const reviewRecoverable=decision&&"review_findings_count" in decision&&decision.review_consistent===true&&(decision.codex_review==="PASS"&&decision.review_findings_count===0||decision.codex_review==="CHANGES_REQUESTED"&&decision.review_findings_count>0);

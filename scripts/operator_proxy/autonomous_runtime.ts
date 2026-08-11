@@ -40,6 +40,7 @@ export function reconcilePersistedRoadmapState(bus:GitHubBus,effects:ProductionE
   if(["DISCOVERED","ADMITTED"].includes(persisted.state))return store.rebindUnstartedBase(persisted,spec.expected_base_sha);
   if(["CI_PENDING","REVIEWING"].includes(persisted.state))return effects.reconcileBlockedCiBase(spec,store.invalidatePostBuildBase(persisted),store);
   if(persisted.state==="MERGING")return effects.reconcileBlockedCiBase(spec,effects.invalidateFailedMerge(spec,persisted,store),store);
+  if(persisted.state==="BUILDING"&&persisted.repair_cycles>0)return effects.reconcileRepairBase(spec,persisted,store);
   if(validatePostMergeBaseAdvance(spec,persisted,((oldSha,newSha)=>bus.isAncestor(oldSha,newSha))))return store.rebindPostMergeBase(persisted,spec.expected_base_sha);
   return effects.reconcilePreBuildBase(spec,persisted,store);
 }
