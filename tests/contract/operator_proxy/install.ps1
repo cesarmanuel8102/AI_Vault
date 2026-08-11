@@ -13,6 +13,19 @@ function Test-SameContractPath {
 }
 $root=(Resolve-Path (Join-Path $PSScriptRoot '..\..\..')).Path
 Import-Module (Join-Path $root 'scripts\operator_proxy\Repair-OperatorProxy.psm1') -Force
+$operatorProxySource=Join-Path $root 'scripts\operator_proxy'
+$managed=@(Get-ManagedOperatorProxyFiles)
+foreach($sourceName in @($managed | Where-Object { $_ -like '*.ts' })) {
+    $sourcePath=Join-Path $operatorProxySource $sourceName
+    if(-not (Test-Path -LiteralPath $sourcePath)){throw "managed source missing: $sourceName"}
+    $sourceText=[IO.File]::ReadAllText($sourcePath)
+    foreach($match in [regex]::Matches($sourceText,'from\s+["'']\./([^"'']+)\.js["'']')) {
+        $dependency=$match.Groups[1].Value+'.ts'
+        if((Test-Path -LiteralPath (Join-Path $operatorProxySource $dependency)) -and $dependency -notin $managed){
+            throw "managed dependency missing: $sourceName -> $dependency"
+        }
+    }
+}
 $tmp=Join-Path $env:TEMP ('operator-proxy-'+[guid]::NewGuid())
 $driveRoot=[IO.Path]::GetPathRoot($tmp)
 $rootChild=Join-Path $driveRoot 'AI_VAULT_OPERATOR_PROXY_INSTALL_ROOT_TEST'
@@ -35,7 +48,7 @@ New-Item $install -ItemType Directory -Force|Out-Null
 $old=[Text.Encoding]::UTF8.GetBytes('old-runtime')
 [IO.File]::WriteAllBytes((Join-Path $install 'operator_proxy.ts'),$old)
 $taskState=Join-Path $tmp 'task-state.txt';[IO.File]::WriteAllText($taskState,'Disabled')
-$validateStage={param($stage) foreach($required in @('operator_proxy.ts','external_effect_guard.ts','redaction.ts','review_contract.ts','builder_router.ts','opencode_builder.ts')){if(!(Test-Path (Join-Path $stage $required))){throw "staging missing $required"}};New-Item (Join-Path $stage 'node_modules\.bin') -ItemType Directory -Force|Out-Null;[IO.File]::WriteAllText((Join-Path $stage 'node_modules\.bin\tsx.cmd'),'@echo off')}
+$validateStage={param($stage) foreach($required in @('operator_proxy.ts','external_effect_guard.ts','redaction.ts','review_contract.ts','builder_backend.ts','builder_config.ts','builder_router.ts','opencode_builder.ts')){if(!(Test-Path (Join-Path $stage $required))){throw "staging missing $required"}};New-Item (Join-Path $stage 'node_modules\.bin') -ItemType Directory -Force|Out-Null;[IO.File]::WriteAllText((Join-Path $stage 'node_modules\.bin\tsx.cmd'),'@echo off')}
 try {
     Invoke-OperatorProxyInstall -Repo $synthetic -InstallRoot $install -ApprovedCommit $syntheticHead -ValidateStaging $validateStage -ValidateInstalled {param($p)} | Out-Null
     if([Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes((Join-Path $install 'operator_proxy.ts'))) -eq 'old-runtime'){throw 'install did not replace runtime'}
