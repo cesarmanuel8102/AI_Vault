@@ -148,10 +148,10 @@ The roadmap specifies the following E2E scenarios:
 | Total existing contract tests | 48 |
 | Roadmap minimum target | 20+ |
 | Surfaces with full coverage | 1 (C14 Agent Loop) |
-| Surfaces with partial coverage | 10 |
+| Surfaces with partial coverage | 9 |
 | Surfaces with no coverage | 4 (C2 Intent, C3 Planner, C4 Evaluator, C11 Financial Autonomy) |
 | Critical gaps | 1 (C7 Memory Service) |
-| High-severity gaps | 6 (C2, C3, C4, C6, C8, C10, C11) |
+| High-severity gaps | 7 (C2, C3, C4, C6, C8, C10, C11) |
 | Medium-severity gaps | 5 (C1, C5, C9, C12, C13) |
 | Low-severity gaps | 1 (C14) |
 
