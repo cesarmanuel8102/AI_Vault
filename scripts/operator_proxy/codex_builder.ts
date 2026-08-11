@@ -2,6 +2,7 @@ import {execFileSync} from "node:child_process";
 import {existsSync} from "node:fs";
 import {isAbsolute} from "node:path";
 import type {BuilderInput, BuilderResult} from "./builder_backend.js";
+import type {BackendConfig} from "./builder_config.js";
 import {redactedError, redactString} from "./redaction.js";
 
 export function builderInvocation(codex: string, entrypoint = process.env.CODEX_ENTRYPOINT): { file: string; prefix: string[] } {
@@ -16,13 +17,14 @@ function parseCodexOutput(output: string): { headSha?: string; providerSession?:
   return { headSha: headMatch?.[1], providerSession: sessionMatch?.[1] };
 }
 
-export async function runCodexBuilder(input: BuilderInput, env: NodeJS.ProcessEnv = process.env): Promise<BuilderResult> {
+export async function runCodexBuilder(input: BuilderInput, config: BackendConfig, env: NodeJS.ProcessEnv = process.env): Promise<BuilderResult> {
+  if (config.transport !== "codex_cli_openai" || !/^[a-z0-9][a-z0-9._/-]{2,127}$/.test(config.model)) throw new Error("Codex builder configuration invalid");
   const codex = env.CODEX_PATH ?? (env.CODEX_ENTRYPOINT ? process.execPath : "codex");
   const invocation = builderInvocation(codex, env.CODEX_ENTRYPOINT);
   const started = new Date().toISOString();
   let stdout = "";
   try {
-    stdout = redactString(execFileSync(invocation.file, [...invocation.prefix, "exec", "--full-auto", "-C", input.worktree, input.prompt], {
+    stdout = redactString(execFileSync(invocation.file, [...invocation.prefix, "--model", config.model, "exec", "--full-auto", "-C", input.worktree, input.prompt], {
       encoding: "utf8",
       env: { ...env, OPERATOR_PROXY_SESSION: input.session },
       timeout: 900000,
@@ -38,7 +40,7 @@ export async function runCodexBuilder(input: BuilderInput, env: NodeJS.ProcessEn
   return {
     executor_role: "codex_control_plane",
     builder_backend: "codex_cli_openai",
-    builder_model: "codex-local",
+    builder_model: config.model,
     builder_session: input.session,
     provider_session: parsed.providerSession ?? `codex-${input.session}`,
     base_sha: input.base_sha,

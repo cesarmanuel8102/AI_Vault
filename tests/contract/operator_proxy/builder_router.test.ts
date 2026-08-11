@@ -62,7 +62,7 @@ function builderRepo(){
 }
 
 function fakeBackendScript(mark:string,exitCode=0){
-  return `const fs=require("fs"),path=require("path"),{execFileSync}=require("child_process");function isWorktreeRoot(d){if(!d)return false;try{execFileSync(process.env.GIT_PATH||"git",["-C",d,"rev-parse","--is-inside-work-tree"],{stdio:"pipe",timeout:10000});return true;}catch{return false;}}function findWorktree(a){let idx=a.indexOf("-C");if(idx<0)idx=a.indexOf("--dir");if(idx>=0){const d=a[idx+1];if(isWorktreeRoot(d))return d;}for(let i=a.length-1;i>=2;i--){const d=a[i];if(isWorktreeRoot(d))return d;}return process.cwd();}const cwd=findWorktree(process.argv);fs.mkdirSync(path.join(cwd,"docs"),{recursive:true});fs.writeFileSync(path.join(cwd,"docs","x.md"),"${mark} build\\n");execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"add","docs/x.md"]);execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"commit","-m","feat(control-plane): complete BRAIN-101-R1-SYNTHETIC-01"]);const head=execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"rev-parse","HEAD"],{encoding:"utf8"}).trim();console.log("HEAD_SHA="+head);process.exit(${exitCode});`;
+  return `const fs=require("fs"),path=require("path"),{execFileSync}=require("child_process");function isWorktreeRoot(d){if(!d)return false;try{execFileSync(process.env.GIT_PATH||"git",["-C",d,"rev-parse","--is-inside-work-tree"],{stdio:"pipe",timeout:10000});return true;}catch{return false;}}function findWorktree(a){let idx=a.indexOf("-C");if(idx<0)idx=a.indexOf("--dir");if(idx>=0){const d=a[idx+1];if(isWorktreeRoot(d))return d;}for(let i=a.length-1;i>=2;i--){const d=a[i];if(isWorktreeRoot(d))return d;}return process.cwd();}const expected=process.env.EXPECTED_CODEX_MODEL;if(expected){const i=process.argv.indexOf("--model");if(i<0||process.argv[i+1]!==expected)process.exit(9);}const cwd=findWorktree(process.argv);fs.mkdirSync(path.join(cwd,"docs"),{recursive:true});fs.writeFileSync(path.join(cwd,"docs","x.md"),"${mark} build\\n");execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"add","docs/x.md"]);execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"commit","-m","feat(control-plane): complete BRAIN-101-R1-SYNTHETIC-01"]);const head=execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"rev-parse","HEAD"],{encoding:"utf8"}).trim();console.log("HEAD_SHA="+head);process.exit(${exitCode});`;
 }
 
 function currentHead(cwd:string){
@@ -75,13 +75,18 @@ test("primary Codex backend succeeds and reports codex_cli_openai",async()=>{
   const priorEntry=process.env.CODEX_ENTRYPOINT;
   const priorPath=process.env.CODEX_PATH;
   const priorRoot=process.env.OPERATOR_PROXY_ROOT;
+  const priorModel=process.env.OPERATOR_PROXY_CODEX_BUILDER_MODEL;
+  const priorExpected=process.env.EXPECTED_CODEX_MODEL;
   writeFileSync(entry,fakeBackendScript("codex",0));
   process.env.CODEX_ENTRYPOINT=entry;
   process.env.CODEX_PATH=process.execPath;
+  process.env.OPERATOR_PROXY_CODEX_BUILDER_MODEL="gpt-5.6-terra";
+  process.env.EXPECTED_CODEX_MODEL="gpt-5.6-terra";
   process.env.OPERATOR_PROXY_ROOT=mkdtempSync(join(tmpdir(),"builder-health-"));
   try{
     const result=await routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree);
     assert.equal(result.builder_backend,"codex_cli_openai");
+    assert.equal(result.builder_model,"gpt-5.6-terra");
     assert.equal(result.fallback_reason,undefined);
     assert.equal(result.head_sha,currentHead(r.worktree));
     assert.equal(execFileSync("git",["-C",r.worktree,"show",`${result.head_sha}:docs/x.md`],{encoding:"utf8"}),"codex build\n");
@@ -89,6 +94,8 @@ test("primary Codex backend succeeds and reports codex_cli_openai",async()=>{
     if(priorEntry===undefined)delete process.env.CODEX_ENTRYPOINT;else process.env.CODEX_ENTRYPOINT=priorEntry;
     if(priorPath===undefined)delete process.env.CODEX_PATH;else process.env.CODEX_PATH=priorPath;
     if(priorRoot===undefined)delete process.env.OPERATOR_PROXY_ROOT;else process.env.OPERATOR_PROXY_ROOT=priorRoot;
+    if(priorModel===undefined)delete process.env.OPERATOR_PROXY_CODEX_BUILDER_MODEL;else process.env.OPERATOR_PROXY_CODEX_BUILDER_MODEL=priorModel;
+    if(priorExpected===undefined)delete process.env.EXPECTED_CODEX_MODEL;else process.env.EXPECTED_CODEX_MODEL=priorExpected;
   }
 });
 

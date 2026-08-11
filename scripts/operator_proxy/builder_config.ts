@@ -14,11 +14,17 @@ export interface BackendConfig {
   maxRetries: number;
 }
 
+export function codexModelForBuilder(env = process.env): string {
+  const model = env.OPERATOR_PROXY_CODEX_BUILDER_MODEL ?? "gpt-5.6-sol";
+  if (!safeModelSlug.test(model)) throw new Error("Codex builder model identity invalid");
+  return model;
+}
+
 export function resolveCodexConfig(env = process.env): BackendConfig {
   const executable = env.CODEX_PATH ?? "codex";
   const entrypoint = env.CODEX_ENTRYPOINT;
   if (entrypoint && (!isAbsolute(entrypoint) || !existsSync(entrypoint))) throw new Error("Codex entrypoint invalid");
-  return { transport: "codex_cli_openai", executable, entrypoint, model: "codex-local", maxRetries: 1 };
+  return { transport: "codex_cli_openai", executable, entrypoint, model: codexModelForBuilder(env), maxRetries: 1 };
 }
 
 function opencodeExecutable(env = process.env): string {
