@@ -7,8 +7,8 @@ import { runOpenCodeBuilder } from "./opencode_builder.js";
 import { randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { redactedError, redactString } from "./redaction.js";
-import { existsSync, mkdirSync, readdirSync, realpathSync, statSync, writeFileSync } from "node:fs";
-import { isAbsolute, join } from "node:path";
+import { existsSync, mkdirSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 
 
 function forbiddenWorktreeRoots(env = process.env): string[] {
@@ -140,9 +140,48 @@ function validateBaseOverride(worktree: string, requestedBase: string, env: Node
   if (status) throw new Error("builder base override worktree is dirty");
 }
 
-function restoreWorktreeBaseline(worktree: string, baseSha: string, env: NodeJS.ProcessEnv) {
+interface IgnoredSnapshot {
+  paths: Set<string>;
+  parentDirs: Set<string>;
+}
+
+function ignoredSnapshot(worktree: string, env: NodeJS.ProcessEnv): IgnoredSnapshot {
+  const output = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "ls-files", "--others", "--ignored", "--exclude-standard", "-z"], { encoding: "utf8", timeout: 30000 });
+  const paths = new Set(output.split("\0").filter(Boolean));
+  const parentDirs = new Set<string>();
+  for (const path of paths) {
+    if (isAbsolute(path) || path.split(/[\\/]/).some(part => part === "..")) throw new Error("builder ignored path invalid");
+    for (let parent = dirname(path); parent !== "."; parent = dirname(parent)) parentDirs.add(parent);
+  }
+  return { paths, parentDirs };
+}
+
+function removeNewIgnoredPaths(worktree: string, baseline: IgnoredSnapshot, env: NodeJS.ProcessEnv) {
+  const current = ignoredSnapshot(worktree, env);
+  const created = [...current.paths].filter(path => !baseline.paths.has(path)).sort((a, b) => b.length - a.length);
+  const root = resolve(worktree);
+  for (const path of created) {
+    const absolute = resolve(root, path);
+    if (absolute !== root && !absolute.startsWith(`${root}\\`) && !absolute.startsWith(`${root}/`)) throw new Error("builder ignored path escaped worktree");
+    rmSync(absolute, { force: true, recursive: true });
+    for (let parent = dirname(path); parent !== "." && !baseline.parentDirs.has(parent); parent = dirname(parent)) {
+      const directory = resolve(root, parent);
+      try {
+        if (readdirSync(directory).length > 0) break;
+        rmSync(directory);
+      } catch (error) {
+        if (existsSync(directory)) throw error;
+      }
+    }
+  }
+  const restored = ignoredSnapshot(worktree, env);
+  if (restored.paths.size !== baseline.paths.size || [...restored.paths].some(path => !baseline.paths.has(path))) throw new Error("builder ignored baseline restore mismatch");
+}
+
+function restoreWorktreeBaseline(worktree: string, baseSha: string, ignoredBaseline: IgnoredSnapshot, env: NodeJS.ProcessEnv) {
   execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "reset", "--hard", baseSha], { encoding: "utf8", timeout: 120000, windowsHide: true });
   execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "clean", "-fd", "--"], { encoding: "utf8", timeout: 120000, windowsHide: true });
+  removeNewIgnoredPaths(worktree, ignoredBaseline, env);
   const head = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "rev-parse", "HEAD"], { encoding: "utf8", timeout: 30000 }).trim();
   if (head !== baseSha) throw new Error("builder worktree baseline restore head mismatch");
   const status = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "status", "--porcelain", "--untracked-files=all"], { encoding: "utf8", timeout: 30000 }).trim();
@@ -190,10 +229,11 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
       return result;
     };
 
+    const attemptIgnoredBaseline = ignoredSnapshot(input.worktree, env);
     try {
       return await invokeBackend(backendSession);
     } catch (error) {
-      restoreWorktreeBaseline(input.worktree, input.base_sha, env);
+      restoreWorktreeBaseline(input.worktree, input.base_sha, attemptIgnoredBaseline, env);
       validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
       const { eligible, failure_class, transient } = isEligibleFallback(error);
       recordHealth(healthDir, { backend: backendId, model: cfg.model, failure_class, attempt: index + 1, front_id: spec.front_id!, base_sha: input.base_sha, created_utc: new Date().toISOString() });
@@ -206,10 +246,11 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
       if (transient && cfg.maxRetries > 0) {
         const backoffMs = Math.min(1000 * Math.pow(2, index), 8000);
         await new Promise(resolve => setTimeout(resolve, backoffMs));
+        const retryIgnoredBaseline = ignoredSnapshot(input.worktree, env);
         try {
           return await invokeBackend(`${backendSession}-retry`);
         } catch (retryError) {
-          restoreWorktreeBaseline(input.worktree, input.base_sha, env);
+          restoreWorktreeBaseline(input.worktree, input.base_sha, retryIgnoredBaseline, env);
           validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
           const { eligible: retryEligible, failure_class: retryClass } = isEligibleFallback(retryError);
           recordHealth(healthDir, { backend: backendId, model: cfg.model, failure_class: `retry:${retryClass}`, attempt: index + 1, front_id: spec.front_id!, base_sha: input.base_sha, created_utc: new Date().toISOString() });
