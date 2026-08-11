@@ -1,10 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
-import {execFileSync} from "node:child_process";
-import {mkdirSync,mkdtempSync,readFileSync,rmSync,symlinkSync,writeFileSync} from "node:fs";
+import {mkdirSync,mkdtempSync,readFileSync,writeFileSync} from "node:fs";
 import {tmpdir} from "node:os";
-import {dirname,join} from "node:path";
+import {join} from "node:path";
 import {OpenCodeReviewerBackend,parseJsonl,projectPanelEvidence,canonicalizeEvidence} from "../../../scripts/operator_proxy/opencode_reviewer.js";
 import {ReviewerBackendError} from "../../../scripts/operator_proxy/reviewer_backend.js";
 
@@ -17,9 +16,9 @@ function fixture(){const root=mkdtempSync(join(tmpdir(),"opencode-review-")),ent
 
 test("uses node plus OpenCode JS entrypoint, full diff retained, and no API/GitHub token",()=>{
   const f=fixture(),old={node:process.env.OPERATOR_PROXY_NODE_PATH,entry:process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT,api:process.env.OPENAI_API_KEY};process.env.OPERATOR_PROXY_NODE_PATH=process.execPath;process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=f.entry;process.env.OPENAI_API_KEY="must-not-propagate";
-  const calls:{file:string;args:string[];options:any;prompt?:string}[]=[];let statuses=0;const safeDiff=`diff --git a/a b/a\n+${"safe".repeat(100)}`;
-  const runner=(file:string,args:string[],options:any)=>{const promptIndex=args.indexOf("--file"),prompt=promptIndex>=0?readFileSync(args[promptIndex+1],"utf8"):undefined;calls.push({file,args,options,prompt});if(args.includes("worktree")&&args.includes("add")){mkdirSync(args[args.indexOf("--detach")+1],{recursive:true});return "";}if(args.includes("rev-parse"))return head;if(args.includes("merge-base"))return base;if(args.includes("status")){statuses++;return "";}if(args.includes("diff"))return safeDiff;if(file===process.execPath)return `${JSON.stringify({type:"text",sessionID:"provider-session",part:{type:"text",text:JSON.stringify({verdict:"PASS",head_sha:head,summary:"ok",findings:[]})}})}\n`;return "";}
-  try{const result=new OpenCodeReviewerBackend("ollama-cloud/glm-5.2",runner).review({repository:"cesarmanuel8102/AI_Vault",repositoryRoot:f.root,pr:1,baseSha:base,headSha:head,risk:"MEDIUM",changedFiles:["a"],builderSession:"builder"},"reviewer-session");assert.equal(result.output.verdict,"PASS");const call=calls.find(x=>x.file===process.execPath&&x.args[0]===f.entry)!;assert.ok(call);assert.equal(call.options.env.OPENAI_API_KEY,undefined);assert.equal(call.options.env.GH_TOKEN,undefined);assert.ok(call.args.every(arg=>arg.length<32767));assert.match(call.prompt!,/BEGIN_COMPLETE_DIFF/);assert.ok(call.prompt!.includes(safeDiff));assert.equal(call.prompt!.includes("[DIFF_TRUNCATED_BY_BOUNDED_PROMPT_BUDGET]"),false);assert.match(call.args[call.args.indexOf("--file")-1],/attached immutable diff/);assert.equal(call.args.at(-1),call.args[call.args.indexOf("--file")+1]);assert.equal(statuses,2);}
+  const calls:{file:string;args:string[];options:any;prompt?:string;config?:any}[]=[];let statuses=0;const safeDiff=`diff --git a/a b/a\n+${"safe".repeat(100)}`;
+  const runner=(file:string,args:string[],options:any)=>{const promptIndex=args.indexOf("--file"),prompt=promptIndex>=0?readFileSync(args[promptIndex+1],"utf8"):undefined,config=file===process.execPath?JSON.parse(readFileSync(options.env.OPENCODE_CONFIG,"utf8")):undefined;calls.push({file,args,options,prompt,config});if(args.includes("worktree")&&args.includes("add")){mkdirSync(args[args.indexOf("--detach")+1],{recursive:true});return "";}if(args.includes("rev-parse"))return head;if(args.includes("merge-base"))return base;if(args.includes("status")){statuses++;return "";}if(args.includes("diff"))return safeDiff;if(file===process.execPath)return `${JSON.stringify({type:"text",sessionID:"provider-session",part:{type:"text",text:JSON.stringify({verdict:"PASS",head_sha:head,summary:"ok",findings:[]})}})}\n`;return "";}
+  try{const result=new OpenCodeReviewerBackend("ollama-cloud/glm-5.2",runner).review({repository:"cesarmanuel8102/AI_Vault",repositoryRoot:f.root,pr:1,baseSha:base,headSha:head,risk:"MEDIUM",changedFiles:["a"],builderSession:"builder"},"reviewer-session");assert.equal(result.output.verdict,"PASS");const call=calls.find(x=>x.file===process.execPath&&x.args[0]===f.entry)!;assert.ok(call);assert.equal(call.options.env.OPENAI_API_KEY,undefined);assert.equal(call.options.env.GH_TOKEN,undefined);assert.ok(call.args.every(arg=>arg.length<32767));assert.match(call.prompt!,/BEGIN_COMPLETE_DIFF/);assert.ok(call.prompt!.includes(safeDiff));assert.equal(call.prompt!.includes("[DIFF_TRUNCATED_BY_BOUNDED_PROMPT_BUDGET]"),false);assert.match(call.prompt!,/Do not call any tool/);assert.match(call.args[call.args.indexOf("--file")-1],/Do not call tools/);assert.equal(call.args.at(-1),call.args[call.args.indexOf("--file")+1]);assert.deepEqual(call.config.agent["brain-opencode-reviewer"].permission,{read:"deny",glob:"deny",grep:"deny",list:"deny",edit:"deny",write:"deny",create_file:"deny",bash:"deny",task:"deny",external_directory:"deny",webfetch:"deny",websearch:"deny",question:"deny",todowrite:"deny"});assert.equal(statuses,2);}
   finally{old.node===undefined?delete process.env.OPERATOR_PROXY_NODE_PATH:process.env.OPERATOR_PROXY_NODE_PATH=old.node;old.entry===undefined?delete process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT:process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=old.entry;old.api===undefined?delete process.env.OPENAI_API_KEY:process.env.OPENAI_API_KEY=old.api;}
 });
 
@@ -57,91 +56,12 @@ test("rejects an invalid review SHA before native Git or model execution",()=>{
   finally{oldNode===undefined?delete process.env.OPERATOR_PROXY_NODE_PATH:process.env.OPERATOR_PROXY_NODE_PATH=oldNode;oldEntry===undefined?delete process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT:process.env.OPERATOR_PROXY_OPENCODE_ENTRYPOINT=oldEntry;}
 });
 
-test("validates captured read glob grep tool events and rejects list, escapes, and over-limit calls",()=>{
-  const f=fixture(),workspace=join(f.root,"workspace"),file=join(workspace,"scripts","a.ts");mkdirSync(join(workspace,"scripts"),{recursive:true});writeFileSync(file,"safe\n");
+test("rejects every reviewer tool event, including formerly allowed read-only tools",()=>{
+  const f=fixture(),workspace=join(f.root,"workspace");mkdirSync(workspace,{recursive:true});
   const final=JSON.stringify({type:"text",sessionID:"provider",part:{text:JSON.stringify({verdict:"PASS",head_sha:head,summary:"ok",findings:[]})}});
   const event=(tool:string,input:object)=>JSON.stringify({type:"tool_use",sessionID:"provider",part:{tool,state:{status:"completed",input}}});
-  assert.equal(parseJsonl(`${event("read",{filePath:file,offset:0,limit:1})}\n${final}\n`,head,workspace).output.verdict,"PASS");
-  assert.equal(parseJsonl(`${event("read",{filePath:"scripts/a.ts",offset:0,limit:1})}\n${final}\n`,head,workspace).output.verdict,"PASS");
-  assert.equal(parseJsonl(`${event("glob",{pattern:"scripts/**/*.ts",path:"scripts"})}\n${event("grep",{pattern:"safe",path:"scripts",include:"*.ts"})}\n${final}\n`,head,workspace).output.verdict,"PASS");
-  assert.equal(parseJsonl(`${event("glob",{pattern:"**/*.ts"})}\n${final}\n`,head,workspace).output.verdict,"PASS");
-  assert.equal(parseJsonl(`${event("grep",{pattern:"safe",include:"*.ts"})}\n${final}\n`,head,workspace).output.verdict,"PASS");
-  assert.throws(()=>parseJsonl(`${event("list",{path:"scripts"})}\n${final}\n`,head,workspace),/tool call/);
-  assert.throws(()=>parseJsonl(`${event("read",{filePath:join(f.root,"outside")})}\n${final}\n`,head,workspace),/outside workspace/);
-  assert.throws(()=>parseJsonl(`${event("read",{filePath:"../outside.ts"})}\n${final}\n`,head,workspace),/outside workspace/);
-  assert.throws(()=>parseJsonl(`${event("read",{filePath:"scripts/\u0000a.ts"})}\n${final}\n`,head,workspace),/path invalid/);
-  assert.throws(()=>parseJsonl(`${event("glob",{pattern:"../**/*"})}\n${final}\n`,head,workspace),/pattern invalid/);
-  assert.throws(()=>parseJsonl(`${event("grep",{pattern:"safe",include:"*.ts\u0000"})}\n${final}\n`,head,workspace),(err:unknown)=>err instanceof ReviewerBackendError&&err.message.includes("include invalid")&&err.failureClass==="REVIEWER_WRITE_ATTEMPT");
-  assert.throws(()=>parseJsonl(`${JSON.stringify({type:"tool_use",sessionID:"provider",part:{tool:"read",state:{status:"malicious",input:{filePath:file}}}})}\n${final}\n`,head,workspace),/tool evidence invalid/);
-  assert.throws(()=>parseJsonl(`${Array.from({length:17},()=>event("glob",{pattern:"**/*.ts"})).join("\n")}\n${final}\n`,head,workspace),/limit exceeded/);
-});
-
-test("resolves relative reviewer reads against detached workspace even when process CWD differs",()=>{
-  const workspace=mkdtempSync(join(tmpdir(),"opencode-relative-workspace-")),scripts=join(workspace,"scripts"),file=join(scripts,"a.ts");mkdirSync(scripts,{recursive:true});writeFileSync(file,"safe\n");
-  const outside=mkdtempSync(join(tmpdir(),"opencode-process-cwd-"));
-  const final=JSON.stringify({type:"text",sessionID:"provider",part:{text:JSON.stringify({verdict:"PASS",head_sha:head,summary:"ok",findings:[]})}});
-  const event=JSON.stringify({type:"tool_use",sessionID:"provider",part:{tool:"read",state:{status:"completed",input:{filePath:"scripts/a.ts",offset:0,limit:1}}}});
-  const original=process.cwd();
-  process.chdir(outside);
-  try{assert.equal(parseJsonl(`${event}\n${final}\n`,head,workspace).output.verdict,"PASS");}
-  finally{process.chdir(original);rmSync(workspace,{recursive:true,force:true});rmSync(outside,{recursive:true,force:true});}
-});
-
-test("rejects symlink targeting outside workspace when supported",()=>{
-  const workspace=mkdtempSync(join(tmpdir(),"opencode-symlink-workspace-")),outside=mkdtempSync(join(tmpdir(),"opencode-symlink-outside-")),target=join(outside,"secret.ts");writeFileSync(target,"secret\n");
-  const link=join(workspace,"leak.ts");let platformNote:string|undefined;
-  function isPrivilegeError(e:any){
-    if(e?.code==="EPERM"||e?.code==="EACCES")return true;
-    const text=String(e?.stderr??e?.message??"").toLowerCase();
-    return /privilege|administrator|operation not permitted|access is denied/.test(text);
-  }
-  try{
-    if(process.platform==="win32"){
-      try{execFileSync("cmd",["/c","mklink",link,target],{encoding:"utf8",windowsHide:true});}
-      catch(first:any){
-        if(isPrivilegeError(first))throw first;
-        try{execFileSync("cmd",["/c","mklink","/J",link,dirname(target)],{encoding:"utf8",windowsHide:true});}
-        catch(second:any){if(isPrivilegeError(second))throw second;else throw second;}
-      }
-    }else{symlinkSync(target,link);}
-    const final=JSON.stringify({type:"text",sessionID:"provider",part:{text:JSON.stringify({verdict:"PASS",head_sha:head,summary:"ok",findings:[]})}});
-    const event=JSON.stringify({type:"tool_use",sessionID:"provider",part:{tool:"read",state:{status:"completed",input:{filePath:"leak.ts",offset:0,limit:1}}}});
-    assert.throws(()=>parseJsonl(`${event}\n${final}\n`,head,workspace),/outside workspace/);
-  }catch(e:any){
-    if(isPrivilegeError(e)){
-      platformNote=`${process.platform} symlink/junction creation requires elevated privileges; containment logic validated by traversal tests`;
-    }else{throw e;}
-  }finally{
-    rmSync(workspace,{recursive:true,force:true});rmSync(outside,{recursive:true,force:true});
-    if(platformNote)console.log(platformNote);
-  }
-});
-
-test("rejects directory symlink or junction escaping workspace for glob and grep",()=>{
-  const workspace=mkdtempSync(join(tmpdir(),"opencode-escape-workspace-")),outside=mkdtempSync(join(tmpdir(),"opencode-escape-outside-")),outsideFile=join(outside,"secret.ts");writeFileSync(outsideFile,"secret\n");
-  const link=join(workspace,"escape-dir");let platformNote:string|undefined;
-  function isPrivilegeError(e:any){
-    if(e?.code==="EPERM"||e?.code==="EACCES")return true;
-    const text=String(e?.stderr??e?.message??"").toLowerCase();
-    return /privilege|administrator|operation not permitted|access is denied/.test(text);
-  }
-  try{
-    if(process.platform==="win32"){
-      try{execFileSync("cmd",["/c","mklink","/J",link,outside],{encoding:"utf8",windowsHide:true});}
-      catch(e:any){if(isPrivilegeError(e))throw e;else throw e;}
-    }else{symlinkSync(outside,link,"dir");}
-    const final=JSON.stringify({type:"text",sessionID:"provider",part:{text:JSON.stringify({verdict:"PASS",head_sha:head,summary:"ok",findings:[]})}});
-    const globEvent=JSON.stringify({type:"tool_use",sessionID:"provider",part:{tool:"glob",state:{status:"completed",input:{path:"escape-dir",pattern:"**/*.ts"}}}});
-    const grepEvent=JSON.stringify({type:"tool_use",sessionID:"provider",part:{tool:"grep",state:{status:"completed",input:{path:"escape-dir",pattern:"secret",include:"*.ts"}}}});
-    assert.throws(()=>parseJsonl(`${globEvent}\n${final}\n`,head,workspace),/outside workspace/);
-    assert.throws(()=>parseJsonl(`${grepEvent}\n${final}\n`,head,workspace),/outside workspace/);
-  }catch(e:any){
-    if(isPrivilegeError(e)){
-      platformNote=`PLATFORM_NOT_APPLICABLE ${process.platform} directory junction/symlink creation requires elevated privileges; containment logic validated by traversal tests`;
-    }else{throw e;}
-  }finally{
-    rmSync(workspace,{recursive:true,force:true});rmSync(outside,{recursive:true,force:true});
-    if(platformNote)console.log(platformNote);
+  for(const [tool,input] of [["read",{filePath:"scripts/a.ts"}],["glob",{pattern:"**/*.ts"}],["grep",{pattern:"safe"}],["write",{filePath:"a",content:"b"}] ] as const){
+    assert.throws(()=>parseJsonl(`${event(tool,input)}\n${final}\n`,head,workspace),(err:unknown)=>err instanceof ReviewerBackendError&&err.failureClass==="REVIEWER_WRITE_ATTEMPT"&&err.message.includes("tool call"));
   }
 });
 
