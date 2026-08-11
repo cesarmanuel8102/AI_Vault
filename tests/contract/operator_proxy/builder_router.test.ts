@@ -5,7 +5,7 @@ import {existsSync,mkdirSync,mkdtempSync,readFileSync,rmSync,writeFileSync} from
 import {tmpdir} from "node:os";
 import {join,resolve} from "node:path";
 import {routeControlPlaneBuild,listBuilderBackendHealth} from "../../../scripts/operator_proxy/builder_router.js";
-import {isEligibleFallback} from "../../../scripts/operator_proxy/builder_backend.js";
+import {isEligibleFallback,isEqualOrDescendantPath} from "../../../scripts/operator_proxy/builder_backend.js";
 import {parseOpenCodeOutput} from "../../../scripts/operator_proxy/opencode_builder.js";
 import type {ProxySpec} from "../../../scripts/operator_proxy/types.js";
 
@@ -30,6 +30,14 @@ const spec:ProxySpec={
   deployment_mode:"NO_DEPLOY",
   front_id:"BRAIN-101-R1-SYNTHETIC-01",
 };
+
+test("forbidden root checks use path-component boundaries on Windows and POSIX",()=>{
+  assert.equal(isEqualOrDescendantPath("C:\\AI_VAULT","C:\\AI_VAULT"),true);
+  assert.equal(isEqualOrDescendantPath("C:\\AI_VAULT","C:\\AI_VAULT\\tmp_agent"),true);
+  assert.equal(isEqualOrDescendantPath("C:\\AI_VAULT","C:\\AI_VAULT_CODEX_BRIDGE\\worktrees\\x"),false);
+  assert.equal(isEqualOrDescendantPath("/AI_VAULT","/AI_VAULT/tmp_agent"),true);
+  assert.equal(isEqualOrDescendantPath("/AI_VAULT","/AI_VAULT_CODEX_BRIDGE/worktrees/x"),false);
+});
 
 function builderRepo(){
   const root=mkdtempSync(join(tmpdir(),"builder-router-")),source=join(root,"source"),remote=join(root,"remote.git"),worktrees=join(root,"worktrees");

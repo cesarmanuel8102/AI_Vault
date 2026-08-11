@@ -1,6 +1,6 @@
 import type {ProxySpec} from "./types.js";
 import type {BuilderInput, BuilderResult, BuilderTransport} from "./builder_backend.js";
-import { isEligibleFallback, validateWorktree, scopeViolations, ELIGIBLE_FALLBACK_FAILURES, INELIGIBLE_FALLBACK_FAILURES } from "./builder_backend.js";
+import { isEligibleFallback, isEqualOrDescendantPath, validateWorktree, scopeViolations, ELIGIBLE_FALLBACK_FAILURES, INELIGIBLE_FALLBACK_FAILURES } from "./builder_backend.js";
 import { resolveCodexConfig, resolveCopilotConfig, resolveOllamaConfig, type BackendConfig } from "./builder_config.js";
 import { runCodexBuilder } from "./codex_builder.js";
 import { runOpenCodeBuilder } from "./opencode_builder.js";
@@ -73,7 +73,7 @@ function validateWorktreeIdentity(worktree: string, env: NodeJS.ProcessEnv) {
   const resolvedTop = realpathSync(top), resolvedWorktree = realpathSync(worktree);
   if (!sameFileSystemObject(resolvedTop, resolvedWorktree)) throw new Error("builder worktree identity mismatch");
   for (const root of forbiddenRoots) {
-    if (top.toLowerCase().startsWith(root.toLowerCase())) throw new Error("builder worktree root denied");
+    if (isEqualOrDescendantPath(root, resolvedTop)) throw new Error("builder worktree root denied");
   }
 }
 

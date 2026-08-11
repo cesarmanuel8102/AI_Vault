@@ -1,6 +1,7 @@
 import type {ProxySpec} from "./types.js";
 import {execFileSync} from "node:child_process";
 import {realpathSync, statSync} from "node:fs";
+import {posix, win32} from "node:path";
 
 export type BuilderTransport = "codex_cli_openai" | "opencode_github_copilot" | "opencode_ollama";
 
@@ -118,12 +119,18 @@ function sameFileSystemObject(a: string, b: string): boolean {
   }
 }
 
+export function isEqualOrDescendantPath(root: string, candidate: string): boolean {
+  const pathApi = /^[A-Za-z]:[\\/]/.test(root) || /^[A-Za-z]:[\\/]/.test(candidate) ? win32 : posix;
+  const relative = pathApi.relative(pathApi.resolve(root), pathApi.resolve(candidate));
+  return relative === "" || relative !== ".." && !relative.startsWith(`..${pathApi.sep}`) && !pathApi.isAbsolute(relative);
+}
+
 export function validateWorktree(worktree: string, expectedBase: string, forbiddenRoots: string[], env: NodeJS.ProcessEnv = process.env) {
   const top = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "rev-parse", "--show-toplevel"], { encoding: "utf8", timeout: 30000 }).trim();
   const resolvedTop = realpathSync(top), resolvedWorktree = realpathSync(worktree);
   if (!sameFileSystemObject(resolvedTop, resolvedWorktree)) throw new Error("builder worktree identity mismatch");
   for (const root of forbiddenRoots) {
-    if (top.toLowerCase().startsWith(root.toLowerCase())) throw new Error("builder worktree root denied");
+    if (isEqualOrDescendantPath(root, resolvedTop)) throw new Error("builder worktree root denied");
   }
   const head = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "rev-parse", "HEAD"], { encoding: "utf8", timeout: 30000 }).trim();
   if (!/^[0-9a-f]{40}$/.test(head)) throw new Error("builder worktree head invalid");
