@@ -4,10 +4,10 @@ import { isEligibleFallback, validateWorktree, scopeViolations, ELIGIBLE_FALLBAC
 import { resolveCodexConfig, resolveCopilotConfig, resolveOllamaConfig, type BackendConfig } from "./builder_config.js";
 import { runCodexBuilder } from "./codex_builder.js";
 import { runOpenCodeBuilder } from "./opencode_builder.js";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { redactedError, redactString } from "./redaction.js";
-import { existsSync, mkdirSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 
 
@@ -141,24 +141,41 @@ function validateBaseOverride(worktree: string, requestedBase: string, env: Node
 }
 
 interface IgnoredSnapshot {
-  paths: Set<string>;
+  paths: Map<string, string>;
+  ignoredDirs: Set<string>;
   parentDirs: Set<string>;
+}
+
+function validateIgnoredRelativePath(path: string) {
+  if (!path || isAbsolute(path) || path.split(/[\\/]/).some(part => part === "..")) throw new Error("builder ignored path invalid");
+}
+
+function ignoredFingerprint(worktree: string, path: string): string {
+  validateIgnoredRelativePath(path);
+  const absolute = resolve(worktree, path), stat = lstatSync(absolute);
+  const kind = stat.isSymbolicLink() ? "symlink" : stat.isFile() ? "file" : "other";
+  if (kind === "other") throw new Error("builder ignored artifact type invalid");
+  const bytes = kind === "symlink" ? Buffer.from(readlinkSync(absolute), "utf8") : readFileSync(absolute);
+  return `${kind}:${stat.mode}:${stat.size}:${createHash("sha256").update(bytes).digest("hex")}`;
 }
 
 function ignoredSnapshot(worktree: string, env: NodeJS.ProcessEnv): IgnoredSnapshot {
   const output = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "ls-files", "--others", "--ignored", "--exclude-standard", "-z"], { encoding: "utf8", timeout: 30000 });
-  const paths = new Set(output.split("\0").filter(Boolean));
+  const paths = new Map<string, string>();
+  for (const path of output.split("\0").filter(Boolean)) paths.set(path, ignoredFingerprint(worktree, path));
+  const ignoredStatus = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "status", "--ignored=matching", "--porcelain=v1", "-z", "--untracked-files=all"], { encoding: "utf8", timeout: 30000 });
+  const ignoredDirs = new Set(ignoredStatus.split("\0").filter(entry => entry.startsWith("!! ") && entry.endsWith("/")).map(entry => entry.slice(3, -1)));
   const parentDirs = new Set<string>();
-  for (const path of paths) {
-    if (isAbsolute(path) || path.split(/[\\/]/).some(part => part === "..")) throw new Error("builder ignored path invalid");
+  for (const path of [...paths.keys(), ...ignoredDirs]) {
+    validateIgnoredRelativePath(path);
     for (let parent = dirname(path); parent !== "."; parent = dirname(parent)) parentDirs.add(parent);
   }
-  return { paths, parentDirs };
+  return { paths, ignoredDirs, parentDirs };
 }
 
 function removeNewIgnoredPaths(worktree: string, baseline: IgnoredSnapshot, env: NodeJS.ProcessEnv) {
   const current = ignoredSnapshot(worktree, env);
-  const created = [...current.paths].filter(path => !baseline.paths.has(path)).sort((a, b) => b.length - a.length);
+  const created = [...current.paths.keys()].filter(path => !baseline.paths.has(path)).sort((a, b) => b.length - a.length);
   const root = resolve(worktree);
   for (const path of created) {
     const absolute = resolve(root, path);
@@ -174,8 +191,16 @@ function removeNewIgnoredPaths(worktree: string, baseline: IgnoredSnapshot, env:
       }
     }
   }
+  const remaining = ignoredSnapshot(worktree, env);
+  const createdDirs = [...remaining.ignoredDirs].filter(path => !baseline.ignoredDirs.has(path)).sort((a, b) => b.length - a.length);
+  for (const path of createdDirs) {
+    validateIgnoredRelativePath(path);
+    const directory = resolve(root, path);
+    if (readdirSync(directory).length > 0) throw new Error("builder ignored directory cleanup blocked");
+    rmSync(directory);
+  }
   const restored = ignoredSnapshot(worktree, env);
-  if (restored.paths.size !== baseline.paths.size || [...restored.paths].some(path => !baseline.paths.has(path))) throw new Error("builder ignored baseline restore mismatch");
+  if (restored.paths.size !== baseline.paths.size || restored.ignoredDirs.size !== baseline.ignoredDirs.size || [...baseline.paths].some(([path, fingerprint]) => restored.paths.get(path) !== fingerprint) || [...baseline.ignoredDirs].some(path => !restored.ignoredDirs.has(path))) throw new Error("builder ignored baseline restore mismatch");
 }
 
 function restoreWorktreeBaseline(worktree: string, baseSha: string, ignoredBaseline: IgnoredSnapshot, env: NodeJS.ProcessEnv) {
