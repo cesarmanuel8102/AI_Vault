@@ -2,7 +2,7 @@ import {createHash} from "node:crypto";
 import {execFileSync} from "node:child_process";
 import {existsSync,mkdtempSync,readFileSync,realpathSync,rmSync,statSync,writeFileSync} from "node:fs";
 import {tmpdir} from "node:os";
-import {isAbsolute,join,relative,resolve} from "node:path";
+import {isAbsolute,join} from "node:path";
 import type {ReviewerBackend,ReviewerAttempt,ReviewerInput} from "./reviewer_backend.js";
 import {ReviewerBackendError} from "./reviewer_backend.js";
 import {normalizeReviewerOutput} from "./review_contract.js";
@@ -127,6 +127,8 @@ function reviewPrompt(input:ReviewerInput,diff:string){
     "verdict must be exactly PASS only if findings=[]; CHANGES_REQUESTED only for repairable P1/P2; BLOCKED for P0, uncertainty, or invalid input.",
     "summary must be a concise plain-text sentence under 200 characters. No Markdown.",
     "findings is an array, maximum 6 entries. Each finding has severity (P0|P1|P2), title (max 60 chars), evidence (max 200 chars), required_correction (max 120 chars).",
+    "The complete immutable diff is supplied below and is the only code evidence for this review. Do not call any tool.",
+    "Your first and only text output must be the required JSON object. Do not emit analysis, progress, acknowledgements, or explanations.",
     "Return exactly one bare JSON object. Do not wrap it in Markdown code fences, code blocks, or prose. The response must be only JSON.",
     `REPOSITORY=${input.repository}`,`PR=${input.pr}`,`BASE_SHA=${input.baseSha}`,`HEAD_SHA=${input.headSha}`,`RISK=${input.risk}`,
     `BUILDER_SESSION=${input.builderSession}`,`CHANGED_FILES=${JSON.stringify(input.changedFiles)}`,
@@ -144,36 +146,9 @@ function reviewPrompt(input:ReviewerInput,diff:string){
   if(Buffer.byteLength(prompt,"utf8")>MAX_PROMPT_SIZE)throw new ReviewerBackendError("review prompt exceeds bounded budget","REVIEWER_INVALID_INPUT");
   return prompt;
 }
-const READ_ONLY_TOOLS=new Set(["read","glob","grep"]),MAX_READ_ONLY_TOOLS=16;
-function insideWorkspace(workspace:string,value:string,existing:boolean){
-  if(value.includes("\0"))throw new ReviewerBackendError("reviewer path invalid","REVIEWER_WRITE_ATTEMPT");
-  const root=realpathSync(workspace);let target:string;
-  try{
-    const candidate=isAbsolute(value)?value:resolve(root,value);
-    target=existing?realpathSync(candidate):candidate;
-  }catch{throw new ReviewerBackendError("reviewer path outside workspace","REVIEWER_WRITE_ATTEMPT");}
-  const rel=relative(root,target);
-  if(rel===""||!rel.startsWith("..")&&!isAbsolute(rel))return;
-  throw new ReviewerBackendError("reviewer path outside workspace","REVIEWER_WRITE_ATTEMPT");
-}
-function validateTool(part:any,workspace:string){
-  const tool=String(part?.tool??""),state=part?.state,input=state?.input;
-  if(!READ_ONLY_TOOLS.has(tool))throw new ReviewerBackendError("reviewer attempted a tool call","REVIEWER_WRITE_ATTEMPT");
-  if(!state||typeof state.status!=="string"||!["completed","error","cancelled"].includes(state.status)||!input||typeof input!=="object"||Array.isArray(input))throw new ReviewerBackendError("reviewer tool evidence invalid","REVIEWER_INVALID_TRANSPORT");
-  const keys=Object.keys(input).sort(),allowed=tool==="read"?["filePath","limit","offset"]:tool==="glob"?["path","pattern"]:["include","path","pattern"];
-  if(keys.some(key=>!allowed.includes(key)))throw new ReviewerBackendError("reviewer tool arguments invalid","REVIEWER_WRITE_ATTEMPT");
-  if(tool==="read"){
-    if(typeof input.filePath!=="string"||input.filePath.length>4096||typeof input.offset!=="undefined"&&(!Number.isInteger(input.offset)||input.offset<0||input.offset>1_000_000)||typeof input.limit!=="undefined"&&(!Number.isInteger(input.limit)||input.limit<1||input.limit>100_000))throw new ReviewerBackendError("reviewer read arguments invalid","REVIEWER_WRITE_ATTEMPT");
-    insideWorkspace(workspace,input.filePath,true);
-  } else {
-    if(typeof input.pattern!=="string"||input.pattern.length<1||input.pattern.length>4096||input.pattern.includes("\0")||/(^|[\\/])\.\.([\\/]|$)|^(?:[a-z]:|\\\\|\/)/i.test(input.pattern))throw new ReviewerBackendError("reviewer pattern invalid","REVIEWER_WRITE_ATTEMPT");
-    if(input.path!==undefined){if(typeof input.path!=="string"||input.path.length>4096)throw new ReviewerBackendError("reviewer path invalid","REVIEWER_WRITE_ATTEMPT");insideWorkspace(workspace,input.path,true);}
-    if(tool==="grep"&&input.include!==undefined&&(typeof input.include!=="string"||input.include.length<1||input.include.length>4096||input.include.includes("\0")||/(^|[\\/])\.\.([\\/]|$)|^(?:[a-z]:|\\\\|\/)/i.test(input.include)))throw new ReviewerBackendError("reviewer include invalid","REVIEWER_WRITE_ATTEMPT");
-  }
-}
-export function parseJsonl(stdout:string,head:string,workspace:string){
+export function parseJsonl(stdout:string,head:string,_workspace:string){
   const texts:string[]=[],sessions=new Set<string>();
-  let tools=0,truncated=false;
+  let truncated=false;
   for(const line of stdout.split(/\r?\n/).filter(Boolean)){
     let event:any;try{event=JSON.parse(line);}catch{throw new ReviewerBackendError("OpenCode JSONL invalid","REVIEWER_INVALID_TRANSPORT");}
     const session=typeof event?.sessionID==="string"?event.sessionID:typeof event?.part?.sessionID==="string"?event.part.sessionID:"";
@@ -182,7 +157,7 @@ export function parseJsonl(stdout:string,head:string,workspace:string){
     if(event?.type==="step_finish"&&event?.part?.reason==="length")truncated=true;
     if(event?.type==="step-finish"&&event?.part?.reason==="length")truncated=true;
     if(event?.info?.finish==="length")truncated=true;
-    if(event?.type==="tool_use"){if(++tools>MAX_READ_ONLY_TOOLS)throw new ReviewerBackendError("reviewer tool call limit exceeded","REVIEWER_WRITE_ATTEMPT");validateTool(event.part,workspace);}
+    if(event?.type==="tool_use")throw new ReviewerBackendError("reviewer attempted a tool call","REVIEWER_WRITE_ATTEMPT");
   }
   if(truncated)throw new ReviewerBackendError("OpenCode response truncated by length","REVIEWER_OUTPUT_TRUNCATED",true);
   if(texts.length!==1||sessions.size!==1)throw new ReviewerBackendError("reviewer final response ambiguous","REVIEWER_INVALID_OUTPUT");
@@ -221,15 +196,15 @@ export class OpenCodeReviewerBackend implements ReviewerBackend {
       const diff=git(this.runner,workspace,["diff","--no-ext-diff","--binary",`${input.baseSha}...${input.headSha}`]);
       const configPath=join(temp,"opencode.json"),config={
         agent:{"brain-opencode-reviewer":{
-          description:"Independent read-only repository reviewer.",mode:"primary",model:this.model,
-          permission:{read:"allow",glob:"allow",grep:"allow",list:"deny",edit:"deny",write:"deny",create_file:"deny",bash:"deny",task:"deny",external_directory:"deny",webfetch:"deny",websearch:"deny",question:"deny",todowrite:"deny"},
+          description:"Independent no-tool reviewer of a supplied immutable diff.",mode:"primary",model:this.model,
+          permission:{read:"deny",glob:"deny",grep:"deny",list:"deny",edit:"deny",write:"deny",create_file:"deny",bash:"deny",task:"deny",external_directory:"deny",webfetch:"deny",websearch:"deny",question:"deny",todowrite:"deny"},
         }},
       };
       writeFileSync(configPath,JSON.stringify(config));
       const promptPath=join(temp,"review-prompt.txt");writeFileSync(promptPath,reviewPrompt(input,diff),"utf8");
       const env:NodeJS.ProcessEnv={...process.env,OPENCODE_CONFIG:configPath};delete env.OPENAI_API_KEY;delete env.GH_TOKEN;delete env.GITHUB_TOKEN;
       let stdout:string;
-      try{stdout=this.runner(runtime.node,[runtime.entrypoint,"run","--dir",workspace,"--model",this.model,"--agent","brain-opencode-reviewer","--format","json","--title",session,"--thinking","false","Review the attached immutable diff and return the required JSON.","--file",promptPath],{cwd:workspace,env,timeout:900000,maxBuffer:64*1024*1024});}
+      try{stdout=this.runner(runtime.node,[runtime.entrypoint,"run","--dir",workspace,"--model",this.model,"--agent","brain-opencode-reviewer","--format","json","--title",session,"--thinking","false","Review only the attached immutable diff. Do not call tools. Return exactly one bare JSON object as your only text output.","--file",promptPath],{cwd:workspace,env,timeout:900000,maxBuffer:64*1024*1024});}
       catch(error){throw new ReviewerBackendError(redactedError(error),"REVIEWER_TRANSPORT_FAILURE",true);}
       assertImmutable(this.runner,workspace,input);
       const parsed=parseJsonl(stdout,input.headSha,workspace);return {output:parsed.output,providerSession:parsed.providerSession,backend:"opencode_ollama",model:this.model,session,startedUtc,completedUtc:new Date().toISOString()};
