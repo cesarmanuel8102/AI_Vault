@@ -15,10 +15,15 @@ type BackendFactory=(model:string)=>ReviewerBackend;
 
 const qualified=(model:string)=>Boolean((REVIEWER_QUALIFICATION as Record<string,{qualified:boolean}>)[model]?.qualified);
 const evidenceHash=(saved:Pick<ReviewerRun,"primary_output"|"verifier"|"arbiter">)=>createHash("sha256").update(canonical({primary_output:saved.primary_output,verifier:saved.verifier,arbiter:saved.arbiter??null})).digest("hex");
+function requiresIndependentArbiter(primary:ReviewerOutput,verifier:ReviewerOutput){
+  const findings=[...primary.findings,...verifier.findings],hasP0=findings.some(f=>f.severity==="P0"),verdicts=new Set([primary.verdict,verifier.verdict]);
+  const boundedRepairDisagreement=verdicts.size===2&&verdicts.has("PASS")&&verdicts.has("CHANGES_REQUESTED")&&!hasP0;
+  return hasP0||primary.verdict!==verifier.verdict&&!boundedRepairDisagreement;
+}
 function synthesizeOutput(primary:ReviewerOutput,verifier:ReviewerOutput,arbiter?:ReviewerOutput):{output:ReviewerOutput;requiresArbiter:boolean}{
-  const disagreement=primary.verdict!==verifier.verdict,hasP0=[...primary.findings,...verifier.findings].some(f=>f.severity==="P0"),requiresArbiter=hasP0||disagreement;
+  const disagreement=primary.verdict!==verifier.verdict,hasP0=[...primary.findings,...verifier.findings].some(f=>f.severity==="P0"),requiresArbiter=requiresIndependentArbiter(primary,verifier);
   let output=primary;
-  if(!disagreement&&primary.verdict==="CHANGES_REQUESTED"){const unique=new Map([...primary.findings,...verifier.findings].map(finding=>[canonical(finding),finding]));output={...primary,summary:"Independent reviewers requested bounded repairs",findings:[...unique.values()]};}
+  if(!requiresArbiter&&(primary.verdict==="CHANGES_REQUESTED"||verifier.verdict==="CHANGES_REQUESTED")){const unique=new Map([...primary.findings,...verifier.findings].map(finding=>[canonical(finding),finding])),repair=primary.verdict==="CHANGES_REQUESTED"?primary:verifier;output={...repair,summary:disagreement?"Conservative quorum requested bounded repairs":"Independent reviewers requested bounded repairs",findings:[...unique.values()]};}
   if(requiresArbiter){if(!arbiter)throw new Error("review receipt arbiter evidence missing");const unique=new Map([...primary.findings,...verifier.findings,...arbiter.findings].map(finding=>[canonical(finding),finding]));output={...primary,verdict:"BLOCKED",summary:`${hasP0?"P0":"reviewer disagreement"} escalated after independent arbiter: ${arbiter.verdict}`,findings:[...unique.values()]};}
   return {output,requiresArbiter};
 }
@@ -54,9 +59,9 @@ export class ReviewerRouter {
       if(successful.length===2)break;
     }
     if(successful.length!==2)throw new ReviewerBackendError("independent reviewer quorum unavailable","BLOCKED_EXTERNAL_REVIEWER");
-    const selected=successful[0],verification=successful[1],primaryOutput=normalizeReviewerOutput(selected.output,input.headSha),verifierOutput=normalizeReviewerOutput(verification.output,input.headSha),disagreement=primaryOutput.verdict!==verifierOutput.verdict,hasP0=[...primaryOutput.findings,...verifierOutput.findings].some(f=>f.severity==="P0");
+    const selected=successful[0],verification=successful[1],primaryOutput=normalizeReviewerOutput(selected.output,input.headSha),verifierOutput=normalizeReviewerOutput(verification.output,input.headSha),requiresArbiter=requiresIndependentArbiter(primaryOutput,verifierOutput);
     let arbiter:ReviewerRun["arbiter"];
-    if(hasP0||disagreement){
+    if(requiresArbiter){
       const arbiterModel=reviewerArbiter(input,successful.map(run=>run.model));if(!arbiterModel)throw new ReviewerBackendError("qualified independent arbiter unavailable","P0_ARBITER_UNAVAILABLE");
       const session=`reviewer:opencode_ollama:${arbiterModel}:${randomUUID()}`;
       const arbiterInput={...input,panelEvidence:{primary:{model:selected.model,output:primaryOutput},verifier:{model:verification.model,output:verifierOutput}}};

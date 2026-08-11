@@ -60,14 +60,19 @@ test("verifier P0 is escalated through the independent third arbiter",()=>{
   const run=new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory).review(input());assert.equal(run.output.verdict,"BLOCKED");assert.equal(run.arbiter?.model,REVIEWER_MODELS.nemotron);
 });
 
-test("material reviewer disagreement is escalated through the independent third arbiter",()=>{
+test("PASS versus bounded P2 repairs converges conservatively without an arbiter",()=>{
   const factory=(model:string):ReviewerBackend=>model===REVIEWER_MODELS.deepseekFlash?{model,review:(_value,session)=>({...pass(model).review(input(),session),output:{verdict:"CHANGES_REQUESTED",head_sha:head,summary:"finding",findings:[{severity:"P2",title:"gap",evidence:"line",required_correction:"fix"}]}})}:pass(model);
-  const run=new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory).review(input());assert.equal(run.output.verdict,"BLOCKED");assert.equal(run.arbiter?.model,REVIEWER_MODELS.nemotron);
+  const run=new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory).review(input());assert.equal(run.output.verdict,"CHANGES_REQUESTED");assert.equal(run.output.findings.length,1);assert.equal(run.arbiter,undefined);
 });
 
-test("builder in reviewer pool still fails closed on disagreement without a fourth actor",()=>{
-  const factory=(model:string):ReviewerBackend=>model===REVIEWER_MODELS.deepseekFlash?{model,review:(_value,session)=>({...pass(model).review(input(),session),output:{verdict:"CHANGES_REQUESTED",head_sha:head,summary:"finding",findings:[{severity:"P2",title:"gap",evidence:"line",required_correction:"fix"}]}})}:pass(model);
+test("builder in reviewer pool still fails closed on BLOCKED disagreement without a fourth actor",()=>{
+  const factory=(model:string):ReviewerBackend=>model===REVIEWER_MODELS.deepseekFlash?{model,review:(_value,session)=>({...pass(model).review(input(),session),output:{verdict:"BLOCKED",head_sha:head,summary:"uncertain",findings:[]}})}:pass(model);
   assert.throws(()=>new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory).review(input({builderModel:REVIEWER_MODELS.deepseekPro})),(error:any)=>error instanceof ReviewerBackendError&&error.failureClass==="P0_ARBITER_UNAVAILABLE");
+});
+
+test("PASS versus BLOCKED still uses the independent arbiter",()=>{
+  const factory=(model:string):ReviewerBackend=>model===REVIEWER_MODELS.deepseekFlash?{model,review:(_value,session)=>({...pass(model).review(input(),session),output:{verdict:"BLOCKED",head_sha:head,summary:"uncertain",findings:[]}})}:pass(model);
+  const run=new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory).review(input());assert.equal(run.output.verdict,"BLOCKED");assert.equal(run.arbiter?.model,REVIEWER_MODELS.nemotron);
 });
 
 test("cached escalated receipt cannot be downgraded to PASS",()=>{
