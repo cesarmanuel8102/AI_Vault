@@ -9227,3 +9227,18 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Authorized next item: exactly one `R2.5`, MEDIUM, domain `security_governance`, executor `codex_control_plane`, work branch `control-plane/r2-5-five-role-rbac-matrix`, `NO_DEPLOY`, with complete closeout metadata.
 - Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched by closeout, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
 - Next gate: execute `R2.5` five-role RBAC matrix with `NO_DEPLOY`.
+
+## BRAIN-101 R2.5 — Five-Role RBAC Matrix Closeout (2026-08-11)
+
+- Front: `BRAIN-101-R2-5-FIVE-ROLE-RBAC-MATRIX-CLOSEOUT-01`.
+- Parent five-role RBAC matrix front: `BRAIN-101-R2-5-FIVE-ROLE-RBAC-MATRIX-01`.
+- RBAC matrix evidence path: `docs/roadmap/evidence/BRAIN_101_R2_5_FIVE_ROLE_RBAC_MATRIX.md`.
+- Governed parent lifecycle: Issue #158 / PR #159, decision `9d011c42-59c3-4609-a785-fc20172938a3`, authorization mode `OWNER_CONSTITUTIONAL`, base `e7cd91b7c7d8f61e25bcbef4eed5c93d658d87d2`, closeout base `f48140ee80388fb1b9cd0ebbbf37fa40ebe4c085`, head `5ebf73c0a6a177840cdc04530940f86964b47f4d`, merge commit `f48140ee80388fb1b9cd0ebbbf37fa40ebe4c085`.
+- Builder session: `builder-271f38c2-0bcf-4a49-97f5-f4d0655307c2`.
+- Reviewer session: `reviewer:opencode_ollama:ollama-cloud/qwen3.5:397b:4df48fbb-c390-430d-a80f-490297a904da`.
+- RBAC matrix result: complete per-role, per-route, per-resource allow/deny matrix for owner, operator, reviewer, executor, and read-only roles; wrong role, wrong actor, wrong scope, anonymous access, and privilege escalation denied under the unified governance gate; P3 denial and human final authority remain preserved.
+- Closeout evidence: `docs/roadmap/evidence/BRAIN_101_R2_5_FIVE_ROLE_RBAC_MATRIX_CLOSEOUT.json`.
+- Status: `R2.5` set to `CLOSED_RUNTIME_VERIFIED`; R2 remains partially closed.
+- Authorized next item: exactly one `R3.1`, MEDIUM, domain `testing_ci_recovery`, executor `codex_control_plane`, work branch `control-plane/r3-1-contract-e2e-gap-matrix`, `NO_DEPLOY`, with complete closeout metadata.
+- Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched by closeout, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
+- Next gate: execute `R3.1` contract/E2E gap matrix with `NO_DEPLOY`.

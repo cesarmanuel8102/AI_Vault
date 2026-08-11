@@ -591,7 +591,7 @@
     },
     "R2.5": {
       "title": "Complete constitutional five-role RBAC matrix",
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "CLOSED_RUNTIME_VERIFIED",
       "dependencies": [
         "R2.4"
       ],
@@ -663,6 +663,77 @@
             "Preserve exactly one authorized next roadmap item",
             "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge",
             "Preserve authentication, response shape, side effects, error codes, and rollback behavior unless explicitly authorized by the R2.5 implementation front"
+          ],
+          "test_commands": [
+            "git diff --check"
+          ]
+        }
+      }
+    },
+    "R3.1": {
+      "title": "Build current contract/E2E gap matrix",
+      "status": "AUTHORIZED_ACTIVE",
+      "dependencies": [
+        "R2.5"
+      ],
+      "automation": {
+        "front_id": "BRAIN-101-R3-1-CONTRACT-E2E-GAP-MATRIX-01",
+        "objective": "Create one documentation-only contract and E2E gap matrix against the current roadmap baseline",
+        "work_branch": "control-plane/r3-1-contract-e2e-gap-matrix",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "testing_ci_recovery",
+        "allowed_paths": [
+          "docs/roadmap/evidence/BRAIN_101_R3_1_CONTRACT_E2E_GAP_MATRIX.md"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "memory/semantic/",
+          "memory/rollback",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Build a complete contract and E2E gap matrix against the current roadmap baseline",
+          "Do not modify runtime code, tests, governance logic, memory, FAISS, trading, financial autonomy, CI, environment files, or canonical local state",
+          "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "closeout": {
+          "front_id": "BRAIN-101-R3-1-CONTRACT-E2E-GAP-MATRIX-CLOSEOUT-01",
+          "objective": "Record R3.1 contract/E2E gap matrix evidence and authorize the next single governed R3 item",
+          "work_branch": "control-plane/r3-1-contract-e2e-gap-matrix-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R3_1_CONTRACT_E2E_GAP_MATRIX_CLOSEOUT.json"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R3.1 Issue PR decision merge and contract/E2E gap matrix evidence",
+            "Set R3.1 to CLOSED_RUNTIME_VERIFIED only after the gap matrix evidence is merged",
+            "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
           ],
           "test_commands": [
             "git diff --check"
@@ -864,7 +935,7 @@
     "closed_at_utc": "2026-08-03T21:28:44Z",
     "final_state": "R2_2_CLOSED_RUNTIME_VERIFIED_R2_3_AUTHORIZED_ACTIVE"
   },
-  "next_gate": "Execute R2.5 five-role RBAC matrix with NO_DEPLOY",
+  "next_gate": "Execute R3.1 contract/E2E gap matrix with NO_DEPLOY",
   "r2_3_constitutional_threat_model_closeout": {
     "evidence_path": "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL_CLOSEOUT.json",
     "schema_version": 1,
@@ -915,5 +986,32 @@
     "next_authorized_front_id": "BRAIN-101-R2-5-FIVE-ROLE-RBAC-MATRIX-01",
     "closed_at_utc": "2026-08-03T23:53:18Z",
     "final_state": "R2_4_CLOSED_RUNTIME_VERIFIED_R2_5_AUTHORIZED_ACTIVE"
+  },
+  "r2_5_five_role_rbac_matrix_closeout": {
+    "evidence_path": "docs/roadmap/evidence/BRAIN_101_R2_5_FIVE_ROLE_RBAC_MATRIX_CLOSEOUT.json",
+    "schema_version": 1,
+    "parent_front_id": "BRAIN-101-R2-5-FIVE-ROLE-RBAC-MATRIX-01",
+    "roadmap_id": "BRAIN-101",
+    "roadmap_item_id": "R2.5",
+    "issue": 158,
+    "pr": 159,
+    "decision_id": "9d011c42-59c3-4609-a785-fc20172938a3",
+    "authorization_mode": "OWNER_CONSTITUTIONAL",
+    "base_sha": "e7cd91b7c7d8f61e25bcbef4eed5c93d658d87d2",
+    "closeout_base_sha": "f48140ee80388fb1b9cd0ebbbf37fa40ebe4c085",
+    "head_sha": "5ebf73c0a6a177840cdc04530940f86964b47f4d",
+    "merge_commit": "f48140ee80388fb1b9cd0ebbbf37fa40ebe4c085",
+    "builder_session": "builder-271f38c2-0bcf-4a49-97f5-f4d0655307c2",
+    "reviewer_session": "reviewer:opencode_ollama:ollama-cloud/qwen3.5:397b:4df48fbb-c390-430d-a80f-490297a904da",
+    "rbac_matrix_evidence_path": "docs/roadmap/evidence/BRAIN_101_R2_5_FIVE_ROLE_RBAC_MATRIX.md",
+    "rbac_matrix_created": true,
+    "five_role_matrix_complete": true,
+    "runtime_controls_closed_by_this_packet": true,
+    "r2_current_status": "PARTIALLY_CLOSED",
+    "r2_can_close_now": false,
+    "next_authorized_item": "R3.1",
+    "next_authorized_front_id": "BRAIN-101-R3-1-CONTRACT-E2E-GAP-MATRIX-01",
+    "closed_at_utc": "2026-08-11T00:00:00Z",
+    "final_state": "R2_5_CLOSED_RUNTIME_VERIFIED_R3_1_AUTHORIZED_ACTIVE"
   }
 }
