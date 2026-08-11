@@ -11,10 +11,13 @@ export function builderInvocation(codex: string, entrypoint = process.env.CODEX_
   return { file: codex, prefix: [entrypoint, "-c", 'service_tier="fast"', "-c", 'model_reasoning_effort="high"'] };
 }
 
-function parseCodexOutput(output: string): { headSha?: string; providerSession?: string } {
+export function parseCodexOutput(output: string): { headSha?: string; providerSession?: string } {
   const headMatch = output.match(/HEAD_SHA=([0-9a-f]{40})/);
-  const sessionMatch = output.match(/PROVIDER_SESSION=([a-zA-Z0-9_-]+)/);
-  return { headSha: headMatch?.[1], providerSession: sessionMatch?.[1] };
+  const sessionMatches = [...output.matchAll(/^PROVIDER_SESSION=([^\r\n]*)$/gm)];
+  if (sessionMatches.length > 1) throw new Error("Codex builder PROVIDER_SESSION receipt ambiguous");
+  const providerSession=sessionMatches[0]?.[1];
+  if(providerSession!==undefined&&!/^[a-z0-9][a-z0-9._:/-]{2,127}$/.test(providerSession))throw new Error("Codex builder PROVIDER_SESSION receipt invalid");
+  return { headSha: headMatch?.[1], providerSession };
 }
 
 export async function runCodexBuilder(input: BuilderInput, config: BackendConfig, env: NodeJS.ProcessEnv = process.env): Promise<BuilderResult> {

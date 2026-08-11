@@ -245,11 +245,10 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
     const invokeBackend = async (attemptSession: string): Promise<BuilderResult> => {
       const result = await buildFn({ ...backendInput, session: attemptSession });
       await validateBuilderOutput({ ...backendInput, session: attemptSession }, result, env);
-      if (result.executor_role !== "codex_control_plane" || result.base_sha !== input.base_sha || result.builder_backend !== backendId || result.builder_model !== cfg.model || !result.provider_session || !/^[0-9a-f]{40}$/.test(result.head_sha)) throw new Error("builder result contract invalid");
+      if (result.executor_role !== "codex_control_plane" || result.base_sha !== input.base_sha || result.builder_backend !== backendId || result.builder_model !== cfg.model || !/^[a-z0-9][a-z0-9._:/-]{2,127}$/.test(result.provider_session) || !/^[0-9a-f]{40}$/.test(result.head_sha)) throw new Error("builder result contract invalid");
       if (result.fallback_reason !== undefined) throw new Error("builder backend must not set fallback_reason");
       if (fallbackReason && backendId === "codex_cli_openai") throw new Error("primary Codex result cannot be an automatic fallback");
       result.builder_session = session;
-      result.provider_session = `${backendId}-${randomUUID()}`;
       if (fallbackReason) result.fallback_reason = fallbackReason;
       return result;
     };

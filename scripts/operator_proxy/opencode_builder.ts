@@ -29,8 +29,11 @@ export function parseOpenCodeOutput(output: string): { headSha?: string; provide
   if (headMatches.length > 1) throw new Error("OpenCode builder HEAD_SHA receipt ambiguous");
   const headMatch = headMatches[0]?.[1];
   if (headMatch !== undefined && !/^[0-9a-f]{40}$/.test(headMatch)) throw new Error("OpenCode builder HEAD_SHA receipt invalid");
-  const sessionMatch = output.match(/PROVIDER_SESSION=([a-zA-Z0-9_-]+)/);
-  return { headSha: headMatch, providerSession: sessionMatch?.[1] };
+  const sessionMatches = [...output.matchAll(/^PROVIDER_SESSION=([^\r\n]*)$/gm)];
+  if (sessionMatches.length > 1) throw new Error("OpenCode builder PROVIDER_SESSION receipt ambiguous");
+  const providerSession=sessionMatches[0]?.[1];
+  if(providerSession!==undefined&&!/^[a-z0-9][a-z0-9._:/-]{2,127}$/.test(providerSession))throw new Error("OpenCode builder PROVIDER_SESSION receipt invalid");
+  return { headSha: headMatch, providerSession };
 }
 
 export async function runOpenCodeBuilder(input: BuilderInput, config: BackendConfig, env: NodeJS.ProcessEnv = process.env, fallbackReason?: string): Promise<BuilderResult> {
