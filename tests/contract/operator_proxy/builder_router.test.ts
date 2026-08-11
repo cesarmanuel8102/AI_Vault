@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {execFileSync} from "node:child_process";
-import {mkdirSync,mkdtempSync,writeFileSync} from "node:fs";
+import {existsSync,mkdirSync,mkdtempSync,readFileSync,rmSync,writeFileSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join,resolve} from "node:path";
 import {routeControlPlaneBuild,listBuilderBackendHealth} from "../../../scripts/operator_proxy/builder_router.js";
@@ -252,4 +252,64 @@ test("OpenCode output requires one canonical HEAD_SHA receipt",()=>{
   assert.deepEqual(parseOpenCodeOutput(`HEAD_SHA=${head}\nPROVIDER_SESSION=session-1\n`),{headSha:head,providerSession:"session-1"});
   assert.throws(()=>parseOpenCodeOutput(`HEAD_SHA=${head}\nHEAD_SHA=${head}\n`),/ambiguous/);
   assert.throws(()=>parseOpenCodeOutput("HEAD_SHA=not-a-sha\n"),/invalid/);
+});
+
+function advanceWorktree(worktree:string,payload:string){
+  writeFileSync(join(worktree,"docs","x.md"),payload);
+  execFileSync("git",["-C",worktree,"add","docs/x.md"]);
+  execFileSync("git",["-C",worktree,"commit","-m","existing governed candidate"]);
+  return currentHead(worktree);
+}
+
+function cleanFallbackScript(expectedBase:string,marker:string){
+  return `const fs=require("fs"),path=require("path"),{execFileSync}=require("child_process");const a=process.argv;const i=a.indexOf("--dir");const cwd=a[i+1];const head=execFileSync("git",["-C",cwd,"rev-parse","HEAD"],{encoding:"utf8"}).trim();const status=execFileSync("git",["-C",cwd,"status","--porcelain","--untracked-files=all"],{encoding:"utf8"}).trim();if(head!=="${expectedBase}"||status)throw new Error("fallback baseline not pristine");fs.mkdirSync(path.join(cwd,"docs"),{recursive:true});fs.writeFileSync(path.join(cwd,"docs","x.md"),"${marker}\\n");execFileSync("git",["-C",cwd,"add","docs/x.md"]);execFileSync("git",["-C",cwd,"commit","-m","feat(control-plane): complete BRAIN-101-R1-SYNTHETIC-01"]);console.log("HEAD_SHA="+execFileSync("git",["-C",cwd,"rev-parse","HEAD"],{encoding:"utf8"}).trim());`;
+}
+
+test("repair build uses the exact clean candidate HEAD as its effective base",async()=>{
+  const r=builderRepo(),candidate=advanceWorktree(r.worktree,"candidate\n"),entry=join(r.source,"repair-builder.js");
+  const prior={entry:process.env.CODEX_ENTRYPOINT,path:process.env.CODEX_PATH,root:process.env.OPERATOR_PROXY_ROOT};
+  writeFileSync(entry,fakeBackendScript("repair",0));
+  process.env.CODEX_ENTRYPOINT=entry;process.env.CODEX_PATH=process.execPath;process.env.OPERATOR_PROXY_ROOT=mkdtempSync(join(tmpdir(),"builder-repair-"));
+  try {const result=await routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"repair",1,{baseSha:candidate,forceBackend:"codex_cli_openai"},r.worktree);assert.equal(result.base_sha,candidate);assert.equal(result.head_sha,currentHead(r.worktree));}
+  finally {if(prior.entry===undefined)delete process.env.CODEX_ENTRYPOINT;else process.env.CODEX_ENTRYPOINT=prior.entry;if(prior.path===undefined)delete process.env.CODEX_PATH;else process.env.CODEX_PATH=prior.path;if(prior.root===undefined)delete process.env.OPERATOR_PROXY_ROOT;else process.env.OPERATOR_PROXY_ROOT=prior.root;}
+});
+
+test("base override mismatch or dirty entry fails before backend execution",async()=>{
+  for(const dirty of [false,true]){
+    const r=builderRepo(),candidate=advanceWorktree(r.worktree,"candidate\n"),called=join(r.source,"called.txt"),entry=join(r.source,"must-not-run.js"),prior={entry:process.env.CODEX_ENTRYPOINT,path:process.env.CODEX_PATH,root:process.env.OPERATOR_PROXY_ROOT};
+    writeFileSync(entry,`require("fs").writeFileSync(${JSON.stringify(called)},"called");`);if(dirty)writeFileSync(join(r.worktree,"dirty.tmp"),"dirty");
+    process.env.CODEX_ENTRYPOINT=entry;process.env.CODEX_PATH=process.execPath;process.env.OPERATOR_PROXY_ROOT=mkdtempSync(join(tmpdir(),"builder-base-deny-"));
+    try {await assert.rejects(routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"repair",1,{baseSha:dirty?candidate:r.base,forceBackend:"codex_cli_openai"},r.worktree),dirty?/worktree is dirty/:/does not match clean worktree HEAD/);assert.equal(existsSync(called),false);}
+    finally {if(prior.entry===undefined)delete process.env.CODEX_ENTRYPOINT;else process.env.CODEX_ENTRYPOINT=prior.entry;if(prior.path===undefined)delete process.env.CODEX_PATH;else process.env.CODEX_PATH=prior.path;if(prior.root===undefined)delete process.env.OPERATOR_PROXY_ROOT;else process.env.OPERATOR_PROXY_ROOT=prior.root;}
+  }
+});
+
+test("failed backend tracked, untracked, and committed contamination is removed before fallback",async()=>{
+  for(const commit of [false,true]){
+    const r=builderRepo(),codex=join(r.source,`contaminate-${commit}.js`),fallback=join(r.source,`fallback-${commit}.js`),prior={entry:process.env.CODEX_ENTRYPOINT,path:process.env.CODEX_PATH,open:process.env.OPEN_CODE_PATH,root:process.env.OPERATOR_PROXY_ROOT};
+    writeFileSync(codex,`const fs=require("fs"),path=require("path"),{execFileSync}=require("child_process");const a=process.argv,i=a.indexOf("-C"),cwd=a[i+1];fs.writeFileSync(path.join(cwd,"docs","x.md"),"contaminated\\n");fs.writeFileSync(path.join(cwd,"leftover.tmp"),"x");${commit?'execFileSync("git",["-C",cwd,"add","docs/x.md"]);execFileSync("git",["-C",cwd,"commit","-m","failed backend commit"]);':''}console.error("usage limit: credits exhausted");process.exit(1);`);
+    writeFileSync(fallback,cleanFallbackScript(r.base,commit?"clean after commit":"clean after files"));
+    process.env.CODEX_ENTRYPOINT=codex;process.env.CODEX_PATH=process.execPath;process.env.OPEN_CODE_PATH=fallback;process.env.OPERATOR_PROXY_ROOT=mkdtempSync(join(tmpdir(),"builder-clean-fallback-"));
+    try {const result=await routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree);assert.equal(result.builder_backend,"opencode_github_copilot");assert.equal(existsSync(join(r.worktree,"leftover.tmp")),false);assert.equal(execFileSync("git",["-C",r.worktree,"rev-parse",`${result.head_sha}^`],{encoding:"utf8"}).trim(),r.base);}
+    finally {if(prior.entry===undefined)delete process.env.CODEX_ENTRYPOINT;else process.env.CODEX_ENTRYPOINT=prior.entry;if(prior.path===undefined)delete process.env.CODEX_PATH;else process.env.CODEX_PATH=prior.path;if(prior.open===undefined)delete process.env.OPEN_CODE_PATH;else process.env.OPEN_CODE_PATH=prior.open;if(prior.root===undefined)delete process.env.OPERATOR_PROXY_ROOT;else process.env.OPERATOR_PROXY_ROOT=prior.root;}
+  }
+});
+
+test("transient retry and subsequent fallback each start from the pristine baseline",async()=>{
+  const r=builderRepo(),attemptFile=join(r.source,"attempt.txt"),codex=join(r.source,"retry-builder.js"),fallback=join(r.source,"retry-fallback.js"),prior={entry:process.env.CODEX_ENTRYPOINT,path:process.env.CODEX_PATH,open:process.env.OPEN_CODE_PATH,root:process.env.OPERATOR_PROXY_ROOT};
+  writeFileSync(codex,`const fs=require("fs"),path=require("path"),{execFileSync}=require("child_process"),a=process.argv,i=a.indexOf("-C"),cwd=a[i+1],state=${JSON.stringify(attemptFile)},n=fs.existsSync(state)?Number(fs.readFileSync(state,"utf8")):0;const status=execFileSync("git",["-C",cwd,"status","--porcelain","--untracked-files=all"],{encoding:"utf8"}).trim();if(status)throw new Error("retry observed contamination");fs.writeFileSync(state,String(n+1));fs.mkdirSync(path.join(cwd,"docs"),{recursive:true});fs.writeFileSync(path.join(cwd,"docs","x.md"),"attempt "+(n+1)+"\\n");fs.writeFileSync(path.join(cwd,"attempt.tmp"),"x");console.error("rate limit");process.exit(1);`);
+  writeFileSync(fallback,cleanFallbackScript(r.base,"fallback after retry"));
+  process.env.CODEX_ENTRYPOINT=codex;process.env.CODEX_PATH=process.execPath;process.env.OPEN_CODE_PATH=fallback;process.env.OPERATOR_PROXY_ROOT=mkdtempSync(join(tmpdir(),"builder-retry-fallback-"));
+  try {const result=await routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree);assert.equal(readFileSync(attemptFile,"utf8"),"2");assert.equal(result.builder_backend,"opencode_github_copilot");assert.equal(existsSync(join(r.worktree,"attempt.tmp")),false);}
+  finally {if(prior.entry===undefined)delete process.env.CODEX_ENTRYPOINT;else process.env.CODEX_ENTRYPOINT=prior.entry;if(prior.path===undefined)delete process.env.CODEX_PATH;else process.env.CODEX_PATH=prior.path;if(prior.open===undefined)delete process.env.OPEN_CODE_PATH;else process.env.OPEN_CODE_PATH=prior.open;if(prior.root===undefined)delete process.env.OPERATOR_PROXY_ROOT;else process.env.OPERATOR_PROXY_ROOT=prior.root;}
+});
+
+test("baseline restoration failure blocks fallback execution",async()=>{
+  const r=builderRepo(),codex=join(r.source,"break-worktree.js"),fallback=join(r.source,"must-not-fallback.js"),called=join(r.source,"fallback-called.txt"),prior={entry:process.env.CODEX_ENTRYPOINT,path:process.env.CODEX_PATH,open:process.env.OPEN_CODE_PATH,root:process.env.OPERATOR_PROXY_ROOT};
+  const lock=execFileSync("git",["-C",r.worktree,"rev-parse","--git-path","index.lock"],{encoding:"utf8"}).trim();
+  writeFileSync(codex,`require("fs").writeFileSync(${JSON.stringify(lock)},"locked");console.error("usage limit: credits exhausted");process.exit(1);`);
+  writeFileSync(fallback,`require("fs").writeFileSync(${JSON.stringify(called)},"called");process.exit(1);`);
+  process.env.CODEX_ENTRYPOINT=codex;process.env.CODEX_PATH=process.execPath;process.env.OPEN_CODE_PATH=fallback;process.env.OPERATOR_PROXY_ROOT=mkdtempSync(join(tmpdir(),"builder-restore-deny-"));
+  try {await assert.rejects(routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree));assert.equal(existsSync(called),false);}
+  finally {rmSync(lock,{force:true});if(prior.entry===undefined)delete process.env.CODEX_ENTRYPOINT;else process.env.CODEX_ENTRYPOINT=prior.entry;if(prior.path===undefined)delete process.env.CODEX_PATH;else process.env.CODEX_PATH=prior.path;if(prior.open===undefined)delete process.env.OPEN_CODE_PATH;else process.env.OPEN_CODE_PATH=prior.open;if(prior.root===undefined)delete process.env.OPERATOR_PROXY_ROOT;else process.env.OPERATOR_PROXY_ROOT=prior.root;}
 });

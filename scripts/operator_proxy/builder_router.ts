@@ -28,16 +28,23 @@ function operatorProxyRoot(env = process.env): string {
 export interface RouterOptions {
   env?: NodeJS.ProcessEnv;
   forceBackend?: "codex_cli_openai" | "opencode_github_copilot" | "opencode_ollama";
+  baseSha?: string;
 }
 
-function buildInputFromSpec(spec: ProxySpec, issue: number, session: string, repairCycle: number, prompt: string, env: NodeJS.ProcessEnv, worktree?: string): BuilderInput {
+function isExact40CharSha(value: string): boolean {
+  return /^[0-9a-f]{40}$/.test(value);
+}
+
+function buildInputFromSpec(spec: ProxySpec, issue: number, session: string, repairCycle: number, prompt: string, env: NodeJS.ProcessEnv, worktree?: string, baseSha?: string): BuilderInput {
   if (!spec.front_id || !spec.work_branch || !spec.expected_base_sha) throw new Error("builder spec incomplete");
+  const effectiveBase = baseSha ?? spec.expected_base_sha;
+  if (!isExact40CharSha(effectiveBase)) throw new Error("builder base identity invalid");
   return {
     repository: spec.repository,
     worktree: worktree ?? join(operatorProxyRoot(env), "worktrees", spec.front_id),
     front_id: spec.front_id,
     issue,
-    base_sha: spec.expected_base_sha,
+    base_sha: effectiveBase,
     work_branch: spec.work_branch,
     allowed_paths: spec.allowed_paths,
     forbidden_paths: spec.forbidden_paths,
@@ -49,6 +56,25 @@ function buildInputFromSpec(spec: ProxySpec, issue: number, session: string, rep
     prompt,
     session,
   };
+}
+
+function sameFileSystemObject(a: string, b: string): boolean {
+  try {
+    const sa = statSync(a), sb = statSync(b);
+    return sa.dev === sb.dev && sa.ino === sb.ino;
+  } catch {
+    return false;
+  }
+}
+
+function validateWorktreeIdentity(worktree: string, env: NodeJS.ProcessEnv) {
+  const forbiddenRoots = forbiddenWorktreeRoots(env);
+  const top = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "rev-parse", "--show-toplevel"], { encoding: "utf8", timeout: 30000 }).trim();
+  const resolvedTop = realpathSync(top), resolvedWorktree = realpathSync(worktree);
+  if (!sameFileSystemObject(resolvedTop, resolvedWorktree)) throw new Error("builder worktree identity mismatch");
+  for (const root of forbiddenRoots) {
+    if (top.toLowerCase().startsWith(root.toLowerCase())) throw new Error("builder worktree root denied");
+  }
 }
 
 function specFromInput(input: BuilderInput): ProxySpec {
@@ -70,25 +96,6 @@ function specFromInput(input: BuilderInput): ProxySpec {
     deployment_mode: input.deployment_mode,
     front_id: input.front_id,
   };
-}
-
-function sameFileSystemObject(a: string, b: string): boolean {
-  try {
-    const sa = statSync(a), sb = statSync(b);
-    return sa.dev === sb.dev && sa.ino === sb.ino;
-  } catch {
-    return false;
-  }
-}
-
-function validateWorktreeIdentity(worktree: string, env: NodeJS.ProcessEnv) {
-  const forbiddenRoots = forbiddenWorktreeRoots(env);
-  const top = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "rev-parse", "--show-toplevel"], { encoding: "utf8", timeout: 30000 }).trim();
-  const resolvedTop = realpathSync(top), resolvedWorktree = realpathSync(worktree);
-  if (!sameFileSystemObject(resolvedTop, resolvedWorktree)) throw new Error("builder worktree identity mismatch");
-  for (const root of forbiddenRoots) {
-    if (top.toLowerCase().startsWith(root.toLowerCase())) throw new Error("builder worktree root denied");
-  }
 }
 
 async function validateBuilderOutput(input: BuilderInput, result: BuilderResult, env: NodeJS.ProcessEnv): Promise<void> {
@@ -125,11 +132,29 @@ function resolveForceBackend(env: NodeJS.ProcessEnv, option?: BuilderTransport):
   return undefined;
 }
 
+function validateBaseOverride(worktree: string, requestedBase: string, env: NodeJS.ProcessEnv) {
+  if (!isExact40CharSha(requestedBase)) throw new Error("builder base override identity invalid");
+  const cleanHead = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "rev-parse", "HEAD"], { encoding: "utf8", timeout: 30000 }).trim();
+  if (cleanHead !== requestedBase) throw new Error("builder base override does not match clean worktree HEAD");
+  const status = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "status", "--porcelain", "--untracked-files=all"], { encoding: "utf8", timeout: 30000 }).trim();
+  if (status) throw new Error("builder base override worktree is dirty");
+}
+
+function restoreWorktreeBaseline(worktree: string, baseSha: string, env: NodeJS.ProcessEnv) {
+  execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "reset", "--hard", baseSha], { encoding: "utf8", timeout: 120000, windowsHide: true });
+  execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "clean", "-fd", "--"], { encoding: "utf8", timeout: 120000, windowsHide: true });
+  const head = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "rev-parse", "HEAD"], { encoding: "utf8", timeout: 30000 }).trim();
+  if (head !== baseSha) throw new Error("builder worktree baseline restore head mismatch");
+  const status = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "status", "--porcelain", "--untracked-files=all"], { encoding: "utf8", timeout: 30000 }).trim();
+  if (status) throw new Error("builder worktree baseline restore left dirty state");
+}
+
 export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, prompt: string, repairCycle: number, options: RouterOptions = {}, worktree?: string): Promise<BuilderResult> {
   const env = options.env ?? process.env;
   const session = `builder-${randomUUID()}`;
-  const input = buildInputFromSpec(spec, issue, session, repairCycle, prompt, env, worktree);
+  const input = buildInputFromSpec(spec, issue, session, repairCycle, prompt, env, worktree, options.baseSha);
   const healthDir = join(operatorProxyRoot(env), "state", "builder-health");
+  if (options.baseSha) validateBaseOverride(worktree ?? input.worktree, options.baseSha, env);
   validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
 
   const forceBackend = resolveForceBackend(env, options.forceBackend);
@@ -153,9 +178,9 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
       buildFn = (i) => runOpenCodeBuilder(i, cfg, env);
     }
 
-    try {
-      const result = await buildFn(backendInput);
-      await validateBuilderOutput(backendInput, result, env);
+    const invokeBackend = async (attemptSession: string): Promise<BuilderResult> => {
+      const result = await buildFn({ ...backendInput, session: attemptSession });
+      await validateBuilderOutput({ ...backendInput, session: attemptSession }, result, env);
       if (result.executor_role !== "codex_control_plane" || result.base_sha !== input.base_sha || result.builder_backend !== backendId || !result.builder_model || !result.provider_session || !/^[0-9a-f]{40}$/.test(result.head_sha)) throw new Error("builder result contract invalid");
       if (result.fallback_reason !== undefined) throw new Error("builder backend must not set fallback_reason");
       if (fallbackReason && backendId === "codex_cli_openai") throw new Error("primary Codex result cannot be an automatic fallback");
@@ -163,9 +188,15 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
       result.provider_session = `${backendId}-${randomUUID()}`;
       if (fallbackReason) result.fallback_reason = fallbackReason;
       return result;
+    };
+
+    try {
+      return await invokeBackend(backendSession);
     } catch (error) {
+      restoreWorktreeBaseline(input.worktree, input.base_sha, env);
+      validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
       const { eligible, failure_class, transient } = isEligibleFallback(error);
-      recordHealth(healthDir, { backend: backendId, model: cfg.model, failure_class, attempt: index + 1, front_id: spec.front_id!, base_sha: spec.expected_base_sha, created_utc: new Date().toISOString() });
+      recordHealth(healthDir, { backend: backendId, model: cfg.model, failure_class, attempt: index + 1, front_id: spec.front_id!, base_sha: input.base_sha, created_utc: new Date().toISOString() });
 
       if (!eligible) throw new Error(redactString(String(error instanceof Error ? error.message : error)));
       if (index === attemptOrder.length - 1) {
@@ -176,15 +207,13 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
         const backoffMs = Math.min(1000 * Math.pow(2, index), 8000);
         await new Promise(resolve => setTimeout(resolve, backoffMs));
         try {
-          const retryResult = await buildFn({ ...backendInput, session: `${backendSession}-retry` });
-          await validateBuilderOutput({ ...backendInput, session: `${backendSession}-retry` }, retryResult, env);
-          retryResult.builder_session = session;
-          retryResult.provider_session = `${backendId}-${randomUUID()}`;
-          if (retryResult.fallback_reason !== undefined) throw new Error("builder backend must not set fallback_reason");
-          return retryResult;
+          return await invokeBackend(`${backendSession}-retry`);
         } catch (retryError) {
-          const { failure_class: retryClass } = isEligibleFallback(retryError);
-          recordHealth(healthDir, { backend: backendId, model: cfg.model, failure_class: `retry:${retryClass}`, attempt: index + 1, front_id: spec.front_id!, base_sha: spec.expected_base_sha, created_utc: new Date().toISOString() });
+          restoreWorktreeBaseline(input.worktree, input.base_sha, env);
+          validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
+          const { eligible: retryEligible, failure_class: retryClass } = isEligibleFallback(retryError);
+          recordHealth(healthDir, { backend: backendId, model: cfg.model, failure_class: `retry:${retryClass}`, attempt: index + 1, front_id: spec.front_id!, base_sha: input.base_sha, created_utc: new Date().toISOString() });
+          if (!retryEligible) throw new Error(redactString(String(retryError instanceof Error ? retryError.message : retryError)));
         }
       }
 

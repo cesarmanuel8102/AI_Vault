@@ -94,7 +94,7 @@ export class GovernedBuilder {
         this.assertEffect("builder_execute",{issue});
         const useRouter=process.env.OPERATOR_PROXY_BUILDER_ROUTER!=="disabled";
         if(useRouter){
-          const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{},worktree);
+          const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{baseSha:initialHead},worktree);
           if(result.executor_role!=="codex_control_plane"||!result.builder_backend||!result.builder_model||!result.builder_session||!result.provider_session||result.base_sha!==initialHead||!/^[0-9a-f]{40}$/.test(result.head_sha))throw new Error("builder router result contract invalid");
           const head=result.head_sha;
           const files=changed(worktree);validateFiles(files,spec);
