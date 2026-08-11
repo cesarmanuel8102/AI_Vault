@@ -32,6 +32,16 @@ test("lost lease, changed base or head, and blocked lifecycle fail closed",()=>{
   lease=false;assert.throws(()=>boundary.assert("push",{issue:63,pr:63,expected_head:head}),/lease lost/);lease=true;currentBase="c".repeat(40);assert.throws(()=>boundary.assert("push",{issue:63}),/base changed/);currentBase=base;currentHead="d".repeat(40);assert.throws(()=>boundary.assert("merge",{issue:63,pr:63,expected_head:head}),/head changed/);currentHead=head;boundary.bind(spec,{...lifecycle,state:"BLOCKED"});assert.throws(()=>boundary.assert("comment_publish",{issue:63}),/lifecycle state/);
 });
 
+test("repair push permits only one exact old-head to new-head transition",()=>{
+  const root=mkdtempSync(join(tmpdir(),"effect-repair-push-"));mkdirSync(join(root,"state"));const next="c".repeat(40),decision="11111111-1111-4111-8111-111111111111";let currentHead=head;
+  const repair:LifecycleRecord={...lifecycle,state:"BUILDING",repair_cycles:1,builder_session:"builder-one",reviewer_session:"reviewer-one",decision_id:decision,completed_effects:["issue:63",`build:${head}`]};
+  const bus:any={branchHead:()=>base,issuePaused:()=>false,prIdentity:()=>({headRefOid:currentHead})},boundary=new ExternalEffectBoundary(root,bus,()=>true);boundary.bind(spec,repair);
+  boundary.assert("push",{issue:63,pr:63,observed_head:head,expected_head:next});
+  for(const context of [{observed_head:"d".repeat(40),expected_head:next},{observed_head:head,expected_head:head},{observed_head:head,expected_head:"bad"},{observed_head:head,expected_head:next,pr:64}])assert.throws(()=>boundary.assert("push",{issue:63,pr:63,...context}),/head changed/);
+  currentHead="e".repeat(40);assert.throws(()=>boundary.assert("push",{issue:63,pr:63,observed_head:head,expected_head:next}),/head changed/);
+  currentHead=head;boundary.bind(spec,{...repair,repair_cycles:0});assert.throws(()=>boundary.assert("push",{issue:63,pr:63,observed_head:head,expected_head:next}),/head changed/);
+});
+
 test("post-merge boundary distinguishes immediate merge effects from rebound closeout",()=>{
   const root=mkdtempSync(join(tmpdir(),"effect-postmerge-"));mkdirSync(join(root,"state"));const merge="c".repeat(40),tip="d".repeat(40);let currentBase=merge;
   const bus:any={branchHead:()=>currentBase,issuePaused:()=>false,prIdentity:()=>({headRefOid:head})};const boundary=new ExternalEffectBoundary(root,bus,()=>true);

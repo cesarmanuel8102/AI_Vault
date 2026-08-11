@@ -75,6 +75,11 @@ export class ExternalEffectBoundary {
     if(this.bus.branchHead("codex/own-capital-sustainable-return")!==expectedBase)throw new Error("external effect base changed");
     const issue=context.issue??state.issue;if(issue&&this.bus.issuePaused(issue))throw new Error("external effect paused by GitHub label");
     const pr=context.pr??state.pr;const expectedHead=context.expected_head??(!POST_MERGE.has(state.state)?state.head_sha:undefined);
-    if(pr&&expectedHead){const current=this.bus.prIdentity(pr);if(current.headRefOid!==expectedHead)throw new Error("external effect head changed");}
+    if(pr&&expectedHead){
+      const current=this.bus.prIdentity(pr);
+      const repairPush=effect==="push"&&state.state==="BUILDING"&&state.repair_cycles>0&&state.repair_cycles<=2&&context.issue===state.issue&&pr===state.pr&&!!state.head_sha&&!!state.reviewer_session&&!!state.decision_id&&context.observed_head===state.head_sha&&current.headRefOid===state.head_sha&&expectedHead!==state.head_sha&&/^[0-9a-f]{40}$/.test(expectedHead);
+      if(effect==="push"&&state.state==="BUILDING"&&state.repair_cycles>0&&!repairPush)throw new Error("external effect head changed");
+      if(!repairPush&&current.headRefOid!==expectedHead)throw new Error("external effect head changed");
+    }
   }
 }
