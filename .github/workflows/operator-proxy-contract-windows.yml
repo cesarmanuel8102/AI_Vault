@@ -1,5 +1,5 @@
 name: Operator Proxy Contract - Windows
-on: {pull_request: {paths: ['scripts/operator_proxy/**','tests/contract/operator_proxy/**','.github/workflows/operator-proxy-**']}}
+on: {pull_request: {paths: ['scripts/operator_proxy/**','tests/contract/operator_proxy/**','docs/roadmap/**','ROADMAP_STATUS.json','docs/MIGRATION_CONTROL_LEDGER.md','.github/workflows/operator-proxy-**']}}
 permissions: {contents: read}
 jobs:
   contract:
