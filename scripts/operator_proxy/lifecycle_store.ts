@@ -42,6 +42,13 @@ export class LifecycleStore {
     if(record.completed_effects.includes(key)) return record;
     const updated={...record,completed_effects:[...record.completed_effects,key],updated_utc:new Date().toISOString()}; this.save(updated); return updated;
   }
+  repairBuild(record:LifecycleRecord,head:string):LifecycleRecord {
+    const exact=record.state==="BUILDING"&&record.repair_cycles>0&&record.repair_cycles<=2&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&!!record.head_sha&&!!record.builder_session&&!!record.reviewer_session&&!!record.decision_id&&validBlockedCiEffectChain(record);
+    if(!exact||!/^[0-9a-f]{40}$/.test(head)||head===record.head_sha)throw new Error("repair build evidence denied");
+    const updated={...record,completed_effects:[`issue:${record.issue}`,`build:${head}`],updated_utc:new Date().toISOString()};
+    appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_repair_build_replaced",front_id:record.front_id,issue:record.issue,pr:record.pr,old_head_sha:record.head_sha,new_head_sha:head,decision_id:record.decision_id,repair_cycle:record.repair_cycles,updated_utc:updated.updated_utc})}\n`);
+    this.save(updated);return updated;
+  }
   rebindPreBuildBase(record: LifecycleRecord, nextBase: string): LifecycleRecord {
     const pristine=record.state==="BUILDING"&&Number.isInteger(record.issue)&&record.issue!>0&&record.repair_cycles===0&&!record.pr&&!record.head_sha&&!record.builder_session&&!record.reviewer_session&&!record.decision_id&&record.completed_effects.length===1&&record.completed_effects[0]===`issue:${record.issue}`;
     if(!pristine||!/^[0-9a-f]{40}$/.test(nextBase)||record.base_sha===nextBase)throw new Error("pre-build lifecycle base rebind denied");
