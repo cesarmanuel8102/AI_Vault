@@ -62,7 +62,7 @@ export function builderPrompt(spec:ProxySpec,repairCycle:number,repair=""){
 export class GovernedBuilder {
   constructor(readonly sourceRepo:string,readonly worktreeRoot:string,readonly bus:BuilderBus,readonly assertEffect:EffectAssertion,readonly codex=process.env.CODEX_PATH??"codex"){}
   synchronizeBlockedCiBase(spec:ProxySpec,state:LifecycleRecord){
-    if(state.state!=="BLOCKED"||state.last_error!=="CI_FAILED"||!state.issue||!state.pr||!state.head_sha||!state.builder_session||state.repair_cycles!==0||state.reviewer_session||state.decision_id||!spec.work_branch||state.base_sha===spec.expected_base_sha)throw new Error("blocked CI branch synchronization denied");
+    if(state.state!=="BLOCKED"||state.last_error!=="CI_FAILED"||!state.issue||!state.pr||!state.head_sha||!state.builder_session||!Number.isInteger(state.repair_cycles)||state.repair_cycles<0||state.repair_cycles>2||state.reviewer_session||state.decision_id||!spec.work_branch||state.base_sha===spec.expected_base_sha)throw new Error("blocked CI branch synchronization denied");
     const pr=this.bus.prIdentity(state.pr),files=(pr.files??[]).map((x:any)=>String(x.path)).sort();
     // GitHub may expose either the PR's original base OID or the advanced target OID.
     if(pr.author?.login!=="cesarmanuel8102"||pr.baseRefName!=="codex/own-capital-sustainable-return"||pr.headRefName!==spec.work_branch||pr.headRepository?.nameWithOwner!=="cesarmanuel8102/AI_Vault"||pr.isCrossRepository!==false||pr.isDraft!==true||pr.state!=="OPEN"||pr.mergeable!=="MERGEABLE"||files.length===0||!files.every((path:string)=>allowed(path,spec)))throw new Error("blocked CI PR identity invalid");

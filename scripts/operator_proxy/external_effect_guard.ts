@@ -32,7 +32,7 @@ export class ExternalEffectBoundary {
   assertPrivilegedInstallResumeReady(){if(!this.privilegedInstallResume)throw new Error("privileged install receipt boundary denied");this.assert("installation_receipt");}
   endPrivilegedInstallResume(){this.privilegedInstallResume=false;}
   beginBlockedCiRecovery(spec:ProxySpec,state:LifecycleRecord){
-    const exact=state.state==="BLOCKED"&&state.last_error==="CI_FAILED"&&Number.isInteger(state.issue)&&state.issue!>0&&Number.isInteger(state.pr)&&state.pr!>0&&state.repair_cycles===0&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&/^[0-9a-f]{40}$/.test(state.base_sha)&&/^[0-9a-f]{40}$/.test(state.head_sha??"")&&state.base_sha!==spec.expected_base_sha&&validBlockedCiEffectChain(state);
+    const exact=state.state==="BLOCKED"&&state.last_error==="CI_FAILED"&&Number.isInteger(state.issue)&&state.issue!>0&&Number.isInteger(state.pr)&&state.pr!>0&&Number.isInteger(state.repair_cycles)&&state.repair_cycles>=0&&state.repair_cycles<=2&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&/^[0-9a-f]{40}$/.test(state.base_sha)&&/^[0-9a-f]{40}$/.test(state.head_sha??"")&&state.base_sha!==spec.expected_base_sha&&validBlockedCiEffectChain(state);
     if(!exact||state.front_id!==spec.front_id||state.roadmap_item_id!==spec.roadmap_item_id)throw new Error("blocked CI recovery boundary denied");
     this.bind(spec,state);this.blockedCiRecovery={frontId:state.front_id,issue:state.issue!,pr:state.pr!,oldBase:state.base_sha,newBase:spec.expected_base_sha,oldHead:state.head_sha!,priorState:"BLOCKED"};
   }
