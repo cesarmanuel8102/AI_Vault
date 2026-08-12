@@ -53,7 +53,7 @@ export class ProductionEffects implements AutonomousEffects {
   }
   reconcileBlockedCiBase(spec:ProxySpec,state:import("./types.js").LifecycleRecord,store:LifecycleStore){
     if(state.base_sha===spec.expected_base_sha)return state;
-    const exact=state.state==="BLOCKED"&&state.last_error==="CI_FAILED"&&Number.isInteger(state.issue)&&Number.isInteger(state.pr)&&state.repair_cycles===0&&!!state.head_sha&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&validBlockedCiEffectChain(state);
+    const exact=state.state==="BLOCKED"&&state.last_error==="CI_FAILED"&&Number.isInteger(state.issue)&&Number.isInteger(state.pr)&&Number.isInteger(state.repair_cycles)&&state.repair_cycles>=0&&state.repair_cycles<=2&&!!state.head_sha&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&validBlockedCiEffectChain(state);
     if(!exact||!this.bus.isAncestor(state.base_sha,spec.expected_base_sha))throw new Error("blocked CI base reconciliation denied");
     const snapshot=this.bus.issueSnapshot(state.issue!);if(snapshot.state!=="OPEN"||snapshot.labels.length!==1||snapshot.labels[0]!==blockedCiIssuePhase(spec))throw new Error("blocked CI Issue state invalid");
     const oldSpec={...spec,expected_base_sha:state.base_sha},oldBody=boundIssueBody(oldSpec,state.pr!),nextBody=boundIssueBody(spec,state.pr!),parsed=parseIssue(snapshot.body);
@@ -96,7 +96,7 @@ export class ProductionEffects implements AutonomousEffects {
   }
   reconcileBlockedCiChecks(spec:ProxySpec,state:import("./types.js").LifecycleRecord,store:LifecycleStore){
     if(state.base_sha!==spec.expected_base_sha)throw new Error("blocked CI check binding mismatch");
-    const exact=state.state==="BLOCKED"&&state.last_error==="CI_FAILED"&&Number.isInteger(state.issue)&&Number.isInteger(state.pr)&&state.repair_cycles===0&&!!state.head_sha&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&validBlockedCiEffectChain(state);
+    const exact=state.state==="BLOCKED"&&state.last_error==="CI_FAILED"&&Number.isInteger(state.issue)&&Number.isInteger(state.pr)&&Number.isInteger(state.repair_cycles)&&state.repair_cycles>=0&&state.repair_cycles<=2&&!!state.head_sha&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&validBlockedCiEffectChain(state);
     if(!exact)throw new Error("blocked CI check reconciliation denied");
     const snapshot=this.bus.issueSnapshot(state.issue!);const expectedBody=boundIssueBody(spec,state.pr!);
     if(snapshot.state!=="OPEN"||snapshot.labels.length!==1||snapshot.labels[0]!==blockedCiIssuePhase(spec)||snapshot.body!==expectedBody)throw new Error("blocked CI check Issue identity invalid");
