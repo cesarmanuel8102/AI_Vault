@@ -2,7 +2,7 @@
   "schema_version": 1,
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
-  "status": "R2_5_CLOSED_RUNTIME_VERIFIED_R3_1_AUTHORIZED_ACTIVE",
+  "status": "R3_1_CLOSED_RUNTIME_VERIFIED_R3_2_AUTHORIZED_ACTIVE",
   "audit_baseline_head": "759edfb",
   "rebaseline_source_head": "53da8ae93158cc3f9a06468c64d955816044c6d2",
   "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
@@ -13,98 +13,1238 @@
   "score_cap_reason": "Critical functional blockers remain open.",
   "domain_scores": [
     {
-      "domain": "security_governance", "score": 6, "weight": 12,
-      "evidence": [{"claim": "Strict operator access, minimal RBAC, signed approvals, and P3 denial contracts exist.", "classification": "CONTRACT_VERIFIED", "paths": ["tmp_agent/brain_v9/api_security.py", "tmp_agent/brain_v9/security/rbac.py", "tmp_agent/brain_v9/governance/signed_approvals.py", "tests/smoke/test_brain_autonomy_signed_approval_runtime_wiring_06b.py", "tests/unit/test_execution_gate_god_p3.py"], "symbols": ["require_strict_operator_access", "Role", "verify_approval_token", "ExecutionGate"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": 29886467842, "command": null, "result": "Contracts and Security Smoke Tests passed; full R2 adversarial role model remains open.", "observed_at_utc": "2026-07-22T13:37:51Z"}, {"claim": "R2.1 constitutional security re-audit evidence was merged and closed the re-audit item without closing R2.", "classification": "RUNTIME_VERIFIED", "paths": ["docs/roadmap/evidence/BRAIN_101_R2_1_CONSTITUTIONAL_SECURITY_REAUDIT.md", "docs/roadmap/evidence/BRAIN_101_R2_1_CONSTITUTIONAL_SECURITY_REAUDIT_CLOSEOUT.json"], "symbols": [], "commit": "677213a8e0d4d46a5a72a9ef5edad00740c9a2f0", "issue": 138, "pr": 139, "decision_id": "54b78608-dd14-48db-b05e-290adb1238f8", "evidence_commit": "94f4ab44b460cbbd9e40dfb10e7a308c8460d9a2", "workflow_run": null, "command": "documentation-only constitutional security re-audit plus governed merge", "result": "R2.1 found no critical regression and concluded R2 remains PARTIALLY_CLOSED. Closed controls include selected strict auth, dev-default denial, P3 denial, and self-dev denial; open or partial blockers remain for full RBAC, one-use approval replay denial, unified gates, lifecycle endpoint matrix, rate limiting, session isolation, path traversal, symlink/reparse, prompt injection, cross-room, cross-user, append-only audit, and threat model.", "observed_at_utc": "2026-08-03T21:00:47Z"}, {"claim": "R2.2 constitutional security remediation routing evidence was merged and closed the remediation plan item without closing R2.", "classification": "RUNTIME_VERIFIED", "paths": ["docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN.md", "docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN_CLOSEOUT.json"], "symbols": [], "commit": "704cbbae808ecf2643e46699abe8340d0afc6b10", "issue": 143, "pr": 144, "decision_id": "9656a9b9-6c3c-43e4-a0e2-824a088c96b3", "evidence_commit": "57b8d5d61c883d5d44fb2af2ca3b951810c5d5ff", "workflow_run": null, "command": "documentation-only constitutional security remediation routing plus governed merge", "result": "R2.2 routed every OPEN or PARTIALLY_CLOSED R2.1 constitutional blocker into explicit governed remediation fronts. R2 remains PARTIALLY_CLOSED and R2.3 is the single authorized next R2 security item.", "observed_at_utc": "2026-08-03T21:28:44Z"}, {"claim": "R2.3 constitutional threat model evidence was merged and closed the threat-model item without closing R2 runtime controls.", "classification": "RUNTIME_VERIFIED", "paths": ["docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL.md", "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL_CLOSEOUT.json"], "symbols": [], "commit": "3ddd5a8355a565d5fe8062152769b6a11f676f9d", "issue": 148, "pr": 149, "decision_id": "4c1949cd-f851-4a1e-a5cc-481b6c1a0a97", "evidence_commit": "45263b9eeaf0e2fc92b595ae39ab68db77785ee0", "workflow_run": null, "command": "documentation-only constitutional threat model plus governed merge", "result": "R2.3 records assets, trust boundaries, actors, abuse cases, failure modes, and explicit open test obligations for prompt injection, path traversal, symlink/reparse, cross-room isolation, and cross-user isolation. R2 remains PARTIALLY_CLOSED and R2.4 is the single authorized next R2 security item.", "observed_at_utc": "2026-08-03T21:50:13Z"}, {"claim": "R2.4 unified governance gate evidence was merged and closed the unified gate item without closing R2.", "classification": "RUNTIME_VERIFIED", "paths": ["docs/roadmap/evidence/BRAIN_101_R2_4_UNIFIED_GOVERNANCE_GATE.md", "docs/roadmap/evidence/BRAIN_101_R2_4_UNIFIED_GOVERNANCE_GATE_CLOSEOUT.json"], "symbols": [], "commit": "4da21f268e339f83b6acfe49fb091087196f2085", "issue": 152, "pr": 153, "decision_id": "82df3921-80a3-43f5-8fc3-2a13a245795c", "authorization_mode": "OWNER_CONSTITUTIONAL", "evidence_commit": "03e326a7da27386c64e3cbb0158762af13448014", "workflow_run": null, "command": "unified governance gate implementation plus governed merge", "result": "R2.4 records one authoritative fail-closed gate model for governance, execution, patch, dev, lifecycle, and approval operations. R2 remains PARTIALLY_CLOSED and R2.5 is the single authorized next R2 security item.", "observed_at_utc": "2026-08-03T23:53:18Z"}]
-    },
-    {
-      "domain": "testing_ci_recovery", "score": 6, "weight": 10,
-      "evidence": [{"claim": "Core Windows CI, nontrading regression, and Agent Loop recovery contracts execute successfully.", "classification": "CONTRACT_VERIFIED", "paths": [".github/workflows/phase1-ci.yml", ".github/workflows/nontrading-smoke-regression.yml", ".github/workflows/agent-loop-worker-contract.yml", "tests/contract"], "symbols": [], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": 33, "pr": 34, "workflow_run": 29886467815, "command": null, "result": "Applicable pilot and baseline checks passed; required cross-domain E2E matrix is incomplete.", "observed_at_utc": "2026-07-22T13:37:51Z"}]
-    },
-    {
-      "domain": "modular_monolith", "score": 3, "weight": 10,
-      "evidence": [{"claim": "Route extraction exists but four legacy/god surfaces exceed R4 targets.", "classification": "STATIC_VERIFIED", "paths": ["tmp_agent/brain_v9/main.py", "tmp_agent/brain_v9/core/session.py", "tmp_agent/brain_v9/agent/tools.py", "tmp_agent/brain_v9/agent/loop.py"], "symbols": [], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": null, "command": "AST/line-count audit executed during R0", "result": "main.py 2164 LOC/30 direct endpoints; session.py 3052 LOC; tools.py 3519 LOC; loop.py 2912 LOC.", "observed_at_utc": "2026-07-22T13:37:51Z"}]
-    },
-    {
-      "domain": "agent_v2_chat", "score": 6, "weight": 10,
-      "evidence": [{"claim": "LangGraph parity is the Agent V2 default and has selector, fallback, and response contracts.", "classification": "CONTRACT_VERIFIED", "paths": ["tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py", "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py", "tests/smoke/test_brain_agent_v2_langgraph_default_promotion_08f7_r1.py"], "symbols": ["DEFAULT_AGENT_V2_BACKEND", "LangGraphParityRuntimeV2"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": 29886467842, "command": null, "result": "Agent V2 Boundary Contracts passed; legacy and fastpath surfaces remain.", "observed_at_utc": "2026-07-22T13:37:51Z"}]
-    },
-    {
-      "domain": "memory_learning", "score": 3, "weight": 10,
-      "evidence": [{"claim": "Retrieval and promotion components exist without a single MemoryService ownership boundary.", "classification": "PRESENCE_ONLY", "paths": ["tmp_agent/brain_v9/memory", "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"], "symbols": ["SemanticMemoryFAISS"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": 29886467842, "command": "rg search for semantic_memory.jsonl, _add_to_index, and SemanticMemoryFAISS during R0", "result": "Distributed ownership remains; no MemoryService class found.", "observed_at_utc": "2026-07-22T13:37:51Z"}]
-    },
-    {
-      "domain": "observability_ux", "score": 4, "weight": 8,
-      "evidence": [{"claim": "TraceStore, SSE lifecycle, dashboard trace enrichment, and timeline UI are wired.", "classification": "CONTRACT_VERIFIED", "paths": ["tmp_agent/brain_v9/core/agent_kernel_v2/trace.py", "tmp_agent/brain_v9/dashboard/dashboard_routes.py", "tmp_agent/brain_v9/dashboard/static/app.js"], "symbols": ["TraceStore", "stream_chat", "agent_v2_trace"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": 29886467842, "command": null, "result": "Dashboard / Trace Tests passed; unified event ownership and full cost accounting remain open.", "observed_at_utc": "2026-07-22T13:37:51Z"}]
-    },
-    {
-      "domain": "agent_loop", "score": 8, "weight": 8,
+      "domain": "security_governance",
+      "score": 6,
+      "weight": 12,
       "evidence": [
-        {"claim": "Agent Loop v1.5.7 persisted and independently verified the canonical BRAIN-101 R1.1 roadmap binding.", "classification": "RUNTIME_VERIFIED", "paths": ["scripts/agent_loop/local_worker/agent_worker.py", "docs/roadmap/evidence/BRAIN_101_R1_1_RUNTIME_CLOSEOUT.json"], "symbols": ["process_state", "validate_persisted_roadmap_binding"], "commit": "1c5115ee72ac3d79fb1e28afe37f2893ba505c1e", "issue": 44, "pr": 45, "workflow_run": 29952330799, "command": "two governed worker --once iterations", "result": "One executor cycle produced the exact two-file pilot; deterministic, Codex, and publish passed; convergence added no cycle and preserved PR HEAD.", "observed_at_utc": "2026-07-22T19:48:49Z"},
-        {"claim": "R1.2 roadmap-doc and test-only Agent Loop profiles are runtime-verified after governed implementation, activation repair, and privileged-install receipt validation.", "classification": "RUNTIME_VERIFIED", "paths": ["scripts/agent_loop/local_worker/agent_worker.py", "tests/contract/test_agent_loop_worker_r1_2_profiles.py", "docs/roadmap/evidence/BRAIN_101_R1_2_RUNTIME_CLOSEOUT.json"], "symbols": ["PROFILE_TRUSTED_COMMANDS", "run_profile", "parse_spec"], "commit": "afbeadcc354e3cb74747c694269c50efdb620ccf", "issue": 56, "runtime_activation_issue": 59, "pr": 57, "runtime_activation_pr": 58, "final_install_repair_pr": 102, "workflow_run": null, "command": "Operator Proxy governed merge plus privileged install receipt validation", "result": "PR #57 implemented the profiles, PR #58 made profile commands immutable for the installed legacy config, and PR #102 closed the privileged-install receipt resume repair chain. Tasks stayed disabled, workers 0, and no deploy, worker --once, live trading, real money, canonical sync, or auto-merge occurred.", "observed_at_utc": "2026-07-31T21:30:17Z"},
-        {"claim": "R1.3 Agent Loop OpenCode Kimi roadmap-doc E2E passed on the append-only retry and was integrated by governed Operator Proxy merge.", "classification": "RUNTIME_VERIFIED", "paths": ["docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md", "docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E_CLOSEOUT.json"], "symbols": [], "commit": "7125bf83ed786c5642b299da2fd4f65157d20f9e", "issue": 126, "pr": 127, "decision_id": "f330634b-4803-4638-af03-58e5ee876cbe", "failed_attempt_issue": 112, "failed_attempt_pr": 113, "retry_authorization_pr": 125, "post_merge_repair_pr": 130, "closeout_issue": 129, "closeout_pr": 131, "closeout_decision_id": "d0a67f07-dc24-4e86-8c07-7374fec5b0b6", "closeout_merge_commit": "02209e4ecf80065ac31da7e71c206b27f2a7ae31", "workflow_run": null, "command": "Agent Loop roadmap-doc retry plus Operator Proxy governed merge", "result": "Evidence commit 1e14fbefa641f10bf3b726b15a9003eeb4ce942a produced the isolated document in one observed cycle; base sync c8e7d6967bd27d5177063ef9d4d68573998c5c52 was merged by Operator Proxy at 7125bf83ed786c5642b299da2fd4f65157d20f9e. Governed closeout PR #131 merged as 02209e4ecf80065ac31da7e71c206b27f2a7ae31. No deploy, worker task activation, live trading, real money, canonical sync, or auto-merge occurred.", "observed_at_utc": "2026-08-03T19:35:07Z"},
-        {"claim": "R1.4 Agent Loop sequencer-contract roadmap-doc E2E closed runtime-verified after the governed parent merge.", "classification": "RUNTIME_VERIFIED", "paths": ["docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E.md", "docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E_CLOSEOUT.json"], "symbols": [], "commit": "d4411ae9719dbfe16db9d07cf2bfeffaca89bf47", "issue": 133, "pr": 134, "decision_id": "c7dc0260-12ec-4566-b032-9a79601c431e", "evidence_commit": "569eb283e05479640cb374aec81f2ae6d8f51705", "closeout_base_sha": "d4411ae9719dbfe16db9d07cf2bfeffaca89bf47", "workflow_run": null, "command": "Agent Loop roadmap-doc sequencer-contract E2E plus governed Operator Proxy merge", "result": "Parent lifecycle evidence records base 325c199cf11dc50599a1a2f4a486f51e50222869, head 569eb283e05479640cb374aec81f2ae6d8f51705, and merge d4411ae9719dbfe16db9d07cf2bfeffaca89bf47. The evidence document validates that only AUTHORIZED_ACTIVE items enter the sequencer output queue and non-active states are rejected with audit evidence. No deploy, worker task activation, live trading, real money, canonical sync, or auto-merge occurred.", "observed_at_utc": "2026-08-03T20:34:49Z"}
+        {
+          "claim": "Strict operator access, minimal RBAC, signed approvals, and P3 denial contracts exist.",
+          "classification": "CONTRACT_VERIFIED",
+          "paths": [
+            "tmp_agent/brain_v9/api_security.py",
+            "tmp_agent/brain_v9/security/rbac.py",
+            "tmp_agent/brain_v9/governance/signed_approvals.py",
+            "tests/smoke/test_brain_autonomy_signed_approval_runtime_wiring_06b.py",
+            "tests/unit/test_execution_gate_god_p3.py"
+          ],
+          "symbols": [
+            "require_strict_operator_access",
+            "Role",
+            "verify_approval_token",
+            "ExecutionGate"
+          ],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": 29886467842,
+          "command": null,
+          "result": "Contracts and Security Smoke Tests passed; full R2 adversarial role model remains open.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        },
+        {
+          "claim": "R2.1 constitutional security re-audit evidence was merged and closed the re-audit item without closing R2.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "docs/roadmap/evidence/BRAIN_101_R2_1_CONSTITUTIONAL_SECURITY_REAUDIT.md",
+            "docs/roadmap/evidence/BRAIN_101_R2_1_CONSTITUTIONAL_SECURITY_REAUDIT_CLOSEOUT.json"
+          ],
+          "symbols": [],
+          "commit": "677213a8e0d4d46a5a72a9ef5edad00740c9a2f0",
+          "issue": 138,
+          "pr": 139,
+          "decision_id": "54b78608-dd14-48db-b05e-290adb1238f8",
+          "evidence_commit": "94f4ab44b460cbbd9e40dfb10e7a308c8460d9a2",
+          "workflow_run": null,
+          "command": "documentation-only constitutional security re-audit plus governed merge",
+          "result": "R2.1 found no critical regression and concluded R2 remains PARTIALLY_CLOSED. Closed controls include selected strict auth, dev-default denial, P3 denial, and self-dev denial; open or partial blockers remain for full RBAC, one-use approval replay denial, unified gates, lifecycle endpoint matrix, rate limiting, session isolation, path traversal, symlink/reparse, prompt injection, cross-room, cross-user, append-only audit, and threat model.",
+          "observed_at_utc": "2026-08-03T21:00:47Z"
+        },
+        {
+          "claim": "R2.2 constitutional security remediation routing evidence was merged and closed the remediation plan item without closing R2.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN.md",
+            "docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN_CLOSEOUT.json"
+          ],
+          "symbols": [],
+          "commit": "704cbbae808ecf2643e46699abe8340d0afc6b10",
+          "issue": 143,
+          "pr": 144,
+          "decision_id": "9656a9b9-6c3c-43e4-a0e2-824a088c96b3",
+          "evidence_commit": "57b8d5d61c883d5d44fb2af2ca3b951810c5d5ff",
+          "workflow_run": null,
+          "command": "documentation-only constitutional security remediation routing plus governed merge",
+          "result": "R2.2 routed every OPEN or PARTIALLY_CLOSED R2.1 constitutional blocker into explicit governed remediation fronts. R2 remains PARTIALLY_CLOSED and R2.3 is the single authorized next R2 security item.",
+          "observed_at_utc": "2026-08-03T21:28:44Z"
+        },
+        {
+          "claim": "R2.3 constitutional threat model evidence was merged and closed the threat-model item without closing R2 runtime controls.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL.md",
+            "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL_CLOSEOUT.json"
+          ],
+          "symbols": [],
+          "commit": "3ddd5a8355a565d5fe8062152769b6a11f676f9d",
+          "issue": 148,
+          "pr": 149,
+          "decision_id": "4c1949cd-f851-4a1e-a5cc-481b6c1a0a97",
+          "evidence_commit": "45263b9eeaf0e2fc92b595ae39ab68db77785ee0",
+          "workflow_run": null,
+          "command": "documentation-only constitutional threat model plus governed merge",
+          "result": "R2.3 records assets, trust boundaries, actors, abuse cases, failure modes, and explicit open test obligations for prompt injection, path traversal, symlink/reparse, cross-room isolation, and cross-user isolation. R2 remains PARTIALLY_CLOSED and R2.4 is the single authorized next R2 security item.",
+          "observed_at_utc": "2026-08-03T21:50:13Z"
+        },
+        {
+          "claim": "R2.4 unified governance gate evidence was merged and closed the unified gate item without closing R2.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "docs/roadmap/evidence/BRAIN_101_R2_4_UNIFIED_GOVERNANCE_GATE.md",
+            "docs/roadmap/evidence/BRAIN_101_R2_4_UNIFIED_GOVERNANCE_GATE_CLOSEOUT.json"
+          ],
+          "symbols": [],
+          "commit": "4da21f268e339f83b6acfe49fb091087196f2085",
+          "issue": 152,
+          "pr": 153,
+          "decision_id": "82df3921-80a3-43f5-8fc3-2a13a245795c",
+          "authorization_mode": "OWNER_CONSTITUTIONAL",
+          "evidence_commit": "03e326a7da27386c64e3cbb0158762af13448014",
+          "workflow_run": null,
+          "command": "unified governance gate implementation plus governed merge",
+          "result": "R2.4 records one authoritative fail-closed gate model for governance, execution, patch, dev, lifecycle, and approval operations. R2 remains PARTIALLY_CLOSED and R2.5 is the single authorized next R2 security item.",
+          "observed_at_utc": "2026-08-03T23:53:18Z"
+        }
       ]
     },
     {
-      "domain": "provider_curated", "score": 2, "weight": 5,
-      "evidence": [{"claim": "Provider selection and curated lookup components exist, but no single ProviderGateway contract exists.", "classification": "PRESENCE_ONLY", "paths": ["tmp_agent/brain_v9/core/llm.py", "brain/curated_runtime_lookup.py", "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py"], "symbols": [], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": null, "command": "rg search for ProviderGateway and active Ollama references during R0", "result": "ProviderGateway class not found; provider references remain distributed.", "observed_at_utc": "2026-07-22T13:37:51Z"}]
+      "domain": "testing_ci_recovery",
+      "score": 6,
+      "weight": 10,
+      "evidence": [
+        {
+          "claim": "Core Windows CI, nontrading regression, and Agent Loop recovery contracts execute successfully.",
+          "classification": "CONTRACT_VERIFIED",
+          "paths": [
+            ".github/workflows/phase1-ci.yml",
+            ".github/workflows/nontrading-smoke-regression.yml",
+            ".github/workflows/agent-loop-worker-contract.yml",
+            "tests/contract"
+          ],
+          "symbols": [],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": 33,
+          "pr": 34,
+          "workflow_run": 29886467815,
+          "command": null,
+          "result": "Applicable pilot and baseline checks passed; required cross-domain E2E matrix is incomplete.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        },
+        {
+          "claim": "R3.1 contract and E2E gap matrix evidence was merged and closed, leaving R3 partially closed and authorizing exactly one next item R3.2.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "docs/roadmap/evidence/BRAIN_101_R3_1_CONTRACT_E2E_GAP_MATRIX.md",
+            "docs/roadmap/evidence/BRAIN_101_R3_1_CONTRACT_E2E_GAP_MATRIX_CLOSEOUT.json"
+          ],
+          "symbols": [],
+          "commit": "282026fbdd28d31e53b24e5a7565c2c60cf81792",
+          "issue": 179,
+          "pr": 180,
+          "decision_id": "ac64c4bc-68ca-40a9-9052-998358c66bac",
+          "evidence_commit": "9f51cbe4b28fd297514c75625edb7e2ba5d14d49",
+          "workflow_run": null,
+          "command": "documentation-only contract and E2E gap matrix plus governed closeout",
+          "result": "Inventoried 48 contract tests and 7 E2E tests against 14 contract surfaces and 15 E2E flows; classified 7 critical, 23 high, 10 medium, and 1 low-severity gaps; R3.2 is the single authorized next item.",
+          "observed_at_utc": "2026-08-12T00:00:00Z"
+        }
+      ]
     },
     {
-      "domain": "self_improvement", "score": 2, "weight": 8,
-      "evidence": [{"claim": "Governed self-improvement dry-run modules and proposals exist, but the full canary-to-promotion E2E is not certified.", "classification": "PRESENCE_ONLY", "paths": ["tmp_agent/brain_v9/autonomy", "tmp_agent/brain_v9/governance/selfdev_sandbox.py"], "symbols": [], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": null, "command": null, "result": "Partial implementation only; R10 closure evidence missing.", "observed_at_utc": "2026-07-22T13:37:51Z"}]
+      "domain": "modular_monolith",
+      "score": 3,
+      "weight": 10,
+      "evidence": [
+        {
+          "claim": "Route extraction exists but four legacy/god surfaces exceed R4 targets.",
+          "classification": "STATIC_VERIFIED",
+          "paths": [
+            "tmp_agent/brain_v9/main.py",
+            "tmp_agent/brain_v9/core/session.py",
+            "tmp_agent/brain_v9/agent/tools.py",
+            "tmp_agent/brain_v9/agent/loop.py"
+          ],
+          "symbols": [],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": null,
+          "command": "AST/line-count audit executed during R0",
+          "result": "main.py 2164 LOC/30 direct endpoints; session.py 3052 LOC; tools.py 3519 LOC; loop.py 2912 LOC.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
     },
     {
-      "domain": "financial_autonomy_wiring", "score": 1, "weight": 4,
-      "evidence": [{"claim": "Financial autonomy source parses but productive runtime wiring is intentionally blocked.", "classification": "MISSING", "paths": ["financial_autonomy", "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"], "symbols": ["financial_autonomy_flags"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": 29886467842, "command": null, "result": "Dry-run contract passed; R11 paper-only interface wiring is absent.", "observed_at_utc": "2026-07-22T13:37:51Z"}]
+      "domain": "agent_v2_chat",
+      "score": 6,
+      "weight": 10,
+      "evidence": [
+        {
+          "claim": "LangGraph parity is the Agent V2 default and has selector, fallback, and response contracts.",
+          "classification": "CONTRACT_VERIFIED",
+          "paths": [
+            "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+            "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py",
+            "tests/smoke/test_brain_agent_v2_langgraph_default_promotion_08f7_r1.py"
+          ],
+          "symbols": [
+            "DEFAULT_AGENT_V2_BACKEND",
+            "LangGraphParityRuntimeV2"
+          ],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": 29886467842,
+          "command": null,
+          "result": "Agent V2 Boundary Contracts passed; legacy and fastpath surfaces remain.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
     },
     {
-      "domain": "portfolio_risk", "score": 1, "weight": 5,
-      "evidence": [{"claim": "Risk components exist, but a canonical PortfolioManager and integrated portfolio ledger do not.", "classification": "MISSING", "paths": ["tmp_agent/brain_v9/brain/risk_contract.py", "tmp_agent/brain_v9/trading"], "symbols": ["PortfolioManager"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": null, "command": "rg search for class PortfolioManager during R0", "result": "No PortfolioManager class found.", "observed_at_utc": "2026-07-22T13:37:51Z"}]
+      "domain": "memory_learning",
+      "score": 3,
+      "weight": 10,
+      "evidence": [
+        {
+          "claim": "Retrieval and promotion components exist without a single MemoryService ownership boundary.",
+          "classification": "PRESENCE_ONLY",
+          "paths": [
+            "tmp_agent/brain_v9/memory",
+            "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"
+          ],
+          "symbols": [
+            "SemanticMemoryFAISS"
+          ],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": 29886467842,
+          "command": "rg search for semantic_memory.jsonl, _add_to_index, and SemanticMemoryFAISS during R0",
+          "result": "Distributed ownership remains; no MemoryService class found.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
     },
     {
-      "domain": "compliance", "score": 0, "weight": 3,
-      "evidence": [{"claim": "No canonical financial Compliance gate was found.", "classification": "MISSING", "paths": ["financial_autonomy", "tmp_agent/brain_v9"], "symbols": ["Compliance"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": null, "command": "rg search for compliance classes during R0", "result": "Scattered checks do not satisfy R13.", "observed_at_utc": "2026-07-22T13:37:51Z"}]
+      "domain": "observability_ux",
+      "score": 4,
+      "weight": 8,
+      "evidence": [
+        {
+          "claim": "TraceStore, SSE lifecycle, dashboard trace enrichment, and timeline UI are wired.",
+          "classification": "CONTRACT_VERIFIED",
+          "paths": [
+            "tmp_agent/brain_v9/core/agent_kernel_v2/trace.py",
+            "tmp_agent/brain_v9/dashboard/dashboard_routes.py",
+            "tmp_agent/brain_v9/dashboard/static/app.js"
+          ],
+          "symbols": [
+            "TraceStore",
+            "stream_chat",
+            "agent_v2_trace"
+          ],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": 29886467842,
+          "command": null,
+          "result": "Dashboard / Trace Tests passed; unified event ownership and full cost accounting remain open.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
     },
     {
-      "domain": "backtester", "score": 1, "weight": 3,
-      "evidence": [{"claim": "Backtest code exists without a certified local Validation Lab contract.", "classification": "PRESENCE_ONLY", "paths": ["00_identity/backtest_engine.py", "tmp_agent/brain_v9/trading/backtest_gate.py", "tmp_agent/brain_v9/financial/improvement_cycle.py"], "symbols": [], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": null, "command": null, "result": "Presence does not prove OOS/stress/cost/reproducibility closure.", "observed_at_utc": "2026-07-22T13:37:51Z"}]
+      "domain": "agent_loop",
+      "score": 8,
+      "weight": 8,
+      "evidence": [
+        {
+          "claim": "Agent Loop v1.5.7 persisted and independently verified the canonical BRAIN-101 R1.1 roadmap binding.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "scripts/agent_loop/local_worker/agent_worker.py",
+            "docs/roadmap/evidence/BRAIN_101_R1_1_RUNTIME_CLOSEOUT.json"
+          ],
+          "symbols": [
+            "process_state",
+            "validate_persisted_roadmap_binding"
+          ],
+          "commit": "1c5115ee72ac3d79fb1e28afe37f2893ba505c1e",
+          "issue": 44,
+          "pr": 45,
+          "workflow_run": 29952330799,
+          "command": "two governed worker --once iterations",
+          "result": "One executor cycle produced the exact two-file pilot; deterministic, Codex, and publish passed; convergence added no cycle and preserved PR HEAD.",
+          "observed_at_utc": "2026-07-22T19:48:49Z"
+        },
+        {
+          "claim": "R1.2 roadmap-doc and test-only Agent Loop profiles are runtime-verified after governed implementation, activation repair, and privileged-install receipt validation.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "scripts/agent_loop/local_worker/agent_worker.py",
+            "tests/contract/test_agent_loop_worker_r1_2_profiles.py",
+            "docs/roadmap/evidence/BRAIN_101_R1_2_RUNTIME_CLOSEOUT.json"
+          ],
+          "symbols": [
+            "PROFILE_TRUSTED_COMMANDS",
+            "run_profile",
+            "parse_spec"
+          ],
+          "commit": "afbeadcc354e3cb74747c694269c50efdb620ccf",
+          "issue": 56,
+          "runtime_activation_issue": 59,
+          "pr": 57,
+          "runtime_activation_pr": 58,
+          "final_install_repair_pr": 102,
+          "workflow_run": null,
+          "command": "Operator Proxy governed merge plus privileged install receipt validation",
+          "result": "PR #57 implemented the profiles, PR #58 made profile commands immutable for the installed legacy config, and PR #102 closed the privileged-install receipt resume repair chain. Tasks stayed disabled, workers 0, and no deploy, worker --once, live trading, real money, canonical sync, or auto-merge occurred.",
+          "observed_at_utc": "2026-07-31T21:30:17Z"
+        },
+        {
+          "claim": "R1.3 Agent Loop OpenCode Kimi roadmap-doc E2E passed on the append-only retry and was integrated by governed Operator Proxy merge.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md",
+            "docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E_CLOSEOUT.json"
+          ],
+          "symbols": [],
+          "commit": "7125bf83ed786c5642b299da2fd4f65157d20f9e",
+          "issue": 126,
+          "pr": 127,
+          "decision_id": "f330634b-4803-4638-af03-58e5ee876cbe",
+          "failed_attempt_issue": 112,
+          "failed_attempt_pr": 113,
+          "retry_authorization_pr": 125,
+          "post_merge_repair_pr": 130,
+          "closeout_issue": 129,
+          "closeout_pr": 131,
+          "closeout_decision_id": "d0a67f07-dc24-4e86-8c07-7374fec5b0b6",
+          "closeout_merge_commit": "02209e4ecf80065ac31da7e71c206b27f2a7ae31",
+          "workflow_run": null,
+          "command": "Agent Loop roadmap-doc retry plus Operator Proxy governed merge",
+          "result": "Evidence commit 1e14fbefa641f10bf3b726b15a9003eeb4ce942a produced the isolated document in one observed cycle; base sync c8e7d6967bd27d5177063ef9d4d68573998c5c52 was merged by Operator Proxy at 7125bf83ed786c5642b299da2fd4f65157d20f9e. Governed closeout PR #131 merged as 02209e4ecf80065ac31da7e71c206b27f2a7ae31. No deploy, worker task activation, live trading, real money, canonical sync, or auto-merge occurred.",
+          "observed_at_utc": "2026-08-03T19:35:07Z"
+        },
+        {
+          "claim": "R1.4 Agent Loop sequencer-contract roadmap-doc E2E closed runtime-verified after the governed parent merge.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E.md",
+            "docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E_CLOSEOUT.json"
+          ],
+          "symbols": [],
+          "commit": "d4411ae9719dbfe16db9d07cf2bfeffaca89bf47",
+          "issue": 133,
+          "pr": 134,
+          "decision_id": "c7dc0260-12ec-4566-b032-9a79601c431e",
+          "evidence_commit": "569eb283e05479640cb374aec81f2ae6d8f51705",
+          "closeout_base_sha": "d4411ae9719dbfe16db9d07cf2bfeffaca89bf47",
+          "workflow_run": null,
+          "command": "Agent Loop roadmap-doc sequencer-contract E2E plus governed Operator Proxy merge",
+          "result": "Parent lifecycle evidence records base 325c199cf11dc50599a1a2f4a486f51e50222869, head 569eb283e05479640cb374aec81f2ae6d8f51705, and merge d4411ae9719dbfe16db9d07cf2bfeffaca89bf47. The evidence document validates that only AUTHORIZED_ACTIVE items enter the sequencer output queue and non-active states are rejected with audit evidence. No deploy, worker task activation, live trading, real money, canonical sync, or auto-merge occurred.",
+          "observed_at_utc": "2026-08-03T20:34:49Z"
+        }
+      ]
     },
     {
-      "domain": "paper_trading", "score": 1, "weight": 3,
-      "evidence": [{"claim": "QC/IBKR paper connectors and read-only dashboard surfaces exist.", "classification": "PRESENCE_ONLY", "paths": ["tmp_agent/brain_v9/trading", "tmp_agent/brain_v9/dashboard/dashboard_routes.py"], "symbols": ["QuantConnectConnector"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": null, "command": null, "result": "No 30-day integrated paper soak certification is bound to R15.", "observed_at_utc": "2026-07-22T13:37:51Z"}]
+      "domain": "provider_curated",
+      "score": 2,
+      "weight": 5,
+      "evidence": [
+        {
+          "claim": "Provider selection and curated lookup components exist, but no single ProviderGateway contract exists.",
+          "classification": "PRESENCE_ONLY",
+          "paths": [
+            "tmp_agent/brain_v9/core/llm.py",
+            "brain/curated_runtime_lookup.py",
+            "tmp_agent/brain_v9/core/agent_kernel_v2/planner.py"
+          ],
+          "symbols": [],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": null,
+          "command": "rg search for ProviderGateway and active Ollama references during R0",
+          "result": "ProviderGateway class not found; provider references remain distributed.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
     },
     {
-      "domain": "live_gate_disabled", "score": 0, "weight": 1,
-      "evidence": [{"claim": "Live trading remains disabled, but the R16 LiveTradingGate implementation is absent.", "classification": "MISSING", "paths": ["financial_autonomy", "tmp_agent/brain_v9"], "symbols": ["LiveTradingGate"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": null, "command": "rg search for class LiveTradingGate during R0", "result": "No LiveTradingGate class found; no live activation was performed.", "observed_at_utc": "2026-07-22T13:37:51Z"}]
+      "domain": "self_improvement",
+      "score": 2,
+      "weight": 8,
+      "evidence": [
+        {
+          "claim": "Governed self-improvement dry-run modules and proposals exist, but the full canary-to-promotion E2E is not certified.",
+          "classification": "PRESENCE_ONLY",
+          "paths": [
+            "tmp_agent/brain_v9/autonomy",
+            "tmp_agent/brain_v9/governance/selfdev_sandbox.py"
+          ],
+          "symbols": [],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": null,
+          "command": null,
+          "result": "Partial implementation only; R10 closure evidence missing.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "domain": "financial_autonomy_wiring",
+      "score": 1,
+      "weight": 4,
+      "evidence": [
+        {
+          "claim": "Financial autonomy source parses but productive runtime wiring is intentionally blocked.",
+          "classification": "MISSING",
+          "paths": [
+            "financial_autonomy",
+            "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"
+          ],
+          "symbols": [
+            "financial_autonomy_flags"
+          ],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": 29886467842,
+          "command": null,
+          "result": "Dry-run contract passed; R11 paper-only interface wiring is absent.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "domain": "portfolio_risk",
+      "score": 1,
+      "weight": 5,
+      "evidence": [
+        {
+          "claim": "Risk components exist, but a canonical PortfolioManager and integrated portfolio ledger do not.",
+          "classification": "MISSING",
+          "paths": [
+            "tmp_agent/brain_v9/brain/risk_contract.py",
+            "tmp_agent/brain_v9/trading"
+          ],
+          "symbols": [
+            "PortfolioManager"
+          ],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": null,
+          "command": "rg search for class PortfolioManager during R0",
+          "result": "No PortfolioManager class found.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "domain": "compliance",
+      "score": 0,
+      "weight": 3,
+      "evidence": [
+        {
+          "claim": "No canonical financial Compliance gate was found.",
+          "classification": "MISSING",
+          "paths": [
+            "financial_autonomy",
+            "tmp_agent/brain_v9"
+          ],
+          "symbols": [
+            "Compliance"
+          ],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": null,
+          "command": "rg search for compliance classes during R0",
+          "result": "Scattered checks do not satisfy R13.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "domain": "backtester",
+      "score": 1,
+      "weight": 3,
+      "evidence": [
+        {
+          "claim": "Backtest code exists without a certified local Validation Lab contract.",
+          "classification": "PRESENCE_ONLY",
+          "paths": [
+            "00_identity/backtest_engine.py",
+            "tmp_agent/brain_v9/trading/backtest_gate.py",
+            "tmp_agent/brain_v9/financial/improvement_cycle.py"
+          ],
+          "symbols": [],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": null,
+          "command": null,
+          "result": "Presence does not prove OOS/stress/cost/reproducibility closure.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "domain": "paper_trading",
+      "score": 1,
+      "weight": 3,
+      "evidence": [
+        {
+          "claim": "QC/IBKR paper connectors and read-only dashboard surfaces exist.",
+          "classification": "PRESENCE_ONLY",
+          "paths": [
+            "tmp_agent/brain_v9/trading",
+            "tmp_agent/brain_v9/dashboard/dashboard_routes.py"
+          ],
+          "symbols": [
+            "QuantConnectConnector"
+          ],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": null,
+          "command": null,
+          "result": "No 30-day integrated paper soak certification is bound to R15.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "domain": "live_gate_disabled",
+      "score": 0,
+      "weight": 1,
+      "evidence": [
+        {
+          "claim": "Live trading remains disabled, but the R16 LiveTradingGate implementation is absent.",
+          "classification": "MISSING",
+          "paths": [
+            "financial_autonomy",
+            "tmp_agent/brain_v9"
+          ],
+          "symbols": [
+            "LiveTradingGate"
+          ],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": null,
+          "command": "rg search for class LiveTradingGate during R0",
+          "result": "No LiveTradingGate class found; no live activation was performed.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
     }
   ],
   "phases": [
-    {"id": "R0", "percent": 100, "status": "CLOSED_HUMAN_ADOPTED", "evidence": [{"claim": "R0 artifacts and historical reconciliation were adopted by human-authorized merge.", "classification": "MERGE_VERIFIED", "paths": ["docs/roadmap/BRAIN_101_ROADMAP.md", "docs/roadmap/BRAIN_101_MANIFEST.json", "docs/roadmap/BRAIN_101_SCORECARD.json", "ROADMAP_STATUS.json"], "symbols": [], "commit": "5b9f101a6d5ec5b314d9413cc5c12d66fec6d94f", "issue": null, "pr": 35, "workflow_run": null, "command": "gh pr merge 35 --merge", "result": "PR #35 merged by normal merge commit with reviewed head a605c4d88510acd477cf26d2787bc38b1c02af48.", "observed_at_utc": "2026-07-22T14:02:16Z"}]},
-    {"id": "R1", "percent": 100, "status": "AGENT_LOOP_ROADMAP_AWARE", "evidence": [
-      {"claim": "R1.1 canonical manifest, hash, dependency, persistence, CI, and convergence contracts passed in the real installed worker.", "classification": "RUNTIME_VERIFIED", "paths": ["scripts/agent_loop/local_worker/agent_worker.py", "docs/roadmap/evidence/BRAIN_101_R1_1_RUNTIME_CLOSEOUT.json"], "symbols": ["process_state", "validate_persisted_roadmap_binding"], "commit": "1c5115ee72ac3d79fb1e28afe37f2893ba505c1e", "issue": 44, "pr": 45, "workflow_run": 29952330799, "command": "two governed worker --once iterations", "result": "R1.1 closed runtime-verified; R1.2 is authorized but not yet implemented.", "observed_at_utc": "2026-07-22T19:48:49Z"},
-      {"claim": "R1.0 autonomous roadmap control-plane E2E passed as a documentation-only PR and was merged by the governed Operator Proxy.", "classification": "RUNTIME_VERIFIED", "paths": ["docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_PAYLOAD.md", "docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_CLOSEOUT.json"], "symbols": ["sequenceRoadmap", "runBuilder", "AutonomousFlow"], "commit": "9fde35227982a89c1af6b31051ff44f131128430", "umbrella_control_plane_issue": 62, "issue": 65, "pr": 68, "workflow_run": 30461856452, "command": "Operator Proxy governed merge after PR #68 CI", "result": "Issue #62 remains the umbrella for the broader control-plane program. Sequencer-created Issue #65 and PR #68 completed the R1.0 E2E. R1.0 closed runtime-verified; R1.2 restored to AUTHORIZED_ACTIVE. PR head f3c610971a261341915bab0baabbf4df7d292d2c, payload commit 2e00f6318b10fe7e05580b207493b6662c6255a6, merge commit 9fde35227982a89c1af6b31051ff44f131128430.", "observed_at_utc": "2026-07-29T15:55:27Z"},
-      {"claim": "R1.2 roadmap-doc and test-only profiles closed runtime-verified after the transactional privileged-install receipt validation passed.", "classification": "RUNTIME_VERIFIED", "paths": ["scripts/agent_loop/local_worker/agent_worker.py", "tests/contract/test_agent_loop_worker_r1_2_profiles.py", "docs/roadmap/evidence/BRAIN_101_R1_2_RUNTIME_CLOSEOUT.json"], "symbols": ["PROFILE_TRUSTED_COMMANDS", "run_profile", "parse_spec"], "commit": "afbeadcc354e3cb74747c694269c50efdb620ccf", "issue": 56, "runtime_activation_issue": 59, "pr": 57, "runtime_activation_pr": 58, "final_install_repair_pr": 102, "workflow_run": null, "command": "Operator Proxy governed merge plus privileged install receipt validation", "result": "Implementation PR #57 merged at 3ec640e317cbe8c6cae8aff91684179144b2fd1e; runtime activation PR #58 merged at 40343a308b7833ee948ea8dbdaf8b8aed334f13d; final install receipt repair PR #102 merged at afbeadcc354e3cb74747c694269c50efdb620ccf. No R2 work, live trading, real money, canonical sync, auto-merge, deployment, or worker --once was authorized.", "observed_at_utc": "2026-07-31T21:30:17Z"},
-      {"claim": "R1.3 Agent Loop OpenCode Kimi roadmap-doc E2E closed runtime-verified after the append-only retry passed.", "classification": "RUNTIME_VERIFIED", "paths": ["docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md", "docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E_CLOSEOUT.json"], "symbols": [], "commit": "7125bf83ed786c5642b299da2fd4f65157d20f9e", "issue": 126, "pr": 127, "decision_id": "f330634b-4803-4638-af03-58e5ee876cbe", "failed_attempt_issue": 112, "failed_attempt_pr": 113, "retry_authorization_pr": 125, "post_merge_repair_pr": 130, "closeout_issue": 129, "closeout_pr": 131, "closeout_decision_id": "d0a67f07-dc24-4e86-8c07-7374fec5b0b6", "closeout_merge_commit": "02209e4ecf80065ac31da7e71c206b27f2a7ae31", "workflow_run": null, "command": "Agent Loop roadmap-doc retry plus Operator Proxy governed merge", "result": "Retry authorization PR #125 merged at ba0c806d92f4bd287eaa05e2f7c82139370719bc; evidence commit 1e14fbefa641f10bf3b726b15a9003eeb4ce942a was integrated by Operator Proxy merge 7125bf83ed786c5642b299da2fd4f65157d20f9e; governed closeout PR #131 merged as 02209e4ecf80065ac31da7e71c206b27f2a7ae31. No R2 work, live trading, real money, canonical sync, auto-merge, deployment, or worker task activation was authorized.", "observed_at_utc": "2026-08-03T19:35:07Z"},
-      {"claim": "R1.4 Agent Loop sequencer contract E2E closed runtime-verified and completed the R1 roadmap-aware certification lane.", "classification": "RUNTIME_VERIFIED", "paths": ["docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E.md", "docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E_CLOSEOUT.json"], "symbols": [], "commit": "d4411ae9719dbfe16db9d07cf2bfeffaca89bf47", "issue": 133, "pr": 134, "decision_id": "c7dc0260-12ec-4566-b032-9a79601c431e", "workflow_run": null, "command": "Agent Loop roadmap-doc sequencer-contract E2E plus Operator Proxy governed merge", "result": "Parent lifecycle evidence was recorded exactly: base 325c199cf11dc50599a1a2f4a486f51e50222869, head 569eb283e05479640cb374aec81f2ae6d8f51705, merge d4411ae9719dbfe16db9d07cf2bfeffaca89bf47, builder session agent-loop-builder-569eb283e05479640cb374aec81f2ae6d8f51705, reviewer session reviewer:opencode_ollama:ollama-cloud/qwen3.5:397b:4336219e-98a8-4a1f-a704-6aec3ace4db1. R1.4 closed after the E2E evidence passed; no live trading, real money, canonical sync, auto-merge, deployment, or worker task activation was authorized.", "observed_at_utc": "2026-08-03T20:34:49Z"}
-    ]},
-    {"id": "R2", "percent": 80, "status": "PARTIALLY_CLOSED_R3_1_AUTHORIZED_ACTIVE", "evidence": [{"claim": "Auth/RBAC/signed approval contracts exist; complete constitutional adversarial coverage does not.", "classification": "CONTRACT_VERIFIED", "paths": ["tmp_agent/brain_v9/api_security.py", "tmp_agent/brain_v9/governance/signed_approvals.py", "tests/integration/test_endpoints_auth.py"], "symbols": ["require_strict_operator_access", "verify_approval_token"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": 29886467842, "command": null, "result": "Partial R2 evidence only.", "observed_at_utc": "2026-07-22T13:37:51Z"}, {"claim": "R2.1 constitutional security re-audit closed as documentation-only runtime-verified evidence.", "classification": "RUNTIME_VERIFIED", "paths": ["docs/roadmap/evidence/BRAIN_101_R2_1_CONSTITUTIONAL_SECURITY_REAUDIT.md", "docs/roadmap/evidence/BRAIN_101_R2_1_CONSTITUTIONAL_SECURITY_REAUDIT_CLOSEOUT.json"], "symbols": [], "commit": "677213a8e0d4d46a5a72a9ef5edad00740c9a2f0", "issue": 138, "pr": 139, "decision_id": "54b78608-dd14-48db-b05e-290adb1238f8", "evidence_commit": "94f4ab44b460cbbd9e40dfb10e7a308c8460d9a2", "workflow_run": null, "command": "documentation-only constitutional security re-audit plus governed merge", "result": "R2.1 concluded R2_REMAINS_PARTIALLY_CLOSED, R2_CRITICAL_REGRESSION_FOUND=false, and R2_CAN_CLOSE_NOW=false.", "observed_at_utc": "2026-08-03T21:00:47Z"}, {"claim": "R2.2 constitutional security remediation plan closed as documentation-only runtime-verified routing evidence.", "classification": "RUNTIME_VERIFIED", "paths": ["docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN.md", "docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN_CLOSEOUT.json"], "symbols": [], "commit": "704cbbae808ecf2643e46699abe8340d0afc6b10", "issue": 143, "pr": 144, "decision_id": "9656a9b9-6c3c-43e4-a0e2-824a088c96b3", "evidence_commit": "57b8d5d61c883d5d44fb2af2ca3b951810c5d5ff", "workflow_run": null, "command": "documentation-only constitutional security remediation routing plus governed merge", "result": "The plan preserves R2.1 closed evidence, keeps R2 partially closed, and routes blockers through R2.3 through R2.13 before any integration closeout can consider R2 closure.", "observed_at_utc": "2026-08-03T21:28:44Z"}, {"claim": "R2.3 constitutional threat model closed as documentation-only runtime-verified evidence.", "classification": "RUNTIME_VERIFIED", "paths": ["docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL.md", "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL_CLOSEOUT.json"], "symbols": [], "commit": "3ddd5a8355a565d5fe8062152769b6a11f676f9d", "issue": 148, "pr": 149, "decision_id": "4c1949cd-f851-4a1e-a5cc-481b6c1a0a97", "evidence_commit": "45263b9eeaf0e2fc92b595ae39ab68db77785ee0", "workflow_run": null, "command": "documentation-only constitutional threat model plus governed merge", "result": "The threat model covers required assets, trust boundaries, actors, abuse cases, failure modes, and explicit test obligations. It closes only R2.3; runtime controls remain open obligations and R2 remains partially closed.", "observed_at_utc": "2026-08-03T21:50:13Z"}, {"claim": "R2.4 unified governance gate evidence was merged and closed the unified gate item without closing R2.", "classification": "RUNTIME_VERIFIED", "paths": ["docs/roadmap/evidence/BRAIN_101_R2_4_UNIFIED_GOVERNANCE_GATE.md", "docs/roadmap/evidence/BRAIN_101_R2_4_UNIFIED_GOVERNANCE_GATE_CLOSEOUT.json"], "symbols": [], "commit": "4da21f268e339f83b6acfe49fb091087196f2085", "issue": 152, "pr": 153, "decision_id": "82df3921-80a3-43f5-8fc3-2a13a245795c", "authorization_mode": "OWNER_CONSTITUTIONAL", "evidence_commit": "03e326a7da27386c64e3cbb0158762af13448014", "workflow_run": null, "command": "unified governance gate implementation plus governed merge", "result": "R2.4 routes governance, execution, patch, dev, lifecycle, and approval operations through one authoritative fail-closed gate model and preserves P3 denial, human final authority, disabled live trading, real money, canonical local sync, and auto-merge. R2 remains PARTIALLY_CLOSED and R2.5 is the single authorized next R2 security item.", "observed_at_utc": "2026-08-03T23:53:18Z"}, {"claim": "Exactly one five-role RBAC matrix item is authorized next with NO_DEPLOY.", "classification": "AUTHORIZED_ACTIVE", "paths": ["tmp_agent/brain_v9/security/rbac.py", "tmp_agent/brain_v9/api_security.py", "tmp_agent/brain_v9/governance/", "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py", "tmp_agent/brain_v9/main.py", "tests/contract/test_brain_101_r2_5_five_role_rbac_matrix.py", "docs/roadmap/evidence/BRAIN_101_R2_5_FIVE_ROLE_RBAC_MATRIX.md"], "symbols": [], "commit": null, "issue": null, "pr": null, "workflow_run": null, "command": null, "result": "R2.5 is MEDIUM risk, domain security_governance, executor codex_control_plane, work_branch control-plane/r2-5-five-role-rbac-matrix, deployment_mode NO_DEPLOY, and complete closeout metadata is declared. No executor alias is used.", "observed_at_utc": "2026-08-03T23:53:18Z"}]},
-    {"id": "R3", "percent": 60, "status": "PARTIALLY_CLOSED", "evidence": [{"claim": "CI and recovery contracts exist; the required E2E matrix is incomplete.", "classification": "CONTRACT_VERIFIED", "paths": [".github/workflows", "tests/contract", "tests/e2e"], "symbols": [], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": 34, "workflow_run": 29886467842, "command": null, "result": "Baseline checks pass, but R3 closure target is unmet.", "observed_at_utc": "2026-07-22T13:37:51Z"}]},
-    {"id": "R4", "percent": 35, "status": "PARTIALLY_CLOSED", "evidence": [{"claim": "Router extraction progressed while R4 LOC and legacy targets remain unmet.", "classification": "STATIC_VERIFIED", "paths": ["tmp_agent/brain_v9/main.py", "tmp_agent/brain_v9/core/session.py", "tmp_agent/brain_v9/agent/tools.py", "tmp_agent/brain_v9/agent/loop.py"], "symbols": [], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": null, "command": "AST/line-count audit executed during R0", "result": "2164/3052/3519/2912 LOC and 30 direct main endpoints.", "observed_at_utc": "2026-07-22T13:37:51Z"}]},
-    {"id": "R5", "percent": 60, "status": "PARTIALLY_CLOSED", "evidence": [{"claim": "LangGraph parity is default, but parallel legacy/fastpath behavior remains.", "classification": "CONTRACT_VERIFIED", "paths": ["tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py", "tmp_agent/brain_v9/core/session_fastpaths.py"], "symbols": ["DEFAULT_AGENT_V2_BACKEND"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": 29886467842, "command": null, "result": "Canonical default verified; unique-runtime closure missing.", "observed_at_utc": "2026-07-22T13:37:51Z"}]},
-    {"id": "R6", "percent": 30, "status": "OPEN", "evidence": [{"claim": "A single MemoryService writer boundary is absent.", "classification": "MISSING", "paths": ["tmp_agent/brain_v9/memory", "memory/semantic"], "symbols": ["MemoryService"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": null, "command": "R0 search for memory writers and MemoryService", "result": "Distributed ownership remains.", "observed_at_utc": "2026-07-22T13:37:51Z"}]},
-    {"id": "R7", "percent": 50, "status": "PARTIALLY_CLOSED", "evidence": [{"claim": "Trace and SSE UI are wired without full unified observability ownership.", "classification": "CONTRACT_VERIFIED", "paths": ["tmp_agent/brain_v9/core/agent_kernel_v2/trace.py", "tmp_agent/brain_v9/dashboard/dashboard_routes.py"], "symbols": ["TraceStore", "agent_v2_trace"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": 29886467842, "command": null, "result": "Trace tests pass; R7 remains partial.", "observed_at_utc": "2026-07-22T13:37:51Z"}]},
-    {"id": "R8", "percent": 20, "status": "OPEN", "evidence": [{"claim": "No single ProviderGateway boundary was found.", "classification": "MISSING", "paths": ["tmp_agent/brain_v9/core/llm.py", "tmp_agent/brain_v9/config.py"], "symbols": ["ProviderGateway"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": null, "command": "R0 search for ProviderGateway", "result": "Provider logic remains distributed.", "observed_at_utc": "2026-07-22T13:37:51Z"}]},
-    {"id": "R9", "percent": 45, "status": "PARTIALLY_CLOSED", "evidence": [{"claim": "Curated read-only lookup exists; production quality/versioning certification is incomplete.", "classification": "CONTRACT_VERIFIED", "paths": ["brain/curated_runtime_lookup.py", "tests/contract"], "symbols": [], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": 29886467842, "command": null, "result": "Read-only capability present; R9 not certified.", "observed_at_utc": "2026-07-22T13:37:51Z"}]},
-    {"id": "R10", "percent": 25, "status": "OPEN", "evidence": [{"claim": "Self-improvement components exist without full governed promotion E2E.", "classification": "PRESENCE_ONLY", "paths": ["tmp_agent/brain_v9/autonomy", "tmp_agent/brain_v9/governance/selfdev_sandbox.py"], "symbols": [], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": null, "command": null, "result": "R10 closure evidence missing.", "observed_at_utc": "2026-07-22T13:37:51Z"}]},
-    {"id": "R11", "percent": 15, "status": "OPEN", "evidence": [{"claim": "Financial autonomy paper-only runtime interface is not wired.", "classification": "MISSING", "paths": ["financial_autonomy", "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"], "symbols": ["financial_autonomy_flags"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": 29886467842, "command": null, "result": "Diagnosis/dry-run exists; R11 wiring absent.", "observed_at_utc": "2026-07-22T13:37:51Z"}]},
-    {"id": "R12", "percent": 15, "status": "OPEN", "evidence": [{"claim": "Canonical PortfolioManager is absent.", "classification": "MISSING", "paths": ["tmp_agent/brain_v9/trading", "tmp_agent/brain_v9/brain/risk_contract.py"], "symbols": ["PortfolioManager"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": null, "command": "R0 search for class PortfolioManager", "result": "No class found.", "observed_at_utc": "2026-07-22T13:37:51Z"}]},
-    {"id": "R13", "percent": 5, "status": "OPEN", "evidence": [{"claim": "Canonical Compliance gate is absent.", "classification": "MISSING", "paths": ["financial_autonomy", "tmp_agent/brain_v9"], "symbols": ["Compliance"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": null, "command": "R0 search for compliance classes", "result": "No R13 boundary found.", "observed_at_utc": "2026-07-22T13:37:51Z"}]},
-    {"id": "R14", "percent": 15, "status": "OPEN", "evidence": [{"claim": "Backtest code is present without certified Validation Lab behavior.", "classification": "PRESENCE_ONLY", "paths": ["00_identity/backtest_engine.py", "tmp_agent/brain_v9/trading/backtest_gate.py"], "symbols": [], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": null, "command": null, "result": "R14 requirements are not proven.", "observed_at_utc": "2026-07-22T13:37:51Z"}]},
-    {"id": "R15", "percent": 15, "status": "OPEN", "evidence": [{"claim": "Paper connectors exist without required integrated soak certification.", "classification": "PRESENCE_ONLY", "paths": ["tmp_agent/brain_v9/trading", "tmp_agent/brain_v9/dashboard/dashboard_routes.py"], "symbols": ["QuantConnectConnector"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": null, "command": null, "result": "No bound 30-day R15 soak evidence.", "observed_at_utc": "2026-07-22T13:37:51Z"}]},
-    {"id": "R16", "percent": 0, "status": "OPEN", "evidence": [{"claim": "LiveTradingGate implementation is absent while live remains disabled.", "classification": "MISSING", "paths": ["financial_autonomy", "tmp_agent/brain_v9"], "symbols": ["LiveTradingGate"], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": null, "command": "R0 search for class LiveTradingGate", "result": "No class found; no live activation performed.", "observed_at_utc": "2026-07-22T13:37:51Z"}]},
-    {"id": "R17", "percent": 10, "status": "JUSTIFIABLY_DEFERRED", "evidence": [{"claim": "Selective microservices are deferred until modular ownership prerequisites close.", "classification": "STATIC_VERIFIED", "paths": ["docs/roadmap/BRAIN_101_ROADMAP.md"], "symbols": [], "commit": null, "issue": null, "pr": 35, "workflow_run": null, "command": null, "result": "Deferral is explicit; extraction is not certified.", "observed_at_utc": "2026-07-22T13:37:51Z"}]},
-    {"id": "R18", "percent": 40, "status": "PARTIALLY_CLOSED", "evidence": [{"claim": "Chat/dashboard/runbooks exist without complete product operations certification.", "classification": "PRESENCE_ONLY", "paths": ["tmp_agent/brain_v9/dashboard", "tmp_agent/brain_v9/ui", "tmp_agent/brain_v9/ops"], "symbols": [], "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2", "issue": null, "pr": null, "workflow_run": 29886467842, "command": null, "result": "Operational surfaces present; accessibility/restore/support bundle remain.", "observed_at_utc": "2026-07-22T13:37:51Z"}]},
-    {"id": "R19", "percent": 0, "status": "NOT_STARTED", "evidence": [{"claim": "No BRAIN-101 adversarial certification has run.", "classification": "MISSING", "paths": ["docs/roadmap/BRAIN_101_ROADMAP.md"], "symbols": [], "commit": null, "issue": null, "pr": 35, "workflow_run": null, "command": null, "result": "BRAIN-101 is not certified.", "observed_at_utc": "2026-07-22T13:37:51Z"}]}
+    {
+      "id": "R0",
+      "percent": 100,
+      "status": "CLOSED_HUMAN_ADOPTED",
+      "evidence": [
+        {
+          "claim": "R0 artifacts and historical reconciliation were adopted by human-authorized merge.",
+          "classification": "MERGE_VERIFIED",
+          "paths": [
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json"
+          ],
+          "symbols": [],
+          "commit": "5b9f101a6d5ec5b314d9413cc5c12d66fec6d94f",
+          "issue": null,
+          "pr": 35,
+          "workflow_run": null,
+          "command": "gh pr merge 35 --merge",
+          "result": "PR #35 merged by normal merge commit with reviewed head a605c4d88510acd477cf26d2787bc38b1c02af48.",
+          "observed_at_utc": "2026-07-22T14:02:16Z"
+        }
+      ]
+    },
+    {
+      "id": "R1",
+      "percent": 100,
+      "status": "AGENT_LOOP_ROADMAP_AWARE",
+      "evidence": [
+        {
+          "claim": "R1.1 canonical manifest, hash, dependency, persistence, CI, and convergence contracts passed in the real installed worker.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "scripts/agent_loop/local_worker/agent_worker.py",
+            "docs/roadmap/evidence/BRAIN_101_R1_1_RUNTIME_CLOSEOUT.json"
+          ],
+          "symbols": [
+            "process_state",
+            "validate_persisted_roadmap_binding"
+          ],
+          "commit": "1c5115ee72ac3d79fb1e28afe37f2893ba505c1e",
+          "issue": 44,
+          "pr": 45,
+          "workflow_run": 29952330799,
+          "command": "two governed worker --once iterations",
+          "result": "R1.1 closed runtime-verified; R1.2 is authorized but not yet implemented.",
+          "observed_at_utc": "2026-07-22T19:48:49Z"
+        },
+        {
+          "claim": "R1.0 autonomous roadmap control-plane E2E passed as a documentation-only PR and was merged by the governed Operator Proxy.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_PAYLOAD.md",
+            "docs/roadmap/evidence/BRAIN_101_AUTONOMOUS_FLOW_E2E_CLOSEOUT.json"
+          ],
+          "symbols": [
+            "sequenceRoadmap",
+            "runBuilder",
+            "AutonomousFlow"
+          ],
+          "commit": "9fde35227982a89c1af6b31051ff44f131128430",
+          "umbrella_control_plane_issue": 62,
+          "issue": 65,
+          "pr": 68,
+          "workflow_run": 30461856452,
+          "command": "Operator Proxy governed merge after PR #68 CI",
+          "result": "Issue #62 remains the umbrella for the broader control-plane program. Sequencer-created Issue #65 and PR #68 completed the R1.0 E2E. R1.0 closed runtime-verified; R1.2 restored to AUTHORIZED_ACTIVE. PR head f3c610971a261341915bab0baabbf4df7d292d2c, payload commit 2e00f6318b10fe7e05580b207493b6662c6255a6, merge commit 9fde35227982a89c1af6b31051ff44f131128430.",
+          "observed_at_utc": "2026-07-29T15:55:27Z"
+        },
+        {
+          "claim": "R1.2 roadmap-doc and test-only profiles closed runtime-verified after the transactional privileged-install receipt validation passed.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "scripts/agent_loop/local_worker/agent_worker.py",
+            "tests/contract/test_agent_loop_worker_r1_2_profiles.py",
+            "docs/roadmap/evidence/BRAIN_101_R1_2_RUNTIME_CLOSEOUT.json"
+          ],
+          "symbols": [
+            "PROFILE_TRUSTED_COMMANDS",
+            "run_profile",
+            "parse_spec"
+          ],
+          "commit": "afbeadcc354e3cb74747c694269c50efdb620ccf",
+          "issue": 56,
+          "runtime_activation_issue": 59,
+          "pr": 57,
+          "runtime_activation_pr": 58,
+          "final_install_repair_pr": 102,
+          "workflow_run": null,
+          "command": "Operator Proxy governed merge plus privileged install receipt validation",
+          "result": "Implementation PR #57 merged at 3ec640e317cbe8c6cae8aff91684179144b2fd1e; runtime activation PR #58 merged at 40343a308b7833ee948ea8dbdaf8b8aed334f13d; final install receipt repair PR #102 merged at afbeadcc354e3cb74747c694269c50efdb620ccf. No R2 work, live trading, real money, canonical sync, auto-merge, deployment, or worker --once was authorized.",
+          "observed_at_utc": "2026-07-31T21:30:17Z"
+        },
+        {
+          "claim": "R1.3 Agent Loop OpenCode Kimi roadmap-doc E2E closed runtime-verified after the append-only retry passed.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E.md",
+            "docs/roadmap/evidence/BRAIN_101_R1_3_AGENT_LOOP_KIMI_E2E_CLOSEOUT.json"
+          ],
+          "symbols": [],
+          "commit": "7125bf83ed786c5642b299da2fd4f65157d20f9e",
+          "issue": 126,
+          "pr": 127,
+          "decision_id": "f330634b-4803-4638-af03-58e5ee876cbe",
+          "failed_attempt_issue": 112,
+          "failed_attempt_pr": 113,
+          "retry_authorization_pr": 125,
+          "post_merge_repair_pr": 130,
+          "closeout_issue": 129,
+          "closeout_pr": 131,
+          "closeout_decision_id": "d0a67f07-dc24-4e86-8c07-7374fec5b0b6",
+          "closeout_merge_commit": "02209e4ecf80065ac31da7e71c206b27f2a7ae31",
+          "workflow_run": null,
+          "command": "Agent Loop roadmap-doc retry plus Operator Proxy governed merge",
+          "result": "Retry authorization PR #125 merged at ba0c806d92f4bd287eaa05e2f7c82139370719bc; evidence commit 1e14fbefa641f10bf3b726b15a9003eeb4ce942a was integrated by Operator Proxy merge 7125bf83ed786c5642b299da2fd4f65157d20f9e; governed closeout PR #131 merged as 02209e4ecf80065ac31da7e71c206b27f2a7ae31. No R2 work, live trading, real money, canonical sync, auto-merge, deployment, or worker task activation was authorized.",
+          "observed_at_utc": "2026-08-03T19:35:07Z"
+        },
+        {
+          "claim": "R1.4 Agent Loop sequencer contract E2E closed runtime-verified and completed the R1 roadmap-aware certification lane.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E.md",
+            "docs/roadmap/evidence/BRAIN_101_R1_4_AGENT_LOOP_SEQUENCER_CONTRACT_E2E_CLOSEOUT.json"
+          ],
+          "symbols": [],
+          "commit": "d4411ae9719dbfe16db9d07cf2bfeffaca89bf47",
+          "issue": 133,
+          "pr": 134,
+          "decision_id": "c7dc0260-12ec-4566-b032-9a79601c431e",
+          "workflow_run": null,
+          "command": "Agent Loop roadmap-doc sequencer-contract E2E plus Operator Proxy governed merge",
+          "result": "Parent lifecycle evidence was recorded exactly: base 325c199cf11dc50599a1a2f4a486f51e50222869, head 569eb283e05479640cb374aec81f2ae6d8f51705, merge d4411ae9719dbfe16db9d07cf2bfeffaca89bf47, builder session agent-loop-builder-569eb283e05479640cb374aec81f2ae6d8f51705, reviewer session reviewer:opencode_ollama:ollama-cloud/qwen3.5:397b:4336219e-98a8-4a1f-a704-6aec3ace4db1. R1.4 closed after the E2E evidence passed; no live trading, real money, canonical sync, auto-merge, deployment, or worker task activation was authorized.",
+          "observed_at_utc": "2026-08-03T20:34:49Z"
+        }
+      ]
+    },
+    {
+      "id": "R2",
+      "percent": 80,
+      "status": "PARTIALLY_CLOSED_R3_2_AUTHORIZED_ACTIVE",
+      "evidence": [
+        {
+          "claim": "Auth/RBAC/signed approval contracts exist; complete constitutional adversarial coverage does not.",
+          "classification": "CONTRACT_VERIFIED",
+          "paths": [
+            "tmp_agent/brain_v9/api_security.py",
+            "tmp_agent/brain_v9/governance/signed_approvals.py",
+            "tests/integration/test_endpoints_auth.py"
+          ],
+          "symbols": [
+            "require_strict_operator_access",
+            "verify_approval_token"
+          ],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": 29886467842,
+          "command": null,
+          "result": "Partial R2 evidence only.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        },
+        {
+          "claim": "R2.1 constitutional security re-audit closed as documentation-only runtime-verified evidence.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "docs/roadmap/evidence/BRAIN_101_R2_1_CONSTITUTIONAL_SECURITY_REAUDIT.md",
+            "docs/roadmap/evidence/BRAIN_101_R2_1_CONSTITUTIONAL_SECURITY_REAUDIT_CLOSEOUT.json"
+          ],
+          "symbols": [],
+          "commit": "677213a8e0d4d46a5a72a9ef5edad00740c9a2f0",
+          "issue": 138,
+          "pr": 139,
+          "decision_id": "54b78608-dd14-48db-b05e-290adb1238f8",
+          "evidence_commit": "94f4ab44b460cbbd9e40dfb10e7a308c8460d9a2",
+          "workflow_run": null,
+          "command": "documentation-only constitutional security re-audit plus governed merge",
+          "result": "R2.1 concluded R2_REMAINS_PARTIALLY_CLOSED, R2_CRITICAL_REGRESSION_FOUND=false, and R2_CAN_CLOSE_NOW=false.",
+          "observed_at_utc": "2026-08-03T21:00:47Z"
+        },
+        {
+          "claim": "R2.2 constitutional security remediation plan closed as documentation-only runtime-verified routing evidence.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN.md",
+            "docs/roadmap/evidence/BRAIN_101_R2_2_CONSTITUTIONAL_SECURITY_REMEDIATION_PLAN_CLOSEOUT.json"
+          ],
+          "symbols": [],
+          "commit": "704cbbae808ecf2643e46699abe8340d0afc6b10",
+          "issue": 143,
+          "pr": 144,
+          "decision_id": "9656a9b9-6c3c-43e4-a0e2-824a088c96b3",
+          "evidence_commit": "57b8d5d61c883d5d44fb2af2ca3b951810c5d5ff",
+          "workflow_run": null,
+          "command": "documentation-only constitutional security remediation routing plus governed merge",
+          "result": "The plan preserves R2.1 closed evidence, keeps R2 partially closed, and routes blockers through R2.3 through R2.13 before any integration closeout can consider R2 closure.",
+          "observed_at_utc": "2026-08-03T21:28:44Z"
+        },
+        {
+          "claim": "R2.3 constitutional threat model closed as documentation-only runtime-verified evidence.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL.md",
+            "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL_CLOSEOUT.json"
+          ],
+          "symbols": [],
+          "commit": "3ddd5a8355a565d5fe8062152769b6a11f676f9d",
+          "issue": 148,
+          "pr": 149,
+          "decision_id": "4c1949cd-f851-4a1e-a5cc-481b6c1a0a97",
+          "evidence_commit": "45263b9eeaf0e2fc92b595ae39ab68db77785ee0",
+          "workflow_run": null,
+          "command": "documentation-only constitutional threat model plus governed merge",
+          "result": "The threat model covers required assets, trust boundaries, actors, abuse cases, failure modes, and explicit test obligations. It closes only R2.3; runtime controls remain open obligations and R2 remains partially closed.",
+          "observed_at_utc": "2026-08-03T21:50:13Z"
+        },
+        {
+          "claim": "R2.4 unified governance gate evidence was merged and closed the unified gate item without closing R2.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "docs/roadmap/evidence/BRAIN_101_R2_4_UNIFIED_GOVERNANCE_GATE.md",
+            "docs/roadmap/evidence/BRAIN_101_R2_4_UNIFIED_GOVERNANCE_GATE_CLOSEOUT.json"
+          ],
+          "symbols": [],
+          "commit": "4da21f268e339f83b6acfe49fb091087196f2085",
+          "issue": 152,
+          "pr": 153,
+          "decision_id": "82df3921-80a3-43f5-8fc3-2a13a245795c",
+          "authorization_mode": "OWNER_CONSTITUTIONAL",
+          "evidence_commit": "03e326a7da27386c64e3cbb0158762af13448014",
+          "workflow_run": null,
+          "command": "unified governance gate implementation plus governed merge",
+          "result": "R2.4 routes governance, execution, patch, dev, lifecycle, and approval operations through one authoritative fail-closed gate model and preserves P3 denial, human final authority, disabled live trading, real money, canonical local sync, and auto-merge. R2 remains PARTIALLY_CLOSED and R2.5 is the single authorized next R2 security item.",
+          "observed_at_utc": "2026-08-03T23:53:18Z"
+        },
+        {
+          "claim": "Exactly one five-role RBAC matrix item is authorized next with NO_DEPLOY.",
+          "classification": "AUTHORIZED_ACTIVE",
+          "paths": [
+            "tmp_agent/brain_v9/security/rbac.py",
+            "tmp_agent/brain_v9/api_security.py",
+            "tmp_agent/brain_v9/governance/",
+            "tmp_agent/brain_v9/core/agent_kernel_v2/governance.py",
+            "tmp_agent/brain_v9/main.py",
+            "tests/contract/test_brain_101_r2_5_five_role_rbac_matrix.py",
+            "docs/roadmap/evidence/BRAIN_101_R2_5_FIVE_ROLE_RBAC_MATRIX.md"
+          ],
+          "symbols": [],
+          "commit": null,
+          "issue": null,
+          "pr": null,
+          "workflow_run": null,
+          "command": null,
+          "result": "R2.5 is MEDIUM risk, domain security_governance, executor codex_control_plane, work_branch control-plane/r2-5-five-role-rbac-matrix, deployment_mode NO_DEPLOY, and complete closeout metadata is declared. No executor alias is used.",
+          "observed_at_utc": "2026-08-03T23:53:18Z"
+        }
+      ]
+    },
+    {
+      "id": "R3",
+      "percent": 65,
+      "status": "PARTIALLY_CLOSED_R3_2_AUTHORIZED_ACTIVE",
+      "evidence": [
+        {
+          "claim": "CI and recovery contracts exist; the required E2E matrix is incomplete.",
+          "classification": "CONTRACT_VERIFIED",
+          "paths": [
+            ".github/workflows",
+            "tests/contract",
+            "tests/e2e"
+          ],
+          "symbols": [],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": 34,
+          "workflow_run": 29886467842,
+          "command": null,
+          "result": "Baseline checks pass, but R3 closure target is unmet.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        },
+        {
+          "claim": "R3.1 documentation-only contract and E2E gap matrix was merged as runtime-verified evidence and R3.2 was authorized as the single next item.",
+          "classification": "RUNTIME_VERIFIED",
+          "paths": [
+            "docs/roadmap/evidence/BRAIN_101_R3_1_CONTRACT_E2E_GAP_MATRIX.md",
+            "docs/roadmap/evidence/BRAIN_101_R3_1_CONTRACT_E2E_GAP_MATRIX_CLOSEOUT.json"
+          ],
+          "symbols": [],
+          "commit": "282026fbdd28d31e53b24e5a7565c2c60cf81792",
+          "issue": 179,
+          "pr": 180,
+          "decision_id": "ac64c4bc-68ca-40a9-9052-998358c66bac",
+          "evidence_commit": "9f51cbe4b28fd297514c75625edb7e2ba5d14d49",
+          "workflow_run": null,
+          "command": "documentation-only contract and E2E gap matrix plus governed closeout",
+          "result": "R3.1 concluded R3_CURRENT_STATUS=PARTIALLY_CLOSED, R3_CAN_CLOSE_NOW=false, next_authorized_item=R3.2. R3 remains partially closed; 48 contract tests and 7 E2E tests inventoried; 7 critical and 23 high-severity gaps remain.",
+          "observed_at_utc": "2026-08-12T00:00:00Z"
+        }
+      ]
+    },
+    {
+      "id": "R4",
+      "percent": 35,
+      "status": "PARTIALLY_CLOSED",
+      "evidence": [
+        {
+          "claim": "Router extraction progressed while R4 LOC and legacy targets remain unmet.",
+          "classification": "STATIC_VERIFIED",
+          "paths": [
+            "tmp_agent/brain_v9/main.py",
+            "tmp_agent/brain_v9/core/session.py",
+            "tmp_agent/brain_v9/agent/tools.py",
+            "tmp_agent/brain_v9/agent/loop.py"
+          ],
+          "symbols": [],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": null,
+          "command": "AST/line-count audit executed during R0",
+          "result": "2164/3052/3519/2912 LOC and 30 direct main endpoints.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "id": "R5",
+      "percent": 60,
+      "status": "PARTIALLY_CLOSED",
+      "evidence": [
+        {
+          "claim": "LangGraph parity is default, but parallel legacy/fastpath behavior remains.",
+          "classification": "CONTRACT_VERIFIED",
+          "paths": [
+            "tmp_agent/brain_v9/core/agent_kernel_v2/runtime.py",
+            "tmp_agent/brain_v9/core/session_fastpaths.py"
+          ],
+          "symbols": [
+            "DEFAULT_AGENT_V2_BACKEND"
+          ],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": 29886467842,
+          "command": null,
+          "result": "Canonical default verified; unique-runtime closure missing.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "id": "R6",
+      "percent": 30,
+      "status": "OPEN",
+      "evidence": [
+        {
+          "claim": "A single MemoryService writer boundary is absent.",
+          "classification": "MISSING",
+          "paths": [
+            "tmp_agent/brain_v9/memory",
+            "memory/semantic"
+          ],
+          "symbols": [
+            "MemoryService"
+          ],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": null,
+          "command": "R0 search for memory writers and MemoryService",
+          "result": "Distributed ownership remains.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "id": "R7",
+      "percent": 50,
+      "status": "PARTIALLY_CLOSED",
+      "evidence": [
+        {
+          "claim": "Trace and SSE UI are wired without full unified observability ownership.",
+          "classification": "CONTRACT_VERIFIED",
+          "paths": [
+            "tmp_agent/brain_v9/core/agent_kernel_v2/trace.py",
+            "tmp_agent/brain_v9/dashboard/dashboard_routes.py"
+          ],
+          "symbols": [
+            "TraceStore",
+            "agent_v2_trace"
+          ],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": 29886467842,
+          "command": null,
+          "result": "Trace tests pass; R7 remains partial.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "id": "R8",
+      "percent": 20,
+      "status": "OPEN",
+      "evidence": [
+        {
+          "claim": "No single ProviderGateway boundary was found.",
+          "classification": "MISSING",
+          "paths": [
+            "tmp_agent/brain_v9/core/llm.py",
+            "tmp_agent/brain_v9/config.py"
+          ],
+          "symbols": [
+            "ProviderGateway"
+          ],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": null,
+          "command": "R0 search for ProviderGateway",
+          "result": "Provider logic remains distributed.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "id": "R9",
+      "percent": 45,
+      "status": "PARTIALLY_CLOSED",
+      "evidence": [
+        {
+          "claim": "Curated read-only lookup exists; production quality/versioning certification is incomplete.",
+          "classification": "CONTRACT_VERIFIED",
+          "paths": [
+            "brain/curated_runtime_lookup.py",
+            "tests/contract"
+          ],
+          "symbols": [],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": 29886467842,
+          "command": null,
+          "result": "Read-only capability present; R9 not certified.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "id": "R10",
+      "percent": 25,
+      "status": "OPEN",
+      "evidence": [
+        {
+          "claim": "Self-improvement components exist without full governed promotion E2E.",
+          "classification": "PRESENCE_ONLY",
+          "paths": [
+            "tmp_agent/brain_v9/autonomy",
+            "tmp_agent/brain_v9/governance/selfdev_sandbox.py"
+          ],
+          "symbols": [],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": null,
+          "command": null,
+          "result": "R10 closure evidence missing.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "id": "R11",
+      "percent": 15,
+      "status": "OPEN",
+      "evidence": [
+        {
+          "claim": "Financial autonomy paper-only runtime interface is not wired.",
+          "classification": "MISSING",
+          "paths": [
+            "financial_autonomy",
+            "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"
+          ],
+          "symbols": [
+            "financial_autonomy_flags"
+          ],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": 29886467842,
+          "command": null,
+          "result": "Diagnosis/dry-run exists; R11 wiring absent.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "id": "R12",
+      "percent": 15,
+      "status": "OPEN",
+      "evidence": [
+        {
+          "claim": "Canonical PortfolioManager is absent.",
+          "classification": "MISSING",
+          "paths": [
+            "tmp_agent/brain_v9/trading",
+            "tmp_agent/brain_v9/brain/risk_contract.py"
+          ],
+          "symbols": [
+            "PortfolioManager"
+          ],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": null,
+          "command": "R0 search for class PortfolioManager",
+          "result": "No class found.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "id": "R13",
+      "percent": 5,
+      "status": "OPEN",
+      "evidence": [
+        {
+          "claim": "Canonical Compliance gate is absent.",
+          "classification": "MISSING",
+          "paths": [
+            "financial_autonomy",
+            "tmp_agent/brain_v9"
+          ],
+          "symbols": [
+            "Compliance"
+          ],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": null,
+          "command": "R0 search for compliance classes",
+          "result": "No R13 boundary found.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "id": "R14",
+      "percent": 15,
+      "status": "OPEN",
+      "evidence": [
+        {
+          "claim": "Backtest code is present without certified Validation Lab behavior.",
+          "classification": "PRESENCE_ONLY",
+          "paths": [
+            "00_identity/backtest_engine.py",
+            "tmp_agent/brain_v9/trading/backtest_gate.py"
+          ],
+          "symbols": [],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": null,
+          "command": null,
+          "result": "R14 requirements are not proven.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "id": "R15",
+      "percent": 15,
+      "status": "OPEN",
+      "evidence": [
+        {
+          "claim": "Paper connectors exist without required integrated soak certification.",
+          "classification": "PRESENCE_ONLY",
+          "paths": [
+            "tmp_agent/brain_v9/trading",
+            "tmp_agent/brain_v9/dashboard/dashboard_routes.py"
+          ],
+          "symbols": [
+            "QuantConnectConnector"
+          ],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": null,
+          "command": null,
+          "result": "No bound 30-day R15 soak evidence.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "id": "R16",
+      "percent": 0,
+      "status": "OPEN",
+      "evidence": [
+        {
+          "claim": "LiveTradingGate implementation is absent while live remains disabled.",
+          "classification": "MISSING",
+          "paths": [
+            "financial_autonomy",
+            "tmp_agent/brain_v9"
+          ],
+          "symbols": [
+            "LiveTradingGate"
+          ],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": null,
+          "command": "R0 search for class LiveTradingGate",
+          "result": "No class found; no live activation performed.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "id": "R17",
+      "percent": 10,
+      "status": "JUSTIFIABLY_DEFERRED",
+      "evidence": [
+        {
+          "claim": "Selective microservices are deferred until modular ownership prerequisites close.",
+          "classification": "STATIC_VERIFIED",
+          "paths": [
+            "docs/roadmap/BRAIN_101_ROADMAP.md"
+          ],
+          "symbols": [],
+          "commit": null,
+          "issue": null,
+          "pr": 35,
+          "workflow_run": null,
+          "command": null,
+          "result": "Deferral is explicit; extraction is not certified.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "id": "R18",
+      "percent": 40,
+      "status": "PARTIALLY_CLOSED",
+      "evidence": [
+        {
+          "claim": "Chat/dashboard/runbooks exist without complete product operations certification.",
+          "classification": "PRESENCE_ONLY",
+          "paths": [
+            "tmp_agent/brain_v9/dashboard",
+            "tmp_agent/brain_v9/ui",
+            "tmp_agent/brain_v9/ops"
+          ],
+          "symbols": [],
+          "commit": "53da8ae93158cc3f9a06468c64d955816044c6d2",
+          "issue": null,
+          "pr": null,
+          "workflow_run": 29886467842,
+          "command": null,
+          "result": "Operational surfaces present; accessibility/restore/support bundle remain.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    },
+    {
+      "id": "R19",
+      "percent": 0,
+      "status": "NOT_STARTED",
+      "evidence": [
+        {
+          "claim": "No BRAIN-101 adversarial certification has run.",
+          "classification": "MISSING",
+          "paths": [
+            "docs/roadmap/BRAIN_101_ROADMAP.md"
+          ],
+          "symbols": [],
+          "commit": null,
+          "issue": null,
+          "pr": 35,
+          "workflow_run": null,
+          "command": null,
+          "result": "BRAIN-101 is not certified.",
+          "observed_at_utc": "2026-07-22T13:37:51Z"
+        }
+      ]
+    }
   ],
   "rules": {
     "critical_open_score_cap": 69,

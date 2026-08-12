@@ -9242,3 +9242,18 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Authorized next item: exactly one `R3.1`, MEDIUM, domain `testing_ci_recovery`, executor `codex_control_plane`, work branch `control-plane/r3-1-contract-e2e-gap-matrix`, `NO_DEPLOY`, with complete closeout metadata.
 - Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched by closeout, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
 - Next gate: execute `R3.1` contract/E2E gap matrix with `NO_DEPLOY`.
+
+## BRAIN-101 R3.1 — Contract/E2E Gap Matrix Closeout (2026-08-12)
+
+- Front: `BRAIN-101-R3-1-CONTRACT-E2E-GAP-MATRIX-CLOSEOUT-01`.
+- Parent gap matrix front: `BRAIN-101-R3-1-CONTRACT-E2E-GAP-MATRIX-01`.
+- Gap matrix evidence path: `docs/roadmap/evidence/BRAIN_101_R3_1_CONTRACT_E2E_GAP_MATRIX.md`.
+- Governed parent lifecycle: Issue #179 / PR #180, decision `ac64c4bc-68ca-40a9-9052-998358c66bac`, authorization mode `POLICY_APPROVED`, base `5004cce535830fc3bf29ca6c1e9b3e88e0848a47`, closeout base `282026fbdd28d31e53b24e5a7565c2c60cf81792`, head `9f51cbe4b28fd297514c75625edb7e2ba5d14d49`, merge commit `282026fbdd28d31e53b24e5a7565c2c60cf81792`.
+- Builder session: `builder-9d292625-892c-437c-91ef-eeeb17db3959`.
+- Reviewer session: `reviewer:opencode_ollama:ollama-cloud/deepseek-v4-flash:54ce13d2-8b77-44d1-8248-df11b24fb5e4`.
+- Gap matrix result: inventoried 48 existing contract tests across 14 contract surfaces and 7 existing E2E tests across 15 E2E flows; classified 7 critical gaps, 23 high-severity gaps, 10 medium-severity gaps, and 1 low-severity gap; produced a prioritized resolution roadmap with dependency-ordered sub-fronts R3.2 through R3.12.
+- Closeout evidence: `docs/roadmap/evidence/BRAIN_101_R3_1_CONTRACT_E2E_GAP_MATRIX_CLOSEOUT.json`.
+- Status: `R3.1` set to `CLOSED_RUNTIME_VERIFIED`; R3 remains partially closed.
+- Authorized next item: exactly one `R3.2`, `MEDIUM`, dominio `testing_ci_recovery`, ejecutor `codex_control_plane`, rama `control-plane/r3-2-agent-v2-cognitive-pipeline-contracts`, `NO_DEPLOY`, permitido para tests de contrato de intent router, planner, evaluator, tool gateway y runtime lifecycle, más `docs/roadmap/evidence/BRAIN_101_R3_2_AGENT_V2_COGNITIVE_PIPELINE_CONTRACTS.md`, con closeout completo predeclarado.
+- Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched by closeout, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
+- Next gate: execute `R3.2` Agent V2 cognitive pipeline contract front with `NO_DEPLOY`.

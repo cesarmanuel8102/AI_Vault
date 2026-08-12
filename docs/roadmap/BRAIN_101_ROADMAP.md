@@ -1116,10 +1116,50 @@ R2_5_AUTHORIZATION_MODE: OWNER_CONSTITUTIONAL
 R2_5_HEAD: 5ebf73c0a6a177840cdc04530940f86964b47f4d
 R2_5_MERGE_COMMIT: f48140ee80388fb1b9cd0ebbbf37fa40ebe4c085
 R2_5_CLOSEOUT_EVIDENCE: docs/roadmap/evidence/BRAIN_101_R2_5_FIVE_ROLE_RBAC_MATRIX_CLOSEOUT.json
-R3_1_STATUS: AUTHORIZED_ACTIVE
+R3_1_STATUS: CLOSED_RUNTIME_VERIFIED
 R3_1_FRONT: BRAIN-101-R3-1-CONTRACT-E2E-GAP-MATRIX-01
 R3_1_EXECUTOR: codex_control_plane
 R3_1_WORK_BRANCH: control-plane/r3-1-contract-e2e-gap-matrix
 R3_1_DEPLOYMENT_MODE: NO_DEPLOY
-NEXT_GATE: Execute R3.1 contract/E2E gap matrix with NO_DEPLOY
+R3_1_ISSUE: 179
+R3_1_PR: 180
+R3_1_DECISION_ID: ac64c4bc-68ca-40a9-9052-998358c66bac
+R3_1_AUTHORIZATION_MODE: POLICY_APPROVED
+R3_1_BASE_SHA: 5004cce535830fc3bf29ca6c1e9b3e88e0848a47
+R3_1_HEAD_SHA: 9f51cbe4b28fd297514c75625edb7e2ba5d14d49
+R3_1_MERGE_COMMIT: 282026fbdd28d31e53b24e5a7565c2c60cf81792
+R3_1_CLOSEOUT_EVIDENCE: docs/roadmap/evidence/BRAIN_101_R3_1_CONTRACT_E2E_GAP_MATRIX_CLOSEOUT.json
+R3_2_STATUS: AUTHORIZED_ACTIVE
+R3_2_FRONT: BRAIN-101-R3-2-AGENT-V2-COGNITIVE-PIPELINE-CONTRACTS-01
+R3_2_EXECUTOR: codex_control_plane
+R3_2_WORK_BRANCH: control-plane/r3-2-agent-v2-cognitive-pipeline-contracts
+R3_2_RISK: MEDIUM
+R3_2_DOMAIN: testing_ci_recovery
+R3_2_ALLOWED_PATHS:
+  - tests/contract/test_brain_101_r3_2_intent_router_contract.py
+  - tests/contract/test_brain_101_r3_2_planner_contract.py
+  - tests/contract/test_brain_101_r3_2_evaluator_contract.py
+  - tests/contract/test_brain_101_r3_2_tool_gateway_contract.py
+  - tests/contract/test_brain_101_r3_2_runtime_lifecycle_contract.py
+  - docs/roadmap/evidence/BRAIN_101_R3_2_AGENT_V2_COGNITIVE_PIPELINE_CONTRACTS.md
+R3_2_FORBIDDEN_PATHS:
+  - .env
+  - .github/
+  - memory/
+  - memory/semantic/
+  - memory/rollback
+  - tmp_agent/brain_v9/trading/
+  - financial_autonomy/
+  - tmp_agent/state/
+  - scripts/
+R3_2_DEPLOYMENT_MODE: NO_DEPLOY
+NEXT_GATE: Execute R3.2 Agent V2 cognitive pipeline contract front with NO_DEPLOY
 ```
+
+## 13.20 Cierre runtime de R3.1
+
+R3.1 quedó cerrado en runtime documental con la matriz de brechas de contrato y E2E `BRAIN-101-R3-1-CONTRACT-E2E-GAP-MATRIX-01`. El paquete `docs/roadmap/evidence/BRAIN_101_R3_1_CONTRACT_E2E_GAP_MATRIX.md` inventaría 48 contratos existentes y 7 pruebas E2E, mapea 14 superficies de contrato y 15 flujos E2E contra el baseline del roadmap, clasifica 7 brechas críticas, 23 de alta severidad, 10 medias y 1 baja, y propone sub-frentes R3.2-R3.12 con orden de dependencia.
+
+La evidencia de lifecycle parent se registra de forma inmutable y exacta: `parent_front_id` `BRAIN-101-R3-1-CONTRACT-E2E-GAP-MATRIX-01`, Issue #179, PR #180, decisión `ac64c4bc-68ca-40a9-9052-998358c66bac`, modo de autorización `POLICY_APPROVED`, base `5004cce535830fc3bf29ca6c1e9b3e88e0848a47`, closeout base `282026fbdd28d31e53b24e5a7565c2c60cf81792`, head `9f51cbe4b28fd297514c75625edb7e2ba5d14d49`, merge `282026fbdd28d31e53b24e5a7565c2c60cf81792`, builder session `builder-9d292625-892c-437c-91ef-eeeb17db3959`, y reviewer session `reviewer:opencode_ollama:ollama-cloud/deepseek-v4-flash:54ce13d2-8b77-44d1-8248-df11b24fb5e4`.
+
+El closeout machine-readable está en `docs/roadmap/evidence/BRAIN_101_R3_1_CONTRACT_E2E_GAP_MATRIX_CLOSEOUT.json`. R3.1 queda `CLOSED_RUNTIME_VERIFIED`, pero R3 no queda cerrado. Se autoriza exactamente un siguiente item: `R3.2`, `MEDIUM`, dominio `testing_ci_recovery`, ejecutor `codex_control_plane`, rama `control-plane/r3-2-agent-v2-cognitive-pipeline-contracts`, `NO_DEPLOY`, permitido para tests de contrato de intent router, planner, evaluator, tool gateway y runtime lifecycle, más el documento de evidencia asociado, con closeout completo predeclarado. Live trading, real money, canonical local sync, auto-merge y deploy siguen no autorizados.
