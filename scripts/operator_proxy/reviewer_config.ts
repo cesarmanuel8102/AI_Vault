@@ -60,7 +60,7 @@ export function reviewerRoute(input:ReviewerInput):string[]{
     : input.risk==="LOW"
       ? [REVIEWER_MODELS.deepseekFlash,REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.nemotron]
       : [REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.deepseekFlash,REVIEWER_MODELS.nemotron];
-  return models.filter(model=>REVIEWER_QUALIFICATION[model].qualified&&model!==input.builderModel).slice(0,2);
+  return models.filter(model=>REVIEWER_QUALIFICATION[model].qualified&&model!==input.builderModel);
 }
 
 export function reviewerArbiter(input:ReviewerInput,used:string[]):string|undefined{

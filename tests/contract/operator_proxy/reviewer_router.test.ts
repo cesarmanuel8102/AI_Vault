@@ -13,8 +13,8 @@ const input=(overrides:Partial<ReviewerInput>={}):ReviewerInput=>({repository:"c
 const pass=(model:string):ReviewerBackend=>({model,review:(_input,session)=>({backend:"opencode_ollama",model,session,providerSession:`provider-${session}`,startedUtc:"2026-01-01T00:00:00Z",completedUtc:"2026-01-01T00:00:01Z",output:{verdict:"PASS",head_sha:head,summary:"pass",findings:[]}})});
 
 test("routes by risk and agent-loop scope while excluding builder model",()=>{
-  assert.deepEqual(reviewerRoute(input({risk:"LOW"})),[REVIEWER_MODELS.deepseekFlash,REVIEWER_MODELS.deepseekPro]);
-  assert.deepEqual(reviewerRoute(input({changedFiles:["scripts/agent_loop/local_worker/agent_worker.py"]})),[REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.deepseekFlash]);
+  assert.deepEqual(reviewerRoute(input({risk:"LOW"})),[REVIEWER_MODELS.deepseekFlash,REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.nemotron]);
+  assert.deepEqual(reviewerRoute(input({changedFiles:["scripts/agent_loop/local_worker/agent_worker.py"]})),[REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.deepseekFlash,REVIEWER_MODELS.nemotron]);
   assert.deepEqual(reviewerRoute(input({builderModel:REVIEWER_MODELS.deepseekPro})),[REVIEWER_MODELS.deepseekFlash,REVIEWER_MODELS.nemotron]);
   assert.deepEqual(reviewerRoute(input({builderModel:REVIEWER_MODELS.deepseekFlash})),[REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.nemotron]);
   assert.ok(!reviewerRoute(input()).includes(REVIEWER_MODELS.glm));
@@ -47,6 +47,14 @@ test("falls back after transient backend failure and persists idempotent receipt
 test("fails closed when every backend is unavailable",()=>{
   const factory=(model:string):ReviewerBackend=>({model,review:()=>{throw new ReviewerBackendError("offline","MODEL_UNAVAILABLE");}});
   assert.throws(()=>new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-")),factory).review(input()),/independent reviewer quorum unavailable/);
+});
+
+test("uses the third qualified reviewer when one primary candidate returns invalid output",()=>{
+  const calls:string[]=[];
+  const factory=(model:string):ReviewerBackend=>model===REVIEWER_MODELS.deepseekFlash?{model,review:()=>{calls.push(model);throw new ReviewerBackendError("invalid","REVIEWER_INVALID_OUTPUT");}}:{...pass(model),review:(value,session)=>{calls.push(model);return pass(model).review(value,session);}};
+  const run=new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-failover-")),factory).review(input({risk:"LOW"}));
+  assert.equal(run.output.verdict,"PASS");assert.equal(run.model,REVIEWER_MODELS.deepseekPro);assert.equal(run.verifier.model,REVIEWER_MODELS.nemotron);assert.deepEqual(calls,[REVIEWER_MODELS.deepseekFlash,REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.nemotron]);
+  assert.deepEqual(run.attempts.map(a=>[a.model,a.status]),[[REVIEWER_MODELS.deepseekFlash,"FAILED"],[REVIEWER_MODELS.deepseekPro,"PASS"],[REVIEWER_MODELS.nemotron,"PASS"]]);
 });
 
 test("P0 is escalated through the independent third arbiter",()=>{
@@ -107,7 +115,7 @@ test("transient truncation retried once then PASS",()=>{
   assert.equal(run.verifier.model,REVIEWER_MODELS.deepseekPro);assert.ok(!run.arbiter);
 });
 
-test("transient truncation twice on same model is blocked",()=>{
+test("transient truncation twice on one model falls through to the third qualified reviewer",()=>{
   const factory=(model:string):ReviewerBackend=>model===REVIEWER_MODELS.deepseekPro?{model,review:()=>{throw new ReviewerBackendError("truncated","REVIEWER_OUTPUT_TRUNCATED",true);}}:pass(model);
-  assert.throws(()=>new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-truncation-twice-")),factory).review(input()),/independent reviewer quorum unavailable/);
+  const run=new ReviewerRouter(mkdtempSync(join(tmpdir(),"router-truncation-twice-")),factory).review(input());assert.equal(run.output.verdict,"PASS");assert.equal(run.model,REVIEWER_MODELS.deepseekFlash);assert.equal(run.verifier.model,REVIEWER_MODELS.nemotron);assert.equal(run.attempts.filter(a=>a.model===REVIEWER_MODELS.deepseekPro&&a.status==="FAILED").length,2);
 });
