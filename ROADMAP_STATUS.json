@@ -1,9 +1,9 @@
 {
-  "current_head": "3f6fc8d",
+  "current_head": "282026fbdd28d31e53b24e5a7565c2c60cf81792",
   "current_remote_head": "pending_push",
   "branch": "codex/own-capital-sustainable-return",
-  "migration_status": "r2_5_five_role_rbac_matrix_closeout_ready",
-  "last_applied_checkpoint": "BRAIN-AGENT-V2-TOTAL-OPERATIONAL-EXCELLENCE-CLOSEOUT-01",
+  "migration_status": "r3_1_contract_e2e_gap_matrix_closeout_ready",
+  "last_applied_checkpoint": "BRAIN-101-R3-1-CONTRACT-E2E-GAP-MATRIX-CLOSEOUT-01",
   "completed_fronts": [
     "BL-01",
     "B3_fake_grounded_dashboard_runtime",
@@ -170,7 +170,8 @@
     "FRONT-BRAIN-CANONICAL-MEMORY-POST-PROMOTION-QUALITY-EVAL-01",
     "FRONT-BRAIN-CODEX-PURE-BRAIN-AUTONOMOUS-TRAINING-AND-PENDING-DRAIN-01",
     "FRONT-BRAIN-CODEX-TRAINING-MEMORY-MUTATION-FORENSIC-CLOSEOUT-01",
-    "BRAIN_AGENT_V2_TOTAL_OPERATIONAL_EXCELLENCE_CLOSEOUT"
+    "BRAIN_AGENT_V2_TOTAL_OPERATIONAL_EXCELLENCE_CLOSEOUT",
+    "BRAIN-101-R3-1-CONTRACT-E2E-GAP-MATRIX-CLOSEOUT-01"
   ],
   "open_fronts": [],
   "blocked_fronts": [
@@ -188,12 +189,12 @@
     "tmp_agent/reports"
   ],
   "recommended_next_front": {
-    "name": "FRONT-BRAIN-CODEX-PURE-BRAIN-TRAINING-EXPANSION-02",
-    "status": "recommended_next",
-    "reason": "Codex-to-Brain autonomous training completed with pending drain and canonical promotion metrics."
+    "name": "BRAIN-101-R3-2-AGENT-V2-COGNITIVE-PIPELINE-CONTRACTS-01",
+    "status": "authorized_next",
+    "reason": "R3.1 gap matrix closed; next governed item is Agent V2 cognitive pipeline contracts (intent router, planner, evaluator, tool gateway, runtime lifecycle)."
   },
   "ready_for_next_front": true,
-  "last_updated": "2026-06-16T00:01:39.703+00:00",
+  "last_updated": "2026-08-12T00:00:00.000+00:00",
   "phase0_security": {
     "status": "done",
     "commits": [
@@ -5385,5 +5386,25 @@
         "git diff --check"
       ]
     }
+  },
+  "brain_101_r3_1_contract_e2e_gap_matrix_closeout": {
+    "status": "done",
+    "issue": 179,
+    "pr": 180,
+    "decision_id": "ac64c4bc-68ca-40a9-9052-998358c66bac",
+    "base_sha": "5004cce535830fc3bf29ca6c1e9b3e88e0848a47",
+    "closeout_base_sha": "282026fbdd28d31e53b24e5a7565c2c60cf81792",
+    "head_sha": "9f51cbe4b28fd297514c75625edb7e2ba5d14d49",
+    "merge_commit": "282026fbdd28d31e53b24e5a7565c2c60cf81792",
+    "gap_matrix_evidence_path": "docs/roadmap/evidence/BRAIN_101_R3_1_CONTRACT_E2E_GAP_MATRIX.md",
+    "closeout_evidence_path": "docs/roadmap/evidence/BRAIN_101_R3_1_CONTRACT_E2E_GAP_MATRIX_CLOSEOUT.json",
+    "next_authorized_item": "R3.2",
+    "next_authorized_front_id": "BRAIN-101-R3-2-AGENT-V2-COGNITIVE-PIPELINE-CONTRACTS-01",
+    "notes": [
+      "R3.1 closed runtime-verified after gap matrix evidence merged",
+      "R3 remains partially closed",
+      "Exactly one next item authorized: R3.2 Agent V2 cognitive pipeline contracts",
+      "Human final authority preserved; live trading, real money, canonical local sync, auto-merge remain disabled"
+    ]
   }
 }
