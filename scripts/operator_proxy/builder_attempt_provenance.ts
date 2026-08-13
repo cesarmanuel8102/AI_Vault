@@ -6,6 +6,13 @@ import type {BuilderInput, BuilderTransport} from "./builder_backend.js";
 import {ELIGIBLE_FALLBACK_FAILURES, INELIGIBLE_FALLBACK_FAILURES, scopeViolations} from "./builder_backend.js";
 import {safeJson} from "./redaction.js";
 
+export const LEGACY_NEUTRALIZATION_TRAILER = "LEGACY_NEUTRALIZATION";
+export const LEGACY_REBUILD_TRAILER = "LEGACY_REBUILD";
+export const PRIOR_UNATTESTED_HEAD_TRAILER = "PRIOR_UNATTESTED_HEAD";
+export const RESET_BASE_TRAILER = "RESET_BASE";
+export const NEUTRALIZATION_HEAD_TRAILER = "NEUTRALIZATION_HEAD";
+export const FRESH_BUILDER_HEAD_TRAILER = "FRESH_BUILDER_HEAD";
+
 const SCHEMA_VERSION = 1;
 const ALLOWED_BACKENDS: BuilderTransport[] = ["codex_cli_openai", "opencode_github_copilot", "opencode_ollama"];
 
@@ -172,8 +179,31 @@ export class BuilderAttemptProvenance {
     return join(this.rootDir(front), "active.json");
   }
 
+  private quarantinePath(front: string): string {
+    return join(this.rootDir(front), "quarantine.jsonl");
+  }
+
   private ensureDir(front: string): void {
     mkdirSync(this.rootDir(front), {recursive: true});
+  }
+
+  activeStarted(input: BuilderInput): {receipt_id: string; state: string; builder_session: string; repair_cycle: number} | undefined {
+    const activePath = this.activePath(input.front_id);
+    if (!existsSync(activePath)) return undefined;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(readFileSync(activePath, "utf8"));
+    } catch {
+      return undefined;
+    }
+    if (typeof parsed !== "object" || parsed === null) return undefined;
+    const p = parsed as Record<string, unknown>;
+    if (p.state !== "STARTED") return undefined;
+    if (!safeReceiptId.test(String(p.receipt_id ?? ""))) return undefined;
+    const session = String(p.builder_session ?? "");
+    const cycle = Number(p.repair_cycle);
+    if (!/^[a-z0-9][a-z0-9._:/-]{2,127}$/i.test(session) || !Number.isInteger(cycle) || cycle < 0) return undefined;
+    return {receipt_id: String(p.receipt_id), state: "STARTED", builder_session: session, repair_cycle: cycle};
   }
 
   recordAttemptStart(input: BuilderInput, config: {backend: BuilderTransport; model: string; attemptNumber: number; providerCorrelationId: string; providerSession?: string}): AttemptStartedReceipt {
@@ -356,8 +386,14 @@ export class BuilderAttemptProvenance {
       throw new Error("builder quarantine worktree invalid");
     }
 
-    const files = this.currentWorktreeFiles(canonicalWorktree);
-    const digest = createHash("sha256").update(JSON.stringify({base_sha: authorizedBaseSha, files: [...files].sort()})).digest("hex");
+    const evidence = this.worktreeChangeEvidence(canonicalWorktree, authorizedBaseSha);
+    const changedFiles = [...new Set([
+      ...evidence.committed.names,
+      ...evidence.staged.names,
+      ...evidence.unstaged.names,
+      ...evidence.untracked.map(f => f.path),
+    ])].sort();
+    const digest = this.computeQuarantineDigest(canonicalWorktree, authorizedBaseSha, observedHead);
 
     const event: BuilderCandidateQuarantineEvent = {
       schema_version: SCHEMA_VERSION,
@@ -370,23 +406,101 @@ export class BuilderAttemptProvenance {
       canonical_worktree: canonicalWorktree,
       work_branch: input.work_branch,
       repair_cycle: input.repair_cycle,
-      changed_files: [...files].sort(),
+      changed_files: changedFiles,
       changed_files_digest: digest,
       reason,
       created_utc: new Date().toISOString(),
     };
 
     this.ensureDir(input.front_id);
-    appendFileSync(this.eventsPath(input.front_id), `${safeJson(event)}\n`);
+    appendFileSync(this.quarantinePath(input.front_id), `${safeJson(event)}\n`);
     return event;
   }
 
-  private currentWorktreeFiles(worktree: string): string[] {
-    const git = (args: string[]) => execFileSync(process.env.GIT_PATH ?? "git", ["-C", worktree, ...args], {encoding: "utf8", timeout: 120000, windowsHide: true}).trim();
-    const tracked = git(["diff", "--name-only", "HEAD"]);
-    const staged = git(["diff", "--cached", "--name-only"]);
-    const untracked = git(["ls-files", "--others", "--exclude-standard"]);
-    return [...new Set([tracked, staged, untracked].flatMap(x => x ? x.split(/\r?\n/) : []).filter(Boolean))].sort();
+  readQuarantineEvents(frontId: string): BuilderCandidateQuarantineEvent[] {
+    if (!safeFront.test(frontId)) throw new Error("front id invalid");
+    const path = this.quarantinePath(frontId);
+    if (!existsSync(path)) return [];
+    const lines = safeReadLines(path);
+    return lines.map((line, index) => {
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(line);
+      } catch {
+        throw new Error(`builder quarantine event corrupt at line ${index}`);
+      }
+      return parsed as BuilderCandidateQuarantineEvent;
+    });
+  }
+
+  private git(worktree: string, args: string[]): string {
+    return execFileSync(process.env.GIT_PATH ?? "git", ["-C", worktree, ...args], {encoding: "utf8", timeout: 120000, windowsHide: true}).trim();
+  }
+
+  private diffNamesAndContent(worktree: string, left: string, right: string): {names: string[]; content_sha256: string} {
+    const names = this.git(worktree, ["diff", "--name-only", `${left}..${right}`]).split(/\r?\n/).filter(Boolean).sort();
+    const patch = this.git(worktree, ["diff", `${left}..${right}`]);
+    const contentSha = createHash("sha256").update(patch).digest("hex");
+    return {names, content_sha256: contentSha};
+  }
+
+  private worktreeChangeEvidence(worktree: string, authorizedBaseSha: string): {
+    committed: {names: string[]; content_sha256: string};
+    staged: {names: string[]; content_sha256: string};
+    unstaged: {names: string[]; content_sha256: string};
+    untracked: {path: string; content_sha256: string}[];
+  } {
+    const head = this.git(worktree, ["rev-parse", "HEAD"]);
+    const committed = this.diffNamesAndContent(worktree, authorizedBaseSha, head);
+    const stagedPatch = this.git(worktree, ["diff", "--cached"]);
+    const stagedNames = this.git(worktree, ["diff", "--cached", "--name-only"]).split(/\r?\n/).filter(Boolean).sort();
+    const unstagedPatch = this.git(worktree, ["diff"]);
+    const unstagedNames = this.git(worktree, ["diff", "--name-only"]).split(/\r?\n/).filter(Boolean).sort();
+    const untrackedPaths = this.git(worktree, ["ls-files", "--others", "--exclude-standard"]).split(/\r?\n/).filter(Boolean).sort();
+    const untracked: {path: string; content_sha256: string}[] = [];
+    for (const path of untrackedPaths) {
+      try {
+        const bytes = readFileSync(join(worktree, path));
+        untracked.push({path, content_sha256: createHash("sha256").update(bytes).digest("hex")});
+      } catch {
+        untracked.push({path, content_sha256: ""});
+      }
+    }
+    return {
+      committed,
+      staged: {names: stagedNames, content_sha256: createHash("sha256").update(stagedPatch).digest("hex")},
+      unstaged: {names: unstagedNames, content_sha256: createHash("sha256").update(unstagedPatch).digest("hex")},
+      untracked,
+    };
+  }
+
+  computeQuarantineDigest(worktree: string, authorizedBaseSha: string, observedHead: string): string {
+    if (!safeSha.test(authorizedBaseSha)) throw new Error("builder quarantine base invalid");
+    if (!safeSha.test(observedHead)) throw new Error("builder quarantine observed head invalid");
+    const evidence = this.worktreeChangeEvidence(worktree, authorizedBaseSha);
+    const canonical = JSON.stringify({
+      authorized_base_sha: authorizedBaseSha,
+      observed_head: observedHead,
+      committed_files: evidence.committed.names,
+      committed_content_sha256: evidence.committed.content_sha256,
+      staged_files: evidence.staged.names,
+      staged_content_sha256: evidence.staged.content_sha256,
+      unstaged_files: evidence.unstaged.names,
+      unstaged_content_sha256: evidence.unstaged.content_sha256,
+      untracked_files: evidence.untracked.map(f => ({path: f.path, content_sha256: f.content_sha256})),
+    });
+    return createHash("sha256").update(canonical).digest("hex");
+  }
+
+  quarantinedPaths(worktree: string, authorizedBaseSha: string): {tracked: string[]; untracked: string[]} {
+    const head = this.git(worktree, ["rev-parse", "HEAD"]);
+    const tracked = [...new Set([
+      ...this.git(worktree, ["diff", "--name-only", `${authorizedBaseSha}..${head}`]).split(/\r?\n/),
+      ...this.git(worktree, ["diff", "--cached", "--name-only"]).split(/\r?\n/),
+      ...this.git(worktree, ["diff", "--name-only"]).split(/\r?\n/),
+    ].filter(Boolean))].sort();
+    const untracked = this.git(worktree, ["ls-files", "--others", "--exclude-standard"]).split(/\r?\n/).filter(Boolean).sort();
+    return {tracked, untracked};
   }
 
   findRecoverableStartedAttempt(input: BuilderInput): RecoverableStartedAttempt | undefined {
@@ -424,6 +538,8 @@ export class BuilderAttemptProvenance {
       if (started.scope_fingerprint !== expectedFingerprint) continue;
       if ("provider_correlation_id" in input && input.provider_correlation_id === undefined) throw new Error("BUILDER_PROVENANCE_RECOVERY_REQUIRED: durable provider correlation missing");
       if (input.provider_correlation_id !== undefined && started.provider_correlation_id !== input.provider_correlation_id) continue;
+      if (input.session !== started.builder_session) continue;
+      if (input.repair_cycle !== started.repair_cycle) continue;
 
       const laterTerminal = lines.slice(i + 1).some(line => {
         let later: AttemptReceipt;
@@ -442,7 +558,8 @@ export class BuilderAttemptProvenance {
 
     if (!candidate) return undefined;
 
-    const files = this.currentWorktreeFiles(canonicalWorktree);
+    const paths = this.quarantinedPaths(canonicalWorktree, input.base_sha);
+    const files = [...new Set([...paths.tracked, ...paths.untracked])].sort();
     const violations = scopeViolations(files, {
       schema_version: 1,
       authorization_id: "",

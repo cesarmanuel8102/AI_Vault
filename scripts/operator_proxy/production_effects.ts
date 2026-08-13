@@ -9,6 +9,7 @@ import {collect,evaluateChecks} from "./evidence_collector.js";
 import {decide,decisionKey,decisionMatchesCandidate,POLICY_SHA256} from "./policy_engine.js";
 import {ReviewerRouter,validateReviewerEnvelope} from "./reviewer_router.js";
 import {inspectAgentLoopCommitModel,verifiedBuilderModel} from "./reviewer_config.js";
+import {LEGACY_NEUTRALIZATION_TRAILER,LEGACY_REBUILD_TRAILER,PRIOR_UNATTESTED_HEAD_TRAILER,RESET_BASE_TRAILER,NEUTRALIZATION_HEAD_TRAILER,FRESH_BUILDER_HEAD_TRAILER} from "./builder_attempt_provenance.js";
 import {execute,reconcileAuthorizationComment} from "./action_executor.js";
 import {agentLoopIssueBody,issueBody,parseAgentLoopIssue,parseIssue} from "./spec_contract.js";
 import {AutonomousFlow} from "./autonomous_flow.js";
@@ -125,23 +126,76 @@ export class ProductionEffects implements AutonomousEffects {
     const safeModel=/^[a-z0-9][a-z0-9._:/-]{2,127}$/;
     const safeProviderSession=/^[a-z0-9][a-z0-9._:/-]{2,127}$/;
     const allowedBackends=new Set(["codex_cli_openai","opencode_github_copilot","opencode_ollama"]);
-    let current=head,depth=0;
-    while(current!==baseSha&&depth++<64){
-      const message=this.bus.commitMessage(current);
-      const firstLine=message.split("\n",1)[0];
-      if(firstLine===subject){
-        const lines=message.replace(/\r\n/g,"\n").split("\n");
-        const values=(prefix:string)=>lines.slice(1).filter(line=>line.startsWith(prefix)).map(line=>line.slice(prefix.length));
-        const backend=values("BUILDER_BACKEND="),model=values("BUILDER_MODEL="),provider=values("PROVIDER_SESSION="),fallback=values("FALLBACK_REASON=");
-        if(backend.length!==1||!allowedBackends.has(backend[0])||model.length!==1||!safeModel.test(model[0])||provider.length!==1||!safeProviderSession.test(provider[0])||fallback.length>1)return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
-        return {model:model[0],headCommit:current,status:"VERIFIED"};
+
+    const commitParents=(sha:string)=>{
+      const commit=JSON.parse(this.bus.call(["api",`repos/${this.bus.repo}/git/commits/${sha}`]));
+      return Array.isArray(commit?.parents)?commit.parents.map((parent:any)=>String(parent?.sha??"")).filter((sha:string)=>/^[0-9a-f]{40}$/.test(sha)):[];
+    };
+    const commitTree=(sha:string)=>{
+      const commit=JSON.parse(this.bus.call(["api",`repos/${this.bus.repo}/git/commits/${sha}`]));
+      return typeof commit?.tree?.sha==="string"&&/^[0-9a-f]{40}$/.test(commit.tree.sha)?commit.tree.sha:"";
+    };
+    const trailer=(message:string,prefix:string)=>message.replace(/\r\n/g,"\n").split("\n").slice(1).filter(line=>line.startsWith(prefix)).map(line=>line.slice(prefix.length));
+    const firstLine=(message:string)=>message.split("\n",1)[0];
+
+    const verifyFreshReceipt=(sha:string)=>{
+      const message=this.bus.commitMessage(sha);
+      if(firstLine(message)!==subject)return undefined;
+      const lines=message.replace(/\r\n/g,"\n").split("\n");
+      const values=(prefix:string)=>lines.slice(1).filter(line=>line.startsWith(prefix)).map(line=>line.slice(prefix.length));
+      const backend=values("BUILDER_BACKEND="),model=values("BUILDER_MODEL="),provider=values("PROVIDER_SESSION="),fallback=values("FALLBACK_REASON=");
+      if(backend.length!==1||!allowedBackends.has(backend[0])||model.length!==1||!safeModel.test(model[0])||provider.length!==1||!safeProviderSession.test(provider[0])||fallback.length>1)return undefined;
+      return {model:model[0],headCommit:sha,status:"VERIFIED" as const};
+    };
+
+    const verifyLegacyRebuild=(sha:string)=>{
+      const message=this.bus.commitMessage(sha);
+      const parents=commitParents(sha);
+      const tree=commitTree(sha);
+      if(parents.length!==2)return undefined;
+      const [n,r]=parents;
+      const nMessage=this.bus.commitMessage(n),rMessage=this.bus.commitMessage(r);
+      if(firstLine(message)!==subject)return undefined;
+      const isLegacy=trailer(message,`${LEGACY_REBUILD_TRAILER}=`).length===1&&trailer(message,`${LEGACY_REBUILD_TRAILER}=`)[0]==="true";
+      if(!isLegacy)return undefined;
+      const nNeutral=trailer(nMessage,`${LEGACY_NEUTRALIZATION_TRAILER}=`).length===1&&trailer(nMessage,`${LEGACY_NEUTRALIZATION_TRAILER}=`)[0]==="true";
+      if(!nNeutral||firstLine(nMessage)!==`chore(control-plane): neutralize ${frontId} legacy baseline`)return undefined;
+      const priorHead=trailer(nMessage,`${PRIOR_UNATTESTED_HEAD_TRAILER}=`)[0];
+      const resetBase=trailer(nMessage,`${RESET_BASE_TRAILER}=`)[0];
+      const bridgeN=trailer(message,`${NEUTRALIZATION_HEAD_TRAILER}=`)[0];
+      const bridgeR=trailer(message,`${FRESH_BUILDER_HEAD_TRAILER}=`)[0];
+      if(!priorHead||!resetBase||!bridgeN||!bridgeR||bridgeN!==n||bridgeR!==r)return undefined;
+      if(resetBase!==baseSha)return undefined;
+      if(!this.bus.isAncestor(baseSha,priorHead)||!this.bus.isAncestor(baseSha,r))return undefined;
+      if(commitTree(n)!==tree){
+        const baseTree=commitTree(baseSha);
+        if(commitTree(n)!==baseTree)return undefined;
       }
-      if(firstLine!==syncSubject)return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
-      const commit=JSON.parse(this.bus.call(["api",`repos/${this.bus.repo}/git/commits/${current}`]));
-      const parents=Array.isArray(commit?.parents)?commit.parents.map((parent:any)=>String(parent?.sha??"")):[];
-      if(parents.length!==2||parents.some((parent:string)=>!/^[0-9a-f]{40}$/.test(parent))||!this.bus.isAncestor(baseSha,parents[1]))return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
+      if(commitTree(sha)!==commitTree(r))return undefined;
+      const fresh=verifyFreshReceipt(r);
+      if(!fresh)return undefined;
+      return {model:fresh.model,headCommit:r,status:"VERIFIED" as const};
+    };
+
+    let current=head,depth=0,candidate:{model:string;headCommit:string;status:"VERIFIED"}|undefined;
+    while(current!==baseSha&&!this.bus.isAncestor(current,baseSha)&&depth++<64){
+      const legacy=verifyLegacyRebuild(current);
+      if(legacy)return legacy;
+      const message=this.bus.commitMessage(current);
+      if(firstLine(message)===syncSubject){
+        const parents=commitParents(current);
+        if(parents.length!==2||!this.bus.isAncestor(baseSha,parents[1]))return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
+        current=parents[0];
+        continue;
+      }
+      const fresh=verifyFreshReceipt(current);
+      if(!fresh)return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
+      if(!candidate)candidate=fresh;
+      const parents=commitParents(current);
+      if(parents.length===0)return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
       current=parents[0];
     }
+    if(candidate&&(current===baseSha||this.bus.isAncestor(current,baseSha)))return candidate;
     return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
   }
   review(pr:number,head:string,session:string) {const spec=this.activeSpec,state=this.activeState;if(!spec||!state?.issue||state.pr!==pr||state.head_sha!==head||!state.builder_session||!spec.front_id)throw new Error("review lifecycle binding missing");const policyKey=decisionKey(spec,state.issue,pr,state.base_sha,head),identity=this.bus.prIdentity(pr),files=(identity.files??[]).map((x:any)=>String(x.path)),reportPath="docs/agent_loop/pilot/EXECUTOR_REPORT.json",report=spec.executor==="agent_loop"&&files.includes(reportPath)?JSON.parse(this.bus.fileAt(reportPath,head)):undefined,receipt=spec.executor==="agent_loop"?inspectAgentLoopCommitModel(this.agentLoopReceiptMessage(spec,state,head),spec.front_id,report?.model):undefined,routerReceipt=spec.executor==="codex_control_plane"?this.inspectRouterBuilderReceipt(head,state.base_sha,spec.front_id):undefined,builderModel=receipt?.model??(routerReceipt?.status==="VERIFIED"?routerReceipt.model:undefined)??verifiedBuilderModel(spec.executor),reviewKey=reviewEvidenceKey(policyKey,state.builder_session,builderModel);if(receipt?.status==="MISSING")return {session:`reviewer:deterministic-receipt-repair:${head}`,output:{verdict:"CHANGES_REQUESTED",head_sha:head,summary:"Agent Loop commit evidence requires bounded regeneration",findings:[{severity:"P1",title:"Executor model receipt missing",evidence:"The exact Agent Loop candidate commit subject is valid, but the required AGENT_LOOP_EXECUTOR_MODEL trailer is absent.",required_correction:"Regenerate the candidate with the installed governed Agent Loop worker so the commit records exactly one configured executor model receipt."}]}};if(spec.executor==="codex_control_plane"&&routerReceipt?.status==="PROVENANCE_RECOVERY_REQUIRED")return {session:`reviewer:builder-provenance-recovery:${head}`,output:{verdict:"CHANGES_REQUESTED",head_sha:head,summary:"Builder model provenance requires a governed fresh rebuild",findings:[{severity:"P1",title:"Builder model receipt missing or invalid",evidence:"The control-plane candidate does not contain a valid BUILDER_MODEL receipt from a governed builder transaction. This may be an unattested legacy candidate or the provenance was lost.",required_correction:"Trigger BUILDER_PROVENANCE_RECOVERY_REQUIRED: run a fresh governed builder transaction from a verified clean baseline and produce a new HEAD containing a real BUILDER_BACKEND/BUILDER_MODEL/PROVIDER_SESSION receipt before review resumes."}]}};const input={repository:spec.repository,repositoryRoot:this.sourceRepo,pr,baseSha:state.base_sha,headSha:head,risk:spec.risk,changedFiles:files,builderSession:state.builder_session,builderModel},expected={issue:state.issue,pr,base_sha:state.base_sha,head_sha:head,front_id:spec.front_id,builder_session:state.builder_session,builder_model:builderModel};const cached=this.ledger.loadOrCreateReview(reviewKey,()=>{this.boundary.assert("reviewer_execute",{issue:state.issue,pr,expected_head:head});const run=new ReviewerRouter(join(this.root,"reviewer-router")).review(input);return {schema_version:1,...expected,requested_session:session,session:run.session,router_run:run,result:run.output};},value=>{validateReviewerEnvelope(value,expected,input);}).review as any;return {output:cached.result,session:cached.session};}

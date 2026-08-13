@@ -1,12 +1,13 @@
 import {execFileSync as rawExecFileSync} from "node:child_process";
-import {existsSync,lstatSync,mkdirSync,readFileSync,readdirSync,realpathSync} from "node:fs";
+import {existsSync,lstatSync,mkdirSync,readFileSync,readdirSync,realpathSync,rmSync} from "node:fs";
 import {join,posix,resolve,sep} from "node:path";
+import {randomUUID} from "node:crypto";
 import type {LifecycleRecord,ProxySpec} from "./types.js";
-import {ELIGIBLE_FALLBACK_FAILURES,type BuilderResult} from "./builder_backend.js";
+import {ELIGIBLE_FALLBACK_FAILURES,type BuilderInput,type BuilderResult} from "./builder_backend.js";
 import type {EffectAssertion} from "./external_effect_guard.js";
 import {redactedError} from "./redaction.js";
 import {routeControlPlaneBuild} from "./builder_router.js";
-import {BuilderAttemptProvenance} from "./builder_attempt_provenance.js";
+import {BuilderAttemptProvenance,LEGACY_NEUTRALIZATION_TRAILER,PRIOR_UNATTESTED_HEAD_TRAILER,RESET_BASE_TRAILER,LEGACY_REBUILD_TRAILER,NEUTRALIZATION_HEAD_TRAILER,FRESH_BUILDER_HEAD_TRAILER} from "./builder_attempt_provenance.js";
 
 export interface BuilderBus {
   findPrByBranch(branch:string):{number:number;head_sha:string}|undefined;
@@ -66,6 +67,21 @@ export function builderPrompt(spec:ProxySpec,repairCycle:number,repair=""){
   return [`Build governed front ${spec.front_id}.`,`Objective: ${spec.objective}`,`Repair cycle: ${repairCycle}.`,repair?`Correct only these independent-review findings:\n${repair}`:"",`Allowed paths only: ${spec.allowed_paths.join(", ")}.`,`Forbidden paths: ${spec.forbidden_paths.join(", ")}.`,`Acceptance: ${spec.acceptance.join(" | ")}.`,manifestContract,`Do not commit, push, open a PR, merge, deploy, or inspect paths outside this worktree.`,`After edits and checks, run git rev-parse HEAD and include exactly one final receipt line HEAD_SHA=<the exact 40-character lowercase result>. The runner, not you, commits the validated changes.`].filter(Boolean).join("\n");
 }
 
+function isLegacyUnattestedPr(spec:ProxySpec,existing:{number:number;head_sha:string}|undefined,bus:BuilderBus,worktree:string,observedHead:string):boolean{
+  if(!existing||!spec.work_branch||existing.head_sha===spec.expected_base_sha||observedHead!==existing.head_sha)return false;
+  const remote=bus.remoteBranchHead(spec.work_branch);if(remote!==existing.head_sha)return false;
+  try{git(worktree,["merge-base","--is-ancestor",spec.expected_base_sha!,observedHead]);}catch{return false;}
+  if(!diffEmpty(worktree,spec.expected_base_sha!,observedHead))return false;
+  return true;
+}
+function treeOf(repo:string,sha:string):string{return git(repo,["rev-parse",`${sha}^{tree}`]);}
+function commitTree(repo:string,tree:string,parents:string[],message:string):string{
+  const args=["commit-tree",tree];for(const p of parents)args.push("-p",p);args.push("-m",message);const sha=git(repo,args);if(!/^[0-9a-f]{40}$/.test(sha))throw new Error("commit-tree produced invalid sha");return sha;
+}
+function neutralizationMessage(front:string,legacyHead:string,baseSha:string){return `chore(control-plane): neutralize ${front} legacy baseline\n\n${LEGACY_NEUTRALIZATION_TRAILER}=true\n${PRIOR_UNATTESTED_HEAD_TRAILER}=${legacyHead}\n${RESET_BASE_TRAILER}=${baseSha}`;}
+function legacyBridgeMessage(front:string,neutralizationHead:string,freshHead:string,baseSha:string){return `feat(control-plane): complete ${front}\n\n${LEGACY_REBUILD_TRAILER}=true\n${NEUTRALIZATION_HEAD_TRAILER}=${neutralizationHead}\n${FRESH_BUILDER_HEAD_TRAILER}=${freshHead}\n${RESET_BASE_TRAILER}=${baseSha}`;}
+function diffEmpty(repo:string,a:string,b:string):boolean{try{git(repo,["diff","--quiet",`${a}..${b}`]);return true;}catch{return false;}}
+
 export class GovernedBuilder {
   constructor(readonly sourceRepo:string,readonly worktreeRoot:string,readonly bus:BuilderBus,readonly assertEffect:EffectAssertion,readonly codex=process.env.CODEX_PATH??"codex"){}
   synchronizeBlockedCiBase(spec:ProxySpec,state:LifecycleRecord){
@@ -101,6 +117,19 @@ export class GovernedBuilder {
     const localHead=git(worktree,["rev-parse","HEAD"]);if(localHead!==nextHead){try{git(worktree,["merge-base","--is-ancestor",localHead,nextHead]);}catch{throw new Error("blocked CI local branch drift");}native(process.env.GIT_PATH??"git",["-C",worktree,"merge","--ff-only",nextHead],{stdio:"inherit",timeout:120000,windowsHide:true});}
     if(git(worktree,["rev-parse","HEAD"])!==nextHead||git(worktree,["status","--porcelain","--untracked-files=all"]))throw new Error("blocked CI worktree synchronization failed");return nextHead;
   }
+  private governedBaselineRestore(worktree:string,baseSha:string,provenance:BuilderAttemptProvenance,input:BuilderInput):void{
+    const paths=provenance.quarantinedPaths(worktree,baseSha);
+    for(const path of paths.untracked){
+      const inScope=input.allowed_paths.some(p=>p.endsWith("/")?path.startsWith(p):path===p)&&!input.forbidden_paths.some(p=>path===p||path.startsWith(p.endsWith("/")?p:`${p}/`));
+      if(!inScope)throw new Error(`quarantined untracked path outside scope: ${path}`);
+      rmSync(join(worktree,path),{recursive:true,force:true});
+    }
+    native(process.env.GIT_PATH??"git",["-C",worktree,"reset","--hard",baseSha],{stdio:"inherit",timeout:120000,windowsHide:true});
+    if(git(worktree,["rev-parse","HEAD"])!==baseSha)throw new Error("builder baseline reset failed");
+    const remaining=git(worktree,["status","--porcelain","--untracked-files=all"]);
+    if(remaining)throw new Error("governed baseline restore left unexpected files");
+  }
+
   async build(spec:ProxySpec,issue:number,session:string,repairCycle:number){
     if(!spec.front_id||!spec.work_branch||!spec.objective)throw new Error("builder metadata missing");
     const existing=this.bus.findPrByBranch(spec.work_branch),orphanHead=!existing&&repairCycle===0?this.bus.remoteBranchHead(spec.work_branch):undefined,publishedHead=repairCycle===0?(existing?.head_sha??orphanHead):undefined;
@@ -108,8 +137,10 @@ export class GovernedBuilder {
     mkdirSync(this.worktreeRoot,{recursive:true});const root=realpathSync(this.worktreeRoot);if(lstatSync(root).isSymbolicLink())throw new Error("worktree root symlink denied");
     const worktree=resolve(root,spec.front_id);if(!worktree.startsWith(`${root}\\`)&&!worktree.startsWith(`${root}/`))throw new Error("worktree escaped root");
     if(!existsSync(worktree)){this.assertEffect("branch_create",{issue});if(publishedHead){native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"fetch","origin",spec.work_branch],{stdio:"inherit",timeout:120000,windowsHide:true});native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","--detach",worktree,publishedHead],{stdio:"inherit",timeout:120000,windowsHide:true});}else if(existing){native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"fetch","origin",spec.work_branch],{stdio:"inherit",timeout:120000,windowsHide:true});try{native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add",worktree,spec.work_branch],{stdio:"inherit",timeout:120000,windowsHide:true});}catch{native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","-b",spec.work_branch,worktree,`origin/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});}}else native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","-b",spec.work_branch,worktree,spec.expected_base_sha],{stdio:"inherit",timeout:120000,windowsHide:true});}
-    if(realpathSync(worktree).toLowerCase()!==worktree.toLowerCase())throw new Error("worktree path identity mismatch");const branch=git(worktree,["branch","--show-current"]);if(branch!==spec.work_branch&&(branch!==""||!publishedHead))throw new Error("worktree branch mismatch");let initialStatus=git(worktree,["status","--porcelain","--untracked-files=all"]);let initialHead=git(worktree,["rev-parse","HEAD"]);const expectedHead=existing?.head_sha??spec.expected_base_sha;
-    if(publishedHead){
+    if(realpathSync(worktree).toLowerCase()!==worktree.toLowerCase())throw new Error("worktree path identity mismatch");const branch=git(worktree,["branch","--show-current"]);if(branch!==spec.work_branch&&(branch!==""||!publishedHead))throw new Error("worktree branch mismatch");let initialStatus=git(worktree,["status","--porcelain","--untracked-files=all"]);let initialHead=git(worktree,["rev-parse","HEAD"]);
+    const legacyMode=existing&&isLegacyUnattestedPr(spec,existing,this.bus,worktree,initialHead);
+    const expectedHead=legacyMode?spec.expected_base_sha:(existing?.head_sha??spec.expected_base_sha);
+    if(publishedHead&&!legacyMode){
       const remote=this.bus.remoteBranchHead(spec.work_branch);if(remote!==publishedHead||initialHead!==publishedHead||initialStatus)throw new Error("published builder branch identity invalid");
       try{git(worktree,["merge-base","--is-ancestor",spec.expected_base_sha,publishedHead]);}catch{throw new Error("published builder ancestry invalid");}
       validateBuilderReceipt(worktree,publishedHead,spec.front_id);const files=committed(worktree,spec.expected_base_sha);validateFiles(files,spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${spec.expected_base_sha}..${publishedHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});
@@ -138,9 +169,10 @@ export class GovernedBuilder {
         return {pr:prNumber,head_sha:head,session,recovered_dirty:true as const};
       }
       provenance.recordQuarantine(attemptInput,initialHead,expectedHead,"BUILDER_PROVENANCE_RECOVERY_REQUIRED");
-      native(process.env.GIT_PATH??"git",["-C",worktree,"reset","--hard",expectedHead],{stdio:"inherit",timeout:120000,windowsHide:true});
-      native(process.env.GIT_PATH??"git",["-C",worktree,"clean","-fd"],{stdio:"inherit",timeout:120000,windowsHide:true});
-      if(git(worktree,["rev-parse","HEAD"])!==expectedHead||git(worktree,["status","--porcelain","--untracked-files=all"]))throw new Error("builder baseline reset failed");
+      this.governedBaselineRestore(worktree,expectedHead,provenance,attemptInput);
+      if(legacyMode){
+        return await this.rebuildLegacyPr(spec,issue,session,repairCycle,worktree,expectedHead,existing!,initialHead);
+      }
       const repair=repairCycle>0?this.bus.repairPrompt(issue):"";if(repairCycle>0&&!repair)throw new Error("repair findings missing");
       const prompt=builderPrompt(spec,repairCycle,repair);
       this.assertEffect("builder_execute",{issue});
@@ -167,9 +199,10 @@ export class GovernedBuilder {
       const provenance=new BuilderAttemptProvenance(process.env);
       const attemptInput={repository:spec.repository,worktree,front_id:spec.front_id,issue,base_sha:expectedHead,work_branch:spec.work_branch,allowed_paths:spec.allowed_paths,forbidden_paths:spec.forbidden_paths,acceptance:spec.acceptance,test_commands:spec.test_commands,repair_cycle:repairCycle,risk:spec.risk,deployment_mode:spec.deployment_mode??"NO_DEPLOY",prompt:"",session};
       provenance.recordQuarantine(attemptInput,initialHead,expectedHead,"BUILDER_PROVENANCE_RECOVERY_REQUIRED");
-      native(process.env.GIT_PATH??"git",["-C",worktree,"reset","--hard",expectedHead],{stdio:"inherit",timeout:120000,windowsHide:true});
-      native(process.env.GIT_PATH??"git",["-C",worktree,"clean","-fd"],{stdio:"inherit",timeout:120000,windowsHide:true});
-      if(git(worktree,["rev-parse","HEAD"])!==expectedHead||git(worktree,["status","--porcelain","--untracked-files=all"]))throw new Error("builder baseline reset failed");
+      this.governedBaselineRestore(worktree,expectedHead,provenance,attemptInput);
+      if(legacyMode){
+        return await this.rebuildLegacyPr(spec,issue,session,repairCycle,worktree,expectedHead,existing!,initialHead);
+      }
       const repair=repairCycle>0?this.bus.repairPrompt(issue):"";if(repairCycle>0&&!repair)throw new Error("repair findings missing");
       const prompt=builderPrompt(spec,repairCycle,repair);
       this.assertEffect("builder_execute",{issue});
@@ -215,5 +248,47 @@ export class GovernedBuilder {
       } else throw new Error("agent_loop builder adapter unavailable");
     }
     throw new Error("BUILDER_PROVENANCE_RECOVERY_REQUIRED: dirty worktree without recoverable provenance");
+  }
+
+  private async rebuildLegacyPr(spec:ProxySpec,issue:number,session:string,repairCycle:number,worktree:string,baseSha:string,existing:{number:number;head_sha:string},legacyHead:string):Promise<{pr:number;head_sha:string;session:string;recovered_legacy:true}>{
+    const identity=this.bus.prIdentity(existing.number);
+    const prFiles=(identity.files??[]).map((item:any)=>String(item.path)).sort();
+    if(!spec.front_id||!spec.work_branch)throw new Error("builder metadata missing");
+    const files=committed(worktree,baseSha);
+    if(identity.author?.login!=="cesarmanuel8102"||identity.baseRefName!=="codex/own-capital-sustainable-return"||identity.baseRefOid!==baseSha||identity.headRefName!==spec.work_branch||identity.headRefOid!==legacyHead||identity.headRepository?.nameWithOwner!=="cesarmanuel8102/AI_Vault"||identity.isCrossRepository!==false||identity.isDraft!==true||identity.state!=="OPEN"||JSON.stringify(prFiles)!==JSON.stringify(files))throw new Error("legacy PR identity invalid for neutralization");
+    try{git(worktree,["merge-base","--is-ancestor",baseSha,legacyHead]);}catch{throw new Error("legacy PR ancestry invalid");}
+    if(!diffEmpty(worktree,baseSha,legacyHead))throw new Error("legacy PR neutralization requires tree equality with base");
+
+    const baseTree=treeOf(worktree,baseSha);
+    const n=commitTree(worktree,baseTree,[legacyHead],neutralizationMessage(spec.front_id,legacyHead,baseSha));
+    if(!diffEmpty(worktree,baseSha,n)||git(worktree,["rev-parse",`${n}^`])!==legacyHead)throw new Error("legacy neutralization commit invalid");
+    this.assertEffect("push",{issue,expected_head:n,observed_head:legacyHead});
+    native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`${n}:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
+    if(this.bus.remoteBranchHead(spec.work_branch)!==n)throw new Error("legacy neutralization push readback failed");
+
+    const tempWorktree=join(this.worktreeRoot,`${spec.front_id}-legacy-${randomUUID()}`);
+    native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","--detach",tempWorktree,baseSha],{stdio:"inherit",timeout:120000,windowsHide:true});
+    try{
+      const repair=repairCycle>0?this.bus.repairPrompt(issue):"";if(repairCycle>0&&!repair)throw new Error("repair findings missing");
+      const prompt=builderPrompt(spec,repairCycle,repair);
+      this.assertEffect("builder_execute",{issue});
+      const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{baseSha},tempWorktree);
+      if(result.executor_role!=="codex_control_plane"||!result.builder_backend||!result.builder_model||!result.builder_session||!result.provider_session||result.base_sha!==baseSha||!/^[0-9a-f]{40}$/.test(result.head_sha))throw new Error("legacy builder router result contract invalid");
+      const r=result.head_sha;
+      const freshReceipt=git(tempWorktree,["show","-s","--format=%B",r]);
+      if(freshReceipt.split("\n",1)[0]!==`feat(control-plane): complete ${spec.front_id}`)throw new Error("legacy fresh receipt subject invalid");
+
+      const mTree=treeOf(tempWorktree,r);
+      const m=commitTree(worktree,mTree,[n,r],legacyBridgeMessage(spec.front_id,n,r,baseSha));
+      if(!diffEmpty(worktree,r,m))throw new Error("legacy bridge tree must equal fresh builder tree");
+      if(git(worktree,["rev-parse",`${m}^1`])!==n||git(worktree,["rev-parse",`${m}^2`])!==r)throw new Error("legacy bridge parents invalid");
+      this.assertEffect("push",{issue,expected_head:m,observed_head:n});
+      native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`${m}:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
+      if(this.bus.remoteBranchHead(spec.work_branch)!==m)throw new Error("legacy bridge push readback failed");
+      this.bus.bindPrToIssue(issue,existing.number);
+      return {pr:existing.number,head_sha:m,session,recovered_legacy:true as const};
+    }finally{
+      native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","remove",tempWorktree],{stdio:"inherit",timeout:120000,windowsHide:true});
+    }
   }
 }

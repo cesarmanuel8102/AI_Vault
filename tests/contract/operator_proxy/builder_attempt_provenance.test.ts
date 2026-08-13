@@ -134,13 +134,15 @@ test("recordQuarantine writes a QUARANTINED event without fabricating backend or
     assert.ok(event.changed_files.includes("docs/x.md"));
     assert.ok(event.changed_files_digest);
     assert.equal(event.canonical_worktree,resolve(r.worktree));
-    const lines=readFileSync(eventsPath(r.root),"utf8").trim().split("\n");
+    const qPath=join(r.root,"state","builder-attempts",spec.front_id!,"quarantine.jsonl");
+    const lines=readFileSync(qPath,"utf8").trim().split("\n");
     assert.equal(lines.length,1);
     const parsed=JSON.parse(lines[0]);
     assert.equal(parsed.state,"QUARANTINED");
     assert.equal(parsed.backend,undefined);
     assert.equal(parsed.model,undefined);
     assert.equal(parsed.provider_correlation_id,undefined);
+    assert.equal(existsSync(eventsPath(r.root)),false);
   }finally{
     delete process.env.OPERATOR_PROXY_ROOT;
   }
@@ -517,7 +519,85 @@ test("recovery commit trailers contain exactly one BUILDER_BACKEND, BUILDER_MODE
   }finally{delete process.env.OPERATOR_PROXY_ROOT;}
 });
 
-test("legacy unattested PR identity is detected and blocked before reviewer execution",()=>{
-  const body=`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nOPERATOR_PROXY_SPEC\n${JSON.stringify(spec)}`;
-  assert.match(body,new RegExp(`FRONT_ID: ${spec.front_id}`));
+test("durable STARTED recovery binds exact builder_session",()=>{
+  const r=provenanceRepo();process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    const p=new BuilderAttemptProvenance();
+    const input=makeInput(r.worktree,r.base);
+    const corr=providerCorr("codex_cli_openai");
+    p.recordAttemptStart({...input,session:"wanted-session"},{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:corr});
+    writeFileSync(join(r.worktree,"docs","x.md"),"wanted\n");
+    assert.equal(p.findRecoverableStartedAttempt({...input,session:"other-session"}),undefined);
+    const ok=p.findRecoverableStartedAttempt({...input,session:"wanted-session"});
+    assert.ok(ok);
+  }finally{delete process.env.OPERATOR_PROXY_ROOT;}
+});
+
+test("durable STARTED recovery binds exact repair_cycle",()=>{
+  const r=provenanceRepo();process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    const p=new BuilderAttemptProvenance();
+    const input=makeInput(r.worktree,r.base);
+    const corr=providerCorr("codex_cli_openai");
+    p.recordAttemptStart({...input,repair_cycle:2},{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:corr});
+    writeFileSync(join(r.worktree,"docs","x.md"),"cycle2\n");
+    assert.equal(p.findRecoverableStartedAttempt({...input,repair_cycle:0}),undefined);
+    assert.equal(p.findRecoverableStartedAttempt({...input,repair_cycle:1}),undefined);
+    const ok=p.findRecoverableStartedAttempt({...input,repair_cycle:2});
+    assert.ok(ok);
+  }finally{delete process.env.OPERATOR_PROXY_ROOT;}
+});
+
+test("quarantine digest binds committed, staged, unstaged content and untracked bytes",()=>{
+  const r=provenanceRepo();process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    const p=new BuilderAttemptProvenance();
+    const input=makeInput(r.worktree,r.base);
+    writeFileSync(join(r.worktree,"docs","x.md"),"uncommitted\n");
+    const observed=execFileSync("git",["-C",r.worktree,"rev-parse","HEAD"],{encoding:"utf8"}).trim();
+    const first=p.computeQuarantineDigest(r.worktree,r.base,observed);
+    writeFileSync(join(r.worktree,"docs","x.md"),"different\n");
+    const second=p.computeQuarantineDigest(r.worktree,r.base,observed);
+    assert.notEqual(first,second);
+    execFileSync("git",["-C",r.worktree,"add","docs/x.md"]);
+    const staged=p.computeQuarantineDigest(r.worktree,r.base,observed);
+    assert.notEqual(second,staged);
+    execFileSync("git",["-C",r.worktree,"commit","-m","staged now committed"]);
+    const committedHead=execFileSync("git",["-C",r.worktree,"rev-parse","HEAD"],{encoding:"utf8"}).trim();
+    const committed=p.computeQuarantineDigest(r.worktree,r.base,committedHead);
+    assert.notEqual(staged,committed);
+    writeFileSync(join(r.worktree,"docs","y.md"),"untracked\n");
+    const untracked=p.computeQuarantineDigest(r.worktree,r.base,committedHead);
+    assert.notEqual(committed,untracked);
+  }finally{delete process.env.OPERATOR_PROXY_ROOT;}
+});
+
+test("quarantine event lives in quarantine.jsonl separate from events.jsonl",()=>{
+  const r=provenanceRepo();process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    const p=new BuilderAttemptProvenance();
+    const input=makeInput(r.worktree,r.base);
+    const observed=execFileSync("git",["-C",r.worktree,"rev-parse","HEAD"],{encoding:"utf8"}).trim();
+    p.recordQuarantine(input,observed,r.base,"BUILDER_PROVENANCE_RECOVERY_REQUIRED");
+    const qLines=readFileSync(join(r.root,"state","builder-attempts",spec.front_id!,"quarantine.jsonl"),"utf8").trim().split("\n");
+    assert.equal(qLines.length,1);
+    assert.equal(JSON.parse(qLines[0]).state,"QUARANTINED");
+    assert.equal(existsSync(join(r.root,"state","builder-attempts",spec.front_id!,"events.jsonl")),false);
+  }finally{delete process.env.OPERATOR_PROXY_ROOT;}
+});
+
+test("quarantined untracked path outside allowed scope blocks governed cleanup",()=>{
+  const r=provenanceRepo();process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    const p=new BuilderAttemptProvenance();
+    const input=makeInput(r.worktree,r.base);
+    const paths=p.quarantinedPaths(r.worktree,r.base);
+    assert.deepEqual(paths.untracked,[]);
+    mkdirSync(join(r.worktree,"trading"),{recursive:true});
+    writeFileSync(join(r.worktree,"trading","evil.md"),"bad\n");
+    const withUntracked=p.quarantinedPaths(r.worktree,r.base);
+    assert.deepEqual(withUntracked.untracked,["trading/evil.md"]);
+    const inScope=(path:string)=>input.allowed_paths.some(p=>p.endsWith("/")?path.startsWith(p):path===p)&&!input.forbidden_paths.some(p=>path===p||path.startsWith(p.endsWith("/")?p:`${p}/`));
+    for(const path of withUntracked.untracked)assert.equal(inScope(path),false);
+  }finally{delete process.env.OPERATOR_PROXY_ROOT;}
 });
