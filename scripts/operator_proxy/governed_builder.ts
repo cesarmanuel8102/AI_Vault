@@ -1,6 +1,6 @@
 import {execFileSync as rawExecFileSync} from "node:child_process";
-import {existsSync,lstatSync,mkdirSync,readFileSync,realpathSync} from "node:fs";
-import {join,resolve} from "node:path";
+import {existsSync,lstatSync,mkdirSync,readFileSync,readdirSync,realpathSync} from "node:fs";
+import {join,posix,resolve,sep} from "node:path";
 import type {LifecycleRecord,ProxySpec} from "./types.js";
 import {ELIGIBLE_FALLBACK_FAILURES,type BuilderResult} from "./builder_backend.js";
 import type {EffectAssertion} from "./external_effect_guard.js";
@@ -53,7 +53,23 @@ function fastForwardDirtyPreBuild(repo:string,currentHead:string,expectedHead:st
   for(const [path,bytes] of untrackedBytes)if(!existsSync(resolve(repo,path))||readFileSync(resolve(repo,path)).toString("base64")!==bytes)throw new Error("dirty pre-build fast-forward changed untracked work");
 }
 export function parseTestCommand(command:string):[string,string[]]{if(/[;&|><`$]/.test(command))throw new Error("test command contains shell syntax");const argv=command.match(/(?:[^\s"]+|"[^"]*")+/g)?.map(x=>x.startsWith('"')?x.slice(1,-1):x)??[];const [file,...args]=argv;const exe=(file??"").toLowerCase();const safeArg=(x:string)=>!x.includes("..")&&!/^[A-Za-z]:[\\/]/.test(x)&&!x.includes("\\");if(!args.every(safeArg))throw new Error("test argument path denied");if(["git","git.exe"].includes(exe)&&args.length===2&&args[0]==="diff"&&args[1]==="--check")return [file,args];if(["npm","npm.cmd"].includes(exe)&&(args.length===1&&args[0]==="test"||args.length===2&&args[0]==="run"&&/^[a-z0-9:_-]+$/i.test(args[1])))return [file,args];if(["python","python.exe"].includes(exe)){if(args[0]==="-m"&&args[1]==="pytest"&&args.slice(2).every(x=>x.startsWith("tests/")||["-q","-v","--maxfail=1"].includes(x)))return [file,args];if(/^tests\/[A-Za-z0-9_./-]+\.py$/.test(args[0]??"")&&args.slice(1).every(x=>/^[A-Za-z0-9_.:/=-]+$/.test(x)))return [file,args];}if(["pwsh","pwsh.exe","powershell","powershell.exe"].includes(exe)){const index=args.findIndex(x=>x.toLowerCase()==="-file");if(index>=0&&args.slice(0,index).every(x=>["-NoProfile","-NonInteractive"].includes(x))&&/^tests\/[A-Za-z0-9_./-]+\.ps1$/.test(args[index+1]??"")&&args.slice(index+2).every(x=>/^[A-Za-z0-9_.:/=-]+$/.test(x)))return [file,args];}throw new Error("test command denied");}
-export function runDeclaredTests(repo:string,commands:string[]){for(const command of commands){const [file,args]=parseTestCommand(command);native(file,args,{cwd:repo,stdio:"inherit",timeout:900000,windowsHide:true});}}
+export function expandDeclaredTestArgs(repo:string,args:string[]){
+  const root=realpathSync(repo),rootPrefix=`${root}${sep}`.toLowerCase();
+  return args.flatMap(arg=>{
+    if(arg.includes("?"))throw new Error("declared test glob denied");
+    if(!arg.includes("*"))return [arg];
+    if(!arg.startsWith("tests/")||arg.includes("**")||(arg.match(/\*/g)?.length??0)!==1)throw new Error("declared test glob denied");
+    const directory=posix.dirname(arg),pattern=posix.basename(arg);
+    if(directory.includes("*")||!/^[A-Za-z0-9_.-]*\*[A-Za-z0-9_.-]*\.py$/.test(pattern))throw new Error("declared test glob denied");
+    const absoluteDirectory=resolve(root,directory),canonicalDirectory=realpathSync(absoluteDirectory);
+    if(!canonicalDirectory.toLowerCase().startsWith(rootPrefix))throw new Error("declared test glob escaped repository");
+    const expression=new RegExp(`^${pattern.split("*").map(part=>part.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join(".*")}$`);
+    const matches=readdirSync(canonicalDirectory,{withFileTypes:true}).filter(entry=>entry.isFile()&&expression.test(entry.name)).map(entry=>`${directory}/${entry.name}`).sort();
+    if(matches.length===0)throw new Error("declared test glob matched no files");
+    return matches;
+  });
+}
+export function runDeclaredTests(repo:string,commands:string[]){for(const command of commands){const [file,args]=parseTestCommand(command);native(file,expandDeclaredTestArgs(repo,args),{cwd:repo,stdio:"inherit",timeout:900000,windowsHide:true});}}
 export function builderPrompt(spec:ProxySpec,repairCycle:number,repair=""){
   const manifestContract=spec.allowed_paths.includes("docs/roadmap/BRAIN_101_MANIFEST.json")?"Any AUTHORIZED_ACTIVE roadmap item must satisfy the current sequencer contract exactly: executor is agent_loop or codex_control_plane; agent_loop requires a matching agent/* work branch, test_profile, and max_executor_cycles from 1 through 3; every active item requires complete valid closeout metadata. Do not invent executor aliases.":"";
   return [`Build governed front ${spec.front_id}.`,`Objective: ${spec.objective}`,`Repair cycle: ${repairCycle}.`,repair?`Correct only these independent-review findings:\n${repair}`:"",`Allowed paths only: ${spec.allowed_paths.join(", ")}.`,`Forbidden paths: ${spec.forbidden_paths.join(", ")}.`,`Acceptance: ${spec.acceptance.join(" | ")}.`,manifestContract,`Do not commit, push, open a PR, merge, deploy, or inspect paths outside this worktree.`,`After edits and checks, run git rev-parse HEAD and include exactly one final receipt line HEAD_SHA=<the exact 40-character lowercase result>. The runner, not you, commits the validated changes.`].filter(Boolean).join("\n");
