@@ -7,7 +7,7 @@ import { runOpenCodeBuilder } from "./opencode_builder.js";
 import { createHash, randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { redactedError, redactString } from "./redaction.js";
-import { existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, readdirSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readFileSync, readlinkSync, readdirSync, realpathSync, rmdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 
 
@@ -185,7 +185,7 @@ function removeNewIgnoredPaths(worktree: string, baseline: IgnoredSnapshot, env:
       const directory = resolve(root, parent);
       try {
         if (readdirSync(directory).length > 0) break;
-        rmSync(directory);
+        rmdirSync(directory);
       } catch (error) {
         if (existsSync(directory)) throw error;
       }
@@ -197,7 +197,7 @@ function removeNewIgnoredPaths(worktree: string, baseline: IgnoredSnapshot, env:
     validateIgnoredRelativePath(path);
     const directory = resolve(root, path);
     if (readdirSync(directory).length > 0) throw new Error("builder ignored directory cleanup blocked");
-    rmSync(directory);
+    rmdirSync(directory);
   }
   const restored = ignoredSnapshot(worktree, env);
   if (restored.paths.size !== baseline.paths.size || restored.ignoredDirs.size !== baseline.ignoredDirs.size || [...baseline.paths].some(([path, fingerprint]) => restored.paths.get(path) !== fingerprint) || [...baseline.ignoredDirs].some(path => !restored.ignoredDirs.has(path))) throw new Error("builder ignored baseline restore mismatch");
