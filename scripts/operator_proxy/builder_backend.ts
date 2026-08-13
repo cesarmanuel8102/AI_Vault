@@ -32,6 +32,7 @@ export const INELIGIBLE_FALLBACK_FAILURES = new Set([
   "SEMANTIC_BUILD_FAILURE",
   "GIT_CONFLICT",
   "OWNER_AUTHORITY_REQUIRED",
+  "BUILDER_PROVENANCE_RECOVERY_REQUIRED",
 ]);
 
 export class BuilderBackendError extends Error {

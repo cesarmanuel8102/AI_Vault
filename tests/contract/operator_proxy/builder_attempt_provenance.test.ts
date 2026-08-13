@@ -116,6 +116,36 @@ test("recordAttemptStart writes STARTED receipt and active atomically",()=>{
   }
 });
 
+test("recordQuarantine writes a QUARANTINED event without fabricating backend or model",()=>{
+  const r=provenanceRepo();
+  process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    writeFileSync(join(r.worktree,"docs","x.md"),"unattested\n");
+    const p=new BuilderAttemptProvenance();
+    const input=makeInput(r.worktree,r.base);
+    const observedHead=execFileSync("git",["-C",r.worktree,"rev-parse","HEAD"],{encoding:"utf8"}).trim();
+    const event=p.recordQuarantine(input,observedHead,r.base,"BUILDER_PROVENANCE_RECOVERY_REQUIRED");
+    assert.equal(event.state,"QUARANTINED");
+    assert.equal(event.front_id,spec.front_id);
+    assert.equal(event.issue,90);
+    assert.equal(event.observed_head,observedHead);
+    assert.equal(event.authorized_base_sha,r.base);
+    assert.equal(event.reason,"BUILDER_PROVENANCE_RECOVERY_REQUIRED");
+    assert.ok(event.changed_files.includes("docs/x.md"));
+    assert.ok(event.changed_files_digest);
+    assert.equal(event.canonical_worktree,resolve(r.worktree));
+    const lines=readFileSync(eventsPath(r.root),"utf8").trim().split("\n");
+    assert.equal(lines.length,1);
+    const parsed=JSON.parse(lines[0]);
+    assert.equal(parsed.state,"QUARANTINED");
+    assert.equal(parsed.backend,undefined);
+    assert.equal(parsed.model,undefined);
+    assert.equal(parsed.provider_correlation_id,undefined);
+  }finally{
+    delete process.env.OPERATOR_PROXY_ROOT;
+  }
+});
+
 test("recordAttemptCompleted appends COMPLETED with head and files",()=>{
   const r=provenanceRepo();
   process.env.OPERATOR_PROXY_ROOT=r.root;

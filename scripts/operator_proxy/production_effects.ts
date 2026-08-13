@@ -121,22 +121,25 @@ export class ProductionEffects implements AutonomousEffects {
     if(!/^[0-9a-f]{40}$/.test(head)||!/^[0-9a-f]{40}$/.test(baseSha)||!/^[A-Z0-9][A-Z0-9._-]{5,127}$/.test(frontId))throw new Error("builder model receipt history invalid");
     if(!this.bus.isAncestor(baseSha,head))return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
     const subject=`feat(control-plane): complete ${frontId}`;
-    const prefix="BUILDER_MODEL=";
+    const syncSubject=`chore(control-plane): synchronize ${frontId} base`;
     const safeModel=/^[a-z0-9][a-z0-9._:/-]{2,127}$/;
+    const safeProviderSession=/^[a-z0-9][a-z0-9._:/-]{2,127}$/;
+    const allowedBackends=new Set(["codex_cli_openai","opencode_github_copilot","opencode_ollama"]);
     let current=head,depth=0;
     while(current!==baseSha&&depth++<64){
       const message=this.bus.commitMessage(current);
-      if(message.split("\n",1)[0]===subject){
+      const firstLine=message.split("\n",1)[0];
+      if(firstLine===subject){
         const lines=message.replace(/\r\n/g,"\n").split("\n");
-        const trailers=lines.slice(1).filter(line=>line.startsWith(prefix));
-        if(trailers.length!==1)return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
-        const model=trailers[0].slice(prefix.length);
-        if(!safeModel.test(model))return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
-        return {model,headCommit:current,status:"VERIFIED"};
+        const values=(prefix:string)=>lines.slice(1).filter(line=>line.startsWith(prefix)).map(line=>line.slice(prefix.length));
+        const backend=values("BUILDER_BACKEND="),model=values("BUILDER_MODEL="),provider=values("PROVIDER_SESSION="),fallback=values("FALLBACK_REASON=");
+        if(backend.length!==1||!allowedBackends.has(backend[0])||model.length!==1||!safeModel.test(model[0])||provider.length!==1||!safeProviderSession.test(provider[0])||fallback.length>1)return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
+        return {model:model[0],headCommit:current,status:"VERIFIED"};
       }
+      if(firstLine!==syncSubject)return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
       const commit=JSON.parse(this.bus.call(["api",`repos/${this.bus.repo}/git/commits/${current}`]));
       const parents=Array.isArray(commit?.parents)?commit.parents.map((parent:any)=>String(parent?.sha??"")):[];
-      if(parents.length<1||parents.length>2||parents.some((parent:string)=>!/^[0-9a-f]{40}$/.test(parent)))throw new Error("builder model receipt history invalid");
+      if(parents.length!==2||parents.some((parent:string)=>!/^[0-9a-f]{40}$/.test(parent))||!this.bus.isAncestor(baseSha,parents[1]))return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
       current=parents[0];
     }
     return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};

@@ -18,6 +18,26 @@ const safeBranch = /^[a-z0-9][a-z0-9._/-]{5,160}$/;
 const safeFailureClass = /^[A-Z][A-Z0-9_]{2,63}$/;
 
 export type AttemptState = "STARTED" | "COMPLETED" | "FAILED";
+export type QuarantineReason = "BUILDER_PROVENANCE_RECOVERY_REQUIRED";
+
+export interface BuilderCandidateQuarantineEvent {
+  schema_version: 1;
+  event_id: string;
+  state: "QUARANTINED";
+  front_id: string;
+  issue: number;
+  observed_head: string;
+  authorized_base_sha: string;
+  canonical_worktree: string;
+  work_branch: string;
+  repair_cycle: number;
+  changed_files: string[];
+  changed_files_digest: string;
+  reason: QuarantineReason;
+  created_utc: string;
+}
+
+const safeEventId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export interface AttemptStartedReceipt {
   schema_version: 1;
@@ -316,6 +336,49 @@ export class BuilderAttemptProvenance {
       const cleared = {schema_version: SCHEMA_VERSION, state: "NONE", cleared_utc: new Date().toISOString()};
       atomicWrite(activePath, `${safeJson(cleared)}\n`);
     }
+  }
+
+  recordQuarantine(input: BuilderInput, observedHead: string, authorizedBaseSha: string, reason: QuarantineReason): BuilderCandidateQuarantineEvent {
+    if (!safeFront.test(input.front_id)) throw new Error("builder quarantine front invalid");
+    if (!safeSha.test(observedHead)) throw new Error("builder quarantine observed head invalid");
+    if (!safeSha.test(authorizedBaseSha)) throw new Error("builder quarantine authorized base invalid");
+    if (!Number.isInteger(input.issue) || input.issue <= 0) throw new Error("builder quarantine issue invalid");
+    if (!safeBranch.test(input.work_branch)) throw new Error("builder quarantine work branch invalid");
+    if (!Number.isInteger(input.repair_cycle) || input.repair_cycle < 0) throw new Error("builder quarantine repair cycle invalid");
+
+    let canonicalWorktree: string;
+    try {
+      canonicalWorktree = canonicalPath(input.worktree);
+    } catch {
+      throw new Error("builder quarantine worktree invalid");
+    }
+    if (!existsSync(canonicalWorktree) || !lstatSync(canonicalWorktree).isDirectory()) {
+      throw new Error("builder quarantine worktree invalid");
+    }
+
+    const files = this.currentWorktreeFiles(canonicalWorktree);
+    const digest = createHash("sha256").update(JSON.stringify({base_sha: authorizedBaseSha, files: [...files].sort()})).digest("hex");
+
+    const event: BuilderCandidateQuarantineEvent = {
+      schema_version: SCHEMA_VERSION,
+      event_id: randomUUID(),
+      state: "QUARANTINED",
+      front_id: input.front_id,
+      issue: input.issue,
+      observed_head: observedHead,
+      authorized_base_sha: authorizedBaseSha,
+      canonical_worktree: canonicalWorktree,
+      work_branch: input.work_branch,
+      repair_cycle: input.repair_cycle,
+      changed_files: [...files].sort(),
+      changed_files_digest: digest,
+      reason,
+      created_utc: new Date().toISOString(),
+    };
+
+    this.ensureDir(input.front_id);
+    appendFileSync(this.eventsPath(input.front_id), `${safeJson(event)}\n`);
+    return event;
   }
 
   private currentWorktreeFiles(worktree: string): string[] {

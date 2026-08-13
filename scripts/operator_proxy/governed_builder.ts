@@ -43,15 +43,6 @@ function validatePublishedPr(spec:ProxySpec,existing:{number:number;head_sha:str
   if(existing.head_sha!==head||identity.author?.login!=="cesarmanuel8102"||identity.baseRefName!=="codex/own-capital-sustainable-return"||identity.baseRefOid!==spec.expected_base_sha||identity.headRefName!==spec.work_branch||identity.headRefOid!==head||identity.headRepository?.nameWithOwner!=="cesarmanuel8102/AI_Vault"||identity.isCrossRepository!==false||identity.isDraft!==true||identity.state!=="OPEN"||JSON.stringify(prFiles)!==JSON.stringify(files))throw new Error("published builder PR identity invalid");
 }
 function validateAgentSyncChain(repo:string,rootHead:string,remoteHead:string,expectedBase:string,files:string[],front:string){let current=remoteHead,depth=0;const bases:string[]=[];while(current!==rootHead){if(++depth>8)throw new Error("blocked CI Agent Loop synchronization chain too deep");const parts=git(repo,["rev-list","--parents","-n","1",current]).split(/\s+/);if(parts.length!==3||parts[0]!==current||git(repo,["show","-s","--format=%s",current])!==`chore(control-plane): synchronize ${front} base`)throw new Error("blocked CI Agent Loop synchronization chain invalid");try{git(repo,["merge-base","--is-ancestor",parts[2],expectedBase]);}catch{throw new Error("blocked CI Agent Loop synchronization base invalid");}const candidate=git(repo,["diff","--name-only",`${parts[2]}..${current}`]).split(/\r?\n/).filter(Boolean).sort();if(JSON.stringify(candidate)!==JSON.stringify(files)||git(repo,["diff","--name-only",`${rootHead}..${current}`,"--",...files]))throw new Error("blocked CI Agent Loop synchronized candidate changed");bases.push(parts[2]);current=parts[1];}return bases;}
-function fastForwardDirtyPreBuild(repo:string,currentHead:string,expectedHead:string,files:string[],spec:ProxySpec){
-  validateFiles(files,spec);const staged=git(repo,["diff","--cached","--name-only"]);if(staged)throw new Error("dirty pre-build base has staged changes");
-  try{git(repo,["merge-base","--is-ancestor",currentHead,expectedHead]);}catch{throw new Error("dirty pre-build base ancestry invalid");}
-  if(git(repo,["diff","--name-only",`${currentHead}..${expectedHead}`,"--",...files]))throw new Error("dirty pre-build paths changed on advanced base");
-  const patch=git(repo,["diff","--binary","HEAD","--",...files]),untracked=git(repo,["ls-files","--others","--exclude-standard"]),untrackedFiles=untracked?untracked.split(/\r?\n/).filter(Boolean):[],untrackedBytes=new Map(untrackedFiles.map(path=>[path,readFileSync(resolve(repo,path)).toString("base64")]));
-  native(process.env.GIT_PATH??"git",["-C",repo,"merge","--ff-only",expectedHead],{stdio:"inherit",timeout:120000,windowsHide:true});
-  const nextFiles=changed(repo);if(git(repo,["rev-parse","HEAD"])!==expectedHead||JSON.stringify(nextFiles)!==JSON.stringify(files)||git(repo,["diff","--binary","HEAD","--",...files])!==patch)throw new Error("dirty pre-build fast-forward changed tracked work");
-  for(const [path,bytes] of untrackedBytes)if(!existsSync(resolve(repo,path))||readFileSync(resolve(repo,path)).toString("base64")!==bytes)throw new Error("dirty pre-build fast-forward changed untracked work");
-}
 export function parseTestCommand(command:string):[string,string[]]{if(/[;&|><`$]/.test(command))throw new Error("test command contains shell syntax");const argv=command.match(/(?:[^\s"]+|"[^"]*")+/g)?.map(x=>x.startsWith('"')?x.slice(1,-1):x)??[];const [file,...args]=argv;const exe=(file??"").toLowerCase();const safeArg=(x:string)=>!x.includes("..")&&!/^[A-Za-z]:[\\/]/.test(x)&&!x.includes("\\");if(!args.every(safeArg))throw new Error("test argument path denied");if(["git","git.exe"].includes(exe)&&args.length===2&&args[0]==="diff"&&args[1]==="--check")return [file,args];if(["npm","npm.cmd"].includes(exe)&&(args.length===1&&args[0]==="test"||args.length===2&&args[0]==="run"&&/^[a-z0-9:_-]+$/i.test(args[1])))return [file,args];if(["python","python.exe"].includes(exe)){if(args[0]==="-m"&&args[1]==="pytest"&&args.slice(2).every(x=>x.startsWith("tests/")||["-q","-v","--maxfail=1"].includes(x)))return [file,args];if(/^tests\/[A-Za-z0-9_./-]+\.py$/.test(args[0]??"")&&args.slice(1).every(x=>/^[A-Za-z0-9_.:/=-]+$/.test(x)))return [file,args];}if(["pwsh","pwsh.exe","powershell","powershell.exe"].includes(exe)){const index=args.findIndex(x=>x.toLowerCase()==="-file");if(index>=0&&args.slice(0,index).every(x=>["-NoProfile","-NonInteractive"].includes(x))&&/^tests\/[A-Za-z0-9_./-]+\.ps1$/.test(args[index+1]??"")&&args.slice(index+2).every(x=>/^[A-Za-z0-9_.:/=-]+$/.test(x)))return [file,args];}throw new Error("test command denied");}
 export function expandDeclaredTestArgs(repo:string,args:string[]){
   const root=realpathSync(repo),rootPrefix=`${root}${sep}`.toLowerCase();
@@ -125,7 +116,7 @@ export class GovernedBuilder {
       if(existing)validatePublishedPr(spec,existing,this.bus.prIdentity(existing.number),publishedHead,files);
       const pr=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nRecovered published builder branch.\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:publishedHead,session};
     }
-    if(!existing&&initialHead!==expectedHead&&initialStatus){
+    if(spec.executor==="codex_control_plane"&&initialStatus){
       const provenance=new BuilderAttemptProvenance(process.env);
       const attemptInput={repository:spec.repository,worktree,front_id:spec.front_id,issue,base_sha:expectedHead,work_branch:spec.work_branch,allowed_paths:spec.allowed_paths,forbidden_paths:spec.forbidden_paths,acceptance:spec.acceptance,test_commands:spec.test_commands,repair_cycle:repairCycle,risk:spec.risk,deployment_mode:spec.deployment_mode??"NO_DEPLOY",prompt:"",session};
       const recoverable=provenance.findRecoverableStartedAttempt(attemptInput);
@@ -146,10 +137,57 @@ export class GovernedBuilder {
         provenance.recordAttemptCompleted(receipt.receipt_id,spec.front_id,head,files,syntheticResult.provider_session);
         return {pr:prNumber,head_sha:head,session,recovered_dirty:true as const};
       }
-      fastForwardDirtyPreBuild(worktree,initialHead,expectedHead,changed(worktree),spec);initialHead=git(worktree,["rev-parse","HEAD"]);initialStatus=git(worktree,["status","--porcelain","--untracked-files=all"]);
+      provenance.recordQuarantine(attemptInput,initialHead,expectedHead,"BUILDER_PROVENANCE_RECOVERY_REQUIRED");
+      native(process.env.GIT_PATH??"git",["-C",worktree,"reset","--hard",expectedHead],{stdio:"inherit",timeout:120000,windowsHide:true});
+      native(process.env.GIT_PATH??"git",["-C",worktree,"clean","-fd"],{stdio:"inherit",timeout:120000,windowsHide:true});
+      if(git(worktree,["rev-parse","HEAD"])!==expectedHead||git(worktree,["status","--porcelain","--untracked-files=all"]))throw new Error("builder baseline reset failed");
+      const repair=repairCycle>0?this.bus.repairPrompt(issue):"";if(repairCycle>0&&!repair)throw new Error("repair findings missing");
+      const prompt=builderPrompt(spec,repairCycle,repair);
+      this.assertEffect("builder_execute",{issue});
+      const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{baseSha:expectedHead},worktree);
+      if(result.executor_role!=="codex_control_plane"||!result.builder_backend||!result.builder_model||!result.builder_session||!result.provider_session||result.base_sha!==expectedHead||!/^[0-9a-f]{40}$/.test(result.head_sha))throw new Error("builder router result contract invalid");
+      const head=result.head_sha,currentHead=git(worktree,["rev-parse","HEAD"]);if(currentHead!==head)throw new Error("builder router head mismatch");
+      const backendCommitted=head!==expectedHead,files=backendCommitted?committed(worktree,expectedHead):changed(worktree);validateFiles(files,spec);
+      if(backendCommitted&&git(worktree,["status","--porcelain","--untracked-files=all"]))throw new Error("builder committed head left dirty worktree");
+      runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",...(backendCommitted?[`${expectedHead}..${head}`]:[])],{stdio:"inherit",timeout:120000,windowsHide:true});
+      this.assertEffect("commit_create",{issue});
+      if(backendCommitted)native(process.env.GIT_PATH??"git",["-C",worktree,"commit","--allow-empty","-m",builderReceiptMessage(spec.front_id,result)],{stdio:"inherit",timeout:120000,windowsHide:true});
+      else {native(process.env.GIT_PATH??"git",["-C",worktree,"add","--",...files],{stdio:"inherit",timeout:120000,windowsHide:true});native(process.env.GIT_PATH??"git",["-C",worktree,"commit","-m",builderReceiptMessage(spec.front_id,result)],{stdio:"inherit",timeout:120000,windowsHide:true});}
+      const committedHead=git(worktree,["rev-parse","HEAD"]);
+      if(committedHead===expectedHead)throw new Error("builder produced no changes");
+      validateBuilderReceipt(worktree,committedHead,spec.front_id);
+      this.assertEffect("push",{issue,expected_head:committedHead,observed_head:initialHead});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
+      const prNumber=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${session}\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,prNumber);
+      return {pr:prNumber,head_sha:committedHead,session,recovered_clean:true as const};
     }
     if(!existing&&initialHead!==expectedHead&&!initialStatus){let canFastForward=false;try{git(worktree,["merge-base","--is-ancestor",initialHead,expectedHead]);canFastForward=true;}catch{}if(canFastForward){native(process.env.GIT_PATH??"git",["-C",worktree,"merge","--ff-only",expectedHead],{stdio:"inherit",timeout:120000,windowsHide:true});initialHead=git(worktree,["rev-parse","HEAD"]);initialStatus=git(worktree,["status","--porcelain","--untracked-files=all"]);if(initialHead!==expectedHead||initialStatus)throw new Error("builder worktree base fast-forward failed");}}
-    if(initialHead!==expectedHead){if(initialStatus)throw new Error("advanced builder worktree is dirty");try{git(worktree,["merge-base","--is-ancestor",expectedHead,initialHead]);}catch{throw new Error("builder worktree head is not a descendant of expected head");}validateBuilderReceipt(worktree,initialHead,spec.front_id);validateFiles(committed(worktree,expectedHead),spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${expectedHead}..${initialHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});this.assertEffect("push",{issue,expected_head:initialHead,...(repairCycle>0?{observed_head:expectedHead}:{})});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});const pr=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nRecovered local builder commit.\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:initialHead,session};}
+    if(initialHead!==expectedHead){if(initialStatus)throw new Error("advanced builder worktree is dirty");try{git(worktree,["merge-base","--is-ancestor",expectedHead,initialHead]);}catch{throw new Error("builder worktree head is not a descendant of expected head");}
+      let receiptValid=false;try{validateBuilderReceipt(worktree,initialHead,spec.front_id);receiptValid=true;}catch{receiptValid=false;}
+      if(receiptValid){validateFiles(committed(worktree,expectedHead),spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${expectedHead}..${initialHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});this.assertEffect("push",{issue,expected_head:initialHead,...(repairCycle>0?{observed_head:expectedHead}:{})});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});const pr=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nRecovered local builder commit.\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:initialHead,session};}
+      const provenance=new BuilderAttemptProvenance(process.env);
+      const attemptInput={repository:spec.repository,worktree,front_id:spec.front_id,issue,base_sha:expectedHead,work_branch:spec.work_branch,allowed_paths:spec.allowed_paths,forbidden_paths:spec.forbidden_paths,acceptance:spec.acceptance,test_commands:spec.test_commands,repair_cycle:repairCycle,risk:spec.risk,deployment_mode:spec.deployment_mode??"NO_DEPLOY",prompt:"",session};
+      provenance.recordQuarantine(attemptInput,initialHead,expectedHead,"BUILDER_PROVENANCE_RECOVERY_REQUIRED");
+      native(process.env.GIT_PATH??"git",["-C",worktree,"reset","--hard",expectedHead],{stdio:"inherit",timeout:120000,windowsHide:true});
+      native(process.env.GIT_PATH??"git",["-C",worktree,"clean","-fd"],{stdio:"inherit",timeout:120000,windowsHide:true});
+      if(git(worktree,["rev-parse","HEAD"])!==expectedHead||git(worktree,["status","--porcelain","--untracked-files=all"]))throw new Error("builder baseline reset failed");
+      const repair=repairCycle>0?this.bus.repairPrompt(issue):"";if(repairCycle>0&&!repair)throw new Error("repair findings missing");
+      const prompt=builderPrompt(spec,repairCycle,repair);
+      this.assertEffect("builder_execute",{issue});
+      const result=await routeControlPlaneBuild(spec,issue,prompt,repairCycle,{baseSha:expectedHead},worktree);
+      if(result.executor_role!=="codex_control_plane"||!result.builder_backend||!result.builder_model||!result.builder_session||!result.provider_session||result.base_sha!==expectedHead||!/^[0-9a-f]{40}$/.test(result.head_sha))throw new Error("builder router result contract invalid");
+      const head=result.head_sha,currentHead=git(worktree,["rev-parse","HEAD"]);if(currentHead!==head)throw new Error("builder router head mismatch");
+      const backendCommitted=head!==expectedHead,files=backendCommitted?committed(worktree,expectedHead):changed(worktree);validateFiles(files,spec);
+      if(backendCommitted&&git(worktree,["status","--porcelain","--untracked-files=all"]))throw new Error("builder committed head left dirty worktree");
+      runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",...(backendCommitted?[`${expectedHead}..${head}`]:[])],{stdio:"inherit",timeout:120000,windowsHide:true});
+      this.assertEffect("commit_create",{issue});
+      if(backendCommitted)native(process.env.GIT_PATH??"git",["-C",worktree,"commit","--allow-empty","-m",builderReceiptMessage(spec.front_id,result)],{stdio:"inherit",timeout:120000,windowsHide:true});
+      else {native(process.env.GIT_PATH??"git",["-C",worktree,"add","--",...files],{stdio:"inherit",timeout:120000,windowsHide:true});native(process.env.GIT_PATH??"git",["-C",worktree,"commit","-m",builderReceiptMessage(spec.front_id,result)],{stdio:"inherit",timeout:120000,windowsHide:true});}
+      const committedHead=git(worktree,["rev-parse","HEAD"]);
+      if(committedHead===expectedHead)throw new Error("builder produced no changes");
+      validateBuilderReceipt(worktree,committedHead,spec.front_id);
+      this.assertEffect("push",{issue,expected_head:committedHead,observed_head:initialHead});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
+      const prNumber=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${session}\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,prNumber);
+      return {pr:prNumber,head_sha:committedHead,session,recovered_clean:true as const};}
     if(repairCycle>0&&existing&&git(worktree,["show","-s","--format=%s",initialHead])===`chore(control-plane): synchronize ${spec.front_id} base`){synchronizedRepairReceipt(worktree,initialHead,spec.front_id);const files=committed(worktree,spec.expected_base_sha);validateFiles(files,spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${spec.expected_base_sha}..${initialHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});validatePublishedPr(spec,existing,this.bus.prIdentity(existing.number),initialHead,files);this.bus.bindPrToIssue(issue,existing.number);return {pr:existing.number,head_sha:initialHead,session,recovered_repair:true as const};}
     const repair=repairCycle>0?this.bus.repairPrompt(issue):"";if(repairCycle>0&&!repair)throw new Error("repair findings missing");
     const prompt=builderPrompt(spec,repairCycle,repair);
@@ -176,11 +214,6 @@ export class GovernedBuilder {
         throw new Error("codex builder direct mode disabled; use router");
       } else throw new Error("agent_loop builder adapter unavailable");
     }
-    const files=changed(worktree);validateFiles(files,spec);
-    runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check"],{stdio:"inherit",timeout:120000,windowsHide:true});
-    this.assertEffect("commit_create",{issue});native(process.env.GIT_PATH??"git",["-C",worktree,"add","--",...files],{stdio:"inherit",timeout:120000,windowsHide:true});
-    native(process.env.GIT_PATH??"git",["-C",worktree,"commit","-m",`feat(control-plane): complete ${spec.front_id}`],{stdio:"inherit",timeout:120000,windowsHide:true});
-    const head=git(worktree,["rev-parse","HEAD"]);this.assertEffect("push",{issue,expected_head:head});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
-    const pr=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${session}\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,pr);return {pr,head_sha:head,session};
+    throw new Error("BUILDER_PROVENANCE_RECOVERY_REQUIRED: dirty worktree without recoverable provenance");
   }
 }
