@@ -11,13 +11,17 @@ export function builderInvocation(codex: string, entrypoint = process.env.CODEX_
   return { file: codex, prefix: [entrypoint, "-c", 'service_tier="fast"', "-c", 'model_reasoning_effort="high"'] };
 }
 
-export function parseCodexOutput(output: string): { headSha?: string; providerSession?: string } {
+export function parseCodexOutput(output: string): { headSha?: string; providerSession?: string; nativeProviderSession?: string } {
   const headMatch = output.match(/HEAD_SHA=([0-9a-f]{40})/);
   const sessionMatches = [...output.matchAll(/^PROVIDER_SESSION=([^\r\n]*)$/gm)];
   if (sessionMatches.length > 1) throw new Error("Codex builder PROVIDER_SESSION receipt ambiguous");
   const providerSession=sessionMatches[0]?.[1];
   if(providerSession!==undefined&&!/^[a-z0-9][a-z0-9._:/-]{2,127}$/.test(providerSession))throw new Error("Codex builder PROVIDER_SESSION receipt invalid");
-  return { headSha: headMatch?.[1], providerSession };
+  const nativeMatches = [...output.matchAll(/^NATIVE_PROVIDER_SESSION=([^\r\n]*)$/gm)];
+  if (nativeMatches.length > 1) throw new Error("Codex builder NATIVE_PROVIDER_SESSION receipt ambiguous");
+  const nativeProviderSession=nativeMatches[0]?.[1];
+  if(nativeProviderSession!==undefined&&!/^[a-z0-9][a-z0-9._:/-]{2,127}$/.test(nativeProviderSession))throw new Error("Codex builder NATIVE_PROVIDER_SESSION receipt invalid");
+  return { headSha: headMatch?.[1], providerSession, nativeProviderSession };
 }
 
 export async function runCodexBuilder(input: BuilderInput, config: BackendConfig, env: NodeJS.ProcessEnv = process.env): Promise<BuilderResult> {
@@ -29,7 +33,7 @@ export async function runCodexBuilder(input: BuilderInput, config: BackendConfig
   try {
     stdout = redactString(execFileSync(invocation.file, [...invocation.prefix, "--model", config.model, "exec", "--full-auto", "-C", input.worktree, input.prompt], {
       encoding: "utf8",
-      env: { ...env, OPERATOR_PROXY_SESSION: input.session },
+      env: { ...env, OPERATOR_PROXY_SESSION: input.session, OPERATOR_PROXY_PROVIDER_CORRELATION_ID: input.provider_correlation_id },
       timeout: 900000,
       windowsHide: true,
       maxBuffer: 32 * 1024 * 1024,
@@ -40,12 +44,15 @@ export async function runCodexBuilder(input: BuilderInput, config: BackendConfig
   const parsed = parseCodexOutput(stdout);
   const head = parsed.headSha ?? env.CODEX_OVERRIDE_HEAD;
   if (!head || !/^[0-9a-f]{40}$/.test(head)) throw new Error("Codex builder did not produce HEAD_SHA");
+  if (!input.provider_correlation_id) throw new Error("Codex builder provider correlation missing");
+  if (parsed.providerSession !== input.provider_correlation_id) throw new Error("Codex builder provider correlation mismatch");
   return {
     executor_role: "codex_control_plane",
     builder_backend: "codex_cli_openai",
     builder_model: config.model,
     builder_session: input.session,
-    provider_session: parsed.providerSession ?? `codex-${input.session}`,
+    provider_session: parsed.providerSession,
+    native_provider_session: parsed.nativeProviderSession,
     base_sha: input.base_sha,
     head_sha: head,
     branch: input.work_branch,

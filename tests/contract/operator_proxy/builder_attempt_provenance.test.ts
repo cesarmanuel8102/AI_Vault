@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {execFileSync} from "node:child_process";
 import {existsSync,mkdirSync,mkdtempSync,readFileSync,rmSync,writeFileSync} from "node:fs";
+import {randomUUID} from "node:crypto";
 import {tmpdir} from "node:os";
 import {join,resolve} from "node:path";
 import {BuilderAttemptProvenance,computeScopeFingerprint,readAttemptEvents} from "../../../scripts/operator_proxy/builder_attempt_provenance.js";
@@ -78,6 +79,8 @@ function activePath(root:string,frontId:string=spec.front_id!){
   return join(root,"state","builder-attempts",frontId,"active.json");
 }
 
+function providerCorr(backend:string="codex_cli_openai"){return `${backend}-${randomUUID()}`;}
+
 test("scope fingerprint includes base and sorted scopes",()=>{
   const a=computeScopeFingerprint(spec.expected_base_sha,["docs/b.md","docs/a.md"],["trading/"]);
   const b=computeScopeFingerprint(spec.expected_base_sha,["docs/a.md","docs/b.md"],["trading/"]);
@@ -93,12 +96,14 @@ test("recordAttemptStart writes STARTED receipt and active atomically",()=>{
   try{
     const p=new BuilderAttemptProvenance();
     const input=makeInput(r.worktree,r.base);
-    const receipt=p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerSession:"codex-provider"});
+    const corr=providerCorr("codex_cli_openai");
+    const receipt=p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:corr,providerSession:"codex-provider"});
     assert.equal(receipt.state,"STARTED");
     assert.equal(receipt.front_id,spec.front_id);
     assert.equal(receipt.issue,90);
     assert.equal(receipt.backend,"codex_cli_openai");
     assert.equal(receipt.model,"gpt-5.6-sol");
+    assert.equal(receipt.provider_correlation_id,corr);
     assert.equal(receipt.provider_session,"codex-provider");
     assert.equal(receipt.attempt_number,1);
     assert.equal(receipt.scope_fingerprint,computeScopeFingerprint(r.base,spec.allowed_paths,spec.forbidden_paths));
@@ -117,18 +122,20 @@ test("recordAttemptCompleted appends COMPLETED with head and files",()=>{
   try{
     const p=new BuilderAttemptProvenance();
     const input=makeInput(r.worktree,r.base);
-    const started=p.recordAttemptStart(input,{backend:"opencode_github_copilot",model:"github-copilot/gpt-5.6-luna",attemptNumber:1});
+    const started=p.recordAttemptStart(input,{backend:"opencode_github_copilot",model:"github-copilot/gpt-5.6-luna",attemptNumber:1,providerCorrelationId:providerCorr("opencode_github_copilot")});
     writeFileSync(join(r.worktree,"docs","x.md"),"completed\n");
     execFileSync("git",["-C",r.worktree,"add","docs/x.md"]);
     execFileSync("git",["-C",r.worktree,"commit","-m","backend output"]);
     const head=execFileSync("git",["-C",r.worktree,"rev-parse","HEAD"],{encoding:"utf8"}).trim();
-    p.recordAttemptCompleted(started.receipt_id,spec.front_id!,head,["docs/x.md"],"copilot-session");
+    p.recordAttemptCompleted(started.receipt_id,spec.front_id!,head,["docs/x.md"],started.provider_correlation_id,"copilot-native");
     const events=readAttemptEvents(spec.front_id!);
     assert.equal(events.length,2);
     assert.equal(events[0].state,"STARTED");
     assert.equal(events[1].state,"COMPLETED");
     const completed=events[1] as any;
     assert.equal(completed.head_sha,head);
+    assert.equal(completed.provider_correlation_id,started.provider_correlation_id);
+    assert.equal(completed.native_provider_session,"copilot-native");
     assert.deepEqual(completed.changed_files,["docs/x.md"]);
     const active=JSON.parse(readFileSync(activePath(r.root),"utf8"));
     assert.equal(active.state,"NONE");
@@ -143,7 +150,7 @@ test("recordAttemptFailed appends FAILED and clears active",()=>{
   try{
     const p=new BuilderAttemptProvenance();
     const input=makeInput(r.worktree,r.base);
-    const started=p.recordAttemptStart(input,{backend:"opencode_ollama",model:"ollama-cloud/deepseek-v4-pro",attemptNumber:1});
+    const started=p.recordAttemptStart(input,{backend:"opencode_ollama",model:"ollama-cloud/deepseek-v4-pro",attemptNumber:1,providerCorrelationId:providerCorr("opencode_ollama")});
     p.recordAttemptFailed(started.receipt_id,spec.front_id!,"CODEX_CREDIT_LIMIT");
     const events=readAttemptEvents(spec.front_id!);
     assert.equal(events.length,2);
@@ -162,7 +169,7 @@ test("failed record requires classified failure class",()=>{
   try{
     const p=new BuilderAttemptProvenance();
     const input=makeInput(r.worktree,r.base);
-    const started=p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1});
+    const started=p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:providerCorr("codex_cli_openai")});
     assert.throws(()=>p.recordAttemptFailed(started.receipt_id,spec.front_id!,"UNCLASSIFIED"),/failure class/);
     assert.throws(()=>p.recordAttemptFailed(started.receipt_id,spec.front_id!,"test"),/failure class/);
   }finally{
@@ -176,12 +183,14 @@ test("findRecoverableStartedAttempt recovers exactly one matching STARTED after 
   try{
     const p=new BuilderAttemptProvenance();
     const input=makeInput(r.worktree,r.base);
-    const started=p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerSession:"codex-interrupted"});
+    const corr=providerCorr("codex_cli_openai");
+    const started=p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:corr,providerSession:"codex-interrupted"});
     writeFileSync(join(r.worktree,"docs","x.md"),"recovered\n");
     const recoverable=p.findRecoverableStartedAttempt(input);
     assert.ok(recoverable);
     assert.equal(recoverable!.receipt.receipt_id,started.receipt_id);
     assert.equal(recoverable!.receipt.model,"gpt-5.6-sol");
+    assert.equal(recoverable!.receipt.provider_correlation_id,corr);
     assert.equal(recoverable!.receipt.provider_session,"codex-interrupted");
   }finally{
     delete process.env.OPERATOR_PROXY_ROOT;
@@ -194,7 +203,7 @@ test("recovery is rejected when worktree files violate scope",()=>{
   try{
     const p=new BuilderAttemptProvenance();
     const input=makeInput(r.worktree,r.base);
-    p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1});
+    p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:providerCorr("codex_cli_openai")});
     mkdirSync(join(r.worktree,"trading"),{recursive:true});
     writeFileSync(join(r.worktree,"trading","evil.md"),"bad\n");
     assert.throws(()=>p.findRecoverableStartedAttempt(input),/scope/);
@@ -209,8 +218,8 @@ test("recovery requires exactly one matching STARTED receipt",()=>{
   try{
     const p=new BuilderAttemptProvenance();
     const input=makeInput(r.worktree,r.base);
-    p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1});
-    p.recordAttemptStart(input,{backend:"opencode_github_copilot",model:"github-copilot/gpt-5.6-luna",attemptNumber:1});
+    p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:providerCorr("codex_cli_openai")});
+    p.recordAttemptStart(input,{backend:"opencode_github_copilot",model:"github-copilot/gpt-5.6-luna",attemptNumber:1,providerCorrelationId:providerCorr("opencode_github_copilot")});
     assert.throws(()=>p.findRecoverableStartedAttempt(input),/ambiguous/);
   }finally{
     delete process.env.OPERATOR_PROXY_ROOT;
@@ -223,12 +232,12 @@ test("recovery is rejected when the only STARTED is already completed",()=>{
   try{
     const p=new BuilderAttemptProvenance();
     const input=makeInput(r.worktree,r.base);
-    const started=p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1});
+    const started=p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:providerCorr("codex_cli_openai")});
     writeFileSync(join(r.worktree,"docs","x.md"),"done\n");
     execFileSync("git",["-C",r.worktree,"add","docs/x.md"]);
     execFileSync("git",["-C",r.worktree,"commit","-m","done"]);
     const head=execFileSync("git",["-C",r.worktree,"rev-parse","HEAD"],{encoding:"utf8"}).trim();
-    p.recordAttemptCompleted(started.receipt_id,spec.front_id!,head,["docs/x.md"],"codex-done");
+    p.recordAttemptCompleted(started.receipt_id,spec.front_id!,head,["docs/x.md"],started.provider_correlation_id);
     assert.equal(p.findRecoverableStartedAttempt(input),undefined);
   }finally{
     delete process.env.OPERATOR_PROXY_ROOT;
@@ -241,7 +250,7 @@ test("recovery rejects invalid front id",()=>{
   try{
     const p=new BuilderAttemptProvenance();
     const input=makeInput(r.worktree,r.base);
-    p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1});
+    p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:providerCorr("codex_cli_openai")});
     assert.throws(()=>p.findRecoverableStartedAttempt({...input,front_id:"not-valid"}),/front id invalid/);
   }finally{
     delete process.env.OPERATOR_PROXY_ROOT;
@@ -254,7 +263,7 @@ test("recovery rejects mismatched issue, base, worktree, branch or scope",()=>{
   try{
     const p=new BuilderAttemptProvenance();
     const input=makeInput(r.worktree,r.base);
-    p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1});
+    p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:providerCorr("codex_cli_openai")});
     assert.equal(p.findRecoverableStartedAttempt({...input,front_id:"BRAIN-999-OTHER-01"}),undefined);
     assert.equal(p.findRecoverableStartedAttempt({...input,issue:91}),undefined);
     const otherBase="b".repeat(40);
@@ -276,11 +285,11 @@ test("active.json is created and cleared per receipt lifecycle",()=>{
   try{
     const p=new BuilderAttemptProvenance();
     const input=makeInput(r.worktree,r.base);
-    const a=p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1});
+    const a=p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:providerCorr("codex_cli_openai")});
     assert.equal(JSON.parse(readFileSync(activePath(r.root),"utf8")).receipt_id,a.receipt_id);
     p.recordAttemptFailed(a.receipt_id,spec.front_id!,"MODEL_UNAVAILABLE");
     assert.equal(JSON.parse(readFileSync(activePath(r.root),"utf8")).state,"NONE");
-    const b=p.recordAttemptStart(input,{backend:"opencode_github_copilot",model:"github-copilot/gpt-5.6-luna",attemptNumber:1});
+    const b=p.recordAttemptStart(input,{backend:"opencode_github_copilot",model:"github-copilot/gpt-5.6-luna",attemptNumber:1,providerCorrelationId:providerCorr("opencode_github_copilot")});
     assert.equal(JSON.parse(readFileSync(activePath(r.root),"utf8")).receipt_id,b.receipt_id);
   }finally{
     delete process.env.OPERATOR_PROXY_ROOT;
@@ -293,7 +302,7 @@ test("receipt events survive independent base sync in source repository",()=>{
   try{
     const p=new BuilderAttemptProvenance();
     const input=makeInput(r.worktree,r.base);
-    const started=p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1});
+    const started=p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:providerCorr("codex_cli_openai")});
     writeFileSync(join(r.source,"BASE2.md"),"base2\n");
     execFileSync("git",["-C",r.source,"add","BASE2.md"]);
     execFileSync("git",["-C",r.source,"commit","-m","base 2"]);
@@ -312,15 +321,170 @@ test("receipt validation rejects invalid inputs",()=>{
   try{
     const p=new BuilderAttemptProvenance();
     const input=makeInput(r.worktree,r.base);
-    assert.throws(()=>p.recordAttemptStart({...input,front_id:"bad"},{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1}),/front invalid/);
-    assert.throws(()=>p.recordAttemptStart({...input,base_sha:"bad"},{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1}),/base invalid/);
-    assert.throws(()=>p.recordAttemptStart(input,{backend:"unknown" as any,model:"gpt-5.6-sol",attemptNumber:1}),/backend invalid/);
-    assert.throws(()=>p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"bad model!",attemptNumber:1}),/model invalid/);
-    assert.throws(()=>p.recordAttemptStart({...input,issue:0},{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1}),/issue invalid/);
-    assert.throws(()=>p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:0}),/attempt number invalid/);
+    assert.throws(()=>p.recordAttemptStart({...input,front_id:"bad"},{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:providerCorr("codex_cli_openai")}),/front invalid/);
+    assert.throws(()=>p.recordAttemptStart({...input,base_sha:"bad"},{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:providerCorr("codex_cli_openai")}),/base invalid/);
+    assert.throws(()=>p.recordAttemptStart(input,{backend:"unknown" as any,model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:providerCorr("codex_cli_openai")}),/backend invalid/);
+    assert.throws(()=>p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"bad model!",attemptNumber:1,providerCorrelationId:providerCorr("codex_cli_openai")}),/model invalid/);
+    assert.throws(()=>p.recordAttemptStart({...input,issue:0},{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:providerCorr("codex_cli_openai")}),/issue invalid/);
+    assert.throws(()=>p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:0,providerCorrelationId:providerCorr("codex_cli_openai")}),/attempt number invalid/);
+    assert.throws(()=>p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:"not valid!"}),/provider correlation id invalid/);
   }finally{
     delete process.env.OPERATOR_PROXY_ROOT;
   }
+});
+
+test("STARTED receipt builder_session matches actual BuilderInput.session used by backend",()=>{
+  const r=provenanceRepo();process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    const p=new BuilderAttemptProvenance();
+    const input=makeInput(r.worktree,r.base);
+    const backendSession=input.session+"-codex_cli_openai";
+    const corr=providerCorr("codex_cli_openai");
+    const started=p.recordAttemptStart({...input,session:backendSession,provider_correlation_id:corr},{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:corr});
+    assert.equal(started.builder_session,backendSession);
+  }finally{delete process.env.OPERATOR_PROXY_ROOT;}
+});
+
+test("STARTED provider correlation exists before backend invocation",()=>{
+  const r=provenanceRepo();process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    const p=new BuilderAttemptProvenance();
+    const input=makeInput(r.worktree,r.base);
+    const corr=providerCorr("codex_cli_openai");
+    const started=p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:corr});
+    assert.ok(started.provider_correlation_id);
+    assert.equal(started.provider_correlation_id,corr);
+    assert.equal(started.state,"STARTED");
+  }finally{delete process.env.OPERATOR_PROXY_ROOT;}
+});
+
+test("successful COMPLETED persists the same durable provider identity",()=>{
+  const r=provenanceRepo();process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    const p=new BuilderAttemptProvenance();
+    const input=makeInput(r.worktree,r.base);
+    const corr=providerCorr("opencode_github_copilot");
+    const started=p.recordAttemptStart({...input,provider_correlation_id:corr},{backend:"opencode_github_copilot",model:"github-copilot/gpt-5.6-luna",attemptNumber:1,providerCorrelationId:corr});
+    writeFileSync(join(r.worktree,"docs","x.md"),"completed\n");
+    execFileSync("git",["-C",r.worktree,"add","docs/x.md"]);
+    execFileSync("git",["-C",r.worktree,"commit","-m","backend output"]);
+    const head=execFileSync("git",["-C",r.worktree,"rev-parse","HEAD"],{encoding:"utf8"}).trim();
+    p.recordAttemptCompleted(started.receipt_id,spec.front_id!,head,["docs/x.md"],corr,"copilot-native");
+    const events=readAttemptEvents(spec.front_id!);
+    const completed=events[1] as any;
+    assert.equal(completed.provider_correlation_id,corr);
+    assert.equal(completed.native_provider_session,"copilot-native");
+  }finally{delete process.env.OPERATOR_PROXY_ROOT;}
+});
+
+test("dirty recovery uses exactly the durable provider correlation identity",()=>{
+  const r=provenanceRepo();process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    const p=new BuilderAttemptProvenance();
+    const input=makeInput(r.worktree,r.base);
+    const corr=providerCorr("codex_cli_openai");
+    const started=p.recordAttemptStart({...input,provider_correlation_id:corr},{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:corr,providerSession:"codex-native"});
+    writeFileSync(join(r.worktree,"docs","x.md"),"recovered\n");
+    const recoverable=p.findRecoverableStartedAttempt({...input,provider_correlation_id:corr});
+    assert.ok(recoverable);
+    assert.equal(recoverable!.receipt.receipt_id,started.receipt_id);
+    assert.equal(recoverable!.receipt.provider_correlation_id,corr);
+    assert.equal(recoverable!.receipt.provider_session,"codex-native");
+  }finally{delete process.env.OPERATOR_PROXY_ROOT;}
+});
+
+test("recovered commit never contains PROVIDER_SESSION=recovered",()=>{
+  const r=provenanceRepo();process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    const p=new BuilderAttemptProvenance();
+    const input=makeInput(r.worktree,r.base);
+    const corr=providerCorr("codex_cli_openai");
+    p.recordAttemptStart({...input,provider_correlation_id:corr},{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:corr});
+    writeFileSync(join(r.worktree,"docs","x.md"),"recovered\n");
+    execFileSync("git",["-C",r.worktree,"add","docs/x.md"]);
+    execFileSync("git",["-C",r.worktree,"commit","-m",`feat(control-plane): complete ${spec.front_id}\n\nBUILDER_BACKEND=codex_cli_openai\nBUILDER_MODEL=gpt-5.6-sol\nPROVIDER_SESSION=${corr}\n`]);
+    const message=execFileSync("git",["-C",r.worktree,"show","-s","--format=%B"],{encoding:"utf8"});
+    assert.doesNotMatch(message,/PROVIDER_SESSION=recovered/);
+    assert.match(message,new RegExp(`PROVIDER_SESSION=${corr.replace(/[-[\]{}()*+?.,\\^$|#\s]/g,"\\$\u0026")}`));
+  }finally{delete process.env.OPERATOR_PROXY_ROOT;}
+});
+
+test("missing provider identity fails closed",()=>{
+  const r=provenanceRepo();process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    const p=new BuilderAttemptProvenance();
+    const input=makeInput(r.worktree,r.base);
+    p.recordAttemptStart(input,{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:providerCorr("codex_cli_openai"),providerSession:"codex-native"});
+    writeFileSync(join(r.worktree,"docs","x.md"),"recovered\n");
+    assert.throws(()=>p.findRecoverableStartedAttempt({...input,provider_correlation_id:undefined as any}),/durable provider correlation missing/);
+  }finally{delete process.env.OPERATOR_PROXY_ROOT;}
+});
+
+test("mismatched provider identity fails closed",()=>{
+  const r=provenanceRepo();process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    const p=new BuilderAttemptProvenance();
+    const input=makeInput(r.worktree,r.base);
+    const corr=providerCorr("codex_cli_openai");
+    p.recordAttemptStart({...input,provider_correlation_id:corr},{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:corr});
+    writeFileSync(join(r.worktree,"docs","x.md"),"recovered\n");
+    assert.equal(p.findRecoverableStartedAttempt({...input,provider_correlation_id:providerCorr("opencode_github_copilot")}),undefined);
+  }finally{delete process.env.OPERATOR_PROXY_ROOT;}
+});
+
+test("fallback attempt gets a distinct provider correlation",()=>{
+  const r=provenanceRepo();process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    const p=new BuilderAttemptProvenance();
+    const input=makeInput(r.worktree,r.base);
+    const first=providerCorr("codex_cli_openai"),second=providerCorr("opencode_github_copilot");
+    p.recordAttemptStart({...input,provider_correlation_id:first},{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:first});
+    p.recordAttemptFailed((readAttemptEvents(spec.front_id!)[0] as any).receipt_id,spec.front_id!,"CODEX_CREDIT_LIMIT");
+    const fallback=p.recordAttemptStart({...input,provider_correlation_id:second},{backend:"opencode_github_copilot",model:"github-copilot/gpt-5.6-luna",attemptNumber:1,providerCorrelationId:second});
+    assert.notEqual(first,second);
+    assert.equal(fallback.provider_correlation_id,second);
+  }finally{delete process.env.OPERATOR_PROXY_ROOT;}
+});
+
+test("failed attempt's provider identity cannot authorize later fallback files",()=>{
+  const r=provenanceRepo();process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    const p=new BuilderAttemptProvenance();
+    const input=makeInput(r.worktree,r.base);
+    const failedCorr=providerCorr("codex_cli_openai");
+    const fallbackCorr=providerCorr("opencode_github_copilot");
+    const started=p.recordAttemptStart({...input,provider_correlation_id:failedCorr},{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:failedCorr});
+    writeFileSync(join(r.worktree,"docs","x.md"),"fallback content\n");
+    execFileSync("git",["-C",r.worktree,"add","docs/x.md"]);
+    execFileSync("git",["-C",r.worktree,"commit","-m","fallback commit"]);
+    const head=execFileSync("git",["-C",r.worktree,"rev-parse","HEAD"],{encoding:"utf8"}).trim();
+    assert.throws(()=>p.recordAttemptCompleted(started.receipt_id,spec.front_id!,head,["docs/x.md"],fallbackCorr),/provider correlation mismatch/);
+  }finally{delete process.env.OPERATOR_PROXY_ROOT;}
+});
+
+test("no CommonJS require remains in builder_attempt_provenance.ts",()=>{
+  const source=readFileSync(join(__dirname,"../../../scripts/operator_proxy/builder_attempt_provenance.ts"),"utf8");
+  assert.doesNotMatch(source,/\brequire\s*\(/);
+});
+
+test("recovery commit trailers contain exactly one BUILDER_BACKEND, BUILDER_MODEL, and PROVIDER_SESSION",()=>{
+  const r=provenanceRepo();process.env.OPERATOR_PROXY_ROOT=r.root;
+  try{
+    const p=new BuilderAttemptProvenance();
+    const input=makeInput(r.worktree,r.base);
+    const corr=providerCorr("codex_cli_openai");
+    p.recordAttemptStart({...input,provider_correlation_id:corr},{backend:"codex_cli_openai",model:"gpt-5.6-sol",attemptNumber:1,providerCorrelationId:corr});
+    writeFileSync(join(r.worktree,"docs","x.md"),"recovered\n");
+    execFileSync("git",["-C",r.worktree,"add","docs/x.md"]);
+    execFileSync("git",["-C",r.worktree,"commit","-m",`feat(control-plane): complete ${spec.front_id}\n\nBUILDER_BACKEND=codex_cli_openai\nBUILDER_MODEL=gpt-5.6-sol\nPROVIDER_SESSION=${corr}\n`]);
+    const message=execFileSync("git",["-C",r.worktree,"show","-s","--format=%B"],{encoding:"utf8"}).trimEnd().split("\n");
+    const backend=message.filter(l=>l.startsWith("BUILDER_BACKEND="));
+    const model=message.filter(l=>l.startsWith("BUILDER_MODEL="));
+    const session=message.filter(l=>l.startsWith("PROVIDER_SESSION="));
+    assert.equal(backend.length,1);
+    assert.equal(model.length,1);
+    assert.equal(session.length,1);
+  }finally{delete process.env.OPERATOR_PROXY_ROOT;}
 });
 
 test("legacy unattested PR identity is detected and blocked before reviewer execution",()=>{

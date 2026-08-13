@@ -1,5 +1,6 @@
 import {createHash, randomUUID} from "node:crypto";
-import {appendFileSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync} from "node:fs";
+import {execFileSync} from "node:child_process";
+import {appendFileSync, existsSync, lstatSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, writeFileSync} from "node:fs";
 import {isAbsolute, join} from "node:path";
 import type {BuilderInput, BuilderTransport} from "./builder_backend.js";
 import {ELIGIBLE_FALLBACK_FAILURES, INELIGIBLE_FALLBACK_FAILURES, scopeViolations} from "./builder_backend.js";
@@ -29,6 +30,7 @@ export interface AttemptStartedReceipt {
   builder_session: string;
   backend: BuilderTransport;
   model: string;
+  provider_correlation_id: string;
   provider_session?: string;
   attempt_number: number;
   repair_cycle: number;
@@ -42,6 +44,8 @@ export interface AttemptCompletedReceipt {
   receipt_id: string;
   state: "COMPLETED";
   head_sha: string;
+  provider_correlation_id: string;
+  native_provider_session?: string;
   changed_files: string[];
   completed_utc: string;
 }
@@ -101,7 +105,7 @@ function atomicWrite(path: string, payload: string): void {
   try {
     renameSync(tmp, path);
   } catch (error) {
-    try { require("node:fs").rmSync(tmp, {force: true}); } catch {}
+    try { rmSync(tmp, {force: true}); } catch {}
     throw error;
   }
 }
@@ -152,7 +156,7 @@ export class BuilderAttemptProvenance {
     mkdirSync(this.rootDir(front), {recursive: true});
   }
 
-  recordAttemptStart(input: BuilderInput, config: {backend: BuilderTransport; model: string; attemptNumber: number; providerSession?: string}): AttemptStartedReceipt {
+  recordAttemptStart(input: BuilderInput, config: {backend: BuilderTransport; model: string; attemptNumber: number; providerCorrelationId: string; providerSession?: string}): AttemptStartedReceipt {
     if (!safeFront.test(input.front_id)) throw new Error("builder attempt front invalid");
     if (!safeSha.test(input.base_sha)) throw new Error("builder attempt base invalid");
     if (!ALLOWED_BACKENDS.includes(config.backend)) throw new Error("builder attempt backend invalid");
@@ -161,6 +165,7 @@ export class BuilderAttemptProvenance {
     if (!safeBranch.test(input.work_branch)) throw new Error("builder attempt work branch invalid");
     if (!Number.isInteger(input.repair_cycle) || input.repair_cycle < 0) throw new Error("builder attempt repair cycle invalid");
     if (!Number.isInteger(config.attemptNumber) || config.attemptNumber < 1) throw new Error("builder attempt number invalid");
+    if (!safeProviderSession.test(config.providerCorrelationId)) throw new Error("builder attempt provider correlation id invalid");
     if (config.providerSession !== undefined && !safeProviderSession.test(config.providerSession)) throw new Error("builder attempt provider session invalid");
 
     let canonicalWorktree: string;
@@ -186,6 +191,7 @@ export class BuilderAttemptProvenance {
       builder_session: input.session,
       backend: config.backend,
       model: config.model,
+      provider_correlation_id: config.providerCorrelationId,
       provider_session: config.providerSession,
       attempt_number: config.attemptNumber,
       repair_cycle: input.repair_cycle,
@@ -209,6 +215,7 @@ export class BuilderAttemptProvenance {
       builder_session: receipt.builder_session,
       backend: receipt.backend,
       model: receipt.model,
+      provider_correlation_id: receipt.provider_correlation_id,
       attempt_number: receipt.attempt_number,
       repair_cycle: receipt.repair_cycle,
       scope_fingerprint: receipt.scope_fingerprint,
@@ -244,20 +251,24 @@ export class BuilderAttemptProvenance {
     return result;
   }
 
-  recordAttemptCompleted(receiptId: string, frontId: string, head: string, files: string[], providerSession?: string): void {
-    if (!safeFront.test(frontId)) throw new Error("front id invalid");
+  recordAttemptCompleted(receiptId: string, frontId: string, head: string, files: string[], providerCorrelationId: string, nativeProviderSession?: string): void {
+    if (!safeFront.test(frontId)) throw new Error("builder attempt front invalid");
     if (!safeSha.test(head)) throw new Error("builder attempt completed head invalid");
     if (!Array.isArray(files) || files.length === 0) throw new Error("builder attempt completed files invalid");
-    if (providerSession !== undefined && !safeProviderSession.test(providerSession)) throw new Error("builder attempt completed provider session invalid");
+    if (!safeProviderSession.test(providerCorrelationId)) throw new Error("builder attempt completed provider correlation id invalid");
+    if (nativeProviderSession !== undefined && !safeProviderSession.test(nativeProviderSession)) throw new Error("builder attempt completed native provider session invalid");
 
     const located = this.findStartedReceipt(frontId, receiptId);
     if (!located) throw new Error("builder attempt STARTED receipt not found");
+    if (located.receipt.provider_correlation_id !== providerCorrelationId) throw new Error("builder attempt provider correlation mismatch");
 
     const completed: AttemptCompletedReceipt = {
       schema_version: SCHEMA_VERSION,
       receipt_id: receiptId,
       state: "COMPLETED",
       head_sha: head,
+      provider_correlation_id: providerCorrelationId,
+      native_provider_session: nativeProviderSession,
       changed_files: [...files].sort(),
       completed_utc: new Date().toISOString(),
     };
@@ -308,7 +319,6 @@ export class BuilderAttemptProvenance {
   }
 
   private currentWorktreeFiles(worktree: string): string[] {
-    const {execFileSync} = require("node:child_process");
     const git = (args: string[]) => execFileSync(process.env.GIT_PATH ?? "git", ["-C", worktree, ...args], {encoding: "utf8", timeout: 120000, windowsHide: true}).trim();
     const tracked = git(["diff", "--name-only", "HEAD"]);
     const staged = git(["diff", "--cached", "--name-only"]);
@@ -349,6 +359,8 @@ export class BuilderAttemptProvenance {
       if (started.canonical_worktree !== canonicalWorktree) continue;
       if (started.work_branch !== input.work_branch) continue;
       if (started.scope_fingerprint !== expectedFingerprint) continue;
+      if ("provider_correlation_id" in input && input.provider_correlation_id === undefined) throw new Error("BUILDER_PROVENANCE_RECOVERY_REQUIRED: durable provider correlation missing");
+      if (input.provider_correlation_id !== undefined && started.provider_correlation_id !== input.provider_correlation_id) continue;
 
       const laterTerminal = lines.slice(i + 1).some(line => {
         let later: AttemptReceipt;

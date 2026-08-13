@@ -237,7 +237,8 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
   for (let index = 0; index < attemptOrder.length; index++) {
     const backendId = attemptOrder[index];
     const backendSession = `${session}-${backendId}`;
-    const backendInput = { ...input, session: backendSession };
+    const providerCorrelationId = `${backendId}-${randomUUID()}`;
+    const backendInput: BuilderInput = { ...input, session: backendSession, provider_correlation_id: providerCorrelationId };
     let cfg: BackendConfig;
     let buildFn: (i: BuilderInput) => Promise<BuilderResult>;
     if (backendId === "codex_cli_openai") {
@@ -251,12 +252,12 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
       buildFn = (i) => runOpenCodeBuilder(i, cfg, env);
     }
 
-    const startedReceipt = provenance.recordAttemptStart(input, {backend: backendId, model: cfg.model, attemptNumber: index + 1});
+    const startedReceipt = provenance.recordAttemptStart(backendInput, {backend: backendId, model: cfg.model, attemptNumber: index + 1, providerCorrelationId});
 
-    const invokeBackend = async (attemptSession: string): Promise<BuilderResult> => {
-      const result = await buildFn({ ...backendInput, session: attemptSession });
-      await validateBuilderOutput({ ...backendInput, session: attemptSession }, result, env);
-      if (result.executor_role !== "codex_control_plane" || result.base_sha !== input.base_sha || result.builder_backend !== backendId || result.builder_model !== cfg.model || !/^[a-z0-9][a-z0-9._:/-]{2,127}$/.test(result.provider_session) || !/^[0-9a-f]{40}$/.test(result.head_sha)) throw new Error("builder result contract invalid");
+    const invokeBackend = async (attemptSession: string, attemptCorrelationId: string): Promise<BuilderResult> => {
+      const result = await buildFn({ ...backendInput, session: attemptSession, provider_correlation_id: attemptCorrelationId });
+      await validateBuilderOutput({ ...backendInput, session: attemptSession, provider_correlation_id: attemptCorrelationId }, result, env);
+      if (result.executor_role !== "codex_control_plane" || result.base_sha !== input.base_sha || result.builder_backend !== backendId || result.builder_model !== cfg.model || result.provider_session !== attemptCorrelationId || !/^[0-9a-f]{40}$/.test(result.head_sha)) throw new Error("builder result contract invalid");
       if (result.fallback_reason !== undefined) throw new Error("builder backend must not set fallback_reason");
       if (fallbackReason && backendId === "codex_cli_openai") throw new Error("primary Codex result cannot be an automatic fallback");
       result.builder_session = session;
@@ -266,9 +267,9 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
 
     const attemptIgnoredBaseline = ignoredSnapshot(input.worktree, env);
     try {
-      const result = await invokeBackend(backendSession);
+      const result = await invokeBackend(backendSession, providerCorrelationId);
       const files = collectChangedFiles(input.worktree, input.base_sha, env);
-      provenance.recordAttemptCompleted(startedReceipt.receipt_id, input.front_id, result.head_sha, files, result.provider_session);
+      provenance.recordAttemptCompleted(startedReceipt.receipt_id, input.front_id, result.head_sha, files, result.provider_session, result.native_provider_session);
       return result;
     } catch (error) {
       restoreWorktreeBaseline(input.worktree, input.base_sha, attemptIgnoredBaseline, env);
@@ -285,12 +286,15 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
       if (transient && cfg.maxRetries > 0) {
         const backoffMs = Math.min(1000 * Math.pow(2, index), 8000);
         await new Promise(resolve => setTimeout(resolve, backoffMs));
-        const retryReceipt = provenance.recordAttemptStart(input, {backend: backendId, model: cfg.model, attemptNumber: index + 1});
+        const retryCorrelationId = `${backendId}-retry-${randomUUID()}`;
+        const retrySession = `${backendSession}-retry`;
+        const retryInput: BuilderInput = { ...input, session: retrySession, provider_correlation_id: retryCorrelationId };
+        const retryReceipt = provenance.recordAttemptStart(retryInput, {backend: backendId, model: cfg.model, attemptNumber: index + 1, providerCorrelationId: retryCorrelationId});
         const retryIgnoredBaseline = ignoredSnapshot(input.worktree, env);
         try {
-          const result = await invokeBackend(`${backendSession}-retry`);
+          const result = await invokeBackend(retrySession, retryCorrelationId);
           const files = collectChangedFiles(input.worktree, input.base_sha, env);
-          provenance.recordAttemptCompleted(retryReceipt.receipt_id, input.front_id, result.head_sha, files, result.provider_session);
+          provenance.recordAttemptCompleted(retryReceipt.receipt_id, input.front_id, result.head_sha, files, result.provider_session, result.native_provider_session);
           return result;
         } catch (retryError) {
           restoreWorktreeBaseline(input.worktree, input.base_sha, retryIgnoredBaseline, env);

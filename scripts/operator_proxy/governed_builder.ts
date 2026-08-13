@@ -130,12 +130,13 @@ export class GovernedBuilder {
       const attemptInput={repository:spec.repository,worktree,front_id:spec.front_id,issue,base_sha:expectedHead,work_branch:spec.work_branch,allowed_paths:spec.allowed_paths,forbidden_paths:spec.forbidden_paths,acceptance:spec.acceptance,test_commands:spec.test_commands,repair_cycle:repairCycle,risk:spec.risk,deployment_mode:spec.deployment_mode??"NO_DEPLOY",prompt:"",session};
       const recoverable=provenance.findRecoverableStartedAttempt(attemptInput);
       if(recoverable){
+        const receipt=recoverable.receipt;
+        if(!receipt.provider_correlation_id)throw new Error("BUILDER_PROVENANCE_RECOVERY_REQUIRED: durable provider correlation missing");
         const files=changed(worktree);validateFiles(files,spec);
         runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check"],{stdio:"inherit",timeout:120000,windowsHide:true});
         this.assertEffect("commit_create",{issue});
         native(process.env.GIT_PATH??"git",["-C",worktree,"add","--",...files],{stdio:"inherit",timeout:120000,windowsHide:true});
-        const receipt=recoverable.receipt;
-        const syntheticResult:BuilderResult={executor_role:"codex_control_plane",builder_backend:receipt.backend,builder_model:receipt.model,builder_session:receipt.builder_session,provider_session:receipt.provider_session??"recovered",base_sha:receipt.base_sha,head_sha:initialHead,branch:spec.work_branch,commit:"",pr:0,started_utc:receipt.created_utc,completed_utc:new Date().toISOString()};
+        const syntheticResult:BuilderResult={executor_role:"codex_control_plane",builder_backend:receipt.backend,builder_model:receipt.model,builder_session:receipt.builder_session,provider_session:receipt.provider_correlation_id,base_sha:receipt.base_sha,head_sha:initialHead,branch:spec.work_branch,commit:"",pr:0,started_utc:receipt.created_utc,completed_utc:new Date().toISOString()};
         native(process.env.GIT_PATH??"git",["-C",worktree,"commit","-m",builderReceiptMessage(spec.front_id,syntheticResult)],{stdio:"inherit",timeout:120000,windowsHide:true});
         const head=git(worktree,["rev-parse","HEAD"]);if(head===initialHead)throw new Error("builder produced no changes");
         validateBuilderReceipt(worktree,head,spec.front_id);

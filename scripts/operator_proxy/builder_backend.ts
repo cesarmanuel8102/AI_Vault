@@ -55,6 +55,7 @@ export interface BuilderInput {
   deployment_mode: "NO_DEPLOY" | "INSTALL_ONLY" | "INSTALL_AND_RUNTIME_PILOT" | "DOCUMENTATION_CLOSEOUT";
   prompt: string;
   session: string;
+  provider_correlation_id?: string;
 }
 
 export interface BuilderResult {
@@ -63,6 +64,7 @@ export interface BuilderResult {
   builder_model: string;
   builder_session: string;
   provider_session: string;
+  native_provider_session?: string;
   base_sha: string;
   head_sha: string;
   branch: string;
