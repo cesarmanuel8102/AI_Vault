@@ -237,12 +237,12 @@ test("OPERATOR_PROXY_ROOT is required and must be absolute",async()=>{
 });
 
 test("health ledger failure does not block eligible fallback",async()=>{
-  const r=builderRepo(),codexEntry=join(r.source,"fake-codex-credit.js"),opencodeEntry=join(r.source,"fake-opencode.js"),rootFile=join(r.root,"root-file");
+  const r=builderRepo(),codexEntry=join(r.source,"fake-codex-credit.js"),opencodeEntry=join(r.source,"fake-opencode.js"),healthFile=join(r.root,"state","builder-health");
   const priorCodexEntry=process.env.CODEX_ENTRYPOINT,priorCodexPath=process.env.CODEX_PATH,priorOpenCode=process.env.OPEN_CODE_PATH,priorRoot=process.env.OPERATOR_PROXY_ROOT;
   writeFileSync(codexEntry,`console.error("usage limit: credits exhausted");process.exit(1);`);
   writeFileSync(opencodeEntry,fakeBackendScript("health fallback",0));
-  writeFileSync(rootFile,"not a directory\n");
-  process.env.CODEX_ENTRYPOINT=codexEntry;process.env.CODEX_PATH=process.execPath;process.env.OPEN_CODE_PATH=opencodeEntry;process.env.OPERATOR_PROXY_ROOT=rootFile;
+  process.env.CODEX_ENTRYPOINT=codexEntry;process.env.CODEX_PATH=process.execPath;process.env.OPEN_CODE_PATH=opencodeEntry;process.env.OPERATOR_PROXY_ROOT=r.root;
+  mkdirSync(join(r.root,"state"),{recursive:true});writeFileSync(healthFile,"not a directory\n");
   try{
     const result=await routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree);
     assert.equal(result.builder_backend,"opencode_github_copilot");

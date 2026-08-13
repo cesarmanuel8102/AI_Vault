@@ -4,6 +4,7 @@ import { isEligibleFallback, isEqualOrDescendantPath, validateWorktree, scopeVio
 import { resolveCodexConfig, resolveCopilotConfig, resolveOllamaConfig, type BackendConfig } from "./builder_config.js";
 import { runCodexBuilder } from "./codex_builder.js";
 import { runOpenCodeBuilder } from "./opencode_builder.js";
+import { BuilderAttemptProvenance } from "./builder_attempt_provenance.js";
 import { createHash, randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { redactedError, redactString } from "./redaction.js";
@@ -213,11 +214,19 @@ function restoreWorktreeBaseline(worktree: string, baseSha: string, ignoredBasel
   if (status) throw new Error("builder worktree baseline restore left dirty state");
 }
 
+function collectChangedFiles(worktree: string, baseSha: string, env: NodeJS.ProcessEnv): string[] {
+  const head = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "rev-parse", "HEAD"], { encoding: "utf8", timeout: 30000 }).trim();
+  const committedFiles = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "diff", "--name-only", `${baseSha}..${head}`], { encoding: "utf8", timeout: 30000 }).split(/\r?\n/).filter(Boolean);
+  const workingTreeFiles = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "status", "--porcelain", "--untracked-files=all"], { encoding: "utf8", timeout: 30000 }).split(/\r?\n/).filter(Boolean).map(line => line.slice(3).trim()).filter(Boolean);
+  return [...new Set([...committedFiles, ...workingTreeFiles])];
+}
+
 export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, prompt: string, repairCycle: number, options: RouterOptions = {}, worktree?: string): Promise<BuilderResult> {
   const env = options.env ?? process.env;
   const session = `builder-${randomUUID()}`;
   const input = buildInputFromSpec(spec, issue, session, repairCycle, prompt, env, worktree, options.baseSha);
   const healthDir = join(operatorProxyRoot(env), "state", "builder-health");
+  const provenance = new BuilderAttemptProvenance(env);
   if (options.baseSha) validateBaseOverride(worktree ?? input.worktree, options.baseSha, env);
   validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
 
@@ -242,6 +251,8 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
       buildFn = (i) => runOpenCodeBuilder(i, cfg, env);
     }
 
+    const startedReceipt = provenance.recordAttemptStart(input, {backend: backendId, model: cfg.model, attemptNumber: index + 1});
+
     const invokeBackend = async (attemptSession: string): Promise<BuilderResult> => {
       const result = await buildFn({ ...backendInput, session: attemptSession });
       await validateBuilderOutput({ ...backendInput, session: attemptSession }, result, env);
@@ -255,11 +266,15 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
 
     const attemptIgnoredBaseline = ignoredSnapshot(input.worktree, env);
     try {
-      return await invokeBackend(backendSession);
+      const result = await invokeBackend(backendSession);
+      const files = collectChangedFiles(input.worktree, input.base_sha, env);
+      provenance.recordAttemptCompleted(startedReceipt.receipt_id, input.front_id, result.head_sha, files, result.provider_session);
+      return result;
     } catch (error) {
       restoreWorktreeBaseline(input.worktree, input.base_sha, attemptIgnoredBaseline, env);
       validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
       const { eligible, failure_class, transient } = isEligibleFallback(error);
+      provenance.recordAttemptFailed(startedReceipt.receipt_id, input.front_id, failure_class);
       recordHealth(healthDir, { backend: backendId, model: cfg.model, failure_class, attempt: index + 1, front_id: spec.front_id!, base_sha: input.base_sha, created_utc: new Date().toISOString() });
 
       if (!eligible) throw new Error(redactString(String(error instanceof Error ? error.message : error)));
@@ -270,13 +285,18 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
       if (transient && cfg.maxRetries > 0) {
         const backoffMs = Math.min(1000 * Math.pow(2, index), 8000);
         await new Promise(resolve => setTimeout(resolve, backoffMs));
+        const retryReceipt = provenance.recordAttemptStart(input, {backend: backendId, model: cfg.model, attemptNumber: index + 1});
         const retryIgnoredBaseline = ignoredSnapshot(input.worktree, env);
         try {
-          return await invokeBackend(`${backendSession}-retry`);
+          const result = await invokeBackend(`${backendSession}-retry`);
+          const files = collectChangedFiles(input.worktree, input.base_sha, env);
+          provenance.recordAttemptCompleted(retryReceipt.receipt_id, input.front_id, result.head_sha, files, result.provider_session);
+          return result;
         } catch (retryError) {
           restoreWorktreeBaseline(input.worktree, input.base_sha, retryIgnoredBaseline, env);
           validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
           const { eligible: retryEligible, failure_class: retryClass } = isEligibleFallback(retryError);
+          provenance.recordAttemptFailed(retryReceipt.receipt_id, input.front_id, retryClass);
           recordHealth(healthDir, { backend: backendId, model: cfg.model, failure_class: `retry:${retryClass}`, attempt: index + 1, front_id: spec.front_id!, base_sha: input.base_sha, created_utc: new Date().toISOString() });
           if (!retryEligible) throw new Error(redactString(String(retryError instanceof Error ? retryError.message : retryError)));
         }

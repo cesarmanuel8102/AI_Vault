@@ -28,13 +28,13 @@ test("control-plane receipt resolves the nearest selected model through a base-s
   const base="1".repeat(40),oldBase="2".repeat(40),older="3".repeat(40),nearest="4".repeat(40),head="5".repeat(40),subject=`feat(control-plane): complete ${spec.front_id}`;
   const messages={[head]:`chore(control-plane): synchronize ${spec.front_id} base`,[nearest]:`${subject}\n\nBUILDER_BACKEND=opencode_ollama\nBUILDER_MODEL=${REVIEWER_MODELS.kimi}\nPROVIDER_SESSION=kimi-1`,[older]:`${subject}\n\nBUILDER_MODEL=${REVIEWER_MODELS.qwen}`},parents={[head]:[nearest,base],[nearest]:[older],[older]:[oldBase]};
   const {effects}=controlPlaneReceiptFixture(messages,parents,head,base),receipt=(effects as any).inspectRouterBuilderReceipt(head,base,spec.front_id);
-  assert.deepEqual(receipt,{model:REVIEWER_MODELS.kimi,headCommit:nearest});
+  assert.deepEqual(receipt,{model:REVIEWER_MODELS.kimi,headCommit:nearest,status:"VERIFIED"});
 });
 
-test("control-plane receipt fails closed when missing, ambiguous, malformed, or outside bound history",()=>{
+test("control-plane receipt classifies recovery when missing, ambiguous, malformed, or outside bound history",()=>{
   const base="1".repeat(40),candidate="2".repeat(40),head="3".repeat(40),subject=`feat(control-plane): complete ${spec.front_id}`;
-  for(const [message,pattern] of [["unrelated",/receipt missing/],[`${subject}\n\nBUILDER_MODEL=${REVIEWER_MODELS.kimi}\nBUILDER_MODEL=${REVIEWER_MODELS.qwen}`,/receipt ambiguous/],[`${subject}\n\nBUILDER_MODEL=NOT SAFE`,/receipt malformed/]] as const){const {effects}=controlPlaneReceiptFixture({[head]:message},{[head]:[candidate],[candidate]:[base]},head,base);assert.throws(()=>(effects as any).inspectRouterBuilderReceipt(head,base,spec.front_id),pattern);}
-  const {effects}=controlPlaneReceiptFixture({[head]:`${subject}\n\nBUILDER_MODEL=${REVIEWER_MODELS.kimi}`},{[head]:[candidate]},head,base);(effects as any).bus.isAncestor=()=>false;assert.throws(()=>(effects as any).inspectRouterBuilderReceipt(head,base,spec.front_id),/history invalid/);
+  for(const message of ["unrelated",`${subject}\n\nBUILDER_MODEL=${REVIEWER_MODELS.kimi}\nBUILDER_MODEL=${REVIEWER_MODELS.qwen}`,`${subject}\n\nBUILDER_MODEL=NOT SAFE`]){const {effects}=controlPlaneReceiptFixture({[head]:message},{[head]:[candidate],[candidate]:[base]},head,base);const receipt=(effects as any).inspectRouterBuilderReceipt(head,base,spec.front_id);assert.deepEqual(receipt,{model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"});}
+  const {effects}=controlPlaneReceiptFixture({[head]:`${subject}\n\nBUILDER_MODEL=${REVIEWER_MODELS.kimi}`},{[head]:[candidate]},head,base);(effects as any).bus.isAncestor=()=>false;const receipt=(effects as any).inspectRouterBuilderReceipt(head,base,spec.front_id);assert.deepEqual(receipt,{model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"});
 });
 
 test("control-plane review propagates the actual builder model and preserves reviewer separation",()=>{
