@@ -26,6 +26,7 @@ const safeFailureClass = /^[A-Z][A-Z0-9_]{2,63}$/;
 
 export type AttemptState = "STARTED" | "COMPLETED" | "FAILED";
 export type QuarantineReason = "BUILDER_PROVENANCE_RECOVERY_REQUIRED";
+export type ControlPlaneDefectClass = "BUILDER_PROVENANCE_START_WRITE_FAILED" | "BUILDER_PROVENANCE_COMPLETED_WRITE_FAILED" | "BUILDER_PROVENANCE_FAILED_WRITE_FAILED" | "BUILDER_PROVENANCE_ROOT_UNUSABLE";
 
 export interface BuilderCandidateQuarantineEvent {
   schema_version: 1;
@@ -176,6 +177,20 @@ export class BuilderAttemptProvenance {
     return BuilderAttemptProvenance.isConfigured(this.env);
   }
 
+  requireConfigured(): void {
+    if (!this.isConfigured()) throw new Error("OPERATOR_PROXY_ROOT is required");
+  }
+
+  requireUsable(front: string): void {
+    this.requireConfigured();
+    try {
+      this.ensureDir(front);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`BUILDER_PROVENANCE_ROOT_UNUSABLE: ${message}`);
+    }
+  }
+
   private rootDir(front: string): string {
     if (!safeFront.test(front)) throw new Error("front id invalid");
     const root = operatorProxyRoot(this.env);
@@ -230,6 +245,7 @@ export class BuilderAttemptProvenance {
 
   recordAttemptStart(input: BuilderInput, config: {backend: BuilderTransport; model: string; attemptNumber: number; providerCorrelationId: string; providerSession?: string}): AttemptStartedReceipt {
     if (!this.isConfigured()) throw new Error("OPERATOR_PROXY_ROOT is required");
+    this.requireUsable(input.front_id);
     if (!safeFront.test(input.front_id)) throw new Error("builder attempt front invalid");
     if (!safeSha.test(input.base_sha)) throw new Error("builder attempt base invalid");
     if (!ALLOWED_BACKENDS.includes(config.backend)) throw new Error("builder attempt backend invalid");

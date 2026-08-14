@@ -229,7 +229,7 @@ test("OPERATOR_PROXY_ROOT is required and must be absolute",async()=>{
   const r=builderRepo(),prior=process.env.OPERATOR_PROXY_ROOT;
   try{
     delete process.env.OPERATOR_PROXY_ROOT;
-    await assert.rejects(routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree),/OPERATOR_PROXY_ROOT is required/);
+    await assert.rejects(routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree),/BUILDER_PROVENANCE_START_WRITE_FAILED: OPERATOR_PROXY_ROOT required in campaign mode/);
     process.env.OPERATOR_PROXY_ROOT="relative-root";
     await assert.rejects(routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree),/OPERATOR_PROXY_ROOT must be absolute/);
   }finally{if(prior===undefined)delete process.env.OPERATOR_PROXY_ROOT;else process.env.OPERATOR_PROXY_ROOT=prior;}

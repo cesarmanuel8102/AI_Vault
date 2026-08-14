@@ -163,12 +163,18 @@ test("terminal completed advances phase and status", async () => {
 });
 
 test("provider role authority rejects mixed builder/owner sessions and audits fallback", () => {
-  const ownerSession = {provider: "owner-vault", model: "owner/model", session_id: "owner:01"};
-  const builderSession = {provider: "owner-vault", model: "builder/model", session_id: "builder:01"};
-  assert.throws(() => validateProviderSession("builder", "builder/model", builderSession, []), /must not equal owner or supervisor/);
-  const log = [auditFallback("PROVIDER_UNAVAILABLE", "opencode_ollama", "owner-vault", "fallback for owner gate")];
-  assert.equal(log[0].failure_class, "PROVIDER_UNAVAILABLE");
-  assert.equal(log[0].to_backend, "owner-vault");
+  const priorBuilder = process.env.OPERATOR_PROXY_BUILDER_MODEL;
+  try {
+    process.env.OPERATOR_PROXY_BUILDER_MODEL = "opencode/kimi-k2.7-code";
+    const ownerSession = {provider: "owner-vault", model: "owner-vault/owner", session_id: "owner:01"};
+    const builderSession = {provider: "owner-vault", model: "opencode/kimi-k2.7-code", session_id: "builder:01"};
+    assert.throws(() => validateProviderSession("builder", "opencode/kimi-k2.7-code", builderSession, []), /must not equal owner or supervisor/);
+    const log = [auditFallback("PROVIDER_UNAVAILABLE", "opencode_ollama", "owner-vault", "fallback for owner gate")];
+    assert.equal(log[0].failure_class, "PROVIDER_UNAVAILABLE");
+    assert.equal(log[0].to_backend, "owner-vault");
+  } finally {
+    if (priorBuilder === undefined) delete process.env.OPERATOR_PROXY_BUILDER_MODEL; else process.env.OPERATOR_PROXY_BUILDER_MODEL = priorBuilder;
+  }
 });
 
 test("campaign authorization validates owner signature", () => {
