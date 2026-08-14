@@ -9,6 +9,7 @@ import {collect,evaluateChecks} from "./evidence_collector.js";
 import {decide,decisionKey,decisionMatchesCandidate,POLICY_SHA256} from "./policy_engine.js";
 import {ReviewerRouter,validateReviewerEnvelope} from "./reviewer_router.js";
 import {inspectAgentLoopCommitModel,verifiedBuilderModel} from "./reviewer_config.js";
+import {LEGACY_NEUTRALIZATION_TRAILER,LEGACY_REBUILD_TRAILER,PRIOR_UNATTESTED_HEAD_TRAILER,RESET_BASE_TRAILER,NEUTRALIZATION_HEAD_TRAILER,FRESH_BUILDER_HEAD_TRAILER} from "./builder_attempt_provenance.js";
 import {execute,reconcileAuthorizationComment} from "./action_executor.js";
 import {agentLoopIssueBody,issueBody,parseAgentLoopIssue,parseIssue} from "./spec_contract.js";
 import {AutonomousFlow} from "./autonomous_flow.js";
@@ -117,30 +118,85 @@ export class ProductionEffects implements AutonomousEffects {
   async ensureBuild(spec:ProxySpec,issue:number,session:string,repairCycle:number,previousHead?:string){return spec.executor==="agent_loop"?await this.agentLoopBuilder.observe(spec,issue,repairCycle,previousHead):await this.builder.build(spec,issue,session,repairCycle);}
   ci(pr:number,head:string):CiResult {const p=this.bus.json(["pr","view",String(pr),"--json","headRefOid,headRefName"]);if(p.headRefOid!==head)throw new Error("CI head changed");const result=evaluateChecks(this.bus,head,String(p.headRefName));return !result.terminal?"PENDING":result.green?"PASS":"FAIL";}
   private agentLoopReceiptMessage(spec:ProxySpec,state:import("./types.js").LifecycleRecord,head:string){const current=this.bus.commitMessage(head),syncSubject=`chore(control-plane): synchronize ${spec.front_id} base`;if(current.split("\n",1)[0]!==syncSubject)return current;const builds=state.completed_effects.filter(value=>/^build:[0-9a-f]{40}$/.test(value)),candidate=builds.length===1?builds[0].slice(6):undefined;if(!candidate||state.repair_cycles!==0||state.builder_session!==`agent-loop-builder-${candidate}`||!state.completed_effects.includes(`base-sync:${head}`)||!this.bus.isAncestor(candidate,head))throw new Error("Agent Loop synchronized receipt evidence invalid");return this.bus.commitMessage(candidate);}
-  private inspectRouterBuilderReceipt(head:string,baseSha:string,frontId:string):{model:string;headCommit:string}{
-    if(!/^[0-9a-f]{40}$/.test(head)||!/^[0-9a-f]{40}$/.test(baseSha)||!/^[A-Z0-9][A-Z0-9._-]{5,127}$/.test(frontId)||!this.bus.isAncestor(baseSha,head))throw new Error("builder model receipt history invalid");
+  private inspectRouterBuilderReceipt(head:string,baseSha:string,frontId:string):{model:string;headCommit:string;status:"VERIFIED"|"PROVENANCE_RECOVERY_REQUIRED"}{
+    if(!/^[0-9a-f]{40}$/.test(head)||!/^[0-9a-f]{40}$/.test(baseSha)||!/^[A-Z0-9][A-Z0-9._-]{5,127}$/.test(frontId))throw new Error("builder model receipt history invalid");
+    if(!this.bus.isAncestor(baseSha,head))return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
     const subject=`feat(control-plane): complete ${frontId}`;
-    const prefix="BUILDER_MODEL=";
+    const syncSubject=`chore(control-plane): synchronize ${frontId} base`;
     const safeModel=/^[a-z0-9][a-z0-9._:/-]{2,127}$/;
-    let current=head,depth=0;
-    while(current!==baseSha&&depth++<64){
+    const safeProviderSession=/^[a-z0-9][a-z0-9._:/-]{2,127}$/;
+    const allowedBackends=new Set(["codex_cli_openai","opencode_github_copilot","opencode_ollama"]);
+
+    const commitParents=(sha:string)=>{
+      const commit=JSON.parse(this.bus.call(["api",`repos/${this.bus.repo}/git/commits/${sha}`]));
+      return Array.isArray(commit?.parents)?commit.parents.map((parent:any)=>String(parent?.sha??"")).filter((sha:string)=>/^[0-9a-f]{40}$/.test(sha)):[];
+    };
+    const commitTree=(sha:string)=>{
+      const commit=JSON.parse(this.bus.call(["api",`repos/${this.bus.repo}/git/commits/${sha}`]));
+      return typeof commit?.tree?.sha==="string"&&/^[0-9a-f]{40}$/.test(commit.tree.sha)?commit.tree.sha:"";
+    };
+    const trailer=(message:string,prefix:string)=>message.replace(/\r\n/g,"\n").split("\n").slice(1).filter(line=>line.startsWith(prefix)).map(line=>line.slice(prefix.length));
+    const firstLine=(message:string)=>message.split("\n",1)[0];
+
+    const verifyFreshReceipt=(sha:string)=>{
+      const message=this.bus.commitMessage(sha);
+      if(firstLine(message)!==subject)return undefined;
+      const lines=message.replace(/\r\n/g,"\n").split("\n");
+      const values=(prefix:string)=>lines.slice(1).filter(line=>line.startsWith(prefix)).map(line=>line.slice(prefix.length));
+      const backend=values("BUILDER_BACKEND="),model=values("BUILDER_MODEL="),provider=values("PROVIDER_SESSION="),fallback=values("FALLBACK_REASON=");
+      if(backend.length!==1||!allowedBackends.has(backend[0])||model.length!==1||!safeModel.test(model[0])||provider.length!==1||!safeProviderSession.test(provider[0])||fallback.length>1)return undefined;
+      return {model:model[0],headCommit:sha,status:"VERIFIED" as const};
+    };
+
+    const verifyLegacyRebuild=(sha:string)=>{
+      const message=this.bus.commitMessage(sha);
+      const parents=commitParents(sha);
+      const tree=commitTree(sha);
+      if(parents.length!==2)return undefined;
+      const [n,r]=parents;
+      const nMessage=this.bus.commitMessage(n),rMessage=this.bus.commitMessage(r);
+      if(firstLine(message)!==subject)return undefined;
+      const isLegacy=trailer(message,`${LEGACY_REBUILD_TRAILER}=`).length===1&&trailer(message,`${LEGACY_REBUILD_TRAILER}=`)[0]==="true";
+      if(!isLegacy)return undefined;
+      const nNeutral=trailer(nMessage,`${LEGACY_NEUTRALIZATION_TRAILER}=`).length===1&&trailer(nMessage,`${LEGACY_NEUTRALIZATION_TRAILER}=`)[0]==="true";
+      if(!nNeutral||firstLine(nMessage)!==`chore(control-plane): neutralize ${frontId} legacy baseline`)return undefined;
+      const priorHead=trailer(nMessage,`${PRIOR_UNATTESTED_HEAD_TRAILER}=`)[0];
+      const resetBase=trailer(nMessage,`${RESET_BASE_TRAILER}=`)[0];
+      const bridgeN=trailer(message,`${NEUTRALIZATION_HEAD_TRAILER}=`)[0];
+      const bridgeR=trailer(message,`${FRESH_BUILDER_HEAD_TRAILER}=`)[0];
+      if(!priorHead||!resetBase||!bridgeN||!bridgeR||bridgeN!==n||bridgeR!==r)return undefined;
+      if(resetBase!==baseSha)return undefined;
+      if(!this.bus.isAncestor(baseSha,priorHead)||!this.bus.isAncestor(baseSha,r))return undefined;
+      const baseTree=commitTree(baseSha);
+      if(commitTree(n)!==baseTree)return undefined;
+      if(commitTree(sha)!==commitTree(r))return undefined;
+      const fresh=verifyFreshReceipt(r);
+      if(!fresh)return undefined;
+      return {model:fresh.model,headCommit:r,status:"VERIFIED" as const};
+    };
+
+    let current=head,depth=0,candidate:{model:string;headCommit:string;status:"VERIFIED"}|undefined;
+    while(current!==baseSha&&!this.bus.isAncestor(current,baseSha)&&depth++<64){
+      const legacy=verifyLegacyRebuild(current);
+      if(legacy)return legacy;
       const message=this.bus.commitMessage(current);
-      if(message.split("\n",1)[0]===subject){
-        const lines=message.replace(/\r\n/g,"\n").split("\n");
-        const trailers=lines.slice(1).filter(line=>line.startsWith(prefix));
-        if(trailers.length!==1)throw new Error(trailers.length>1?"builder model receipt ambiguous":"builder model receipt missing");
-        const model=trailers[0].slice(prefix.length);
-        if(!safeModel.test(model))throw new Error("builder model receipt malformed");
-        return {model,headCommit:current};
+      if(firstLine(message)===syncSubject){
+        const parents=commitParents(current);
+        if(parents.length!==2||!this.bus.isAncestor(baseSha,parents[1]))return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
+        current=parents[0];
+        continue;
       }
-      const commit=JSON.parse(this.bus.call(["api",`repos/${this.bus.repo}/git/commits/${current}`]));
-      const parents=Array.isArray(commit?.parents)?commit.parents.map((parent:any)=>String(parent?.sha??"")):[];
-      if(parents.length<1||parents.length>2||parents.some((parent:string)=>!/^[0-9a-f]{40}$/.test(parent)))throw new Error("builder model receipt history invalid");
+      const fresh=verifyFreshReceipt(current);
+      if(!fresh)return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
+      if(!candidate)candidate=fresh;
+      const parents=commitParents(current);
+      if(parents.length===0)return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
       current=parents[0];
     }
-    throw new Error("builder model receipt missing");
+    if(candidate&&(current===baseSha||this.bus.isAncestor(current,baseSha)))return candidate;
+    return {model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"};
   }
-  review(pr:number,head:string,session:string) {const spec=this.activeSpec,state=this.activeState;if(!spec||!state?.issue||state.pr!==pr||state.head_sha!==head||!state.builder_session||!spec.front_id)throw new Error("review lifecycle binding missing");const policyKey=decisionKey(spec,state.issue,pr,state.base_sha,head),identity=this.bus.prIdentity(pr),files=(identity.files??[]).map((x:any)=>String(x.path)),reportPath="docs/agent_loop/pilot/EXECUTOR_REPORT.json",report=spec.executor==="agent_loop"&&files.includes(reportPath)?JSON.parse(this.bus.fileAt(reportPath,head)):undefined,receipt=spec.executor==="agent_loop"?inspectAgentLoopCommitModel(this.agentLoopReceiptMessage(spec,state,head),spec.front_id,report?.model):undefined,routerReceipt=spec.executor==="codex_control_plane"?this.inspectRouterBuilderReceipt(head,state.base_sha,spec.front_id):undefined,builderModel=receipt?.model??routerReceipt?.model??verifiedBuilderModel(spec.executor),reviewKey=reviewEvidenceKey(policyKey,state.builder_session,builderModel);if(receipt?.status==="MISSING")return {session:`reviewer:deterministic-receipt-repair:${head}`,output:{verdict:"CHANGES_REQUESTED",head_sha:head,summary:"Agent Loop commit evidence requires bounded regeneration",findings:[{severity:"P1",title:"Executor model receipt missing",evidence:"The exact Agent Loop candidate commit subject is valid, but the required AGENT_LOOP_EXECUTOR_MODEL trailer is absent.",required_correction:"Regenerate the candidate with the installed governed Agent Loop worker so the commit records exactly one configured executor model receipt."}]}};const input={repository:spec.repository,repositoryRoot:this.sourceRepo,pr,baseSha:state.base_sha,headSha:head,risk:spec.risk,changedFiles:files,builderSession:state.builder_session,builderModel},expected={issue:state.issue,pr,base_sha:state.base_sha,head_sha:head,front_id:spec.front_id,builder_session:state.builder_session,builder_model:builderModel};const cached=this.ledger.loadOrCreateReview(reviewKey,()=>{this.boundary.assert("reviewer_execute",{issue:state.issue,pr,expected_head:head});const run=new ReviewerRouter(join(this.root,"reviewer-router")).review(input);return {schema_version:1,...expected,requested_session:session,session:run.session,router_run:run,result:run.output};},value=>{validateReviewerEnvelope(value,expected,input);}).review as any;return {output:cached.result,session:cached.session};}
+  review(pr:number,head:string,session:string) {const spec=this.activeSpec,state=this.activeState;if(!spec||!state?.issue||state.pr!==pr||state.head_sha!==head||!state.builder_session||!spec.front_id)throw new Error("review lifecycle binding missing");const policyKey=decisionKey(spec,state.issue,pr,state.base_sha,head),identity=this.bus.prIdentity(pr),files=(identity.files??[]).map((x:any)=>String(x.path)),reportPath="docs/agent_loop/pilot/EXECUTOR_REPORT.json",report=spec.executor==="agent_loop"&&files.includes(reportPath)?JSON.parse(this.bus.fileAt(reportPath,head)):undefined,receipt=spec.executor==="agent_loop"?inspectAgentLoopCommitModel(this.agentLoopReceiptMessage(spec,state,head),spec.front_id,report?.model):undefined,routerReceipt=spec.executor==="codex_control_plane"?this.inspectRouterBuilderReceipt(head,state.base_sha,spec.front_id):undefined,builderModel=receipt?.model??(routerReceipt?.status==="VERIFIED"?routerReceipt.model:undefined)??verifiedBuilderModel(spec.executor),reviewKey=reviewEvidenceKey(policyKey,state.builder_session,builderModel);if(receipt?.status==="MISSING")return {session:`reviewer:deterministic-receipt-repair:${head}`,output:{verdict:"CHANGES_REQUESTED",head_sha:head,summary:"Agent Loop commit evidence requires bounded regeneration",findings:[{severity:"P1",title:"Executor model receipt missing",evidence:"The exact Agent Loop candidate commit subject is valid, but the required AGENT_LOOP_EXECUTOR_MODEL trailer is absent.",required_correction:"Regenerate the candidate with the installed governed Agent Loop worker so the commit records exactly one configured executor model receipt."}]}};if(spec.executor==="codex_control_plane"&&routerReceipt?.status==="PROVENANCE_RECOVERY_REQUIRED")return {session:`reviewer:builder-provenance-recovery:${head}`,output:{verdict:"CHANGES_REQUESTED",head_sha:head,summary:"Builder model provenance requires a governed fresh rebuild",findings:[{severity:"P1",title:"Builder model receipt missing or invalid",evidence:"The control-plane candidate does not contain a valid BUILDER_MODEL receipt from a governed builder transaction. This may be an unattested legacy candidate or the provenance was lost.",required_correction:"Trigger BUILDER_PROVENANCE_RECOVERY_REQUIRED: run a fresh governed builder transaction from a verified clean baseline and produce a new HEAD containing a real BUILDER_BACKEND/BUILDER_MODEL/PROVIDER_SESSION receipt before review resumes."}]}};const input={repository:spec.repository,repositoryRoot:this.sourceRepo,pr,baseSha:state.base_sha,headSha:head,risk:spec.risk,changedFiles:files,builderSession:state.builder_session,builderModel},expected={issue:state.issue,pr,base_sha:state.base_sha,head_sha:head,front_id:spec.front_id,builder_session:state.builder_session,builder_model:builderModel};const cached=this.ledger.loadOrCreateReview(reviewKey,()=>{this.boundary.assert("reviewer_execute",{issue:state.issue,pr,expected_head:head});const run=new ReviewerRouter(join(this.root,"reviewer-router")).review(input);return {schema_version:1,...expected,requested_session:session,session:run.session,router_run:run,result:run.output};},value=>{validateReviewerEnvelope(value,expected,input);}).review as any;return {output:cached.result,session:cached.session};}
   policy(spec:ProxySpec,issue:number,pr:number,head:string,review:ReviewerOutput,builderSession:string,reviewerSession:string,repairCycles:number):PolicyResult {review=normalizeReviewerOutput(review,head);const key=decisionKey(spec,issue,pr,spec.expected_base_sha,head),evidence=collect(this.bus,issue,pr,reviewerSession,review,spec);evidence.builder_session=builderSession;evidence.review_session=reviewerSession;evidence.repair_cycles=repairCycles;const candidate=decide(spec,evidence),prior=this.ledger.findByKey(key)??this.ledger.findByHead(head);if(prior){if(!decisionMatchesCandidate(prior,candidate))throw new Error("DECISION_IDENTITY_CONFLICT");return {outcome:prior.policy_decision,decision_id:prior.decision_id};}this.boundary.assert("decision_persist",{issue,pr,expected_head:head});const decision=this.ledger.recordOrLoad(candidate).decision;if(decision.policy_decision==="REPAIR"){this.boundary.assert("findings_publish",{issue,pr,expected_head:head});this.boundary.assert("repair_request",{issue,pr,expected_head:head});const marker=`decision_key=${decision.decision_key}`;this.bus.commentOnce("issue",issue,marker,`[OPERATOR-PROXY][REPAIR]\n\n${marker}\ndecision_id=${decision.decision_id}\nhead=${head}\nfindings=${safeJson(review.findings)}`);if(spec.executor==="agent_loop"){this.bus.reconcileLabel("issue",issue,"loop:repairing",["operator:repairing","loop:ci"]);this.bus.reconcileLabel("pr",pr,"loop:repairing",["operator:repairing","loop:ci"]);}}return {outcome:decision.policy_decision,decision_id:decision.decision_id};}
   ensureMerge(pr:number,head:string,base:string,decisionId:string){const spec=this.activeSpec,state=this.activeState;if(!spec||!state?.issue||state.pr!==pr||state.head_sha!==head||state.base_sha!==base||state.decision_id!==decisionId||!state.builder_session||!state.reviewer_session)throw new Error("merge lifecycle binding missing");const decision=this.ledger.load(decisionId);if(decision.pr!==pr||decision.head_sha!==head||decision.base_sha!==base)throw new Error("merge decision binding mismatch");const alreadyMerged=this.ledger.hasHead(head)||this.bus.prIdentity(pr).state==="MERGED";if(!alreadyMerged){const reviewed=this.review(pr,head,state.reviewer_session),recomputed=this.policy(spec,state.issue,pr,head,reviewed.output,state.builder_session,reviewed.session,state.repair_cycles);if(recomputed.outcome!=="APPROVE"||recomputed.decision_id!==decisionId)throw new Error("merge decision revalidation failed");}const merge=execute(this.bus,this.ledger,decision,false);if(!merge)throw new Error("governed merge not completed");this.boundary.bindPostMerge(merge);reconcileAuthorizationComment(this.bus,decision);return merge;}
   ensureInstall(spec:ProxySpec,merge:string){const path=installArtifactPath(spec);if(!path)throw new Error("install artifact target invalid");const artifactSha256=createHash("sha256").update(Buffer.from(this.bus.fileAt(path,merge),"utf8")).digest("hex");return this.coordinator.install(spec,merge,artifactSha256);}
