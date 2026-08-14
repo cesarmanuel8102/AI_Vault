@@ -70,8 +70,14 @@ export function builderPrompt(spec:ProxySpec,repairCycle:number,repair=""){
 function isLegacyUnattestedPr(spec:ProxySpec,existing:{number:number;head_sha:string}|undefined,bus:BuilderBus,worktree:string,observedHead:string):boolean{
   if(!existing||!spec.work_branch||existing.head_sha===spec.expected_base_sha||observedHead!==existing.head_sha)return false;
   const remote=bus.remoteBranchHead(spec.work_branch);if(remote!==existing.head_sha)return false;
+  if(observedHead===spec.expected_base_sha)return false;
   try{git(worktree,["merge-base","--is-ancestor",spec.expected_base_sha!,observedHead]);}catch{return false;}
-  if(!diffEmpty(worktree,spec.expected_base_sha!,observedHead))return false;
+  let receiptValid=false;try{validateBuilderReceipt(worktree,observedHead,spec.front_id!);receiptValid=true;}catch{receiptValid=false;}
+  if(receiptValid)return false;
+  const subject=git(worktree,["show","-s","--format=%s",observedHead]);
+  if(subject===`chore(control-plane): synchronize ${spec.front_id!} base`)return false;
+  const files=committed(worktree,spec.expected_base_sha!);
+  try{validateFiles(files,spec);}catch{return false;}
   return true;
 }
 function treeOf(repo:string,sha:string):string{return git(repo,["rev-parse",`${sha}^{tree}`]);}
@@ -254,10 +260,11 @@ export class GovernedBuilder {
     const identity=this.bus.prIdentity(existing.number);
     const prFiles=(identity.files??[]).map((item:any)=>String(item.path)).sort();
     if(!spec.front_id||!spec.work_branch)throw new Error("builder metadata missing");
-    const files=committed(worktree,baseSha);
-    if(identity.author?.login!=="cesarmanuel8102"||identity.baseRefName!=="codex/own-capital-sustainable-return"||identity.baseRefOid!==baseSha||identity.headRefName!==spec.work_branch||identity.headRefOid!==legacyHead||identity.headRepository?.nameWithOwner!=="cesarmanuel8102/AI_Vault"||identity.isCrossRepository!==false||identity.isDraft!==true||identity.state!=="OPEN"||JSON.stringify(prFiles)!==JSON.stringify(files))throw new Error("legacy PR identity invalid for neutralization");
+    if(identity.author?.login!=="cesarmanuel8102"||identity.baseRefName!=="codex/own-capital-sustainable-return"||identity.baseRefOid!==baseSha||identity.headRefName!==spec.work_branch||identity.headRefOid!==legacyHead||identity.headRepository?.nameWithOwner!=="cesarmanuel8102/AI_Vault"||identity.isCrossRepository!==false||identity.isDraft!==true||identity.state!=="OPEN")throw new Error("legacy PR identity invalid for neutralization");
     try{git(worktree,["merge-base","--is-ancestor",baseSha,legacyHead]);}catch{throw new Error("legacy PR ancestry invalid");}
-    if(!diffEmpty(worktree,baseSha,legacyHead))throw new Error("legacy PR neutralization requires tree equality with base");
+    const files=(()=>{const output=git(worktree,["diff","--name-only",`${baseSha}..${legacyHead}`]);return output?output.split(/\r?\n/).filter(Boolean).sort():[];})();
+    if(JSON.stringify(prFiles)!==JSON.stringify(files))throw new Error("legacy PR file scope mismatch");
+    try{validateFiles(files,spec);}catch{throw new Error("legacy PR files out of scope");}
 
     const baseTree=treeOf(worktree,baseSha);
     const n=commitTree(worktree,baseTree,[legacyHead],neutralizationMessage(spec.front_id,legacyHead,baseSha));

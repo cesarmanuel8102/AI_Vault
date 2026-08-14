@@ -45,23 +45,23 @@ test("control-plane receipt child cannot bless an unattested ancestor",()=>{
 });
 
 test("control-plane legacy B/L/N/R/M bridge is verified only with exact provenance bindings",()=>{
-  const base="1".repeat(40),legacy="2".repeat(40),n="3".repeat(40),r="4".repeat(40),m="5".repeat(40),subject=`feat(control-plane): complete ${spec.front_id}`,nSubject=`chore(control-plane): neutralize ${spec.front_id} legacy baseline`;
+  const base="1".repeat(40),legacy="2".repeat(40),legacyTree="7".repeat(40),n="3".repeat(40),r="4".repeat(40),m="5".repeat(40),subject=`feat(control-plane): complete ${spec.front_id}`,nSubject=`chore(control-plane): neutralize ${spec.front_id} legacy baseline`;
   const messages={
     [m]:`${subject}\n\nLEGACY_REBUILD=true\nNEUTRALIZATION_HEAD=${n}\nFRESH_BUILDER_HEAD=${r}\nRESET_BASE=${base}`,
     [n]:`${nSubject}\n\nLEGACY_NEUTRALIZATION=true\nPRIOR_UNATTESTED_HEAD=${legacy}\nRESET_BASE=${base}`,
     [r]:`${subject}\n\nBUILDER_BACKEND=opencode_ollama\nBUILDER_MODEL=${REVIEWER_MODELS.kimi}\nPROVIDER_SESSION=kimi-1`,
-  },parents={[m]:[n,r],[n]:[legacy],[r]:[base]},trees={[n]:base,[r]:r,[m]:r,[base]:base};
+  },parents={[m]:[n,r],[n]:[legacy],[r]:[base]},trees={[legacy]:legacyTree,[n]:base,[r]:r,[m]:r,[base]:base};
   const {effects}=controlPlaneReceiptFixture(messages,parents,m,base,trees);const receipt=(effects as any).inspectRouterBuilderReceipt(m,base,spec.front_id);
   assert.deepEqual(receipt,{model:REVIEWER_MODELS.kimi,headCommit:r,status:"VERIFIED"});
 });
 
 test("control-plane legacy bridge rejected when neutralization tree differs from base",()=>{
-  const base="1".repeat(40),legacy="2".repeat(40),n="3".repeat(40),r="4".repeat(40),m="5".repeat(40),subject=`feat(control-plane): complete ${spec.front_id}`,nSubject=`chore(control-plane): neutralize ${spec.front_id} legacy baseline`,otherTree="6".repeat(40);
+  const base="1".repeat(40),legacy="2".repeat(40),legacyTree="7".repeat(40),n="3".repeat(40),r="4".repeat(40),m="5".repeat(40),subject=`feat(control-plane): complete ${spec.front_id}`,nSubject=`chore(control-plane): neutralize ${spec.front_id} legacy baseline`,otherTree="6".repeat(40);
   const messages={
     [m]:`${subject}\n\nLEGACY_REBUILD=true\nNEUTRALIZATION_HEAD=${n}\nFRESH_BUILDER_HEAD=${r}\nRESET_BASE=${base}`,
     [n]:`${nSubject}\n\nLEGACY_NEUTRALIZATION=true\nPRIOR_UNATTESTED_HEAD=${legacy}\nRESET_BASE=${base}`,
     [r]:`${subject}\n\nBUILDER_BACKEND=opencode_ollama\nBUILDER_MODEL=${REVIEWER_MODELS.kimi}\nPROVIDER_SESSION=kimi-1`,
-  },parents={[m]:[n,r],[n]:[legacy],[r]:[base]},trees={[n]:otherTree,[r]:r,[m]:r,[base]:base};
+  },parents={[m]:[n,r],[n]:[legacy],[r]:[base]},trees={[legacy]:legacyTree,[n]:otherTree,[r]:r,[m]:r,[base]:base};
   const {effects}=controlPlaneReceiptFixture(messages,parents,m,base,trees);const receipt=(effects as any).inspectRouterBuilderReceipt(m,base,spec.front_id);
   assert.deepEqual(receipt,{model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"});
 });

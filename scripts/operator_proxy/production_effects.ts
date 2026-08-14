@@ -167,10 +167,8 @@ export class ProductionEffects implements AutonomousEffects {
       if(!priorHead||!resetBase||!bridgeN||!bridgeR||bridgeN!==n||bridgeR!==r)return undefined;
       if(resetBase!==baseSha)return undefined;
       if(!this.bus.isAncestor(baseSha,priorHead)||!this.bus.isAncestor(baseSha,r))return undefined;
-      if(commitTree(n)!==tree){
-        const baseTree=commitTree(baseSha);
-        if(commitTree(n)!==baseTree)return undefined;
-      }
+      const baseTree=commitTree(baseSha);
+      if(commitTree(n)!==baseTree)return undefined;
       if(commitTree(sha)!==commitTree(r))return undefined;
       const fresh=verifyFreshReceipt(r);
       if(!fresh)return undefined;
