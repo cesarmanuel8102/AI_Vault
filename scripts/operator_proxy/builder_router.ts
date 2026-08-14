@@ -4,6 +4,7 @@ import { isEligibleFallback, isEqualOrDescendantPath, validateWorktree, scopeVio
 import { resolveCodexConfig, resolveCopilotConfig, resolveOllamaConfig, type BackendConfig } from "./builder_config.js";
 import { runCodexBuilder } from "./codex_builder.js";
 import { runOpenCodeBuilder } from "./opencode_builder.js";
+import { BuilderAttemptProvenance } from "./builder_attempt_provenance.js";
 import { createHash, randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { redactedError, redactString } from "./redaction.js";
@@ -213,11 +214,19 @@ function restoreWorktreeBaseline(worktree: string, baseSha: string, ignoredBasel
   if (status) throw new Error("builder worktree baseline restore left dirty state");
 }
 
+function collectChangedFiles(worktree: string, baseSha: string, env: NodeJS.ProcessEnv): string[] {
+  const head = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "rev-parse", "HEAD"], { encoding: "utf8", timeout: 30000 }).trim();
+  const committedFiles = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "diff", "--name-only", `${baseSha}..${head}`], { encoding: "utf8", timeout: 30000 }).split(/\r?\n/).filter(Boolean);
+  const workingTreeFiles = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "status", "--porcelain", "--untracked-files=all"], { encoding: "utf8", timeout: 30000 }).split(/\r?\n/).filter(Boolean).map(line => line.slice(3).trim()).filter(Boolean);
+  return [...new Set([...committedFiles, ...workingTreeFiles])];
+}
+
 export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, prompt: string, repairCycle: number, options: RouterOptions = {}, worktree?: string): Promise<BuilderResult> {
   const env = options.env ?? process.env;
   const session = `builder-${randomUUID()}`;
   const input = buildInputFromSpec(spec, issue, session, repairCycle, prompt, env, worktree, options.baseSha);
   const healthDir = join(operatorProxyRoot(env), "state", "builder-health");
+  const provenance = new BuilderAttemptProvenance(env);
   if (options.baseSha) validateBaseOverride(worktree ?? input.worktree, options.baseSha, env);
   validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
 
@@ -228,7 +237,8 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
   for (let index = 0; index < attemptOrder.length; index++) {
     const backendId = attemptOrder[index];
     const backendSession = `${session}-${backendId}`;
-    const backendInput = { ...input, session: backendSession };
+    const providerCorrelationId = `${backendId}-${randomUUID()}`;
+    const backendInput: BuilderInput = { ...input, session: backendSession, provider_correlation_id: providerCorrelationId };
     let cfg: BackendConfig;
     let buildFn: (i: BuilderInput) => Promise<BuilderResult>;
     if (backendId === "codex_cli_openai") {
@@ -242,10 +252,12 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
       buildFn = (i) => runOpenCodeBuilder(i, cfg, env);
     }
 
-    const invokeBackend = async (attemptSession: string): Promise<BuilderResult> => {
-      const result = await buildFn({ ...backendInput, session: attemptSession });
-      await validateBuilderOutput({ ...backendInput, session: attemptSession }, result, env);
-      if (result.executor_role !== "codex_control_plane" || result.base_sha !== input.base_sha || result.builder_backend !== backendId || result.builder_model !== cfg.model || !/^[a-z0-9][a-z0-9._:/-]{2,127}$/.test(result.provider_session) || !/^[0-9a-f]{40}$/.test(result.head_sha)) throw new Error("builder result contract invalid");
+    const startedReceipt = provenance.recordAttemptStart(backendInput, {backend: backendId, model: cfg.model, attemptNumber: index + 1, providerCorrelationId});
+
+    const invokeBackend = async (attemptSession: string, attemptCorrelationId: string): Promise<BuilderResult> => {
+      const result = await buildFn({ ...backendInput, session: attemptSession, provider_correlation_id: attemptCorrelationId });
+      await validateBuilderOutput({ ...backendInput, session: attemptSession, provider_correlation_id: attemptCorrelationId }, result, env);
+      if (result.executor_role !== "codex_control_plane" || result.base_sha !== input.base_sha || result.builder_backend !== backendId || result.builder_model !== cfg.model || result.provider_session !== attemptCorrelationId || !/^[0-9a-f]{40}$/.test(result.head_sha)) throw new Error("builder result contract invalid");
       if (result.fallback_reason !== undefined) throw new Error("builder backend must not set fallback_reason");
       if (fallbackReason && backendId === "codex_cli_openai") throw new Error("primary Codex result cannot be an automatic fallback");
       result.builder_session = session;
@@ -255,11 +267,15 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
 
     const attemptIgnoredBaseline = ignoredSnapshot(input.worktree, env);
     try {
-      return await invokeBackend(backendSession);
+      const result = await invokeBackend(backendSession, providerCorrelationId);
+      const files = collectChangedFiles(input.worktree, input.base_sha, env);
+      provenance.recordAttemptCompleted(startedReceipt.receipt_id, input.front_id, result.head_sha, files, result.provider_session, result.native_provider_session);
+      return result;
     } catch (error) {
       restoreWorktreeBaseline(input.worktree, input.base_sha, attemptIgnoredBaseline, env);
       validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
       const { eligible, failure_class, transient } = isEligibleFallback(error);
+      provenance.recordAttemptFailed(startedReceipt.receipt_id, input.front_id, failure_class);
       recordHealth(healthDir, { backend: backendId, model: cfg.model, failure_class, attempt: index + 1, front_id: spec.front_id!, base_sha: input.base_sha, created_utc: new Date().toISOString() });
 
       if (!eligible) throw new Error(redactString(String(error instanceof Error ? error.message : error)));
@@ -270,13 +286,21 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
       if (transient && cfg.maxRetries > 0) {
         const backoffMs = Math.min(1000 * Math.pow(2, index), 8000);
         await new Promise(resolve => setTimeout(resolve, backoffMs));
+        const retryCorrelationId = `${backendId}-retry-${randomUUID()}`;
+        const retrySession = `${backendSession}-retry`;
+        const retryInput: BuilderInput = { ...input, session: retrySession, provider_correlation_id: retryCorrelationId };
+        const retryReceipt = provenance.recordAttemptStart(retryInput, {backend: backendId, model: cfg.model, attemptNumber: index + 1, providerCorrelationId: retryCorrelationId});
         const retryIgnoredBaseline = ignoredSnapshot(input.worktree, env);
         try {
-          return await invokeBackend(`${backendSession}-retry`);
+          const result = await invokeBackend(retrySession, retryCorrelationId);
+          const files = collectChangedFiles(input.worktree, input.base_sha, env);
+          provenance.recordAttemptCompleted(retryReceipt.receipt_id, input.front_id, result.head_sha, files, result.provider_session, result.native_provider_session);
+          return result;
         } catch (retryError) {
           restoreWorktreeBaseline(input.worktree, input.base_sha, retryIgnoredBaseline, env);
           validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
           const { eligible: retryEligible, failure_class: retryClass } = isEligibleFallback(retryError);
+          provenance.recordAttemptFailed(retryReceipt.receipt_id, input.front_id, retryClass);
           recordHealth(healthDir, { backend: backendId, model: cfg.model, failure_class: `retry:${retryClass}`, attempt: index + 1, front_id: spec.front_id!, base_sha: input.base_sha, created_utc: new Date().toISOString() });
           if (!retryEligible) throw new Error(redactString(String(retryError instanceof Error ? retryError.message : retryError)));
         }

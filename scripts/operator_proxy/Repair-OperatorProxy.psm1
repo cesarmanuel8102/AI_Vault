@@ -106,8 +106,9 @@ function Assert-SafeManagedTarget {
 }
 
 function Get-ManagedOperatorProxyFiles {
-    return @('schemas','action_executor.ts','agent_loop_builder_adapter.ts','autonomous_flow.ts','autonomous_runtime.ts','builder_backend.ts','builder_config.ts','builder_router.ts','codex_builder.ts','codex_reviewer.ts','decision_ledger.ts','evidence_collector.ts','external_effect_guard.ts','github_bus.ts','governed_builder.ts','lifecycle_store.ts','opencode_builder.ts','opencode_reviewer.ts','operator_proxy.ts','policy_engine.ts','production_effects.ts','redaction.ts','request_coordinator.ts','review_contract.ts','reviewer_backend.ts','reviewer_config.ts','reviewer_router.ts','risk_classifier.ts','roadmap_sequencer.ts','single_instance_lock.ts','spec_contract.ts','state_machine.ts','types.ts','package.json','package-lock.json','tsconfig.json','Run-OperatorProxy.ps1')
+  return @('schemas','action_executor.ts','agent_loop_builder_adapter.ts','autonomous_flow.ts','autonomous_runtime.ts','builder_attempt_provenance.ts','builder_backend.ts','builder_config.ts','builder_router.ts','codex_builder.ts','codex_reviewer.ts','decision_ledger.ts','evidence_collector.ts','external_effect_guard.ts','github_bus.ts','governed_builder.ts','lifecycle_store.ts','opencode_builder.ts','opencode_reviewer.ts','operator_proxy.ts','policy_engine.ts','production_effects.ts','redaction.ts','request_coordinator.ts','review_contract.ts','reviewer_backend.ts','reviewer_config.ts','reviewer_router.ts','risk_classifier.ts','roadmap_sequencer.ts','single_instance_lock.ts','spec_contract.ts','state_machine.ts','types.ts','package.json','package-lock.json','tsconfig.json','Run-OperatorProxy.ps1')
 }
+
 
 function Invoke-OperatorProxyInstall {
     [CmdletBinding()]
