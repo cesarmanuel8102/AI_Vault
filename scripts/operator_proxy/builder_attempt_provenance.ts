@@ -245,8 +245,8 @@ export class BuilderAttemptProvenance {
 
   recordAttemptStart(input: BuilderInput, config: {backend: BuilderTransport; model: string; attemptNumber: number; providerCorrelationId: string; providerSession?: string}): AttemptStartedReceipt {
     if (!this.isConfigured()) throw new Error("OPERATOR_PROXY_ROOT is required");
-    this.requireUsable(input.front_id);
     if (!safeFront.test(input.front_id)) throw new Error("builder attempt front invalid");
+    this.requireUsable(input.front_id);
     if (!safeSha.test(input.base_sha)) throw new Error("builder attempt base invalid");
     if (!ALLOWED_BACKENDS.includes(config.backend)) throw new Error("builder attempt backend invalid");
     if (!safeModel.test(config.model)) throw new Error("builder attempt model invalid");
