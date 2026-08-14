@@ -1,0 +1,1480 @@
+{
+  "schema_version": 1,
+  "campaign_id": "BRAIN-101-OPERATOR-PROXY-PHASE2-PHASE3",
+  "source": "PR #200 durable builder provenance + operator proxy autonomous campaign bootstrap",
+  "integration_branch": "codex/feat-operator-proxy-autonomous-campaign-supervisor-201",
+  "canonical_integration_sha": "999d53c374dc7349332c540a3f20d104abfa64fb",
+  "roadmap_id": "BRAIN-101",
+  "current_phase": "R3.2",
+  "hard_limits": {
+    "AUTO_MERGE": false,
+    "LIVE_TRADING": false,
+    "REAL_MONEY": false,
+    "CANONICAL_LOCAL_SYNC": false,
+    "HUMAN_FINAL_AUTHORITY": true
+  },
+  "items": [
+    {
+      "id": "R3.3",
+      "title": "Operator Proxy campaign state and incident store",
+      "status": "PLANNED",
+      "executor": "codex_control_plane",
+      "risk": "MEDIUM",
+      "deployment_mode": "NO_DEPLOY",
+      "allowed_paths": [
+        "scripts/operator_proxy/campaign_state.ts",
+        "scripts/operator_proxy/incident_classifier.ts",
+        "scripts/operator_proxy/self_repair_controller.ts",
+        "tests/contract/operator_proxy/campaign_state.test.ts"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/",
+        "docs/roadmap/BRAIN_101_MANIFEST.json",
+        "docs/roadmap/BRAIN_101_ROADMAP.md"
+      ],
+      "acceptance": [
+        "CampaignStateStore persists state atomically with append-only events",
+        "Incident classification maps BLOCKED/ESCALATED lifecycle errors to P0-P3 incidents",
+        "System repair controller only attempts CI_FAILED, PROVENANCE_RECOVERY_REQUIRED, PROVIDER_UNAVAILABLE",
+        "Human gate classes pause campaign and require owner authorization",
+        "Preserve AUTO_MERGE=false, LIVE_TRADING=false, REAL_MONEY=false, CANONICAL_LOCAL_SYNC=false, HUMAN_FINAL_AUTHORITY=true"
+      ],
+      "test_commands": [
+        "npm run typecheck",
+        "npx tsx --test tests/contract/operator_proxy/campaign_supervisor.test.ts",
+        "git diff --check"
+      ],
+      "human_gate_triggers": [
+        "OWNER_AUTHORITY_REQUIRED",
+        "REPAIR_LIMIT_REACHED",
+        "HUMAN_GATE_REQUIRED"
+      ],
+      "stop_conditions": [
+        "Hard limit violated",
+        "Three consecutive human gates without authorization",
+        "P0 POLICY_BLOCK classified"
+      ],
+      "objective": "Operator Proxy campaign state and incident store",
+      "dependencies": [],
+      "domain": "operator_proxy_governance",
+      "deliverables": [
+        "R3.3_evidence.md"
+      ],
+      "verification_classes": [
+        "unit",
+        "contract",
+        "integration"
+      ],
+      "repair_budget": 2,
+      "closeout": {
+        "front_id": "BRAIN-101-R3.3-CLOSEOUT-01",
+        "objective": "Closeout for R3.3",
+        "work_branch": "control-plane/brain-101-r3-3-closeout",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": [
+          "docs/roadmap/evidence/"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Evidence recorded",
+          "Hard limits preserved"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ]
+      },
+      "jit_binding_policy": "bind_front_at_first_wake"
+    },
+    {
+      "id": "R3.4",
+      "title": "Operator Proxy campaign authorization and hard-limit enforcer",
+      "status": "PLANNED",
+      "executor": "codex_control_plane",
+      "risk": "MEDIUM",
+      "deployment_mode": "NO_DEPLOY",
+      "allowed_paths": [
+        "scripts/operator_proxy/campaign_authorization.ts",
+        "scripts/operator_proxy/provider_role_authority.ts",
+        "tests/contract/operator_proxy/campaign_authorization.test.ts"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/"
+      ],
+      "acceptance": [
+        "validateCampaignAuthorization matches campaign_id, authorization_id, allowed actions, and 64-hex owner_signature",
+        "enforceHardLimits throws on any deviation from constitutional booleans",
+        "Provider roles builder/reviewer/supervisor/arbiter/owner are isolated",
+        "Fallback audit records timestamp, reason, backends, and failure class",
+        "Preserve AUTO_MERGE=false, LIVE_TRADING=false, REAL_MONEY=false, CANONICAL_LOCAL_SYNC=false, HUMAN_FINAL_AUTHORITY=true"
+      ],
+      "test_commands": [
+        "npm run typecheck",
+        "npx tsx --test tests/contract/operator_proxy/campaign_authorization.test.ts",
+        "git diff --check"
+      ],
+      "human_gate_triggers": [
+        "Invalid owner signature",
+        "Authorization action outside allowed set",
+        "Provider role collision"
+      ],
+      "stop_conditions": [
+        "Hard limit violated",
+        "Owner signature validation cannot be satisfied"
+      ],
+      "objective": "Operator Proxy campaign authorization and hard-limit enforcer",
+      "dependencies": [],
+      "domain": "operator_proxy_governance",
+      "deliverables": [
+        "R3.4_evidence.md"
+      ],
+      "verification_classes": [
+        "unit",
+        "contract",
+        "integration"
+      ],
+      "repair_budget": 2,
+      "closeout": {
+        "front_id": "BRAIN-101-R3.4-CLOSEOUT-01",
+        "objective": "Closeout for R3.4",
+        "work_branch": "control-plane/brain-101-r3-4-closeout",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": [
+          "docs/roadmap/evidence/"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Evidence recorded",
+          "Hard limits preserved"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ]
+      },
+      "jit_binding_policy": "bind_front_at_first_wake"
+    },
+    {
+      "id": "R3.5",
+      "title": "Operator Proxy campaign supervisor wake loop",
+      "status": "PLANNED",
+      "executor": "codex_control_plane",
+      "risk": "MEDIUM",
+      "deployment_mode": "NO_DEPLOY",
+      "allowed_paths": [
+        "scripts/operator_proxy/campaign_supervisor.ts",
+        "tests/contract/operator_proxy/campaign_supervisor.test.ts",
+        "docs/roadmap/evidence/BRAIN_101_R3_5_SUPERVISOR_WAKE_LOOP.md"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/",
+        "docs/roadmap/BRAIN_101_MANIFEST.json"
+      ],
+      "acceptance": [
+        "wake() enforces hard limits before executing tick",
+        "Incidents are classified, recorded, and routed to repair/human-gate/halt",
+        "Self-repair loops are bounded by maxSelfRepairs",
+        "TERMINAL_COMPLETED advances phase via nextPhase() helper",
+        "Preserve AUTO_MERGE=false, LIVE_TRADING=false, REAL_MONEY=false, CANONICAL_LOCAL_SYNC=false, HUMAN_FINAL_AUTHORITY=true"
+      ],
+      "test_commands": [
+        "npm run typecheck",
+        "npx tsx --test tests/contract/operator_proxy/campaign_supervisor.test.ts",
+        "git diff --check"
+      ],
+      "human_gate_triggers": [
+        "OWNER_AUTHORITY_REQUIRED",
+        "LOCAL_PRIVILEGE_REQUIRED",
+        "REPAIR_LIMIT_REACHED",
+        "HUMAN_GATE_REQUIRED",
+        "Max wakes without human gate"
+      ],
+      "stop_conditions": [
+        "P0 POLICY_BLOCK",
+        "REPAIR_LIMIT_REACHED",
+        "Campaign status HALTED"
+      ],
+      "objective": "Operator Proxy campaign supervisor wake loop",
+      "dependencies": [],
+      "domain": "operator_proxy_governance",
+      "deliverables": [
+        "R3.5_evidence.md"
+      ],
+      "verification_classes": [
+        "unit",
+        "contract",
+        "integration"
+      ],
+      "repair_budget": 2,
+      "closeout": {
+        "front_id": "BRAIN-101-R3.5-CLOSEOUT-01",
+        "objective": "Closeout for R3.5",
+        "work_branch": "control-plane/brain-101-r3-5-closeout",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": [
+          "docs/roadmap/evidence/"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Evidence recorded",
+          "Hard limits preserved"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ]
+      },
+      "jit_binding_policy": "bind_front_at_first_wake"
+    },
+    {
+      "id": "R4",
+      "title": "Operator Proxy manifest-driven contract catalog",
+      "status": "PLANNED",
+      "executor": "codex_control_plane",
+      "risk": "LOW",
+      "deployment_mode": "NO_DEPLOY",
+      "allowed_paths": [
+        "docs/roadmap/BRAIN_101_CONTRACT_CATALOG.json",
+        "docs/roadmap/evidence/BRAIN_101_R4_CONTRACT_CATALOG_EVIDENCE.md"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/",
+        "scripts/"
+      ],
+      "acceptance": [
+        "Catalog lists every planned R3.3-R19 operator proxy item",
+        "Each item declares executor, risk, deployment mode, allowed/forbidden paths, acceptance, tests, gates, and stops",
+        "Catalog hard_limits object mirrors manifest constitutional booleans",
+        "Preserve AUTO_MERGE=false, LIVE_TRADING=false, REAL_MONEY=false, CANONICAL_LOCAL_SYNC=false, HUMAN_FINAL_AUTHORITY=true"
+      ],
+      "test_commands": [
+        "python scripts/operator_proxy/verify_governed_merge_evidence.py docs/roadmap/BRAIN_101_CONTRACT_CATALOG.json",
+        "git diff --check"
+      ],
+      "human_gate_triggers": [
+        "Catalog schema validation failure"
+      ],
+      "stop_conditions": [
+        "Missing hard_limits block",
+        "Forbidden path present in allowed_paths"
+      ],
+      "objective": "Operator Proxy manifest-driven contract catalog",
+      "dependencies": [],
+      "domain": "operator_proxy_governance",
+      "deliverables": [
+        "R4_evidence.md"
+      ],
+      "verification_classes": [
+        "unit",
+        "contract",
+        "integration"
+      ],
+      "repair_budget": 2,
+      "closeout": {
+        "front_id": "BRAIN-101-R4-CLOSEOUT-01",
+        "objective": "Closeout for R4",
+        "work_branch": "control-plane/brain-101-r4-closeout",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": [
+          "docs/roadmap/evidence/"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Evidence recorded",
+          "Hard limits preserved"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ]
+      },
+      "jit_binding_policy": "bind_front_at_first_wake"
+    },
+    {
+      "id": "R5",
+      "title": "Operator Proxy synthetic governance gate E2E",
+      "status": "PLANNED",
+      "executor": "agent_loop",
+      "risk": "LOW",
+      "deployment_mode": "NO_DEPLOY",
+      "allowed_paths": [
+        "docs/roadmap/evidence/BRAIN_101_R5_OPERATOR_PROXY_GOVERNANCE_E2E.md"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/",
+        "scripts/"
+      ],
+      "acceptance": [
+        "Create one deterministic evidence document proving supervisor wake/halt/human-gate behavior",
+        "Use roadmap-doc or test-only profile only",
+        "Do not deploy, activate worker tasks, run live trading, use real money, perform canonical local sync, or auto-merge"
+      ],
+      "test_commands": [
+        "git diff --check"
+      ],
+      "human_gate_triggers": [
+        "Evidence requires owner review"
+      ],
+      "stop_conditions": [
+        "Any non-evidence file modification"
+      ],
+      "objective": "Operator Proxy synthetic governance gate E2E",
+      "dependencies": [],
+      "domain": "operator_proxy_governance",
+      "deliverables": [
+        "R5_evidence.md"
+      ],
+      "verification_classes": [
+        "unit",
+        "contract",
+        "integration"
+      ],
+      "repair_budget": 2,
+      "closeout": {
+        "front_id": "BRAIN-101-R5-CLOSEOUT-01",
+        "objective": "Closeout for R5",
+        "work_branch": "control-plane/brain-101-r5-closeout",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": [
+          "docs/roadmap/evidence/"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Evidence recorded",
+          "Hard limits preserved"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ]
+      },
+      "jit_binding_policy": "bind_front_at_first_wake"
+    },
+    {
+      "id": "R6",
+      "title": "Operator Proxy CI failure self-repair integration",
+      "status": "PLANNED",
+      "executor": "codex_control_plane",
+      "risk": "MEDIUM",
+      "deployment_mode": "NO_DEPLOY",
+      "allowed_paths": [
+        "scripts/operator_proxy/self_repair_controller.ts",
+        "tests/contract/operator_proxy/self_repair_controller.test.ts",
+        "docs/roadmap/evidence/BRAIN_101_R6_CI_SELF_REPAIR.md"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/"
+      ],
+      "acceptance": [
+        "Base-drift CI_FAILED reconciles blocked CI base",
+        "Green-check CI_FAILED reconciles blocked CI checks",
+        "Unrecoverable CI_FAILED records WAITING_CAPACITY and pauses",
+        "Repair loop never exceeds max_consecutive_self_repairs",
+        "Preserve AUTO_MERGE=false, LIVE_TRADING=false, REAL_MONEY=false, CANONICAL_LOCAL_SYNC=false, HUMAN_FINAL_AUTHORITY=true"
+      ],
+      "test_commands": [
+        "npm run typecheck",
+        "npx tsx --test tests/contract/operator_proxy/self_repair_controller.test.ts",
+        "git diff --check"
+      ],
+      "human_gate_triggers": [
+        "REPAIR_LIMIT_REACHED"
+      ],
+      "stop_conditions": [
+        "Self-repair loop unbounded",
+        "Hard limit violated"
+      ],
+      "objective": "Operator Proxy CI failure self-repair integration",
+      "dependencies": [],
+      "domain": "operator_proxy_governance",
+      "deliverables": [
+        "R6_evidence.md"
+      ],
+      "verification_classes": [
+        "unit",
+        "contract",
+        "integration"
+      ],
+      "repair_budget": 2,
+      "closeout": {
+        "front_id": "BRAIN-101-R6-CLOSEOUT-01",
+        "objective": "Closeout for R6",
+        "work_branch": "control-plane/brain-101-r6-closeout",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": [
+          "docs/roadmap/evidence/"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Evidence recorded",
+          "Hard limits preserved"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ]
+      },
+      "jit_binding_policy": "bind_front_at_first_wake"
+    },
+    {
+      "id": "R7",
+      "title": "Operator Proxy provider session isolation contract",
+      "status": "PLANNED",
+      "executor": "codex_control_plane",
+      "risk": "MEDIUM",
+      "deployment_mode": "NO_DEPLOY",
+      "allowed_paths": [
+        "scripts/operator_proxy/provider_role_authority.ts",
+        "tests/contract/operator_proxy/provider_role_authority.test.ts",
+        "docs/roadmap/evidence/BRAIN_101_R7_PROVIDER_ISOLATION.md"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/"
+      ],
+      "acceptance": [
+        "Builder/reviewer session providers must differ from owner/supervisor providers",
+        "Malformed session identities are rejected",
+        "Fallback audit records are deterministic and append-only",
+        "Preserve AUTO_MERGE=false, LIVE_TRADING=false, REAL_MONEY=false, CANONICAL_LOCAL_SYNC=false, HUMAN_FINAL_AUTHORITY=true"
+      ],
+      "test_commands": [
+        "npm run typecheck",
+        "npx tsx --test tests/contract/operator_proxy/provider_role_authority.test.ts",
+        "git diff --check"
+      ],
+      "human_gate_triggers": [
+        "Provider session collision",
+        "Unknown provider backend"
+      ],
+      "stop_conditions": [
+        "Role separation cannot be enforced"
+      ],
+      "objective": "Operator Proxy provider session isolation contract",
+      "dependencies": [],
+      "domain": "operator_proxy_governance",
+      "deliverables": [
+        "R7_evidence.md"
+      ],
+      "verification_classes": [
+        "unit",
+        "contract",
+        "integration"
+      ],
+      "repair_budget": 2,
+      "closeout": {
+        "front_id": "BRAIN-101-R7-CLOSEOUT-01",
+        "objective": "Closeout for R7",
+        "work_branch": "control-plane/brain-101-r7-closeout",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": [
+          "docs/roadmap/evidence/"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Evidence recorded",
+          "Hard limits preserved"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ]
+      },
+      "jit_binding_policy": "bind_front_at_first_wake"
+    },
+    {
+      "id": "R8",
+      "title": "Operator Proxy decision ledger campaign binding",
+      "status": "PLANNED",
+      "executor": "codex_control_plane",
+      "risk": "MEDIUM",
+      "deployment_mode": "NO_DEPLOY",
+      "allowed_paths": [
+        "scripts/operator_proxy/decision_ledger.ts",
+        "scripts/operator_proxy/campaign_authorization.ts",
+        "tests/contract/operator_proxy/campaign_ledger.test.ts"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/"
+      ],
+      "acceptance": [
+        "Every decision references the active campaign_id and authorization_id",
+        "Stale decisions fail closed on authorization mismatch",
+        "Owner-constitutional merges require validated owner signature",
+        "Preserve AUTO_MERGE=false, LIVE_TRADING=false, REAL_MONEY=false, CANONICAL_LOCAL_SYNC=false, HUMAN_FINAL_AUTHORITY=true"
+      ],
+      "test_commands": [
+        "npm run typecheck",
+        "npx tsx --test tests/contract/operator_proxy/campaign_ledger.test.ts",
+        "git diff --check"
+      ],
+      "human_gate_triggers": [
+        "Owner signature mismatch",
+        "Decision authorization_id drift"
+      ],
+      "stop_conditions": [
+        "Decision identity conflict",
+        "Hard limit violated"
+      ],
+      "objective": "Operator Proxy decision ledger campaign binding",
+      "dependencies": [],
+      "domain": "operator_proxy_governance",
+      "deliverables": [
+        "R8_evidence.md"
+      ],
+      "verification_classes": [
+        "unit",
+        "contract",
+        "integration"
+      ],
+      "repair_budget": 2,
+      "closeout": {
+        "front_id": "BRAIN-101-R8-CLOSEOUT-01",
+        "objective": "Closeout for R8",
+        "work_branch": "control-plane/brain-101-r8-closeout",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": [
+          "docs/roadmap/evidence/"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Evidence recorded",
+          "Hard limits preserved"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ]
+      },
+      "jit_binding_policy": "bind_front_at_first_wake"
+    },
+    {
+      "id": "R9",
+      "title": "Operator Proxy runtime recovery without canonical local sync",
+      "status": "PLANNED",
+      "executor": "codex_control_plane",
+      "risk": "MEDIUM",
+      "deployment_mode": "NO_DEPLOY",
+      "allowed_paths": [
+        "scripts/operator_proxy/autonomous_runtime.ts",
+        "scripts/operator_proxy/campaign_supervisor.ts",
+        "tests/contract/operator_proxy/runtime_recovery.test.ts"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/"
+      ],
+      "acceptance": [
+        "Runtime recovery reuses durable builder provenance from PR #200",
+        "No canonical local sync is performed; all state is GitHub-backed or append-only file store",
+        "Recovery actions are bounded and audited in campaign-events.jsonl",
+        "Preserve AUTO_MERGE=false, LIVE_TRADING=false, REAL_MONEY=false, CANONICAL_LOCAL_SYNC=false, HUMAN_FINAL_AUTHORITY=true"
+      ],
+      "test_commands": [
+        "npm run typecheck",
+        "npx tsx --test tests/contract/operator_proxy/runtime_recovery.test.ts",
+        "git diff --check"
+      ],
+      "human_gate_triggers": [
+        "LOCAL_PRIVILEGE_REQUIRED"
+      ],
+      "stop_conditions": [
+        "CANONICAL_LOCAL_SYNC=true attempted",
+        "Hard limit violated"
+      ],
+      "objective": "Operator Proxy runtime recovery without canonical local sync",
+      "dependencies": [],
+      "domain": "operator_proxy_governance",
+      "deliverables": [
+        "R9_evidence.md"
+      ],
+      "verification_classes": [
+        "unit",
+        "contract",
+        "integration"
+      ],
+      "repair_budget": 2,
+      "closeout": {
+        "front_id": "BRAIN-101-R9-CLOSEOUT-01",
+        "objective": "Closeout for R9",
+        "work_branch": "control-plane/brain-101-r9-closeout",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": [
+          "docs/roadmap/evidence/"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Evidence recorded",
+          "Hard limits preserved"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ]
+      },
+      "jit_binding_policy": "bind_front_at_first_wake"
+    },
+    {
+      "id": "R10",
+      "title": "Operator Proxy pause and resume contract",
+      "status": "PLANNED",
+      "executor": "codex_control_plane",
+      "risk": "LOW",
+      "deployment_mode": "NO_DEPLOY",
+      "allowed_paths": [
+        "scripts/operator_proxy/campaign_supervisor.ts",
+        "tests/contract/operator_proxy/pause_resume.test.ts",
+        "docs/roadmap/evidence/BRAIN_101_R10_PAUSE_RESUME.md"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/"
+      ],
+      "acceptance": [
+        "PAUSED supervisor refuses wake until human gate is authorized",
+        "RESUME authorization validates owner signature before activation",
+        "Halted campaigns cannot be resumed without explicit re-initialization gate",
+        "Preserve AUTO_MERGE=false, LIVE_TRADING=false, REAL_MONEY=false, CANONICAL_LOCAL_SYNC=false, HUMAN_FINAL_AUTHORITY=true"
+      ],
+      "test_commands": [
+        "npm run typecheck",
+        "npx tsx --test tests/contract/operator_proxy/pause_resume.test.ts",
+        "git diff --check"
+      ],
+      "human_gate_triggers": [
+        "PAUSE",
+        "HALT",
+        "RESUME"
+      ],
+      "stop_conditions": [
+        "Resume without owner authorization"
+      ],
+      "objective": "Operator Proxy pause and resume contract",
+      "dependencies": [],
+      "domain": "operator_proxy_governance",
+      "deliverables": [
+        "R10_evidence.md"
+      ],
+      "verification_classes": [
+        "unit",
+        "contract",
+        "integration"
+      ],
+      "repair_budget": 2,
+      "closeout": {
+        "front_id": "BRAIN-101-R10-CLOSEOUT-01",
+        "objective": "Closeout for R10",
+        "work_branch": "control-plane/brain-101-r10-closeout",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": [
+          "docs/roadmap/evidence/"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Evidence recorded",
+          "Hard limits preserved"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ]
+      },
+      "jit_binding_policy": "bind_front_at_first_wake"
+    },
+    {
+      "id": "R11",
+      "title": "Operator Proxy event stream observability",
+      "status": "PLANNED",
+      "executor": "codex_control_plane",
+      "risk": "LOW",
+      "deployment_mode": "NO_DEPLOY",
+      "allowed_paths": [
+        "scripts/operator_proxy/campaign_state.ts",
+        "tests/contract/operator_proxy/events.test.ts",
+        "docs/roadmap/evidence/BRAIN_101_R11_EVENT_STREAM.md"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/"
+      ],
+      "acceptance": [
+        "campaign-events.jsonl is append-only and redacted",
+        "Events include incident classification, repair attempts, human gates, and phase advances",
+        "Sensitive tokens are not persisted in event stream",
+        "Preserve AUTO_MERGE=false, LIVE_TRADING=false, REAL_MONEY=false, CANONICAL_LOCAL_SYNC=false, HUMAN_FINAL_AUTHORITY=true"
+      ],
+      "test_commands": [
+        "npm run typecheck",
+        "npx tsx --test tests/contract/operator_proxy/events.test.ts",
+        "git diff --check"
+      ],
+      "human_gate_triggers": [
+        "Event tampering detected"
+      ],
+      "stop_conditions": [
+        "Event stream not append-only"
+      ],
+      "objective": "Operator Proxy event stream observability",
+      "dependencies": [],
+      "domain": "operator_proxy_governance",
+      "deliverables": [
+        "R11_evidence.md"
+      ],
+      "verification_classes": [
+        "unit",
+        "contract",
+        "integration"
+      ],
+      "repair_budget": 2,
+      "closeout": {
+        "front_id": "BRAIN-101-R11-CLOSEOUT-01",
+        "objective": "Closeout for R11",
+        "work_branch": "control-plane/brain-101-r11-closeout",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": [
+          "docs/roadmap/evidence/"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Evidence recorded",
+          "Hard limits preserved"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ]
+      },
+      "jit_binding_policy": "bind_front_at_first_wake"
+    },
+    {
+      "id": "R12",
+      "title": "Operator Proxy closeout packet generator",
+      "status": "PLANNED",
+      "executor": "codex_control_plane",
+      "risk": "MEDIUM",
+      "deployment_mode": "NO_DEPLOY",
+      "allowed_paths": [
+        "scripts/operator_proxy/campaign_supervisor.ts",
+        "docs/roadmap/evidence/BRAIN_101_R12_CLOSEOUT_GENERATOR.md"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/"
+      ],
+      "acceptance": [
+        "Closeout evidence packet includes campaign_id, phase, incidents, and final state",
+        "Packet is redacted and signed with authorization_id",
+        "No runtime code or governance files are modified by closeout generation",
+        "Preserve AUTO_MERGE=false, LIVE_TRADING=false, REAL_MONEY=false, CANONICAL_LOCAL_SYNC=false, HUMAN_FINAL_AUTHORITY=true"
+      ],
+      "test_commands": [
+        "npx tsx scripts/operator_proxy/campaign_supervisor.ts --closeout BRAIN-101-R12",
+        "git diff --check"
+      ],
+      "human_gate_triggers": [
+        "Closeout packet review"
+      ],
+      "stop_conditions": [
+        "Packet missing required fields"
+      ],
+      "objective": "Operator Proxy closeout packet generator",
+      "dependencies": [],
+      "domain": "operator_proxy_governance",
+      "deliverables": [
+        "R12_evidence.md"
+      ],
+      "verification_classes": [
+        "unit",
+        "contract",
+        "integration"
+      ],
+      "repair_budget": 2,
+      "closeout": {
+        "front_id": "BRAIN-101-R12-CLOSEOUT-01",
+        "objective": "Closeout for R12",
+        "work_branch": "control-plane/brain-101-r12-closeout",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": [
+          "docs/roadmap/evidence/"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Evidence recorded",
+          "Hard limits preserved"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ]
+      },
+      "jit_binding_policy": "bind_front_at_first_wake"
+    },
+    {
+      "id": "R13",
+      "title": "Operator Proxy multi-item campaign supervision",
+      "status": "PLANNED",
+      "executor": "codex_control_plane",
+      "risk": "MEDIUM",
+      "deployment_mode": "NO_DEPLOY",
+      "allowed_paths": [
+        "scripts/operator_proxy/campaign_supervisor.ts",
+        "scripts/operator_proxy/roadmap_sequencer.ts",
+        "tests/contract/operator_proxy/multi_item.test.ts"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/"
+      ],
+      "acceptance": [
+        "Supervisor advances from R3.3 through R19 with one active front at a time",
+        "Each phase completion updates the manifest active item pointer conceptually",
+        "Halt or human gate on any phase pauses the whole campaign",
+        "Preserve AUTO_MERGE=false, LIVE_TRADING=false, REAL_MONEY=false, CANONICAL_LOCAL_SYNC=false, HUMAN_FINAL_AUTHORITY=true"
+      ],
+      "test_commands": [
+        "npm run typecheck",
+        "npx tsx --test tests/contract/operator_proxy/multi_item.test.ts",
+        "git diff --check"
+      ],
+      "human_gate_triggers": [
+        "Any phase human gate"
+      ],
+      "stop_conditions": [
+        "Multiple active fronts detected",
+        "Phase order violated"
+      ],
+      "objective": "Operator Proxy multi-item campaign supervision",
+      "dependencies": [],
+      "domain": "operator_proxy_governance",
+      "deliverables": [
+        "R13_evidence.md"
+      ],
+      "verification_classes": [
+        "unit",
+        "contract",
+        "integration"
+      ],
+      "repair_budget": 2,
+      "closeout": {
+        "front_id": "BRAIN-101-R13-CLOSEOUT-01",
+        "objective": "Closeout for R13",
+        "work_branch": "control-plane/brain-101-r13-closeout",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": [
+          "docs/roadmap/evidence/"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Evidence recorded",
+          "Hard limits preserved"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ]
+      },
+      "jit_binding_policy": "bind_front_at_first_wake"
+    },
+    {
+      "id": "R14",
+      "title": "Operator Proxy adversarial incident classification",
+      "status": "PLANNED",
+      "executor": "codex_control_plane",
+      "risk": "MEDIUM",
+      "deployment_mode": "NO_DEPLOY",
+      "allowed_paths": [
+        "scripts/operator_proxy/incident_classifier.ts",
+        "tests/contract/operator_proxy/adversarial_incidents.test.ts"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/"
+      ],
+      "acceptance": [
+        "Malformed errors classify as UNKNOWN with P3 severity",
+        "Injection of fake last_error strings is bounded by known class set",
+        "Severity escalation never exceeds P0 without owner gate",
+        "Preserve AUTO_MERGE=false, LIVE_TRADING=false, REAL_MONEY=false, CANONICAL_LOCAL_SYNC=false, HUMAN_FINAL_AUTHORITY=true"
+      ],
+      "test_commands": [
+        "npm run typecheck",
+        "npx tsx --test tests/contract/operator_proxy/adversarial_incidents.test.ts",
+        "git diff --check"
+      ],
+      "human_gate_triggers": [
+        "UNKNOWN P0 incident"
+      ],
+      "stop_conditions": [
+        "Classifier accepts arbitrary severity override"
+      ],
+      "objective": "Operator Proxy adversarial incident classification",
+      "dependencies": [],
+      "domain": "operator_proxy_governance",
+      "deliverables": [
+        "R14_evidence.md"
+      ],
+      "verification_classes": [
+        "unit",
+        "contract",
+        "integration"
+      ],
+      "repair_budget": 2,
+      "closeout": {
+        "front_id": "BRAIN-101-R14-CLOSEOUT-01",
+        "objective": "Closeout for R14",
+        "work_branch": "control-plane/brain-101-r14-closeout",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": [
+          "docs/roadmap/evidence/"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Evidence recorded",
+          "Hard limits preserved"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ]
+      },
+      "jit_binding_policy": "bind_front_at_first_wake"
+    },
+    {
+      "id": "R15",
+      "title": "Operator Proxy durable state migration from lifecycle store",
+      "status": "PLANNED",
+      "executor": "codex_control_plane",
+      "risk": "MEDIUM",
+      "deployment_mode": "NO_DEPLOY",
+      "allowed_paths": [
+        "scripts/operator_proxy/campaign_state.ts",
+        "scripts/operator_proxy/lifecycle_store.ts",
+        "tests/contract/operator_proxy/state_migration.test.ts"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/"
+      ],
+      "acceptance": [
+        "Existing lifecycle files remain valid and immutable",
+        "Campaign state references lifecycle front_id without duplicating effects",
+        "Migration is idempotent and audited",
+        "Preserve AUTO_MERGE=false, LIVE_TRADING=false, REAL_MONEY=false, CANONICAL_LOCAL_SYNC=false, HUMAN_FINAL_AUTHORITY=true"
+      ],
+      "test_commands": [
+        "npm run typecheck",
+        "npx tsx --test tests/contract/operator_proxy/state_migration.test.ts",
+        "git diff --check"
+      ],
+      "human_gate_triggers": [
+        "Migration conflicts with active lifecycle"
+      ],
+      "stop_conditions": [
+        "Existing lifecycle record mutated"
+      ],
+      "objective": "Operator Proxy durable state migration from lifecycle store",
+      "dependencies": [],
+      "domain": "operator_proxy_governance",
+      "deliverables": [
+        "R15_evidence.md"
+      ],
+      "verification_classes": [
+        "unit",
+        "contract",
+        "integration"
+      ],
+      "repair_budget": 2,
+      "closeout": {
+        "front_id": "BRAIN-101-R15-CLOSEOUT-01",
+        "objective": "Closeout for R15",
+        "work_branch": "control-plane/brain-101-r15-closeout",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": [
+          "docs/roadmap/evidence/"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Evidence recorded",
+          "Hard limits preserved"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ]
+      },
+      "jit_binding_policy": "bind_front_at_first_wake"
+    },
+    {
+      "id": "R16",
+      "title": "Operator Proxy end-to-end bounded autonomy test",
+      "status": "PLANNED",
+      "executor": "agent_loop",
+      "risk": "LOW",
+      "deployment_mode": "NO_DEPLOY",
+      "allowed_paths": [
+        "docs/roadmap/evidence/BRAIN_101_R16_BOUNDED_AUTONOMY_E2E.md"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/",
+        "scripts/"
+      ],
+      "acceptance": [
+        "Produce one deterministic evidence document showing bounded autonomy",
+        "Do not modify runtime code, governance, memory, trading, or financial autonomy",
+        "Do not deploy, run live trading, use real money, perform canonical local sync, or auto-merge"
+      ],
+      "test_commands": [
+        "git diff --check"
+      ],
+      "human_gate_triggers": [
+        "E2E evidence review"
+      ],
+      "stop_conditions": [
+        "Any non-evidence file modification"
+      ],
+      "objective": "Operator Proxy end-to-end bounded autonomy test",
+      "dependencies": [],
+      "domain": "operator_proxy_governance",
+      "deliverables": [
+        "R16_evidence.md"
+      ],
+      "verification_classes": [
+        "unit",
+        "contract",
+        "integration"
+      ],
+      "repair_budget": 2,
+      "closeout": {
+        "front_id": "BRAIN-101-R16-CLOSEOUT-01",
+        "objective": "Closeout for R16",
+        "work_branch": "control-plane/brain-101-r16-closeout",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": [
+          "docs/roadmap/evidence/"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Evidence recorded",
+          "Hard limits preserved"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ]
+      },
+      "jit_binding_policy": "bind_front_at_first_wake"
+    },
+    {
+      "id": "R17",
+      "title": "Operator Proxy constitutional invariant regression suite",
+      "status": "PLANNED",
+      "executor": "codex_control_plane",
+      "risk": "MEDIUM",
+      "deployment_mode": "NO_DEPLOY",
+      "allowed_paths": [
+        "tests/contract/operator_proxy/constitutional_invariants.test.ts",
+        "docs/roadmap/evidence/BRAIN_101_R17_CONSTITUTIONAL_REGRESSION.md"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/"
+      ],
+      "acceptance": [
+        "Regression tests assert hard limits in all reachable states",
+        "Any attempt to enable AUTO_MERGE/LIVE_TRADING/REAL_MONEY/CANONICAL_LOCAL_SYNC fails closed",
+        "HUMAN_FINAL_AUTHORITY remains true in every persisted state",
+        "Preserve AUTO_MERGE=false, LIVE_TRADING=false, REAL_MONEY=false, CANONICAL_LOCAL_SYNC=false, HUMAN_FINAL_AUTHORITY=true"
+      ],
+      "test_commands": [
+        "npm run typecheck",
+        "npx tsx --test tests/contract/operator_proxy/constitutional_invariants.test.ts",
+        "git diff --check"
+      ],
+      "human_gate_triggers": [
+        "Constitutional regression failure"
+      ],
+      "stop_conditions": [
+        "Any invariant violation"
+      ],
+      "objective": "Operator Proxy constitutional invariant regression suite",
+      "dependencies": [],
+      "domain": "operator_proxy_governance",
+      "deliverables": [
+        "R17_evidence.md"
+      ],
+      "verification_classes": [
+        "unit",
+        "contract",
+        "integration"
+      ],
+      "repair_budget": 2,
+      "closeout": {
+        "front_id": "BRAIN-101-R17-CLOSEOUT-01",
+        "objective": "Closeout for R17",
+        "work_branch": "control-plane/brain-101-r17-closeout",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": [
+          "docs/roadmap/evidence/"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Evidence recorded",
+          "Hard limits preserved"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ]
+      },
+      "jit_binding_policy": "bind_front_at_first_wake"
+    },
+    {
+      "id": "R18",
+      "title": "Operator Proxy closeout documentation and scorecard update",
+      "status": "PLANNED",
+      "executor": "codex_control_plane",
+      "risk": "LOW",
+      "deployment_mode": "DOCUMENTATION_CLOSEOUT",
+      "allowed_paths": [
+        "docs/roadmap/BRAIN_101_SCORECARD.json",
+        "docs/roadmap/BRAIN_101_ROADMAP.md",
+        "docs/MIGRATION_CONTROL_LEDGER.md",
+        "docs/roadmap/evidence/BRAIN_101_R18_OPERATOR_PROXY_CLOSEOUT.md"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/",
+        "scripts/"
+      ],
+      "acceptance": [
+        "Update scorecard to reflect operator proxy phase completion",
+        "Record every R3.3-R17 evidence path and decision_id",
+        "Do not modify runtime code, governance, memory, trading, or financial autonomy",
+        "Preserve AUTO_MERGE=false, LIVE_TRADING=false, REAL_MONEY=false, CANONICAL_LOCAL_SYNC=false, HUMAN_FINAL_AUTHORITY=true"
+      ],
+      "test_commands": [
+        "git diff --check"
+      ],
+      "human_gate_triggers": [
+        "Scorecard review"
+      ],
+      "stop_conditions": [
+        "Runtime file modified"
+      ],
+      "objective": "Operator Proxy closeout documentation and scorecard update",
+      "dependencies": [],
+      "domain": "operator_proxy_governance",
+      "deliverables": [
+        "R18_evidence.md"
+      ],
+      "verification_classes": [
+        "unit",
+        "contract",
+        "integration"
+      ],
+      "repair_budget": 2,
+      "closeout": {
+        "front_id": "BRAIN-101-R18-CLOSEOUT-01",
+        "objective": "Closeout for R18",
+        "work_branch": "control-plane/brain-101-r18-closeout",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": [
+          "docs/roadmap/evidence/"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Evidence recorded",
+          "Hard limits preserved"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ]
+      },
+      "jit_binding_policy": "bind_front_at_first_wake"
+    },
+    {
+      "id": "R19",
+      "title": "Operator Proxy campaign finalization and human adoption",
+      "status": "PLANNED",
+      "executor": "codex_control_plane",
+      "risk": "LOW",
+      "deployment_mode": "DOCUMENTATION_CLOSEOUT",
+      "allowed_paths": [
+        "docs/roadmap/BRAIN_101_MANIFEST.json",
+        "docs/roadmap/BRAIN_101_ROADMAP.md",
+        "docs/MIGRATION_CONTROL_LEDGER.md",
+        "docs/roadmap/evidence/BRAIN_101_R19_HUMAN_ADOPTION.md"
+      ],
+      "forbidden_paths": [
+        ".env",
+        ".github/",
+        "memory/",
+        "tmp_agent/brain_v9/trading/",
+        "financial_autonomy/",
+        "tmp_agent/state/",
+        "scripts/"
+      ],
+      "acceptance": [
+        "Set operator proxy campaign status to CLOSED_HUMAN_ADOPTED",
+        "Record final integration SHA and manifest governance validation",
+        "Authorize next roadmap item with exactly one AUTHORIZED_ACTIVE pointer",
+        "Preserve AUTO_MERGE=false, LIVE_TRADING=false, REAL_MONEY=false, CANONICAL_LOCAL_SYNC=false, HUMAN_FINAL_AUTHORITY=true"
+      ],
+      "test_commands": [
+        "git diff --check"
+      ],
+      "human_gate_triggers": [
+        "Final human owner adoption review"
+      ],
+      "stop_conditions": [
+        "Multiple active roadmap items",
+        "Missing human final authority attestation"
+      ],
+      "objective": "Operator Proxy campaign finalization and human adoption",
+      "dependencies": [],
+      "domain": "operator_proxy_governance",
+      "deliverables": [
+        "R19_evidence.md"
+      ],
+      "verification_classes": [
+        "unit",
+        "contract",
+        "integration"
+      ],
+      "repair_budget": 2,
+      "closeout": {
+        "front_id": "BRAIN-101-R19-CLOSEOUT-01",
+        "objective": "Closeout for R19",
+        "work_branch": "control-plane/brain-101-r19-closeout",
+        "executor": "codex_control_plane",
+        "risk": "LOW",
+        "allowed_paths": [
+          "docs/roadmap/evidence/"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/"
+        ],
+        "acceptance": [
+          "Evidence recorded",
+          "Hard limits preserved"
+        ],
+        "test_commands": [
+          "git diff --check"
+        ]
+      },
+      "jit_binding_policy": "bind_front_at_first_wake"
+    }
+  ]
+}
