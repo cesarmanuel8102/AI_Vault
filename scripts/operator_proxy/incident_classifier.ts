@@ -17,7 +17,8 @@ export function classifyIncident(state: LifecycleRecord, error?: unknown): {clas
     WAITING_CAPACITY: "WAITING_CAPACITY",
     HUMAN_GATE_REQUIRED: "HUMAN_GATE_REQUIRED",
   };
-  const resolved = map[last ?? ""] ?? (message.includes("provider") ? "PROVIDER_UNAVAILABLE" : message.includes("provenance") ? "PROVENANCE_RECOVERY_REQUIRED" : "UNKNOWN");
+  const lower = message.toLowerCase();
+  const resolved = map[last ?? ""] ?? (lower.includes("codex") || lower.includes("provider") ? "PROVIDER_UNAVAILABLE" : lower.includes("provenance") || lower.includes("control_plane_defect") ? "PROVENANCE_RECOVERY_REQUIRED" : "UNKNOWN");
   const severity: Severity = resolved === "POLICY_BLOCK" || resolved === "REPAIR_LIMIT_REACHED" ? "P0" : resolved === "CI_FAILED" || resolved === "PROVENANCE_RECOVERY_REQUIRED" ? "P1" : resolved === "OWNER_AUTHORITY_REQUIRED" || resolved === "LOCAL_PRIVILEGE_REQUIRED" || resolved === "HUMAN_GATE_REQUIRED" ? "P0" : resolved === "PROVIDER_UNAVAILABLE" ? "P2" : "P3";
   return {class: resolved, severity, detail};
 }

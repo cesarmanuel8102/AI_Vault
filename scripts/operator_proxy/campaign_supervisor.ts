@@ -12,12 +12,14 @@ import type {ExternalEffectBoundary} from "./external_effect_guard.js";
 import type {LifecycleRecord, ProxySpec} from "./types.js";
 
 function nextPhase(phase: string): string {
-  if (phase === "R19") return "COMPLETED";
-  const match = phase.match(/^(R\d+)(?:\.(\d+))?$/);
+  if (phase === "R19" || phase.startsWith("R19.")) return "COMPLETED";
+  if (phase === "R3.2") return "R3.3";
+  if (phase === "R3.3") return "R4";
+  const match = phase.match(/^R(\d+)$/);
   if (!match) throw new Error("phase format invalid");
-  const base = match[1];
-  const sub = match[2] ? Number.parseInt(match[2], 10) : 0;
-  return `${base}.${sub + 1}`;
+  const baseNum = Number.parseInt(match[1], 10);
+  if (baseNum >= 19) return "COMPLETED";
+  return `R${baseNum + 1}`;
 }
 
 export interface SupervisorOptions {
@@ -214,7 +216,7 @@ export class CampaignSupervisor {
     return auditFallback(failureClass, fromBackend, toBackend, reason);
   }
 
-  private runTick(): Promise<LifecycleRecord> {
+  protected runTick(): Promise<LifecycleRecord> {
     return runAutonomousRoadmapTick(this.bus, join(this.root, "operator_proxy"), this.reviewerRepo, this.boundary);
   }
 
