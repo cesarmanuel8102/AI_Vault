@@ -20,26 +20,66 @@ test("missing Agent Loop model receipt becomes one bounded deterministic repair 
 test("synchronized Agent Loop head inspects the exact governed candidate receipt",()=>{const root=mkdtempSync(join(tmpdir(),"sync-receipt-")),front="BRAIN-101-R1-3-SYNC-RECEIPT",candidate="b".repeat(40),head="c".repeat(40),agentSpec:ProxySpec={...spec,executor:"agent_loop",front_id:front,test_profile:"roadmap-doc",max_executor_cycles:2},state:any={schema_version:1,front_id:front,roadmap_item_id:agentSpec.roadmap_item_id,state:"REVIEWING",issue:112,pr:113,base_sha:agentSpec.expected_base_sha,head_sha:head,builder_session:`agent-loop-builder-${candidate}`,repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:["issue:112",`build:${candidate}`,`base-sync:${head}`],updated_utc:new Date().toISOString()},messages:any={[head]:`chore(control-plane): synchronize ${front} base`,[candidate]:`test(agent-loop): complete ${front}`},bus:any=guarded({prIdentity:()=>({files:[{path:"docs/roadmap/evidence/x.md"}]}),commitMessage:(sha:string)=>messages[sha],isAncestor:(older:string,newer:string)=>older===candidate&&newer===head}),prior=process.env.OPERATOR_PROXY_BUILDER_MODEL;process.env.OPERATOR_PROXY_BUILDER_MODEL=REVIEWER_MODELS.kimi;try{const effects=new ProductionEffects(bus,new Ledger(join(root,"decisions")),".",root,boundary);effects.bindLifecycle(agentSpec,state);assert.equal(effects.review(113,head,"requested").output.verdict,"CHANGES_REQUESTED");for(const mutation of [{completed_effects:["issue:112",`build:${candidate}`]},{builder_session:`agent-loop-builder-${head}`},{repair_cycles:1}]){const denied=new ProductionEffects(bus,new Ledger(join(root,Math.random().toString())),".",root,boundary);denied.bindLifecycle(agentSpec,{...state,...mutation});assert.throws(()=>denied.review(113,head,"requested"),/synchronized receipt evidence invalid/);}}finally{if(prior===undefined)delete process.env.OPERATOR_PROXY_BUILDER_MODEL;else process.env.OPERATOR_PROXY_BUILDER_MODEL=prior;}});
 test("ambiguous or contradictory Agent Loop receipts remain fail-closed",()=>{const root=mkdtempSync(join(tmpdir(),"receipt-deny-")),front="BRAIN-101-R1-3-RECEIPT-DENY",head="b".repeat(40),agentSpec:ProxySpec={...spec,executor:"agent_loop",front_id:front},state:any={schema_version:1,front_id:front,roadmap_item_id:agentSpec.roadmap_item_id,state:"REVIEWING",issue:112,pr:113,base_sha:agentSpec.expected_base_sha,head_sha:head,builder_session:`agent-loop-builder-${head}`,repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:["issue:112",`build:${head}`],updated_utc:new Date().toISOString()},prior=process.env.OPERATOR_PROXY_BUILDER_MODEL;process.env.OPERATOR_PROXY_BUILDER_MODEL=REVIEWER_MODELS.kimi;try{for(const message of [`test(agent-loop): complete ${front}\n\nAGENT_LOOP_EXECUTOR_MODEL=${REVIEWER_MODELS.kimi}\nAGENT_LOOP_EXECUTOR_MODEL=${REVIEWER_MODELS.kimi}`,`test(agent-loop): complete ${front}\n\nAGENT_LOOP_EXECUTOR_MODEL=${REVIEWER_MODELS.qwen}`]){const effects=new ProductionEffects(guarded({prIdentity:()=>({files:[]}),commitMessage:()=>message}),new Ledger(join(root,createHash("sha256").update(message).digest("hex"))),".",root,boundary);effects.bindLifecycle(agentSpec,state);assert.throws(()=>effects.review(113,head,"requested"),/receipt (ambiguous|mismatch)/);}}finally{if(prior===undefined)delete process.env.OPERATOR_PROXY_BUILDER_MODEL;else process.env.OPERATOR_PROXY_BUILDER_MODEL=prior;}});
 
-function controlPlaneReceiptFixture(messages:Record<string,string>,parents:Record<string,string[]>,head:string,base:string){
-  const root=mkdtempSync(join(tmpdir(),"router-receipt-")),bus:any=guarded({repo:spec.repository,isAncestor:(older:string,newer:string)=>older===base&&newer===head,commitMessage:(sha:string)=>messages[sha]??"unrelated",call:(args:string[])=>{const sha=args[1].split("/").at(-1)!;return JSON.stringify({parents:(parents[sha]??[]).map(value=>({sha:value}))});},prIdentity:()=>({files:[{path:"docs/x.md"}]})}),effects=new ProductionEffects(bus,new Ledger(join(root,"decisions")),".",root,boundary);return {root,bus,effects};
+function controlPlaneReceiptFixture(messages:Record<string,string>,parents:Record<string,string[]>,head:string,base:string,trees?:Record<string,string>){
+  const root=mkdtempSync(join(tmpdir(),"router-receipt-")),bus:any=guarded({repo:spec.repository,isAncestor:(older:string,newer:string)=>older===newer||older===base,commitMessage:(sha:string)=>messages[sha]??"unrelated",call:(args:string[])=>{const sha=args[1].split("/").at(-1)!;return JSON.stringify({tree:{sha:trees?.[sha]??"0".repeat(40)},parents:(parents[sha]??[]).map(value=>({sha:value}))});},prIdentity:()=>({files:[{path:"docs/x.md"}]})}),effects=new ProductionEffects(bus,new Ledger(join(root,"decisions")),".",root,boundary);return {root,bus,effects};
 }
 
 test("control-plane receipt resolves the nearest selected model through a base-sync merge",()=>{
   const base="1".repeat(40),oldBase="2".repeat(40),older="3".repeat(40),nearest="4".repeat(40),head="5".repeat(40),subject=`feat(control-plane): complete ${spec.front_id}`;
-  const messages={[head]:`chore(control-plane): synchronize ${spec.front_id} base`,[nearest]:`${subject}\n\nBUILDER_BACKEND=opencode_ollama\nBUILDER_MODEL=${REVIEWER_MODELS.kimi}\nPROVIDER_SESSION=kimi-1`,[older]:`${subject}\n\nBUILDER_MODEL=${REVIEWER_MODELS.qwen}`},parents={[head]:[nearest,base],[nearest]:[older],[older]:[oldBase]};
+  const messages={[head]:`chore(control-plane): synchronize ${spec.front_id} base`,[nearest]:`${subject}\n\nBUILDER_BACKEND=opencode_ollama\nBUILDER_MODEL=${REVIEWER_MODELS.kimi}\nPROVIDER_SESSION=kimi-1`,[older]:`${subject}\n\nBUILDER_BACKEND=opencode_ollama\nBUILDER_MODEL=${REVIEWER_MODELS.qwen}\nPROVIDER_SESSION=qwen-1`},parents={[head]:[nearest,base],[nearest]:[older],[older]:[base]};
   const {effects}=controlPlaneReceiptFixture(messages,parents,head,base),receipt=(effects as any).inspectRouterBuilderReceipt(head,base,spec.front_id);
-  assert.deepEqual(receipt,{model:REVIEWER_MODELS.kimi,headCommit:nearest});
+  assert.deepEqual(receipt,{model:REVIEWER_MODELS.kimi,headCommit:nearest,status:"VERIFIED"});
 });
 
-test("control-plane receipt fails closed when missing, ambiguous, malformed, or outside bound history",()=>{
+test("control-plane receipt classifies recovery when missing, ambiguous, malformed, or outside bound history",()=>{
   const base="1".repeat(40),candidate="2".repeat(40),head="3".repeat(40),subject=`feat(control-plane): complete ${spec.front_id}`;
-  for(const [message,pattern] of [["unrelated",/receipt missing/],[`${subject}\n\nBUILDER_MODEL=${REVIEWER_MODELS.kimi}\nBUILDER_MODEL=${REVIEWER_MODELS.qwen}`,/receipt ambiguous/],[`${subject}\n\nBUILDER_MODEL=NOT SAFE`,/receipt malformed/]] as const){const {effects}=controlPlaneReceiptFixture({[head]:message},{[head]:[candidate],[candidate]:[base]},head,base);assert.throws(()=>(effects as any).inspectRouterBuilderReceipt(head,base,spec.front_id),pattern);}
-  const {effects}=controlPlaneReceiptFixture({[head]:`${subject}\n\nBUILDER_MODEL=${REVIEWER_MODELS.kimi}`},{[head]:[candidate]},head,base);(effects as any).bus.isAncestor=()=>false;assert.throws(()=>(effects as any).inspectRouterBuilderReceipt(head,base,spec.front_id),/history invalid/);
+  for(const message of ["unrelated",`${subject}\n\nBUILDER_MODEL=${REVIEWER_MODELS.kimi}\nBUILDER_MODEL=${REVIEWER_MODELS.qwen}`,`${subject}\n\nBUILDER_MODEL=NOT SAFE`]){const {effects}=controlPlaneReceiptFixture({[head]:message},{[head]:[candidate],[candidate]:[base]},head,base);const receipt=(effects as any).inspectRouterBuilderReceipt(head,base,spec.front_id);assert.deepEqual(receipt,{model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"});}
+  const {effects}=controlPlaneReceiptFixture({[head]:`${subject}\n\nBUILDER_MODEL=${REVIEWER_MODELS.kimi}`},{[head]:[candidate]},head,base);(effects as any).bus.isAncestor=()=>false;const receipt=(effects as any).inspectRouterBuilderReceipt(head,base,spec.front_id);assert.deepEqual(receipt,{model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"});
+});
+
+test("control-plane receipt child cannot bless an unattested ancestor",()=>{
+  const base="1".repeat(40),unattested="2".repeat(40),candidate="3".repeat(40),head="4".repeat(40),subject=`feat(control-plane): complete ${spec.front_id}`;
+  const messages={[head]:`chore(control-plane): synchronize ${spec.front_id} base`,[candidate]:`${subject}\n\nBUILDER_BACKEND=opencode_ollama\nBUILDER_MODEL=${REVIEWER_MODELS.kimi}\nPROVIDER_SESSION=kimi-1`,[unattested]:`unattested commit`},parents={[head]:[candidate,base],[candidate]:[unattested],[unattested]:[base]};
+  const {effects}=controlPlaneReceiptFixture(messages,parents,head,base);const receipt=(effects as any).inspectRouterBuilderReceipt(head,base,spec.front_id);
+  assert.deepEqual(receipt,{model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"});
+});
+
+test("control-plane legacy B/L/N/R/M bridge is verified only with exact provenance bindings",()=>{
+  const base="1".repeat(40),legacy="2".repeat(40),legacyTree="7".repeat(40),n="3".repeat(40),r="4".repeat(40),m="5".repeat(40),subject=`feat(control-plane): complete ${spec.front_id}`,nSubject=`chore(control-plane): neutralize ${spec.front_id} legacy baseline`;
+  const messages={
+    [m]:`${subject}\n\nLEGACY_REBUILD=true\nNEUTRALIZATION_HEAD=${n}\nFRESH_BUILDER_HEAD=${r}\nRESET_BASE=${base}`,
+    [n]:`${nSubject}\n\nLEGACY_NEUTRALIZATION=true\nPRIOR_UNATTESTED_HEAD=${legacy}\nRESET_BASE=${base}`,
+    [r]:`${subject}\n\nBUILDER_BACKEND=opencode_ollama\nBUILDER_MODEL=${REVIEWER_MODELS.kimi}\nPROVIDER_SESSION=kimi-1`,
+  },parents={[m]:[n,r],[n]:[legacy],[r]:[base]},trees={[legacy]:legacyTree,[n]:base,[r]:r,[m]:r,[base]:base};
+  const {effects}=controlPlaneReceiptFixture(messages,parents,m,base,trees);const receipt=(effects as any).inspectRouterBuilderReceipt(m,base,spec.front_id);
+  assert.deepEqual(receipt,{model:REVIEWER_MODELS.kimi,headCommit:r,status:"VERIFIED"});
+});
+
+test("control-plane legacy bridge rejected when neutralization tree differs from base",()=>{
+  const base="1".repeat(40),legacy="2".repeat(40),legacyTree="7".repeat(40),n="3".repeat(40),r="4".repeat(40),m="5".repeat(40),subject=`feat(control-plane): complete ${spec.front_id}`,nSubject=`chore(control-plane): neutralize ${spec.front_id} legacy baseline`,otherTree="6".repeat(40);
+  const messages={
+    [m]:`${subject}\n\nLEGACY_REBUILD=true\nNEUTRALIZATION_HEAD=${n}\nFRESH_BUILDER_HEAD=${r}\nRESET_BASE=${base}`,
+    [n]:`${nSubject}\n\nLEGACY_NEUTRALIZATION=true\nPRIOR_UNATTESTED_HEAD=${legacy}\nRESET_BASE=${base}`,
+    [r]:`${subject}\n\nBUILDER_BACKEND=opencode_ollama\nBUILDER_MODEL=${REVIEWER_MODELS.kimi}\nPROVIDER_SESSION=kimi-1`,
+  },parents={[m]:[n,r],[n]:[legacy],[r]:[base]},trees={[legacy]:legacyTree,[n]:otherTree,[r]:r,[m]:r,[base]:base};
+  const {effects}=controlPlaneReceiptFixture(messages,parents,m,base,trees);const receipt=(effects as any).inspectRouterBuilderReceipt(m,base,spec.front_id);
+  assert.deepEqual(receipt,{model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"});
+});
+
+test("control-plane legacy bridge rejected when bridge tree differs from fresh builder tree",()=>{
+  const base="1".repeat(40),legacy="2".repeat(40),n="3".repeat(40),r="4".repeat(40),m="5".repeat(40),subject=`feat(control-plane): complete ${spec.front_id}`,nSubject=`chore(control-plane): neutralize ${spec.front_id} legacy baseline`,otherTree="6".repeat(40);
+  const messages={
+    [m]:`${subject}\n\nLEGACY_REBUILD=true\nNEUTRALIZATION_HEAD=${n}\nFRESH_BUILDER_HEAD=${r}\nRESET_BASE=${base}`,
+    [n]:`${nSubject}\n\nLEGACY_NEUTRALIZATION=true\nPRIOR_UNATTESTED_HEAD=${legacy}\nRESET_BASE=${base}`,
+    [r]:`${subject}\n\nBUILDER_BACKEND=opencode_ollama\nBUILDER_MODEL=${REVIEWER_MODELS.kimi}\nPROVIDER_SESSION=kimi-1`,
+  },parents={[m]:[n,r],[n]:[legacy],[r]:[base]},trees={[n]:base,[r]:r,[m]:otherTree,[base]:base};
+  const {effects}=controlPlaneReceiptFixture(messages,parents,m,base,trees);const receipt=(effects as any).inspectRouterBuilderReceipt(m,base,spec.front_id);
+  assert.deepEqual(receipt,{model:"",headCommit:"",status:"PROVENANCE_RECOVERY_REQUIRED"});
 });
 
 test("control-plane review propagates the actual builder model and preserves reviewer separation",()=>{
-  const base="1".repeat(40),candidate="2".repeat(40),head="3".repeat(40),model=REVIEWER_MODELS.kimi,subject=`feat(control-plane): complete ${spec.front_id}`;
-  const {root,effects}=controlPlaneReceiptFixture({[head]:"merge",[candidate]:`${subject}\n\nBUILDER_BACKEND=opencode_ollama\nBUILDER_MODEL=${model}\nPROVIDER_SESSION=kimi-session`},{[head]:[candidate,base],[candidate]:[base]},head,base),state:any={schema_version:1,front_id:spec.front_id,roadmap_item_id:spec.roadmap_item_id,state:"REVIEWING",issue:112,pr:113,base_sha:base,head_sha:head,builder_session:"builder-router-session",repair_cycles:1,deployment_mode:"NO_DEPLOY",completed_effects:["issue:112",`build:${head}`],updated_utc:new Date().toISOString()},input:ReviewerInput={repository:spec.repository,repositoryRoot:".",pr:113,baseSha:base,headSha:head,risk:spec.risk,changedFiles:["docs/x.md"],builderSession:state.builder_session,builderModel:model};
+  const base="1".repeat(40),candidate="2".repeat(40),head="3".repeat(40),model=REVIEWER_MODELS.kimi,subject=`feat(control-plane): complete ${spec.front_id}`,syncSubject=`chore(control-plane): synchronize ${spec.front_id} base`;
+  const {root,effects}=controlPlaneReceiptFixture({[head]:syncSubject,[candidate]:`${subject}\n\nBUILDER_BACKEND=opencode_ollama\nBUILDER_MODEL=${model}\nPROVIDER_SESSION=kimi-session`},{[head]:[candidate,base],[candidate]:[base]},head,base),state:any={schema_version:1,front_id:spec.front_id,roadmap_item_id:spec.roadmap_item_id,state:"REVIEWING",issue:112,pr:113,base_sha:base,head_sha:head,builder_session:"builder-router-session",repair_cycles:1,deployment_mode:"NO_DEPLOY",completed_effects:["issue:112",`build:${head}`],updated_utc:new Date().toISOString()},input:ReviewerInput={repository:spec.repository,repositoryRoot:".",pr:113,baseSha:base,headSha:head,risk:spec.risk,changedFiles:["docs/x.md"],builderSession:state.builder_session,builderModel:model};
   const pass=(reviewerModel:string):ReviewerBackend=>({model:reviewerModel,review:(_value,session)=>({backend:"opencode_ollama",model:reviewerModel,session,providerSession:`provider-${session}`,startedUtc:"2026-01-01T00:00:00Z",completedUtc:"2026-01-01T00:00:01Z",output:{verdict:"PASS",head_sha:head,summary:"pass",findings:[]}})});
   const seeded=new ReviewerRouter(join(root,"reviewer-router"),reviewerModel=>pass(reviewerModel)).review(input);assert.notEqual(seeded.model,model);assert.notEqual(seeded.verifier.model,model);
   effects.bindLifecycle({...spec,expected_base_sha:base},state);const result=effects.review(113,head,"requested-review");assert.equal(result.output.verdict,"PASS");assert.notEqual(result.session,state.builder_session);

@@ -24,7 +24,7 @@ function resolveOpenCodeExecutable(env: NodeJS.ProcessEnv): string {
   throw new Error("OpenCode executable not found: set OPEN_CODE_PATH");
 }
 
-export function parseOpenCodeOutput(output: string): { headSha?: string; providerSession?: string } {
+export function parseOpenCodeOutput(output: string): { headSha?: string; providerSession?: string; nativeProviderSession?: string } {
   const headMatches = [...output.matchAll(/^HEAD_SHA=([^\r\n]*)$/gm)];
   if (headMatches.length > 1) throw new Error("OpenCode builder HEAD_SHA receipt ambiguous");
   const headMatch = headMatches[0]?.[1];
@@ -33,7 +33,11 @@ export function parseOpenCodeOutput(output: string): { headSha?: string; provide
   if (sessionMatches.length > 1) throw new Error("OpenCode builder PROVIDER_SESSION receipt ambiguous");
   const providerSession=sessionMatches[0]?.[1];
   if(providerSession!==undefined&&!/^[a-z0-9][a-z0-9._:/-]{2,127}$/.test(providerSession))throw new Error("OpenCode builder PROVIDER_SESSION receipt invalid");
-  return { headSha: headMatch, providerSession };
+  const nativeMatches = [...output.matchAll(/^NATIVE_PROVIDER_SESSION=([^\r\n]*)$/gm)];
+  if (nativeMatches.length > 1) throw new Error("OpenCode builder NATIVE_PROVIDER_SESSION receipt ambiguous");
+  const nativeProviderSession=nativeMatches[0]?.[1];
+  if(nativeProviderSession!==undefined&&!/^[a-z0-9][a-z0-9._:/-]{2,127}$/.test(nativeProviderSession))throw new Error("OpenCode builder NATIVE_PROVIDER_SESSION receipt invalid");
+  return { headSha: headMatch, providerSession, nativeProviderSession };
 }
 
 export async function runOpenCodeBuilder(input: BuilderInput, config: BackendConfig, env: NodeJS.ProcessEnv = process.env, fallbackReason?: string): Promise<BuilderResult> {
@@ -49,7 +53,7 @@ export async function runOpenCodeBuilder(input: BuilderInput, config: BackendCon
   try {
     stdout = redactString(execFileSync(executable, args, {
       encoding: "utf8",
-      env: { ...env, OPERATOR_PROXY_SESSION: input.session },
+      env: { ...env, OPERATOR_PROXY_SESSION: input.session, OPERATOR_PROXY_PROVIDER_CORRELATION_ID: input.provider_correlation_id },
       timeout: 900000,
       windowsHide: true,
       maxBuffer: 32 * 1024 * 1024,
@@ -65,12 +69,15 @@ export async function runOpenCodeBuilder(input: BuilderInput, config: BackendCon
   if (!head || !/^[0-9a-f]{40}$/.test(head)) throw new Error("OpenCode builder did not produce HEAD_SHA");
   const actualHead = execFileSync(env.GIT_PATH ?? "git", ["-C", input.worktree, "rev-parse", "HEAD"], { encoding: "utf8", timeout: 30000 }).trim();
   if (actualHead !== head) throw new Error("OpenCode builder HEAD mismatch");
+  if (!input.provider_correlation_id) throw new Error("OpenCode builder provider correlation missing");
+  if (parsed.providerSession !== input.provider_correlation_id) throw new Error("OpenCode builder provider correlation mismatch");
   return {
     executor_role: "codex_control_plane",
     builder_backend: config.transport,
     builder_model: config.model,
     builder_session: input.session,
-    provider_session: parsed.providerSession ?? `${config.transport}-${input.session}`,
+    provider_session: parsed.providerSession,
+    native_provider_session: parsed.nativeProviderSession,
     base_sha: input.base_sha,
     head_sha: head,
     branch: input.work_branch,
