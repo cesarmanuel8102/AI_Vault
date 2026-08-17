@@ -20,6 +20,12 @@ import {safeJson} from "./redaction.js";
 import {AgentLoopBuilderAdapter} from "./agent_loop_builder_adapter.js";
 import {classify} from "./risk_classifier.js";
 
+const EXPECTED_AUTHOR="cesarmanuel8102";
+const EXPECTED_BASE_BRANCH="codex/own-capital-sustainable-return";
+const EXPECTED_REPO="cesarmanuel8102/AI_Vault";
+const FRESH_SUBJECT=(front:string)=>`feat(control-plane): complete ${front}`;
+const NEUTRALIZATION_SUBJECT=(front:string)=>`chore(control-plane): neutralize ${front} legacy baseline`;
+
 export function reviewEvidenceKey(policyKey:string,builderSession:string,builderModel:string){
   if(!/^[0-9a-f]{64}$/.test(policyKey)||!builderSession||!builderModel)throw new Error("review evidence identity invalid");
   return createHash("sha256").update(JSON.stringify({policy_key:policyKey,builder_session:builderSession,builder_model:builderModel})).digest("hex");
@@ -205,12 +211,58 @@ export class ProductionEffects implements AutonomousEffects {
     if(state.state==="BLOCKED"&&state.last_error==="CI_FAILED")return state.base_sha===spec.expected_base_sha?this.reconcileBlockedCiChecks(spec,state,store):this.reconcileBlockedCiBase(spec,state,store);
     if(state.base_sha===spec.expected_base_sha)return state;
     if(!this.bus.isAncestor(state.base_sha,spec.expected_base_sha))throw new Error("closeout base ancestry invalid");
+    const bridge=this.inspectBridgeCandidate(spec,state);
+    if(bridge&&["CI_PENDING","REVIEWING"].includes(state.state))return store.adoptBridgeCandidate(state,bridge.nextBase,bridge.nextHead);
     if(["CI_PENDING","REVIEWING"].includes(state.state))return this.reconcileBlockedCiBase(spec,store.invalidatePostBuildBase(state),store);
     if(state.state==="MERGING")return this.reconcileBlockedCiBase(spec,this.invalidateFailedMerge(spec,state,store),store);
     if(["DISCOVERED","ADMITTED"].includes(state.state))return store.rebindUnstartedBase(state,spec.expected_base_sha);
     if(state.state==="BUILDING")return this.reconcilePreBuildBase(spec,state,store);
     if(["MERGED","CLOSEOUT_PENDING","CLOSEOUT_MERGED","TERMINAL_COMPLETED"].includes(state.state))return store.rebindPostMergeBase(state,spec.expected_base_sha);
     throw new Error("closeout base reconciliation denied");
+  }
+  inspectBridgeCandidate(spec:ProxySpec,state:LifecycleRecord):{nextBase:string;nextHead:string}|undefined{
+    if(state.base_sha===spec.expected_base_sha)return undefined;
+    const exact=["CI_PENDING","REVIEWING"].includes(state.state)&&Number.isInteger(state.issue)&&state.issue!>0&&Number.isInteger(state.pr)&&state.pr!>0&&state.repair_cycles===0&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&/^[0-9a-f]{40}$/.test(state.head_sha??"");
+    if(!exact)return undefined;
+    const pr=this.bus.prIdentity(state.pr!);
+    const files=(pr.files??[]).map((x:any)=>String(x.path)).sort();
+    if(pr.author?.login!==EXPECTED_AUTHOR||pr.baseRefName!==EXPECTED_BASE_BRANCH||pr.baseRefOid!==spec.expected_base_sha||pr.headRefName!==spec.work_branch||pr.headRepository?.nameWithOwner!==EXPECTED_REPO||pr.isCrossRepository!==false||pr.isDraft!==true||pr.state!=="OPEN"||pr.mergeable!=="MERGEABLE")return undefined;
+    const remote=this.bus.remoteBranchHead(spec.work_branch!);if(!remote||pr.headRefOid!==remote||remote!==state.head_sha)return undefined;
+    if(files.length===0)return undefined;
+    const allowed=(path:string)=>spec.allowed_paths.some(p=>p.endsWith("/")?path.startsWith(p):path===p)&&!spec.forbidden_paths.some(p=>path===p||path.startsWith(p.endsWith("/")?p:`${p}/`));
+    if(!files.every(allowed))return undefined;
+    const commitParents=(sha:string)=>{const commit=JSON.parse(this.bus.call(["api",`repos/${this.bus.repo}/git/commits/${sha}`]));return Array.isArray(commit?.parents)?commit.parents.map((p:any)=>String(p?.sha??"")).filter((s:string)=>/^[0-9a-f]{40}$/.test(s)):[];};
+    const commitTree=(sha:string)=>{const commit=JSON.parse(this.bus.call(["api",`repos/${this.bus.repo}/git/commits/${sha}`]));return typeof commit?.tree?.sha==="string"&&/^[0-9a-f]{40}$/.test(commit.tree.sha)?commit.tree.sha:"";};
+    const parents=commitParents(state.head_sha!);
+    if(parents.length!==2)return undefined;
+    const [n,r]=parents;
+    const nMessage=this.bus.commitMessage(n),rMessage=this.bus.commitMessage(r);
+    const firstLine=(message:string)=>message.split("\n",1)[0];
+    const trailer=(message:string,prefix:string)=>message.replace(/\r\n/g,"\n").split("\n").slice(1).filter(line=>line.startsWith(prefix)).map(line=>line.slice(prefix.length));
+    const bridgeMessage=this.bus.commitMessage(state.head_sha!);
+    if(firstLine(bridgeMessage)!==FRESH_SUBJECT(spec.front_id!))return undefined;
+    const legacyRebuild=trailer(bridgeMessage,`${LEGACY_REBUILD_TRAILER}=`);
+    const bridgeN=trailer(bridgeMessage,`${NEUTRALIZATION_HEAD_TRAILER}=`);
+    const bridgeR=trailer(bridgeMessage,`${FRESH_BUILDER_HEAD_TRAILER}=`);
+    const resetBase=trailer(bridgeMessage,`${RESET_BASE_TRAILER}=`);
+    if(legacyRebuild.length!==1||legacyRebuild[0]!=="true"||bridgeN.length!==1||bridgeN[0]!==n||bridgeR.length!==1||bridgeR[0]!==r||resetBase.length!==1||resetBase[0]!==spec.expected_base_sha)return undefined;
+    if(firstLine(nMessage)!==NEUTRALIZATION_SUBJECT(spec.front_id!)||trailer(nMessage,`${LEGACY_NEUTRALIZATION_TRAILER}=`).length!==1||trailer(nMessage,`${LEGACY_NEUTRALIZATION_TRAILER}=`)[0]!=="true")return undefined;
+    const priorHead=trailer(nMessage,`${PRIOR_UNATTESTED_HEAD_TRAILER}=`)[0];
+    if(!priorHead||!this.bus.isAncestor(spec.expected_base_sha,priorHead))return undefined;
+    if(!this.bus.isAncestor(spec.expected_base_sha,r))return undefined;
+    const parentsN=commitParents(n);
+    if(parentsN.length!==1||parentsN[0]!==priorHead)return undefined;
+    const expectedTree=commitTree(spec.expected_base_sha);
+    const nTree=commitTree(n),rTree=commitTree(r),bridgeTree=commitTree(state.head_sha!);
+    if(!expectedTree||nTree!==expectedTree||!rTree||!bridgeTree||bridgeTree!==rTree)return undefined;
+    const safeModel=/^[a-z0-9][a-z0-9._:/-]{2,127}$/;
+    const safeProviderSession=/^[a-z0-9][a-z0-9._:/-]{2,127}$/;
+    const allowedBackends=new Set(["codex_cli_openai","opencode_github_copilot","opencode_ollama"]);
+    const rLines=rMessage.replace(/\r\n/g,"\n").split("\n");
+    const values=(prefix:string)=>rLines.slice(1).filter(line=>line.startsWith(prefix)).map(line=>line.slice(prefix.length));
+    const backend=values("BUILDER_BACKEND="),model=values("BUILDER_MODEL="),provider=values("PROVIDER_SESSION="),fallback=values("FALLBACK_REASON=");
+    if(backend.length!==1||!allowedBackends.has(backend[0])||model.length!==1||!safeModel.test(model[0])||provider.length!==1||!safeProviderSession.test(provider[0])||fallback.length>1)return undefined;
+    return {nextBase:spec.expected_base_sha,nextHead:state.head_sha!};
   }
   private closeoutParentEvidence(spec:ProxySpec,merge:string){
     const state=this.activeState;

@@ -175,3 +175,28 @@ test("orchestrator fails closed if policy blocks", async () => {
   assert.equal(result.policy_approved, false);
   assert.equal(result.merged, undefined);
 });
+
+test("orchestrator emits deterministic repair identity", async () => {
+  const lifecycle = makeLifecycle();
+  const incident = makeIncident();
+  const spec = makeSpec();
+  const identities: RepairIdentity[] = [];
+  const effects = makeEffects({
+    createRepairIdentity: (s, i, fp) => {
+      const id: RepairIdentity = {
+        repair_id: `repair-${i.incident_id}`,
+        branch: `repair/${i.incident_id}`,
+        worktree: `/tmp/repair-${i.incident_id}`,
+        builder_model: "ollama-cloud/kimi-k2.7-code",
+        started_utc: new Date().toISOString(),
+      };
+      identities.push(id);
+      return id;
+    },
+  });
+  const orchestrator = new SelfRepairOrchestrator(effects);
+  const result = await orchestrator.orchestrate(spec, lifecycle, incident);
+  assert.equal(result.success, true);
+  assert.equal(identities.length, 1);
+  assert.match(identities[0].repair_id, /^repair-inc-/);
+});

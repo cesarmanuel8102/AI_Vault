@@ -32,17 +32,12 @@ export function resumePrivilegedInstall(bus:GitHubBus,boundary:ExternalEffectBou
   }finally{boundary.endPrivilegedInstallResume();}
 }
 
-export function reconcilePersistedRoadmapState(bus:GitHubBus,effects:ProductionEffects,store:LifecycleStore,spec:ProxySpec,persisted?:LifecycleRecord){
+export function reconcilePersistedRoadmapState(_bus:GitHubBus,effects:ProductionEffects,store:LifecycleStore,spec:ProxySpec,persisted?:LifecycleRecord){
   if(!persisted)return persisted;
   if(persisted.state==="ESCALATED"&&persisted.last_error==="OWNER_AUTHORITY_REQUIRED"&&persisted.base_sha!==spec.expected_base_sha)return effects.reconcileNegatedRiskEscalation(spec,persisted,store);
-  if(persisted.state==="BLOCKED"&&persisted.last_error==="CI_FAILED")return persisted.base_sha!==spec.expected_base_sha?effects.reconcileBlockedCiBase(spec,persisted,store):effects.reconcileBlockedCiChecks(spec,persisted,store);
   if(persisted.base_sha===spec.expected_base_sha)return persisted;
-  if(["DISCOVERED","ADMITTED"].includes(persisted.state))return store.rebindUnstartedBase(persisted,spec.expected_base_sha);
-  if(["CI_PENDING","REVIEWING"].includes(persisted.state))return effects.reconcileBlockedCiBase(spec,store.invalidatePostBuildBase(persisted),store);
-  if(persisted.state==="MERGING")return effects.reconcileBlockedCiBase(spec,effects.invalidateFailedMerge(spec,persisted,store),store);
-  if(persisted.state==="BUILDING"&&persisted.repair_cycles>0)return effects.reconcileRepairBase(spec,persisted,store);
-  if(validatePostMergeBaseAdvance(spec,persisted,((oldSha,newSha)=>bus.isAncestor(oldSha,newSha))))return store.rebindPostMergeBase(persisted,spec.expected_base_sha);
-  return effects.reconcilePreBuildBase(spec,persisted,store);
+  // ProductionEffects owns all non-owner base reconciliation, including bridge provenance.
+  return effects.reconcileCloseoutState(spec,persisted,store);
 }
 
 export async function runAutonomousRoadmapTick(bus:GitHubBus,root:string,reviewerRepo:string,boundary:ExternalEffectBoundary){
