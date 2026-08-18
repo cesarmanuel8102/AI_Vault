@@ -248,7 +248,7 @@ export class ProductionEffects implements AutonomousEffects {
     if(legacyRebuild.length!==1||legacyRebuild[0]!=="true"||bridgeN.length!==1||bridgeN[0]!==n||bridgeR.length!==1||bridgeR[0]!==r||resetBase.length!==1||resetBase[0]!==spec.expected_base_sha)return undefined;
     if(firstLine(nMessage)!==NEUTRALIZATION_SUBJECT(spec.front_id!)||trailer(nMessage,`${LEGACY_NEUTRALIZATION_TRAILER}=`).length!==1||trailer(nMessage,`${LEGACY_NEUTRALIZATION_TRAILER}=`)[0]!=="true")return undefined;
     const priorHead=trailer(nMessage,`${PRIOR_UNATTESTED_HEAD_TRAILER}=`)[0];
-    if(!priorHead||!this.bus.isAncestor(spec.expected_base_sha,priorHead))return undefined;
+    if(!priorHead)return undefined;
     if(!this.bus.isAncestor(spec.expected_base_sha,r))return undefined;
     const parentsN=commitParents(n);
     if(parentsN.length!==1||parentsN[0]!==priorHead)return undefined;
