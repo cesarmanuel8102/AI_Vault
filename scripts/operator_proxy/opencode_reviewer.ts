@@ -206,7 +206,7 @@ export class OpenCodeReviewerBackend implements ReviewerBackend {
       const promptPath=join(temp,"review-prompt.txt");writeFileSync(promptPath,reviewPrompt(input,diff),"utf8");
       const env:NodeJS.ProcessEnv={...process.env,OPENCODE_CONFIG:configPath};delete env.OPENAI_API_KEY;delete env.GH_TOKEN;delete env.GITHUB_TOKEN;
       let stdout:string;
-      const finalInstruction=`Return exactly one bare JSON object: {"verdict":"PASS|CHANGES_REQUESTED|BLOCKED","head_sha":"${input.headSha}","summary":"1-400 characters","findings":[{"severity":"P0|P1|P2","title":"max 200 chars","evidence":"max 1000 chars","required_correction":"max 500 chars"}]}. Preserve head_sha byte-for-byte. Use at most 6 findings and no other finding keys. PASS requires findings=[]. Do not call tools.`;
+      const finalInstruction=`Return exactly one bare JSON object: {"verdict":"PASS|CHANGES_REQUESTED|BLOCKED","head_sha":"${input.headSha}","summary":"1-500 characters","findings":[{"severity":"P0|P1|P2","title":"max 200 chars","evidence":"max 1000 chars","required_correction":"max 500 chars"}]}. Preserve head_sha byte-for-byte. Use at most 6 findings and no other finding keys. PASS requires findings=[]. Do not call tools.`;
       try{stdout=this.runner(runtime.node,[runtime.entrypoint,"run","--dir",workspace,"--model",this.model,"--agent","brain-opencode-reviewer","--format","json","--title",session,"--thinking","false",finalInstruction,"--file",promptPath],{cwd:workspace,env,timeout:REVIEWER_TRANSPORT_TIMEOUT_MS,maxBuffer:64*1024*1024});}
       catch(error){throw new ReviewerBackendError(redactedError(error),"REVIEWER_TRANSPORT_FAILURE",true);}
       assertImmutable(this.runner,workspace,input);
