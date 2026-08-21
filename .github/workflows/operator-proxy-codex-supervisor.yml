@@ -54,5 +54,5 @@ jobs:
         run: |
           grep -q 'class ReviewerRouter' scripts/operator_proxy/reviewer_router.ts
           grep -q 'OpenCodeReviewerBackend' scripts/operator_proxy/opencode_reviewer.ts
-          grep -q 'BLOCKED_EXTERNAL_REVIEWER' scripts/operator_proxy/reviewer_router.ts
+          grep -q 'SINGLE_REVIEWER_UNAVAILABLE' scripts/operator_proxy/reviewer_router.ts
           grep -q 'REVIEWER_WRITE_ATTEMPT' scripts/operator_proxy/opencode_reviewer.ts
