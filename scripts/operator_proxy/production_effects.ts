@@ -66,14 +66,14 @@ export class ProductionEffects implements AutonomousEffects {
     let recoveryState=state,issueSpec:ProxySpec=snapshot.body===oldBody?oldSpec:spec;
     if(snapshot.body!==oldBody&&snapshot.body!==nextBody){
       const pr=this.bus.prIdentity(state.pr!),files=(pr.files??[]).map((x:any)=>String(x.path)),intermediateBase=pr.baseRefOid,intermediateHead=pr.headRefOid,intermediateSpec={...spec,expected_base_sha:intermediateBase},intermediateBody=boundIssueBody(intermediateSpec,state.pr!);
-      const exact=pr.author?.login==="cesarmanuel8102"&&pr.baseRefName===INTEGRATION_BRANCH&&pr.headRefName===spec.work_branch&&pr.headRepository?.nameWithOwner===spec.repository&&pr.isCrossRepository===false&&pr.isDraft===true&&pr.state==="OPEN"&&pr.mergeable==="MERGEABLE"&&this.bus.remoteBranchHead(spec.work_branch!)===intermediateHead&&files.length>0&&files.every((path:string)=>pathAllowed(path,spec))&&snapshot.body===intermediateBody&&JSON.stringify(parsed.spec)===JSON.stringify(intermediateSpec)&&this.bus.isAncestor(state.base_sha,intermediateBase)&&this.bus.isAncestor(intermediateBase,spec.expected_base_sha)&&this.bus.isAncestor(state.head_sha!,intermediateHead);
+      const exact=typeof spec.work_branch==="string"&&typeof state.head_sha==="string"&&pr.author?.login==="cesarmanuel8102"&&pr.baseRefName===INTEGRATION_BRANCH&&pr.headRefName===spec.work_branch&&pr.headRepository?.nameWithOwner===spec.repository&&pr.isCrossRepository===false&&pr.isDraft===true&&pr.state==="OPEN"&&pr.mergeable==="MERGEABLE"&&this.bus.remoteBranchHead(spec.work_branch)===intermediateHead&&files.length>0&&files.every((path:string)=>pathAllowed(path,spec))&&snapshot.body===intermediateBody&&JSON.stringify(parsed.spec)===JSON.stringify(intermediateSpec)&&this.bus.isAncestor(state.base_sha,intermediateBase)&&this.bus.isAncestor(intermediateBase,spec.expected_base_sha)&&this.bus.isAncestor(state.head_sha,intermediateHead);
       if(!exact)throw new Error("blocked CI intermediate bridge identity invalid");
       recoveryState=store.adoptBlockedCiBridge(state,intermediateBase,intermediateHead);this.bindLifecycle(spec,recoveryState);issueSpec=intermediateSpec;
     } else if(JSON.stringify(parsed.spec)!==JSON.stringify(issueSpec))throw new Error("blocked CI Issue contract mismatch");
     if(spec.executor==="agent_loop")parseAgentLoopIssue(snapshot.body,issueSpec);
     this.boundary.beginBlockedCiRecovery(spec,recoveryState);
     try {
-      const nextHead=this.builder.synchronizeBlockedCiBase(spec,recoveryState);this.boundary.bindBlockedCiRecoveryHead(nextHead);if(snapshot.body!==nextBody)this.bus.replaceIssueBodyExact(state.issue!,snapshot.body,nextBody,nextHead);
+      const nextHead=this.builder.synchronizeBlockedCiBase(spec,recoveryState);this.boundary.bindBlockedCiRecoveryHead(nextHead);if(snapshot.body!==nextBody){if(typeof recoveryState.issue!=="number")throw new Error("blocked CI recovery Issue missing");this.bus.replaceIssueBodyExact(recoveryState.issue,snapshot.body,nextBody,nextHead);}
       const updated=store.recoverBlockedCiBase(recoveryState,spec.expected_base_sha,nextHead);this.bindLifecycle(spec,updated);return updated;
     } finally {this.boundary.endBlockedCiRecovery();}
   }
