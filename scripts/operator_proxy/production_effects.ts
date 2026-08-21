@@ -13,7 +13,7 @@ import {LEGACY_NEUTRALIZATION_TRAILER,LEGACY_REBUILD_TRAILER,PRIOR_UNATTESTED_HE
 import {execute,reconcileAuthorizationComment} from "./action_executor.js";
 import {agentLoopIssueBody,issueBody,parseAgentLoopIssue,parseIssue} from "./spec_contract.js";
 import {AutonomousFlow} from "./autonomous_flow.js";
-import {LifecycleStore,validBlockedCiEffectChain} from "./lifecycle_store.js";
+import {LifecycleStore,validBlockedCiEffectChain,validBridgeAdoptionState} from "./lifecycle_store.js";
 import type {ExternalEffectBoundary} from "./external_effect_guard.js";
 import {normalizeReviewerOutput} from "./review_contract.js";
 import {safeJson} from "./redaction.js";
@@ -208,11 +208,12 @@ export class ProductionEffects implements AutonomousEffects {
   reconcileCloseoutState(spec:ProxySpec,state:LifecycleRecord,store:LifecycleStore){
     if(state.state==="BLOCKED"&&state.last_error==="CI_FAILED")return state.base_sha===spec.expected_base_sha?this.reconcileBlockedCiChecks(spec,state,store):this.reconcileBlockedCiBase(spec,state,store);
     if(state.base_sha===spec.expected_base_sha)return state;
-    const bridge=this.inspectBridgeCandidate(spec,state);
+    const ordinaryAncestry=this.bus.isAncestor(state.base_sha,spec.expected_base_sha);
+    const bridge=!ordinaryAncestry?this.inspectBridgeCandidate(spec,state):undefined;
     if(bridge&&["CI_PENDING","REVIEWING"].includes(state.state))return store.adoptBridgeCandidate(state,bridge.nextBase,bridge.nextHead);
     // The ordinary recovery path also requires ancestry. Only the fully verified
     // B/L/N/R/M bridge below may cross a divergent historical base.
-    if(!this.bus.isAncestor(state.base_sha,spec.expected_base_sha))throw new Error("closeout base ancestry invalid");
+    if(!ordinaryAncestry)throw new Error("closeout base ancestry invalid");
     if(["CI_PENDING","REVIEWING"].includes(state.state))return this.reconcileBlockedCiBase(spec,store.invalidatePostBuildBase(state),store);
     if(state.state==="MERGING")return this.reconcileBlockedCiBase(spec,this.invalidateFailedMerge(spec,state,store),store);
     if(["DISCOVERED","ADMITTED"].includes(state.state))return store.rebindUnstartedBase(state,spec.expected_base_sha);
@@ -222,9 +223,7 @@ export class ProductionEffects implements AutonomousEffects {
   }
   inspectBridgeCandidate(spec:ProxySpec,state:LifecycleRecord):{nextBase:string;nextHead:string}|undefined{
     if(state.base_sha===spec.expected_base_sha)return undefined;
-    const hasPositiveIssue=Number.isInteger(state.issue)&&state.issue! > 0;
-    const hasPositivePr=Number.isInteger(state.pr)&&state.pr! > 0;
-    const exact=["CI_PENDING","REVIEWING"].includes(state.state)&&hasPositiveIssue&&hasPositivePr&&state.repair_cycles===0&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&/^[0-9a-f]{40}$/.test(state.head_sha??"")&&state.completed_effects.length===2&&validBlockedCiEffectChain(state);
+    const exact=validBridgeAdoptionState(state);
     if(!exact)return undefined;
     try {
     const pr=this.bus.prIdentity(state.pr!);

@@ -109,3 +109,10 @@ test("bridge adoption rejects a previously synchronized ledger instead of growin
   assert.throws(()=>store.adoptBridgeCandidate(state,"d".repeat(40),head),/bridge candidate adoption denied/);
   const effects:any=Object.create(ProductionEffects.prototype);effects.bus={};assert.equal(effects.inspectBridgeCandidate({expected_base_sha:"d".repeat(40)} as any,state),undefined);
 });
+
+test("ordinary ancestor recovery skips remote bridge inspection",()=>{
+  const state:any={state:"CI_PENDING",base_sha:"a".repeat(40),head_sha:"b".repeat(40),issue:80,pr:81,builder_session:"builder",repair_cycles:0,completed_effects:["issue:80",`build:${"b".repeat(40)}`]};
+  const effects:any=Object.create(ProductionEffects.prototype);effects.bus={isAncestor:()=>true};let bridgeReads=0;effects.inspectBridgeCandidate=()=>{bridgeReads++;throw new Error("unexpected bridge read");};effects.reconcileBlockedCiBase=()=>"RECOVERED";
+  const store:any={invalidatePostBuildBase:(received:any)=>({...received,state:"BLOCKED",last_error:"CI_FAILED"})};
+  assert.equal(effects.reconcileCloseoutState({expected_base_sha:"c".repeat(40)} as any,state,store),"RECOVERED");assert.equal(bridgeReads,0);
+});
