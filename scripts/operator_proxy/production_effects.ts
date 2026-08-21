@@ -19,10 +19,8 @@ import {normalizeReviewerOutput} from "./review_contract.js";
 import {safeJson} from "./redaction.js";
 import {AgentLoopBuilderAdapter} from "./agent_loop_builder_adapter.js";
 import {classify} from "./risk_classifier.js";
+import {INTEGRATION_BRANCH} from "./roadmap_sequencer.js";
 
-const EXPECTED_AUTHOR="cesarmanuel8102";
-const EXPECTED_BASE_BRANCH="codex/own-capital-sustainable-return";
-const EXPECTED_REPO="cesarmanuel8102/AI_Vault";
 const FRESH_SUBJECT=(front:string)=>`feat(control-plane): complete ${front}`;
 const NEUTRALIZATION_SUBJECT=(front:string)=>`chore(control-plane): neutralize ${front} legacy baseline`;
 
@@ -142,7 +140,7 @@ export class ProductionEffects implements AutonomousEffects {
       return typeof commit?.tree?.sha==="string"&&/^[0-9a-f]{40}$/.test(commit.tree.sha)?commit.tree.sha:"";
     };
     const trailer=(message:string,prefix:string)=>message.replace(/\r\n/g,"\n").split("\n").slice(1).filter(line=>line.startsWith(prefix)).map(line=>line.slice(prefix.length));
-    const firstLine=(message:string)=>message.split("\n",1)[0];
+    const firstLine=(message:string)=>message.replace(/\r\n/g,"\n").split("\n",1)[0];
 
     const verifyFreshReceipt=(sha:string)=>{
       const message=this.bus.commitMessage(sha);
@@ -210,9 +208,9 @@ export class ProductionEffects implements AutonomousEffects {
   reconcileCloseoutState(spec:ProxySpec,state:LifecycleRecord,store:LifecycleStore){
     if(state.state==="BLOCKED"&&state.last_error==="CI_FAILED")return state.base_sha===spec.expected_base_sha?this.reconcileBlockedCiChecks(spec,state,store):this.reconcileBlockedCiBase(spec,state,store);
     if(state.base_sha===spec.expected_base_sha)return state;
-    if(!this.bus.isAncestor(state.base_sha,spec.expected_base_sha))throw new Error("closeout base ancestry invalid");
     const bridge=this.inspectBridgeCandidate(spec,state);
     if(bridge&&["CI_PENDING","REVIEWING"].includes(state.state))return store.adoptBridgeCandidate(state,bridge.nextBase,bridge.nextHead);
+    if(!this.bus.isAncestor(state.base_sha,spec.expected_base_sha))throw new Error("closeout base ancestry invalid");
     if(["CI_PENDING","REVIEWING"].includes(state.state))return this.reconcileBlockedCiBase(spec,store.invalidatePostBuildBase(state),store);
     if(state.state==="MERGING")return this.reconcileBlockedCiBase(spec,this.invalidateFailedMerge(spec,state,store),store);
     if(["DISCOVERED","ADMITTED"].includes(state.state))return store.rebindUnstartedBase(state,spec.expected_base_sha);
@@ -222,11 +220,14 @@ export class ProductionEffects implements AutonomousEffects {
   }
   inspectBridgeCandidate(spec:ProxySpec,state:LifecycleRecord):{nextBase:string;nextHead:string}|undefined{
     if(state.base_sha===spec.expected_base_sha)return undefined;
-    const exact=["CI_PENDING","REVIEWING"].includes(state.state)&&Number.isInteger(state.issue)&&state.issue!>0&&Number.isInteger(state.pr)&&state.pr!>0&&state.repair_cycles===0&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&/^[0-9a-f]{40}$/.test(state.head_sha??"");
+    const hasPositiveIssue=Number.isInteger(state.issue)&&state.issue! > 0;
+    const hasPositivePr=Number.isInteger(state.pr)&&state.pr! > 0;
+    const exact=["CI_PENDING","REVIEWING"].includes(state.state)&&hasPositiveIssue&&hasPositivePr&&state.repair_cycles===0&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&/^[0-9a-f]{40}$/.test(state.head_sha??"");
     if(!exact)return undefined;
     const pr=this.bus.prIdentity(state.pr!);
     const files=(pr.files??[]).map((x:any)=>String(x.path)).sort();
-    if(pr.author?.login!==EXPECTED_AUTHOR||pr.baseRefName!==EXPECTED_BASE_BRANCH||pr.baseRefOid!==spec.expected_base_sha||pr.headRefName!==spec.work_branch||pr.headRepository?.nameWithOwner!==EXPECTED_REPO||pr.isCrossRepository!==false||pr.isDraft!==true||pr.state!=="OPEN"||pr.mergeable!=="MERGEABLE")return undefined;
+    const expectedAuthor=spec.repository.split("/",1)[0];
+    if(this.bus.repo!==spec.repository||!expectedAuthor||pr.author?.login!==expectedAuthor||pr.baseRefName!==INTEGRATION_BRANCH||pr.baseRefOid!==spec.expected_base_sha||pr.headRefName!==spec.work_branch||pr.headRepository?.nameWithOwner!==spec.repository||pr.isCrossRepository!==false||pr.isDraft!==true||pr.state!=="OPEN"||pr.mergeable!=="MERGEABLE")return undefined;
     const remote=this.bus.remoteBranchHead(spec.work_branch!);if(!remote||pr.headRefOid!==remote||remote!==state.head_sha)return undefined;
     if(files.length===0)return undefined;
     const allowed=(path:string)=>spec.allowed_paths.some(p=>p.endsWith("/")?path.startsWith(p):path===p)&&!spec.forbidden_paths.some(p=>path===p||path.startsWith(p.endsWith("/")?p:`${p}/`));
@@ -237,7 +238,7 @@ export class ProductionEffects implements AutonomousEffects {
     if(parents.length!==2)return undefined;
     const [n,r]=parents;
     const nMessage=this.bus.commitMessage(n),rMessage=this.bus.commitMessage(r);
-    const firstLine=(message:string)=>message.split("\n",1)[0];
+    const firstLine=(message:string)=>message.replace(/\r\n/g,"\n").split("\n",1)[0];
     const trailer=(message:string,prefix:string)=>message.replace(/\r\n/g,"\n").split("\n").slice(1).filter(line=>line.startsWith(prefix)).map(line=>line.slice(prefix.length));
     const bridgeMessage=this.bus.commitMessage(state.head_sha!);
     if(firstLine(bridgeMessage)!==FRESH_SUBJECT(spec.front_id!))return undefined;
