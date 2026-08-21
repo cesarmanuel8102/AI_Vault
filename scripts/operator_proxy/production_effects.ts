@@ -13,12 +13,16 @@ import {LEGACY_NEUTRALIZATION_TRAILER,LEGACY_REBUILD_TRAILER,PRIOR_UNATTESTED_HE
 import {execute,reconcileAuthorizationComment} from "./action_executor.js";
 import {agentLoopIssueBody,issueBody,parseAgentLoopIssue,parseIssue} from "./spec_contract.js";
 import {AutonomousFlow} from "./autonomous_flow.js";
-import {LifecycleStore,validBlockedCiEffectChain} from "./lifecycle_store.js";
+import {LifecycleStore,validBlockedCiEffectChain,validBridgeAdoptionState} from "./lifecycle_store.js";
 import type {ExternalEffectBoundary} from "./external_effect_guard.js";
 import {normalizeReviewerOutput} from "./review_contract.js";
 import {safeJson} from "./redaction.js";
 import {AgentLoopBuilderAdapter} from "./agent_loop_builder_adapter.js";
 import {classify} from "./risk_classifier.js";
+import {INTEGRATION_BRANCH} from "./roadmap_sequencer.js";
+
+const FRESH_SUBJECT=(front:string)=>`feat(control-plane): complete ${front}`;
+const NEUTRALIZATION_SUBJECT=(front:string)=>`chore(control-plane): neutralize ${front} legacy baseline`;
 
 export function reviewEvidenceKey(policyKey:string,builderSession:string,builderModel:string){
   if(!/^[0-9a-f]{64}$/.test(policyKey)||!builderSession||!builderModel)throw new Error("review evidence identity invalid");
@@ -136,7 +140,7 @@ export class ProductionEffects implements AutonomousEffects {
       return typeof commit?.tree?.sha==="string"&&/^[0-9a-f]{40}$/.test(commit.tree.sha)?commit.tree.sha:"";
     };
     const trailer=(message:string,prefix:string)=>message.replace(/\r\n/g,"\n").split("\n").slice(1).filter(line=>line.startsWith(prefix)).map(line=>line.slice(prefix.length));
-    const firstLine=(message:string)=>message.split("\n",1)[0];
+    const firstLine=(message:string)=>message.replace(/\r\n/g,"\n").split("\n",1)[0];
 
     const verifyFreshReceipt=(sha:string)=>{
       const message=this.bus.commitMessage(sha);
@@ -204,13 +208,67 @@ export class ProductionEffects implements AutonomousEffects {
   reconcileCloseoutState(spec:ProxySpec,state:LifecycleRecord,store:LifecycleStore){
     if(state.state==="BLOCKED"&&state.last_error==="CI_FAILED")return state.base_sha===spec.expected_base_sha?this.reconcileBlockedCiChecks(spec,state,store):this.reconcileBlockedCiBase(spec,state,store);
     if(state.base_sha===spec.expected_base_sha)return state;
-    if(!this.bus.isAncestor(state.base_sha,spec.expected_base_sha))throw new Error("closeout base ancestry invalid");
+    const ordinaryAncestry=this.bus.isAncestor(state.base_sha,spec.expected_base_sha);
+    const bridge=!ordinaryAncestry?this.inspectBridgeCandidate(spec,state):undefined;
+    if(bridge&&["CI_PENDING","REVIEWING"].includes(state.state))return store.adoptBridgeCandidate(state,bridge.nextBase,bridge.nextHead);
+    // The ordinary recovery path also requires ancestry. Only the fully verified
+    // B/L/N/R/M bridge below may cross a divergent historical base.
+    if(!ordinaryAncestry)throw new Error("closeout base ancestry invalid");
     if(["CI_PENDING","REVIEWING"].includes(state.state))return this.reconcileBlockedCiBase(spec,store.invalidatePostBuildBase(state),store);
     if(state.state==="MERGING")return this.reconcileBlockedCiBase(spec,this.invalidateFailedMerge(spec,state,store),store);
     if(["DISCOVERED","ADMITTED"].includes(state.state))return store.rebindUnstartedBase(state,spec.expected_base_sha);
     if(state.state==="BUILDING")return this.reconcilePreBuildBase(spec,state,store);
     if(["MERGED","CLOSEOUT_PENDING","CLOSEOUT_MERGED","TERMINAL_COMPLETED"].includes(state.state))return store.rebindPostMergeBase(state,spec.expected_base_sha);
     throw new Error("closeout base reconciliation denied");
+  }
+  inspectBridgeCandidate(spec:ProxySpec,state:LifecycleRecord):{nextBase:string;nextHead:string}|undefined{
+    if(state.base_sha===spec.expected_base_sha)return undefined;
+    const exact=validBridgeAdoptionState(state);
+    if(!exact)return undefined;
+    try {
+    const pr=this.bus.prIdentity(state.pr!);
+    const files=(pr.files??[]).map((x:any)=>String(x.path)).sort();
+    const expectedAuthor=spec.repository.split("/",1)[0];
+    if(this.bus.repo!==spec.repository||!expectedAuthor||pr.author?.login!==expectedAuthor||pr.baseRefName!==INTEGRATION_BRANCH||pr.baseRefOid!==spec.expected_base_sha||pr.headRefName!==spec.work_branch||pr.headRepository?.nameWithOwner!==spec.repository||pr.isCrossRepository!==false||pr.isDraft!==true||pr.state!=="OPEN"||pr.mergeable!=="MERGEABLE")return undefined;
+    const remote=this.bus.remoteBranchHead(spec.work_branch!);if(!remote||pr.headRefOid!==remote||remote!==state.head_sha)return undefined;
+    if(files.length===0)return undefined;
+    const allowed=(path:string)=>spec.allowed_paths.some(p=>p.endsWith("/")?path.startsWith(p):path===p)&&!spec.forbidden_paths.some(p=>path===p||path.startsWith(p.endsWith("/")?p:`${p}/`));
+    if(!files.every(allowed))return undefined;
+    const commitParents=(sha:string)=>{const commit=JSON.parse(this.bus.call(["api",`repos/${this.bus.repo}/git/commits/${sha}`]));return Array.isArray(commit?.parents)?commit.parents.map((p:any)=>String(p?.sha??"")).filter((s:string)=>/^[0-9a-f]{40}$/.test(s)):[];};
+    const commitTree=(sha:string)=>{const commit=JSON.parse(this.bus.call(["api",`repos/${this.bus.repo}/git/commits/${sha}`]));return typeof commit?.tree?.sha==="string"&&/^[0-9a-f]{40}$/.test(commit.tree.sha)?commit.tree.sha:"";};
+    const parents=commitParents(state.head_sha!);
+    if(parents.length!==2)return undefined;
+    const [n,r]=parents;
+    const nMessage=this.bus.commitMessage(n),rMessage=this.bus.commitMessage(r);
+    const firstLine=(message:string)=>message.replace(/\r\n/g,"\n").split("\n",1)[0];
+    const trailer=(message:string,prefix:string)=>message.replace(/\r\n/g,"\n").split("\n").slice(1).filter(line=>line.startsWith(prefix)).map(line=>line.slice(prefix.length));
+    const bridgeMessage=this.bus.commitMessage(state.head_sha!);
+    if(firstLine(bridgeMessage)!==FRESH_SUBJECT(spec.front_id!))return undefined;
+    const legacyRebuild=trailer(bridgeMessage,`${LEGACY_REBUILD_TRAILER}=`);
+    const bridgeN=trailer(bridgeMessage,`${NEUTRALIZATION_HEAD_TRAILER}=`);
+    const bridgeR=trailer(bridgeMessage,`${FRESH_BUILDER_HEAD_TRAILER}=`);
+    const resetBase=trailer(bridgeMessage,`${RESET_BASE_TRAILER}=`);
+    if(legacyRebuild.length!==1||legacyRebuild[0]!=="true"||bridgeN.length!==1||bridgeN[0]!==n||bridgeR.length!==1||bridgeR[0]!==r||resetBase.length!==1||resetBase[0]!==spec.expected_base_sha)return undefined;
+    if(firstLine(nMessage)!==NEUTRALIZATION_SUBJECT(spec.front_id!)||trailer(nMessage,`${LEGACY_NEUTRALIZATION_TRAILER}=`).length!==1||trailer(nMessage,`${LEGACY_NEUTRALIZATION_TRAILER}=`)[0]!=="true")return undefined;
+    const priorHead=trailer(nMessage,`${PRIOR_UNATTESTED_HEAD_TRAILER}=`)[0];
+    if(!priorHead)return undefined;
+    if(!this.bus.isAncestor(spec.expected_base_sha,r))return undefined;
+    const parentsN=commitParents(n);
+    if(parentsN.length!==1||parentsN[0]!==priorHead)return undefined;
+    const expectedTree=commitTree(spec.expected_base_sha);
+    const nTree=commitTree(n),rTree=commitTree(r),bridgeTree=commitTree(state.head_sha!);
+    if(!expectedTree||nTree!==expectedTree||!rTree||!bridgeTree||bridgeTree!==rTree)return undefined;
+    const safeModel=/^[a-z0-9][a-z0-9._:/-]{2,127}$/;
+    const safeProviderSession=/^[a-z0-9][a-z0-9._:/-]{2,127}$/;
+    const allowedBackends=new Set(["codex_cli_openai","opencode_github_copilot","opencode_ollama"]);
+    const rLines=rMessage.replace(/\r\n/g,"\n").split("\n");
+    const values=(prefix:string)=>rLines.slice(1).filter(line=>line.startsWith(prefix)).map(line=>line.slice(prefix.length));
+    const backend=values("BUILDER_BACKEND="),model=values("BUILDER_MODEL="),provider=values("PROVIDER_SESSION="),fallback=values("FALLBACK_REASON=");
+    if(backend.length!==1||!allowedBackends.has(backend[0])||model.length!==1||!safeModel.test(model[0])||provider.length!==1||!safeProviderSession.test(provider[0])||fallback.length>1)return undefined;
+    return {nextBase:spec.expected_base_sha,nextHead:state.head_sha!};
+    } catch {
+      return undefined;
+    }
   }
   private closeoutParentEvidence(spec:ProxySpec,merge:string){
     const state=this.activeState;
