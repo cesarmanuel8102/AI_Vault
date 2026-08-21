@@ -18,6 +18,11 @@ export function validPrivilegedInstallEffectChain(record:LifecycleRecord){
   if(!record.issue||!record.head_sha||effects.length<3||effects.length>11||effects[0]!==`issue:${record.issue}`||!/^build:[0-9a-f]{40}$/.test(effects[1]??"")||effects.at(-1)!==`merge:${record.head_sha}`||new Set(effects).size!==effects.length)return false;
   return effects.slice(2,-1).every(effect=>/^base-sync:[0-9a-f]{40}$/.test(effect));
 }
+export function validBridgeAdoptionState(record:LifecycleRecord){
+  const hasPositiveIssue=Number.isInteger(record.issue)&&record.issue! > 0;
+  const hasPositivePr=Number.isInteger(record.pr)&&record.pr! > 0;
+  return ["CI_PENDING","REVIEWING"].includes(record.state)&&hasPositiveIssue&&hasPositivePr&&record.repair_cycles===0&&!!record.builder_session&&!record.reviewer_session&&!record.decision_id&&/^[0-9a-f]{40}$/.test(record.head_sha??"")&&record.completed_effects.length===2&&validBlockedCiEffectChain(record);
+}
 
 export class LifecycleStore {
   constructor(readonly root: string) { mkdirSync(root, {recursive:true}); }
@@ -90,6 +95,12 @@ export class LifecycleStore {
     const updated={...record,state:"CI_PENDING" as const,base_sha:nextBase,head_sha:nextHead,last_error:undefined,completed_effects:[...record.completed_effects,`base-sync:${nextHead}`],updated_utc:new Date().toISOString()};
     this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_blocked_ci_base_recovered",front_id:record.front_id,issue:record.issue,pr:record.pr,old_base_sha:record.base_sha,new_base_sha:nextBase,old_head_sha:record.head_sha,new_head_sha:nextHead,updated_utc:updated.updated_utc})}\n`);return updated;
   }
+  stageBlockedCiBridge(record:LifecycleRecord,nextBase:string,nextHead:string):LifecycleRecord {
+    const exact=record.state==="BLOCKED"&&record.last_error==="CI_FAILED"&&typeof record.issue==="number"&&Number.isInteger(record.issue)&&record.issue>0&&typeof record.pr==="number"&&Number.isInteger(record.pr)&&record.pr>0&&Number.isInteger(record.repair_cycles)&&record.repair_cycles>=0&&record.repair_cycles<=2&&!!record.builder_session&&!record.reviewer_session&&!record.decision_id&&validBlockedCiEffectChain(record);
+    if(!exact||!/^[0-9a-f]{40}$/.test(nextBase)||!/^[0-9a-f]{40}$/.test(nextHead)||record.base_sha===nextBase||record.head_sha===nextHead||record.completed_effects.length>=10||record.completed_effects.includes(`base-sync:${nextHead}`))throw new Error("blocked CI bridge adoption denied");
+    // Keep the intermediate bridge in memory until branch synchronization succeeds.
+    return {...record,base_sha:nextBase,head_sha:nextHead,completed_effects:[...record.completed_effects,`base-sync:${nextHead}`]};
+  }
   recoverRepairBase(record:LifecycleRecord,nextBase:string,nextHead:string):LifecycleRecord {
     const exact=record.state==="BUILDING"&&record.repair_cycles>0&&record.repair_cycles<=2&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&!!record.builder_session&&!!record.reviewer_session&&!!record.decision_id&&/^[0-9a-f]{40}$/.test(record.head_sha??"")&&validBlockedCiEffectChain(record);
     if(!exact||!/^[0-9a-f]{40}$/.test(nextBase)||!/^[0-9a-f]{40}$/.test(nextHead)||record.base_sha===nextBase||record.head_sha===nextHead)throw new Error("repair base recovery denied");
@@ -107,5 +118,13 @@ export class LifecycleStore {
     if(!exact)throw new Error("blocked CI check recovery denied");
     const updated={...record,state:"CI_PENDING" as const,last_error:undefined,updated_utc:new Date().toISOString()};
     this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_blocked_ci_checks_reopened",front_id:record.front_id,issue:record.issue,pr:record.pr,base_sha:record.base_sha,head_sha:record.head_sha,updated_utc:updated.updated_utc})}\n`);return updated;
+  }
+  adoptBridgeCandidate(record:LifecycleRecord,nextBase:string,nextHead:string):LifecycleRecord {
+    // ProductionEffects owns remote PR/commit verification. This persistence
+    // transition is one-shot and returns to CI_PENDING without review or policy.
+    const exact=validBridgeAdoptionState(record);
+    if(!exact||!/^[0-9a-f]{40}$/.test(nextBase)||!/^[0-9a-f]{40}$/.test(nextHead)||record.base_sha===nextBase||record.head_sha!==nextHead)throw new Error("bridge candidate adoption denied");
+    const updated={...record,state:"CI_PENDING" as const,base_sha:nextBase,head_sha:nextHead,last_error:undefined,decision_id:undefined,reviewer_session:undefined,completed_effects:[...record.completed_effects,`base-sync:${nextHead}`],updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_bridge_candidate_adopted",front_id:record.front_id,issue:record.issue,pr:record.pr,old_base_sha:record.base_sha,new_base_sha:nextBase,old_head_sha:record.head_sha,new_head_sha:nextHead,updated_utc:updated.updated_utc})}\n`);return updated;
   }
 }

@@ -95,12 +95,21 @@ export class GovernedBuilder {
     const pr=this.bus.prIdentity(state.pr),files=(pr.files??[]).map((x:any)=>String(x.path)).sort();
     // GitHub may expose either the PR's original base OID or the advanced target OID.
     if(pr.author?.login!=="cesarmanuel8102"||pr.baseRefName!=="codex/own-capital-sustainable-return"||pr.headRefName!==spec.work_branch||pr.headRepository?.nameWithOwner!=="cesarmanuel8102/AI_Vault"||pr.isCrossRepository!==false||pr.isDraft!==true||pr.state!=="OPEN"||pr.mergeable!=="MERGEABLE"||files.length===0||!files.every((path:string)=>allowed(path,spec)))throw new Error("blocked CI PR identity invalid");
-    const remote=this.bus.remoteBranchHead(spec.work_branch);if(!remote||pr.headRefOid!==remote)throw new Error("blocked CI remote branch missing or inconsistent");
-    mkdirSync(this.worktreeRoot,{recursive:true});const root=realpathSync(this.worktreeRoot),worktree=resolve(root,spec.front_id!);if(!worktree.startsWith(`${root}\\`)&&!worktree.startsWith(`${root}/`))throw new Error("blocked CI worktree identity invalid");
+    const remote=this.bus.remoteBranchHead(spec.work_branch);if(!remote||!/^[a-f0-9]{40}$/.test(remote)||pr.headRefOid!==remote)throw new Error("blocked CI remote branch missing or inconsistent");
+    mkdirSync(this.worktreeRoot,{recursive:true});const root=realpathSync(this.worktreeRoot),historicalWorktree=resolve(root,spec.front_id!);if(!historicalWorktree.startsWith(`${root}\\`)&&!historicalWorktree.startsWith(`${root}/`))throw new Error("blocked CI worktree identity invalid");
     native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"fetch","origin","codex/own-capital-sustainable-return",spec.work_branch],{stdio:"inherit",timeout:120000,windowsHide:true});
     const syncBases=spec.executor==="agent_loop"?validateAgentSyncChain(this.sourceRepo,state.head_sha,remote,spec.expected_base_sha,files,spec.front_id!):[];if(!([state.base_sha,spec.expected_base_sha,...syncBases].includes(pr.baseRefOid)))throw new Error("blocked CI PR base identity invalid");
-    // Historical governed branches may be checked out elsewhere; recover without moving or mutating that worktree.
-    if(!existsSync(worktree))native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","--detach",worktree,remote],{stdio:"inherit",timeout:120000,windowsHide:true});
+    // Never clean or move a historical worktree. A dirty one is forensic state, so recovery uses
+    // a deterministic detached workspace keyed by the immutable remote candidate.
+    let worktree=historicalWorktree;
+    if(!existsSync(historicalWorktree))native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","--detach",historicalWorktree,remote],{stdio:"inherit",timeout:120000,windowsHide:true});
+    else if(realpathSync(historicalWorktree).toLowerCase()!==historicalWorktree.toLowerCase()||git(historicalWorktree,["status","--porcelain","--untracked-files=all"])){
+      const recoveryWorktree=resolve(root,`${spec.front_id}-blocked-ci-recovery-${remote.slice(0,12)}`);
+      if(!recoveryWorktree.startsWith(`${root}\\`)&&!recoveryWorktree.startsWith(`${root}/`))throw new Error("blocked CI recovery worktree identity invalid");
+      if(!existsSync(recoveryWorktree))native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","--detach",recoveryWorktree,remote],{stdio:"inherit",timeout:120000,windowsHide:true});
+      if(realpathSync(recoveryWorktree).toLowerCase()!==recoveryWorktree.toLowerCase()||git(recoveryWorktree,["status","--porcelain","--untracked-files=all"])||git(recoveryWorktree,["branch","--show-current"])!=="")throw new Error("blocked CI recovery worktree state invalid");
+      worktree=recoveryWorktree;
+    }
     if(realpathSync(worktree).toLowerCase()!==worktree.toLowerCase()||git(worktree,["status","--porcelain","--untracked-files=all"]))throw new Error("blocked CI worktree state invalid");const localHeadBefore=git(worktree,["rev-parse","HEAD"]),localBranch=git(worktree,["branch","--show-current"]);
     if(localBranch!==spec.work_branch&&(localBranch!==""||!([state.head_sha,remote].includes(localHeadBefore))))throw new Error("blocked CI worktree state invalid");
     try{git(worktree,["merge-base","--is-ancestor",state.base_sha,spec.expected_base_sha]);git(worktree,["merge-base","--is-ancestor",state.base_sha,state.head_sha]);}catch{throw new Error("blocked CI ancestry invalid");}

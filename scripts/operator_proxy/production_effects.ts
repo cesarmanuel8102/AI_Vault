@@ -13,12 +13,16 @@ import {LEGACY_NEUTRALIZATION_TRAILER,LEGACY_REBUILD_TRAILER,PRIOR_UNATTESTED_HE
 import {execute,reconcileAuthorizationComment} from "./action_executor.js";
 import {agentLoopIssueBody,issueBody,parseAgentLoopIssue,parseIssue} from "./spec_contract.js";
 import {AutonomousFlow} from "./autonomous_flow.js";
-import {LifecycleStore,validBlockedCiEffectChain} from "./lifecycle_store.js";
+import {LifecycleStore,validBlockedCiEffectChain,validBridgeAdoptionState} from "./lifecycle_store.js";
 import type {ExternalEffectBoundary} from "./external_effect_guard.js";
 import {normalizeReviewerOutput} from "./review_contract.js";
 import {safeJson} from "./redaction.js";
 import {AgentLoopBuilderAdapter} from "./agent_loop_builder_adapter.js";
 import {classify} from "./risk_classifier.js";
+import {INTEGRATION_BRANCH,MANIFEST_PATH,ROADMAP_PATH} from "./roadmap_sequencer.js";
+
+const FRESH_SUBJECT=(front:string)=>`feat(control-plane): complete ${front}`;
+const NEUTRALIZATION_SUBJECT=(front:string)=>`chore(control-plane): neutralize ${front} legacy baseline`;
 
 export function reviewEvidenceKey(policyKey:string,builderSession:string,builderModel:string){
   if(!/^[0-9a-f]{64}$/.test(policyKey)||!builderSession||!builderModel)throw new Error("review evidence identity invalid");
@@ -36,12 +40,29 @@ const installArtifactPath=(spec:ProxySpec)=>spec.install_target==="agent_loop_wo
 const pathAllowed=(path:string,spec:ProxySpec)=>spec.allowed_paths.some(p=>p.endsWith("/")?path.startsWith(p):path===p)&&!spec.forbidden_paths.some(p=>path===p||path.startsWith(p.endsWith("/")?p:`${p}/`));
 const boundIssueBody=(spec:ProxySpec,pr:number)=>`${(spec.executor==="agent_loop"?agentLoopIssueBody(spec):issueBody(spec)).trim()}\n\nOPERATOR_PROXY_PR: ${pr}\n`;
 const blockedCiIssuePhase=(spec:ProxySpec)=>spec.executor==="agent_loop"?"loop:ci":"operator:building";
+const roadmapBindingFields=new Set(["expected_base_sha","roadmap_sha256","manifest_sha256"]);
+const sha256=(value:string)=>createHash("sha256").update(Buffer.from(value,"utf8")).digest("hex");
+const serializedSpec=(spec:ProxySpec)=>Object.fromEntries(Object.entries(spec).filter(([,value])=>value!==undefined));
+const exactSpecExceptHistoricalBinding=(current:ProxySpec,historical:ProxySpec)=>{
+  current=serializedSpec(current) as ProxySpec;historical=serializedSpec(historical) as ProxySpec;
+  const currentKeys=Object.keys(current).sort(),historicalKeys=Object.keys(historical).sort();
+  if(JSON.stringify(currentKeys)!==JSON.stringify(historicalKeys))return false;
+  return currentKeys.every(key=>roadmapBindingFields.has(key)||JSON.stringify((current as any)[key])===JSON.stringify((historical as any)[key]));
+};
+const canonicalDependencies=(value:unknown)=>Array.isArray(value)&&value.every(item=>typeof item==="string"&&/^R\d+(?:\.\d+)?$/.test(item))&&new Set(value).size===value.length?[...value].sort():undefined;
 
 export class ProductionEffects implements AutonomousEffects {
   readonly builder:GovernedBuilder;readonly agentLoopBuilder:AgentLoopBuilderAdapter;
   private activeSpec?:ProxySpec;private activeState?:import("./types.js").LifecycleRecord;
   constructor(readonly bus:GitHubBus,readonly ledger:Ledger,readonly sourceRepo:string,readonly root:string,readonly boundary:ExternalEffectBoundary,readonly coordinator:LocalCoordinator=failClosedCoordinator){this.bus.setMutationGuard(this.boundary.assert.bind(this.boundary));this.builder=new GovernedBuilder(sourceRepo,join(root,"worktrees"),bus,this.boundary.assert.bind(this.boundary));this.agentLoopBuilder=new AgentLoopBuilderAdapter(bus);}
   bindLifecycle(spec:ProxySpec,state:import("./types.js").LifecycleRecord){this.activeSpec=spec;this.activeState=state;this.boundary.bind(spec,state);}
+  private validHistoricalRoadmapBinding(current:ProxySpec,historical:ProxySpec,base:string){
+    if(!exactSpecExceptHistoricalBinding(current,historical)||historical.expected_base_sha!==base||!/^[0-9a-f]{64}$/.test(historical.roadmap_sha256??"")||!/^[0-9a-f]{64}$/.test(historical.manifest_sha256??""))return false;
+    const manifestText=this.bus.fileAt(MANIFEST_PATH,base),roadmapText=this.bus.fileAt(ROADMAP_PATH,base);
+    let manifest:any;try{manifest=JSON.parse(manifestText);}catch{throw new Error("intermediate canonical manifest invalid");}
+    const item=manifest?.roadmap_items?.[historical.roadmap_item_id],dependencies=canonicalDependencies(item?.dependencies);
+    return manifest?.roadmap_id===historical.roadmap_id&&manifest?.roadmap_version===historical.roadmap_version&&manifest?.repository===historical.repository&&manifest?.integration_branch===INTEGRATION_BRANCH&&manifest?.approval_status==="HUMAN_ADOPTED"&&manifest?.r0_status==="CLOSED_HUMAN_ADOPTED"&&manifest?.human_final_authority===true&&manifest?.auto_merge===false&&manifest?.canonical_local_sync===false&&manifest?.live_trading_enabled===false&&manifest?.roadmap_path===ROADMAP_PATH&&manifest?.roadmap_sha256===sha256(roadmapText)&&historical.roadmap_sha256===sha256(roadmapText)&&historical.manifest_sha256===sha256(manifestText)&&item?.status==="AUTHORIZED_ACTIVE"&&JSON.stringify(dependencies)===JSON.stringify(historical.dependencies??[]);
+  }
   reconcilePreBuildBase(spec:ProxySpec,state:import("./types.js").LifecycleRecord,store:LifecycleStore){
     if(state.base_sha===spec.expected_base_sha)return state;
     const pristine=state.state==="BUILDING"&&Number.isInteger(state.issue)&&state.issue!>0&&state.repair_cycles===0&&!state.pr&&!state.head_sha&&!state.builder_session&&!state.reviewer_session&&!state.decision_id&&state.completed_effects.length===1&&state.completed_effects[0]===`issue:${state.issue}`;
@@ -58,12 +79,19 @@ export class ProductionEffects implements AutonomousEffects {
     if(!exact||!this.bus.isAncestor(state.base_sha,spec.expected_base_sha))throw new Error("blocked CI base reconciliation denied");
     const snapshot=this.bus.issueSnapshot(state.issue!);if(snapshot.state!=="OPEN"||snapshot.labels.length!==1||snapshot.labels[0]!==blockedCiIssuePhase(spec))throw new Error("blocked CI Issue state invalid");
     const oldSpec={...spec,expected_base_sha:state.base_sha},oldBody=boundIssueBody(oldSpec,state.pr!),nextBody=boundIssueBody(spec,state.pr!),parsed=parseIssue(snapshot.body);
-    if(parsed.pr!==state.pr||JSON.stringify(parsed.spec)!==JSON.stringify(snapshot.body===oldBody?oldSpec:spec)||snapshot.body!==oldBody&&snapshot.body!==nextBody)throw new Error("blocked CI Issue contract mismatch");
-    if(spec.executor==="agent_loop")parseAgentLoopIssue(snapshot.body,snapshot.body===oldBody?oldSpec:spec);
-    this.boundary.beginBlockedCiRecovery(spec,state);
+    if(parsed.pr!==state.pr)throw new Error("blocked CI Issue contract mismatch");
+    let recoveryState=state,issueSpec:ProxySpec=snapshot.body===oldBody?oldSpec:spec;
+    if(snapshot.body!==oldBody&&snapshot.body!==nextBody){
+      const pr=this.bus.prIdentity(state.pr!),files=(pr.files??[]).map((x:any)=>String(x.path)),intermediateBase=pr.baseRefOid,intermediateHead=pr.headRefOid,intermediateSpec=parsed.spec,intermediateBody=boundIssueBody(intermediateSpec,state.pr!);
+      const exact=typeof spec.work_branch==="string"&&typeof state.head_sha==="string"&&pr.author?.login==="cesarmanuel8102"&&pr.baseRefName===INTEGRATION_BRANCH&&pr.headRefName===spec.work_branch&&pr.headRepository?.nameWithOwner===spec.repository&&pr.isCrossRepository===false&&pr.isDraft===true&&pr.state==="OPEN"&&pr.mergeable==="MERGEABLE"&&this.bus.remoteBranchHead(spec.work_branch)===intermediateHead&&files.length>0&&files.every((path:string)=>pathAllowed(path,spec))&&snapshot.body===intermediateBody&&this.validHistoricalRoadmapBinding(spec,intermediateSpec,intermediateBase)&&this.bus.isAncestor(state.base_sha,intermediateBase)&&this.bus.isAncestor(intermediateBase,spec.expected_base_sha)&&this.bus.isAncestor(state.head_sha,intermediateHead);
+      if(!exact)throw new Error("blocked CI intermediate bridge identity invalid");
+      recoveryState=store.stageBlockedCiBridge(state,intermediateBase,intermediateHead);issueSpec=intermediateSpec;
+    } else if(JSON.stringify(parsed.spec)!==JSON.stringify(issueSpec))throw new Error("blocked CI Issue contract mismatch");
+    if(spec.executor==="agent_loop")parseAgentLoopIssue(snapshot.body,issueSpec);
+    this.boundary.beginBlockedCiRecovery(spec,recoveryState);
     try {
-      const nextHead=this.builder.synchronizeBlockedCiBase(spec,state);this.boundary.bindBlockedCiRecoveryHead(nextHead);if(snapshot.body===oldBody)this.bus.replaceIssueBodyExact(state.issue!,oldBody,nextBody,nextHead);
-      const updated=store.recoverBlockedCiBase(state,spec.expected_base_sha,nextHead);this.bindLifecycle(spec,updated);return updated;
+      const nextHead=this.builder.synchronizeBlockedCiBase(spec,recoveryState);this.boundary.bindBlockedCiRecoveryHead(nextHead);if(snapshot.body!==nextBody){if(typeof recoveryState.issue!=="number")throw new Error("blocked CI recovery Issue missing");this.bus.replaceIssueBodyExact(recoveryState.issue,snapshot.body,nextBody,nextHead);}
+      const updated=store.recoverBlockedCiBase(recoveryState,spec.expected_base_sha,nextHead);this.bindLifecycle(spec,updated);return updated;
     } finally {this.boundary.endBlockedCiRecovery();}
   }
   reconcileRepairBase(spec:ProxySpec,state:import("./types.js").LifecycleRecord,store:LifecycleStore){
@@ -136,7 +164,7 @@ export class ProductionEffects implements AutonomousEffects {
       return typeof commit?.tree?.sha==="string"&&/^[0-9a-f]{40}$/.test(commit.tree.sha)?commit.tree.sha:"";
     };
     const trailer=(message:string,prefix:string)=>message.replace(/\r\n/g,"\n").split("\n").slice(1).filter(line=>line.startsWith(prefix)).map(line=>line.slice(prefix.length));
-    const firstLine=(message:string)=>message.split("\n",1)[0];
+    const firstLine=(message:string)=>message.replace(/\r\n/g,"\n").split("\n",1)[0];
 
     const verifyFreshReceipt=(sha:string)=>{
       const message=this.bus.commitMessage(sha);
@@ -204,13 +232,67 @@ export class ProductionEffects implements AutonomousEffects {
   reconcileCloseoutState(spec:ProxySpec,state:LifecycleRecord,store:LifecycleStore){
     if(state.state==="BLOCKED"&&state.last_error==="CI_FAILED")return state.base_sha===spec.expected_base_sha?this.reconcileBlockedCiChecks(spec,state,store):this.reconcileBlockedCiBase(spec,state,store);
     if(state.base_sha===spec.expected_base_sha)return state;
-    if(!this.bus.isAncestor(state.base_sha,spec.expected_base_sha))throw new Error("closeout base ancestry invalid");
+    const ordinaryAncestry=this.bus.isAncestor(state.base_sha,spec.expected_base_sha);
+    const bridge=!ordinaryAncestry?this.inspectBridgeCandidate(spec,state):undefined;
+    if(bridge&&["CI_PENDING","REVIEWING"].includes(state.state))return store.adoptBridgeCandidate(state,bridge.nextBase,bridge.nextHead);
+    // The ordinary recovery path also requires ancestry. Only the fully verified
+    // B/L/N/R/M bridge below may cross a divergent historical base.
+    if(!ordinaryAncestry)throw new Error("closeout base ancestry invalid");
     if(["CI_PENDING","REVIEWING"].includes(state.state))return this.reconcileBlockedCiBase(spec,store.invalidatePostBuildBase(state),store);
     if(state.state==="MERGING")return this.reconcileBlockedCiBase(spec,this.invalidateFailedMerge(spec,state,store),store);
     if(["DISCOVERED","ADMITTED"].includes(state.state))return store.rebindUnstartedBase(state,spec.expected_base_sha);
     if(state.state==="BUILDING")return this.reconcilePreBuildBase(spec,state,store);
     if(["MERGED","CLOSEOUT_PENDING","CLOSEOUT_MERGED","TERMINAL_COMPLETED"].includes(state.state))return store.rebindPostMergeBase(state,spec.expected_base_sha);
     throw new Error("closeout base reconciliation denied");
+  }
+  inspectBridgeCandidate(spec:ProxySpec,state:LifecycleRecord):{nextBase:string;nextHead:string}|undefined{
+    if(state.base_sha===spec.expected_base_sha)return undefined;
+    const exact=validBridgeAdoptionState(state);
+    if(!exact)return undefined;
+    try {
+    const pr=this.bus.prIdentity(state.pr!);
+    const files=(pr.files??[]).map((x:any)=>String(x.path)).sort();
+    const expectedAuthor=spec.repository.split("/",1)[0];
+    if(this.bus.repo!==spec.repository||!expectedAuthor||pr.author?.login!==expectedAuthor||pr.baseRefName!==INTEGRATION_BRANCH||pr.baseRefOid!==spec.expected_base_sha||pr.headRefName!==spec.work_branch||pr.headRepository?.nameWithOwner!==spec.repository||pr.isCrossRepository!==false||pr.isDraft!==true||pr.state!=="OPEN"||pr.mergeable!=="MERGEABLE")return undefined;
+    const remote=this.bus.remoteBranchHead(spec.work_branch!);if(!remote||pr.headRefOid!==remote||remote!==state.head_sha)return undefined;
+    if(files.length===0)return undefined;
+    const allowed=(path:string)=>spec.allowed_paths.some(p=>p.endsWith("/")?path.startsWith(p):path===p)&&!spec.forbidden_paths.some(p=>path===p||path.startsWith(p.endsWith("/")?p:`${p}/`));
+    if(!files.every(allowed))return undefined;
+    const commitParents=(sha:string)=>{const commit=JSON.parse(this.bus.call(["api",`repos/${this.bus.repo}/git/commits/${sha}`]));return Array.isArray(commit?.parents)?commit.parents.map((p:any)=>String(p?.sha??"")).filter((s:string)=>/^[0-9a-f]{40}$/.test(s)):[];};
+    const commitTree=(sha:string)=>{const commit=JSON.parse(this.bus.call(["api",`repos/${this.bus.repo}/git/commits/${sha}`]));return typeof commit?.tree?.sha==="string"&&/^[0-9a-f]{40}$/.test(commit.tree.sha)?commit.tree.sha:"";};
+    const parents=commitParents(state.head_sha!);
+    if(parents.length!==2)return undefined;
+    const [n,r]=parents;
+    const nMessage=this.bus.commitMessage(n),rMessage=this.bus.commitMessage(r);
+    const firstLine=(message:string)=>message.replace(/\r\n/g,"\n").split("\n",1)[0];
+    const trailer=(message:string,prefix:string)=>message.replace(/\r\n/g,"\n").split("\n").slice(1).filter(line=>line.startsWith(prefix)).map(line=>line.slice(prefix.length));
+    const bridgeMessage=this.bus.commitMessage(state.head_sha!);
+    if(firstLine(bridgeMessage)!==FRESH_SUBJECT(spec.front_id!))return undefined;
+    const legacyRebuild=trailer(bridgeMessage,`${LEGACY_REBUILD_TRAILER}=`);
+    const bridgeN=trailer(bridgeMessage,`${NEUTRALIZATION_HEAD_TRAILER}=`);
+    const bridgeR=trailer(bridgeMessage,`${FRESH_BUILDER_HEAD_TRAILER}=`);
+    const resetBase=trailer(bridgeMessage,`${RESET_BASE_TRAILER}=`);
+    if(legacyRebuild.length!==1||legacyRebuild[0]!=="true"||bridgeN.length!==1||bridgeN[0]!==n||bridgeR.length!==1||bridgeR[0]!==r||resetBase.length!==1||resetBase[0]!==spec.expected_base_sha)return undefined;
+    if(firstLine(nMessage)!==NEUTRALIZATION_SUBJECT(spec.front_id!)||trailer(nMessage,`${LEGACY_NEUTRALIZATION_TRAILER}=`).length!==1||trailer(nMessage,`${LEGACY_NEUTRALIZATION_TRAILER}=`)[0]!=="true")return undefined;
+    const priorHead=trailer(nMessage,`${PRIOR_UNATTESTED_HEAD_TRAILER}=`)[0];
+    if(!priorHead)return undefined;
+    if(!this.bus.isAncestor(spec.expected_base_sha,r))return undefined;
+    const parentsN=commitParents(n);
+    if(parentsN.length!==1||parentsN[0]!==priorHead)return undefined;
+    const expectedTree=commitTree(spec.expected_base_sha);
+    const nTree=commitTree(n),rTree=commitTree(r),bridgeTree=commitTree(state.head_sha!);
+    if(!expectedTree||nTree!==expectedTree||!rTree||!bridgeTree||bridgeTree!==rTree)return undefined;
+    const safeModel=/^[a-z0-9][a-z0-9._:/-]{2,127}$/;
+    const safeProviderSession=/^[a-z0-9][a-z0-9._:/-]{2,127}$/;
+    const allowedBackends=new Set(["codex_cli_openai","opencode_github_copilot","opencode_ollama"]);
+    const rLines=rMessage.replace(/\r\n/g,"\n").split("\n");
+    const values=(prefix:string)=>rLines.slice(1).filter(line=>line.startsWith(prefix)).map(line=>line.slice(prefix.length));
+    const backend=values("BUILDER_BACKEND="),model=values("BUILDER_MODEL="),provider=values("PROVIDER_SESSION="),fallback=values("FALLBACK_REASON=");
+    if(backend.length!==1||!allowedBackends.has(backend[0])||model.length!==1||!safeModel.test(model[0])||provider.length!==1||!safeProviderSession.test(provider[0])||fallback.length>1)return undefined;
+    return {nextBase:spec.expected_base_sha,nextHead:state.head_sha!};
+    } catch {
+      return undefined;
+    }
   }
   private closeoutParentEvidence(spec:ProxySpec,merge:string){
     const state=this.activeState;

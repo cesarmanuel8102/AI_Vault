@@ -1,6 +1,6 @@
 import {createHash} from "node:crypto";import type {Decision,Evidence,NormalizedDecision,ProxySpec} from "./types.js";import {classify} from "./risk_classifier.js";
 export const AUTH="CESAR-BRAIN-101-OPERATOR-PROXY-20260722-01";export const REPO="cesarmanuel8102/AI_Vault";
-export const POLICY="v2:exact-repo;active-item;stable-shas;green-ci;independent-review;allowlist;no-sensitive;no-fork;no-p0;bounded-p1p2-repair;merge-commit-only;human-escalation";
+export const POLICY="v2:exact-repo;active-item;stable-shas;green-ci;single-deepseek-pro-review;builder-reviewer-separation;allowlist;no-sensitive;no-fork;no-p0;bounded-p1p2-repair;merge-commit-only;human-escalation";
 export const sha=(v:unknown)=>createHash("sha256").update(typeof v==="string"?v:JSON.stringify(v,Object.keys(v as object).sort())).digest("hex");
 export const POLICY_SHA256=sha(POLICY);
 const canonical=(value:Record<string,unknown>)=>JSON.stringify(Object.fromEntries(Object.entries(value).sort(([a],[b])=>a.localeCompare(b))));
