@@ -19,7 +19,7 @@ import {normalizeReviewerOutput} from "./review_contract.js";
 import {safeJson} from "./redaction.js";
 import {AgentLoopBuilderAdapter} from "./agent_loop_builder_adapter.js";
 import {classify} from "./risk_classifier.js";
-import {INTEGRATION_BRANCH} from "./roadmap_sequencer.js";
+import {INTEGRATION_BRANCH,MANIFEST_PATH,ROADMAP_PATH} from "./roadmap_sequencer.js";
 
 const FRESH_SUBJECT=(front:string)=>`feat(control-plane): complete ${front}`;
 const NEUTRALIZATION_SUBJECT=(front:string)=>`chore(control-plane): neutralize ${front} legacy baseline`;
@@ -40,12 +40,27 @@ const installArtifactPath=(spec:ProxySpec)=>spec.install_target==="agent_loop_wo
 const pathAllowed=(path:string,spec:ProxySpec)=>spec.allowed_paths.some(p=>p.endsWith("/")?path.startsWith(p):path===p)&&!spec.forbidden_paths.some(p=>path===p||path.startsWith(p.endsWith("/")?p:`${p}/`));
 const boundIssueBody=(spec:ProxySpec,pr:number)=>`${(spec.executor==="agent_loop"?agentLoopIssueBody(spec):issueBody(spec)).trim()}\n\nOPERATOR_PROXY_PR: ${pr}\n`;
 const blockedCiIssuePhase=(spec:ProxySpec)=>spec.executor==="agent_loop"?"loop:ci":"operator:building";
+const roadmapBindingFields=new Set(["expected_base_sha","roadmap_sha256","manifest_sha256"]);
+const sha256=(value:string)=>createHash("sha256").update(Buffer.from(value,"utf8")).digest("hex");
+const exactSpecExceptHistoricalBinding=(current:ProxySpec,historical:ProxySpec)=>{
+  const currentKeys=Object.keys(current).sort(),historicalKeys=Object.keys(historical).sort();
+  if(JSON.stringify(currentKeys)!==JSON.stringify(historicalKeys))return false;
+  return currentKeys.every(key=>roadmapBindingFields.has(key)||JSON.stringify((current as any)[key])===JSON.stringify((historical as any)[key]));
+};
+const canonicalDependencies=(value:unknown)=>Array.isArray(value)&&value.every(item=>typeof item==="string"&&/^R\d+(?:\.\d+)?$/.test(item))&&new Set(value).size===value.length?[...value].sort():undefined;
 
 export class ProductionEffects implements AutonomousEffects {
   readonly builder:GovernedBuilder;readonly agentLoopBuilder:AgentLoopBuilderAdapter;
   private activeSpec?:ProxySpec;private activeState?:import("./types.js").LifecycleRecord;
   constructor(readonly bus:GitHubBus,readonly ledger:Ledger,readonly sourceRepo:string,readonly root:string,readonly boundary:ExternalEffectBoundary,readonly coordinator:LocalCoordinator=failClosedCoordinator){this.bus.setMutationGuard(this.boundary.assert.bind(this.boundary));this.builder=new GovernedBuilder(sourceRepo,join(root,"worktrees"),bus,this.boundary.assert.bind(this.boundary));this.agentLoopBuilder=new AgentLoopBuilderAdapter(bus);}
   bindLifecycle(spec:ProxySpec,state:import("./types.js").LifecycleRecord){this.activeSpec=spec;this.activeState=state;this.boundary.bind(spec,state);}
+  private validHistoricalRoadmapBinding(current:ProxySpec,historical:ProxySpec,base:string){
+    if(!exactSpecExceptHistoricalBinding(current,historical)||historical.expected_base_sha!==base||!/^[0-9a-f]{64}$/.test(historical.roadmap_sha256??"")||!/^[0-9a-f]{64}$/.test(historical.manifest_sha256??""))return false;
+    const manifestText=this.bus.fileAt(MANIFEST_PATH,base),roadmapText=this.bus.fileAt(ROADMAP_PATH,base);
+    let manifest:any;try{manifest=JSON.parse(manifestText);}catch{throw new Error("intermediate canonical manifest invalid");}
+    const item=manifest?.roadmap_items?.[historical.roadmap_item_id],dependencies=canonicalDependencies(item?.dependencies);
+    return manifest?.roadmap_id===historical.roadmap_id&&manifest?.roadmap_version===historical.roadmap_version&&manifest?.repository===historical.repository&&manifest?.integration_branch===INTEGRATION_BRANCH&&manifest?.approval_status==="HUMAN_ADOPTED"&&manifest?.r0_status==="CLOSED_HUMAN_ADOPTED"&&manifest?.human_final_authority===true&&manifest?.auto_merge===false&&manifest?.canonical_local_sync===false&&manifest?.live_trading_enabled===false&&manifest?.roadmap_path===ROADMAP_PATH&&manifest?.roadmap_sha256===sha256(roadmapText)&&historical.roadmap_sha256===sha256(roadmapText)&&historical.manifest_sha256===sha256(manifestText)&&item?.status==="AUTHORIZED_ACTIVE"&&JSON.stringify(dependencies)===JSON.stringify(historical.dependencies??[]);
+  }
   reconcilePreBuildBase(spec:ProxySpec,state:import("./types.js").LifecycleRecord,store:LifecycleStore){
     if(state.base_sha===spec.expected_base_sha)return state;
     const pristine=state.state==="BUILDING"&&Number.isInteger(state.issue)&&state.issue!>0&&state.repair_cycles===0&&!state.pr&&!state.head_sha&&!state.builder_session&&!state.reviewer_session&&!state.decision_id&&state.completed_effects.length===1&&state.completed_effects[0]===`issue:${state.issue}`;
@@ -65,8 +80,8 @@ export class ProductionEffects implements AutonomousEffects {
     if(parsed.pr!==state.pr)throw new Error("blocked CI Issue contract mismatch");
     let recoveryState=state,issueSpec:ProxySpec=snapshot.body===oldBody?oldSpec:spec;
     if(snapshot.body!==oldBody&&snapshot.body!==nextBody){
-      const pr=this.bus.prIdentity(state.pr!),files=(pr.files??[]).map((x:any)=>String(x.path)),intermediateBase=pr.baseRefOid,intermediateHead=pr.headRefOid,intermediateSpec={...spec,expected_base_sha:intermediateBase},intermediateBody=boundIssueBody(intermediateSpec,state.pr!);
-      const exact=typeof spec.work_branch==="string"&&typeof state.head_sha==="string"&&pr.author?.login==="cesarmanuel8102"&&pr.baseRefName===INTEGRATION_BRANCH&&pr.headRefName===spec.work_branch&&pr.headRepository?.nameWithOwner===spec.repository&&pr.isCrossRepository===false&&pr.isDraft===true&&pr.state==="OPEN"&&pr.mergeable==="MERGEABLE"&&this.bus.remoteBranchHead(spec.work_branch)===intermediateHead&&files.length>0&&files.every((path:string)=>pathAllowed(path,spec))&&snapshot.body===intermediateBody&&JSON.stringify(parsed.spec)===JSON.stringify(intermediateSpec)&&this.bus.isAncestor(state.base_sha,intermediateBase)&&this.bus.isAncestor(intermediateBase,spec.expected_base_sha)&&this.bus.isAncestor(state.head_sha,intermediateHead);
+      const pr=this.bus.prIdentity(state.pr!),files=(pr.files??[]).map((x:any)=>String(x.path)),intermediateBase=pr.baseRefOid,intermediateHead=pr.headRefOid,intermediateSpec=parsed.spec,intermediateBody=boundIssueBody(intermediateSpec,state.pr!);
+      const exact=typeof spec.work_branch==="string"&&typeof state.head_sha==="string"&&pr.author?.login==="cesarmanuel8102"&&pr.baseRefName===INTEGRATION_BRANCH&&pr.headRefName===spec.work_branch&&pr.headRepository?.nameWithOwner===spec.repository&&pr.isCrossRepository===false&&pr.isDraft===true&&pr.state==="OPEN"&&pr.mergeable==="MERGEABLE"&&this.bus.remoteBranchHead(spec.work_branch)===intermediateHead&&files.length>0&&files.every((path:string)=>pathAllowed(path,spec))&&snapshot.body===intermediateBody&&this.validHistoricalRoadmapBinding(spec,intermediateSpec,intermediateBase)&&this.bus.isAncestor(state.base_sha,intermediateBase)&&this.bus.isAncestor(intermediateBase,spec.expected_base_sha)&&this.bus.isAncestor(state.head_sha,intermediateHead);
       if(!exact)throw new Error("blocked CI intermediate bridge identity invalid");
       recoveryState=store.stageBlockedCiBridge(state,intermediateBase,intermediateHead);issueSpec=intermediateSpec;
     } else if(JSON.stringify(parsed.spec)!==JSON.stringify(issueSpec))throw new Error("blocked CI Issue contract mismatch");
