@@ -68,7 +68,7 @@ export class ProductionEffects implements AutonomousEffects {
       const pr=this.bus.prIdentity(state.pr!),files=(pr.files??[]).map((x:any)=>String(x.path)),intermediateBase=pr.baseRefOid,intermediateHead=pr.headRefOid,intermediateSpec={...spec,expected_base_sha:intermediateBase},intermediateBody=boundIssueBody(intermediateSpec,state.pr!);
       const exact=typeof spec.work_branch==="string"&&typeof state.head_sha==="string"&&pr.author?.login==="cesarmanuel8102"&&pr.baseRefName===INTEGRATION_BRANCH&&pr.headRefName===spec.work_branch&&pr.headRepository?.nameWithOwner===spec.repository&&pr.isCrossRepository===false&&pr.isDraft===true&&pr.state==="OPEN"&&pr.mergeable==="MERGEABLE"&&this.bus.remoteBranchHead(spec.work_branch)===intermediateHead&&files.length>0&&files.every((path:string)=>pathAllowed(path,spec))&&snapshot.body===intermediateBody&&JSON.stringify(parsed.spec)===JSON.stringify(intermediateSpec)&&this.bus.isAncestor(state.base_sha,intermediateBase)&&this.bus.isAncestor(intermediateBase,spec.expected_base_sha)&&this.bus.isAncestor(state.head_sha,intermediateHead);
       if(!exact)throw new Error("blocked CI intermediate bridge identity invalid");
-      recoveryState=store.adoptBlockedCiBridge(state,intermediateBase,intermediateHead);this.bindLifecycle(spec,recoveryState);issueSpec=intermediateSpec;
+      recoveryState=store.stageBlockedCiBridge(state,intermediateBase,intermediateHead);issueSpec=intermediateSpec;
     } else if(JSON.stringify(parsed.spec)!==JSON.stringify(issueSpec))throw new Error("blocked CI Issue contract mismatch");
     if(spec.executor==="agent_loop")parseAgentLoopIssue(snapshot.body,issueSpec);
     this.boundary.beginBlockedCiRecovery(spec,recoveryState);
