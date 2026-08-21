@@ -101,7 +101,7 @@ test("closeout adopts a fully verified bridge before testing divergent old-base 
   const state:any={schema_version:1,front_id:"BRIDGE-ORDER",roadmap_item_id:"R3.2",state:"CI_PENDING",base_sha:old,head_sha:head,issue:80,pr:81,builder_session:"builder",repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:["issue:80",`build:${head}`],updated_utc:new Date().toISOString()};store.save(state);
   const effects:any=Object.create(ProductionEffects.prototype);effects.bus={isAncestor:()=>false};effects.inspectBridgeCandidate=()=>({nextBase:next,nextHead:head});
   const updated=effects.reconcileCloseoutState({expected_base_sha:next} as any,state,store);
-  assert.equal(updated.base_sha,next);assert.equal(updated.head_sha,head);assert.equal(updated.state,"CI_PENDING");assert.deepEqual(updated.completed_effects,["issue:80",`build:${head}`,`base-sync:${head}`]);
+  assert.equal(updated.base_sha,next);assert.equal(updated.head_sha,head);assert.equal(updated.state,"CI_PENDING");assert.equal(updated.reviewer_session,undefined);assert.equal(updated.decision_id,undefined);assert.deepEqual(updated.completed_effects,["issue:80",`build:${head}`,`base-sync:${head}`]);
 });
 
 test("bridge adoption rejects a previously synchronized ledger instead of growing base-sync effects",()=>{

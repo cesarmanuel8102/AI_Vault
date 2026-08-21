@@ -109,6 +109,8 @@ export class LifecycleStore {
     this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_blocked_ci_checks_reopened",front_id:record.front_id,issue:record.issue,pr:record.pr,base_sha:record.base_sha,head_sha:record.head_sha,updated_utc:updated.updated_utc})}\n`);return updated;
   }
   adoptBridgeCandidate(record:LifecycleRecord,nextBase:string,nextHead:string):LifecycleRecord {
+    // ProductionEffects owns remote PR/commit verification. This persistence
+    // transition is one-shot and returns to CI_PENDING without review or policy.
     const hasPositiveIssue=Number.isInteger(record.issue)&&record.issue! > 0;
     const hasPositivePr=Number.isInteger(record.pr)&&record.pr! > 0;
     const exact=["CI_PENDING","REVIEWING"].includes(record.state)&&hasPositiveIssue&&hasPositivePr&&record.repair_cycles===0&&!!record.builder_session&&!record.reviewer_session&&!record.decision_id&&/^[0-9a-f]{40}$/.test(record.head_sha??"")&&record.completed_effects.length===2&&validBlockedCiEffectChain(record);

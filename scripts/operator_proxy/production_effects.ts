@@ -210,6 +210,8 @@ export class ProductionEffects implements AutonomousEffects {
     if(state.base_sha===spec.expected_base_sha)return state;
     const bridge=this.inspectBridgeCandidate(spec,state);
     if(bridge&&["CI_PENDING","REVIEWING"].includes(state.state))return store.adoptBridgeCandidate(state,bridge.nextBase,bridge.nextHead);
+    // The ordinary recovery path also requires ancestry. Only the fully verified
+    // B/L/N/R/M bridge below may cross a divergent historical base.
     if(!this.bus.isAncestor(state.base_sha,spec.expected_base_sha))throw new Error("closeout base ancestry invalid");
     if(["CI_PENDING","REVIEWING"].includes(state.state))return this.reconcileBlockedCiBase(spec,store.invalidatePostBuildBase(state),store);
     if(state.state==="MERGING")return this.reconcileBlockedCiBase(spec,this.invalidateFailedMerge(spec,state,store),store);
