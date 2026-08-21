@@ -222,8 +222,9 @@ export class ProductionEffects implements AutonomousEffects {
     if(state.base_sha===spec.expected_base_sha)return undefined;
     const hasPositiveIssue=Number.isInteger(state.issue)&&state.issue! > 0;
     const hasPositivePr=Number.isInteger(state.pr)&&state.pr! > 0;
-    const exact=["CI_PENDING","REVIEWING"].includes(state.state)&&hasPositiveIssue&&hasPositivePr&&state.repair_cycles===0&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&/^[0-9a-f]{40}$/.test(state.head_sha??"");
+    const exact=["CI_PENDING","REVIEWING"].includes(state.state)&&hasPositiveIssue&&hasPositivePr&&state.repair_cycles===0&&!!state.builder_session&&!state.reviewer_session&&!state.decision_id&&/^[0-9a-f]{40}$/.test(state.head_sha??"")&&state.completed_effects.length===2&&validBlockedCiEffectChain(state);
     if(!exact)return undefined;
+    try {
     const pr=this.bus.prIdentity(state.pr!);
     const files=(pr.files??[]).map((x:any)=>String(x.path)).sort();
     const expectedAuthor=spec.repository.split("/",1)[0];
@@ -264,6 +265,9 @@ export class ProductionEffects implements AutonomousEffects {
     const backend=values("BUILDER_BACKEND="),model=values("BUILDER_MODEL="),provider=values("PROVIDER_SESSION="),fallback=values("FALLBACK_REASON=");
     if(backend.length!==1||!allowedBackends.has(backend[0])||model.length!==1||!safeModel.test(model[0])||provider.length!==1||!safeProviderSession.test(provider[0])||fallback.length>1)return undefined;
     return {nextBase:spec.expected_base_sha,nextHead:state.head_sha!};
+    } catch {
+      return undefined;
+    }
   }
   private closeoutParentEvidence(spec:ProxySpec,merge:string){
     const state=this.activeState;

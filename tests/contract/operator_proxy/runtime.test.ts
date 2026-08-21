@@ -92,6 +92,8 @@ test("bridge provenance reads parents from the bridge commit, not PR metadata",(
   }
   messages[head]=messages[head].replace(/\n/g,"\r\n");messages[neutral]=messages[neutral].replace(/\n/g,"\r\n");messages[fresh]=messages[fresh].replace(/\n/g,"\r\n");
   assert.deepEqual(effects.inspectBridgeCandidate(spec,state),{nextBase:base,nextHead:head});
+  const originalCall=bus.call;bus.call=()=>"";assert.equal(effects.inspectBridgeCandidate(spec,state),undefined);bus.call=originalCall;
+  const originalMessage=bus.commitMessage;bus.commitMessage=()=>undefined;assert.equal(effects.inspectBridgeCandidate(spec,state),undefined);bus.commitMessage=originalMessage;
 });
 
 test("closeout adopts a fully verified bridge before testing divergent old-base ancestry",()=>{
@@ -105,4 +107,5 @@ test("closeout adopts a fully verified bridge before testing divergent old-base 
 test("bridge adoption rejects a previously synchronized ledger instead of growing base-sync effects",()=>{
   const store=new LifecycleStore(mkdtempSync(join(tmpdir(),"bridge-bound-"))),head="b".repeat(40),state:any={schema_version:1,front_id:"BRIDGE-BOUND",roadmap_item_id:"R3.2",state:"CI_PENDING",base_sha:"a".repeat(40),head_sha:head,issue:80,pr:81,builder_session:"builder",repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:["issue:80",`build:${"c".repeat(40)}`,`base-sync:${head}`],updated_utc:new Date().toISOString()};
   assert.throws(()=>store.adoptBridgeCandidate(state,"d".repeat(40),head),/bridge candidate adoption denied/);
+  const effects:any=Object.create(ProductionEffects.prototype);effects.bus={};assert.equal(effects.inspectBridgeCandidate({expected_base_sha:"d".repeat(40)} as any,state),undefined);
 });
