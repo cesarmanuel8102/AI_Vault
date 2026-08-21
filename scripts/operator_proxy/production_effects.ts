@@ -42,7 +42,9 @@ const boundIssueBody=(spec:ProxySpec,pr:number)=>`${(spec.executor==="agent_loop
 const blockedCiIssuePhase=(spec:ProxySpec)=>spec.executor==="agent_loop"?"loop:ci":"operator:building";
 const roadmapBindingFields=new Set(["expected_base_sha","roadmap_sha256","manifest_sha256"]);
 const sha256=(value:string)=>createHash("sha256").update(Buffer.from(value,"utf8")).digest("hex");
+const serializedSpec=(spec:ProxySpec)=>Object.fromEntries(Object.entries(spec).filter(([,value])=>value!==undefined));
 const exactSpecExceptHistoricalBinding=(current:ProxySpec,historical:ProxySpec)=>{
+  current=serializedSpec(current) as ProxySpec;historical=serializedSpec(historical) as ProxySpec;
   const currentKeys=Object.keys(current).sort(),historicalKeys=Object.keys(historical).sort();
   if(JSON.stringify(currentKeys)!==JSON.stringify(historicalKeys))return false;
   return currentKeys.every(key=>roadmapBindingFields.has(key)||JSON.stringify((current as any)[key])===JSON.stringify((historical as any)[key]));
