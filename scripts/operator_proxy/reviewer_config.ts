@@ -52,17 +52,7 @@ export function inspectAgentLoopCommitModel(message:string,frontId:string,report
   return {status:"VERIFIED",model};
 }
 
-const agentLoopPath=(path:string)=>path.startsWith("scripts/agent_loop/")||path.startsWith("tests/contract/test_agent_loop_");
-
 export function reviewerRoute(input:ReviewerInput):string[]{
-  const models=input.changedFiles.some(agentLoopPath)
-    ? [REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.deepseekFlash,REVIEWER_MODELS.nemotron]
-    : input.risk==="LOW"
-      ? [REVIEWER_MODELS.deepseekFlash,REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.nemotron]
-      : [REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.deepseekFlash,REVIEWER_MODELS.nemotron];
-  return models.filter(model=>REVIEWER_QUALIFICATION[model].qualified&&model!==input.builderModel);
-}
-
-export function reviewerArbiter(input:ReviewerInput,used:string[]):string|undefined{
-  return [REVIEWER_MODELS.deepseekFlash,REVIEWER_MODELS.deepseekPro,REVIEWER_MODELS.nemotron].find(model=>REVIEWER_QUALIFICATION[model].qualified&&model!==input.builderModel&&!used.includes(model));
+  // The configured reviewer is fixed; a builder never reviews itself.
+  return input.builderModel===REVIEWER_MODELS.deepseekPro?[]:[REVIEWER_MODELS.deepseekPro];
 }
