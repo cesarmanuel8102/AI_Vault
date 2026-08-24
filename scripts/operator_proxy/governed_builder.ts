@@ -150,9 +150,21 @@ export class GovernedBuilder {
     const existing=this.bus.findPrByBranch(spec.work_branch),orphanHead=!existing&&repairCycle===0?this.bus.remoteBranchHead(spec.work_branch):undefined,publishedHead=repairCycle===0?(existing?.head_sha??orphanHead):undefined;
     ensureCommit(this.sourceRepo,spec.expected_base_sha);
     mkdirSync(this.worktreeRoot,{recursive:true});const root=realpathSync(this.worktreeRoot);if(lstatSync(root).isSymbolicLink())throw new Error("worktree root symlink denied");
-    const worktree=resolve(root,spec.front_id);if(!worktree.startsWith(`${root}\\`)&&!worktree.startsWith(`${root}/`))throw new Error("worktree escaped root");
+    let worktree=resolve(root,spec.front_id);if(!worktree.startsWith(`${root}\\`)&&!worktree.startsWith(`${root}/`))throw new Error("worktree escaped root");
     if(!existsSync(worktree)){this.assertEffect("branch_create",{issue});if(publishedHead){native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"fetch","origin",spec.work_branch],{stdio:"inherit",timeout:120000,windowsHide:true});native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","--detach",worktree,publishedHead],{stdio:"inherit",timeout:120000,windowsHide:true});}else if(existing){native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"fetch","origin",spec.work_branch],{stdio:"inherit",timeout:120000,windowsHide:true});try{native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add",worktree,spec.work_branch],{stdio:"inherit",timeout:120000,windowsHide:true});}catch{native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","-b",spec.work_branch,worktree,`origin/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});}}else native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","-b",spec.work_branch,worktree,spec.expected_base_sha],{stdio:"inherit",timeout:120000,windowsHide:true});}
-    if(realpathSync(worktree).toLowerCase()!==worktree.toLowerCase())throw new Error("worktree path identity mismatch");const branch=git(worktree,["branch","--show-current"]);if(branch!==spec.work_branch&&(branch!==""||!publishedHead))throw new Error("worktree branch mismatch");let initialStatus=git(worktree,["status","--porcelain","--untracked-files=all"]);let initialHead=git(worktree,["rev-parse","HEAD"]);
+    let recoveryDetached=false;
+    // Historical dirty worktrees are forensic evidence. A repair resumes from a
+    // clean detached checkout of the published candidate instead of deleting it.
+    if(spec.executor==="codex_control_plane"&&repairCycle>0&&existing&&git(worktree,["status","--porcelain","--untracked-files=all"])){
+      const remote=this.bus.remoteBranchHead(spec.work_branch);
+      if(!remote||remote!==existing.head_sha||!/^[a-f0-9]{40}$/.test(remote))throw new Error("repair candidate branch identity invalid");
+      const recovery=resolve(root,`${spec.front_id}-builder-recovery-${remote.slice(0,12)}`);
+      if(!recovery.startsWith(`${root}\\`)&&!recovery.startsWith(`${root}/`))throw new Error("builder recovery worktree escaped root");
+      if(!existsSync(recovery))native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"worktree","add","--detach",recovery,remote],{stdio:"inherit",timeout:120000,windowsHide:true});
+      if(realpathSync(recovery).toLowerCase()!==recovery.toLowerCase()||git(recovery,["branch","--show-current"])!==""||git(recovery,["rev-parse","HEAD"])!==remote||git(recovery,["status","--porcelain","--untracked-files=all"]))throw new Error("builder recovery worktree state invalid");
+      worktree=recovery;recoveryDetached=true;
+    }
+    if(realpathSync(worktree).toLowerCase()!==worktree.toLowerCase())throw new Error("worktree path identity mismatch");const branch=git(worktree,["branch","--show-current"]);if(branch!==spec.work_branch&&(branch!==""||!publishedHead&&!recoveryDetached))throw new Error("worktree branch mismatch");let initialStatus=git(worktree,["status","--porcelain","--untracked-files=all"]);let initialHead=git(worktree,["rev-parse","HEAD"]);
     const legacyMode=existing&&isLegacyUnattestedPr(spec,existing,this.bus,worktree,initialHead);
     const expectedHead=legacyMode?spec.expected_base_sha:(existing?.head_sha??spec.expected_base_sha);
     if(publishedHead&&!legacyMode){
