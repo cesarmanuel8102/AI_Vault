@@ -57,10 +57,22 @@ try {
     if(Test-Path -LiteralPath (Join-Path $installedMirror '.git\shallow')){throw 'installed mirror is shallow'}
     $installedMirrorStatus=@(& git -C $installedMirror status --porcelain --untracked-files=all)
     if($installedMirrorStatus){throw 'installed mirror dirty'}
+    # A legacy shallow mirror is admitted only for identity-checked migration and must end full-depth.
+    $shallowInstall=Join-Path $tmp 'shallow-install'
+    New-Item $shallowInstall -ItemType Directory -Force|Out-Null
+    $shallowMirror=Join-Path $shallowInstall 'repos\AI_VAULT-governed'
+    New-Item (Split-Path $shallowMirror -Parent) -ItemType Directory -Force|Out-Null
+    & git clone --depth 1 "file:///$($synthetic.Replace('\','/'))" $shallowMirror | Out-Null
+    & git -C $shallowMirror remote set-url origin 'https://github.com/cesarmanuel8102/AI_Vault.git'
+    if(-not (Test-Path -LiteralPath (Join-Path $shallowMirror '.git\shallow'))){throw 'shallow migration fixture is not shallow'}
+    Invoke-OperatorProxyInstall -Repo $synthetic -InstallRoot $shallowInstall -ApprovedCommit $syntheticHead -ValidateStaging $validateStage -ValidateInstalled {param($p)} | Out-Null
+    if(Test-Path -LiteralPath (Join-Path $shallowMirror '.git\shallow')){throw 'shallow mirror was not migrated'}
+    if(((& git -C $shallowMirror rev-parse HEAD).Trim()) -ne $syntheticHead){throw 'migrated shallow mirror head mismatch'}
+    if(((& git -C $shallowMirror remote get-url origin).Trim()) -ne 'https://github.com/cesarmanuel8102/AI_Vault.git'){throw 'migrated shallow mirror remote mismatch'}
     if(& git -C $synthetic status --porcelain --untracked-files=all){throw 'install dirtied source repository'}
     if(Get-ChildItem $synthetic -Force -Filter '.operator-proxy-*'){throw 'transaction artifact created inside source repository'}
     $backupRoot=Join-Path $tmp 'AI_VAULT_OPERATOR_PROXY_BACKUPS'
-    if(@(Get-ChildItem $backupRoot -Directory -Filter 'operator-proxy-backup-*').Count -ne 2){throw 'backups not isolated under transaction backup root'}
+    if(@(Get-ChildItem $backupRoot -Directory -Filter 'operator-proxy-backup-*').Count -ne 3){throw 'backups not isolated under transaction backup root'}
     $capturedArgs=Join-Path $tmp 'runner-args.txt'
     $capturedEnv=Join-Path $tmp 'runner-env.txt'
     $shim="@echo off`r`n> `"$capturedArgs`" echo %~1`r`n>> `"$capturedArgs`" echo %~2`r`n>> `"$capturedArgs`" echo %~3`r`n> `"$capturedEnv`" echo %OPERATOR_PROXY_BUILDER_MODEL%`r`n>> `"$capturedEnv`" echo %OPERATOR_PROXY_OLLAMA_BUILDER_MODEL%`r`n>> `"$capturedEnv`" echo %OPERATOR_PROXY_ROOT%`r`nexit /b 0`r`n"

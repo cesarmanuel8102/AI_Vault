@@ -111,7 +111,8 @@ function Get-ManagedOperatorProxyFiles {
 
 function Assert-TrustedReviewerMirror {
     param(
-        [Parameter(Mandatory=$true)][string]$Target
+        [Parameter(Mandatory=$true)][string]$Target,
+        [switch]$AllowShallowForMigration
     )
     $resolved=Resolve-TrustedOperatorProxyPath $Target -MustExist
     $top=Get-TrustedGitValue $resolved @('rev-parse','--show-toplevel') 'reviewer mirror top-level verification'
@@ -122,7 +123,7 @@ function Assert-TrustedReviewerMirror {
     if($head -notmatch '^[0-9a-f]{40}$'){throw 'reviewer mirror HEAD invalid'}
     $remote=Get-TrustedGitValue $resolved @('remote','get-url','origin') 'reviewer mirror remote verification'
     if($remote -notin @('https://github.com/cesarmanuel8102/AI_Vault','https://github.com/cesarmanuel8102/AI_Vault.git','git@github.com:cesarmanuel8102/AI_Vault.git')){throw 'reviewer mirror remote identity mismatch'}
-    if(Test-Path -LiteralPath (Join-Path $resolved '.git\shallow')){throw 'reviewer mirror history is shallow'}
+    if((Test-Path -LiteralPath (Join-Path $resolved '.git\shallow')) -and -not $AllowShallowForMigration){throw 'reviewer mirror history is shallow'}
     if(Get-TrustedGitValue $resolved @('status','--porcelain','--untracked-files=all') 'reviewer mirror cleanliness verification'){throw 'reviewer mirror is not clean'}
     return [pscustomobject]@{Repo=$resolved;Head=$head;Remote=$remote}
 }
@@ -135,7 +136,7 @@ function Update-TrustedReviewerMirror {
     Assert-SafeManagedTarget $Target (Split-Path (Split-Path $Target -Parent) -Parent)
     $created=$false
     if(Test-Path -LiteralPath $Target){
-        $previous=Assert-TrustedReviewerMirror $Target
+        $previous=Assert-TrustedReviewerMirror $Target -AllowShallowForMigration
     } else {
         $previous=$null
         $created=$true
