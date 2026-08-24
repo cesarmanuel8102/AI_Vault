@@ -43,19 +43,42 @@ try {
     foreach($required in @('builder_backend.ts','builder_config.ts','builder_router.ts','opencode_builder.ts')){
         if(-not (Test-Path -LiteralPath (Join-Path $compiledInstall $required))){throw "compiled install missing $required"}
     }
+    $compiledMirror=Join-Path $compiledInstall 'repos\AI_Vault-governed'
+    if(((& git -C $compiledMirror rev-parse HEAD).Trim()) -ne $syntheticHead){throw 'compiled install mirror head mismatch'}
+    if(((& git -C $compiledMirror remote get-url origin).Trim()) -ne 'https://github.com/cesarmanuel8102/AI_Vault.git'){throw 'compiled install mirror remote mismatch'}
+    if(Test-Path -LiteralPath (Join-Path $compiledMirror '.git\shallow')){throw 'compiled install mirror is shallow'}
+    $compiledMirrorStatus=@(& git -C $compiledMirror status --porcelain --untracked-files=all)
+    if($compiledMirrorStatus){throw 'compiled install mirror dirty'}
     Invoke-OperatorProxyInstall -Repo $synthetic -InstallRoot $install -ApprovedCommit $syntheticHead -ValidateStaging $validateStage -ValidateInstalled {param($p)} | Out-Null
     if([Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes((Join-Path $install 'operator_proxy.ts'))) -eq 'old-runtime'){throw 'install did not replace runtime'}
+    $installedMirror=Join-Path $install 'repos\AI_Vault-governed'
+    if(((& git -C $installedMirror rev-parse HEAD).Trim()) -ne $syntheticHead){throw 'installed mirror head mismatch'}
+    if(((& git -C $installedMirror remote get-url origin).Trim()) -ne 'https://github.com/cesarmanuel8102/AI_Vault.git'){throw 'installed mirror remote mismatch'}
+    if(Test-Path -LiteralPath (Join-Path $installedMirror '.git\shallow')){throw 'installed mirror is shallow'}
+    $installedMirrorStatus=@(& git -C $installedMirror status --porcelain --untracked-files=all)
+    if($installedMirrorStatus){throw 'installed mirror dirty'}
+    # A legacy shallow mirror is admitted only for identity-checked migration and must end full-depth.
+    $shallowInstall=Join-Path $tmp 'shallow-install'
+    New-Item $shallowInstall -ItemType Directory -Force|Out-Null
+    $shallowMirror=Join-Path $shallowInstall 'repos\AI_VAULT-governed'
+    New-Item (Split-Path $shallowMirror -Parent) -ItemType Directory -Force|Out-Null
+    & git clone --depth 1 "file:///$($synthetic.Replace('\','/'))" $shallowMirror | Out-Null
+    & git -C $shallowMirror remote set-url origin 'https://github.com/cesarmanuel8102/AI_Vault.git'
+    if(-not (Test-Path -LiteralPath (Join-Path $shallowMirror '.git\shallow'))){throw 'shallow migration fixture is not shallow'}
+    Invoke-OperatorProxyInstall -Repo $synthetic -InstallRoot $shallowInstall -ApprovedCommit $syntheticHead -ValidateStaging $validateStage -ValidateInstalled {param($p)} | Out-Null
+    if(Test-Path -LiteralPath (Join-Path $shallowMirror '.git\shallow')){throw 'shallow mirror was not migrated'}
+    if(((& git -C $shallowMirror rev-parse HEAD).Trim()) -ne $syntheticHead){throw 'migrated shallow mirror head mismatch'}
+    if(((& git -C $shallowMirror remote get-url origin).Trim()) -ne 'https://github.com/cesarmanuel8102/AI_Vault.git'){throw 'migrated shallow mirror remote mismatch'}
     if(& git -C $synthetic status --porcelain --untracked-files=all){throw 'install dirtied source repository'}
     if(Get-ChildItem $synthetic -Force -Filter '.operator-proxy-*'){throw 'transaction artifact created inside source repository'}
     $backupRoot=Join-Path $tmp 'AI_VAULT_OPERATOR_PROXY_BACKUPS'
-    if(@(Get-ChildItem $backupRoot -Directory -Filter 'operator-proxy-backup-*').Count -ne 2){throw 'backups not isolated under transaction backup root'}
+    if(@(Get-ChildItem $backupRoot -Directory -Filter 'operator-proxy-backup-*').Count -ne 3){throw 'backups not isolated under transaction backup root'}
     $capturedArgs=Join-Path $tmp 'runner-args.txt'
     $capturedEnv=Join-Path $tmp 'runner-env.txt'
     $shim="@echo off`r`n> `"$capturedArgs`" echo %~1`r`n>> `"$capturedArgs`" echo %~2`r`n>> `"$capturedArgs`" echo %~3`r`n> `"$capturedEnv`" echo %OPERATOR_PROXY_BUILDER_MODEL%`r`n>> `"$capturedEnv`" echo %OPERATOR_PROXY_OLLAMA_BUILDER_MODEL%`r`n>> `"$capturedEnv`" echo %OPERATOR_PROXY_ROOT%`r`nexit /b 0`r`n"
     [IO.File]::WriteAllText((Join-Path $install 'node_modules\.bin\tsx.cmd'),$shim,[Text.Encoding]::ASCII)
     $builderConfig=Join-Path $tmp 'worker.json';[IO.File]::WriteAllText($builderConfig,'{"opencode_model":"ollama-cloud/kimi-k2.7-code"}',[Text.Encoding]::UTF8)
-    $reviewerRepo=Join-Path $install 'repos\AI_Vault-governed';New-Item $reviewerRepo -ItemType Directory -Force|Out-Null
-    & git -C $reviewerRepo init -q; & git -C $reviewerRepo config user.email 'contract@example.invalid'; & git -C $reviewerRepo config user.name 'Contract'; & git -C $reviewerRepo remote add origin 'https://github.com/cesarmanuel8102/AI_Vault.git'
+    $reviewerRepo=Join-Path $install 'repos\AI_Vault-governed'
     $foreignCwd=Join-Path $tmp 'foreign-cwd';New-Item $foreignCwd -ItemType Directory|Out-Null
     $runner=(Join-Path $install 'Run-OperatorProxy.ps1').Replace("'","''")
     $escapedInstall=$install.Replace("'","''")
@@ -74,10 +97,6 @@ try {
     if($actualEnv.Count -ne 3 -or $actualEnv[0] -ne 'ollama-cloud/kimi-k2.7-code' -or $actualEnv[1] -ne 'ollama-cloud/kimi-k2.7-code'){throw 'runner did not preserve configured builder model parity'}
     if($actualEnv[2] -ne $install){throw 'runner did not bind the installed proxy root'}
     try { Invoke-OperatorProxyInstall -Repo $synthetic -InstallRoot $install -ApprovedCommit ('0'*40) -ValidateStaging $validateStage | Out-Null; throw 'bad sha accepted' } catch { if($_.Exception.Message -eq 'bad sha accepted'){throw} }
-    [IO.File]::WriteAllBytes((Join-Path $install 'operator_proxy.ts'),$old)
-    try { Invoke-OperatorProxyInstall -Repo $synthetic -InstallRoot $install -ApprovedCommit $syntheticHead -ValidateStaging $validateStage -ValidateInstalled {param($p) throw 'post-install validation failure'} | Out-Null; throw 'post failure accepted' } catch { if($_.Exception.Message -eq 'post failure accepted'){throw} }
-    if(-not [Linq.Enumerable]::SequenceEqual([byte[]]$old,[IO.File]::ReadAllBytes((Join-Path $install 'operator_proxy.ts')))){throw 'rollback bytes differ'}
-    if([IO.File]::ReadAllText($taskState) -ne 'Disabled'){throw 'task state changed'}
 
     # Synthetic repositories exercise physical/Git identity without touching the canonical checkout.
     $verified=Assert-TrustedOperatorProxyRepository $synthetic $syntheticHead
@@ -114,5 +133,16 @@ try {
     $postIdentityChange={param($installedPath) & git -C $synthetic remote set-url origin 'https://github.com/other/AI_Vault.git'}
     try{Invoke-OperatorProxyInstall -Repo $synthetic -InstallRoot $syntheticInstall -ApprovedCommit $syntheticHead -ValidateStaging $validateStage -ValidateInstalled $postIdentityChange|Out-Null;throw 'post-install identity change accepted'}catch{if($_.Exception.Message -eq 'post-install identity change accepted'){throw}}finally{& git -C $synthetic remote set-url origin 'https://github.com/cesarmanuel8102/AI_Vault.git'}
     if(-not [Linq.Enumerable]::SequenceEqual([byte[]]$old,[IO.File]::ReadAllBytes((Join-Path $syntheticInstall 'operator_proxy.ts')))){throw 'TOCTOU rollback bytes differ'}
+    [IO.File]::WriteAllBytes((Join-Path $install 'operator_proxy.ts'),$old)
+    [IO.File]::WriteAllText((Join-Path $synthetic 'mirror-source-proof.txt'),'next',[Text.Encoding]::UTF8)
+    & git -C $synthetic add mirror-source-proof.txt; & git -C $synthetic commit -qm 'next fixture'
+    $nextHead=(& git -C $synthetic rev-parse HEAD).Trim()
+    try { Invoke-OperatorProxyInstall -Repo $synthetic -InstallRoot $install -ApprovedCommit $nextHead -ValidateStaging $validateStage -ValidateInstalled {param($p) throw 'post-install validation failure'} | Out-Null; throw 'post failure accepted' } catch { if($_.Exception.Message -eq 'post failure accepted'){throw} }
+    if(-not [Linq.Enumerable]::SequenceEqual([byte[]]$old,[IO.File]::ReadAllBytes((Join-Path $install 'operator_proxy.ts')))){throw 'rollback bytes differ'}
+    if(((& git -C $installedMirror rev-parse HEAD).Trim()) -ne $syntheticHead){throw 'rollback mirror head differs'}
+    if(Test-Path -LiteralPath (Join-Path $installedMirror '.git\shallow')){throw 'rollback mirror is shallow'}
+    $rollbackMirrorStatus=@(& git -C $installedMirror status --porcelain --untracked-files=all)
+    if($rollbackMirrorStatus){throw 'rollback mirror dirty'}
+    if([IO.File]::ReadAllText($taskState) -ne 'Disabled'){throw 'task state changed'}
     'OPERATOR_PROXY_TRANSACTION_PASS'
 } finally { if(Test-Path $tmp){Remove-Item $tmp -Recurse -Force} }

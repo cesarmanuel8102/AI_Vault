@@ -109,6 +109,55 @@ function Get-ManagedOperatorProxyFiles {
     return @('schemas','action_executor.ts','agent_loop_builder_adapter.ts','autonomous_flow.ts','autonomous_runtime.ts','brain_101_catalog_audit.ts','builder_attempt_provenance.ts','builder_backend.ts','builder_config.ts','builder_router.ts','campaign_authorization.ts','campaign_state.ts','campaign_supervisor.ts','codex_builder.ts','codex_reviewer.ts','decision_ledger.ts','evidence_collector.ts','external_effect_guard.ts','github_bus.ts','governed_builder.ts','incident_classifier.ts','lifecycle_store.ts','opencode_builder.ts','opencode_reviewer.ts','operator_proxy.ts','policy_engine.ts','production_effects.ts','provider_role_authority.ts','redaction.ts','request_coordinator.ts','review_contract.ts','reviewer_backend.ts','reviewer_config.ts','reviewer_router.ts','risk_classifier.ts','roadmap_sequencer.ts','self_repair_controller.ts','self_repair_orchestrator.ts','single_instance_lock.ts','spec_contract.ts','state_machine.ts','types.ts','package.json','package-lock.json','tsconfig.json','Run-OperatorProxy.ps1')
 }
 
+function Assert-TrustedReviewerMirror {
+    param(
+        [Parameter(Mandatory=$true)][string]$Target,
+        [switch]$AllowShallowForMigration
+    )
+    $resolved=Resolve-TrustedOperatorProxyPath $Target -MustExist
+    $top=Get-TrustedGitValue $resolved @('rev-parse','--show-toplevel') 'reviewer mirror top-level verification'
+    $top=Resolve-TrustedOperatorProxyPath $top -MustExist
+    if(-not $top.Equals($resolved,[StringComparison]::OrdinalIgnoreCase)){throw 'reviewer mirror top-level identity mismatch'}
+    if((Get-TrustedGitValue $resolved @('rev-parse','--is-inside-work-tree') 'reviewer mirror worktree verification') -ne 'true'){throw 'reviewer mirror is not a worktree'}
+    $head=Get-TrustedGitValue $resolved @('rev-parse','HEAD') 'reviewer mirror HEAD verification'
+    if($head -notmatch '^[0-9a-f]{40}$'){throw 'reviewer mirror HEAD invalid'}
+    $remote=Get-TrustedGitValue $resolved @('remote','get-url','origin') 'reviewer mirror remote verification'
+    if($remote -notin @('https://github.com/cesarmanuel8102/AI_Vault','https://github.com/cesarmanuel8102/AI_Vault.git','git@github.com:cesarmanuel8102/AI_Vault.git')){throw 'reviewer mirror remote identity mismatch'}
+    if((Test-Path -LiteralPath (Join-Path $resolved '.git\shallow')) -and -not $AllowShallowForMigration){throw 'reviewer mirror history is shallow'}
+    if(Get-TrustedGitValue $resolved @('status','--porcelain','--untracked-files=all') 'reviewer mirror cleanliness verification'){throw 'reviewer mirror is not clean'}
+    return [pscustomobject]@{Repo=$resolved;Head=$head;Remote=$remote}
+}
+
+function Update-TrustedReviewerMirror {
+    param(
+        [Parameter(Mandatory=$true)]$Identity,
+        [Parameter(Mandatory=$true)][string]$Target
+    )
+    Assert-SafeManagedTarget $Target (Split-Path (Split-Path $Target -Parent) -Parent)
+    $created=$false
+    if(Test-Path -LiteralPath $Target){
+        $previous=Assert-TrustedReviewerMirror $Target -AllowShallowForMigration
+    } else {
+        $previous=$null
+        $created=$true
+    $parent=Split-Path $Target -Parent
+    New-Item -Path $parent -ItemType Directory -Force|Out-Null
+        Invoke-CheckedNative 'git' @('init','-q',$Target) 'reviewer mirror initialization'|Out-Null
+        Invoke-CheckedNative 'git' @('-C',$Target,'remote','add','origin',$Identity.Remote) 'reviewer mirror remote binding'|Out-Null
+    }
+    try {
+        if(Test-Path -LiteralPath (Join-Path $Target '.git\shallow')){Invoke-CheckedNative 'git' @('-C',$Target,'fetch','--unshallow',$Identity.Repo) 'reviewer mirror history recovery'|Out-Null}
+        Invoke-CheckedNative 'git' @('-C',$Target,'fetch',$Identity.Repo,$Identity.Head) 'reviewer mirror fetch'|Out-Null
+        Invoke-CheckedNative 'git' @('-C',$Target,'checkout','--detach','FETCH_HEAD') 'reviewer mirror checkout'|Out-Null
+        $mirror=Assert-TrustedReviewerMirror $Target
+        if($mirror.Head -ne $Identity.Head -or $mirror.Remote -ne $Identity.Remote){throw 'reviewer mirror identity mismatch'}
+        return [pscustomobject]@{PreviousHead=$previous.Head;Created=$created}
+    } catch {
+        if($created -and (Test-Path -LiteralPath $Target)){Remove-Item -LiteralPath $Target -Recurse -Force}
+        throw
+    }
+}
+
 function Invoke-OperatorProxyInstall {
     [CmdletBinding()]
     param(
@@ -133,12 +182,15 @@ function Invoke-OperatorProxyInstall {
     if((Test-PathWithin $stage $identity.Repo) -or (Test-PathWithin $backup $identity.Repo)){throw 'transaction artifacts overlap repository'}
     if((Test-Path -LiteralPath $stage) -or (Test-Path -LiteralPath $backup)){throw 'transaction path collision'}
     if($install -eq $stage -or $install -eq $backup){throw 'transaction root collision'}
-    $managed=@(Get-ManagedOperatorProxyFiles)
+    $runtimeManaged=@(Get-ManagedOperatorProxyFiles)
+    $managed=@($runtimeManaged)
+    $mirrorRelative='repos\AI_Vault-governed'
+    $mirrorUpdate=$null
     $installed=$false
     try {
         Assert-TransactionIdentity $identity $install $stage $backup
         New-Item -Path $stage -ItemType Directory|Out-Null
-        foreach($name in $managed){Assert-TransactionIdentity $identity $install $stage $backup;$src=Join-Path $identity.Source $name;$dst=Join-Path $stage $name;Assert-SafeManagedTarget $dst $stage;Copy-Item -LiteralPath $src -Destination $dst -Recurse -Force}
+        foreach($name in $runtimeManaged){Assert-TransactionIdentity $identity $install $stage $backup;$src=Join-Path $identity.Source $name;$dst=Join-Path $stage $name;Assert-SafeManagedTarget $dst $stage;Copy-Item -LiteralPath $src -Destination $dst -Recurse -Force}
         if($ValidateStaging){& $ValidateStaging $stage}else{Push-Location $stage;try{Invoke-CheckedNative 'npm.cmd' @('ci','--ignore-scripts') 'npm ci';Invoke-CheckedNative (Join-Path $stage 'node_modules\.bin\tsc.cmd') @('--noEmit','-p',(Join-Path $stage 'tsconfig.json')) 'typecheck'}finally{Pop-Location}}
         if(-not (Test-Path -LiteralPath (Join-Path $stage 'node_modules\.bin\tsx.cmd'))){throw 'validated staging dependencies missing'}
         $managed+='node_modules'
@@ -147,11 +199,17 @@ function Invoke-OperatorProxyInstall {
         if(Test-Path -LiteralPath $install){foreach($name in $managed){$p=Join-Path $install $name;$saved=Join-Path $backup $name;Assert-SafeManagedTarget $p $install;Assert-SafeManagedTarget $saved $backup;if(Test-Path -LiteralPath $p){Copy-Item -LiteralPath $p -Destination $saved -Recurse -Force}}}else{New-Item -Path $install -ItemType Directory|Out-Null}
         $installed=$true
         foreach($name in $managed){Assert-TransactionIdentity $identity $install $stage $backup;$target=Join-Path $install $name;Assert-SafeManagedTarget $target $install;if(Test-Path -LiteralPath $target){Remove-Item -LiteralPath $target -Recurse -Force};Copy-Item -LiteralPath (Join-Path $stage $name) -Destination $target -Recurse -Force}
+        $mirrorUpdate=Update-TrustedReviewerMirror $identity (Join-Path $install $mirrorRelative)
         if($ValidateInstalled){& $ValidateInstalled $install}
         Assert-TransactionIdentity $identity $install $stage $backup
         if(Get-TrustedGitValue $identity.Repo @('status','--porcelain','--untracked-files=all') 'git repository cleanliness verification'){throw 'repository changed during installation'}
         Write-Output 'OPERATOR_PROXY_INSTALL_PASS'
     } catch {
+        if($mirrorUpdate){
+            $mirrorTarget=Join-Path $install $mirrorRelative
+            if($mirrorUpdate.Created){if(Test-Path -LiteralPath $mirrorTarget){Remove-Item -LiteralPath $mirrorTarget -Recurse -Force}}
+            elseif($mirrorUpdate.PreviousHead){Invoke-CheckedNative 'git' @('-C',$mirrorTarget,'checkout','--detach',$mirrorUpdate.PreviousHead) 'reviewer mirror rollback';Assert-TrustedReviewerMirror $mirrorTarget|Out-Null}
+        }
         if($installed){
             foreach($name in $managed){$target=Join-Path $install $name;Assert-SafeManagedTarget $target $install;if(Test-Path -LiteralPath $target){Remove-Item -LiteralPath $target -Recurse -Force};$saved=Join-Path $backup $name;Assert-SafeManagedTarget $saved $backup;if(Test-Path -LiteralPath $saved){Copy-Item -LiteralPath $saved -Destination $target -Recurse -Force}}
             Write-Output 'OPERATOR_PROXY_ROLLBACK_PASS'
@@ -161,4 +219,4 @@ function Invoke-OperatorProxyInstall {
         if(Test-Path -LiteralPath $stage){Assert-SafeManagedTarget $stage $parent;Remove-Item -LiteralPath $stage -Recurse -Force}
     }
 }
-Export-ModuleMember -Function Invoke-OperatorProxyInstall,Invoke-CheckedNative,Resolve-TrustedOperatorProxyPath,Assert-NoReparsePoint,Assert-TrustedOperatorProxyRepository,Assert-SafeInstallRoot,Get-OperatorProxyTransactionParent,Get-ManagedOperatorProxyFiles
+Export-ModuleMember -Function Invoke-OperatorProxyInstall,Invoke-CheckedNative,Resolve-TrustedOperatorProxyPath,Assert-NoReparsePoint,Assert-TrustedOperatorProxyRepository,Assert-TrustedReviewerMirror,Assert-SafeInstallRoot,Get-OperatorProxyTransactionParent,Get-ManagedOperatorProxyFiles
