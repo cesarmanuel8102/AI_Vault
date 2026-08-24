@@ -13,6 +13,10 @@ export function validBlockedCiEffectChain(record:LifecycleRecord){
   if(effects.length===2)return effects[1]===`build:${record.head_sha}`;
   return effects.slice(2).every(effect=>/^base-sync:[0-9a-f]{40}$/.test(effect))&&effects.at(-1)===`base-sync:${record.head_sha}`;
 }
+function validExpandableBlockedCiEffectChain(record:LifecycleRecord){
+  const effects=record.completed_effects;
+  return effects.length>=2&&effects.length<=64&&effects[0]===`issue:${record.issue}`&&/^build:[0-9a-f]{40}$/.test(effects[1]??"")&&new Set(effects).size===effects.length&&effects.slice(2).every(effect=>/^base-sync:[0-9a-f]{40}$/.test(effect))&&effects.at(-1)===`base-sync:${record.head_sha}`;
+}
 export function validPrivilegedInstallEffectChain(record:LifecycleRecord){
   const effects=record.completed_effects;
   if(!record.issue||!record.head_sha||effects.length<3||effects.length>11||effects[0]!==`issue:${record.issue}`||!/^build:[0-9a-f]{40}$/.test(effects[1]??"")||effects.at(-1)!==`merge:${record.head_sha}`||new Set(effects).size!==effects.length)return false;
@@ -46,6 +50,16 @@ export class LifecycleStore {
     if(!/^[A-Za-z0-9][A-Za-z0-9:._-]{2,159}$/.test(key)) throw new Error("effect key invalid");
     if(record.completed_effects.includes(key)) return record;
     const updated={...record,completed_effects:[...record.completed_effects,key],updated_utc:new Date().toISOString()}; this.save(updated); return updated;
+  }
+  compactBuilderFailureEffectChain(record:LifecycleRecord,decisionHead:string):LifecycleRecord {
+    if(record.completed_effects.length<=10)return record;
+    const decisionEffect=`base-sync:${decisionHead}`;
+    const currentEffect=`base-sync:${record.head_sha}`;
+    const exact=record.state==="BLOCKED"&&/^BUILDER_FAILED:[A-Z_]+$/.test(record.last_error??"")&&record.repair_cycles>0&&record.repair_cycles<=2&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&!!record.builder_session&&!!record.reviewer_session&&!!record.decision_id&&/^[0-9a-f]{40}$/.test(decisionHead)&&validExpandableBlockedCiEffectChain(record)&&record.completed_effects.includes(decisionEffect)&&record.completed_effects.at(-1)===currentEffect;
+    if(!exact)throw new Error("builder failure effect-chain compaction denied");
+    const retained=[record.completed_effects[0]!,record.completed_effects[1]!,...(decisionEffect===currentEffect?[currentEffect]:[decisionEffect,currentEffect])];
+    const updated={...record,completed_effects:retained,updated_utc:new Date().toISOString()};
+    this.save(updated);appendFileSync(join(this.root,"events.jsonl"),`${safeJson({event:"lifecycle_builder_failure_effect_chain_compacted",front_id:record.front_id,issue:record.issue,pr:record.pr,decision_id:record.decision_id,decision_head_sha:decisionHead,current_head_sha:record.head_sha,discarded_effects:record.completed_effects.filter(effect=>!retained.includes(effect)),retained_effects:retained,updated_utc:updated.updated_utc})}\n`);return updated;
   }
   repairBuild(record:LifecycleRecord,head:string):LifecycleRecord {
     const exact=record.state==="BUILDING"&&record.repair_cycles>0&&record.repair_cycles<=2&&Number.isInteger(record.issue)&&record.issue!>0&&Number.isInteger(record.pr)&&record.pr!>0&&!!record.head_sha&&!!record.builder_session&&!!record.reviewer_session&&!!record.decision_id&&validBlockedCiEffectChain(record);
