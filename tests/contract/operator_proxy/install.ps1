@@ -51,7 +51,7 @@ try {
     if(@(Get-ChildItem $backupRoot -Directory -Filter 'operator-proxy-backup-*').Count -ne 2){throw 'backups not isolated under transaction backup root'}
     $capturedArgs=Join-Path $tmp 'runner-args.txt'
     $capturedEnv=Join-Path $tmp 'runner-env.txt'
-    $shim="@echo off`r`n> `"$capturedArgs`" echo %~1`r`n>> `"$capturedArgs`" echo %~2`r`n>> `"$capturedArgs`" echo %~3`r`n> `"$capturedEnv`" echo %OPERATOR_PROXY_BUILDER_MODEL%`r`n>> `"$capturedEnv`" echo %OPERATOR_PROXY_OLLAMA_BUILDER_MODEL%`r`nexit /b 0`r`n"
+    $shim="@echo off`r`n> `"$capturedArgs`" echo %~1`r`n>> `"$capturedArgs`" echo %~2`r`n>> `"$capturedArgs`" echo %~3`r`n> `"$capturedEnv`" echo %OPERATOR_PROXY_BUILDER_MODEL%`r`n>> `"$capturedEnv`" echo %OPERATOR_PROXY_OLLAMA_BUILDER_MODEL%`r`n>> `"$capturedEnv`" echo %OPERATOR_PROXY_ROOT%`r`nexit /b 0`r`n"
     [IO.File]::WriteAllText((Join-Path $install 'node_modules\.bin\tsx.cmd'),$shim,[Text.Encoding]::ASCII)
     $builderConfig=Join-Path $tmp 'worker.json';[IO.File]::WriteAllText($builderConfig,'{"opencode_model":"ollama-cloud/kimi-k2.7-code"}',[Text.Encoding]::UTF8)
     $reviewerRepo=Join-Path $install 'repos\AI_Vault-governed';New-Item $reviewerRepo -ItemType Directory -Force|Out-Null
@@ -71,7 +71,8 @@ try {
     $expectedArgs=@((Join-Path $install 'operator_proxy.ts'),'--once','--dry-run')
     if((Compare-Object $expectedArgs $actualArgs -SyncWindow 0)){throw 'runner did not use absolute install entrypoint'}
     $actualEnv=[IO.File]::ReadAllLines($capturedEnv)|ForEach-Object{$_.Trim()}
-    if($actualEnv.Count -ne 2 -or $actualEnv[0] -ne 'ollama-cloud/kimi-k2.7-code' -or $actualEnv[1] -ne 'ollama-cloud/kimi-k2.7-code'){throw 'runner did not preserve configured builder model parity'}
+    if($actualEnv.Count -ne 3 -or $actualEnv[0] -ne 'ollama-cloud/kimi-k2.7-code' -or $actualEnv[1] -ne 'ollama-cloud/kimi-k2.7-code'){throw 'runner did not preserve configured builder model parity'}
+    if($actualEnv[2] -ne $install){throw 'runner did not bind the installed proxy root'}
     try { Invoke-OperatorProxyInstall -Repo $synthetic -InstallRoot $install -ApprovedCommit ('0'*40) -ValidateStaging $validateStage | Out-Null; throw 'bad sha accepted' } catch { if($_.Exception.Message -eq 'bad sha accepted'){throw} }
     [IO.File]::WriteAllBytes((Join-Path $install 'operator_proxy.ts'),$old)
     try { Invoke-OperatorProxyInstall -Repo $synthetic -InstallRoot $install -ApprovedCommit $syntheticHead -ValidateStaging $validateStage -ValidateInstalled {param($p) throw 'post-install validation failure'} | Out-Null; throw 'post failure accepted' } catch { if($_.Exception.Message -eq 'post failure accepted'){throw} }
