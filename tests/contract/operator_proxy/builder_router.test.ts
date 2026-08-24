@@ -70,6 +70,11 @@ function currentHead(cwd:string){
   return execFileSync("git",["-C",cwd,"rev-parse","HEAD"],{encoding:"utf8"}).trim();
 }
 
+function attemptStates(root:string){
+  const directory=join(root,"state","builder-attempts",spec.front_id!);
+  return readFileSync(join(directory,"events.jsonl"),"utf8").trim().split("\n").map(line=>JSON.parse(line) as {state:string;failure_class?:string});
+}
+
 test("OpenCode builder converts a bounded native timeout into an eligible transport timeout",async()=>{
   const root=mkdtempSync(join(tmpdir(),"opencode-timeout-")),entry=join(root,"sleep.js"),worktree=join(root,"worktree");
   mkdirSync(worktree);writeFileSync(entry,"setTimeout(()=>process.exit(0),5000);");
@@ -360,7 +365,17 @@ test("transient retry and subsequent fallback each start from the pristine basel
   writeFileSync(codex,`const fs=require("fs"),path=require("path"),{execFileSync}=require("child_process"),a=process.argv,i=a.indexOf("-C"),cwd=a[i+1],correlation=process.env.OPERATOR_PROXY_PROVIDER_CORRELATION_ID;if(!correlation)process.exit(11);const state=${JSON.stringify(attemptFile)},n=fs.existsSync(state)?Number(fs.readFileSync(state,"utf8")):0;const status=execFileSync("git",["-C",cwd,"status","--porcelain","--untracked-files=all"],{encoding:"utf8"}).trim();if(status)throw new Error("retry observed contamination");fs.writeFileSync(state,String(n+1));fs.mkdirSync(path.join(cwd,"docs"),{recursive:true});fs.writeFileSync(path.join(cwd,"docs","x.md"),"attempt "+(n+1)+"\\n");fs.writeFileSync(path.join(cwd,"attempt.tmp"),"x");console.error("rate limit");process.exit(1);`);
   writeFileSync(fallback,cleanFallbackScript(r.base,"fallback after retry"));
   process.env.CODEX_ENTRYPOINT=codex;process.env.CODEX_PATH=process.execPath;process.env.OPEN_CODE_PATH=fallback;process.env.OPERATOR_PROXY_ROOT=mkdtempSync(join(tmpdir(),"builder-retry-fallback-"));
-  try {const result=await routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree);assert.equal(readFileSync(attemptFile,"utf8"),"2");assert.equal(result.builder_backend,"opencode_github_copilot");assert.equal(existsSync(join(r.worktree,"attempt.tmp")),false);}
+  try {
+    const result=await routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree);
+    assert.equal(readFileSync(attemptFile,"utf8"),"2");
+    assert.equal(result.builder_backend,"opencode_github_copilot");
+    assert.equal(existsSync(join(r.worktree,"attempt.tmp")),false);
+    const events=attemptStates(process.env.OPERATOR_PROXY_ROOT!);
+    assert.equal(events.filter(event=>event.state==="STARTED").length,3);
+    assert.equal(events.filter(event=>event.state==="FAILED"&&event.failure_class==="RATE_LIMIT").length,2);
+    assert.equal(events.at(-1)?.state,"COMPLETED");
+    assert.equal(JSON.parse(readFileSync(join(process.env.OPERATOR_PROXY_ROOT!,"state","builder-attempts",spec.front_id!,"active.json"),"utf8")).state,"NONE");
+  }
   finally {if(prior.entry===undefined)delete process.env.CODEX_ENTRYPOINT;else process.env.CODEX_ENTRYPOINT=prior.entry;if(prior.path===undefined)delete process.env.CODEX_PATH;else process.env.CODEX_PATH=prior.path;if(prior.open===undefined)delete process.env.OPEN_CODE_PATH;else process.env.OPEN_CODE_PATH=prior.open;if(prior.root===undefined)delete process.env.OPERATOR_PROXY_ROOT;else process.env.OPERATOR_PROXY_ROOT=prior.root;}
 });
 
@@ -369,8 +384,16 @@ test("baseline restoration failure blocks fallback execution",async()=>{
   const lock=execFileSync("git",["-C",r.worktree,"rev-parse","--git-path","index.lock"],{encoding:"utf8"}).trim();
   writeFileSync(codex,`require("fs").writeFileSync(${JSON.stringify(lock)},"locked");console.error("usage limit: credits exhausted");process.exit(1);`);
   writeFileSync(fallback,`require("fs").writeFileSync(${JSON.stringify(called)},"called");process.exit(1);`);
-  process.env.CODEX_ENTRYPOINT=codex;process.env.CODEX_PATH=process.execPath;process.env.OPEN_CODE_PATH=fallback;process.env.OPERATOR_PROXY_ROOT=mkdtempSync(join(tmpdir(),"builder-restore-deny-"));
-  try {await assert.rejects(routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree));assert.equal(existsSync(called),false);}
+  const provenanceRoot=mkdtempSync(join(tmpdir(),"builder-restore-deny-"));
+  process.env.CODEX_ENTRYPOINT=codex;process.env.CODEX_PATH=process.execPath;process.env.OPEN_CODE_PATH=fallback;process.env.OPERATOR_PROXY_ROOT=provenanceRoot;
+  try {
+    await assert.rejects(routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree));
+    assert.equal(existsSync(called),false);
+    const events=attemptStates(provenanceRoot);
+    assert.deepEqual(events.map(event=>event.state),["STARTED","FAILED"]);
+    assert.equal(events[1].failure_class,"CODEX_CREDIT_LIMIT");
+    assert.equal(JSON.parse(readFileSync(join(provenanceRoot,"state","builder-attempts",spec.front_id!,"active.json"),"utf8")).state,"NONE");
+  }
   finally {rmSync(lock,{force:true});if(prior.entry===undefined)delete process.env.CODEX_ENTRYPOINT;else process.env.CODEX_ENTRYPOINT=prior.entry;if(prior.path===undefined)delete process.env.CODEX_PATH;else process.env.CODEX_PATH=prior.path;if(prior.open===undefined)delete process.env.OPEN_CODE_PATH;else process.env.OPEN_CODE_PATH=prior.open;if(prior.root===undefined)delete process.env.OPERATOR_PROXY_ROOT;else process.env.OPERATOR_PROXY_ROOT=prior.root;}
 });
 
