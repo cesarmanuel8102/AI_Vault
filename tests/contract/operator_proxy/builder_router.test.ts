@@ -6,7 +6,7 @@ import {tmpdir} from "node:os";
 import {join,resolve} from "node:path";
 import {routeControlPlaneBuild,listBuilderBackendHealth} from "../../../scripts/operator_proxy/builder_router.js";
 import {isEligibleFallback,isEqualOrDescendantPath} from "../../../scripts/operator_proxy/builder_backend.js";
-import {parseOpenCodeOutput,runOpenCodeBuilder} from "../../../scripts/operator_proxy/opencode_builder.js";
+import {buildTimeoutMs,parseOpenCodeOutput,runOpenCodeBuilder} from "../../../scripts/operator_proxy/opencode_builder.js";
 import {parseCodexOutput} from "../../../scripts/operator_proxy/codex_builder.js";
 import type {ProxySpec} from "../../../scripts/operator_proxy/types.js";
 
@@ -84,6 +84,22 @@ test("OpenCode builder converts a bounded native timeout into an eligible transp
     const classified=isEligibleFallback(error);
     return classified.eligible===true&&classified.failure_class==="TRANSPORT_TIMEOUT";
   });
+});
+
+test("OpenCode build timeout is bounded but permits a governed contract suite",()=>{
+  assert.equal(buildTimeoutMs({}),180_000);
+  assert.equal(buildTimeoutMs({OPERATOR_PROXY_OPENCODE_TIMEOUT_MS:"300000"}),300_000);
+  assert.throws(()=>buildTimeoutMs({OPERATOR_PROXY_OPENCODE_TIMEOUT_MS:"300001"}),/OpenCode timeout out of range/);
+});
+
+test("configured OpenCode/Ollama builder is tried before bounded fallbacks",async()=>{
+  const r=builderRepo(),ollama=join(r.source,"fake-ollama-primary.js"),codex=join(r.source,"codex-must-not-run.js"),called=join(r.source,"codex-called.txt");
+  const prior={ollama:process.env.OPEN_CODE_OLLAMA_PATH,model:process.env.OPERATOR_PROXY_OLLAMA_BUILDER_MODEL,preferred:process.env.OPERATOR_PROXY_PREFERRED_BUILDER_BACKEND,codexEntry:process.env.CODEX_ENTRYPOINT,codexPath:process.env.CODEX_PATH,root:process.env.OPERATOR_PROXY_ROOT};
+  writeFileSync(ollama,fakeBackendScript("kimi",0));
+  writeFileSync(codex,`require("fs").writeFileSync(${JSON.stringify(called)},"called");process.exit(1);`);
+  Object.assign(process.env,{OPEN_CODE_OLLAMA_PATH:ollama,OPERATOR_PROXY_OLLAMA_BUILDER_MODEL:"ollama-cloud/kimi-k2.7-code",OPERATOR_PROXY_PREFERRED_BUILDER_BACKEND:"opencode_ollama",CODEX_ENTRYPOINT:codex,CODEX_PATH:process.execPath,OPERATOR_PROXY_ROOT:mkdtempSync(join(tmpdir(),"builder-kimi-primary-"))});
+  try { const result=await routeControlPlaneBuild({...spec,expected_base_sha:r.base},90,"x",0,{},r.worktree);assert.equal(result.builder_backend,"opencode_ollama");assert.equal(existsSync(called),false); }
+  finally { for(const [key,value] of Object.entries(prior)){const envKey={ollama:"OPEN_CODE_OLLAMA_PATH",model:"OPERATOR_PROXY_OLLAMA_BUILDER_MODEL",preferred:"OPERATOR_PROXY_PREFERRED_BUILDER_BACKEND",codexEntry:"CODEX_ENTRYPOINT",codexPath:"CODEX_PATH",root:"OPERATOR_PROXY_ROOT"}[key]!;if(value===undefined)delete process.env[envKey];else process.env[envKey]=value;} }
 });
 
 test("primary Codex backend succeeds and reports codex_cli_openai",async()=>{

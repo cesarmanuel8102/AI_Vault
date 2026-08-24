@@ -17,5 +17,7 @@ if(Test-Path -LiteralPath $builderConfig){
   if(-not $env:OPERATOR_PROXY_BUILDER_MODEL){$env:OPERATOR_PROXY_BUILDER_MODEL=$builder}
   if(-not $env:OPERATOR_PROXY_OLLAMA_BUILDER_MODEL){$env:OPERATOR_PROXY_OLLAMA_BUILDER_MODEL=$builder}
 }
+# The configured OpenCode/Ollama model builds first; bounded alternatives remain available.
+if(-not $env:OPERATOR_PROXY_PREFERRED_BUILDER_BACKEND){$env:OPERATOR_PROXY_PREFERRED_BUILDER_BACKEND='opencode_ollama'}
 $entry = Join-Path $InstallRoot 'operator_proxy.ts'
 $args=@($entry);if($Once){$args+='--once'};if($DryRun){$args+='--dry-run'};& (Join-Path $InstallRoot 'node_modules\.bin\tsx.cmd') @args;exit $LASTEXITCODE

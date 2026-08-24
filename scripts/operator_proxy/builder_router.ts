@@ -144,6 +144,15 @@ function resolveForceBackend(env: NodeJS.ProcessEnv, option?: BuilderTransport):
   return undefined;
 }
 
+function attemptOrderFor(env: NodeJS.ProcessEnv, forceBackend?: BuilderTransport): BuilderTransport[] {
+  const defaults: BuilderTransport[] = ["codex_cli_openai", "opencode_github_copilot", "opencode_ollama"];
+  if (forceBackend) return [forceBackend];
+  const preferred = env.OPERATOR_PROXY_PREFERRED_BUILDER_BACKEND;
+  if (!preferred) return defaults;
+  if (!ALLOWED_BACKENDS.includes(preferred as BuilderTransport)) throw new Error("preferred builder backend invalid");
+  return [preferred as BuilderTransport, ...defaults.filter(backend => backend !== preferred)];
+}
+
 function validateBaseOverride(worktree: string, requestedBase: string, env: NodeJS.ProcessEnv) {
   if (!isExact40CharSha(requestedBase)) throw new Error("builder base override identity invalid");
   const cleanHead = execFileSync(env.GIT_PATH ?? "git", ["-C", worktree, "rev-parse", "HEAD"], { encoding: "utf8", timeout: 30000 }).trim();
@@ -247,7 +256,7 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
   validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
 
   const forceBackend = resolveForceBackend(env, options.forceBackend);
-  const attemptOrder: BuilderTransport[] = forceBackend ? [forceBackend] : ["codex_cli_openai", "opencode_github_copilot", "opencode_ollama"];
+  const attemptOrder = attemptOrderFor(env, forceBackend);
   let fallbackReason: string | undefined;
 
   for (let index = 0; index < attemptOrder.length; index++) {
