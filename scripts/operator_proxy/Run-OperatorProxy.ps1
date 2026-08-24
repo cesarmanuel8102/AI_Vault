@@ -1,4 +1,5 @@
 param([string]$InstallRoot='C:\AI_VAULT_CODEX_BRIDGE',[switch]$Once,[switch]$DryRun)
+$env:OPERATOR_PROXY_ROOT=$InstallRoot
 $reviewerRepo=Join-Path $InstallRoot 'repos\AI_Vault-governed'
 if(-not (Test-Path -LiteralPath $reviewerRepo)){throw 'operator proxy reviewer repository missing'}
 $reviewerTop=(& git -C $reviewerRepo rev-parse --show-toplevel)
