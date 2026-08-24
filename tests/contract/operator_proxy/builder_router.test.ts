@@ -96,7 +96,7 @@ test("OpenCode builder derives the committed head from Git when model stdout has
 });
 
 test("OpenCode build timeout is bounded but permits a governed contract suite",()=>{
-  assert.equal(buildTimeoutMs({}),180_000);
+  assert.equal(buildTimeoutMs({}),300_000);
   assert.equal(buildTimeoutMs({OPERATOR_PROXY_OPENCODE_TIMEOUT_MS:"300000"}),300_000);
   assert.throws(()=>buildTimeoutMs({OPERATOR_PROXY_OPENCODE_TIMEOUT_MS:"300001"}),/OpenCode timeout out of range/);
 });
