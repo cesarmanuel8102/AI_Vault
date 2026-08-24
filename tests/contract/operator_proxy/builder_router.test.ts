@@ -86,6 +86,15 @@ test("OpenCode builder converts a bounded native timeout into an eligible transp
   });
 });
 
+test("OpenCode builder derives the committed head from Git when model stdout has no receipt",async()=>{
+  const root=mkdtempSync(join(tmpdir(),"opencode-git-head-")),worktree=join(root,"worktree"),entry=join(root,"commit-without-receipt.js");
+  mkdirSync(worktree);execFileSync("git",["init",worktree]);execFileSync("git",["-C",worktree,"config","user.email","builder@test.invalid"]);execFileSync("git",["-C",worktree,"config","user.name","Builder Test"]);writeFileSync(join(worktree,"README.md"),"base\n");execFileSync("git",["-C",worktree,"add","README.md"]);execFileSync("git",["-C",worktree,"commit","-m","base"]);
+  const base=execFileSync("git",["-C",worktree,"rev-parse","HEAD"],{encoding:"utf8"}).trim();
+  writeFileSync(entry,`const fs=require("fs"),{execFileSync}=require("child_process"),a=process.argv,w=a[a.indexOf("--dir")+1];fs.writeFileSync(w+"/README.md","changed\\n");execFileSync("git",["-C",w,"add","README.md"]);execFileSync("git",["-C",w,"commit","-m","builder change"]);`);
+  const result=await runOpenCodeBuilder({worktree,session:"builder-git-head",provider_correlation_id:"provider-git-head",base_sha:base,work_branch:"control-plane/test",prompt:"test"} as any,{transport:"opencode_ollama",model:"ollama-cloud/test-model",executable:entry,maxRetries:0},{...process.env,GIT_PATH:"git"});
+  assert.notEqual(result.head_sha,base);assert.equal(result.provider_session,"provider-git-head");
+});
+
 test("OpenCode build timeout is bounded but permits a governed contract suite",()=>{
   assert.equal(buildTimeoutMs({}),180_000);
   assert.equal(buildTimeoutMs({OPERATOR_PROXY_OPENCODE_TIMEOUT_MS:"300000"}),300_000);
