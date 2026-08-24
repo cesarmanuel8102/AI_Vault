@@ -46,6 +46,7 @@ try {
     $compiledMirror=Join-Path $compiledInstall 'repos\AI_Vault-governed'
     if(((& git -C $compiledMirror rev-parse HEAD).Trim()) -ne $syntheticHead){throw 'compiled install mirror head mismatch'}
     if(((& git -C $compiledMirror remote get-url origin).Trim()) -ne 'https://github.com/cesarmanuel8102/AI_Vault.git'){throw 'compiled install mirror remote mismatch'}
+    if(Test-Path -LiteralPath (Join-Path $compiledMirror '.git\shallow')){throw 'compiled install mirror is shallow'}
     $compiledMirrorStatus=@(& git -C $compiledMirror status --porcelain --untracked-files=all)
     if($compiledMirrorStatus){throw 'compiled install mirror dirty'}
     Invoke-OperatorProxyInstall -Repo $synthetic -InstallRoot $install -ApprovedCommit $syntheticHead -ValidateStaging $validateStage -ValidateInstalled {param($p)} | Out-Null
@@ -53,6 +54,7 @@ try {
     $installedMirror=Join-Path $install 'repos\AI_Vault-governed'
     if(((& git -C $installedMirror rev-parse HEAD).Trim()) -ne $syntheticHead){throw 'installed mirror head mismatch'}
     if(((& git -C $installedMirror remote get-url origin).Trim()) -ne 'https://github.com/cesarmanuel8102/AI_Vault.git'){throw 'installed mirror remote mismatch'}
+    if(Test-Path -LiteralPath (Join-Path $installedMirror '.git\shallow')){throw 'installed mirror is shallow'}
     $installedMirrorStatus=@(& git -C $installedMirror status --porcelain --untracked-files=all)
     if($installedMirrorStatus){throw 'installed mirror dirty'}
     if(& git -C $synthetic status --porcelain --untracked-files=all){throw 'install dirtied source repository'}
@@ -126,6 +128,7 @@ try {
     try { Invoke-OperatorProxyInstall -Repo $synthetic -InstallRoot $install -ApprovedCommit $nextHead -ValidateStaging $validateStage -ValidateInstalled {param($p) throw 'post-install validation failure'} | Out-Null; throw 'post failure accepted' } catch { if($_.Exception.Message -eq 'post failure accepted'){throw} }
     if(-not [Linq.Enumerable]::SequenceEqual([byte[]]$old,[IO.File]::ReadAllBytes((Join-Path $install 'operator_proxy.ts')))){throw 'rollback bytes differ'}
     if(((& git -C $installedMirror rev-parse HEAD).Trim()) -ne $syntheticHead){throw 'rollback mirror head differs'}
+    if(Test-Path -LiteralPath (Join-Path $installedMirror '.git\shallow')){throw 'rollback mirror is shallow'}
     $rollbackMirrorStatus=@(& git -C $installedMirror status --porcelain --untracked-files=all)
     if($rollbackMirrorStatus){throw 'rollback mirror dirty'}
     if([IO.File]::ReadAllText($taskState) -ne 'Disabled'){throw 'task state changed'}
