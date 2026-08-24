@@ -6,7 +6,7 @@ import {tmpdir} from "node:os";
 import {join,resolve} from "node:path";
 import {routeControlPlaneBuild,listBuilderBackendHealth} from "../../../scripts/operator_proxy/builder_router.js";
 import {isEligibleFallback,isEqualOrDescendantPath} from "../../../scripts/operator_proxy/builder_backend.js";
-import {parseOpenCodeOutput} from "../../../scripts/operator_proxy/opencode_builder.js";
+import {parseOpenCodeOutput,runOpenCodeBuilder} from "../../../scripts/operator_proxy/opencode_builder.js";
 import {parseCodexOutput} from "../../../scripts/operator_proxy/codex_builder.js";
 import type {ProxySpec} from "../../../scripts/operator_proxy/types.js";
 
@@ -69,6 +69,17 @@ function fakeBackendScript(mark:string,exitCode=0){
 function currentHead(cwd:string){
   return execFileSync("git",["-C",cwd,"rev-parse","HEAD"],{encoding:"utf8"}).trim();
 }
+
+test("OpenCode builder converts a bounded native timeout into an eligible transport timeout",async()=>{
+  const root=mkdtempSync(join(tmpdir(),"opencode-timeout-")),entry=join(root,"sleep.js"),worktree=join(root,"worktree");
+  mkdirSync(worktree);writeFileSync(entry,"setTimeout(()=>process.exit(0),5000);");
+  const env:any={...process.env,OPEN_CODE_PATH:entry,OPERATOR_PROXY_OPENCODE_TIMEOUT_MS:"1000",GIT_PATH:"git"};
+  const input:any={worktree,session:"builder-timeout",provider_correlation_id:"provider-timeout",base_sha:"a".repeat(40),work_branch:"control-plane/timeout",prompt:"test"};
+  await assert.rejects(runOpenCodeBuilder(input,{transport:"opencode_github_copilot",model:"github-copilot/test-model",executable:entry,maxRetries:0},env),error=>{
+    const classified=isEligibleFallback(error);
+    return classified.eligible===true&&classified.failure_class==="TRANSPORT_TIMEOUT";
+  });
+});
 
 test("primary Codex backend succeeds and reports codex_cli_openai",async()=>{
   const r=builderRepo();
