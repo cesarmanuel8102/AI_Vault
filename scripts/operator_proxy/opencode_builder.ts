@@ -3,7 +3,20 @@ import {existsSync} from "node:fs";
 import {isAbsolute} from "node:path";
 import type {BackendConfig} from "./builder_config.js";
 import type {BuilderInput, BuilderResult} from "./builder_backend.js";
+import {BuilderBackendError} from "./builder_backend.js";
 import {redactedError, redactString} from "./redaction.js";
+
+const DEFAULT_BUILD_TIMEOUT_MS = 60_000;
+const MIN_BUILD_TIMEOUT_MS = 1_000;
+
+function buildTimeoutMs(env: NodeJS.ProcessEnv): number {
+  const configured = env.OPERATOR_PROXY_OPENCODE_TIMEOUT_MS;
+  if (configured === undefined) return DEFAULT_BUILD_TIMEOUT_MS;
+  if (!/^\d+$/.test(configured)) throw new Error("OpenCode timeout invalid");
+  const value = Number(configured);
+  if (!Number.isSafeInteger(value) || value < MIN_BUILD_TIMEOUT_MS || value > DEFAULT_BUILD_TIMEOUT_MS) throw new Error("OpenCode timeout out of range");
+  return value;
+}
 
 function resolveOpenCodeExecutable(env: NodeJS.ProcessEnv): string {
   if (env.OPEN_CODE_PATH) {
@@ -54,11 +67,14 @@ export async function runOpenCodeBuilder(input: BuilderInput, config: BackendCon
     stdout = redactString(execFileSync(executable, args, {
       encoding: "utf8",
       env: { ...env, OPERATOR_PROXY_SESSION: input.session, OPERATOR_PROXY_PROVIDER_CORRELATION_ID: input.provider_correlation_id },
-      timeout: 900000,
+      timeout: buildTimeoutMs(env),
       windowsHide: true,
       maxBuffer: 32 * 1024 * 1024,
     }));
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === "ETIMEDOUT" || error?.signal === "SIGTERM") {
+      throw new BuilderBackendError("OpenCode builder transport timeout", "TRANSPORT_TIMEOUT", true);
+    }
     throw new Error(redactedError(error));
   }
   const parsed = parseOpenCodeOutput(stdout);
