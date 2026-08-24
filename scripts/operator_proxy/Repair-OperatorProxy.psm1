@@ -122,6 +122,7 @@ function Assert-TrustedReviewerMirror {
     if($head -notmatch '^[0-9a-f]{40}$'){throw 'reviewer mirror HEAD invalid'}
     $remote=Get-TrustedGitValue $resolved @('remote','get-url','origin') 'reviewer mirror remote verification'
     if($remote -notin @('https://github.com/cesarmanuel8102/AI_Vault','https://github.com/cesarmanuel8102/AI_Vault.git','git@github.com:cesarmanuel8102/AI_Vault.git')){throw 'reviewer mirror remote identity mismatch'}
+    if(Test-Path -LiteralPath (Join-Path $resolved '.git\shallow')){throw 'reviewer mirror history is shallow'}
     if(Get-TrustedGitValue $resolved @('status','--porcelain','--untracked-files=all') 'reviewer mirror cleanliness verification'){throw 'reviewer mirror is not clean'}
     return [pscustomobject]@{Repo=$resolved;Head=$head;Remote=$remote}
 }
@@ -144,7 +145,8 @@ function Update-TrustedReviewerMirror {
         Invoke-CheckedNative 'git' @('-C',$Target,'remote','add','origin',$Identity.Remote) 'reviewer mirror remote binding'|Out-Null
     }
     try {
-        Invoke-CheckedNative 'git' @('-C',$Target,'fetch','--depth','1',$Identity.Repo,$Identity.Head) 'reviewer mirror fetch'|Out-Null
+        if(Test-Path -LiteralPath (Join-Path $Target '.git\shallow')){Invoke-CheckedNative 'git' @('-C',$Target,'fetch','--unshallow',$Identity.Repo) 'reviewer mirror history recovery'|Out-Null}
+        Invoke-CheckedNative 'git' @('-C',$Target,'fetch',$Identity.Repo,$Identity.Head) 'reviewer mirror fetch'|Out-Null
         Invoke-CheckedNative 'git' @('-C',$Target,'checkout','--detach','FETCH_HEAD') 'reviewer mirror checkout'|Out-Null
         $mirror=Assert-TrustedReviewerMirror $Target
         if($mirror.Head -ne $Identity.Head -or $mirror.Remote -ne $Identity.Remote){throw 'reviewer mirror identity mismatch'}
