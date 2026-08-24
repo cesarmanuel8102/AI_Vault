@@ -253,7 +253,12 @@ export class GovernedBuilder {
       this.assertEffect("push",{issue,expected_head:committedHead,observed_head:initialHead});native(process.env.GIT_PATH??"git",["-C",worktree,"push","origin",`HEAD:refs/heads/${spec.work_branch}`],{stdio:"inherit",timeout:120000,windowsHide:true});
       const prNumber=existing?.number??this.bus.createDraftPr(spec.work_branch,"codex/own-capital-sustainable-return",`feat(control-plane): ${spec.objective}`,`FRONT_ID: ${spec.front_id}\n\nRoadmap item: ${spec.roadmap_item_id}\n\nBuilder session: ${session}\n\nNo auto-merge.`);this.bus.bindPrToIssue(issue,prNumber);
       return {pr:prNumber,head_sha:committedHead,session,recovered_clean:true as const};}
-    if(repairCycle>0&&existing&&git(worktree,["show","-s","--format=%s",initialHead])===`chore(control-plane): synchronize ${spec.front_id} base`){synchronizedRepairReceipt(worktree,initialHead,spec.front_id);const files=committed(worktree,spec.expected_base_sha);validateFiles(files,spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${spec.expected_base_sha}..${initialHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});validatePublishedPr(spec,existing,this.bus.prIdentity(existing.number),initialHead,files);this.bus.bindPrToIssue(issue,existing.number);return {pr:existing.number,head_sha:initialHead,session,recovered_repair:true as const};}
+    if(repairCycle>0&&existing&&git(worktree,["show","-s","--format=%s",initialHead])===`chore(control-plane): synchronize ${spec.front_id} base`){
+      try{synchronizedRepairReceipt(worktree,initialHead,spec.front_id);const files=committed(worktree,spec.expected_base_sha);validateFiles(files,spec);runDeclaredTests(worktree,spec.test_commands);native(process.env.GIT_PATH??"git",["-C",worktree,"diff","--check",`${spec.expected_base_sha}..${initialHead}`],{stdio:"inherit",timeout:120000,windowsHide:true});validatePublishedPr(spec,existing,this.bus.prIdentity(existing.number),initialHead,files);this.bus.bindPrToIssue(issue,existing.number);return {pr:existing.number,head_sha:initialHead,session,recovered_repair:true as const};}
+      catch(error){if(!(error instanceof Error)||error.message!=="recovered builder receipt invalid")throw error;}
+      // A synchronized legacy candidate has no receipt by definition. Rebuild it rather
+      // than treating the missing provenance as a validated recovery.
+    }
     const repair=repairCycle>0?this.bus.repairPrompt(issue):"";if(repairCycle>0&&!repair)throw new Error("repair findings missing");
     const prompt=builderPrompt(spec,repairCycle,repair);
     if(!initialStatus){
