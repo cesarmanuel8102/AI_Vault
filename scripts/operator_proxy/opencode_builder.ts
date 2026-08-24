@@ -83,18 +83,20 @@ export async function runOpenCodeBuilder(input: BuilderInput, config: BackendCon
   const override = env.OPENCODE_OVERRIDE_HEAD;
   if (override !== undefined && !/^[0-9a-f]{40}$/.test(override)) throw new Error("OpenCode override HEAD invalid");
   if (parsed.headSha && override && parsed.headSha !== override) throw new Error("OpenCode builder HEAD override conflicts with receipt");
-  const head = parsed.headSha ?? override;
-  if (!head || !/^[0-9a-f]{40}$/.test(head)) throw new Error("OpenCode builder did not produce HEAD_SHA");
+  // Model stdout is not an authority. The supervising process derives the
+  // commit identity from Git, while an optional model receipt can only agree.
   const actualHead = execFileSync(env.GIT_PATH ?? "git", ["-C", input.worktree, "rev-parse", "HEAD"], { encoding: "utf8", timeout: 30000 }).trim();
-  if (actualHead !== head) throw new Error("OpenCode builder HEAD mismatch");
+  const head = override ?? actualHead;
+  if (!/^[0-9a-f]{40}$/.test(actualHead)) throw new Error("OpenCode builder HEAD invalid");
+  if (parsed.headSha && parsed.headSha !== actualHead) throw new Error("OpenCode builder HEAD mismatch");
   if (!input.provider_correlation_id) throw new Error("OpenCode builder provider correlation missing");
-  if (parsed.providerSession !== input.provider_correlation_id) throw new Error("OpenCode builder provider correlation mismatch");
+  if (parsed.providerSession && parsed.providerSession !== input.provider_correlation_id) throw new Error("OpenCode builder provider correlation mismatch");
   return {
     executor_role: "codex_control_plane",
     builder_backend: config.transport,
     builder_model: config.model,
     builder_session: input.session,
-    provider_session: parsed.providerSession,
+    provider_session: input.provider_correlation_id,
     native_provider_session: parsed.nativeProviderSession,
     base_sha: input.base_sha,
     head_sha: head,
