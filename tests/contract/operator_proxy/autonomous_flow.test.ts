@@ -32,3 +32,5 @@ test("bridge candidate adoption store update is exact and auditably retains issu
   assert.match(readFileSync(join(store.root,"events.jsonl"),"utf8"),/lifecycle_bridge_candidate_adopted/);
   assert.throws(()=>store.adoptBridgeCandidate({...state,state:"BLOCKED",last_error:"CI_FAILED"},nextBase,nextHead),/bridge candidate adoption denied/);
 });
+
+test("builder failure is classified and persisted without creating a PR",async()=>{const store=new LifecycleStore(mkdtempSync(join(tmpdir(),"flow-builder-failure-"))),f=fixture();let builds=0;f.effects.ensureBuild=async()=>{builds++;throw new Error("request timed out");};const flow=new AutonomousFlow(store,f.effects);await flow.step(spec);await flow.step(spec);await flow.step(spec);const state=await flow.step(spec);assert.equal(state.state,"BLOCKED");assert.equal(state.last_error,"BUILDER_FAILED:TRANSPORT_TIMEOUT");assert.equal(state.pr,undefined);assert.equal(state.head_sha,undefined);assert.deepEqual(state.completed_effects,["issue:70"]);assert.equal(builds,1);assert.equal(store.load(spec.front_id!)!.last_error,"BUILDER_FAILED:TRANSPORT_TIMEOUT");});
