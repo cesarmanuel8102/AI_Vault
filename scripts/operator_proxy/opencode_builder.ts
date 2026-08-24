@@ -7,7 +7,9 @@ import {BuilderBackendError} from "./builder_backend.js";
 import {redactedError, redactString} from "./redaction.js";
 
 // A governed build can legitimately run the declared contract suite after editing.
-const DEFAULT_BUILD_TIMEOUT_MS = 180_000;
+// The configured Kimi builder can legitimately need the full bounded window
+// to edit and run its declared contract suite.
+const DEFAULT_BUILD_TIMEOUT_MS = 300_000;
 const MAX_BUILD_TIMEOUT_MS = 300_000;
 const MIN_BUILD_TIMEOUT_MS = 1_000;
 
