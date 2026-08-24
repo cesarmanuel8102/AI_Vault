@@ -54,6 +54,8 @@ try {
     $shim="@echo off`r`n> `"$capturedArgs`" echo %~1`r`n>> `"$capturedArgs`" echo %~2`r`n>> `"$capturedArgs`" echo %~3`r`n> `"$capturedEnv`" echo %OPERATOR_PROXY_BUILDER_MODEL%`r`n>> `"$capturedEnv`" echo %OPERATOR_PROXY_OLLAMA_BUILDER_MODEL%`r`nexit /b 0`r`n"
     [IO.File]::WriteAllText((Join-Path $install 'node_modules\.bin\tsx.cmd'),$shim,[Text.Encoding]::ASCII)
     $builderConfig=Join-Path $tmp 'worker.json';[IO.File]::WriteAllText($builderConfig,'{"opencode_model":"ollama-cloud/kimi-k2.7-code"}',[Text.Encoding]::UTF8)
+    $reviewerRepo=Join-Path $install 'repos\AI_Vault-governed';New-Item $reviewerRepo -ItemType Directory -Force|Out-Null
+    & git -C $reviewerRepo init -q; & git -C $reviewerRepo config user.email 'contract@example.invalid'; & git -C $reviewerRepo config user.name 'Contract'; & git -C $reviewerRepo remote add origin 'https://github.com/cesarmanuel8102/AI_Vault.git'
     $foreignCwd=Join-Path $tmp 'foreign-cwd';New-Item $foreignCwd -ItemType Directory|Out-Null
     $runner=(Join-Path $install 'Run-OperatorProxy.ps1').Replace("'","''")
     $escapedInstall=$install.Replace("'","''")

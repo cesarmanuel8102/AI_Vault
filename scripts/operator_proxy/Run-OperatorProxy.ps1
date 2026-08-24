@@ -1,4 +1,13 @@
 param([string]$InstallRoot='C:\AI_VAULT_CODEX_BRIDGE',[switch]$Once,[switch]$DryRun)
+$reviewerRepo=Join-Path $InstallRoot 'repos\AI_Vault-governed'
+if(-not (Test-Path -LiteralPath $reviewerRepo)){throw 'operator proxy reviewer repository missing'}
+$reviewerTop=(& git -C $reviewerRepo rev-parse --show-toplevel)
+if($LASTEXITCODE -ne 0 -or -not $reviewerTop){throw 'operator proxy reviewer repository invalid'}
+$reviewerTop=$reviewerTop.Trim()
+if(((& git -C $reviewerTop status --porcelain --untracked-files=all) -join "`n").Trim()){throw 'operator proxy reviewer repository dirty'}
+$reviewerRemote=((& git -C $reviewerTop remote get-url origin) -join "`n").Trim()
+if($LASTEXITCODE -ne 0 -or $reviewerRemote -notin @('https://github.com/cesarmanuel8102/AI_Vault','https://github.com/cesarmanuel8102/AI_Vault.git','git@github.com:cesarmanuel8102/AI_Vault.git')){throw 'operator proxy reviewer repository remote invalid'}
+$env:OPERATOR_PROXY_REPO=$reviewerTop
 $builderConfig=$env:OPERATOR_PROXY_BUILDER_CONFIG
 if(-not $builderConfig){$builderConfig='C:\AI_VAULT_AGENT_WORKER\config\worker.json'}
 if(Test-Path -LiteralPath $builderConfig){
