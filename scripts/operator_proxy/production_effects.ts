@@ -110,6 +110,7 @@ export class ProductionEffects implements AutonomousEffects {
   }
   reconcileBuilderFailureBase(spec:ProxySpec,state:import("./types.js").LifecycleRecord,store:LifecycleStore){
     const decision=state.decision_id?this.ledger.load(state.decision_id):undefined;
+    if(decision)state=store.compactBuilderFailureEffectChain(state,decision.head_sha);
     const decisionBaseBound=!!decision&&(decision.base_sha===state.base_sha||this.bus.isAncestor(decision.base_sha,state.base_sha));
     const decisionHeadRecorded=!!decision&&state.completed_effects.some(effect=>effect===`build:${decision.head_sha}`||effect===`base-sync:${decision.head_sha}`);
     const decisionHeadBound=!!decision&&!!state.head_sha&&(decision.head_sha===state.head_sha||decisionHeadRecorded&&this.bus.isAncestor(decision.head_sha,state.head_sha));
