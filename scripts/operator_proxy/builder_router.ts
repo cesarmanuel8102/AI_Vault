@@ -320,8 +320,6 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
       }
       return result;
     } catch (error) {
-      restoreWorktreeBaseline(input.worktree, input.base_sha, attemptIgnoredBaseline, env);
-      validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
       const { eligible, failure_class, transient } = isEligibleFallback(error);
       if (startedReceipt) {
         try {
@@ -334,6 +332,9 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
           );
         }
       }
+      // Finalize provenance before cleanup. A failed reset must never strand STARTED.
+      restoreWorktreeBaseline(input.worktree, input.base_sha, attemptIgnoredBaseline, env);
+      validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
       if (healthDir) recordHealth(healthDir, { backend: backendId, model: cfg.model, failure_class, attempt: index + 1, front_id: spec.front_id!, base_sha: input.base_sha, created_utc: new Date().toISOString() });
 
       if (!eligible) throw new Error(redactString(String(error instanceof Error ? error.message : error)));
@@ -380,8 +381,6 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
           }
           return result;
         } catch (retryError) {
-          restoreWorktreeBaseline(input.worktree, input.base_sha, retryIgnoredBaseline, env);
-          validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
           const { eligible: retryEligible, failure_class: retryClass } = isEligibleFallback(retryError);
           if (retryReceipt) {
             try {
@@ -394,6 +393,9 @@ export async function routeControlPlaneBuild(spec: ProxySpec, issue: number, pro
               );
             }
           }
+          // The retry receives the same terminal-receipt guarantee as its first attempt.
+          restoreWorktreeBaseline(input.worktree, input.base_sha, retryIgnoredBaseline, env);
+          validateWorktree(input.worktree, input.base_sha, forbiddenWorktreeRoots(env), env);
           if (healthDir) recordHealth(healthDir, { backend: backendId, model: cfg.model, failure_class: `retry:${retryClass}`, attempt: index + 1, front_id: spec.front_id!, base_sha: input.base_sha, created_utc: new Date().toISOString() });
           if (!retryEligible) throw new Error(redactString(String(retryError instanceof Error ? retryError.message : retryError)));
         }
