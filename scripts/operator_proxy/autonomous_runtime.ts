@@ -36,6 +36,7 @@ export function reconcilePersistedRoadmapState(bus:GitHubBus,effects:ProductionE
   if(!persisted)return persisted;
   if(persisted.state==="ESCALATED"&&persisted.last_error==="OWNER_AUTHORITY_REQUIRED"&&persisted.base_sha!==spec.expected_base_sha)return effects.reconcileNegatedRiskEscalation(spec,persisted,store);
   if(persisted.state==="BLOCKED"&&persisted.last_error==="CI_FAILED")return persisted.base_sha!==spec.expected_base_sha?effects.reconcileBlockedCiBase(spec,persisted,store):effects.reconcileBlockedCiChecks(spec,persisted,store);
+  if(persisted.state==="BLOCKED"&&/^BUILDER_FAILED:[A-Z_]+$/.test(persisted.last_error??"")&&persisted.base_sha!==spec.expected_base_sha)return effects.reconcileBuilderFailureBase(spec,persisted,store);
   if(persisted.base_sha===spec.expected_base_sha)return persisted;
   if(["DISCOVERED","ADMITTED"].includes(persisted.state))return store.rebindUnstartedBase(persisted,spec.expected_base_sha);
   if(["CI_PENDING","REVIEWING"].includes(persisted.state))return effects.reconcileCloseoutState(spec,persisted,store);
