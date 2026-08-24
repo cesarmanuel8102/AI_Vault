@@ -6,15 +6,17 @@ import type {BuilderInput, BuilderResult} from "./builder_backend.js";
 import {BuilderBackendError} from "./builder_backend.js";
 import {redactedError, redactString} from "./redaction.js";
 
-const DEFAULT_BUILD_TIMEOUT_MS = 60_000;
+// A governed build can legitimately run the declared contract suite after editing.
+const DEFAULT_BUILD_TIMEOUT_MS = 180_000;
+const MAX_BUILD_TIMEOUT_MS = 300_000;
 const MIN_BUILD_TIMEOUT_MS = 1_000;
 
-function buildTimeoutMs(env: NodeJS.ProcessEnv): number {
+export function buildTimeoutMs(env: NodeJS.ProcessEnv): number {
   const configured = env.OPERATOR_PROXY_OPENCODE_TIMEOUT_MS;
   if (configured === undefined) return DEFAULT_BUILD_TIMEOUT_MS;
   if (!/^\d+$/.test(configured)) throw new Error("OpenCode timeout invalid");
   const value = Number(configured);
-  if (!Number.isSafeInteger(value) || value < MIN_BUILD_TIMEOUT_MS || value > DEFAULT_BUILD_TIMEOUT_MS) throw new Error("OpenCode timeout out of range");
+  if (!Number.isSafeInteger(value) || value < MIN_BUILD_TIMEOUT_MS || value > MAX_BUILD_TIMEOUT_MS) throw new Error("OpenCode timeout out of range");
   return value;
 }
 
