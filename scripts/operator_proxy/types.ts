@@ -34,5 +34,6 @@ export interface LifecycleRecord {
   deployment_mode: DeploymentMode;
   completed_effects: string[];
   last_error?: string;
+  builder_retry_reason?: "BUILDER_FAILURE";
   updated_utc: string;
 }
