@@ -145,7 +145,7 @@ export class GovernedBuilder {
     if(remaining)throw new Error("governed baseline restore left unexpected files");
   }
 
-  async build(spec:ProxySpec,issue:number,session:string,repairCycle:number){
+  async build(spec:ProxySpec,issue:number,session:string,repairCycle:number,retryReason?:"BUILDER_FAILURE"){
     if(!spec.front_id||!spec.work_branch||!spec.objective)throw new Error("builder metadata missing");
     const existing=this.bus.findPrByBranch(spec.work_branch),orphanHead=!existing&&repairCycle===0?this.bus.remoteBranchHead(spec.work_branch):undefined,publishedHead=repairCycle===0?(existing?.head_sha??orphanHead):undefined;
     ensureCommit(this.sourceRepo,spec.expected_base_sha);
@@ -259,7 +259,9 @@ export class GovernedBuilder {
       // A synchronized legacy candidate has no receipt by definition. Rebuild it rather
       // than treating the missing provenance as a validated recovery.
     }
-    const repair=repairCycle>0?this.bus.repairPrompt(issue):"";if(repairCycle>0&&!repair)throw new Error("repair findings missing");
+    const requestedRepair=repairCycle>0?this.bus.repairPrompt(issue):"";
+    const repair=requestedRepair||(retryReason==="BUILDER_FAILURE"&&repairCycle>0?"Previous builder execution failed before producing a candidate. Re-run the approved objective exactly; do not infer reviewer findings or broaden scope.":"");
+    if(repairCycle>0&&!repair)throw new Error("repair findings missing");
     const prompt=builderPrompt(spec,repairCycle,repair);
     if(!initialStatus){
       if(spec.executor==="codex_control_plane"){
