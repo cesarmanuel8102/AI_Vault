@@ -87,6 +87,7 @@ function commitTree(repo:string,tree:string,parents:string[],message:string):str
 function neutralizationMessage(front:string,legacyHead:string,baseSha:string){return `chore(control-plane): neutralize ${front} legacy baseline\n\n${LEGACY_NEUTRALIZATION_TRAILER}=true\n${PRIOR_UNATTESTED_HEAD_TRAILER}=${legacyHead}\n${RESET_BASE_TRAILER}=${baseSha}`;}
 function legacyBridgeMessage(front:string,neutralizationHead:string,freshHead:string,baseSha:string){return `feat(control-plane): complete ${front}\n\n${LEGACY_REBUILD_TRAILER}=true\n${NEUTRALIZATION_HEAD_TRAILER}=${neutralizationHead}\n${FRESH_BUILDER_HEAD_TRAILER}=${freshHead}\n${RESET_BASE_TRAILER}=${baseSha}`;}
 function diffEmpty(repo:string,a:string,b:string):boolean{try{git(repo,["diff","--quiet",`${a}..${b}`]);return true;}catch{return false;}}
+const synchronizationMergeability=(value:unknown)=>value==="MERGEABLE"||value==="UNKNOWN";
 
 export class GovernedBuilder {
   constructor(readonly sourceRepo:string,readonly worktreeRoot:string,readonly bus:BuilderBus,readonly assertEffect:EffectAssertion,readonly codex=process.env.CODEX_PATH??"codex"){}
@@ -94,7 +95,8 @@ export class GovernedBuilder {
     if(state.state!=="BLOCKED"||state.last_error!=="CI_FAILED"||!state.issue||!state.pr||!state.head_sha||!state.builder_session||!Number.isInteger(state.repair_cycles)||state.repair_cycles<0||state.repair_cycles>2||state.reviewer_session||state.decision_id||!spec.work_branch||state.base_sha===spec.expected_base_sha)throw new Error("blocked CI branch synchronization denied");
     const pr=this.bus.prIdentity(state.pr),files=(pr.files??[]).map((x:any)=>String(x.path)).sort();
     // GitHub may expose either the PR's original base OID or the advanced target OID.
-    if(pr.author?.login!=="cesarmanuel8102"||pr.baseRefName!=="codex/own-capital-sustainable-return"||pr.headRefName!==spec.work_branch||pr.headRepository?.nameWithOwner!=="cesarmanuel8102/AI_Vault"||pr.isCrossRepository!==false||pr.isDraft!==true||pr.state!=="OPEN"||pr.mergeable!=="MERGEABLE"||files.length===0||!files.every((path:string)=>allowed(path,spec)))throw new Error("blocked CI PR identity invalid");
+    // This operation only synchronizes the trusted Draft branch; merge dispatch still requires MERGEABLE.
+    if(pr.author?.login!=="cesarmanuel8102"||pr.baseRefName!=="codex/own-capital-sustainable-return"||pr.headRefName!==spec.work_branch||pr.headRepository?.nameWithOwner!=="cesarmanuel8102/AI_Vault"||pr.isCrossRepository!==false||pr.isDraft!==true||pr.state!=="OPEN"||!synchronizationMergeability(pr.mergeable)||files.length===0||!files.every((path:string)=>allowed(path,spec)))throw new Error("blocked CI PR identity invalid");
     const remote=this.bus.remoteBranchHead(spec.work_branch);if(!remote||!/^[a-f0-9]{40}$/.test(remote)||pr.headRefOid!==remote)throw new Error("blocked CI remote branch missing or inconsistent");
     mkdirSync(this.worktreeRoot,{recursive:true});const root=realpathSync(this.worktreeRoot),historicalWorktree=resolve(root,spec.front_id!);if(!historicalWorktree.startsWith(`${root}\\`)&&!historicalWorktree.startsWith(`${root}/`))throw new Error("blocked CI worktree identity invalid");
     native(process.env.GIT_PATH??"git",["-C",this.sourceRepo,"fetch","origin","codex/own-capital-sustainable-return",spec.work_branch],{stdio:"inherit",timeout:120000,windowsHide:true});
