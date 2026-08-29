@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {existsSync,mkdtempSync,mkdirSync,rmSync,writeFileSync} from "node:fs";
+import {existsSync,mkdtempSync,mkdirSync,readFileSync,rmSync,writeFileSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {EXTERNAL_EFFECT_REGISTRY,ExternalEffectBoundary} from "../../../scripts/operator_proxy/external_effect_guard.js";
@@ -14,6 +14,8 @@ const installSpec:ProxySpec={...spec,deployment_mode:"INSTALL_ONLY",install_targ
 const installReceipt=()=>({schema_version:2,kind:"install",sha:base,repository:spec.repository,front_id:spec.front_id,roadmap_item_id:spec.roadmap_item_id,install_target:"agent_loop_worker",installer_profile:"agent_loop_v157_transaction",artifact_path:"scripts/agent_loop/local_worker/agent_worker.py",artifact_sha256:artifact,source_sha256:artifact,installed_sha256:artifact,config_sha256_before:config,config_sha256_after:config,task_state:"Disabled",transaction_marker:"V157_DEPLOY_RECOVERY_CONTRACT_PASS",status:"PASS"});
 const lifecycle:LifecycleRecord={schema_version:1,front_id:spec.front_id!,roadmap_item_id:spec.roadmap_item_id,state:"REVIEWING",issue:63,pr:63,base_sha:base,head_sha:head,repair_cycles:0,deployment_mode:"NO_DEPLOY",completed_effects:[],updated_utc:new Date().toISOString()};
 const expected=["issue_create","issue_modify","label_modify","comment_publish","branch_create","builder_execute","commit_create","push","pr_create","workflow_dispatch","reviewer_execute","decision_persist","findings_publish","repair_request","merge","installation_request","installation_receipt","pilot_request","pilot_receipt","closeout_create","next_item_activate"];
+
+test("PowerShell wrapper exposes doctor explicitly and rejects ambiguous execution modes",()=>{const source=readFileSync(join(__dirname,"../../../scripts/operator_proxy/Run-OperatorProxy.ps1"),"utf8");assert.match(source,/\[switch\]\$Doctor/);assert.match(source,/execution mode is ambiguous/);assert.match(source,/if\(\$Doctor\)\{\$args\+='--doctor'\}/);});
 
 test("external effect registry is canonical and complete",()=>assert.deepEqual([...EXTERNAL_EFFECT_REGISTRY],expected));
 

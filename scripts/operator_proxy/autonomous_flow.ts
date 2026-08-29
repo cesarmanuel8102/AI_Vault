@@ -35,6 +35,8 @@ function builderFailureDetail(error: unknown): string {
     [/builder worktree dirty/i,"WORKTREE_DIRTY"],
     [/builder recovery worktree state invalid/i,"RECOVERY_WORKTREE_INVALID"],
     [/recovered repair synchronization invalid/i,"RECOVERY_SYNC_INVALID"],
+    [/recovered repair synchronization cycle detected/i,"RECOVERY_SYNC_CHAIN_INVALID"],
+    [/recovered repair synchronization depth exceeded/i,"RECOVERY_SYNC_DEPTH_EXCEEDED"],
     [/recovered builder receipt invalid/i,"RECOVERY_RECEIPT_INVALID"],
     [/repair findings missing/i,"REPAIR_FINDINGS_MISSING"],
     [/external effect/i,"EXTERNAL_EFFECT_DENIED"],
