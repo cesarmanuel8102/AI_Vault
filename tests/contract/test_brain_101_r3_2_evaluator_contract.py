@@ -14,19 +14,26 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "tmp_agent"))
+
+
+@pytest.fixture
+def evaluator_run_root(tmp_path):
+    return tmp_path / "runs_parity_test_eval"
 
 
 # ---------------------------------------------------------------------------
 # 1. Evaluator criteria key inventory
 # ---------------------------------------------------------------------------
 
-def test_evaluator_criteria_inventory():
+def test_evaluator_criteria_inventory(evaluator_run_root):
     """The R3 C4 contract requires these evaluation criteria."""
     from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphParityRuntimeV2
 
-    rt = LangGraphParityRuntimeV2(run_root=ROOT / "tmp_agent" / "agent_kernel_v2" / "runs_parity_test_eval")
+    rt = LangGraphParityRuntimeV2(run_root=evaluator_run_root)
     state = _minimal_completed_state("inventory run", "brain_evidence")
     rt._evaluator_node(state)
     ev = state.get("evaluator_result", {})
@@ -52,10 +59,10 @@ def test_evaluator_criteria_inventory():
 # 2. Evaluator on direct-assistant route
 # ---------------------------------------------------------------------------
 
-def test_evaluator_marks_direct_assistant_as_tool_adequate_without_tools():
+def test_evaluator_marks_direct_assistant_as_tool_adequate_without_tools(evaluator_run_root):
     from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphParityRuntimeV2
 
-    rt = LangGraphParityRuntimeV2(run_root=ROOT / "tmp_agent" / "agent_kernel_v2" / "runs_parity_test_eval")
+    rt = LangGraphParityRuntimeV2(run_root=evaluator_run_root)
     state = _minimal_completed_state("hi", "direct_assistant")
     rt._evaluator_node(state)
     ev = state["evaluator_result"]
@@ -69,10 +76,10 @@ def test_evaluator_marks_direct_assistant_as_tool_adequate_without_tools():
 # 3. Evaluator on brain-evidence route requires tools and evidence
 # ---------------------------------------------------------------------------
 
-def test_evaluator_requires_tools_for_brain_evidence_route():
+def test_evaluator_requires_tools_for_brain_evidence_route(evaluator_run_root):
     from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphParityRuntimeV2
 
-    rt = LangGraphParityRuntimeV2(run_root=ROOT / "tmp_agent" / "agent_kernel_v2" / "runs_parity_test_eval")
+    rt = LangGraphParityRuntimeV2(run_root=evaluator_run_root)
     state = _minimal_completed_state("How is memory structured?", "brain_evidence")
     state["plan"] = []
     state["evidence_sources"] = []
@@ -83,10 +90,10 @@ def test_evaluator_requires_tools_for_brain_evidence_route():
     assert ev["evidence_adequate"] is False
 
 
-def test_evaluator_passes_brain_evidence_with_tools_and_sources():
+def test_evaluator_passes_brain_evidence_with_tools_and_sources(evaluator_run_root):
     from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphParityRuntimeV2
 
-    rt = LangGraphParityRuntimeV2(run_root=ROOT / "tmp_agent" / "agent_kernel_v2" / "runs_parity_test_eval")
+    rt = LangGraphParityRuntimeV2(run_root=evaluator_run_root)
     state = _minimal_completed_state("How is memory structured?", "brain_evidence")
     state["plan"] = [
         {
@@ -109,10 +116,10 @@ def test_evaluator_passes_brain_evidence_with_tools_and_sources():
 # 4. Governance compliance contract
 # ---------------------------------------------------------------------------
 
-def test_evaluator_marks_governance_compliant_when_no_escalation():
+def test_evaluator_marks_governance_compliant_when_no_escalation(evaluator_run_root):
     from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphParityRuntimeV2
 
-    rt = LangGraphParityRuntimeV2(run_root=ROOT / "tmp_agent" / "agent_kernel_v2" / "runs_parity_test_eval")
+    rt = LangGraphParityRuntimeV2(run_root=evaluator_run_root)
     state = _minimal_completed_state("repo status", "brain_evidence")
     state["mode_escalation_required"] = False
     state["approval_required"] = False
@@ -121,10 +128,10 @@ def test_evaluator_marks_governance_compliant_when_no_escalation():
     assert ev["governance_compliant"] is True
 
 
-def test_evaluator_marks_governance_noncompliant_for_unapproved_escalation():
+def test_evaluator_marks_governance_noncompliant_for_unapproved_escalation(evaluator_run_root):
     from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphParityRuntimeV2
 
-    rt = LangGraphParityRuntimeV2(run_root=ROOT / "tmp_agent" / "agent_kernel_v2" / "runs_parity_test_eval")
+    rt = LangGraphParityRuntimeV2(run_root=evaluator_run_root)
     state = _minimal_completed_state("patch the code", "operational_agent")
     state["mode_escalation_required"] = True
     state["approval_required"] = False
@@ -137,24 +144,24 @@ def test_evaluator_marks_governance_noncompliant_for_unapproved_escalation():
 # 5. Evaluator result sources
 # ---------------------------------------------------------------------------
 
-def test_evaluator_records_source_and_mode():
+def test_evaluator_records_source_and_mode(evaluator_run_root):
     from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphParityRuntimeV2
 
-    rt = LangGraphParityRuntimeV2(run_root=ROOT / "tmp_agent" / "agent_kernel_v2" / "runs_parity_test_eval")
+    rt = LangGraphParityRuntimeV2(run_root=evaluator_run_root)
     state = _minimal_completed_state("repo status", "brain_evidence")
     rt._evaluator_node(state)
     assert state["evaluator_source"] == "deterministic_parity_evaluator"
     assert state["evaluator_parity_mode"] == "deterministic"
 
 
-def test_injected_evaluator_is_used_when_supplied():
+def test_injected_evaluator_is_used_when_supplied(evaluator_run_root):
     from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphParityRuntimeV2
 
     def custom_eval(_state):
         return {"custom": True}
 
     rt = LangGraphParityRuntimeV2(
-        run_root=ROOT / "tmp_agent" / "agent_kernel_v2" / "runs_parity_test_eval",
+        run_root=evaluator_run_root,
         evaluator_fn=custom_eval,
     )
     state = _minimal_completed_state("repo status", "brain_evidence")
@@ -168,10 +175,10 @@ def test_injected_evaluator_is_used_when_supplied():
 # 6. Repair/replan node contract
 # ---------------------------------------------------------------------------
 
-def test_repair_or_replan_node_detects_failed_evaluation():
+def test_repair_or_replan_node_detects_failed_evaluation(evaluator_run_root):
     from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphParityRuntimeV2
 
-    rt = LangGraphParityRuntimeV2(run_root=ROOT / "tmp_agent" / "agent_kernel_v2" / "runs_parity_test_eval")
+    rt = LangGraphParityRuntimeV2(run_root=evaluator_run_root)
     state = _minimal_completed_state("How is memory structured?", "brain_evidence")
     state["plan"] = []
     state["evidence_sources"] = []
@@ -181,10 +188,10 @@ def test_repair_or_replan_node_detects_failed_evaluation():
     assert state["node_path"][-1] == "repair_or_replan"
 
 
-def test_repair_or_replan_node_marks_success_when_all_criteria_pass():
+def test_repair_or_replan_node_marks_success_when_all_criteria_pass(evaluator_run_root):
     from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphParityRuntimeV2
 
-    rt = LangGraphParityRuntimeV2(run_root=ROOT / "tmp_agent" / "agent_kernel_v2" / "runs_parity_test_eval")
+    rt = LangGraphParityRuntimeV2(run_root=evaluator_run_root)
     state = _minimal_completed_state("hi", "direct_assistant")
     # Ensure the evaluator_result is fully truthy; full_parity_score of 10 is
     # not enough because native_helper_parity_score is 0.  Supply a minimal

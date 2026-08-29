@@ -24,6 +24,11 @@ def temp_run_root(tmp_path):
     return tmp_path / "runs"
 
 
+@pytest.fixture
+def parity_run_root(tmp_path):
+    return tmp_path / "runs_parity_test_lifecycle"
+
+
 # ---------------------------------------------------------------------------
 # 1. Runtime backend selector contract
 # ---------------------------------------------------------------------------
@@ -69,11 +74,11 @@ def test_native_runtime_implements_required_interface():
         assert hasattr(rt, method) and callable(getattr(rt, method))
 
 
-def test_langgraph_parity_runtime_implements_required_interface():
+def test_langgraph_parity_runtime_implements_required_interface(parity_run_root):
     from brain_v9.core.agent_kernel_v2.runtime import is_agent_v2_production_runtime_compatible
     from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphParityRuntimeV2
 
-    rt = LangGraphParityRuntimeV2(run_root=ROOT / "tmp_agent" / "agent_kernel_v2" / "runs_parity_test_lifecycle")
+    rt = LangGraphParityRuntimeV2(run_root=parity_run_root)
     compatible, missing = is_agent_v2_production_runtime_compatible(rt)
     assert compatible is True
     assert not missing
@@ -86,8 +91,10 @@ def test_langgraph_parity_runtime_implements_required_interface():
 def test_native_create_run_sets_required_identity_fields(temp_run_root, monkeypatch):
     from brain_v9.core.agent_kernel_v2.native_runtime import NativeAgentRuntimeV2
     from brain_v9.core.agent_kernel_v2 import state as state_mod
+    from brain_v9.core.agent_kernel_v2 import native_runtime as native_runtime_mod
 
     monkeypatch.setattr(state_mod, "RUN_ROOT", temp_run_root)
+    monkeypatch.setattr(native_runtime_mod, "RUN_ROOT", temp_run_root)
     rt = NativeAgentRuntimeV2()
     run = rt.create_run("Test goal", mode="read_only", user_id="contract_user")
     assert run["goal"] == "Test goal"
@@ -104,8 +111,10 @@ def test_native_create_run_sets_required_identity_fields(temp_run_root, monkeypa
 def test_native_plan_run_persists_plan_and_status(temp_run_root, monkeypatch):
     from brain_v9.core.agent_kernel_v2.native_runtime import NativeAgentRuntimeV2
     from brain_v9.core.agent_kernel_v2 import state as state_mod
+    from brain_v9.core.agent_kernel_v2 import native_runtime as native_runtime_mod
 
     monkeypatch.setattr(state_mod, "RUN_ROOT", temp_run_root)
+    monkeypatch.setattr(native_runtime_mod, "RUN_ROOT", temp_run_root)
     rt = NativeAgentRuntimeV2()
     run = rt.create_run("repo status", mode="read_only")
     planned = rt.plan_run(run["run_id"])
@@ -118,8 +127,10 @@ def test_native_plan_run_persists_plan_and_status(temp_run_root, monkeypatch):
 def test_native_pause_resume_cancel_transitions(temp_run_root, monkeypatch):
     from brain_v9.core.agent_kernel_v2.native_runtime import NativeAgentRuntimeV2
     from brain_v9.core.agent_kernel_v2 import state as state_mod
+    from brain_v9.core.agent_kernel_v2 import native_runtime as native_runtime_mod
 
     monkeypatch.setattr(state_mod, "RUN_ROOT", temp_run_root)
+    monkeypatch.setattr(native_runtime_mod, "RUN_ROOT", temp_run_root)
     rt = NativeAgentRuntimeV2()
     run = rt.create_run("lifecycle test", mode="read_only")
     rt.pause_run(run["run_id"])
@@ -136,8 +147,10 @@ def test_native_pause_resume_cancel_transitions(temp_run_root, monkeypatch):
 def test_native_checkpoint_is_persisted(temp_run_root, monkeypatch):
     from brain_v9.core.agent_kernel_v2.native_runtime import NativeAgentRuntimeV2
     from brain_v9.core.agent_kernel_v2 import state as state_mod
+    from brain_v9.core.agent_kernel_v2 import native_runtime as native_runtime_mod
 
     monkeypatch.setattr(state_mod, "RUN_ROOT", temp_run_root)
+    monkeypatch.setattr(native_runtime_mod, "RUN_ROOT", temp_run_root)
     rt = NativeAgentRuntimeV2()
     run = rt.create_run("checkpoint test", mode="read_only")
     rt._save_run(run)
@@ -149,10 +162,10 @@ def test_native_checkpoint_is_persisted(temp_run_root, monkeypatch):
 # 4. LangGraph parity runtime lifecycle contract
 # ---------------------------------------------------------------------------
 
-def test_langgraph_parity_create_run_sets_required_fields():
+def test_langgraph_parity_create_run_sets_required_fields(parity_run_root):
     from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphParityRuntimeV2
 
-    rt = LangGraphParityRuntimeV2(run_root=ROOT / "tmp_agent" / "agent_kernel_v2" / "runs_parity_test_lifecycle")
+    rt = LangGraphParityRuntimeV2(run_root=parity_run_root)
     run = rt.create_run("parity lifecycle", mode="read_only", user_id="contract_user")
     assert run["goal"] == "parity lifecycle"
     assert run["mode"] == "read_only"
@@ -165,10 +178,10 @@ def test_langgraph_parity_create_run_sets_required_fields():
     assert run["canonical_agent"] is True
 
 
-def test_langgraph_parity_plan_run_transitions_and_schedules_tools():
+def test_langgraph_parity_plan_run_transitions_and_schedules_tools(parity_run_root):
     from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphParityRuntimeV2
 
-    rt = LangGraphParityRuntimeV2(run_root=ROOT / "tmp_agent" / "agent_kernel_v2" / "runs_parity_test_lifecycle")
+    rt = LangGraphParityRuntimeV2(run_root=parity_run_root)
     run = rt.create_run("repo status", mode="read_only")
     planned = rt.plan_run(run["run_id"])
     assert planned["status"] == "planned"
@@ -177,10 +190,10 @@ def test_langgraph_parity_plan_run_transitions_and_schedules_tools():
     assert isinstance(planned["plan"], list)
 
 
-def test_langgraph_parity_status_transition_rules():
+def test_langgraph_parity_status_transition_rules(parity_run_root):
     from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphParityRuntimeV2
 
-    rt = LangGraphParityRuntimeV2(run_root=ROOT / "tmp_agent" / "agent_kernel_v2" / "runs_parity_test_lifecycle")
+    rt = LangGraphParityRuntimeV2(run_root=parity_run_root)
     run = rt.create_run("transition test", mode="read_only")
     rt.pause_run(run["run_id"])
     assert rt.get_run(run["run_id"])["status"] == "paused"
@@ -190,10 +203,10 @@ def test_langgraph_parity_status_transition_rules():
     assert rt.get_run(run["run_id"])["status"] == "cancelled"
 
 
-def test_langgraph_parity_invalid_transition_is_rejected():
+def test_langgraph_parity_invalid_transition_is_rejected(parity_run_root):
     from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphParityRuntimeV2
 
-    rt = LangGraphParityRuntimeV2(run_root=ROOT / "tmp_agent" / "agent_kernel_v2" / "runs_parity_test_lifecycle")
+    rt = LangGraphParityRuntimeV2(run_root=parity_run_root)
     run = rt.create_run("invalid transition", mode="read_only")
     rt.cancel_run(run["run_id"])
     result = rt.pause_run(run["run_id"])
