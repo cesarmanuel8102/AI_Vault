@@ -203,6 +203,23 @@ def test_langgraph_parity_status_transition_rules(parity_run_root):
     assert rt.get_run(run["run_id"])["status"] == "cancelled"
 
 
+def test_langgraph_parity_resume_survives_runtime_recreation(parity_run_root):
+    from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphParityRuntimeV2
+
+    first_runtime = LangGraphParityRuntimeV2(run_root=parity_run_root)
+    run = first_runtime.create_run("restartable lifecycle", mode="read_only")
+    first_runtime.plan_run(run["run_id"])
+    first_runtime.pause_run(run["run_id"])
+
+    recreated_runtime = LangGraphParityRuntimeV2(run_root=parity_run_root)
+    resumed = recreated_runtime.resume_run(run["run_id"])
+
+    assert resumed["status"] == "resumed"
+    assert resumed["previous_status"] == "paused"
+    assert resumed["resumed_to_status"] == "planned"
+    assert recreated_runtime.get_checkpoint(run["run_id"])["status"] == "resumed"
+
+
 def test_langgraph_parity_invalid_transition_is_rejected(parity_run_root):
     from brain_v9.core.agent_kernel_v2.langgraph_parity_runtime import LangGraphParityRuntimeV2
 

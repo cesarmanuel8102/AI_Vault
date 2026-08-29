@@ -169,6 +169,8 @@ class LangGraphParityRuntimeV2:
         payload = {k: v for k, v in state.items()}
         payload["updated_utc"] = utc_now()
         (self._run_dir(run_id) / "run.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True, default=str) + "\n", encoding="utf-8")
+        # Keep lifecycle recovery durable even when no graph node has run yet.
+        self._save_checkpoint(payload, step_index=int(payload.get("checkpoint_step_index", 0)))
 
     _REQUIRED_RUN_FIELDS = {"run_id", "goal", "mode"}
 
@@ -1764,4 +1766,3 @@ class LangGraphParityRuntimeV2:
             if val is not None and str(val):
                 return str(val)
         return ""
-

@@ -25,8 +25,8 @@ write operations.
 | C2 Intent Router | G-H1 | **PRESENT** | `tests/contract/test_brain_101_r3_2_intent_router_contract.py` | Keyword classifier schema, route map, evidence policy, adapter evidence-source contract |
 | C3 Planner | G-H2 | **PRESENT** | `tests/contract/test_brain_101_r3_2_planner_contract.py` | build_plan schema, planner class inventory, explicit tool request detection, diagnostic phrases, tool resolution |
 | C4 Evaluator | G-H3 | **PRESENT** | `tests/contract/test_brain_101_r3_2_evaluator_contract.py` | LangGraphParityRuntimeV2 evaluator node criteria schema, governance compliance, repair/replan signal |
-| C6 Tool Gateway | G-H4 | **PARTIAL → PRESENT** | `tests/contract/test_brain_101_r3_2_tool_gateway_contract.py` | Capability schema, read-only execution, write-tool gating, path blocking, route probe rules, result normalization |
-| C1 Runtime Lifecycle | G-M1 | **PARTIAL → PRESENT** | `tests/contract/test_brain_101_r3_2_runtime_lifecycle_contract.py` | Backend selector, required runtime interface, create/plan/pause/resume/cancel, checkpoint persistence, status constants |
+| C6 Tool Gateway | G-H4 | **PARTIAL → PRESENT** | `tests/contract/test_brain_101_r3_2_tool_gateway_contract.py` | Capability schema, read-only execution, write-tool gating, path blocking, route probe rules, bounded timeout and safe transport fallback, result normalization |
+| C1 Runtime Lifecycle | G-M1 | **PARTIAL → PRESENT** | `tests/contract/test_brain_101_r3_2_runtime_lifecycle_contract.py` | Backend selector, required runtime interface, create/plan/pause/resume/cancel, checkpoint persistence and fresh-runtime resume, status constants |
 
 ### Classification Legend
 
@@ -151,7 +151,8 @@ write operations.
    `result`, `blocked`, `approval_required`, `error`.
 10. **Unknown tool** — Unknown tools return `error == "unknown_tool"`.
 11. **Safety boundary** — Tool gateway source does not import uvicorn, FastAPI,
-    TestClient, or os.system.
+    TestClient, or os.system. Route probes use a bounded five-second timeout;
+    timeout and transport errors return a normalized failure without retrying.
 
 ### Classification
 
@@ -182,7 +183,9 @@ write operations.
 7. **Status constants** — `STATUSES` and `MODES` contain the canonical values.
 8. **Invalid transition guard** — LangGraph parity runtime rejects transitions
    from terminal statuses.
-9. **Safety boundary** — Runtime selector and native runtime source do not
+9. **Fresh-runtime recovery** — A paused run is loaded from disk and resumed by
+   a newly created runtime instance, with its checkpoint state preserved.
+10. **Safety boundary** — Runtime selector and native runtime source do not
    import server-starting or shell-execution utilities.
 
 ### Classification

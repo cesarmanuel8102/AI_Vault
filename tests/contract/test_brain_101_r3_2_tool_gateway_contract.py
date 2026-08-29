@@ -207,6 +207,50 @@ def test_route_probe_normalizes_bare_relative_path():
     assert result.result.get("url") == "http://127.0.0.1:8091/v2/agent/status"
 
 
+def test_route_probe_timeout_is_bounded_and_deterministic(monkeypatch):
+    from brain_v9.core.agent_kernel_v2 import tool_gateway as gateway_module
+    from brain_v9.core.agent_kernel_v2.tool_gateway import ToolGatewayV2
+    from brain_v9.core.agent_kernel_v2.schemas import ToolCallRequest
+
+    calls = []
+
+    def fake_urlopen(request, timeout):
+        calls.append((request.full_url, timeout))
+        raise TimeoutError("controlled timeout")
+
+    monkeypatch.setattr(gateway_module.urllib.request, "urlopen", fake_urlopen)
+    result = ToolGatewayV2().call(
+        ToolCallRequest("route_probe", {"url": "/v2/agent/status"}, "read_only")
+    )
+
+    assert result.ok is False
+    assert result.blocked is False
+    assert result.result["url"] == "http://127.0.0.1:8091/v2/agent/status"
+    assert calls == [(result.result["url"], 5)]
+
+
+def test_route_probe_transport_failure_is_safe_fallback_without_retry(monkeypatch):
+    from brain_v9.core.agent_kernel_v2 import tool_gateway as gateway_module
+    from brain_v9.core.agent_kernel_v2.tool_gateway import ToolGatewayV2
+    from brain_v9.core.agent_kernel_v2.schemas import ToolCallRequest
+
+    calls = []
+
+    def fake_urlopen(request, timeout):
+        calls.append(request.full_url)
+        raise gateway_module.urllib.error.URLError("controlled offline")
+
+    monkeypatch.setattr(gateway_module.urllib.request, "urlopen", fake_urlopen)
+    result = ToolGatewayV2().call(
+        ToolCallRequest("route_probe", {"url": "/v2/agent/status"}, "read_only")
+    )
+
+    assert result.ok is False
+    assert result.blocked is False
+    assert result.result["url"] == "http://127.0.0.1:8091/v2/agent/status"
+    assert calls == [result.result["url"]]
+
+
 # ---------------------------------------------------------------------------
 # 5. Smoke test gating contract
 # ---------------------------------------------------------------------------
@@ -287,6 +331,8 @@ _TESTS = [
     test_route_probe_only_allows_localhost,
     test_route_probe_blocks_non_allowlisted_post,
     test_route_probe_normalizes_bare_relative_path,
+    test_route_probe_timeout_is_bounded_and_deterministic,
+    test_route_probe_transport_failure_is_safe_fallback_without_retry,
     test_smoke_test_readonly_blocks_disallowed_target,
     test_tool_call_result_has_required_schema,
     test_unknown_tool_returns_unknown_error,
