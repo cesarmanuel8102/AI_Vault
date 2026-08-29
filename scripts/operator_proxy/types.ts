@@ -37,5 +37,15 @@ export interface LifecycleRecord {
   // Redacted, bounded evidence for diagnosis only; never used for lifecycle control.
   last_error_detail?: string;
   builder_retry_reason?: "BUILDER_FAILURE";
+  merge_reconciliation?: {
+    source: "GITHUB_EXTERNALLY_MERGED_PR";
+    issue: number;
+    pr: number;
+    original_base_sha: string;
+    original_state_head_sha: string;
+    candidate_head_sha: string;
+    merge_commit_sha: string;
+    reviewer_check: "review";
+  };
   updated_utc: string;
 }

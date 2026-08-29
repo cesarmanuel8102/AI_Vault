@@ -36,6 +36,7 @@ export function reconcilePersistedRoadmapState(bus:GitHubBus,effects:ProductionE
   if(!persisted)return persisted;
   if(persisted.state==="ESCALATED"&&persisted.last_error==="OWNER_AUTHORITY_REQUIRED"&&persisted.base_sha!==spec.expected_base_sha)return effects.reconcileNegatedRiskEscalation(spec,persisted,store);
   if(persisted.state==="BLOCKED"&&persisted.last_error==="CI_FAILED")return persisted.base_sha!==spec.expected_base_sha?effects.reconcileBlockedCiBase(spec,persisted,store):effects.reconcileBlockedCiChecks(spec,persisted,store);
+  if(persisted.state==="BLOCKED"&&/^BUILDER_FAILED:[A-Z_]+$/.test(persisted.last_error??"")&&persisted.pr&&persisted.head_sha&&typeof (effects as any).reconcileExternallyMergedBuilderFailure==="function"){const reconciled=(effects as any).reconcileExternallyMergedBuilderFailure(spec,persisted,store);if(reconciled)return reconciled;}
   if(persisted.state==="BLOCKED"&&/^BUILDER_FAILED:[A-Z_]+$/.test(persisted.last_error??"")&&persisted.base_sha!==spec.expected_base_sha)return effects.reconcileBuilderFailureBase(spec,persisted,store);
   if(persisted.state==="BLOCKED"&&/^BUILDER_FAILED:[A-Z_]+$/.test(persisted.last_error??"")&&persisted.base_sha===spec.expected_base_sha&&persisted.builder_retry_reason==="BUILDER_FAILURE")return store.resumeRecordedBuilderRetry(persisted);
   if(persisted.base_sha===spec.expected_base_sha)return persisted;
