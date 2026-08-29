@@ -3,7 +3,7 @@ import {existsSync,lstatSync,mkdirSync,readFileSync,readdirSync,realpathSync,rmS
 import {join,posix,resolve,sep} from "node:path";
 import {randomUUID} from "node:crypto";
 import type {LifecycleRecord,ProxySpec} from "./types.js";
-import {ELIGIBLE_FALLBACK_FAILURES,type BuilderInput,type BuilderResult} from "./builder_backend.js";
+import {BuilderBackendError,ELIGIBLE_FALLBACK_FAILURES,type BuilderInput,type BuilderResult} from "./builder_backend.js";
 import type {EffectAssertion} from "./external_effect_guard.js";
 import {redactedError} from "./redaction.js";
 import {routeControlPlaneBuild} from "./builder_router.js";
@@ -38,7 +38,19 @@ function validateBuilderReceipt(repo:string,head:string,front:string){
   const backend=values("BUILDER_BACKEND="),model=values("BUILDER_MODEL="),provider=values("PROVIDER_SESSION="),fallback=values("FALLBACK_REASON=");
   if(backend.length!==1||!["codex_cli_openai","opencode_github_copilot","opencode_ollama"].includes(backend[0])||model.length!==1||!/^[a-z0-9][a-z0-9._:/-]{2,127}$/.test(model[0])||provider.length!==1||!/^[a-z0-9][a-z0-9._:/-]{2,127}$/.test(provider[0])||fallback.length>1||fallback.length===1&&!ELIGIBLE_FALLBACK_FAILURES.has(fallback[0]))throw new Error("recovered builder receipt invalid");
 }
-function synchronizedRepairReceipt(repo:string,head:string,front:string){let current=head;for(let depth=0;depth<10;depth++){const subject=git(repo,["show","-s","--format=%s",current]);if(subject!==`chore(control-plane): synchronize ${front} base`){validateBuilderReceipt(repo,current,front);return current;}const parents=git(repo,["rev-list","--parents","-n","1",current]).split(/\s+/);if(parents.length!==3)throw new Error("recovered repair synchronization invalid");current=parents[1];}throw new Error("recovered repair synchronization depth exceeded");}
+export function synchronizedRepairReceipt(repo:string,head:string,front:string){
+  let current=head;const visited=new Set<string>();
+  for(let depth=0;depth<64;depth++){
+    if(visited.has(current))throw new BuilderBackendError("recovered repair synchronization cycle detected","RECOVERY_SYNC_CHAIN_INVALID");
+    visited.add(current);
+    const subject=git(repo,["show","-s","--format=%s",current]);
+    if(subject!==`chore(control-plane): synchronize ${front} base`){validateBuilderReceipt(repo,current,front);return current;}
+    const parents=git(repo,["rev-list","--parents","-n","1",current]).split(/\s+/);
+    if(parents.length!==3||parents[0]!==current)throw new BuilderBackendError("recovered repair synchronization invalid","RECOVERY_SYNC_CHAIN_INVALID");
+    current=parents[1];
+  }
+  throw new BuilderBackendError("recovered repair synchronization depth exceeded","RECOVERY_SYNC_DEPTH_EXCEEDED");
+}
 function validatePublishedPr(spec:ProxySpec,existing:{number:number;head_sha:string},identity:any,head:string,files:string[]){
   const prFiles=(identity.files??[]).map((item:any)=>String(item.path)).sort();
   if(existing.head_sha!==head||identity.author?.login!=="cesarmanuel8102"||identity.baseRefName!=="codex/own-capital-sustainable-return"||identity.baseRefOid!==spec.expected_base_sha||identity.headRefName!==spec.work_branch||identity.headRefOid!==head||identity.headRepository?.nameWithOwner!=="cesarmanuel8102/AI_Vault"||identity.isCrossRepository!==false||identity.isDraft!==true||identity.state!=="OPEN"||JSON.stringify(prFiles)!==JSON.stringify(files))throw new Error("published builder PR identity invalid");

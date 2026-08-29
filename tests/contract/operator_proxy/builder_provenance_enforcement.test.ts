@@ -22,7 +22,7 @@ execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"commit","-m","feat(control-p
 const head=execFileSync(process.env.GIT_PATH||"git",["-C",cwd,"rev-parse","HEAD"],{encoding:"utf8"}).trim();
 console.log("HEAD_SHA="+head);
 console.log("PROVIDER_SESSION="+correlation);
-console.log("BUILDER_BACKEND="+(process.env.OPERATOR_PROXY_BACKEND_OVERRIDE||"opencode_ollama"));
+console.log("BUILDER_BACKEND="+(process.env.OPERATOR_PROXY_BUILDER_BACKEND||"opencode_ollama"));
 console.log("BUILDER_MODEL=opencode/kimi-k2.7-code");
 process.exit(${exitCode});`;
 }
@@ -119,11 +119,11 @@ test("campaign COMPLETED write failure performs ZERO push/publication", async ()
   writeFileSync(opencodeEntry, fakeBackendScript("ok", 0));
   const priorOpenCode = process.env.OPEN_CODE_PATH;
   const priorRoot = process.env.OPERATOR_PROXY_ROOT;
-  const priorBackendOverride = process.env.OPERATOR_PROXY_BACKEND_OVERRIDE;
+  const priorBackendOverride = process.env.OPERATOR_PROXY_BUILDER_BACKEND;
   try {
     process.env.OPEN_CODE_PATH = opencodeEntry;
     process.env.OPERATOR_PROXY_ROOT = r.root;
-    process.env.OPERATOR_PROXY_BACKEND_OVERRIDE = "opencode_ollama";
+    process.env.OPERATOR_PROXY_BUILDER_BACKEND = "opencode_ollama";
     mkdirSync(join(r.root, "state"), {recursive: true});
     const spec = baseSpec(r);
     const provenance = new ThrowingCompletedProvenance();
@@ -136,7 +136,7 @@ test("campaign COMPLETED write failure performs ZERO push/publication", async ()
   } finally {
     if (priorOpenCode === undefined) delete process.env.OPEN_CODE_PATH; else process.env.OPEN_CODE_PATH = priorOpenCode;
     if (priorRoot === undefined) delete process.env.OPERATOR_PROXY_ROOT; else process.env.OPERATOR_PROXY_ROOT = priorRoot;
-    if (priorBackendOverride === undefined) delete process.env.OPERATOR_PROXY_BACKEND_OVERRIDE; else process.env.OPERATOR_PROXY_BACKEND_OVERRIDE = priorBackendOverride;
+    if (priorBackendOverride === undefined) delete process.env.OPERATOR_PROXY_BUILDER_BACKEND; else process.env.OPERATOR_PROXY_BUILDER_BACKEND = priorBackendOverride;
   }
 });
 
@@ -160,11 +160,11 @@ test("non-campaign legacy compatibility can still run only where contract allows
   writeFileSync(opencodeEntry, fakeBackendScript("legacy", 0));
   const priorOpenCode = process.env.OPEN_CODE_PATH;
   const priorRoot = process.env.OPERATOR_PROXY_ROOT;
-  const priorBackendOverride = process.env.OPERATOR_PROXY_BACKEND_OVERRIDE;
+  const priorBackendOverride = process.env.OPERATOR_PROXY_BUILDER_BACKEND;
   try {
     delete process.env.OPERATOR_PROXY_ROOT;
     process.env.OPEN_CODE_PATH = process.execPath;
-    process.env.OPERATOR_PROXY_BACKEND_OVERRIDE = "opencode_ollama";
+    process.env.OPERATOR_PROXY_BUILDER_BACKEND = "opencode_ollama";
     const spec: ProxySpec = {...baseSpec(r), executor: "agent_loop"};
     await assert.rejects(
       routeControlPlaneBuild(spec, 1, "prompt", 0, {}, r.worktree),
@@ -173,7 +173,7 @@ test("non-campaign legacy compatibility can still run only where contract allows
   } finally {
     if (priorOpenCode === undefined) delete process.env.OPEN_CODE_PATH; else process.env.OPEN_CODE_PATH = priorOpenCode;
     if (priorRoot === undefined) delete process.env.OPERATOR_PROXY_ROOT; else process.env.OPERATOR_PROXY_ROOT = priorRoot;
-    if (priorBackendOverride === undefined) delete process.env.OPERATOR_PROXY_BACKEND_OVERRIDE; else process.env.OPERATOR_PROXY_BACKEND_OVERRIDE = priorBackendOverride;
+    if (priorBackendOverride === undefined) delete process.env.OPERATOR_PROXY_BUILDER_BACKEND; else process.env.OPERATOR_PROXY_BUILDER_BACKEND = priorBackendOverride;
   }
 });
 
