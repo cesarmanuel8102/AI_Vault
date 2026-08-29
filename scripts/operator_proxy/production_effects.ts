@@ -151,6 +151,21 @@ export class ProductionEffects implements AutonomousEffects {
     if(this.ci(state.pr!,state.head_sha!)!=="PASS")throw new Error("blocked CI checks not green");
     const updated=store.recoverBlockedCiChecks(state);this.bindLifecycle(spec,updated);return updated;
   }
+  reconcileExternallyMergedBuilderFailure(spec:ProxySpec,state:import("./types.js").LifecycleRecord,store:LifecycleStore){
+    if(state.base_sha===spec.expected_base_sha||state.state!=="BLOCKED"||!state.pr||!state.head_sha)return undefined;
+    const exactState=/^BUILDER_FAILED:[A-Z_]+$/.test(state.last_error??"")&&state.repair_cycles>0&&state.repair_cycles<=2&&Number.isInteger(state.issue)&&state.issue!>0&&Number.isInteger(state.pr)&&state.pr!>0&&/^[0-9a-f]{40}$/.test(state.base_sha)&&/^[0-9a-f]{40}$/.test(state.head_sha)&&state.completed_effects.length>=3&&state.completed_effects.length<=10&&state.completed_effects[0]===`issue:${state.issue}`&&state.completed_effects.slice(1).every((effect:string)=>/^build:[0-9a-f]{40}$/.test(effect)||/^base-sync:[0-9a-f]{40}$/.test(effect))&&new Set(state.completed_effects).size===state.completed_effects.length&&state.completed_effects.some((effect:string)=>effect===`base-sync:${state.head_sha}`)&&state.completed_effects.at(-1)===`base-sync:${state.head_sha}`;
+    if(!exactState)return undefined;
+    try {
+      const pr=this.bus.prIdentity(state.pr),files=(pr.files??[]).map((x:any)=>String(x.path));
+      if(this.bus.repo!==spec.repository||pr.author?.login!==spec.repository.split("/",1)[0]||pr.baseRefName!==INTEGRATION_BRANCH||pr.baseRefOid!==state.base_sha||pr.headRefName!==spec.work_branch||pr.headRepository?.nameWithOwner!==spec.repository||pr.isCrossRepository!==false||pr.state!=="MERGED"||pr.isDraft!==false||files.length===0||!files.every((path:string)=>pathAllowed(path,spec)))return undefined;
+      const candidateHead=String(pr.headRefOid??"");if(!/^[0-9a-f]{40}$/.test(candidateHead)||candidateHead===state.head_sha||!this.bus.isAncestor(state.head_sha,candidateHead)||this.bus.remoteBranchHead(spec.work_branch!)!==candidateHead)return undefined;
+      const merge=this.bus.verifyMerged(state.pr,candidateHead,state.base_sha);if(this.bus.remoteBranchHead(INTEGRATION_BRANCH)!==merge||merge!==spec.expected_base_sha)return undefined;
+      const checks=evaluateChecks(this.bus,candidateHead,spec.work_branch!);if(!checks.terminal||!checks.green||!checks.checks.some((check:any)=>check.name==="review"&&check.status==="COMPLETED"&&check.conclusion==="SUCCESS"))return undefined;
+      const snapshot=this.bus.issueSnapshot(state.issue!);const expectedBody=boundIssueBody({...spec,expected_base_sha:state.base_sha},state.pr!);if(snapshot.state!=="OPEN"||snapshot.labels.length!==1||snapshot.labels[0]!==blockedCiIssuePhase(spec)||snapshot.body!==expectedBody)return undefined;
+      if(spec.executor==="agent_loop")parseAgentLoopIssue(snapshot.body,{...spec,expected_base_sha:state.base_sha});
+      const updated=store.adoptExternallyMergedPr(state,spec.expected_base_sha,candidateHead,merge,"review");this.bindLifecycle(spec,updated);return updated;
+    } catch (error) { throw error; }
+  }
   invalidateFailedMerge(spec:ProxySpec,state:import("./types.js").LifecycleRecord,store:LifecycleStore){
     const decision=state.decision_id?this.ledger.load(state.decision_id):undefined,pr=state.pr?this.bus.prIdentity(state.pr):undefined,files=(pr?.files??[]).map((x:any)=>String(x.path));
     const baseTip=pr?.baseRefName?this.bus.remoteBranchHead(pr.baseRefName):undefined,acceptedPrBase=pr?.baseRefOid===state.base_sha||pr?.baseRefOid===spec.expected_base_sha;
@@ -312,7 +327,9 @@ export class ProductionEffects implements AutonomousEffects {
   }
   private closeoutParentEvidence(spec:ProxySpec,merge:string){
     const state=this.activeState;
-    if(!state||state.front_id!==spec.front_id||state.roadmap_item_id!==spec.roadmap_item_id||state.state!=="CLOSEOUT_PENDING"||state.head_sha!==merge||!state.completed_effects.includes(`merge:${merge}`)||!state.issue||!state.pr||!state.builder_session||!state.reviewer_session||!state.decision_id)throw new Error("closeout parent lifecycle evidence missing");
+    if(!state||state.front_id!==spec.front_id||state.roadmap_item_id!==spec.roadmap_item_id||state.state!=="CLOSEOUT_PENDING"||state.head_sha!==merge||!state.completed_effects.includes(`merge:${merge}`)||!state.issue||!state.pr)throw new Error("closeout parent lifecycle evidence missing");
+    if(state.merge_reconciliation){const r=state.merge_reconciliation;if(r.source!=="GITHUB_EXTERNALLY_MERGED_PR"||r.issue!==state.issue||r.pr!==state.pr||r.merge_commit_sha!==merge||r.original_base_sha===spec.expected_base_sha||r.original_state_head_sha===r.candidate_head_sha||r.candidate_head_sha===merge||r.reviewer_check!=="review"||state.base_sha!==spec.expected_base_sha||!state.builder_session)throw new Error("external merge closeout evidence mismatch");return {schema_version:1,parent_front_id:state.front_id,roadmap_id:spec.roadmap_id,roadmap_item_id:spec.roadmap_item_id,issue:state.issue,pr:state.pr,authorization_mode:"EXTERNAL_MERGE_RECONCILED",base_sha:r.original_base_sha,closeout_base_sha:merge,head_sha:r.candidate_head_sha,merge_commit:merge,builder_session:state.builder_session,reviewer_check:r.reviewer_check};}
+    if(!state.builder_session||!state.reviewer_session||!state.decision_id)throw new Error("closeout parent lifecycle evidence missing");
     const decision=this.ledger.load(state.decision_id);
     const baseBound=decision.base_sha===state.base_sha||this.bus.isAncestor(decision.base_sha,state.base_sha);
     const common=decision.authorization_id===spec.authorization_id&&decision.repository===spec.repository&&decision.issue===state.issue&&decision.pr===state.pr&&state.base_sha===spec.expected_base_sha&&baseBound&&decision.roadmap_id===spec.roadmap_id&&decision.roadmap_item_id===spec.roadmap_item_id;
