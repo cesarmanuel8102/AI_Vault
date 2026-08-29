@@ -159,11 +159,11 @@ export class ProductionEffects implements AutonomousEffects {
       const pr=this.bus.prIdentity(state.pr),files=(pr.files??[]).map((x:any)=>String(x.path));
       if(this.bus.repo!==spec.repository||pr.author?.login!==spec.repository.split("/",1)[0]||pr.baseRefName!==INTEGRATION_BRANCH||pr.baseRefOid!==state.base_sha||pr.headRefName!==spec.work_branch||pr.headRepository?.nameWithOwner!==spec.repository||pr.isCrossRepository!==false||pr.state!=="MERGED"||pr.isDraft!==false||files.length===0||!files.every((path:string)=>pathAllowed(path,spec)))return undefined;
       const candidateHead=String(pr.headRefOid??"");if(!/^[0-9a-f]{40}$/.test(candidateHead)||candidateHead===state.head_sha||!this.bus.isAncestor(state.head_sha,candidateHead)||this.bus.remoteBranchHead(spec.work_branch!)!==candidateHead)return undefined;
-      const merge=this.bus.verifyMerged(state.pr,candidateHead,state.base_sha);if(this.bus.remoteBranchHead(INTEGRATION_BRANCH)!==merge||merge!==spec.expected_base_sha)return undefined;
+      const merge=this.bus.verifyMerged(state.pr,candidateHead,state.base_sha),currentBase=this.bus.remoteBranchHead(INTEGRATION_BRANCH)??"",baseAdvanced=merge!==currentBase&&this.bus.isAncestor(merge,currentBase);if(currentBase!==spec.expected_base_sha||merge!==currentBase&&!baseAdvanced)return undefined;
       const checks=evaluateChecks(this.bus,candidateHead,spec.work_branch!);if(!checks.terminal||!checks.green||!checks.checks.some((check:any)=>check.name==="review"&&check.status==="COMPLETED"&&check.conclusion==="SUCCESS"))return undefined;
       const snapshot=this.bus.issueSnapshot(state.issue!);const expectedBody=boundIssueBody({...spec,expected_base_sha:state.base_sha},state.pr!);if(snapshot.state!=="OPEN"||snapshot.labels.length!==1||snapshot.labels[0]!==blockedCiIssuePhase(spec)||snapshot.body!==expectedBody)return undefined;
       if(spec.executor==="agent_loop")parseAgentLoopIssue(snapshot.body,{...spec,expected_base_sha:state.base_sha});
-      const updated=store.adoptExternallyMergedPr(state,spec.expected_base_sha,candidateHead,merge,"review");this.bindLifecycle(spec,updated);return updated;
+      const updated=store.adoptExternallyMergedPr(state,spec.expected_base_sha,candidateHead,merge,"review",baseAdvanced);this.bindLifecycle(spec,updated);return updated;
     } catch (error) { throw error; }
   }
   invalidateFailedMerge(spec:ProxySpec,state:import("./types.js").LifecycleRecord,store:LifecycleStore){
