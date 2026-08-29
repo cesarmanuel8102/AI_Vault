@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "roadmap_id": "BRAIN-101",
+  "roadmap_item_id": "R3.2",
+  "incident_class": "MERGED_PR_SCOPE_VIOLATION",
+  "disposition": "SUPERSEDED_SCOPE_INCIDENT",
+  "detected_at_utc": "2026-08-29T19:30:00Z",
+  "issue": 196,
+  "pr": 199,
+  "original_base_sha": "af17c6bc06c6a88465ecca054177f955c232afd2",
+  "candidate_head_sha": "28b2613adb5370865920ad0eae2b486e15f85f70",
+  "merge_commit_sha": "749ada1458e3092614b6e8c72380e350cbd46514",
+  "original_allowed_paths": [
+    "docs/roadmap/evidence/BRAIN_101_R3_2_AGENT_V2_COGNITIVE_PIPELINE_CONTRACTS.md",
+    "tests/contract/test_brain_101_r3_2_evaluator_contract.py",
+    "tests/contract/test_brain_101_r3_2_intent_router_contract.py",
+    "tests/contract/test_brain_101_r3_2_planner_contract.py",
+    "tests/contract/test_brain_101_r3_2_runtime_lifecycle_contract.py",
+    "tests/contract/test_brain_101_r3_2_tool_gateway_contract.py"
+  ],
+  "observed_pr_paths": [
+    "docs/roadmap/evidence/BRAIN_101_R3_2_AGENT_V2_COGNITIVE_PIPELINE_CONTRACTS.md",
+    "scripts/operator_proxy/autonomous_flow.ts",
+    "tests/contract/operator_proxy/autonomous_flow.test.ts",
+    "tests/contract/test_brain_101_r3_2_evaluator_contract.py",
+    "tests/contract/test_brain_101_r3_2_intent_router_contract.py",
+    "tests/contract/test_brain_101_r3_2_planner_contract.py",
+    "tests/contract/test_brain_101_r3_2_runtime_lifecycle_contract.py",
+    "tests/contract/test_brain_101_r3_2_tool_gateway_contract.py",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"
+  ],
+  "out_of_contract_paths": [
+    "scripts/operator_proxy/autonomous_flow.ts",
+    "tests/contract/operator_proxy/autonomous_flow.test.ts",
+    "tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py"
+  ],
+  "runtime_response": "blocked CI PR identity invalid",
+  "historical_lifecycle_preserved": true,
+  "historical_pr_treated_as_compliant": false,
+  "replacement_item": "R3.13",
+  "replacement_front_id": "BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-01",
+  "live_trading_enabled": false,
+  "real_money_enabled": false,
+  "canonical_local_sync": false,
+  "auto_merge": false,
+  "human_final_authority": true
+}

@@ -3,7 +3,7 @@
   "roadmap_id": "BRAIN-101",
   "roadmap_version": "1.0.0-reconstructed-glm-harmonized",
   "roadmap_path": "docs/roadmap/BRAIN_101_ROADMAP.md",
-  "roadmap_sha256": "046eb1d6ae630274afd97014c928dae897113940d12ff8c51858eb229424be25",
+  "roadmap_sha256": "aaf299982ce70329d4c20359ef4ec1a8dc62879b0aa7667de9135494e8f89425",
   "handoff_file_sha256": "e96afd142894c4c3c2c699bc846fa230af18ef4f7e7c0b2c19ff4cebcf33c060",
   "repository": "cesarmanuel8102/AI_Vault",
   "integration_branch": "codex/own-capital-sustainable-return",
@@ -36,7 +36,7 @@
   "runtime_snapshot": "docs/roadmap/evidence/BRAIN_101_R0_RUNTIME_SNAPSHOT.json",
   "approval_status": "HUMAN_ADOPTED",
   "r0_status": "CLOSED_HUMAN_ADOPTED",
-  "current_phase": "R2",
+  "current_phase": "R3",
   "human_final_authority": true,
   "auto_merge": false,
   "canonical_local_sync": false,
@@ -743,7 +743,7 @@
     },
     "R3.2": {
       "title": "Agent V2 cognitive pipeline contracts",
-      "status": "AUTHORIZED_ACTIVE",
+      "status": "SUPERSEDED_SCOPE_INCIDENT",
       "dependencies": [
         "R3.1"
       ],
@@ -810,6 +810,81 @@
             "Record exact R3.2 Issue PR decision merge and cognitive pipeline contract evidence",
             "Set R3.2 to CLOSED_RUNTIME_VERIFIED only after the contract tests pass",
             "Preserve exactly one authorized next roadmap item",
+            "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+          ],
+          "test_commands": [
+            "git diff --check"
+          ]
+        }
+      }
+    },
+    "R3.13": {
+      "title": "R3.2 scope-incident replacement certification",
+      "status": "AUTHORIZED_ACTIVE",
+      "dependencies": [
+        "R3.1"
+      ],
+      "automation": {
+        "front_id": "BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-01",
+        "objective": "Certify the canonical Agent V2 cognitive pipeline contracts after preserving the R3.2 scope incident without treating PR #199 as contract-compliant",
+        "work_branch": "control-plane/r3-13-r3-2-scope-incident-certification",
+        "executor": "codex_control_plane",
+        "risk": "MEDIUM",
+        "domain": "testing_ci_recovery",
+        "allowed_paths": [
+          "docs/roadmap/evidence/BRAIN_101_R3_13_R3_2_SCOPE_INCIDENT_CERTIFICATION.md"
+        ],
+        "forbidden_paths": [
+          ".env",
+          ".github/",
+          "memory/",
+          "memory/semantic/",
+          "memory/rollback",
+          "tmp_agent/brain_v9/trading/",
+          "financial_autonomy/",
+          "tmp_agent/state/",
+          "scripts/"
+        ],
+        "acceptance": [
+          "Preserve R3.2 as SUPERSEDED_SCOPE_INCIDENT and never represent PR #199 as compliant with its original six-path contract",
+          "Verify the five canonical R3.2 Python contract suites and their evidence document from the current immutable integration base",
+          "Record the exact nine PR #199 paths, the six originally authorized paths, and the three out-of-contract paths",
+          "Do not modify runtime code, tests, governance logic, memory, FAISS, trading, financial autonomy, CI, environment files, or canonical local state",
+          "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
+        ],
+        "test_commands": [
+          "python -m pytest tests/contract/test_brain_101_r3_2_*.py",
+          "git diff --check"
+        ],
+        "deployment_mode": "NO_DEPLOY",
+        "closeout": {
+          "front_id": "BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-CLOSEOUT-01",
+          "objective": "Close the replacement R3.2 certification, preserve the historical scope incident, and authorize R3.4 as the next single governed R3 item",
+          "work_branch": "control-plane/r3-13-r3-2-scope-incident-certification-closeout",
+          "executor": "codex_control_plane",
+          "risk": "MEDIUM",
+          "allowed_paths": [
+            "docs/roadmap/BRAIN_101_MANIFEST.json",
+            "docs/roadmap/BRAIN_101_ROADMAP.md",
+            "docs/roadmap/BRAIN_101_SCORECARD.json",
+            "ROADMAP_STATUS.json",
+            "docs/MIGRATION_CONTROL_LEDGER.md",
+            "docs/roadmap/evidence/BRAIN_101_R3_13_R3_2_SCOPE_INCIDENT_CERTIFICATION_CLOSEOUT.json"
+          ],
+          "forbidden_paths": [
+            ".env",
+            ".github/",
+            "memory/",
+            "tmp_agent/brain_v9/trading/",
+            "financial_autonomy/",
+            "tmp_agent/state/",
+            "scripts/"
+          ],
+          "acceptance": [
+            "Record exact R3.13 Issue PR decision merge and contract certification evidence",
+            "Set R3.13 to CLOSED_RUNTIME_VERIFIED only after all R3.2 contract suites pass",
+            "Keep R3.2 as SUPERSEDED_SCOPE_INCIDENT and retain its immutable incident evidence",
+            "Authorize exactly one next roadmap item R3.4 for the full cognitive pipeline E2E",
             "Preserve human final authority and disabled live trading, real money, canonical local sync, and auto-merge"
           ],
           "test_commands": [
@@ -1012,7 +1087,7 @@
     "closed_at_utc": "2026-08-03T21:28:44Z",
     "final_state": "R2_2_CLOSED_RUNTIME_VERIFIED_R2_3_AUTHORIZED_ACTIVE"
   },
-  "next_gate": "Execute R3.1 contract/E2E gap matrix with NO_DEPLOY",
+  "next_gate": "Execute R3.13 replacement certification and preserve R3.2 as an immutable scope incident",
   "r2_3_constitutional_threat_model_closeout": {
     "evidence_path": "docs/roadmap/evidence/BRAIN_101_R2_3_CONSTITUTIONAL_THREAT_MODEL_CLOSEOUT.json",
     "schema_version": 1,

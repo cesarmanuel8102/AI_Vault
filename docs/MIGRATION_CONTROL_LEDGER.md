@@ -9257,3 +9257,16 @@ FRONT-BRAIN-AGENT-V2-PRODUCTION-OPERATIONS-01
 - Authorized next item: exactly one `R3.2`, `MEDIUM`, dominio `testing_ci_recovery`, ejecutor `codex_control_plane`, rama `control-plane/r3-2-agent-v2-cognitive-pipeline-contracts`, `NO_DEPLOY`, permitido para tests de contrato de intent router, planner, evaluator, tool gateway y runtime lifecycle, más `docs/roadmap/evidence/BRAIN_101_R3_2_AGENT_V2_COGNITIVE_PIPELINE_CONTRACTS.md`, con closeout completo predeclarado.
 - Preserved controls: human final authority true, live trading disabled, real money disabled, auto-merge disabled, canonical local sync disabled, deploy disabled, runtime files untouched by closeout, authentication unchanged, response shapes unchanged, side effects unchanged, error codes unchanged, rollback behavior unchanged.
 - Next gate: execute `R3.2` Agent V2 cognitive pipeline contract front with `NO_DEPLOY`.
+
+## BRAIN-101 R3.2 — Scope Incident and Replacement Authorization (2026-08-29)
+
+- Historical front: `BRAIN-101-R3-2-AGENT-V2-COGNITIVE-PIPELINE-CONTRACTS-01`.
+- Issue / PR: Issue #196 / PR #199.
+- Historical candidate and merge: head `28b2613adb5370865920ad0eae2b486e15f85f70`, merge `749ada1458e3092614b6e8c72380e350cbd46514`.
+- Contract result: `SUPERSEDED_SCOPE_INCIDENT`; PR #199 changed nine files against six originally authorized paths.
+- Out-of-contract paths: `scripts/operator_proxy/autonomous_flow.ts`, `tests/contract/operator_proxy/autonomous_flow.test.ts`, and `tmp_agent/brain_v9/core/agent_kernel_v2/langgraph_parity_runtime.py`.
+- Fail-closed evidence: installed runtime returned `blocked CI PR identity invalid`; the historical lifecycle remains unchanged and is not represented as compliant.
+- Incident evidence: `docs/roadmap/evidence/BRAIN_101_R3_2_SCOPE_INCIDENT.json`.
+- Replacement item: exactly one `R3.13`, front `BRAIN-101-R3-13-R3-2-SCOPE-INCIDENT-CERTIFICATION-01`, `MEDIUM`, `NO_DEPLOY`, allowed only to create `docs/roadmap/evidence/BRAIN_101_R3_13_R3_2_SCOPE_INCIDENT_CERTIFICATION.md` and run the canonical R3.2 contract suites.
+- Preserved controls: human final authority true; live trading, real money, canonical local sync, auto-merge, runtime deployment, memory/FAISS mutation, and trading remain disabled.
+- Next gate: execute R3.13 replacement certification and preserve R3.2 as an immutable scope incident.
