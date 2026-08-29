@@ -34,6 +34,8 @@ export interface LifecycleRecord {
   deployment_mode: DeploymentMode;
   completed_effects: string[];
   last_error?: string;
+  // Redacted, bounded evidence for diagnosis only; never used for lifecycle control.
+  last_error_detail?: string;
   builder_retry_reason?: "BUILDER_FAILURE";
   updated_utc: string;
 }

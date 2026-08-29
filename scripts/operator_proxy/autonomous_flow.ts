@@ -2,6 +2,7 @@ import {randomUUID} from "node:crypto";
 import type {LifecycleRecord, ProxySpec, ReviewerOutput} from "./types.js";
 import {LifecycleStore} from "./lifecycle_store.js";
 import {isEligibleFallback} from "./builder_backend.js";
+import {redactString} from "./redaction.js";
 
 export interface BuildResult {pr:number;head_sha:string;session:string;recovered_repair?:true}
 export type CiResult="PENDING"|"PASS"|"FAIL";
@@ -26,6 +27,23 @@ export function newLifecycle(spec:ProxySpec):LifecycleRecord {
   return {schema_version:1,front_id:spec.front_id,roadmap_item_id:spec.roadmap_item_id,state:"DISCOVERED",base_sha:spec.expected_base_sha,repair_cycles:0,deployment_mode:spec.deployment_mode,completed_effects:[],updated_utc:new Date().toISOString()};
 }
 
+function builderFailureDetail(error: unknown): string {
+  const message=redactString(error instanceof Error?error.message:String(error));
+  const known:[RegExp,string][]=[
+    [/builder worktree base mismatch/i,"WORKTREE_BASE_MISMATCH"],
+    [/base override does not match clean worktree HEAD/i,"BASE_OVERRIDE_MISMATCH"],
+    [/builder worktree dirty/i,"WORKTREE_DIRTY"],
+    [/builder recovery worktree state invalid/i,"RECOVERY_WORKTREE_INVALID"],
+    [/recovered repair synchronization invalid/i,"RECOVERY_SYNC_INVALID"],
+    [/recovered builder receipt invalid/i,"RECOVERY_RECEIPT_INVALID"],
+    [/repair findings missing/i,"REPAIR_FINDINGS_MISSING"],
+    [/external effect/i,"EXTERNAL_EFFECT_DENIED"],
+    [/preferred builder backend invalid/i,"BUILDER_BACKEND_INVALID"],
+    [/OPERATOR_PROXY_ROOT/i,"PROVENANCE_ROOT_INVALID"],
+  ];
+  return known.find(([pattern])=>pattern.test(message))?.[1]??"UNCLASSIFIED";
+}
+
 export class AutonomousFlow {
   constructor(readonly store:LifecycleStore,readonly effects:AutonomousEffects){}
   assertPrivilegedInstallState(expected:LifecycleRecord):LifecycleRecord {
@@ -44,7 +62,7 @@ export class AutonomousFlow {
       case "ADMITTED": {const issue=this.effects.ensureIssue(spec); state=this.store.effect(state,`issue:${issue}`); return this.store.advance(state,"ISSUE_CREATED",{issue});}
       case "ISSUE_CREATED":
       case "REPAIRING": return this.store.advance(state,"BUILDING");
-      case "BUILDING": {if(!state.issue)throw new Error("lifecycle issue missing");const session=`builder-${randomUUID()}`;let built:BuildResult|"PENDING";try{built=await this.effects.ensureBuild(spec,state.issue,session,state.repair_cycles,state.head_sha,state.builder_retry_reason);}catch(error){const {failure_class}=isEligibleFallback(error);return this.store.advance(state,"BLOCKED",{last_error:`BUILDER_FAILED:${failure_class}`,builder_retry_reason:undefined});}if(built==="PENDING")return state;const sameRepairHead=state.repair_cycles>0&&built.head_sha===state.head_sha;if(typeof built!=="object"||!built.session||!/^[0-9a-f]{40}$/.test(built.head_sha)||sameRepairHead&&built.recovered_repair!==true||!sameRepairHead&&built.recovered_repair===true)throw new Error("builder evidence invalid");if(!sameRepairHead)state=state.repair_cycles>0?this.store.repairBuild(state,built.head_sha):this.store.effect(state,`build:${built.head_sha}`);return this.store.advance(state,"PR_CREATED",{pr:built.pr,head_sha:built.head_sha,builder_session:built.session,decision_id:undefined,reviewer_session:undefined,builder_retry_reason:undefined});}
+      case "BUILDING": {if(!state.issue)throw new Error("lifecycle issue missing");const session=`builder-${randomUUID()}`;let built:BuildResult|"PENDING";try{built=await this.effects.ensureBuild(spec,state.issue,session,state.repair_cycles,state.head_sha,state.builder_retry_reason);}catch(error){const {failure_class}=isEligibleFallback(error);return this.store.advance(state,"BLOCKED",{last_error:`BUILDER_FAILED:${failure_class}`,last_error_detail:builderFailureDetail(error),builder_retry_reason:undefined});}if(built==="PENDING")return state;const sameRepairHead=state.repair_cycles>0&&built.head_sha===state.head_sha;if(typeof built!=="object"||!built.session||!/^[0-9a-f]{40}$/.test(built.head_sha)||sameRepairHead&&built.recovered_repair!==true||!sameRepairHead&&built.recovered_repair===true)throw new Error("builder evidence invalid");if(!sameRepairHead)state=state.repair_cycles>0?this.store.repairBuild(state,built.head_sha):this.store.effect(state,`build:${built.head_sha}`);return this.store.advance(state,"PR_CREATED",{pr:built.pr,head_sha:built.head_sha,builder_session:built.session,decision_id:undefined,reviewer_session:undefined,builder_retry_reason:undefined,last_error_detail:undefined});}
       case "PR_CREATED": return this.store.advance(state,"CI_PENDING");
       case "CI_PENDING": {if(!state.pr||!state.head_sha)throw new Error("PR evidence missing");const ci=this.effects.ci(state.pr,state.head_sha);if(ci==="PENDING")return state;if(ci==="FAIL")return this.store.advance(state,"BLOCKED",{last_error:"CI_FAILED"});return this.store.advance(state,"REVIEWING");}
       case "REVIEWING": {if(!state.pr||!state.head_sha||!state.builder_session)throw new Error("review evidence missing");const requested=`reviewer-${randomUUID()}`;if(requested===state.builder_session)throw new Error("actor separation failed");const reviewed=this.effects.review(state.pr,state.head_sha,requested),review=reviewed.output,reviewer=reviewed.session;if(!reviewer||reviewer===state.builder_session)throw new Error("actor separation failed");if(review.head_sha!==state.head_sha)throw new Error("review head mismatch");const decision=this.effects.policy(spec,state.issue!,state.pr,state.head_sha,review,state.builder_session,reviewer,state.repair_cycles);if(!/^[0-9a-f-]{36}$/.test(decision.decision_id))throw new Error("policy decision id invalid");state={...state,reviewer_session:reviewer,decision_id:decision.decision_id};if(decision.outcome==="REPAIR"){if(state.repair_cycles>=2)return this.store.advance(state,"BLOCKED",{last_error:"REPAIR_LIMIT_REACHED"});return this.store.advance(state,"REPAIRING",{repair_cycles:state.repair_cycles+1});}if(decision.outcome==="BLOCK")return this.store.advance(state,"BLOCKED",{last_error:"POLICY_BLOCK"});if(decision.outcome==="ESCALATE_TO_OWNER")return this.store.advance(state,"ESCALATED",{last_error:"OWNER_AUTHORITY_REQUIRED"});return this.store.advance(state,"READY_TO_MERGE");}
