@@ -1,5 +1,5 @@
 param([string]$InstallRoot='C:\AI_VAULT_CODEX_BRIDGE',[switch]$Once,[switch]$DryRun,[switch]$Doctor)
-if(([int]$Once.IsPresent+[int]$DryRun.IsPresent+[int]$Doctor.IsPresent) -gt 1){throw 'operator proxy execution mode is ambiguous'}
+if($Doctor -and ($Once -or $DryRun)){throw 'operator proxy execution mode is ambiguous'}
 $env:OPERATOR_PROXY_ROOT=$InstallRoot
 $reviewerRepo=Join-Path $InstallRoot 'repos\AI_Vault-governed'
 if(-not (Test-Path -LiteralPath $reviewerRepo)){throw 'operator proxy reviewer repository missing'}
